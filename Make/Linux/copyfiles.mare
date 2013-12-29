@@ -1,0 +1,8 @@
+
+if tool == "vcxproj" {
+  copyfiles = {
+    dependencies = "Nao"
+    folder = "Tools"
+    buildCommand = "..\\..\\Util\\CallTool\\bin\\CallTool.exe CONFIG=$(configuration) /c \"copyfiles 10.0.1.xxx\" /t Copyfiles \"copyfiles ipaddress [-l location] [-t color] [-p number] [-d]\""
+  }
+}

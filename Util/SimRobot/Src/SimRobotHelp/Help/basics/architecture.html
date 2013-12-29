@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="../simrobothelp.css">
+<title>Architecture Components</title>
+</head>
+<body>
+
+<table width="100%">
+	<tr>
+		<td rowspan="2" width="5%"><img alt="logo" src="../Icons/SimRobot.png"></td>
+		<td valign="middle" align="right"><div class="title">Architecture Components</div></td>
+	</tr>
+	<tr valign="top">
+		<td><hr></td>
+	</tr>
+</table>
+
+<p>
+As shown in Fig. 1, SimRobot consists of several modules that are linked
+to one single application. This approach, which is different from many other
+client/server-based simulation concepts, has been chosen because it offers the
+possibility of halting or stepwise executing the whole simulation without any
+concurrencies. It allows also a more comprehensive debugging of the executed
+robot software.
+</p>
+
+<p align="center">
+<img alt="architecture" src="../Icons/architecture.png" align="middle">
+</p>
+
+<p>
+The main components of SimRobot are:
+</p>
+
+<ul type="disc">
+
+	<li><b>SimRobotCore</b><br>
+		The simulation core, which may also be qualified as engine or
+		kernel, is the most important part of the application. It models the robots
+		and the environment, simulates sensor readings, and executes commands
+		given by the controller or the user. Even most parts of the visualization are
+		integrated into the simulation core.<br>		
+		The kernel is platform independent. It is connected to a user interface and
+		a controller via a well-defined interface. This enables an easy porting to
+		other platforms as well as the embedding into other applications.<br>
+	</li>
+	
+	<li><b>GUI</b><br>
+		The user interface is responsible for the display of information (e. g. different
+		views of the simulated scene) and for the interaction with the user. It is described
+		in more detail in <a href="../basics/interface.html">User Interface</a> section.<br>
+	</li>
+	
+	<li><b>Controller</b><br>
+		The controller implements a sense-think-act cycle. In each simulation step,
+		it is called by the simulation, reads the available sensors, plans the
+		next action, and sets the actuators to the desired states. A controller which
+		is suitable for the modeled scene has to be provided by the user. Normally,
+		it contains the control software of the simulated robots, but it may also be
+		left empty.<br>
+	</li>
+	
+	<li><b>Scene</b><br>
+		The specification of the robots and the environment, in the context of SimRobot named as
+		scene, is modeled via an external XML file and loaded	at runtime. It is described
+		in the <a href="specification.html">Specification of Robots</a>section.<br>
+	</li>
+
+</ul>
+
+
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+
+SpecialActions = customTool + {
+  dependencies = "URC"
+  root = "$(srcDirRoot)/Modules/MotionControl/mof"
+  urc = "$(buildDirRoot)/URC/$(platform)/$(configuration)/URC",
+  mofFiles = "$(srcDirRoot)/Modules/MotionControl/mof/*.mof"
+  files = {
+    if tool == "vcxproj" { "$(mofFiles)" } // list all mof files in Visual Studio
+  }
+  input = mofFiles,
+  command = urc,
+  message = ".mof (URC)",
+  dependencies = "URC",
+  output = "$(configDirRoot)/specialActions.dat",
+}

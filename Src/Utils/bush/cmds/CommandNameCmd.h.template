@@ -1,0 +1,21 @@
+#pragma once
+
+#include "Utils/bush/cmdlib/CommandAdapter.h"
+#include "Utils/bush/cmdlib/Commands.h"
+#include "Utils/bush/cmdlib/RobotCommand.h"
+
+// TODO: choose a super class
+class CommandNameCmd : public CommandAdapter
+class CommandNameCmd : public RobotCommand
+{
+  CommandNameCmd();
+  virtual std::string getName() const;
+  virtual std::string getDescription() const;
+  virtual std::vector<std::string> complete(const std::string &cmdLine) const;
+  virtual bool execute(Context &context, const std::vector<std::string> &params);
+  virtual bool preExecution(Context &context, const std::vector<std::string> &params);
+  virtual Task* perRobotExecution(Context &context, Robot &robot);
+  virtual bool postExecution(Context &context, const std::vector<std::string> &params);
+public:
+  static CommandNameCmd theCommandNameCmd;
+};

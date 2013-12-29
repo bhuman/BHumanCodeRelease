@@ -1,0 +1,61 @@
+# activate simulation time
+st on
+
+# in case we have more than a single robot
+robot all
+
+# ODE on Mac requires pan and tilt not to be 0
+set representation:HeadMotionRequest watchField = true; mode = panTiltMode; cameraControlMode = lowerCamera; pan = 0.02; tilt = 0.02; speed = 1; target = {x = 1; y = 0; z = 0;};
+poll
+
+# Select modules for simulator
+mr BallModel CognitionLogDataProvider 
+mr RobotPose CognitionLogDataProvider 
+mr FrameInfo CognitionLogDataProvider
+mr JointData MotionLogDataProvider
+mr SensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+mr GroundTruthRobotPose CognitionLogDataProvider
+mr GroundTruthBallModel CognitionLogDataProvider
+
+# Fast, because we do not compute images 
+ci off
+mr Image default
+
+# Deactivate unused modules
+mr RobotHealth default
+mr HeadMotionRequest default
+mr Thumbnail off
+
+# Deactivate modules depending on images
+mr FieldBoundary default 
+mr FreePartOfOpponentGoalModel default 
+
+mr RobotsModel default
+
+mr GoalPercept default
+mr LinePercept default
+mr BallPercept off
+mr LineSpots off
+mr BallSpots off
+mr RegionPercept off
+
+mr ObstacleWheel default
+mr ObstacleSpots off
+mr PossibleObstacleSpots off
+
+mr ColorReference off
+mr BodyContour off
+
+# joint request is required by simulation
+dr representation:JointRequest
+
+# request joint data and sensor data
+dr representation:SensorData
+dr representation:JointData
+
+# request behavior messages
+dr representation:ActivationGraph
+
+call GameStates

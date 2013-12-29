@@ -1,0 +1,4 @@
+#!/bin/bash
+
+octave riccati.m
+cat riccatisolution | grep -v '#' > ../../Config/carttable-riccatisolution.cfg

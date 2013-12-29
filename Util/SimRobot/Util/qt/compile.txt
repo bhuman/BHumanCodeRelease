@@ -1,0 +1,64 @@
+
+A short guide on how to compile the Qt library with Visual Studio 2008:
+
+Requirements:
+  Visual Studio 2008 (Command Prompt)
+  Cygwin
+  some free disk space
+  a lot of time
+
+1. Download and unpack the package (e.g. qt-win-opensource-src-4.5.3.zip) to the path <builddir> (e.g. F:\qt-win-opensource-src-4.5.3)
+
+2. Open the "Visual Studio 2008 Command Prompt" and go to <builddir>.
+
+3. Type: 
+
+   configure.exe -release -opensource -fast -no-stl -no-qt3support -platform win32-msvc2008
+	
+4. *wait*
+
+5. Type:
+   
+   nmake
+   
+6. *wait*
+
+7. *wait*
+
+8. *wait*
+
+9. Done? The binaries (*.dll) and imports libraries (*.lib) are located at <builddir>\lib.
+
+10. Actually the header files are located at <builddir>\include, but the files in this directory just point on other files somewhere in <builddir>\src. Therefore, i suggest to use the following script to create a working set of header files.
+
+		#!/bin/bash
+
+		pushd include &>/dev/null
+		for dir in *; do 
+
+		  if [ $dir == Qt3Support ]; then continue; fi
+
+		  pushd $dir &>/dev/null
+		  mkdir -p ../../exportedInclude/$dir
+		  for name in *; do
+			case $name in	  
+				private) ;;
+				*.pri) ;;
+				*.h)
+				  read wayne file < $name
+				  cp $(echo $file | tr -d \") ../../exportedInclude/$dir
+				  ;;
+				*)
+				  cp -R $name ../../exportedInclude/$dir
+				  ;;
+			esac
+		  done
+		  popd &>/dev/null
+
+		done
+		popd &>/dev/null
+  
+   Paste the script into <builddir>\exportInclude, open a cygwin shell, change the working directory to <builddir> and run the script using ./exportInclude.
+   
+   When the script has finished, the exported header files are located at <builddir>\exportedInclude.
+   

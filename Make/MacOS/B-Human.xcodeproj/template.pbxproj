@@ -1,0 +1,3174 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		2042274C1202418600B9944D /* Deploy */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 20422753120241CD00B9944D /* Build configuration list for PBXAggregateTarget "Deploy" */;
+			buildPhases = (
+				2042274B1202418600B9944D /* Copy Files */,
+			);
+			dependencies = (
+				20C301B912304BCB0014668E /* PBXTargetDependency */,
+			);
+			name = Deploy;
+			productName = "Deploy to Nao";
+		};
+		209C6C1212008D6B007E5C2E /* SpecialActions */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 209C6C1512008D8A007E5C2E /* Build configuration list for PBXAggregateTarget "SpecialActions" */;
+			buildPhases = (
+				209C6C1112008D6B007E5C2E /* Compile MOF Files */,
+			);
+			dependencies = (
+				209C6C1712008DCB007E5C2E /* PBXTargetDependency */,
+			);
+			name = SpecialActions;
+			productName = SpecialActions;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		200377B717C11749008F7CAC /* help.qch in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200377B317C11658008F7CAC /* help.qch */; };
+		200377B817C1174C008F7CAC /* helpcollection.qhc in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200377B517C11717008F7CAC /* helpcollection.qhc */; };
+		2007C22817861C26002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C22917861C26002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C22C17861C43002033FC /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22B17861C43002033FC /* QtOpenGL.framework */; };
+		2007C22D17861CDD002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C22E17861CDD002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C23017861D13002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C23117861D13002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C23417861D22002033FC /* QtHelp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C23317861D21002033FC /* QtHelp.framework */; };
+		2007C23A17861DFA002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C23B17861DFA002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C23C17861DFA002033FC /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22B17861C43002033FC /* QtOpenGL.framework */; };
+		2007C24317861EA1002033FC /* QtCore.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C24417861EA1002033FC /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C2451786204F002033FC /* QtSvg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22417861AD1002033FC /* QtSvg.framework */; };
+		2007C2481786242D002033FC /* QtCore.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C2491786242D002033FC /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C24A1786242D002033FC /* QtSvg.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22417861AD1002033FC /* QtSvg.framework */; };
+		200C742F17F76EC60081E703 /* SimulatedNao.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200C742E17F76E940081E703 /* SimulatedNao.dylib */; };
+		2024529F12041A9300C3BCD9 /* libController.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20245219120416DB00C3BCD9 /* libController.a */; };
+		202B6E5A17FB347B00555411 /* qt_menu.nib in Copy QtGui Resources */ = {isa = PBXBuildFile; fileRef = 202B6E5817FB341200555411 /* qt_menu.nib */; };
+		202B6E5D17FB35C000555411 /* QtNetwork in Copy QtNetwork Framework */ = {isa = PBXBuildFile; fileRef = 202B6E5C17FB358B00555411 /* QtNetwork */; };
+		202B6E6017FB365800555411 /* libQtCLucene.4.dylib in Copy libQtCLucene */ = {isa = PBXBuildFile; fileRef = 202B6E5E17FB361200555411 /* libQtCLucene.4.dylib */; };
+		202B6E6317FB399C00555411 /* libqsqlite.dylib in Copy Sql Driver Plugin */ = {isa = PBXBuildFile; fileRef = 202B6E6217FB397A00555411 /* libqsqlite.dylib */; };
+		202B6E6517FB3AF500555411 /* qt_menu.nib in Copy QtGui Resources */ = {isa = PBXBuildFile; fileRef = 202B6E5817FB341200555411 /* qt_menu.nib */; };
+		20318598173D298000E25227 /* libqtpropertybrowser.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20318536173D0FE000E25227 /* libqtpropertybrowser.a */; };
+		203E5A8417A52FD200401CAA /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
+		2048B1BD1794827200553A54 /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 20C115221793477000961A38 /* QtCore */; };
+		2048B1BF179482BA00553A54 /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 20C11525179347B900961A38 /* QtGui */; };
+		2048B1C31794832700553A54 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */ = {isa = PBXBuildFile; fileRef = 20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */; };
+		2048B1C71794838700553A54 /* qt.conf in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
+		2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
+		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
+		20844BCE11FCC5390037FA87 /* SimRobotHelp.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */; };
+		208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 208460E511FE413F0037FA87 /* libjpeg.a */; };
+		2084615711FED7420037FA87 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
+		2084637011FF64E10037FA87 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
+		208B2E4C14B898AC003A08A0 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 208B2E4B14B898AC003A08A0 /* libxml2.dylib */; };
+		208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */; };
+		20909D03176C8ACB00A997C2 /* GameCtrl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000798319009676 /* GameCtrl.cpp */; };
+		2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD05175CE13100E764EF /* libsnappy.a */; };
+		2098CD08175CE16C00E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD07175CE16C00E764EF /* libsnappy.a */; };
+		209F7ED4176DC072005C25DC /* UdpComm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000398147572914 /* UdpComm.cpp */; };
+		20A0EB181217F4AC0033F048 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20A0EB141217F49C0033F048 /* IOKit.framework */; };
+		20C115231793477000961A38 /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 20C115221793477000961A38 /* QtCore */; };
+		20C11526179347B900961A38 /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 20C11525179347B900961A38 /* QtGui */; };
+		20C11529179347F200961A38 /* QtHelp in Copy QtHelp Framework */ = {isa = PBXBuildFile; fileRef = 20C11528179347F200961A38 /* QtHelp */; };
+		20C11532179348E300961A38 /* QtOpenGL in Copy QtOpenGL Framework */ = {isa = PBXBuildFile; fileRef = 20C11531179348E300961A38 /* QtOpenGL */; };
+		20C115381793499500961A38 /* QtSql in Copy QtSql Framework */ = {isa = PBXBuildFile; fileRef = 20C115371793499500961A38 /* QtSql */; };
+		20C1153B179349D700961A38 /* QtSvg in Copy QtSvg Framework */ = {isa = PBXBuildFile; fileRef = 20C1153A179349D700961A38 /* QtSvg */; };
+		20C1154317934AB200961A38 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */ = {isa = PBXBuildFile; fileRef = 20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */; };
+		20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
+		20C3018A123040570014668E /* bhuman.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000049871213554 /* bhuman.cpp */; };
+		20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000210128052140591905 /* SimRobot.icns */; };
+		20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000001676308541306894187 /* SimRobotDoc.icns */; };
+		20D32B9013D810D300AE1B12 /* bush.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000000003194532100095 /* bush.icns */; };
+		20DD73EA134E4E33003FF249 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
+		20DD73EF134E4E33003FF249 /* libode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20844A6111FB5F1C0037FA87 /* libode.a */; };
+		20DD73F1134E4E33003FF249 /* libiconv.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C112C0F80200B772CD /* libiconv.dylib */; };
+		20DD73F2134E4E33003FF249 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C212C0F80200B772CD /* libz.dylib */; };
+		20F2188B13B38F0400D19518 /* CoreServices.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		202452A212041AC600C3BCD9 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20318531173D0FE000E25227 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		2031859B173D357800E25227 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		208443B911FA398B0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B1111FC70CA0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B1211FC70CA0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B3E11FCC3E20037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B3F11FCC3E20037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844C1A11FD56640037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844C5F11FD7D4E0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qhp";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/../../Help/$(INPUT_FILE_BASE).qch",
+				"$(CONFIGURATION_TEMP_DIR)/../../Help/helpcollection.qhc",
+			);
+			script = "echo \"[Paths]\" >$QT_DIR/bin/qt.conf\necho \"Prefix = $SRCROOT/$QT_DIR\" >>$QT_DIR/bin/qt.conf\ncd $QT_DIR/bin\n./qhelpgenerator $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/../../Help/$INPUT_FILE_BASE.qch\ncp $INPUT_FILE_DIR/helpcollection.qhcp $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhcp\n./qcollectiongenerator $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhcp -o $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhc";
+		};
+		208462B711FF64520037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20A05D4D12115F5100BE52B1 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20DD73F4134E4E33003FF249 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20DD73F5134E4E33003FF249 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20EF879E13B37D7500508E6A /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20EF879F13B37D7500508E6A /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXContainerItemProxy section */
+		202452B412041BD900C3BCD9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20245218120416DB00C3BCD9;
+			remoteInfo = Controller;
+		};
+		20318599173D29A700E25227 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 203184E5173D0FE000E25227;
+			remoteInfo = qtpropertybrowser;
+		};
+		2061F288152DC68E0089659C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844F1711FE33150037FA87;
+			remoteInfo = SimulatedNao;
+		};
+		20844B2311FC73AD0037FA87 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844AF411FC6F410037FA87;
+			remoteInfo = SimRobotEditor;
+		};
+		20844BCC11FCC5120037FA87 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844B3611FCB34C0037FA87;
+			remoteInfo = SimRobotHelp;
+		};
+		2099D31E1868EF3F00AEF9C0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20C3017F12303D200014668E;
+			remoteInfo = libbhuman;
+		};
+		2099D3201868EF4600AEF9C0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20909CF9176BB55200A997C2;
+			remoteInfo = libgamectrl;
+		};
+		209C6C1612008DCB007E5C2E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 209C6BDD120078F3007E5C2E;
+			remoteInfo = URC;
+		};
+		209C6C39120090E6007E5C2E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 209C6C1212008D6B007E5C2E;
+			remoteInfo = SpecialActions;
+		};
+		20B7664C1230040200F11A62 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 209C6C1212008D6B007E5C2E;
+			remoteInfo = SpecialActions;
+		};
+		20C301B812304BCB0014668E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20B7663F123001A300F11A62;
+			remoteInfo = Nao;
+		};
+		20DD7420134E5458003FF249 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20DD73A1134E4E33003FF249;
+			remoteInfo = SimRobotCore2;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		202B6E5917FB344900555411 /* Copy QtGui Resources */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Resources;
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E5A17FB347B00555411 /* qt_menu.nib in Copy QtGui Resources */,
+			);
+			name = "Copy QtGui Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		202B6E5B17FB355300555411 /* Copy QtNetwork Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtNetwork.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E5D17FB35C000555411 /* QtNetwork in Copy QtNetwork Framework */,
+			);
+			name = "Copy QtNetwork Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		202B6E5F17FB363400555411 /* Copy libQtCLucene */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E6017FB365800555411 /* libQtCLucene.4.dylib in Copy libQtCLucene */,
+			);
+			name = "Copy libQtCLucene";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		202B6E6117FB395B00555411 /* Copy Sql Driver Plugin */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = sqldrivers;
+			dstSubfolderSpec = 13;
+			files = (
+				202B6E6317FB399C00555411 /* libqsqlite.dylib in Copy Sql Driver Plugin */,
+			);
+			name = "Copy Sql Driver Plugin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		202B6E6417FB3ABF00555411 /* Copy QtGui Resources */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Resources;
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E6517FB3AF500555411 /* qt_menu.nib in Copy QtGui Resources */,
+			);
+			name = "Copy QtGui Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2048B1BC1794825400553A54 /* Copy QtCore Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtCore.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				2048B1BD1794827200553A54 /* QtCore in Copy QtCore Framework */,
+			);
+			name = "Copy QtCore Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2048B1BE1794829F00553A54 /* Copy QtGui Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				2048B1BF179482BA00553A54 /* QtGui in Copy QtGui Framework */,
+			);
+			name = "Copy QtGui Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2048B1C21794830B00553A54 /* Copy Accessible Plugin */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = accessible;
+			dstSubfolderSpec = 13;
+			files = (
+				2048B1C31794832700553A54 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */,
+			);
+			name = "Copy Accessible Plugin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115211793473400961A38 /* Copy QtCore Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtCore.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C115231793477000961A38 /* QtCore in Copy QtCore Framework */,
+			);
+			name = "Copy QtCore Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115241793478A00961A38 /* Copy QtGui Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11526179347B900961A38 /* QtGui in Copy QtGui Framework */,
+			);
+			name = "Copy QtGui Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11527179347C800961A38 /* Copy QtHelp Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtHelp.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11529179347F200961A38 /* QtHelp in Copy QtHelp Framework */,
+			);
+			name = "Copy QtHelp Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11530179348A000961A38 /* Copy QtOpenGL Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtOpenGL.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11532179348E300961A38 /* QtOpenGL in Copy QtOpenGL Framework */,
+			);
+			name = "Copy QtOpenGL Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115361793494F00961A38 /* Copy QtSql Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtSql.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C115381793499500961A38 /* QtSql in Copy QtSql Framework */,
+			);
+			name = "Copy QtSql Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11539179349A500961A38 /* Copy QtSvg Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtSvg.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C1153B179349D700961A38 /* QtSvg in Copy QtSvg Framework */,
+			);
+			name = "Copy QtSvg Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C1153F17934A2700961A38 /* Copy Accessible Plugin */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = accessible;
+			dstSubfolderSpec = 13;
+			files = (
+				20C1154317934AB200961A38 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */,
+			);
+			name = "Copy Accessible Plugin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		200377B317C11658008F7CAC /* help.qch */ = {isa = PBXFileReference; lastKnownFileType = file; path = help.qch; sourceTree = BUILT_PRODUCTS_DIR; };
+		200377B517C11717008F7CAC /* helpcollection.qhc */ = {isa = PBXFileReference; lastKnownFileType = file; path = helpcollection.qhc; sourceTree = BUILT_PRODUCTS_DIR; };
+		2007C22017861A13002033FC /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtCore.framework; sourceTree = SOURCE_ROOT; };
+		2007C22217861A7D002033FC /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtGui.framework; sourceTree = SOURCE_ROOT; };
+		2007C22417861AD1002033FC /* QtSvg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtSvg.framework; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtSvg.framework; sourceTree = SOURCE_ROOT; };
+		2007C22B17861C43002033FC /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtOpenGL.framework; sourceTree = SOURCE_ROOT; };
+		2007C23317861D21002033FC /* QtHelp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtHelp.framework; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtHelp.framework; sourceTree = SOURCE_ROOT; };
+		200C742E17F76E940081E703 /* SimulatedNao.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimulatedNao.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20245219120416DB00C3BCD9 /* libController.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libController.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		202B6E5817FB341200555411 /* qt_menu.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = qt_menu.nib; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtGui.framework/Versions/4/Resources/qt_menu.nib; sourceTree = "<group>"; };
+		202B6E5C17FB358B00555411 /* QtNetwork */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtNetwork; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtNetwork.framework/Versions/4/QtNetwork; sourceTree = SOURCE_ROOT; };
+		202B6E5E17FB361200555411 /* libQtCLucene.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libQtCLucene.4.dylib; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/libQtCLucene.4.dylib; sourceTree = SOURCE_ROOT; };
+		202B6E6217FB397A00555411 /* libqsqlite.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqsqlite.dylib; path = ../../Util/SimRobot/Util/qt/MacOS/plugins/sqldrivers/libqsqlite.dylib; sourceTree = SOURCE_ROOT; };
+		20318536173D0FE000E25227 /* libqtpropertybrowser.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libqtpropertybrowser.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		203E5A8317A52FD200401CAA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		2044A8C112C0F80200B772CD /* libiconv.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.dylib; path = /usr/lib/libiconv.dylib; sourceTree = "<absolute>"; };
+		2044A8C212C0F80200B772CD /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
+		2061F22D152CA4430089659C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		20844A6111FB5F1C0037FA87 /* libode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libode.a; path = ../../Util/SimRobot/Util/ode/MacOS/lib/libode.a; sourceTree = SOURCE_ROOT; };
+		20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotHelp.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		208460E511FE413F0037FA87 /* libjpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libjpeg.a; path = ../../Util/libjpeg/MacOS/lib/libjpeg.a; sourceTree = SOURCE_ROOT; };
+		208462A211FF5B640037FA87 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		208B2E4B14B898AC003A08A0 /* libxml2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libxml2.dylib; path = /usr/lib/libxml2.dylib; sourceTree = "<absolute>"; };
+		20909D01176BB55200A997C2 /* libgamectrl.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libgamectrl.so; sourceTree = BUILT_PRODUCTS_DIR; };
+		2098CD05175CE13100E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/linux_x86/libsnappy.a; sourceTree = SOURCE_ROOT; };
+		2098CD07175CE16C00E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/MacOS/libsnappy.a; sourceTree = "<group>"; };
+		209C6D111200A9C2007E5C2E /* SimRobot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRobot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		209C6D131200A9C2007E5C2E /* URC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = URC; sourceTree = BUILT_PRODUCTS_DIR; };
+		20A0EB141217F49C0033F048 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
+		20B76640123001A300F11A62 /* bhuman */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bhuman; sourceTree = BUILT_PRODUCTS_DIR; };
+		20C115221793477000961A38 /* QtCore */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtCore; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtCore.framework/Versions/4/QtCore; sourceTree = SOURCE_ROOT; };
+		20C11525179347B900961A38 /* QtGui */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtGui; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtGui.framework/Versions/4/QtGui; sourceTree = SOURCE_ROOT; };
+		20C11528179347F200961A38 /* QtHelp */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtHelp; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtHelp.framework/Versions/4/QtHelp; sourceTree = SOURCE_ROOT; };
+		20C11531179348E300961A38 /* QtOpenGL */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtOpenGL; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtOpenGL.framework/Versions/4/QtOpenGL; sourceTree = SOURCE_ROOT; };
+		20C115371793499500961A38 /* QtSql */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtSql; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtSql.framework/Versions/4/QtSql; sourceTree = SOURCE_ROOT; };
+		20C1153A179349D700961A38 /* QtSvg */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtSvg; path = ../../Util/SimRobot/Util/qt/MacOS/Frameworks/QtSvg.framework/Versions/4/QtSvg; sourceTree = SOURCE_ROOT; };
+		20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqtaccessiblewidgets.dylib; path = ../../Util/SimRobot/Util/qt/MacOS/plugins/accessible/libqtaccessiblewidgets.dylib; sourceTree = SOURCE_ROOT; };
+		20C1154C17934BDC00961A38 /* qt.conf */ = {isa = PBXFileReference; lastKnownFileType = text; path = qt.conf; sourceTree = SOURCE_ROOT; };
+		20C3018012303D200014668E /* libbhuman.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libbhuman.so; sourceTree = BUILT_PRODUCTS_DIR; };
+		20D13C3411F0CD31007DFC5D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		20DD7409134E5056003FF249 /* SimRobotCore2.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotCore2.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20EF87B713B3802B00508E6A /* bush.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bush.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		20844AF311FC6F410037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2007C22D17861CDD002033FC /* QtCore.framework in Frameworks */,
+				2007C22E17861CDD002033FC /* QtGui.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844B3511FCB34C0037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2007C23417861D22002033FC /* QtHelp.framework in Frameworks */,
+				2007C23017861D13002033FC /* QtCore.framework in Frameworks */,
+				2007C23117861D13002033FC /* QtGui.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844F1611FE33150037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				203E5A8417A52FD200401CAA /* AppKit.framework in Frameworks */,
+				20A0EB181217F4AC0033F048 /* IOKit.framework in Frameworks */,
+				2084637011FF64E10037FA87 /* CoreServices.framework in Frameworks */,
+				2084615711FED7420037FA87 /* OpenGL.framework in Frameworks */,
+				2007C23A17861DFA002033FC /* QtCore.framework in Frameworks */,
+				2007C23B17861DFA002033FC /* QtGui.framework in Frameworks */,
+				2007C23C17861DFA002033FC /* QtOpenGL.framework in Frameworks */,
+				2007C2451786204F002033FC /* QtSvg.framework in Frameworks */,
+				208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */,
+				2024529F12041A9300C3BCD9 /* libController.a in Frameworks */,
+				20318598173D298000E25227 /* libqtpropertybrowser.a in Frameworks */,
+				2098CD08175CE16C00E764EF /* libsnappy.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20909CFC176BB55200A997C2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		209C6BDC120078F3007E5C2E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20B7663E123001A300F11A62 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C3017E12303D200014668E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20DD73E6134E4E33003FF249 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20DD73EA134E4E33003FF249 /* OpenGL.framework in Frameworks */,
+				2007C22817861C26002033FC /* QtCore.framework in Frameworks */,
+				2007C22917861C26002033FC /* QtGui.framework in Frameworks */,
+				2007C22C17861C43002033FC /* QtOpenGL.framework in Frameworks */,
+				20DD73EF134E4E33003FF249 /* libode.a in Frameworks */,
+				20DD73F1134E4E33003FF249 /* libiconv.dylib in Frameworks */,
+				208B2E4C14B898AC003A08A0 /* libxml2.dylib in Frameworks */,
+				20DD73F2134E4E33003FF249 /* libz.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20EF878E13B37D7500508E6A /* Frameworks & Libraries */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20F2188B13B38F0400D19518 /* CoreServices.framework in Frameworks & Libraries */,
+				2007C24317861EA1002033FC /* QtCore.framework in Frameworks & Libraries */,
+				2007C24417861EA1002033FC /* QtGui.framework in Frameworks & Libraries */,
+			);
+			name = "Frameworks & Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A1043669E6E5A7426EA502A /* Frameworks & Libraries */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */,
+				2007C2481786242D002033FC /* QtCore.framework in Frameworks & Libraries */,
+				2007C2491786242D002033FC /* QtGui.framework in Frameworks & Libraries */,
+				2007C24A1786242D002033FC /* QtSvg.framework in Frameworks & Libraries */,
+			);
+			name = "Frameworks & Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000023799 /* Nao */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000006073199 /* Modules */,
+				000000000000000012188877 /* Platform */,
+				000000000000000024473793 /* Processes */,
+				000000000000001554291843 /* Representations */,
+				000000000000000001517989 /* Tools */,
+			);
+			name = Nao;
+			sourceTree = "<group>";
+		};
+		05596AB53D8D521C69802C27 /* B-Human */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000023799 /* Nao */,
+				2024566F1205D86500C3BCD9 /* Libs */,
+				2086A0AD17EDCE5D004AD507 /* Utils */,
+				ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */,
+				20D139C911F0B445007DFC5D /* Target Files */,
+			);
+			name = "B-Human";
+			sourceTree = "<group>";
+		};
+		2024566F1205D86500C3BCD9 /* Libs */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000048893248 /* Controller */,
+				000000000006394564570238 /* SimRobotCore2 */,
+				000000000012825087747900 /* SimRobotEditor */,
+				000000000003206299627624 /* SimRobotHelp */,
+				000000000000000024306316 /* libbhuman */,
+				000000000000000097203996 /* libgamectrl */,
+				000000000000012525966558 /* qtpropertybrowser */,
+				000000000000000006098284 /* libqxt */,
+			);
+			name = Libs;
+			sourceTree = "<group>";
+		};
+		2086A0AD17EDCE5D004AD507 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000200393726512 /* SimRobot */,
+				000000000000000024286971 /* URC */,
+				000000000000000048744670 /* bush */,
+			);
+			name = Utils;
+			sourceTree = "<group>";
+		};
+		20D139C911F0B445007DFC5D /* Target Files */ = {
+			isa = PBXGroup;
+			children = (
+				200377B317C11658008F7CAC /* help.qch */,
+				200377B517C11717008F7CAC /* helpcollection.qhc */,
+				20909D01176BB55200A997C2 /* libgamectrl.so */,
+				20318536173D0FE000E25227 /* libqtpropertybrowser.a */,
+				20EF87B713B3802B00508E6A /* bush.app */,
+				20C3018012303D200014668E /* libbhuman.so */,
+				20B76640123001A300F11A62 /* bhuman */,
+				20245219120416DB00C3BCD9 /* libController.a */,
+				209C6D111200A9C2007E5C2E /* SimRobot.app */,
+				20DD7409134E5056003FF249 /* SimRobotCore2.dylib */,
+				20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */,
+				20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */,
+				200C742E17F76E940081E703 /* SimulatedNao.dylib */,
+				209C6D131200A9C2007E5C2E /* URC */,
+			);
+			name = "Target Files";
+			sourceTree = "<group>";
+		};
+		ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				202B6E5817FB341200555411 /* qt_menu.nib */,
+				20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */,
+				202B6E6217FB397A00555411 /* libqsqlite.dylib */,
+				202B6E5E17FB361200555411 /* libQtCLucene.4.dylib */,
+				2098CD07175CE16C00E764EF /* libsnappy.a */,
+				2098CD05175CE13100E764EF /* libsnappy.a */,
+				2044A8C112C0F80200B772CD /* libiconv.dylib */,
+				208B2E4B14B898AC003A08A0 /* libxml2.dylib */,
+				2044A8C212C0F80200B772CD /* libz.dylib */,
+				208460E511FE413F0037FA87 /* libjpeg.a */,
+				20844A6111FB5F1C0037FA87 /* libode.a */,
+				20C1154C17934BDC00961A38 /* qt.conf */,
+				20C115221793477000961A38 /* QtCore */,
+				20C11525179347B900961A38 /* QtGui */,
+				20C11528179347F200961A38 /* QtHelp */,
+				202B6E5C17FB358B00555411 /* QtNetwork */,
+				20C11531179348E300961A38 /* QtOpenGL */,
+				20C1153A179349D700961A38 /* QtSvg */,
+				20C115371793499500961A38 /* QtSql */,
+				203E5A8317A52FD200401CAA /* AppKit.framework */,
+				208462A211FF5B640037FA87 /* CoreServices.framework */,
+				2061F22D152CA4430089659C /* Foundation.framework */,
+				20D13C3411F0CD31007DFC5D /* OpenGL.framework */,
+				2007C22017861A13002033FC /* QtCore.framework */,
+				2007C22217861A7D002033FC /* QtGui.framework */,
+				2007C23317861D21002033FC /* QtHelp.framework */,
+				2007C22B17861C43002033FC /* QtOpenGL.framework */,
+				2007C22417861AD1002033FC /* QtSvg.framework */,
+				20A0EB141217F49C0033F048 /* IOKit.framework */,
+			);
+			name = "Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		20245218120416DB00C3BCD9 /* Controller */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2024521E1204174D00C3BCD9 /* Build configuration list for PBXNativeTarget "Controller" */;
+			buildPhases = (
+				20A05D4612115F1E00BE52B1 /* Check Resource Dependencies */,
+				20245216120416DB00C3BCD9 /* Sources */,
+			);
+			buildRules = (
+				202452A212041AC600C3BCD9 /* PBXBuildRule */,
+				20A05D4D12115F5100BE52B1 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = Controller;
+			productName = Controller;
+			productReference = 20245219120416DB00C3BCD9 /* libController.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		203184E5173D0FE000E25227 /* qtpropertybrowser */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20318532173D0FE000E25227 /* Build configuration list for PBXNativeTarget "qtpropertybrowser" */;
+			buildPhases = (
+				203184E6173D0FE000E25227 /* Check Resource Dependencies */,
+				2031859C173D483100E25227 /* Generate MOC from Headers */,
+				2031859D173D564D00E25227 /* Generate MOC from Implementation Files */,
+				203184E7173D0FE000E25227 /* Sources */,
+			);
+			buildRules = (
+				2031859B173D357800E25227 /* PBXBuildRule */,
+				20318531173D0FE000E25227 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = qtpropertybrowser;
+			productName = Controller;
+			productReference = 20318536173D0FE000E25227 /* libqtpropertybrowser.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		20844AF411FC6F410037FA87 /* SimRobotEditor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */;
+			buildPhases = (
+				20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */,
+				20844AF211FC6F410037FA87 /* Sources */,
+				20844AF311FC6F410037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				20844B1111FC70CA0037FA87 /* PBXBuildRule */,
+				20844B1211FC70CA0037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotEditor;
+			productName = SimRobotEditor;
+			productReference = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20844B3611FCB34C0037FA87 /* SimRobotHelp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844B3A11FCB3910037FA87 /* Build configuration list for PBXNativeTarget "SimRobotHelp" */;
+			buildPhases = (
+				20844E6211FE0FA20037FA87 /* Check Resource Dependencies */,
+				20844E7311FE13870037FA87 /* Check Help Dependencies */,
+				20844B3411FCB34C0037FA87 /* Sources */,
+				20844B3511FCB34C0037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				20844C5F11FD7D4E0037FA87 /* PBXBuildRule */,
+				20844B3E11FCC3E20037FA87 /* PBXBuildRule */,
+				20844B3F11FCC3E20037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotHelp;
+			productName = SimRobotHelp;
+			productReference = 20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20844F1711FE33150037FA87 /* SimulatedNao */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844F1B11FE336F0037FA87 /* Build configuration list for PBXNativeTarget "SimulatedNao" */;
+			buildPhases = (
+				2046C1E61446DE7900CADD6F /* Get Libraries */,
+				20844F1511FE33150037FA87 /* Sources */,
+				20844F1611FE33150037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				208462B711FF64520037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+				2031859A173D29A700E25227 /* PBXTargetDependency */,
+				202452B512041BD900C3BCD9 /* PBXTargetDependency */,
+			);
+			name = SimulatedNao;
+			productName = Controller;
+			productReference = 200C742E17F76E940081E703 /* SimulatedNao.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20909CF9176BB55200A997C2 /* libgamectrl */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20909CFD176BB55200A997C2 /* Build configuration list for PBXNativeTarget "libgamectrl" */;
+			buildPhases = (
+				20909CFA176BB55200A997C2 /* Sources */,
+				20909CFC176BB55200A997C2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = libgamectrl;
+			productName = libbhuman;
+			productReference = 20909D01176BB55200A997C2 /* libgamectrl.so */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		209C6BDD120078F3007E5C2E /* URC */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 209C6BE21200794C007E5C2E /* Build configuration list for PBXNativeTarget "URC" */;
+			buildPhases = (
+				209C6BDB120078F3007E5C2E /* Sources */,
+				209C6BDC120078F3007E5C2E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = URC;
+			productName = URC;
+			productReference = 209C6D131200A9C2007E5C2E /* URC */;
+			productType = "com.apple.product-type.tool";
+		};
+		20B7663F123001A300F11A62 /* Nao */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20B76649123001F600F11A62 /* Build configuration list for PBXNativeTarget "Nao" */;
+			buildPhases = (
+				20B7663D123001A300F11A62 /* Sources */,
+				20B7663E123001A300F11A62 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2099D3211868EF4600AEF9C0 /* PBXTargetDependency */,
+				2099D31F1868EF3F00AEF9C0 /* PBXTargetDependency */,
+				20B7664D1230040200F11A62 /* PBXTargetDependency */,
+			);
+			name = Nao;
+			productName = Nao;
+			productReference = 20B76640123001A300F11A62 /* bhuman */;
+			productType = "com.apple.product-type.tool";
+		};
+		20C3017F12303D200014668E /* libbhuman */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20C3018512303D3F0014668E /* Build configuration list for PBXNativeTarget "libbhuman" */;
+			buildPhases = (
+				20C3017D12303D200014668E /* Sources */,
+				20C3017E12303D200014668E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = libbhuman;
+			productName = libbhuman;
+			productReference = 20C3018012303D200014668E /* libbhuman.so */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20DD73A1134E4E33003FF249 /* SimRobotCore2 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */;
+			buildPhases = (
+				20DD73A2134E4E33003FF249 /* Check Resource Dependencies */,
+				20DD73A3134E4E33003FF249 /* Sources */,
+				20DD73E6134E4E33003FF249 /* Frameworks */,
+			);
+			buildRules = (
+				20DD73F4134E4E33003FF249 /* PBXBuildRule */,
+				20DD73F5134E4E33003FF249 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotCore2;
+			productName = SimRobotCore;
+			productReference = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20EF877313B37D7500508E6A /* bush */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20EF87A013B37D7500508E6A /* Build configuration list for PBXNativeTarget "bush" */;
+			buildPhases = (
+				20EF878213B37D7500508E6A /* Check Resource Dependencies */,
+				20EF878313B37D7500508E6A /* Sources */,
+				20EF878E13B37D7500508E6A /* Frameworks & Libraries */,
+				20EF879313B37D7500508E6A /* Bundle Resources */,
+				2048B1BC1794825400553A54 /* Copy QtCore Framework */,
+				2048B1BE1794829F00553A54 /* Copy QtGui Framework */,
+				202B6E6417FB3ABF00555411 /* Copy QtGui Resources */,
+				2048B1C21794830B00553A54 /* Copy Accessible Plugin */,
+			);
+			buildRules = (
+				20EF879E13B37D7500508E6A /* PBXBuildRule */,
+				20EF879F13B37D7500508E6A /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = bush;
+			productName = SimRobotDemo;
+			productReference = 20EF87B713B3802B00508E6A /* bush.app */;
+			productType = "com.apple.product-type.application";
+		};
+		299502394E013F9C280A5D16 /* SimRobot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */;
+			buildPhases = (
+				2046C1E71446E11F00CADD6F /* Get Libraries */,
+				20844D9211FDF51B0037FA87 /* Check Resource Dependencies */,
+				C29B8785722055ED95EF7B57 /* Sources */,
+				2A1043669E6E5A7426EA502A /* Frameworks & Libraries */,
+				3787F99312C85FF0073FD7BA /* Bundle Resources */,
+				20C115211793473400961A38 /* Copy QtCore Framework */,
+				20C115241793478A00961A38 /* Copy QtGui Framework */,
+				202B6E5917FB344900555411 /* Copy QtGui Resources */,
+				20C11527179347C800961A38 /* Copy QtHelp Framework */,
+				202B6E5B17FB355300555411 /* Copy QtNetwork Framework */,
+				20C11530179348A000961A38 /* Copy QtOpenGL Framework */,
+				20C115361793494F00961A38 /* Copy QtSql Framework */,
+				20C11539179349A500961A38 /* Copy QtSvg Framework */,
+				202B6E5F17FB363400555411 /* Copy libQtCLucene */,
+				20C1153F17934A2700961A38 /* Copy Accessible Plugin */,
+				202B6E6117FB395B00555411 /* Copy Sql Driver Plugin */,
+			);
+			buildRules = (
+				208443B911FA398B0037FA87 /* PBXBuildRule */,
+				20844C1A11FD56640037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+				20DD7421134E5458003FF249 /* PBXTargetDependency */,
+				20844B2411FC73AD0037FA87 /* PBXTargetDependency */,
+				20844BCD11FCC5120037FA87 /* PBXTargetDependency */,
+				2061F289152DC68E0089659C /* PBXTargetDependency */,
+				209C6C3A120090E6007E5C2E /* PBXTargetDependency */,
+			);
+			name = SimRobot;
+			productName = SimRobotDemo;
+			productReference = 209C6D111200A9C2007E5C2E /* SimRobot.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		91B15E841AA80083484172DE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0500;
+			};
+			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "B-Human" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 05596AB53D8D521C69802C27 /* B-Human */;
+			productRefGroup = 05596AB53D8D521C69802C27 /* B-Human */;
+			projectDirPath = "";
+			projectRoot = ../../Src;
+			targets = (
+				299502394E013F9C280A5D16 /* SimRobot */,
+				20B7663F123001A300F11A62 /* Nao */,
+				2042274C1202418600B9944D /* Deploy */,
+				20DD73A1134E4E33003FF249 /* SimRobotCore2 */,
+				20844AF411FC6F410037FA87 /* SimRobotEditor */,
+				20844B3611FCB34C0037FA87 /* SimRobotHelp */,
+				20245218120416DB00C3BCD9 /* Controller */,
+				20844F1711FE33150037FA87 /* SimulatedNao */,
+				20C3017F12303D200014668E /* libbhuman */,
+				20909CF9176BB55200A997C2 /* libgamectrl */,
+				203184E5173D0FE000E25227 /* qtpropertybrowser */,
+				209C6BDD120078F3007E5C2E /* URC */,
+				209C6C1212008D6B007E5C2E /* SpecialActions */,
+				20EF877313B37D7500508E6A /* bush */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		20EF879313B37D7500508E6A /* Bundle Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2048B1C71794838700553A54 /* qt.conf in Bundle Resources */,
+				20D32B9013D810D300AE1B12 /* bush.icns in Bundle Resources */,
+			);
+			name = "Bundle Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3787F99312C85FF0073FD7BA /* Bundle Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200377B717C11749008F7CAC /* help.qch in Bundle Resources */,
+				200377B817C1174C008F7CAC /* helpcollection.qhc in Bundle Resources */,
+				20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */,
+				208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */,
+				20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */,
+				20844BCE11FCC5390037FA87 /* SimRobotHelp.dylib in Bundle Resources */,
+				20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Bundle Resources */,
+				20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Bundle Resources */,
+				200C742F17F76EC60081E703 /* SimulatedNao.dylib in Bundle Resources */,
+			);
+			name = "Bundle Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		203184E6173D0FE000E25227 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Util/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		2031859C173D483100E25227 /* Generate MOC from Headers */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate MOC from Headers";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/h.moc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "for ((i=0; i < SCRIPT_INPUT_FILE_COUNT ; i++)); do\n  INPUT_FILE_PATH=`eval echo '$SCRIPT_INPUT_FILE_'$i`\n  INPUT_FILE_DIR=`dirname $INPUT_FILE_PATH`\n  INPUT_FILE_BASE=`basename $INPUT_FILE_PATH .h`\n  $QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/file1.tmp\n  cmp -s $CONFIGURATION_TEMP_DIR/file1.tmp $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp || mv $CONFIGURATION_TEMP_DIR/file1.tmp $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp\ndone\ntouch $CONFIGURATION_TEMP_DIR/h.moc";
+			showEnvVarsInLog = 0;
+		};
+		2031859D173D564D00E25227 /* Generate MOC from Implementation Files */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate MOC from Implementation Files";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/cpp.moc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "for ((i=0; i < SCRIPT_INPUT_FILE_COUNT ; i++)); do\n  INPUT_FILE_PATH=`eval echo '$SCRIPT_INPUT_FILE_'$i`\n  INPUT_FILE_DIR=`dirname $INPUT_FILE_PATH`\n  INPUT_FILE_BASE=`basename $INPUT_FILE_PATH .cpp`\n  $QT_DIR/bin/moc $INPUT_FILE_DIR/$INPUT_FILE_BASE.cpp -nw -o $CONFIGURATION_TEMP_DIR/file1.tmp\n  cmp -s $CONFIGURATION_TEMP_DIR/file1.tmp $CONFIGURATION_TEMP_DIR/$INPUT_FILE_BASE.moc || mv $CONFIGURATION_TEMP_DIR/file1.tmp $CONFIGURATION_TEMP_DIR/$INPUT_FILE_BASE.moc\ndone\ntouch $CONFIGURATION_TEMP_DIR/cpp.moc";
+			showEnvVarsInLog = 0;
+		};
+		2042274B1202418600B9944D /* Copy Files */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Files";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-r\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nCOMMAND=\"`head -1 ../../Config/Scenes/connect.con | sed -e \"s%\\# This script connects to a remote robot.%<ipaddress>%\" -e \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`$OPTIONS\"\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `./getModKey | sed \"s%512%%\"` ]; then\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"Copy Files (default from connect.con)\\n<ipaddress> [-l <location>] [-t <color>] [-p <number>] [-r] [-d] [-a]\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  echo \"$COMMAND\" | sed \"s% *\\([^ ]*\\).*%sc Remote \\1%\" >../../Config/Scenes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ./copyfiles $CONFIGURATION `echo \"$COMMAND\" | sed \"s% -a%%\"`\nfi";
+			showEnvVarsInLog = 0;
+		};
+		2046C1E61446DE7900CADD6F /* Get Libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/Controller/MacOS/$(SIMROBOT_CONFIG)/libController.a",
+				"$(BUILD_DIR)/qtpropertybrowser/MacOS/$(SIMROBOT_CONFIG)/libqtpropertybrowser.a",
+			);
+			name = "Get Libraries";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/libController.a",
+				"$(CONFIGURATION_TEMP_DIR)/libqtpropertybrowser.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/Controller/MacOS/$SIMROBOT_CONFIG/libController.a $CONFIGURATION_TEMP_DIR/libController.a\ncp $BUILD_DIR/qtpropertybrowser/MacOS/$SIMROBOT_CONFIG/libqtpropertybrowser.a $CONFIGURATION_TEMP_DIR/libqtpropertybrowser.a";
+			showEnvVarsInLog = 0;
+		};
+		2046C1E71446E11F00CADD6F /* Get Libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimRobotCore2/MacOS/$(SIMROBOT_CONFIG)/SimRobotCore2.dylib",
+				"$(BUILD_DIR)/SimRobotEditor/MacOS/$(SIMROBOT_CONFIG)/SimRobotEditor.dylib",
+				"$(BUILD_DIR)/SimRobotHelp/MacOS/$(SIMROBOT_CONFIG)/SimRobotHelp.dylib",
+				"$(BUILD_DIR)/SimulatedNao/MacOS/$(CONFIGURATION)/SimulatedNao.dylib",
+				"$(BUILD_DIR)/SimRobotHelp/Help/help.qch",
+				"$(BUILD_DIR)/SimRobotHelp/Help/helpcollection.qhc",
+			);
+			name = "Get Libraries";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotCore2.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotEditor.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotHelp.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimulatedNao.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/help.qch",
+				"$(CONFIGURATION_TEMP_DIR)/helpcollection.qhc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimRobotCore2/MacOS/$SIMROBOT_CONFIG/SimRobotCore2.dylib $CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib\ncp $BUILD_DIR/SimRobotEditor/MacOS/$SIMROBOT_CONFIG/SimRobotEditor.dylib $CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\ncp $BUILD_DIR/SimRobotHelp/MacOS/$SIMROBOT_CONFIG/SimRobotHelp.dylib $CONFIGURATION_TEMP_DIR/SimRobotHelp.dylib\ncp $BUILD_DIR/SimulatedNao/MacOS/$CONFIGURATION/SimulatedNao.dylib $CONFIGURATION_TEMP_DIR/SimulatedNao.dylib\ncp $BUILD_DIR/SimRobotHelp/Help/help.qch $CONFIGURATION_TEMP_DIR/help.qch\ncp $BUILD_DIR/SimRobotHelp/Help/helpcollection.qhc $CONFIGURATION_TEMP_DIR/helpcollection.qhc";
+			showEnvVarsInLog = 0;
+		};
+		20844D9211FDF51B0037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E6211FE0FA20037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E7311FE13870037FA87 /* Check Help Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Help Dependencies";
+			outputPaths = (
+				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/Help/help.qhp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/Help/help.qhp";
+			showEnvVarsInLog = 0;
+		};
+		209C6C1112008D6B007E5C2E /* Compile MOF Files */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Compile MOF Files";
+			outputPaths = (
+				../../Config/specialActions.dat,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = $BUILD_DIR/URC/MacOS/Release/URC;
+			showEnvVarsInLog = 0;
+		};
+		20A05D4612115F1E00BE52B1 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20DD73A2134E4E33003FF249 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20EF878213B37D7500508E6A /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/Utils/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/Utils/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		20245216120416DB00C3BCD9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		203184E7173D0FE000E25227 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844AF211FC6F410037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844B3411FCB34C0037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844F1511FE33150037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20909CFA176BB55200A997C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20909D03176C8ACB00A997C2 /* GameCtrl.cpp in Sources */,
+				209F7ED4176DC072005C25DC /* UdpComm.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		209C6BDB120078F3007E5C2E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20B7663D123001A300F11A62 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C3017D12303D200014668E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20C3018A123040570014668E /* bhuman.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20DD73A3134E4E33003FF249 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20EF878313B37D7500508E6A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C29B8785722055ED95EF7B57 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		202452B512041BD900C3BCD9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20245218120416DB00C3BCD9 /* Controller */;
+			targetProxy = 202452B412041BD900C3BCD9 /* PBXContainerItemProxy */;
+		};
+		2031859A173D29A700E25227 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 203184E5173D0FE000E25227 /* qtpropertybrowser */;
+			targetProxy = 20318599173D29A700E25227 /* PBXContainerItemProxy */;
+		};
+		2061F289152DC68E0089659C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844F1711FE33150037FA87 /* SimulatedNao */;
+			targetProxy = 2061F288152DC68E0089659C /* PBXContainerItemProxy */;
+		};
+		20844B2411FC73AD0037FA87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844AF411FC6F410037FA87 /* SimRobotEditor */;
+			targetProxy = 20844B2311FC73AD0037FA87 /* PBXContainerItemProxy */;
+		};
+		20844BCD11FCC5120037FA87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844B3611FCB34C0037FA87 /* SimRobotHelp */;
+			targetProxy = 20844BCC11FCC5120037FA87 /* PBXContainerItemProxy */;
+		};
+		2099D31F1868EF3F00AEF9C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20C3017F12303D200014668E /* libbhuman */;
+			targetProxy = 2099D31E1868EF3F00AEF9C0 /* PBXContainerItemProxy */;
+		};
+		2099D3211868EF4600AEF9C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20909CF9176BB55200A997C2 /* libgamectrl */;
+			targetProxy = 2099D3201868EF4600AEF9C0 /* PBXContainerItemProxy */;
+		};
+		209C6C1712008DCB007E5C2E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 209C6BDD120078F3007E5C2E /* URC */;
+			targetProxy = 209C6C1612008DCB007E5C2E /* PBXContainerItemProxy */;
+		};
+		209C6C3A120090E6007E5C2E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 209C6C1212008D6B007E5C2E /* SpecialActions */;
+			targetProxy = 209C6C39120090E6007E5C2E /* PBXContainerItemProxy */;
+		};
+		20B7664D1230040200F11A62 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 209C6C1212008D6B007E5C2E /* SpecialActions */;
+			targetProxy = 20B7664C1230040200F11A62 /* PBXContainerItemProxy */;
+		};
+		20C301B912304BCB0014668E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20B7663F123001A300F11A62 /* Nao */;
+			targetProxy = 20C301B812304BCB0014668E /* PBXContainerItemProxy */;
+		};
+		20DD7421134E5458003FF249 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20DD73A1134E4E33003FF249 /* SimRobotCore2 */;
+			targetProxy = 20DD7420134E5458003FF249 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2024521A120416DC00C3BCD9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				GENERATE_MASTER_OBJECT_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Src/SimRobotEditor,
+					../../Util/qtpropertybrowser,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = Controller;
+			};
+			name = Debug;
+		};
+		2024521B120416DC00C3BCD9 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Src/SimRobotEditor,
+					../../Util/qtpropertybrowser,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = Controller;
+			};
+			name = Develop;
+		};
+		2024521D120416DC00C3BCD9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				GENERATE_MASTER_OBJECT_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Src/SimRobotEditor,
+					../../Util/qtpropertybrowser,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = Controller;
+			};
+			name = Release;
+		};
+		20318533173D0FE000E25227 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				GENERATE_MASTER_OBJECT_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(CONFIGURATION_TEMP_DIR)",
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = qtpropertybrowser;
+			};
+			name = Debug;
+		};
+		20318534173D0FE000E25227 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(CONFIGURATION_TEMP_DIR)",
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = qtpropertybrowser;
+			};
+			name = Develop;
+		};
+		20318535173D0FE000E25227 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				EXECUTABLE_EXTENSION = a;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				GENERATE_MASTER_OBJECT_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(CONFIGURATION_TEMP_DIR)",
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = qtpropertybrowser;
+			};
+			name = Release;
+		};
+		2042274D1202418600B9944D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				PRODUCT_NAME = "Deploy to Nao";
+			};
+			name = Debug;
+		};
+		2042274E1202418600B9944D /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				PRODUCT_NAME = "Deploy to Nao";
+			};
+			name = Develop;
+		};
+		204227501202418600B9944D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				PRODUCT_NAME = "Deploy to Nao";
+			};
+			name = Release;
+		};
+		2081799B1201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CC = "$(SRCROOT)/../../Util/Buildchain/MacOS/bin/compile";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = YES;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					NDEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-mtune=native",
+					"-fomit-frame-pointer",
+				);
+				QT_DIR = ../../Util/SimRobot/Util/qt/MacOS;
+				SIMROBOT_CONFIG = Release;
+				SKIP_INSTALL = YES;
+				SYMROOT = ../../Build;
+				VALID_ARCHS = x86_64;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-address",
+					"-Wno-deprecated",
+					"-Wno-dynamic-class-memaccess",
+					"-Wno-overloaded-virtual",
+					"-Wno-reorder",
+					"-Wno-shorten-64-to-32",
+					"-Wno-sign-conversion",
+					"-Wno-strict-aliasing",
+					"-Wno-switch",
+					"-Wno-uninitialized",
+					"-Wno-unused-parameter",
+				);
+			};
+			name = Develop;
+		};
+		2081799C1201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_NAME = SimRobot;
+			};
+			name = Develop;
+		};
+		2081799E1201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotEditor,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+			};
+			name = Develop;
+		};
+		2081799F1201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotHelp,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+			};
+			name = Develop;
+		};
+		208179A01201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/SimulatedNao/MacOS/$(CONFIGURATION)";
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_DEBUGGING_SYMBOLS = default;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					_DEBUG,
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/qtpropertybrowser,
+					../../Util/Eigen,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtMultimedia.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/libjpeg/MacOS/lib,
+					../../Util/snappy/lib/MacOS,
+				);
+				OTHER_CFLAGS = "-mtune=native";
+				OTHER_LDFLAGS = "-w";
+				PRODUCT_NAME = SimulatedNao;
+				SEPARATE_SYMBOL_EDIT = NO;
+				WARNING_LDFLAGS = "";
+			};
+			name = Develop;
+		};
+		208179A11201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				COPY_PHASE_STRIP = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					TARGET_TOOL,
+				);
+				HEADER_SEARCH_PATHS = ../../Src;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = URC;
+			};
+			name = Develop;
+		};
+		208179A21201800A0005F60F /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				PRODUCT_NAME = SpecialActions;
+			};
+			name = Develop;
+		};
+		20844AF611FC6F420037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotEditor,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+			};
+			name = Debug;
+		};
+		20844AF711FC6F420037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotEditor,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+			};
+			name = Release;
+		};
+		20844B3811FCB34C0037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotHelp,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+			};
+			name = Debug;
+		};
+		20844B3911FCB34C0037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotHelp,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+			};
+			name = Release;
+		};
+		20844F1911FE33150037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/SimulatedNao/MacOS/$(CONFIGURATION)";
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/qtpropertybrowser,
+					../../Util/Eigen,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtMultimedia.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/libjpeg/MacOS/lib,
+					../../Util/snappy/lib/MacOS,
+				);
+				PRODUCT_NAME = SimulatedNao;
+			};
+			name = Debug;
+		};
+		20844F1A11FE33150037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/SimulatedNao/MacOS/$(CONFIGURATION)";
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					TARGET_SIM,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/qtpropertybrowser,
+					../../Util/Eigen,
+					../../Util/libqxt,
+					../../Util/snappy/include,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtMultimedia.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/OpenGL.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/libjpeg/MacOS/lib,
+					../../Util/snappy/lib/MacOS,
+				);
+				PRODUCT_NAME = SimulatedNao;
+			};
+			name = Release;
+		};
+		20909CFE176BB55200A997C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				COPY_PHASE_STRIP = YES;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libgamectrl;
+			};
+			name = Debug;
+		};
+		20909CFF176BB55200A997C2 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libgamectrl;
+			};
+			name = Develop;
+		};
+		20909D00176BB55200A997C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libgamectrl;
+			};
+			name = Release;
+		};
+		209C6BE0120078F4007E5C2E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				COPY_PHASE_STRIP = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					NDEBUG,
+					TARGET_TOOL,
+				);
+				HEADER_SEARCH_PATHS = ../../Src;
+				INSTALL_PATH = /usr/local/bin;
+				OTHER_CFLAGS = (
+					"-mtune=native",
+					"-fomit-frame-pointer",
+				);
+				PRODUCT_NAME = URC;
+			};
+			name = Debug;
+		};
+		209C6BE1120078F4007E5C2E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					TARGET_TOOL,
+				);
+				HEADER_SEARCH_PATHS = ../../Src;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = URC;
+			};
+			name = Release;
+		};
+		209C6C1312008D6C007E5C2E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = SpecialActions;
+			};
+			name = Debug;
+		};
+		209C6C1412008D6C007E5C2E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				PRODUCT_NAME = SpecialActions;
+			};
+			name = Release;
+		};
+		20B76642123001A300F11A62 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/Nao/Linux/$(CONFIGURATION)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+					_DEBUG,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/Eigen,
+					../../Util/snappy/include,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/libjpeg/lib,
+					../../Util/Buildchain/gcc/lib,
+					"\"$(SRCROOT)/../../Util/snappy/lib/linux_x86\"",
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lrt",
+					"-ljpeg-atom",
+					"-lpthread",
+				);
+				PRODUCT_NAME = bhuman;
+			};
+			name = Debug;
+		};
+		20B76643123001A300F11A62 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/Nao/Linux/$(CONFIGURATION)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/Eigen,
+					../../Util/snappy/include,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/libjpeg/lib,
+					../../Util/Buildchain/gcc/lib,
+					"\"$(SRCROOT)/../../Util/snappy/lib/linux_x86\"",
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lrt",
+					"-ljpeg-atom",
+					"-lpthread",
+				);
+				PRODUCT_NAME = bhuman;
+			};
+			name = Develop;
+		};
+		20B76645123001A300F11A62 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/Nao/Linux/$(CONFIGURATION)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+					NDEBUG,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/Eigen,
+					../../Util/snappy/include,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/libjpeg/lib,
+					../../Util/Buildchain/gcc/lib,
+					"\"$(SRCROOT)/../../Util/snappy/lib/linux_x86\"",
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lrt",
+					"-ljpeg-atom",
+					"-lpthread",
+				);
+				PRODUCT_NAME = bhuman;
+			};
+			name = Release;
+		};
+		20C3018112303D200014668E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				COPY_PHASE_STRIP = YES;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libbhuman;
+			};
+			name = Debug;
+		};
+		20C3018212303D200014668E /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libbhuman;
+			};
+			name = Develop;
+		};
+		20C3018412303D200014668E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Linux/$(CONFIGURATION)";
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = so;
+				EXECUTABLE_PREFIX = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					../../Util/alcommon/include,
+					../../Util/boost/linux,
+					../../Util/Buildchain/gcc/include,
+					"../../Util/Buildchain/gcc/include/c++/4.7.1",
+					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					../../Util/Buildchain/clang4.2/include,
+				);
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					ink,
+					../../Util/alcommon/lib/linux,
+					../../Util/Buildchain/gcc/lib,
+				);
+				LINK_WITH_STANDARD_LIBRARIES = NO;
+				MACH_O_TYPE = mh_execute;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-march=atom",
+					"-fPIC",
+					"-target",
+					"i686-pc-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-lalcommon",
+					"-fPIC",
+					"-shared",
+					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
+					"-s",
+				);
+				PRODUCT_NAME = libbhuman;
+			};
+			name = Release;
+		};
+		20DD73F7134E4E33003FF249 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_OPENMP_SUPPORT = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					MULTI_THREADING,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Util/ode/MacOS/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/SimRobot/Util/ode/MacOS/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wno-deprecated-writable-strings",
+				);
+			};
+			name = Debug;
+		};
+		20DD73F8134E4E33003FF249 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/Release";
+				ENABLE_OPENMP_SUPPORT = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					dNODEBUG,
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					MULTI_THREADING,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Util/ode/MacOS/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/SimRobot/Util/ode/MacOS/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wno-deprecated-writable-strings",
+				);
+			};
+			name = Develop;
+		};
+		20DD73FA134E4E33003FF249 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_OPENMP_SUPPORT = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					dNODEBUG,
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+					MULTI_THREADING,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/SimRobot/Src/SimRobotCore2,
+					../../Util/SimRobot/Util/ode/MacOS/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/SimRobot/Util/ode/MacOS/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wno-deprecated-writable-strings",
+				);
+			};
+			name = Release;
+		};
+		20EF87A113B37D7500508E6A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					_DEBUG,
+					QT_NO_STL,
+					TARGET_TOOL,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_NAME = bush;
+			};
+			name = Debug;
+		};
+		20EF87A213B37D7500508E6A /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					NDEBUG,
+					QT_NO_STL,
+					TARGET_TOOL,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_NAME = bush;
+			};
+			name = Develop;
+		};
+		20EF87A413B37D7500508E6A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					NDEBUG,
+					QT_NO_STL,
+					TARGET_TOOL,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					../../Src,
+					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_NAME = bush;
+			};
+			name = Release;
+		};
+		7C33BA060E74328D00ACB790 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_NAME = SimRobot;
+			};
+			name = Debug;
+		};
+		7C33BA070E74328D00ACB790 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_NAME = SimRobot;
+			};
+			name = Release;
+		};
+		8DB1DD96F65B1BF1FFC506E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CC = "$(SRCROOT)/../../Util/Buildchain/MacOS/bin/compile";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					_DEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "-mtune=native";
+				OTHER_LDFLAGS = "-w";
+				QT_DIR = ../../Util/SimRobot/Util/qt/MacOS;
+				SIMROBOT_CONFIG = "$(CONFIGURATION)";
+				SKIP_INSTALL = YES;
+				SYMROOT = ../../Build;
+				VALID_ARCHS = x86_64;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-address",
+					"-Wno-deprecated",
+					"-Wno-dynamic-class-memaccess",
+					"-Wno-overloaded-virtual",
+					"-Wno-reorder",
+					"-Wno-shorten-64-to-32",
+					"-Wno-sign-conversion",
+					"-Wno-strict-aliasing",
+					"-Wno-switch",
+					"-Wno-uninitialized",
+					"-Wno-unused-parameter",
+				);
+			};
+			name = Debug;
+		};
+		95E1EB2E5DDD587BE5B3E548 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CC = "$(SRCROOT)/../../Util/Buildchain/MacOS/bin/compile";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/MacOS/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = YES;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOSX,
+					NDEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-mtune=native",
+					"-fomit-frame-pointer",
+				);
+				QT_DIR = ../../Util/SimRobot/Util/qt/MacOS;
+				SIMROBOT_CONFIG = "$(CONFIGURATION)";
+				SKIP_INSTALL = YES;
+				SYMROOT = ../../Build;
+				VALID_ARCHS = x86_64;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-address",
+					"-Wno-deprecated",
+					"-Wno-dynamic-class-memaccess",
+					"-Wno-overloaded-virtual",
+					"-Wno-reorder",
+					"-Wno-shorten-64-to-32",
+					"-Wno-sign-conversion",
+					"-Wno-strict-aliasing",
+					"-Wno-switch",
+					"-Wno-uninitialized",
+					"-Wno-unused-parameter",
+				);
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2024521E1204174D00C3BCD9 /* Build configuration list for PBXNativeTarget "Controller" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2024521A120416DC00C3BCD9 /* Debug */,
+				2024521B120416DC00C3BCD9 /* Develop */,
+				2024521D120416DC00C3BCD9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20318532173D0FE000E25227 /* Build configuration list for PBXNativeTarget "qtpropertybrowser" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20318533173D0FE000E25227 /* Debug */,
+				20318534173D0FE000E25227 /* Develop */,
+				20318535173D0FE000E25227 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20422753120241CD00B9944D /* Build configuration list for PBXAggregateTarget "Deploy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2042274D1202418600B9944D /* Debug */,
+				2042274E1202418600B9944D /* Develop */,
+				204227501202418600B9944D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844AF611FC6F420037FA87 /* Debug */,
+				2081799E1201800A0005F60F /* Develop */,
+				20844AF711FC6F420037FA87 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20844B3A11FCB3910037FA87 /* Build configuration list for PBXNativeTarget "SimRobotHelp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844B3811FCB34C0037FA87 /* Debug */,
+				2081799F1201800A0005F60F /* Develop */,
+				20844B3911FCB34C0037FA87 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20844F1B11FE336F0037FA87 /* Build configuration list for PBXNativeTarget "SimulatedNao" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844F1911FE33150037FA87 /* Debug */,
+				208179A01201800A0005F60F /* Develop */,
+				20844F1A11FE33150037FA87 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20909CFD176BB55200A997C2 /* Build configuration list for PBXNativeTarget "libgamectrl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20909CFE176BB55200A997C2 /* Debug */,
+				20909CFF176BB55200A997C2 /* Develop */,
+				20909D00176BB55200A997C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		209C6BE21200794C007E5C2E /* Build configuration list for PBXNativeTarget "URC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				209C6BE0120078F4007E5C2E /* Debug */,
+				208179A11201800A0005F60F /* Develop */,
+				209C6BE1120078F4007E5C2E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		209C6C1512008D8A007E5C2E /* Build configuration list for PBXAggregateTarget "SpecialActions" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				209C6C1312008D6C007E5C2E /* Debug */,
+				208179A21201800A0005F60F /* Develop */,
+				209C6C1412008D6C007E5C2E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20B76649123001F600F11A62 /* Build configuration list for PBXNativeTarget "Nao" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20B76642123001A300F11A62 /* Debug */,
+				20B76643123001A300F11A62 /* Develop */,
+				20B76645123001A300F11A62 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20C3018512303D3F0014668E /* Build configuration list for PBXNativeTarget "libbhuman" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20C3018112303D200014668E /* Debug */,
+				20C3018212303D200014668E /* Develop */,
+				20C3018412303D200014668E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20DD73F7134E4E33003FF249 /* Debug */,
+				20DD73F8134E4E33003FF249 /* Develop */,
+				20DD73FA134E4E33003FF249 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20EF87A013B37D7500508E6A /* Build configuration list for PBXNativeTarget "bush" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20EF87A113B37D7500508E6A /* Debug */,
+				20EF87A213B37D7500508E6A /* Develop */,
+				20EF87A413B37D7500508E6A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "B-Human" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8DB1DD96F65B1BF1FFC506E0 /* Debug */,
+				2081799B1201800A0005F60F /* Develop */,
+				95E1EB2E5DDD587BE5B3E548 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C33BA060E74328D00ACB790 /* Debug */,
+				2081799C1201800A0005F60F /* Develop */,
+				7C33BA070E74328D00ACB790 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 91B15E841AA80083484172DE /* Project object */;
+}

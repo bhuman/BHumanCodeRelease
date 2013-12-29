@@ -1,0 +1,24 @@
+# connect to a robot
+call connect
+
+# request joint data and sensor data
+dr representation:SensorData
+dr representation:JointData
+dr representation:MotionRequest
+
+# request behavior messages
+dr representation:ActivationGraph
+
+dr representation:RobotDimensions
+dr representation:JointCalibration
+bike
+
+vp plot1 1000 -50 50
+vpd plot1 module:Bike:refy red
+vpd plot1 module:Bike:comy blue
+vpd plot1 module:Bike:diffy orange
+
+vp plot2 1000 -50 50
+vpd plot2 module:Bike:refx red
+vpd plot2 module:Bike:comx blue
+vpd plot2 module:Bike:diffx orange

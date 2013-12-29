@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QtHelpProject version="1.0">
+	<namespace>simrobothelp</namespace>
+	<virtualFolder>doc</virtualFolder>
+	<customFilter name="SimRobotHelp">
+		<filterAttribute>SimRobot Help Application</filterAttribute>
+		<filterAttribute>1.0</filterAttribute>
+	</customFilter>
+	<filterSection>
+		<filterAttribute>SimRobot Help Application</filterAttribute>
+		<filterAttribute>1.0</filterAttribute>
+		<toc>
+			<section title="Overview" ref="index.html">
+			</section>
+			<section title="Basics" ref="basics/basics.html">
+				<section title="Quickstart" ref="basics/quickstart.html">
+				</section>
+				<section title="Architecture Components" ref="basics/architecture.html">
+				</section>
+				<section title="Specification of Robots" ref="basics/specification.html">
+				</section>
+				<section title="Physics and Actuators" ref="basics/physics.html">
+				</section>
+				<section title="Sensing" ref="basics/sensing.html">
+				</section>
+			</section>
+			<section title="User Interface" ref="interface/interface.html">
+				<section title="Menus" ref="interface/menus.html">
+					<section title="File Menu" ref="interface/filemenu.html">
+					</section>
+					<section title="Edit Menu" ref="interface/editmenu.html">
+					</section>
+					<section title="View Menu" ref="interface/viewmenu.html">
+					</section>
+					<section title="Simulation Menu" ref="interface/simulationmenu.html">
+					</section>
+					<section title="Window Menu" ref="interface/windowmenu.html">
+					</section>
+					<section title="Help Menu" ref="interface/helpmenu.html">
+					</section>
+				</section>			
+				<section title="Tool Bar" ref="interface/toolbar.html">
+				</section>
+				<section title="Status Bar" ref="interface/statusbar.html">
+				</section>
+				<section title="Console" ref="interface/console.html">
+				</section>
+				<section title="Tree Window" ref="interface/treewindow.html">
+				</section>
+				<section title="Editor Window" ref="interface/editorwindow.html">
+				</section>
+				<section title="Object Window" ref="interface/objectwindow.html">
+				</section>
+				<section title="Sensor Window" ref="interface/sensorwindow.html">
+				</section>
+			</section>
+			<section title="Console Commands" ref="console/commands.html">
+			</section>
+			<section title="SimRobot API" ref="api/api.html">
+			</section>
+			<section title="RoSiML" ref="rosiml/rosi.html">
+				<section title="CONTROLLER" ref="rosiml/rosi_controller.html" />
+			</section>
+			<section title="Examples" ref="examples/examples.html">
+			</section>
+			<section title="FAQ" ref="faq/faq.html">
+			</section>
+		</toc>
+		<keywords>
+			<keyword name="SnapToRobot" id="SimRobotHelp::SnapToRobot"
+				ref="interface/view_menu_command_camera_command_snap_to_robot.html" />
+			<keyword name="Reset" id="SimRobotHelp::Reset"
+				ref="interface/simulation_menu_command_reset.html" />
+			<keyword name="Start" id="SimRobotHelp::Start"
+				ref="interface/simulation_menu_command_start.html" />
+			<keyword name="Step" id="SimRobotHelp::Step"
+				ref="interface/simulation_menu_command_step.html" />
+			<keyword name="CubeMap" id="SimRobotHelp::CubeMap"
+				ref="interface/simulation_menu_command_generate_cube_map.html" />
+		</keywords>
+		<files>
+			<file>api/*.html</file>
+			<file>basics/*.html</file>
+			<file>console/*.html</file>
+			<file>examples/*.html</file>
+			<file>faq/*.html</file>
+			<file>interface/*.html</file>
+			<file>rosiml/*.html</file>
+			<file>*.html</file>
+			<file>Icons/*.bmp</file>
+			<file>Icons/*.png</file>
+			<file>simrobothelp.css</file>
+		</files>
+	</filterSection>
+</QtHelpProject>

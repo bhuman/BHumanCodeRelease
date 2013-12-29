@@ -1,0 +1,10 @@
+#!/sbin/runscript
+
+description="mount / read-only by using umount /"
+
+start()
+{
+  ebegin "unmount / for read-only filesystem"
+  umount /
+  eend $?
+}

@@ -1,0 +1,4 @@
+libjpeg.a is libjpeg-turbo 1.2.1 with libjpeg v6b api emulation.
+
+libjpeg-atom.a is libjpeg-turbo 1.2.1 with libjpeg v6b api emulation and -march=atom.
+

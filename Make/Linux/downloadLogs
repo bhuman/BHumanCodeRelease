@@ -1,0 +1,85 @@
+#!/bin/bash
+#downloads all log files from the robot
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+currPath=$(pwd)
+
+usage()
+{
+  echo "usage: downloadLogs [-d] <robot name> <ip>"
+  echo " -d  - Delete log files after download."
+  echo "  examples:"
+  echo "    ./downloadLogs Leonard 192.168.2.28"
+  echo "    ./downloadLogs -d Leonard 192.168.2.28"
+  exit 1
+}
+
+
+
+#Variables
+logpath="/home/nao/logs/"
+keyFile=$basePath/../../Config/Keys/id_rsa_nao
+
+chmod 400 $keyFile
+
+if [ $# -lt 2 ]
+then
+  usage
+fi
+
+if [ "$1" = "-d" ]
+then
+    delete=true
+    name=$2
+    ip=$3
+else
+    delete=false
+    name=$1
+    ip=$2
+fi
+
+
+localLogpath="$basePath/../../Config/Logs/$name/"
+
+#check if log file dir  exists
+if [ ! -d "$basePath/../../Config/Logs/$name" ]; then
+    mkdir $basePath/../../Config/Logs/$name
+fi
+
+#check if log dir exist on the remote robot
+ssh -i $keyFile -o StrictHostKeyChecking=no nao@$ip "test -d $logpath"
+logPathExists=$?
+if [ "$logPathExists" -ne 0 ]
+then
+    echo "Logfile directory does not exist on robot."
+    exit 1
+fi
+
+#check if log directory is not empty
+logFileCount=`ssh -i $keyFile -o StrictHostKeyChecking=no nao@$ip "ls $logpath*.log | wc -l"`
+
+if [ $logFileCount -eq 0 ]
+then
+    echo "No log files on robot."
+    exit 1
+fi
+
+#download all log files
+echo "Downloading log files..."
+#-p = preserve original date and time
+scp -C -i $keyFile -o StrictHostKeyChecking=no -p nao@$ip:$logpath*.log $localLogpath
+
+scpResult=$?
+if [ $scpResult -ne 0 ]
+then
+   echo "scp failed!"
+   exit 1
+fi
+
+if $delete
+then
+    #remove log files from robot
+    echo "Deleting log files from robot"
+    ssh -i $keyFile -o StrictHostKeyChecking=no nao@$ip "rm $logpath*"
+fi
+

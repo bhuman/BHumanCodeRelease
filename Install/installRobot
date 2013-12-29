@@ -1,0 +1,105 @@
+#!/bin/bash
+
+set -eu
+
+scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
+baseDir="$(dirname "${scriptPath}")"
+bhDir="$(dirname "${baseDir}")"
+includeDir="${baseDir}/Include/"
+privateKey="${baseDir}/../Config/Keys/id_rsa_nao"
+SSHOPTIONS="-o PreferredAuthentications=keyboard-interactive,publickey -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no"
+
+source "${includeDir}/bhumanBase"
+
+robotName=""
+naoPw="nao"
+
+usage() {
+  echo "usage:"
+  echo "${0} <name> <ipaddress>"
+  echo ""
+  echo " <name>    : name of the robot"
+  echo " <address> : the current dns name or ip address of the robot to install"
+  echo " -h|--help : displays this help"
+  exit 1
+}
+
+parseOptions() {
+  # -h or --help => print help
+  if [ $# -ge 1 ] ; then
+    if [ ${1} = "-h" -o ${1} = "--help" ] ; then
+      usage
+    fi
+  fi
+    
+  # not enough parameter => print help
+  if [ $# -lt 2 ] ; then
+    echo "[ERROR] missing parameters"
+    echo ""
+    usage
+  fi
+
+  # setting up variables
+  robotName=${1}
+  robotIp=${2}
+  robotDir="${baseDir}/Robots/${robotName}"
+  
+  # try to ping robot
+  if [ `ping ${pingoptions} ${robotIp} > /dev/null && echo 1 || echo 0` == "0" ]; then
+    echo "[ERROR] robot not reachable at ${robotIp}"
+    echo ""
+    usage
+  fi
+  
+  # does the robot exist?
+  if [ ! -d "${robotDir}" ]; then
+    echo "[ERROR] robot \"${robotName}\" does not exist"
+    echo ""
+    usage
+  fi
+
+  echo ""
+  echo "using parameters"
+  echo "  name:    ${robotName}"
+  echo "  address: ${robotIp}" 
+  echo ""
+}
+
+copyFiles() {
+  copyTo="/tmp/NaoInstall/${robotName}"
+  
+  echo "[INFO] Copying files to ${copyTo}"
+  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} 'rm -rf /tmp/NaoInstall && mkdir /tmp/NaoInstall'
+  if [[ $(uname) == "*CYGWIN*" ]] ; then
+    chmod -R 755 "${fileDir}"
+  fi
+  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${fileDir}" nao@${robotIp}:${copyTo}
+  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${robotDir}" nao@${robotIp}:${copyTo}/Robot
+  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${baseDir}/Network/Profiles" nao@${robotIp}:${copyTo}/Robot
+}
+
+runInstallation() {
+  echo "[INFO] launching install process"
+  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install"
+  
+  echo "[INFO] clean up and restart"
+  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" -t ${SSHOPTIONS} nao@${robotIp} 'rm -rf /tmp/NaoInstall && reboot'
+}
+
+###############################################################################
+##                                                                           ##
+##  MAIN                                                                     ##
+##                                                                           ##
+###############################################################################
+
+checkApp "scp" "secure copy"
+if [ "Linux" == `uname -s` ]; then
+  checkApp "${sshpass}"
+fi
+parseOptions "$@"
+
+chmod 600 "${privateKey}"
+
+copyFiles
+runInstallation
+

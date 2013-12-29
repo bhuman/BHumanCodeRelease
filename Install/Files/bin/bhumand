@@ -1,0 +1,31 @@
+#!/bin/sh
+
+NAME=$2
+
+[ -z $NAME ] && NAME=Default 
+
+case "$1" in
+  start)
+    /home/nao/bin/bhuman $NAME -b &
+    ;;
+
+  stop)
+    killall bhuman 2> /dev/null
+    sleep 2
+    killall -9 bhuman 2> /dev/null
+    ;;
+
+  restart)
+    $0 stop
+    $0 start
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+    ;;
+
+esac
+
+exit 0
+

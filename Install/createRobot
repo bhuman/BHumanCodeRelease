@@ -1,0 +1,225 @@
+#!/bin/bash
+
+set -eu
+
+export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+export baseDir=$(dirname "${scriptPath}")
+export bhDir=$(dirname "${baseDir}")
+export includeDir="${baseDir}/Include/"
+
+export networkDir="${baseDir}/Network"
+export profileDir="${networkDir}/Profiles"
+
+source "${includeDir}/bhumanBase"
+
+robotName=""
+teamID=""
+robotPart=""
+deleteBeforeWrite=""
+deleteOnly=""
+profilesOnly=""
+
+usage() {
+  echo "usage:"
+  echo "${0} [-h]"
+  echo "${0} [-d] -t <teamID> -r <robotPart> <name>"
+  echo "${0} -D <name>"
+  echo ""
+  echo " <name>     : name of the robot"
+  echo " <teamID>   : the third part of the IPv4 address of the robot"
+  echo "              Needs to be the same on all robots of your team"
+  echo " <robotPart>: the last part of the IPv4 address of the robot"
+  echo "              Needs to be unique for the chosen teamID"
+  echo ""
+  echo " -d         : Delete existing files for the given robot before creating new files"
+  echo " -D         : Only delete all files for the given robot"
+  echo " -p         : Only update the network profiles"
+  echo " -h         : Display this help"
+  exit 1
+}
+
+
+parseOptions() {
+  while getopts :hpt:r:Dd opt ; do
+    case "$opt" in
+      p)
+        profilesOnly="true"
+        ;;
+      t)
+        teamID="$OPTARG"
+        ;;
+      r)
+        robotPart="$OPTARG"
+        ;;
+      d)
+        deleteBeforeWrite="true"
+        ;;
+      D)
+        deleteOnly="true"
+        ;;
+      [?]|h)
+        usage
+        ;;
+    esac
+  done
+  
+  debug $#
+  debug $OPTIND
+  shift $(($OPTIND-1))
+  
+  if ! [ $# -eq 1 ] ; then
+    error "bad number of arguments"
+    usage
+  fi
+  
+  robotName=${1}
+
+  robotDir="${baseDir}/Robots/${robotName}"
+  
+  if [ -z ${deleteOnly} ]; then
+    if [ -z "${teamID}" -o -z "${robotPart}" -o -z "${robotName}" ]; then
+      usage
+    fi
+  else
+    if [ -n "${teamID}" -o -n "${robotPart}" -o -z "${robotName}" -o -n "${deleteBeforeWrite}" ]; then
+      usage
+    fi
+    deleteBeforeWrite="true"
+  fi
+
+  debug "robotName: " "${robotName}"
+  debug "robotDir: " "${robotDir}"
+  debug "teamID: " "${teamID}"
+  debug "robotPart: " "${robotPart}"
+  debug "deleteOnly: " "${deleteOnly}"
+  debug "deleteBeforeWrite: " "${deleteBeforeWrite}"
+}
+
+function checkFile()
+{
+  if [ -z "${1:-""}" ]; then
+    debug "No parameter given"
+    return 0
+  fi
+  if [ -e "${1}" ]; then
+    debug "${1} found"
+    if [ -z "${deleteBeforeWrite}" ]; then
+      return 1
+    else
+      debug "Deleting ${1}"
+      rm -rf "${1}"
+      return 0
+    fi
+  else
+    debug "${1} not found"
+  fi
+}
+
+function checkFiles()
+{
+  foundFiles=""
+  checkFile "${robotDir}/hostname"             || foundFiles="true"
+  checkFile "${robotDir}"                      || foundFiles="true"
+  checkFile "${configDir}/Robots/${robotName}" || foundFiles="true"
+  debug "foundFiles: ${foundFiles}"
+
+  if [ -n "${foundFiles}" ]; then
+    error "Found files for robot ${robotName}"
+    fatal "Use -d to cleanup before writing new files"
+  fi  
+}
+
+function createRobotDirectory()
+{
+  message "Creating robot directory"
+  mkdir -p "${robotDir}" || return 1
+  return 0
+}
+
+function createHostname()
+{
+  echo "${robotName}" > "${robotDir}/hostname"
+  return 0;
+}
+
+function createProfiles()
+{
+  message "Creating network profiles"
+  mkdir -p "${profileDir}"
+  
+  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired" >"${robotDir}/wired" || return 1
+  chmod +x "${robotDir}/wired"
+  
+  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless" >"${robotDir}/wireless" || return 1
+  chmod +x "${robotDir}/wireless"
+  return 0
+}
+
+function createCalibrationDirectory()
+{
+  message "Creating calibration directory"
+  mkdir -p "${configDir}/Robots/${robotName}" || return 1
+  return 0
+}
+
+function createBushConfig()
+{
+  message "Creating network.cfg"
+cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
+name = "${robotName}";
+lan = "192.168.${teamID}.${robotPart}";
+wlan = "10.0.${teamID}.${robotPart}";
+EOF
+}
+
+###############################################################################
+##                                                                           ##
+##  MAIN                                                                     ##
+##                                                                           ##
+###############################################################################
+
+
+checkApp "sed" "stream editor"
+
+parseOptions "$@"
+
+if [ -n "${profilesOnly}" ]; then
+  if ! [ -d ${robotDir} ]; then
+    error "Robot '${robotName}' does not exist"
+    fatal "Rerun ${0} without -p"
+  fi
+  
+  if ! createProfiles; then
+    error "Failed to create network profiles"
+    fatal "Rerun ${0} with -d"
+  fi
+else
+  checkFiles
+
+  if [ -n "${deleteOnly}" ]; then
+    message "Successfully deleted all files for ${robotName}"
+  else
+    if ! createRobotDirectory; then
+      error "Failed to create robot directory"
+      fatal "Rerun ${0} with -d"
+    fi
+    if ! createHostname; then
+      error "Failed to create hostname"
+      fatal "Rerun ${0} with -d"
+    fi
+    if ! createProfiles; then
+      error "Failed to create network profiles"
+      fatal "Rerun ${0} with -d"
+    fi
+    if ! createCalibrationDirectory; then
+      error "Failed to create calibration directory"
+      fatal "Rerun ${0} with -d"
+    fi
+    if ! createBushConfig; then
+      error "Failed to create configuration for the bush"
+      fatal "Rerun ${0} with -d"
+    fi
+    message "Created needed files for robot ${robotName}"
+    message "Don't forget to calibrate ${robotName}"
+  fi
+fi

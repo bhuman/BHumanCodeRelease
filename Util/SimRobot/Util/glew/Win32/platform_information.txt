@@ -1,0 +1,2 @@
+newer librarys are available under glew.sourcefourge.net
+in addition libs for linux, unix, solaris and macOS are available

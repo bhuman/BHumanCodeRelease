@@ -1,0 +1,14 @@
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=0
+ap_scan=1
+
+network={
+  ssid="NAME OF THE NETWORK"
+  scan_ssid=1
+  proto=WPA
+  key_mgmt=WPA-PSK
+  pairwise=TKIP
+  group=TKIP
+  psk="PASSWORD"
+}
+

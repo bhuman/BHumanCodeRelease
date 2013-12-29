@@ -1,0 +1,70 @@
+#!/bin/bash
+set -eu
+
+########### PARAMETERS ###########
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+baseDir=$(dirname "${scriptPath}")
+robotsDir="../../Install/Robots"
+sshKeyPath="${baseDir}/../../Config/Keys/id_rsa_nao"
+install=false
+
+########### FUNCTIONS ###########
+function status {
+  echo "[STATUS] $1"
+}
+
+########### MAIN ###########
+# use install mode?
+if [[ $# -ge 1 ]] ; then
+  if [[ ${1} == "-i" ]] ; then
+    install=true
+  fi
+fi
+
+# change mod of private key
+chmod 400 "${sshKeyPath}"
+
+# create host for each robot
+hosts=""
+for robot in `ls ${robotsDir}`
+do
+  lanDir=${robotsDir}/${robot}/wired
+  wlanDir=${robotsDir}/${robot}/wireless
+  
+  if [ -e ${lanDir} ]; then
+    lan=`cat ${lanDir} | grep -o -P '(?<=BASE_ETH0_IP=").*(?=")'``cat ${lanDir} | grep -o -P '(?<=ROBOT_ID=").*(?=")'`
+    wlan=`cat ${wlanDir} | grep -o -P '(?<=BASE_WLAN0_IP=").*(?=")'``cat ${wlanDir} | grep -o -P '(?<=ROBOT_ID=").*(?=")'`
+  
+    hosts=${hosts}"Host ${robot}\n"
+    hosts=${hosts}"  HostName ${lan}\n"
+    hosts=${hosts}"  User nao\n"
+    hosts=${hosts}"  IdentityFile \"${sshKeyPath}\"\n"
+    hosts=${hosts}"  StrictHostKeyChecking=no\n"
+    hosts=${hosts}"\n"
+  
+    hosts=${hosts}"Host "`echo ${robot} | tr '[:upper:]' '[:lower:]'`"\n"
+    hosts=${hosts}"  HostName ${wlan}\n"
+    hosts=${hosts}"  User nao\n"
+    hosts=${hosts}"  IdentityFile \"${sshKeyPath}\"\n"
+    hosts=${hosts}"  StrictHostKeyChecking=no\n"
+    hosts=${hosts}"\n"
+  fi
+done
+
+if ${install} ; then
+  if [[ $(uname) == *CYGWIN* ]] ; then
+    status "installing ssh autocompletion"
+    cp ${baseDir}/ssh-hosts ~/.ssh-hosts
+
+	# do not include the ssh-hosts file more than once
+    if [[ `grep -c 'source .ssh-hosts' ~/.bashrc` == 0 ]] ; then
+      echo "source .ssh-hosts" >> ~/.bashrc
+    fi
+  fi
+  
+  status "installing ssh config file"
+  mkdir -p ~/.ssh
+  echo -e ${hosts} > ~/.ssh/config
+else
+  echo -e ${hosts}
+fi

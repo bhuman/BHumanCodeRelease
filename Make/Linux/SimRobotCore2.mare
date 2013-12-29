@@ -1,0 +1,79 @@
+
+SimRobotCore2 = cppDynamicLibrary + {
+
+  folder = "Libs"
+  root = "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
+  files = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/**.cpp" = cppSource
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/**.h"
+  }
+
+  qtRessourceFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/Icons/**.png"
+  qtRccFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/SimRobotCore2.qrc"
+  qtMocFiles = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/ActuatorsWidget.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/SensorWidget.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2/SimObjectWidget.h"
+  }
+  files += qtFiles
+
+  defines += {
+    "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
+    if platform == "Win32" { "dDOUBLE", "_CRT_SECURE_NO_DEPRECATE" }
+    if platform == "Linux" { "dSINGLE" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2",
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4/QtOpenGL",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/QtOpenGL",
+      "/usr/include/Qt",
+      "/usr/include/libxml2",
+      "$(utilDirRoot)/SimRobot/Util/ode/Linux/include",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/glew/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/libxml2/include",
+      "$(utilDirRoot)/SimRobot/Util/ode/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGUI",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtOpenGL",
+    }
+  },
+  libPaths = {
+    if platform == "Linux" {
+      "$(utilDirRoot)/SimRobot/Util/ode/$(archName)/lib",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/glew/Win32/lib",
+      "$(utilDirRoot)/SimRobot/Util/libxml2/Win32/lib",
+      "$(utilDirRoot)/SimRobot/Util/ode/Win32/lib",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/lib",
+    }
+  },
+  libs = {
+    if platform == "Linux" { "rt", "pthread", "ode", "GLEW", "xml2", "QtGui", "QtCore", "QtOpenGL", "GLU", "GL" },
+    if platform == "Win32" { "ode_double", "opengl32", "glu32", "glew32", "libxml2", "QtCore4", "QtGui4", "QtOpenGL4" }
+  },
+
+  cppFlags += {
+    if tool == "vcxproj" {
+      "/wd4503"
+      if configuration == "Debug" {} else { "/GL /GS-" }
+    } else  {
+      "-Wno-deprecated-writable-strings"
+    }
+  }
+  linkFlags += {
+    if tool == "vcxproj" {
+      if configuration == "Debug" { "/NODEFAULTLIB:msvcrt.lib" } else { "/LTCG" }
+    }
+  }
+}

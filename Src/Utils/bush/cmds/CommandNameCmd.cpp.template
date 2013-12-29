@@ -1,0 +1,102 @@
+#include "Utils/bush/cmds/CommandNameCmd.h"
+#include "Utils/bush/cmdlib/Context.h"
+
+/*
+
+In order to create the command <CommandName>
+ 1. copy CommandNameCmd.h.template to <CommandName>Cmd.h and CommandNameCmd.cpp.template to
+    <CommandName>Cmd.cpp,
+ 2. replace all occurrences of "CommandName" by <CommandName> in both files,
+ 3. implement getName,
+ 4. implement getDescription and complete if you want or remove the declarations
+    and definitions,
+ 5a. implementing a command without a robot involved:
+    let the command inherit from CommandAdapter and
+     - implement execute and
+     - delete declarations and definitions for preExecution, perRobotExecution and
+       postExecution.
+ 5b. implementing a command for every activated robot:
+    let the command inherit from RobotCommand and
+     - implement prepareExecution, prepareTask and postExecution and
+     - delete declarations and definitions for execute.
+ 6. Delete this comment from the new files.
+
+*/
+
+CommandNameCmd CommandNameCmd::theCommandNameCmd;
+
+CommandNameCmd::CommandNameCmd()
+{
+  Commands::getInstance().addCommand(this);
+}
+
+std::string CommandNameCmd::getName() const
+{
+  // Insert the command name here.
+  return "commandName";
+}
+
+std::string CommandNameCmd::getDescription() const
+{
+  // You do not need to implement this function.
+  return "Enter description here.";
+}
+
+std::vector<std::string> CommandNameCmd::complete(const std::string &cmdLine) const
+{
+  // You do not need to implement this function.
+  // This function only completes only the parameters of the command. The
+  // command itself will be completed automatically. The result should be a set
+  // of strings that could be missing in cmdLine. E. g. the input for the help
+  // command could be "help re". The completion function should return
+  // { start }. The Console would complete this to "help restart". See
+  // RestartCmd for a simple example.
+  std::vector<std::string> result;
+  return result;
+}
+
+
+// For commands which not get in contact with robots directly
+bool CommandNameCmd::execute(Context &context, const std::vector<std::string> &params)
+{
+  // Insert the command implementation here.
+  // You can start a task thread for each robot with the ConcurrencyManager. You
+  // can find a simple example for this in the RestartCmd.
+  // You can call other commands. See how the DeployCmd executes the CompileCmd
+  // for a simple example.
+  // You can start system processes with a ProcessRunner. A more complex example
+  // for that can be found in the CompileCmd.
+  return false;
+}
+
+
+// For commands which are acting with robots
+bool CommandNameCmd::preExecution(Context &context, const std::vector<std::string> &params)
+{
+  // You do not need to implement this function.
+  // This function is called before single robot tasks are executed.
+  // Here you are able to implement some general behavior, like parameter
+  // proofing or configuration settings which can be used for every robot.
+  // You can call other commands. See how the DeployCmd executes the CompileCmd
+  // for a simple example.
+}
+
+Task* CommandNameCmd::perRobotExecution(Context &context, const Robot& robot)
+{
+  // Insert the command implementation here.
+  // You can build a task thread for each robot. You can find a simple
+  // example for this in the RestartCmd.
+  // If it must not be an extra Task you also can implement your command here
+  // itself but then it is not executed concurrent.
+  // You can start system processes with a ProcessRunner.
+  return 0;
+}
+
+bool CommandNameCmd::postExecution(Context &context, const std::vector<std::string> &params)
+{
+  // You do not need to implement this function.
+  // This function is called after the tasks for every single robot was executed.
+  // You may do some kind of update, restart or cleanup here.
+  // See DeployCmd for an example.
+  return false;
+}

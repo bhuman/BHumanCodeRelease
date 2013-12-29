@@ -1,0 +1,46 @@
+#!/bin/sh
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+if [ ! "$4" = "-Link" -a ! "$6" = "-Link" ]; then
+  export CCACHE_CPP2=1
+  ${basePath}/ccache `xcrun -find clang++` $*
+else
+  CALL=
+  SHARED=
+  while true; do
+    case $1 in
+      "")
+        break;
+        ;;
+      "-arch")
+        shift
+        ;;
+      "-isysroot")
+        shift
+        ;;
+      "-single_module")
+        ;;
+      "-filelist")
+        shift
+        CALL="$CALL `cat $1`"
+        ;;
+      "-F"*)
+        ;;
+      "-Link")
+        ;;
+      "-soname"*)
+        SHARED=1
+        CALL="$CALL $1"
+        ;;
+      *)
+        CALL="$CALL $1"
+        ;;
+    esac
+    shift
+  done
+  if [ -z $SHARED ]; then
+    ${basePath}/i586-pc-linux-ld --eh-frame-hdr -m elf_i386 -dynamic-linker /lib/ld-linux.so.2 ../../Util/Buildchain/gcc/lib/crt1.o ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbegin.o $CALL -lstdc++ -lm -lgcc_s -lc -lgcc_s ../../Util/Buildchain/gcc/lib/crtend.o ../../Util/Buildchain/gcc/lib/crtn.o
+  else
+    ${basePath}/i586-pc-linux-ld --eh-frame-hdr -m elf_i386 -shared ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbeginS.o $CALL -lstdc++ -lm -lgcc_s -lc -lgcc_s ../../Util/Buildchain/gcc/lib/crtendS.o ../../Util/Buildchain/gcc/lib/crtn.o
+  fi
+fi

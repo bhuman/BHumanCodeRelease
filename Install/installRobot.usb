@@ -1,0 +1,142 @@
+#!/bin/bash
+
+set -eu
+
+scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
+baseDir="$(dirname "${scriptPath}")"
+bhDir="$(dirname "${baseDir}")"
+includeDir="${baseDir}/Include/"
+templatesDir="${baseDir}/Templates/"
+privateKey="${baseDir}/../Config/Keys/id_rsa_nao"
+SSHOPTIONS="-o PreferredAuthentications=keyboard-interactive,publickey -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no"
+
+source "${includeDir}/bhumanBase"
+
+naoPw="nao"
+rootPw="root"
+
+usage() {
+  echo "usage:"
+  echo " ${0} <name> <address> <path>"
+  echo ""
+  echo " <name>    : name of the robot"
+  echo " <address> : the current dns name or ip address of the robot to install"
+  echo " <path>    : the path to the usb flashdirve on which all data will be stored"
+  echo "             (fat32 is required)"
+  echo " -h|--help : displays this help"
+  exit 1
+}
+
+parseOptions() {
+  # -h or --help => print help
+  if [ $# -ge 1 ] ; then
+    if [ ${1} = "-h" -o ${1} = "--help" ] ; then
+      usage
+    fi
+  fi
+    
+  # not enough parameter => print help
+  if [ $# -lt 3 ] ; then
+    echo "[ERROR] missing parameters"
+    echo ""
+    usage
+  fi
+
+  # setting up variables
+  robotName=${1}
+  robotIp=${2}
+  path=${3}
+  robotDir="${baseDir}/Robots/${robotName}"
+  
+  # try to ping robot
+  if [ `ping ${pingoptions} ${robotIp} > /dev/null && echo 1 || echo 0` == "0" ]; then
+    echo "[ERROR] robot not reachable at ${robotIp}"
+    echo ""
+    usage
+  fi
+  
+  # does the robot exist?
+  if [ ! -d ${robotDir} ]; then
+    echo "[ERROR] robot \"${robotName}\" does not exist"
+    echo ""
+    usage
+  fi
+  
+  # does the path to the usb stick exist?
+  if [ ! -d ${path} ]; then
+    echo "[ERROR] path \"${path}\" does not exist"
+    echo ""
+    usage
+  fi
+
+  echo ""
+  echo "using parameters"
+  echo "  name:    ${robotName}"
+  echo "  address: ${robotIp}"
+  echo "  path:    ${path}" 
+  echo ""
+}
+
+prepareFlashDrive() {
+  destDir=${path}"/"${robotName}
+  
+  # otherwise all files will be copied inside the destination dir
+  if [ -d ${destDir} ]; then
+    echo "[INFO] removing old directory: ${destDir}"
+    rm -rf "${destDir}"
+  fi
+  
+  # copy and rename "Files" to path/"RobotName"
+  echo "[INFO] copying files to: ${destDir}" 
+  cp -fr "${fileDir}" "${destDir}" 
+  cp -fr "${robotDir}" "${destDir}/Robot"
+  cp -fr "${baseDir}/Network/Profiles" "${destDir}/Robot"
+  
+  # otherwise script may break
+  if [[ $(uname) == *CYGWIN* ]] ; then
+    echo "[INFO] it appears that you are using cygwin, setting mode to 755"
+    chmod -R 755 "${destDir}"
+  fi
+}
+
+mountFlashdrive() {
+  echo -ne "[INFO] please unmount your usb flashdrive and plug it into the nao"
+  
+  sshOut=`${sshpass} -p ${naoPw} ssh -i ${privateKey} ${SSHOPTIONS} nao@${robotIp} 'ls /dev/sdb &> /dev/null; echo $?'`
+  while [ ${sshOut} != "0" ]
+  do
+    echo -ne "."
+    sleep 2
+    sshOut=`${sshpass} -p ${naoPw} ssh -i ${privateKey} ${SSHOPTIONS} nao@${robotIp} 'ls /dev/sdb &> /dev/null; echo $?'`
+  done
+  echo ""  
+    
+  echo "[INFO] mounting usb flashdrive to /tmp/NaoInstall"
+  echo "Please enter password for user 'root' (usually also 'root')"
+  ${sshpass} -p ${naoPw} ssh -i ${privateKey} -t ${SSHOPTIONS} nao@${robotIp} '/bin/su -c "mkdir /tmp/NaoInstall && mount /dev/sdb1 /tmp/NaoInstall"'
+}
+
+runInstallation() {
+  echo "[INFO] launching install process"
+  ${sshpass} -p ${naoPw} ssh -i ${privateKey} ${SSHOPTIONS} nao@${robotIp} /tmp/NaoInstall/"${robotName}"/install
+  
+  echo "[INFO] clean up and restart"  
+  echo "Please enter password for user 'root' (usually also 'root')"
+  ${sshpass} -p ${naoPw} ssh -i ${privateKey} -t ${SSHOPTIONS} nao@${robotIp} '/bin/su -c "umount /tmp/NaoInstall && rm -rf /tmp/NaoInstall && shutdown -r now"'
+}
+
+###############################################################################
+##                                                                           ##
+##  MAIN                                                                     ##
+##                                                                           ##
+###############################################################################
+
+checkApp "scp" "secure copy"
+checkApp "${sshpass}" "sshpass"
+parseOptions "$@"
+
+chmod 600 "${privateKey}"
+
+prepareFlashDrive
+mountFlashdrive
+runInstallation

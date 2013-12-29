@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ ! -z "$(/etc/init.d/naoqi status | grep started)" ]; then
+	echo NaoQi is running
+else
+	echo NaoQi is not running
+fi
+
+if [ -n  "$(ps -A | egrep [b]hu)" ]; then
+        echo bhuman is running
+else
+        echo bhuman is not running
+fi
+

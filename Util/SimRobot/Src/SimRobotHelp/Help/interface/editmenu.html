@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="../simrobothelp.css">
+<title>Edit Menu</title>
+</head>
+<body>
+
+<table width="100%">
+	<tr>
+		<td rowspan="2" width="5%"><img alt="logo" src="../Icons/SimRobot.png"></td>
+		<td valign="middle" align="right"><div class="title">Edit Menu</div></td>
+	</tr>
+	<tr valign="top">
+		<td><hr></td>
+	</tr>
+</table>
+
+<p>The Edit menu offers the following commands:</p>
+
+<ul type="square">
+	<li><a name="undo"><b>Undo</b></a><br>
+	Resets the last change you have made.<br><br>
+	
+	Use this command to undo the last change you have made. If you undo twice,
+	you undo your undo and nothing will have changed.<br>
+	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: CTRL+Z<br>
+	</li>
+	
+	<li><a name="cut"><b>Cut</b></a><br>
+	Cuts selected text into the clipboard.<br><br>
+	
+	Use this command to remove the currently selected text from the editor and put it on
+	the clipboard. This command is unavailable if there is no text currently selected.<br>
+	Cutting text to the clipboard replaces the contents previously stored there.<br>
+	Tool Bar: <img alt="toolbar_cut" src="../Icons/toolbar_cut.bmp"><br>
+	Keys: CTRL+X<br>
+	</li>
+		
+	<li><a name="copy"><b>Copy</b></a><br>
+	Copies selected text into the clipboard.<br><br>
+	
+	Use this command to copy the selected text, object or sensor data onto the clipboard.
+	This command is unavailable if there is no text, no object or sensor currently selected.
+ 	You can also use this command to copy the actual view onto the clipboard.<br>
+  	Copying data to the clipboard replaces the contents previously stored there.<br>
+	Tool Bar: <img alt="toolbar_copy" src="../Icons/toolbar_copy.bmp"><br>
+	Keys: CTRL+C<br>
+	</li>
+		
+	<li><a name="paste"><b>Paste</b></a><br>
+	Pastes the contents from the clipboard.<br><br>
+	
+	Use this command to insert a copy of text on the clipboard at the insertion
+	point. This command is unavailable if the clipboard is empty.<br>	
+	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Tool Bar:<img alt="toolbar_paste" src="../Icons/toolbar_paste.bmp"><br>
+	Keys: CTRL+V<br>
+	</li>
+     	
+	<li><a name="indent"><b>Indent</b></a><br>
+	Indents selected text by one column.<br><br>
+
+	Use this command to indent the selected text by one column. If no text
+	is selected the command inserts spaces up to the next tab position.<br>
+ 	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: Tab<br>
+	</li>
+	 	
+	<li><a name="unindent"><b>Unindent</b></a><br>
+	Unindents selected text by one column.<br><br>
+	
+	Use this command to unindent the selected text by one column. This command
+	is unavailable if there is no text currently selected.<br>
+ 	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: Shift+Tab<br>
+	</li>
+ 		
+	<li><a name="find"><b>Find</b></a><br>
+	Finds text you can enter.<br><br>
+	
+	Use this command to search for a specific text. The command displays the
+	Find dialog box, that enables you to specify the search text and some options.<br>
+	Use the <a href="editmenu.html#find_next">Find Next</a> command to search for the
+	text's next occurence in the simulation after you closed the Find dialog box.<br>
+	Use the <a href="editmenu.html#replace">Replace</a> command to replace the found text by a different text.<br>
+ 	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: Ctrl+F<br>
+	</li>
+	
+	<li><a name="find_next"><b>Find Next</b></a><br>
+	Finds the next occurrence of the text you are looking for.<br><br>
+
+	Use this command to search for the next occurence of a text you
+	specified in the last <a href="editmenu.html#find">Find</a> command.<br>
+	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: F3<br>
+	</li>
+	
+	<li><a name="replace"><b>Replace</b></a><br>
+	Finds text you can enter and replaces it with other text you can enter, too.<br><br>
+	
+	Use this command to search for a specific text and replace it by a different text.
+	The command displays the Replace dialog box, that enables you to specify
+	the search and replace texts and some options.<br>
+	Use the <a href="editmenu.html#find">Find command</a> if you only want to
+	search for a text without replacing it by another.<br>
+	This command is only available if an <a href="editorwindow.html">Editor Window</a> is focussed.<br>
+	Keys: Ctrl+H<br>
+	</li>
+	
+	<li><a name="drag_and_drop_plane"><b>Drag and Drop Plane</b></a><br>
+	Lets to drag and drop plane<br><br>
+	
+	This command is only available if an <a href="objectwindow.html">Object Window</a> is focussed.<br><br>
+	There are three options:<br>
+	<table>
+	<colgroup>
+	<col width="150" span="1">
+	<col width="100" span="1">
+	<col>
+	</colgroup>
+	<tr><td class="links"><b>Mode</b></td> <td class="links"><b>Shortcut</b></td>	<td class="links"><b>Description</b></td></tr>
+	<tr><td class="links">X/Y Plane</td> <td class="mitte">Z</td>	<td class="links">HELP</td></tr>
+	<tr><td class="links">X/Z Plane</td> <td class="mitte">Y</td>	<td class="links">HELP</td></tr>
+	<tr><td class="links">Y/Z Plane</td> <td class="mitte">X</td>	<td class="links">HELP</td></tr>
+	</table><br>
+	</li>
+	
+	<li><a name="drag_and_drop_mode"><b>Drag and Drop Mode</b></a><br>
+	Switches to Drag and Drop mode.<br><br>
+
+	This command is only available if an <a href="objectwindow.html">Object Window</a> is focussed.<br><br>
+	There are three options:<br>
+	<table>
+	<colgroup>
+	<col width="150" span="1">
+	<col width="100" span="1">
+	<col>
+	</colgroup>
+	<tr><td class="links"><b>Mode</b></td> <td class="links"><b>Shortcut</b></td>	<td class="links"><b>Description</b></td></tr>
+	<tr><td class="links">Keep Dynamics</td> <td class="mitte">8</td>	<td class="links">HELP</td></tr>
+	<tr><td class="links">Reset Dynamics</td> <td class="mitte">9</td>	<td class="links">HELP</td></tr>
+	<tr><td class="links">Apply Dynamics</td> <td class="mitte">0</td>	<td class="links">HELP</td></tr>
+	</table><br>
+	</li>
+</ul>
+
+<p>This menu is not available if the <a href="treewindow.html">Tree Window</a> is focussed.</p><br>
+
+</body>
+</html>

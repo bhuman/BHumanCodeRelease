@@ -1,0 +1,8 @@
+#!/bin/bash
+export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+export baseDir=$(dirname "${scriptPath}")
+if [ "`uname -m`" = "x86_64" ]; then
+  "$baseDir/mare64" $*
+else
+  "$baseDir/mare32" $*
+fi

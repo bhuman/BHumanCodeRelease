@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ros2</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>SimRobotDoc.icns</string>
+			<key>CFBundleTypeName</key>
+			<string>Simulation Scene</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
+	</array>
+	<key>CFBundleExecutable</key>
+	<string>SimRobot</string>
+	<key>CFBundleIconFile</key>
+	<string>SimRobot.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.B-Human.SimRobot</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>ROSI</string>
+</dict>
+</plist>

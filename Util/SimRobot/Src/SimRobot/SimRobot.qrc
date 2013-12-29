@@ -1,0 +1,19 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+  <file>Icons/application_side_tree.png</file>
+  <file>Icons/arrow_redo.png</file>
+  <file>Icons/arrow_undo.png</file>
+  <file>Icons/control_play_blue.png</file>
+  <file>Icons/control_start_blue.png</file>
+  <file>Icons/control_step_blue.png</file>
+  <file>Icons/cut.png</file>
+  <file>Icons/disk.png</file>
+  <file>Icons/folder.png</file>
+  <file>Icons/folder_page.png</file>
+  <file>Icons/page_copy.png</file>
+  <file>Icons/page_paste.png</file>
+  <file>Icons/SimRobot.png</file>
+  <file>Icons/tag_green.png</file>
+  <file>Icons/textfield.png</file>
+</qresource>
+</RCC>

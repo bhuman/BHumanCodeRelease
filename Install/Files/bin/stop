@@ -1,0 +1,7 @@
+#!/bin/sh
+export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+export baseDir=$(dirname ${scriptPath})
+
+${baseDir}/bhumand stop &
+sleep 2
+sudo /etc/init.d/naoqi stop

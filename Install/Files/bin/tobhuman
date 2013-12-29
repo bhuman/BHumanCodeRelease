@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ $(whoami) != root ]; then
+  sudo $0 $*
+  exit 0
+fi
+
+cp /etc/naoqi/autoload.bh /etc/naoqi/autoload.ini

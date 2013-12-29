@@ -1,0 +1,48 @@
+
+libgamectrl = cppDynamicLibrary + {
+  
+  // overwrite platform and c++-compiler for cross compiling
+  platform = "Linux"
+
+  if host == "Win32" {
+    cppCompiler = "$(utilDirRoot)/Buildchain/Win32/bin/clang.exe"
+    linker = "$(utilDirRoot)/Buildchain/Win32/bin/i686-unknown-linux-gnu-ld.bfd.exe"
+  } else {
+    linker = "ld"
+  }
+  command = "$(linker) -shared $(__soFlags) -o $(output) --eh-frame-hdr -m elf_i386 $(utilDirRoot)/Buildchain/gcc/lib/crti.o $(utilDirRoot)/Buildchain/gcc/lib/crtbeginS.o $(patsubst %,-L%,$(libPaths)) $(input) $(linkFlags) $(LDFLAGS) $(patsubst %,-l%,$(libs)) $(utilDirRoot)/Buildchain/gcc/lib/libstdc++.so.6.0.17 $(utilDirRoot)/Buildchain/gcc/lib/libm-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/ld-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/crtendS.o $(utilDirRoot)/Buildchain/gcc/lib/crtn.o"
+
+  folder = "Libs"
+  root = "$(srcDirRoot)/libgamectrl"
+  files = { 
+    "$(srcDirRoot)/libgamectrl/*.cpp" = cppSource,
+    "$(srcDirRoot)/libgamectrl/*.h"
+  },
+  includePaths = { 
+    "$(utilDirRoot)/alcommon/include",
+    "$(utilDirRoot)/boost/linux",
+    "$(utilDirRoot)/Buildchain/gcc/include",
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/4.7.1",
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+    "$(utilDirRoot)/Buildchain/clang4.2/include",
+  },
+  libPaths = { 
+    "$(utilDirRoot)/alcommon/lib/linux",
+    "$(utilDirRoot)/Buildchain/gcc/lib",
+  },
+  libs = { 
+    "alcommon",
+  },
+  cppFlags += { 
+    "-nostdinc -march=atom -target i686-pc-linux-gnu"
+    if host == "Win32" { "-x c++" }
+  },
+  linkFlags += "-nostdlib -soname $(buildDir)/gamectrl.so",
+  output = "$(buildDir)/libgamectrl.so",
+  
+  if tool == "vcxproj" {
+    buildCommand = "bash -c \"$(utilDirRoot)/mare/Win32/bin/mare.exe --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    reBuildCommand = "bash -c \"$(utilDirRoot)/mare/Win32/bin/mare.exe --ignore-dependencies rebuild $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    cleanCommand = "$(utilDirRoot)/mare/Win32/bin/mare.exe --ignore-dependencies clean $(target) config=$(configuration)"
+  }
+}

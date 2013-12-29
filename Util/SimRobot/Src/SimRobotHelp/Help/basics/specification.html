@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="../simrobothelp.css">
+<title>Specification of Robots</title>
+</head>
+<body>
+
+<table width="100%">
+	<tr>
+		<td rowspan="2" width="5%"><img alt="logo" src="../Icons/SimRobot.png"></td>
+		<td valign="middle" align="right"><div class="title">Specification of Robots</div></td>
+	</tr>
+	<tr valign="top">
+		<td><hr></td>
+	</tr>
+</table>
+
+<p>
+The use of an external specification language allows the modeling of scenes without
+any modifications or extensions of the source code of the simulator. Thus
+the modeling process becomes simpler and people without programming skills
+are also enabled to use the simulator.
+</p>
+
+<p>
+Together with researchers from the Fraunhofer Institute for Autonomous Intelligent Systems,
+the specification language <a href="../rosiml/rosi.html">RoSiML</a> (Robot Simulation Markup Language)
+has been developed. It is a part of a joint effort to establish common interfaces for robot simulations.
+The aim is to exchange components between different simulators and to allow the migration
+of robot models among simulators without any complicated adaption's. 
+</p>
+
+<p>The language by itself has been specified in XML Schema. This is a popular choice, since XML
+is supported by a variety of editors and there also exist many ready-to-use parsers. The cascaded
+structure of XML documents is also quite suitable to reflect the structure of scenes inside the simulator,
+as it uses the scene graph approach from computer graphics to organize and process all elements.
+</p>
+
+</body>
+</html>

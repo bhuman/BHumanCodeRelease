@@ -1,0 +1,330 @@
+{
+  inputPaths = {
+    "SimRobot Resource" = {
+      anchor = 20844D9211FDF51B0037FA87;
+      includes = (
+        ../../Util/SimRobot/Src/SimRobot/Icons/*.png,
+      );
+    };
+
+    "SimRobotCore2 Resource" = {
+      anchor = 20DD73A2134E4E33003FF249;
+      includes = (
+        ../../Util/SimRobot/Src/SimRobotCore2/Icons/*.png,
+      );
+    };
+
+    "SimRobotEditor Resource" = {
+      anchor = 20844E5C11FE0ECC0037FA87;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotEditor/Icons/*.png,
+      );
+    };
+
+    "SimRobotHelp Resource" = {
+      anchor = 20844E6211FE0FA20037FA87;
+      includes = (
+        ../../Util/SimRobot/Src/SimRobotHelp/Icons/*.png,
+      );
+    };
+
+   "SimRobotHelp Help" = {
+      anchor = 20844E7311FE13870037FA87;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotHelp/Help/**.(html|bmp|css|qhcp),
+      );
+    };
+
+    "Controller Resource" = {
+      anchor = 20A05D4612115F1E00BE52B1;
+      includes = (
+         ../../Src/Controller/Icons/*.png,
+      );
+    };
+
+    "qtpropertybrowser Resource" = {
+      anchor = 203184E6173D0FE000E25227;
+      includes = (
+         ../../Util/qtpropertybrowser/Images/*.png,
+      );
+    };
+
+    "qtpropertybrowser MOC from Header" = {
+      anchor = 2031859C173D483100E25227;
+      includes = (
+         ../../Util/qtpropertybrowser/**.h,
+      );
+      excludes = (
+         ../../Util/qtpropertybrowser/qtpropertybrowserutils_p.h,
+      );
+    };
+
+    "qtpropertybrowser MOC from Implementation" = {
+      anchor = 2031859D173D564D00E25227;
+      includes = (
+         ../../Util/qtpropertybrowser/qteditorfactory.cpp,
+         ../../Util/qtpropertybrowser/qtpropertybrowser.cpp,
+         ../../Util/qtpropertybrowser/qtpropertymanager.cpp,
+         ../../Util/qtpropertybrowser/qttreepropertybrowser.cpp,
+      );
+    };
+
+    "SpecialAction Build" = {
+      anchor = 209C6C1112008D6B007E5C2E;
+      includes = (
+        ../../Src/Modules/MotionControl/mof/*.mof,
+      );
+    };
+
+    "bush Resource" = {
+      anchor = 20EF878213B37D7500508E6A;
+      includes = (
+        ../../Src/Utils/bush/Icons/*.png,
+      );
+    };
+  };
+  
+  sources = {  
+    Nao = {
+      root = ../../Src;
+      includes = (
+        ../../Src/Modules/**.(cpp|h|mof),
+        ../../Src/Platform/**.(cpp|mm|h),
+        ../../Src/Processes/**.(cpp|h),
+        ../../Src/Representations/**.(cpp|h),
+        ../../Src/Tools/**.(cpp|h),
+      );
+    };
+
+    Controller = {
+      root = ../../Src;
+      includes = (
+        ../../Src/Controller/**.(cpp|h|qrc|png),
+      );
+    };
+
+    SimRobotCore2 = {
+      root = ../../Util/SimRobot/Src;
+      includes = (
+        ../../Util/SimRobot/Src/SimRobotCore2/**.(cpp|h|qrc|png),
+      );
+    };
+
+    SimRobotEditor = {
+      root = ../../Util/SimRobot/Src;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotEditor/**.(cpp|h|qrc|png),
+      );
+    };
+
+    SimRobotHelp = {
+      root = ../../Util/SimRobot/Src;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotHelp/**.(cpp|h|qrc|png|bmp|css|htm|qhp|qhcp),
+      );
+    };
+
+    libbhuman = {
+      root = ../../Src;
+      includes = (
+        ../../Src/libbhuman/bhuman.(cpp|h),
+      );
+    };
+
+    libgamectrl = {
+      root = ../../Src;
+      includes = (
+        ../../Src/libgamectrl/**.(cpp|h),
+      );
+    };
+
+    qtpropertybrowser = {
+      root = ../../Util;
+      includes = (
+        ../../Util/qtpropertybrowser/**.(cpp|h|qrc|png),
+      );
+    };
+
+    libqxt = {
+      root = ../../Util;
+      includes = (
+        ../../Util/libqxt/**.(cpp|h),
+      );
+    };
+
+    SimRobot = {
+      root = ../../Util/SimRobot/Src;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobot/**.(cpp|h|qrc|png|icns|mm),
+      );
+      excludes = (
+         ../../Util/SimRobot/Src/SimRobot/resource.h,
+         ../../Util/SimRobot/Src/SimRobot/qtdotnetstyle.(cpp|h),
+      );
+    };
+
+    bush = {
+      root = ../../Src/Utils;
+      includes = (
+         ../../Src/Utils/bush/**.(cpp|h|qrc|png|icns),
+      );
+    };
+
+    URC = {
+      root = ../../Src/Utils;
+      includes = (
+         ../../Src/Utils/URC/**.(cpp|h),
+      );
+    };
+  };
+    
+  buildFiles = {
+    SimulatedNao = {
+      anchor = 20844F1511FE33150037FA87;
+      includes = (
+        ../../Src/Modules/**.cpp,
+        ../../Src/Platform/**.(cpp|mm),
+        ../../Src/Processes/**.cpp,
+        ../../Src/Representations/**.cpp,
+        ../../Src/Tools/**.cpp,
+      );
+      excludes = (
+        ../../Src/Platform/Linux/Main.cpp,
+        ../../Src/Platform/Linux/NaoBody.cpp,
+        ../../Src/Platform/Linux/NaoCamera.cpp,
+        ../../Src/Platform/Linux/Robot.cpp,
+        ../../Src/Platform/Linux/Semaphore.cpp,
+        ../../Src/Platform/Linux/SharedMemory.cpp,
+        ../../Src/Platform/Linux/SoundPlayer.cpp,
+        ../../Src/Platform/Linux/SystemCall.cpp,
+        ../../Src/Platform/Win32/**,
+      );
+    };
+
+    Nao = {
+      anchor = 20B7663D123001A300F11A62;
+      includes = (
+        ../../Src/Modules/**.cpp,
+        ../../Src/Platform/Linux/*.cpp,
+        ../../Src/Platform/Common/*.cpp,
+        ../../Src/Processes/**.cpp,
+        ../../Src/Representations/**.cpp,
+        ../../Src/Tools/**.cpp,
+      );
+    };
+
+    SimRobot = {
+      anchor = C29B8785722055ED95EF7B57;
+      includes =(
+         ../../Util/SimRobot/Src/SimRobot/**.(cpp|h|qrc|mm),
+      );
+      excludes = (
+         ../../Util/SimRobot/Src/SimRobot/resource.h,
+         ../../Util/SimRobot/Src/SimRobot/qtdotnetstyle.(cpp|h),
+         ../../Util/SimRobot/Src/SimRobot/MacFullscreen.h,
+         ../../Util/SimRobot/Src/SimRobot/SimRobot.h,
+      );
+    };
+
+    SimRobotCore2 = {
+      anchor = 20DD73A3134E4E33003FF249;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotCore2/**.(cpp|qrc),
+         ../../Util/SimRobot/Src/SimRobotCore2/*Widget.h,
+      );
+    };
+
+    SimRobotEditor = {
+      anchor = 20844AF211FC6F410037FA87;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotEditor/**.(cpp|qrc),
+         ../../Util/SimRobot/Src/SimRobotEditor/*Widget.h,
+         ../../Util/SimRobot/Src/SimRobotEditor/SyntaxHighlighter.h,
+      );
+    };
+
+    SimRobotHelp = {
+      anchor = 20844B3411FCB34C0037FA87;
+      includes = (
+         ../../Util/SimRobot/Src/SimRobotHelp/**.(cpp|qrc|qhp),
+         ../../Util/SimRobot/Src/SimRobotHelp/*Widget.h,
+      );
+    };
+
+    Controller = {
+      anchor = 20245216120416DB00C3BCD9;
+      includes = (
+        ../../Src/Controller/**.(cpp|qrc),
+        ../../Src/Controller/BHToolBar.h,
+        ../../Src/Controller/TimeCtrl.h,
+        ../../Src/Controller/Views/CalibrationView.h,
+        ../../Src/Controller/Views/ConsoleView.h,
+        ../../Src/Controller/Views/DotView.h,
+        ../../Src/Controller/Views/ImageView.h,
+        ../../Src/Controller/Views/PlotView.h,
+        ../../Src/Controller/Views/**Widget.h,
+        ../../Src/Controller/Views/ColorCalibrationView/*.h,
+        ../../Src/Controller/Views/DataView/PropertyManager.h,
+        ../../Src/Controller/Views/DataView/PropertyEditorFactory.h,
+        ../../Src/Controller/Views/ViewBike/ViewBike.h,
+        ../../Src/Utils/URC/*.cpp,
+        ../../Util/libqxt/qxtspanslider*.*,
+      );
+      excludes = (
+        ../../Src/Controller/Platform/Win32/*.(cpp|h),
+        ../../Src/Controller/Platform/Linux/Joystick.(cpp|h),
+        ../../Src/Utils/URC/UniversalResourceCompiler.cpp,
+      );
+    };
+
+    qtpropertybrowser = {
+      anchor = 203184E7173D0FE000E25227;
+      includes = (
+        ../../Util/qtpropertybrowser/**.(cpp|qrc),
+        ../../Util/qtpropertybrowser/qtpropertybrowserutils_p.h,
+      );
+    };
+
+    URC = {
+      anchor = 209C6BDB120078F3007E5C2E;
+      includes = (
+        ../../Src/Platform/Common/File.cpp,
+        ../../Src/Tools/Enum.cpp,
+        ../../Src/Utils/URC/*.cpp,
+        ../../Src/Representations/MotionControl/SpecialActionRequest.cpp,
+      );
+    };
+
+    bush = {
+      anchor = 20EF878313B37D7500508E6A;
+      includes = (
+        ../../Src/Controller/Platform/Linux/Directory.cpp,
+        ../../Src/Utils/bush/**.(cpp|qrc),
+        ../../Src/Utils/bush/Session.h,
+        ../../Src/Utils/bush/agents/PingAgent.h,
+        ../../Src/Utils/bush/agents/TeamCommAgent.h,
+        ../../Src/Utils/bush/cmdlib/AbstractConsole.h,
+        ../../Src/Utils/bush/cmdlib/Context.h,
+        ../../Src/Utils/bush/cmdlib/ProcessRunner.h,
+        ../../Src/Utils/bush/ui/*.h,
+        ../../Src/Platform/Linux/BHAssert.cpp,
+        ../../Src/Platform/MacOS/Semaphore.cpp,
+        ../../Src/Platform/SimRobotQt/SystemCall.cpp,
+        ../../Src/Platform/Common/*.cpp,
+        ../../Src/Representations/Infrastructure/GameInfo.cpp,
+        ../../Src/Tools/Enum.cpp,
+        ../../Src/Tools/Global.cpp,
+        ../../Src/Tools/NTP.cpp,
+        ../../Src/Tools/Streams/**.cpp,
+        ../../Src/Tools/MessageQueue/**.cpp,
+        ../../Src/Tools/ProcessFramework/TeamHandler.cpp,
+        ../../Src/Tools/Settings.cpp,
+        ../../Src/Tools/Debugging/**.cpp,
+      );
+      excludes = (
+        ../../Src/Utils/bush/ui/CommandLineEdit.h,
+        ../../Src/Tools/Debugging/CognitionLogger.cpp,
+      );
+    };
+  };
+}

@@ -1,0 +1,20 @@
+vp errorLeftX 1000 0 50
+vpd errorLeftX module:ArmContactModelProvider:errorLeftX
+vp errorRightX 1000 0 50
+vpd errorRightX module:ArmContactModelProvider:errorRightX
+vp errorLeftY 1000 0 50
+vpd errorLeftY module:ArmContactModelProvider:errorLeftY
+vp errorRightY 1000 0 50
+vpd errorRightY module:ArmContactModelProvider:errorRightY
+vp errorDurationLeft 1000 0 1000
+vpd errorDurationLeft module:ArmContactModelProvider:errorDurationLeft
+vp errorDurationRight 1000 0 1000
+vpd errorDurationRight module:ArmContactModelProvider:errorDurationRight
+vp errorYThreshold 1000 0 50
+vpd errorYThreshold module:ArmContactModelProvider:errorYThreshold
+vp errorXThreshold 1000 0 50
+vpd errorXThreshold module:ArmContactModelProvider:errorXThreshold
+vp contactLeft 1000 0 2
+vpd contactLeft module:ArmContactModelProvider:contactLeft
+vp contactRight 1000 0 50
+vpd contactRight module:ArmContactModelProvider:contactRight

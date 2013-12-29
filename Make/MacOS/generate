@@ -1,0 +1,50 @@
+#!/bin/sh
+cd `dirname $0`
+
+# Force Xcode to use Build directory
+SETTINGSFILE=WorkspaceSettings.xcsettings
+SETTINGSDIR=B-Human.xcodeproj/project.xcworkspace/xcuserdata/$USER.xcuserdatad
+SETTINGSPATH=$SETTINGSDIR/$SETTINGSFILE
+PLIST="/usr/libexec/PlistBuddy -c"
+if [ ! -e $SETTINGSPATH ]; then
+  mkdir -p $SETTINGSDIR
+  cp $SETTINGSFILE $SETTINGSPATH
+else
+  $PLIST "Set :BuildLocationStyle CustomLocation" $SETTINGSPATH 2>/dev/null || $PLIST "Add :BuildLocationStyle string CustomLocation" $SETTINGSPATH 
+  $PLIST "Set :CustomBuildIntermediatesPath ../../Build" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildIntermediatesPath string ../../Build" $SETTINGSPATH 
+  $PLIST "Set :CustomBuildLocationType RelativeToWorkspace" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildLocationType string RelativeToWorkspace" $SETTINGSPATH
+  $PLIST "Set :CustomBuildProductsPath ../../Build" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildProductsPath string ../../Build" $SETTINGSPATH
+  $PLIST "Set :DerivedDataLocationStyle Default" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string Default" $SETTINGSPATH
+fi
+
+# Disable App Nap for SimRobot
+defaults write org.B-Human.SimRobot NSAppSleepDisabled -bool YES
+
+# Generate project file
+if [ "$1" == "-b" ]; then
+  export JAR=../../../Util/pbxgen/pbxgen.jar
+  export CFG=project.pbxgen
+  export SRC=project.pbxproj
+  export DST=template.pbxproj
+  export MSG=template
+  cd B-Human.xcodeproj
+  shift
+else
+  export JAR=../../Util/pbxgen/pbxgen.jar
+  export CFG=B-Human.xcodeproj/project.pbxgen
+  export SRC=B-Human.xcodeproj/template.pbxproj
+  export DST=B-Human.xcodeproj/project.pbxproj
+  export MSG=project
+fi
+
+if [ "$1" == "-p" ]; then
+  export ECHO="read -p"
+else
+  export ECHO=echo
+fi
+
+java -jar $JAR $CFG $SRC
+if [ -e $SRC.tmp ]; then
+  cmp -s $SRC.tmp $DST || ( mv $SRC.tmp $DST && $ECHO "Xcode $MSG changed." )
+  rm -f $SRC.tmp
+fi

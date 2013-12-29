@@ -1,0 +1,12 @@
+set representation:RobotPose rotation = 0; translation = {x = -1200; y = 0;}; validity = 1; sideConfidence = 1; deviation = 100000;
+set representation:HeadMotionRequest mode = panTiltMode; cameraControlMode = lowerCamera; watchField = false; pan = 1000; tilt = 1000; speed = 2.61799; target = {x = 1; y = 0; z = 0;};
+mr CameraCalibration CameraCalibrator
+vid raw representation:LinePercept:Image off
+vid raw representation:GoalPercept:Image off
+vid raw representation:BodyContour off
+vid raw module:CameraCalibrator:points
+vid raw module:CameraCalibrator:drawFieldLines
+cameraCalibrator raw on
+echo dr module:CameraCalibrator:collectPoints
+echo dr module:CameraCalibrator:optimize
+echo dr module:CameraCalibrator:stop

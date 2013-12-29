@@ -1,0 +1,20 @@
+# connect to a robot
+call connect
+
+# all views are defined in another script
+call ViewsJpeg
+
+# request joint data and sensor data
+dr representation:SensorData
+dr representation:JointData
+
+# request behavior messages
+dr representation:ActivationGraph
+
+# press any key to activate the joystick 
+jc press 1 call Joystick
+jc press 2 call Joystick
+jc press 3 call Joystick
+jc press 4 call Joystick
+
+echo dr representation:JPEGImage off

@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Icons/help.png</file>
+        <file>Icons/back.png</file>
+        <file>Icons/forward.png</file>
+        <file>Icons/home.png</file>
+        <file>Icons/locate.png</file>
+        <file alias="simrobothelp.css">Help/simrobothelp.css</file>
+    </qresource>
+</RCC>

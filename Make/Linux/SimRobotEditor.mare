@@ -1,0 +1,49 @@
+
+SimRobotEditor = cppDynamicLibrary + {
+
+  folder = "Libs"
+  root = "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
+  files = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/**.cpp" = cppSource,
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/**.h",
+  }
+
+  qtRessourceFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/Icons/*.png"
+  qtRccFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/SimRobotEditor.qrc",
+  qtMocFiles = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/EditorWidget.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor/SyntaxHighlighter.h"
+  }
+  files += qtFiles
+
+  defines += {
+    "QT_NO_DEBUG", "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
+    if platform == "Win32" { "_CRT_SECURE_NO_DEPRECATE" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor",
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/Qt",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGUI",
+    }
+  },
+  libPaths = {
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/lib",
+    }
+  },
+  libs = {
+    if platform == "Win32" { "QtCore4", "QtGui4" }
+    if platform == "Linux" { "QtCore", "QtGui" }
+  },
+}

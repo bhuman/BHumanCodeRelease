@@ -1,0 +1,4 @@
+#include "resource.h"
+
+IDI_ICON1               ICON                    "Icons\\SimRobot.ico"
+IDI_ICON2               ICON                    "Icons\\SimRobotDoc.ico"

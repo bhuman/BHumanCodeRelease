@@ -1,0 +1,81 @@
+
+Controller = cppStaticLibrary + {
+
+  folder = "Libs"
+  root = "$(srcDirRoot)"
+  files = {
+    "$(srcDirRoot)/Controller/**.cpp" = cppSource,
+    "$(srcDirRoot)/Controller/**.h",
+    "$(srcDirRoot)/Utils/URC/**.cpp" = cppSource,
+    "$(srcDirRoot)/Utils/URC/**.h",
+    if platform != "Linux" { -"$(srcDirRoot)/Controller/Platform/Linux/**.cpp", -"$(srcDirRoot)/Controller/Platform/Linux/**.h" }
+    if platform != "MacOSX" { -"$(srcDirRoot)/Controller/Platform/MacOS/**.cpp", -"$(srcDirRoot)/Controller/Platform/MacOS/**.h" }
+    if platform != "Win32" { -"$(srcDirRoot)/Controller/Platform/Win32/**.cpp", -"$(srcDirRoot)/Controller/Platform/Win32/**.h" }
+    -"$(srcDirRoot)/Utils/URC/UniversalResourceCompiler.cpp"
+  }
+
+  qtRessourceFiles = "$(srcDirRoot)/Controller/Icons/*.png"
+  qtRccFiles = "$(srcDirRoot)/Controller/*.qrc"
+  qtMocFiles = {
+    "$(srcDirRoot)/Controller/Views/ViewBike/ViewBikeWidget.h"
+    "$(srcDirRoot)/Controller/Views/DataView/DataWidget.h"
+    "$(srcDirRoot)/Controller/Views/DataView/PropertyManager.h"
+    "$(srcDirRoot)/Controller/Views/DataView/PropertyEditorFactory.h"
+    "$(srcDirRoot)/Controller/Views/TimeView/TimeWidget.h"
+    "$(srcDirRoot)/Controller/Views/ViewBike/TabWidget.h"
+    "$(srcDirRoot)/Controller/Views/ViewBike/ViewBike.h"
+    "$(srcDirRoot)/Controller/Views/ViewBike/ViewBikeGLWidget.h"
+    "$(srcDirRoot)/Controller/Views/PlotView.h"
+    "$(srcDirRoot)/Controller/Views/ConsoleView.h"
+    "$(srcDirRoot)/Controller/Views/ImageView.h"
+    "$(srcDirRoot)/Controller/Views/DotView.h"
+    "$(srcDirRoot)/Controller/BHToolBar.h"
+    "$(srcDirRoot)/Controller/Views/ColorCalibrationView/ColorCalibrationView.h"
+    "$(srcDirRoot)/Controller/Views/ColorCalibrationView/RangeSelector.h"
+    "$(srcDirRoot)/Controller/Views/ColorCalibrationView/ThresholdSelector.h"
+  }
+  files += qtFiles
+
+  defines += {
+    "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "TARGET_SIM", "QT_NO_STL", "QXT_STATIC"
+    if platform == "Win32" { "NOMINMAX", "_CRT_SECURE_NO_DEPRECATE" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(srcDirRoot)",
+    "$(utilDirRoot)/SimRobot/Src/SimRobot",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotCore2",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotEditor",
+    "$(utilDirRoot)/qtpropertybrowser",
+    "$(utilDirRoot)/snappy/include",
+    "$(utilDirRoot)/libqxt",
+    if platform == "Win32" {
+      "$(srcDirRoot)/Platform/Win32",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGui",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtOpenGL",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtSvg",
+      "$(utilDirRoot)/SimRobot/Util/glew/Win32/include",
+    }
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4/QtOpenGL",
+      "/usr/include/qt4/QtSvg",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/QtOpenGL",
+      "/usr/include/QtSvg",
+      "/usr/include/Qt",
+    }
+  },
+  cppFlags += {
+    if tool == "vcxproj" {
+      "/wd4503"
+      if configuration == "Release" { "/GS-" }
+    }
+    if platform == "Linux" { "-mmmx", "-fPIC" }
+  }
+}

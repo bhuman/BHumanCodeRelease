@@ -1,0 +1,27 @@
+#!/sbin/runscript
+
+depend() {
+  after naoqi
+  after sshd
+}
+
+start() {
+  ebegin "Starting bhumand"
+  if [ $(whoami) = nao ]; then
+    /home/nao/bin/bhumand start Default
+  elif [ ! -e /dev/sdb ]; then
+    su -c "/home/nao/bin/bhumand start Default -b" - nao >/dev/null
+  fi
+  eend $?
+}
+
+stop() {
+  ebegin "Stopping bhumand"
+  /home/nao/bin/bhumand stop
+  eend $?
+}
+
+restart() {
+  stop
+  start
+}

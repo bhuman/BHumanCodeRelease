@@ -1,0 +1,46 @@
+# replay a log file.
+# you have to adjust the name of the log file.
+sl LOG ${Logfile:,../Logs/*.log}
+
+
+# simulation time on, otherwise log data may be skipped
+st on
+msg off
+
+# all views are defined in another script
+call Views
+
+vfd worldState representation:GameInfo
+vfd worldState representation:SideConfidence
+vfd worldState representation:OwnTeamInfo
+# navigate in log file using shortcuts
+jc press 1 log pause # Shift+Crtl+A
+jc press 17 log goto 1 # Shift+Crtl+Q
+jc press 19 log start # Shift+Crtl+S
+jc press 23 log repeat # Shift+Crtl+W
+jc press 24 log forward # Shift+Crtl+X
+jc press 25 log backward # Shift+Crtl+Y
+jc press 6 log forward image # Shift+Crtl+F
+jc press 4 log backward image # Shift+Crtl+D
+jc press 10 log fast_forward # Shift+Ctrl+J  jump forward 100 frames
+jc press 11 log fast_rewind # Shift+Ctrl*k   jump back 100 frames
+
+set representation:GroundContactState contact = true;
+ac both
+log mr
+
+#enable behavior graph
+dr representation:ActivationGraph
+
+echo = Keys:                                                                        
+echo = ctrl+shift+A: Pause replay                                                          
+echo = ctrl+shift+Q: Goto first frame                                                 
+echo = ctrl+shift+S: Start replaying the log                                         
+echo = ctrl+shift+W: Loop forever                                                    
+echo = ctrl+shift+X: One frame forward                                               
+echo = ctrl+shift+Y: One frame backward                                              
+echo = ctrl+shift+F: Jump to next frame that contains an image                       
+echo = ctrl+shift+D: Jump to previous frame that contains an image                   
+echo = ctrl+shift+J: Jump forward 100 frames                                         
+echo = ctrl+shift+K: Jump backward 100 frames                                        
+

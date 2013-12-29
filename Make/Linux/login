@@ -1,0 +1,9 @@
+#!/bin/sh
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+currPath=$(pwd)
+cd "${basePath}"
+echo "sc Remote $1" >../../Config/Scenes/connect.con
+chmod 400 ../../Config/Keys/id_rsa_nao
+ssh -i ../../Config/Keys/id_rsa_nao -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@$1
+cd "${currPath}"

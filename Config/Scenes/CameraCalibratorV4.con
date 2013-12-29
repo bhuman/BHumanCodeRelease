@@ -1,0 +1,14 @@
+mr CameraCalibration CameraCalibratorV4
+mr RobotPose CameraCalibratorV4
+set module:CameraCalibratorV4:robotPose rotation = 0; translation = {x = -750; y = 0;};
+cameraCalibrator raw on
+vid raw representation:LinePercept:Image off
+vid raw representation:GoalPercept:Image off
+vid raw representation:BodyContour off
+vid raw module:CameraCalibratorV4:points
+vid raw module:CameraCalibratorV4:drawSamples
+vid raw module:CameraCalibratorV4:drawFieldLines
+get module:CameraCalibratorV4:currentCamera
+echo dr module:CameraCalibratorV4:collectPoints
+echo dr module:CameraCalibratorV4:optimize
+echo dr module:CameraCalibratorV4:stop

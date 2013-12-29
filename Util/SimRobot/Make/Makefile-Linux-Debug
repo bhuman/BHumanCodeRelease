@@ -1,0 +1,26 @@
+
+.SUFFIXES:
+.PHONY: all clean SimRobot SimRobotCore2 SimRobotEditor SimRobotHelp Factory SimpleVehicle
+
+all: SimRobot
+
+clean:
+	@rm -rf ../Build/*/Linux/Debug
+
+SimRobot: SimRobotCore2 SimRobotEditor SimRobotHelp Factory SimpleVehicle
+	@$(MAKE) --no-print-directory -r -f SimRobot-Linux-Debug.make
+
+SimRobotCore2: 
+	@$(MAKE) --no-print-directory -r -f SimRobotCore2-Linux-Debug.make
+
+SimRobotEditor: 
+	@$(MAKE) --no-print-directory -r -f SimRobotEditor-Linux-Debug.make
+
+SimRobotHelp: 
+	@$(MAKE) --no-print-directory -r -f SimRobotHelp-Linux-Debug.make
+
+Factory:
+	@$(MAKE) --no-print-directory -r -f Factory-Linux-Debug.make
+
+SimpleVehicle:
+	@$(MAKE) --no-print-directory -r -f SimpleVehicle-Linux-Debug.make

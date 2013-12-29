@@ -1,0 +1,11 @@
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=0
+ap_scan=1
+
+network={
+  ssid="NAME OF THE NETWORK"
+  key_mgmt=NONE
+  wep_tx_keyidx=0
+  wep_key0="THE PASSWORD"
+}
+

@@ -1,0 +1,2 @@
+#!/bin/sh
+/bin/su -c "mount -o remount,rw / -n && /bin/bash && umount /"

@@ -1,0 +1,32 @@
+#!/sbin/runscript
+# Copyright 1999-2012 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+BASE_WLAN0_IP="10.0.%teamID%."
+ROBOT_ID="%robotPart%"
+#GATEWAY="10.0.0.1"
+
+depend() {
+  need dbus
+}
+
+start() {
+  ifconfig wlan0 up
+  wpa_supplicant -iwlan0 -Dwext -c/home/nao/Profiles/default -B
+  sleep 1
+  ifconfig wlan0 "${BASE_WLAN0_IP}${ROBOT_ID}" netmask 255.255.0.0
+#  route add -net default gw "${GATEWAY}"
+  sysctl -w net.ipv6.conf.all.disable_ipv6=1
+}
+
+stop() {
+  killall wpa_supplicant
+  ifconfig wlan0 down
+}
+
+restart() {
+  stop
+  sleep 2
+  start
+}

@@ -1,0 +1,82 @@
+
+SimRobotHelp = cppDynamicLibrary + {
+
+  folder = "Libs"
+  root = "$(utilDirRoot)/SimRobot/Src/SimRobotHelp"
+  helpFiles = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/**.html",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/**.css",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/*.q*p",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/Icons/**.bmp",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/Icons/**.png"
+  }
+  files = {
+    if tool == "vcxproj" { "$(helpFiles)" } // list all help files in Visual Studio
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/*.cpp" = cppSource,
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/*.h",
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/help.qhp" = {
+      input = file + helpFiles
+      output = "$(buildDir)/help.qch",
+      if platform == "Win32" {
+        qhelpgenerator = "$(utilDirRoot)/SimRobot/Util/qt/Win32/bin/qhelpgenerator.exe",
+      }
+      else {
+        qhelpgenerator = "qhelpgenerator",
+      }
+      command = "$(qhelpgenerator) $(file) -o $(output)",
+      message = "$(if $(Win32),$(notdir $(file)),$(file)) (qhelpgenerator)",
+    },
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/helpcollection.qhcp" = {
+      input = file + "$(buildDir)/help.qch",
+      output = "$(buildDir)/helpcollection.qhc",
+      if platform == "Win32" {
+        qcollectiongenerator = "$(utilDirRoot)/SimRobot/Util/qt/Win32/bin/qcollectiongenerator.exe"
+      } else {
+        qcollectiongenerator = "qcollectiongenerator"
+      }
+      command = "bash -c \"cp $(file) $(buildDir)/helpcollection.qhcp && $(qcollectiongenerator) $(buildDir)/helpcollection.qhcp -o $(output)\"",
+      message = "$(if $(Win32),$(notdir $(file)),$(file)) (qcollectiongenerator)",
+    },
+  }
+
+  qtRessourceFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Icons/*.png"
+  qtRccFiles = "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/SimRobotHelp.qrc",
+  qtMocFiles = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/HelpWidget.h"
+  }
+  files += qtFiles
+
+  defines += {
+    "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_HELP_LIB", "QT_NO_STL"
+    if platform == "Win32" { "_CRT_SECURE_NO_DEPRECATE" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobotHelp",
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4/QtHelp",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/QtHelp",
+      "/usr/include/Qt",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGUI",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtHelp",
+    }
+  },
+  libPaths = {
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/lib",
+    }
+  },
+  libs = {
+    if platform == "Win32" { "QtCore4", "QtGui4", "QtHelp4" }
+    if platform == "Linux" { "QtCore", "QtGui", "QtHelp" }
+  },
+}

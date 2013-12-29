@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<QHelpCollectionProject version="1.0">
+	<assistant>
+		<title>SimRobot Application Help</title>
+		<startPage>qthelp://simrobothelp/doc/index.html</startPage>
+		<currentFilter>SimRobotHelp</currentFilter>
+		<enableFilterFunctionality>true</enableFilterFunctionality>
+		<enableDocumentationManager>true</enableDocumentationManager>
+		<enableAddressBar visible="true">true</enableAddressBar>
+		<cacheDirectory>simrobot</cacheDirectory>
+	</assistant>
+	<docFiles>
+		<register>
+			<file>help.qch</file>
+		</register>
+	</docFiles>
+</QHelpCollectionProject>

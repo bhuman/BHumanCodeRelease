@@ -1,0 +1,5 @@
+#!/bin/sh
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+cd $basePath
+xcodebuild -jobs `sysctl -n hw.ncpu` -parallelizeTargets -target $1 -configuration $2 | grep --line-buffered "^[^ -]"

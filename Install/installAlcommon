@@ -1,0 +1,591 @@
+#!/bin/bash
+
+set -eu
+
+export scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
+export baseDir="$(dirname "${scriptPath}")"
+export bhDir="$(dirname "${baseDir}")"
+export includeDir="${baseDir}/Include/"
+defaultArchive="naoqi-sdk-1.14.5-linux32.tar.gz"
+
+source "${includeDir}/bhumanBase"
+
+includesAlcommon="
+include/alcore/altypes.h \
+include/alcore/alerror.h \
+include/qi/macro.hpp \
+include/alerror/alerror.h \
+include/alerror/config.h \
+include/alcore/alcatcherror.h \
+include/alcommon/albroker.h \
+include/alcommon/almoduleinfo.h \
+include/alvalue/alvalue.h \
+include/alvalue/config.h \
+include/alcommon/alproxy.h \
+include/alcommon/almodule.h \
+include/alcommon/almodulecore.h \
+include/alcommon/almethodinfo.h \
+include/alcommon/alparamtype.h \
+include/alcommon/detail/gettype.h \
+include/alcommon/alfunctor.h \
+include/alcommon/detail/alfunctorwithreturn.h \
+include/alvalue/detail/alfunctorconvert.h \
+include/alcommon/detail/alfunctorwithoutreturn.h \
+include/alcommon/detail/altaskinfo.h \
+include/alcommon/alproxy.hxx \
+include/alcommon/detail/alpcall.h \
+include/alcommon/detail/alpcallbase.h \
+include/alproxies/dcmproxy.h \
+include/alproxies/dcmproxyposthandler.h \
+include/alproxies/api.h \
+include/alproxies/almemoryproxy.h \
+include/alproxies/almemoryproxyposthandler.h \
+"
+
+includesBoost="
+include/boost/shared_ptr.hpp \
+include/boost/smart_ptr/shared_ptr.hpp \
+include/boost/config.hpp \
+include/boost/config/user.hpp \
+include/boost/config/select_compiler_config.hpp \
+include/boost/config/compiler/clang.hpp \
+include/boost/config/select_stdlib_config.hpp \
+include/boost/config/no_tr1/utility.hpp \
+include/boost/config/stdlib/libstdcpp3.hpp \
+include/boost/config/select_platform_config.hpp \
+include/boost/config/platform/linux.hpp \
+include/boost/config/posix_features.hpp \
+include/boost/config/suffix.hpp \
+include/boost/config/no_tr1/memory.hpp \
+include/boost/assert.hpp \
+include/boost/checked_delete.hpp \
+include/boost/throw_exception.hpp \
+include/boost/exception/detail/attribute_noreturn.hpp \
+include/boost/detail/workaround.hpp \
+include/boost/exception/exception.hpp \
+include/boost/current_function.hpp \
+include/boost/smart_ptr/detail/shared_count.hpp \
+include/boost/smart_ptr/bad_weak_ptr.hpp \
+include/boost/smart_ptr/detail/sp_counted_base.hpp \
+include/boost/smart_ptr/detail/sp_has_sync.hpp \
+include/boost/smart_ptr/detail/sp_counted_base_nt.hpp \
+include/boost/detail/sp_typeinfo.hpp \
+include/boost/smart_ptr/detail/sp_counted_impl.hpp \
+include/boost/smart_ptr/detail/sp_convertible.hpp \
+include/boost/smart_ptr/detail/spinlock_pool.hpp \
+include/boost/smart_ptr/detail/spinlock.hpp \
+include/boost/smart_ptr/detail/spinlock_sync.hpp \
+include/boost/smart_ptr/detail/yield_k.hpp \
+include/boost/memory_order.hpp \
+include/boost/smart_ptr/detail/operator_bool.hpp \
+include/boost/smart_ptr/enable_shared_from_this.hpp \
+include/boost/smart_ptr/weak_ptr.hpp \
+include/boost/noncopyable.hpp \
+include/boost/enable_shared_from_this.hpp \
+include/boost/signal.hpp \
+include/boost/type_traits/function_traits.hpp \
+include/boost/type_traits/is_function.hpp \
+include/boost/type_traits/is_reference.hpp \
+include/boost/type_traits/config.hpp \
+include/boost/type_traits/is_lvalue_reference.hpp \
+include/boost/type_traits/detail/bool_trait_def.hpp \
+include/boost/type_traits/detail/template_arity_spec.hpp \
+include/boost/mpl/int.hpp \
+include/boost/mpl/int_fwd.hpp \
+include/boost/mpl/aux_/adl_barrier.hpp \
+include/boost/mpl/aux_/config/adl.hpp \
+include/boost/mpl/aux_/config/msvc.hpp \
+include/boost/mpl/aux_/config/intel.hpp \
+include/boost/mpl/aux_/config/gcc.hpp \
+include/boost/mpl/aux_/config/workaround.hpp \
+include/boost/mpl/aux_/nttp_decl.hpp \
+include/boost/mpl/aux_/config/nttp.hpp \
+include/boost/mpl/aux_/integral_wrapper.hpp \
+include/boost/mpl/integral_c_tag.hpp \
+include/boost/mpl/aux_/config/static_constant.hpp \
+include/boost/mpl/aux_/static_cast.hpp \
+include/boost/preprocessor/cat.hpp \
+include/boost/preprocessor/config/config.hpp \
+include/boost/mpl/aux_/template_arity_fwd.hpp \
+include/boost/mpl/aux_/preprocessor/params.hpp \
+include/boost/mpl/aux_/config/preprocessor.hpp \
+include/boost/preprocessor/comma_if.hpp \
+include/boost/preprocessor/punctuation/comma_if.hpp \
+include/boost/preprocessor/control/if.hpp \
+include/boost/preprocessor/control/iif.hpp \
+include/boost/preprocessor/logical/bool.hpp \
+include/boost/preprocessor/facilities/empty.hpp \
+include/boost/preprocessor/punctuation/comma.hpp \
+include/boost/preprocessor/repeat.hpp \
+include/boost/preprocessor/repetition/repeat.hpp \
+include/boost/preprocessor/debug/error.hpp \
+include/boost/preprocessor/detail/auto_rec.hpp \
+include/boost/preprocessor/tuple/eat.hpp \
+include/boost/preprocessor/inc.hpp \
+include/boost/preprocessor/arithmetic/inc.hpp \
+include/boost/mpl/aux_/config/lambda.hpp \
+include/boost/mpl/aux_/config/ttp.hpp \
+include/boost/mpl/aux_/config/ctps.hpp \
+include/boost/mpl/aux_/config/overload_resolution.hpp \
+include/boost/type_traits/integral_constant.hpp \
+include/boost/mpl/bool.hpp \
+include/boost/mpl/bool_fwd.hpp \
+include/boost/mpl/integral_c.hpp \
+include/boost/mpl/integral_c_fwd.hpp \
+include/boost/mpl/aux_/lambda_support.hpp \
+include/boost/type_traits/detail/bool_trait_undef.hpp \
+include/boost/type_traits/is_rvalue_reference.hpp \
+include/boost/type_traits/ice.hpp \
+include/boost/type_traits/detail/yes_no_type.hpp \
+include/boost/type_traits/detail/ice_or.hpp \
+include/boost/type_traits/detail/ice_and.hpp \
+include/boost/type_traits/detail/ice_not.hpp \
+include/boost/type_traits/detail/ice_eq.hpp \
+include/boost/type_traits/detail/false_result.hpp \
+include/boost/type_traits/detail/is_function_ptr_helper.hpp \
+include/boost/type_traits/add_pointer.hpp \
+include/boost/type_traits/remove_reference.hpp \
+include/boost/type_traits/broken_compiler_spec.hpp \
+include/boost/type_traits/detail/type_trait_def.hpp \
+include/boost/type_traits/detail/type_trait_undef.hpp \
+include/boost/signals/signal0.hpp \
+include/boost/signals/signal_template.hpp \
+include/boost/signals/connection.hpp \
+include/boost/signals/detail/signals_common.hpp \
+include/boost/type_traits/conversion_traits.hpp \
+include/boost/type_traits/is_convertible.hpp \
+include/boost/type_traits/intrinsics.hpp \
+include/boost/type_traits/is_same.hpp \
+include/boost/type_traits/is_volatile.hpp \
+include/boost/type_traits/detail/cv_traits_impl.hpp \
+include/boost/type_traits/is_abstract.hpp \
+include/boost/ref.hpp \
+include/boost/utility/addressof.hpp \
+include/boost/signals/detail/config.hpp \
+include/boost/config/auto_link.hpp \
+include/boost/smart_ptr.hpp \
+include/boost/scoped_ptr.hpp \
+include/boost/smart_ptr/scoped_ptr.hpp \
+include/boost/scoped_array.hpp \
+include/boost/smart_ptr/scoped_array.hpp \
+include/boost/shared_array.hpp \
+include/boost/smart_ptr/shared_array.hpp \
+include/boost/weak_ptr.hpp \
+include/boost/intrusive_ptr.hpp \
+include/boost/smart_ptr/intrusive_ptr.hpp \
+include/boost/config/no_tr1/functional.hpp \
+include/boost/make_shared.hpp \
+include/boost/smart_ptr/make_shared.hpp \
+include/boost/type_traits/type_with_alignment.hpp \
+include/boost/mpl/if.hpp \
+include/boost/mpl/aux_/value_wknd.hpp \
+include/boost/mpl/aux_/config/integral.hpp \
+include/boost/mpl/aux_/config/eti.hpp \
+include/boost/mpl/aux_/na_spec.hpp \
+include/boost/mpl/lambda_fwd.hpp \
+include/boost/mpl/void_fwd.hpp \
+include/boost/mpl/aux_/na.hpp \
+include/boost/mpl/aux_/na_fwd.hpp \
+include/boost/mpl/aux_/lambda_arity_param.hpp \
+include/boost/mpl/aux_/arity.hpp \
+include/boost/mpl/aux_/config/dtp.hpp \
+include/boost/mpl/aux_/preprocessor/enum.hpp \
+include/boost/mpl/aux_/preprocessor/def_params_tail.hpp \
+include/boost/mpl/limits/arity.hpp \
+include/boost/preprocessor/logical/and.hpp \
+include/boost/preprocessor/logical/bitand.hpp \
+include/boost/preprocessor/identity.hpp \
+include/boost/preprocessor/facilities/identity.hpp \
+include/boost/preprocessor/empty.hpp \
+include/boost/preprocessor/arithmetic/add.hpp \
+include/boost/preprocessor/arithmetic/dec.hpp \
+include/boost/preprocessor/control/while.hpp \
+include/boost/preprocessor/list/fold_left.hpp \
+include/boost/preprocessor/list/detail/fold_left.hpp \
+include/boost/preprocessor/control/expr_iif.hpp \
+include/boost/preprocessor/list/adt.hpp \
+include/boost/preprocessor/detail/is_binary.hpp \
+include/boost/preprocessor/detail/check.hpp \
+include/boost/preprocessor/logical/compl.hpp \
+include/boost/preprocessor/list/fold_right.hpp \
+include/boost/preprocessor/list/detail/fold_right.hpp \
+include/boost/preprocessor/list/reverse.hpp \
+include/boost/preprocessor/control/detail/while.hpp \
+include/boost/preprocessor/tuple/elem.hpp \
+include/boost/preprocessor/arithmetic/sub.hpp \
+include/boost/preprocessor/list/for_each_i.hpp \
+include/boost/preprocessor/repetition/for.hpp \
+include/boost/preprocessor/repetition/detail/for.hpp \
+include/boost/preprocessor/tuple/rem.hpp \
+include/boost/preprocessor/tuple/to_list.hpp \
+include/boost/preprocessor/list/transform.hpp \
+include/boost/preprocessor/list/append.hpp \
+include/boost/type_traits/alignment_of.hpp \
+include/boost/type_traits/detail/size_t_trait_def.hpp \
+include/boost/mpl/size_t.hpp \
+include/boost/mpl/size_t_fwd.hpp \
+include/boost/type_traits/detail/size_t_trait_undef.hpp \
+include/boost/type_traits/is_pod.hpp \
+include/boost/type_traits/is_void.hpp \
+include/boost/type_traits/is_scalar.hpp \
+include/boost/type_traits/is_arithmetic.hpp \
+include/boost/type_traits/is_integral.hpp \
+include/boost/type_traits/is_float.hpp \
+include/boost/type_traits/is_enum.hpp \
+include/boost/type_traits/is_pointer.hpp \
+include/boost/type_traits/is_member_pointer.hpp \
+include/boost/type_traits/is_member_function_pointer.hpp \
+include/boost/type_traits/detail/is_mem_fun_pointer_impl.hpp \
+include/boost/type_traits/remove_cv.hpp \
+include/boost/static_assert.hpp \
+include/boost/operators.hpp \
+include/boost/iterator.hpp \
+include/boost/any.hpp \
+include/boost/utility.hpp \
+include/boost/utility/base_from_member.hpp \
+include/boost/preprocessor/repetition/enum_binary_params.hpp \
+include/boost/preprocessor/repetition/enum_params.hpp \
+include/boost/preprocessor/repetition/repeat_from_to.hpp \
+include/boost/utility/binary.hpp \
+include/boost/preprocessor/control/deduce_d.hpp \
+include/boost/preprocessor/seq/cat.hpp \
+include/boost/preprocessor/seq/fold_left.hpp \
+include/boost/preprocessor/seq/seq.hpp \
+include/boost/preprocessor/seq/elem.hpp \
+include/boost/preprocessor/seq/size.hpp \
+include/boost/preprocessor/seq/transform.hpp \
+include/boost/preprocessor/arithmetic/mod.hpp \
+include/boost/preprocessor/arithmetic/detail/div_base.hpp \
+include/boost/preprocessor/comparison/less_equal.hpp \
+include/boost/preprocessor/logical/not.hpp \
+include/boost/utility/enable_if.hpp \
+include/boost/next_prior.hpp \
+include/boost/signals/slot.hpp \
+include/boost/signals/trackable.hpp \
+include/boost/type_traits.hpp \
+include/boost/type_traits/add_const.hpp \
+include/boost/type_traits/add_cv.hpp \
+include/boost/type_traits/add_lvalue_reference.hpp \
+include/boost/type_traits/add_reference.hpp \
+include/boost/type_traits/add_rvalue_reference.hpp \
+include/boost/type_traits/add_volatile.hpp \
+include/boost/type_traits/aligned_storage.hpp \
+include/boost/aligned_storage.hpp \
+include/boost/mpl/eval_if.hpp \
+include/boost/mpl/identity.hpp \
+include/boost/type_traits/common_type.hpp \
+include/boost/utility/declval.hpp \
+include/boost/type_traits/conditional.hpp \
+include/boost/type_traits/decay.hpp \
+include/boost/type_traits/is_array.hpp \
+include/boost/type_traits/remove_bounds.hpp \
+include/boost/type_traits/extent.hpp \
+include/boost/type_traits/floating_point_promotion.hpp \
+include/boost/type_traits/has_new_operator.hpp \
+include/boost/type_traits/has_nothrow_assign.hpp \
+include/boost/type_traits/has_trivial_assign.hpp \
+include/boost/type_traits/is_const.hpp \
+include/boost/type_traits/has_nothrow_constructor.hpp \
+include/boost/type_traits/has_trivial_constructor.hpp \
+include/boost/type_traits/has_nothrow_copy.hpp \
+include/boost/type_traits/has_trivial_copy.hpp \
+include/boost/type_traits/has_nothrow_destructor.hpp \
+include/boost/type_traits/has_trivial_destructor.hpp \
+include/boost/type_traits/has_operator.hpp \
+include/boost/type_traits/has_bit_and.hpp \
+include/boost/type_traits/detail/has_binary_operator.hpp \
+include/boost/type_traits/is_base_of.hpp \
+include/boost/type_traits/is_base_and_derived.hpp \
+include/boost/type_traits/is_class.hpp \
+include/boost/type_traits/is_fundamental.hpp \
+include/boost/type_traits/remove_pointer.hpp \
+include/boost/type_traits/has_bit_and_assign.hpp \
+include/boost/type_traits/has_bit_or.hpp \
+include/boost/type_traits/has_bit_or_assign.hpp \
+include/boost/type_traits/has_bit_xor.hpp \
+include/boost/type_traits/has_bit_xor_assign.hpp \
+include/boost/type_traits/has_complement.hpp \
+include/boost/type_traits/detail/has_prefix_operator.hpp \
+include/boost/type_traits/has_dereference.hpp \
+include/boost/type_traits/has_divides.hpp \
+include/boost/type_traits/has_divides_assign.hpp \
+include/boost/type_traits/has_equal_to.hpp \
+include/boost/type_traits/has_greater.hpp \
+include/boost/type_traits/has_greater_equal.hpp \
+include/boost/type_traits/has_left_shift.hpp \
+include/boost/type_traits/has_left_shift_assign.hpp \
+include/boost/type_traits/has_less.hpp \
+include/boost/type_traits/has_less_equal.hpp \
+include/boost/type_traits/has_logical_and.hpp \
+include/boost/type_traits/has_logical_not.hpp \
+include/boost/type_traits/has_logical_or.hpp \
+include/boost/type_traits/has_minus.hpp \
+include/boost/type_traits/has_minus_assign.hpp \
+include/boost/type_traits/has_modulus.hpp \
+include/boost/type_traits/has_modulus_assign.hpp \
+include/boost/type_traits/has_multiplies.hpp \
+include/boost/type_traits/has_multiplies_assign.hpp \
+include/boost/type_traits/has_negate.hpp \
+include/boost/type_traits/has_not_equal_to.hpp \
+include/boost/type_traits/has_plus.hpp \
+include/boost/type_traits/has_plus_assign.hpp \
+include/boost/type_traits/has_post_decrement.hpp \
+include/boost/type_traits/detail/has_postfix_operator.hpp \
+include/boost/type_traits/has_post_increment.hpp \
+include/boost/type_traits/has_pre_decrement.hpp \
+include/boost/type_traits/has_pre_increment.hpp \
+include/boost/type_traits/has_right_shift.hpp \
+include/boost/type_traits/has_right_shift_assign.hpp \
+include/boost/type_traits/has_unary_minus.hpp \
+include/boost/type_traits/has_unary_plus.hpp \
+include/boost/type_traits/has_virtual_destructor.hpp \
+include/boost/type_traits/is_complex.hpp \
+include/boost/type_traits/is_compound.hpp \
+include/boost/type_traits/is_empty.hpp \
+include/boost/type_traits/is_floating_point.hpp \
+include/boost/type_traits/is_member_object_pointer.hpp \
+include/boost/type_traits/is_object.hpp \
+include/boost/type_traits/is_polymorphic.hpp \
+include/boost/type_traits/is_signed.hpp \
+include/boost/type_traits/is_stateless.hpp \
+include/boost/type_traits/is_union.hpp \
+include/boost/type_traits/is_unsigned.hpp \
+include/boost/type_traits/is_virtual_base_of.hpp \
+include/boost/mpl/and.hpp \
+include/boost/mpl/aux_/config/use_preprocessed.hpp \
+include/boost/mpl/aux_/nested_type_wknd.hpp \
+include/boost/mpl/aux_/include_preprocessed.hpp \
+include/boost/mpl/aux_/config/compiler.hpp \
+include/boost/preprocessor/stringize.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/and.hpp \
+include/boost/mpl/not.hpp \
+include/boost/type_traits/make_unsigned.hpp \
+include/boost/type_traits/make_signed.hpp \
+include/boost/type_traits/rank.hpp \
+include/boost/type_traits/remove_extent.hpp \
+include/boost/type_traits/remove_all_extents.hpp \
+include/boost/type_traits/remove_const.hpp \
+include/boost/type_traits/remove_volatile.hpp \
+include/boost/type_traits/integral_promotion.hpp \
+include/boost/type_traits/promote.hpp \
+include/boost/visit_each.hpp \
+include/boost/last_value.hpp \
+include/boost/signals/detail/signal_base.hpp \
+include/boost/signals/detail/named_slot_map.hpp \
+include/boost/function/function2.hpp \
+include/boost/function/detail/maybe_include.hpp \
+include/boost/function/function_template.hpp \
+include/boost/function/detail/prologue.hpp \
+include/boost/function/function_base.hpp \
+include/boost/integer.hpp \
+include/boost/integer_fwd.hpp \
+include/boost/limits.hpp \
+include/boost/cstdint.hpp \
+include/boost/integer_traits.hpp \
+include/boost/type_traits/composite_traits.hpp \
+include/boost/function_equal.hpp \
+include/boost/function/function_fwd.hpp \
+include/boost/mem_fn.hpp \
+include/boost/bind/mem_fn.hpp \
+include/boost/get_pointer.hpp \
+include/boost/bind/mem_fn_template.hpp \
+include/boost/bind/mem_fn_cc.hpp \
+include/boost/preprocessor/enum.hpp \
+include/boost/preprocessor/repetition/enum.hpp \
+include/boost/preprocessor/enum_params.hpp \
+include/boost/detail/no_exceptions_support.hpp \
+include/boost/iterator/iterator_facade.hpp \
+include/boost/iterator/interoperable.hpp \
+include/boost/mpl/or.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/or.hpp \
+include/boost/iterator/detail/config_def.hpp \
+include/boost/iterator/detail/config_undef.hpp \
+include/boost/iterator/iterator_traits.hpp \
+include/boost/detail/iterator.hpp \
+include/boost/iterator/detail/facade_iterator_category.hpp \
+include/boost/iterator/iterator_categories.hpp \
+include/boost/mpl/placeholders.hpp \
+include/boost/mpl/arg.hpp \
+include/boost/mpl/arg_fwd.hpp \
+include/boost/mpl/aux_/na_assert.hpp \
+include/boost/mpl/assert.hpp \
+include/boost/mpl/aux_/yes_no.hpp \
+include/boost/mpl/aux_/config/arrays.hpp \
+include/boost/mpl/aux_/config/pp_counter.hpp \
+include/boost/mpl/aux_/arity_spec.hpp \
+include/boost/mpl/aux_/arg_typedef.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/arg.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/placeholders.hpp \
+include/boost/detail/indirect_traits.hpp \
+include/boost/iterator/detail/enable_if.hpp \
+include/boost/implicit_cast.hpp \
+include/boost/mpl/always.hpp \
+include/boost/mpl/apply.hpp \
+include/boost/mpl/apply_fwd.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/apply_fwd.hpp \
+include/boost/mpl/apply_wrap.hpp \
+include/boost/mpl/aux_/has_apply.hpp \
+include/boost/mpl/has_xxx.hpp \
+include/boost/mpl/aux_/type_wrapper.hpp \
+include/boost/mpl/aux_/config/has_xxx.hpp \
+include/boost/mpl/aux_/config/msvc_typename.hpp \
+include/boost/preprocessor/array/elem.hpp \
+include/boost/preprocessor/array/data.hpp \
+include/boost/preprocessor/array/size.hpp \
+include/boost/preprocessor/repetition/enum_trailing_params.hpp \
+include/boost/mpl/aux_/config/has_apply.hpp \
+include/boost/mpl/aux_/msvc_never_true.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/apply_wrap.hpp \
+include/boost/mpl/lambda.hpp \
+include/boost/mpl/bind.hpp \
+include/boost/mpl/bind_fwd.hpp \
+include/boost/mpl/aux_/config/bind.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/bind_fwd.hpp \
+include/boost/mpl/next.hpp \
+include/boost/mpl/next_prior.hpp \
+include/boost/mpl/aux_/common_name_wknd.hpp \
+include/boost/mpl/protect.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/bind.hpp \
+include/boost/mpl/aux_/full_lambda.hpp \
+include/boost/mpl/quote.hpp \
+include/boost/mpl/void.hpp \
+include/boost/mpl/aux_/has_type.hpp \
+include/boost/mpl/aux_/config/bcc.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/quote.hpp \
+include/boost/mpl/aux_/template_arity.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/template_arity.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/full_lambda.hpp \
+include/boost/mpl/aux_/preprocessed/gcc/apply.hpp \
+include/boost/signals/detail/slot_call_iterator.hpp \
+include/boost/optional.hpp \
+include/boost/optional/optional.hpp \
+include/boost/type.hpp \
+include/boost/detail/reference_content.hpp \
+include/boost/none.hpp \
+include/boost/none_t.hpp \
+include/boost/utility/swap.hpp \
+include/boost/utility/compare_pointees.hpp \
+include/boost/utility/in_place_factory.hpp \
+include/boost/utility/detail/in_place_factory_prefix.hpp \
+include/boost/preprocessor/punctuation/paren.hpp \
+include/boost/preprocessor/iteration/iterate.hpp \
+include/boost/preprocessor/slot/slot.hpp \
+include/boost/preprocessor/slot/detail/def.hpp \
+include/boost/preprocessor/iteration/detail/iter/forward1.hpp \
+include/boost/preprocessor/iteration/detail/bounds/lower1.hpp \
+include/boost/preprocessor/slot/detail/shared.hpp \
+include/boost/preprocessor/iteration/detail/bounds/upper1.hpp \
+include/boost/utility/detail/in_place_factory_suffix.hpp \
+include/boost/optional/optional_fwd.hpp \
+include/boost/function/function0.hpp \
+include/boost/signals/signal1.hpp \
+include/boost/function/function1.hpp \
+include/boost/signals/signal2.hpp \
+include/boost/signals/signal3.hpp \
+include/boost/function/function3.hpp \
+include/boost/signals/signal4.hpp \
+include/boost/function/function4.hpp \
+include/boost/signals/signal5.hpp \
+include/boost/function/function5.hpp \
+include/boost/signals/signal6.hpp \
+include/boost/function/function6.hpp \
+include/boost/signals/signal7.hpp \
+include/boost/function/function7.hpp \
+include/boost/signals/signal8.hpp \
+include/boost/function/function8.hpp \
+include/boost/signals/signal9.hpp \
+include/boost/function/function9.hpp \
+include/boost/signals/signal10.hpp \
+include/boost/function/function10.hpp \
+include/boost/function.hpp \
+include/boost/preprocessor/iterate.hpp \
+include/boost/function/detail/function_iterate.hpp \
+"
+
+usage() {
+  echo "usage:"
+  echo "${0} <sdk-archive>"
+  echo ""
+  echo " <sdk-archive> : The archive file with the aldebaran linux sdk"
+  exit 1
+}
+
+if [ $# -ne 1 ]
+then
+  usage
+else
+  archive="${1}"
+fi
+
+tmpdir="$(mktemp -d /tmp/bhuman.XXXXXX)"
+archiveDir="${archive}"
+archiveBase="$(dirname "${archiveDir}")"
+archiveDir="${archiveDir#"${archiveBase}"}"
+archiveDir="${archiveDir#/}"
+if [ "${defaultArchive}" != "${archiveDir}" ]
+then
+  warning "sdk-archive (\"${archiveDir}\") does not match the expected name (\"${defaultArchive}\")."
+fi
+archiveDir="${archiveDir%\.tar\.gz}"
+
+debug "tempdir: " "${tmpdir}"
+debug "archive: " "${archive}"
+debug "archiveBase: " "${archiveBase}"
+debug "archiveDir: " "${archiveDir}"
+
+for f in ${includesAlcommon}
+do
+  alcommonIncludes+="${archiveDir}/${f} "
+done
+
+for f in ${includesBoost}
+do
+  boostIncludes+="${archiveDir}/${f} "
+done
+
+alcommonContent="${alcommonIncludes}${archiveDir}/lib/libalcommon.so"
+echo -n "Unpacking required content..."
+tar -xz -C "${tmpdir}" -f "${archive}" ${alcommonContent}
+tar -xz -C "${tmpdir}" -f "${archive}" ${boostIncludes}
+echo "Done"
+
+echo -n "Copying alcommon headers to destination..."
+mkdir -p "${baseDir}/../Util/alcommon/include" 
+for f in ${includesAlcommon}
+do
+  destFile="${f#include/}"
+  dirOfFile="$(dirname "${destFile}")"
+  
+  if [ ! -d "${baseDir}/../Util/alcommon/include/${dirOfFile}" ]
+  then
+    mkdir -p "${baseDir}/../Util/alcommon/include/${dirOfFile}"
+  fi
+  LC_ALL='C' tr -d '\r' < "${tmpdir}/${archiveDir}/${f}" > "${baseDir}/../Util/alcommon/include/${destFile}"
+done
+echo "Done"
+
+echo -n "Copying alcommon library to destination..."
+mkdir -p "${baseDir}/../Util/alcommon/lib/linux" 
+cp "${tmpdir}/${archiveDir}/lib/libalcommon.so" "${baseDir}/../Util/alcommon/lib/linux/libalcommon.so"
+echo "Done"
+
+echo -n "Copying boost headers to destination..."
+for f in ${includesBoost}
+do
+  destFile="${f#include/}"
+  dirOfFile="$(dirname "${destFile}")"
+  
+  debug "\tdestFile:  $destFile"
+  debug "\tdirOfFile: $dirOfFile"
+
+  if [ ! -d "${baseDir}/../Util/boost/linux/${dirOfFile}" ]
+  then
+    mkdir -p "${baseDir}/../Util/boost/linux/${dirOfFile}"
+  fi
+  LC_ALL='C' tr -d '\r' < "${tmpdir}/${archiveDir}/${f}" > "${baseDir}/../Util/boost/linux/${destFile}"
+done
+echo "Done"
+
+echo -n "Cleaning up..."
+rm -r "${tmpdir}"
+echo "Done"

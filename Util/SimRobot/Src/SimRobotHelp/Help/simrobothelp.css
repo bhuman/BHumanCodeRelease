@@ -1,0 +1,68 @@
+body
+{
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	background-color : white;
+	color : black;
+}
+
+.title
+{
+	font-size : 18pt;
+	font-weight: bold;
+	font-style: italic;	
+	margin-right: 40px;
+}
+
+.strong
+{
+	font-weight: bold;
+	font-style: italic;
+}
+
+p
+{
+	text-indent: 20px;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+h3
+{
+	margin-left: 20px;
+}
+
+h1
+{
+ 	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 1.5em;
+	color : black;
+}
+
+h2
+{
+ 	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 1.25em;
+	color : black;
+}
+
+li
+{
+	margin-top: 6px;
+	margin-bottom: 6px;
+}
+
+table
+{
+	border-style: none;
+}
+
+td {}
+.links	{text-align: left;}
+.mitte	{text-align: center;}
+.rechts	{text-align: right;}
+
+ A:link { color : blue}
+
+ A:visited { color : gray; }
+
+ A:active { color : navy; }

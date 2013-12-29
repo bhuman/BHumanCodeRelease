@@ -1,0 +1,45 @@
+
+libqxt = cppStaticLibrary + {
+
+  folder = "Libs"
+  root = "$(utilDirRoot)/libqxt"
+  files = {"$(utilDirRoot)/libqxt/**.cpp" = cppSource}
+  qtMocFiles = {"$(utilDirRoot)/libqxt/qxtspanslider.h", 
+                "$(utilDirRoot)/libqxt/qxtspanslider_p.h"}
+  files += qtFilesNew
+
+  defines += {
+    "QXT_STATIC"
+//  if platform == "Win32" { "Q_OS_WIN" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(buildDir)",
+    "$(utilDirRoot)/libqxt",
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/Qt",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGUI",
+    }
+  },
+  libPaths = {
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/lib",
+    }
+  },
+  libs = {
+    if platform == "Win32" { "QtCore4", "QtGui4" }
+    if platform == "Linux" { "QtCore", "QtGui" }
+  },
+  cppFlags += {
+    if platform == "Linux" { "-fPIC",  -"-Wconversion" }
+  }
+}

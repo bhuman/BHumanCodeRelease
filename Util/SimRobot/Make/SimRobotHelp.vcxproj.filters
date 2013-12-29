@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Help">
+      <UniqueIdentifier>{6A26F548-831E-6A8C-26BF-BBD9F6EC61E0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\api">
+      <UniqueIdentifier>{70DA9D9D-7423-899D-FEA4-6C22F49865E5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\basics">
+      <UniqueIdentifier>{142202DC-35D3-36A0-70A7-13F212BBA6F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\console">
+      <UniqueIdentifier>{C4D0A848-2A18-423C-1802-30CC5D751B12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\examples">
+      <UniqueIdentifier>{35C47E29-63BA-9C53-7CE1-727C777CBA92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\faq">
+      <UniqueIdentifier>{22D9C464-E854-45D0-4A78-A28B5E958FA1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\interface">
+      <UniqueIdentifier>{D18275DD-4A8A-D8F1-E172-68571E6C9C90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\rosiml">
+      <UniqueIdentifier>{19BB6691-4DC2-440D-A58B-8E9A7521F8C2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Help\Icons">
+      <UniqueIdentifier>{DF8F2A8B-9ED6-4B7A-8B30-D378E5B644F6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include=".Qt">
+      <UniqueIdentifier>{}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Icons">
+      <UniqueIdentifier>{8F679730-0715-8337-3465-84551B093BE8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Src\SimRobotHelp\Help\index.html">
+      <Filter>Help</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\api\api.html">
+      <Filter>Help\api</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\architecture.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\basics.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\physics.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\quickstart.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\sensing.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\basics\specification.html">
+      <Filter>Help\basics</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\console\commands.html">
+      <Filter>Help\console</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\examples\examples.html">
+      <Filter>Help\examples</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\faq\faq.html">
+      <Filter>Help\faq</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\console.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\editmenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\editorwindow.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\filemenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\helpmenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\interface.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\menus.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\objectwindow.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\sensorwindow.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\simulationmenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\statusbar.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\toolbar.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\treewindow.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\viewmenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\interface\windowmenu.html">
+      <Filter>Help\interface</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\rosiml\rosi.html">
+      <Filter>Help\rosiml</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\rosiml\rosi_controller.html">
+      <Filter>Help\rosiml</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\simrobothelp.css">
+      <Filter>Help</Filter>
+    </None>
+    <CustomBuild Include="..\Src\SimRobotHelp\Help\help.qhp">
+      <Filter>Help</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\Src\SimRobotHelp\Help\helpcollection.qhcp">
+      <Filter>Help</Filter>
+    </CustomBuild>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\app_exit.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\app_exit_xp.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\crystal_toolbar.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\status_bar.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_camera.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_clock.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_color_image.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_column_graph.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_copy.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_cut.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_drag_and_drop_plane.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_grid.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_help.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_light.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_line_graph.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_monochrome_image.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_motion_blur.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_new.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_open.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_paste.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_reset.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_save.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_search.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_shader_interface.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_show_sensors.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_start.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_step.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_stereogram.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_surface_rendering.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_tree_view.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_update_view.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\toolbar_view_item.bmp">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\architecture.png">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Help\Icons\SimRobot.png">
+      <Filter>Help\Icons</Filter>
+    </None>
+    <ClCompile Include="..\Src\SimRobotHelp\HelpModule.cpp" />
+    <ClCompile Include="..\Src\SimRobotHelp\HelpWidget.cpp" />
+    <ClInclude Include="..\Src\SimRobotHelp\HelpModule.h" />
+    <CustomBuild Include="..\Src\SimRobotHelp\HelpWidget.h" />
+    <CustomBuild Include="..\Src\SimRobotHelp\SimRobotHelp.qrc" />
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Develop\qrc_SimRobotHelp.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+    <None Include="..\Src\SimRobotHelp\Icons\back.png">
+      <Filter>Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Icons\forward.png">
+      <Filter>Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Icons\help.png">
+      <Filter>Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Icons\home.png">
+      <Filter>Icons</Filter>
+    </None>
+    <None Include="..\Src\SimRobotHelp\Icons\locate.png">
+      <Filter>Icons</Filter>
+    </None>
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Develop\moc_HelpWidget.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Debug\qrc_SimRobotHelp.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Debug\moc_HelpWidget.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Release\qrc_SimRobotHelp.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Build\SimRobotHelp\Win32\Release\moc_HelpWidget.cpp">
+      <Filter>.Qt</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

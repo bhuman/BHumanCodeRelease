@@ -1,0 +1,52 @@
+
+qtpropertybrowser = cppStaticLibrary + {
+
+  folder = "Libs"
+  root = "$(utilDirRoot)/qtpropertybrowser"
+  files = {
+    "$(utilDirRoot)/qtpropertybrowser/**.cpp" = cppSource,
+  }
+
+  qtRessourceFiles = "$(utilDirRoot)/qtpropertybrowser/images/**.png"
+  qtRccFiles = "$(utilDirRoot)/qtpropertybrowser/qtpropertybrowser.qrc",
+  qtMocFiles = { "$(utilDirRoot)/qtpropertybrowser/qtpropertybrowserutils_p.h" },
+  qtMocFilesNew = {
+    "$(utilDirRoot)/qtpropertybrowser/**.h"
+    -"$(utilDirRoot)/qtpropertybrowser/qtpropertybrowserutils_p.h"
+  }
+  files += qtFilesNew
+
+  defines += {
+    "QT_NO_STL"
+    if platform == "Win32" { "QT_QTPROPERTYBROWSER_EXPORT" }
+    if configuration != "Debug" { "QT_NO_DEBUG" }
+  },
+  includePaths = {
+    "$(buildDir)",
+    if platform == "Linux" {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/Qt",
+    }
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/include/QtGUI",
+    }
+  },
+  libPaths = {
+    if platform == "Win32" {
+      "$(utilDirRoot)/SimRobot/Util/qt/Win32/lib",
+    }
+  },
+  libs = {
+    if platform == "Win32" { "QtCore4", "QtGui4" }
+    if platform == "Linux" { "QtCore", "QtGui" }
+  },
+  cppFlags += {
+    if platform == "Linux" { "-fPIC",  -"-Wconversion" }
+  }
+}

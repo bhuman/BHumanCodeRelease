@@ -1,0 +1,130 @@
+<Simulation>
+  <Surface name="dark blue" diffuseColor="rgb(0%, 0%, 50%)"/>
+  <Surface name="green" diffuseColor="rgb(0%, 80%, 25%)"/>
+  <Surface name="yellow" diffuseColor="rgb(90%, 90%, 0%)"/>
+  <Surface name="orange" diffuseColor="rgb(100%, 60%, 0%)"/>
+
+  <Scene name="SimpleVehicle" controller="SimpleVehicle" stepLength="0.01" color="rgb(80%, 80%, 80%)" ERP="0.2" CFM="0.0001">
+    <Light z="8m" ambientColor="rgb(50%, 50%, 50%)" diffuseColor="rgb(90%, 90%, 90%)" specularColor="rgb(100%, 100%, 100%)"/>
+
+    <Compound name="Ground">
+      <Translation z="-0.1"/>
+      <BoxAppearance width="10" depth="10" height="0.2">
+        <Surface ref="dark blue"/>
+      </BoxAppearance>
+      <BoxGeometry width="10" depth="10" height="0.2"/>
+    </Compound>
+    
+    <Compound name="Side1">
+      <Translation y="4.9" z="0.1"/>
+      <BoxAppearance width="0.1" depth="10" height="0.2">
+        <Surface ref="green"/>
+      </BoxAppearance>
+      <BoxGeometry width="0.1" depth="10" height="0.2"/>
+    </Compound>
+    
+    <Compound name="Side2">
+      <Translation y="-4.9" z="0.1"/>
+      <BoxAppearance width="0.1" depth="10" height="0.2">
+        <Surface ref="green"/>
+      </BoxAppearance>
+      <BoxGeometry width="0.1" depth="10" height="0.2"/>
+    </Compound>
+    
+    <Compound name="Side3">
+      <Translation x="4.9" z="0.1"/>
+      <BoxAppearance width="10" depth="0.1" height="0.2">
+        <Surface ref="green"/>
+      </BoxAppearance>
+      <BoxGeometry width="10" depth="0.1" height="0.2"/>
+    </Compound>
+    
+    <Compound name="Side4">
+      <Translation x="-4.9" z="0.1"/>
+      <BoxAppearance width="10" depth="0.1" height="0.2">
+        <Surface ref="green"/>
+      </BoxAppearance>
+      <BoxGeometry width="10" depth="0.1" height="0.2"/>
+    </Compound>
+    
+    <!-- The simple vehicle, a box with four ball wheels -->
+    <Body name="car">
+      <Translation z="0.2"/>
+      <BoxAppearance width="0.4" depth="0.2" height="0.1">
+        <Surface ref="green"/>
+      </BoxAppearance>
+      <BoxGeometry width="0.4" depth="0.2" height="0.1"/>
+      <BoxMass value="2kg" width="0.4" depth="0.2" height="0.1"/>
+      <DepthImageSensor name="LaserRangeFinder" imageWidth="100" angleX="120degree" angleY="0.1degree" min="0.03m" max="3m" projection="spherical">
+        <Translation z="0.1"/>
+        <Rotation z="-90degree"/>
+      </DepthImageSensor>
+      <Hinge name="backLeft">
+        <Translation x="0.1" y="0.13" z="-0.01" />
+        <Axis x="1.0">
+          <VelocityMotor maxVelocity="3" maxForce="10.0"/>
+        </Axis>
+        <Body name="Wheel1">
+          <Translation x="0.07"/>
+          <SphereAppearance radius="0.05">
+            <Surface ref="yellow"/>
+          </SphereAppearance>
+          <SphereGeometry radius="0.05"/>
+          <SphereMass value="1kg" radius="0.05"/>
+        </Body>
+      </Hinge>
+      <Hinge name="backRight">
+        <Translation x="-0.1" y="0.13" z="-0.01" />
+        <Axis x="1.0">
+          <VelocityMotor maxVelocity="3" maxForce="10.0"/>
+        </Axis>
+        <Body name="Wheel2">
+          <Translation x="-0.07"/>
+          <SphereAppearance radius="0.05">
+            <Surface ref="yellow"/>
+          </SphereAppearance>
+          <SphereGeometry radius="0.05"/>
+          <SphereMass value="1kg" radius="0.05"/>
+        </Body>
+      </Hinge>
+      <Hinge name="frontLeft">
+        <Translation x="0.1" y="-0.13" z="-0.01" />
+        <Axis x="1.0">
+          <VelocityMotor maxVelocity="3" maxForce="10.0"/>
+        </Axis>
+        <Body name="Wheel3">
+          <Translation x="0.07"/>
+          <SphereAppearance radius="0.05">
+            <Surface ref="yellow"/>
+          </SphereAppearance>
+          <SphereGeometry radius="0.05"/>
+          <SphereMass value="1kg" radius="0.05"/>
+        </Body>
+      </Hinge>
+      <Hinge name="frontRight">
+        <Translation x="-0.1" y="-0.13" z="-0.01" />
+        <Axis x="1.0">
+          <VelocityMotor maxVelocity="3" maxForce="10.0"/>
+        </Axis>
+        <Body name="Wheel4">
+          <Translation x="-0.07"/>
+          <SphereAppearance radius="0.05">
+            <Surface ref="yellow"/>
+          </SphereAppearance>
+          <SphereGeometry radius="0.05"/>
+          <SphereMass value="1kg" radius="0.05"/>
+        </Body>
+      </Hinge>
+    </Body>
+ 
+    <!-- The ball which the robot tries to get -->
+    <Body name="Ball">
+      <Translation x="2" z="0.5"/>
+      <SphereAppearance radius="0.14">
+        <Surface ref="orange"/>
+      </SphereAppearance>
+      <SphereGeometry radius="0.14"/>
+      <SphereMass value="1kg" radius="0.14"/>
+    </Body>
+  </Scene>
+</Simulation>

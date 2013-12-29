@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="../simrobothelp.css">
+<title>User Interface</title>
+</head>
+<body>
+
+<table width="100%">
+	<tr>
+		<td rowspan="2" width="5%"><img alt="logo" src="../Icons/SimRobot.png"></td>
+		<td valign="middle" align="right"><div class="title">User Interface</div></td>
+	</tr>
+	<tr valign="top">
+		<td><hr></td>
+	</tr>
+</table>
+
+<p>
+The user interface of SimRobot has been designed to allow as much
+visualization and interaction as possible, as well as to be flexible enough to handle
+simulations of any different kind of environments. Therefore a tree of all objects
+of the scene is the starting point for all user operations. Each node of that tree
+may be selected to open a view for that kind of object. In case of actuators (e. g.
+a hinge joint), a control for direct manipulation is opened. For sensors, several
+different visualization modes are implemented. Through this concept, it is also
+possible to open several views of arbitrary subsets of the scene graph. These views
+offer a zoom, rotation, panning and different grades of detail as well as the
+possibility to switch between the appearance and the physical model of single objects.
+Furthermore, it is possible to interactively drag and drop and rotate objects inside
+the scene or to apply a momentum to an object (e. g. to let a ball roll). This is quite
+useful to arrange different settings while testing e. g. a robot behavior.
+To add own views to a scene, an interface for user-defined views has been implemented
+which enables the definition of own debug drawings from inside the controller.
+Other elements of the user interface are an editor for the scene description
+files and a console for text output from the controller.
+</p>
+
+<p>Main Window of SimRobot contains following elements:</p>
+
+<p>
+<table>
+	<tr>
+		<td>
+			<ul type="square">
+				<li><a href="menus.html">Menus</a></li>
+				<li><a href="toolbar.html">Tool Bar</a></li>
+				<li><a href="statusbar.html">Status Bar</a></li>
+				<li><a href="console.html">Console</a></li>			
+			</ul>
+		</td>
+		<td>
+			<ul type="square">
+				<li><a href="treewindow.html">Tree Window</a></li>
+				<li><a href="editorwindow.html">Editor Window</a></li>	
+				<li><a href="objectwindow.html">Object Window</a></li>	
+				<li><a href="sensorwindow.html">Sensor Window</a></li>
+			</ul>		
+		</td>
+	</tr>
+</table>
+</p>
+
+</body>
+</html>

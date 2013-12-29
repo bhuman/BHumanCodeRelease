@@ -1,0 +1,33 @@
+# activate simulation time
+st on
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameInfo
+dr debugDrawing3d:representation:TeamInfo
+
+# in case we have more than a single robot
+robot all
+
+# select modules for simulator
+mr Image CognitionLogDataProvider
+mr CameraInfo CognitionLogDataProvider
+mr FrameInfo CognitionLogDataProvider
+mr JointData MotionLogDataProvider
+mr SensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+mr GroundTruthRobotPose CognitionLogDataProvider
+mr GroundTruthBallModel CognitionLogDataProvider
+mr Thumbnail off 
+
+# joint and us requests are required by simulation
+dr representation:JointRequest
+dr representation:USRequest
+
+
+call GameStates
+
+dr debugDrawing3d:representation:RobotPose
+
+# request behavior messages
+

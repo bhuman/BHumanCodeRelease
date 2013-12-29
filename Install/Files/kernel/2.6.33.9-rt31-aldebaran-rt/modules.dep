@@ -1,0 +1,115 @@
+kernel/arch/x86/kernel/test_nx.ko:
+kernel/fs/cifs/cifs.ko:
+kernel/fs/fuse/fuse.ko:
+kernel/fs/fuse/cuse.ko: kernel/fs/fuse/fuse.ko
+kernel/drivers/video/display/display.ko:
+kernel/drivers/gpu/drm/drm.ko:
+kernel/drivers/misc/eeprom/eeprom_93cx6.ko:
+kernel/drivers/scsi/scsi_wait_scan.ko:
+kernel/drivers/net/wireless/zd1211rw/zd1211rw.ko: kernel/net/mac80211/mac80211.ko kernel/net/wireless/cfg80211.ko
+kernel/drivers/net/wireless/rndis_wlan.ko: kernel/net/wireless/cfg80211.ko kernel/drivers/net/usb/rndis_host.ko kernel/drivers/net/usb/cdc_ether.ko kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/asix.ko: kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/cdc_ether.ko: kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/net1080.ko: kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/rndis_host.ko: kernel/drivers/net/usb/cdc_ether.ko kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/cdc_subset.ko: kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/zaurus.ko: kernel/drivers/net/usb/cdc_ether.ko kernel/drivers/net/usb/usbnet.ko
+kernel/drivers/net/usb/usbnet.ko:
+kernel/drivers/usb/serial/ftdi_sio.ko:
+kernel/drivers/usb/class/cdc-acm.ko:
+kernel/drivers/input/serio/pcips2.ko:
+kernel/drivers/input/serio/serio_raw.ko:
+kernel/drivers/input/keyboard/adp5588-keys.ko:
+kernel/drivers/input/keyboard/lkkbd.ko:
+kernel/drivers/input/keyboard/max7359_keypad.ko:
+kernel/drivers/input/keyboard/newtonkbd.ko:
+kernel/drivers/input/keyboard/opencores-kbd.ko:
+kernel/drivers/input/keyboard/stowaway.ko:
+kernel/drivers/input/keyboard/sunkbd.ko:
+kernel/drivers/input/keyboard/xtkbd.ko:
+kernel/drivers/i2c/busses/i2c-i801.ko:
+kernel/drivers/i2c/busses/i2c-isch.ko:
+kernel/drivers/i2c/busses/i2c-serial.ko:
+kernel/drivers/i2c/algos/i2c-algo-bit.ko:
+kernel/drivers/media/common/tuners/tuner-xc2028.ko:
+kernel/drivers/media/common/tuners/tuner-simple.ko: kernel/drivers/media/common/tuners/tuner-types.ko
+kernel/drivers/media/common/tuners/tuner-types.ko:
+kernel/drivers/media/common/tuners/mt20xx.ko:
+kernel/drivers/media/common/tuners/tda8290.ko:
+kernel/drivers/media/common/tuners/tea5767.ko:
+kernel/drivers/media/common/tuners/tea5761.ko:
+kernel/drivers/media/common/tuners/tda9887.ko:
+kernel/drivers/media/common/tuners/xc5000.ko:
+kernel/drivers/media/common/tuners/mc44s803.ko:
+kernel/drivers/media/IR/ir-core.ko:
+kernel/drivers/media/IR/ir-common.ko: kernel/drivers/media/IR/ir-core.ko
+kernel/drivers/media/video/videodev.ko: kernel/drivers/media/video/v4l1-compat.ko
+kernel/drivers/media/video/v4l2-int-device.ko:
+kernel/drivers/media/video/v4l2-common.ko: kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko
+kernel/drivers/media/video/v4l1-compat.ko:
+kernel/drivers/media/video/ov7670.ko: kernel/drivers/media/video/v4l2-common.ko kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko
+kernel/drivers/media/video/mt9m114.ko: kernel/drivers/media/video/v4l2-common.ko kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko
+kernel/drivers/media/video/videobuf-core.ko:
+kernel/drivers/media/video/videobuf-dma-contig.ko: kernel/drivers/media/video/videobuf-core.ko
+kernel/drivers/media/video/cafe_ccic.ko: kernel/drivers/media/video/v4l2-common.ko kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko
+kernel/drivers/media/video/soc_camera.ko: kernel/drivers/media/video/videobuf-core.ko kernel/drivers/media/video/v4l2-common.ko kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko kernel/drivers/media/video/soc_mediabus.ko
+kernel/drivers/media/video/soc_mediabus.ko:
+kernel/drivers/media/video/ir-kbd-i2c.ko: kernel/drivers/media/IR/ir-common.ko kernel/drivers/media/IR/ir-core.ko
+kernel/drivers/media/dvb/dvb-core/dvb-core.ko:
+kernel/drivers/hwmon/hwmon-vid.ko:
+kernel/drivers/hwmon/coretemp.ko:
+kernel/drivers/hwmon/dme1737.ko: kernel/drivers/hwmon/hwmon-vid.ko
+kernel/drivers/mmc/card/mmc_block.ko:
+kernel/drivers/mmc/host/sdhci.ko:
+kernel/drivers/mmc/host/sdhci-pci.ko: kernel/drivers/mmc/host/sdhci.ko
+kernel/drivers/dma/ioat/ioatdma.ko: kernel/drivers/dca/dca.ko
+kernel/drivers/hid/hid-wacom.ko:
+kernel/drivers/staging/al_fastserial/fastserial.ko:
+kernel/drivers/staging/al_unicorn/unicorn.ko: kernel/drivers/media/video/v4l2-common.ko kernel/drivers/media/video/videodev.ko kernel/drivers/media/video/v4l1-compat.ko kernel/drivers/media/video/videobuf-dma-contig.ko kernel/drivers/media/video/videobuf-core.ko
+kernel/drivers/bluetooth/hci_vhci.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/hci_uart.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/bcm203x.ko:
+kernel/drivers/bluetooth/bpa10x.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/bfusb.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/dtl1_cs.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/bt3c_cs.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/bluecard_cs.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/btuart_cs.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/btusb.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/btsdio.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/ath3k.ko:
+kernel/drivers/bluetooth/btmrvl.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/bluetooth/btmrvl_sdio.ko: kernel/drivers/bluetooth/btmrvl.ko kernel/net/bluetooth/bluetooth.ko
+kernel/drivers/dca/dca.ko:
+kernel/drivers/cgosdrv/cgosdrv.ko:
+kernel/sound/core/snd-hwdep.ko:
+kernel/sound/pci/ac97/snd-ac97-codec.ko: kernel/sound/ac97_bus.ko
+kernel/sound/pci/hda/snd-hda-codec.ko: kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-realtek.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-cmedia.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-analog.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-idt.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-si3054.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-atihdmi.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-cirrus.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-ca0110.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-conexant.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-via.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-nvhdmi.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-codec-intelhdmi.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/hda/snd-hda-intel.ko: kernel/sound/pci/hda/snd-hda-codec.ko kernel/sound/core/snd-hwdep.ko
+kernel/sound/pci/snd-ad1889.ko: kernel/sound/pci/ac97/snd-ac97-codec.ko kernel/sound/ac97_bus.ko
+kernel/sound/ac97_bus.ko:
+kernel/net/802/stp.ko:
+kernel/net/netfilter/xt_hl.ko:
+kernel/net/wireless/cfg80211.ko:
+kernel/net/bridge/bridge.ko: kernel/net/802/stp.ko
+kernel/net/bluetooth/bluetooth.ko:
+kernel/net/bluetooth/l2cap.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/net/bluetooth/sco.ko: kernel/net/bluetooth/bluetooth.ko
+kernel/net/bluetooth/rfcomm/rfcomm.ko: kernel/net/bluetooth/l2cap.ko kernel/net/bluetooth/bluetooth.ko
+kernel/net/bluetooth/bnep/bnep.ko: kernel/net/bluetooth/l2cap.ko kernel/net/bluetooth/bluetooth.ko
+kernel/net/bluetooth/hidp/hidp.ko: kernel/net/bluetooth/l2cap.ko kernel/net/bluetooth/bluetooth.ko
+kernel/net/mac80211/mac80211.ko: kernel/net/wireless/cfg80211.ko
+kernel/lib/crc-ccitt.ko:
+kernel/lib/crc-itu-t.ko:

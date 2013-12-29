@@ -1,0 +1,49 @@
+
+URC = cppApplication + {
+  folder = "Utils"
+  root = "$(srcDirRoot)"
+  files = {
+    "$(srcDirRoot)/Platform/Common/File.cpp" = cppSource,
+    "$(srcDirRoot)/Platform/Common/File.h",
+    "$(srcDirRoot)/Utils/URC/MofCompiler.cpp" = cppSource,
+    "$(srcDirRoot)/Utils/URC/MofCompiler.h",
+    "$(srcDirRoot)/Representations/MotionControl/SpecialActionRequest.cpp" = cppSource,
+    "$(srcDirRoot)/Representations/MotionControl/SpecialActionRequest.h",
+    "$(srcDirRoot)/Tools/Enum.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Enum.h",
+    "$(srcDirRoot)/Tools/Streams/Streamable.h",
+    "$(srcDirRoot)/Utils/URC/UniversalResourceCompiler.cpp" = cppSource,
+
+    if platform == "Linux" {
+      "$(srcDirRoot)/Tools/Streams/Streamable.cpp" = cppSource,
+      "$(srcDirRoot)/Platform/Linux/BHAssert.cpp" = cppSource,
+      "$(srcDirRoot)/Platform/Linux/BHAssert.h",
+      "$(srcDirRoot)/Tools/Streams/StreamHandler.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/Streams/StreamHandler.h",
+      "$(srcDirRoot)/Tools/Streams/InOut.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/Streams/InOut.h",
+      "$(srcDirRoot)/Tools/Streams/OutStreams.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/Streams/OutStreams.h",
+      "$(srcDirRoot)/Tools/MessageQueue/OutMessage.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/MessageQueue/OutMessage.h",
+      "$(srcDirRoot)/Tools/MessageQueue/MessageQueueBase.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/MessageQueue/MessageQueueBase.h",
+      "$(srcDirRoot)/Tools/Debugging/Debugging.h",
+      "$(srcDirRoot)/Tools/Debugging/DebugRequest.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/Debugging/DebugRequest.h",
+      "$(srcDirRoot)/Tools/Global.cpp" = cppSource,
+      "$(srcDirRoot)/Tools/Global.h",
+    }
+  },
+  includePaths = {
+    "$(srcDirRoot)",
+    if platform == "Win32" { "$(srcDirRoot)/Platform/Win32" }
+  },
+  defines += {
+    "TARGET_TOOL"
+    if platform == "Win32" { "NOMINMAX", "_CRT_SECURE_NO_WARNINGS", "_CONSOLE" }
+  },
+  linkFlags += {
+    if tool == "vcxproj" { -"/SUBSYSTEM:WINDOWS", "/SUBSYSTEM:CONSOLE" }
+  }
+}

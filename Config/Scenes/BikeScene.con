@@ -1,0 +1,44 @@
+# activate simulation time
+st on
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+mr Image CognitionLogDataProvider
+mr CameraInfo CognitionLogDataProvider
+mr FrameInfo CognitionLogDataProvider
+mr JointData MotionLogDataProvider
+mr SensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+mr GroundTruthRobotPose CognitionLogDataProvider
+mr GroundTruthBallModel CognitionLogDataProvider
+mr Thumbnail off 
+
+# joint, us, and motion requests are required by simulation
+dr representation:JointRequest
+dr representation:USRequest
+dr representation:MotionRequest
+
+# request joint data and sensor data
+dr representation:SensorData
+dr representation:JointData
+
+# request behavior messages
+dr representation:ActivationGraph
+
+bike
+dr representation:RobotDimensions
+dr representation:JointCalibration
+
+
+vp plot1 1000 -50 50
+vpd plot1 module:Bike:refy red
+vpd plot1 module:Bike:comy blue
+vpd plot1 module:Bike:diffy orange
+
+vp plot2 1000 -50 50
+vpd plot2 module:Bike:refx red
+vpd plot2 module:Bike:comx blue
+vpd plot2 module:Bike:diffx orange

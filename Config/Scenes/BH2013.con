@@ -1,0 +1,39 @@
+# activate simulation time
+st on
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+mr Image CognitionLogDataProvider
+mr CameraInfo CognitionLogDataProvider
+mr FrameInfo CognitionLogDataProvider
+mr JointData MotionLogDataProvider
+mr SensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+mr GroundTruthRobotPose CognitionLogDataProvider
+mr GroundTruthBallModel CognitionLogDataProvider
+mr Thumbnail off 
+
+# all views are defined in another script
+call Views
+
+# joint and us requests are required by simulation
+dr representation:JointRequest
+dr representation:USRequest
+
+# request joint data and sensor data
+dr representation:SensorData
+dr representation:JointData
+
+# request behavior messages
+dr representation:ActivationGraph
+
+# press any key to activate the joystick 
+jc press 1 call Joystick
+jc press 2 call Joystick
+jc press 3 call Joystick
+jc press 4 call Joystick
+
+call GameStates

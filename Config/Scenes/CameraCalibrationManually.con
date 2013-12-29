@@ -1,0 +1,8 @@
+set representation:RobotPose rotation = 0; translation = {x = -1200; y = 0;}; validity = 1; deviation = 100000;
+set representation:HeadJointRequest pan = 1000; tilt = 1000; reachable = true; moving = false;
+vid raw module:CameraMatrixProvider:calibrationHelper 
+vid raw representation:LinePercept:Image off
+vid raw representation:BallPercept:Image off
+vid raw representation:GoalPercept:Image off
+vid raw representation:BodyContour off
+get representation:CameraCalibration

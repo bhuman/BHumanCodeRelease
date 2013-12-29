@@ -1,0 +1,28 @@
+call teamPort
+su Robot1 1
+su Robot2 2
+su Robot3 3
+su Robot4 4
+echo set teamColor 0
+echo set teamColor 1
+robot all
+
+vf worldState
+vfd worldState fieldPolygons
+vfd worldState fieldLines
+vfd worldState robotState
+vfd worldState robotOffline
+vfd worldState representation:RobotPose
+vfd worldState representation:RobotPose:deviation
+vfd worldState representation:CombinedWorldModel
+vfd worldState origin:RobotPose
+vfd worldState representation:BallModel
+vfd worldState representation:GoalPercept:Field
+vfd worldState representation:MotionRequest
+vfd worldState representation:LinePercept:Field
+vfd worldState representation:RobotsModel:robots
+vfd worldState representation:RobotsModel:covariance
+vfd worldState representation:ObstacleModelReduced
+vp ballTimes 100 0 10000
+vpd ballTimes tob blue
+vpd ballTimes tgb red

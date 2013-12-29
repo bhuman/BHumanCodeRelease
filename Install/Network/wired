@@ -1,0 +1,26 @@
+#!/sbin/runscript
+# Copyright 1999-2012 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+BASE_ETH0_IP="192.168.%teamID%."
+ROBOT_ID="%robotPart%"
+
+depend() {
+  need dbus
+}
+
+start() {
+  ifconfig eth0 "${BASE_ETH0_IP}${ROBOT_ID}" netmask 255.255.0.0
+  ifconfig eth0 up
+}
+
+stop() {
+  ifconfig eth0 down
+}
+
+restart() {
+  stop
+  sleep 2
+  start
+}

@@ -1,0 +1,1 @@
+export PATH=/home/nao/bin:${PATH}
