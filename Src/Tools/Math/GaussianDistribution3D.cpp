@@ -21,7 +21,7 @@ float GaussianDistribution3D::probabilityAt(const Vector3<>& pos) const
 {
   Vector3<> diff(pos - mean);
   float exponent(diff * (covariance.invert()*diff));
-  float probability(1.0f / (pi2 * std::sqrt(covariance.det())));
+  float probability(1.0f / sqrt(pow(M_PI*2,3) * (covariance.det()) ) );
   probability *= exp(-0.5f * exponent);
   return std::max(probability, 0.000001f);
 }
