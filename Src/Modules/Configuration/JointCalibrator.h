@@ -13,13 +13,14 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointData.h"
 
-MODULE(JointCalibrator)
-  USES(JointRequest)
-  USES(JointData)
-  REQUIRES(RobotDimensions)
-  REQUIRES(MassCalibration)
-  PROVIDES_WITH_MODIFY(JointCalibration)
-END_MODULE
+MODULE(JointCalibrator,
+{,
+  USES(JointRequest),
+  USES(JointData),
+  REQUIRES(RobotDimensions),
+  REQUIRES(MassCalibration),
+  PROVIDES_WITH_MODIFY(JointCalibration),
+});
 
 class JointCalibrator : public JointCalibratorBase
 {

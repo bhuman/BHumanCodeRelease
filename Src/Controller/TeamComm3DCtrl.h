@@ -8,20 +8,20 @@
 #include <map>
 
 #include "SimRobotCore2.h"
-#include "Controller/Oracle.h"
+#include "Controller/SimulatedRobot.h"
 #include "Tools/Settings.h"
 #include "Tools/NTP.h"
 #include "Tools/MessageQueue/MessageQueue.h"
 #include "Tools/ProcessFramework/TeamHandler.h"
-#include "Representations/Infrastructure/TeamMateData.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/RobotHealth.h"
+#include "Representations/Infrastructure/RoboCupGameControlData.h"
 #include "Representations/Infrastructure/SensorData.h"
 #include "Representations/Perception/GoalPercept.h"
 #include "Representations/Perception/LinePercept.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Modeling/CombinedWorldModel.h"
-#include "Representations/Modeling/FreePartOfOpponentGoalModel.h"
 #include "Representations/Modeling/SideConfidence.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Tools/RingBuffer.h"
@@ -56,7 +56,7 @@ private:
     bool online;
     SimRobotCore2::Object* robot;
     Vector3<> initialPosition;
-    Oracle oracle;
+    SimulatedRobot simulatedRobot;
     JointData jointData;
     unsigned int updateTimeStamp;
     unsigned int lastJointDataTimeStamp;
@@ -75,7 +75,7 @@ private:
     unsigned int ping;
     unsigned int lastPacketLatency;
     RingBufferWithSum<unsigned int, 100> packetSizes;
-    RingBuffer<unsigned int, 1000> packetTimeStamps;
+    RingBuffer<unsigned int, 100> packetTimeStamps;
     RingBuffer<unsigned int, 600> goalPercepts;
     RingBuffer<unsigned int, 600> ballPercepts;
     RingBuffer<unsigned int, 600> linePercepts;
@@ -88,7 +88,7 @@ private:
     bool hasGroundContact;
     bool isPenalized;
     bool isUpright;
-    RobotsModel robotsModel;
+    bool isBHumanPlayer;
     BehaviorStatus behaviorStatus;
 
     // additional (optional) stuff not used for team play
@@ -97,8 +97,8 @@ private:
     LinePercept linePercept;
     MotionRequest motionRequest;
     CombinedWorldModel combinedWorldModel;
-    FreePartOfOpponentGoalModel freePartOfOpponentGoalModel;
     ObstacleModel obstacleModel;
+    ObstacleClusters obstacleClusters;
     SensorData sensorData;
     JointData jointData;
     unsigned int jointDataTimeStamp;
@@ -132,14 +132,18 @@ private:
   TeamListener teamListener[2];
   TeamListener* currentListener;
   RobotData* currentRobotData;
-  PuppetData puppetData[numOfTeamColors][TeamMateData::numOfPlayers];
+  PuppetData puppetData[numOfTeamColors][TeammateData::numOfPlayers];
   unsigned int now;
   unsigned int lastMousePressed;
+  UdpComm gameControlSocket;
+  RoboCup::RoboCupGameControlData gameControlData;
+  unsigned lastReceivedSize = 0;
 
   virtual ~TeamComm3DCtrl();
 
   virtual bool compile();
   virtual void update();
+  void receiveGameControlPacket();
   virtual void selectedObject(const SimRobot::Object& object);
 
   /**

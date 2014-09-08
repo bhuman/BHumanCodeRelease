@@ -1,50 +1,24 @@
 # image views
-vi image raw
-vi image upperCam rawUpper
-vi image segmented segmented
-#vi image act raw
-vid raw representation:LinePercept:Image
-vid raw representation:BallPercept:Image 
-vid raw representation:GoalPercept:Image
-vid raw representation:BodyContour
+vi image lower
+vi image upper upper
+vi image segmented segmentedLower
+vi image segmented upper segmentedUpper
 
-vid rawUpper representation:LinePercept:Image
-vid rawUpper representation:BallPercept:Image 
-vid rawUpper representation:GoalPercept:Image
-vid rawUpper representation:BodyContour
+vid lower representation:LinePercept:Image
+vid lower representation:BallPercept:Image
+vid lower representation:GoalPercept:Image
+vid lower representation:RobotPercept:Image
+vid lower representation:BodyContour
+
+vid upper representation:LinePercept:Image
+vid upper representation:BallPercept:Image
+vid upper representation:GoalPercept:Image
+vid upper representation:RobotPercept:Image
+vid upper representation:BodyContour
 
 # field views
-vf worldState
-vfd worldState fieldLines
-vfd worldState fieldPolygons
-#vfd worldState module:SelfLocator:samples 
-vfd worldState representation:RobotPose 
-vfd worldState module:FieldCoverageProvider:FieldView 
-
-# ground truth view layers
-vfd worldState representation:GroundTruthRobotPose
-# from now, relative to ground truth robot pose
-vfd worldState origin:GroundTruthRobotPose
-vfd worldState representation:GroundTruthBallModel
-
-# views relative to robot
-# from now, relative to estimated robot pose
-vfd worldState origin:RobotPose
-vfd worldState representation:BallModel
-vfd worldState representation:BallPercept:Field
-vfd worldState representation:LinePercept:Field
-vfd worldState representation:GoalPercept:Field 
-vfd worldState representation:ObstacleModel
-vfd worldState representation:MotionRequest
-vfd worldState representation:FieldBoundary:Field 
-
-# local obstacle grid view
-# usually commented out as it is quite bandwidth/time consuming
-# vfd worldState origin:USObstacleGrid
-# vfd worldState representation:USObstacleGrid
-
-# back to global coordinates
-vfd worldState origin:Reset 
+call FieldViews
 
 # 3-D image views
-v3 image raw
+v3 image lower
+v3 image upper upper

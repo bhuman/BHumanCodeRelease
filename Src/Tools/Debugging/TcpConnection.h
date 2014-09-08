@@ -10,7 +10,7 @@
 
 #include "Platform/TcpComm.h"
 
-#define MAX_PACKAGE_SIZE    67108864      // max package size that can be received. prevent from allocating to much buffer (max ~64 MB)
+#define MAX_PACKAGE_SIZE 67108864 // max package size that can be received. prevent from allocating too much buffer (max ~64 MB)
 
 /**
 * @class TcpConnection
@@ -65,7 +65,6 @@ public:
   TcpConnection(const char* ip, int port, Handshake handshake = noHandshake,
                 int maxPackageSendSize = 0, int maxPackageReceiveSize = 0)
   {connect(ip, port, handshake, maxPackageSendSize, maxPackageReceiveSize);}
-
 
   /**
   * Destructor.

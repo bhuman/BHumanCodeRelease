@@ -9,16 +9,14 @@
 #include "Modules/MotionControl/WalkingEngine/WalkingEngine.h"
 #include "Modules/MotionControl/MotionSelector.h"
 
-static const char* categories[] = {"Motion Infrastructure", "Motion Control", "Sensing"};
-
 Motion::Motion() :
   INIT_DEBUGGING,
   INIT_RECEIVER(CognitionToMotion),
   INIT_SENDER(MotionToCognition),
-  moduleManager(categories, sizeof(categories) / sizeof(*categories))
+  moduleManager({"Motion Infrastructure", "Motion Control", "Sensing"})
 {
   theDebugReceiver.setSize(200000);
-  theDebugSender.setSize(40000);
+  theDebugSender.setSize(40000, 10000);
 
   theMotionToCognitionSender.moduleManager = theCognitionToMotionReceiver.moduleManager = &moduleManager;
 
@@ -66,7 +64,6 @@ bool Motion::main()
       timingManager.getData().copyAllMessages(theDebugSender);
     );
 
-
     if(theDebugSender.getNumberOfMessages() != numberOfMessages)
     {
       // messages were sent in this frame -> send process finished
@@ -75,7 +72,7 @@ bool Motion::main()
     theDebugSender.send();
   }
 
-  if(&Blackboard::theInstance->theJointData)
+  if(Blackboard::getInstance().exists("JointData"))
     NaoProvider::waitForFrameData();
   else
     SystemCall::sleep(10);

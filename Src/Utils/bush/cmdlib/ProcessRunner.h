@@ -141,7 +141,7 @@ public:
    * Indicates if an error occurred during the execution.
    * @return True if an error occurred, false otherwise.
    */
-  inline bool error() const
+  bool error() const
   {
     return process->exitStatus() == QProcess::CrashExit
         || process->exitCode() != 0;
@@ -152,9 +152,9 @@ public:
    * Do not delete it since this is done by the runner.
    * @return The underlying QProcess object.
    */
-  inline QProcess* getProcess()
+  QProcess* getProcess()
   {
-    if (!process)
+    if(!process)
       process = new QProcess();
     return process;
   };
@@ -164,7 +164,7 @@ public:
    */
   QString getOutput();
 
-  inline void setContext(Context &context) { this->context = &context; }
+  void setContext(Context &context) { this->context = &context; }
 
 protected:
   /**
@@ -179,7 +179,7 @@ protected:
    * Do not call something like waitForFinished or close on the process since
    * run will do that after the call of interact.
    */
-  virtual void interact(QProcess* process) { };
+  virtual void interact(QProcess* process) {}
 
 public slots:
 
@@ -229,6 +229,4 @@ public:
                            const QString &program,
                            const QStringList &arguments,
                            const QByteArray& data);
-
-  ~RemoteWriteProcessRunner() { };
 };

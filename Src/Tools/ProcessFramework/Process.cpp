@@ -8,23 +8,15 @@
 #include "Tools/Global.h"
 
 Process::Process(MessageQueue& debugIn, MessageQueue& debugOut)
-  : debugIn(debugIn), debugOut(debugOut),
-    blackboard(new Blackboard) // uses custom new operator
+  : debugIn(debugIn), debugOut(debugOut)
 {
-  setGlobals(); // In Simulator: in GUI thread
   initialized = false;
-}
-
-Process::~Process()
-{
-  delete blackboard;
 }
 
 bool Process::processMain()
 {
   if(!initialized)
   {
-    setGlobals(); // In Simulator: in separate thread for process
     init();
     initialized = true;
   }
@@ -60,7 +52,7 @@ void Process::setGlobals()
   Global::theDrawingManager3D = &drawingManager3D;
   Global::theTimingManager = &timingManager;
 
-  Blackboard::theInstance = blackboard; // blackboard is NOT globally accessible
+  Blackboard::setInstance(blackboard); // blackboard is NOT globally accessible
 }
 
 bool Process::handleMessage(InMessage& message)
@@ -74,11 +66,9 @@ bool Process::handleMessage(InMessage& message)
     Global::getDebugRequestTable().addRequest(debugRequest);
     return true;
   }
-
   case idDebugDataChangeRequest:
     Global::getDebugDataTable().processChangeRequest(message);
     return true;
-
   default:
     return false;
   }

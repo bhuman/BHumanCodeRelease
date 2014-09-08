@@ -13,11 +13,11 @@
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Modeling/Odometer.h"
 
-MODULE(OdometerProvider)
-  REQUIRES(OdometryData)
-  PROVIDES_WITH_MODIFY(Odometer)
-END_MODULE
-
+MODULE(OdometerProvider,
+{,
+  REQUIRES(OdometryData),
+  PROVIDES_WITH_MODIFY(Odometer),
+});
 
 /*
  * @class OdometerProvider

@@ -22,7 +22,7 @@ public:
   /**
    * @class Linesegment
    *
-   * This class represents a linesegment generated from a lienspot.
+   * This class represents a linesegment generated from a linespot.
    */
   STREAMABLE(LineSegment,
   {,
@@ -43,7 +43,7 @@ public:
   {
   public:
     /**
-     * Calculates the distance of a point p the this line
+     * Calculates the distance of a point p to this line
      * @param p a point
      * @return the distance
      */
@@ -96,6 +96,9 @@ public:
   STREAMABLE(Intersection,
   {
   public:
+    /**
+     * Intersection types are inclusive. 
+     * T includes L; X includes T and L */
     ENUM(IntersectionType,
       L,
       T,
@@ -116,23 +119,11 @@ public:
   float getClosestLine(Vector2<> point, Line& retLine) const;
 
   /**
-  * The method draws the line percepts on the field.
+  * The method draws the percepts to image/field/3D scene.
   */
-  void drawOnField(const FieldDimensions& theFieldDimensions, float circleBiggerThanSpecified) const;
-
-  /**
-  * The method draws the line percepts on the image.
-  */
-  void drawOnImage(const CameraMatrix& theCameraMatrix, const CameraInfo& theCameraInfo, const FieldDimensions& theFieldDimensions, float circleBiggerThanSpecified, const ImageCoordinateSystem& theImageCoordinateSystem) const;
-
-  /**
-  * The method draws the line percepts in the 3D View.
-  */
-  void drawIn3D(const FieldDimensions& theFieldDimensions, float circleBiggerThanSpecified) const,
+  void draw() const,
 
   (std::vector<Line>) lines, /**< The found fieldlines */
   (std::vector<Intersection>) intersections, /**< The intersections of the lines */
-  (std::vector<LineSegment>) singleSegs, /**< Line segments which could not be clustered to a line */
-  (std::vector<LineSegment>) rawSegs, /**< All line segments before clustering */
   (CircleSpot) circle, /**< The position of the center circle if found */
 });

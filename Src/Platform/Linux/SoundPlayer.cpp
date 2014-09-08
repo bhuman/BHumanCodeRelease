@@ -62,7 +62,6 @@ void SoundPlayer::playDirect(const std::string& basename)
   }
 }
 
-
 void SoundPlayer::flush()
 {
   for(;;)
@@ -80,7 +79,6 @@ void SoundPlayer::flush()
   }
 }
 
-
 int SoundPlayer::play(const std::string& name)
 {
   int queuelen;
@@ -88,7 +86,7 @@ int SoundPlayer::play(const std::string& name)
   {
     SYNC_WITH(soundPlayer);
     soundPlayer.queue.push_back(name.c_str()); // avoid copy-on-write
-    queuelen = soundPlayer.queue.size();
+    queuelen = static_cast<int>(soundPlayer.queue.size());
     if(!soundPlayer.started)
     {
       soundPlayer.started = true;

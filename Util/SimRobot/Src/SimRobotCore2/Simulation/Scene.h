@@ -91,6 +91,7 @@ public:
   * @param isShared Whether the OpenGL context has shared display lists and textures
   */
   void createGraphics(bool isShared);
+  using GraphicalObject::createGraphics; // avoid warning
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (as fast as possible) */
   virtual void drawAppearances() const;

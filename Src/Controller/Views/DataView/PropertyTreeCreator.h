@@ -70,7 +70,7 @@ protected:
   virtual void outUChar(unsigned char value);
   virtual void outShort(short value) {out(value);}
   virtual void outUShort(unsigned short value) {out(value);}
-  virtual void outInt(int value) {out(value);};
+  virtual void outInt(int value) {out(value);}
   virtual void outUInt(unsigned int value);
   virtual void outFloat(float value) {out(value);}
   virtual void outDouble(double value) {out(value);}
@@ -102,5 +102,5 @@ public:
   virtual void deselect();
 
   /** Writing raw data is not supported. Do not call. */
-  virtual void write(const void* p, int size) {ASSERT(false);}
+  virtual void write(const void* p, size_t size) {ASSERT(false);}
 };

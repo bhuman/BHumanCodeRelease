@@ -18,7 +18,8 @@ template <class V> inline V normalize(const V& data)
 {
   const float pi = 3.1415926535897932384626433832795f;
   const float pi2 = 2.0f * pi;
-  if(data < V(pi) && data >= -V(pi)) return data;
+  if(data < V(pi) && data >= -V(pi))
+    return data;
   V ndata = data - ((int)(data / V(pi2))) * V(pi2);
   if(ndata >= V(pi))
     ndata -= V(pi2);
@@ -29,7 +30,7 @@ template <class V> inline V normalize(const V& data)
 
 SimObjectRenderer::SimObjectRenderer(SimObject& simObject) :
   simObject(simObject), width(0), height(0),
-  cameraMode(targetCam), defaultCameraPos(-3.f, -6.f, 4.f), cameraPos(defaultCameraPos), fovy(40.f),
+  cameraMode(targetCam), defaultCameraPos(3.f, 6.f, 4.f), cameraPos(defaultCameraPos), fovy(40.f),
   surfaceShadeMode(smoothShading), physicsShadeMode(noShading), drawingsShadeMode(noShading), renderFlags(enableLights | enableTextures | showCoordinateSystem),
   dragging(false), dragPlane(xyPlane), dragMode(keepDynamics),
   moving(false), movingLeftStartTime(0), movingRightStartTime(0), movingUpStartTime(0), movingDownStartTime(0)
@@ -51,7 +52,10 @@ void SimObjectRenderer::updateCameraTransformation()
 
 void SimObjectRenderer::init(bool hasSharedDisplayLists)
 {
-  //glewInit();
+#ifdef OSX
+  CGLContextObj ctx = CGLGetCurrentContext();
+  VERIFY(CGLEnable(ctx, kCGLCEMPEngine) == kCGLNoError);
+#endif
 
   Simulation::simulation->scene->createGraphics(hasSharedDisplayLists);
 }
@@ -233,6 +237,8 @@ void SimObjectRenderer::draw()
 
     switch(dragPlane)
     {
+    case xyPlane:
+      break; // do nothing
     case xzPlane:
       glRotatef(90.f, 1.f, 0.f, 0.f);
       break;

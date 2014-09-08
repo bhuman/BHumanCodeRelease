@@ -11,7 +11,6 @@
 
 void ObstacleWheel::draw() const
 {
-
   DECLARE_DEBUG_DRAWING("representation:ObstacleWheel:wheel", "drawingOnField");
   for(const Cone& cone : cones)
   {
@@ -19,7 +18,7 @@ void ObstacleWheel::draw() const
   }
 
   CIRCLE("representation:ObstacleWheel:wheel", 0, 0, wheelRadius, 1,
-         Drawings::ps_solid, ColorClasses::black, Drawings::bs_null, ColorClasses::black);
+         Drawings::ps_solid, ColorRGBA::black, Drawings::bs_null, ColorRGBA::black);
 }
 
 void ObstacleWheel::drawCone(const Cone& cone) const
@@ -35,7 +34,6 @@ void ObstacleWheel::drawCone(const Cone& cone) const
   LINE("representation:ObstacleWheel:wheel", 0, 0, leftBorder.x, leftBorder.y,
            1, Drawings::ps_solid, ColorRGBA(0x00, 0x00, 0xFF, 0x0F));
 
-
   if(cone.spot.seenCount > 0)
   {
     Vector2<float> left(cone.distance, 0);
@@ -43,13 +41,14 @@ void ObstacleWheel::drawCone(const Cone& cone) const
     left.rotate(leftAngle);
     right.rotate(rightAngle);
 
-    ColorClasses::Color col = ColorClasses::green;
+    ColorRGBA col = ColorRGBA::green;
     if(cone.hasObstacle)
     {
-      col = ColorClasses::red;
+      col = ColorRGBA::red;
     }
     LINE("representation:ObstacleWheel:wheel", left.x, left.y, right.x, right.y,
          8, Drawings::ps_solid, col);
+    DRAWTEXT("representation:ObstacleWheel:wheel", (left.x + right.x) / 2, (left.y + right.y) / 2, 100, col, cone.spot.seenCount);
+    CROSS("representation:ObstacleWheel:wheel", cone.spot.position.x, cone.spot.position.y, 30, 20, Drawings::ps_solid, ColorRGBA::blue);
   }
-
 }

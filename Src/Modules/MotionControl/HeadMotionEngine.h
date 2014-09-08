@@ -20,14 +20,15 @@
 #include "Representations/Sensing/GroundContactState.h"
 #include "Tools/Math/Geometry.h"
 
-MODULE(HeadMotionEngine)
-  REQUIRES(HeadAngleRequest)
-  REQUIRES(FilteredJointData)
-  REQUIRES(FrameInfo)
-  REQUIRES(JointCalibration)
-  REQUIRES(GroundContactState)
-  PROVIDES_WITH_MODIFY(HeadJointRequest)
-END_MODULE
+MODULE(HeadMotionEngine,
+{,
+  REQUIRES(HeadAngleRequest),
+  REQUIRES(FilteredJointData),
+  REQUIRES(FrameInfo),
+  REQUIRES(JointCalibration),
+  REQUIRES(GroundContactState),
+  PROVIDES_WITH_MODIFY(HeadJointRequest),
+});
 
 class HeadMotionEngine: public HeadMotionEngineBase
 {

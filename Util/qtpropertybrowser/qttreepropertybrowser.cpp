@@ -39,10 +39,7 @@
 
 
 #include "qttreepropertybrowser.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
+
 #include <QSet>
 #include <QIcon>
 #include <QTreeWidget>
@@ -54,9 +51,6 @@
 #include <QFocusEvent>
 #include <QStyle>
 #include <QPalette>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #if QT_VERSION >= 0x040400
 QT_BEGIN_NAMESPACE

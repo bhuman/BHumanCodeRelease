@@ -5,7 +5,6 @@
 #pragma once
 
 #include "Tools/Streams/Streamable.h"
-#include "Tools/Debugging/DebugImages.h"
 #include "Image.h"
 #include <cstring>
 #include "Platform/SystemCall.h"
@@ -24,6 +23,7 @@ public:
     static const int maxHeight = maxResolutionHeight;
     int width;
     int height;
+
   private:
     static const int padding = 16;      /**< Some padding needed for the SSE instructions. */
     Pixel* imagePadding;                /**< A pointer to the memory for the image including some padding at the front and back. */
@@ -38,15 +38,16 @@ public:
 
     TImage& operator=(const TImage& other);
 
-    inline Pixel* operator[](const int y)
+    Pixel* operator[](const int y)
     {
       return image + y * width;
     }
 
-    inline const Pixel* operator[](const int y) const
+    const Pixel* operator[](const int y) const
     {
       return image + y * width;
     }
+
   private:
     virtual void serialize(In* in, Out* out);
   };
@@ -59,19 +60,19 @@ public:
     void uncompress(TImage<PixelUncompressed>& uncompressedImage) const;
   };
 
-  typedef TImage<Image::Pixel> ThumbnailImage;
-  typedef TImageCompressed<unsigned short, Image::Pixel> ThumbnailImageCompressed;
+  using ThumbnailImage = TImage<Image::Pixel>;
+  using ThumbnailImageCompressed = TImageCompressed<unsigned short, Image::Pixel>;
+  using ThumbnailImageGrayscale = TImage<unsigned char>;
 
   ThumbnailImage image;
   ThumbnailImageCompressed compressedImage;
-  int scale;
+  ThumbnailImageGrayscale imageGrayscale;
 
-private:
-  DECLARE_DEBUG_IMAGE(thumbnailDI);
+  int scale;
+  bool grayscale;
 
 public:
-
-  void draw() const;
+  void toImage(Image& dest) const;
 
 private:
   virtual void serialize(In* in, Out* out);
@@ -130,7 +131,6 @@ void Thumbnail::TImage<Pixel>::serialize(In* in, Out* out)
 
   STREAM_REGISTER_FINISH;
 }
-
 
 template<class Pixel, class PixelUncompressed>
 void Thumbnail::TImageCompressed<Pixel, PixelUncompressed>::compress(const TImage<PixelUncompressed>& uncompressedImage)

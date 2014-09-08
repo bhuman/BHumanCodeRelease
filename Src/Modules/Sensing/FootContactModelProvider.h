@@ -21,19 +21,23 @@
 /** Number of contacts to buffer. 100 complies to 1 second */
 #define BUFFER_SIZE 100
 
-MODULE(FootContactModelProvider)
-  REQUIRES(MotionInfo)
-  REQUIRES(FallDownState)
-  REQUIRES(FrameInfo)
-  REQUIRES(KeyStates)
-  REQUIRES(GameInfo)
-  REQUIRES(DamageConfiguration)
-  PROVIDES_WITH_MODIFY(FootContactModel)
-  DEFINES_PARAMETER(bool, debug, false)             /**< enables debug mode (debug sound) */
-  DEFINES_PARAMETER(int, contactThreshold, 15)      /**< threshold in contacts per second to determine foot contact */
-  DEFINES_PARAMETER(int, malfunctionThreshold, 250) /**< threshold in Motion frames of contact after a malfunction of a bumper is detected (2.5 seconds) */
-  DEFINES_PARAMETER(unsigned, soundDelay, 1000)     /**< Delay between debug sounds. */
-END_MODULE
+MODULE(FootContactModelProvider,
+{,
+  REQUIRES(MotionInfo),
+  REQUIRES(FallDownState),
+  REQUIRES(FrameInfo),
+  REQUIRES(KeyStates),
+  REQUIRES(GameInfo),
+  REQUIRES(DamageConfiguration),
+  PROVIDES_WITH_MODIFY(FootContactModel),
+  DEFINES_PARAMETERS(
+  {,
+    (bool)(false) debug,             /**< enables debug mode (debug sound) */
+    (int)(15) contactThreshold,      /**< threshold in contacts per second to determine foot contact */
+    (int)(250) malfunctionThreshold, /**< threshold in Motion frames of contact after a malfunction of a bumper is detected (2.5 seconds) */
+    (unsigned)(1000) soundDelay,     /**< Delay between debug sounds. */
+  }),
+});
 
 /**
  * Provides information about foot contacts :)
@@ -62,6 +66,7 @@ private:
   int rightFootLeftDuration;
   int rightFootRightDuration;
 
+  unsigned int lastSoundTime;                          /**< Delay between debug sounds. */
 
   /**
   * Checks for contact of a bumper. Additionally, if a bumper is pressed longer than the

@@ -10,9 +10,10 @@
 #include "Tools/RingBufferWithSum.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 
-MODULE(MotionRobotHealthProvider)
-  PROVIDES(MotionRobotHealth)
-END_MODULE
+MODULE(MotionRobotHealthProvider,
+{,
+  PROVIDES(MotionRobotHealth),
+});
 
 /**
 * @class MotionRobotHealthProvider

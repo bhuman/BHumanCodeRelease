@@ -9,6 +9,5 @@ label start
 transition playDead playDead start
 transition sitDown sitDown start
 
-
 "This line must be the last one
 transition extern extern start

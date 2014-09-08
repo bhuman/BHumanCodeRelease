@@ -7,7 +7,7 @@
 #include "BHAssert.h"
 #include "Semaphore.h"
 
-#ifdef MACOSX
+#ifdef OSX
 // Prevent strange recursive include: <semaphore.h> is resolved by header of this file!
 #include </usr/include/semaphore.h>
 #else

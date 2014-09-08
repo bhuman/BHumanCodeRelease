@@ -34,22 +34,30 @@ void LEDHandler::setRightEar(LEDRequest& ledRequest)
 
 void LEDHandler::setLeftEar(LEDRequest& ledRequest)
 {
-  if(theTeamMateData.numOfConnectedTeamMates > 0)
+  //left ear -> connected players
+  //          + GameController connection lost -> freaky blinking
+  if(theFrameInfo.getTimeSince(theGameInfo.timeLastPackageReceived) > 2000)
+  {
+    ledRequest.ledStates[LEDRequest::earsLeft324Deg] = LEDRequest::blinking;
+    ledRequest.ledStates[LEDRequest::earsLeft144Deg] = LEDRequest::blinking;
+  }
+
+  if(theTeammateData.numOfConnectedTeammates > 0)
   {
     ledRequest.ledStates[LEDRequest::earsLeft0Deg] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::earsLeft36Deg] = LEDRequest::on;
   }
-  if(theTeamMateData.numOfConnectedTeamMates > 1)
+  if(theTeammateData.numOfConnectedTeammates > 1)
   {
     ledRequest.ledStates[LEDRequest::earsLeft72Deg] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::earsLeft108Deg] = LEDRequest::on;
   }
-  if(theTeamMateData.numOfConnectedTeamMates > 2)
+  if(theTeammateData.numOfConnectedTeammates > 2)
   {
     ledRequest.ledStates[LEDRequest::earsLeft180Deg] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::earsLeft216Deg] = LEDRequest::on;
   }
-  if(theTeamMateData.numOfConnectedTeamMates > 3)
+  if(theTeammateData.numOfConnectedTeammates > 3)
   {
     ledRequest.ledStates[LEDRequest::earsLeft252Deg] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::earsLeft288Deg] = LEDRequest::on;
@@ -125,7 +133,6 @@ void LEDHandler::setLeftEye(LEDRequest& ledRequest)
 
   LEDRequest::LEDState state = theBehaviorLEDRequest.modifiers[BehaviorLEDRequest::leftEye];
 
-
   //no groundContact
   if(!theGroundContactState.contact/* && (theFrameInfo.time & 512)*/)
     setEyeColor(ledRequest, true, BehaviorLEDRequest::blue, state);
@@ -170,14 +177,18 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
   {
     switch(theBehaviorControlOutput.behaviorStatus.role)
     {
-    case BehaviorStatus::keeper:
+    case Role::keeper:
       setEyeColor(ledRequest, false, BehaviorLEDRequest::blue, state);
       break;
-    case BehaviorStatus::striker:
+    case Role::defender:
+      setEyeColor(ledRequest, false, BehaviorLEDRequest::white, state);
+      break;
+    case Role::striker:
       setEyeColor(ledRequest, false, BehaviorLEDRequest::red, state);
       break;
-    case BehaviorStatus::defender:
-      setEyeColor(ledRequest, false, BehaviorLEDRequest::white, state);
+    case Role::undefined:
+    case Role::none:
+      //off
       break;
     default:
       ASSERT(false);

@@ -2,8 +2,6 @@
 
 #include "Utils/bush/cmdlib/RobotCommand.h"
 
-class ShutdownCmd;
-
 class ShutdownCmd : public RobotCommand
 {
   class ShutdownTask : public RobotTask

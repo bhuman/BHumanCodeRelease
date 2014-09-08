@@ -1,10 +1,12 @@
+#include <iostream>
+
 #include "Platform/File.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/tools/Platform.h"
 
-static const size_t MAX_PLAYERS = 5;
+static const size_t MAX_PLAYERS = 7;
 
 void Team::init()
 {
@@ -52,7 +54,7 @@ Team::Team(const std::string& name, unsigned short number)
  * Adds a robot to the players of this Team. If there already is a robot with playerNumber, this robot will be omitted.
  *
  * @param playerNumber The number of the robot in the team.
- *				Substitute robots have the same number as the robots they substitute.
+ *                Substitute robots have the same number as the robots they substitute.
  * @param substitutePlayer Defines weather the robot is a substiturte for another robot, or not.
  * @param robot The robot to add.
  */
@@ -60,14 +62,14 @@ void Team::addPlayer(unsigned int playerNumber, bool  substitutePlayer, Robot& r
 {
   if(substitutePlayer)
   {
-	if(players[playerNumber][1])
+    if(players[playerNumber][1])
       return;
     else
       players[playerNumber][1] = &robot;
   }
   else
   {
-	if(players[playerNumber][0])
+    if(players[playerNumber][0])
       return;
     else
       players[playerNumber][0] = &robot;
@@ -125,8 +127,7 @@ std::vector<Team> Team::getTeams(const std::string& filename)
 
 void Team::changePlayer(unsigned short number, unsigned short pos, Robot* robot)
 {
-  size_t i = number - 1;
-  players[i][pos] = robot;
+  players[number][pos] = robot;
 }
 
 ConfigMap& operator<< (ConfigMap& cv, const Team& team)
@@ -192,7 +193,7 @@ unsigned short Team::getPlayerNumber(const Robot& robot) const
   std::vector<Robot*> robots = getPlayersWrapped();
   for(size_t i = 0; i < robots.size(); ++i)
     if(robots[i] != 0 && robots[i]->name == robot.name)
-      return i % MAX_PLAYERS + 1;
+      return i % MAX_PLAYERS;
   return 0;
 }
 

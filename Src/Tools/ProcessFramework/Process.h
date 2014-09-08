@@ -1,14 +1,14 @@
 /**
 * @file Process.h
 *
-* Contains the definition of class Process and macros for receivers and senders
+* Contains the definition of class Process and macros for receivers and senders.
 */
 
 #pragma once
 
 #include "ProcessFramework.h"
 #include "Tools/MessageQueue/MessageQueue.h"
-#include "Representations/Blackboard.h"
+#include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/StreamHandler.h"
 #include "Tools/Debugging/DebugRequest.h"
@@ -20,15 +20,11 @@
 /**
  * @class Process
  *
- * System independent base class for Processes.
- *
- * Process is the common base for processes in the GT200x Project.
- * The embedding into the system environment is done by system dependent frameworks that use
+ * System-independent base class for Processes.
+ * The embedding into the system environment is done by system-dependent frameworks that use
  * derivates of the Process class.
  */
-class Process :
-  public PlatformProcess,
-  public MessageHandler
+class Process : public PlatformProcess, public MessageHandler
 {
 public:
   /**
@@ -37,11 +33,6 @@ public:
    * @param debugOut A reference to an outgoing debug queue
    */
   Process(MessageQueue& debugIn, MessageQueue& debugOut);
-
-  /**
-   * Destructor.
-   */
-  ~Process();
 
   /**
    * The main function is called from the process framework once in each frame.
@@ -80,7 +71,7 @@ private:
   MessageQueue& debugIn; /**< A queue for incoming debug messages. */
   MessageQueue& debugOut; /**< A queue for outgoing debug messages. */
   bool initialized; /**< A helper to determine whether the process is already initialized. */
-  Blackboard* blackboard; /**< The only real instance of the blackboard. All copies use references. */
+  Blackboard blackboard; /**< The blackboard of this process. */
   Settings settings;
   DebugRequestTable debugRequestTable;
   DebugDataTable debugDataTable;

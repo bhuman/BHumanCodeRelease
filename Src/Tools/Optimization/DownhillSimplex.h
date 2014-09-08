@@ -76,7 +76,7 @@ private:
     std::vector<float> position;
     float rating;
 
-    inline bool operator<(const Point& other) const {return rating < other.rating;}
+    bool operator<(const Point& other) const {return rating < other.rating;}
   };
 
   enum State

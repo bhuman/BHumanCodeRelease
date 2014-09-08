@@ -7,8 +7,7 @@
 #include "UdpComm.h"
 
 #include <iostream>
-#ifdef WIN32
-#  include <winsock2.h>
+#ifdef WINDOWS
 #  include <ws2tcpip.h>
 #else
 #  include <cerrno>
@@ -39,7 +38,7 @@ UdpComm::UdpComm()
 
 UdpComm::~UdpComm()
 {
-#ifdef WIN32
+#ifdef WINDOWS
   closesocket(sock);
 #else
   close(sock);
@@ -47,7 +46,6 @@ UdpComm::~UdpComm()
 
   delete (struct sockaddr_in*)target;
 }
-
 
 bool UdpComm::resolve(const char* addrStr, int port, struct sockaddr_in* addr)
 {
@@ -70,17 +68,15 @@ bool UdpComm::resolve(const char* addrStr, int port, struct sockaddr_in* addr)
   return true;
 }
 
-
 bool UdpComm::setTarget(const char* addrStr, int port)
 {
   struct sockaddr_in* addr = (struct sockaddr_in*)target;
   return resolve(addrStr, port, addr);
 }
 
-
 bool UdpComm::setBlocking(bool block)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   int yes = block ? 0 : 1;
   if(ioctlsocket(sock, FIONBIO, (u_long*)&yes))
     return false;
@@ -102,7 +98,6 @@ bool UdpComm::setBlocking(bool block)
 #endif
 }
 
-
 bool UdpComm::setTTL(const char ttl)
 {
   int r = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(unsigned char));
@@ -113,7 +108,6 @@ bool UdpComm::setTTL(const char ttl)
   }
   return true;
 }
-
 
 bool UdpComm::setLoopback(bool yesno)
 {
@@ -127,7 +121,6 @@ bool UdpComm::setLoopback(bool yesno)
   return true;
 }
 
-
 bool UdpComm::joinMulticast(const char* addrStr)
 {
   struct sockaddr_in group;
@@ -137,7 +130,7 @@ bool UdpComm::joinMulticast(const char* addrStr)
   //join multicast group for every interface
   if(IN_MULTICAST(ntohl(group.sin_addr.s_addr)))
   {
-#ifndef WIN32
+#ifndef WINDOWS
     struct ip_mreq mreq;
     struct ifconf ifc;
     struct ifreq* item;
@@ -201,7 +194,6 @@ bool UdpComm::joinMulticast(const char* addrStr)
   return false;
 }
 
-
 bool UdpComm::setBroadcast(bool enable)
 {
   int yes = enable ? 1 : 0;
@@ -238,7 +230,6 @@ bool UdpComm::setRcvBufSize(unsigned int rcvbuf)
   std::cerr << "multicast-socket: could not get sockopt SO_RCVBUF" << std::endl;
   return false;
 }
-
 
 bool UdpComm::bind(const char* addr_str, int port)
 {
@@ -286,12 +277,12 @@ bool UdpComm::bind(const char* addr_str, int port)
 int UdpComm::read(char* data, int len, unsigned int& ip)
 {
   sockaddr_in senderAddr;
-#ifdef WIN32
+#ifdef WINDOWS
   int size = sizeof(senderAddr);
 #else
   unsigned size = sizeof(senderAddr);
 #endif
-  int result = ::recvfrom(sock, data, len, 0, (sockaddr*) &senderAddr, &size);
+  int result = (int) ::recvfrom(sock, data, len, 0, (sockaddr*) &senderAddr, &size);
   if(result <= 0)
     return result;
   ip = ntohl(senderAddr.sin_addr.s_addr);
@@ -300,24 +291,24 @@ int UdpComm::read(char* data, int len, unsigned int& ip)
 
 int UdpComm::read(char* data, int len)
 {
-  return ::recv(sock, data, len, 0);
+  return (int) ::recv(sock, data, len, 0);
 }
 
 int UdpComm::readLocal(char* data, int len)
 {
   sockaddr_in senderAddr;
-#ifdef WIN32
+#ifdef WINDOWS
   int size = sizeof(senderAddr);
 #else
   unsigned size = sizeof(senderAddr);
   bool found = false;
 #endif
-  int result = ::recvfrom(sock, data, len, 0, (sockaddr*) &senderAddr, &size);
+  int result = (int) ::recvfrom(sock, data, len, 0, (sockaddr*) &senderAddr, &size);
   if(result <= 0)
     return result;
   else
   {
-#ifndef WIN32
+#ifndef WINDOWS
     struct ifaddrs* addrs, *ifac;
 
     if(getifaddrs(&addrs) < 0)
@@ -361,13 +352,13 @@ std::string UdpComm::getWifiBroadcastAddress()
 
   //determine ip address
   getifaddrs(&ifAddrStruct);
-  for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
+  for(ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
   {
         // manpage getifaddrs    // check it is IP4
-    if (ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family==AF_INET)
+    if(ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family==AF_INET)
     {
       std::string interfaceName(ifa->ifa_name);
-      if (interfaceName.find("wlan") != std::string::npos)
+      if(interfaceName.find("wlan") != std::string::npos)
       {
         in_addr_t mask = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
         in_addr_t addr = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;

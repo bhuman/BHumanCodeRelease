@@ -252,7 +252,7 @@ public:
       SYNC_WITH(sensorView.console);
       const SensorData& sensorData(sensorView.sensorData);
       const SensorData& filteredSensorData(sensorView.filteredSensorData);
-      int mode = std::min<int>(sensorData.usActuatorMode, SensorData::numOfUsActuatorModes - 1);
+      int mode = std::min<int>(sensorData.usActuatorMode & 0x3f, SensorData::numOfUsActuatorModes - 1);
 
       if(sensorData.data[SensorData::usL] != SensorData::off)
         for(int i = 0; i < 10; ++i)
@@ -263,7 +263,7 @@ public:
       if(sensorData.data[SensorData::usL] != SensorData::off || sensorData.data[SensorData::usR] != SensorData::off)
         usTimeStamps[0][mode] = sensorData.usTimeStamp;
 
-      int filteredMode = std::min<int>(filteredSensorData.usActuatorMode, SensorData::numOfUsActuatorModes - 1);
+      int filteredMode = std::min<int>(filteredSensorData.usActuatorMode & 0x3f, SensorData::numOfUsActuatorModes - 1);
       if(filteredSensorData.data[SensorData::usL] != SensorData::off)
         for(int i = 0; i < 10; ++i)
           usLDistances[1][filteredMode][i] = filteredSensorData.data[SensorData::usL + i];
@@ -373,7 +373,7 @@ private:
 };
 
 SensorView::SensorView(const QString& fullName, RobotConsole& console, const SensorData& sensorData, const SensorData& filteredSensorData) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), sensorData(sensorData), filteredSensorData(filteredSensorData) {};
+  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), sensorData(sensorData), filteredSensorData(filteredSensorData) {}
 
 SimRobot::Widget* SensorView::createWidget()
 {

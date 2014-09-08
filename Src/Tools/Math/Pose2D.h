@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Vector2.h"
+#include "BHMath.h"
 
 template <class T> class Range;
 
@@ -89,7 +90,7 @@ public:
    *
    * Same as (point.rotate(Pose2D.rotation) + Pose2D.translation)
    *
-  *\param point The Vector2 that will be multiplicated with this Pose2D
+  *\param point The Vector2 that will be multiplied with this Pose2D
   *\return The resulting Vector2
   */
   Vector2<> operator*(const Vector2<>& point) const
@@ -180,7 +181,6 @@ public:
     return *this;
   }
 
-
   /**Rotate this pose by a rotation
   *\param angle Angle to rotate.
   *\return A reference to this pose after rotation
@@ -190,7 +190,6 @@ public:
     rotation += angle;
     return *this;
   }
-
 
   /** Calculates the inverse transformation from the current pose
   * @return The inverse transformation pose.

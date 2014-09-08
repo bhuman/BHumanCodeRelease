@@ -15,20 +15,24 @@
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Representations/MotionControl/MotionInfo.h"
 
-MODULE(GroundContactDetector)
-  REQUIRES(RobotModel)
-  REQUIRES(FrameInfo)
-  REQUIRES(MotionRequest)
-  REQUIRES(SensorData)
-  USES(TorsoMatrix)
-  USES(MotionInfo)
-  PROVIDES_WITH_MODIFY(GroundContactState)
-  DEFINES_PARAMETER(float, noContactMinAccNoise, 0.08f)
-  DEFINES_PARAMETER(float, noContactMinGyroNoise, 0.04f)
-  DEFINES_PARAMETER(float, contactMaxAngleNoise, 0.01f)
-  DEFINES_PARAMETER(float, contactAngleActivationNoise, 0.007f)
-  DEFINES_PARAMETER(float, contactMaxAccZ, 10.f) // deactivate
-END_MODULE
+MODULE(GroundContactDetector,
+{,
+  REQUIRES(RobotModel),
+  REQUIRES(FrameInfo),
+  REQUIRES(MotionRequest),
+  REQUIRES(SensorData),
+  USES(TorsoMatrix),
+  USES(MotionInfo),
+  PROVIDES_WITH_MODIFY(GroundContactState),
+  DEFINES_PARAMETERS(
+  {,
+    (float)(0.08f) noContactMinAccNoise,
+    (float)(0.04f) noContactMinGyroNoise,
+    (float)(0.01f) contactMaxAngleNoise,
+    (float)(0.007f) contactAngleActivationNoise,
+    (float)(10.f) contactMaxAccZ, // deactivate
+  }),
+});
 
 /**
 * @class GroundContactDetector

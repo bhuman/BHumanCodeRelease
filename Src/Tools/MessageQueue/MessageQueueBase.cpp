@@ -7,6 +7,8 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <algorithm>
+#include <limits>
 
 #include "MessageQueueBase.h"
 #include "Platform/BHAssert.h"
@@ -14,11 +16,12 @@
 MessageQueueBase::MessageQueueBase()
   : buf(0),
     messageIndex(0),
+    reserveForInfrastructure(0),
 #ifndef TARGET_ROBOT
     maximumSize(0x4000000), // 64 MB
     reservedSize(16384)
 {
-  buf = (char*) malloc(reservedSize);
+  buf = (char*) malloc(reservedSize + queueHeaderSize) + queueHeaderSize;
   ASSERT(buf);
 #else
     maximumSize(0)
@@ -31,20 +34,22 @@ MessageQueueBase::~MessageQueueBase()
 {
   freeIndex();
   if(buf)
-    free(buf);
+    free(buf - queueHeaderSize);
 }
 
-void MessageQueueBase::setSize(unsigned size)
+void MessageQueueBase::setSize(unsigned size, unsigned reserveForInfrastructure)
 {
+  this->reserveForInfrastructure = reserveForInfrastructure;
+  size = std::min(std::numeric_limits<unsigned>::max() - queueHeaderSize, size);
 #ifdef TARGET_ROBOT
   ASSERT(!buf);
-  buf = (char*) malloc(size);
+  buf = (char*) malloc(size + queueHeaderSize) + queueHeaderSize;
   ASSERT(buf);
 #else
   ASSERT(size >= usedSize);
   if(size < reservedSize)
   {
-    char* newBuf = (char*) realloc(buf, size);
+    char* newBuf = (char*) realloc(buf - queueHeaderSize, size + queueHeaderSize) + queueHeaderSize;
     if(newBuf)
     {
       buf = newBuf;
@@ -109,7 +114,7 @@ void MessageQueueBase::removeMessage(int message)
   lastMessage = 0;
 }
 
-char* MessageQueueBase::reserve(unsigned size)
+char* MessageQueueBase::reserve(size_t size)
 {
   unsigned currentSize = usedSize + headerSize + writePosition;
   if((unsigned long long) currentSize + size > (unsigned long long) maximumSize)
@@ -128,7 +133,7 @@ char* MessageQueueBase::reserve(unsigned size)
       r = maximumSize;
     if(r > (unsigned long long) reservedSize)
     {
-      char* newBuf = (char*) realloc(buf, (size_t) r);
+      char* newBuf = (char*) realloc(buf - queueHeaderSize, (size_t) r + queueHeaderSize) + queueHeaderSize;
       if(newBuf)
       {
         buf = newBuf;
@@ -141,12 +146,12 @@ char* MessageQueueBase::reserve(unsigned size)
       }
     }
 #endif
-    writePosition += size;
+    writePosition += static_cast<unsigned>(size);
     return buf + currentSize;
   }
 }
 
-void MessageQueueBase::write(const void* p, int size)
+void MessageQueueBase::write(const void* p, size_t size)
 {
   ASSERT(!messageIndex);
   if(!writingOfLastMessageFailed)
@@ -162,20 +167,48 @@ void MessageQueueBase::write(const void* p, int size)
 bool MessageQueueBase::finishMessage(MessageID id)
 {
   ASSERT(!messageIndex);
-  bool result = !writingOfLastMessageFailed;
-
-  if(!writingOfLastMessageFailed)
+  bool success = !writingOfLastMessageFailed;
+  if(success)
   {
-    ASSERT(writePosition > 0);
-    memcpy(buf + usedSize, (char*)&id, 1); // write the id of the message
-    memcpy(buf + usedSize + 1, &writePosition, 3); // write the size of the message
-    ++numberOfMessages;
-    usedSize += writePosition + headerSize;
+    if(reserveForInfrastructure > maximumSize - usedSize - writePosition - headerSize)
+      switch(id)
+      { // When these messages are lost, communication might get stuck
+        case idProcessBegin:
+        case idProcessFinished:
+        case idDebugRequest:
+        case idDebugResponse:
+        case idDebugDataResponse:
+        case idDebugDataChangeRequest:
+        case idStreamSpecification:
+        case idModuleTable:
+        case idModuleRequest:
+        case idQueueFillRequest:
+        case idLogResponse:
+        case idDrawingManager:
+        case idDrawingManager3D:
+        case idConsole:
+        case idRobotname:
+        case idColorCalibration:
+        case idAudioData: // continuous data stream required
+          break; // accept
+        default:
+          success = false; // reject
+      }
+
+    if(success)
+    {
+      ASSERT(writePosition > 0);
+      memcpy(buf + usedSize, (char*)&id, 1); // write the id of the message
+      memcpy(buf + usedSize + 1, &writePosition, 3); // write the size of the message
+      ++numberOfMessages;
+      usedSize += writePosition + headerSize;
+    }
   }
+
   writePosition = 0;
   writingOfLastMessageFailed = false;
 
-  return result;
+  return success;
 }
 
 void MessageQueueBase::removeRepetitions()
@@ -226,6 +259,7 @@ void MessageQueueBase::removeRepetitions()
     case idDebugDataResponse:
     case idPlot:
     case idConsole:
+    case idAudioData:
       copy = true;
       break;
 
@@ -320,14 +354,9 @@ void MessageQueueBase::setSelectedMessageForReading(int message)
   lastMessage = message;
 }
 
-void MessageQueueBase::read(void* p, int size)
+void MessageQueueBase::read(void* p, size_t size)
 {
-  ASSERT(readPosition + size <= getMessageSize());
+  ASSERT(readPosition + (int) size <= getMessageSize());
   memcpy(p, buf + selectedMessageForReadingPosition + headerSize + readPosition, size);
-  readPosition += size;
-}
-
-bool MessageQueueBase::hasWriteOfLastMsgFailed() const
-{
-  return writingOfLastMessageFailed;
+  readPosition += static_cast<int>(size);
 }

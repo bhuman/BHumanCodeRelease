@@ -8,7 +8,6 @@
 #include "BodyContour.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
-#include "ColorReference.h"
 
 BodyContour::Line::Line(const Vector2<int>& p1, const Vector2<int>& p2)
 : p1(p1.x < p2.x ? p1 : p2),
@@ -21,7 +20,6 @@ void BodyContour::clipBottom(int x, int& y) const
     if(i->yAt(x, yIntersection) && yIntersection < y)
       y = yIntersection;
 }
-
 
 void BodyContour::clipBottom(int x, int& y, int imageHeight) const
 {
@@ -37,7 +35,6 @@ void BodyContour::clipBottom(int x, int& y, int imageHeight) const
     y = imageHeight  - 1;
   }
 }
-
 
 void BodyContour::clipLeft(int& x, int y) const
 {
@@ -113,5 +110,22 @@ int BodyContour::getMaxY() const
   return y;
 }
 
+bool BodyContour::isValidPoint(const Vector2<int>& point) const
+{
+  Vector2<int> copy(point);
+  clipBottom(copy.x, copy.y);
+  if(point.y != copy.y)
+    return false;
 
+  clipLeft(copy.x, copy.y);
+  if(point.x > copy.x)
+    return false;
+  if(point.x < copy.x)
+    return true;
 
+  clipRight(copy.x, copy.y);
+  if(point.x < copy.x)
+    return false;
+
+  return true;
+}

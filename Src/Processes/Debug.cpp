@@ -26,8 +26,8 @@ Debug::Debug() :
 {
   theDebugSender.setSize(MAX_PACKAGE_SEND_SIZE - 2000);
   theDebugReceiver.setSize(MAX_PACKAGE_RECEIVE_SIZE - 2000);
-  theCognitionReceiver.setSize(10000000);
-  theCognitionSender.setSize(1400000);
+  theCognitionReceiver.setSize(5200000);
+  theCognitionSender.setSize(2800000);
 
   theMotionReceiver.setSize(40000);
   theMotionSender.setSize(200000);
@@ -134,10 +134,7 @@ bool Debug::main()
       break;
 
     case QueueFillRequest::sendViaNetwork:
-#ifdef TARGET_ROBOT
-      if(messageWasReceived)
-#endif
-        sendToGUI = true;
+      sendToGUI = true;
       break;
     }
   }
@@ -164,17 +161,19 @@ void Debug::init()
 
   theDebugReceiver.handleAllMessages(*this);
   theDebugReceiver.clear();
-  messageWasReceived = false;
 }
 
 bool Debug::handleMessage(InMessage& message)
 {
-  messageWasReceived = true;
-
   switch(message.getMessageID())
   {
   case idText: // loop back to GUI
     message >> theDebugSender;
+    return true;
+
+  // messages to Cognition
+  case idColorCalibration:
+    message >> theCognitionSender;
     return true;
 
   // messages to Motion

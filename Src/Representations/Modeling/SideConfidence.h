@@ -46,7 +46,7 @@ public:
 
     DECLARE_DEBUG_DRAWING("representation:SideConfidence","drawingOnField",
     {
-      DRAWTEXT("representation:SideConfidence", -5000, -3600, 140, ColorClasses::red, "Sideconfidence: " << sideConfidence);
+      DRAWTEXT("representation:SideConfidence", -5000, -3600, 140, ColorRGBA::red, "Sideconfidence: " << sideConfidence);
     });
   },
 

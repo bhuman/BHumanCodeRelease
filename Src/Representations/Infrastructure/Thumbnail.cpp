@@ -4,35 +4,55 @@
 
 #include "Thumbnail.h"
 
-void Thumbnail::draw() const
+void Thumbnail::toImage(Image& dest) const
 {
-  compressedImage.uncompress(*(const_cast<ThumbnailImage*>(&image)));
-
-  COMPLEX_DEBUG_IMAGE(thumbnailDI,
+  Image::Pixel pixel;
+  if(grayscale)
   {
-    SET_DEBUG_IMAGE_SIZE(thumbnailDI, image.width * scale, image.height * scale);
-    for(int y = 0; y < (image.height * scale); y += scale)
+    pixel.cb = pixel.cr = 127;
+    dest.setResolution(imageGrayscale.width * scale, imageGrayscale.height * scale);
+    for(int y = 0; y < dest.height; ++y)
     {
-      for(int x = 0; x < (image.width * scale); x += scale)
+      Image::Pixel* pDest = dest[y];
+      for(const ThumbnailImageGrayscale::PixelType* pSrc = imageGrayscale[y / scale], *pEnd = pSrc + imageGrayscale.width; pSrc < pEnd; ++pSrc)
       {
-        const ThumbnailImage::PixelType& pix = image[y / scale][x / scale];
-        for(int i = 0; i < scale; ++i)
-        {
-          for(int j = 0; j < scale; ++j)
-          {
-            DEBUG_IMAGE_SET_PIXEL_YUV(thumbnailDI, x + i, y + j, pix.y , pix.cb , pix.cr);
-          }
-        }
+        pixel.y = *pSrc;
+        for(int x = 0; x < scale; ++x)
+          *pDest++ = pixel;
       }
     }
-    SEND_DEBUG_IMAGE(thumbnailDI);
-  });
+  }
+  else
+  {
+    compressedImage.uncompress(*(const_cast<ThumbnailImage*>(&image)));
+    dest.setResolution(image.width * scale, image.height * scale);
+    for(int y = 0; y < dest.height; ++y)
+    {
+      Image::Pixel* pDest = dest[y];
+      for(const ThumbnailImage::PixelType* pSrc = image[y / scale], *pEnd = pSrc + image.width; pSrc < pEnd; ++pSrc)
+      {
+        pixel.y = pSrc->y;
+        pixel.cb = pSrc->cb;
+        pixel.cr = pSrc->cr;
+        for(int x = 0; x < scale; ++x)
+          *pDest++ = pixel;
+      }
+    }
+  }
 }
 
 void Thumbnail::serialize(In* in, Out* out)
 {
   STREAM_REGISTER_BEGIN;
-  STREAM(compressedImage);
+  STREAM(grayscale);
   STREAM(scale);
+  if(grayscale)
+  {
+    STREAM(imageGrayscale);
+  }
+  else
+  {
+    STREAM(compressedImage);
+  }
   STREAM_REGISTER_FINISH;
 }

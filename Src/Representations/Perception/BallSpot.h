@@ -16,11 +16,8 @@
 STREAMABLE(BallSpot,
 {
 public:
-  BallSpot(int x, int y)
-  {
-    position.x = x;
-    position.y = y;
-  },
+  BallSpot() = default;
+  BallSpot(int x, int y) : position(x, y) {},
 
   (Vector2<int>) position,
 });

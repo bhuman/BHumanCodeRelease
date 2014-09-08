@@ -13,6 +13,7 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Approx.h"
 #include <algorithm>
+#include <list>
 
 static const EvidenceGrid::Cell initCell = {0, 0, 0}; // For VS2012
 
@@ -111,7 +112,7 @@ void USObstacleModelProvider::update(USObstacleModel& usObstacleModel)
   gridSize = 2.f * (maxDistance + obstacleThickness +
                     std::max(std::max(std::max(leftToLeft.translation.abs(), leftToRight.translation.abs()),
                                       rightToLeft.translation.abs()), rightToRight.translation.abs()));
-  
+
   // Check whether the grid size was MODIFYed
   if(gridSize != grid.width || gridSizeInCells != grid.widthInCells)
   {
@@ -304,7 +305,7 @@ void USObstacleModelProvider::clusterObstacles(ObstacleModel& obstacleModel)
       if(!c->clustered && c->count >= occupiedThreshold)
       {
         c->clustered = 1;
-        clusterObstacle(Vector2<int>(c - grid[y], y), obstacleModel);
+        clusterObstacle(Vector2<int>(int(c - grid[y]), y), obstacleModel);
       }
 }
 

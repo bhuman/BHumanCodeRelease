@@ -7,9 +7,20 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace RoboCup
 {
 #define teamColour teamColor
-#define TEAM_NONE 2
-#include <../Util/GameController/RoboCupGameControlData.h>
+#include <RoboCupGameControlData.h>
+#include <SPLStandardMessage.h>
+#undef teamColour
+
+// This should be defined in one of the includes above
+// but it isn't so i will just leave this here
+#define DROPIN_INTENTION_DEFAULT 0
+#define DROPIN_INTENTION_KEEPER 1
+#define DROPIN_INTENTION_DEFENSIVE 2
+#define DROPIN_INTENTION_KICK 3
+#define DROPIN_INTENTION_LOST 4
 }

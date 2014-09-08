@@ -443,7 +443,7 @@ void Parser::trianglesAndQuadsText(std::string& text)
   while(*str)
   {
     while(*str == '#') { while(*str && *str != '\n' && *str != '\r') ++str;  while(isspace(*str)) ++str; if(!*str) goto breakTwice; }
-    l = strtol(str, &str, 10);
+    l = (unsigned int) strtol(str, &str, 10);
     while(isspace(*str))
       ++str;
     vs.push_back(l);
@@ -1018,7 +1018,7 @@ void Parser::handleNode(const std::string& nodeName, Attributes& attributes) // 
       if(!includeFile.empty())
       {
         passedSimulationTag = false;
-        unsigned int preErrorCount = errors->size();
+        size_t preErrorCount = errors->size();
         std::string oldRootDir = parseRootDir;
         std::string fileName;
         if(includeFile[0] != '/' && includeFile[0] != '\\' && // not absolute path on Unix
@@ -1026,8 +1026,8 @@ void Parser::handleNode(const std::string& nodeName, Attributes& attributes) // 
           fileName = parseRootDir + includeFile;
         else
           fileName = includeFile;
-        int i = fileName.find_last_of("/\\");
-        parseRootDir = i >= 0 ? fileName.substr(0, i + 1) : std::string();
+        std::string::size_type i = fileName.find_last_of("/\\");
+        parseRootDir = i != std::string::npos ? fileName.substr(0, i + 1) : std::string();
         if(!readFile(fileName))
         {
           if(preErrorCount == errors->size())
@@ -1140,11 +1140,11 @@ bool Parser::parse(const std::string& fileName, std::list<std::string>& errors)
 
   ASSERT(!Simulation::simulation->scene);
 
-  int i = fileName.find_last_of("/\\");
-  parseRootDir = i >= 0 ? fileName.substr(0, i + 1) : std::string();
+  std::string::size_type i = fileName.find_last_of("/\\");
+  parseRootDir = i != std::string::npos ? fileName.substr(0, i + 1) : std::string();
 
   // phase #1: reading the file and create "macros"
-  unsigned int preErrorCount = errors.size();
+  size_t preErrorCount = errors.size();
   if(!readFile(fileName) || preErrorCount != errors.size())
     goto error;
   ASSERT(!Simulation::simulation->scene);
@@ -1310,7 +1310,7 @@ bool Parser::getStringRaw(const char* key, bool required, const std::string*& va
   elementData->parsedAttributes |= 1 << ai.second;
   value = &replacePlaceholders(ai.first);
   return true;
-};
+}
 
 bool Parser::getFloatRaw(const char* key, bool required, float& value)
 {
@@ -1325,7 +1325,7 @@ bool Parser::getFloatRaw(const char* key, bool required, float& value)
     return false;
   }
   return true;
-};
+}
 
 bool Parser::getIntegerRaw(const char* key, bool required, int& value)
 {
@@ -1333,14 +1333,14 @@ bool Parser::getIntegerRaw(const char* key, bool required, int& value)
   if(!getStringRaw(key, required, strvalue))
     return false;
   char* end;
-  value = strtol(strvalue->c_str(), &end, 10);
+  value = (int) strtol(strvalue->c_str(), &end, 10);
   if(*end)
   {
     handleError("Expected integer");
     return false;
   }
   return true;
-};
+}
 
 const std::string& Parser::getString(const char* key, bool required)
 {
@@ -1351,7 +1351,7 @@ const std::string& Parser::getString(const char* key, bool required)
     return emptyString;
   }
   return *value;
-};
+}
 
 bool Parser::getBool(const char* key, bool required, bool defaultValue)
 {
@@ -1391,7 +1391,7 @@ int Parser::getInteger(const char* key, bool required, int defaultValue)
 {
   int value;
   return getIntegerRaw(key, required, value) ? value : defaultValue;
-};
+}
 
 float Parser::getFloatMinMax(const char* key, bool required, float defaultValue, float min, float max)
 {
@@ -1417,7 +1417,7 @@ bool Parser::getFloatAndUnit(const char* key, bool required, float defaultValue,
   while(isspace(**unit))
     ++(*unit);
   return true;
-};
+}
 
 float Parser::getUnit(const char* key, bool required, float defaultValue)
 {
@@ -1708,8 +1708,7 @@ bool Parser::getColor(const char* key, bool required, float* color)
       }
       ++endPtr;
     }
-    int len = endPtr - strclr;
-    switch(len)
+    switch(endPtr - strclr)
     {
     case 3:
       color[0] = float(lcol >> 8) * f1_255;

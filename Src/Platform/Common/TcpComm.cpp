@@ -9,32 +9,28 @@
 #include "TcpComm.h"
 #include "Platform/BHAssert.h"
 
-#ifndef WINCE
 #include <cerrno>
 #include <fcntl.h>
-#endif
 
-#ifdef WIN32
+#ifdef WINDOWS
 
-#ifndef WINCE
 #include <sys/types.h>
-#endif
 
 #define ERRNO WSAGetLastError()
 #define RESET_ERRNO WSASetLastError(0)
+#define NON_BLOCK(socket) ioctlsocket(socket, FIONBIO, (u_long*) "NONE")
+#define CLOSE(socket) closesocket(socket)
 #undef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #undef EINPROGRESS
 #define EINPROGRESS WSAEINPROGRESS
-#define NON_BLOCK(socket) ioctlsocket(socket, FIONBIO, (u_long*) "NONE")
-#define CLOSE(socket) closesocket(socket)
 
 class _WSAFramework
 {
 public:
   _WSAFramework()
   {
-    WORD wVersionRequested = MAKEWORD(1, 0);
+    WORD wVersionRequested = MAKEWORD(2, 2);
     WSADATA wsaData;
     WSAStartup(wVersionRequested, &wsaData);
   }
@@ -54,6 +50,10 @@ public:
 #define NON_BLOCK(socket) fcntl(socket,F_SETFL,O_NONBLOCK)
 #define CLOSE(socket) close(socket)
 
+#endif
+
+#ifndef LINUX
+#define MSG_NOSIGNAL 0
 #endif
 
 TcpComm::TcpComm(const char* ip, int port, int maxPackageSendSize, int maxPackageReceiveSize) :
@@ -102,14 +102,8 @@ bool TcpComm::checkConnection()
 {
   if(!connected())
   {
-#ifndef WIN32
-    unsigned int addrlen = sizeof(sockaddr_in);
-#else
-    int addrlen = sizeof(sockaddr_in);
-#endif
-
     if(createSocket)
-      transferSocket = accept(createSocket, (sockaddr*) &address, &addrlen);
+      transferSocket = accept(createSocket, nullptr, nullptr);
     else if(!wasConnected)
     {
       transferSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -125,7 +119,7 @@ bool TcpComm::checkConnection()
     {
       wasConnected = true;
       NON_BLOCK(transferSocket); // switch socket to nonblocking
-#ifdef MACOSX
+#ifdef OSX
       int yes = 1;
       VERIFY(!setsockopt(transferSocket, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes)));
 #endif
@@ -156,25 +150,25 @@ bool TcpComm::receive(unsigned char* buffer, int size, bool wait)
   if(!wait)
   {
     RESET_ERRNO;
-#ifndef WIN32
-    int received = recv(transferSocket, (char*) buffer, size, MSG_PEEK);
+#ifdef WINDOWS
+    char c;
+    int received = recv(transferSocket, &c, 1, MSG_PEEK);
+    if(!received || (received < 0 && ERRNO != EWOULDBLOCK && ERRNO != EINPROGRESS) ||
+      ioctlsocket(transferSocket, FIONREAD, (u_long*) &received) != 0)
+    {
+      closeTransferSocket();
+      return false;
+    }
+    else if (received == 0)
+      return false;
+#else
+    int received = (int) recv(transferSocket, (char*) buffer, size, MSG_PEEK);
     if(received < size)
     {
       if(!received || (received < 0 && ERRNO != EWOULDBLOCK && ERRNO != EINPROGRESS))
         closeTransferSocket();
       return false;
     }
-#else
-    char c;
-    int received = recv(transferSocket, &c, 1, MSG_PEEK);
-    if(!received || (received < 0 && ERRNO != EWOULDBLOCK && ERRNO != EINPROGRESS) ||
-       ioctlsocket(transferSocket, FIONREAD, (u_long*) &received) != 0)
-    {
-      closeTransferSocket();
-      return false;
-    }
-    else if(received == 0)
-      return false;
 #endif
   }
 
@@ -183,8 +177,8 @@ bool TcpComm::receive(unsigned char* buffer, int size, bool wait)
   {
     RESET_ERRNO;
 
-    int received2 = recv(transferSocket, (char*) buffer + received,
-                         size - received, 0);
+    int received2 = (int) recv(transferSocket, (char*) buffer + received,
+                               size - received, 0);
 
     if(!received2 || (received2 < 0 && ERRNO != EWOULDBLOCK && ERRNO != EINPROGRESS))  // error during reading of package
     {
@@ -200,7 +194,7 @@ bool TcpComm::receive(unsigned char* buffer, int size, bool wait)
       fd_set rset;
       FD_ZERO(&rset);
       FD_SET(transferSocket, &rset);
-      if(select(transferSocket + 1, &rset, 0, 0, &timeout) == -1)
+      if(select(static_cast<int>(transferSocket + 1), &rset, 0, 0, &timeout) == -1)
       {
         closeTransferSocket();
         return false; // error while waiting
@@ -212,18 +206,13 @@ bool TcpComm::receive(unsigned char* buffer, int size, bool wait)
   return true; // ok, data received
 }
 
-int TcpComm::receiveSys(void* buffer, unsigned int len, int flags)
-{
-  return recv(transferSocket, (char*) buffer, len, flags);
-}
-
 bool TcpComm::send(const unsigned char* buffer, int size)
 {
   if(!checkConnection())
     return false;
 
   RESET_ERRNO;
-  int sent = ::send(transferSocket, (const char*) buffer, size, 0);
+  int sent = (int) ::send(transferSocket, (const char*) buffer, size, MSG_NOSIGNAL);
   if(sent > 0)
   {
     overallBytesSent += sent;
@@ -236,10 +225,10 @@ bool TcpComm::send(const unsigned char* buffer, int size)
       FD_ZERO(&wset);
       FD_SET(transferSocket, &wset);
       RESET_ERRNO;
-      if(select(transferSocket + 1, 0, &wset, 0, &timeout) == -1)
+      if (select(static_cast<int>(transferSocket + 1), 0, &wset, 0, &timeout) == -1)
         break;
       RESET_ERRNO;
-      int sent2 = ::send(transferSocket, (const char*) buffer + sent, size - sent, 0);
+      int sent2 = (int) ::send(transferSocket, (const char*) buffer + sent, size - sent, MSG_NOSIGNAL);
       if(sent2 >= 0)
       {
         sent += sent2;

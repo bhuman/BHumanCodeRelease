@@ -44,7 +44,7 @@ public:
   /**
   * Virtual destructor.
   */
-  virtual ~SenderList() {}
+  virtual ~SenderList() = default;
 
   /**
   * Returns the begin of the list of all senders.

@@ -9,16 +9,7 @@
 
 #pragma once
 
-#include "Representations/Perception/LinePercept.h"
-#include "Tools/Math/Vector2.h"
-#include <vector>
-
-class SelfLocatorParameters;
-class FieldDimensions;
-class Pose2D;
-class CameraMatrix;
-class RobotPose;
-
+#include "SelfLocatorBase.h"
 
 /**
 * @class FieldModel
@@ -46,7 +37,7 @@ public:
 
 private:
   Vector2<> goalPosts[4];  /**< The positions of the goal posts. */
-  const SelfLocatorParameters& parameters;
+  const SelfLocatorBase::Parameters& parameters;
   const CameraMatrix& cameraMatrix;
   std::vector< Vector2<> > xCorners;
   std::vector< Vector2<> > lCorners;
@@ -56,7 +47,7 @@ public:
   /**
    * Constructor, initialized the field model
   */
-  FieldModel(const FieldDimensions& fieldDimensions, const SelfLocatorParameters& parameters, const CameraMatrix& cameraMatrix);
+  FieldModel(const FieldDimensions& fieldDimensions, const SelfLocatorBase::Parameters& parameters, const CameraMatrix& cameraMatrix);
 
   bool getAssociatedUnknownGoalPost(const Pose2D& robotPose, const Vector2<>& goalPercept, Vector2<>& associatedPost) const;
 

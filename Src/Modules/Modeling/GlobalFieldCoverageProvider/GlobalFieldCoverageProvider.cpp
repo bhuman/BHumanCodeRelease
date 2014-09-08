@@ -80,7 +80,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
   int worst = mergeGrids(globalFieldCoverage.grid);
   COMPLEX_DRAWING("module:GlobalFieldCoverageProvider:globalFieldCoverage",
   {
-    for(size_t i = 0; i < FieldCoverage::GridInterval::xSteps* FieldCoverage::GridInterval::ySteps; i++)
+    for(int i = 0; i < int(FieldCoverage::GridInterval::xSteps* FieldCoverage::GridInterval::ySteps); i++)
     {
       const unsigned char coverage = globalFieldCoverage.grid.coverage(i, theFrameInfo.time);
       DRAW_CELL_COVERAGE_WITH_TEXT("module:GlobalFieldCoverageProvider:globalFieldCoverage", i, coverage);
@@ -94,7 +94,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
     Vector2<int> coord = FieldCoverage::GridInterval::index2CellCoordinates(globalFieldCoverage.worstCoveredCellIndex);
     float x = theFieldDimensions.xPosOwnGroundline + (2 * (float) coord.x + 1) * cellLengths.x / 2.0f;
     float y = theFieldDimensions.yPosRightSideline + (2 * (float) coord.y + 1) * cellLengths.y / 2.0f;
-    CIRCLE("module:GlobalFieldCoverageProvider:globalWorstCoveredCell", x, y, 100, 10, Drawings::ps_solid, ColorClasses::blue, Drawings::ps_solid, ColorClasses::blue);
+    CIRCLE("module:GlobalFieldCoverageProvider:globalWorstCoveredCell", x, y, 100, 10, Drawings::ps_solid, ColorRGBA::blue, Drawings::ps_solid, ColorRGBA::blue);
   });
 
   // Find patrol regions
@@ -105,7 +105,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
     PLOT("module:GlobalFieldCoverageProvider:coverageThreshold", globalFieldCoverage.threshold);
     STOP_TIME_ON_REQUEST_WITH_PLOT("GlobalFieldCoverageProvider:regions", findRegions(globalFieldCoverage, numPatrol););
     STOP_TIME_ON_REQUEST_WITH_PLOT("GlobalFieldCoverageProvider:components", findLargestComponents(););
-    for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+    for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
       if(!largestComponent[i].empty())
         calcCenterOfRegion(largestComponent[i], componentCenter[i]);
 
@@ -124,7 +124,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
 
   COMPLEX_DRAWING("module:GlobalFieldCoverageProvider:patrolRegionCenters",
   {
-    for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+    for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
     {
       Region& r = regions[i];
       if(r.robotNumber == -1)
@@ -132,7 +132,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
       if(r.cells)
       {
         CIRCLE("module:GlobalFieldCoverageProvider:patrolRegionCenters",
-               r.mean.x, r.mean.y, 80, 10, Drawings::ps_solid, ColorClasses::red,
+               r.mean.x, r.mean.y, 80, 10, Drawings::ps_solid, ColorRGBA::red,
                Drawings::ps_solid, ColorRGBA(255, 192, 203)); // Pink
       }
       else
@@ -151,16 +151,18 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
           continue;
         const float fx = xPosOwnGroundline + (static_cast<float>(x) + .5f) * cellLengths.x;
         const float fy = yPosRightSideline + (static_cast<float>(y) + .5f) * cellLengths.y;
-        ColorClasses::Color cc = ColorClasses::none;
+        ColorRGBA cc;
         Region* r = cell2Region[c];
-        if(r->robotNumber == TeamMateData::player2)
-          cc = ColorClasses::red;
-        else if(r->robotNumber == TeamMateData::player3)
-          cc = ColorClasses::blue;
-        else if(r->robotNumber == TeamMateData::player4)
-          cc = ColorClasses::yellow;
-        else if(r->robotNumber == TeamMateData::player5)
-          cc = ColorClasses::white;
+        if(r->robotNumber == TeammateData::player2)
+          cc = ColorRGBA::red;
+        else if(r->robotNumber == TeammateData::player3)
+          cc = ColorRGBA::blue;
+        else if(r->robotNumber == TeammateData::player4)
+          cc = ColorRGBA::yellow;
+        else if(r->robotNumber == TeammateData::player5)
+          cc = ColorRGBA::white;
+        else if (r->robotNumber == TeammateData::player6)
+          cc = ColorRGBA::orange;
         else
           ASSERT(false);
         CIRCLE("module:GlobalFieldCoverageProvider:patrolRegions",
@@ -169,7 +171,7 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
   });
   COMPLEX_DRAWING("module:GlobalFieldCoverageProvider:patrolComponents",
   {
-    for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+    for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
     {
       const std::vector<int>& component = largestComponent[i];
       for(size_t c = 0; c < component.size(); ++c)
@@ -178,15 +180,15 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
         + (static_cast<float>(component[c] / FieldCoverage::GridInterval::ySteps) + .5f) * cellLengths.x;
         const float fy = yPosRightSideline
         + (static_cast<float>(component[c] % FieldCoverage::GridInterval::ySteps) + .5f) * cellLengths.y;
-        ColorClasses::Color cc = ColorClasses::none;
-        if(i == TeamMateData::player2)
-          cc = ColorClasses::red;
-        else if(i == TeamMateData::player3)
-          cc = ColorClasses::blue;
-        else if(i == TeamMateData::player4)
-          cc = ColorClasses::yellow;
-        else if(i == TeamMateData::player5)
-          cc = ColorClasses::white;
+        ColorRGBA cc;
+        if(i == TeammateData::player2)
+          cc = ColorRGBA::red;
+        else if(i == TeammateData::player3)
+          cc = ColorRGBA::blue;
+        else if(i == TeammateData::player4)
+          cc = ColorRGBA::yellow;
+        else if(i == TeammateData::player5)
+          cc = ColorRGBA::white;
         else
           ASSERT(false); // All other robotnumbers should have empty components.
         CIRCLE("module:GlobalFieldCoverageProvider:patrolComponents",
@@ -196,11 +198,11 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
   });
   COMPLEX_DRAWING("module:GlobalFieldCoverageProvider:patrolComponentCenters",
   {
-    for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+    for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
       if(!largestComponent[i].empty())
       {
         CIRCLE("module:GlobalFieldCoverageProvider:patrolComponentCenters",
-               componentCenter[i].x, componentCenter[i].y, 80, 10, Drawings::ps_solid, ColorClasses::red,
+               componentCenter[i].x, componentCenter[i].y, 80, 10, Drawings::ps_solid, ColorRGBA::red,
                Drawings::ps_solid, ColorRGBA(255, 192, 203)); // Pink
       }
   });
@@ -209,11 +211,11 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
 
 void GlobalFieldCoverageProvider::updateFieldCoverageGrids()
 {
-  for(int mate = TeamMateData::firstPlayer; mate < TeamMateData::numOfPlayers; ++mate)
+  for(int mate = TeammateData::firstPlayer; mate < TeammateData::numOfPlayers; ++mate)
     if(mate != theRobotInfo.number)
     {
       unsigned* fcgrid = fieldCoverageGrids[mate];
-      const FieldCoverage::GridInterval& gridInterval = theTeamMateData.fieldCoverages[mate];
+      const FieldCoverage::GridInterval& gridInterval = theTeammateData.fieldCoverages[mate];
       // Avoid timestamps in the future
       const unsigned basetime = gridInterval.timestamp < theFrameInfo.time ? gridInterval.timestamp : theFrameInfo.time;
       const int intervalBase = gridInterval.interval * gridInterval.intervalSize;
@@ -227,14 +229,14 @@ void GlobalFieldCoverageProvider::updateFieldCoverageGrids()
 
 int GlobalFieldCoverageProvider::mergeGrids(GlobalFieldCoverage::Grid& mergedGrid)
 {
-  const size_t size = FieldCoverage::GridInterval::xSteps * FieldCoverage::GridInterval::ySteps;
+  const int size = int(FieldCoverage::GridInterval::xSteps * FieldCoverage::GridInterval::ySteps);
 
   int worstIdx = -1;
   unsigned worstLastseen = 0;
-  for(size_t i = 0; i < size; i++)
+  for(int i = 0; i < size; i++)
   {
     mergedGrid.cells[i] = std::max(mergedGrid.cells[i], theFieldCoverage.cells[i]);
-    for(int j = TeamMateData::firstPlayer; j < TeamMateData::numOfPlayers; ++j)
+    for(int j = TeammateData::firstPlayer; j < TeammateData::numOfPlayers; ++j)
       mergedGrid.cells[i] = std::max(mergedGrid.cells[i], fieldCoverageGrids[j][i]);
 
     if(worstIdx == -1 || worstLastseen > mergedGrid.cells[i])
@@ -354,21 +356,21 @@ int GlobalFieldCoverageProvider::initRegions()
 {
   int patrolReady = 0;
   // Find players which are 'online' and not goalkeeper
-  for(int p = TeamMateData::firstPlayer; p < TeamMateData::numOfPlayers; ++p)
+  for(int p = TeammateData::firstPlayer; p < TeammateData::numOfPlayers; ++p)
   {
-    if(theRobotInfo.number == p || !theTeamMateData.timeStamps[p])
+    if(theRobotInfo.number == p || !theTeammateData.timeStamps[p])
       continue;
-    if(theTeamMateData.isPenalized[p] || !theTeamMateData.hasGroundContact[p]
-       || !theTeamMateData.isUpright[p] || theTeamMateData.robotPoses[p].deviation > 50.f
-       || theTeamMateData.behaviorStatus[p].role == BehaviorStatus::keeper)
+    if(theTeammateData.isPenalized[p] || !theTeammateData.hasGroundContact[p]
+       || !theTeammateData.isUpright[p] || theTeammateData.robotPoses[p].deviation > 50.f
+       || theTeammateData.behaviorStatus[p].role == Role::keeper)
       removeFromPatrol(p);
     else
     {
-      updatePatrol(theTeamMateData.robotPoses[p].translation, p);
+      updatePatrol(theTeammateData.robotPoses[p].translation, p);
       patrolReady += 1;
     }
   }
-  if(theBehaviorControlOutput.behaviorStatus.role != BehaviorStatus::keeper && theRobotPose.deviation <= 50.f)
+  if(theBehaviorControlOutput.behaviorStatus.role != Role::keeper && theRobotPose.deviation <= 50.f)
   {
     updatePatrol(theRobotPose.translation, theRobotInfo.number);
     patrolReady += 1;
@@ -381,16 +383,16 @@ int GlobalFieldCoverageProvider::initRegions()
 
 void GlobalFieldCoverageProvider::updatePatrol(const Vector2<>& rpose, int robotNumber)
 {
-  ASSERT(robotNumber >= TeamMateData::firstPlayer
-         && robotNumber < TeamMateData::numOfPlayers);
+  ASSERT(robotNumber >= TeammateData::firstPlayer
+         && robotNumber < TeammateData::numOfPlayers);
   regions[robotNumber].mean = rpose;
   regions[robotNumber].robotNumber = robotNumber;
 }
 
 void GlobalFieldCoverageProvider::removeFromPatrol(int robotNumber)
 {
-  ASSERT(robotNumber >= TeamMateData::firstPlayer
-         && robotNumber < TeamMateData::numOfPlayers);
+  ASSERT(robotNumber >= TeammateData::firstPlayer
+         && robotNumber < TeammateData::numOfPlayers);
   if(regions[robotNumber].robotNumber == -1)
     return;
   regions[robotNumber].robotNumber = -1;
@@ -402,9 +404,9 @@ void GlobalFieldCoverageProvider::removeFromPatrol(int robotNumber)
 void GlobalFieldCoverageProvider::findRegions(const GlobalFieldCoverage& coverage, int numPatrol)
 {
   int invalids;
-  for(invalids = TeamMateData::firstPlayer; invalids < TeamMateData::numOfPlayers
+  for(invalids = TeammateData::firstPlayer; invalids < TeammateData::numOfPlayers
       && regions[invalids].robotNumber == -1; ++invalids);
-  if(invalids == TeamMateData::numOfPlayers)
+  if(invalids == TeammateData::numOfPlayers)
     return; // No regions to assign cells to.
 
   // Find closest covered cell for each start cell.
@@ -433,15 +435,15 @@ void GlobalFieldCoverageProvider::findRegions(const GlobalFieldCoverage& coverag
         float minDistance = .0f;
         Region* bestRegion = NULL;
         Region* defenderRegion = NULL;
-        for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+        for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
         {
           if(regions[i].robotNumber == -1)
             continue;
           // Don't assign cells in the opponent half of the field to the defender's region,
           // if the defender is in it's own half.
           const BehaviorStatus& bhstatus = theRobotInfo.number == regions[i].robotNumber ? theBehaviorControlOutput.behaviorStatus
-                                       : theTeamMateData.behaviorStatus[regions[i].robotNumber];
-          if(bhstatus.role == BehaviorStatus::defender && numPatrol > 1 && regions[i].mean.x < 0.f
+                                       : theTeammateData.behaviorStatus[regions[i].robotNumber];
+          if(bhstatus.role == Role::defender && numPatrol > 1 && regions[i].mean.x < 0.f
              && x* cellLengths.x >= -xPosOwnGroundline)
           {
             defenderRegion = &regions[i];
@@ -479,7 +481,7 @@ void GlobalFieldCoverageProvider::findRegions(const GlobalFieldCoverage& coverag
     if(converged)
       break;
 
-    for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+    for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
       regions[i].adjustMean(cellLengths, xPosOwnGroundline, yPosRightSideline);
   }
   PLOT("module:GlobalFieldCoverageProvider:patrolRegionIterations", iterations);
@@ -525,7 +527,7 @@ void GlobalFieldCoverageProvider::Region::adjustMean(const Vector2<>& cellLength
 void GlobalFieldCoverageProvider::findLargestComponents()
 {
   // Clear old largest components
-  for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+  for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
     largestComponent[i].clear();
 
   // Find new largest components
@@ -627,8 +629,8 @@ void GlobalFieldCoverageProvider::draw3D(const GlobalFieldCoverage& globalFieldC
              ColorRGBA(255, 0, 0, 255 - value));
 
       // Display grids of other robots, only works with the current player numbering.
-      ASSERT(TeamMateData::firstPlayer == 1);
-      ASSERT((TeamMateData::numOfPlayers - TeamMateData::firstPlayer) == 4);
+      ASSERT(TeammateData::firstPlayer == 1);
+      ASSERT((TeammateData::numOfPlayers - TeammateData::firstPlayer) == 4);
       for(int i = 0; i < 2 ; ++i)
         for(int j = 0; j < 2; ++j)
         {
@@ -650,7 +652,7 @@ void GlobalFieldCoverageProvider::draw3D(const GlobalFieldCoverage& globalFieldC
         }
 
       // Draw a pink arrow for every patrol target over the field pointing towards the target on ground.
-      for(int i = TeamMateData::firstPlayer; i < TeamMateData::numOfPlayers; ++i)
+      for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
         if(!largestComponent[i].empty())
         {
           const Vector2<>& ptarget = componentCenter[i];

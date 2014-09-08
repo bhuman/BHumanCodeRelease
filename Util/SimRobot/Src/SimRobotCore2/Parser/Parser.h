@@ -96,7 +96,7 @@ private:
         delete *iter;
     }
 
-    inline bool hasTextOrChildren() const {return !children.empty() || !text.empty();}
+    bool hasTextOrChildren() const {return !children.empty() || !text.empty();}
   };
 
   class Macro : public MacroElement

@@ -98,7 +98,6 @@ void Appearance::Surface::unset(bool defaultTextureSize) const
     glDisable(GL_BLEND);
 }
 
-
 void Appearance::createGraphics()
 {
   if(initializedContexts == 0)

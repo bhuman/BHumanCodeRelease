@@ -7,14 +7,7 @@
 * @author Colin Graf
 */
 
-
 #include "UKFSample.h"
-#include "FieldModel.h"
-#include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/GoalPercept.h"
-#include "Representations/Perception/LinePercept.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Probabilistics.h"
@@ -22,8 +15,9 @@
 
 using namespace std;
 
-void UKFSample::init(const Pose2D& pose, const SelfLocatorParameters& parameters)
+void UKFSample::init(const Pose2D& pose, const SelfLocatorBase::Parameters& parameters, int number)
 {
+  this->number = number;
   mean.x = pose.translation.x;
   mean.y = pose.translation.y;
   mean.z = pose.rotation;
@@ -31,25 +25,21 @@ void UKFSample::init(const Pose2D& pose, const SelfLocatorParameters& parameters
   cov[0][0] = sqr(parameters.defaultPoseDeviation.translation.x);
   cov[1][1] = sqr(parameters.defaultPoseDeviation.translation.y);
   cov[2][2] = sqr(parameters.defaultPoseDeviation.rotation);
-  mirrored = false;
   // Buffer is always initially filled with average value
   for(int i=0; i<validityBuffer.getMaxEntries(); ++i)
     validityBuffer.add(0.5f);
 }
 
-
-void UKFSample::motionUpdate(const Pose2D& odometryOffset, const SelfLocatorParameters& parameters)
+void UKFSample::motionUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters)
 {
   generateSigmaPoints();
   performOdometryUpdate(odometryOffset, parameters);
 }
 
-
 Pose2D UKFSample::getPose() const
 {
   return Pose2D(mean.z, mean.x, mean.y);
 }
-
 
 void UKFSample::mirror()
 {
@@ -58,7 +48,6 @@ void UKFSample::mirror()
   mean.y = newPose.translation.y;
   mean.z = newPose.rotation;
 }
-
 
 float UKFSample::computeValidity(const FieldDimensions& fieldDimensions)
 {
@@ -69,26 +58,22 @@ float UKFSample::computeValidity(const FieldDimensions& fieldDimensions)
     return validity = 0.f;
 }
 
-
 void UKFSample::invalidate()
 {
   for(int i=0; i<validityBuffer.getMaxEntries(); ++i)
     validityBuffer.add(0.f);
 }
 
-
 float UKFSample::getVarianceWeighting() const
 {
   return std::max(cov[0].x, cov[1].y) * cov[2].z;
 }
-
 
 void UKFSample::twist()
 {
   mean.z += pi;
   mean.z = normalize(mean.z);
 }
-
 
 void UKFSample::generateSigmaPoints()
 {
@@ -128,8 +113,7 @@ void UKFSample::generateSigmaPoints()
   sigmaPoints[6] = mean - l.c[2];
 }
 
-
-void UKFSample::performOdometryUpdate(const Pose2D& odometryOffset, const SelfLocatorParameters& parameters)
+void UKFSample::performOdometryUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters)
 {
   // addOdometryToSigmaPoints
   for(int i = 0; i < 7; ++i)
@@ -171,8 +155,7 @@ void UKFSample::performOdometryUpdate(const Pose2D& odometryOffset, const SelfLo
   mean.z = normalize(mean.z);
 }
 
-
-void UKFSample::updateByGoalPercept(const GoalPercept& goalPercept, const FieldModel& fieldModel, const SelfLocatorParameters& parameters,
+void UKFSample::updateByGoalPercept(const GoalPercept& goalPercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                                     const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix)
 {
   const Pose2D robotPose = getPose();
@@ -200,8 +183,7 @@ void UKFSample::updateByGoalPercept(const GoalPercept& goalPercept, const FieldM
   }
 }
 
-
-void UKFSample::updateByLinePercept(const LinePercept& linePercept, const FieldModel& fieldModel, const SelfLocatorParameters& parameters,
+void UKFSample::updateByLinePercept(const LinePercept& linePercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                                     const FieldDimensions& fieldDimensions, const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix)
 {
   // Check for center circle:
@@ -294,9 +276,8 @@ void UKFSample::updateByLinePercept(const LinePercept& linePercept, const FieldM
   }
 }
 
-
 Matrix2x2f UKFSample::getCovOfPointInWorld(const Vector2<>& pointInWorld2, float pointZInWorld, const MotionInfo& motionInfo,
-                                           const CameraMatrix& cameraMatrix, const SelfLocatorParameters& parameters) const
+                                           const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const
 {
   Vector3<> unscaledVectorToPoint = cameraMatrix.invert() * Vector3<>(pointInWorld2.x, pointInWorld2.y, pointZInWorld);
   const Vector3<> unscaledWorld = cameraMatrix.rotation * unscaledVectorToPoint;
@@ -313,9 +294,8 @@ Matrix2x2f UKFSample::getCovOfPointInWorld(const Vector2<>& pointInWorld2, float
   return rot * cov * rot.transpose();
 }
 
-
 Matrix2x2f UKFSample::getCovOfCircle(const Vector2<>& circlePos, float centerCircleRadius, const MotionInfo& motionInfo,
-                                     const CameraMatrix& cameraMatrix, const SelfLocatorParameters& parameters) const
+                                     const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const
 {
   float circleDistance = circlePos.abs();
   Vector2<> increasedCirclePos = circlePos;
@@ -328,7 +308,6 @@ Matrix2x2f UKFSample::getCovOfCircle(const Vector2<>& circlePos, float centerCir
   }
   return getCovOfPointInWorld(increasedCirclePos, 0.f, motionInfo, cameraMatrix, parameters);
 }
-
 
 void UKFSample::landmarkSensorUpdate(const Vector2<>& landmarkPosition, const Vector2f& reading, const Matrix2x2f& readingCov)
 {
@@ -377,7 +356,6 @@ void UKFSample::landmarkSensorUpdate(const Vector2<>& landmarkPosition, const Ve
   mean.z = normalize(mean.z);
   cov -= kalmanGain * landmarkReadingAndMeanCov;
 }
-
 
 void UKFSample::lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2x2f& readingCov)
 {
@@ -431,7 +409,6 @@ void UKFSample::lineSensorUpdate(bool vertical, const Vector2f& reading, const M
   cov -= kalmanGain * lineReadingAndMeanCov;
 }
 
-
 void UKFSample::poseSensorUpdate(const Vector3f& reading, const Matrix3x3f& readingCov)
 {
   generateSigmaPoints();
@@ -479,43 +456,12 @@ void UKFSample::poseSensorUpdate(const Vector3f& reading, const Matrix3x3f& read
   cov -= kalmanGain * poseReadingAndMeanCov;
 }
 
-
-void UKFSample::computeWeightingBasedOnValidity(const FieldDimensions& fieldDimensions, const SelfLocatorParameters& parameters)
+void UKFSample::computeWeightingBasedOnValidity(const FieldDimensions& fieldDimensions, const SelfLocatorBase::Parameters& parameters)
 {
   // Wenn das sample nicht mehr auf dem Teppich ist, ist das weighting gleich NULL
   float factor = computeValidity(fieldDimensions) / validityBuffer.getMaxEntries();
   weighting = parameters.baseValidityWeighting + (1.f - parameters.baseValidityWeighting) * factor;
 }
-
-
-void UKFSample::computeWeightingBasedOnBallObservation(const Vector2<>& ballObservation, const Vector2<>& teamBallPosition,
-                                                       const float& camZ, const SelfLocatorParameters& parameters)
-{
-  // Some constant parameters
-  const float distanceObserved = ballObservation.abs();
-  const float angleObserved = ballObservation.angle();
-  const float distanceAsAngleObserved = (pi_2 - atan2(camZ,distanceObserved));
-
-  // Weighting for original pose
-  Pose2D theRobotPose = getPose();
-  float originalWeighting = computeAngleWeighting(angleObserved, teamBallPosition, theRobotPose,
-    parameters.standardDeviationBallAngle);
-  originalWeighting *= computeDistanceWeighting(distanceAsAngleObserved, teamBallPosition, theRobotPose,
-    camZ, parameters.standardDeviationBallDistance);
-
-  // Weighting for mirrored pose
-  const Pose2D  mirroredPose = Pose2D(pi) + (Pose2D)(theRobotPose);
-  float mirroredWeighting = computeAngleWeighting(angleObserved, teamBallPosition, mirroredPose,
-    parameters.standardDeviationBallAngle);
-  mirroredWeighting *= computeDistanceWeighting(distanceAsAngleObserved, teamBallPosition, mirroredPose,
-    camZ, parameters.standardDeviationBallDistance);
-
-  if(originalWeighting >= mirroredWeighting)
-    weighting = 1.f;
-  else
-    weighting = originalWeighting / mirroredWeighting;
-}
-
 
 float UKFSample::computeAngleWeighting(float measuredAngle, const Vector2<>& modelPosition,
   const Pose2D& robotPose, float standardDeviation) const
@@ -523,7 +469,6 @@ float UKFSample::computeAngleWeighting(float measuredAngle, const Vector2<>& mod
   const float modelAngle = Geometry::angleTo(robotPose, modelPosition);
   return gaussianProbability(abs(modelAngle-measuredAngle), standardDeviation);
 }
-
 
 float UKFSample::computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2<>& modelPosition,
   const Pose2D& robotPose, float cameraZ, float standardDeviation) const
@@ -533,43 +478,11 @@ float UKFSample::computeDistanceWeighting(float measuredDistanceAsAngle, const V
   return gaussianProbability(abs(modelDistanceAsAngle-measuredDistanceAsAngle), standardDeviation);
 }
 
-
 Vector2<> UKFSample::getOrthogonalProjection(const Vector2<>& base, const Vector2<>& dir, const Vector2<>& point) const
 {
   const float l = (point.x - base.x) * dir.x + (point.y - base.y) * dir.y;
   return base + dir * l;
 }
-
-
-void UKFSample::updateMirrorFlag(bool fallen, bool armContact, const SelfLocatorParameters& parameters, const FieldDimensions& fieldDimensions)
-{
-  const float distToFieldCenter = getPose().translation.abs();
-  if(fallen && distToFieldCenter < parameters.maxDistanceToFieldCenterForMirrorActions)
-  {
-    float probability(0.5f);
-    const float rCircle = fieldDimensions.centerCircleRadius;
-    if(distToFieldCenter > rCircle)
-      probability += ((distToFieldCenter - rCircle) / (parameters.maxDistanceToFieldCenterForMirrorActions - rCircle));
-    if(randomFloat() > probability)
-    {
-      mirrored = !mirrored;
-      return;
-    }
-  }
-  if(armContact && distToFieldCenter < parameters.maxDistanceToFieldCenterForMirrorActions)
-  {
-    float probability(0.7f);
-    const float rCircle = fieldDimensions.centerCircleRadius;
-    if(distToFieldCenter > rCircle/2)
-      probability += ((distToFieldCenter - rCircle) / (parameters.maxDistanceToFieldCenterForMirrorActions - rCircle));
-    if(randomFloat() > probability)
-    {
-      mirrored = !mirrored;
-      return;
-    }
-  }
-}
-
 
 void UKFSample::draw(bool simple)
 {
@@ -578,7 +491,7 @@ void UKFSample::draw(bool simple)
     Pose2D pose = getPose();
     Vector2<> headPos(30, 0);
     headPos = pose * headPos;
-    ColorRGBA sampleFillColor = mirrored ? ColorRGBA(200, 0, 0) : ColorRGBA(200, 200, 0);
+    ColorRGBA sampleFillColor = ColorRGBA(200, 200, 0);
     RECTANGLE2("module:SelfLocator:simples", Vector2<>(pose.translation - Vector2<>(55.f, 90.f)), 110, 180, pose.rotation, 0, Drawings::ps_solid,
             ColorRGBA(180, 180, 180),
             Drawings::bs_solid,

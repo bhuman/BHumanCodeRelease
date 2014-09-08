@@ -11,23 +11,22 @@
 
 MAKE_MODULE(FootContactModelProvider, Sensing);
 
-
 FootContactModelProvider::FootContactModelProvider():
   contactDurationLeft(0), contactDurationRight(0), leftFootLeftDuration(0), leftFootRightDuration(0), rightFootLeftDuration(0), rightFootRightDuration(0)
 {
 }
 
-
 void FootContactModelProvider::update(FootContactModel& model)
 {
   // Check, if any bumper is pressed
-  bool leftFootLeft = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootLeft, leftFootLeftDuration);
-  bool leftFootRight = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootRight, leftFootRightDuration);
-  bool rightFootLeft = !theDamageConfiguration.rightFootBumperDefect &&  checkContact(KeyStates::rightFootLeft, rightFootLeftDuration);
-  bool rightFootRight = !theDamageConfiguration.rightFootBumperDefect && checkContact(KeyStates::rightFootRight, rightFootRightDuration);
-
+  const bool leftFootLeft = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootLeft, leftFootLeftDuration);
+  const bool leftFootRight = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootRight, leftFootRightDuration);
+  const bool rightFootLeft = !theDamageConfiguration.rightFootBumperDefect &&  checkContact(KeyStates::rightFootLeft, rightFootLeftDuration);
+  const bool rightFootRight = !theDamageConfiguration.rightFootBumperDefect && checkContact(KeyStates::rightFootRight, rightFootRightDuration);
+  const bool contactLeftFoot = leftFootLeft || leftFootRight;
+  const bool contactRightFoot = rightFootLeft || rightFootRight;
   // Update statistics
-  if (leftFootLeft || leftFootRight)
+  if(contactLeftFoot)
   {
     contactBufferLeft.add(1);
     contactDurationLeft++;
@@ -37,7 +36,7 @@ void FootContactModelProvider::update(FootContactModel& model)
     contactBufferLeft.add(0);
     contactDurationLeft = 0;
   }
-  if (rightFootLeft || rightFootRight)
+  if(contactRightFoot)
   {
     contactBufferRight.add(1);
     contactDurationRight++;
@@ -49,7 +48,7 @@ void FootContactModelProvider::update(FootContactModel& model)
   }
 
   // Generate model
-  if ((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
+  if((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
       (theGameInfo.state == STATE_READY || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_PLAYING) && //The bumper is used for configuration in initial
       (theFallDownState.state == FallDownState::upright))
   {
@@ -57,7 +56,8 @@ void FootContactModelProvider::update(FootContactModel& model)
     {
       model.contactLeft = true;
       model.contactDurationLeft = contactDurationLeft;
-      model.lastContactLeft = theFrameInfo.time;
+      if(contactLeftFoot)
+        model.lastContactLeft = theFrameInfo.time;
     }
     else
     {
@@ -68,7 +68,8 @@ void FootContactModelProvider::update(FootContactModel& model)
     {
       model.contactRight = true;
       model.contactDurationRight = contactDurationRight;
-      model.lastContactRight = theFrameInfo.time;
+      if(contactRightFoot)
+        model.lastContactRight = theFrameInfo.time;
     }
     else
     {
@@ -82,6 +83,15 @@ void FootContactModelProvider::update(FootContactModel& model)
     model.contactRight = false;
     model.contactDurationLeft = 0;
     model.contactDurationRight = 0;
+  }
+
+  // Debugging stuff:
+
+  if(debug && theFrameInfo.getTimeSince(lastSoundTime) > (int) soundDelay &&
+    (model.contactLeft || model.contactRight))
+  {
+    lastSoundTime = theFrameInfo.time;
+    SystemCall::playSound("doh.wav");
   }
 
   DECLARE_PLOT("module:FootContactModelProvider:sumLeft");
@@ -105,7 +115,6 @@ void FootContactModelProvider::update(FootContactModel& model)
   PLOT("module:FootContactModelProvider:rightFootLeft", rightFootLeft ? 10 : 0);
   PLOT("module:FootContactModelProvider:rightFootRight", rightFootRight ? 10 : 0);
 }
-
 
 bool FootContactModelProvider::checkContact(KeyStates::Key key, int& duration)
 {

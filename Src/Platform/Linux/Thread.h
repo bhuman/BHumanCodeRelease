@@ -11,12 +11,12 @@
 #pragma once
 
 #include <pthread.h>
-#ifdef MACOSX
+#ifdef OSX
 #include <sched.h>
 #endif
 #include <unistd.h>
 #include "Platform/BHAssert.h"
-#include <Platform/Semaphore.h>
+#include "Platform/Semaphore.h"
 
 /**
 * A class encapsulating a pthread
@@ -86,7 +86,7 @@ public:
     if(handle)
     {
       running = false;
-      terminated.wait(1000);
+      terminated.wait(10000);
       pthread_cancel(handle);
       pthread_join(handle, 0);
       handle = 0;
@@ -138,7 +138,7 @@ public:
     */
   static void yield()
   {
-#ifdef MACOSX
+#ifdef OSX
     sched_yield();
 #else
     pthread_yield();
@@ -176,7 +176,7 @@ public:
 #ifndef NDEBUG
     pthread_mutexattr_t attr;
     VERIFY(pthread_mutexattr_init(&attr) == 0);
-#ifdef MACOSX
+#ifdef OSX
     VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK) == 0);
 #else
     VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP) == 0);

@@ -6,7 +6,7 @@
 #include "Utils/bush/tools/Platform.h"
 #include <iostream>
 
-#if defined(LINUX) || defined(MACOSX)
+#if defined(LINUX) || defined(OSX)
 #include <cstdlib>
 #include <sys/types.h>
 #include <cerrno>

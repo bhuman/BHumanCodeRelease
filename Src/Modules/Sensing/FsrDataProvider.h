@@ -7,12 +7,16 @@
 
 #include "Tools/RingBufferWithSum.h"
 
-MODULE(FsrDataProvider)
-REQUIRES(RobotModel)
-REQUIRES(SensorData)
-PROVIDES_WITH_MODIFY(FsrData)
-DEFINES_PARAMETER(float, fsrWeightOffset, 2.0f)
-END_MODULE
+MODULE(FsrDataProvider,
+{,
+  REQUIRES(RobotModel),
+  REQUIRES(SensorData),
+  PROVIDES_WITH_MODIFY(FsrData),
+  DEFINES_PARAMETERS(
+  {,
+    (float)(2.0f) fsrWeightOffset,
+  }),
+});
 
 /**
  * @class ExpGroundContactDetector

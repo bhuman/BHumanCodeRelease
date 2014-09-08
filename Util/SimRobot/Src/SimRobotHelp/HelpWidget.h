@@ -56,5 +56,4 @@ private slots:
 
 signals:
   void tabChangeRequested(int tabIndex);
-
 };

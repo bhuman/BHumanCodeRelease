@@ -4,7 +4,7 @@
 
 #include "Tools/Module/Module.h"
 #include "Representations/Modeling/ObstacleWheel.h"
-#include "Representations/Perception/ObstacleSpots.h"
+#include "Representations/Perception/RobotPercept.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -15,31 +15,36 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Sensing/GroundContactState.h"
+#include "Representations/Perception/ImageCoordinateSystem.h"
 
-MODULE(ObstacleWheelProvider)
-REQUIRES(FrameInfo)
-REQUIRES(ObstacleSpots)
-REQUIRES(CameraInfo)
-REQUIRES(CameraMatrix)
-REQUIRES(Image)
-REQUIRES(Odometer)
-REQUIRES(FallDownState)
-REQUIRES(MotionInfo)
-REQUIRES(RobotInfo)
-REQUIRES(GameInfo)
-REQUIRES(GroundContactState)
-PROVIDES_WITH_MODIFY_AND_DRAW(ObstacleWheel)
-
-DEFINES_PARAMETER(int, wheelRadius, 2700) /**< Radius of the obstacle wheel in mm */
-DEFINES_PARAMETER(int, coneWidth, 6) /**< Width of one sensor code in deg */
-DEFINES_PARAMETER(float, stuffHoleDistThresholdAngle, 0.2f) /**< If the difference in distance between two obstacles is less than this value the hole inbetween is stuffed. */
-DEFINES_PARAMETER(int, stuffHoleMaxRadius, 800) /**< Holes between spots further away than this value will NOT be stuff */
-DEFINES_PARAMETER(int, decreaseSeenTickCount, 1200); /**< every x ms the seenCount of all obstacles will be decreased by 1 */
-DEFINES_PARAMETER(int, maxSeenCount, 9); /**< what the name says :P */
-DEFINES_PARAMETER(int, spotIsObstacleCount, 3); /**< If the seenCount of a spot is higher than this value it is an obstacle */
-DEFINES_PARAMETER(float, mergeCloserWeight, 8.0f); /**< When two obstacles are merged the one that is closer to the robot is weighted with this factor. */
-DEFINES_PARAMETER(float, mergeFurtherWeight,2.0f); /**< When two obstacles are merged the one that is further away from the robot is weighted with this factor. */
-END_MODULE
+MODULE(ObstacleWheelProvider,
+{,
+  REQUIRES(FrameInfo),
+  REQUIRES(RobotPercept),
+  REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
+  REQUIRES(Image),
+  REQUIRES(Odometer),
+  REQUIRES(FallDownState),
+  REQUIRES(MotionInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(GameInfo),
+  REQUIRES(GroundContactState),
+  REQUIRES(ImageCoordinateSystem),
+  PROVIDES_WITH_MODIFY_AND_DRAW(ObstacleWheel),
+  DEFINES_PARAMETERS(
+  {,
+    (int)(2700) wheelRadius, /**< Radius of the obstacle wheel in mm */
+    (int)(6) coneWidth, /**< Width of one sensor code in deg */
+    (float)(0.2f) stuffHoleDistThresholdAngle, /**< If the difference in distance between two obstacles is less than this value the hole inbetween is stuffed. */
+    (int)(800) stuffHoleMaxRadius, /**< Holes between spots further away than this value will NOT be stuff */
+    (int)(1200) decreaseSeenTickCount, /**< every x ms the seenCount of all obstacles will be decreased by 1 */
+    (int)(9) maxSeenCount, /**< what the name says :P */
+    (int)(3) spotIsObstacleCount, /**< If the seenCount of a spot is higher than this value it is an obstacle */
+    (float)(8.0f) mergeCloserWeight, /**< When two obstacles are merged the one that is closer to the robot is weighted with this factor. */
+    (float)(2.0f) mergeFurtherWeight, /**< When two obstacles are merged the one that is further away from the robot is weighted with this factor. */
+  }),
+});
 
 class ObstacleWheelProvider : public ObstacleWheelProviderBase
 {
@@ -51,7 +56,6 @@ private:
   int oldWheelRadius;
   int lastDecreaseTimestamp;
   int coneCount;
-
 
   void update(ObstacleWheel& wheel);
 
@@ -74,7 +78,6 @@ private:
                  const int initialSeenCount, const CameraInfo::Camera seenBy,
                  const bool seenThisFrame, const int seenCountIncrement) const;
 
-
   /**Calculate angle distance from normal distance*/
   float calcAngleDist(const float dist) const;
 
@@ -91,5 +94,4 @@ private:
                  std::vector<ObstacleWheel::Cone>::iterator right) const;
 
   void clearWheel(ObstacleWheel& wheel) const;
-
 };

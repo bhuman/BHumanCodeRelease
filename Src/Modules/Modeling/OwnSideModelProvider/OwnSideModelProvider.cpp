@@ -7,7 +7,7 @@
  */
 
 #include "OwnSideModelProvider.h"
-#include "Representations/Infrastructure/TeamMateData.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Streams/InStreams.h"
 
@@ -61,14 +61,14 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
       if(manuallyPlaced)
       {
-        if(theRobotInfo.number == TeamMateData::firstPlayer)
+        if(theRobotInfo.number == TeammateData::firstPlayer)
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;
         else if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamColor)
           largestXPossibleAtKnownPosition = -theFieldDimensions.centerCircleRadius - awayFromLineDistance;
         else
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyArea + awayFromLineDistance;
       }
-      else if(theRobotInfo.number == TeamMateData::firstPlayer)
+      else if(theRobotInfo.number == TeammateData::firstPlayer)
         largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyArea;
       else
         largestXPossibleAtKnownPosition = -awayFromLineDistance;

@@ -1,9 +1,9 @@
 #include <cfloat>
 #include <algorithm>
 #include "ObstacleWheelProvider.h"
-#include "Tools/Math/Common.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Matrix2x2.h"
+#include "Tools/Math/Transformation.h"
 #include "Tools/Math/Vector.h"
 #include "Representations/Infrastructure/JointData.h"
 MAKE_MODULE(ObstacleWheelProvider, Modeling)
@@ -22,7 +22,7 @@ void ObstacleWheelProvider::update(ObstacleWheel& wheel)
   }
 
   //clear wheel if we are penalized, falling, getting up, etc.
-  if (theGameInfo.state == STATE_INITIAL || theGameInfo.state == STATE_FINISHED ||
+  if(theGameInfo.state == STATE_INITIAL || theGameInfo.state == STATE_FINISHED ||
   theFallDownState.state == FallDownState::onGround ||
   theFallDownState.state == FallDownState::falling ||
   theMotionInfo.motion == MotionRequest::getUp ||
@@ -43,8 +43,6 @@ void ObstacleWheelProvider::update(ObstacleWheel& wheel)
     enterObstacles(wheel);
     stuffHoles(wheel);
   }
-
-
 }
 
 int ObstacleWheelProvider::calcConeIndex(const Vector2<float>& pInField, ObstacleWheel& wheel) const
@@ -56,7 +54,7 @@ int ObstacleWheelProvider::calcConeIndex(const Vector2<float>& pInField, Obstacl
     /** If the angle is very close to negative zero (angle / wheel.coneWidth)
      becomes very very small. If a very very small negative number is added to
      wheel.cones.size() it has no effect. This special case fixes the issue.*/
-    return wheel.cones.size() - 1;
+    return (int) wheel.cones.size() - 1;
   }
   else if(angle < 0)
   {
@@ -132,18 +130,25 @@ void ObstacleWheelProvider::initialize(ObstacleWheel& wheel)
 
 void ObstacleWheelProvider::enterObstacles(ObstacleWheel& wheel) const
 {
-  const int obstacleCount = theObstacleSpots.obstacles.size();
+  const int obstacleCount = (int) theRobotPercept.robots.size();
 
   for(int i = 0; i < obstacleCount; ++i)
   {
     //enter a spot into each cone that is inside the banzone
-    const ObstacleSpots::Obstacle& obstacle = theObstacleSpots.obstacles[i];
+    const RobotPercept::RobotBox& box = theRobotPercept.robots[i];
+
+    if(!box.detectedFeet)
+      continue;
+
     Vector2<float> leftInField;
     Vector2<float> rightInField;
-    Geometry::calculatePointOnField(obstacle.banZoneTopLeft.x, obstacle.banZoneBottomRight.y,
-                                    theCameraMatrix, theCameraInfo, leftInField);
-    Geometry::calculatePointOnField(obstacle.banZoneBottomRight.x, obstacle.banZoneBottomRight.y,
-                                    theCameraMatrix, theCameraInfo, rightInField);
+    const Vector2<> correctedImageCoordinates = theImageCoordinateSystem.toCorrected(Vector2<int>(box.x1FeetOnly, box.y2));
+    const Vector2<> correctedImageCoordinates2 = theImageCoordinateSystem.toCorrected(Vector2<int>(box.x2FeetOnly, box.y2));
+    //ignore return of imageToRobot... there might be reasons for that
+    Transformation::imageToRobot(correctedImageCoordinates.x, correctedImageCoordinates.y,
+                                 theCameraMatrix, theCameraInfo, leftInField);
+    Transformation::imageToRobot(correctedImageCoordinates2.x, correctedImageCoordinates2.y,
+                                 theCameraMatrix, theCameraInfo, rightInField);
     const int rightConeIndex = calcConeIndex(rightInField, wheel);
     int leftConeIndex = calcConeIndex(leftInField, wheel);
 
@@ -160,7 +165,7 @@ void ObstacleWheelProvider::enterObstacles(ObstacleWheel& wheel) const
         enterSpot(wheel, intersection, 1, theCameraInfo.camera, true, 1);
       }
       --leftConeIndex;
-      leftConeIndex = (leftConeIndex + wheel.cones.size()) % wheel.cones.size(); //mathematically correct modulo
+      leftConeIndex = int((leftConeIndex + wheel.cones.size()) % wheel.cones.size()); //mathematically correct modulo
     }
     //last iteration
     enterSpot(wheel, rightInField, 1, theCameraInfo.camera, true, 1);
@@ -213,10 +218,9 @@ void ObstacleWheelProvider::enterSpot(ObstacleWheel& wheel, const Vector2<>& pIn
 
   if(cone.spot.seenCount > 0)
   {//merge the spots
-    if(cone.spot.seenCount < maxSeenCount && !cone.seenThisFrame)
-    {//only increase count if this is the first time that we see the obstacle in this frame
-      cone.spot.seenCount = std::min(cone.spot.seenCount + seenCountIncrement, maxSeenCount);
-    }
+    //merge counts
+    cone.spot.seenCount = std::max(cone.spot.seenCount + seenCountIncrement, initialSeenCount);
+    cone.spot.seenCount = std::min(maxSeenCount, cone.spot.seenCount);
     float oldFactor = 0;  //factor for the old measurement
     float newFactor = 0;  //the factor that is used to weight the new measurement
 

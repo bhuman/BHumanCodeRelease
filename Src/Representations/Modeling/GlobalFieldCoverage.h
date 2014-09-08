@@ -17,14 +17,15 @@ public:
   STREAMABLE(Grid,
   {
   public:
+    Grid()
+    {
+      memset(cells, 0, sizeof(cells));
+    }
     unsigned char coverage(int index, unsigned time) const;
     void setCoverage(int index, unsigned time, unsigned char coverage),
 
     /* cells[i] is the timestamp when the cell has been looked at the last time by one robot. */
     (unsigned[FieldCoverage::GridInterval::xSteps * FieldCoverage::GridInterval::ySteps]) cells,
-
-    // Initialization
-    memset(cells, 0, sizeof(cells));
   }),
 
   (Grid) grid,

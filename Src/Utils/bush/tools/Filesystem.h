@@ -15,7 +15,7 @@ public:
       const std::string& suffix = "",
       bool keepSuffixes = true);
   static std::string getFileAsString(const std::string& filename);
-  
+
   /**Returns the path to the private key used to connect to the NAO*/
   static std::string getNaoKey();
 };

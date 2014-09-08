@@ -6,11 +6,11 @@
 * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
 */
 
-#include "Platform/Thread.h"
-#include "ColorSpaceView.h"
 #include "Controller/RobotConsole.h"
+#include "ColorSpaceView.h"
+#include "Platform/Thread.h"
 #include "Controller/Visualization/OpenGLMethods.h"
-#ifdef MACOSX
+#ifdef OSX
 #include <gl.h>
 #else
 #include <GL/gl.h>
@@ -18,12 +18,12 @@
 
 ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3<>& b, bool upperCam)
   : View3D(fullName, b),
-    upperCam(upperCam),
     console(c),
     name(n),
     colorModel(cm),
     channel(ch),
-    lastTimeStamp(0)
+    lastTimeStamp(0),
+    upperCam(upperCam)
 {
 }
 

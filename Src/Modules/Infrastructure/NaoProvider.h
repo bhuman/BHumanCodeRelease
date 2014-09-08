@@ -20,23 +20,23 @@
 #include "Representations/Infrastructure/USRequest.h"
 #include "Platform/Linux/NaoBody.h"
 
-MODULE(NaoProvider)
-  REQUIRES(JointCalibration)
-  REQUIRES(JointData)
-  REQUIRES(LEDRequest)
-  REQUIRES(SensorCalibration)
-  REQUIRES(USRequest)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(JointData)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(SensorData)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(KeyStates)
-  PROVIDES_WITH_MODIFY(FrameInfo)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(RobotInfo)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OwnTeamInfo)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OpponentTeamInfo)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(GameInfo)
-  USES(JointRequest) // Will be accessed in send()
-END_MODULE
-
+MODULE(NaoProvider,
+{,
+  REQUIRES(JointCalibration),
+  REQUIRES(JointData),
+  REQUIRES(LEDRequest),
+  REQUIRES(SensorCalibration),
+  REQUIRES(USRequest),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(JointData),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(SensorData),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(KeyStates),
+  PROVIDES_WITH_MODIFY(FrameInfo),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(RobotInfo),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OwnTeamInfo),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OpponentTeamInfo),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(GameInfo),
+  USES(JointRequest), // Will be accessed in send()
+});
 
 #ifdef TARGET_ROBOT
 
@@ -111,8 +111,6 @@ private:
   void send();
 
 public:
-  NaoProvider() {}
-  ~NaoProvider() {}
   static void finishFrame() {}
   static bool isFrameDataComplete() {return true;}
   static void waitForFrameData() {}

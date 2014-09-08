@@ -20,7 +20,7 @@ Vector2<> HeadLimits::getTiltBound(float pan) const
   if(it == end)
     return Vector2<>(JointData::off, JointData::off); // Unreachable pan angle
 
-  const int index = it - begin;
+  const size_t index = it - begin;
   const float xe = intervals[index];   // Interval end
   const float le = lowerBounds[index]; // Lower bound at interval end
   const float ue = upperBounds[index]; // Upper bound at interval end
@@ -84,6 +84,6 @@ void HeadLimits::draw() const
 {
   DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:left", "LShoulderPitch");
   DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:right", "RShoulderPitch");
-  SPHERE3D("representation:HeadLimits:left", 0, 0, 0, shoulderRadius, ColorClasses::orange);
-  SPHERE3D("representation:HeadLimits:right", 0, 0, 0, shoulderRadius, ColorClasses::orange);
+  SPHERE3D("representation:HeadLimits:left", 0, 0, 0, shoulderRadius, ColorRGBA::orange);
+  SPHERE3D("representation:HeadLimits:right", 0, 0, 0, shoulderRadius, ColorRGBA::orange);
 }

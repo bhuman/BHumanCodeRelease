@@ -10,30 +10,41 @@ class NaoCamera;
 
 #include "Tools/Module/Module.h"
 #include "Platform/Camera.h"
-#include "Representations/Configuration/CameraSettings.h"
+#include "Representations/Infrastructure/CameraSettings.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/CameraIntrinsics.h"
+#include "Representations/Infrastructure/CameraResolution.h"
 
-MODULE(CameraProvider)
-  REQUIRES(CameraSettings)
-  REQUIRES(Image)
-  PROVIDES_WITH_OUTPUT(Image)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(FrameInfo)
-  PROVIDES_WITH_MODIFY(CognitionFrameInfo)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(CameraInfo)
-END_MODULE
+MODULE(CameraProvider,
+{,
+  USES(CameraIntrinsicsNext),
+  USES(CameraResolutionRequest),
+  REQUIRES(Image),
+  PROVIDES_WITH_OUTPUT(Image),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(FrameInfo),
+  PROVIDES_WITH_OUTPUT(CameraInfo),
+  PROVIDES(CameraInfoFullRes),
+  PROVIDES(CameraSettings),
+  PROVIDES_WITH_MODIFY(CameraIntrinsics),
+  PROVIDES(CameraResolution),
+});
 
 class CameraProvider : public CameraProviderBase
 {
 private:
   static PROCESS_WIDE_STORAGE(CameraProvider) theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
 
-  NaoCamera* upperCamera;
-  NaoCamera* lowerCamera;
-  NaoCamera* currentImageCamera;
+  NaoCamera* upperCamera = nullptr;
+  NaoCamera* lowerCamera = nullptr;
+  NaoCamera* currentImageCamera = nullptr;
   CameraInfo upperCameraInfo;
   CameraInfo lowerCameraInfo;
+  CameraSettings upperCameraSettings;
+  CameraSettings lowerCameraSettings;
+  CameraIntrinsics cameraIntrinsics;
+  CameraResolution cameraResolution;
   float cycleTime;
 #ifdef CAMERA_INCLUDED
   unsigned int imageTimeStamp;
@@ -41,11 +52,6 @@ private:
   unsigned int lastImageTimeStamp;
   unsigned long long lastImageTimeStampLL;
 #endif
-
-  void update(Image& image);
-  void update(FrameInfo& frameInfo);
-  void update(CognitionFrameInfo& cognitionFrameInfo);
-  void update(CameraInfo& cameraInfo);
 
 public:
   /**
@@ -69,4 +75,23 @@ public:
   */
   static void waitForFrameData();
   void waitForFrameData2();
+
+  void setUpCameras();
+
+private:
+  void update(Image& image);
+  void update(FrameInfo& frameInfo);
+  void update(CameraInfo& cameraInfo);
+  void update(CameraInfoFullRes& cameraInfoFullRes);
+  void update(CameraSettings& cameraSettings);
+  void update(CameraIntrinsics& cameraIntrinsics);
+  void update(CameraResolution& cameraResolution);
+
+  bool readCameraSettings();
+  bool readCameraIntrinsics();
+  bool readCameraResolution();
+
+  bool processResolutionRequest();
+
+  void setupCameras();
 };

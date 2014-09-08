@@ -30,7 +30,7 @@ class invalid_key : public std::logic_error
 {
   public:
     explicit invalid_key (const std::string& what_arg) : logic_error(what_arg)
-    { }
+    {}
 };
 
 /**
@@ -44,12 +44,12 @@ class bad_cm_cast : public std::bad_cast
 public:
   bad_cm_cast(const std::string &reason)
     : msg(reason)
-  { }
+  {}
   const char* what() const throw()
   {
     return msg.c_str();
   }
-  virtual ~bad_cm_cast() throw() { }
+  virtual ~bad_cm_cast() throw() {}
 };
 
 class ConfigValue;
@@ -69,7 +69,7 @@ protected:
   virtual void setParent(ConfigValue *cv) = 0;
   virtual ConfigValue* deepCopy() const = 0;
 public:
-  virtual ~ConfigValue() { }
+  virtual ~ConfigValue() = default;
   enum Type
   {
     PLAIN,
@@ -161,7 +161,7 @@ protected:
   ConfigValueBase()
     : comment(""),
       parent(0)
-  { }
+  {}
   const ConfigValue* getParent() const;
   void setParent(ConfigValue *cv);
 public:
@@ -207,7 +207,7 @@ public:
   PlainConfigValue(const std::string &v);
   PlainConfigValue(const PlainConfigValue &other);
   ~PlainConfigValue() { /* nothing to do */ }
-  inline Type getType() const { return ConfigValue::PLAIN; }
+  Type getType() const { return ConfigValue::PLAIN; }
   size_t length() const;
   std::ostream& write(std::ostream &os, bool comment = true, std::string indentation = "") const;
 
@@ -275,10 +275,10 @@ protected:
     return new ListConfigValue(*this);
   }
 public:
-  ListConfigValue();
+  ListConfigValue() = default;
   ListConfigValue(const ListConfigValue &other);
   ~ListConfigValue();
-  inline Type getType() const { return ConfigValue::LIST; }
+  Type getType() const { return ConfigValue::LIST; }
   explicit ListConfigValue(std::vector<ConfigValue*> values);
   size_t length() const;
   std::ostream& write(std::ostream &os, bool comment = true, std::string indentation = "") const;
@@ -286,7 +286,7 @@ public:
   template<typename T> const ListConfigValue& operator>>(std::vector<T> &value) const
   {
     value.clear();
-    for (std::vector<ConfigValue*>::const_iterator i = list.begin();
+    for(std::vector<ConfigValue*>::const_iterator i = list.begin();
          i != list.end();
          ++i)
     {
@@ -349,7 +349,7 @@ public:
   ConfigMap(const ConfigMap& other);
   ConfigMap(unsigned int flags);
   ~ConfigMap();
-  inline Type getType() const { return ConfigValue::MAP; }
+  Type getType() const { return ConfigValue::MAP; }
   bool isReadOnly() const;
   size_t length() const;
   void write(const std::string *filename, bool withComment = true, std::string indentation = "") const;
@@ -450,9 +450,9 @@ public:
 
   template<typename T> ConfigValue& operator<<(const T &value)
   {
-    if (!configValue)
+    if(!configValue)
     {
-      if (key)
+      if(key)
         configValue = map->set(*key, *createConfigValueFor(value));
       else
         configValue = list->append(index, *createConfigValueFor(value));
@@ -462,9 +462,9 @@ public:
 
   template<typename T> ConfigValue& operator<<(const std::vector<T> &value)
   {
-    if (!configValue)
+    if(!configValue)
     {
-      if (key)
+      if(key)
         configValue = map->set(*key, ListConfigValue());
       else
         configValue = list->append(index, ListConfigValue());
@@ -506,7 +506,7 @@ template<typename T> ListConfigValue& ListConfigValue::operator<<(const std::vec
 {
   clear();
   list.reserve(value.size());
-  for (size_t i = 0; i < value.size(); ++i)
+  for(size_t i = 0; i < value.size(); ++i)
     (*this)[i] << value[i];
   return *this;
 }

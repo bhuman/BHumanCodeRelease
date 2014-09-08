@@ -7,7 +7,7 @@
 #pragma once
 
 #include <set>
-
+#include <SimRobotCore2.h>
 #include "Platform/Thread.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/GameInfo.h"
@@ -17,7 +17,7 @@
 #include "Tools/Math/Pose2D.h"
 #include "Tools/Streams/InOut.h"
 
-class Oracle;
+class SimulatedRobot;
 
 /**
  * The class simulates a console-based GameController.
@@ -28,13 +28,13 @@ private:
   class Robot
   {
   public:
-    Oracle* oracle;
+    SimulatedRobot* simulatedRobot;
     RobotInfo info;
     unsigned timeWhenPenalized;
     Pose2D lastPose;
     bool manuallyPlaced;
 
-    Robot() : oracle(0), timeWhenPenalized(0), manuallyPlaced(false) {}
+    Robot() : simulatedRobot(0), timeWhenPenalized(0), manuallyPlaced(false) {}
   };
 
   ENUM(Penalty,
@@ -52,12 +52,13 @@ private:
   static const int numOfPenalties = numOfPenaltys; /**< Correct typo. */
 
   DECLARE_SYNC;
-  static const int numOfRobots = 10;
-  static const int numOfFieldPlayers = numOfRobots / 2 - 1;
+  static const int numOfRobots = 14;
+  static const int numOfFieldPlayers = numOfRobots / 2 - 3; //Coach, Keeper, Substitute
   static const int durationOfHalf = 600;
   static const float footLength; /**< foot length for position check and manual placement at center circle. */
   static const float safeDistance; /**< safe distance from penalty areas for manual placement. */
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
+  static Pose2D lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
   static FieldDimensions fieldDimensions;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
@@ -66,6 +67,9 @@ private:
   unsigned timeWhenLastRobotMoved;
   unsigned timeWhenStateBegan;
   Robot robots[numOfRobots];
+
+   /** enum which declares the different types of balls leaving the field */
+  enum BallOut { NONE, GOAL_BY_RED, GOAL_BY_BLUE, OUT_BY_RED, OUT_BY_BLUE };
 
   /**
    * Handles the command "gc".
@@ -127,17 +131,21 @@ private:
   /** Execute the manual placements decided before. */
   void executePlacement();
 
+  /** Update the ball position based on the rules. */
+  static BallOut updateBall();
+
 public:
   bool automatic; /**< Are the automatic features active? */
 
+  /** Constructor */
   GameController();
 
   /**
-   * Each simulated robot must register its oracle.
+   * Each simulated robot must be registered.
    * @param robot The number of the robot [0 ... numOfRobots-1].
-   * @param oracle The oracle of that robot.
+   * @param simulatedRobot The simulation interface of that robot.
    */
-  void registerOracle(int robot, Oracle& oracle);
+  void registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot);
 
   /**
    * Handles the parameters of the console command "gc".
@@ -156,6 +164,12 @@ public:
 
   /** Executes the automatic referee. */
   void referee();
+
+  /**
+  * Proclaims which robot touched the ball at last
+  * @param robot The robot
+  */
+  static void setLastBallContactRobot(SimRobot::Object* robot);
 
   /**
    * Write the current game information to the stream provided.

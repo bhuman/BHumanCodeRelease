@@ -4,18 +4,11 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QScrollBar>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QSettings>
 #include <QApplication>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "ConsoleView.h"
 #include "Platform/BHAssert.h"
@@ -140,8 +133,7 @@ void ConsoleWidget::print(const QString& text)
   cursor.movePosition(QTextCursor::End);
 }
 
-
-QMenu* ConsoleWidget::createEditMenu()
+QMenu* ConsoleWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Edit"));
 
@@ -199,7 +191,6 @@ QMenu* ConsoleWidget::createEditMenu()
   return menu;
 }
 
-
 void ConsoleWidget::keyPressEvent(QKeyEvent* event)
 {
   switch(event->key())
@@ -237,7 +228,7 @@ void ConsoleWidget::keyPressEvent(QKeyEvent* event)
         newBegin += i;
         */
 
-        for(int i = command.length() - 2; i >= 0; --i)
+        for(int i = (int) command.length() - 2; i >= 0; --i)
         {
           char c = command[i];
           if(c == ' ' || c == ':' || c == '.')

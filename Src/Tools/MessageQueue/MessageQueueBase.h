@@ -34,10 +34,13 @@ public:
   ~MessageQueueBase();
 
   /**
-  * Sets the size of the queue. Ignored on the Win32 platform.
-  * @param size The maximum size of the queue in bytes.
+  * The method sets the size of memory which is allocated for the queue.
+  * In the simulator, this is only the maximum size (dynamic allocation).
+  * @param size The maximum size of the queue in Bytes.
+  * @param reserveForInfrastructure Non-infrastructure messages will be rejected if
+  *                                 less than this number of bytes is free.
   */
-  void setSize(unsigned size);
+  void setSize(unsigned size, unsigned reserveForInfrastructure);
 
   /**
    * Returns the (maximum) size of the queue.
@@ -60,7 +63,7 @@ public:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  void write(const void* p, int size);
+  void write(const void* p, size_t size);
 
   /**
   * The method finishes the last message in the queue.
@@ -87,7 +90,7 @@ public:
   *          that is at least "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  void read(void* p, int size);
+  void read(void* p, size_t size);
 
   /**
   * The method gives direct read access to the selected message for reading.
@@ -138,19 +141,13 @@ public:
   */
   void removeRepetitions();
 
-  /**
-   * Writing data to a queue can fail if the memory is full.
-   * @return true if a write error occurred due to full memory.
-   */
-  bool hasWriteOfLastMsgFailed() const;
-
 private:
   /**
    * The method reserves a number of bytes in the message queue.
    * @param size The number of bytes to reserve.
    * @return The address of the reserved space or 0 if there was no room.
    */
-  char* reserve(unsigned size);
+  char* reserve(size_t size);
 
   /**
    * Creates an index of the beginnings of all messages.
@@ -164,10 +161,12 @@ private:
    */
   void freeIndex();
 
-  enum {headerSize = 4}; /**< The size of the header of each message in bytes. */
+  static const int headerSize = 4; /**< The size of the header of each message in bytes. */
+  static const int queueHeaderSize = 2 * sizeof(unsigned); /**< The size of the header in a streamed queue. */
   char* buf; /**< The buffer on that the queue works. */
   unsigned* messageIndex; /**< An index of the beginnings of all messages. */
   unsigned selectedMessageForReadingPosition; /**< The position of the message that is selected for reading. */
+  unsigned reserveForInfrastructure; /**< Non-infrastructure messages will be rejected if less than this number of bytes is free. */
   unsigned maximumSize; /**< The maximum queue size (in bytes). */
   unsigned reservedSize; /**< The queue size reserved (in bytes). */
   unsigned usedSize; /** The queue size used (in bytes). It is also the position where the next message starts. */

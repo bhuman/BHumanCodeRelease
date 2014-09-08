@@ -50,7 +50,6 @@ bool SCPCmd::preExecution(Context &context, const std::vector<std::string> &para
     fromFile = fromFile.replace(fromFile.size() - 1, 1, "");
   }
 
-
   toFile = params[i++];
   if(toFile[0] == '"')
   {
@@ -66,7 +65,6 @@ bool SCPCmd::preExecution(Context &context, const std::vector<std::string> &para
 
     toFile = toFile.replace(toFile.size() - 1, 1, "");
   }
-
 
   if(i != params.size())
   {
@@ -88,7 +86,7 @@ Task* SCPCmd::perRobotExecution(Context &context, Robot &robot)
 SCPCmd::SCPTask::SCPTask(Context &context, Robot *robot, const std::string &command)
   : RobotTask(context, robot),
     command(command)
-{ }
+{}
 
 bool SCPCmd::SCPTask::execute()
 {

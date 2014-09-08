@@ -18,7 +18,6 @@ ServoMotor::ServoMotor() : maxVelocity(0), maxForce(0)
 {
   Simulation::simulation->scene->actuators.push_back(this);
 
-
   positionSensor.sensorType = SimRobotCore2::SensorPort::floatSensor;
   positionSensor.dimensions.push_back(1);
 }

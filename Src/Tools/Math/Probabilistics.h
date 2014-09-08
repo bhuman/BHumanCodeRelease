@@ -8,13 +8,16 @@
 
 #pragma once
 
-#include "Common.h"
+#include "BHMath.h"
 #include "Random.h"
+#include <cmath>
 #include <algorithm>
-
 
 /** constant for e*/
 const float e = 2.71828182845902353602874713527f;
+
+/** constant for an expression used by the gaussian function*/
+const float sqrt2pi = std::sqrt(2.0f * pi);
 
 /** constant for triangular distribution*/
 const float sqrt6dividedBy2 = std::sqrt(6.0f) / 2.0f;

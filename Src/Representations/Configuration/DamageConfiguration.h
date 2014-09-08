@@ -11,10 +11,12 @@
 
 STREAMABLE(DamageConfiguration,
 {,
-  (bool)(false) weakLeftLeg,
-  (bool)(false) weakRightLeg,
-  (bool)(false) usLDefect,
-  (bool)(false) usRDefect,
-  (bool)(false) leftFootBumperDefect,
-  (bool)(false) rightFootBumperDefect,
+  (bool) (false) weakLeftLeg,
+  (bool) (false) weakRightLeg,
+  (bool) (false) usLDefect,
+  (bool) (false) usRDefect,
+  (bool) (false) leftFootBumperDefect,
+  (bool) (false) rightFootBumperDefect,
+  (bool) (false) noFieldGenuflect,
+  (bool) (false) noBackwardKick,
 });

@@ -11,9 +11,12 @@ inline float approxAtan2(float y, float x)
 {
   if(x == 0.f)
   {
-    if(y > 0.0f) return 1.5707963f;
-    if(y == 0.0f) return 0.0f;
-    return -1.5707963f;
+    if(y > 0.0f)
+      return 1.5707963f;
+    else if(y == 0.0f)
+      return 0.0f;
+    else
+      return -1.5707963f;
   }
   float atan;
   float z = y / x;
@@ -22,14 +25,17 @@ inline float approxAtan2(float y, float x)
     atan = z / (1.f + 0.28f * z * z);
     if(x < 0.0f)
     {
-      if(y < 0.0f) return atan - 3.14159265f;
-      return atan + 3.14159265f;
+      if(y < 0.0f)
+        return atan - 3.14159265f;
+      else
+        return atan + 3.14159265f;
     }
   }
   else
   {
     atan = 1.5707963f - z / (z * z + 0.28f);
-    if(y < 0.f) return atan - 3.14159265f;
+    if(y < 0.f)
+      return atan - 3.14159265f;
   }
   return atan;
 }

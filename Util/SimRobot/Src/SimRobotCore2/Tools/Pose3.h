@@ -21,41 +21,41 @@ public:
   Vector3<V> translation;
 
   /** constructor*/
-  inline Pose3<V>() {}
+  Pose3<V>() = default;
 
   /** constructor from rotation and translation
    * \param rot Rotation
    * \param trans Translation
    */
-  inline Pose3<V>(const Matrix3x3<V>& rot, const Vector3<V>& trans) : rotation(rot), translation(trans) {}
+  Pose3<V>(const Matrix3x3<V>& rot, const Vector3<V>& trans) : rotation(rot), translation(trans) {}
 
   /** constructor from rotation
    * \param rot Rotation
    */
-  inline Pose3<V>(const Matrix3x3<V>& rot): rotation(rot) {}
+  Pose3<V>(const Matrix3x3<V>& rot): rotation(rot) {}
 
   /** constructor from translation
    * \param trans Translation
    */
-  inline Pose3<V>(const Vector3<V>& trans): translation(trans) {}
+  Pose3<V>(const Vector3<V>& trans): translation(trans) {}
 
   /** constructor from three translation values
    * \param x translation x component
    * \param y translation y component
    * \param z translation z component
    */
-  inline Pose3<V>(const V& x, const V& y, const V& z) : translation(x, y, z) {}
+  Pose3<V>(const V& x, const V& y, const V& z) : translation(x, y, z) {}
 
   /** Copy constructor
   *\param other The other vector that is copied to this one
   */
-  inline Pose3<V>(const Pose3<V>& other) : rotation(other.rotation), translation(other.translation) {}
+  Pose3<V>(const Pose3<V>& other) : rotation(other.rotation), translation(other.translation) {}
 
   /** Assignment operator
   *\param other The other Pose3<V> that is assigned to this one
   *\return A reference to this object after the assignment.
   */
-  inline Pose3<V>& operator=(const Pose3<V>& other)
+  Pose3<V>& operator=(const Pose3<V>& other)
   {
     rotation = other.rotation;
     translation = other.translation;
@@ -65,7 +65,7 @@ public:
   /** Multiplication with Point
   *\param point (Vector3&lt;float&gt;)
   */
-  inline Vector3<V> operator*(const Vector3<V>& point) const
+  Vector3<V> operator*(const Vector3<V>& point) const
   {
     return rotation * point + translation;
   }
@@ -74,7 +74,7 @@ public:
   *\param other The other vector that will be compared to this one
   *\return Whether the two vectors are equal.
   */
-  inline bool operator==(const Pose3<V>& other) const
+  bool operator==(const Pose3<V>& other) const
   {
     return translation == other.translation && rotation == other.rotation;
   }
@@ -83,7 +83,7 @@ public:
   *\param other The other vector that will be compared to this one
   *\return Whether the two vectors are unequal.
   */
-  inline bool operator!=(const Pose3<V>& other) const
+  bool operator!=(const Pose3<V>& other) const
   {
     return translation != other.translation || rotation != other.rotation;
   }
@@ -92,7 +92,7 @@ public:
   *\param other The other pose that will be concatenated to this one.
   *\return A reference to this pose after concatenation
   */
-  inline Pose3<V>& conc(const Pose3<V>& other)
+  Pose3<V>& conc(const Pose3<V>& other)
   {
     translation = *this * other.translation;
     rotation *= other.rotation;
@@ -102,7 +102,7 @@ public:
   /** Calculates the inverse transformation from the current pose
   * @return The inverse transformation pose.
   */
-  inline Pose3<V> invert() const
+  Pose3<V> invert() const
   {
     Pose3<V> result;
     result.rotation = rotation.transpose();
@@ -114,7 +114,7 @@ public:
   *\param trans Vector to translate with
   *\return A reference to this pose after translation
   */
-  inline Pose3<V>& translate(const Vector3<V>& trans)
+  Pose3<V>& translate(const Vector3<V>& trans)
   {
     translation = *this * trans;
     return *this;
@@ -126,7 +126,7 @@ public:
   *\param z z component of vector to translate with
   *\return A reference to this pose after translation
   */
-  inline Pose3<V>& translate(const V& x, const V& y, const V& z)
+  Pose3<V>& translate(const V& x, const V& y, const V& z)
   {
     translation = *this * Vector3<V>(x, y, z);
     return *this;
@@ -136,7 +136,7 @@ public:
   *\param rot Rotationmatrix to rotate with
   *\return A reference to this pose after rotation
   */
-  inline Pose3<V>& rotate(const Matrix3x3<V>& rot)
+  Pose3<V>& rotate(const Matrix3x3<V>& rot)
   {
     rotation *= rot;
     return *this;

@@ -10,10 +10,9 @@
 
 #include <QString>
 #include <QIcon>
+#include <SimRobot.h>
 
 #include "Tools/Math/Vector3.h"
-
-#include "SimRobot.h"
 
 /**
 * @class View3D

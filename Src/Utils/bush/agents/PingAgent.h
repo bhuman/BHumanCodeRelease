@@ -17,7 +17,6 @@ class PingAgent : public QObject
   std::map<size_t, std::map<std::string, double> > pings;
 
 public:
-  PingAgent();
   ~PingAgent();
   void cleanUp();
   void initializeProcesses(std::map<std::string, Robot*>& robotsByName);

@@ -4,6 +4,8 @@
 * @author Colin Graf
 */
 
+#include "Controller/RobotConsole.h"
+
 #include <QHeaderView>
 #include <QApplication>
 #include <QPainter>
@@ -12,7 +14,6 @@
 
 #include "JointView.h"
 #include "Platform/Thread.h"
-#include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/Visualization/HeaderedWidget.h"
 
@@ -160,7 +161,6 @@ private:
   QSize sizeHint() const { return QSize(260, 400); }
 };
 
-
 class JointHeaderedWidget : public HeaderedWidget, public SimRobot::Widget
 {
 public:
@@ -185,8 +185,6 @@ private:
   virtual QWidget* getWidget() {return this;}
   virtual void update() {jointWidget->update();}
 };
-
-
 
 JointView::JointView(const QString& fullName, RobotConsole& robotConsole, const JointData& jointData, const SensorData& sensorData, const JointData& jointRequest) :
   fullName(fullName), icon(":/Icons/tag_green.png"), console(robotConsole), jointData(jointData), sensorData(sensorData), jointRequest(jointRequest) {}

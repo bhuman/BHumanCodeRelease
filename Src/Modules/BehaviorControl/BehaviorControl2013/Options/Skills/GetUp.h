@@ -32,6 +32,7 @@ option(GetUp)
       GetUpEngine();
     }
   }
+
   /** Get up from side
    *  Try to move legs to turn on front or back */
   state(lyingOnSide)

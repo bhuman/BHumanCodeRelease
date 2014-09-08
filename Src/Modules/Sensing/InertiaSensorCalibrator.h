@@ -22,28 +22,32 @@
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/SensorCalibration.h"
 
-MODULE(InertiaSensorCalibrator)
-  REQUIRES(SensorData)
-  REQUIRES(RobotModel)
-  REQUIRES(FrameInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(GameInfo)
-  REQUIRES(GroundContactState)
-  REQUIRES(JointCalibration)
-  REQUIRES(SensorCalibration)
-  USES(MotionSelection)
-  USES(MotionInfo)
-  USES(WalkingEngineOutput)
-  PROVIDES_WITH_MODIFY(InertiaSensorData)
-  DEFINES_PARAMETER(unsigned, timeFrame, 1500) /**< The time frame within unstable situations lead to dropping averaged gyro and acceleration measurements. (in ms) */
-  DEFINES_PARAMETER(unsigned, penalizedTimeFrame, 400) /**< Time frame expansion after receiving a penalty or before getting unpanlized (in ms) */
-  DEFINES_PARAMETER(Vector2<>, gyroBiasProcessNoise, Vector2<>(0.05f, 0.05f)) /**< The process noise of the gyro offset estimator. */
-  DEFINES_PARAMETER(Vector2<>, gyroBiasStandMeasurementNoise, Vector2<>(0.01f, 0.01f)) /**< The noise of gyro measurements and the gyro offset while standing. */
-  DEFINES_PARAMETER(Vector2<>, gyroBiasWalkMeasurementNoise, Vector2<>(0.1f, 0.1f)) /**< The noise of gyro measurements and the gyro offset while walking. */
-  DEFINES_PARAMETER(Vector3<>, accBiasProcessNoise, Vector3<>(0.1f, 0.1f, 0.1f)) /**< The process noise of the acceleration sensor offset estimator. */
-  DEFINES_PARAMETER(Vector3<>, accBiasStandMeasurementNoise, Vector3<>(0.1f, 0.1f, 0.1f)) /**< The noise of acceleration sensor measurements and the acceleration sensor offset while standing. */
-  DEFINES_PARAMETER(Vector3<>, accBiasWalkMeasurementNoise, Vector3<>(1.f, 1.f, 1.f)) /**< The noise of acceleration sensor measurements and the acceleration sensor offset while walking. */
-END_MODULE
+MODULE(InertiaSensorCalibrator,
+{,
+  REQUIRES(SensorData),
+  REQUIRES(RobotModel),
+  REQUIRES(FrameInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(GameInfo),
+  REQUIRES(GroundContactState),
+  REQUIRES(JointCalibration),
+  REQUIRES(SensorCalibration),
+  USES(MotionSelection),
+  USES(MotionInfo),
+  USES(WalkingEngineOutput),
+  PROVIDES_WITH_MODIFY(InertiaSensorData),
+  DEFINES_PARAMETERS(
+  {,
+    (unsigned)(1500) timeFrame, /**< The time frame within unstable situations lead to dropping averaged gyro and acceleration measurements. (in ms) */
+    (unsigned)(400) penalizedTimeFrame, /**< Time frame expansion after receiving a penalty or before getting unpanlized (in ms) */
+    (Vector2<>)(0.05f, 0.05f) gyroBiasProcessNoise, /**< The process noise of the gyro offset estimator. */
+    (Vector2<>)(0.01f, 0.01f) gyroBiasStandMeasurementNoise, /**< The noise of gyro measurements and the gyro offset while standing. */
+    (Vector2<>)(0.1f, 0.1f) gyroBiasWalkMeasurementNoise, /**< The noise of gyro measurements and the gyro offset while walking. */
+    (Vector3<>)(0.1f, 0.1f, 0.1f) accBiasProcessNoise, /**< The process noise of the acceleration sensor offset estimator. */
+    (Vector3<>)(0.1f, 0.1f, 0.1f) accBiasStandMeasurementNoise, /**< The noise of acceleration sensor measurements and the acceleration sensor offset while standing. */
+    (Vector3<>)(1.f, 1.f, 1.f) accBiasWalkMeasurementNoise, /**< The noise of acceleration sensor measurements and the acceleration sensor offset while walking. */
+  }),
+});
 
 /**
 * @class InertiaSensorCalibrator
@@ -76,7 +80,7 @@ private:
     /**
     * Default constructor.
     */
-    Collection() {};
+    Collection() = default;
   };
 
   bool calibrated; /**< Whether the filters are initialized. */

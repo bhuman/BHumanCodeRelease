@@ -26,12 +26,3 @@ public:
   (unsigned)(0) time, /**< The time stamp of the data processed in the current frame in ms. */
   (float)(1) cycleTime, /**< Length of one cycle in seconds. */
 });
-
-/**
-* @class CognitionFrameInfo
-* A class that contains information on the current Cognition frame.
-* This representation is used to track whether camera images are
-* received. In contrast to FrameInfo, it will be transfered to the
-* Motion process.
-*/
-class CognitionFrameInfo : public FrameInfo {};

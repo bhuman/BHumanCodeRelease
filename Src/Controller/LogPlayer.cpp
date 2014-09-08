@@ -8,7 +8,8 @@
 
 #include <QImage>
 #include "LogPlayer.h"
-#include "Representations/Perception/JPEGImage.h"
+#include "Representations/Infrastructure/AudioData.h"
+#include "Representations/Infrastructure/LowFrameRateImage.h"
 #include "Platform/SystemCall.h"
 #include "Platform/BHAssert.h"
 #include "Platform/File.h"
@@ -39,20 +40,27 @@ void LogPlayer::init()
 bool LogPlayer::open(const char* fileName)
 {
   InBinaryFile file(fileName);
-  unsigned long long totalUncompressedSize = 0;
+  unsigned long long uncompressedSize;
   if(file.exists())
   {
     clear();
 
     char magicByte;
     file >> magicByte;
-    
+
     switch(magicByte)
     {
       case logFileRegular: //regular log file
         file >> *this;
         break;
       case logFileCompressed://compressed log file
+
+        uncompressedSize = getUncompressedSize(fileName);
+        //if this assert is triggered the log file is too big. The maximum size is set
+        //by the RobotConsole.
+        ASSERT(uncompressedSize <= (unsigned long long) queue.getSize());
+        setSize((unsigned) uncompressedSize);
+
         while(!file.eof())
         {
           unsigned compressedSize;
@@ -66,20 +74,16 @@ bool LogPlayer::open(const char* fileName)
           snappy_uncompressed_length(&compressedBuffer[0], compressedSize, &uncompressedSize);
           std::vector<char> uncompressBuffer;
           uncompressBuffer.resize(uncompressedSize);
-          snappy_uncompress(&compressedBuffer[0], compressedSize, &uncompressBuffer[0], &uncompressedSize);
+          if(snappy_uncompress(&compressedBuffer[0], compressedSize, &uncompressBuffer[0], &uncompressedSize) != SNAPPY_OK)
+            break;
           InBinaryMemory mem(&uncompressBuffer[0], uncompressedSize);
-          totalUncompressedSize += uncompressedSize;
-
-          //if this assert is triggered the log file is too big. The maximum size is set
-          //by the RobotConsole.
-          ASSERT(totalUncompressedSize <= (unsigned long long) queue.getSize());
           mem >> *this;
         }
         break;
       default:
         ASSERT(FALSE); //unknown magic byte
     }
-    
+
     stop();
     countFrames();
     createFrameIndex();
@@ -87,7 +91,6 @@ bool LogPlayer::open(const char* fileName)
   }
   return false;
 }
-
 
 void LogPlayer::play()
 {
@@ -146,7 +149,8 @@ void LogPlayer::stepForward()
     do
     {
       copyMessage(++currentMessageNumber, targetQueue);
-      if(queue.getMessageID() == idImage || queue.getMessageID() == idJPEGImage)
+      if(queue.getMessageID() == idImage || queue.getMessageID() == idJPEGImage || queue.getMessageID() == idThumbnail ||
+         (queue.getMessageID() == idLowFrameRateImage && queue.getBytesLeftInMessage() > 150))
         lastImageFrameNumber = currentFrameNumber;
     }
     while(queue.getMessageID() != idProcessFinished);
@@ -225,6 +229,15 @@ bool LogPlayer::saveImages(const bool raw, const char* fileName)
       in.bin >> jpegImage;
       jpegImage.toImage(image);
     }
+    else if(queue.getMessageID() == idLowFrameRateImage)
+    {
+      LowFrameRateImage lowFrameRateImage;
+      in.bin >> lowFrameRateImage;
+      if(lowFrameRateImage.imageUpdated)
+        image = lowFrameRateImage.image;
+      else
+        continue;
+    }
     else
       continue;
 
@@ -251,7 +264,6 @@ void LogPlayer::recordStop()
   currentFrameNumber = -1;
   state = initial;
 }
-
 
 void LogPlayer::setLoop(bool loop_)
 {
@@ -280,7 +292,8 @@ bool LogPlayer::replay()
       do
       {
         copyMessage(++currentMessageNumber, targetQueue);
-        if(queue.getMessageID() == idImage || queue.getMessageID() == idJPEGImage)
+        if(queue.getMessageID() == idImage || queue.getMessageID() == idJPEGImage || queue.getMessageID() == idThumbnail ||
+           (queue.getMessageID() == idLowFrameRateImage && queue.getBytesLeftInMessage() > 150))
           lastImageFrameNumber = currentFrameNumber;
       }
       while(queue.getMessageID() != idProcessFinished && currentMessageNumber < numberOfMessagesWithinCompleteFrames - 1);
@@ -549,7 +562,7 @@ bool LogPlayer::writeTimingData(const std::string& fileName)
     vector<long> row;
     row.resize(column, -42); //-42 is a value that can never happen because all timings are unsigned
     map<unsigned short, unsigned>& timing = timings[frameNo];
-    for(auto t : timing)
+    for(const auto& t : timing)
     {
       int colIndex = columns[t.first];
       row[colIndex] = t.second;
@@ -569,5 +582,102 @@ bool LogPlayer::writeTimingData(const std::string& fileName)
     }
     file << endl;
   }
+  return true;
+}
+
+unsigned long long LogPlayer::getUncompressedSize(const std::string& fileName)
+{
+  InBinaryFile file(fileName);
+  unsigned long long totalUncompressedSize = 0;
+
+  char magicByte;
+  file >> magicByte;
+
+  while(!file.eof())
+  {
+    unsigned compressedSize;
+    file >> compressedSize;
+    ASSERT(compressedSize > 0);
+    std::vector<char> compressedBuffer;
+    compressedBuffer.resize(compressedSize);
+    file.read(&compressedBuffer[0], (int)compressedSize);
+    size_t uncompressedSize = 0;
+    snappy_uncompressed_length(&compressedBuffer[0], compressedSize, &uncompressedSize);
+    totalUncompressedSize += uncompressedSize;
+  }
+
+  return totalUncompressedSize;
+}
+
+bool LogPlayer::saveAudioFile(const char* fileName)
+{
+  OutBinaryFile stream(fileName);
+  if(!stream.exists())
+    return false;
+
+  int frames = 0;
+  AudioData audioData;
+  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); ++currentMessageNumber)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber);
+    if(queue.getMessageID() == idAudioData)
+    {
+      in.bin >> audioData;
+      frames += unsigned(audioData.samples.size()) / audioData.channels;
+    }
+  }
+
+  struct WAVHeader
+  {
+    char chunkId[4];
+    int chunkSize;
+    char format[4];
+    char subchunk1Id[4];
+    int subchunk1Size;
+    short audioFormat;
+    short numChannels;
+    int sampleRate;
+    int byteRate;
+    short blockAlign;
+    short bitsPerSample;
+    char subchunk2Id[4];
+    int subchunk2Size;
+  };
+
+  int length = sizeof(WAVHeader) + sizeof(short) * frames * audioData.channels;
+  WAVHeader* header = (WAVHeader*) new char[length];
+  *(unsigned*) header->chunkId = *(const unsigned*) "RIFF";
+  header->chunkSize = length - 8;
+  *(unsigned*) header->format = *(const unsigned*) "WAVE";
+
+  *(unsigned*) header->subchunk1Id = *(const unsigned*) "fmt ";
+  header->subchunk1Size = 16;
+  header->audioFormat = 1;
+  header->numChannels = (short) audioData.channels;
+  header->sampleRate = audioData.sampleRate;
+  header->byteRate = audioData.sampleRate * audioData.channels * sizeof(short);
+  header->blockAlign = short(audioData.channels * sizeof(short));
+  header->bitsPerSample = 16;
+
+  *(unsigned*) header->subchunk2Id = *(const unsigned*) "data";
+  header->subchunk2Size = frames * audioData.channels * sizeof(short);
+
+  char* p = (char*) (header + 1);
+  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); ++currentMessageNumber)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber);
+    if(queue.getMessageID() == idAudioData)
+    {
+      in.bin >> audioData;
+      memcpy(p, audioData.samples.data(), audioData.samples.size() * sizeof(short));
+      p += audioData.samples.size() * sizeof(short);
+    }
+  }
+
+  stream.write(header, length);
+  delete [] header;
+
+  stop();
+
   return true;
 }

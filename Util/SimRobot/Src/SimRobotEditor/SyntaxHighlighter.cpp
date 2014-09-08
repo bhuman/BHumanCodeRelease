@@ -87,7 +87,6 @@ SyntaxHighlighter::SyntaxHighlighter(QTextDocument* parent) :
 
 void SyntaxHighlighter::highlightBlock(const QString &text)
 {
-
   //Do the main block highlighting.
   highlightSubBlock(text, 0, previousBlockState());
 
@@ -373,7 +372,6 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
       break;
     }
   }
-
 }
 
 void SyntaxHighlighter::setCharFormat(const int whichFormat, const QTextCharFormat &newFormat)

@@ -28,8 +28,8 @@ class Task
   Context *mContext;
 public:
 
-  inline Context& context() { return *mContext; }
-  inline virtual void setContext(Context *context) { mContext = context; }
+  Context& context() { return *mContext; }
+  virtual void setContext(Context *context) { mContext = context; }
 
   /** Constructs a Task.
    * @see autoDelete
@@ -37,22 +37,22 @@ public:
   explicit Task(Context &context, bool autoDelete = true)
     : autoDelete(autoDelete),
       mContext(&context)
-  { }
+  {}
 
   /** Implement your Code here.
    * @return Should return false in case of an error, true otherwise.
    */
   virtual bool execute() = 0;
 
-  virtual void cancel() { }
+  virtual void cancel() {}
 
   /** Interfaces need virtual a destructor. */
-  virtual ~Task() { }
+  virtual ~Task() = default;
 
   /** @see autoDelete */
-  inline bool isAutoDelete() { return autoDelete; }
+  bool isAutoDelete() { return autoDelete; }
 
-  virtual inline std::string getLabel() { return ""; }
+  virtual std::string getLabel() { return ""; }
 };
 
 class ContextRunnable : public QThread
@@ -61,7 +61,6 @@ class ContextRunnable : public QThread
 
 public:
   explicit ContextRunnable(QObject *parent);
-  virtual ~ContextRunnable() { }
   void run();
 
 protected:
@@ -80,8 +79,6 @@ class CommandRunnable : public ContextRunnable
 
 public:
   CommandRunnable(Context *context, const std::string &cmdLine);
-  virtual ~CommandRunnable() { }
-
 };
 
 class TaskRunnable : public ContextRunnable
@@ -92,7 +89,6 @@ class TaskRunnable : public ContextRunnable
 
 public:
   TaskRunnable(QObject *parent, Task *task);
-  virtual ~TaskRunnable() { }
 };
 
 class Context : public AbstractConsole
@@ -111,7 +107,7 @@ class Context : public AbstractConsole
   volatile bool canceled;
 
   // do not copy it
-  Context(const Context &other) : detached(false) { }
+  Context(const Context &other) : detached(false) {}
   Context& operator=(const Context &other) { return *this; }
 
   Context(Context *parent, const std::string &cmdLine);
@@ -134,14 +130,14 @@ public:
 
   void wait();
   bool waitForChildren();
-  inline std::vector<Robot*> getSelectedRobots() const { return selectedRobots; }
-  inline Team* getSelectedTeam() const { return selectedTeam; }
-  inline bool isDetached() const { return detached; }
-  inline bool getStatus() const { return status; }
-  inline bool isCanceled() const { return canceled; }
-  inline void cleanupFinished() { emit sCancelFinished(); }
+  std::vector<Robot*> getSelectedRobots() const { return selectedRobots; }
+  Team* getSelectedTeam() const { return selectedTeam; }
+  bool isDetached() const { return detached; }
+  bool getStatus() const { return status; }
+  bool isCanceled() const { return canceled; }
+  void cleanupFinished() { emit sCancelFinished(); }
   void shutdown();
-  inline bool isShudown() { return requestApplicationShutdown; }
+  bool isShudown() { return requestApplicationShutdown; }
 
 public slots:
   void threadFinished(bool status);

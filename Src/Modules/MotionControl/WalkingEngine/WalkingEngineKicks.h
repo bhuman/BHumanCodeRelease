@@ -1,5 +1,5 @@
 /**
-* @file AsymmetricWalkingEngineKicks.h
+* @file WalkingEngineKicks.h
 * Declaration of walking engine kicks and tools to use them
 * @author Colin Graf
 */
@@ -51,18 +51,18 @@ private:
   {
   public:
     template<int N>String(const char(&ptr)[N]) : ptr(ptr), len(N - 1) {}
-    String(const char* ptr, unsigned int len) : ptr(ptr), len(len) {}
+    String(const char* ptr, size_t len) : ptr(ptr), len(len) {}
     bool operator==(const String& other) const;
   private:
     const char* ptr;
-    unsigned int len;
+    size_t len;
   };
 
   class Value
   {
   public:
     Value(WalkingEngineKick& kick) : next(kick.firstValue) {kick.firstValue = this;}
-    virtual ~Value() {}
+    virtual ~Value() = default;
 
     virtual float evaluate() const = 0;
 
@@ -172,7 +172,7 @@ private:
   Value* refXValue;
   std::vector<PhaseInfo> tracks[numOfTracks];
 
-  inline float getParameterValue(unsigned int index) {return 0.f;}
+  float getParameterValue(unsigned int index) {return 0.f;}
 
   void addPhase(Track track, Value* value);
 
@@ -193,7 +193,7 @@ public:
   void load();
   void load(WalkRequest::KickType type, char* data);
 
-  inline bool isKickMirrored(WalkRequest::KickType type) const {return (type - 1) % 2 != 0;}
+  bool isKickMirrored(WalkRequest::KickType type) const {return (type - 1) % 2 != 0;}
   void getKickStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const;
   void getKickPreStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const;
   float getKickStepDuration(WalkRequest::KickType type) const;
@@ -219,7 +219,7 @@ public:
   /**
   * Stops replaying a kick
   */
-  inline void stop() {kick = 0;}
+  void stop() {kick = 0;}
 
   /**
   * Moves the player to the given position
@@ -231,7 +231,7 @@ public:
   * Returns the length of the currently replayed kick
   * @return The length of the kick in seconds
   */
-  inline float getLength() const {return length * 0.001f;}
+  float getLength() const {return length * 0.001f;}
 
   void applyFoot(Pose3D& leftOriginToFoot, Pose3D& rightOriginToFoot);
   void applyHeadAndArms(float headJointAngles[2], float leftArmJointAngles[4], float rightArmJointAngles[4]);
@@ -240,7 +240,7 @@ public:
   * Whether the kick player is currently replaying a kick
   * @return true if so
   */
-  inline bool isActive() const {return !!kick;}
+  bool isActive() const {return !!kick;}
 
 private:
   class Phase

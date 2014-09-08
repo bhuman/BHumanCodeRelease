@@ -13,7 +13,8 @@ namespace Behavior2013
   class LibraryBase : public BehaviorBase
   {
   public:
-    LibCodeRelease&   libCodeRelease;
+    LibCodeRelease&   libCodeRelease;    /**< Contains miscellaneous helper methods */
+
     /**
      * The default constructor initializes all references with the actual libraries.
      * Note that these libraries may not be initialzed yet, so do not call them

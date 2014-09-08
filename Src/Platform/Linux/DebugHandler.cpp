@@ -28,7 +28,7 @@ void DebugHandler::communicate(bool send)
   {
     OutBinarySize size;
     size << out;
-    sendSize = size.getSize();
+    sendSize = (int) size.getSize();
     sendData = new unsigned char[sendSize];
     ASSERT(sendData);
     OutBinaryMemory memory(sendData);

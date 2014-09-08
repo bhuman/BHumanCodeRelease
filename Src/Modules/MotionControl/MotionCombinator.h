@@ -14,34 +14,34 @@
 #include "Representations/MotionControl/MotionSelection.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
-#include "Representations/MotionControl/BikeEngineOutput.h"
-#include "Representations/MotionControl/IndykickEngineOutput.h"
+#include "Representations/MotionControl/KickEngineOutput.h"
 #include "Representations/MotionControl/GetUpEngineOutput.h"
-#include "Representations/MotionControl/BallTakingOutput.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/HeadJointRequest.h"
 
-MODULE(MotionCombinator)
-  REQUIRES(FilteredJointData)
-  REQUIRES(FallDownState)
-  REQUIRES(MotionSelection)
-  REQUIRES(WalkingEngineOutput)
-  REQUIRES(BikeEngineOutput)
-  REQUIRES(IndykickEngineOutput)
-  REQUIRES(SpecialActionsOutput)
-  REQUIRES(WalkingEngineStandOutput)
-  REQUIRES(GetUpEngineOutput)
-  REQUIRES(BallTakingOutput)
-  REQUIRES(HeadJointRequest)
-  REQUIRES(HardnessSettings)
-  REQUIRES(ArmMotionEngineOutput)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(OdometryData)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(JointRequest)
-  PROVIDES_WITH_MODIFY(MotionInfo)
-  LOADS_PARAMETER(bool, emergencyOffEnabled)
-  LOADS_PARAMETER(unsigned, recoveryTime) /**< The number of frames to interpolate after emergency-stop. */
-END_MODULE
+MODULE(MotionCombinator,
+{,
+  REQUIRES(FilteredJointData),
+  REQUIRES(FallDownState),
+  REQUIRES(MotionSelection),
+  REQUIRES(WalkingEngineOutput),
+  REQUIRES(KickEngineOutput),
+  REQUIRES(SpecialActionsOutput),
+  REQUIRES(WalkingEngineStandOutput),
+  REQUIRES(GetUpEngineOutput),
+  REQUIRES(HeadJointRequest),
+  REQUIRES(HardnessSettings),
+  REQUIRES(ArmMotionEngineOutput),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(OdometryData),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT(JointRequest),
+  PROVIDES_WITH_MODIFY(MotionInfo),
+  LOADS_PARAMETERS(
+  {,
+    (bool) emergencyOffEnabled,
+    (unsigned) recoveryTime, /**< The number of frames to interpolate after emergency-stop. */
+  }),
+});
 
 class MotionCombinator : public MotionCombinatorBase
 {

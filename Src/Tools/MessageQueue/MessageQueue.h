@@ -29,7 +29,7 @@
 * //
 * // ... copy the queue between processes, systems
 * //
-* if (myQueue.in.getMessageID() == idImage) // check for the type of the next message
+* if(myQueue.in.getMessageID() == idImage) // check for the type of the next message
 * {
 *   Image image2;
 *   myQueue.in.bin >> image2;  // read the image from the queue
@@ -52,16 +52,25 @@ public:
 
   /**
   * The method sets the size of memory which is allocated for the queue.
-  * Ignored on the Win32 platform (dynamic allocation).
+  * In the simulator, this is only the maximum size (dynamic allocation).
   * @param size The maximum size of the queue in Bytes.
+  * @param reserveForInfrastructure Non-infrastructure messages will be rejected if
+  *                                 less than this number of bytes is free.
   */
-  void setSize(unsigned size) {queue.setSize(size);}
+  void setSize(unsigned size, unsigned reserveForInfrastructure = 0) {queue.setSize(size, reserveForInfrastructure);}
 
   /**
   * The method returns the size of memory which is needed to write the queue to a stream.
   * @return The number of bytes required.
   */
-  int getStreamedSize() const {return 8 + queue.usedSize;}
+  unsigned getStreamedSize() const {return MessageQueueBase::queueHeaderSize + queue.usedSize;}
+
+  /**
+  * The method returns the queue in streamed format. It runs in constant time.
+  * @return A buffer of getStreamedSize() bytes. Note that it is only valid until the next
+  *         non-const call to a method of this queue.
+  */
+  char* getStreamedData();
 
   /**
   * The method calls a given message handler for all messages in the queue. Note that the messages
@@ -136,13 +145,6 @@ public:
   * @param stream The stream that is appended to.
   */
   void append(Out& stream) const;
-
-  /**
-   * Writing to the queue can fail (if it is full).
-   * @returns true if any of the last writes failed.
-   * @note This flag is reset if finishMessage is called.
-   */
-  bool writeErrorOccurred() const;
 
 protected:
   /**

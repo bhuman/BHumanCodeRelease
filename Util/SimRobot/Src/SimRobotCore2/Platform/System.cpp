@@ -3,10 +3,10 @@
 * Implementation of class System
 */
 
-#ifdef WIN32
+#ifdef WINDOWS
 #define NOMINMAX
 #include <windows.h>
-#elif defined(MACOSX)
+#elif defined(OSX)
 #include <mach/mach_time.h>
 #include <unistd.h>
 #else
@@ -18,9 +18,9 @@
 
 unsigned int System::getTime()
 {
-#ifdef WIN32
+#ifdef WINDOWS
   return GetTickCount();
-#elif defined(MACOSX)
+#elif defined(OSX)
   static mach_timebase_info_data_t info = {0, 0};
   if(info.denom == 0)
     mach_timebase_info(&info);

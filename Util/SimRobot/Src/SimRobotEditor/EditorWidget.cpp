@@ -4,10 +4,6 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QMenu>
 #include <QSet>
 #include <QFileInfo>
@@ -16,9 +12,6 @@
 #include <QSettings>
 #include <QScrollBar>
 #include <QResizeEvent>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "EditorModule.h"
 #include "EditorWidget.h"
@@ -160,9 +153,9 @@ EditorWidget::EditorWidget(FileEditorObject* editorObject, const QString& fileCo
     highlighter = new SyntaxHighlighter(document());
   setFrameStyle(QFrame::NoFrame);
 
-#ifdef WIN32
+#ifdef WINDOWS
   QFont font("Courier New", 10);
-#elif defined(MACOSX)
+#elif defined(OSX)
   QFont font("Monaco", 11);
 #else
   QFont font("Bitstream Vera Sans Mono", 9);

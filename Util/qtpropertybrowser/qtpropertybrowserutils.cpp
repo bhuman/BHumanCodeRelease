@@ -39,10 +39,7 @@
 
 
 #include "qtpropertybrowserutils_p.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
+
 #include <QApplication>
 #include <QPainter>
 #include <QHBoxLayout>
@@ -51,9 +48,6 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QStyleOption>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #if QT_VERSION >= 0x040400
 QT_BEGIN_NAMESPACE

@@ -8,20 +8,12 @@
 */
 
 #include "Platform/OpenGL.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
-#include <QGLWidget>
-#include <QMouseEvent>
-#include <QSettings>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
 #include "View3D.h"
 #include "Controller/RoboCupCtrl.h"
 
+#include <QGLWidget>
+#include <QMouseEvent>
+#include <QSettings>
 
 class View3DWidget : public QGLWidget, public SimRobot::Widget
 {

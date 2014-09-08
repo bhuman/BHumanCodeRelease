@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "Tools/Math/Common.h"
 #include "Tools/Math/Random.h"
 #include "Tools/Enum.h"
 
@@ -18,7 +17,6 @@
 * Simple optimization for N values of type T
 * Reward has different type R
 */
-
 
 template <typename T, typename R, int N>
 class HillClimbing
@@ -152,12 +150,10 @@ public:
     return runCount;
   }
 
-
   int getUnchangedSteps()
   {
     return unchangedSteps;
   }
-
 
   void getMaxStepSize(T maxStepSize[N])
   {
@@ -166,6 +162,4 @@ public:
       maxStepSize[i] = this->maxStepSize[i];
     }
   }
-
-
 };

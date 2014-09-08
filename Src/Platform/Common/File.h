@@ -1,6 +1,6 @@
 /**
 * @file Platform/Common/File.h
-* Declaration of class File for Win32 and Linux.
+* Declaration of class File for Windows and Linux.
 */
 
 #pragma once
@@ -9,7 +9,7 @@
 #include <list>
 
 /**
- * This class provides basic file input/output capabilies.
+ * This class provides basic file input/output capabilities.
  */
 class File
 {
@@ -44,7 +44,7 @@ public:
    * @param p The start of the memory space the data is written to.
    * @param size The number of bytes read from the file.
    */
-  void read(void* p, unsigned size);
+  void read(void* p, size_t size);
 
   /**
    * The function read a line (up to \c size bytes long) from the file to a certain
@@ -53,7 +53,7 @@ public:
    * @param size The maximal length of the line read from the file.
    * @return \c p on success, \c 0 otherwise
    */
-  char* readLine(char* p, unsigned size);
+  char* readLine(char* p, size_t size);
 
   /**
    * The function writes a number of bytes from a certain memory
@@ -61,7 +61,7 @@ public:
    * @param p The start of the memory space the data is read from.
    * @param size The number of bytes written into the file.
    */
-  void write(const void* p, unsigned size);
+  void write(const void* p, size_t size);
 
   /**
    * The function implements printf for the stream represented by
@@ -89,7 +89,7 @@ public:
    * The function returns the size of the file
    * @return The size of the file in bytes
    */
-  unsigned getSize();
+  size_t getSize();
 
   /**
   * The function returns the current BH directory,
@@ -105,16 +105,6 @@ public:
    * @return true, if the delivered path is absolute.
    */
   static bool isAbsolute(const char* path);
-
-  /**
-   * Checks if the delivered path is explicit relative, which means in this
-   * context, it begins with a '.' and a PATH_SEPARATOR_CHAR.
-   * This method does not return true for every relative path. Use !isAbsolute to
-   * determine if a path is a 'normal' relative one.
-   * @param path  Must be a valid c string.
-   * @return true, if the delivered path is explicit relative.
-   */
-  static bool isExplicitRelative(const char* path);
 
 private:
   void* stream; /**< File handle. */

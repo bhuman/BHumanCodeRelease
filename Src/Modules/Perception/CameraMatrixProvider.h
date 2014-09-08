@@ -22,23 +22,23 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/RobotModel.h"
 
-MODULE(CameraMatrixProvider)
-  REQUIRES(FrameInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(CameraCalibration)
-  REQUIRES(RobotDimensions)
-  REQUIRES(FilteredJointData)
-  REQUIRES(MotionInfo)
-  REQUIRES(FallDownState)
-  REQUIRES(TorsoMatrix)
-  REQUIRES(RobotCameraMatrix)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(CameraMatrix);
-  USES(CameraMatrix)
-  USES(FieldDimensions) // for debug drawing
-  USES(RobotPose) // for debug drawing
-  USES(CameraInfo) // for debug drawing
-  USES(RobotModel)
-END_MODULE
+MODULE(CameraMatrixProvider,
+{,
+  REQUIRES(FrameInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(CameraCalibration),
+  REQUIRES(RobotDimensions),
+  REQUIRES(FilteredJointData),
+  REQUIRES(MotionInfo),
+  REQUIRES(FallDownState),
+  REQUIRES(TorsoMatrix),
+  REQUIRES(RobotCameraMatrix),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(CameraMatrix),
+  REQUIRES(FieldDimensions), // for debug drawing
+  USES(RobotPose), // for debug drawing
+  REQUIRES(CameraInfo), // for debug drawing
+  REQUIRES(RobotModel),
+});
 
 class CameraMatrixProvider: public CameraMatrixProviderBase
 {

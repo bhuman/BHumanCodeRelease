@@ -9,10 +9,6 @@
 
 #pragma once
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QString>
 #include <QIcon>
 #include <QPainter>
@@ -21,11 +17,8 @@
 #include <QWidget>
 #include <QSettings>
 #include <QMenu>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
-#include "SimRobot.h"
+#include <SimRobot.h>
 #include "Tools/Math/Vector2.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
@@ -82,7 +75,6 @@ private:
   friend class ImageWidget;
 };
 
-
 class ImageWidget : public QWidget, public SimRobot::Widget
 {
   Q_OBJECT
@@ -96,7 +88,7 @@ private:
   int imageWidth;
   int imageHeight;
   unsigned int lastImageTimeStamp;
-  unsigned int lastColorReferenceTimeStamp;
+  unsigned int lastColorTableTimeStamp;
   unsigned int lastDrawingsTimeStamp;
   QPainter painter;
   QPoint dragStart;
@@ -104,14 +96,10 @@ private:
   float zoom;
   QPoint offset;
   bool headControlMode;
-  float imageXOffset;
-  float imageYOffset;
 
   // which classified should be drawn?
-  static const unsigned char allColors = ~0;
-  unsigned char drawnColors;
+  ColorClasses::Color drawnColor; /**< "none" means all. */
 
-  void updateColorCalibrator();
   void handleHeadControl(QMouseEvent& event);
   void paintEvent(QPaintEvent* event);
   virtual void paint(QPainter& painter);
@@ -121,7 +109,6 @@ private:
   void paintImage(QPainter& painter, const Image& srcImage);
   bool needsRepaint() const;
   void window2viewport(QPoint& point);
-  void mousePressEvent(QMouseEvent* event);
   void mouseMoveEvent(QMouseEvent* event);
   void mouseReleaseEvent(QMouseEvent* event);
   void keyPressEvent(QKeyEvent* event);
@@ -140,83 +127,16 @@ private:
   friend class ImageView;
 
 private slots:
-
-  void headControlToggled(bool value)
-  {
-    headControlMode = value;
-    if(value)
-    {
-      imageView.console.handleConsole("mr HeadMotionRequest ManualHeadMotionProvider");
-    }
-  }
-  void headAngle()
-  {
-    imageView.console.handleConsole("set representation:HeadAngleRequest pan = 1000; tilt = 1000; speed = 2.61799;");
-  }
   void camUpOn()
   {
-    imageView.console.handleConsole("ac " + imageView.name + " upper");
+    imageView.console.handleConsole("ac upper " + imageView.name);
   }
   void camDownOn()
   {
-    imageView.console.handleConsole("ac " + imageView.name + " lower");
+    imageView.console.handleConsole("ac lower " + imageView.name);
   }
+  
+  void saveImg();
 
-  void greenAct()
-  {
-    drawnColors = ColorReference::green;
-    updateColorCalibrator();
-  }
-  void yellowAct()
-  {
-    drawnColors = ColorReference::yellow;
-    updateColorCalibrator();
-  }
-  void orangeAct()
-  {
-    drawnColors = ColorReference::orange;
-    updateColorCalibrator();
-  }
-  void redAct()
-  {
-    drawnColors = ColorReference::red;
-    updateColorCalibrator();
-  }
-  void blueAct()
-  {
-    drawnColors = ColorReference::blue;
-    updateColorCalibrator();
-  }
-  void whiteAct()
-  {
-    drawnColors = ColorReference::white;
-    updateColorCalibrator();
-  }
-  void blackAct()
-  {
-    drawnColors = ColorReference::black;
-    updateColorCalibrator();
-  }
-  void allColorsAct()
-  {
-    drawnColors = allColors;
-    updateColorCalibrator();
-  }
-  void saveColorCalibration()
-  {
-    ColorReference& cr = imageView.console.colorReference;
-    char buffer[1000];
-    sprintf(buffer, 
-    "set parameters:ColorProvider minHGreen = %f; maxHGreen = %f; minSGreen = %f; maxSGreen = %f; minVGreen = %f; maxVGreen = %f; minHYellow = %f; maxHYellow = %f; minSYellow = %f; maxSYellow = %f; minVYellow = %f; maxVYellow = %f; minHOrange = %f; maxHOrange = %f; minSOrange = %f; maxSOrange = %f; minVOrange = %f; maxVOrange = %f; minHRed = %f; maxHRed = %f; minSRed = %f; maxSRed = %f; minVRed = %f; maxVRed = %f; minHBlue = %f; maxHBlue = %f; minSBlue = %f; maxSBlue = %f; minVBlue = %f; maxVBlue = %f; minRWhite = %d; minBWhite = %d; minRBWhite = %d; cbBlack = 128; crBlack = 128; maxYBlack = 60;",
-    cr.thresholdGreen.hue.min, cr.thresholdGreen.hue.max, cr.thresholdGreen.saturation.min, cr.thresholdGreen.saturation.max, cr.thresholdGreen.value.min, cr.thresholdGreen.value.max,
-    cr.thresholdYellow.hue.min, cr.thresholdYellow.hue.max, cr.thresholdYellow.saturation.min, cr.thresholdYellow.saturation.max, cr.thresholdYellow.value.min, cr.thresholdYellow.value.max,
-    cr.thresholdOrange.hue.min, cr.thresholdOrange.hue.max, cr.thresholdOrange.saturation.min, cr.thresholdOrange.saturation.max, cr.thresholdOrange.value.min, cr.thresholdOrange.value.max,
-    cr.thresholdRed.hue.min, cr.thresholdRed.hue.max, cr.thresholdRed.saturation.min, cr.thresholdRed.saturation.max, cr.thresholdRed.value.min, cr.thresholdRed.value.max,
-    cr.thresholdBlue.hue.min, cr.thresholdBlue.hue.max, cr.thresholdBlue.saturation.min, cr.thresholdBlue.saturation.max, cr.thresholdBlue.value.min, cr.thresholdBlue.value.max,
-    cr.thresholdWhite.first, cr.thresholdWhite.second, cr.thresholdWhite.third
-    );
-    imageView.console.handleConsole(std::string(buffer));
-    imageView.console.handleConsole("save parameters:ColorProvider");
-    imageView.console.handleConsole("save representation:CameraSettings");
-  }
+  void colorAct(int color) {drawnColor = (ColorClasses::Color) color;}
 };

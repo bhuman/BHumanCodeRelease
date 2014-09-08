@@ -1,27 +1,13 @@
 /**
 * @file Module.cpp
 * The class attributes of the module handling schema.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+* @author Thomas Röfer
 */
 
 #include "Module.h"
 #include "Tools/Streams/InStreams.h"
 
-std::list<Requirements::Entry>* Requirements::entries = 0;
-std::list<Representations::Entry>* Representations::entries = 0;
 ModuleBase* ModuleBase::first = 0;
-
-void Requirements::add(const char* name, void (*create)(), void (*free)(), void (*in)(In&))
-{
-  if(entries)
-    entries->push_back(Entry(name, create, free, in));
-}
-
-void Representations::add(const char* name, void (*update)(Blackboard&), void (*create)(), void (*free)(), void (*out)(Out&))
-{
-  if(entries)
-    entries->push_back(Entry(name, update, create, free, out));
-}
 
 void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName)
 {

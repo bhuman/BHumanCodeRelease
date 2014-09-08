@@ -6,10 +6,10 @@
 */
 
 #pragma once
-#ifdef WIN32
-#include "Win32/Directory.h"
+#ifdef WINDOWS
+#include "Windows/Directory.h"
 
-#elif defined LINUX || defined MACOSX
+#elif defined LINUX || defined OSX
 #include "Linux/Directory.h"
 
 #else

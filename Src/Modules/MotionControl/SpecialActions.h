@@ -15,13 +15,14 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Tools/MessageQueue/InMessage.h"
 
-MODULE(SpecialActions)
-  REQUIRES(FilteredJointData)
-  REQUIRES(FrameInfo)
-  REQUIRES(MotionSelection)
-  REQUIRES(HardnessSettings)
-  PROVIDES_WITH_MODIFY(SpecialActionsOutput)
-END_MODULE
+MODULE(SpecialActions,
+{,
+  REQUIRES(FilteredJointData),
+  REQUIRES(FrameInfo),
+  REQUIRES(MotionSelection),
+  REQUIRES(HardnessSettings),
+  PROVIDES_WITH_MODIFY(SpecialActionsOutput),
+});
 
 class SpecialActions : public SpecialActionsBase
 {

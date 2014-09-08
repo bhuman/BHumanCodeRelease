@@ -43,7 +43,8 @@ class DrawingManager3D : public DrawingManager {};
 /**
 * A macro that declares
 * @param id A drawing id
-* @param type A coordinate-system type ("field", "robot", "camera" or "origin")
+* @param type A coordinate-system type ("field", "robot" or any
+*             robot part named in the scene description file)
 */
 #define DECLARE_DEBUG_DRAWING3D(id, type, ...) \
   Global::getDrawingManager3D().addDrawingId(id, type); \
@@ -74,6 +75,20 @@ class DrawingManager3D : public DrawingManager {};
            ColorRGBA(color) \
           ); \
   })
+
+/**
+* A macro that adds a cross to a drawing.
+* @param id The drawing to which the cross should be added.
+* @param x,y,z The center of the cross
+* @param size Half of the height of the rectangle enclosing the cross
+* @param penColor The color of the quadrangle
+*/
+#define CROSS3D(id, x, y, z, length, size, penColor) do \
+{ \
+  LINE3D(id, x+length, y+length, z, x-length, y-length, z, size, penColor); \
+  LINE3D(id, x+length, y-length, z, x-length, y+length, z, size, penColor); \
+} \
+while(false)
 
 /**
 * A macro that adds a digit as a set of lines to a drawing.

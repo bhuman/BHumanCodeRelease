@@ -44,7 +44,7 @@ protected:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void writeToStream(const void* p, int size);
+  virtual void writeToStream(const void* p, size_t size);
 };
 
 /**

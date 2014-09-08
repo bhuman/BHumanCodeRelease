@@ -14,7 +14,7 @@ class RobotCommand : public CommandAdapter
   bool status;
 
 public:
-  RobotCommand() : status(true) { }
+  RobotCommand() : status(true) {}
 
   /**
    * Executes the preExecution(), perRobotExecution() and postExecution() in
@@ -79,9 +79,7 @@ public:
   RobotTask(Context &context, Robot *robot)
   : Task(context, true),
     robot(robot)
-  { }
+  {}
 
-  virtual ~RobotTask() { }
-
-  virtual inline std::string getLabel() { return robot->name; }
+  virtual std::string getLabel() { return robot->name; }
 };

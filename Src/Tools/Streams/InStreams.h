@@ -29,20 +29,20 @@ public:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void readFromStream(void* p, int size) = 0;
+  virtual void readFromStream(void* p, size_t size) = 0;
 
   /**
   * The function skips a number of bytes in a stream.
   * @param size The number of bytes to be read.
   */
-  virtual void skipInStream(int size);
+  virtual void skipInStream(size_t size);
 
   /**
   * The function states whether this stream actually exists.
   * This function is relevant if the stream represents a file.
   * @return Does the stream exist?
   */
-  virtual bool exists() const {return true;};
+  virtual bool exists() const {return true;}
 
   /**
   * The function states whether the end of the stream has been reached.
@@ -144,14 +144,14 @@ protected:
   * @param size The number of bytes to be read.
   * @param stream The stream to read from.
   */
-  virtual void readData(void* p, int size, PhysicalInStream& stream) = 0;
+  virtual void readData(void* p, size_t size, PhysicalInStream& stream) = 0;
 
   /**
   * The function skips a number of bytes in the file.
   * @param size The number of bytes to be skipped.
   * @param stream The stream to read from.
   */
-  virtual void skipData(int size, PhysicalInStream& stream);
+  virtual void skipData(size_t size, PhysicalInStream& stream);
 
   /**
   * The function states whether the end of the stream has been reached.
@@ -176,14 +176,14 @@ public:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void read(void* p, int size)
+  virtual void read(void* p, size_t size)
   { R::readData(p, size, *this); }
 
   /**
   * The function skips a number of bytes in the stream.
   * @param size The number of bytes to be skipped.
   */
-  virtual void skip(int size)
+  virtual void skip(size_t size)
   { R::skipData(size, *this); }
 
   /**
@@ -282,7 +282,6 @@ public:
   */
   void reset()
   { theChar = theNextChar = ' '; eof = nextEof = false;}
-
 
 protected:
   /** The last character read. */
@@ -386,7 +385,7 @@ protected:
   * reads the 'end of line' from a stream
   * @param stream the stream to read from
   */
-  virtual void readEndl(PhysicalInStream& stream) {};
+  virtual void readEndl(PhysicalInStream& stream) {}
 
   /**
   * The function determines whether the current character is a whitespace.
@@ -425,7 +424,7 @@ protected:
   * @param size The number of bytes to be read.
   * @param stream The stream to read from.
   */
-  virtual void readData(void* p, int size, PhysicalInStream& stream);
+  virtual void readData(void* p, size_t size, PhysicalInStream& stream);
 };
 
 /**
@@ -443,7 +442,7 @@ public:
   /**
   * Default constructor
   */
-  InConfig() : readSection(false) {};
+  InConfig() : readSection(false) {}
 
 protected:
   /**
@@ -578,13 +577,11 @@ protected:
   */
   virtual void readString(std::string& d, PhysicalInStream& stream)
   {
-    int size;
-    stream.readFromStream(&size, sizeof(size));
+    size_t size = 0;
+    stream.readFromStream(&size, sizeof(unsigned));
     d.resize(size);
     if(size)
-    {
       stream.readFromStream(&d[0], size);
-    }
   }
 
   /**
@@ -592,7 +589,7 @@ protected:
   * In fact, the function does nothing.
   * @param stream A stream to read from.
   */
-  virtual void readEndl(PhysicalInStream& stream) {};
+  virtual void readEndl(PhysicalInStream& stream) {}
 
   /**
   * The function reads a number of bytes from a stream.
@@ -602,7 +599,7 @@ protected:
   * @param size The number of bytes to be read.
   * @param stream A stream to read from.
   */
-  virtual void readData(void* p, int size, PhysicalInStream& stream)
+  virtual void readData(void* p, size_t size, PhysicalInStream& stream)
   { stream.readFromStream(p, size); }
 
   /**
@@ -610,7 +607,7 @@ protected:
   * @param size The number of bytes to be skipped.
   * @param stream The stream to read from.
   */
-  virtual void skipData(int size, PhysicalInStream& stream)
+  virtual void skipData(size_t size, PhysicalInStream& stream)
   { stream.skipInStream(size); }
 };
 
@@ -626,7 +623,7 @@ private:
 
 public:
   /** Default constructor */
-  InFile() : stream(0) {};
+  InFile() : stream(0) {}
 
   /** Destructor */
   ~InFile();
@@ -658,7 +655,7 @@ protected:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void readFromStream(void* p, int size);
+  virtual void readFromStream(void* p, size_t size);
 };
 
 /**
@@ -674,7 +671,7 @@ private:
 
 public:
   /** Default constructor */
-  InMemory() : memory(0), end(0) {};
+  InMemory() : memory(0), end(0) {}
 
   /**
   * The function states whether the stream actually exists.
@@ -700,7 +697,7 @@ protected:
   *             specified, eof() will always return true, but reading
   *             from the stream is still possible.
   */
-  void open(const void* mem, unsigned size = 0)
+  void open(const void* mem, size_t size = 0)
   { if(memory == 0) { memory = (const char*) mem; end = (const char*) mem + size; }}
 
   /**
@@ -710,13 +707,13 @@ protected:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void readFromStream(void* p, int size);
+  virtual void readFromStream(void* p, size_t size);
 
   /**
   * The function skips a number of bytes.
   * @param size The number of bytes to be skipped.
   */
-  virtual void skipInStream(int size) {memory += size;}
+  virtual void skipInStream(size_t size) {memory += size;}
 };
 
 /**
@@ -757,7 +754,7 @@ public:
   *             specified, eof() will always return true, but reading
   *             from the stream is still possible.
   */
-  InBinaryMemory(const void* mem, unsigned size = 0) { open(mem, size); }
+  InBinaryMemory(const void* mem, size_t size = 0) { open(mem, size); }
 
   /**
   * The function returns whether this is a binary stream.
@@ -796,7 +793,7 @@ public:
   * @param size The size of the memory block. It is only used to
   *             implement the function eof().
   */
-  InTextMemory(const void* mem, unsigned size) { open(mem, size); initEof(*this); }
+  InTextMemory(const void* mem, size_t size) { open(mem, size); initEof(*this); }
 };
 
 /**
@@ -836,7 +833,7 @@ public:
   *             from the stream is still possible.
   * @param sectionName If given the section is searched
   */
-  InConfigMemory(const void* mem, unsigned size = 0, const std::string& sectionName = "")
+  InConfigMemory(const void* mem, size_t size = 0, const std::string& sectionName = "")
   { open(mem, size); initEof(*this); create(sectionName, *this); }
 };
 
@@ -979,14 +976,14 @@ public:
    *          "size" bytes large.
    * @param size The number of bytes to be read.
    */
-  virtual void read(void* p, int size);
+  virtual void read(void* p, size_t size);
 
   /**
    * The function skips a number of bytes in a stream.
    * Not allowed for this stream!
    * @param size The number of bytes to be skipped.
    */
-  virtual void skip(int size);
+  virtual void skip(size_t size);
 
   /**
    * Select an entry for reading.
@@ -1052,5 +1049,5 @@ public:
    * @param memory The block of memory to read from.
    * @param size The size of the memory block to read from.
    */
-  InMapMemory(const void* memory, unsigned size);
+  InMapMemory(const void* memory, size_t size);
 };

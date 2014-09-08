@@ -3,6 +3,7 @@
 #include "Utils/bush/tools/ConfigMap.h"
 #include <string>
 #include <vector>
+#include <climits>
 
 class Session;
 class Team;
@@ -14,6 +15,8 @@ public:
   std::string lan;
   std::string wlan;
   std::string name;
+
+  static const unsigned short INVALID_PLAYER_NUMBER = USHRT_MAX;
 
   std::string getSettingsString(const Team& team) const;
   std::string getBestIP() const;

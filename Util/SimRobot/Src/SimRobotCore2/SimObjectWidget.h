@@ -43,7 +43,7 @@ private:
 
   virtual QWidget* getWidget() {return this;}
   virtual void update();
-  virtual QMenu* createEditMenu();
+  virtual QMenu* createEditMenu() const;
   virtual QMenu* createUserMenu() const;
 
   virtual void initializeGL();

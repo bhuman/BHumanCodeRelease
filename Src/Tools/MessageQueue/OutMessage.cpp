@@ -20,7 +20,7 @@ void OutMessageQueue::open(MessageQueueBase* q)
   if(queue == 0) queue = q;
 }
 
-void OutMessageQueue::writeToStream(const void* p, int size)
+void OutMessageQueue::writeToStream(const void* p, size_t size)
 {
   if(queue != 0) queue->write(p, size);
 }

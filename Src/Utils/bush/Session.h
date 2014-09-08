@@ -45,7 +45,6 @@ class Session : public QObject
   RemoteRobotAgent* remoteRobotAgent;
 
   Session();
-  ~Session();
 
   ENetwork getBestNetwork(const Robot* robot);
 

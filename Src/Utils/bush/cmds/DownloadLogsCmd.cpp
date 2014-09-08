@@ -23,25 +23,20 @@
 
 DownloadLogsCmd DownloadLogsCmd::theDownloadLogsCmd;
 
-
 DownloadLogsCmd::DownloadLogsCmd()
 {
   Commands::getInstance().addCommand(this);
 }
-
-
 
 std::string DownloadLogsCmd::getName() const
 {
   return "downloadLogs";
 }
 
-
 std::string DownloadLogsCmd::getDescription() const
 {
   return "Downloads all *.log files from the robot. Afterwards the logs are deleted from the robot.";
 }
-
 
 bool DownloadLogsCmd::preExecution(Context & context, const std::vector<std::string> & params)
 {
@@ -53,20 +48,15 @@ bool DownloadLogsCmd::preExecution(Context & context, const std::vector<std::str
   return true;
 }
 
-
 Task *DownloadLogsCmd::perRobotExecution(Context & context, Robot & robot)
 {
   return new DownloadLogsCmd::DownloadLogsTask(context, &robot);
-
 }
-
-
 
 bool DownloadLogsCmd::postExecution(Context & context, const std::vector<std::string> & params)
 {
   return true;
 }
-
 
 bool DownloadLogsCmd::DownloadLogsTask::execute()
 {
@@ -99,14 +89,9 @@ DownloadLogsCmd::DownloadLogsTask::DownloadLogsTask(Context &context,
 
 QString DownloadLogsCmd::DownloadLogsTask::getCommand()
 {
-
-  //FIXME win32
+#ifdef WINDOWS
+  return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/downloadLogs.cmd");
+#else
   return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/downloadLogs");
+#endif
 }
-
-
-
-
-
-
-

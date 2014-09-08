@@ -11,66 +11,66 @@
 #include "Utils/bush/tools/StringTools.h"
 #include <iostream>
 
-ProcessRunner::ProcessRunner(const QString &command)
+ProcessRunner::ProcessRunner(const QString& command)
   : process(0),
     program(command),
     arguments(0),
     context(0)
-{ }
+{}
 
-ProcessRunner::ProcessRunner(const QString &program, const QStringList &arguments)
+ProcessRunner::ProcessRunner(const QString& program, const QStringList& arguments)
   : process(0),
     program(program),
     arguments(new QStringList(arguments)),
     context(0)
-{ }
+{}
 
-ProcessRunner::ProcessRunner(Context &context, const std::string &program, const QStringList &arguments)
+ProcessRunner::ProcessRunner(Context& context, const std::string& program, const QStringList& arguments)
   : process(0),
     program(fromString(program)),
     arguments(new QStringList(arguments)),
     context(&context)
-{ }
+{}
 
-ProcessRunner::ProcessRunner(Context &context, const QString &program, const QStringList &args)
+ProcessRunner::ProcessRunner(Context& context, const QString& program, const QStringList& args)
   : process(0),
     program(program),
     arguments(new QStringList(args)),
     context(&context)
-{ }
+{}
 
-ProcessRunner::ProcessRunner(Context &context, const std::string &command)
+ProcessRunner::ProcessRunner(Context& context, const std::string& command)
   : process(0),
     program(fromString(command)),
     arguments(0),
     context(&context)
-{ }
+{}
 
-ProcessRunner::ProcessRunner(Context &context, const QString &command)
+ProcessRunner::ProcessRunner(Context& context, const QString& command)
   : process(0),
     program(command),
     arguments(0),
     context(&context)
-{ }
+{}
 
 ProcessRunner::~ProcessRunner()
 {
-  if (process)
+  if(process)
     process->deleteLater();
-  if (arguments)
+  if(arguments)
     delete arguments;
 }
 
-ProcessRunner& ProcessRunner::operator=(const ProcessRunner &other)
+ProcessRunner& ProcessRunner::operator=(const ProcessRunner& other)
 {
-  if (this != &other)
+  if(this != &other)
   {
-    if (arguments)
+    if(arguments)
       delete arguments;
 
     process = other.process;
     program = other.program;
-    if (other.arguments)
+    if(other.arguments)
       arguments = new QStringList(*other.arguments);
     else
       arguments = 0;
@@ -80,9 +80,9 @@ ProcessRunner& ProcessRunner::operator=(const ProcessRunner &other)
 
 void ProcessRunner::run()
 {
-  if (!process)
+  if(!process)
     process = new QProcess();
-#ifdef WIN32
+#ifdef WINDOWS
   QProcessEnvironment env = env.systemEnvironment();
   env.insert("CYGWIN", "nodosfilewarning");
   process->setProcessEnvironment(env);
@@ -107,7 +107,7 @@ void ProcessRunner::run()
 
 void ProcessRunner::stop()
 {
-#ifdef WIN32
+#ifdef WINDOWS
   process->kill();
 #else
   process->terminate();
@@ -137,13 +137,13 @@ void ProcessRunner::updateText()
     context->print(toString(stdOutput));
 }
 
-RemoteWriteProcessRunner::RemoteWriteProcessRunner(Context &context,
-                                                   const QString &program,
-                                                   const QStringList &arguments,
-                                                   const QByteArray& data)
+RemoteWriteProcessRunner::RemoteWriteProcessRunner(Context& context,
+    const QString& program,
+    const QStringList& arguments,
+    const QByteArray& data)
   : ProcessRunner(context, program, arguments),
     data(data)
-{ }
+{}
 
 void RemoteWriteProcessRunner::interact(QProcess* process)
 {

@@ -13,15 +13,12 @@
 #include <QSpinBox>
 #include "DataView.h"
 
-// HACK to make Debug version compile on Mac OS.
-class MakeDebugCompileOnMac : public QtVariantEditorFactory {};
-
 /**
  * Extended QtVariantFactory to provide custom controls for certain types.
  * The factory is responsible for creating editor widgets for certain types.
  * It manages the connection between properties and those editor widgets.
  */
-class PropertyEditorFactory : public MakeDebugCompileOnMac
+class PropertyEditorFactory : public QtVariantEditorFactory
 {
   Q_OBJECT
 

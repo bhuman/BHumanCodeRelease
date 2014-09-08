@@ -10,13 +10,13 @@
 *     autoReverse is set to true.
 */
 option(Arms, ArmMotionRequest::ArmMotionId motion, bool fast = false,
-  bool autoReverse = false, int autoReverseTime = 0)
+       bool autoReverse = false, int autoReverseTime = 0)
 {
   initial_state(setRequest)
   {
     transition
     {
-      if (theArmMotionEngineOutput.arms[ArmMotionRequest::left].move && theArmMotionEngineOutput.arms[ArmMotionRequest::left].motion == motion &&
+      if(theArmMotionEngineOutput.arms[ArmMotionRequest::left].move && theArmMotionEngineOutput.arms[ArmMotionRequest::left].motion == motion &&
           theArmMotionEngineOutput.arms[ArmMotionRequest::right].move && theArmMotionEngineOutput.arms[ArmMotionRequest::right].motion == motion)
         goto requestIsExecuted;
     }
@@ -38,7 +38,7 @@ option(Arms, ArmMotionRequest::ArmMotionId motion, bool fast = false,
   {
     transition
     {
-      if (!theArmMotionEngineOutput.arms[ArmMotionRequest::left].move || theArmMotionEngineOutput.arms[ArmMotionRequest::left].motion != motion ||
+      if(!theArmMotionEngineOutput.arms[ArmMotionRequest::left].move || theArmMotionEngineOutput.arms[ArmMotionRequest::left].motion != motion ||
           !theArmMotionEngineOutput.arms[ArmMotionRequest::right].move || theArmMotionEngineOutput.arms[ArmMotionRequest::right].motion != motion)
         goto setRequest;
     }

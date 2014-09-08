@@ -19,9 +19,9 @@ namespace SimRobot
   class Widget
   {
   public:
-    virtual ~Widget() {}
+    virtual ~Widget() = default;
     virtual QWidget* getWidget() = 0;
-    virtual void update() {};
+    virtual void update() {}
     virtual bool canClose() {return true;}
     virtual QMenu* createFileMenu() const {return 0;}
     virtual QMenu* createEditMenu() const {return 0;}
@@ -35,7 +35,7 @@ namespace SimRobot
   class Object
   {
   public:
-    virtual ~Object() {};
+    virtual ~Object() = default;
     virtual Widget* createWidget() {return 0;}
 
     /** Accesses pathname to the object in the scene graph
@@ -43,7 +43,7 @@ namespace SimRobot
     */
     virtual const QString& getFullName() const = 0;
 
-    virtual const QIcon* getIcon() const {return 0;};
+    virtual const QIcon* getIcon() const {return 0;}
     virtual int getKind() const {return 0;}
   };
 
@@ -53,9 +53,9 @@ namespace SimRobot
   class StatusLabel
   {
   public:
-    virtual ~StatusLabel() {};
+    virtual ~StatusLabel() = default;
     virtual QWidget* getWidget() = 0;
-    virtual void update() {};
+    virtual void update() {}
   };
 
  /**
@@ -85,7 +85,7 @@ namespace SimRobot
   public:
 
     /** Virtual destructor */
-    virtual ~Module() {};
+    virtual ~Module() = default;
 
     /**
     * Called to initialize the module. In this phase the module can do the following tasks
@@ -104,17 +104,17 @@ namespace SimRobot
     /**
     * Called to perform another simulation step
     */
-    virtual void update() {};
+    virtual void update() {}
 
     /**
     * A handler that will be called when any modules uses \c Application::selectObject
     */
-    virtual void selectedObject(const Object& object) {};
+    virtual void selectedObject(const Object& object) {}
 
     /**
     * A handler that can be used to implement CTRL + SHIFT shortcuts
     */
-    virtual void pressedKey(int key, bool pressed) {};
+    virtual void pressedKey(int key, bool pressed) {}
 
     /**
     * Create a menu for this module. If 0 is returned, there is no menu.
@@ -128,7 +128,7 @@ namespace SimRobot
   class Application
   {
   public:
-    virtual ~Application() {};
+    virtual ~Application() = default;
     virtual bool registerObject(const Module& module, Object& object, const Object* parent, int flags = 0) = 0;
     virtual bool unregisterObject(const Object& object) = 0;
     virtual Object* resolveObject(const QString& fullName, int kind = 0) = 0;
@@ -148,9 +148,9 @@ namespace SimRobot
     virtual QSettings& getSettings() = 0;
     virtual QSettings& getLayoutSettings() = 0;
   };
-};
+}
 
-#ifdef WIN32
+#ifdef WINDOWS
 #define DLL_EXPORT __declspec(dllexport)
 #else
 #define DLL_EXPORT

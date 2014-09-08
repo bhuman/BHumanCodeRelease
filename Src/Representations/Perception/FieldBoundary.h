@@ -11,8 +11,8 @@
 STREAMABLE(FieldBoundary,
 {
 public:
-  typedef std::vector<Vector2<int> > InImage;   ///< Type for the boundary in image coordinates.
-  typedef std::vector<Vector2<float> > InField; ///< Type for the boundary in field coordinates.
+  using InImage = std::vector<Vector2<int>>;   ///< Type for the boundary in image coordinates.
+  using InField = std::vector<Vector2<float>>; ///< Type for the boundary in field coordinates.
 
   std::vector<InImage> convexBoundaryCandidates; ///< Possible bondary candidates.
 
@@ -42,7 +42,5 @@ public:
   (InField) boundaryOnField,   ///< The boundary projectet to the Field in relative coordinates.
   (InImage) boundaryInImage,   ///< The boundary in image coordinates.
   (Vector2<int>) highestPoint, ///< The highest pont of the boundary.
-  (bool)(false) isValid,	   ///< True if a boundary could be detected.
-  (int)(16) scanlineDistance,  ///< The distance between the scanlines used to find the boundarySpots.
-  (int)(0) width,              ///< The width of the current image; used for some debug drawings.
+  (bool)(false) isValid,       ///< True if a boundary could be detected.
 });

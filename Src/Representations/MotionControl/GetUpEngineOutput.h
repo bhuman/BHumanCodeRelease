@@ -9,7 +9,7 @@
 #include "Tools/Math/Pose2D.h"
 
 /**
-* @class BikeEngineOutput
+* @class KickEngineOutput
 * A class that represents the output of the walking engine.
 */
 STREAMABLE_WITH_BASE(GetUpEngineOutput, JointRequest,

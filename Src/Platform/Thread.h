@@ -17,8 +17,8 @@
 
 #if defined(TARGET_SIM) || defined(TARGET_TOOL)
 
-#ifdef WIN32
-#include "Win32/Thread.h"
+#ifdef WINDOWS
+#include "Windows/Thread.h"
 #define THREAD_INCLUDED
 #endif
 
@@ -27,13 +27,12 @@
 #define THREAD_INCLUDED
 #endif
 
-#ifdef MACOSX
+#ifdef OSX
 #include "linux/Thread.h"
 #define THREAD_INCLUDED
 #endif
 
 #endif
-
 
 #ifndef THREAD_INCLUDED
 #error Unknown platform

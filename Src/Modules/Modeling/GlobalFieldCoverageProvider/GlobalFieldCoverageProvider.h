@@ -10,7 +10,7 @@
 #include "Tools/Math/Vector2.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Infrastructure/TeamMateData.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Modeling/GlobalFieldCoverage.h"
@@ -20,16 +20,17 @@
 
 #include <stack>
 
-MODULE(GlobalFieldCoverageProvider)
-  REQUIRES(FieldCoverage)
-  REQUIRES(TeamMateData)
-  REQUIRES(FrameInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(RobotPose)
-  REQUIRES(FieldDimensions)
-  USES(BehaviorControlOutput)
-  PROVIDES_WITH_MODIFY(GlobalFieldCoverage)
-END_MODULE
+MODULE(GlobalFieldCoverageProvider,
+{,
+  REQUIRES(FieldCoverage),
+  REQUIRES(TeammateData),
+  REQUIRES(FrameInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(RobotPose),
+  REQUIRES(FieldDimensions),
+  USES(BehaviorControlOutput),
+  PROVIDES_WITH_MODIFY(GlobalFieldCoverage),
+});
 
 /**
  * @class GlobalFieldCoverageProvider
@@ -88,13 +89,13 @@ private:
   /**
    * Accumulated field coverage grids of the other team mates.
    */
-  unsigned fieldCoverageGrids[TeamMateData::numOfPlayers][FieldCoverage::GridInterval::xSteps* FieldCoverage::GridInterval::ySteps];
+  unsigned fieldCoverageGrids[TeammateData::numOfPlayers][FieldCoverage::GridInterval::xSteps* FieldCoverage::GridInterval::ySteps];
 
   /**
    * Partitioning of the field coverage grid used for exploring the field with
    * more than a one robot.
    */
-  Region regions[TeamMateData::numOfPlayers];
+  Region regions[TeammateData::numOfPlayers];
 
   /**
    * Array to assign each cell to a region.
@@ -104,12 +105,12 @@ private:
   /**
    * Largest components of the regions of each robot.
    */
-  std::vector<int> largestComponent[TeamMateData::numOfPlayers];
+  std::vector<int> largestComponent[TeammateData::numOfPlayers];
 
   /**
    * Centers of each of the largest components.
    */
-  Vector2<> componentCenter[TeamMateData::numOfPlayers];
+  Vector2<> componentCenter[TeammateData::numOfPlayers];
 
   /**
    * Returns the local coverage value of robot 'robotId' of the cell 'cellIdx'.
@@ -117,7 +118,7 @@ private:
   unsigned char coverage(int robotId, int cellIdx) const;
 
   /**
-   * Updates the field coverage grid of team mate 'teamMate'
+   * Updates the field coverage grid of team mate 'teammate'
    * with the data from the grid interval 'interval'.
    */
   void updateFieldCoverageGrids();

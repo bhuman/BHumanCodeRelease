@@ -4,10 +4,6 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QMouseEvent>
 #include <QApplication>
 #include <QSettings>
@@ -15,9 +11,6 @@
 #include <QSignalMapper>
 #include <QClipboard>
 #include <QFileDialog>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "SimObjectWidget.h"
 #include "CoreModule.h"
@@ -254,7 +247,7 @@ void SimObjectWidget::update()
   QGLWidget::update();
 }
 
-QMenu* SimObjectWidget::createEditMenu()
+QMenu* SimObjectWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Edit"));
 

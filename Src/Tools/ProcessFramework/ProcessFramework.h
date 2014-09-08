@@ -18,7 +18,7 @@
 #endif
 
 /**
-* The class is a helper that allows to instantiate a class as an Win32 process.
+* The class is a helper that allows to instantiate a class as an Windows process.
 * ProcessBase contains the parts that need not to be implemented as a template.
 * It will only be used by the macro MAKE_PROCESS and should never be used directly.
 */
@@ -34,7 +34,7 @@ public:
   /**
   * Virtual destructor.
   */
-  virtual ~ProcessBase() {}
+  virtual ~ProcessBase() = default;
 
   /**
   * The function starts the process by starting the Windows thread.
@@ -73,15 +73,15 @@ public:
 };
 
 /**
-* The class is a helper that allows to instantiate a class as an Win32 process.
+* The class is a helper that allows to instantiate a class as an Windows process.
 * ProcessCreator contains the parts that need to be implemented as a template.
 * It will only be used by the macro MAKE_PROCESS and should never be used directly.
 */
 template<class T> class ProcessFrame : public ProcessBase
 {
 private:
-  T process; /**< The process. */
   std::string name; /**< The name of the process. */
+  T process; /**< The process. */
 
 protected:
   /**
@@ -97,6 +97,7 @@ protected:
     setPriority(process.getPriority());
     process.processBase = this;
     Thread<ProcessBase>::yield(); // always leave processing time to other threads
+    process.setGlobals();
     while(isRunning())
     {
       if(process.getFirstReceiver())
@@ -113,9 +114,18 @@ protected:
 public:
   /**
   * Constructor.
+  * Note that process.setGlobals() is called before process is constructed.
   * @param name The name of the process.
   */
-  ProcessFrame(const std::string& name) : name(name) {}
+  ProcessFrame(const std::string& name) : name((process.setGlobals(), name)) {}
+
+  /**
+   * Destructor.
+   */
+  ~ProcessFrame()
+  {
+    process.setGlobals();
+  }
 
   /**
   * The functions searches for a sender with a given name.
@@ -193,7 +203,7 @@ public:
   /**
   * Virtual destructor.
   */
-  virtual ~ProcessCreatorBase() {}
+  virtual ~ProcessCreatorBase() = default;
 
   friend class ProcessList;
 };

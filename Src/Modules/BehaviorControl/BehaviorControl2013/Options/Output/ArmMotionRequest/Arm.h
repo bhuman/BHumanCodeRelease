@@ -1,11 +1,11 @@
 option(Arm, ArmMotionRequest::Arm arm, ArmMotionRequest::ArmMotionId motion, bool fast = false,
-  bool autoReverse = false, int autoReverseTime = 0)
+       bool autoReverse = false, int autoReverseTime = 0)
 {
   initial_state(setRequest)
   {
     transition
     {
-      if (theArmMotionEngineOutput.arms[arm].move && theArmMotionEngineOutput.arms[arm].motion == motion)
+      if(theArmMotionEngineOutput.arms[arm].move && theArmMotionEngineOutput.arms[arm].motion == motion)
         goto requestIsExecuted;
     }
     action
@@ -17,13 +17,11 @@ option(Arm, ArmMotionRequest::Arm arm, ArmMotionRequest::ArmMotionId motion, boo
     }
   }
 
-
-
   target_state(requestIsExecuted)
   {
     transition
     {
-      if (!theArmMotionEngineOutput.arms[arm].move || theArmMotionEngineOutput.arms[arm].motion != motion)
+      if(!theArmMotionEngineOutput.arms[arm].move || theArmMotionEngineOutput.arms[arm].motion != motion)
         goto setRequest;
     }
     action

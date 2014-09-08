@@ -5,6 +5,7 @@
  * Created on May 21, 2013, 8:15 PM
  */
 
+#include "Controller/RobotConsole.h"
 #include "TimeWidget.h"
 #include <QTableWidgetItem>
 #include <QHeaderView>
@@ -12,9 +13,9 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QSettings>
 #include "TimeView.h"
 #include "Platform/Thread.h"
-#include "Controller/RobotConsole.h"
 
 /**A simple QTableWidgetItem that enables correct sorting of numbers*/
 class NumberTableWidgetItem : public QTableWidgetItem
@@ -33,7 +34,6 @@ struct Row
   NumberTableWidgetItem* avg;
 };
 
-
 TimeWidget::TimeWidget(TimeView& timeView) : timeView(timeView), lastTimeInfoTimeStamp(0)
 {
   table = new QTableWidget();
@@ -42,26 +42,53 @@ TimeWidget::TimeWidget(TimeView& timeView) : timeView(timeView), lastTimeInfoTim
   headerNames << "Stopwatch" << "Min" << "Max" << "Avg";
   table->setHorizontalHeaderLabels(headerNames);
   table->verticalHeader()->setVisible(false);
-  table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+  table->verticalHeader()->setDefaultSectionSize(15);
+  table->horizontalHeader()->setResizeMode(3, QHeaderView::Stretch);
+  table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->setAlternatingRowColors(true);
   table->setSortingEnabled(true);
-  table->sortItems(0);//initial sort by name
+  table->setShowGrid(false);
+
+  //initial sort by name
   QVBoxLayout* layout = new QVBoxLayout(this);
   QHBoxLayout* filterLayout = new QHBoxLayout();
-  filterLayout->addWidget(new QLabel("Filter:"));
+  filterLayout->addWidget(new QLabel(" Filter: "));
   QLineEdit* filterEdit = new QLineEdit();
   filterEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   filterLayout->addWidget(filterEdit);
-  frequency = new QLabel("Frequency: ");
+  filterLayout->setContentsMargins(QMargins());
+  frequency = new QLabel(" Frequency: ");
+  layout->setSpacing(0);
+  layout->addSpacing(2);
   layout->addWidget(frequency);
+  layout->addSpacing(2);
   layout->addLayout(filterLayout);
   layout->addWidget(table);
+  layout->setContentsMargins(QMargins());
   this->setLayout(layout);
   lastTimeInfoTimeStamp = SystemCall::getCurrentSystemTime();
   lastUpdate = SystemCall::getCurrentSystemTime();
   QObject::connect(filterEdit,SIGNAL(textChanged(QString)),this,SLOT(filterChanged(QString)));
 
+  QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
+  settings.beginGroup(timeView.fullName);
+  table->horizontalHeader()->restoreState(settings.value("HeaderState").toByteArray());
+  table->sortItems(settings.value("SortBy").toInt(), (Qt::SortOrder) settings.value("SortOrder").toInt());
+  filter = settings.value("Filter").toString();
+  filterEdit->setText(filter);
+  settings.endGroup();
+}
+
+TimeWidget::~TimeWidget()
+{
+  QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
+  settings.beginGroup(timeView.fullName);
+  settings.setValue("HeaderState", table->horizontalHeader()->saveState());
+  settings.setValue("SortBy", table->horizontalHeader()->sortIndicatorSection());
+  settings.setValue("SortOrder", table->horizontalHeader()->sortIndicatorOrder());
+  settings.setValue("Filter", filter);
+  settings.endGroup();
 }
 
 QWidget* TimeWidget::getWidget() {return this;}
@@ -83,13 +110,12 @@ void TimeWidget::update()
 
     float avgFrequency = -1.0;
     timeView.info.getProcessStatistics(avgFrequency);
-    frequency->setText("Frequency: " + QString::number(avgFrequency));
+    frequency->setText(" Frequency: " + QString::number(avgFrequency));
 
     table->setUpdatesEnabled(false);
     table->setSortingEnabled(false);//disable sorting while updating to avoid race conditions
     for(TimeInfo::Infos::const_iterator i = timeView.info.infos.begin(), end = timeView.info.infos.end(); i != end; ++i)
     {
-
       std::string name = timeView.info.getName(i->first);
       Row* currentRow = NULL;
       if(items.find(i->first) != items.end())

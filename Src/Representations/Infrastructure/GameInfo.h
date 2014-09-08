@@ -20,6 +20,10 @@ private:
   */
   virtual void serialize(In* in, Out* out);
 
+  using RoboCup::RoboCupGameControlData::header; // Hide, because it is not streamed
+  using RoboCup::RoboCupGameControlData::version; // Hide, because it is not streamed
+  using RoboCup::RoboCupGameControlData::packetNumber; // Hide, because it is not streamed
+  using RoboCup::RoboCupGameControlData::secondaryTime; // Hide, because it is not streamed
   using RoboCup::RoboCupGameControlData::teams; // Make teams private, the information is provided in other representations.
 
 public:
@@ -30,4 +34,6 @@ public:
 
   /** Draws the game time in the scene view. */
   void draw() const;
+
+  friend class NaoProvider; // access to packetNumber
 };

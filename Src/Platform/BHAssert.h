@@ -17,8 +17,8 @@
 
 #if defined(TARGET_SIM) || defined(TARGET_TOOL)
 
-#ifdef WIN32
-#include "Win32/BHAssert.h"
+#ifdef WINDOWS
+#include "Windows/BHAssert.h"
 #define BHASSERT_INCLUDED
 #endif
 
@@ -27,7 +27,7 @@
 #define BHASSERT_INCLUDED
 #endif
 
-#ifdef MACOSX
+#ifdef OSX
 #include "Linux/BHAssert.h"
 #define BHASSERT_INCLUDED
 #endif

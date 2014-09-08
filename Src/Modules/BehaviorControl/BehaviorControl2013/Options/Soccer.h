@@ -12,9 +12,8 @@ option(Soccer)
   {
     transition
     {
-#ifdef TARGET_SIM
-      goto standUp; // Don't wait for the button in SimRobot
-#endif
+      if(SystemCall::getMode() == SystemCall::simulatedRobot)
+        goto standUp; // Don't wait for the button in SimRobot
 
       if(action_done) // chest button pressed and released
         goto standUp;

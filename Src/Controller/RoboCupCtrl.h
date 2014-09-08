@@ -8,12 +8,11 @@
 
 #pragma once
 
+#include "SimulatedRobot.h"
+#include "GameController.h"
+
 #include <QList>
 #include <list>
-
-#include "SimRobotCore2.h"
-#include "Oracle.h"
-#include "GameController.h"
 
 class Robot;
 

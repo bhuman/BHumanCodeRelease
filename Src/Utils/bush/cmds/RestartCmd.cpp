@@ -71,11 +71,11 @@ std::vector<std::string> RestartCmd::complete(const std::string& cmdLine) const
 RestartCmd::RestartTask::RestartTask(Context &context, Robot *robot, RestartType type)
   : RobotTask(context, robot),
     type(type)
-{ }
+{}
 
 void RestartCmd::RestartTask::reportStatus(const ProcessRunner &r)
 {
-  if (r.error())
+  if(r.error())
     context().errorLine("Robot \"" + robot->name + "\" is unreachable");
   else
     context().printLine("Robot \"" + robot->name + "\" restarted");
@@ -107,7 +107,6 @@ bool RestartCmd::RestartTask::execute()
         return false;
       }
       else context().printLine(robot->name + ": restarted Naoqi.");
-
     }
     else if(type == ROBOT)
     {
@@ -121,7 +120,6 @@ bool RestartCmd::RestartTask::execute()
       context().errorLine("Unkown restart command.");
       return false;
     }
-
   }
   else if(type == BHUMAND_AND_NAOQID)
   {

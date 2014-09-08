@@ -30,7 +30,7 @@ public:
 
   void run();
 
-  inline unsigned short getPort() { return port; }
+  unsigned short getPort() { return port; }
 
 signals:
   void powerChanged(std::map<std::string, Power>*);

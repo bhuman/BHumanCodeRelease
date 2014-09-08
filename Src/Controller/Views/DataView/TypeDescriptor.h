@@ -13,7 +13,7 @@ namespace Type //The namespace is here to fix a VC-compiler bug
   class TypeDescriptor
   {
   public:
-    virtual ~TypeDescriptor() {}
+    virtual ~TypeDescriptor() = default;
     /**
      * Returns the type id which is supported by this descriptor.
      */

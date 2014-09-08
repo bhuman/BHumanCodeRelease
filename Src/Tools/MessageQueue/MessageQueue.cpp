@@ -119,11 +119,6 @@ void MessageQueue::append(In& stream)
     }
 }
 
-bool MessageQueue::writeErrorOccurred() const
-{
-  return queue.hasWriteOfLastMsgFailed();
-}
-
 Out& operator<<(Out& stream, const MessageQueue& messageQueue)
 {
   messageQueue.write(stream);
@@ -140,4 +135,11 @@ void operator>>(InMessage& message, MessageQueue& queue)
 {
   queue.out.bin.write(message.getData(), message.getMessageSize());
   queue.out.finishMessage(message.getMessageID());
+}
+
+char* MessageQueue::getStreamedData()
+{
+  ((unsigned*) queue.buf)[-2] = queue.usedSize;
+  ((unsigned*) queue.buf)[-1] = queue.numberOfMessages;
+  return queue.buf - MessageQueueBase::queueHeaderSize;
 }

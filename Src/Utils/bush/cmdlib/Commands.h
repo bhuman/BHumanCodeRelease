@@ -12,7 +12,6 @@ class Commands
 {
   std::map<std::string, Command*> commands;
 public:
-  Commands();
   static Commands& getInstance();
   bool addCommand(Command* cmd);
 

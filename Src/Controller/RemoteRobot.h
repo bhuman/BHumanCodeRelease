@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "RobotConsole.h"
 #include "Tools/Debugging/TcpConnection.h"
-#include "Oracle.h"
+#include "RobotConsole.h"
+#include "SimulatedRobot.h"
 
 /**
 * @class RemoteRobot
@@ -24,7 +24,7 @@ private:
   int bytesTransfered; /**< The number of bytes transfered so far. */
   float transferSpeed; /**< The transfer speed in kb/s. */
   unsigned timeStamp; /**< The time when the transfer speed was measured. */
-  Oracle oracle; /**< The interface to simulated objects. */
+  SimulatedRobot simulatedRobot; /**< The interface to simulated objects. */
   SimRobotCore2::Body* puppet; /**< A pointer to the puppet when there is one. Otherwise 0. */
 
   /**
@@ -53,7 +53,7 @@ public:
   /**
    * Destructor.
    */
-  ~RemoteRobot() {Thread<RemoteRobot>::stop();}
+  ~RemoteRobot() {Thread<RemoteRobot>::stop(); setGlobals();}
 
   /**
   * The function starts the process.

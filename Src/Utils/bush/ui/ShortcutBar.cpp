@@ -10,14 +10,14 @@
 ShortcutBar::ShortcutBar(Console *console)
   : QToolBar("Shortcuts"),
     console(console)
-{ }
+{}
 
 QAction* ShortcutBar::addShortcut(const QString &name,
                                   const QString &command,
                                   QIcon *icon)
 {
   QIcon _icon;
-  if (icon)
+  if(icon)
     _icon = *icon;
   else
     _icon = QIcon::fromTheme("player_play");
@@ -41,14 +41,14 @@ QAction* ShortcutBar::addShortcut(const QString &name,
 void ShortcutBar::actionTriggered()
 {
   QObject *s = sender();
-  if (s && s->inherits("QAction"))
+  if(s && s->inherits("QAction"))
   {
     QAction *a = dynamic_cast<QAction*>(s);
     QVariant data = a->data();
-    if (data.canConvert(QVariant::String))
+    if(data.canConvert(QVariant::String))
     {
       QString command = data.toString();
-      if (command.length() > 0)
+      if(command.length() > 0)
       {
         console->fireCommand(command);
       }

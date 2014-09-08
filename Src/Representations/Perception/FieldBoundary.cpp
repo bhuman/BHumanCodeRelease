@@ -3,29 +3,26 @@
 */
 
 #include "FieldBoundary.h"
+#include "Platform/BHAssert.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/Modify.h"
-#include "Platform/BHAssert.h"
 
 void FieldBoundary::draw() const
 {
-  if(width == 0)
-    return;
-
   DECLARE_DEBUG_DRAWING("representation:FieldBoundary:BoundarySpots", "drawingOnImage");
   for(const Vector2<int>& p : boundarySpots)
   {
-    DOT("representation:FieldBoundary:BoundarySpots", p.x, p.y, ColorClasses::blue, ColorClasses::blue);
+    DOT("representation:FieldBoundary:BoundarySpots", p.x, p.y, ColorRGBA::blue, ColorRGBA::blue);
   }
 
   DECLARE_DEBUG_DRAWING("representation:FieldBoundary:ConvexBoundary", "drawingOnImage");
   const Vector2<int>* previ = nullptr;
   for(const Vector2<int>& p : convexBoundary)
   {
-    DOT_AS_VECTOR("representation:FieldBoundary:ConvexBoundary", p, ColorClasses::red, ColorClasses::red);
+    DOT_AS_VECTOR("representation:FieldBoundary:ConvexBoundary", p, ColorRGBA::red, ColorRGBA::red);
     if(previ != nullptr)
     {
-      LINE("representation:FieldBoundary:ConvexBoundary", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorClasses::red);
+      LINE("representation:FieldBoundary:ConvexBoundary", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorRGBA::red);
     }
     previ = &p;
   }
@@ -34,7 +31,7 @@ void FieldBoundary::draw() const
   MODIFY("representation:FieldBoundary:SelectedCandidate", selected);
 
   DECLARE_DEBUG_DRAWING("representation:FieldBoundary:BoundaryCandidates", "drawingOnImage");
-  int num = convexBoundaryCandidates.size();
+  int num = (int) convexBoundaryCandidates.size();
   float step = 255.0f / (num - 1);
   int pos = 0;
   for(const InImage& tmpBoundary : convexBoundaryCandidates)
@@ -61,10 +58,10 @@ void FieldBoundary::draw() const
   previ = nullptr;
   for(const Vector2<int>& p : boundaryInImage)
   {
-    DOT_AS_VECTOR("representation:FieldBoundary:Image", p, ColorClasses::orange, ColorClasses::orange);
+    DOT_AS_VECTOR("representation:FieldBoundary:Image", p, ColorRGBA::orange, ColorRGBA::orange);
     if(previ != nullptr)
     {
-      LINE("representation:FieldBoundary:Image", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorClasses::orange);
+      LINE("representation:FieldBoundary:Image", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorRGBA::orange);
     }
     previ = &p;
   }
@@ -73,17 +70,17 @@ void FieldBoundary::draw() const
   const Vector2<float>* prevf = nullptr;
   for(const Vector2<float>& p : boundaryOnField)
   {
-    DOT("representation:FieldBoundary:Field", p.x, p.y, ColorClasses::black, ColorClasses::black);
+    DOT("representation:FieldBoundary:Field", p.x, p.y, ColorRGBA::black, ColorRGBA::black);
     if(prevf != nullptr)
     {
-      LINE("representation:FieldBoundary:Field", p.x, p.y, prevf->x, prevf->y, 20, Drawings::ps_solid, ColorClasses::black);
+      LINE("representation:FieldBoundary:Field", p.x, p.y, prevf->x, prevf->y, 20, Drawings::ps_solid, ColorRGBA::black);
     }
     prevf = &p;
   }
 
   DECLARE_DEBUG_DRAWING("representation:FieldBoundary:HighestPoint", "drawingOnImage");
-  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x + 20, highestPoint.y, 2, Drawings::ps_solid, ColorClasses::black);
-  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x, highestPoint.y + 20, 2, Drawings::ps_solid, ColorClasses::black);
+  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x + 20, highestPoint.y, 2, Drawings::ps_solid, ColorRGBA::black);
+  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x, highestPoint.y + 20, 2, Drawings::ps_solid, ColorRGBA::black);
 }
 
 int FieldBoundary::getBoundaryY(int x) const

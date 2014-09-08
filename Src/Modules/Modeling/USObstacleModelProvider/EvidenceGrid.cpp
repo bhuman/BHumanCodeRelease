@@ -7,6 +7,7 @@
 #include "EvidenceGrid.h"
 #include "Platform/BHAssert.h"
 #include <cstring>
+#include <cstdlib>
 
 EvidenceGrid::EvidenceGrid(float width, int widthInCells, int heightInCells, const Cell& empty)
 : Grid(width, widthInCells, heightInCells),

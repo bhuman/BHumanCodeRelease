@@ -15,7 +15,8 @@ public:
   STREAMABLE(Node,
   {
   public:
-    inline Node(const std::string& option,
+    Node() = default;
+    Node(const std::string& option,
                 int depth,
                 const std::string& state,
                 int optionTime,
@@ -26,19 +27,21 @@ public:
     (std::string) state,
     (int)(0) optionTime,
     (int)(0) stateTime,
-  }),
+  });
+
+  ActivationGraph()
+  {
+    graph.reserve(100);
+  },
 
   (std::vector<Node>) graph,
-
-  // Initialization
-  graph.reserve(100);
 });
 
-ActivationGraph::Node::Node(const std::string& option,
-                            int depth,
-                            const std::string& state,
-                            int optionTime,
-                            int stateTime)
+inline ActivationGraph::Node::Node(const std::string& option,
+                                   int depth,
+                                   const std::string& state,
+                                   int optionTime,
+                                   int stateTime)
 : option(option),
   depth(depth),
   state(state),

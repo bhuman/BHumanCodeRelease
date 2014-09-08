@@ -4,7 +4,6 @@
 */
 
 #include "BallModel.h"
-#include "Tools/Math/Pose2D.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 
@@ -20,28 +19,23 @@ void BallModel::draw() const
             45,
             0, // pen width
             Drawings::ps_solid,
-            ColorClasses::red,
+            ColorRGBA::red,
             Drawings::bs_solid,
-            ColorClasses::red);
+            ColorRGBA::red);
     ARROW("representation:BallModel", position.x, position.y,
-          position.x + velocity.x, position.y + velocity.y, 5, 1, ColorClasses::red);
+          position.x + velocity.x, position.y + velocity.y, 5, 1, ColorRGBA::red);
   );
-}
 
-void BallModel::draw3D(const Pose2D& robotPose) const
-{
-  // drawing og the ball model in the scene
-  DECLARE_DEBUG_DRAWING3D("representation:BallModel", "field",
+  DECLARE_DEBUG_DRAWING3D("representation:BallModel", "robot",
   {
+    TRANSLATE3D("representation:BallModel", 0, 0, -230);
     if(SystemCall::getTimeSince(timeWhenLastSeen) < 5000 && SystemCall::getTimeSince(timeWhenDisappeared) < 1000)
     {
-      Vector2<> ballRelToWorld = robotPose * estimate.position;
-      SPHERE3D("representation:BallModel", ballRelToWorld.x, ballRelToWorld.y, 35.f, 35.f, ColorClasses::orange);
-      LINE3D("representation:BallModel", robotPose.translation.x, robotPose.translation.y, 1.f, ballRelToWorld.x, ballRelToWorld.y, 1.f, 5.f, ColorClasses::orange);
+      SPHERE3D("representation:BallModel", estimate.position.x, estimate.position.y, 35.f, 35.f, ColorRGBA::orange);
+      LINE3D("representation:BallModel", 0, 0, 1.f, estimate.position.x, estimate.position.y, 1.f, 5.f, ColorRGBA::orange);
     }
   });
 }
-
 
 void BallModel::drawEndPosition(float ballFriction) const
 {
@@ -54,7 +48,7 @@ void BallModel::drawEndPosition(float ballFriction) const
             45,
             0, // pen width
             Drawings::ps_solid,
-            ColorClasses::black,
+            ColorRGBA::black,
             Drawings::bs_solid,
             ColorRGBA(168, 25, 99, 220));
   );
@@ -84,7 +78,7 @@ BallModelCompressed::BallModelCompressed(const BallModel& ballModel)
   position(ballModel.estimate.position),
   velocity(ballModel.estimate.velocity),
   timeWhenLastSeen(ballModel.timeWhenLastSeen),
-timeWhenDisappeared(ballModel.timeWhenDisappeared) {}
+  timeWhenDisappeared((ballModel.timeWhenDisappeared & 0x00ffffff) | ballModel.seenPercentage << 24) {}
 
 BallModelCompressed::operator BallModel() const
 {
@@ -93,7 +87,8 @@ BallModelCompressed::operator BallModel() const
   ballModel.estimate.position = Vector2<>(position);
   ballModel.estimate.velocity = Vector2<>(velocity);
   ballModel.timeWhenLastSeen = timeWhenLastSeen;
-  ballModel.timeWhenDisappeared = timeWhenDisappeared;
+  ballModel.timeWhenDisappeared = timeWhenDisappeared & 0x00ffffff;
+  ballModel.seenPercentage = (unsigned char) (timeWhenDisappeared >> 24);
   return ballModel;
 }
 

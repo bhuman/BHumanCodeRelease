@@ -11,7 +11,7 @@ dr representation:JointData
 # request behavior messages
 dr representation:ActivationGraph
 
-# press any key to activate the joystick 
+# press any key to activate the joystick
 jc press 1 call Joystick
 jc press 2 call Joystick
 jc press 3 call Joystick

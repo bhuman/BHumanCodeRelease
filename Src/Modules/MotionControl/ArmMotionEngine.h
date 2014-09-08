@@ -17,22 +17,26 @@
 #include "Tools/MessageQueue/InMessage.h"
 #include "ArmMotion.h"
 
-MODULE(ArmMotionEngine)
-  USES(MotionInfo)
-  REQUIRES(ArmMotionRequest)
-  REQUIRES(FrameInfo)
-  REQUIRES(GameInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(ArmContactModel)
-  REQUIRES(FilteredJointData)
-  REQUIRES(HardnessSettings)
-  REQUIRES(FallDownState)
-  REQUIRES(GroundContactState)
-  PROVIDES_WITH_MODIFY(ArmMotionEngineOutput)
-  LOADS_PARAMETER(int, actionDelay);                    /**< delay in ms after which arm contact triggered motions can be started again. */
-  LOADS_PARAMETER(int, targetTime);                     /**< time of how long arm stays in target position for contact triggered motions */
-  LOADS_PARAMETER(std::vector<ArmMotion>, allMotions);  /**< contains the existing arm motions */
-END_MODULE
+MODULE(ArmMotionEngine,
+{,
+  USES(MotionInfo),
+  REQUIRES(ArmMotionRequest),
+  REQUIRES(FrameInfo),
+  REQUIRES(GameInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(ArmContactModel),
+  REQUIRES(FilteredJointData),
+  REQUIRES(HardnessSettings),
+  REQUIRES(FallDownState),
+  REQUIRES(GroundContactState),
+  PROVIDES_WITH_MODIFY(ArmMotionEngineOutput),
+  LOADS_PARAMETERS(
+  {,
+    (int) actionDelay,                    /**< delay in ms after which arm contact triggered motions can be started again. */
+    (int) targetTime,                     /**< time of how long arm stays in target position for contact triggered motions */
+    (std::vector<ArmMotion>) allMotions,  /**< contains the existing arm motions */
+  }),
+});
 
 /**
 * Module which provides SpecialAction style arm motions which can be
@@ -71,8 +75,9 @@ private:
     ArmMotion currentMotion;   /**< The motion which is currently performed by this arm. Contains the actual target states in order they should be reached */
 
     Arm(ArmMotionRequest::Arm id = ArmMotionRequest::left, int firstJoint = 2) :
-      id(id), firstJoint(firstJoint) , stateIndex(0), interpolationTime(0), isMotionActive(false), targetTime(0),
-      lastContactAction(0) {}
+      id(id), firstJoint(firstJoint) , stateIndex(0), interpolationTime(0), targetTime(0),
+      lastContactAction(0), isMotionActive(false)
+    {}
 
     /**
      * Resets fields in this instance to start a new motion. The current joint information
@@ -99,8 +104,6 @@ private:
         interpolationStart.angles[i] = currentJoints.angles[firstJoint + i];
       }
     }
-
-
   };
 
   Arm arms[2];                     /**< There are two arms :) */

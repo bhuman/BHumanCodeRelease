@@ -4,10 +4,6 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QGraphicsSvgItem>
 #include <QGraphicsRectItem>
 #include <QWheelEvent>
@@ -18,9 +14,6 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QScrollBar>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 #include <qmath.h>
 
 #include "Platform/File.h"
@@ -68,16 +61,7 @@ bool DotViewWidget::openSvgFile(const QString& fileName)
     return false;
   }
   svgItem->setFlags(QGraphicsItem::ItemClipsToShape);
-  //svgItem->setCacheMode(QGraphicsItem::NoCache);
   svgItem->setZValue(0);
-/*
-  QGraphicsRectItem* backgroundItem = new QGraphicsRectItem(svgItem->boundingRect());
-  backgroundItem->setBrush(Qt::white);
-  backgroundItem->setPen(Qt::NoPen);
-  backgroundItem->setZValue(-1);
-
-  //s->addItem(backgroundItem);
-  */
   s->addItem(svgItem);
 
   // load window state
@@ -98,7 +82,6 @@ bool DotViewWidget::openSvgFile(const QString& fileName)
 
 void DotViewWidget::wheelEvent(QWheelEvent* event)
 {
-
   // scroll with mouse wheel
   qreal factor = qPow(1.2, event->delta() / 240.0);
   scale(factor, factor);
@@ -141,12 +124,7 @@ void DotViewWidget::keyPressEvent(QKeyEvent* event)
 bool DotViewWidget::convertDotFile(const QString& fmt, const QString& src, const QString& dest)
 {
   QString cmd = builtDotCommand(fmt, src, dest);
-  int exitCode =
-#ifdef MACOSX // QProcess::execute does not terminate since using multithreaded ODE
-  system(cmd.toUtf8().constData());
-#else
-  QProcess::execute(cmd);
-#endif
+  int exitCode = QProcess::execute(cmd);
   return exitCode != 0;
 }
 
@@ -155,12 +133,7 @@ bool DotViewWidget::openDotFile(const QString& fileName)
   // convert dot file into svg
   const QString svgFileName = QDir::temp().filePath("DotView.svg");
   QString cmd = builtDotCommand("svg", fileName, svgFileName);
-  int exitCode =
-#ifdef MACOSX // QProcess::execute does not terminate since using multithreaded ODE
-  system(cmd.toUtf8().constData());
-#else
-  QProcess::execute(cmd);
-#endif
+  int exitCode = QProcess::execute(cmd);
   if(exitCode != 0)
     return false;
 
@@ -175,13 +148,11 @@ bool DotViewWidget::saveDotFileContent(const QString& content, const QString& fi
   if(content.isEmpty())
     return false;
 
-  {
-    QFile dotFile(fileName);
-    if(!dotFile.open(QIODevice::WriteOnly | QIODevice::Text))
-      return false;
-    QTextStream out(&dotFile);
-    out << content;
-  }
+  QFile dotFile(fileName);
+  if(!dotFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    return false;
+  QTextStream out(&dotFile);
+  out << content;
   return true;
 }
 
@@ -210,10 +181,10 @@ void DotViewWidget::update()
 
 QString DotViewWidget::builtDotCommand(const QString& fmt, const QString& src, const QString& dest) const
 {
-#ifdef WIN32
-  return QString("\"%1\\Util\\dot-2.28.0\\dot.exe\" -T%2 -o \"%3\" \"%4\"").arg(File::getBHDir(), fmt, dest, src);
+#ifdef WINDOWS
+  return QString("\"%1\\Util\\dot\\dot.exe\" -T%2 -o \"%3\" \"%4\"").arg(File::getBHDir(), fmt, dest, src);
 #else
-  return QString("\"%1/Util/dot-2.28.0/dot\" -T%2 -o \"%3\" \"%4\"").arg(File::getBHDir(), fmt, dest, src);
+  return QString("\"%1/Util/dot/dot\" -T%2 -o \"%3\" \"%4\"").arg(File::getBHDir(), fmt, dest, src);
 #endif
 }
 

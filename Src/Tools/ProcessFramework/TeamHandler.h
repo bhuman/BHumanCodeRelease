@@ -20,7 +20,7 @@
 
 #ifdef TARGET_SIM
 #define START_TEAM_COMM \
-  theTeamHandler.startLocal(Global::getSettings().teamPort, (unsigned short) Global::getSettings().playerNumber);
+  theTeamHandler.startLocal(Global::getSettings().teamPort, (unsigned) Global::getSettings().playerNumber);
 #else
 #define START_TEAM_COMM \
   std::string bcastAddr = UdpComm::getWifiBroadcastAddress(); \
@@ -28,7 +28,7 @@
 #endif
 
 #define RECEIVE_TEAM_COMM \
-  theTeamHandler.receive()
+  (void) theTeamHandler.receive()
 
 #define SEND_TEAM_COMM \
   theTeamHandler.send()
@@ -52,7 +52,7 @@ public:
   * @param port The UDP port this handler is listening to.
   * @param localId An identifier for a local robot
   */
-  void startLocal(int port, unsigned short localId);
+  void startLocal(int port, unsigned localId);
 
   /**
   * The method starts the actual communication on the given port.
@@ -68,13 +68,14 @@ public:
 
   /**
   * The method receives packages if available.
+  * @return The number of bytes received.
   */
-  void receive();
+  unsigned receive();
 
 private:
   MessageQueue& in, /**< Incoming debug data is stored here. */
               & out; /**< Outgoing debug data is stored here. */
   int port; /**< The UDP port this handler is listening to. */
   UdpComm socket; /**< The socket used to communicate. */
-  unsigned short localId; /**< The id of a local team communication participant or 0 for normal udp communication. */
+  unsigned localId; /**< The id of a local team communication participant or 0 for normal udp communication. */
 };

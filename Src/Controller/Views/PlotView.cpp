@@ -7,18 +7,11 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QMouseEvent>
 #include <QMenu>
 #include <QSettings>
 #include <QFileDialog>
 #include <QTextStream>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
@@ -274,7 +267,6 @@ void PlotWidget::paint(QPainter& painter)
     if(antialiasing)
       painter.setRenderHints(QPainter::Antialiasing | QPainter::HighQualityAntialiasing, false);
 
-
     // draw legend
     if(drawLegend && plotList.size() > 0)
     {
@@ -381,7 +373,7 @@ void PlotWidget::exportAsGnuplot()
   int numOfPlots = 0;
   {
     const std::list<RobotConsole::Layer>& plotList(plotView.console.plotViews[plotView.name]);
-    numOfPlots = plotList.size();
+    numOfPlots = (int) plotList.size();
     for(std::list<RobotConsole::Layer>::const_iterator i = plotList.begin(), end = plotList.end(); i != end; ++i)
     {
       const std::list<float>& list = plotView.console.plots[i->layer].points;
@@ -465,7 +457,6 @@ QMenu* PlotWidget::createUserMenu() const
 
   QAction* action = menu->addAction(tr("Export as Gnuplot..."));
   connect(action, SIGNAL(triggered()), this, SLOT(exportAsGnuplot()));
-
 
   menu->addSeparator();
   action = menu->addAction(tr("Show Units"));

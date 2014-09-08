@@ -26,6 +26,12 @@ public:
   DebugHandler(MessageQueue& in, MessageQueue& out, int maxPackageSendSize = 0, int maxPackageReceiveSize = 0);
 
   /**
+  * Destructor.
+  * Delete buffered package if needed.
+  */
+  ~DebugHandler() {if(sendData) delete [] sendData;}
+
+  /**
   * The method performs the communication.
   * It has to be called at the end of each frame.
   * @param send Send outgoing queue?

@@ -34,7 +34,7 @@ protected:
     }
     return QSpinBox::validate(input, pos);
   }
-  
+
 public:
   IntSpinBox(QWidget* parent) : QSpinBox(parent) {}
 };
@@ -206,7 +206,6 @@ void PropertyEditorFactory::slotManagerValueChanged(QtProperty* property, const 
   }
 }
 
-
 /**
  * This slot is invoked whenever one of the managed spinboxes changes its value.
  * It updates the value in the property belonging to the box.
@@ -236,7 +235,6 @@ void PropertyEditorFactory::slotFloatSpinBoxValueChanged(double newValue)
 
   float val = (float)newValue;//this is ok because the spinBox was limited to float ranges
   pTheManager->setValue(doubleSpinBoxToProperty[pCaller], QVariant::fromValue(val));
-
 }
 
 void PropertyEditorFactory::slotEditorDestroyed(QObject* pObject)

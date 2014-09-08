@@ -2,7 +2,7 @@
 
   <Body name="Nao"> <!-- Torso -->
     <Translation z="400mm"/>
-    
+
     <Set name="NaoColor" value="blue"/>
 
     <InertiaMatrixMass value="1049.56g" x="-4.13mm" y="0.09mm" z="43.42mm"
@@ -15,7 +15,7 @@
     <Geometry name="origin">
       <Translation z="-0.085"/>
     </Geometry>
-    
+
     <ComplexAppearance ref="CHEST_COORD_MACRO0"/>
     <ComplexAppearance ref="CHEST_COORD_MACRO1"/>
     <ComplexAppearance ref="CHEST_COORD_MACRO2"/>
@@ -24,14 +24,14 @@
     <ComplexAppearance ref="CHEST_LED_VERTEX1_MACRO3">
       <Translation y="0" x="50mm" z="58mm"/>
     </ComplexAppearance>
-    
+
 
     <CylinderAppearance name="ARMS_AXIS" height="0.2" radius="0.017">
       <Translation z="0.1"/>
       <Rotation x="90degree"/>
       <Surface ref="STRUCTURE_APP"/>
     </CylinderAppearance>
-    
+
     <Gyroscope>
       <!-- <Translation x="-0.008" y="0.006" z="0.029"/> --><!-- not supported yet, pointless? -->
     </Gyroscope>
@@ -54,7 +54,7 @@
       <Translation x="0.0507" y="0.03785" z="0.06"/>
       <Rotation z="22.5degree"/>
     </ApproxDistanceSensor>
-    
+
     <!-- Head -->
     <Hinge name="HeadYaw">
       <Translation z="126.5mm"/><!-- NeckOffsetZ -->
@@ -71,14 +71,14 @@
         <CylinderAppearance name="NECK" height="0.01" radius="0.016">
           <Surface ref="STRUCTURE_APP"/>
         </CylinderAppearance>
-        
+
         <Hinge name="HeadPitch">
           <Axis y="1.0">
             <Deflection min="-38.5degree" max="29.5degree"/>
             <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
           </Axis>
           <Body name="Head">
-          
+
             <InertiaMatrixMass value="605.33g" x="-1.12mm" y="0.03mm" z="52.58mm"
               ixx="2631295.18g*mm^2" ixy="8788.14g*mm^2" ixz="40984.66g*mm^2"
               iyy="2491124.88g*mm^2" iyz="-29957.92g*mm^2" izz="985735.65g*mm^2"/>
@@ -86,7 +86,7 @@
             <SphereGeometry radius="62mm">
               <Translation z="55mm"/>
             </SphereGeometry>
-            
+
             <Camera name="CameraTop" imageWidth="320" imageHeight="240" angleX="1.0641" angleY="0.83147">
               <Translation x="0.05871" z="0.06364"/>
               <Rotation y="1.2degree"/>
@@ -95,7 +95,7 @@
               <Translation x="0.05071" z="0.01774"/>
               <Rotation y="39.7degree"/>
             </Camera>
-            
+
             <ComplexAppearance ref="HEAD_COORD_MACRO5"/>
             <ComplexAppearance ref="HEAD_COORD_MACRO6"/>
             <ComplexAppearance ref="HEAD_COORD_MACRO7"/>
@@ -127,9 +127,9 @@
           <Axis z="1.0">
             <Deflection min="-18degree" max="76degree"/>
             <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
-          </Axis> 
+          </Axis>
           <Body name="LUpperArm">
-          
+
             <InertiaMatrixMass value="157.77g" x="24.55mm" y="5.63mm" z="3.30mm"
               ixx="93899.93g*mm^2" ixy="-47144.52g*mm^2" ixz="-26994.71g*mm^2"
               iyy="371518.79g*mm^2" iyz="-2459.77g*mm^2" izz="341900.83g*mm^2"/>
@@ -138,7 +138,7 @@
               <Translation x="25mm"/>
               <Rotation x="45degree"/>
             </BoxGeometry>
-            
+
             <ComplexAppearance ref="LARM_COORD_MACRO19">
               <Translation x="15mm"/>
               <Rotation z="8degree"/>
@@ -148,15 +148,15 @@
               <Translation x="15mm"/>
               <Rotation z="8degree"/>
             </ComplexAppearance>
-            
+
             <Hinge name="LElbowYaw">
               <Translation x="105mm" y="15mm"/><!-- UpperArmLength, ElbowOffsetY -->
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
                 <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
-              </Axis> 
+              </Axis>
               <Body name="LElbow">
-              
+
                 <InertiaMatrixMass value="64.83g" x="-27.44mm" y="0.00mm" z="-0.14mm"
                   ixx="5597.15g*mm^2" ixy="-4.21g*mm^2" ixz="43.19g*mm^2"
                   iyy="75433.12g*mm^2" iyz="1.84g*mm^2" izz="76443.39g*mm^2"/>
@@ -165,7 +165,7 @@
                   <Axis z="1.0">
                     <Deflection min="-88.5degree" max="-2degree"/>
                     <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
-                  </Axis> 
+                  </Axis>
                   <Body name="LLowerArm">
 
                     <InertiaMatrixMass value="184.05g" x="65.30mm" y="-1.14mm" z="0.51mm"
@@ -176,17 +176,17 @@
                       <Translation x="70mm"/>
                       <Rotation x="45degree"/>
                     </BoxGeometry>
-                    
+
                     <ComplexAppearance ref="LFOREARM_COORD_MACRO22"/>
                     <ComplexAppearance ref="LFOREARM_COORD_MACRO23"/>
                     <ComplexAppearance ref="LFOREARM_COORD_MACRO24"/>
-                    
+
                   </Body>
                 </Hinge>
               </Body>
-            </Hinge> 
-          </Body>  
-        </Hinge> 
+            </Hinge>
+          </Body>
+        </Hinge>
       </Body>
     </Hinge>
 
@@ -207,7 +207,7 @@
           <Axis z="1.0">
             <Deflection min="-76degree" max="18degree"/>
             <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
-          </Axis> 
+          </Axis>
           <Body name="RUpperArm">
 
             <InertiaMatrixMass value="157.94g" x="24.29mm" y="-9.52mm" z="3.20mm"
@@ -218,7 +218,7 @@
               <Translation x="25mm"/>
               <Rotation x="45degree"/>
             </BoxGeometry>
-            
+
             <ComplexAppearance ref="RARM_COORD_MACRO13">
               <Translation x="15mm"/>
               <Rotation z="-8degree"/>
@@ -234,9 +234,9 @@
               <Axis x="1.0">
                 <Deflection min="-119.5degree" max="119.5degree"/>
                 <ServoMotor maxVelocity="474" maxForce="5" p="20.0"/>
-              </Axis> 
+              </Axis>
               <Body name="RElbow">
-              
+
                 <InertiaMatrixMass value="64.83g" x="-27.44mm" y="0.00mm" z="-0.14mm"
                   ixx="5597.15g*mm^2" ixy="4.21g*mm^2" ixz="43.19g*mm^2"
                   iyy="75433.12g*mm^2" iyz="-1.84g*mm^2" izz="76443.39g*mm^2"/>
@@ -245,7 +245,7 @@
                   <Axis z="1.0">
                     <Deflection min="2degree" max="88.5degree"/>
                     <ServoMotor maxVelocity="412" maxForce="6" p="20.0"/>
-                  </Axis> 
+                  </Axis>
                   <Body name="RLowerArm">
 
                     <InertiaMatrixMass value="184.05g" x="65.30mm" y="1.14mm" z="0.51mm"
@@ -256,17 +256,17 @@
                       <Translation x="70mm"/>
                       <Rotation x="45degree"/>
                     </BoxGeometry>
-                    
+
                     <ComplexAppearance ref="RFOREARM_COORD_MACRO16"/>
                     <ComplexAppearance ref="RFOREARM_COORD_MACRO17"/>
                     <ComplexAppearance ref="RFOREARM_COORD_MACRO18"/>
-                    
+
                   </Body>
                 </Hinge>
               </Body>
-            </Hinge> 
-          </Body>  
-        </Hinge> 
+            </Hinge>
+          </Body>
+        </Hinge>
       </Body>
     </Hinge>
 
@@ -292,7 +292,7 @@
             <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
           </Axis>
           <Body name="LHip2">
-            
+
             <InertiaMatrixMass value="130.53g" x="-15.49mm" y="0.29mm" z="-5.15mm"
               ixx="27583.54g*mm^2" ixy="-22.33g*mm^2" ixz="-4081.64g*mm^2"
               iyy="98270.55g*mm^2" iyz="-4.19g*mm^2" izz="88099.73g*mm^2"/>
@@ -302,14 +302,14 @@
               <Rotation y="90degree"/>
               <Surface ref="STRUCTURE_APP"/>
             </CylinderAppearance>
-            
+
             <Hinge name="LHipPitch">
               <Axis y="1.0">
                 <Deflection min="-101.63degree" max="27.73degree"/>
                 <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
               </Axis>
               <Body name="LThigh">
-              
+
                 <InertiaMatrixMass value="389.68g" x="1.38mm" y="2.21mm" z="-53.73mm"
                   ixx="1636719.62g*mm^2" ixy="924.51g*mm^2" ixz="85306.68g*mm^2"
                   iyy="1591072.78g*mm^2" iyz="38361.60g*mm^2" izz="303743.42g*mm^2"/>
@@ -317,11 +317,11 @@
                 <BoxGeometry depth="70mm" width="70mm" height="90mm">
                   <Translation z="-50mm"/>
                 </BoxGeometry>
-              
+
                 <ComplexAppearance ref="UPPER_THIGH_COORD_MACRO27"/>
                 <ComplexAppearance ref="LTHIGH_COORD_MACRO40"/>
                 <ComplexAppearance ref="LTHIGH_COORD_MACRO41"/>
-                
+
                 <Hinge name="LKneePitch">
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
@@ -329,19 +329,19 @@
                     <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
                   </Axis>
                   <Body name="LTibia">
-                  
+
                     <InertiaMatrixMass value="291.42g" x="4.53mm" y="2.25mm" z="-49.36mm"
                       ixx="1182079.67g*mm^2" ixy="633.62g*mm^2" ixz="36496.97g*mm^2"
                       iyy="1128652.26g*mm^2" iyz="39495.23g*mm^2" izz="193227.44g*mm^2"/>
-                    
+
                     <BoxGeometry depth="70mm" width="70mm" height="90mm">
                       <Translation z="-51.375mm"/>
                     </BoxGeometry>
-                    
+
                     <ComplexAppearance ref="LSHINE_BONE_COORD_MACRO42"/>
                     <ComplexAppearance ref="LSHINE_BONE_COORD_MACRO43"/>
                     <ComplexAppearance ref="LSHINE_BONE_COORD_MACRO44"/>
-                    
+
                     <Hinge name="LAnklePitch">
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
@@ -349,33 +349,33 @@
                         <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
                       </Axis>
                       <Body name="LAnkle">
-                        
+
                         <InertiaMatrixMass value="134.16g" x="0.45mm" y="0.29mm" z="6.85mm"
                           ixx="38509.78g*mm^2" ixy="-26.34g*mm^2" ixz="3861.94g*mm^2"
                           iyy="74265.26g*mm^2" iyz="18.34g*mm^2" izz="54865.40g*mm^2"/>
-                        
+
                         <ComplexAppearance ref="ANKLE_SHAPE_VERTEX4_MACRO33"/>
-                        
+
                         <Hinge name="LAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-44.06degree" max="22.79degree"/>
                             <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
                           </Axis>
                           <Body name="LFoot">
-                            
+
                             <InertiaMatrixMass value="161.84g" x="25.42mm" y="3.30mm" z="-32.39mm"
                               ixx="269441.82g*mm^2" ixy="-5695.72g*mm^2" ixz="139379.48g*mm^2"
                               iyy="644342.50g*mm^2" iyz="18740.92g*mm^2" izz="525756.75g*mm^2"/>
-                            
+
                             <BoxGeometry depth="150mm" width="75mm" height="30mm">
                               <Translation x="20mm" y="3mm" z="-30.11mm"/>
                             </BoxGeometry>
-                            
+
                             <ComplexAppearance ref="LFOOT_COORD_MACRO45"/>
                             <ComplexAppearance ref="LFOOT_COORD_MACRO46"/>
                             <ComplexAppearance ref="LFOOT_COORD_MACRO47"/>
                             <ComplexAppearance ref="LFOOT_COORD_MACRO48"/>
-                            
+
                           </Body>
                         </Hinge>
                       </Body>
@@ -389,7 +389,7 @@
       </Body>
     </Hinge>
 
-    <!-- Right Leg -->  
+    <!-- Right Leg -->
     <Hinge name="RHipYawPitch">
       <Translation y="-50mm" z="-85mm"/><!-- -HipOffsetY, HipOffsetZ -->
       <Axis y="0.7" z="0.7">
@@ -397,21 +397,21 @@
         <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
       </Axis>
       <Body name="RHip1">
-        
+
         <InertiaMatrixMass value="71.18g" x="-7.66mm" y="12.00mm" z="27.16mm"
           ixx="89971.95g*mm^2" ixy="5002.19g*mm^2" ixz="12735.25g*mm^2"
           iyy="105526.11g*mm^2" iyz="-27700.80g*mm^2" izz="66887.24g*mm^2"/>
-        
+
         <ComplexAppearance ref="coord_RHip_MACRO25"/>
         <ComplexAppearance ref="coord_RHip_MACRO26"/>
-        
+
         <Hinge name="RHipRoll">
           <Axis x="1.0">
             <Deflection min="-42.30degree" max="23.76degree"/>
             <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
           </Axis>
           <Body name="RHip2">
-          
+
             <InertiaMatrixMass value="130.53g" x="-15.49mm" y="-0.29mm" z="-5.16mm"
               ixx="27586.54g*mm^2" ixy="-19.19g*mm^2" ixz="-4108.22g*mm^2"
               iyy="98269.96g*mm^2" iyz="2.51g*mm^2" izz="88103.32g*mm^2"/>
@@ -421,14 +421,14 @@
               <Rotation y="90degree"/>
               <Surface ref="STRUCTURE_APP"/>
             </CylinderAppearance>
-            
+
             <Hinge name="RHipPitch">
               <Axis y="1.0">
                 <Deflection min="-101.54degree" max="27.82degree"/>
                 <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
               </Axis>
               <Body name="RThigh">
-              
+
                 <InertiaMatrixMass value="389.76g" x="1.39mm" y="-2.25mm" z="-53.74mm"
                   ixx="1637482.05g*mm^2" ixy="-839.54g*mm^2" ixz="85883.01g*mm^2"
                   iyy="1592214.03g*mm^2" iyz="-39176.26g*mm^2" izz="303978.24g*mm^2"/>
@@ -436,11 +436,11 @@
                 <BoxGeometry depth="70mm" width="70mm" height="90mm">
                   <Translation z="-50mm"/>
                 </BoxGeometry>
-                
+
                 <ComplexAppearance ref="UPPER_THIGH_COORD_MACRO27"/>
                 <ComplexAppearance ref="RTHIGH_COORD_MACRO28"/>
                 <ComplexAppearance ref="RTHIGH_COORD_MACRO29"/>
-                
+
                 <Hinge name="RKneePitch">
                   <Translation z="-100mm"/><!-- ThighLength -->
                   <Axis y="1.0">
@@ -448,7 +448,7 @@
                     <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
                   </Axis>
                   <Body name="RTibia">
-                  
+
                     <InertiaMatrixMass value="291.63g" x="3.94mm" y="-2.21mm" z="-49.38mm"
                       ixx="1182829.56g*mm^2" ixy="-896.50g*mm^2" ixz="27996.90g*mm^2"
                       iyy="1128278.51g*mm^2" iyz="-38476.04g*mm^2" izz="191452.77g*mm^2"/>
@@ -456,11 +456,11 @@
                     <BoxGeometry depth="70mm" width="70mm" height="90mm">
                       <Translation z="-51.375mm"/>
                     </BoxGeometry>
-                    
+
                     <ComplexAppearance ref="RSHINE_BONE_COORD_MACRO30"/>
                     <ComplexAppearance ref="RSHINE_BONE_COORD_MACRO31"/>
                     <ComplexAppearance ref="RSHINE_BONE_COORD_MACRO32"/>
-                    
+
                     <Hinge name="RAnklePitch">
                       <Translation z="-102.9mm"/><!-- TibiaLength -->
                       <Axis y="1.0">
@@ -468,20 +468,20 @@
                         <ServoMotor maxVelocity="367" maxForce="16" p="20.0"/>
                       </Axis>
                       <Body name="RAnkle">
-                      
+
                         <InertiaMatrixMass value="134.15g" x="0.45mm" y="-0.30mm" z="6.84mm"
                           ixx="38508.13g*mm^2" ixy="64.34g*mm^2" ixz="3874.66g*mm^2"
                           iyy="74310.82g*mm^2" iyz="-4.58g*mm^2" izz="54913.12g*mm^2"/>
 
                         <ComplexAppearance ref="ANKLE_SHAPE_VERTEX4_MACRO33"/>
-                        
+
                         <Hinge name="RAnkleRoll">
                           <Axis x="1.0">
                             <Deflection min="-22.27degree" max="45.03degree"/>
                             <ServoMotor maxVelocity="238" maxForce="24" p="20.0"/>
                           </Axis>
                           <Body name="RFoot">
-                          
+
                             <InertiaMatrixMass value="161.71g" x="25.40mm" y="-3.32mm" z="-32.39mm"
                               ixx="269302.01g*mm^2" ixy="5875.05g*mm^2" ixz="139133.28g*mm^2"
                               iyy="643473.85g*mm^2" iyz="-18849.17g*mm^2" izz="525034.77g*mm^2"/>
@@ -489,12 +489,12 @@
                             <BoxGeometry depth="150mm" width="75mm" height="30mm">
                               <Translation x="20mm" y="-3mm" z="-30.11mm"/>
                             </BoxGeometry>
-                            
+
                             <ComplexAppearance ref="RFOOT_COORD_MACRO34"/>
                             <ComplexAppearance ref="RFOOT_COORD_MACRO35"/>
                             <ComplexAppearance ref="RFOOT_COORD_MACRO36"/>
                             <ComplexAppearance ref="RFOOT_COORD_MACRO37"/>
-                            
+
                           </Body>
                         </Hinge>
                       </Body>
@@ -507,12 +507,12 @@
         </Hinge>
       </Body>
     </Hinge>
-    
+
   </Body>
-  
+
   <Body name="NaoDummy"><!-- A box that looks like a Nao -->
     <Translation z="400mm"/>
-    
+
     <Set name="NaoColor" value="blue"/>
 
     <BoxGeometry depth="100mm" width="200mm" height="566mm">
@@ -521,7 +521,7 @@
     <BoxMass value="5kg" depth="150mm" width="200mm" height="566mm">
       <Translation x="20mm" z="-50mm"/>
     </BoxMass>
-  
+
     <ComplexAppearance ref="CHEST_COORD_MACRO0"/>
     <ComplexAppearance ref="CHEST_COORD_MACRO1"/>
     <ComplexAppearance ref="CHEST_COORD_MACRO2"/>
@@ -530,8 +530,8 @@
     <ComplexAppearance ref="CHEST_LED_VERTEX1_MACRO3">
       <Translation y="0" x="50mm" z="58mm"/>
     </ComplexAppearance>
-    
-    
+
+
     <!-- Head -->
     <Appearance name="Neck">
       <Translation z="126.5mm"/><!-- NeckOffsetZ -->
@@ -549,7 +549,7 @@
         <ComplexAppearance ref="HEAD_COORD_MACRO12"/>
       </Appearance>
     </Appearance>
-    
+
     <!-- Left Arm -->
     <Appearance name="LUpperArm">
       <Translation y="98mm" z="100mm"/><!-- ShoulderOffsetY, ShoulderOffsetZ -->
@@ -569,7 +569,7 @@
         <ComplexAppearance ref="LFOREARM_COORD_MACRO23"/>
         <ComplexAppearance ref="LFOREARM_COORD_MACRO24"/>
       </Appearance>
-    </Appearance>  
+    </Appearance>
 
     <!-- Right Arm -->
     <Appearance name="RUpperArm">
@@ -591,7 +591,7 @@
         <ComplexAppearance ref="RFOREARM_COORD_MACRO18"/>
       </Appearance>
     </Appearance>
-    
+
     <!-- Left Leg -->
     <Appearance name="LHip1">
       <Translation y="50mm" z="-85mm"/><!-- HipOffsetY, HipOffsetZ -->
@@ -663,28 +663,28 @@
     </Appearance>
 
   </Body>
-  
+
   <Surface name="MAIN_SKIN_APP" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(40%, 40%, 40%)" specularColor="rgb(60%, 60%, 60%)" shininess="10"/>
-    
+
   <Surface name="nao-gray" diffuseColor="rgb(75%, 75%, 75%)" ambientColor="rgb(30%, 30%, 30%)" specularColor="rgb(40%, 40%, 40%)" shininess="20"/>
 
   <Surface name="nao-blue" diffuseColor="rgb(0%, 100%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
   <Surface name="nao-red" diffuseColor="rgb(100%, 0%, 100%)" ambientColor="rgb(20%, 12%, 12%)"/>
-  
+
   <Surface name="nao-logo" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(15%, 15%, 15%)" specularColor="rgb(40%, 40%, 40%)" shininess="10" diffuseTexture="Textures/textures-button_gray.png"/>
-  
+
   <Surface name="LED_APP" diffuseColor="rgb(74.9%, 74.9%, 74.9%)" emissionColor="rgb(40%, 40%, 40%)"/>
-  
+
   <Surface name="BLACK_PARTS_APP3" diffuseColor="rgb(0%, 0%, 0%)" ambientColor="rgb(0%, 0%, 0%)"/>
-  
+
   <Surface name="LED_APP_Ears-Led-Right_ON" diffuseColor="rgb(74.9%, 74.9%, 74.9%)" emissionColor="rgb(0%, 0%, 100%)"/>
-  
+
   <Surface name="LED_APP_Ears-Led-Left_ON" diffuseColor="rgb(74.9%, 74.9%, 74.9%)" emissionColor="rgb(0%, 0%, 100%)"/>
-  
+
   <Surface name="EARS_TEXTURE_APP5" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(16.67%, 16.67%, 16.67%)" specularColor="rgb(10.2%, 10.2%, 10.2%)" shininess="10" diffuseTexture="Textures/textures-ear.png"/>
-  
+
   <Surface name="STRUCTURE_APP" diffuseColor="rgb(75%, 75%, 75%)" ambientColor="rgb(20%, 20%, 20%)" specularColor="rgb(20%, 20%, 20%)" shininess="10"/>
-  
+
   <Vertices name="CHEST_COORD">
 0.05695 0.01979 0.06969
 0.04737 0.0198 0.09516
@@ -1100,7 +1100,7 @@
 -0.04263 -0.01097 -0.02543
 0.05611 -0 0.05635
   </Vertices>
-  
+
  <Vertices name="CHEST_BUTTON_TEXTURED_VERTEX0">
 0.05586 0.00531 0.06917
 0.05611 -0 0.05635
@@ -1127,7 +1127,7 @@
 0.05608 0.01284 0.05101
 0.05611 -0 0.05635
   </Vertices>
-  
+
   <TexCoords name="CHEST_BUTTON_TEXTURED_VERTEX0">
 0.72611 0.93557
 0.50682 0.48563
@@ -1154,14 +1154,14 @@
 0.94415 0.29187
 0.50682 0.48563
   </TexCoords>
-  
+
   <Vertices name="CHEST_LED_VERTEX1">
 0 0.035 0.025
 0 -0.035 0.025
 0 -0.03 -0.025
 0 0.03 -0.025
   </Vertices>
-    
+
   <Vertices name="HEAD_COORD">
 0.02646 0.06608 0.06667
 -0.02719 0.06608 0.04661
@@ -1606,7 +1606,7 @@
 0.04443 -0.02211 0.04511
 0.04387 -0.02829 0.04545
   </Vertices>
-  
+
   <Vertices name="EARS_TEXTURE_VERTEX3">
 0.0015 0.06161 0.07956
 0.01131 0.06135 0.07726
@@ -1699,7 +1699,7 @@
 -0.01063 -0.06129 0.07697
 0.00034 -0.06145 0.05373
   </Vertices>
-  
+
   <TexCoords name="EARS_TEXTURE_VERTEX3">
 0.21094 0.90625
 0.42969 0.99609
@@ -2002,7 +2002,7 @@
 -0.0119 -0.03587 -0
 0.00978 0.01063 0.03755
   </Vertices>
-  
+
   <Vertices name="RFOREARM_COORD">
 0.11393 -0.01607 0.00049
 0.11368 0.01205 0.00154
@@ -2205,7 +2205,7 @@
 -0.00852 -0.02459 0.00622
 0.00889 -0.00088 0.00264
   </Vertices>
-  
+
   <Vertices name="LARM_COORD">
 0.09281 0.00343 -0.0194
 0.10762 -0 0.00729
@@ -2415,7 +2415,7 @@
 -0.0119 0.03587 -0
 0.00978 -0.01063 0.03755
   </Vertices>
-  
+
   <Vertices name="LFOREARM_COORD">
 0.11393 0.01607 0.00049
 0.11368 -0.01205 0.00154
@@ -2618,7 +2618,7 @@
 -0.00852 0.02459 0.00622
 0.00889 0.00088 0.00264
   </Vertices>
-  
+
   <Vertices name="coord_RHip">
 0.02007 -0.01052 0.00863
 0.01997 -0.01327 0.00264
@@ -2842,7 +2842,7 @@
 0.02002 -0.00762 -0.0103
 -0.00908 0.0325 0.01877
   </Vertices>
-  
+
   <Vertices name="UPPER_THIGH_COORD">
 -0.02418 -0.014 -0.02178
 -0.01309 -0.014 -0.0292
@@ -2902,7 +2902,7 @@
 -0.0427 0.01411 -0.01672
 -0.0427 -0.01411 -0.01672
   </Vertices>
-  
+
   <Vertices name="RTHIGH_COORD">
 0.01597 -0.01452 -0.03539
 0.00917 -0.01451 -0.03079
@@ -3093,7 +3093,7 @@
 -0.0047 0.01274 -0.09616
 -0.00425 -0.01463 -0.09774
   </Vertices>
-  
+
   <Vertices name="RSHINE_BONE_COORD">
 -0.01575 -0.01395 0.01558
 -0.01566 0.01404 0.01558
@@ -3301,7 +3301,7 @@
 0.02153 -0.03063 -0.08376
 0.01737 -0.03495 -0.09099
   </Vertices>
-  
+
   <Vertices name="ANKLE_SHAPE_VERTEX4">
 -0.0326 -0.00662 -0.01624
 -0.0326 0.00631 -0.01624
@@ -3338,7 +3338,7 @@
 0.03386 0.0141 0.0248
 0.03731 0.0141 0.01416
   </Vertices>
-  
+
   <Vertices name="RFOOT_COORD">
 0.03901 0.00257 -0.01344
 0.039 -0.00276 -0.01344
@@ -3526,7 +3526,7 @@
 0.10097 -0.00836 -0.04078
 0.07386 0.0001 -0.01397
   </Vertices>
-  
+
   <Vertices name="LHIP_COORD">
 0.02007 0.01052 0.00863
 0.01997 0.01327 0.00264
@@ -3750,7 +3750,7 @@
 0.02002 0.00762 -0.0103
 -0.00908 -0.0325 0.01877
   </Vertices>
-  
+
   <Vertices name="LTHIGH_COORD">
 0.01597 0.01452 -0.03539
 0.00917 0.01451 -0.03079
@@ -3941,7 +3941,7 @@
 -0.0047 -0.01274 -0.09616
 -0.00425 0.01463 -0.09774
   </Vertices>
-  
+
   <Vertices name="LSHINE_BONE_COORD">
 -0.01575 0.01395 0.01558
 -0.01566 -0.01404 0.01558
@@ -4149,7 +4149,7 @@
 0.02153 0.03063 -0.08376
 0.01737 0.03495 -0.09099
   </Vertices>
-  
+
   <Vertices name="LFOOT_COORD">
 0.03901 -0.00257 -0.01344
 0.039 0.00276 -0.01344
@@ -4337,98 +4337,98 @@
 0.10097 0.00836 -0.04078
 0.07386 -0.0001 -0.01397
   </Vertices>
-  
+
   <ComplexAppearance name="CHEST_COORD_MACROCOL">
     <Surface ref="nao-$NaoColor"/>
     <Vertices ref="CHEST_COORD"/>
     <Triangles>
-100 130 107 
-50 165 198 
-14 37 192 
-9 192 183 
-163 89 87 
-50 184 165 
+100 130 107
+50 165 198
+14 37 192
+9 192 183
+163 89 87
+50 184 165
 99 178 57
-87 47 99  
-136 99 57 
-178 99 46 
-46 99 47 
-171 87 99 
-136 171 99 
-57 178 55 
-57 55 145 
-57 145 121 
+87 47 99
+136 99 57
+178 99 46
+46 99 47
+171 87 99
+136 171 99
+57 178 55
+57 55 145
+57 145 121
 35 57 121
-136 57 54  
+136 57 54
 54 57 35
-108 87 171 
-163 87 108 
-36 47 87  
-54 143 136 
-136 133 137 
+108 87 171
+163 87 108
+36 47 87
+54 143 136
+136 133 137
 146 171 136
-133 136 143 
+133 136 143
 136 137 146
-171 146 108  
-159 87 89 
-36 87 159 
-145 55 44 
-189 121 145 
-189 145 44 
-156 35 121 
-121 189 156 
+171 146 108
+159 87 89
+36 87 159
+145 55 44
+189 121 145
+189 145 44
+156 35 121
+121 189 156
 170 301 35
-72 170 35  
-35 301 54 
-203 35 156 
-203 72 35 
-54 123 143 
-301 123 54 
-142 163 108 
-108 146 142 
-107 163 155 
-142 155 163 
-107 89 163 
-123 133 143 
-123 128 133 
-189 44 198 
-156 189 165 
-198 165 189 
-203 156 149 
-156 165 39 
-39 149 156 
-148 353 170 
-170 248 301 
-285 248 170 
-285 170 353 
-72 148 170 
-248 268 301 
-301 268 123 
-72 140 177 
-72 149 140 
+72 170 35
+35 301 54
+203 35 156
+203 72 35
+54 123 143
+301 123 54
+142 163 108
+108 146 142
+107 163 155
+142 155 163
+107 89 163
+123 133 143
+123 128 133
+189 44 198
+156 189 165
+198 165 189
+203 156 149
+156 165 39
+39 149 156
+148 353 170
+170 248 301
+285 248 170
+285 170 353
+72 148 170
+248 268 301
+301 268 123
+72 140 177
+72 149 140
 72 177 188
-72 188 148 
-203 149 72 
-123 349 338 
-123 338 128 
-268 349 123 
-107 155 126 
-134 100 107 
-134 107 126 
-184 193 165 
-193 39 165 
-39 140 149 
-39 193 140 
-148 188 353 
-285 353 188 
+72 188 148
+203 149 72
+123 349 338
+123 338 128
+268 349 123
+107 155 126
+134 100 107
+134 107 126
+184 193 165
+193 39 165
+39 140 149
+39 193 140
+148 188 353
+285 353 188
 360 329 248
-268 248 271  
-248 329 271 
-405 360 248 
-405 248 285 
-285 346 354 
-285 380 346 
-285 188 380 
+268 248 271
+248 329 271
+405 360 248
+405 248 285
+285 346 354
+285 380 346
+285 188 380
 405 285 354
 268 342 349
 342 268 271
@@ -4449,7 +4449,7 @@
 342 343 338
 339 126 316
 49 126 339
-316 126 359 
+316 126 359
 49 134 126
 2 134 49
 134 1 100
@@ -4491,65 +4491,65 @@
 361 357 385
 385 366 273
 385 357 366
-254 385 273 
-386 125 160 
-160 182 386 
-147 125 386  
+254 385 273
+386 125 160
+160 182 386
+147 125 386
 386 364 331
-364 386 182 
-147 386 331 
-222 246 387 
-222 387 395  
+364 386 182
+147 386 331
+222 246 387
+222 387 395
 313 334 387
-313 387 246 
-263 369 388 
-253 263 388 
-239 250 388 
-388 250 253 
-388 396 391 
+313 387 246
+263 369 388
+253 263 388
+239 250 388
+388 250 253
+388 396 391
 391 242 388
-388 369 396 
-239 388 242  
+388 369 396
+239 388 242
 278 294 389
-389 358 397  
+389 358 397
 389 397 278
-402 390 369 
-390 258 351 
-390 402 258 
-217 391 265 
-217 245 391 
-391 294 291 
-291 265 391 
-391 396 294 
-245 242 391 
-227 395 250 
-282 250 395 
-235 395 227 
-222 395 218 
-218 395 235 
-396 369 252 
-341 331 397 
-364 397 331 
-364 278 397 
-358 341 397 
-86 113 399 
-399 113 340  
+402 390 369
+390 258 351
+390 402 258
+217 391 265
+217 245 391
+391 294 291
+291 265 391
+391 396 294
+245 242 391
+227 395 250
+282 250 395
+235 395 227
+222 395 218
+218 395 235
+396 369 252
+341 331 397
+364 397 331
+364 278 397
+358 341 397
+86 113 399
+399 113 340
 399 166 86
-200 166 399 
+200 166 399
 299 399 321
-399 340 321 
-399 299 370 
-200 399 370 
-263 402 369 
-404 340 287 
-230 404 216 
-321 340 404 
-321 404 230 
-337 404 287 
-337 216 404 
-367 300 304 
-363 304 300 
-316 367 304 
+399 340 321
+399 299 370
+200 399 370
+263 402 369
+404 340 287
+230 404 216
+321 340 404
+321 404 230
+337 404 287
+337 216 404
+367 300 304
+363 304 300
+316 367 304
 14 26 37
 22 14 192
 69 192 37
@@ -4679,7 +4679,7 @@
 104 207 106
 105 150 161
 105 161 210
-107 130 66 
+107 130 66
 109 68 144
 110 114 128
 110 128 322
@@ -5133,9 +5133,9 @@
 200 370 254 209
 166 200 209 41
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="CHEST_COORD_MACRO1">
     <Surface ref="nao-gray"/>
     <Vertices ref="CHEST_COORD"/>
@@ -5239,9 +5239,9 @@
 1 16 31 6
 212 219 244 229
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="CHEST_COORD_MACRO2">
     <Surface ref="nao-logo"/>
     <Vertices ref="CHEST_BUTTON_TEXTURED_VERTEX0"/>
@@ -5257,16 +5257,16 @@
 21 22 23
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="CHEST_LED_VERTEX1_MACRO3">
     <Surface ref="LED_APP"/>
     <Vertices ref="CHEST_LED_VERTEX1"/>
     <Quads>
 0 1 2 3
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO5">
     <Surface ref="nao-gray"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5565,7 +5565,7 @@
 200 421 201
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO6">
     <Surface ref="BLACK_PARTS_APP3"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5584,9 +5584,9 @@
     <Quads>
 422 425 202 424
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO7">
     <Surface ref="LED_APP"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5607,7 +5607,7 @@
 247 253 248
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO8">
     <Surface ref="LED_APP"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5628,7 +5628,7 @@
 31 32 39
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO9">
     <Surface ref="LED_APP"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5666,7 +5666,7 @@
 218 238 220
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO10">
     <Surface ref="LED_APP"/>
     <Vertices ref="HEAD_COORD"/>
@@ -5704,7 +5704,7 @@
 6 8 26
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO11">
     <Surface ref="EARS_TEXTURE_APP5"/>
     <Vertices ref="EARS_TEXTURE_VERTEX3"/>
@@ -5742,7 +5742,7 @@
 87 88 89
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="HEAD_COORD_MACRO12">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="HEAD_COORD"/>
@@ -6205,7 +6205,7 @@
 103 323 314
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RARM_COORD_MACRO13">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="RARM_COORD"/>
@@ -6376,7 +6376,7 @@
 2 4 3
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RARM_COORD_MACRO14">
     <Surface ref="nao-gray"/>
     <Vertices ref="RARM_COORD"/>
@@ -6553,7 +6553,7 @@
 120 122 124
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RARM_COORD_MACRO15">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="RARM_COORD"/>
@@ -6605,7 +6605,7 @@
 2 1 4
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOREARM_COORD_MACRO16">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="RFOREARM_COORD"/>
@@ -6966,7 +6966,7 @@
 11 22 20
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOREARM_COORD_MACRO17">
     <Surface ref="nao-gray"/>
     <Vertices ref="RFOREARM_COORD"/>
@@ -7005,7 +7005,7 @@
 17 127 132
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOREARM_COORD_MACRO18">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="RFOREARM_COORD"/>
@@ -7022,7 +7022,7 @@
 65 67 79
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LARM_COORD_MACRO19">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LARM_COORD"/>
@@ -7193,7 +7193,7 @@
 2 3 4
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LARM_COORD_MACRO20">
     <Surface ref="nao-gray"/>
     <Vertices ref="LARM_COORD"/>
@@ -7370,7 +7370,7 @@
 124 122 120
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LARM_COORD_MACRO21">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LARM_COORD"/>
@@ -7422,7 +7422,7 @@
 2 4 1
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOREARM_COORD_MACRO22">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LFOREARM_COORD"/>
@@ -7783,7 +7783,7 @@
 11 20 22
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOREARM_COORD_MACRO23">
     <Surface ref="nao-gray"/>
     <Vertices ref="LFOREARM_COORD"/>
@@ -7822,7 +7822,7 @@
 17 132 127
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOREARM_COORD_MACRO24">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LFOREARM_COORD"/>
@@ -7839,7 +7839,7 @@
 65 79 67
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="coord_RHip_MACRO25">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="coord_RHip"/>
@@ -8111,7 +8111,7 @@
 4 16 17
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="coord_RHip_MACRO26">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="coord_RHip"/>
@@ -8274,7 +8274,7 @@
 78 92 103
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="UPPER_THIGH_COORD_MACRO27">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="UPPER_THIGH_COORD"/>
@@ -8337,7 +8337,7 @@
 6 12 5
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RTHIGH_COORD_MACRO28">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="RTHIGH_COORD"/>
@@ -8657,9 +8657,9 @@
     <Quads>
 43 97 96 47
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RTHIGH_COORD_MACRO29">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="RTHIGH_COORD"/>
@@ -8723,7 +8723,7 @@
 7 2 178
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RSHINE_BONE_COORD_MACRO30">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="RSHINE_BONE_COORD"/>
@@ -9051,7 +9051,7 @@
 20 31 105
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RSHINE_BONE_COORD_MACRO31">
     <Surface ref="nao-gray"/>
     <Vertices ref="RSHINE_BONE_COORD"/>
@@ -9112,7 +9112,7 @@
 174 177 175
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RSHINE_BONE_COORD_MACRO32">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="RSHINE_BONE_COORD"/>
@@ -9139,7 +9139,7 @@
 3 12 11
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="ANKLE_SHAPE_VERTEX4_MACRO33">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="ANKLE_SHAPE_VERTEX4"/>
@@ -9210,7 +9210,7 @@
 17 19 20
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOOT_COORD_MACRO34">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="RFOOT_COORD"/>
@@ -9276,9 +9276,9 @@
 36 44 47 37
 41 42 47 44
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOOT_COORD_MACRO35">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="RFOOT_COORD"/>
@@ -9527,7 +9527,7 @@
 82 74 118
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOOT_COORD_MACRO36">
     <Surface ref="nao-gray"/>
     <Vertices ref="RFOOT_COORD"/>
@@ -9552,7 +9552,7 @@
 96 127 181
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="RFOOT_COORD_MACRO37">
     <Surface ref="LED_APP"/>
     <Vertices ref="RFOOT_COORD"/>
@@ -9565,7 +9565,7 @@
 150 151 184
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LHIP_COORD_MACRO38">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LHIP_COORD"/>
@@ -9837,7 +9837,7 @@
 4 17 16
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LHIP_COORD_MACRO39">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LHIP_COORD"/>
@@ -10000,7 +10000,7 @@
 78 103 92
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LTHIGH_COORD_MACRO40">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LTHIGH_COORD"/>
@@ -10320,9 +10320,9 @@
     <Quads>
 43 47 96 97
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LTHIGH_COORD_MACRO41">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LTHIGH_COORD"/>
@@ -10386,7 +10386,7 @@
 7 178 2
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LSHINE_BONE_COORD_MACRO42">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LSHINE_BONE_COORD"/>
@@ -10714,7 +10714,7 @@
 20 105 31
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LSHINE_BONE_COORD_MACRO43">
     <Surface ref="nao-gray"/>
     <Vertices ref="LSHINE_BONE_COORD"/>
@@ -10775,7 +10775,7 @@
 174 175 177
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LSHINE_BONE_COORD_MACRO44">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LSHINE_BONE_COORD"/>
@@ -10802,7 +10802,7 @@
 3 11 12
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOOT_COORD_MACRO45">
     <Surface ref="STRUCTURE_APP"/>
     <Vertices ref="LFOOT_COORD"/>
@@ -10868,9 +10868,9 @@
 36 44 47 37
 41 42 47 44
     </Quads>
-    
+
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOOT_COORD_MACRO46">
     <Surface ref="MAIN_SKIN_APP"/>
     <Vertices ref="LFOOT_COORD"/>
@@ -11119,7 +11119,7 @@
 82 118 74
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOOT_COORD_MACRO47">
     <Surface ref="nao-gray"/>
     <Vertices ref="LFOOT_COORD"/>
@@ -11144,7 +11144,7 @@
 96 181 127
     </Triangles>
   </ComplexAppearance>
-  
+
   <ComplexAppearance name="LFOOT_COORD_MACRO48">
     <Surface ref="LED_APP"/>
     <Vertices ref="LFOOT_COORD"/>

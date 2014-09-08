@@ -1,6 +1,6 @@
 #pragma once
 
-#define ENV_COMNTOOLS_11 "VS110COMNTOOLS" // VS 2012
+#define ENV_COMNTOOLS_12 "VS120COMNTOOLS" // VS 2013
 #include <string>
 
 extern std::string bhumandDirOnRobot; // TODO global configuration file

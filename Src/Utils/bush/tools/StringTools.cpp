@@ -23,10 +23,10 @@ std::vector<std::string> split(const std::string line, char separator)
 std::string join(const std::vector<std::string> line, const std::string &separator)
 {
   std::stringstream buf;
-  for (size_t i = 0; i < line.size(); ++i)
+  for(size_t i = 0; i < line.size(); ++i)
   {
     buf << line[i];
-    if (i < line.size() - 1)
+    if(i < line.size() - 1)
       buf << separator;
   }
   return buf.str();
@@ -34,11 +34,11 @@ std::string join(const std::vector<std::string> line, const std::string &separat
 
 bool startsWidth(const std::string &str, const std::string &prefix)
 {
-  if (str.length() < prefix.length())
+  if(str.length() < prefix.length())
     return false;
 
-  for (size_t i = 0; i < prefix.length(); ++i)
-    if (prefix[i] != str[i])
+  for(size_t i = 0; i < prefix.length(); ++i)
+    if(prefix[i] != str[i])
       return false;
 
   return true;

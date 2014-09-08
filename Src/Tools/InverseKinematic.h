@@ -6,14 +6,13 @@
 
 #pragma once
 
+#include "Platform/BHAssert.h"
 #include "Tools/Math/Vector2.h"
 #include "Tools/Math/Pose3D.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Tools/Range.h"
-#include "Tools/Debugging/Asserts.h"
-
 
 class InverseKinematic
 {
@@ -546,8 +545,8 @@ public:
     panTilt.x = std::atan2(position.y, position.x);
     if(lowerCamera)
     {
-      panTilt.y += cameraCalibration.cameraTiltCorrection; // headTilt joint angle is flipped for some reason
-      panTilt.x -= cameraCalibration.cameraPanCorrection;
+      panTilt.y += cameraCalibration.lowerCameraTiltCorrection; // headTilt joint angle is flipped for some reason
+      panTilt.x -= cameraCalibration.lowerCameraPanCorrection;
     }
     else
     {

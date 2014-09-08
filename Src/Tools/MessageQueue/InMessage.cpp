@@ -30,7 +30,7 @@ void InMessageQueue::open(MessageQueueBase* q)
   if(queue == 0) queue = q;
 }
 
-void InMessageQueue::readFromStream(void* p, int size)
+void InMessageQueue::readFromStream(void* p, size_t size)
 {
   if(queue != 0) queue->read(p, size);
 }

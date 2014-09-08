@@ -5,25 +5,27 @@
 #include "Tools/Debugging/Debugging.h"
 #include <sstream>
 
-void CameraCalibratorHandler::deliverPoint(const Vector2<int>& point)
+void CameraCalibratorHandler::deliverPoint(const Vector2<int>& point, bool upper)
 {
-  std::stringstream line;
-  line << "set module:CameraCalibrator:point x = ";
-  line << point.x;
-  line << "; y = ";
-  line << point.y;
-  line << ";";
-  robotConsole->handleConsoleLine(line.str());
+  std::stringstream line1;
+  line1 << "set module:CameraCalibrator:currentCamera " << (upper ? "upper;" : "lower;");
+  robotConsole->handleConsoleLine(line1.str());
+  std::stringstream line2;
+  line2 << "set module:CameraCalibrator:point x = ";
+  line2 << point.x;
+  line2 << "; y = ";
+  line2 << point.y;
+  line2 << ";";
+  robotConsole->handleConsoleLine(line2.str());
 }
+
 void CameraCalibratorHandler::setActive(std::string view)
 {
-  if(ImageViewAdapter::addListener(this, view))
-    OUTPUT(idText, text, "CameraCalibratorHandler activated for \"" + view + "\" ImageView");
-  else
-    OUTPUT(idText, text, "CameraCalibratorHandler is already active for \"" + view + "\" ImageView");
+  if(!ImageViewAdapter::addListener(this, view))
+    OUTPUT(idText, text, "cameraCalibrator is already active for \"" + view + "\"");
 }
+
 void CameraCalibratorHandler::setInactive(std::string view)
 {
   ImageViewAdapter::removeListener(this, view);
-  OUTPUT(idText, text, "CameraCalibratorHandler deactivated for \"" + view + "\"");
 }

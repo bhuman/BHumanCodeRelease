@@ -12,7 +12,7 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/Image.h"
-#include "Representations/Perception/JPEGImage.h"
+#include "Representations/Infrastructure/JPEGImage.h"
 
 /**
 * @class LogPlayer
@@ -40,7 +40,7 @@ public:
   * @return if the reading was successful
   */
   bool open(const char* fileName);
-  
+
   /**
   * Playes the queue.
   * Note that you have to call replay() regularely if you want to use that function
@@ -88,6 +88,13 @@ public:
   * @return if the writing was successful
   */
   bool save(const char* fileName);
+
+  /**
+  * Writes all audio data in the log player queue to a single wav file.
+  * @param fileName the name of the file to write
+  * @return if the writing was successful
+  */
+  bool saveAudioFile(const char* fileName);
 
   /**
   * Writes all images in the log player queue to a bunch of files (*.bmp or *.jpg).
@@ -180,4 +187,11 @@ private:
   * @return The full path of the image file.
   */
   static std::string expandImageFileName(const char* fileName, int imageNumber);
+
+  /**
+  * The method reads a compressed log to get it´s uncompressed size.
+  * @param fileName The short file name of the compressed log.
+  * @return The uncompressed size.
+  */
+  static unsigned long long getUncompressedSize(const std::string& fileName);
 };

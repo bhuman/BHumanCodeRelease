@@ -14,19 +14,25 @@
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Perception/BodyContour.h"
 
-MODULE(BodyContourProvider)
-  REQUIRES(CameraInfo)
-  REQUIRES(ImageCoordinateSystem)
-  REQUIRES(RobotCameraMatrix)
-  REQUIRES(RobotModel)
-  PROVIDES_WITH_MODIFY_AND_DRAW(BodyContour)
-  LOADS_PARAMETER(std::vector<Vector3<> >, torso) /**< The contour of the torso. */
-  LOADS_PARAMETER(std::vector<Vector3<> >, upperArm) /**< The contour of the left upper arm. */
-  LOADS_PARAMETER(std::vector<Vector3<> >, lowerArm) /**< The contour of the left lower arm. */
-  LOADS_PARAMETER(std::vector<Vector3<> >, upperLeg1) /**< The contour of the left upper leg (part 1). */
-  LOADS_PARAMETER(std::vector<Vector3<> >, upperLeg2) /**< The contour of the left upper leg (part 2). */
-  LOADS_PARAMETER(std::vector<Vector3<> >, foot) /**< The contour of the left foot. */
-END_MODULE
+MODULE(BodyContourProvider,
+{,
+  REQUIRES(CameraInfo),
+  REQUIRES(ImageCoordinateSystem),
+  REQUIRES(RobotCameraMatrix),
+  REQUIRES(RobotModel),
+  PROVIDES_WITH_MODIFY_AND_DRAW(BodyContour),
+  LOADS_PARAMETERS(
+  {,
+    (std::vector<Vector3<> >) torso, /**< The contour of the torso. */
+    (std::vector<Vector3<> >) shoulder, /**< The contour of the left inner shoulder. */
+    (std::vector<Vector3<> >) upperArm, /**< The contour of the left upper arm. */
+    (std::vector<Vector3<> >) lowerArm, /**< The contour of the left lower arm. */
+    (std::vector<Vector3<> >) lowerArm2, /**< The contour of the left lower arm. */
+    (std::vector<Vector3<> >) upperLeg1, /**< The contour of the left upper leg (part 1). */
+    (std::vector<Vector3<> >) upperLeg2, /**< The contour of the left upper leg (part 2). */
+    (std::vector<Vector3<> >) foot, /**< The contour of the left foot. */
+  }),
+});
 
 /**
 * @class BodyContourProvider

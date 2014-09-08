@@ -12,17 +12,19 @@
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Probabilistics.h"
 
-TemplateGenerator::TemplateGenerator(const SelfLocatorParameters& parameters,
-                                       const GoalPercept& goalPercept, const LinePercept& linePercept,
-                                       const FrameInfo& frameInfo,
-                                       const FieldDimensions& fieldDimensions,
-                                       const OdometryData& odometryData) :
+TemplateGenerator::TemplateGenerator(const SelfLocatorBase::Parameters& parameters,
+                                     const GoalPercept& goalPercept, const LinePercept& linePercept,
+                                     const FrameInfo& frameInfo,
+                                     const FieldDimensions& fieldDimensions,
+                                     const OdometryData& odometryData,
+                                     const MotionRequest& motionRequest) :
   parameters(parameters),
   theGoalPercept(goalPercept),
   theLinePercept(linePercept),
   theFrameInfo(frameInfo),
   theFieldDimensions(fieldDimensions),
   theOdometryData(odometryData),
+  theMotionRequest(motionRequest),
   nextWalkInTemplateNumber(0)
 {
 }
@@ -45,13 +47,10 @@ void TemplateGenerator::init()
   walkInPositions.push_back( Pose2D(fromDegrees( 100.f),-3000.f, theFieldDimensions.yPosRightSideline) );
 }
 
-Pose2D TemplateGenerator::getTemplate(TemplateGenerator::ForceHalf forceHalf, float mirrorLikelihood, Pose2D robotPose, const Pose2D& lastRobotPose) const
+Pose2D TemplateGenerator::getTemplate(TemplateGenerator::ForceHalf forceHalf, const Pose2D& robotPose, const Pose2D& lastRobotPose) const
 {
   if(forceHalf == TemplateGenerator::CONSIDER_POSE)
   {
-    // Check mirroring of robotPose: (TODO: think about some potential problems)
-    if(randomFloat() < mirrorLikelihood)
-      robotPose = Pose2D(pi) + robotPose;
     TemplateGenerator::SampleTemplate t = generateTemplate(lastRobotPose);
     if(isMirrorCloser(t, lastRobotPose))
       return Pose2D(pi) + t;
@@ -92,27 +91,64 @@ Pose2D TemplateGenerator::getTemplate(TemplateGenerator::ForceHalf forceHalf, fl
 
 void TemplateGenerator::bufferNewPerceptions(const Pose2D& robotPose)
 {
-  if(!theGoalPercept.goalPosts.empty())
+  if(!theGoalPercept.goalPosts.empty() &&
+     (theMotionRequest.motion == MotionRequest::walk || theMotionRequest.motion == MotionRequest::stand))
   {
+    // Check, if there is a line on which the posts are standing, aka the "ground line"
+    bool groundLineFound = false;
+    Vector2<> groundLineDir;
+    for(auto line : theLinePercept.lines)
+    {
+      groundLineDir = line.last - line.first;
+      if(groundLineDir.abs() >= parameters.minGroundLineLength)
+      {
+        bool allPostsOnLine = true;
+        for(auto goalPost : theGoalPercept.goalPosts)
+        {
+          if(Geometry::getDistanceToLine(Geometry::Line(line.first, groundLineDir), goalPost.positionOnField) >
+             parameters.maxGoalPostDistFromGroundLine)
+          {
+            allPostsOnLine = false;
+            break;
+          }
+        }
+        if(allPostsOnLine)
+        {
+          groundLineFound = true;
+          break;
+        }
+      }
+    }
+    
+    // First post in list s always considered:
     const Vector2<>& positionOnField1(theGoalPercept.goalPosts[0].positionOnField);
 
     // Buffer data generated from GoalPercept:
     if(theGoalPercept.goalPosts.size() == 2)
     {
-      const Vector2<>& positionOnField2(theGoalPercept.goalPosts[1].positionOnField);
-      FullGoal newFullGoal;
-      const bool leftBeforeRight = theGoalPercept.goalPosts[0].position == GoalPost::IS_LEFT;
-      newFullGoal.realLeftPosition = realPostPositions[GoalPost::IS_LEFT];
-      newFullGoal.realRightPosition = realPostPositions[GoalPost::IS_RIGHT];
-      newFullGoal.seenLeftPosition = leftBeforeRight ? positionOnField1 : positionOnField2;
-      newFullGoal.seenRightPosition = leftBeforeRight ? positionOnField2 : positionOnField1;
-      newFullGoal.timestamp = theFrameInfo.time;
-      newFullGoal.odometry = theOdometryData;
+      const float realPostDist = 2.f * std::abs(theFieldDimensions.yPosLeftGoal);
+      const float seenPostDist = (theGoalPercept.goalPosts[0].positionOnField - theGoalPercept.goalPosts[1].positionOnField).abs();
+      if(seenPostDist < 1.2f * realPostDist)
+      {
+        const Vector2<>& positionOnField2(theGoalPercept.goalPosts[1].positionOnField);
+        FullGoal newFullGoal;
+        const bool leftBeforeRight = theGoalPercept.goalPosts[0].position == GoalPost::IS_LEFT;
+        newFullGoal.realLeftPosition = realPostPositions[GoalPost::IS_LEFT];
+        newFullGoal.realRightPosition = realPostPositions[GoalPost::IS_RIGHT];
+        newFullGoal.seenLeftPosition = leftBeforeRight ? positionOnField1 : positionOnField2;
+        newFullGoal.seenRightPosition = leftBeforeRight ? positionOnField2 : positionOnField1;
+        newFullGoal.timestamp = theFrameInfo.time;
+        newFullGoal.odometry = theOdometryData;
 
-      // Before adding, check if templates can be generated from this perception
-      SampleTemplate checkTemplate = generateTemplateFromFullGoal(newFullGoal);
-      if(checkTemplate.timestamp)
-        fullGoals.add(newFullGoal);
+        // Before adding, check if templates can be generated from this perception
+        SampleTemplate checkTemplate = generateTemplateFromFullGoal(newFullGoal);
+        if(checkTemplate.timestamp)
+          fullGoals.add(newFullGoal);
+      }
+      else
+      {
+        //OUTPUT(idText, text, "Post not accepted! " << seenPostDist);
+      }
     }
     else
     {
@@ -125,9 +161,22 @@ void TemplateGenerator::bufferNewPerceptions(const Pose2D& robotPose)
         newPost.seenPosition = positionOnField1;
         newPost.timestamp = theFrameInfo.time;
         newPost.odometry = theOdometryData;
+        newPost.midLineSeen = false;
+        newPost.groundLineSeen = false;
         newPost.centerCircleSeen = theLinePercept.circle.found;
         if(newPost.centerCircleSeen)
+        {
           newPost.centerCircleSeenPosition = theLinePercept.circle.pos;
+          for(auto line : theLinePercept.lines)
+          {
+            if(line.midLine)
+            {
+              newPost.midLineSeen = true;
+              newPost.lineDirection = line.last - line.first;
+              break;
+            }
+          }
+        }
         knownGoalposts.add(newPost);
       }
       else
@@ -139,9 +188,22 @@ void TemplateGenerator::bufferNewPerceptions(const Pose2D& robotPose)
         newPost.seenPosition = positionOnField1;
         newPost.timestamp = theFrameInfo.time;
         newPost.odometry = theOdometryData;
+        newPost.midLineSeen = false;
+        newPost.groundLineSeen = false;
         newPost.centerCircleSeen = theLinePercept.circle.found;
         if(newPost.centerCircleSeen)
+        {
           newPost.centerCircleSeenPosition = theLinePercept.circle.pos;
+          for(auto line : theLinePercept.lines)
+          {
+            if(line.midLine)
+            {
+              newPost.midLineSeen = true;
+              newPost.lineDirection = line.last - line.first;
+              break;
+            }
+          }
+        }
         // Try to make a guess about the real position of the goal post
         if(positionOnField1.abs() < parameters.templateUnknownPostAssumptionMaxDistance)
         {
@@ -150,7 +212,12 @@ void TemplateGenerator::bufferNewPerceptions(const Pose2D& robotPose)
             postWorld = Pose2D(pi) * postWorld;
           const float d0 = (postWorld - newPost.realPositions[0]).abs();
           const float d1 = (postWorld - newPost.realPositions[1]).abs();
-          newPost.realPositionGuess = d0 < d1 ? 0 : 1;
+          if(3 * d0 < d1)
+            newPost.realPositionGuess = 0;
+          else if(3 * d1 < d0)
+            newPost.realPositionGuess = 1;
+          else
+            newPost.realPositionGuess = -1;
         }
         else
         {
@@ -216,12 +283,13 @@ TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplate(const Pose
 bool TemplateGenerator::isMirrorCloser(const Pose2D& currentPose, const Pose2D& lastPose) const
 {
   const Vector2<>& translation = currentPose.translation;
-  Vector2<> rotationWeight(std::max(parameters.useRotationThreshold - std::min(translation.abs(), lastPose.translation.abs()), 0.f), 0);
-  Vector2<> rotation = Pose2D(currentPose.rotation) * rotationWeight;
-  Vector2<> lastRotation = Pose2D(lastPose.rotation) * rotationWeight;
-
-  return (lastPose.translation - translation).abs() + (lastRotation - rotation).abs() >
+  Vector2<> rotationWeight(std::max(theFieldDimensions.yPosLeftSideline * 1.1f - std::min(std::abs(translation.x), std::abs(lastPose.translation.x)), 0.f), 0);
+  Vector2<> opponentGoal(theFieldDimensions.xPosOpponentGoalPost, 0.f);
+  const Vector2<> rotation = Pose2D(Geometry::angleTo(currentPose, opponentGoal)) * rotationWeight;
+  const Vector2<> lastRotation = Pose2D(Geometry::angleTo(lastPose, opponentGoal)) * rotationWeight;
+  bool result = (lastPose.translation - translation).abs() + (lastRotation - rotation).abs() >
          (lastPose.translation + translation).abs() + (lastRotation + rotation).abs();
+  return result;
 }
 
 bool TemplateGenerator::templatesAvailable() const
@@ -250,21 +318,26 @@ TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplateFromFullGoa
   int result = Geometry::getIntersectionOfCircles(c1, c2, p1, p2);
   if(result)
   {
-    if(theFieldDimensions.isInsideCarpet(p1))
+    Vector2<> p;
+    bool p1InsideCarpet = theFieldDimensions.isInsideCarpet(p1);
+    bool p2InsideCarpet = theFieldDimensions.isInsideCarpet(p2);
+    if(p1InsideCarpet && !p2InsideCarpet)
     {
-      float origAngle = (goal.realLeftPosition - p1).angle();
-      float observedAngle = goal.seenLeftPosition.angle();
-      Pose2D templatePose(origAngle - observedAngle, p1);
-      templatePose += odometryOffset;
-      newTemplate = templatePose;
-      newTemplate.timestamp = theFrameInfo.time;
-      newTemplate.origin = TemplateGenerator::SampleTemplate::GOAL;
+      p = p1;
     }
-    else if(theFieldDimensions.isInsideCarpet(p2))
+    else if(p2InsideCarpet && !p1InsideCarpet)
     {
-      float origAngle = (goal.realLeftPosition - p2).angle();
+      p = p2;
+    }
+    else if(p2InsideCarpet && p1InsideCarpet)
+    {
+      p = theFieldDimensions.isInsideField(p1) ? p1 : p2;
+    }
+    if(p1InsideCarpet || p2InsideCarpet)
+    {
+      float origAngle = (goal.realLeftPosition - p).angle();
       float observedAngle = goal.seenLeftPosition.angle();
-      Pose2D templatePose(origAngle - observedAngle, p2);
+      Pose2D templatePose(origAngle - observedAngle, p);
       templatePose += odometryOffset;
       newTemplate = templatePose;
       newTemplate.timestamp = theFrameInfo.time;
@@ -295,21 +368,26 @@ TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplateFromPositio
   int result = Geometry::getIntersectionOfCircles(c1, c2, p1, p2);
   if(result)
   {
-    if(theFieldDimensions.isInsideCarpet(p1))
+    Vector2<> p;
+    bool p1InsideCarpet = theFieldDimensions.isInsideCarpet(p1);
+    bool p2InsideCarpet = theFieldDimensions.isInsideCarpet(p2);
+    if(p1InsideCarpet && !p2InsideCarpet)
     {
-      float origAngle = (posReal - p1).angle();
+      p = p1;
+    }
+    else if(p2InsideCarpet && !p1InsideCarpet)
+    {
+      p = p2;
+    }
+    else if(p2InsideCarpet && p1InsideCarpet)
+    {
+      p = theFieldDimensions.isInsideField(p1) ? p1 : p2;
+    }
+    if(p1InsideCarpet || p2InsideCarpet)
+    {
+      float origAngle = (posReal - p).angle();
       float observedAngle = posSeen.angle();
       Pose2D templatePose(origAngle - observedAngle, p1);
-      templatePose += odometryOffset;
-      newTemplate = templatePose;
-      newTemplate.timestamp = theFrameInfo.time;
-      newTemplate.origin = TemplateGenerator::SampleTemplate::GOAL;
-    }
-    else if(theFieldDimensions.isInsideCarpet(p2))
-    {
-      float origAngle = (posReal - p2).angle();
-      float observedAngle = posSeen.angle();
-      Pose2D templatePose(origAngle - observedAngle, p2);
       templatePose += odometryOffset;
       newTemplate = templatePose;
       newTemplate.timestamp = theFrameInfo.time;
@@ -326,7 +404,7 @@ TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplateFromPositio
 {
   TemplateGenerator::SampleTemplate newTemplate;
   float r = posSeen.abs() + theFieldDimensions.goalPostRadius;
-  float distUncertainty = sampleTriangularDistribution(parameters.standardDeviationGoalpostSamplingDistance);
+  const float distUncertainty = sampleTriangularDistribution(parameters.standardDeviationGoalpostSamplingDistance);
   if(r + distUncertainty > parameters.standardDeviationGoalpostSamplingDistance)
     r += distUncertainty;
   Vector2<> realPosition = posReal;
@@ -348,6 +426,35 @@ TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplateFromPositio
     newTemplate.timestamp = theFrameInfo.time;
     newTemplate.origin = TemplateGenerator::SampleTemplate::GOAL;
   }
+  return newTemplate;
+}
+
+TemplateGenerator::SampleTemplate TemplateGenerator::generateTemplateFromPostAndLine(
+                                               const Vector2<>& postSeen, const Vector2<>& postReal, const Pose2D& postOdometry,
+                                               const Vector2<>& lineBase, const Vector2<>& lineDirection, bool isGroundLine)
+{
+  // Compute x-coordinate by using the line:
+  const float lineXReal = isGroundLine ? theFieldDimensions.xPosOpponentGroundline : 0.f;
+  const float distance  = std::abs(Geometry::getDistanceToLine(Geometry::Line(lineBase, lineDirection), Vector2<>(0.f,0.f)));
+  const float sampleX   = lineXReal - distance;
+  // Radius of circle around goal post:
+  float r = postSeen.abs() + theFieldDimensions.goalPostRadius;
+  const float distUncertainty = sampleTriangularDistribution(parameters.standardDeviationGoalpostSamplingDistance);
+  if(r + distUncertainty > parameters.standardDeviationGoalpostSamplingDistance)
+    r += distUncertainty;
+  // Intersect circle with line parallel to seen line:
+  Vector2<> int1, int2;
+  bool intersectionFound = Geometry::getIntersectionOfLineAndCircle(Geometry::Line(Vector2<>(sampleX, 0.f), Vector2<>(0.f,1.f)),
+                                                                    Geometry::Circle(postReal, r), int1, int2) != 0;
+  if(intersectionFound)
+  {
+    
+  }
+  else // Find point on line that is closest to the circle
+  {
+    
+  }
+  SampleTemplate newTemplate;
   return newTemplate;
 }
 
@@ -407,4 +514,14 @@ void TemplateGenerator::draw()
     CIRCLE("module:SelfLocator:templates", postPos.x, postPos.y,
            200, 20, Drawings::ps_solid, ColorRGBA(0, 0, 0), Drawings::bs_null, ColorRGBA(140, 140, 255));
   }
+}
+
+void TemplateGenerator::plot()
+{
+  DECLARE_PLOT("module:SelfLocator:fullGoalsBuffer");
+  PLOT("module:SelfLocator:fullGoalsBuffer", static_cast<float>(fullGoals.getNumberOfEntries()) / fullGoals.getMaxEntries());
+  DECLARE_PLOT("module:SelfLocator:knownGoalPostsBuffer");
+  PLOT("module:SelfLocator:knownGoalPostsBuffer", static_cast<float>(knownGoalposts.getNumberOfEntries()) / knownGoalposts.getMaxEntries());
+  DECLARE_PLOT("module:SelfLocator:unknownGoalPostsBuffer");
+  PLOT("module:SelfLocator:unknownGoalPostsBuffer", static_cast<float>(unknownGoalposts.getNumberOfEntries()) / unknownGoalposts.getMaxEntries());
 }

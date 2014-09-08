@@ -15,7 +15,7 @@ public:
   * @param pose The pose to convert
   * @param transformation The converted pose
   */
-  static inline void convertTransformation(const Pose3<>& pose, float transformation[16])
+  static void convertTransformation(const Pose3<>& pose, float transformation[16])
   {
     transformation[0] = (float)pose.rotation.c0.x;
     transformation[1] = (float)pose.rotation.c0.y;
@@ -40,7 +40,7 @@ public:
   * @param translation The translational part of the pose to convert
   * @param transformation The converted pose
   */
-  static inline void convertTransformation(const Matrix3x3<>* rotation, const Vector3<>* translation, float transformation[16])
+  static void convertTransformation(const Matrix3x3<>* rotation, const Vector3<>* translation, float transformation[16])
   {
     if(rotation)
     {
@@ -74,7 +74,7 @@ public:
   /**
   * Computes a camera transformation (basically like gluLookAt)
   */
-  static inline void computeCameraTransformation(const Vector3<>& eyePosition3D, const Vector3<>& center3D, const Vector3<>& upVector3D, float* transformation)
+  static void computeCameraTransformation(const Vector3<>& eyePosition3D, const Vector3<>& center3D, const Vector3<>& upVector3D, float* transformation)
   {
      Vector3<> forward, side, up;
      forward = center3D - eyePosition3D;

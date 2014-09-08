@@ -44,12 +44,12 @@ CompileCmd::CompileTask::CompileTask(Context &context,
   : Task(context),
     r(context, command, args),
     label(label)
-{ }
+{}
 
 bool CompileCmd::CompileTask::execute()
 {
   r.run();
-  if (context().isCanceled())
+  if(context().isCanceled())
   {
     context().cleanupFinished();
     return true;
@@ -82,11 +82,11 @@ std::string CompileCmd::CompileTask::getLabel()
 #ifdef LINUX
   #define LABEL "make"
 #else
-  #ifdef MACOSX
+  #ifdef OSX
     #define LABEL "xcodebuild"
   #else
-    #ifdef WIN32
-      #define LABEL "vcproj"
+    #ifdef WINDOWS
+      #define LABEL "vcxproj"
     #endif
   #endif
 #endif
@@ -121,10 +121,10 @@ bool CompileCmd::execute(Context &context, const std::vector<std::string> &param
   return context.waitForChildren();
 }
 
-#ifdef WIN32
+#ifdef WINDOWS
 QString CompileCmd::getCommand()
 {
-  return QString(getenv(ENV_COMNTOOLS_11)) + "..\\IDE\\devenv.com";
+  return QString(getenv(ENV_COMNTOOLS_12)) + "..\\IDE\\devenv.com";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)
@@ -132,13 +132,13 @@ QStringList CompileCmd::getParams(const QString& config, const QString& project)
   QStringList args;
   const QString makeDir(fromString(makeDirectory()));
   args << fromString(std::string(File::getBHDir())).replace("/", "\\") + "\\Make\\" + makeDir + "\\B-Human.sln";
-  args << QString("/Build") << config << QString("/Project") << project;
+  args << QString("/Build") << config + "|x64" << QString("/Project") << project;
   return args;
 }
-#elif defined(MACOSX)
+#elif defined(OSX)
 QString CompileCmd::getCommand()
 {
-  return fromString(std::string(File::getBHDir())) + "/Make/MacOS/compileFromBush";
+  return fromString(std::string(File::getBHDir())) + "/Make/OSX/compileFromBush";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)
@@ -165,4 +165,4 @@ QStringList CompileCmd::getParams(const QString& config, const QString& project)
 
   return args;
 }
-#endif // WIN32
+#endif // WINDOWS

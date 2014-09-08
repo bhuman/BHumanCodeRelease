@@ -10,8 +10,9 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Configuration/FieldDimensions.h"
-
+#include "Representations/BehaviorControl/Role.h"
 
 class PathFinder
 {
@@ -32,11 +33,13 @@ public:
   };
 
   PathFinder(const CombinedWorldModel& combinedWorldModel, const FieldDimensions& fieldDimensions,
-    const RobotInfo& robotInfo, const GameInfo& gameInfo) :
+    const RobotInfo& robotInfo, const GameInfo& gameInfo, const TeammateData& teammateData, const Role& role) :
     theCombinedWorldModel(combinedWorldModel),
     theFieldDimensions(fieldDimensions),
     theRobotInfo(robotInfo),
     theGameInfo(gameInfo),
+    theTeammateData(teammateData),
+    theRole(role),
     countNoPathFound(0)
   {
   }
@@ -75,6 +78,8 @@ private:
   const FieldDimensions& theFieldDimensions;
   const RobotInfo& theRobotInfo;
   const GameInfo& theGameInfo;
+  const TeammateData& theTeammateData;
+  const Role& theRole;
 
   std::vector<Node> completePath; // the complete path found in the last run
   int countNoPathFound;
@@ -86,11 +91,5 @@ private:
   void checkForFoundPath(const Vector2<>& currentUsedNode, const std::vector<Node>& currentNotUsedTree, bool& foundPath, bool& foundPathInFirstTree, int& indexOtherTree, const bool useFirstTree);
   void createNewNode(std::vector<Node>& currentUsedTree, const Vector2<> randomPosition, const int indexNearestNode);
   void createCompletePath(std::vector<Node>& completePath, const bool foundPathInFirstTree, const std::vector<Node>& firstTree, const std::vector<Node>& secondTree, const int indexOtherTree, const bool ObstacleStart, const bool ObstacleEnd, const Vector2<>& oldStart, const Vector2<>& oldEnd);
-  void addAvoidingPoints(const std::vector<Node>& allObstacles, std::vector<Node>& currentUsedTree, const Vector2<>& position, const Vector2<>& positionOfObstacle, bool nearestObstacle, const Node& target, const bool startIsUsed);
-
-  bool checkForObstaclesNearPositionMMX(const std::vector<Node>& allObstacles, Vector2<>& positionOfObstacle, const Vector2<>& position, float& smallestDistance);
-  void checkForFoundPathMMX(const Vector2<>& currentUsedNode, const std::vector<Node>& currentNotUsedTree, bool& foundPath, bool& foundPathInFirstTree, int& indexOtherTree, const bool useFirstTree);
-  bool checkForCollisionMMX(const std::vector<Node>& allObstacles, const Vector2<>& nearestNode, const Vector2<>& randomPosition, bool usePosition, float& distanceToObstacle, Vector2<>& positionObstacle, const Vector2<>& target);
-  void calculateNearestNodeMMX(const std::vector<Node>& currentUsedTree, int& indexNearestNode, const Vector2<>& randomPosition);
-
+  void addAvoidingPoints(const std::vector<Node>& allObstacles, std::vector<Node>& currentUsedTree, const Vector2<>& position, const Vector2<>& positionOfObstacle, const Node& target, const bool startIsUsed);
 };

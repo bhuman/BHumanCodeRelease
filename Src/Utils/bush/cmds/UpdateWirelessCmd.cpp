@@ -14,12 +14,11 @@
 const std::string TEAM_ID("%teamID%");
 const std::string ROBOT_PART("%robotPart%");
 
-
 UpdateWirelessCmd::UpdateWirelessTask::UpdateWirelessTask(Context& context,
     Robot* robot, const std::string& command)
   : RobotTask(context, robot),
     command(command)
-{ }
+{}
 
 bool UpdateWirelessCmd::UpdateWirelessTask::execute()
 {

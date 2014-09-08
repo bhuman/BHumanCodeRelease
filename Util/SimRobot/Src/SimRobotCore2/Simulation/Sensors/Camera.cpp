@@ -232,5 +232,4 @@ void Camera::drawPhysics(unsigned int flags) const
   Sensor::drawPhysics(flags);
 
   glPopMatrix();
-
 }

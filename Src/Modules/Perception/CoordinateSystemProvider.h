@@ -14,16 +14,20 @@
 #include "Representations/Perception/ImageCoordinateSystem.h"
 #include "Tools/Debugging/DebugImages.h"
 
-MODULE(CoordinateSystemProvider)
-  REQUIRES(Image) // for debugging only
-  REQUIRES(FrameInfo)
-  REQUIRES(FilteredJointData) // for timeStamp only
-  REQUIRES(CameraInfo)
-  REQUIRES(CameraMatrix)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(ImageCoordinateSystem);
-  LOADS_PARAMETER(float, imageRecordingTime) /**< Time the camera requires to take an image (in s, for motion compensation, may depend on exposure). */
-  LOADS_PARAMETER(float, imageRecordingDelay) /**< Delay after the camera took an image (in s, for motion compensation). */
-END_MODULE
+MODULE(CoordinateSystemProvider,
+{,
+  REQUIRES(Image), // for debugging only
+  REQUIRES(FrameInfo),
+  REQUIRES(FilteredJointData), // for timeStamp only
+  REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(ImageCoordinateSystem),
+  LOADS_PARAMETERS(
+  {,
+    (float) imageRecordingTime, /**< Time the camera requires to take an image (in s, for motion compensation, may depend on exposure). */
+    (float) imageRecordingDelay, /**< Delay after the camera took an image (in s, for motion compensation). */
+  }),
+});
 
 class CoordinateSystemProvider : public CoordinateSystemProviderBase
 {

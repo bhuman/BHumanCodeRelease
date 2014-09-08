@@ -18,18 +18,22 @@
 #include "Platform/Linux/NaoBody.h"
 #endif
 
-MODULE(RobotHealthProvider)
-  REQUIRES(BallPercept)
-  REQUIRES(LinePercept)
-  REQUIRES(GoalPercept)
-  REQUIRES(MotionRobotHealth)
-  REQUIRES(FilteredSensorData)
-  REQUIRES(FrameInfo)
-  LOADS_PARAMETER(char, batteryLow) /**< The voltage below which the robot gives low battery warnings. */
-  LOADS_PARAMETER(int, temperatureHigh) /**< The temperature the robot starts complaining about the temperature. */
-  PROVIDES_WITH_MODIFY_AND_DRAW(RobotHealth)
-  LOADS_PARAMETER(bool, enableName)
-END_MODULE
+MODULE(RobotHealthProvider,
+{,
+  REQUIRES(BallPercept),
+  REQUIRES(LinePercept),
+  REQUIRES(GoalPercept),
+  REQUIRES(MotionRobotHealth),
+  REQUIRES(FilteredSensorData),
+  REQUIRES(FrameInfo),
+  PROVIDES_WITH_MODIFY_AND_DRAW(RobotHealth),
+  LOADS_PARAMETERS(
+  {,
+    (char) batteryLow, /**< The voltage below which the robot gives low battery warnings. */
+    (int) temperatureHigh, /**< The temperature the robot starts complaining about the temperature. */
+    (bool) enableName,
+  }),
+});
 
 /**
 * @class RobotHealthProvider
@@ -42,6 +46,14 @@ public:
   RobotHealthProvider();
 
 private:
+  STREAMABLE(BuildInfo,
+  {,
+    (RobotHealth, Configuration)(Develop) configuration, /**< The configuration that was deployed. */
+    (std::string)("unknown") hash, /**< The first 5 digits of the hash of the git HEAD that was deployed. */
+    (bool)(false) clean, /**< Was the working copy clean when it was deployed? */
+  });
+
+  BuildInfo buildInfo; /**< Information about the revision that was deployed. */
   RingBufferWithSum<unsigned, 30> timeBuffer; /**< Buffered timestamps of previous executions */
   unsigned lastExecutionTime;
   unsigned lastRelaxedHealthComputation;

@@ -266,7 +266,7 @@ public:
    * \param  i index
    * \return reference to column
    */
-  inline Vector3<V>& operator[](int i)
+  Vector3<V>& operator[](int i)
   {
     return (&c0)[i];
   }
@@ -276,7 +276,7 @@ public:
    * \param  i index
    * \return reference to column
    */
-  inline const Vector3<V>& operator[](int i) const
+  const Vector3<V>& operator[](int i) const
   {
     return (&c0)[i];
   }

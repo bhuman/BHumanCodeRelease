@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Tools/Math/Pose3D.h"
+#include "Tools/Math/BHMath.h"
 #include "Representations/Infrastructure/JointData.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/MassCalibration.h"

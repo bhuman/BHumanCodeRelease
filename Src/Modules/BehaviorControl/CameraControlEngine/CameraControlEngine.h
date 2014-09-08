@@ -17,7 +17,7 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/JointData.h"
-#include "Representations/Infrastructure/TeamMateData.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Perception/GoalPercept.h"
@@ -28,19 +28,23 @@
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Representations/Perception/BodyContour.h"
 
-MODULE(CameraControlEngine)
-  REQUIRES(RobotDimensions)
-  REQUIRES(CameraCalibration)
-  REQUIRES(CameraInfo)
-  REQUIRES(HeadLimits)
-  REQUIRES(HeadMotionRequest)
-  REQUIRES(RobotCameraMatrix)
-  REQUIRES(RobotModel)
-  REQUIRES(TorsoMatrix)
-  PROVIDES_WITH_MODIFY(HeadAngleRequest)
-  LOADS_PARAMETER(float, moveHeadThreshold)
-  LOADS_PARAMETER(float, defaultTilt)
-END_MODULE
+MODULE(CameraControlEngine,
+{,
+  REQUIRES(RobotDimensions),
+  REQUIRES(CameraCalibration),
+  REQUIRES(CameraInfo),
+  REQUIRES(HeadLimits),
+  REQUIRES(HeadMotionRequest),
+  REQUIRES(RobotCameraMatrix),
+  REQUIRES(RobotModel),
+  REQUIRES(TorsoMatrix),
+  PROVIDES_WITH_MODIFY(HeadAngleRequest),
+  LOADS_PARAMETERS(
+  {,
+    (float) moveHeadThreshold,
+    (float) defaultTilt,
+  }),
+});
 
 class CameraControlEngine : public CameraControlEngineBase
 {

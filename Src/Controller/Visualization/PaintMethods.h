@@ -8,8 +8,13 @@
 
 #pragma once
 
+
+#include "DebugDrawing.h"
+
 class DebugDrawing;
 class QPainter;
+class QBrush;
+class QPen;
 
 /**
 * @class PaintMethods
@@ -18,6 +23,12 @@ class QPainter;
 */
 class PaintMethods
 {
+private:
+  static QBrush brush;
+  static QBrush noBrush;
+  static QPen pen;
+  static QPen noPen;
+
 public:
   /**
   * Paints a DebugDrawings to a QPainter.
@@ -26,4 +37,16 @@ public:
   * @param baseTrans A basic transformation.
   */
   static void paintDebugDrawing(QPainter& painter, const DebugDrawing& debugDrawing, const QTransform& baseTrans);
+
+  static void paintLine(const DebugDrawing::Line& element, QPainter& painter);
+  static void paintPolygon(const DebugDrawing::Polygon& element, QPainter& painter);
+  static void paintEllipse(const DebugDrawing::Ellipse& element, QPainter& painter);
+  static void paintOrigin(const DebugDrawing::Origin& element, QPainter& painter, const QTransform& baseTrans);
+  static void paintText(const DebugDrawing::Text& element, QPainter& painter);
+  static void paintGridRGBA(const DebugDrawing::GridRGBA& element, QPainter& painter);
+  static void paintGridMono(const DebugDrawing::GridMono& element, QPainter& painter);
+  static void paintRectangle(const DebugDrawing::Rectangle& element, QPainter& painter);
+
+  static void setPen(const DebugDrawing::Element& element, QPainter& painter);
+  static void setBrush(const Drawings::FillStyle fillStyle, const ColorRGBA& fillColor, QPainter& painter);
 };

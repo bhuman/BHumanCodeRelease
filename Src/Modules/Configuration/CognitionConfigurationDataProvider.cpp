@@ -11,21 +11,14 @@
 
 PROCESS_WIDE_STORAGE(CognitionConfigurationDataProvider) CognitionConfigurationDataProvider::theInstance = 0;
 
-CognitionConfigurationDataProvider::CognitionConfigurationDataProvider() :
-  theFieldDimensions(0),
-  theCameraSettings(0),
-  theCameraCalibration(0),
-  theRobotDimensions(0),
-  theDamageConfiguration(0),
-  theHeadLimits(0)
+CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
 {
   theInstance = this;
 
   readFieldDimensions();
-  readCameraSettings();
   readCameraCalibration();
+  readColorCalibration();
   readRobotDimensions();
-
   readDamageConfiguration();
   readHeadLimits();
 }
@@ -34,10 +27,10 @@ CognitionConfigurationDataProvider::~CognitionConfigurationDataProvider()
 {
   if(theFieldDimensions)
     delete theFieldDimensions;
-  if(theCameraSettings)
-    delete theCameraSettings;
   if(theCameraCalibration)
     delete theCameraCalibration;
+  if(theColorCalibration)
+    delete theColorCalibration;
   if(theDamageConfiguration)
     delete theDamageConfiguration;
   if(theHeadLimits)
@@ -56,16 +49,6 @@ void CognitionConfigurationDataProvider::update(FieldDimensions& fieldDimensions
   EXECUTE_ONLY_IN_DEBUG(fieldDimensions.drawPolygons(theOwnTeamInfo.teamColor););
 }
 
-void CognitionConfigurationDataProvider::update(CameraSettings& cameraSettings)
-{
-  if(theCameraSettings)
-  {
-    cameraSettings = *theCameraSettings;
-    delete theCameraSettings;
-    theCameraSettings = 0;
-  }
-}
-
 void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
 {
   if(theCameraCalibration)
@@ -74,6 +57,28 @@ void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibra
     delete theCameraCalibration;
     theCameraCalibration = 0;
   }
+  else
+  {
+    if (theCameraCalibrationNext.hasNext())
+    {
+      cameraCalibration = const_cast<CameraCalibrationNext&>(theCameraCalibrationNext).getNext();
+    }
+  }
+}
+
+void CognitionConfigurationDataProvider::update(ColorTable& colorTable)
+{
+  if(theColorCalibration)
+  {
+    colorTable.fromColorCalibration(*theColorCalibration, colorCalibration);
+    delete theColorCalibration;
+    theColorCalibration = 0;
+  }
+
+  DEBUG_RESPONSE_ONCE("representation:ColorCalibration",
+  {
+    OUTPUT(idColorCalibration, bin, colorCalibration);
+  });
 }
 
 void CognitionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
@@ -114,18 +119,6 @@ void CognitionConfigurationDataProvider::readFieldDimensions()
   theFieldDimensions->load();
 }
 
-void CognitionConfigurationDataProvider::readCameraSettings()
-{
-  ASSERT(!theCameraSettings);
-
-  InMapFile stream("cameraSettings.cfg");
-  if(stream.exists())
-  {
-    theCameraSettings = new CameraSettings;
-    stream >> *theCameraSettings;
-  }
-}
-
 void CognitionConfigurationDataProvider::readCameraCalibration()
 {
   ASSERT(!theCameraCalibration);
@@ -135,6 +128,18 @@ void CognitionConfigurationDataProvider::readCameraCalibration()
   {
     theCameraCalibration = new CameraCalibration;
     stream >> *theCameraCalibration;
+  }
+}
+
+void CognitionConfigurationDataProvider::readColorCalibration()
+{
+  ASSERT(!theColorCalibration);
+
+  InMapFile stream("colorCalibration.cfg");
+  if(stream.exists())
+  {
+    theColorCalibration = new ColorCalibration;
+    stream >> *theColorCalibration;
   }
 }
 
@@ -172,6 +177,19 @@ void CognitionConfigurationDataProvider::readHeadLimits()
     theHeadLimits = new HeadLimits;
     stream >> *theHeadLimits;
   }
+}
+
+bool CognitionConfigurationDataProvider::handleMessage(InMessage& message)
+{
+  if(theInstance && message.getMessageID() == idColorCalibration)
+  {
+    if(!theInstance->theColorCalibration)
+      theInstance->theColorCalibration = new ColorCalibration;
+    message.bin >> *theInstance->theColorCalibration;
+    return true;
+  }
+  else
+    return false;
 }
 
 MAKE_MODULE(CognitionConfigurationDataProvider, Cognition Infrastructure)

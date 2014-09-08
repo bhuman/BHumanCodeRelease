@@ -5,6 +5,7 @@
 */
 
 #include "CognitionLogDataProvider.h"
+#include "Representations/Infrastructure/Thumbnail.h"
 #include "Tools/Settings.h"
 #include <vector>
 
@@ -49,6 +50,11 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
 {
   switch(message.getMessageID())
   {
+    HANDLE(OwnTeamInfo)
+    HANDLE(OpponentTeamInfo)
+    HANDLE(GameInfo)
+    HANDLE2(RobotInfo, ((RobotInfo&) *representationBuffer[idRobotInfo]).number = Global::getSettings().playerNumber;)
+    HANDLE(AudioData)
     HANDLE2(Image,
     {
       ALLOC(FrameInfo)
@@ -57,19 +63,39 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
       frameInfo.cycleTime = (float) (image.timeStamp - frameInfo.time) * 0.001f;
       frameInfo.time = image.timeStamp;
     })
+    HANDLE(LowFrameRateImage)
     HANDLE(CameraInfo)
-    HANDLE(FrameInfo)
+    HANDLE2(FrameInfo,
+    {
+      ALLOC(Image)
+      Image& image = (Image&) *representationBuffer[idImage];
+      const FrameInfo& frameInfo = (FrameInfo&) *representationBuffer[idFrameInfo];
+      image.timeStamp = frameInfo.time;
+    })
     HANDLE(LinePercept)
     HANDLE(ActivationGraph)
     HANDLE(BallPercept)
     HANDLE(GoalPercept)
     HANDLE(FieldBoundary)
-    HANDLE(ObstacleSpots)
     HANDLE(BallModel)
     HANDLE(ObstacleWheel)
     HANDLE(BodyContour)
-    HANDLE(Thumbnail)
-	HANDLE(RobotHealth)
+    HANDLE2(Thumbnail,
+    {
+      ALLOC(Image)
+      Thumbnail& thumbnail = (Thumbnail&) *representationBuffer[idThumbnail];
+      thumbnail.toImage((Image&) *representationBuffer[idImage]);
+      return true;
+    })
+    HANDLE(TeammateReliability)
+    HANDLE2(TeammateDataCompressed,
+    {
+      ALLOC(TeammateData)
+      TeammateData& teammateData = (TeammateData&) *representationBuffer[idTeammateData];
+      TeammateDataCompressed& teammateDataCompressed = (TeammateDataCompressed&) *representationBuffer[idTeammateDataCompressed];
+      teammateData = TeammateData(teammateDataCompressed);
+    })
+    HANDLE(RobotHealth)
     HANDLE2(FilteredSensorData,
     {
       ALLOC(FrameInfo)
@@ -84,18 +110,19 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
     })
     HANDLE(ObstacleModel)
     HANDLE(FilteredJointData)
-    HANDLE(RobotsModel)
     HANDLE(CombinedWorldModel)
-    HANDLE2(GroundTruthRobotPose, ASSIGN(RobotPose, GroundTruthRobotPose))
-    HANDLE2(GroundTruthBallModel, ASSIGN(BallModel, GroundTruthBallModel))
-    HANDLE2(GroundTruthRobotsModel, ASSIGN(RobotsModel, GroundTruthRobotsModel))
     HANDLE(CameraMatrix)
-
+    HANDLE(RobotPercept)
     HANDLE(ImageCoordinateSystem)
+    HANDLE(LineSpots)
+    HANDLE(LocalizationTeamBall)
     HANDLE(RobotPose)
     HANDLE(SideConfidence)
     HANDLE(MotionInfo)
-    HANDLE(ColorReference)
+    HANDLE(GroundTruthWorldState)
+    HANDLE(Odometer)
+    HANDLE(GroundContactState)
+    HANDLE(ReceivedSPLStandardMessages)
 
   case idProcessFinished:
     frameDataComplete = true;

@@ -1,7 +1,7 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/TeamMateData.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Infrastructure/JointData.h"
@@ -9,28 +9,27 @@
 #include "Representations/Perception/ImageCoordinateSystem.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/RobotsModel.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/CombinedWorldModel.h"
 #include "Tools/Math/Geometry.h"
 #include <vector>
 #include <algorithm>
 
-MODULE(FieldCoverageProvider)
-  REQUIRES(CameraInfo)
-  REQUIRES(CameraMatrix)
-  REQUIRES(ImageCoordinateSystem)
-  REQUIRES(FieldDimensions)
-  REQUIRES(RobotPose)
-  REQUIRES(RobotsModel)
-  REQUIRES(FrameInfo)
-  REQUIRES(TeamMateData)
-  REQUIRES(OwnTeamInfo)
-  REQUIRES(GameInfo)
-  REQUIRES(CombinedWorldModel)
-  REQUIRES(JointData)
-  PROVIDES_WITH_MODIFY(FieldCoverage)
-END_MODULE
+MODULE(FieldCoverageProvider,
+{,
+  REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
+  REQUIRES(ImageCoordinateSystem),
+  REQUIRES(FieldDimensions),
+  REQUIRES(RobotPose),
+  REQUIRES(FrameInfo),
+  REQUIRES(TeammateData),
+  REQUIRES(OwnTeamInfo),
+  REQUIRES(GameInfo),
+  REQUIRES(CombinedWorldModel),
+  REQUIRES(JointData),
+  PROVIDES_WITH_MODIFY(FieldCoverage),
+});
 
 class FieldCoverageProvider : public FieldCoverageProviderBase
 {
@@ -68,12 +67,12 @@ public:
     /**
      *  Returns the coverage of this cell given the current time [ms]
      */
-    inline unsigned char coverage(unsigned time) const
+    unsigned char coverage(unsigned time) const
     {
       return coverage(time, this->lastseen);
     }
 
-    inline unsigned char coverage(unsigned time, unsigned lastseen) const
+    unsigned char coverage(unsigned time, unsigned lastseen) const
     {
       unsigned sub = (time - lastseen) / tick;
       return sub >= maxCoverage ? 0 : maxCoverage - static_cast<unsigned char>(sub);
@@ -83,7 +82,7 @@ public:
      * Sets the coverage value of this cell to 'coverage' based on the
      * timestamp 'time'.
      */
-    inline void setCoverage(unsigned time, unsigned char coverage)
+    void setCoverage(unsigned time, unsigned char coverage)
     {
       ASSERT(coverage <= maxCoverage);
       unsigned sub = tick * (maxCoverage - coverage);
@@ -94,56 +93,7 @@ public:
      * Sets the coverage value of this cell to the maximum coverage value
      * based on the timestamp 'time'.
      */
-    inline void refresh(unsigned int time) { lastseen = time; }
-  };
-
-  /**
-   * Class representing a shadow a robot can cast on the field.
-   */
-  class RobotShadow
-  {
-  public:
-    /**
-     * Copy constructor.
-     */
-    RobotShadow(const RobotShadow& other);
-
-    /**
-     * Constructor.
-     */
-    RobotShadow(const RobotPose& robotPose, const Vector2<>& otherRobotRelativePosition);
-
-    /**
-     * Assignment operator for the non-const attributes.
-     * Not that this does not assign the robotPose attribute.
-     */
-    RobotShadow& operator=(const RobotShadow& other);
-
-    /**
-     * Tests whether this shadow extends over the center of the cell 'cell'.
-     */
-    bool isPointShadowed(const Cell& cell) const;
-
-    /**
-     * Draws this shadow.
-     */
-    void draw() const;
-
-    /**
-     * Draws this shadow on an image.
-     */
-    void drawOnImage(const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo,
-                     const ImageCoordinateSystem& imageCoordinateSystem) const;
-  private:
-    const RobotPose& robotPose; /**< The pose of the robot that sees the robot causing the shadow. */
-    float distance; /**< Distance to the robot causing the shadow. */
-    Vector2<> vertices[4]; /**< Vertices of the shadow in field coordinates */
-
-    /**
-     * Projects a point in field coordinates 'absPosOnField' into a
-     */
-    Vector2<> projectOnImage(const Vector2<>& absPosOnField, const CameraMatrix& cameraMatrix,
-                             const CameraInfo& cameraInfo, const ImageCoordinateSystem& imageCoordinateSystem) const;
+    void refresh(unsigned int time) { lastseen = time; }
   };
 
   class BallTime
@@ -157,6 +107,11 @@ public:
    * Constructor
    */
   FieldCoverageProvider();
+
+  /**
+   * Destructor.
+   */
+  ~FieldCoverageProvider();
 
 private:
   static const size_t xSteps = 12; /**< Number of cells the field is devided into in field-coordinate-x direction. */
@@ -189,24 +144,9 @@ private:
   BallTime ballOut; /**< The position and timestamp of the last time the ball went out. */
 
   /**
-   * Destructor
-   */
-  ~FieldCoverageProvider();
-
-  /**
    * Updates the field coverage representation.
    */
   void update(FieldCoverage& fieldCoverage);
-
-  /**
-   * Computes the shadows of all robots in the robotsModel.
-   */
-  void computeShadows(std::vector<RobotShadow>& shadows, const RobotPose& robotPose, const RobotsModel& robotsModel);
-
-  /**
-   * Tests whether a cell 'cell' is shadowed by one of the 'shadows'.
-   */
-  bool isCellShadowed(const std::vector<RobotShadow>& shadows, const Cell& cell);
 
   /**
    * Projects a point from the image onto the field.

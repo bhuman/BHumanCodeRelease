@@ -6,11 +6,15 @@
 */
 
 #include "RobotPose.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/Module/Blackboard.h"
 
-void RobotPose::draw(bool teamRed)
+void RobotPose::draw()
 {
+  bool teamRed = Blackboard::getInstance().exists("OwnTeamInfo") &&
+                ((const OwnTeamInfo&) Blackboard::getInstance()["OwnTeamInfo"]).teamColor != TEAM_BLUE;
   DECLARE_DEBUG_DRAWING("representation:RobotPose", "drawingOnField");
   Vector2<> bodyPoints[4] = {Vector2<>(55, 90),
                              Vector2<>(-55, 90),
@@ -23,9 +27,9 @@ void RobotPose::draw(bool teamRed)
   dirVec = *this * dirVec;
   const ColorRGBA ownTeamColorForDrawing = teamRed ? ColorRGBA(255, 0, 0) : ColorRGBA(0, 0, 255);
   LINE("representation:RobotPose", translation.x, translation.y, dirVec.x, dirVec.y,
-       20, Drawings::ps_solid, ColorClasses::white);
+       20, Drawings::ps_solid, ColorRGBA::white);
   POLYGON("representation:RobotPose", 4, bodyPoints, 20, Drawings::ps_solid,
-          ownTeamColorForDrawing, Drawings::bs_solid, ColorClasses::white);
+          ownTeamColorForDrawing, Drawings::bs_solid, ColorRGBA::white);
   CIRCLE("representation:RobotPose", translation.x, translation.y, 42, 0,
          Drawings::ps_solid, ownTeamColorForDrawing, Drawings::bs_solid, ownTeamColorForDrawing);
 
@@ -57,7 +61,7 @@ void RobotPose::draw(bool teamRed)
 void GroundTruthRobotPose::draw() const
 {
   DECLARE_DEBUG_DRAWING("representation:GroundTruthRobotPose", "drawingOnField");
-  ColorRGBA transparentWhite(ColorClasses::white);
+  ColorRGBA transparentWhite(ColorRGBA::white);
   transparentWhite.a = 128;
   Vector2<> bodyPoints[4] = {Vector2<>(55, 90),
                              Vector2<>(-55, 90),
@@ -84,21 +88,17 @@ void GroundTruthRobotPose::draw() const
 
 RobotPoseCompressed::RobotPoseCompressed(const RobotPose& robotPose)
 : translation(robotPose.translation),
+  rotation(robotPose.rotation),
   deviation(robotPose.deviation)
 {
-  float normalizedAngle = normalize(robotPose.rotation);
-  int discretizedAngle = (int)(normalizedAngle * 128.0f / pi);
-  if(discretizedAngle > 127)
-    discretizedAngle = -128;
-  rotation = (char) discretizedAngle;
   validity = (unsigned char) (robotPose.validity * 255.f);
 }
 
 RobotPoseCompressed::operator RobotPose() const
 {
   RobotPose robotPose;
-  robotPose.translation = Vector2<>(translation);
-  robotPose.rotation = (float) rotation * pi / 128.f;
+  robotPose.translation = translation;
+  robotPose.rotation = rotation;
   robotPose.validity = (float) validity / 255.f;
   robotPose.deviation = deviation;
   return robotPose;

@@ -15,24 +15,18 @@ PROCESS_WIDE_STORAGE(MotionSelector) MotionSelector::theInstance = 0;
 
 void MotionSelector::stand()
 {
-  if(theInstance)
-  {
-#ifdef TARGET_ROBOT
+  if(theInstance && SystemCall::getMode() == SystemCall::physicalRobot)
     theInstance->forceStand = true;
-#endif
-  }
 }
 
 void MotionSelector::update(MotionSelection& motionSelection)
 {
   static int interpolationTimes[MotionRequest::numOfMotions];
   interpolationTimes[MotionRequest::walk] = 790;
-  interpolationTimes[MotionRequest::bike] = 200;
-  interpolationTimes[MotionRequest::indykick] = 10;
+  interpolationTimes[MotionRequest::kick] = 200;
   interpolationTimes[MotionRequest::specialAction] = 200;
   interpolationTimes[MotionRequest::stand] = 600;
   interpolationTimes[MotionRequest::getUp] = 600;
-  interpolationTimes[MotionRequest::takeBall] = 600;
   static const int playDeadDelay(2000);
 
   if(lastExecution)
@@ -50,12 +44,9 @@ void MotionSelector::update(MotionSelection& motionSelection)
     // check if the target motion can be the requested motion (mainly if leaving is possible)
     if((lastMotion == MotionRequest::walk && (!&theWalkingEngineOutput || theWalkingEngineOutput.isLeavingPossible || !theGroundContactState.contact)) ||
        lastMotion == MotionRequest::stand || // stand can always be left
-       (lastMotion == MotionRequest::specialAction && (!&theSpecialActionsOutput || theSpecialActionsOutput.isLeavingPossible)) ||
-       (lastMotion == MotionRequest::bike && (!&theBikeEngineOutput || theBikeEngineOutput.isLeavingPossible)) ||
-       (lastMotion == MotionRequest::indykick && (!&theIndykickEngineOutput || theIndykickEngineOutput.isLeavingPossible)) ||
-       (lastMotion == MotionRequest::getUp && (!&theGetUpEngineOutput || theGetUpEngineOutput.isLeavingPossible)) ||
-       (lastMotion == MotionRequest::takeBall && (!&theBallTakingOutput || theBallTakingOutput.isLeavingPossible)) ||
-       (requestedMotion == MotionRequest::takeBall && &theBallTakingOutput && lastMotion == MotionRequest::walk)) 
+       (lastMotion == MotionRequest::specialAction && theSpecialActionsOutput.isLeavingPossible) ||
+       (lastMotion == MotionRequest::kick && theKickEngineOutput.isLeavingPossible) ||
+       (lastMotion == MotionRequest::getUp && theGetUpEngineOutput.isLeavingPossible)) //never immediatly leave kick or get up
     {
       motionSelection.targetMotion = requestedMotion;
     }

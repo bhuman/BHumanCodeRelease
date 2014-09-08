@@ -9,6 +9,9 @@
 #include "ImageCoordinateSystem.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
+ImageCoordinateSystem::ImageCoordinateSystem()
+: xTable(0), yTable(0) {}
+
 ImageCoordinateSystem::~ImageCoordinateSystem()
 {
   if(xTable)

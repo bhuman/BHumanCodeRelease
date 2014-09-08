@@ -64,7 +64,6 @@ public:
   /** Adds the contents of another debug drawing to this one. */
   const DebugDrawing3D& operator+=(const DebugDrawing3D& other);
 
-
   /** base class for all drawing elements */
   class Element
   {

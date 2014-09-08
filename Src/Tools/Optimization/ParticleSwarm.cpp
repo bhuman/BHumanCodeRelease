@@ -7,7 +7,6 @@
 #include <limits>
 
 #include "ParticleSwarm.h"
-#include "Tools/Math/Common.h"
 #include "Tools/Math/Random.h"
 #include "Platform/BHAssert.h"
 
@@ -60,7 +59,7 @@ void ParticleSwarm::next()
   currentParticleIndex = (currentParticleIndex + 1) % particles.size();
   Particle& particle = particles[currentParticleIndex];
   updateParticle(particle);
-  for(int i = 0, count = dimensions.size(); i < count; ++i)
+  for(size_t i = 0, count = dimensions.size(); i < count; ++i)
       *dimensions[i].variable = particle.position[i];
 }
 

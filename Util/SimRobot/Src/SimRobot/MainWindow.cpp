@@ -4,10 +4,11 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
+#include "MainWindow.h"
+#include "SceneGraphDockWidget.h"
+#include "RegisteredDockWidget.h"
+#include "StatusBar.h"
+
 #include <QApplication>
 #include <QAction>
 #include <QMenu>
@@ -22,29 +23,28 @@
 #include <QCloseEvent>
 #include <QUrl>
 #include <QTimer>
-#ifdef WIN32
+#ifdef FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
+#include <QGLWidget>
+#endif
+#ifdef WINDOWS
 #include <windows.h>
-#elif defined(MACOSX)
+#elif defined(OSX)
 #include <mach/mach_time.h>
 #include "MacFullscreen.h"
 #else
 #include <ctime>
 #endif
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
-#include "MainWindow.h"
-#include "SceneGraphDockWidget.h"
-#include "RegisteredDockWidget.h"
-#include "StatusBar.h"
+#ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
+#define startTimer(ms) (QSysInfo::windowsVersion() <= QSysInfo::WV_WINDOWS7 ? 1 : startTimer(ms))
+#endif
 
 #define QDOCKWIDGET_STYLE ""
 #define QDOCKWIDGET_STYLE_FOCUS "QDockWidget {font-weight: bold;}"
 
 SimRobot::Application* MainWindow::application;
 
-#ifdef WIN32
+#ifdef WINDOWS
 #define PATH_SEPARATOR "\\"
 #else
 #define PATH_SEPARATOR "/"
@@ -88,9 +88,9 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   connect(fileCloseAct, SIGNAL(triggered()), this, SLOT(closeFile()));
 
   fileExitAct = new QAction(/*QIcon(":/Icons/Exit.png"), */tr("E&xit"), this);
-#ifdef WIN32
+#ifdef WINDOWS
   fileExitAct->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F4));
-#elif defined(MACOSX)
+#elif defined(OSX)
   fileExitAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 #else
   fileExitAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q, Qt::ALT + Qt::Key_F4));
@@ -125,7 +125,7 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   toolBar = addToolBar(tr("&Toolbar"));
   toolBar->setObjectName("Toolbar");
   toolBar->setIconSize(QSize(16, 16));
-#ifdef MACOSX
+#ifdef OSX
   setUnifiedTitleAndToolBarOnMac(true);
 #endif
 
@@ -173,7 +173,7 @@ MainWindow::MainWindow(int argc, char *argv[]) :
 
 QString MainWindow::getAppPath(const char* argv0)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   char fileName[_MAX_PATH];
   char longFileName[_MAX_PATH];
   GetModuleFileNameA(GetModuleHandleA(0), fileName, _MAX_PATH);
@@ -187,7 +187,7 @@ QString MainWindow::getAppPath(const char* argv0)
 unsigned int MainWindow::getAppLocationSum(const QString& appPath)
 {
   unsigned int sum = 0;
-#ifdef MACOSX
+#ifdef OSX
   QString path = appPath;
   for(int i = 0; i < 5; ++i)
     path = QFileInfo(path).dir().path();
@@ -207,9 +207,9 @@ unsigned int MainWindow::getAppLocationSum(const QString& appPath)
 
 unsigned int MainWindow::getSystemTime()
 {
-#ifdef WIN32
+#ifdef WINDOWS
   return GetTickCount();
-#elif defined(MACOSX)
+#elif defined(OSX)
   static mach_timebase_info_data_t info = {0, 0};
   if(info.denom == 0)
     mach_timebase_info(&info);
@@ -362,8 +362,13 @@ void MainWindow::timerEvent(QTimerEvent* event)
   }
   else
   {
-    Q_ASSERT(event->timerId() == timerId);
-    killTimer(timerId);
+#ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
+    if(event)
+#endif
+    {
+      Q_ASSERT(event->timerId() == timerId);
+      killTimer(timerId);
+    }
     timerId = 0;
   }
 }
@@ -445,9 +450,9 @@ bool MainWindow::loadModule(const QString& name, bool manually)
       flags = i->flags;
   }
 
-#ifdef WIN32
+#ifdef WINDOWS
   const QString& moduleName = name;
-#elif defined(MACOSX)
+#elif defined(OSX)
   QString moduleName = QFileInfo(application->getAppPath()).dir().path() + "/../Resources/" + name;
 #else
   QString moduleName = QFileInfo(appPath).path() + "/lib" + name + ".so";
@@ -764,7 +769,7 @@ void MainWindow::updateFileMenu()
       recentFileMapper.setMapping(action, file);
     }
   }
-#ifndef MACOSX
+#ifndef OSX
   fileMenu->addSeparator();
   fileMenu->addAction(fileExitAct);
 #endif
@@ -866,15 +871,6 @@ void MainWindow::openFile(const QString& fileName)
     foreach(QString object, openedObjects)
       openObject(object, 0, 0, 0);
   }
-#ifdef FIX_LINUX_DOCK_WIDGET_DOCK_STATE_RESTORING_BUG
-  QStringList dockedWidgets = layoutSettings.value("DockedWidgets").toStringList();
-  foreach(QString docketWidgetName, dockedWidgets)
-  {
-    RegisteredDockWidget* dockWidget = openedObjectsByName.value(docketWidgetName);
-    if(dockWidget)
-      dockWidget->setFloating(false);
-  }
-#endif
 #ifdef FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
   layoutSettings.beginGroup("DockedWidgetSizes");
   for(QMap<QString, RegisteredDockWidget*>::iterator it = openedObjectsByName.begin(), end = openedObjectsByName.end(); it != end; ++it)
@@ -890,7 +886,7 @@ void MainWindow::openFile(const QString& fileName)
   layoutSettings.endGroup();
   QTimer::singleShot(500, this, SLOT(unlockLayout()));
 #endif
-#ifdef MACOSX
+#ifdef OSX
   MacFullscreen::setActive(this, layoutSettings.value("Fullscreen").toBool());
 #endif
   restoreGeometry(layoutSettings.value("Geometry").toByteArray());
@@ -969,13 +965,6 @@ bool MainWindow::closeFile()
   {
     layoutSettings.setValue("Geometry", saveGeometry());
     layoutSettings.setValue("WindowState", saveState());
-#ifdef FIX_LINUX_DOCK_WIDGET_DOCK_STATE_RESTORING_BUG
-    QStringList dockedWidgets;
-    for(QMap<QString, RegisteredDockWidget*>::iterator it = openedObjectsByName.begin(), end = openedObjectsByName.end(); it != end; ++it)
-      if(!it.value()->isFloating())
-        dockedWidgets.append(it.key());
-    layoutSettings.setValue("DockedWidgets", dockedWidgets);
-#endif
 #ifdef FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
     layoutSettings.beginGroup("DockedWidgetSizes");
     for(QMap<QString, RegisteredDockWidget*>::iterator it = openedObjectsByName.begin(), end = openedObjectsByName.end(); it != end; ++it)
@@ -996,7 +985,7 @@ bool MainWindow::closeFile()
 #ifdef FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
     layoutSettings.setValue("ShowToolbar", toolBar->isVisible());
 #endif
-#ifdef MACOSX
+#ifdef OSX
     layoutSettings.setValue("Fullscreen", MacFullscreen::isActive(this));
 #endif
     layoutSettings.setValue("OpenedObjects", openedObjects);
@@ -1064,6 +1053,12 @@ bool MainWindow::closeFile()
     running = false;
     performStep = false;
   }
+#ifdef FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
+  else
+    // Prevents crash when no QGLWidget was created before the program terminates
+    QGLWidget helper(QGLFormat(QGL::NoStencilBuffer | QGL::SingleBuffer), 0, 0, Qt::WindowStaysOnTopHint);
+#endif
+
   return true;
 }
 
@@ -1157,7 +1152,6 @@ void MainWindow::simReset()
   if(compiled && wasRunning)
     simStart();
 }
-
 
 void MainWindow::simStart()
 {

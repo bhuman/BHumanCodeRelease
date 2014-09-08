@@ -5,10 +5,21 @@
  */
 
 #pragma once
-#include <string>
 
 struct sockaddr;
 struct sockaddr_in;
+
+#ifdef WINDOWS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <WinSock2.h>
+#endif
+#include <string>
+
+#ifdef WINDOWS
+#define socket_t SOCKET
+#else
+#define socket_t int
+#endif
 
 /**
 * @class UdpComm
@@ -56,7 +67,6 @@ public:
    */
   bool setLoopback(bool);
 
-
   bool setRcvBufSize(unsigned int);
 
   /**
@@ -93,6 +103,6 @@ public:
 
 private:
   struct sockaddr* target;
-  int sock;
+  socket_t sock;
   bool resolve(const char*, int, struct sockaddr_in*);
 };

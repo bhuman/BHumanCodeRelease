@@ -23,22 +23,25 @@ public:
       CONTEXT,
       CONCURRENT
     } type;
+
     union
     {
       QString *text;
       VisualContext *context;
     };
+
     Entry(Type type, const QString &text)
       : type(type),
         text(new QString(text))
-    { }
+    {}
+
     Entry(VisualContext *context)
       : type(CONTEXT),
         context(context)
-    { }
+    {}
+
     ~Entry();
   };
-
 
 private:
   /** The entries of the visual context. Actually they can be text or sub
@@ -53,13 +56,12 @@ private:
   /** Indicates if the last printed line had a newline at their end. */
   bool nl;
 
-  inline QFormLayout* getLayout() { return formLayout; }
+  QFormLayout* getLayout() { return formLayout; }
   void updateWidget(size_t index, Entry *entry);
   void addWidget(Entry *entry, const QString &commandLine = "");
 
 public:
   VisualContext(QWidget *parent);
-  virtual ~VisualContext() { }
 
   virtual void executeInContext(Console *console, TeamSelector *teamSelector, const QString &cmdLine);
 
@@ -74,7 +76,6 @@ signals:
   void statusChanged(bool status);
   void sCanceled();
   void sCancel();
-
 };
 
 /** Draws a cool Frame around a VisualContext. */

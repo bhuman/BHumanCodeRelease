@@ -5,93 +5,51 @@
  * @author Tim Laue
  */
 
+#include "Libraries.h"
 #include "Tools/Team.h"
 #include "Tools/Streams/InStreams.h"
-#include "Libraries.h"
-
+#ifdef __INTELLISENSE__
+#define INTELLISENSE_PREFIX Behavior2013::Behavior
+#endif
+#include "Tools/Cabsl.h" // include last, because macros might mix up other header files
 
 namespace Behavior2013
 {
   /**
    * The wrapper for the behavior options.
    */
-  class Behavior : public Libraries
+  class Behavior : public Cabsl<Behavior>, public Libraries
   {
-    static PROCESS_WIDE_STORAGE(Behavior) _theInstance; /**< The instance of this behavior used. */
-
-  public:
-#include "Cabsl.h"
-
-  private:
-    OptionContext::StateType _stateType; /**< The state type of the last option called. */
-    unsigned _lastFrameTime; /**< The time stamp of the last time the behavior was executed. */
-    unsigned char _depth; /**< The depth level of the current option. Used for sending debug messages. */
-
 #include "Options.h"
-
   public:
     /**
      * Constructor.
      * @param base The blackboard configured for this module.
      */
-    Behavior(const BehaviorControl2013Base& base, BehaviorControlOutput& behaviorControlOutput) :
-      Libraries(base, behaviorControlOutput)
-    {
-      _theInstance = this;
-    }
-
-
-    /* Destructor. */
-    ~Behavior() {_theInstance = 0;}
+    Behavior(const BehaviorControl2013Base& base, BehaviorControlOutput& behaviorControlOutput)
+    : Cabsl<Behavior>(&behaviorControlOutput.executionGraph),
+      Libraries(base, behaviorControlOutput) {}
 
     /**
      * Executes one behavior cycle.
      * @param roots A set of root options. They must be parameterless.
      */
-    void update(const std::vector<OptionInfos::Option>& roots)
+    void execute(const std::vector<OptionInfos::Option>& roots)
     {
       theOwnTeamInfo = BehaviorControl2013Base::theOwnTeamInfo;
       theRobotInfo = BehaviorControl2013Base::theRobotInfo;
       theGameInfo = BehaviorControl2013Base::theGameInfo;
-      theActivationGraph.graph.clear();
 
+      beginFrame(theFrameInfo.time);
       preProcessLibraries();
 
       for(std::vector<Behavior::OptionInfos::Option>::const_iterator i = roots.begin(); i != roots.end(); ++i)
-        OptionInfos::execute(this, *i);
+      Cabsl<Behavior>::execute(*i);
 
       postProcessLibraries();
-
-      _lastFrameTime = theFrameInfo.time;
-    }
-
-    /**
-     * The operator allocates a memory block that is zeroed.
-     * Therefore, all members of this class are initialized with 0.
-     * @attention This operator is only called if this class is instantiated by
-     * a separate call to new, i.e. it cannot be created as a part of another class.
-     * @param size The size of the block in bytes.
-     * @return A pointer to the block.
-     */
-    static void* operator new(std::size_t size)
-    {
-      return calloc(1, size);
-    }
-
-    /**
-     * The operator frees a memory block.
-     * @param p The address of the block to free.
-     */
-    static void operator delete(void* p)
-    {
-      return free(p);
+      endFrame();
     }
   };
-
-  PROCESS_WIDE_STORAGE(Behavior) Behavior::_theInstance;
-  std::unordered_map<std::string, Behavior::OptionDescriptor*> Behavior::OptionInfos::optionsByName;
-  std::vector<Behavior::OptionDescriptor> Behavior::OptionInfos::optionsByIndex;
-  Behavior::OptionInfos collectOptions; /**< This global instantiation collects data about all options. */
 }
 
 using namespace Behavior2013;
@@ -116,11 +74,15 @@ class BehaviorControl2013 : public BehaviorControl2013Base
     MODIFY("parameters:BehaviorControl2013", p);
     if(theFrameInfo.time)
     {
+      behaviorControlOutput.behaviorStatus.role = theRole.role;
       behaviorControlOutput.behaviorStatus.teamColor = theOwnTeamInfo.teamColor == TEAM_BLUE ? BehaviorStatus::blue : BehaviorStatus::red;
 
-      theBehavior->update(p.roots);
+      TEAM_OUTPUT_FAST(idWalkTarget, bin, theRobotPose.translation);
+      TEAM_OUTPUT_FAST(idKickTarget, bin, theRobotPose.translation);
 
-      TEAM_OUTPUT_FAST(idTeamMateBehaviorStatus, bin, behaviorControlOutput.behaviorStatus);
+      theBehavior->execute(p.roots);
+
+      TEAM_OUTPUT_FAST(idTeammateBehaviorStatus, bin, behaviorControlOutput.behaviorStatus);
     }
   }
 

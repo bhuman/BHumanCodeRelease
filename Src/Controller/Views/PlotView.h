@@ -13,8 +13,7 @@
 #include <QPainter>
 #include <QIcon>
 #include <string>
-
-#include "SimRobot.h"
+#include <SimRobot.h>
 
 class RobotConsole;
 class QPointF;

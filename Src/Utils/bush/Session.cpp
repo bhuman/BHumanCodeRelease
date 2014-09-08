@@ -17,10 +17,6 @@ Session::Session()
 {
 }
 
-Session::~Session()
-{
-}
-
 std::string Session::getBestIP(const Robot* robot)
 {
   std::string ip;

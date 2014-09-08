@@ -1,4 +1,4 @@
-  /**
+/**
 * @file WalkingEngine.h
 * Declaration a module that creates the walking motions
 * @author Colin Graf
@@ -28,80 +28,90 @@
 #include "Tools/Optimization/ParticleSwarm.h"
 #include "WalkingEngineTools.h"
 #include "WalkingEngineKicks.h"
-#include "SubPhaseParameters.h"
 
-MODULE(WalkingEngine)
-  REQUIRES(MotionSelection)
-  REQUIRES(MotionRequest)
-  REQUIRES(RobotModel)
-  REQUIRES(RobotDimensions)
-  REQUIRES(MassCalibration)
-  REQUIRES(HeadJointRequest)
-  REQUIRES(ArmMotionEngineOutput)
-  REQUIRES(FrameInfo)
-  REQUIRES(TorsoMatrix)
-  REQUIRES(GroundContactState)
-  REQUIRES(FallDownState)
-  REQUIRES(FilteredJointData)
-  REQUIRES(InertiaSensorData)
-  REQUIRES(DamageConfiguration)
-  PROVIDES_WITH_MODIFY(WalkingEngineOutput)
-  REQUIRES(WalkingEngineOutput)
-  PROVIDES_WITH_MODIFY(WalkingEngineStandOutput)
+/**
+ * A parameter set to separate a phase in three arbitrary parts.
+ * Would be part of LOADS_PARAMETERS if Microsoft's compiler had
+ * allowed it.
+ */
+STREAMABLE(SubPhaseParameters,
+{,
+  (float)(0) start, /**< The start position of the second sub phase */
+  (float)(1) duration, /**< The length of the second sub phase */
+});
 
-  LOADS_PARAMETER(VectorYZ, standComPosition) /**< The position of the center of mass relative to the right foot when standing */
-  LOADS_PARAMETER(float, standBodyTilt) /**< The tilt of the torso when standing */
-  LOADS_PARAMETER(Vector2<>, standArmJointAngles) /**< The joint angles of the left arm when standing */
-  LOADS_PARAMETER(int, standHardnessAnklePitch) /**< The hardness of the ankle pitch joint for standing and walking */
-  LOADS_PARAMETER(int, standHardnessAnkleRoll) /**< The hardness of the ankle roll joint for standing and walking */
+MODULE(WalkingEngine,
+{,
+  REQUIRES(MotionSelection),
+  REQUIRES(MotionRequest),
+  REQUIRES(RobotModel),
+  REQUIRES(RobotDimensions),
+  REQUIRES(MassCalibration),
+  REQUIRES(HeadJointRequest),
+  REQUIRES(ArmMotionEngineOutput),
+  REQUIRES(FrameInfo),
+  REQUIRES(TorsoMatrix),
+  REQUIRES(GroundContactState),
+  REQUIRES(FallDownState),
+  REQUIRES(FilteredJointData),
+  REQUIRES(InertiaSensorData),
+  REQUIRES(DamageConfiguration),
+  PROVIDES_WITH_MODIFY(WalkingEngineOutput),
+  REQUIRES(WalkingEngineOutput),
+  PROVIDES_WITH_MODIFY(WalkingEngineStandOutput),
+  LOADS_PARAMETERS(
+  {,
+    (VectorYZ) standComPosition, /**< The position of the center of mass relative to the right foot when standing */
+    (float) standBodyTilt, /**< The tilt of the torso when standing */
+    (Vector2<>) standArmJointAngles, /**< The joint angles of the left arm when standing */
+    (int) standHardnessAnklePitch, /**< The hardness of the ankle pitch joint for standing and walking */
+    (int) standHardnessAnkleRoll, /**< The hardness of the ankle roll joint for standing and walking */
 
-  LOADS_PARAMETER(Vector2<>, walkRef) /**< The position of the pendulum pivot point in Q */
-  LOADS_PARAMETER(Vector2<>, walkRefAtFullSpeedX) /**< The position of the pendulum pivot point when walking forwards with maximum speed */
-  LOADS_PARAMETER(Range<>, walkRefXPlanningLimit) /**< The limit for shifting the pendulum pivot point towards the x-axis when planning the next step size */
-  LOADS_PARAMETER(Range<>, walkRefXLimit) /**< The limit for shifting the pendulum pivot point towards the x-axis when balancing */
-  LOADS_PARAMETER(Range<>, walkRefYLimit) /**< The limit for shifting the pendulum pivot point towards the y-axis when balancing */
-  LOADS_PARAMETER(Range<>, walkStepSizeXPlanningLimit) /**< The minimum and maximum step size used to plan the next step size */
-  LOADS_PARAMETER(Range<>, walkStepSizeXLimit) /**< The minimum and maximum step size when balancing */
-  LOADS_PARAMETER(float, walkStepDuration) /**< the duration of a full step cycle (two half steps) */
-  LOADS_PARAMETER(float, walkStepDurationAtFullSpeedX) /**< the duration of a full step cycle when walking forwards with maximum speed */
-  LOADS_PARAMETER(float, walkStepDurationAtFullSpeedY) /**< the duration of a full step cycle when walking sidewards with maximum speed */
-  LOADS_PARAMETER(Vector2<>, walkHeight) /**< the height of the 3d linear inverted pendulum plane (for the pendulum motion towards the x-axis and the pendulum motion towards the y-axis) */
-  LOADS_PARAMETER(float, walkArmRotationAtFullSpeedX) /**< The maximum deflection for the arm swinging motion */
-  LOADS_PARAMETER(SubPhaseParameters, walkMovePhase) /**< The beginning and length of the trajectory used to move the swinging foot to its new position */
-  LOADS_PARAMETER(SubPhaseParameters, walkLiftPhase) /**< The beginning and length of the trajectory used to lift the swinging foot */
-  LOADS_PARAMETER(Vector3<>, walkLiftOffset) /**< The height the swinging foot is lifted */
-  LOADS_PARAMETER(Vector3<>, walkLiftOffsetAtFullSpeedX) /**< The height the swinging foot is lifted when walking full speed in x-direction */
-  LOADS_PARAMETER(Vector3<>, walkLiftOffsetAtFullSpeedY) /**< The height the swinging foot is lifted when walking full speed in y-direction */
-  LOADS_PARAMETER(Vector3<>, walkLiftRotation) /**< The amount the swinging foot is rotated while getting lifted */
-  LOADS_PARAMETER(float, walkSupportRotation) /**< A rotation added to the supporting foot to boost the com acceleration */
-  LOADS_PARAMETER(Vector3<>, walkComLiftOffset) /**< The height the center of mass is lifted within a single support phase */
-  LOADS_PARAMETER(float, walkComBodyRotation) /**< How much the torso is rotated to achieve the center of mass shift along the y-axis */
+    (Vector2<>) walkRef, /**< The position of the pendulum pivot point in Q */
+    (Vector2<>) walkRefAtFullSpeedX, /**< The position of the pendulum pivot point when walking forwards with maximum speed */
+    (Range<>) walkRefXPlanningLimit, /**< The limit for shifting the pendulum pivot point towards the x-axis when planning the next step size */
+    (Range<>) walkRefXLimit, /**< The limit for shifting the pendulum pivot point towards the x-axis when balancing */
+    (Range<>) walkRefYLimit, /**< The limit for shifting the pendulum pivot point towards the y-axis when balancing */
+    (Range<>) walkStepSizeXPlanningLimit, /**< The minimum and maximum step size used to plan the next step size */
+    (Range<>) walkStepSizeXLimit, /**< The minimum and maximum step size when balancing */
+    (float) walkStepDuration, /**< the duration of a full step cycle (two half steps) */
+    (float) walkStepDurationAtFullSpeedX, /**< the duration of a full step cycle when walking forwards with maximum speed */
+    (float) walkStepDurationAtFullSpeedY, /**< the duration of a full step cycle when walking sidewards with maximum speed */
+    (Vector2<>) walkHeight, /**< the height of the 3d linear inverted pendulum plane (for the pendulum motion towards the x-axis and the pendulum motion towards the y-axis) */
+    (float) walkArmRotationAtFullSpeedX, /**< The maximum deflection for the arm swinging motion */
+    (SubPhaseParameters) walkMovePhase, /**< The beginning and length of the trajectory used to move the swinging foot to its new position */
+    (SubPhaseParameters) walkLiftPhase, /**< The beginning and length of the trajectory used to lift the swinging foot */
+    (Vector3<>) walkLiftOffset, /**< The height the swinging foot is lifted */
+    (Vector3<>) walkLiftOffsetAtFullSpeedX, /**< The height the swinging foot is lifted when walking full speed in x-direction */
+    (Vector3<>) walkLiftOffsetAtFullSpeedY, /**< The height the swinging foot is lifted when walking full speed in y-direction */
+    (Vector3<>) walkLiftRotation, /**< The amount the swinging foot is rotated while getting lifted */
+    (float) walkSupportRotation, /**< A rotation added to the supporting foot to boost the com acceleration */
+    (Vector3<>) walkComLiftOffset, /**< The height the center of mass is lifted within a single support phase */
+    (float) walkComBodyRotation, /**< How much the torso is rotated to achieve the center of mass shift along the y-axis */
 
-  LOADS_PARAMETER(Pose2D, speedMax) /**< The maximum walking speed (in "size of two steps") */
-  LOADS_PARAMETER(float, speedMaxBackwards) /**< The maximum walking speed for backwards walking (in "size of two steps") */
-  LOADS_PARAMETER(Pose2D, speedMaxChange) /**< The maximum walking speed deceleration that is used to avoid overshooting of the walking target */
+    (Pose2D) speedMax, /**< The maximum walking speed (in "size of two steps") */
+    (float) speedMaxBackwards, /**< The maximum walking speed for backwards walking (in "size of two steps") */
+    (Pose2D) speedMaxChange, /**< The maximum walking speed deceleration that is used to avoid overshooting of the walking target */
 
-  LOADS_PARAMETER(bool, balance) /**< Whether sensory feedback should be used or not */
-  LOADS_PARAMETER(Vector2<>, balanceBodyRotation) /**< A  torso rotation p-control factor */
-  LOADS_PARAMETER(Vector2<>, balanceCom) /**< A measured center of mass position adoption factor */
-  LOADS_PARAMETER(Vector2<>, balanceComVelocity)  /**< A measured center of mass velocity adoption factor */
-  LOADS_PARAMETER(Vector2<>, balanceRef) /**< A pendulum pivot point p-control factor */
-  LOADS_PARAMETER(Vector2<>, balanceNextRef) /**< A pendulum pivot point of the upcoming single support phase p-control factor */
-  LOADS_PARAMETER(Vector2<>, balanceStepSize) /**< A step size i-control factor */
+    (bool) balance, /**< Whether sensory feedback should be used or not */
+    (Vector2<>) balanceCom, /**< A measured center of mass position adoption factor */
+    (Vector2<>) balanceComVelocity, /**< A measured center of mass velocity adoption factor */
+    (Vector2<>) balanceRef, /**< A pendulum pivot point p-control factor */
+    (Vector2<>) balanceNextRef, /**< A pendulum pivot point of the upcoming single support phase p-control factor */
+    (Vector2<>) balanceStepSize, /**< A step size i-control factor */
 
-  LOADS_PARAMETER(float, observerMeasurementDelay) /**< The delay between setting a joint angle and the ability of measuring the result */
-  LOADS_PARAMETER(Vector4f, observerProcessDeviation)  /**< The noise of the filtering process that estimates the position of the center of mass */
-  LOADS_PARAMETER(Vector2f, observerMeasurementDeviation) /**< The measurement uncertainty of the computed "measured" center of mass position */
+    (float) observerMeasurementDelay, /**< The delay between setting a joint angle and the ability of measuring the result */
+    (Vector4f) observerProcessDeviation, /**< The noise of the filtering process that estimates the position of the center of mass */
+    (Vector2f) observerMeasurementDeviation, /**< The measurement uncertainty of the computed "measured" center of mass position */
 
-  LOADS_PARAMETER(Pose2D, odometryScale) /**< A scaling factor for computed odometry data */
+    (Pose2D) odometryScale, /**< A scaling factor for computed odometry data */
 
-  /* Parameters to calculate the correction of the torso's angular velocity. */
-  LOADS_PARAMETER(float, gyroStateGain) /**< Control weight (P) of the torso's angular velocity error. */
-  LOADS_PARAMETER(float, gyroDerivativeGain) /**< Control weight (D) of the approximated rate of change of the angular velocity error. */
-  LOADS_PARAMETER(float, gyroSmoothing) /**< Smoothing (between 0 and 1!) to calculate the moving average of the y-axis gyro measurements. */
-
-  LOADS_PARAMETER(float, minRotationToReduceStepSize) /** I have no idea what im doing! Colin pls fix this! **/
-END_MODULE
+    // Parameters to calculate the correction of the torso's angular velocity.
+    (float) gyroStateGain, /**< Control weight (P) of the torso's angular velocity error. */
+    (float) gyroDerivativeGain, /**< Control weight (D) of the approximated rate of change of the angular velocity error. */
+    (float) gyroSmoothing, /**< Smoothing (between 0 and 1!) to calculate the moving average of the y-axis gyro measurements. */
+  }),
+});
 
 /**
 * A module that creates walking motions using a three-dimensional linear inverted pendulum
@@ -127,13 +137,6 @@ public:
   ~WalkingEngine() {theInstance = 0;}
 
 private:
-  /** Helper for optimizer. */
-  class Parameters : public WalkingEngineBase
-  {
-    void update(WalkingEngineOutput&) {}
-    void update(WalkingEngineStandOutput&) {}
-  };
-
   /**
   * The size of a single step
   */
@@ -182,9 +185,9 @@ private:
   );
 
   ENUM(PhaseType,
-    standPhase,
-    leftSupportPhase,
-    rightSupportPhase
+    standPhase = 0,
+    leftSupportPhase = 1,
+    rightSupportPhase = 2
   );
 
   class PendulumPhase
@@ -351,9 +354,6 @@ private:
   Vector3<> lastOdometryOrigin;
   Pose2D upcomingOdometryOffset;
 
-  static float asinh(float x);
-  static float atanh(float x);
-
   /**
   * A smoothed blend function with f(0)=0, f'(0)=0, f(1)=1, f'(1)=0, f(2)=0, f'(2)=0
   * @param x The function parameter [0...2]
@@ -361,45 +361,11 @@ private:
   */
   static float blend(float x);
 
-  // debug drawings
-  void declareDrawings(const WalkingEngineOutput& walkingEngineOutput) const;
-
   // The different coordinate systems
   void drawW() const;
   void drawP() const;
   void drawQ(const WalkingEngineOutput& walkingEngineOutput) const;
 
-  /*
-  void drawFootTrajectory(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawPreview(WalkRequest::KickType previewKickType, const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawSkeleton(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawSkeleton2(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawJoints(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawJoints2(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawPendulum(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawInvKin1(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawInvKin2(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawInvKin3(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseCenterOfMass(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseContactAreaLeft() const;
-  void drawShowcaseContactAreaRight() const;
-  void drawShowcaseSupportAreaLeft() const;
-  void drawShowcaseSupportAreaBoth(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseIpTrajectory(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseIp(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseIpSphere(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcase3dlipmPlane(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseSimpleIp(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseZmp(const WalkingEngineOutput& walkingEngineOutput) const;
-  void drawShowcaseFloorGrid(const Pose3D& torsoMatrix) const;
-  static const Vector3<> drawFootPoints[];
-  static const unsigned int drawNumOfFootPoints;
-  void drawComPlot();
-  Vector2<> drawComPlotOrigin;
-  Vector2<> drawComPlotLastR;
-  unsigned int drawComPlotState;
-  //unsigned int drawMeasurementDelay;
-  */
   static const Vector3<> drawFootPoints[];
   static const unsigned int drawNumOfFootPoints;
   void drawZmp();

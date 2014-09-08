@@ -9,46 +9,14 @@
 */
 
 #include "ObstacleCombinator.h"
+#include "Tools/Math/BHMath.h"
 
 void ObstacleCombinator::update(ObstacleModel& obstacleModel)
 {
   obstacleModel.obstacles = theUSObstacleModel.obstacles;
   addFootObstacles(obstacleModel);
   addArmObstacles(obstacleModel);
-
-  // Robot dimensions:
-  const float robotHeight = 580;
-  const float robotWidth  = 300; // Guessed value
-//  const float robotDepth  = 150; // Guessed value
-
-  // Add robot obstacles:
-  const float maxRobotDistanceSqr = (float) sqr(maxRobotDistance);
-  for(RobotsModel::RCIt robot = theRobotsModel.robots.begin(); robot != theRobotsModel.robots.end(); robot++)
-  {
-    const float robotDistanceSqr = robot->relPosOnField.squareAbs();
-    if(((!robot->standing && considerLyingRobots)
-        && robotDistanceSqr < maxRobotDistanceSqr && maxRobotDistanceSqr > 0.f) ||
-        ((robot->standing && considerStandingRobots)
-         && robotDistanceSqr < maxRobotDistanceSqr && maxRobotDistanceSqr > 0.f))
-    {
-      const float robotDistance = std::sqrt(robotDistanceSqr);
-      const float robotDistanceInv = 1.f / robotDistance;
-      const Vector2<> widthOffset((robot->standing ? robotWidth : robotHeight) * 0.5f, 0.0f);
-      const Vector2<>& robotCenter = robot->relPosOnField;
-      const Vector2<> robotCenterNorm = robotCenter * robotDistanceInv;
-      const Vector2<> closestRobotPoint = robotCenter * (1.f - widthOffset.x * robotDistanceInv);
-      Vector2<> vertDirLeft = robotCenterNorm * widthOffset.x;
-      vertDirLeft.rotateLeft();
-      const Vector2<> leftCorner = closestRobotPoint + vertDirLeft;
-      const Vector2<> rightCorner = closestRobotPoint - vertDirLeft;
-      obstacleModel.obstacles.push_back(ObstacleModel::Obstacle(leftCorner, rightCorner, robotCenter, closestRobotPoint,
-                                        robot->covariance, ObstacleModel::Obstacle::ROBOT));
-    }
-  }
-
-  EXECUTE_ONLY_IN_DEBUG(obstacleModel.draw3D(theTorsoMatrix););
 }
-
 
 // TODO add some parameters
 void ObstacleCombinator::addFootObstacles(ObstacleModel& obstacleModel)
@@ -75,7 +43,6 @@ void ObstacleCombinator::addFootObstacles(ObstacleModel& obstacleModel)
   }
 }
 
-
 void ObstacleCombinator::addArmObstacles(ObstacleModel& obstacleModel)
 {
   if(theFrameInfo.getTimeSince(theArmContactModel.timeOfLastContactLeft) < 2000)
@@ -87,7 +54,6 @@ void ObstacleCombinator::addArmObstacles(ObstacleModel& obstacleModel)
     addArmObstacle(obstacleModel, false, theArmContactModel.pushDirectionRight);
   }
 }
-
 
 // This implementation is quite simplistic and deliberately ignores odometry => but the approach works
 void ObstacleCombinator::addArmObstacle(ObstacleModel& obstacleModel, bool leftArm,
@@ -108,6 +74,5 @@ void ObstacleCombinator::addArmObstacle(ObstacleModel& obstacleModel, bool leftA
   obstacleModel.obstacles.push_back(ObstacleModel::Obstacle(leftCorner, rightCorner, center, closestPoint,
     covariance, ObstacleModel::Obstacle::ARM));
 }
-
 
 MAKE_MODULE(ObstacleCombinator, Modeling)

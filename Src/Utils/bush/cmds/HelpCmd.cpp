@@ -49,16 +49,16 @@ std::vector<std::string> HelpCmd::complete(const std::string& cmdLine) const
   size_t lastIdx = commandWithArgs.size() - 1;
 
   // indicates that we want to find a new parameter
-  if (*(--cmdLine.end()) == ' ')
+  if(*(--cmdLine.end()) == ' ')
   {
     ++lastIdx;
     commandWithArgs.push_back("");
   }
 
   std::vector<std::string> cmds = Commands::getInstance().getAllCommandNames();
-  for (size_t i = 0; i < cmds.size(); ++i)
+  for(size_t i = 0; i < cmds.size(); ++i)
   {
-    if (startsWidth(cmds[i], commandWithArgs[lastIdx]))
+    if(startsWidth(cmds[i], commandWithArgs[lastIdx]))
     {
       std::vector<std::string> v = commandWithArgs;
       v[lastIdx] = cmds[i];

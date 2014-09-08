@@ -47,7 +47,7 @@ MainWindow::MainWindow()
   console->resize(60, 500);
 
   teamSelector->loadTeams();
-  int widgetWidth = 1008;
+  int widgetWidth = 1200;
   int widgetHeight = 600;
   splitter->setMinimumWidth(200);
   QWidget::setMinimumHeight(widgetHeight);

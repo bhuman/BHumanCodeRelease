@@ -1,4 +1,0 @@
-#!/bin/sh
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname ${scriptPath})
-${basePath}/../Linux/copyfiles -nc $*

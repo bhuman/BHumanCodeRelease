@@ -2,14 +2,14 @@
 
   <Include href="NaoV4H21.rsi2"/>
   <!-- Include href="Ball2010SPL.rsi2"/ -->
-  <Include href="Field2013SPL.rsi2"/>
+  <Include href="Field2014SPL.rsi2"/>
 
   <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.01" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005" bodyCollisions="false">
     <!-- <QuickSolver iterations="100" skip="2"/>  -->
-  
+
     <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
 
-    <Compound name="robots">      
+    <Compound name="robots">
       <Body ref="Nao" name="robot1Red">
         <Translation x="-0.9" y="-3.2" z="320mm"/>
         <Rotation z="90degree"/>
@@ -35,7 +35,12 @@
         <Rotation z="90degree"/>
         <Set name="NaoColor" value="red"/>
       </Body>
-      
+      <Body ref="Nao" name="robot6Red">
+        <Translation x="-2.9" y="-3.2" z="320mm"/>
+        <Rotation z="90degree"/>
+        <Set name="NaoColor" value="red"/>
+      </Body>
+
       <Body ref="Nao" name="robot1Blue">
         <Translation x="0.9" y="-3.2" z="320mm"/>
         <Rotation z="90degree"/>
@@ -56,10 +61,14 @@
         <Translation x="2.5" y="-3.2" z="320mm"/>
         <Rotation z="90degree"/>
       </Body>
+      <Body ref="Nao" name="robot6Blue">
+        <Translation x="2.9" y="-3.2" z="320mm"/>
+        <Rotation z="90degree"/>
+      </Body>
 
     </Compound>
 
-    <Compound name="extras">      
+    <Compound name="extras">
     </Compound>
 
     <Compound name="balls">
@@ -71,6 +80,6 @@
     <Compound name="field">
       <Compound ref="field"/>
     </Compound>
-    
+
   </Scene>
 </Simulation>

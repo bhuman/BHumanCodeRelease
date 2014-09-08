@@ -33,7 +33,7 @@ public:
   }
 
   /** Draws the robot pose in the color of the team to the field view*/
-  void draw(bool teamRed),
+  void draw(),
 
   (float)(0) validity,                 /**< The validity of the robot pose. (0 = invalid, 1 = perfect) */
   (float)(unknownDeviation) deviation, /**< The deviation of the robot pose. */
@@ -61,11 +61,12 @@ public:
 STREAMABLE(RobotPoseCompressed,
 {
 public:
+  RobotPoseCompressed() = default;
   RobotPoseCompressed(const RobotPose& robotPose);
   operator RobotPose() const,
 
-  (Vector2<short>) translation,
-  (char) rotation,
+  (Vector2<>) translation,
+  (float) rotation,
   (unsigned char) validity,
   (float) deviation,
 });

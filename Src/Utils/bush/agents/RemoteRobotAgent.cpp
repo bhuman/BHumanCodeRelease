@@ -19,7 +19,7 @@ void communicate(TcpConnection& connection, MessageQueue& theDebugReceiver, Mess
   {
     OutBinarySize size;
     size << theDebugSender;
-    sendSize = size.getSize();
+    sendSize = (int) size.getSize();
     sendData = new unsigned char[sendSize];
     OutBinaryMemory stream(sendData);
     stream << theDebugSender;

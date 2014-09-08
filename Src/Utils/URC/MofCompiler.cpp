@@ -14,20 +14,17 @@
 #include <cstdarg>
 #include <cstring>
 
-#if defined(LINUX) || defined(_CYGWIN_) || defined (MACOSX)
+#if defined(LINUX) || defined(_CYGWIN_) || defined (OSX)
 #include <dirent.h>
 #include <string>
 #else
 #include <io.h>
 #endif
 
-
-#if defined(LINUX) || defined(_CYGWIN_) || defined(MACOSX)
+#if defined(LINUX) || defined(_CYGWIN_) || defined(OSX)
 #define _strdup strdup
 #define _vsnprintf vsnprintf
 #endif
-
-
 
 static const int MAXLAB = 5000;
 static int numOfLabels = 0;
@@ -51,7 +48,7 @@ static short file_startindex[MAXFIL];
 static int jumpTable[SpecialActionRequest::numOfSpecialActionIDs];
 
 static char* printBuffer;
-static int printBufferSize;
+static size_t printBufferSize;
 
 /**
 * The function replaces printf so that the output is written into a buffer.
@@ -153,24 +150,24 @@ static bool generateMotionNet()
 static bool parseMofs()
 {
   numOfFiles = 0;
-#ifndef WIN32
+#ifndef WINDOWS
   dirent* ff = 0;
   DIR* fd;
 #define FFNAME ff->d_name
 #else
   struct _finddata_t ff;
-  long fd;
+  intptr_t fd;
 #define FFNAME ff.name
 #endif
 
   char ffname[256];
-#ifndef WIN32
+#ifndef WINDOWS
   sprintf(ffname, "%s/Src/Modules/MotionControl/mof", File::getBHDir());
 #else
   sprintf(ffname, "%s/Src/Modules/MotionControl/mof/*.mof", File::getBHDir());
 #endif
   bool thereAreMore;
-#ifndef WIN32
+#ifndef WINDOWS
   if((fd = opendir(ffname)))
   {
     do
@@ -184,7 +181,6 @@ static bool parseMofs()
   {
     thereAreMore = false;
   }
-
 #else
   fd = _findfirst(ffname, &ff);
   thereAreMore = fd > 0;
@@ -218,7 +214,7 @@ static bool parseMofs()
           }
 
         char s[128000];
-        int siz = fread(s, 1, 128000, f);
+        size_t siz = fread(s, 1, 128000, f);
         fclose(f);
         if(siz > 0)
         {
@@ -427,7 +423,7 @@ static bool parseMofs()
         }
       }
     }
-#ifndef WIN32
+#ifndef WINDOWS
     if(fd)
     {
       do
@@ -467,7 +463,7 @@ static bool parseExternMof()
   else
   {
     char s[128000];
-    int siz = fread(s, 1, 128000, f);
+    size_t siz = fread(s, 1, 128000, f);
     fclose(f);
     if(siz > 0)
     {

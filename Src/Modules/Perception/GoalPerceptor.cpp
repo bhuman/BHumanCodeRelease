@@ -5,6 +5,7 @@
 */
 
 #include "GoalPerceptor.h"
+#include "Tools/Math/Transformation.h"
 #include <algorithm>
 
 void GoalPerceptor::update(GoalPercept& percept)
@@ -18,13 +19,11 @@ void GoalPerceptor::update(GoalPercept& percept)
   percept.goalPosts.clear();
 
   if(!theCameraMatrix.isValid)
-  {
     return;
-  }
 
   int scanHeight = std::max(1, (int)theImageCoordinateSystem.origin.y);
-  scanHeight = std::min(scanHeight, theImage.height-2);
-  LINE("module:GoalPerceptor:Spots", 1, scanHeight, theImage.width-1, scanHeight, 1, Drawings::ps_dash, ColorClasses::orange);
+  scanHeight = std::min(scanHeight, theImage.height - 2);
+  LINE("module:GoalPerceptor:Spots", 1, scanHeight, theImage.width - 1, scanHeight, 1, Drawings::ps_dash, ColorRGBA::orange);
 
   // find goal spots
   findSpots(scanHeight);
@@ -50,9 +49,9 @@ void GoalPerceptor::findSpots(const int& height)
       start = i;
       sum = 0;
       skipped = 0;
-      while (i < theImage.width && skipped < yellowSkipping)
+      while(i < theImage.width && skipped < horizontalSkippingHorizon)
       {
-        if (isYellow(i, height))
+        if(isYellow(i, height))
         {
           sum++;
           skipped = 0;
@@ -64,11 +63,12 @@ void GoalPerceptor::findSpots(const int& height)
         i++;
       }
 
-      if(sum > 0) // do not allow posts with width = 0
+      int width = i - skipped - start;
+      if(width >= minWidthHorizon && ((float)sum / width) >= connectionHorizon && (width >= lowerCameraMinWidth || theCameraInfo.camera == CameraInfo::Camera::upper))
       {
-        spots.push_back(Spot(start, i-skipped, height));
-        CROSS("module:GoalPerceptor:Spots", start, height, 2, 2, Drawings::ps_solid, ColorClasses::green);
-        CROSS("module:GoalPerceptor:Spots", i-skipped, height, 2, 2, Drawings::ps_solid, ColorClasses::blue);
+        spots.push_back(Spot(start, i - skipped, height));
+        CROSS("module:GoalPerceptor:Spots", start, height, 2, 2, Drawings::ps_solid, ColorRGBA::green);
+        CROSS("module:GoalPerceptor:Spots", i - skipped, height, 2, 2, Drawings::ps_solid, ColorRGBA::blue);
       }
     }
   }
@@ -85,63 +85,64 @@ void GoalPerceptor::verticalColorScanDown()
 
     while(mid.x != lastMid.x)
     {
-      int noGaps = 2;
-      for(baseY = mid.y+1; baseY < theImage.height-1; baseY++)
+      int skipped = 0;
+      for(baseY = mid.y + 1; baseY < theImage.height - 1; baseY++)
       {
         if(isYellow(mid.x, baseY))
         {
-          noGaps++;
-        } else if(noGaps > 1)  {
-          noGaps = 0;
-        } else {
-          baseY -= 2;
-          break;
+          skipped = 0;
+        }
+        else
+        {
+          if(++skipped > verticalSkippingUnderHorizon)
+          {
+            baseY -= skipped;
+            break;
+          }
         }
       }
-      LINE("module:GoalPerceptor:Scans", mid.x, mid.y, mid.x, baseY, 1, Drawings::ps_solid, ColorClasses::yellow);
+      LINE("module:GoalPerceptor:Scans", mid.x, mid.y, mid.x, baseY, 1, Drawings::ps_solid, ColorRGBA::red);
       lastMid = mid;
-      mid.y = mid.y + (baseY-mid.y)/2;
-      noGaps = 2;
+      mid.y = mid.y + (baseY - mid.y) / 2;
+      skipped = 0;
       int left = 1;
       for(int x = mid.x; x > 1; x--)
       {
         if(isYellow(x, mid.y))
         {
-          noGaps++;
-        }
-        else if(noGaps > 1)
-        {
-          noGaps = 0;
+          skipped = 0;
         }
         else
         {
-          left = x+2;
-          break;
+          if(++skipped > horizontalSkippingUnderHorizon)
+          {
+            left = x + skipped;
+            break;
+          }
         }
       }
-      noGaps = 2;
+      skipped = 0;
       width = theImage.width - left;
-      for(int x = mid.x; x < theImage.width-1; x++)
+      for(int x = mid.x; x < theImage.width - 1; x++)
       {
         if(isYellow(x, mid.y))
         {
-          noGaps++;
-        }
-        else if(noGaps > 1)
-        {
-          noGaps = 0;
+          skipped = 0;
         }
         else
         {
-          width = x-2 - left;
-          break;
+          if(++skipped > horizontalSkippingUnderHorizon)
+          {
+            width = x - skipped - left;
+            break;
+          }
         }
       }
       i->widths.push_back(width);
-      mid.x = left+width/2;
+      mid.x = left + width / 2;
     }
     i->base = Vector2<int>(mid.x, baseY + 1);
-    CROSS("module:GoalPerceptor:Scans", i->base.x, i->base.y, 2, 2, Drawings::ps_solid, ColorClasses::red);
+    CROSS("module:GoalPerceptor:Scans", i->base.x, i->base.y, 2, 2, Drawings::ps_solid, ColorRGBA::red);
   }
 }
 
@@ -154,76 +155,73 @@ void GoalPerceptor::verticalColorScanUp()
     int width = i->width;
     int initialWidth = 0;
     int topY = 0;
-    int left = i->mid.x-width/2;
-    int right = i->mid.x+width/2;
+    int left = i->mid.x - width / 2;
+    int right = i->mid.x + width / 2;
     int lastLeft;
     int lastRight;
     bool crossbarChecking = false;
 
     while(mid.y != lastMid.y)
     {
-      int noGaps = 2;
-      for(topY = mid.y-1; topY > 0; topY--)
+      int skipped = 0;
+      for(topY = mid.y - 1; topY > 0; topY--)
       {
         if(isYellow(mid.x, topY))
         {
-          noGaps++;
-        }
-        else if(noGaps > 1)
-        {
-          noGaps = 0;
+          skipped = 0;
         }
         else
         {
-          topY += 2;
-          break;
+          if(++skipped > verticalSkippingOverHorizon)
+          {
+            topY += skipped;
+            break;
+          }
         }
       }
-      LINE("module:GoalPerceptor:Scans", mid.x, mid.y, mid.x, topY, 1, Drawings::ps_solid, ColorClasses::yellow);
+      LINE("module:GoalPerceptor:Scans", mid.x, mid.y, mid.x, topY, 1, Drawings::ps_solid, ColorRGBA::red);
       lastMid = mid;
-      mid.y = mid.y - (mid.y-topY)/2;
-      noGaps = 2;
+      mid.y = mid.y - (mid.y - topY) / 2;
+      skipped = 0;
       lastLeft = left;
       lastRight = right;
       left = 1;
-      right = theImage.width-1;
+      right = theImage.width - 1;
       for(int x = mid.x; x > 1; x--)
       {
         if(isYellow(x, mid.y))
         {
-          noGaps++;
-        }
-        else if(noGaps > 1)
-        {
-          noGaps = 0;
+          skipped = 0;
         }
         else
         {
-          left = x+2;
-          break;
+          if(++skipped > horizontalSkippingOverHorizon)
+          {
+            left = x + skipped;
+            break;
+          }
         }
       }
-      noGaps = 2;
-      for(int x = mid.x; x < theImage.width-1; x++)
+      skipped = 0;
+      for(int x = mid.x; x < theImage.width - 1; x++)
       {
         if(isYellow(x, mid.y))
         {
-          noGaps++;
-        }
-        else if(noGaps > 1)
-        {
-          noGaps = 0;
+          skipped = 0;
         }
         else
         {
-          right = x-2;
-          width = right-left;
-          break;
+          if(++skipped > horizontalSkippingOverHorizon)
+          {
+            right = x - skipped;
+            width = right - left;
+            break;
+          }
         }
       }
       if(!initialWidth)
       {
-        if(lastLeft > 1 && lastRight < theImage.width-2)
+        if(lastLeft > 1 && lastRight < theImage.width - 2)
         {
           initialWidth = width;
           crossbarChecking = true;
@@ -231,27 +229,27 @@ void GoalPerceptor::verticalColorScanUp()
       }
       if(crossbarChecking)
       {
-        if(lastLeft-left > initialWidth && abs(right-lastRight) < initialWidth)
+        if(lastLeft - left > initialWidth && abs(right - lastRight) < initialWidth)
         {
           i->top = Vector2<int>(mid.x, topY);
           i->leftRight = GoalPost::Position::IS_RIGHT;
-          LINE("module:GoalPerceptor:Scans", mid.x, mid.y, left, mid.y, 1, Drawings::ps_solid, ColorClasses::yellow);
+          LINE("module:GoalPerceptor:Scans", mid.x, mid.y, left, mid.y, 1, Drawings::ps_solid, ColorRGBA::red);
           goto end_vcs_up;
         }
-        else if(right-lastRight > initialWidth && abs(left-lastLeft) < initialWidth)
+        else if(right - lastRight > initialWidth && abs(left - lastLeft) < initialWidth)
         {
           i->top = Vector2<int>(mid.x, topY);
           i->leftRight = GoalPost::Position::IS_LEFT;
-          LINE("module:GoalPerceptor:Scans", mid.x, mid.y, right, mid.y, 1, Drawings::ps_solid, ColorClasses::yellow);
+          LINE("module:GoalPerceptor:Scans", mid.x, mid.y, right, mid.y, 1, Drawings::ps_solid, ColorRGBA::red);
           goto end_vcs_up;
         }
       }
-      mid.x = left+width/2;
+      mid.x = left + width / 2;
     }
     i->leftRight = GoalPost::Position::IS_UNKNOWN;
-    end_vcs_up:
+  end_vcs_up:
     i->top = Vector2<int>(mid.x, topY + 1);
-    CROSS("module:GoalPerceptor:Scans", i->top.x, i->top.y, 2, 2, Drawings::ps_solid, ColorClasses::orange);
+    CROSS("module:GoalPerceptor:Scans", i->top.x, i->top.y, 2, 2, Drawings::ps_solid, ColorRGBA::orange);
   }
 }
 
@@ -259,24 +257,24 @@ void GoalPerceptor::calculatePosition(const int& height)
 {
   for(std::list<Spot>::iterator i = spots.begin(), end = spots.end(); i != end; ++i)
   {
-    if (i->base.y > theImage.height-5)
+    if(i->base.y > theImage.height - 5)
     {
       bool matching = false;
       Vector2<> lastPosition;
       if(theCameraInfo.camera == CameraInfo::upper)
       {
-        Vector2<int> projection;
+        Vector2<> projection;
         for(unsigned e = 0; e < lastPosts.size(); e++)
         {
           Vector2<> updated = lastPosts[e].position;
           updated = updated.rotate(-theOdometer.odometryOffset.rotation);
           updated -= theOdometer.odometryOffset.translation;
-          Geometry::calculatePointInImage(updated, theCameraMatrix, theCameraInfo, projection);
+          Transformation::robotToImage(updated, theCameraMatrix, theCameraInfo, projection);
           if(projection.x < i->end && projection.x > i->start)
           {
-            Vector2<int> intersection;
-            Geometry::Line l1 = Geometry::Line(Vector2<int>(i->start, height), (Vector2<int>(i->end, height) - Vector2<int>(i->start, height)));
-            Geometry::Line l2 = Geometry::Line(projection, (i->base - projection));
+            Vector2<> intersection;
+            Geometry::Line l1 = Geometry::Line(Vector2<>(static_cast<float>(i->start), static_cast<float>(height)), (Vector2<>(static_cast<float>(i->end), static_cast<float>(height)) - Vector2<>(static_cast<float>(i->start), static_cast<float>(height))));
+            Geometry::Line l2 = Geometry::Line(projection, (Vector2<>(static_cast<float>(i->base.x), static_cast<float>(i->base.y)) - projection));
             Geometry::getIntersectionOfLines(l1, l2, intersection);
             if(intersection.x < i->end && intersection.x > i->start)
             {
@@ -301,7 +299,7 @@ void GoalPerceptor::calculatePosition(const int& height)
     else
     {
       Vector2<> pCorrected = theImageCoordinateSystem.toCorrected(i->base);
-      Geometry::calculatePointOnField((int)pCorrected.x, (int)pCorrected.y, theCameraMatrix, theCameraInfo, i->position);
+      Transformation::imageToRobot(pCorrected.x, pCorrected.y, theCameraMatrix, theCameraInfo, i->position);
     }
   }
 }
@@ -309,15 +307,15 @@ void GoalPerceptor::calculatePosition(const int& height)
 // probability based evaluation
 void GoalPerceptor::validate()
 {
-  int distanceEvaluation;
-  int relationWidthToHeight;
-  int minimalHeight;
-  int belowFieldBorder;
-  int constantWidth;
-  int expectedWidth;
-  int expectedHeight;
-  int distanceToEachOther;
-  int matchingCrossbars;
+  bool distanceEvaluation;
+  bool minimalHeight;
+  bool belowFieldBorder;
+  bool constantWidth;
+  float relationWidthToHeight;
+  float expectedWidth;
+  float expectedHeight;
+  float distanceToEachOther;
+  float matchingCrossbars;
 
   int height;
   float value;
@@ -328,24 +326,38 @@ void GoalPerceptor::validate()
   {
     height = (i->base - i->top).abs();
 
-    // if goappost is too far away or too near this post gets 0 %
+    // if goalpost is too far away or too near this post gets 0 %
     i->position.abs() > maxDistance || i->position.abs() < theFieldDimensions.goalPostRadius ? distanceEvaluation = 0 : distanceEvaluation = 1;
 
     //min height
-    height < Geometry::getSizeByDistance(theCameraInfo, theFieldDimensions.goalHeight, maxDistance) ? minimalHeight = 0 : minimalHeight = 1;
+    if(theCameraInfo.camera == CameraInfo::Camera::upper)
+    {
+      height < Geometry::getSizeByDistance(theCameraInfo, theFieldDimensions.goalHeight, maxDistance) ? minimalHeight = 0 : minimalHeight = 1;
+    }
+    else
+    {
+      height < theImage.height * lowerCameraMinHeight ? minimalHeight = 0 : minimalHeight = 1;
+    }
 
-    //if goalpost base is above the fieldborde
+    //if goalpost base is above the fieldborder
     value = (float)theFieldBoundary.getBoundaryY(i->base.x);
-    i->base.y > value - (value / 20) ? belowFieldBorder = 1 : belowFieldBorder = 0;
+    i->base.y > value - underFieldBoundaryOffset ? belowFieldBorder = 1 : belowFieldBorder = 0;
 
     //if all width of the goalposts are alike
     constantWidth = 1;
-    for(int w : i->widths){if(w > i->width * 2) constantWidth = 0;}
+    for(int w : i->widths)
+    {
+      if(w > i->width * constantWidthToleranceFactor)
+      {
+        constantWidth = 0;
+        break;
+      }
+    }
 
     //gaolposts relation of height to width
     value = ((float)height) / i->width;
     expectedValue = theFieldDimensions.goalHeight / (theFieldDimensions.goalPostRadius * 2);
-    relationWidthToHeight = (int)(100 - (std::abs(expectedValue - value) / expectedValue) * 50);
+    relationWidthToHeight = std::max(0.0f, (float)(1 - ((std::abs(expectedValue - value) / expectedValue) / relationWidthToHeightToleranceFactor)));
 
     //ditance compared to width
     expectedValue = Geometry::getSizeByDistance(theCameraInfo, theFieldDimensions.goalPostRadius * 2, i->position.abs());
@@ -359,7 +371,7 @@ void GoalPerceptor::validate()
     {
       expectedValue -= ((expectedValue / 2) - ((theImage.width - 1) - i->base.x));
     }
-    expectedWidth = (int)(100 - (std::abs(expectedValue - i->width) / expectedValue) * 50);
+    expectedWidth = std::max(0.0f, (float)(1 - ((std::abs(expectedValue - i->width) / expectedValue) / expectedWidthToleranceFactor)));
 
     //ditance compared to height
     expectedValue = Geometry::getSizeByDistance(theCameraInfo, theFieldDimensions.goalHeight, i->position.abs());
@@ -373,10 +385,10 @@ void GoalPerceptor::validate()
     {
       expectedValue -= (expectedValue - ((theImage.height - 1) - i->top.y));
     }
-    expectedHeight = (int)(100 - (std::abs(expectedValue - height) / expectedValue) * 50);
+    expectedHeight = std::max(0.0f, (float)(1 - ((std::abs(expectedValue - height) / expectedValue) / expectedHeightToleranceFactor)));
 
-    distanceToEachOther = quality;
-    matchingCrossbars = quality;
+    distanceToEachOther = 1.0f;
+    matchingCrossbars = 1.0f;
     if(spots.size() > 1)
     {
       for(std::list<Spot>::iterator j = spots.begin(); j != spots.end(); j++)
@@ -386,40 +398,30 @@ void GoalPerceptor::validate()
           //distance to each other
           value = (float)(i->position - j->position).abs();
           expectedValue = std::abs(theFieldDimensions.yPosLeftGoal) * 2;
-          if((int)(100 - (std::abs(expectedValue - value) / expectedValue) * 50) > 75) distanceToEachOther = 75;
+          float currentDistanceToEachOther = std::max(0.0f, (float)(1 - ((std::abs(expectedValue - value) / expectedValue) / distanceToEachOtherToleranceFactor)));
+          currentDistanceToEachOther *= distanceToEachOtherBonusFactor;
+          if(currentDistanceToEachOther > distanceToEachOther)
+            distanceToEachOther = currentDistanceToEachOther;
 
           //matching crossbars
-          if((i->leftRight == GoalPost::IS_LEFT && j->leftRight == GoalPost::IS_RIGHT) || (i->leftRight == GoalPost::IS_RIGHT && j->leftRight == GoalPost::IS_LEFT)) matchingCrossbars = 75;
+          if((i->leftRight == GoalPost::IS_LEFT && j->leftRight == GoalPost::IS_RIGHT) || (i->leftRight == GoalPost::IS_RIGHT && j->leftRight == GoalPost::IS_LEFT))
+            matchingCrossbars = matchingCrossbarsBonusFactor;
         }
       }
     }
 
-    if(relationWidthToHeight < 0)
-      relationWidthToHeight *= 3;
-    if(expectedWidth < 0)
-      expectedWidth *= 3;
-    if(expectedHeight < 0)
-      expectedHeight *= 3;
+    i->validity = distanceEvaluation * minimalHeight * belowFieldBorder * constantWidth * relationWidthToHeight * expectedWidth * expectedHeight * distanceToEachOther * matchingCrossbars;
 
-    i->validity = ((relationWidthToHeight + expectedWidth + expectedHeight + distanceToEachOther + matchingCrossbars) / 5.0f) * distanceEvaluation * minimalHeight * belowFieldBorder * constantWidth;
-
-    int low = 0;
-    int high = 110;
-    MODIFY("module:GoalPerceptor:low", low);
-    MODIFY("module:GoalPerceptor:high", high);
-
-    if(i->validity < high && i->validity > low){
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y - 55, 10, ColorClasses::black, "distanceEvaluation: " << distanceEvaluation);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y - 44, 10, ColorClasses::black, "minimalHeight: " << minimalHeight);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y - 33, 10, ColorClasses::black, "belowFieldBorder: " << belowFieldBorder);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y - 22, 10, ColorClasses::black, "constantWidth: " << constantWidth);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y - 11, 10, ColorClasses::black, "relationWidthToHeight: " << relationWidthToHeight);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y     , 10, ColorClasses::black, "expectedWidth: " << expectedWidth);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y + 11, 10, ColorClasses::black, "expectedHeight: " << expectedHeight);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y + 22, 10, ColorClasses::black, "distanceToEachOther: " << distanceToEachOther);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y + 33, 10, ColorClasses::black, "matchingCrossbars: " << matchingCrossbars);
-      DRAWTEXT("module:GoalPerceptor:Validation", i->mid.x, i->mid.y + 44, 10, ColorClasses::black, "validity: " << i->validity);
-    }
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 80, 7, ColorRGBA::black, "distanceEvaluation: " << distanceEvaluation);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 72, 7, ColorRGBA::black, "minimalHeight: " << minimalHeight);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 64, 7, ColorRGBA::black, "belowFieldBorder: " << belowFieldBorder);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 56, 7, ColorRGBA::black, "constantWidth: " << constantWidth);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 48, 7, ColorRGBA::black, "relationWidthToHeight: " << relationWidthToHeight);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 40, 7, ColorRGBA::black, "expectedWidth: " << expectedWidth);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 32, 7, ColorRGBA::black, "expectedHeight: " << expectedHeight);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 24, 7, ColorRGBA::black, "distanceToEachOther: " << distanceToEachOther);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 16, 7, ColorRGBA::black, "matchingCrossbars: " << matchingCrossbars);
+    DRAWTEXT("module:GoalPerceptor:Validation", i->base.x, i->base.y - 8, 7, ColorRGBA::black, "validity: " << i->validity);
   }
   spots.sort();
 }
@@ -471,7 +473,7 @@ void GoalPerceptor::posting(GoalPercept& percept)
 
 inline bool GoalPerceptor::isYellow(const int& x, const int& y)
 {
-  return theColorReference.isYellow(&theImage[y][x]);
+  return theColorTable[theImage[y][x]].is(ColorClasses::yellow);
 }
 
 MAKE_MODULE(GoalPerceptor, Perception)

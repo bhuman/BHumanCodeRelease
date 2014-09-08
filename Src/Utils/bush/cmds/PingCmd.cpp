@@ -6,8 +6,7 @@
 #include <cstdlib>
 #include <QStringList>
 
-
-#ifdef WIN32
+#ifdef WINDOWS
 static QStringList getParams(const std::string &ip)
 {
   QStringList args;
@@ -24,7 +23,7 @@ bool PingCmd::PingTask::isReachable(ProcessRunner& r)
 static QStringList getParams(const std::string &ip)
 {
   QStringList args;
-#ifdef MACOSX
+#ifdef OSX
   args << QString("-c1") << QString("-t2") << fromString(ip);
 #else
   args << QString("-c1") << QString("-w2") << fromString(ip);
@@ -62,11 +61,10 @@ Task* PingCmd::perRobotExecution(Context &context, Robot &robot)
 
 PingCmd::PingTask::PingTask(Context &context, Robot *robot)
   : RobotTask(context, robot)
-{ }
+{}
 
 bool PingCmd::PingTask::execute()
 {
-
   QString command("ping");
   QStringList args;
   args = getParams(robot->getBestIP());

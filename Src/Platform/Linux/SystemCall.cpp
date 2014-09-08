@@ -11,6 +11,7 @@
 */
 
 #include "SystemCall.h"
+#include "Platform/File.h"
 #include "SoundPlayer.h"
 #include "BHAssert.h"
 #include <sys/sysinfo.h>
@@ -20,6 +21,7 @@
 #include <cstring>
 #include <pthread.h>
 #include <ctime>
+#include <sys/statvfs.h>
 
 unsigned SystemCall::base = 0;
 
@@ -119,10 +121,20 @@ void SystemCall::getLoad(float& mem, float load[3])
   }
 }
 
+unsigned long long SystemCall::getFreeDiskSpace(const char* path)
+{
+  std::string fullPath = File::isAbsolute(path) ? path : std::string(File::getBHDir()) + "/" + path;
+  struct statvfs data;
+  if(!statvfs(fullPath.c_str(), &data))
+    return data.f_bfree * data.f_bsize;
+  else
+    return 0;
+}
+
 void* SystemCall::alignedMalloc(size_t size, size_t alignment)
 {
   void* ptr;
-  if (!posix_memalign(&ptr, alignment, size))
+  if(!posix_memalign(&ptr, alignment, size))
   {
     return ptr;
   }
@@ -139,5 +151,8 @@ void SystemCall::alignedFree(void* ptr)
 
 int SystemCall::playSound(const char* name)
 {
+#ifdef TARGET_ROBOT
+  fprintf(stderr, "Playing %s\n", name);
+#endif
   return SoundPlayer::play(name);
 }

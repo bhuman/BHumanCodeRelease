@@ -22,6 +22,9 @@ public:
   STREAMABLE(Line,
   {
   public:
+    /** Default constructor. */
+    Line() = default;
+    
     /**
      * Constructor.
      * @param p1 The first endpoint of the line.
@@ -69,6 +72,12 @@ public:
     (Vector2<int>) p2, /**< The right point of the line. */
   });
 
+  /** Default constructor. */
+  BodyContour()
+  {
+    lines.reserve(50);
+  }
+
   /**
   * The method clips the bottom y coordinate of a vertical line.
   * @param x The x coordinate of the vertical line.
@@ -87,7 +96,6 @@ public:
   *        the image.
   */
   void clipBottom(int x, int& y, int imageHeight) const;
-
 
   /**
   * The method clips the left x coordinate of a horizonal line.
@@ -115,12 +123,15 @@ public:
    */
   int getMaxY() const;
 
+  /**
+   * Returns false if the given point is inside the bodycontour, true if not
+   * @return
+   */
+  bool isValidPoint(const Vector2<int>& point) const;
+
   /** Creates drawings of the contour. */
   void draw() const,
 
   (std::vector<Line>) lines, /**< The clipping lines. */
   (Vector2<int>) cameraResolution, /**< Only for drawing. */
-
-  // Initialization
-  lines.reserve(50);
 });

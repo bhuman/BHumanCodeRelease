@@ -13,6 +13,9 @@
 class TeamInfo : public RoboCup::TeamInfo, public Streamable
 {
 private:
+  using RoboCup::TeamInfo::penaltyShot; // Hide, because it is not streamed.
+  using RoboCup::TeamInfo::singleShots; // Hide, because it is not streamed.
+
   /**
   * The method makes the object streamable.
   * @param in The stream from which the object is read (if in != 0).
@@ -33,7 +36,6 @@ class OwnTeamInfo : public TeamInfo
 public:
   OwnTeamInfo();
   virtual void draw() const;
-
 };
 
 class OpponentTeamInfo : public TeamInfo

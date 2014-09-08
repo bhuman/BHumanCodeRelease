@@ -69,53 +69,6 @@ void OpenGLMethods::paintCubeToOpenGLList
   gluDeleteQuadric(pQuadric);
 }
 
-inline void OpenGLMethods::getColorClassColor(ColorClasses::Color colorClass,
-    unsigned char& r, unsigned char& g, unsigned char& b)
-{
-  switch(colorClass)
-  {
-  case ColorClasses::white:
-    r = 255;
-    g = 255;
-    b = 255;
-    break;
-  case ColorClasses::green:
-    r = 0;
-    g = 255;
-    b = 0;
-    break;
-  case ColorClasses::orange:
-    r = 255;
-    g = 127;
-    b = 64;
-    break;
-  case ColorClasses::yellow:
-    r = 255;
-    g = 255;
-    b = 0;
-    break;
-  case ColorClasses::blue:
-    r = 0;
-    g = 0;
-    b = 255;
-    break;
-  case ColorClasses::black:
-    r = 0;
-    g = 0;
-    b = 0;
-    break;
-  case ColorClasses::red:
-    r = 255;
-    g = 0;
-    b = 0;
-    break;
-  default:
-    r = 64;
-    g = 0;
-    b = 0;
-  }
-}
-
 void OpenGLMethods::paintImagePixelsToOpenGLList
 (
   const Image& image,
@@ -218,8 +171,8 @@ void OpenGLMethods::paintImagePixelsToOpenGLList
   ::glEndList();
 }
 
-void OpenGLMethods::paintColorReference(const ColorReference& colorReference,
-                                        ColorClasses::Color color, int listID)
+void OpenGLMethods::paintColorTable(const ColorTable& colorTable,
+                                    ColorClasses::Color color, int listID)
 {
   // Build a new list
   ::glNewList(listID, GL_COMPILE_AND_EXECUTE);
@@ -231,17 +184,17 @@ void OpenGLMethods::paintColorReference(const ColorReference& colorReference,
   float z00;
 
   Image::Pixel p;
-  const int step = 256 / colorReference.colorTableSize;
-  for(int colorSpaceY = 0; colorSpaceY < 256; colorSpaceY += step)
+  // subsampling of color table is independent from its real resolution
+  for(int colorSpaceY = 0; colorSpaceY < 256; colorSpaceY += 4)
   {
     p.y = (unsigned char) colorSpaceY;
-    for(int colorSpaceU = 0; colorSpaceU < 256; colorSpaceU += step)
+    for(int colorSpaceU = 0; colorSpaceU < 256; colorSpaceU += 4)
     {
       p.cb = (unsigned char) colorSpaceU;
-      for(int colorSpaceV = 0; colorSpaceV < 256; colorSpaceV += step)
+      for(int colorSpaceV = 0; colorSpaceV < 256; colorSpaceV += 4)
       {
         p.cr = (unsigned char) colorSpaceV;
-        if(colorReference.getColorClasses(&p) == color)
+        if(colorTable[p].is(color))
         {
           x   = (float)(-1.0f + colorSpaceV * tmp);
           y   = (float)(-1.0f + colorSpaceU * tmp);

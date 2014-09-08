@@ -20,32 +20,37 @@
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Math/Vector.h"
 #include "Tools/Math/Matrix.h"
+#include "Tools/RingBufferWithSum.h"
 
-MODULE(BallLocator)
-  REQUIRES(BallPercept)
-  REQUIRES(OdometryData)
-  REQUIRES(FrameInfo)
-  REQUIRES(FieldDimensions)
-  REQUIRES(CameraMatrix)
-  REQUIRES(CameraInfo)
-  REQUIRES(ImageCoordinateSystem)
-  REQUIRES(TorsoMatrix)
-  REQUIRES(RobotModel)
-  REQUIRES(RobotDimensions)
-  USES(BallModel)
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(BallModel)
-  DEFINES_PARAMETER(Vector4f, processDeviation, Vector4f(0.1f, 0.1f, 1.f, 1.f)) /**< The process noise. (petite) */
-  DEFINES_PARAMETER(Vector2<>, robotRotationDeviation, Vector2<>(0.02f, 0.08f)) /**< Deviation of the rotation of the robot's torso */
-  DEFINES_PARAMETER(Pose2D, odometryDeviation, Pose2D(0.5f, 0.5f, 0.5f)) /**< The percentage inaccuracy of the odometry */
-  DEFINES_PARAMETER(float, initialStateWeight, 0.1f) /**< The weight of newly created states (between >0 and <1) */
-  DEFINES_PARAMETER(Vector2<>, footOffset, Vector2<>(65.f, 0.f)) /**< Offset from foot ankle point to a "center" of the foot used for approximating the foot shape with a circle */
-  DEFINES_PARAMETER(float, footRadius, 50.f) /**< The raidus of the approximated foot shape */
-  DEFINES_PARAMETER(float, footMass, 0.1f) /**< An assumed mass for each foot (in kg) */
-  DEFINES_PARAMETER(float, ballMass, 0.05f) /**< The mass of the ball (in kg) */
-  DEFINES_PARAMETER(Vector2<>, kickDeviation, Vector2<>(1.f, 1.f)) /**< The percentage inaccuracy of passed velocities */
-  DEFINES_PARAMETER(unsigned, ballNotSeenTimeout, 200)
-  DEFINES_PARAMETER(unsigned, ballNotUpdatedTimeout, 8000)
-END_MODULE
+MODULE(BallLocator,
+{,
+  REQUIRES(BallPercept),
+  REQUIRES(OdometryData),
+  REQUIRES(FrameInfo),
+  REQUIRES(FieldDimensions),
+  REQUIRES(CameraMatrix),
+  REQUIRES(CameraInfo),
+  REQUIRES(ImageCoordinateSystem),
+  REQUIRES(TorsoMatrix),
+  REQUIRES(RobotModel),
+  REQUIRES(RobotDimensions),
+  USES(BallModel),
+  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(BallModel),
+  DEFINES_PARAMETERS(
+  {,
+    (Vector4f)(0.1f, 0.1f, 1.f, 1.f) processDeviation, /**< The process noise. (petite) */
+    (Vector2<>)(0.02f, 0.08f) robotRotationDeviation, /**< Deviation of the rotation of the robot's torso */
+    (Pose2D)(0.5f, 0.5f, 0.5f) odometryDeviation, /**< The percentage inaccuracy of the odometry */
+    (float)(0.1f) initialStateWeight, /**< The weight of newly created states (between >0 and <1) */
+    (Vector2<>)(65.f, 0.f) footOffset, /**< Offset from foot ankle point to a "center" of the foot used for approximating the foot shape with a circle */
+    (float)(50.f) footRadius, /**< The raidus of the approximated foot shape */
+    (float)(0.1f) footMass, /**< An assumed mass for each foot (in kg) */
+    (float)(0.05f) ballMass, /**< The mass of the ball (in kg) */
+    (Vector2<>)(1.f, 1.f) kickDeviation, /**< The percentage inaccuracy of passed velocities */
+    (unsigned)(200) ballNotSeenTimeout,
+    (unsigned)(8000) ballNotUpdatedTimeout,
+  }),
+});
 
 /**
  * @class BallLocator
@@ -102,6 +107,7 @@ private:
   unsigned firstDisappearance; /**< Time stamp of the last frame after which the ball disappearance was detected */
   bool ballWasBeenSeenInLastLowerCameraImage;
   bool ballWasSeenInThisFrame;
+  RingBufferWithSum<unsigned short, 60> seenStats; /**< Contains a 100 for time the ball was seen and 0 when it was not. */ 
 
   /**
   * Initialize something.

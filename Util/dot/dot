@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ "`uname`" = "Darwin" ]; then
+  export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+  export baseDir=$(dirname "${scriptPath}")
+  export GVBINDIR=$baseDir/OSX
+  "$GVBINDIR/dot" $@
+else 
+  export PATH=$PATH:/usr/local/bin
+  dot=$(which dot 2> /dev/null)
+  retVal=$?
+  if [ ${retVal} -eq 0 ]; then
+    $dot $@
+  else
+    echo "dot executable was not found" >&2
+    echo "Install graphviz or check your PATH environment variable" >&2
+  fi
+fi

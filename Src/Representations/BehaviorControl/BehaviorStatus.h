@@ -5,7 +5,9 @@
 */
 
 #pragma once
+#include "Representations/BehaviorControl/Role.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Enum.h"
 
 /**
 * @class BehaviorStatus
@@ -14,17 +16,13 @@
 STREAMABLE(BehaviorStatus,
 {
 public:
-  ENUM(Role,
-    striker,
-    defender,
-    keeper
-  );
-
   ENUM(TeamColor,
     red,
     blue
-  );
-  ,
-  (TeamColor)(red) teamColor,
-  (Role)(striker) role,
+  ),
+
+  (Role, RoleType) (striker) role,
+  (TeamColor) (red) teamColor,
+
+  (float) (999999.f) estimatedTimeToReachBall,
 });

@@ -1,0 +1,6 @@
+Build
+Make/SimRobot.xcodeproj/project.xcworkspace
+Make/SimRobot.xcodeproj/xcuserdata
+Make/*.*sdf
+Make/*.suo
+Util/qt/OSX/bin/qt.conf

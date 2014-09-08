@@ -266,7 +266,7 @@ enum LBHActuatorIds
 enum LBHTeamInfoIds
 {
   teamNumber,
-  teamColour,
+  teamColor,
   playerNumber,
   lbhNumOfTeamInfoIds
 };

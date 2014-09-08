@@ -26,9 +26,6 @@
 #include <ode/common.h>
 #include <ode/collision_space.h>
 #include <ode/contact.h>
-// Include odeinit.h for backward compatibility as some of initialization APIs 
-// were initally declared in current header.
-#include <ode/odeinit.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -424,7 +421,7 @@ enum
 
 enum
 {
-	dGeomColliderMergeContactsValue__Default = 0, // Used with Set... to restore default value
+    dGeomColliderMergeContactsValue__Default = 0, /* Used with Set... to restore default value*/
 	dGeomColliderMergeContactsValue_None = 1,
 	dGeomColliderMergeContactsValue_Normals = 2,
 	dGeomColliderMergeContactsValue_Full = 3
@@ -892,7 +889,7 @@ enum {
   dFirstSpaceClass,
   dSimpleSpaceClass = dFirstSpaceClass,
   dHashSpaceClass,
-  dSweepAndPruneSpaceClass, // SAP
+  dSweepAndPruneSpaceClass, /* SAP */
   dQuadTreeSpaceClass,
   dLastSpaceClass = dQuadTreeSpaceClass,
 
@@ -964,7 +961,7 @@ ODE_API dReal dGeomSphereGetRadius (dGeomID sphere);
 ODE_API dReal dGeomSpherePointDepth (dGeomID sphere, dReal x, dReal y, dReal z);
 
 
-//--> Convex Functions
+/*--> Convex Functions*/
 ODE_API dGeomID dCreateConvex (dSpaceID space,
 			       dReal *_planes,
 			       unsigned int _planecount,
@@ -976,7 +973,7 @@ ODE_API void dGeomSetConvex (dGeomID g,
 			     unsigned int _count,
 			     dReal *_points,
 			     unsigned int _pointcount,unsigned int *_polygons);
-//<-- Convex Functions
+/*<-- Convex Functions*/
 
 /**
  * @defgroup collide_box Box Class
@@ -1053,7 +1050,7 @@ ODE_API void dGeomCapsuleSetParams (dGeomID ccylinder, dReal radius, dReal lengt
 ODE_API void dGeomCapsuleGetParams (dGeomID ccylinder, dReal *radius, dReal *length);
 ODE_API dReal dGeomCapsulePointDepth (dGeomID ccylinder, dReal x, dReal y, dReal z);
 
-// For now we want to have a backwards compatible C-API, note: C++ API is not.
+/* For now we want to have a backwards compatible C-API, note: C++ API is not.*/
 #define dCreateCCylinder dCreateCapsule
 #define dGeomCCylinderSetParams dGeomCapsuleSetParams
 #define dGeomCCylinderGetParams dGeomCapsuleGetParams
@@ -1096,7 +1093,7 @@ ODE_API int dGeomTransformGetInfo (dGeomID g);
 /* heightfield functions */
 
 
-// Data storage for heightfield data.
+/* Data storage for heightfield data.*/
 struct dxHeightfieldData;
 typedef struct dxHeightfieldData* dHeightfieldDataID;
 
@@ -1471,7 +1468,7 @@ ODE_API int dBoxTouchesBox (const dVector3 _p1, const dMatrix3 R1,
 		    const dVector3 side1, const dVector3 _p2,
 		    const dMatrix3 R2, const dVector3 side2);
 
-// The meaning of flags parameter is the same as in dCollide()
+/* The meaning of flags parameter is the same as in dCollide()*/
 ODE_API int dBoxBox (const dVector3 p1, const dMatrix3 R1,
 	     const dVector3 side1, const dVector3 p2,
 	     const dMatrix3 R2, const dVector3 side2,

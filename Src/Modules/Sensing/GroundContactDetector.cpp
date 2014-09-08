@@ -25,6 +25,15 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
   DECLARE_PLOT("module:GroundContactDetector:gyroNoiseY");
 
   MODIFY("module:GroundContactDetector:contact", contact);
+
+  if(theMotionInfo.motion == MotionRequest::getUp) //hack to avoid long pause after get up 
+  {
+    contact = true;
+    useAngle = false;
+    groundContactState.contact = contact;
+    contactStartTime = theFrameInfo.time;
+  }
+
   bool ignoreSensors = (theMotionInfo.motion != MotionRequest::walk && theMotionInfo.motion != MotionRequest::stand &&
                         theMotionInfo.motion != MotionRequest::specialAction && theMotionInfo.motion != MotionRequest::getUp) ||
                        (theMotionRequest.motion != MotionRequest::walk && theMotionRequest.motion != MotionRequest::stand &&
@@ -62,10 +71,8 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
         accValues.clear();
         gyroValues.clear();
         angleNoises.clear();
-#ifndef TARGET_SIM
-        if(contactStartTime != 0)
+        if(SystemCall::getMode() == SystemCall::physicalRobot && contactStartTime != 0)
           SystemCall::playSound("high.wav");
-#endif
       }
     }
     else

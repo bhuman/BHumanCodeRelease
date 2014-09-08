@@ -8,10 +8,11 @@
 
 #pragma once
 
-#include "SimRobot.h"
+#include <SimRobot.h>
 #include <unordered_map>
 #include <string>
 #include <QIcon>
+
 class RobotConsole;
 class TimeInfo;
 class QWidget;
@@ -36,7 +37,6 @@ public:
   */
   TimeView(const QString& fullName, RobotConsole& console, const TimeInfo& info);
 
-
 private:
   const QString fullName; /**< The path to this view in the scene graph */
   const QIcon icon; /**< The icon used for listing this view in the scene graph */
@@ -55,5 +55,4 @@ private:
 
   friend class TimeWidget;//TimeWidget needs access to console
 };
-
 

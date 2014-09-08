@@ -104,15 +104,15 @@ void TeamView::generateRobotViews(QGridLayout* teamGrid)
   for(size_t j = 0; j < 2; ++j)
     for(size_t i = 0; i < max; ++i)
     {
-      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short) (i + 1), (unsigned short) j);
+      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short) i, (unsigned short) j);
       robotViews.push_back(rv);
-      teamGrid->addWidget(rv, j > 0 ? 2 : 0, i);
+      teamGrid->addWidget(rv, j > 0 ? 2 : 0, (int) i);
     }
   if(backup)
   {
     QFrame* hr = new QFrame(this);
     hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
-    teamGrid->addWidget(hr, 1, 0, 1, max);
+    teamGrid->addWidget(hr, 1, 0, 1, (int) max);
   }
 }
 
@@ -129,7 +129,8 @@ void TeamView::colorChanged(const QString& color)
 
 void TeamView::numberChanged(int number)
 {
-  if(team){
+  if(team)
+  {
     team->number = (unsigned short) number;
     team->port = (unsigned short) (10001 + 100 * number);
   }

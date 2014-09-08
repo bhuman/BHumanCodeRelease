@@ -9,7 +9,6 @@
 
 #include "OdometryOnlySelfLocator.h"
 
-
 void OdometryOnlySelfLocator::update(RobotPose& robotPose)
 {
   Pose2D offset = theOdometryData - referenceOdometry;
@@ -20,8 +19,6 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
   {
     referenceOdometry = theOdometryData;
   });
-  EXECUTE_ONLY_IN_DEBUG(robotPose.draw(false););
 }
-
 
 MAKE_MODULE(OdometryOnlySelfLocator, Modeling)

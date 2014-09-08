@@ -219,7 +219,6 @@ void InertiaSensorCalibrator::update(InertiaSensorData& inertiaSensorData)
     inertiaSensorData.acc.z *= theSensorCalibration.accZGain;
   }
 
-
   MODIFY("module:InertiaSensorCalibrator:calibrated", calibrated);
   MODIFY("module:InertiaSensorCalibrator:gyroXBias", gyroXBias.value);
   MODIFY("module:InertiaSensorCalibrator:gyroYBias", gyroYBias.value);

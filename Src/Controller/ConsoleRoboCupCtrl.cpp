@@ -6,13 +6,15 @@
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 
+#include "ConsoleRoboCupCtrl.h"
+
 #include <QDir>
+#include <QDirIterator>
 #include <QInputDialog>
 #include <QSettings>
 
 #include <algorithm>
 
-#include "ConsoleRoboCupCtrl.h"
 #include "LocalRobot.h"
 #include "Controller/Views/ConsoleView.h"
 #include "Controller/Views/CABSLGraphView.h"
@@ -27,10 +29,10 @@
 
 ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application)
   : RoboCupCtrl(application),
-    mode(SystemCall::simulatedRobot),
     calculateImage(true),
     calculateImageFps(FRAMES_PER_SECOND),
     globalNextImageTimeStamp(0),
+    mode(SystemCall::simulatedRobot),
     INIT_TEAM_COMM,
     timeStamp(0),
     robotNumber(-1),
@@ -56,12 +58,14 @@ ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application)
 
   representationToFile["parameters:BodyContourProvider"] = "bodyContourProvider.cfg";
   representationToFile["representation:CameraCalibration"] = "cameraCalibration.cfg";
-  representationToFile["representation:CameraSettings"] = "cameraSettings.cfg";
+  representationToFile["representation:UpperCameraSettings"] = "upperCameraSettings.cfg";
+  representationToFile["representation:LowerCameraSettings"] = "lowerCameraSettings.cfg";
   representationToFile["representation:JointCalibration"] = "jointCalibration.cfg";
   representationToFile["representation:MassCalibration"] = "massCalibration.cfg";
   representationToFile["representation:RobotDimensions"] = "robotDimensions.cfg";
   representationToFile["representation:SensorCalibration"] = "sensorCalibration.cfg";
-  representationToFile["parameters:ColorProvider"] = "colorProvider.cfg";
+  representationToFile["representation:CameraIntrinsics"] = "cameraIntrinsics.cfg";
+  representationToFile["parameters:WalkingEngine"] = "walkingEngine.cfg";
 }
 
 bool ConsoleRoboCupCtrl::compile()
@@ -76,14 +80,14 @@ bool ConsoleRoboCupCtrl::compile()
   Global::theStreamHandler = &streamHandler;
 
   std::string fileName = application->getFilePath().
-#ifdef WIN32
+#ifdef WINDOWS
   toLatin1
 #else
   toUtf8
 #endif
   ().constData();
-  int p = fileName.find_last_of("\\/"),
-      p2 = fileName.find_last_of(".");
+  std::string::size_type p = fileName.find_last_of("\\/"),
+                         p2 = fileName.find_last_of(".");
   if(p2 > p)
     fileName = fileName.substr(0, p2);
   executeFile(fileName.c_str(), false, 0);
@@ -119,7 +123,6 @@ void ConsoleRoboCupCtrl::link()
 
 ConsoleRoboCupCtrl::~ConsoleRoboCupCtrl()
 {
-
   for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
     (*i)->announceStop();
   for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
@@ -156,7 +159,7 @@ void ConsoleRoboCupCtrl::update()
   Global::theStreamHandler = &streamHandler;
   ntp.doSynchronization(SystemCall::getRealSystemTime(), theTeamSender.out);
   theTeamHandler.send();
-  theTeamHandler.receive();
+  (void) theTeamHandler.receive();
   theTeamReceiver.handleAllMessages(*this);
   theTeamReceiver.clear();
   for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
@@ -228,6 +231,17 @@ void ConsoleRoboCupCtrl::pressedKey(int key, bool pressed)
   if(key > 10)
     for(std::list<RobotConsole*>::iterator i = selected.begin(); i != selected.end(); ++i)
       (*i)->handleKeyEvent(key - 11, pressed);
+}
+
+SystemCall::Mode ConsoleRoboCupCtrl::getMode() const
+{
+  size_t threadId = Thread<ProcessBase>::getCurrentId();
+  for(std::list<Robot*>::const_iterator i = robots.begin(); i != robots.end(); ++i)
+    if((*i)->getRobotProcess())
+      for(ProcessList::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j)
+        if((*j)->getId() == threadId)
+          return (*i)->getRobotProcess()->mode;
+  return mode;
 }
 
 void ConsoleRoboCupCtrl::setRepresentation(const std::string representationName, const Streamable& representation)
@@ -445,16 +459,17 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  st off | on : Switch simulation of time on or off.", pattern, true);
   list("  # <text> : Comment.", pattern, true);
   list("Robot commands:", pattern, true);
-  list("  ac ? | [<imageView>] (lower | upper | both) : Change the camera that is used in the specified image view. / Change the process that provides drawings in the field and 3d views.", pattern, true);
+  list("  ac ? | ( both | lower | upper ) [ ? ] | (lower | upper ) ( ? | <imageView> ) : Change camera source shown in field views or in a specific image view.", pattern, true);
   list("  bc <red%> <green%> <blue%> : Set the background color of all 3-D views.", pattern, true);
-  list("  bike : Adds the BIKE view.", pattern, true);
+  list("  kick : Adds the KickEngine view.", pattern, true);
   list("  dr ? [<pattern>] | off | <key> ( off | on ) : Send debug request.", pattern, true);
   list("  get ? [<pattern>] | <key> [?]: Show debug data or show its specification.", pattern, true);
   list("  jc hide | show | motion <num> <command> | ( press | release ) <button> <command> : Set joystick motion (use $1 .. $6) or button command.", pattern, true);
   list("  jm <axis> ( off | <button> <button> ) : Map two buttons on an axis.", pattern, true);
   list("  js <axis> <speed> <threshold> [<center>] : Set axis maximum speed and ignore threshold for \"jc motion <num>\" commands.", pattern, true);
   list("  log start | stop | clear | save <file> | full | jpeg : Record log file and (de)activate image compression.", pattern, true);
-  list("  log saveImages (raw) <file> : Save images from log.", pattern, true);
+  list("  log saveAudio <file> : Save audio data from log.", pattern, true);
+  list("  log saveImages [raw] <file> : Save images from log.", pattern, true);
   list("  log saveTiming <file> : Save timing data from log to csv.", pattern, true);
   list("  log ? | load <file> | ( keep | remove ) <message> {<message>} : Load, filter, and display information about log file.", pattern, true);
   list("  log start | pause | stop | forward [image] | backward [image] | repeat | goto <number> | cycle | once | fast_forward | fast_rewind : Replay log file.", pattern, true);
@@ -469,11 +484,11 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  set ? [<pattern>] | <key> ( ? | unchanged | <data> ) : Change debug data or show its specification.", pattern, true);
   list("  save ? [<pattern>] | <key> [<path>] : Save debug data to a configuration file.", pattern, true);
   list("  si reset | (upper | lower) [number] <file> : Save the upper/lower cams image.", pattern, true);
-  list("  v3 ? [<pattern>] | <image> [jpeg] [<name>] : Add a set of 3-D views for a certain image.", pattern, true);
+  list("  v3 ? [<pattern>] | <image> [jpeg] [upper] [<name>] : Add a set of 3-D views for a certain image.", pattern, true);
   list("  vd <debug data> on | off : Show debug data in a window or switch sending it off.", pattern, true);
   list("  vf <name> : Add field view.", pattern, true);
   list("  vfd ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in field view.", pattern, true);
-  list("  vi ? [<pattern>] | <image> [jpeg] [segmented] [upperCam] [<name>] [gain <value>] : Add image view.", pattern, true);
+  list("  vi ? [<pattern>] | <image> [jpeg] [segmented] [upper] [<name>] [gain <value>] : Add image view.", pattern, true);
   list("  vid ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in image view.", pattern, true);
   list("  vp <name> <numOfValues> <minValue> <maxValue> [<yUnit> <xUnit> <xScale>]: Add plot view.", pattern, true);
   list("  vpd ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( ? [<pattern>] | <color> [<description>] | off ) ) : Plot data in a certain color in plot view.", pattern, true);
@@ -641,7 +656,7 @@ void ConsoleRoboCupCtrl::createCompletion()
     "ar off",
     "ar on",
     "bc",
-    "bike",
+    "kick",
     "call",
     "ci off",
     "ci on",
@@ -660,9 +675,10 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log start",
     "log stop",
     "log save",
+    "log saveAudio",
     "log saveImages",
-    "log saveTiming",
     "log saveImages raw",
+    "log saveTiming",
     "log clear",
     "log full",
     "log jpeg",
@@ -705,13 +721,14 @@ void ConsoleRoboCupCtrl::createCompletion()
     "st off",
     "st on",
     "tc",
-    "v3 image jpeg",
+    "v3 image upper",
+    "v3 image jpeg upper",
     "vf",
     "vi none",
     "vi image jpeg segmented",
     "vi image segmented",
-    "vi image upperCam jpeg segmented",
-    "vi image upperCam segmented",
+    "vi image upper jpeg segmented",
+    "vi image upper segmented",
     "wek"
   };
 
@@ -740,11 +757,13 @@ void ConsoleRoboCupCtrl::createCompletion()
 
   if(moduleInfo)
   {
-    for(std::list<ModuleInfo::Provider>::const_iterator i = moduleInfo->providers.begin(); i != moduleInfo->providers.end(); ++i)
+    for(const auto& r : moduleInfo->representations)
     {
-      completion.insert(std::string("mr ") + i->representation + " off");
-      for(std::vector<std::string>::const_iterator j = i->modules.begin(); j != i->modules.end(); ++j)
-        completion.insert(std::string("mr ") + i->representation + " " + *j);
+      completion.insert(std::string("mr ") + r + " default");
+      completion.insert(std::string("mr ") + r + " off");
+      for(const auto& m : moduleInfo->modules)
+        if(std::find(m.representations.begin(), m.representations.end(), r) != m.representations.end())
+          completion.insert(std::string("mr ") + r + " " + m.name);
     }
   }
 
@@ -756,9 +775,12 @@ void ConsoleRoboCupCtrl::createCompletion()
       completion.insert(std::string("dr ") + translate(debugRequestTable->debugRequests[i].description) + " off");
       if(debugRequestTable->debugRequests[i].description.substr(0, 13) == "debug images:")
       {
-        completion.insert(std::string("v3 ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg segmented");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " segmented");
+        completion.insert(std::string("v3 ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " upper");
+        completion.insert(std::string("v3 ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg upper");
+        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " upper");
+        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " segmented upper");
+        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg upper");
+        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg segmented upper");
       }
       else if(debugRequestTable->debugRequests[i].description.substr(0, 11) == "debug data:")
       {
@@ -798,10 +820,11 @@ void ConsoleRoboCupCtrl::createCompletion()
       for(int j = 0; j < debugRequestTable->currentNumberOfDebugRequests; ++j)
         if(translate(debugRequestTable->debugRequests[j].description).substr(0, 5) == "plot:")
         {
-          for(int color = 1; color < ColorClasses::numOfColors; ++color)
+          static const char* colors[] = {"black", "red", "green", "blue", "yellow", "cyan", "magenta", "orange"};
+          for(unsigned color = 0; color < sizeof(colors) / sizeof(*colors); ++color)
             completion.insert(std::string("vpd ") + i->first + " " +
                               translate(debugRequestTable->debugRequests[j].description).substr(5) + " " +
-                              translate(ColorClasses::getName((ColorClasses::Color) color)));
+                              colors[color]);
           completion.insert(std::string("vpd ") + i->first + " " +
                             translate(debugRequestTable->debugRequests[j].description).substr(5) + " off");
         }
@@ -810,12 +833,11 @@ void ConsoleRoboCupCtrl::createCompletion()
       i != representationToFile.end(); ++i)
     completion.insert(std::string("save ") + i->first);
 
-
   if(imageViews)
     for(RobotConsole::Views::const_iterator v = imageViews->begin(); v != imageViews->end(); ++v)
     {
-      completion.insert(std::string("ac ") + translate(v->first) + " upper");
-      completion.insert(std::string("ac ") + translate(v->first) + " lower");
+      completion.insert(std::string("ac lower ") + translate(v->first));
+      completion.insert(std::string("ac upper ") + translate(v->first));
     }
 
   gameController.addCompletion(completion);
@@ -853,8 +875,8 @@ void ConsoleRoboCupCtrl::completeConsoleCommand(std::string& command, bool forwa
     command = command.substr(0, command.size() - 1);
   }
   std::string constantPart;
-  int n = command.find_last_of(separators);
-  if(n != -1)
+  std::string::size_type n = command.find_last_of(separators);
+  if(n != std::string::npos)
     constantPart = command.substr(0, n + 1);
 
   if(forward)
@@ -886,7 +908,7 @@ void ConsoleRoboCupCtrl::completeConsoleCommand(std::string& command, bool forwa
     command = command.substr(1);
   n = command.find_first_of(separators);
   char separator2 = ' ';
-  if(n == -1)
+  if(n == std::string::npos)
     n = command.size();
   else
     separator2 = command[n];
@@ -954,12 +976,12 @@ bool ConsoleRoboCupCtrl::handleMessage(InMessage& message)
   }
 }
 
-
 void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
 {
   QString qstrCommand(command.c_str());
   QRegExp re("\\$\\{([^\\}]*)\\}", Qt::CaseSensitive, QRegExp::RegExp2);
-  while(re.indexIn(qstrCommand) != -1)
+  bool ok = true;
+  while(ok && re.indexIn(qstrCommand) != -1)
   {
     QStringList list = re.cap(1).split(',');
     QString label = list.takeFirst();
@@ -967,7 +989,7 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
     if(list.isEmpty())
     {
       // ${Text input:}
-      input = QInputDialog::getText(0, "Input", label);
+      input = QInputDialog::getText(0, "Input", label, QLineEdit::Normal, "", &ok);
     }
     else if(list.length() == 1)
     {
@@ -976,27 +998,30 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
       const int lastSlashIdx = qpattern.lastIndexOf('/');
 
       QDir qdir(qpattern.left(lastSlashIdx));
-
-      QRegExp regExp(qpattern.right(qpattern.size() - lastSlashIdx - 1).replace(".", "\\.").replace("*", ".*"));
-
-      QStringList filenames = qdir.entryList(QDir::Files);
-      for(int i = 0; i < filenames.size(); i++)
+      qdir.setFilter(QDir::Files | QDir::Dirs | QDir::NoDot | QDir::NoDotDot);
+      QStringList qsl;
+      qsl.append(qpattern.right(qpattern.size() - lastSlashIdx - 1));
+      qdir.setNameFilters(qsl);
+      QDirIterator it(qdir, QDirIterator::Subdirectories);
+      while(it.hasNext())
       {
-        if(regExp.exactMatch(filenames[i]))
-        {
-          filenames[i].chop(filenames[i].size() - filenames[i].lastIndexOf("."));
-          list.append(filenames[i]);
-        }
+        QString filename = it.next().remove(0, lastSlashIdx + 1);
+        filename.chop(filename.size() - filename.lastIndexOf("."));
+        list.append(filename);
       }
+
       // ${Select Logfile:,../Logs/*.log}
-      input = QInputDialog::getItem(0, "Input", label, list);
+      input = QInputDialog::getItem(0, "Input", label, list, 0, true, &ok);
     }
     else
     {
       // ${Select Robot:,Leonard,Rajesh,Lenny}
-      input = QInputDialog::getItem(0, "Input", label, list);
+      input = QInputDialog::getItem(0, "Input", label, list, 0, true, &ok);
     }
     qstrCommand.replace(re.cap(0), input);
   }
-  command = std::string(qstrCommand.toUtf8().constData());
+  if(ok)
+    command = std::string(qstrCommand.toUtf8().constData());
+  else
+    command = "";
 }

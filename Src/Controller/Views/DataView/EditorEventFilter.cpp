@@ -15,9 +15,9 @@ EditorEventFilter::EditorEventFilter(QObject* pParent, DataView* pView, QWidget*
 
 bool EditorEventFilter::eventFilter(QObject *obj, QEvent *event)
 {
-  if (NULL != pTheView &&
-      (event->type() == QEvent::FocusIn || event->type() == QEvent::Paint ||
-       event->type() == QEvent::FocusOut || event->type() == QEvent::LayoutRequest)) // prevent sending events after death
+  if(NULL != pTheView &&
+     (event->type() == QEvent::FocusIn || event->type() == QEvent::Paint ||
+      event->type() == QEvent::FocusOut || event->type() == QEvent::LayoutRequest)) // prevent sending events after death
   {
     return pTheView->handlePropertyEditorEvent(pTheSource, pTheProperty, event);
   }

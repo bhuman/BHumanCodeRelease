@@ -2,10 +2,8 @@
 # you have to adjust the name of the log file.
 sl LOG ${Logfile:,../Logs/*.log}
 
-
 # simulation time on, otherwise log data may be skipped
 st on
-msg off
 
 # all views are defined in another script
 call Views
@@ -27,20 +25,27 @@ jc press 11 log fast_rewind # Shift+Ctrl*k   jump back 100 frames
 
 set representation:GroundContactState contact = true;
 ac both
+
+# deactivate game info provided in Motion
+mr RobotInfo default
+mr OwnTeamInfo default
+mr OpponentTeamInfo default
+mr GameInfo default
+
 log mr
 
 #enable behavior graph
 dr representation:ActivationGraph
 
-echo = Keys:                                                                        
-echo = ctrl+shift+A: Pause replay                                                          
-echo = ctrl+shift+Q: Goto first frame                                                 
-echo = ctrl+shift+S: Start replaying the log                                         
-echo = ctrl+shift+W: Loop forever                                                    
-echo = ctrl+shift+X: One frame forward                                               
-echo = ctrl+shift+Y: One frame backward                                              
-echo = ctrl+shift+F: Jump to next frame that contains an image                       
-echo = ctrl+shift+D: Jump to previous frame that contains an image                   
-echo = ctrl+shift+J: Jump forward 100 frames                                         
-echo = ctrl+shift+K: Jump backward 100 frames                                        
+echo = Keys:
+echo = ctrl+shift+A: Pause replay
+echo = ctrl+shift+Q: Goto first frame
+echo = ctrl+shift+S: Start replaying the log
+echo = ctrl+shift+W: Loop forever
+echo = ctrl+shift+X: One frame forward
+echo = ctrl+shift+Y: One frame backward
+echo = ctrl+shift+F: Jump to next frame that contains an image
+echo = ctrl+shift+D: Jump to previous frame that contains an image
+echo = ctrl+shift+J: Jump forward 100 frames
+echo = ctrl+shift+K: Jump backward 100 frames
 

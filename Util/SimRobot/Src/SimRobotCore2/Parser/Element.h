@@ -17,11 +17,11 @@ public:
   Element();
 
   /** Destructor */
-  virtual ~Element() {}
+  virtual ~Element() = default;
 
   /**
   * Registers an element as parent
   * @param element The element to register
   */
-  virtual void addParent(Element& element) {};
+  virtual void addParent(Element& element) {}
 };

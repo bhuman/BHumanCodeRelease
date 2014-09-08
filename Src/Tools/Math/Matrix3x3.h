@@ -76,7 +76,6 @@ public:
     return *this;
   }
 
-
   /**
    * Adds this matrix with another matrix.
    *
@@ -354,7 +353,6 @@ public:
                det2(c0.x, c1.x, c0.y, c1.y)
              )
            );
-
   }
 
   /**

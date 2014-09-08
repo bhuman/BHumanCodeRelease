@@ -5,18 +5,11 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QStandardItemModel>
 #include <QScrollArea>
 #include <QResizeEvent>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "HeaderedWidget.h"
 

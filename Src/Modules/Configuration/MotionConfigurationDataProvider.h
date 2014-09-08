@@ -15,14 +15,15 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointData.h"
 
-MODULE(MotionConfigurationDataProvider)
-  PROVIDES_WITH_MODIFY(JointCalibration)
-  PROVIDES_WITH_MODIFY(SensorCalibration)
-  PROVIDES_WITH_MODIFY(RobotDimensions)
-  PROVIDES_WITH_MODIFY(MassCalibration)
-  PROVIDES_WITH_MODIFY(HardnessSettings)
-  PROVIDES_WITH_MODIFY(DamageConfiguration)
-END_MODULE
+MODULE(MotionConfigurationDataProvider,
+{,
+  PROVIDES_WITH_MODIFY(JointCalibration),
+  PROVIDES_WITH_MODIFY(SensorCalibration),
+  PROVIDES_WITH_MODIFY(RobotDimensions),
+  PROVIDES_WITH_MODIFY(MassCalibration),
+  PROVIDES_WITH_MODIFY(HardnessSettings),
+  PROVIDES_WITH_MODIFY(DamageConfiguration),
+});
 
 class MotionConfigurationDataProvider : public MotionConfigurationDataProviderBase
 {

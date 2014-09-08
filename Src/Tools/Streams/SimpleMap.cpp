@@ -43,7 +43,7 @@ SimpleMap::Array::~Array()
 
 void SimpleMap::nextChar()
 {
-  if(!stream.eof() || c)
+  if(c || !stream.eof())
   {
     if(c == '\n')
     {

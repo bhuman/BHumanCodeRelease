@@ -54,7 +54,6 @@ bool CoreModule::compile()
   registerObjects();
   application->registerObject(*this, actuatorsObject, 0, SimRobot::Flag::hidden);
 
-
   // register status bar labels
   class StepsLabel : public QLabel, public SimRobot::StatusLabel
   {
@@ -137,7 +136,6 @@ bool CoreModule::compile()
     }
   };
 
-
   application->addStatusLabel(*this, new StepsLabel());
   application->addStatusLabel(*this, new StepsPerSecondLabel());
   application->addStatusLabel(*this, new CollisionsLabel());
@@ -151,7 +149,6 @@ bool CoreModule::compile()
   if(simulation->scene->controller != "")
     application->loadModule(simulation->scene->controller.c_str());
   return true;
-
 }
 
 void CoreModule::update()

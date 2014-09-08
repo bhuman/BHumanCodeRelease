@@ -82,14 +82,14 @@ protected:
 
 public:
   /** Virtual destructor for derived classes. */
-  virtual ~Out() {}
+  virtual ~Out() = default;
 
   /**
   * The function writes a number of bytes into a stream.
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void write(const void* p, int size) = 0;
+  virtual void write(const void* p, size_t size) = 0;
 
   /**
   * The function returns whether this is a binary stream.
@@ -232,7 +232,6 @@ inline Out& operator<<(Out& out, Out& (*f)(Out&)) {return f(out);}
 */
 Out& endl(Out& out);
 
-
 /**
 * The class In is the abstract base class for all classes
 * that implement reading from streams.
@@ -298,7 +297,7 @@ protected:
 
 public:
   /** Virtual destructor for derived classes. */
-  virtual ~In() {}
+  virtual ~In() = default;
 
   /**
   * The function reads a number of bytes from a stream.
@@ -307,13 +306,13 @@ public:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void read(void* p, int size) = 0;
+  virtual void read(void* p, size_t size) = 0;
 
   /**
   * The function skips a number of bytes in a stream.
   * @param size The number of bytes to be skipped.
   */
-  virtual void skip(int size) = 0;
+  virtual void skip(size_t size) = 0;
 
   /**
   * Determines whether the end of file has been reached.
@@ -492,6 +491,7 @@ namespace EnumHelpers
   */
   template<class T, bool isEnum> struct EnumOrClass
   {
+    // An error here usually means that you try to stream data that is not streamable
     static Out& write(Out& out, const T& t) {return (Out2&) out << t;}
     static In& read(In& in, T& t) {return (In2&) in >> t;}
   };

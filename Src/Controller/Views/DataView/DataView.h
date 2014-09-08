@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "SimRobot.h"
+#include <SimRobot.h>
 #include <QIcon>
 #include <QObject>
 #include <QString>

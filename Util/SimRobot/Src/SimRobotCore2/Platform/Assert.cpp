@@ -8,7 +8,7 @@
 
 #include <cstdarg>
 #include <cstdio>
-#ifdef WIN32
+#ifdef WINDOWS
 #define NOMINMAX
 #include <windows.h>
 #endif
@@ -17,12 +17,12 @@
 
 void Assert::trace(const char* format, ...)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   char data[320];
   va_list ap;
   va_start (ap, format);
   int length;
-#ifdef WIN32
+#ifdef WINDOWS
   length = vsprintf_s(data, sizeof(data) - 1, format, ap);
 #else
   length = ::vsnprintf(data, sizeof(data) - 2, format, ap);

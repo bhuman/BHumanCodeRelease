@@ -1,7 +1,7 @@
 /**
  * @file Tools/Streams/AutoStreamable.h
  *
- * This file provides two macros that allow to declare classes that automatically stream all 
+ * This file provides two macros that allow to declare classes that automatically stream all
  * attributes and optionally also initialize them.
  *
  * The first is:
@@ -9,20 +9,19 @@
  * STREAMABLE(<class>,
  * { <header>,
  *   <comma-separated-declarations>,
- *   <default-constructor-body>
  * })
  *
- * The second is very similar: 
- * 
+ * The second is very similar:
+ *
  * STREAMABLE_WITH_BASE(<class>, <base>, ...
- * 
+ *
  * <class>: The name of the class to be declared.
  * <base>:  Its base class. It must be streamable and its serialize method must not be private.
  *          The default (without "_WITH_BASE") is the class Streamable.
  * <header>: Everything that can be part of a class body except for the attributes that should
- *          be streamable and the default constructor. Please note that this part must not 
+ *          be streamable and the default constructor. Please note that this part must not
  *          contain commas that are not surrounded by parentheses, because C++ would consider
- *          it to be more than a single macro parameter otherwise. 
+ *          it to be more than a single macro parameter otherwise.
  * <comma-separated-declarations>: Declarations of the streamable attributes in four possible
  *          forms:
  *          (<type>) <var>
@@ -36,24 +35,24 @@
  *                  parameter(s) passed to its constructor.
  *          <enum-domain>: If an enum is declared, the type of which is not declared in the
  *                  current class, the class the enum is declared in must be specified here.
- *                  The <type> and the optional <init> value are automatically prefixed by this 
+ *                  The <type> and the optional <init> value are automatically prefixed by this
  *                  entry with :: in between. Please note that there is one case that is
  *                  not supported, i.e. streaming a vector of enums that are declared in
  *                  another class, because in that case, the class name is not a prefix of
  *                  the typename rather than a prefix of its type parameter. The macro would
  *                  generate C::std::vector<E> instead of std::vector<C::E>, which does not
- *                  compile.
- * <default-constructor-body>: The body of the default constructor. Can be empty.
+ *                  compile. Use a typedef as workaround.
  *
- * Please note that all these parts, including each declaration of a streamable attribute, are 
+ * Please note that all these parts, including each declaration of a streamable attribute, are
  * separated by commas, since they are parameters of a macro.
  *
  * Example:
  *
  * STREAMABLE(Example,
  * {
- * public:
- *   ENUM(ABC, a, b, c),
+ *   ENUM(ABC, a, b, c);
+ *
+ *   Example() {memset(array, 0, sizeof(array));},
  *
  *   (int) anInt,
  *   (float)(3.14f) pi,
@@ -61,8 +60,6 @@
  *   (Vector2<>)(1.f, 2.f) aVector,
  *   (ABC) aLetter,
  *   (MotionRequest, Motion)(stand) motionId,
- *
- *   memset(array, 0, sizeof(array));
  * });
  *
  * In this example, all attributes except from anInt and aLetter would be initialized.
@@ -74,15 +71,28 @@
 
 #include "Streamable.h"
 
-#ifdef WIN32
-#include "Platform/Win32/StreamableHelper.h"
+/**
+ * Determine the number of entries in a tuple.
+ */
+#ifdef WINDOWS
+#define _STREAM_TUPLE_SIZE(...) _STREAM_JOIN(_STREAM_TUPLE_SIZE_II, (__VA_ARGS__, \
+  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
+  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
+  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
+  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
+  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 #else
-#include "Platform/Linux/StreamableHelper.h"
+#define _STREAM_TUPLE_SIZE(...) _STREAM_TUPLE_SIZE_I((__VA_ARGS__, \
+  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
+  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
+  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
+  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
+  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+#define _STREAM_TUPLE_SIZE_I(params) _STREAM_TUPLE_SIZE_II params
 #endif
 
 /**
  * The last part of a macro to determine the number of entries in a tuple.
- * The other parts are platform dependent.
  */
 #define _STREAM_TUPLE_SIZE_II( \
   a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
@@ -90,6 +100,33 @@
   a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, \
   a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, \
   a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, ...) a100
+
+/**
+ * Determine whether a sequence is of the form "(a) b" or "(a)(b) c".
+ * In the first case, 1 is returned, otherwise 2.
+ */
+#if !defined(WINDOWS) || defined(__INTELLISENSE__)
+#define _STREAM_SEQ_SIZE(seq) _STREAM_CAT(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_0 seq))
+#define _STREAM_SEQ_SIZE_0(...) _STREAM_SEQ_SIZE_1
+#define _STREAM_SEQ_SIZE_1(...) _STREAM_SEQ_SIZE_2
+#define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_1 1 _STREAM_DROP(
+#define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_2 2 _STREAM_DROP(
+#else
+#define _STREAM_SEQ_SIZE(seq) _STREAM_JOIN(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE1(_STREAM_SEQ_SIZE1(_STREAM_SEQ_SIZE1(seq)))))
+#define _STREAM_SEQ_SIZE1(seq) _STREAM_CAT(_STREAM_DROP, seq)
+#define _STREAM_SEQ_SIZE_STREAM_DROP 2 _STREAM_DROP(
+#define _STREAM_SEQ_SIZE_STREAM_DROP_STREAM_DROP 1 _STREAM_DROP (
+#endif
+
+/**
+ * Remove surrounding parentheses from header. Ignored for Microsoft's compiler, but required
+ * on Linux and OS X.
+ */
+#ifdef WINDOWS
+#define _STREAM_UNWRAP
+#else
+#define _STREAM_UNWRAP(...) __VA_ARGS__
+#endif
 
 /**
  * Apply a macro to all elements of a tuple.
@@ -144,60 +181,16 @@
 #define _STREAM_ATTR_48(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47)
 #define _STREAM_ATTR_49(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48)
 #define _STREAM_ATTR_50(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49)
-
-/**
- * Return the last element of a tuple.
- */
-#define _STREAM_LAST_1(a1) a1
-#define _STREAM_LAST_2(a1, a2) a2
-#define _STREAM_LAST_3(a1, a2, a3) a3
-#define _STREAM_LAST_4(a1, a2, a3, a4) a4
-#define _STREAM_LAST_5(a1, a2, a3, a4, a5) a5
-#define _STREAM_LAST_6(a1, a2, a3, a4, a5, a6) a6
-#define _STREAM_LAST_7(a1, a2, a3, a4, a5, a6, a7) a7
-#define _STREAM_LAST_8(a1, a2, a3, a4, a5, a6, a7, a8) a8
-#define _STREAM_LAST_9(a1, a2, a3, a4, a5, a6, a7, a8, a9) a9
-#define _STREAM_LAST_10(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) a10
-#define _STREAM_LAST_11(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) a11
-#define _STREAM_LAST_12(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) a12
-#define _STREAM_LAST_13(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) a13
-#define _STREAM_LAST_14(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) a14
-#define _STREAM_LAST_15(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) a15
-#define _STREAM_LAST_16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) a16
-#define _STREAM_LAST_17(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) a17
-#define _STREAM_LAST_18(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) a18
-#define _STREAM_LAST_19(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) a19
-#define _STREAM_LAST_20(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) a20
-#define _STREAM_LAST_21(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) a21
-#define _STREAM_LAST_22(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) a22
-#define _STREAM_LAST_23(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) a23
-#define _STREAM_LAST_24(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) a24
-#define _STREAM_LAST_25(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) a25
-#define _STREAM_LAST_26(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26) a26
-#define _STREAM_LAST_27(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27) a27
-#define _STREAM_LAST_28(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28) a28
-#define _STREAM_LAST_29(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29) a29
-#define _STREAM_LAST_30(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30) a30
-#define _STREAM_LAST_31(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) a31
-#define _STREAM_LAST_32(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32) a32
-#define _STREAM_LAST_33(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33) a33
-#define _STREAM_LAST_34(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34) a34
-#define _STREAM_LAST_35(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35) a35
-#define _STREAM_LAST_36(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36) a36
-#define _STREAM_LAST_37(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37) a37
-#define _STREAM_LAST_38(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38) a38
-#define _STREAM_LAST_39(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39) a39
-#define _STREAM_LAST_40(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40) a40
-#define _STREAM_LAST_41(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41) a41
-#define _STREAM_LAST_42(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42) a42
-#define _STREAM_LAST_43(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43) a43
-#define _STREAM_LAST_44(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44) a44
-#define _STREAM_LAST_45(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45) a45
-#define _STREAM_LAST_46(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46) a46
-#define _STREAM_LAST_47(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47) a47
-#define _STREAM_LAST_48(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48) a48
-#define _STREAM_LAST_49(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49) a49
-#define _STREAM_LAST_50(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50) a50
+#define _STREAM_ATTR_51(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50)
+#define _STREAM_ATTR_52(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51)
+#define _STREAM_ATTR_53(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52)
+#define _STREAM_ATTR_54(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53)
+#define _STREAM_ATTR_55(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54)
+#define _STREAM_ATTR_56(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55)
+#define _STREAM_ATTR_57(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56)
+#define _STREAM_ATTR_58(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57)
+#define _STREAM_ATTR_59(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58)
+#define _STREAM_ATTR_60(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59)
 
 /** Simply drop all parameters passed. */
 #define _STREAM_DROP(...)
@@ -230,7 +223,7 @@
 #define _STREAM_SER_WITHOUT_CLASS(class) Casting<std::is_enum<decltype(Streaming::unwrap(_var))>::value>::getNameFunction(*this, _var)
 
 /** Generate the actual declaration. */
-#define _STREAM_DECL(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)) _STREAM_VAR(seq);
+#define _STREAM_DECL(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)) _STREAM_VAR(seq) _STREAM_INIT(seq);
 #define _STREAM_DECL_I(...) _STREAM_DECL_II((__VA_ARGS__, _STREAM_DECL_WITH_CLASS, _STREAM_DECL_WITHOUT_CLASS))
 #define _STREAM_DECL_II(params) _STREAM_DECL_III params
 #define _STREAM_DECL_III(class, type, fn, ...) fn(class, type) _STREAM_DROP(
@@ -240,7 +233,7 @@
 /** Generate the initialisation code from the declaration if required. */
 #define _STREAM_INIT(seq) _STREAM_JOIN(_STREAM_INIT_I_, _STREAM_SEQ_SIZE(seq))(seq)
 #define _STREAM_INIT_I_1(seq)
-#define _STREAM_INIT_I_2(seq) , _STREAM_VAR(seq) (_STREAM_INIT_II seq) _STREAM_INIT_I_2_I(seq))
+#define _STREAM_INIT_I_2(seq) = decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))( _STREAM_INIT_II seq) _STREAM_INIT_I_2_I(seq) )
 #define _STREAM_INIT_I_2_I(seq) _STREAM_INIT_I_2_II seq)
 #define _STREAM_INIT_I_2_II(...) _STREAM_INIT_I_2_III
 #define _STREAM_INIT_I_2_III(...) __VA_ARGS__ _STREAM_DROP(
@@ -253,9 +246,9 @@
 #define _STREAM_STREAMABLE(name, base, streamBase, header, ...) \
   class name : public base \
   _STREAM_UNWRAP header; \
-  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, base, streamBase, __VA_ARGS__)
-#define _STREAM_STREAMABLE_I(n, name, base, streamBase, ...) _STREAM_STREAMABLE_II(n, name, base, streamBase, (_STREAM_SER, __VA_ARGS__), (_STREAM_DECL, __VA_ARGS__), (_STREAM_INIT, __VA_ARGS__), (__VA_ARGS__))
-#define _STREAM_STREAMABLE_II(n, name, base, streamBase, params1, params2, params3, params4) \
+  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, streamBase, __VA_ARGS__)
+#define _STREAM_STREAMABLE_I(n, name, streamBase, ...) _STREAM_STREAMABLE_II(n, name, streamBase, (_STREAM_SER, __VA_ARGS__), (_STREAM_DECL, __VA_ARGS__))
+#define _STREAM_STREAMABLE_II(n, name, streamBase, params1, params2) \
   protected: \
     void serialize(In* in, Out* out) \
     { \
@@ -266,8 +259,41 @@
     } \
   public: \
     _STREAM_ATTR_##n params2 \
-    name() : base() \
-      _STREAM_ATTR_##n params3 \
-    { \
-      _STREAM_LAST_##n params4 \
   }
+
+/**
+ * Generate a streamable class that is directly derived from Streamable
+ * @param name The name of the class.
+ * @param header A header that starts with a curly bracket and can contain
+ *               arbitrary declarations. Please note that commas are only
+ *               allowed if enclosed by parantheses.
+ * @param ... The actual declarations. However, the last entry can contain
+ *            code for the body of the default constructor. In any case, it
+ *            must end with a closing curly bracket.
+ */
+#ifdef WINDOWS
+#define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , header, __VA_ARGS__)
+#else
+#define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , (header), __VA_ARGS__)
+#endif
+
+/**
+ * Generate a streamable class that is derived from a class that is already
+ * streamable. Please note that the serialize method in the base class must
+ * not be private. For instance, this is the case if that class also was
+ * created by a STREAMABLE macro.
+ * @param name The name of the class.
+ * @param name The name of the base class.
+ * @param header A header that starts with a curly bracket and can contain
+ *               arbitrary declarations. Please note that commas are only
+ *               allowed if enclosed by parantheses.
+ * @param ... The actual declarations. However, the last entry can contain
+ *            code for the body of the default constructor. In any case, it
+ *            must end with a closing curly bracket.
+ */
+#ifdef WINDOWS
+#define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), header, __VA_ARGS__)
+#else
+#define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), (header), __VA_ARGS__)
+#endif
+

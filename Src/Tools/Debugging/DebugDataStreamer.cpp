@@ -7,6 +7,7 @@
 
 #include "DebugDataStreamer.h"
 #include "Platform/BHAssert.h"
+#include "Tools/Debugging/Debugging.h"
 #include "Tools/Streams/StreamHandler.h"
 #include <cstdlib>
 #include <cstring>
@@ -33,6 +34,9 @@ void DebugDataStreamer::serialize(In* in, Out* out)
 {
   ASSERT((inData && out) || (outData && in));
 
+  if(type.size() > 8 && type.substr(type.size() - 8) == " __ptr64")
+    type = type.substr(0, type.size() - 8);
+
   if(type[type.size() - 1] == ']' || type[type.size() - 1] == '*')
   {
     unsigned size;
@@ -40,10 +44,10 @@ void DebugDataStreamer::serialize(In* in, Out* out)
     bool staticSize = type[type.size() - 1] == ']';
     if(staticSize)
     {
-      unsigned i = type.size();
+      size_t i = type.size();
       while(type[i - 1] != '[')
         --i;
-      unsigned j = type[i - 2] == ' ' ? i - 2 : i - 1;
+      size_t j = type[i - 2] == ' ' ? i - 2 : i - 1;
       size = atoi(&type[i]);
       elementType = std::string(type).substr(0, j);
     }
@@ -57,9 +61,20 @@ void DebugDataStreamer::serialize(In* in, Out* out)
     if(in)
     {
       in->select(name, -1);
-      *in >> size;
+      unsigned dynamicSize;
+      *in >> dynamicSize;
       if(!staticSize)
+      {
+        size = dynamicSize;
         *outData << size;
+      }
+      else if(size != dynamicSize)
+      {
+        char buf[100];
+        sprintf(buf, "array has %d elements instead of %d", dynamicSize, size);
+        OUTPUT_ERROR(buf);
+        size = dynamicSize;
+      }
     }
     else
     {

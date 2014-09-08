@@ -17,13 +17,13 @@ PointListener::~PointListener()
   ImageViewAdapter::removeListener(this);
 }
 
-void ImageViewAdapter::fireClick(const string view, const Vector2<int>& point)
+void ImageViewAdapter::fireClick(const string view, const Vector2<int>& point, bool upper)
 {
   for(multimap<const string, PointListener*>::iterator iter = listeners.find(view);
       iter != listeners.end();
       ++iter)
   {
-    iter->second->deliverPoint(point);
+    iter->second->deliverPoint(point, upper);
   }
 }
 
@@ -53,7 +53,6 @@ void ImageViewAdapter::removeListener(PointListener* listener, const string view
       return;
     }
   }
-
 }
 
 void ImageViewAdapter::removeListener(PointListener* listener)

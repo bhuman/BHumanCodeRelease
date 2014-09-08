@@ -20,9 +20,8 @@
 #include <QString>
 #include <QVector>
 #include <cmath>
-#ifdef WIN32
+#ifdef WINDOWS
 #include <windows.h>
-#define M_PI 3.14159265358979323846
 #else
 #include <unistd.h>
 #endif
@@ -203,7 +202,7 @@ public:
         currentState = nextState = MEASURING;
       }
     }
-#ifdef WIN32
+#ifdef WINDOWS
     Sleep(10);
 #else
     usleep(10000);

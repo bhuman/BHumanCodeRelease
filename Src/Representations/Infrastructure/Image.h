@@ -8,11 +8,11 @@
 
 #include "Tools/Streams/Streamable.h"
 
-const int maxResolutionWidth = 640;
-const int maxResolutionHeight = 480;
+const int maxResolutionWidth = 1280;
+const int maxResolutionHeight = 960;
 
 /**
-* Platform independend definition of an image class
+* Platform independent definition of an image class
 */
 class Image : public Streamable
 {
@@ -27,23 +27,23 @@ public:
     struct
     {
       unsigned char yCbCrPadding, /**< Ignore. */
-      cb, /**< Cb channel. */
-      y, /**< Y channel. */
-      cr; /**< Cr channel. */
+               cb, /**< Cb channel. */
+               y, /**< Y channel. */
+               cr; /**< Cr channel. */
     };
     struct
     {
       unsigned char r, /**< R channel. */
-      g, /**< G channel. */
-      b, /**< B channel. */
-      rgbPadding; /**< Ignore. */
+               g, /**< G channel. */
+               b, /**< B channel. */
+               rgbPadding; /**< Ignore. */
     };
     struct
     {
       unsigned char h, /**< H channel. */
-      s, /**< S channel. */
-      i, /**< I channel. */
-      hsiPadding; /**< Ignore. */
+               s, /**< S channel. */
+               i, /**< I channel. */
+               hsiPadding; /**< Ignore. */
     };
   };
 
@@ -69,14 +69,22 @@ public:
   */
   Image& operator=(const Image& other);
 
-  inline Pixel* operator[](const int y)
+  Pixel* operator[](const int y)
   {
     return image + y * widthStep;
   }
 
-  inline const Pixel* operator[](const int y) const
+  const Pixel* operator[](const int y) const
   {
     return image + y * widthStep;
+  }
+
+  Pixel getFullSizePixel(const int y, const int x) const
+  {
+    Image::Pixel p = *(image + y * width + x / 2);
+    if(!(x & 1))
+      p.y = p.yCbCrPadding;
+    return p;
   }
 
   /**
@@ -84,6 +92,7 @@ public:
   * @param buffer The image buffer.
   */
   void setImage(const unsigned char* buffer);
+  void setImage(Pixel* image);
 
   /** Converts an YCbCr image into an RGB image.
   *  @param ycbcrImage The given YCbCr image
@@ -107,6 +116,7 @@ public:
 
   unsigned timeStamp; /**< The time stamp of this image. */
   bool isReference; /**< States whether this class holds the image, or only a reference to an image stored elsewhere. */
+  bool isFullSize; /**< States that the pixels x = [width ... widthStep] should be preserved. */
   int width; /**< The width of the image in pixel */
   int height; /**< The height of the image in pixel */
   int widthStep; /**< The Distance between the first pixels of subsequent lines. */
@@ -114,11 +124,12 @@ public:
   /**
    * Sets the new resolution of the image including the widthStep.
    */
-  inline void setResolution(int newWidth, int newHeight)
+  void setResolution(int newWidth, int newHeight, bool fullSize = false)
   {
     width = newWidth;
     height = newHeight;
     widthStep = width * 2;
+    isFullSize = fullSize;
   }
 
   /**

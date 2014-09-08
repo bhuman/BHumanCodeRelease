@@ -1,6 +1,6 @@
 /**
-* @file AsymmetricWalkingEngineTools.h
-* Declaration of tools utilized by the AsymmetricWalkingEngine
+* @file WalkingEngineTools.h
+* Declaration of tools utilized by the WalkingEngine
 * @author Colin Graf
 */
 
@@ -9,6 +9,7 @@
 STREAMABLE(VectorYZ,
 {
 public:
+  VectorYZ() = default;
   VectorYZ(float y, float z),
 
   (float)(0) y,

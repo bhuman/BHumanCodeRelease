@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/ProcessFramework/ProcessFramework.h"
-#include "SimRobot.h"
+#include <SimRobot.h>
 
 class RobotConsole;
 

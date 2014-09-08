@@ -8,7 +8,7 @@
 #include "Tools/Streams/InStreams.h"
 #include "Representations/Infrastructure/RoboCupGameControlData.h"
 #ifdef TARGET_SIM
-#include "Controller/RoboCupCtrl.h"
+#include "Controller/ConsoleRoboCupCtrl.h"
 #endif
 #ifdef TARGET_ROBOT
 #include "Platform/Linux/NaoBody.h"
@@ -25,6 +25,7 @@ Settings Settings::settings(true);
 bool Settings::loaded = false;
 
 Settings::Settings(bool master) :
+  isDropInGame(false),
   teamNumber(0),
   teamColor(blue),
   playerNumber(0),
@@ -47,13 +48,35 @@ void Settings::init()
 #ifdef TARGET_SIM
   if(SystemCall::getMode() == SystemCall::simulatedRobot)
   {
-    int index = atoi(RoboCupCtrl::controller->getRobotName().c_str() + 5) - 1;
-    teamNumber = index < 5 ? 1 : 2;
+    int index = atoi(RoboCupCtrl::controller->getRobotName().c_str() + 5);
+    teamNumber = index < 7 ? 1 : 2;
     teamPort = 10000 + teamNumber;
-    teamColor = index < 5 ? blue : red;
-    playerNumber = (index % 5) + 1;
+    teamColor = index < 7 ? blue : red;
+    playerNumber = index % 7;
+  }
+
+  robot = "Nao";
+
+  ConsoleRoboCupCtrl* ctrl = dynamic_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller);
+  if(ctrl)
+  {
+    std::string logFileName = ctrl->getLogFile();
+    if(logFileName != "")
+    {
+      QRegExp re("[0-9]_[A-Za-z]*_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].log", Qt::CaseSensitive, QRegExp::RegExp2);
+      int pos = re.indexIn(logFileName.c_str());
+      if(pos != -1)
+      {
+        robot = logFileName.substr(pos + 2);
+        robot = robot.substr(0, robot.find("_"));
+      }
+      else
+        robot = "Default";
+    }
   }
 #endif
+
+  isDropInGame = location.find("DropIn") != std::string::npos;
 }
 
 bool Settings::load()
@@ -86,5 +109,6 @@ bool Settings::load()
   printf("playerNumber %d\n", playerNumber);
   printf("location %s\n", location.c_str());
 #endif
+
   return true;
 }

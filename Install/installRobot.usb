@@ -30,7 +30,7 @@ usage() {
 parseOptions() {
   # -h or --help => print help
   if [ $# -ge 1 ] ; then
-    if [ ${1} = "-h" -o ${1} = "--help" ] ; then
+    if [ "${1}" = "-h" -o "${1}" = "--help" ] ; then
       usage
     fi
   fi
@@ -43,9 +43,9 @@ parseOptions() {
   fi
 
   # setting up variables
-  robotName=${1}
-  robotIp=${2}
-  path=${3}
+  robotName="${1}"
+  robotIp="${2}"
+  path="${3}"
   robotDir="${baseDir}/Robots/${robotName}"
   
   # try to ping robot
@@ -56,14 +56,14 @@ parseOptions() {
   fi
   
   # does the robot exist?
-  if [ ! -d ${robotDir} ]; then
+  if [ ! -d "${robotDir}" ]; then
     echo "[ERROR] robot \"${robotName}\" does not exist"
     echo ""
     usage
   fi
   
   # does the path to the usb stick exist?
-  if [ ! -d ${path} ]; then
+  if [ ! -d "${path}" ]; then
     echo "[ERROR] path \"${path}\" does not exist"
     echo ""
     usage
@@ -81,7 +81,7 @@ prepareFlashDrive() {
   destDir=${path}"/"${robotName}
   
   # otherwise all files will be copied inside the destination dir
-  if [ -d ${destDir} ]; then
+  if [ -d "${destDir}" ]; then
     echo "[INFO] removing old directory: ${destDir}"
     rm -rf "${destDir}"
   fi

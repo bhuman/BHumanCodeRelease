@@ -30,6 +30,7 @@ private slots:
   void setPlayDead();
   void setStand();
   void setSitDown();
+  void headAngle(bool active);
   void pressChestButton();
   void releaseChestButton();
   void unchangeButtons();

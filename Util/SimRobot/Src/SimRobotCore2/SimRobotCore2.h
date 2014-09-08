@@ -109,7 +109,7 @@ namespace SimRobotCore2
     };
 
     /** Virtual destructor */
-    virtual ~Renderer() {}
+    virtual ~Renderer() = default;
 
     /** Initializes the currently selected OpenGL context.
     * @parem hasSharedDisplayLists Whether the OpenGL has shared display lists and textures with another context that is already initialized.
@@ -226,7 +226,7 @@ namespace SimRobotCore2
   {
   public:
     /** Empty virtual destructor */
-    virtual ~Controller3DDrawing() {};
+    virtual ~Controller3DDrawing() = default;
 
     /**
     * Virtual function for drawing commands. Derived classes have to
@@ -543,4 +543,4 @@ namespace SimRobotCore2
     */
     virtual const QString& getUnit() const = 0;
   };
-};
+}

@@ -53,7 +53,7 @@ public:
   /**
   * Virtual destructor.
   */
-  virtual ~PlatformProcess() {}
+  virtual ~PlatformProcess() = default;
 
   /**
   * The function returns the begin of list of all senders.

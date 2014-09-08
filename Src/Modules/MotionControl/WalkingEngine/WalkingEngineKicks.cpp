@@ -1,5 +1,5 @@
 /**
-* @file AsymmetricWalkingEngineKicks.h
+* @file WalkingEngineKicks.h
 * Implementation of walking engine kicks and tools to use them
 * @author Colin Graf
 */
@@ -261,7 +261,7 @@ bool WalkingEngineKick::load(const char* filePath, char* buf)
     }
     catch(ParseException e)
     {
-      OUTPUT(idText, text, "AsymmetricWalkingEngine: " << filePath << ":" << lineNumber << ": " << e.message);
+      OUTPUT(idText, text, "WalkingEngine: " << filePath << ":" << lineNumber << ": " << e.message);
       (void)e;
       error = true;
     }
@@ -278,7 +278,7 @@ bool WalkingEngineKick::load(const char* filePath, char* buf)
   {
     for(int i = 0; i < numOfTracks; ++i)
       tracks[i].clear();
-    OUTPUT(idText, text, "AsymmetricWalkingEngine: " << filePath << ": failed to load file");
+    OUTPUT(idText, text, "WalkingEngine: " << filePath << ": failed to load file");
     return false;
   }
 
@@ -294,7 +294,7 @@ bool WalkingEngineKick::load(const char* filePath)
   bool success = file.exists();
   if(success)
   {
-    int size = file.getSize();
+    size_t size = file.getSize();
     char* buffer = new char[size + 1];
     file.read(buffer, size);
     buffer[size] = '\0';
@@ -409,7 +409,6 @@ const WalkingEngineKick* WalkingEngineKicks::getKick(WalkRequest::KickType type)
   return &kicks[(type - 1) / 2];
 }
 
-
 void WalkingEngineKickPlayer::start(const WalkingEngineKick& kick, bool mirrored)
 {
   ASSERT(!this->kick);
@@ -425,7 +424,7 @@ void WalkingEngineKickPlayer::start(const WalkingEngineKick& kick, bool mirrored
     std::vector<Phase>& phases = tracks[i];
     phases.resize(phaseInfos.size());
     float pos = 0.f;
-    for(int i = 0, end = phases.size(); i < end; ++i)
+    for(size_t i = 0, end = phases.size(); i < end; ++i)
     {
       Phase& phase = phases[i];
       const WalkingEngineKick::PhaseInfo& phaseInfo = phaseInfos[i];
@@ -520,7 +519,6 @@ float WalkingEngineKickPlayer::getValue(WalkingEngineKick::Track track, float ex
   return a * xx * x + b * xx + c * x + d;
 }
 
-
 void WalkingEngineKickPlayer::applyFoot(Pose3D& leftOriginToFoot, Pose3D& rightOriginToFoot)
 {
   ASSERT(kick);
@@ -580,14 +578,3 @@ void WalkingEngineKickPlayer::applyHeadAndArms(float headJointAngles[2], float l
     rightArmJointAngles[i] += additionRightArmAngles[i];
   }
 }
-/*
-void WalkingEngineKickPlayer::setParameters(const Vector2<>& ballPosition, const Vector2<>& target)
-{
-  if(!kick)
-    return;
-  if(mirrored)
-    kick->setParameters(Vector2<>(ballPosition.x, -ballPosition.y), Vector2<>(target.x, -target.y));
-  else
-    kick->setParameters(ballPosition, target);
-}
-*/

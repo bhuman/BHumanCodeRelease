@@ -38,7 +38,6 @@ public:
    *  Call this method in between signalProcessStop() and signalProcessStart.*/
   MessageQueue& getData();
 
-
 private:
   /**Prepares timing data for streaming*/
   void prepareData();

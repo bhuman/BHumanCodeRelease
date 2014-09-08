@@ -49,7 +49,6 @@ class CommandLineCompleter : public QCompleter
 public:
   explicit CommandLineCompleter(QObject *parent);
 
-
 public slots:
   /**
    * Updates the model if needed and calls @link

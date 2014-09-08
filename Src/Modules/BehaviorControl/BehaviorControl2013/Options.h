@@ -12,16 +12,19 @@
 
 #include "Options/Output/ArmMotionRequest/Arm.h"
 #include "Options/Output/ArmMotionRequest/Arms.h"
+
 #include "Options/Output/HeadMotionRequest/SetHeadPanTilt.h"
 #include "Options/Output/HeadMotionRequest/SetHeadTarget.h"
 #include "Options/Output/HeadMotionRequest/SetHeadTargetOnGround.h"
+
+#include "Options/Output/MotionRequest/GetUpEngine.h"
 #include "Options/Output/MotionRequest/InWalkKick.h"
 #include "Options/Output/MotionRequest/SpecialAction.h"
 #include "Options/Output/MotionRequest/Stand.h"
 #include "Options/Output/MotionRequest/WalkAtSpeed.h"
 #include "Options/Output/MotionRequest/WalkAtSpeedPercentage.h"
 #include "Options/Output/MotionRequest/WalkToTarget.h"
-#include "Options/Output/MotionRequest/GetUpEngine.h"
+
 #include "Options/Output/PlaySound.h"
 
 #include "Options/Roles/Striker.h"
@@ -29,5 +32,3 @@
 #include "Options/Skills/GetUp.h"
 
 #include "Options/Tools/ButtonPressedAndReleased.h"
-
-

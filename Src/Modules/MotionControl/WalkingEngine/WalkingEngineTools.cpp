@@ -1,6 +1,6 @@
 /**
-* @file AsymmetricWalkingEngineTools.h
-* Implementation of tools utilized by the AsymmetricWalkingEngine
+* @file WalkingEngineTools.h
+* Implementation of tools utilized by the WalkingEngine
 * @author Colin Graf
 */
 
@@ -18,7 +18,7 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
     float pos;
     float val;
 
-    inline void setPos(float pos, float min, float max)
+    void setPos(float pos, float min, float max)
     {
       if(pos < min)
         this->pos = min;
@@ -68,27 +68,11 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
     smallest = &point[1];
   }
 
-  /*
-  int i = 0;
-  bool fail = false;
-  */
   for(;;)
   {
-  /*
-    ++i;
-    if(i >= 400)
-    {
-      fail = true;
-      printf("minimizing %s failed: smallest->pos=%g, min=%g, max=%g, largest->pos=%g\nsmallest->val=%g, largest->val=%g\n", debugstr, smallest->pos, minPos, maxPos, largest->val, smallest->val, largest->val);
-    }
-    */
-
     float delta = (smallest->pos - largest->pos);
     if(fabs(delta) <= 0.0001f)
     {
-      /*
-      printf("minimizing %s failed with delta == 0.f\n", debugstr);
-      */
       clipped = true;
       return smallest->pos;
     }
@@ -96,20 +80,12 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
     Point* reflection = free;
     reflection->setPos(smallest->pos + delta, minPos, maxPos);
     reflection->val = reflection->pos == smallest->pos ? largest->val : func(reflection->pos);
-    /*
-    if(fail)
-      printf("reflection->pos=%g, reflection->val=%g\n", reflection->pos, reflection->val);
-      */
 
     if(reflection->val < smallest->val)
     {
       Point* expansion = largest;
       expansion->setPos(reflection->pos + delta, minPos, maxPos);
       expansion->val = expansion->pos == reflection->pos ? reflection->val : func(expansion->pos);
-      /*
-      if(fail)
-        printf("expansion->pos=%g, expansion->val=%g\n", expansion->pos, expansion->val);
-        */
 
       if(expansion->val < reflection->val)
       {
@@ -124,23 +100,12 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
         smallest = reflection;
       }
     }
-    /*
-    else if(reflection->val < largest->val)
-    {
-      free = largest;
-      largest = reflection;
-    }
-    */
     else
     {
       Point* contraction = free;
       delta *= 0.5f;
       contraction->setPos(smallest->pos + delta, minPos, maxPos);
       contraction->val = contraction->pos == smallest->pos ? largest->val : func(contraction->pos);
-      /*
-      if(fail)
-        printf("contraction->pos=%g, contraction->val=%g\n", contraction->pos, contraction->val);
-        */
 
       if(contraction->val < smallest->val)
       {
@@ -158,10 +123,6 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
         Point* reduction = free;
         reduction->setPos(smallest->pos - delta, minPos, maxPos);
         reduction->val = reduction->pos == smallest->pos ? largest->val : func(reduction->pos);
-        /*
-        if(fail)
-          printf("reduction->pos=%g, reduction->val=%g\n", reduction->pos, reduction->val);
-          */
 
         if(reduction->val < smallest->val)
         {
@@ -169,30 +130,13 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
           largest = smallest;
           smallest = reduction;
         }
-        else //if(reduction->val < largest->val)
+        else
         {
           free = largest;
           largest = reduction;
         }
-        /*
-        else
-        {
-          printf("minimizing %s failed with reduction did not help\n", debugstr);
-          return smallest->pos;
-        }
-        */
       }
     }
-
-    /*
-    if(fail)
-    {
-      printf("smallest->pos=%g, largest->pos=%g\nsmallest->val=%g, largest->val=%g\n", smallest->pos, largest->pos, smallest->val, largest->val);
-      fflush(stdout);
-      ASSERT(false);
-      return smallest->pos;
-    }
-    */
 
     if(smallest->val < minVal)
       return smallest->pos;

@@ -41,8 +41,42 @@ public:
   float focalLength;
   float focalLengthInv; // (1/focalLength) used to speed up certain calculations
   float focalLenPow2;
-  float focalLenPow4;
+
+  CameraInfo() = default;
+
+  CameraInfo(Camera camera) :
+    camera(camera)
+  {}
+
+  void updateFocalLength();
 
 private:
   virtual void serialize(In* in, Out* out);
+};
+
+class CameraInfoFullRes : public CameraInfo
+{
+public:
+  CameraInfoFullRes() = default;
+
+  explicit CameraInfoFullRes(const CameraInfo& other) :
+    CameraInfo(other)
+  {
+    width *= 2;
+    height *= 2;
+    opticalCenter *= 2.f;
+    updateFocalLength();
+  };
+
+  CameraInfoFullRes& operator=(const CameraInfo& other)
+  {
+    camera = other.camera;
+    width = other.width * 2;
+    height = other.height * 2;
+    openingAngleWidth = other.openingAngleWidth;
+    openingAngleHeight = other.openingAngleHeight;
+    opticalCenter = other.opticalCenter * 2.f;
+    updateFocalLength();
+    return *this;
+  };
 };

@@ -1,9 +1,9 @@
 <RCC>
     <qresource prefix="/">
-        <file>Icons/bike_new.png</file>
-        <file>Icons/bike_save.png</file>
-        <file>Icons/bike_open.png</file>
-        <file>Icons/bike_save_as.png</file>
+        <file>Icons/kick_new.png</file>
+        <file>Icons/kick_save.png</file>
+        <file>Icons/kick_open.png</file>
+        <file>Icons/kick_save_as.png</file>
         <file>Icons/green.png</file>
         <file>Icons/white.png</file>
         <file>Icons/orange.png</file>

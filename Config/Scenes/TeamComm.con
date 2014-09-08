@@ -20,8 +20,6 @@ vfd worldState representation:BallModel
 vfd worldState representation:GoalPercept:Field
 vfd worldState representation:MotionRequest
 vfd worldState representation:LinePercept:Field
-vfd worldState representation:RobotsModel:robots
-vfd worldState representation:RobotsModel:covariance
 vfd worldState representation:ObstacleModelReduced
 vp ballTimes 100 0 10000
 vpd ballTimes tob blue

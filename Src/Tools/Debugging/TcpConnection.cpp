@@ -55,6 +55,8 @@ bool TcpConnection::sendAndReceive(const unsigned char* dataToSend, int sendSize
       ack = false;
       return true;
     }
+    if(connectedBefore && !isConnected())
+      return true; // We cannot reconnect, so we fake success to prevent this packet from being sent again
   }
   return false;
 }

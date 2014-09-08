@@ -18,21 +18,25 @@
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Modeling/Odometer.h"
 
-MODULE(OwnSideModelProvider)
-  REQUIRES(FieldDimensions)
-  REQUIRES(FrameInfo)
-  REQUIRES(GameInfo)
-  REQUIRES(OwnTeamInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(GroundContactState)
-  REQUIRES(Odometer)
-  PROVIDES_WITH_MODIFY(OwnSideModel)
-  LOADS_PARAMETER(float, distanceUncertaintyOffset) /**< Estimated odometry and localization base error (mm). */
-  LOADS_PARAMETER(float, distanceUncertaintyFactor) /**< Estimated odometry error as a factor of the distance walked. */
-  LOADS_PARAMETER(float, largestXInInitial) /**< The largest x coordinate of a robot in initial (mm). */
-  LOADS_PARAMETER(float, awayFromLineDistance) /**< The distance the robot has to be before or behind a certain line (mm). */
-  LOADS_PARAMETER(float, minPenaltyTime) /**< The minimum time a robot must be penalized to actually believe it (ms). */
-END_MODULE
+MODULE(OwnSideModelProvider,
+{,
+  REQUIRES(FieldDimensions),
+  REQUIRES(FrameInfo),
+  REQUIRES(GameInfo),
+  REQUIRES(OwnTeamInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(GroundContactState),
+  REQUIRES(Odometer),
+  PROVIDES_WITH_MODIFY(OwnSideModel),
+  LOADS_PARAMETERS(
+  {,
+    (float) distanceUncertaintyOffset, /**< Estimated odometry and localization base error (mm). */
+    (float) distanceUncertaintyFactor, /**< Estimated odometry error as a factor of the distance walked. */
+    (float) largestXInInitial, /**< The largest x coordinate of a robot in initial (mm). */
+    (float) awayFromLineDistance, /**< The distance the robot has to be before or behind a certain line (mm). */
+    (float) minPenaltyTime, /**< The minimum time a robot must be penalized to actually believe it (ms). */
+  }),
+});
 
 /**
  * @class OwnSideModelProvider

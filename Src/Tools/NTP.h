@@ -33,7 +33,6 @@ public:
   int roundTrip;
 };
 
-
 /**
 * @class NTPRequest
 *
@@ -51,6 +50,9 @@ public:
    *  Is not set (and transmitted) by the requesting robot. The receiving
    *  robot sets this timestamp as early as possible after receiving from WLAN*/
   unsigned receipt;
+
+  /** Default constructor. */
+  NTPRequest() = default;
 
   /** Constructor
   * @param sender The robot, which sent the request
@@ -78,6 +80,9 @@ public:
    *  Is not set (and transmitted) by the responding robot. The receiving
    *  robot sets this timestamp as early as possible after receiving from WLAN*/
   unsigned responseReceipt;
+
+  /** Default constructor. */
+  NTPResponse() = default;
 
   /** Constructor
   * @param request The request which will be responded
@@ -135,7 +140,7 @@ public:
   /** Adds a new measurement to the ring buffer
   * @param s The measurement
   */
-  inline void add(const SynchronizationMeasurement& s)
+  void add(const SynchronizationMeasurement& s)
   {
     buffer.add(s);
 
@@ -165,14 +170,18 @@ private:
   NTPRequest receivedNTPRequests[MAX_NUM_OF_NTP_PACKAGES]; /**< The requests received in the current frame*/
   NTPResponse receivedNTPResponses[MAX_NUM_OF_NTP_PACKAGES]; /**< The responses receved in the current frame*/
   SynchronizationMeasurementsBuffer timeSyncBuffers[MAX_NUM_OF_NTP_CLIENTS]; /**< A buffer which contains synchronization data for all other robots*/
+  unsigned char syncStarted[MAX_NUM_OF_NTP_CLIENTS]; /**< Synchronization was started for these robots. Only used in watchOnly mode. */
+  unsigned char syncCompleted[MAX_NUM_OF_NTP_CLIENTS]; /**< Synchronization was completed for these robots. Only used in watchOnly mode. */
+  unsigned timeOfLastRequest[MAX_NUM_OF_NTP_CLIENTS]; /**< Last time a packet was received from these robots. Only used in watchOnly mode. */
+  int numberOfUnsyncedRobots; /**< The number of robots known, but not synchronized yet. Only used in watchOnly mode. */
+  unsigned timeWhenLastRobotDetected; /**< The time when the last robot was detected. Only used in watchOnly mode. */
 
   unsigned char localId; /**< The id of the local robot. */
   unsigned char currentRemoteId; /**< The ip address based remote robot id of the last handled team communication message. */
 
 public:
-  unsigned int sendTimeStamp; /**< The send time stamp from the remote robot of the last handled team communication message. */
-  unsigned int receiveTimeStamp; /**< The receive time stamp of the last handled team communication message. */
-
+  unsigned sendTimeStamp; /**< The send time stamp from the remote robot of the last handled team communication message. */
+  unsigned receiveTimeStamp; /**< The receive time stamp of the last handled team communication message. */
   /**
   * Default constructor.
   */
@@ -182,9 +191,10 @@ public:
   * Function for handling all NTP stuff. Called by update().
   * @param now The current time.
   * @param out In case packages have to be sent, they will be streamed to this queue.
+  * @param watchOnly Only send out NTP requests for new robots.
   * @return Send synchronization package in this frame?
   */
-  bool doSynchronization(unsigned now, OutMessage& out);
+  bool doSynchronization(unsigned now, OutMessage& out, bool watchOnly = false);
 
   /** Converts a time stamp from a team communciation participant to local time
   * @param remoteTime The time on the other robot
@@ -197,7 +207,7 @@ public:
   * @param remoteTime The time on the other robot
   * @return The time in local time
   */
-  inline unsigned getRemoteTimeInLocalTime(unsigned remoteTime) const {return getRemoteTimeInLocalTime(remoteTime, currentRemoteId);}
+  unsigned getRemoteTimeInLocalTime(unsigned remoteTime) const {return getRemoteTimeInLocalTime(remoteTime, currentRemoteId);}
 
   /** Returns the shortest buffered round trip length of the given team communciation participant
   * @param remoteId The team communciation participant
@@ -208,12 +218,12 @@ public:
   /** Returns the shortest buffered round trip length of the team communciation participant who sent the last handled message
   * @return The round trip length
   */
-  inline unsigned getRoundTripLength() const {return getRoundTripLength(currentRemoteId);}
+  unsigned getRoundTripLength() const {return getRoundTripLength(currentRemoteId);}
 
   /** Returns the id of last handled team communciation participant
   * @return The id
   */
-  inline unsigned char getRemoteId() const {return currentRemoteId;}
+  unsigned char getRemoteId() const {return currentRemoteId;}
 
   /**
   * The method is called for every incoming team communciation message.

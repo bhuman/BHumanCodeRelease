@@ -118,7 +118,6 @@ public:
 
     return true;
   }
-
 } assertFramework;
 
 pthread_mutex_t AssertFramework::mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -154,15 +153,15 @@ void Assert::logAdd(int trackId, const char* file, int lineNum, const char* mess
 }
 
 // Get current date/time, format is YYYY-MM-DD_HH:mm:ss
-const std::string currentTimeStamp() {
-    time_t     now = time(0);
-    struct tm  tstruct;
-    char       buf[80];
-    tstruct = *localtime(&now);
-    strftime(buf, sizeof(buf), "%F_%T", &tstruct);
-    return buf;
+const std::string currentTimeStamp()
+{
+  time_t     now = time(0);
+  struct tm  tstruct;
+  char       buf[80];
+  tstruct = *localtime(&now);
+  strftime(buf, sizeof(buf), "%F_%T", &tstruct);
+  return buf;
 }
-
 
 void Assert::logDump(bool toStderr, int termSignal)
 {

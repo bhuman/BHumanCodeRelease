@@ -68,7 +68,7 @@ public:
     /** Addition of another normal to this one.
     * @param other The other normal that will be added to this one
     */
-    inline void operator+=(const Normal& other)
+    void operator+=(const Normal& other)
     {
       x += other.x;
       y += other.y;

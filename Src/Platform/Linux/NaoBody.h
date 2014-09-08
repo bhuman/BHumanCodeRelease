@@ -47,8 +47,8 @@ public:
   /** Accesses the lastst data from the GameController. */
   const RoboCup::RoboCupGameControlData& getGameControlData() const;
 
-  /** Accesses temperature sensors */
-  void getTemperature(float& cpu, float& mb);
+  /** Accesses CPU temperature sensor */
+  float getCPUTemperature();
 
   /** Determine status of wlan hardware. */
   bool getWlanStatus();
@@ -61,7 +61,7 @@ public:
   void closeActuators();
 
   /** Sets the current team info that will be used by libgamectrl. */
-  void setTeamInfo(int teamNumber, int teamColour, int playerNumber);
+  void setTeamInfo(int teamNumber, int teamColor, int playerNumber);
 
 private:
   int writingActuators; /**< The index of the opened exclusive actuator writing buffer. */

@@ -8,7 +8,7 @@
 #include "ConsoleRoboCupCtrl.h"
 
 RemoteRobot::RemoteRobot(const char* name, const char* ip) :
-  RobotConsole(theDebugReceiver, theDebugSender),
+  RobotConsole((setGlobals(), theDebugReceiver), theDebugSender),
   theDebugReceiver(this, "Receiver.MessageQueue.O"),
   theDebugSender(this, "Sender.MessageQueue.S"),
   bytesTransfered(0),
@@ -20,7 +20,7 @@ RemoteRobot::RemoteRobot(const char* name, const char* ip) :
   mode = SystemCall::remoteRobot;
   puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
   if(puppet)
-    oracle.init(puppet);
+    simulatedRobot.init(puppet);
 
   // try to connect for one second
   Thread<RemoteRobot>::start(this, &RemoteRobot::connect);
@@ -36,6 +36,7 @@ void RemoteRobot::connect()
 void RemoteRobot::run()
 {
   NAME_THREAD((std::string(name) + ".RemoteRobot").c_str());
+  setGlobals();
   while(isRunning())
     processMain();
 }
@@ -54,7 +55,7 @@ bool RemoteRobot::main()
     SYNC;
     OutBinarySize size;
     size << theDebugSender;
-    sendSize = size.getSize();
+    sendSize = (int) size.getSize();
     sendData = new unsigned char[sendSize];
     OutBinaryMemory stream(sendData);
     stream << theDebugSender;
@@ -108,15 +109,15 @@ void RemoteRobot::update()
   if(puppet)
   {
     JointData dummy;
-    oracle.getAndSetJointData((const JointRequest&) jointData, dummy);
+    simulatedRobot.getAndSetJointData((const JointRequest&) jointData, dummy);
     if(moveOp != noMove)
     {
       if(moveOp == moveBoth)
-        oracle.moveRobot(movePos, moveRot * (pi / 180), true);
+        simulatedRobot.moveRobot(movePos,moveRot * (pi / 180),true);
       else if(moveOp == movePosition)
-        oracle.moveRobot(movePos, Vector3<>(), false);
+        simulatedRobot.moveRobot(movePos,Vector3<>(),false);
       else if(moveOp == moveBallPosition)
-        oracle.moveBall(movePos);
+        simulatedRobot.moveBall(movePos);
       moveOp = noMove;
     }
   }
@@ -130,8 +131,9 @@ void RemoteRobot::update()
 
   char buf[33];
   sprintf(buf, "%.1lf kb/s", transferSpeed);
-  std::string statusText = std::string(robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData()) + ": connected to " +
-                           ip + ", " + buf;
+  std::string statusText = robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData() +
+                           (isConnected() ? std::string(": connected to ") + ip + ", " + buf
+                                          : std::string(": connection lost from ") + ip);
 
   if(logPlayer.getNumberOfMessages() != 0)
   {

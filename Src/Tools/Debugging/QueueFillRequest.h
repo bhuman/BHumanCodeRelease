@@ -50,7 +50,6 @@ public: // nested stuff
     writeToStick    = 1   // Don't send messages but write them onto the stick
   };
 
-
 public: // members
 
   /** Queue fill and send timing behaviour. */
@@ -64,7 +63,6 @@ public: // members
 
   /** Timing parameter (used by some of the behaviours). */
   int timingMilliseconds;
-
 
 public: // methods
 

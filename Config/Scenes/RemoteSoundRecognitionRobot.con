@@ -1,0 +1,24 @@
+# connect to a robot
+call connect
+
+# request behavior messages
+dr representation:ActivationGraph
+
+vp AverageValue320Hz 600 0 1
+vpd AverageValue320Hz module:SoundSignalRecognizer:avgValue320Channel0 red
+vpd AverageValue320Hz module:SoundSignalRecognizer:avgValue320Channel1 blue
+vpd AverageValue320Hz module:SoundSignalRecognizer:lastValue320Channel0 yellow
+vpd AverageValue320Hz module:SoundSignalRecognizer:lastValue320Channel1 green
+
+vp AverageValue200Hz 600 0 1
+vpd AverageValue200Hz module:SoundSignalRecognizer:avgValue200Channel0 red
+vpd AverageValue200Hz module:SoundSignalRecognizer:avgValue200Channel1 blue
+vpd AverageValue200Hz module:SoundSignalRecognizer:lastValue200Channel0 yellow
+vpd AverageValue200Hz module:SoundSignalRecognizer:lastValue200Channel1 green
+
+vp WhistleCorrelation 600 0 1
+vpd WhistleCorrelation module:SoundSignalRecognizer:whistleCorrelationChannel0 red
+vpd WhistleCorrelation module:SoundSignalRecognizer:whistleCorrelationChannel1 blue
+
+vp DFT 51 0 1
+vpd DFT module:SoundSignalRecognizer:DFT black

@@ -6,6 +6,7 @@
 
 #include "SensorFilter.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/BHMath.h"
 
 MAKE_MODULE(SensorFilter, Sensing)
 

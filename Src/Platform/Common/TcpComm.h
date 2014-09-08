@@ -8,10 +8,17 @@
 
 #pragma once
 
-#ifdef WIN32
-#include <winsock.h>
+#ifdef WINDOWS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <WinSock2.h>
 #else
 #include <netinet/in.h>
+#endif
+
+#ifdef WINDOWS
+#define socket_t SOCKET
+#else
+#define socket_t int
 #endif
 
 /**
@@ -21,7 +28,7 @@
 class TcpComm
 {
 private:
-  int createSocket, /**< The handle of the basic socket. */
+  socket_t createSocket, /**< The handle of the basic socket. */
       transferSocket; /**< The handle of the actual transfer socket. */
   sockaddr_in address; /**< The socket address. */
   int overallBytesSent, /**< The overall number of bytes sent so far. */
@@ -29,7 +36,6 @@ private:
       maxPackageSendSize, /**< The maximum size of an outgoing package. If 0, this setting is ignored. */
       maxPackageReceiveSize; /**< The maximum size of an incoming package. If 0, this setting is ignored. */
   bool wasConnected; /**< Whether a tranfer connection was established or not */
-
 
   /**
   * The method checks whether the connection is available.
@@ -81,15 +87,6 @@ public:
   * Was the data successfully received?
   */
   bool receive(unsigned char* buffer, int size, bool wait = true);
-
-  /**
-  * The function receives a block of bytes using the system call recv().
-  * @param buffer This buffer will be filled with the bytes to receive.
-  * @param size of buffer.
-  * @param flags See RECV(2) manpage.
-  * @return number of bytes received, or -1 on error.
-  */
-  int receiveSys(void* buffer, unsigned int size, int flags);
 
   /**
   * The function returns the overall number of bytes sent so far by this object.

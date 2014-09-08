@@ -1,5 +1,6 @@
 #include "ObstacleClusterer.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 
 MAKE_MODULE(ObstacleClusterer, Modeling)
 
@@ -36,15 +37,15 @@ void ObstacleClusterer::update(ObstacleClusters& clusters)
   for(Cluster& c : tempClusters)
   {
     calculateCenterOfMass(c);
-    Vector2<int> pointInImg;
-    Geometry::calculatePointInImage(c.centerOfMass, theCameraMatrix, theCameraInfo, pointInImg);
+    Vector2<> pointInImg;
+    Transformation::robotToImage(c.centerOfMass, theCameraMatrix, theCameraInfo, pointInImg);
 
         /**note: This covariance is probably as wrong as it gets. The spots from the obstacle wheel are
                  moved every frame using the odometry. Their covariance should get worse with every move.
                  It should get better with every new measurement. Additionally using relative2FieldCoord
                  and calculatepointInImage introduces additional errors which are not reflected by the
                  covariance. I doubt that this is any better than just using 1 0 0 1 as cov...*/
-    clusters.obstacles.push_back(GaussianPositionDistribution(c.centerOfMass, getCovOfPixelInWorld(Vector2<float>(pointInImg), 0.0f)));
+    clusters.obstacles.push_back(GaussianPositionDistribution(c.centerOfMass, getCovOfPixelInWorld(pointInImg, 0.0f)));
   }
 }
 
@@ -63,9 +64,9 @@ Matrix2x2<> ObstacleClusterer::getCovOfPixelInWorld(const Vector2<>& correctedPo
   return rot * cov * rot.transpose();
 }
 
-bool ObstacleClusterer::isInsideField(const Vector2<>& spot)
+bool ObstacleClusterer::isInsideField(const Vector2<>& spot) const
 {
-  Vector2<> pointInWorld = Geometry::relative2FieldCoord(theRobotPose, spot.x, spot.y);
+  const Vector2<> pointInWorld = Transformation::robotToField(theRobotPose, spot);
   const float yMax = theFieldDimensions.yPosLeftSideline + fieldSizeThreshold;
   const float yMin = theFieldDimensions.yPosRightSideline - fieldSizeThreshold;
   const float xMax = theFieldDimensions.xPosOpponentGroundline + fieldSizeThreshold;
@@ -80,14 +81,14 @@ void ObstacleClusterer::extractCluster(std::list<Vector2<> >& spots, Cluster& cl
   {
     cluster.spots.push_back(spots.back());
     spots.pop_back();
-    for(auto it = cluster.spots.begin(); it != cluster.spots.end(); ++it)
+    for(const auto& it : cluster.spots)
     {
-      extractFitting(spots, cluster, *it);
+      extractFitting(spots, cluster, it);
     }
   }
 }
 
-void ObstacleClusterer::extractFitting(std::list<Vector2<> >& spots, Cluster& cluster, Vector2<> reference)
+void ObstacleClusterer::extractFitting(std::list<Vector2<> >& spots, Cluster& cluster, const Vector2<>& reference)
 {
   for(std::list<Vector2<> >::iterator it = spots.begin(); it != spots.end();)
   {

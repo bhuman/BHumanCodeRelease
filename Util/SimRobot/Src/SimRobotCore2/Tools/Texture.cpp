@@ -13,7 +13,7 @@
 #include "Tools/Texture.h"
 #include <QImage>
 
-#ifdef WIN32
+#ifdef WINDOWS
 #define strcasecmp _stricmp
 #endif
 

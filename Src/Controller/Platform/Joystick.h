@@ -6,8 +6,8 @@
 
 #pragma once
 
-#ifdef WIN32
-#include "Win32/Joystick.h"
+#ifdef WINDOWS
+#include "Windows/Joystick.h"
 #define Joystick_H
 #endif
 
@@ -16,8 +16,8 @@
 #define Joystick_H
 #endif
 
-#ifdef MACOSX
-#include "MacOS/Joystick.h"
+#ifdef OSX
+#include "OSX/Joystick.h"
 #define Joystick_H
 #endif
 

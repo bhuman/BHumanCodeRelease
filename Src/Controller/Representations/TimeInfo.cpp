@@ -10,7 +10,7 @@
 #include "Tools/MessageQueue/InMessage.h"
 #include "Platform/SystemCall.h"
 #include <cfloat>
-#include "Tools/Debugging/Asserts.h"
+#include "Platform/BHAssert.h"
 #include <iostream>
 
 using namespace std;
@@ -24,11 +24,7 @@ void TimeInfo::reset()
 {
   infos.clear();
   lastFrameNo = 0;
-}
-
-void TimeInfo::reset(Info& info)
-{
-  //FIXME
+  lastStartTime = 0;
 }
 
 bool TimeInfo::handleMessage(InMessage& message)
@@ -73,10 +69,11 @@ bool TimeInfo::handleMessage(InMessage& message)
     int diff = frameNo - lastFrameNo;
     //sometimes we do not get data every frame. Compensate by assuming that the missing frames have
     // the same timing as the last one
-    for(int i = 0; i < diff; ++i)
-    {
-      processDeltas.add(static_cast<float>(processStartTime - lastStartTime) / static_cast<float>(diff));
-    }
+    if(lastFrameNo && diff < processDeltas.getMaxEntries())
+      for(int i = 0; i < diff; ++i)
+      {
+        processDeltas.add(static_cast<float>(processStartTime - lastStartTime) / static_cast<float>(diff));
+      }
 
     lastFrameNo = frameNo;
     lastStartTime = processStartTime;

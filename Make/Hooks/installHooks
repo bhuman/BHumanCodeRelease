@@ -1,0 +1,86 @@
+#!/bin/bash
+
+scriptname=$0
+scriptDir="`dirname $0`"
+
+usage() {
+  echo "Usage:"
+  echo "    $scriptname [-g] [-t] [-f] [repo]..."
+  echo ""
+  echo "  -g        Do not enable generate hooks in the git config (per repo)"
+  echo "            [not recommended for the simulator repo]"
+  echo ""
+  echo "  -t        Do not enable pre-commit hook (checkTab, per repo)"
+  echo ""
+  echo "  -f        Overwrite existing files"
+  echo ""
+  echo "  repo...   Repos where the hooks should be installed"
+  echo "            (default: \`$scriptDir/../..\`)"
+}
+
+absolute() {
+  if [ -z "$(echo "$1" | grep -E '^\/')" ]
+  then
+    echo -n "$callDir/$1"
+  else
+    echo -n "$1"
+  fi
+}
+
+installDIRs="$scriptDir/../.."
+files="generate.sh post-checkout post-merge post-rewrite pre-commit"
+enableGenerate=1
+enableCheckTabs=1
+force=0
+
+while getopts ":gtf" option
+do
+  case $option in
+    g)    enableGenerate=0;;
+    t)    enableCheckTabs=0;;
+    f)    force=1;;
+    *)    usage
+          exit 1;;
+  esac
+done
+shift $(($OPTIND-1))
+
+if [ ${#@} -gt 0 ]
+then
+  installDIRs=$@
+fi
+
+callDir=`pwd`
+
+if [ ! -z $DEBUG ]
+then
+  printf "    installDirs: %b\n" "$installDIRs"
+  printf " enableGenerate: %b\n" $enableGenerate
+  printf "enableCheckTabs: %b\n" $enableCheckTabs
+  printf "          force: %b\n" $force
+fi
+
+for d in $installDIRs
+do
+  ad="$(absolute "$d")"
+  echo "Install to $ad"
+  for f in $files
+  do
+    if [[ -e "$ad/.git/hooks/$f" && $force -ne 1 ]]
+    then
+      echo "Skipping $f since it already exists"
+      echo "  Use -f to overwrite existing files"
+    else
+      cp "$scriptDir/$f" "$ad/.git/hooks/$f"
+    fi
+  done
+  cd "$ad"
+  if [ $enableGenerate -eq 1 ]
+  then
+    git config hooks.generateProject true
+  fi
+  if [ $enableCheckTabs -eq 1 ]
+  then
+    git config hooks.checkTabs true
+  fi
+done

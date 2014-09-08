@@ -43,7 +43,7 @@ SSHCmd::SSHTask::SSHTask(Context &context,
                          const std::string &command)
   : RobotTask(context, robot),
     command(command)
-{ }
+{}
 
 bool SSHCmd::SSHTask::execute()
 {

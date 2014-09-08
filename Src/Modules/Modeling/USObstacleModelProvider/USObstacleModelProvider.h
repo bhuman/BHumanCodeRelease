@@ -58,32 +58,36 @@ public:
   float openingAngle; /**< The opening angle in radian. */
 };
 
-MODULE(USObstacleModelProvider)
-  REQUIRES(OdometryData)
-  REQUIRES(FrameInfo)
-  REQUIRES(FilteredSensorData)
-  REQUIRES(GameInfo)
-  REQUIRES(RobotInfo)
-  USES(MotionRequest)
-  REQUIRES(MotionInfo)
-  REQUIRES(CameraInfo)
-  PROVIDES_WITH_DRAW(USObstacleModel)
-  LOADS_PARAMETER(SonarInfo, leftToLeft)
-  LOADS_PARAMETER(SonarInfo, rightToRight)
-  LOADS_PARAMETER(SonarInfo, leftToRight)
-  LOADS_PARAMETER(SonarInfo, rightToLeft)
-  LOADS_PARAMETER(float, maxDistance)
-  LOADS_PARAMETER(float, minDistance)
-  LOADS_PARAMETER(int, gridSizeInCells)
-  LOADS_PARAMETER(unsigned char, occupiedThreshold)
-  LOADS_PARAMETER(float, maxAngleStep)
-  LOADS_PARAMETER(int, maxDistanceStep)
-  LOADS_PARAMETER(float, obstacleThickness)
-  LOADS_PARAMETER(int, decayDelay)
-  LOADS_PARAMETER(int, historySize)
-  LOADS_PARAMETER(int, minObstacleCells)
-  LOADS_PARAMETER(int, ignoreAfterPenaltyDelay);
-END_MODULE
+MODULE(USObstacleModelProvider,
+{,
+  REQUIRES(OdometryData),
+  REQUIRES(FrameInfo),
+  REQUIRES(FilteredSensorData),
+  REQUIRES(GameInfo),
+  REQUIRES(RobotInfo),
+  USES(MotionRequest),
+  REQUIRES(MotionInfo),
+  REQUIRES(CameraInfo),
+  PROVIDES_WITH_DRAW(USObstacleModel),
+  LOADS_PARAMETERS(
+  {,
+    (SonarInfo) leftToLeft,
+    (SonarInfo) rightToRight,
+    (SonarInfo) leftToRight,
+    (SonarInfo) rightToLeft,
+    (float) maxDistance,
+    (float) minDistance,
+    (int) gridSizeInCells,
+    (unsigned char) occupiedThreshold,
+    (float) maxAngleStep,
+    (int) maxDistanceStep,
+    (float) obstacleThickness,
+    (int) decayDelay,
+    (int) historySize,
+    (int) minObstacleCells,
+    (int) ignoreAfterPenaltyDelay,
+  }),
+});
 
 class USObstacleModelProvider: public USObstacleModelProviderBase
 {

@@ -9,24 +9,31 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Configuration/RobotDimensions.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Sensing/InertiaSensorData.h"
 #include "Representations/Sensing/OrientationData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Math/Matrix.h"
+#include "Tools/Math/BHMath.h"
 
-MODULE(InertiaSensorFilter)
-  REQUIRES(FrameInfo)
-  REQUIRES(InertiaSensorData)
-  REQUIRES(RobotModel)
-  REQUIRES(SensorData)
-  REQUIRES(RobotDimensions)
-  USES(MotionInfo)
-  USES(WalkingEngineOutput)
-  PROVIDES_WITH_MODIFY(OrientationData)
-  DEFINES_PARAMETER(Vector2f, processNoise, Vector2f(0.004f, 0.004f)) /**< The standard deviation of the process. */
-  DEFINES_PARAMETER(Vector3f, accNoise, Vector3f(1.f, 1.f, 1.f)) /**< The standard deviation of the inertia sensor. */
-  DEFINES_PARAMETER(Vector2f, calculatedAccLimit, Vector2f(fromDegrees(20.f), fromDegrees(30.f))) /**< Use a calculated angle up to this angle (in rad). (We use the acceleration sensors otherwise.) */
-END_MODULE
+MODULE(InertiaSensorFilter,
+{,
+  REQUIRES(FrameInfo),
+  REQUIRES(InertiaSensorData),
+  REQUIRES(RobotModel),
+  REQUIRES(SensorData),
+  REQUIRES(RobotDimensions),
+  USES(MotionInfo),
+  USES(WalkingEngineOutput),
+  PROVIDES_WITH_MODIFY(OrientationData),
+  DEFINES_PARAMETERS(
+  {,
+    (Vector2f)(0.004f, 0.004f) processNoise, /**< The standard deviation of the process. */
+    (Vector3f)(1.f, 1.f, 1.f) accNoise, /**< The standard deviation of the inertia sensor. */
+    (Vector2f)(fromDegrees(20.f), fromDegrees(30.f)) calculatedAccLimit, /**< Use a calculated angle up to this angle (in rad). (We use the acceleration sensors otherwise.) */
+  }),
+});
 
 /**
 * @class InertiaSensorFilter
@@ -46,9 +53,6 @@ private:
   {
   public:
     RotationMatrix rotation; /** The rotation of the torso. */
-
-    /** Default constructor. */
-    State() {}
 
     /**
     * Adds some world rotation given as angle axis.
@@ -118,22 +122,22 @@ private:
   void covOfSigmaReadingsAndSigmaPoints();
   void covOfSigmaReadings();
 
-  inline Matrix2x2f tensor(const Vector2f& a, const Vector2f& b) const
+  Matrix2x2f tensor(const Vector2f& a, const Vector2f& b) const
   {
     return Matrix2x2f(a * b.x, a * b.y);
   }
 
-  inline Matrix2x2f tensor(const Vector2f& a) const
+  Matrix2x2f tensor(const Vector2f& a) const
   {
     return Matrix2x2f(a * a.x, a * a.y);
   }
 
-  inline Matrix3x2f tensor(const Vector3f& a, const Vector2f& b)
+  Matrix3x2f tensor(const Vector3f& a, const Vector2f& b)
   {
     return Matrix3x2f(a * b.x, a * b.y);
   }
 
-  inline Matrix3x3f tensor(const Vector3f& a)
+  Matrix3x3f tensor(const Vector3f& a)
   {
     return Matrix3x3f(a * a.x, a * a.y, a * a.z);
   }

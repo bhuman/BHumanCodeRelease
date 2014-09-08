@@ -7,20 +7,13 @@
 #include "TeamComm3DView.h"
 #include "Controller/TeamComm3DCtrl.h"
 #include "Controller/Visualization/HeaderedWidget.h"
-#include <algorithm>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
+#include <algorithm>
 #include <QHeaderView>
 #include <QApplication>
 #include <QPainter>
 #include <QKeyEvent>
 #include <QSettings>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 class TeamComm3DWidget : public QWidget
 {
@@ -89,10 +82,18 @@ public:
     TeamComm3DCtrl::TeamListener& teamListener = TeamComm3DCtrl::controller->teamListener[view.listenerIndex];
     unsigned int now = TeamComm3DCtrl::controller->now;
     float totalTraffic = 0;
+    
+    std::map<unsigned int, std::pair<unsigned int, TeamComm3DCtrl::RobotData>> sortedRobotData; //map<robot id, pair<ip address, robotData>>
     for(std::map<unsigned int, TeamComm3DCtrl::RobotData>::iterator iter = teamListener.robotData.begin(), end = teamListener.robotData.end(); iter != end; ++iter)
     {
       TeamComm3DCtrl::RobotData& robotData = iter->second;
-      unsigned int ipAddress = iter->first;
+      sortedRobotData[robotData.robotNumber] = std::make_pair(iter->first, robotData);
+    }
+    
+    for(const auto& iter : sortedRobotData)
+    {
+      const TeamComm3DCtrl::RobotData& robotData = iter.second.second;
+      unsigned int ipAddress = iter.second.first;
       bool bold = robotData.puppetData && robotData.puppetData->selected;
 
       indent(0);
@@ -115,8 +116,9 @@ public:
       float traffic = now != oldestPacketTimeStamp ? float(robotData.packetSizes.getSum() * 1000) / float(now - oldestPacketTimeStamp) : 0;
       totalTraffic += traffic;
       float averagePackageSize = float(robotData.packetSizes.getSum()) / float(robotData.packetSizes.getNumberOfEntries()) - 28.f;
-      sprintf(formatedValue, "%.0f bytes/s, 28 + %.1f bytes", traffic, averagePackageSize);
-      print("Traffic, Average Packet Size", formatedValue, std::min(computeRegularity(traffic, 5000.f, 10000.f), computeRegularity(averagePackageSize, 500.f, 1000.f)));
+      float frequency = robotData.packetTimeStamps.getNumberOfEntries() * 1000.f / float(now - oldestPacketTimeStamp);
+      sprintf(formatedValue, "%.0f bytes/s, 28 + %.1f bytes, %.1f/s", traffic, averagePackageSize, frequency);
+      print("Packets: Traffic, Average Size, Frequency", formatedValue, std::min(std::min(computeRegularity(traffic, 5000.f, 10000.f), computeRegularity(averagePackageSize, 500.f, 1000.f)), computeRegularity(frequency, 5.f, 8.f)));
       //sprintf(formatedValue, "", averagePackageSize);
       //print("Average Packet Size", formatedValue, computeRegularity(averagePackageSize, 500.f, 1000.f));
       //sprintf(formatedValue, "%u ms", now - robotData.timeStamp);
@@ -128,8 +130,16 @@ public:
       {
         if(!robotData.robotHealth.robotName.empty())
         {
-          //print("Name", robotData.robotHealth.robotName.c_str(), 1.f);
-          //newBlock();
+          char hash[sizeof(robotData.robotHealth.hash) + 1];
+          strncpy(hash, robotData.robotHealth.hash, sizeof(robotData.robotHealth.hash));
+          hash[sizeof(robotData.robotHealth.hash)] = 0;
+          char location[sizeof(robotData.robotHealth.location) + 1];
+          strncpy(location, robotData.robotHealth.location, sizeof(robotData.robotHealth.location));
+          location[sizeof(robotData.robotHealth.location)] = 0;
+          sprintf(formatedValue, "%s (%s), %s, %s", hash, robotData.robotHealth.clean ? "clean" : "dirty",
+                  RobotHealth::getName(robotData.robotHealth.configuration), location);
+          print("Revision, Config, Location", formatedValue, 1.f);
+          newBlock();
 
           float loadAverage1 = float(robotData.robotHealth.load[0]) / 10.f;
           sprintf(formatedValue, "%.1f %.1f %.1f, %hhu%%", loadAverage1, float(robotData.robotHealth.load[1]) / 10.f, float(robotData.robotHealth.load[2]) / 10.f, robotData.robotHealth.memoryUsage);
@@ -141,9 +151,8 @@ public:
           newBlock();
 
           sprintf(formatedValue, "%hhu%%, %hhu°C", robotData.robotHealth.batteryLevel, robotData.robotHealth.maxJointTemperature);
-          print("Battery Level, Max Temperature", formatedValue, std::min(computeRegularity(robotData.robotHealth.batteryLevel, 30.f, 10.f),  computeRegularity(robotData.robotHealth.maxJointTemperature, 60.f, 80.f)));
+          print((std::string("Battery, Temperature ") + JointData::getName(robotData.robotHealth.jointWithMaxTemperature)).c_str(), formatedValue, std::min(computeRegularity(robotData.robotHealth.batteryLevel, 30.f, 10.f),  computeRegularity(robotData.robotHealth.maxJointTemperature, 60.f, 80.f)));
           newBlock();
-
 
           if(robotData.robotHealthTimeStamps.getNumberOfEntries() > 0)
           {
@@ -163,7 +172,7 @@ public:
 
         int ballLastSeen = robotData.ballModel.timeWhenLastSeen ? int(now - robotData.ballModel.timeWhenLastSeen) : 0;
         if(ballLastSeen)
-          sprintf(formatedValue,  "%d ms", ballLastSeen);
+          sprintf(formatedValue, "%d ms, %u%%", ballLastSeen, robotData.ballModel.seenPercentage);
         else
           sprintf(formatedValue, "never");
         print("Ball Last Seen", formatedValue, computeRegularity(ballLastSeen, 10000.f, 12000.f));
@@ -174,18 +183,18 @@ public:
         if(robotData.robotPose.deviation == RobotPose::unknownDeviation)
           sprintf(formatedValue, "unknown");
         else
-          sprintf(formatedValue,  "%.1f mm", robotData.robotPose.deviation);
+          sprintf(formatedValue, "%.1f mm", robotData.robotPose.deviation);
         print("Pose deviation", formatedValue, computeRegularity(robotData.robotPose.deviation, 100.f, RobotPose::unknownDeviation));
         newBlock();
 
-        sprintf(formatedValue, "%s%s", BehaviorStatus::getName(robotData.behaviorStatus.role), robotData.isPenalized ? " (Penalized)" : "");
-        print("Behavior Role", formatedValue, 1.f);
+        sprintf(formatedValue, "%s%s", Role::getName(robotData.behaviorStatus.role), robotData.isPenalized ? " (Penalized)" : "");
+        print("Behavior Role, Activity", formatedValue, 1.f);
         newBlock();
       }
       newSection();
     }
     sprintf(formatedValue, "%.0f bytes/s", totalTraffic);
-    print("Total Traffic", formatedValue, computeRegularity(totalTraffic, 150000, 200000));
+    print("Total Traffic", formatedValue, computeRegularity(totalTraffic, 32000, 64000));
 
     painter.end();
     setMinimumHeight(paintRectField1.top());

@@ -18,7 +18,7 @@ class InMessage;
 * @class TimeInfo
 *
 * A class to represent information about the timing of modules.
- * There should be one TimeInfo per process.
+* There should be one TimeInfo per process.
 *
 * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
 * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
@@ -37,7 +37,7 @@ public:
   /**
   * Default constructor.
   */
-  TimeInfo() {}
+  TimeInfo() = default;
 
   /**
   * Constructor.
@@ -57,12 +57,6 @@ public:
   * The function empties the time info object.
   */
   void reset();
-
-  /**
-  * The function empties the time info of a certain stop watch.
-  * @param info Information on the stop watch to reset.
-  */
-  void reset(Info& info);
 
   /**
   * The function returns statistics about a certain stop watch.

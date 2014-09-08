@@ -42,7 +42,7 @@ private:
 
   virtual QWidget* getWidget() {return this;}
   virtual void update();
-  virtual QMenu* createEditMenu();
+  virtual QMenu* createEditMenu() const;
 
   virtual QSize sizeHint() const;
   virtual void paintEvent(QPaintEvent *event);

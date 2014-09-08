@@ -14,18 +14,13 @@
  */
 class DownloadLogsCmd : public RobotCommand
 {
-
   class DownloadLogsTask : public RobotTask
   {
-
   public:
     DownloadLogsTask(Context &context, Robot *robot);
     bool execute();
     QString getCommand();
-
   };
-
-
 
   public:
     DownloadLogsCmd();
@@ -38,8 +33,6 @@ class DownloadLogsCmd : public RobotCommand
     QString getCommand();
   public:
     static DownloadLogsCmd theDownloadLogsCmd;
-
-
 };
 
 #endif /* DOWNLOADLOGSCMD_H_ */

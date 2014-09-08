@@ -62,7 +62,6 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
   adjustTiltBoundToShoulder(panTiltUpperCam.x, false, tiltBoundUpperCam);
   adjustTiltBoundToShoulder(panTiltLowerCam.x, true, tiltBoundLowerCam);
 
-
   bool lowerCam = false;
   headAngleRequest.pan = panTiltUpperCam.x; // Pan is the same for both cams
 

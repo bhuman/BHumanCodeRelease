@@ -51,11 +51,11 @@ void ArmMotionEngine::updateArm(Arm& arm, ArmMotionEngineOutput& armMotionEngine
         theArmMotionRequest.autoReverse[arm.id],
         theArmMotionRequest.autoReverseTime[arm.id],
         theFilteredJointData);
-
-    } else if(theFrameInfo.getTimeSince(arm.lastContactAction) > actionDelay &&
-      (arm.id == ArmMotionRequest::left ? theArmContactModel.contactLeft : theArmContactModel.contactRight))
+    }
+    else if(theFrameInfo.getTimeSince(arm.lastContactAction) > actionDelay &&
+            (arm.id == ArmMotionRequest::left ? theArmContactModel.contactLeft : theArmContactModel.contactRight) &&
+            SystemCall::getMode() != SystemCall::simulatedRobot)
     {
-#ifdef TARGET_ROBOT
       // check for armcontact
       ArmContactModel::PushDirection dir = (arm.id == ArmMotionRequest::left)
         ? theArmContactModel.pushDirectionLeft
@@ -73,7 +73,6 @@ void ArmMotionEngine::updateArm(Arm& arm, ArmMotionEngineOutput& armMotionEngine
       default:
         break;
       }
-#endif
     }
   }
 
@@ -88,7 +87,7 @@ void ArmMotionEngine::updateArm(Arm& arm, ArmMotionEngineOutput& armMotionEngine
     // fallen
     return;
   }
-  else if(theMotionInfo.motion == MotionInfo::bike && arm.isMotionActive && arm.currentMotion.id != ArmMotionRequest::useDefault)
+  else if(theMotionInfo.motion == MotionInfo::kick && arm.isMotionActive && arm.currentMotion.id != ArmMotionRequest::useDefault)
   {
     arm.startMotion(allMotions[ArmMotionRequest::useDefault], true, false, 0, theFilteredJointData);
   }
@@ -97,7 +96,6 @@ void ArmMotionEngine::updateArm(Arm& arm, ArmMotionEngineOutput& armMotionEngine
   if(arm.isMotionActive)
   {
     // a motion is active, so decide what to do
-
     if(arm.stateIndex == arm.currentMotion.states.size())
     {
       // arm reached its motion target

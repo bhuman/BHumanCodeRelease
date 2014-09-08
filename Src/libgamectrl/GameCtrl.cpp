@@ -11,18 +11,19 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-#include <alcore/altypes.h>
-#include <alcore/alerror.h>
+#define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
 #include <alcommon/alproxy.h>
 #include <alproxies/dcmproxy.h>
 #include <alproxies/almemoryproxy.h>
+#undef BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
-#include "RoboCupGameControlData.h"
+#include <RoboCupGameControlData.h>
 #include "UdpComm.h"
 
 static const int BUTTON_DELAY = 30; /**< Button state changes are ignored when happening in less than 30 ms. */
@@ -90,11 +91,11 @@ private:
   const int* defaultTeamColour; /** Points to where ALMemory stores the default team color. */
   int teamNumber; /**< The team number. */
   RoboCupGameControlData gameCtrlData; /**< The local copy of the GameController packet. */
-  uint8 previousState; /**< The game state during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint8 previousSecondaryState; /**< The secondary game state during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint8 previousKickOffTeam; /**< The kick-off team during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint8 previousTeamColour; /**< The team colour during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint16 previousPenalty; /**< The penalty set during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousState; /**< The game state during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousSecondaryState; /**< The secondary game state during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousKickOffTeam; /**< The kick-off team during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousTeamColour; /**< The team colour during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousPenalty; /**< The penalty set during the previous cycle. Used to detect when LEDs have to be updated. */
   bool previousChestButtonPressed; /**< Whether the chest button was pressed during the previous cycle. */
   bool previousLeftFootButtonPressed; /**< Whether the left foot bumper was pressed during the previous cycle. */
   bool previousRightFootButtonPressed; /**< Whether the right foot bumper was pressed during the previous cycle. */
@@ -109,11 +110,11 @@ private:
    */
   void init()
   {
-    previousState = (uint8) -1;
-    previousSecondaryState = (uint8) -1;
-    previousKickOffTeam = (uint8) -1;
-    previousTeamColour = (uint8) -1;
-    previousPenalty = (uint16) -1;
+    previousState = (uint8_t) -1;
+    previousSecondaryState = (uint8_t) -1;
+    previousKickOffTeam = (uint8_t) -1;
+    previousTeamColour = (uint8_t) -1;
+    previousPenalty = (uint8_t) -1;
     previousChestButtonPressed = false;
     previousLeftFootButtonPressed = false;
     previousRightFootButtonPressed = false;
@@ -133,7 +134,7 @@ private:
   {
     unsigned now = (unsigned) proxy->getTime(0);
 
-    if(teamNumber && *playerNumber &&
+    if(teamNumber && *playerNumber >= 0 &&
        *playerNumber <= gameCtrlData.playersPerTeam &&
        (gameCtrlData.teams[0].teamNumber == teamNumber ||
         gameCtrlData.teams[1].teamNumber == teamNumber))
@@ -234,23 +235,23 @@ private:
     if(receive())
     {
       if(!whenPacketWasReceived)
-        previousState = (uint8) -1; // force LED update on first packet received
+        previousState = (uint8_t) -1; // force LED update on first packet received
       whenPacketWasReceived = now;
       publish();
     }
 
-    if(teamNumber && *playerNumber)
+    if(teamNumber && *playerNumber >= 0)
     {
       // init gameCtrlData if invalid
       if(gameCtrlData.teams[0].teamNumber != teamNumber &&
          gameCtrlData.teams[1].teamNumber != teamNumber)
       {
-        uint8 teamColour = *defaultTeamColour == TEAM_RED ? 1 : 0;
-        gameCtrlData.teams[teamColour].teamNumber = (uint8) teamNumber;
+        uint8_t teamColour = *defaultTeamColour == TEAM_RED ? 1 : 0;
+        gameCtrlData.teams[teamColour].teamNumber = (uint8_t) teamNumber;
         gameCtrlData.teams[teamColour].teamColour = teamColour;
         gameCtrlData.teams[1 - teamColour].teamColour = 1 - teamColour;
         if(!gameCtrlData.playersPerTeam)
-          gameCtrlData.playersPerTeam = (uint8) *playerNumber; // we don't know better
+          gameCtrlData.playersPerTeam = (uint8_t) *playerNumber; // we don't know better
         publish();
       }
       TeamInfo& team = gameCtrlData.teams[gameCtrlData.teams[0].teamNumber == teamNumber ? 0 : 1];
@@ -331,13 +332,11 @@ private:
    * @param message The message contained in the packet (GAMECONTROLLER_RETURN_MSG_MAN_PENALISE,
    *                GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE or GAMECONTROLLER_RETURN_MSG_ALIVE).
    */
-  bool send(uint32 message)
+  bool send(uint8_t message)
   {
     RoboCupGameControlReturnData returnPacket;
-    memcpy(returnPacket.header, GAMECONTROLLER_RETURN_STRUCT_HEADER, sizeof(returnPacket.header));
-    returnPacket.version = GAMECONTROLLER_RETURN_STRUCT_VERSION;
-    returnPacket.team = (uint8) teamNumber;
-    returnPacket.player = (uint8) *playerNumber;
+    returnPacket.team = (uint8_t) teamNumber;
+    returnPacket.player = (uint8_t) *playerNumber;
     returnPacket.message = message;
     return !udp || udp->write((const char*) &returnPacket, sizeof(returnPacket));
   }

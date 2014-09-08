@@ -2,6 +2,7 @@
 
 #include "Tools/Team.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include <algorithm>
 #include <list>
@@ -52,6 +53,9 @@ lastGameState(STATE_INITIAL)
 
 FieldCoverageProvider::~FieldCoverageProvider()
 {
+  for(size_t x = 0; x < xSteps; x++)
+    for(size_t y = 0; y < ySteps; y++)
+      delete fieldCoverageGrid[x][y];
 }
 
 void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
@@ -61,9 +65,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   DECLARE_PLOT("module:FieldCoverageProvider:mean");
   DECLARE_PLOT("module:FieldCoverageProvider:stddev");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:cameraRange", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:shadows", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:fieldCoverage", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:shadowsOnImage", "drawingOnImage");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:worstTarget", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:worstNoTurnTarget", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:worstNoTurnRangeTarget", "drawingOnField");
@@ -72,7 +74,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:throwInCell", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:outPosition", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:throwInPosition", "drawingOnField");
-  DECLARE_DEBUG_DRAWING3D("module:FieldCoverageProvider:cameraRange", "origin");
+  DECLARE_DEBUG_DRAWING3D("module:FieldCoverageProvider:cameraRange", "robot");
 
   if(theCombinedWorldModel.ballIsValid)
   {
@@ -102,7 +104,6 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
 
   if(theCameraMatrix.isValid && theRobotPose.deviation < 50.0f)
   {
-
     const int xMax = theCameraInfo.width - 1;
     const int yMin = (int)std::max(theImageCoordinateSystem.origin.y + theImageCoordinateSystem.rotation.c[1].y * 25, 0.f);
     const int yMax = theCameraInfo.height - 1;
@@ -115,7 +116,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     cameraRange[3] = projectOnField(xMax, yMax);
 
     POLYGON("module:FieldCoverageProvider:cameraRange", 4, cameraRange, 20,
-            Drawings::ps_dash, ColorClasses::green, Drawings::bs_solid, ColorRGBA(0, 255, 0, 50));
+            Drawings::ps_dash, ColorRGBA::green, Drawings::bs_solid, ColorRGBA(0, 255, 0, 50));
 
     COMPLEX_DRAWING3D("module:FieldCoverageProvider:cameraRange",
     {
@@ -126,29 +127,9 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
         Vector2<> p2 = (Pose2D(cameraRange[(i + 1) & 3]) - theRobotPose).translation;
         LINE3D("module:FieldCoverageProvider:cameraRange",
                theCameraMatrix.translation.x, theCameraMatrix.translation.y, theCameraMatrix.translation.z,
-               p.x, p.y, 0, 2, ColorClasses::blue);
-        LINE3D("module:FieldCoverageProvider:cameraRange", p.x, p.y, 0, p2.x, p2.y, 0, 2, ColorClasses::blue);
+               p.x, p.y, 0, 2, ColorRGBA::blue);
+        LINE3D("module:FieldCoverageProvider:cameraRange", p.x, p.y, 0, p2.x, p2.y, 0, 2, ColorRGBA::blue);
       }
-    });
-
-    // precompute shadows
-    std::vector<RobotShadow> shadows;
-    computeShadows(shadows, theRobotPose, theRobotsModel);
-
-    // Draw shadows
-    COMPLEX_DRAWING("module:FieldCoverageProvider:shadows",
-    {
-      std::vector<RobotShadow>::const_iterator it = shadows.begin();
-      const std::vector<RobotShadow>::const_iterator end = shadows.end();
-      for(; it != end; ++it)
-        it->draw();
-    });
-    COMPLEX_DRAWING("module:FieldCoverageProvider:shadowsOnImage",
-    {
-      std::vector<RobotShadow>::const_iterator it = shadows.begin();
-      const std::vector<RobotShadow>::const_iterator end = shadows.end();
-      for(; it != end; ++it)
-        it->drawOnImage(theCameraMatrix, theCameraInfo, theImageCoordinateSystem);
     });
 
     // refresh every cell that is visible, i. e. the center is visible
@@ -159,20 +140,12 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
         Cell& c = *fieldCoverageGrid[x][y];
         if(Geometry::isPointInsideConvexPolygon(cameraRange, 4, c.absoluteCameraTargetOnField))
         {
-          // Cell is visibile if it's not shadowed.
-          if(isCellShadowed(shadows, c))
+          c.shadowed = false;
+          c.lastseenScanPattern = theFrameInfo.time;
+          if(c.distance < range)
           {
-            c.shadowed = true;
-          }
-          else
-          {
-            c.shadowed = false;
-            c.lastseenScanPattern = theFrameInfo.time;
-            if(c.distance < range)
-            {
-              c.lastseen = theFrameInfo.time;
-              fieldCoverage.cells[x * ySteps + y] = theFrameInfo.time;
-            }
+            c.lastseen = theFrameInfo.time;
+            fieldCoverage.cells[x * ySteps + y] = theFrameInfo.time;
           }
         }
       }
@@ -207,34 +180,32 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   int worstNoTurnIdx = 0;
   int worstIdx = 0;
   ASSERT(worstCoverage > Cell::maxCoverage);
-  for(size_t i = 0; i < xSteps * ySteps; i++)
+  for(int i = 0; i < int(xSteps * ySteps); i++)
   {
     Cell* cell = cells[i];
-    if(!cell->shadowed)
+
+    const unsigned char coverage = cell->coverage(theFrameInfo.time);
+    if(coverage < worstCoverage)
     {
-      const unsigned char coverage = cell->coverage(theFrameInfo.time);
-      if(coverage < worstCoverage)
+      worstCoverage = coverage;
+      worstIdx = i;
+    }
+    if(std::abs(cell->relativeTargetOnField.angle()) < visibleAngle)
+    {
+      if(cell->lastseenScanPattern < worstNoTurnScanTimestamp)
       {
-        worstCoverage = coverage;
-        worstIdx = i;
+        worstNoTurnScanTimestamp = cell->lastseenScanPattern;
+        worstNoTurnIdx = i;
       }
-      if(std::abs(cell->relativeTargetOnField.angle()) < visibleAngle)
+      if(coverage < worstNoTurnRangeCoverage && cell->distance < range)
       {
-        if(cell->lastseenScanPattern < worstNoTurnScanTimestamp)
-        {
-          worstNoTurnScanTimestamp = cell->lastseenScanPattern;
-          worstNoTurnIdx = i;
-        }
-        if(coverage < worstNoTurnRangeCoverage && cell->distance < range)
-        {
-          worstNoTurnRangeCoverage = coverage;
-          worstNoTurnRangeIdx = i;
-        }
-        if(coverage < worstNoTurnHalfRangeCoverage && cell->distance < range / 2.0f)
-        {
-          worstNoTurnHalfRangeCoverage = coverage;
-          worstNoTurnHalfRangeIdx = i;
-        }
+        worstNoTurnRangeCoverage = coverage;
+        worstNoTurnRangeIdx = i;
+      }
+      if(coverage < worstNoTurnHalfRangeCoverage && cell->distance < range / 2.0f)
+      {
+        worstNoTurnHalfRangeCoverage = coverage;
+        worstNoTurnHalfRangeIdx = i;
       }
     }
   }
@@ -297,7 +268,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     {
       const Vector2<> abs = theRobotPose * fieldCoverage.worstTarget.target;
       CROSS("module:FieldCoverageProvider:worstTarget",
-            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorClasses::blue);
+            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorRGBA::blue);
     }
   });
 
@@ -307,7 +278,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     {
       const Vector2<> abs = theRobotPose * fieldCoverage.worstNoTurnTarget.target;
       CROSS("module:FieldCoverageProvider:worstNoTurnTarget",
-            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorClasses::white);
+            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorRGBA::white);
     }
   });
 
@@ -317,7 +288,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     {
       const Vector2<> abs = theRobotPose * fieldCoverage.worstNoTurnRangeTarget.target;
       CROSS("module:FieldCoverageProvider:worstNoTurnRangeTarget",
-            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorClasses::yellow);
+            abs.x, abs.y, 100, 20, Drawings::ps_solid, ColorRGBA::yellow);
     }
   });
 
@@ -335,10 +306,10 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   {
     if(fieldCoverage.worstNoTurnTarget.isValid)
     {
-      Vector2<int> img;
-      Geometry::calculatePointInImage(fieldCoverage.worstNoTurnTarget.target, theCameraMatrix, theCameraInfo, img);
+      Vector2<> img;
+      Transformation::robotToImage(fieldCoverage.worstNoTurnTarget.target, theCameraMatrix, theCameraInfo, img);
       CROSS("module:FieldCoverageProvider:worstNoTurnTargetImage",
-            img.x, img.y, 100, 20, Drawings::ps_solid, ColorClasses::blue);
+            img.x, img.y, 100, 20, Drawings::ps_solid, ColorRGBA::blue);
     }
   });
 
@@ -349,7 +320,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   PLOT("module:FieldCoverageProvider:stddev", fieldCoverage.stddev);
 
   // Assemble Team Comm
-  if(theTeamMateData.sendThisFrame)
+  if(theTeammateData.sendThisFrame)
   {
     teamData.nextInterval();
     unsigned intervalOffset = teamData.interval * teamData.intervalSize;
@@ -357,16 +328,15 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     for(int i = 0; i < teamData.intervalSize; ++i)
       teamData.cells[i] = cells[intervalOffset + i]->coverage(theFrameInfo.time);
     teamData.timestamp = theFrameInfo.time;
-    TEAM_OUTPUT(idTeamMateFieldCoverage, bin, teamData);
+    TEAM_OUTPUT(idTeammateFieldCoverage, bin, teamData);
   }
 }
 
 Vector2<> FieldCoverageProvider::projectOnField(int x, int y)
 {
-  Vector2<> pointOnField;
-  Geometry::calculatePointOnField(x, y, theCameraMatrix, theCameraInfo, pointOnField);
-  pointOnField = Geometry::relative2FieldCoord(theRobotPose, pointOnField);
-  return pointOnField;
+  Vector2<> pointRelativeToRobot;
+  Transformation::imageToRobot(x, y, theCameraMatrix, theCameraInfo, pointRelativeToRobot);
+  return Transformation::robotToField(theRobotPose, pointRelativeToRobot);
 }
 
 void FieldCoverageProvider::calculateMean(FieldCoverage& fieldCoverage)
@@ -430,7 +400,7 @@ void FieldCoverageProvider::ballThrowIn(FieldCoverage& fieldCoverage)
   DEBUG_RESPONSE("module:FieldCoverageProvider:throwIn", fieldCoverage.throwIn = true;);
   if(fieldCoverage.throwIn)
   {
-    const bool ownTeamKicked = theGameInfo.dropInTeam == theOwnTeamInfo.teamColour;
+    const bool ownTeamKicked = theGameInfo.dropInTeam == theOwnTeamInfo.teamColor;
 
     Vector2<> throwInPosition(lastValidInsideLyingBall.position.x + (ownTeamKicked ? -throwInPenaltyDistance : throwInPenaltyDistance),
                               lastValidInsideLyingBall.position.y < 0 ? yPosRightThrowInLine : yPosLeftThrowInLine);
@@ -485,24 +455,6 @@ void FieldCoverageProvider::ballThrowIn(FieldCoverage& fieldCoverage)
   }
 }
 
-void FieldCoverageProvider::computeShadows(std::vector<RobotShadow>& shadows, const RobotPose& robotPose,
-    const RobotsModel& robotsModel)
-{
-  for(RobotsModel::RCIt r = theRobotsModel.robots.begin(); r != theRobotsModel.robots.end(); ++r)
-    if(r->standing)
-      shadows.push_back(RobotShadow(robotPose, r->relPosOnField));
-}
-
-bool FieldCoverageProvider::isCellShadowed(const std::vector<RobotShadow>& shadows, const Cell& cell)
-{
-  std::vector<RobotShadow>::const_iterator it = shadows.begin();
-  const std::vector<RobotShadow>::const_iterator end = shadows.end();
-  for(; it != end; ++it)
-    if(it->isPointShadowed(cell))
-      return true;
-  return false;
-}
-
 bool FieldCoverageProvider::calculateBallOutPosition()
 {
   if(lastValidInsideBall.time > lastValidOutsideBall.time)
@@ -545,95 +497,22 @@ bool FieldCoverageProvider::calculateBallOutPosition()
   return false;
 }
 
-FieldCoverageProvider::RobotShadow::RobotShadow(const RobotShadow& other)
-  : robotPose(other.robotPose), distance(other.distance)
-{
-  for(int i = 0; i < 4; ++i)
-    vertices[i] = other.vertices[i];
-}
-
-FieldCoverageProvider::RobotShadow::RobotShadow(const RobotPose& robotPose, const Vector2<>& otherRobotRelativePosition)
-  : robotPose(robotPose), distance(otherRobotRelativePosition.abs())
-{
-  // Calculate shadow vertices.
-  const Vector2<> absPosOnField = Geometry::relative2FieldCoord(robotPose, otherRobotRelativePosition);
-  Vector2<> directionToRobot = absPosOnField - robotPose.translation;
-  const Vector2<> perpendicular = directionToRobot.rotateRight().normalize();
-
-  vertices[0] = absPosOnField - perpendicular * 250.0f;
-  vertices[3] = absPosOnField + perpendicular * 250.0f;
-  vertices[1] = vertices[0] + (vertices[0] - robotPose.translation).normalize(7000.0f);
-  vertices[2] = vertices[3] + (vertices[3] - robotPose.translation).normalize(7000.0f);
-}
-
-FieldCoverageProvider::RobotShadow& FieldCoverageProvider::RobotShadow::operator=(const RobotShadow& other)
-{
-  distance = other.distance;
-  for(int i = 0; i < 4; ++i)
-    vertices[i] = other.vertices[i];
-  return *this;
-}
-
-bool FieldCoverageProvider::RobotShadow::isPointShadowed(const Cell& cell) const
-{
-  if(cell.distance < distance)
-    return false;
-  return Geometry::isPointInsideConvexPolygon(vertices, 4, cell.absoluteCameraTargetOnField);
-}
-
-void FieldCoverageProvider::RobotShadow::draw() const
-{
-  QUADRANGLE("module:FieldCoverageProvider:shadows",
-             vertices[0].x, vertices[0].y,
-             vertices[1].x, vertices[1].y,
-             vertices[2].x, vertices[2].y,
-             vertices[3].x, vertices[3].y,
-             20, Drawings::ps_solid, ColorClasses::yellow);
-}
-
-void FieldCoverageProvider::RobotShadow::drawOnImage(const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo,
-                                                     const ImageCoordinateSystem& imageCoordinateSystem) const
-{
-  COMPLEX_DRAWING("module:FieldCoverageProvider:shadowsOnImage",
-  {
-    Vector2<> pixel1 = projectOnImage(vertices[0], cameraMatrix, cameraInfo, imageCoordinateSystem);
-    Vector2<> pixel2 = projectOnImage(vertices[1], cameraMatrix, cameraInfo, imageCoordinateSystem);
-    Vector2<> pixel3 = projectOnImage(vertices[2], cameraMatrix, cameraInfo, imageCoordinateSystem);
-    Vector2<> pixel4 = projectOnImage(vertices[3], cameraMatrix, cameraInfo, imageCoordinateSystem);
-    QUADRANGLE("module:FieldCoverageProvider:shadowsOnImage",
-               pixel1.x, pixel1.y,
-               pixel2.x, pixel2.y,
-               pixel3.x, pixel3.y,
-               pixel4.x, pixel4.y,
-               1, Drawings::ps_solid, ColorClasses::red);
-  });
-}
-
-Vector2<> FieldCoverageProvider::RobotShadow::projectOnImage(const Vector2<>& absPosOnField, const CameraMatrix& cameraMatrix,
-    const CameraInfo& cameraInfo, const ImageCoordinateSystem& imageCoordinateSystem) const
-{
-  Vector2<> relPosOnField = Geometry::fieldCoord2Relative(robotPose, absPosOnField);
-  Vector2<int> pointInImage;
-  Geometry::calculatePointInImage(relPosOnField, cameraMatrix, cameraInfo, pointInImage);
-  return imageCoordinateSystem.fromCorrectedApprox(pointInImage);
-}
-
 void FieldCoverageProvider::drawFieldView()
 {
   DECLARE_DEBUG_DRAWING("module:FieldCoverageProvider:FieldView", "drawingOnField");
 
   Vector2<> p[4];
-  Vector3<> vectorToCenter(1, 0, 0);
+  const Vector3<> vectorToCenter(1, 0, 0);
 
   RotationMatrix r = theCameraMatrix.rotation;
   r.rotateY(theCameraInfo.openingAngleHeight / 2);
   r.rotateZ(theCameraInfo.openingAngleWidth / 2);
   Vector3<> vectorToCenterWorld = r * vectorToCenter;
 
-  float a1 = theCameraMatrix.translation.x,
+  const float a1 = theCameraMatrix.translation.x,
   a2 = theCameraMatrix.translation.y,
-  a3 = theCameraMatrix.translation.z ,
-  b1 = vectorToCenterWorld.x,
+  a3 = theCameraMatrix.translation.z;
+  float b1 = vectorToCenterWorld.x,
   b2 = vectorToCenterWorld.y,
   b3 = vectorToCenterWorld.z,
   f = a3 / b3;
@@ -671,8 +550,10 @@ void FieldCoverageProvider::drawFieldView()
   f = a3 / b3;
   pof = Vector2<>(a1 - f * b1, a2 - f * b2);
 
+  const float maxDist = std::sqrt(4.f * theFieldDimensions.xPosOpponentFieldBorder * theFieldDimensions.xPosOpponentFieldBorder +
+                                  4.f * theFieldDimensions.yPosLeftFieldBorder * theFieldDimensions.yPosLeftFieldBorder);
   if(f > 0.f)
-    p[2] = theRobotPose.translation + Vector2<>(12000, 0).rotate(theRobotPose.rotation + (-theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
+    p[2] = theRobotPose.translation + Vector2<>(maxDist, 0).rotate(theRobotPose.rotation + (-theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
   else
     p[2] = (theRobotPose + pof).translation;
 
@@ -688,9 +569,9 @@ void FieldCoverageProvider::drawFieldView()
   pof = Vector2<>(a1 - f * b1, a2 - f * b2);
 
   if(f > 0.f)
-    p[3] = theRobotPose.translation + Vector2<>(12000, 0).rotate(theRobotPose.rotation + (theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
+    p[3] = theRobotPose.translation + Vector2<>(maxDist, 0).rotate(theRobotPose.rotation + (theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
   else
     p[3] = (theRobotPose + pof).translation;
 
-  POLYGON("module:FieldCoverageProvider:FieldView", 4, p, 20, Drawings::ps_null, ColorClasses::none, Drawings::bs_solid, ColorRGBA(255, 255, 255, 25));
+  POLYGON("module:FieldCoverageProvider:FieldView", 4, p, 20, Drawings::ps_null, ColorRGBA(), Drawings::bs_solid, ColorRGBA(255, 255, 255, 25));
 }

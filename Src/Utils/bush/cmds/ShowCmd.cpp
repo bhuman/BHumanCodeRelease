@@ -56,7 +56,6 @@ bool ShowCmd::preExecution(Context &context, const std::vector<std::string> &par
   return true;
 }
 
-
 Task* ShowCmd::perRobotExecution(Context &context, Robot &robot)
 {
   context.printLine("--------------");

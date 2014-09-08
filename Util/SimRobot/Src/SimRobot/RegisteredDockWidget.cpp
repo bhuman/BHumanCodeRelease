@@ -1,7 +1,3 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QCloseEvent>
 #include <QMenu>
 #include <QApplication>
@@ -9,12 +5,13 @@
 #include <QSvgGenerator>
 #include <QFileDialog>
 #include <QPainter>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "RegisteredDockWidget.h"
 #include "MainWindow.h"
+
+#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+extern MainWindow* mainWindow;
+#endif
 
 RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* parent) :
   QDockWidget(parent), fullName(fullName), module(0), object(0), widget(0), flags(0), reallyVisible(false)
@@ -101,11 +98,7 @@ QMenu* RegisteredDockWidget::createUserMenu() const
 
   QMenu* menu = widget->createUserMenu();
 
-  if(menu)
-  {
-
-  }
-  else if(flags & SimRobot::Flag::exportAsImage)
+  if(!menu && (flags & SimRobot::Flag::exportAsImage))
     menu = new QMenu(tr("&Object"));
 
   if(flags & SimRobot::Flag::exportAsImage)
@@ -115,7 +108,6 @@ QMenu* RegisteredDockWidget::createUserMenu() const
     QAction* pngAction = exportImgMenu->addAction(tr("Export Image as &PNG"));
     connect(svgAction, SIGNAL(triggered()), this, SLOT(exportAsSvg()));
     connect(pngAction, SIGNAL(triggered()), this, SLOT(exportAsPng()));
-
   }
 
   return menu;
@@ -148,7 +140,14 @@ void RegisteredDockWidget::closeEvent(QCloseEvent* event)
   }
 
 #ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+  QList<QDockWidget*> widgets = mainWindow->tabifiedDockWidgets(this);
+  mainWindow->setUpdatesEnabled(false);
+  foreach(QDockWidget* w, widgets)
+    w->setFloating(true);
   setFloating(false);
+  foreach(QDockWidget* w, widgets)
+    w->setFloating(false);
+  mainWindow->setUpdatesEnabled(true);
 #endif
   QDockWidget::closeEvent(event);
 
@@ -212,6 +211,9 @@ void RegisteredDockWidget::contextMenuEvent(QContextMenuEvent* event)
 
 void RegisteredDockWidget::visibilityChanged(bool visible)
 {
+#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+  setWindowOpacity(!isFloating() || mainWindow->updatesEnabled() ? 1.f : 0.f);
+#endif
   reallyVisible = visible;
 }
 
@@ -263,8 +265,6 @@ void RegisteredDockWidget::exportAsPng()
   widget->getWidget()->render(&pixmap);
   pixmap.save(fileName, "PNG");
 }
-
-
 
 void RegisteredDockWidget::keyPressEvent(QKeyEvent* event)
 {

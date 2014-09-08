@@ -5,13 +5,13 @@
  *      Author: Arne Böckmann (arneboe@tzi.de)
  */
 
-#include <QEvent>
-
+#include "DataWidget.h"
 #include "PropertyTreeCreator.h"
 #include "PropertyTreeWriter.h"
-#include "DataWidget.h"
 #include "Tools/Debugging/DebugDataStreamer.h"
 #include "Tools/MessageQueue/InMessage.h"
+
+#include <QEvent>
 
 DataView::DataView(const QString& fullName,
                                        const std::string& repName,
@@ -104,7 +104,6 @@ void DataView::setUnchanged()
   tempQ.out.finishMessage(idDebugDataChangeRequest);
 
   theConsole.sendDebugMessage(tempQ.in);
-  setIgnoreUpdates(false);
 
   pTheWidget->setUnchangedButtonEnabled(false);
 }
@@ -130,6 +129,7 @@ void DataView::set()
 
   pTheWidget->setSetButtonEnabled(false);
   pTheWidget->setUnchangedButtonEnabled(true);
+  setIgnoreUpdates(false);
 }
 
 void DataView::setAutoSet(bool value)

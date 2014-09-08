@@ -17,7 +17,7 @@ namespace Behavior2013
 
   void Libraries::operator=(const Libraries& other)
   {
-    memcpy(this, &other, sizeof(*this));
+    memcpy((void*) this, (void*) &other, sizeof(*this));
   }
 
   void Libraries::preProcessLibraries()

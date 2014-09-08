@@ -1,90 +1,120 @@
-/**
-* @file LineSpots.h
-* Declaration of a class that represents a spot that  indicates a line.
-* @author jeff
-*/
-
 #pragma once
 
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Vector2.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include <algorithm>
+#include "Tools/Math/Vector.h"
+#include "Tools/Math/Geometry.h"
+#include <vector>
 
 /**
 * @class LineSpots
-* This class contains all the linespots and nonlinesposts (=white regions which are no lines)
+* This class contains all the linespots
 */
 STREAMABLE(LineSpots,
 {
 public:
-  /**
-   * @class LineSpot
-   * A class that represents a spot that's an indication of a line.
-   */
-  STREAMABLE(LineSpot,
+  STREAMABLE(Line,
   {
   public:
-    bool operator<(const LineSpots::LineSpot& ls) const
-    {
-      if(std::min(p1.x, p2.x) < std::min(ls.p1.x, ls.p2.x))
-        return true;
-      else if(std::min(p1.y, p2.y) < std::min(ls.p1.y, ls.p2.y))
-        return true;
-      else
-        return false;
-    }
+    Line() = default;
+    Line(const Vector2<float>& base, const Vector2<float>& direction) : line(base, direction) {},
 
-    bool operator<(const LineSpots::LineSpot* ls) const
-    {
-      return *this < *ls;
-    },
-
-    (float) alpha, /**< the direction/rotation of the region   | */
-    (float) alphaLen, /**< "ausbreitung entlang alpha"         |-> Haupttraegheitsachsenbla */
-    (float) alphaLen2, /**< "ausbreitung orthogonal zu alpha"  | */
-    (int) xs, /**< center of mass x */
-    (int) ys, /**< center of mass y */
-    (Vector2<int>) p1,
-    (Vector2<int>) p2, /**< The starting/end point of this linespot in image coordinates*/
+    (Geometry::Line) line, /**<The fitted line in field coordinates */
+    (std::vector<Vector2<>>) spotsInField, /**< Spots that are on this line  (in relative field coordinates). NOT FITTED TO LINE*/
+    (std::vector<Vector2<int>>) spotsInImg, /**< Spots that are on this line  (in image coordinates). NOT FITTED TO LINE*/
+    (std::vector<int>) spotInImgHeights, /**<The height of each spot in the image (only needed for validation) */
+    (Vector2<int>) firstImg,/**<First spot of the line in image coordinates, NOT FITTED TO LINE*/
+    (Vector2<int>) lastImg,/**<Last spot of the line in image coordinates, NOT FITTED TO LINE*/
+    (Vector2<>) firstField, /**<start of the fitted line in field coordinates */
+    (Vector2<>) lastField,/**< end of the fitted line in field coordinates */
+    (bool)(false) belongsToCircle,
   });
-
-  /**
-   * @class NonLineSpot
-   * This class represents a white region which is no line
-   */
-  STREAMABLE(NonLineSpot,
-  {,
-    (Vector2<int>) p1, /**< start point of this spot in image coordinates */
-    (Vector2<int>) p2, /**< end point of this spot in image coordinates */
-    (int) size, /**< The size of the coresponding region in the image */
+  
+  STREAMABLE(Intersection,
+  {
+  public:
+    ENUM(IntersectionType,
+      L,
+      T,
+      X
+    ),
+    (IntersectionType) type,
+    (Vector2<>) pos, /**< The fieldcoordinates of the intersection */
   });
-
+  
+  
   /**
   * The method draws all line spots.
   */
   void draw() const
   {
-    DECLARE_DEBUG_DRAWING("representation:LineSpots:nonLineSpots", "drawingOnImage");
-    COMPLEX_DRAWING("representation:LineSpots:nonLineSpots",
+    DECLARE_DEBUG_DRAWING("representation:LineSpots:image", "drawingOnImage");
+    DECLARE_DEBUG_DRAWING("representation:LineSpots:field", "drawingOnField");
+    
+    COMPLEX_DRAWING("representation:LineSpots:field",
     {
-      for(std::vector<LineSpots::NonLineSpot>::const_iterator i = nonLineSpots.begin(); i != nonLineSpots.end(); ++i)
+     
+      ColorRGBA colors[8] = {ColorRGBA::black, ColorRGBA::blue, ColorRGBA::cyan, ColorRGBA::gray,
+                             ColorRGBA::green, ColorRGBA::magenta, ColorRGBA::orange, ColorRGBA::violet};
+      int colorIndex = 0;
+      for(const Line& line : lines)
       {
-        ARROW("representation:LineSpots:nonLineSpots", i->p1.x, i->p1.y, i->p2.x, i->p2.y, 2, Drawings::ps_solid, ColorClasses::blue);
-      }
-    });
+        Vector2<> p1 = line.line.base + (line.line.direction * 2);
+        Vector2<> p2 = line.line.base - (line.line.direction * 2);
+        ColorRGBA color = colors[colorIndex];
+        LINE("representation:LineSpots:field", p1.x, p1.y, p2.x, p2.y, 20, Drawings::ps_dot, color);
+        LINE("representation:LineSpots:field", line.spotsInField[0].x,
+             line.spotsInField[0].y, line.spotsInField.back().x, line.spotsInField.back().y, 30, Drawings::ps_solid, color);
 
-    DECLARE_DEBUG_DRAWING("representation:LineSpots:Image", "drawingOnImage"); // Draws the LineSpots to the image
-    COMPLEX_DRAWING("representation:LineSpots:Image",
-    {
-      for(std::vector<LineSpots::LineSpot>::const_iterator i = spots.begin(); i != spots.end(); ++i)
+        for(const auto& spot : line.spotsInField)
+        {
+          CROSS("representation:LineSpots:field", spot.x, spot.y, 15, 10, Drawings::ps_solid, color);
+        }
+        
+        CROSS("representation:LineSpots:field", line.firstField.x, line.firstField.y, 30, 15, Drawings::ps_solid, color);
+        CROSS("representation:LineSpots:field", line.lastField.x, line.lastField.y, 30, 15, Drawings::ps_solid, color);
+        colorIndex = (colorIndex + 1) % 8;
+      }
+      
+      if(circleSeen)
       {
-        LINE("representation:LineSpots:Image", i->xs, i->ys, i->xs + (int)(cos(i->alpha + pi_2) * i->alphaLen2), i->ys + (int)(sin(i->alpha + pi_2)*i->alphaLen2), 0, Drawings::ps_solid, ColorClasses::black);
-        ARROW("representation:LineSpots:Image", i->p1.x, i->p1.y, i->p2.x, i->p2.y, 0, Drawings::ps_solid, ColorClasses::black);
+        CROSS("representation:LineSpots:field", circle.center.x, circle.center.y, 60, 30, Drawings::ps_solid, ColorRGBA::green);
+        CIRCLE("representation:LineSpots:field", circle.center.x, circle.center.y, circle.radius, 30, Drawings::ps_solid, ColorRGBA::blue, Drawings::bs_null, ColorRGBA::blue);
+      }
+      
+      for(const Intersection& intersection : intersections)
+      {
+        CROSS("representation:LineSpots:field", intersection.pos.x, intersection.pos.y, 60, 30, Drawings::ps_solid, ColorRGBA::blue);
+      }      
+    });
+    
+    COMPLEX_DRAWING("representation:LineSpots:image",
+    {
+      
+      ColorRGBA colors[8] = {ColorRGBA::black, ColorRGBA::blue, ColorRGBA::cyan, ColorRGBA::gray,
+                             ColorRGBA::green, ColorRGBA::magenta, ColorRGBA::orange, ColorRGBA::violet};
+      int colorIndex = 0;
+      for(const Line& line : lines)
+      {
+        ColorRGBA color = colors[colorIndex];
+        LINE("representation:LineSpots:image", line.spotsInImg[0].x, line.spotsInImg[0].y,
+             line.spotsInImg.back().x, line.spotsInImg.back().y, 2, Drawings::ps_solid, color);
+        for(const auto& spot : line.spotsInImg)
+        {
+          CROSS("representation:LineSpots:image", spot.x, spot.y, 2, 1, Drawings::ps_solid, color);
+        }
+        CROSS("representation:LineSpots:image", line.firstImg.x, line.firstImg.y, 5, 3, Drawings::ps_solid, color);
+        CROSS("representation:LineSpots:image", line.lastImg.x, line.lastImg.y, 5, 3, Drawings::ps_solid, color);
+        colorIndex = (colorIndex + 1) % 8;
       }
     });
   },
 
-  (std::vector<LineSpot>) spots, /**< All the line spots */
-  (std::vector<NonLineSpot>) nonLineSpots, /**< All the non line spots (= white regions which are no lines)*/
+  /**line spots in image coordinates*/
+  (std::vector<Line>) lines,
+  (std::vector<Intersection>) intersections,
+  (unsigned) spotCount, /**<Total number of detected spots */
+  (Geometry::Circle) circle, /**< location and radius of the circle if found */
+  (bool) circleSeen, /**< True if circle has been found this frame */
+
 });

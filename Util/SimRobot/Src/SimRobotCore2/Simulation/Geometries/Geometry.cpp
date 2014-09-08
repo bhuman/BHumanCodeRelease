@@ -46,7 +46,6 @@ void Geometry::drawPhysics(unsigned int flags) const
   glPopMatrix();
 }
 
-
 bool Geometry::registerCollisionCallback(SimRobotCore2::CollisionCallback& collisionCallback)
 {
   if(!collisionCallbacks)

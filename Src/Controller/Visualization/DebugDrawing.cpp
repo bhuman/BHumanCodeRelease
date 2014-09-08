@@ -120,7 +120,7 @@ void DebugDrawing::text
   element.y = y;
   element.fontSize = fontSize;
   element.penColor = color;
-  element.size = strlen(text) + 1;
+  element.size = (int) strlen(text) + 1;
   write(&element, sizeof(element));
   write(text, element.size);
 }
@@ -137,7 +137,7 @@ void DebugDrawing::tip
   element.x = x;
   element.y = y;
   element.radius = radius;
-  element.size = strlen(text) + 1;
+  element.size = (int) strlen(text) + 1;
   element.next = firstTip;
   firstTip = usedSize;
   write(&element, sizeof(element));

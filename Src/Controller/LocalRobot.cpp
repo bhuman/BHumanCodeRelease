@@ -31,14 +31,14 @@ LocalRobot::LocalRobot()
     logPlayer.play();
     puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
     if(puppet)
-      oracle.init(puppet);
+      simulatedRobot.init(puppet);
   }
   else if(mode == SystemCall::simulatedRobot)
   {
     SimRobotCore2::Body* robot = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject(RoboCupCtrl::getRobotFullName(), SimRobotCore2::body);
     ASSERT(robot);
-    oracle.init(robot);
-    ctrl->gameController.registerOracle(robotName.mid(5).toInt() - 1, oracle);
+    simulatedRobot.init(robot);
+    ctrl->gameController.registerSimulatedRobot(robotName.mid(5).toInt(), simulatedRobot);
   }
 }
 
@@ -66,7 +66,7 @@ bool LocalRobot::main()
           debugOut.out.finishMessage(idGroundTruthOrientationData);
           ctrl->gameController.writeGameInfo(debugOut.out.bin);
           debugOut.out.finishMessage(idGameInfo);
-          int robot = robotName.mid(5).toInt() - 1;
+          int robot = robotName.mid(5).toInt();
           ctrl->gameController.writeOwnTeamInfo(robot, debugOut.out.bin);
           debugOut.out.finishMessage(idOwnTeamInfo);
           ctrl->gameController.writeOpponentTeamInfo(robot, debugOut.out.bin);
@@ -97,12 +97,8 @@ bool LocalRobot::main()
           }
           debugOut.out.bin << cameraInfo;
           debugOut.out.finishMessage(idCameraInfo);
-          debugOut.out.bin << robotPose;
-          debugOut.out.finishMessage(idGroundTruthRobotPose);
-          debugOut.out.bin << ballModel;
-          debugOut.out.finishMessage(idGroundTruthBallModel);
-          debugOut.out.bin << robotsModel;
-          debugOut.out.finishMessage(idGroundTruthRobotsModel);
+          debugOut.out.bin << worldState;
+          debugOut.out.finishMessage(idGroundTruthWorldState);
           debugOut.out.bin << 'c';
           debugOut.out.finishMessage(idProcessFinished);
           imageLastTimeStampSent = image.timeStamp;
@@ -131,18 +127,18 @@ void LocalRobot::update()
       if(logAcknowledged && logPlayer.replay())
         logAcknowledged = false;
       if(puppet)
-        oracle.getAndSetJointData((const JointRequest&) RobotConsole::jointData, jointData);
+        simulatedRobot.getAndSetJointData((const JointRequest&) RobotConsole::jointData, jointData);
     }
     if(mode == SystemCall::simulatedRobot || puppet)
     {
       if(moveOp != noMove)
       {
         if(moveOp == moveBoth)
-          oracle.moveRobot(movePos, moveRot * (pi / 180), true);
+          simulatedRobot.moveRobot(movePos, moveRot * (pi / 180), true);
         else if(moveOp == movePosition)
-          oracle.moveRobot(movePos, Vector3<>(), false);
+          simulatedRobot.moveRobot(movePos, Vector3<>(), false);
         else if(moveOp == moveBallPosition)
-          oracle.moveBall(movePos);
+          simulatedRobot.moveBall(movePos);
         moveOp = noMove;
       }
     }
@@ -162,21 +158,25 @@ void LocalRobot::update()
         nextImageTimeStamp = newNextImageTimeStamp;
 
         if(ctrl->calculateImage)
-          oracle.getImage(image, cameraInfo);
+        {
+          simulatedRobot.getImage(image, cameraInfo);
+        }
         else
+        {
+          simulatedRobot.getCameraInfo(cameraInfo);
           image.timeStamp = now;
-        oracle.getRobotPose(robotPose);
-        robotPose.timestamp = now;
-        oracle.getBallModel(robotPose, ballModel);
-        oracle.toggleCamera();
+        }
+        simulatedRobot.getRobotPose(robotPose);
+        simulatedRobot.getWorldState(worldState);
+        simulatedRobot.toggleCamera();
       }
       else
-        oracle.getRobotPose(robotPose);
+        simulatedRobot.getRobotPose(robotPose);
 
-      oracle.getOdometryData(robotPose, odometryData);
-      oracle.getSensorData(sensorData, usRequest);
-      oracle.getOrientationData(sensorData, orientationData);
-      oracle.getAndSetJointData(jointRequest, jointData);
+      simulatedRobot.getOdometryData(robotPose, odometryData);
+      simulatedRobot.getSensorData(sensorData, usRequest);
+      simulatedRobot.getOrientationData(sensorData, orientationData);
+      simulatedRobot.getAndSetJointData(jointRequest, jointData);
     }
 
     std::string statusText;

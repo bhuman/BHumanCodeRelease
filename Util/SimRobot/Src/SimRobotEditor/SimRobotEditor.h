@@ -32,4 +32,4 @@ namespace SimRobotEditor
     */
     virtual Editor* addFolder(const QString& name) = 0;
   };
-};
+}

@@ -7,7 +7,7 @@
 */
 
 #include "Controller/RobotConsole.h"
-#ifdef MACOSX
+#ifdef OSX
 #include <gl.h>
 #include <glu.h>
 #else
@@ -19,7 +19,6 @@
 #include "Platform/SystemCall.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/RobotDimensions.h"
-
 
 DebugDrawing3D::DebugDrawing3D() : flip(false), robotConsole(0)
 {
@@ -283,7 +282,6 @@ void DebugDrawing3D::draw2()
   glPopMatrix();
 }
 
-
 void DebugDrawing3D::reset()
 {
   timeStamp = SystemCall::getCurrentSystemTime();
@@ -307,7 +305,6 @@ void DebugDrawing3D::quad(const Vector3<>* points, float width, ColorRGBA color)
   element.width = width;
   quads.push_back(element);
 }
-
 
 void DebugDrawing3D::line
 (
@@ -558,7 +555,6 @@ bool DebugDrawing3D::addShapeFromQueue
       this->line(0, v.y, v.z,     0,  0, v.z, 1.0f, c);
       this->line(0, v.y, v.z,   v.x, v.y, v.z, 1.0f, c);
     }
-
   }
   break;
   case Drawings3D::sphere:

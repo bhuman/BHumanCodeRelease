@@ -30,7 +30,6 @@ public:
   /** Default constructor */
   InMessageQueue();
 
-
   /**
   * The function states whether the stream actually exists.
   * @return Does the file exist?
@@ -57,7 +56,7 @@ protected:
   *          "size" bytes large.
   * @param size The number of bytes to be read.
   */
-  virtual void readFromStream(void* p, int size);
+  virtual void readFromStream(void* p, size_t size);
 };
 
 /**
@@ -120,10 +119,10 @@ public:
 /**
 * @class InMessage
 *
-* An Interface for reading single messages from a MessageQueue that is used by
-* MessageHandler derivates.
+* An interface for reading single messages from a MessageQueue that is used by
+* MessageHandler derivatives.
 *
-* Use the bin, text or config member for formated reading from a message queue.
+* Use the bin, text or config member for formatted reading from a message queue.
 */
 class InMessage
 {
@@ -197,7 +196,7 @@ public:
   /**
    * Virtual destructor (for bush).
    */
-  virtual ~MessageHandler() {}
+  virtual ~MessageHandler() = default;
 
   /**
   * Called from a MessageQueue to distribute messages.

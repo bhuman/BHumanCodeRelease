@@ -15,7 +15,14 @@
 * A class that represents the output of the walking engine.
 */
 STREAMABLE_WITH_BASE(WalkingEngineOutput, JointRequest,
-{,
+{
+public:
+  ENUM(PhaseType,
+    standPhase,
+    leftSupportPhase,
+    rightSupportPhase
+  );
+  ,
   (bool)(true) standing, /**< Whether the robot is standing or walking */
   (Pose2D) speed, /**< The current walking speed in mm/s and rad/s. */
   (Pose2D) odometryOffset, /**< The body motion performed in this step. */
@@ -25,6 +32,7 @@ STREAMABLE_WITH_BASE(WalkingEngineOutput, JointRequest,
   (float)(0) positionInWalkCycle, /**< The current position in the walk cycle in the range [0..1[. */
   (float)(0) instability, /**< An evaluation of the current walk stability. */
   (WalkRequest) executedWalk, /**< The walk currently executed. */
+  (PhaseType) walkPhase,
 });
 
 /**

@@ -13,13 +13,14 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/CameraMatrix.h"
 
-MODULE(RobotCameraMatrixProvider)
-  REQUIRES(CameraCalibration)
-  REQUIRES(RobotDimensions)
-  REQUIRES(FilteredJointData)
-  REQUIRES(CameraInfo)
-  PROVIDES_WITH_MODIFY_AND_DRAW(RobotCameraMatrix);
-END_MODULE
+MODULE(RobotCameraMatrixProvider,
+{,
+  REQUIRES(CameraCalibration),
+  REQUIRES(RobotDimensions),
+  REQUIRES(FilteredJointData),
+  REQUIRES(CameraInfo),
+  PROVIDES_WITH_MODIFY_AND_DRAW(RobotCameraMatrix),
+});
 
 class RobotCameraMatrixProvider: public RobotCameraMatrixProviderBase
 {

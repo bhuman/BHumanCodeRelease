@@ -34,7 +34,6 @@
 #include "Representations/MotionControl/ArmMotionEngineOutput.h"
 #include "Tools/Math/Vector.h"
 
-
 /** maximum numbers of frames to buffer */
 #define FRAME_BUFFER_SIZE 5
 
@@ -47,29 +46,32 @@
 /** serves as input for the checkArms method if checking the right arm */
 #define RIGHT false
 
-MODULE(ArmContactModelProvider)
-  REQUIRES(FilteredJointData)
-  USES(MotionInfo)
-  USES(JointRequest)
-  USES(ArmMotionEngineOutput)
-  USES(OdometryData)
-  REQUIRES(GroundContactState)
-  REQUIRES(GameInfo)
-  REQUIRES(RobotInfo)
-  REQUIRES(FrameInfo)
-  REQUIRES(FallDownState)
-  REQUIRES(RobotModel)
-  PROVIDES_WITH_MODIFY(ArmContactModel)
-  LOADS_PARAMETER(float, errorXThreshold)           /**< Maximum divergence of arm angleX (in degrees) that is not treated as an obstacle detection */
-  LOADS_PARAMETER(float, errorYThreshold)           /**< Maximum divergence of arm angleY (in degrees) that is not treated as an obstacle detection */
-  LOADS_PARAMETER(unsigned, malfunctionThreshold)   /**< Duration of contact in frames after a contact is ignored */
-  LOADS_PARAMETER(unsigned, frameDelay)             /**< The size of the delay in frames */
-  LOADS_PARAMETER(bool, debugMode)                  /**< Enable debug mode */
-  LOADS_PARAMETER(float, speedBasedErrorReduction)  /**< At this translational hand speed, the angular error will be ignored (in mm/s). */
-  LOADS_PARAMETER(int, waitAfterMovement)           /**< wait this amount of time (in ms) after ARME moved an arm before contact can be detected again */
-  LOADS_PARAMETER(bool, detectWhilePenalized)
-END_MODULE
-
+MODULE(ArmContactModelProvider,
+{,
+  REQUIRES(FilteredJointData),
+  USES(MotionInfo),
+  USES(JointRequest),
+  USES(ArmMotionEngineOutput),
+  USES(OdometryData),
+  REQUIRES(GroundContactState),
+  REQUIRES(GameInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(FrameInfo),
+  REQUIRES(FallDownState),
+  REQUIRES(RobotModel),
+  PROVIDES_WITH_MODIFY(ArmContactModel),
+  LOADS_PARAMETERS(
+  {,
+    (float) errorXThreshold,           /**< Maximum divergence of arm angleX (in degrees) that is not treated as an obstacle detection */
+    (float) errorYThreshold,           /**< Maximum divergence of arm angleY (in degrees) that is not treated as an obstacle detection */
+    (unsigned) malfunctionThreshold,   /**< Duration of contact in frames after a contact is ignored */
+    (unsigned) frameDelay,             /**< The size of the delay in frames */
+    (bool) debugMode,                  /**< Enable debug mode */
+    (float) speedBasedErrorReduction,  /**< At this translational hand speed, the angular error will be ignored (in mm/s). */
+    (int) waitAfterMovement,           /**< wait this amount of time (in ms) after ARME moved an arm before contact can be detected again */
+    (bool) detectWhilePenalized,
+  }),
+});
 
 /**
 * @class ArmContactModelProvider
@@ -117,7 +119,6 @@ private:
   */
   void resetAll(ArmContactModel& armContactModel);
 
-
   /** Fills the error buffers with differences of current and requested
   * joint angles
   * @param left Check the left or the right arm for collisions?
@@ -125,12 +126,10 @@ private:
   */
   void checkArm(bool left, float factor);
 
-
   /** Executes this module.
   * @param ArmContactModel The data structure that is filled by this module.
   */
   void update(ArmContactModel& armContactModel);
-
 
   /** Calculates the angular speed of the robots hands.
   *
@@ -139,7 +138,6 @@ private:
   * @param The speed of the hand calculated in the previous frame. This will be updated at the end of this method.
   */
   float calculateCorrectionFactor(const Pose3D foreArm, const Pose2D odometryOffset, Vector2<> &lastArmPos);
-
 
   /** Dertemines the push direction for an arm. That is, the direction in which the specified arm is being
   * pushed. That means that the obstacle causing the contact is located on the opposite direction of

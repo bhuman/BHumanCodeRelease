@@ -20,7 +20,7 @@ public:
   void draw() const;
 
   void computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera);
-  RobotCameraMatrix() {}
+  RobotCameraMatrix() = default;
   RobotCameraMatrix(const RobotDimensions& robotDimensions, const float headYaw, const float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera);
 };
 
@@ -30,19 +30,19 @@ public:
 STREAMABLE_WITH_BASE(CameraMatrix, Pose3D,
 {
 public:
+  CameraMatrix() = default;
+
   /** Kind of copy-constructor.
   * @param pose The other pose.
   */
   CameraMatrix(const Pose3D& pose);
+  
+  CameraMatrix(const Pose3D& torsoMatrix, const Pose3D& robotCameraMatrix, const CameraCalibration& cameraCalibration);
 
   void computeCameraMatrix(const Pose3D& torsoMatrix, const Pose3D& robotCameraMatrix, const CameraCalibration& cameraCalibration);
-  CameraMatrix(const Pose3D& torsoMatrix, const Pose3D& robotCameraMatrix, const CameraCalibration& cameraCalibration);
 
   /** Draws the camera matrix. */
   void draw() const,
 
   (bool)(true) isValid, /**< Matrix is only valid if motion was stable. */
 });
-
-class CameraMatrixOther : public CameraMatrix {};
-class RobotCameraMatrixOther : public RobotCameraMatrix {};

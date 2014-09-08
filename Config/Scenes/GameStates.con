@@ -10,7 +10,7 @@ jc press 18 gc ready # Shift+Crtl+R
 jc press 19 gc set # Shift+Crtl+S
 jc press 16 gc playing # Shift+Crtl+P
 jc press 6 gc finished # Shift+Crtl+F
-jc press 2 gc kickOffBlue # Shift+Ctrl+B 
+jc press 2 gc kickOffBlue # Shift+Ctrl+B
 jc press 25 gc kickOffRed # Shift+Ctrl+Y
 jc press 21 pr none # Shift+Ctrl+U
 jc press 13 pr manual # Shift+Ctrl+M

@@ -67,17 +67,14 @@ public:
   void draw() const;
 
   /** Draws the end position of the estimate on the field */
-  void drawEndPosition(float ballFriction) const;
-
-  /** Draw the ball model in scene */
-  void draw3D(const Pose2D& robotPose) const,
+  void drawEndPosition(float ballFriction) const,
 
   (Vector2<>) lastPerception, /**< The last seen position of the ball */
   (BallState) estimate, /**< The state of the ball estimated from own observations; it is propagated even if the ball is not seen */
   (unsigned)(0) timeWhenLastSeen, /**< Time stamp, indicating what its name says */
   (unsigned)(0) timeWhenDisappeared, /**< The time when the ball was not seen in the image altough it should have been there */
+  (unsigned char)(0) seenPercentage, /**< How often was the ball seen in the recent past (0%...100%). */
 });
-
 
 /**
 * @class GroundTruthBallModel
@@ -91,7 +88,6 @@ public:
   void draw() const;
 };
 
-
 /**
 * @class BallModelCompressed
 * A compressed version of BallModel used in team communication
@@ -99,12 +95,13 @@ public:
 STREAMABLE(BallModelCompressed,
 {
 public:
+  BallModelCompressed() = default;
   BallModelCompressed(const BallModel& ballModel);
   operator BallModel() const,
 
   (Vector2<short>) lastPerception, /**< The last seen position of the ball */
-  (Vector2<short>) position,
-  (Vector2<short>) velocity,
+  (Vector2<>) position,
+  (Vector2<>) velocity,
   (unsigned) timeWhenLastSeen, /**< Time stamp, indicating what its name says */
   (unsigned) timeWhenDisappeared, /**< The time when the ball was not seen in the image altough it should have been there */
 });

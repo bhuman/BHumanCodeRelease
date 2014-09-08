@@ -8,45 +8,46 @@
 
 #pragma once
 
-#include <QString>
-#include <fstream>
-#include <list>
+#ifdef WINDOWS
+#include <WinSock2.h> // This must be included first to prevent errors, since windows.h is included in one of the following headers. 
+#endif
 
-#include "Tools/ProcessFramework/Process.h"
-#include "Platform/Joystick.h"
-#include "Representations/Infrastructure/SensorData.h"
+#include "Representations/BehaviorControl/ActivationGraph.h"
+#include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/Configuration/ColorCalibration.h"
+#include "Representations/Configuration/ColorTable.h"
+#include "Representations/Configuration/JointCalibration.h"
+#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/JointData.h"
+#include "Representations/Infrastructure/SensorData.h"
 #include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/USRequest.h"
-#include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/FreePartOfOpponentGoalModel.h"
-#include "Representations/Modeling/RobotsModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/CombinedWorldModel.h"
-#include "Representations/Perception/GoalPercept.h"
-#include "Representations/Perception/LinePercept.h"
-#include "Representations/Perception/ColorReference.h"
+#include "Representations/Modeling/ObstacleModel.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/Configuration/JointCalibration.h"
-#include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/BehaviorControl/ActivationGraph.h"
-#include "Representations/Sensing/RobotBalance.h"
-#include "LogPlayer.h"
-#include "Tools/Debugging/DebugImages.h"
+#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/GoalPercept.h"
+#include "Representations/Perception/LinePercept.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
-#include "Visualization/DebugDrawing.h"
-#include "Visualization/DebugDrawing3D.h"
+#include "Tools/Debugging/DebugImages.h"
+#include "Tools/ProcessFramework/Process.h"
+
+#include "CameraCalibratorHandler.h"
+#include "LogPlayer.h" // Must be included after Process.h
+#include "Platform/Joystick.h"
 #include "Representations/ModuleInfo.h"
 #include "Representations/TimeInfo.h"
-#include "Controller/CameraCalibratorHandler.h"
 #include "Views/DataView/DataView.h"
-#include "Views/FootView.h"
-#include "Views/ColorCalibrationView/ColorCalibrationView.h"
+#include "Visualization/DebugDrawing.h"
+#include "Visualization/DebugDrawing3D.h"
+
+#include <QString>
+#include <fstream>
+#include <list>
 
 class ConsoleRoboCupCtrl;
 class ColorCalibrationView;
@@ -91,16 +92,17 @@ private:
 
 public:
   DECLARE_SYNC; /**< Make this object synchronizable. */
-  ColorReference colorReference; /**< The color reference */
-  unsigned colorReferenceTimeStamp; /**< The time when the last color reference was received. */
-  unsigned colorReferenceChangedTimeStamp; /**< The time when the ColorReference was changed by the ColorCalibrator. */
-  ColorCalibrationView* colorCalibrator; /**< The ColorCalibrator tool. */
+  ColorCalibration colorCalibration; /**< The color calibration */
+  ColorCalibration prevColorCalibration; /**< The previous color calibration */
+  bool colorCalibrationChanged; /**< Was the color calibration changed since the color table was updated? */
+  ColorTable colorTable; /**< The color table */
+  unsigned colorTableTimeStamp; /**< The last time when the last color table was updated. */
+  SystemCall::Mode mode; /**< Defines mode in which this process runs. */
 
 protected:
   ConsoleRoboCupCtrl* ctrl; /** A pointer to the controller object. */
   QString robotFullName; /**< The full name of the robot. (e.g. "RoboCup.Robot1") */
   QString robotName; /**< The name of the robot. (e.g. "Robot1") */
-  SystemCall::Mode mode; /**< Defines mode in which this process runs. */
   bool printMessages, /**< Decides whether to output text messages in the console window. */
        handleMessages, /**< Decides whether messages are handled or not. */
        logAcknowledged, /**< The flag is true whenever log data sent to the robot code was processed. */
@@ -120,8 +122,6 @@ protected:
   Vector3<> movePos; /**< The position the robot is moved to. */
   Vector3<> moveRot; /**< The rotation the robot is moved to. */
   ObstacleModel obstacleModel; /**< Obstacle model from team communication. */
-  FreePartOfOpponentGoalModel freePartOfOpponentGoalModel; /**< Free part of opponent goal model from team communication. */
-  RobotsModel robotsModel; /**< Robots model from team communication. */
   RobotPose robotPose; /**< Robot pose from team communication. */
   BallModel ballModel; /**< Ball model from team communication. */
   CombinedWorldModel combinedWorldModel; /**< combined world model from team communication */
@@ -134,9 +134,7 @@ protected:
   bool isPenalized, /**< Penalized state from team communication. */
        hasGroundContact, /**< Ground contact state from team communication. */
        isUpright; /**<fall down state from team communication */
-  unsigned freePartOfOpponentGoalModelReceived, /**< When was the free part of opponent goal model received from team communication. */
-           obstacleModelReceived, /**< When was the obstacle model received from team communication. */
-           robotsModelReceived, /**< When was the robots model received from team communication. */
+  unsigned obstacleModelReceived, /**< When was the obstacle model received from team communication. */
            robotPoseReceived, /**< When was the robot pose received from team communication. */
            ballModelReceived, /**< When was the ball model received from team communication. */
            goalPerceptReceived, /**< When was the goal percept received from team communication. */
@@ -147,12 +145,12 @@ protected:
            hasGroundContactReceived, /**< When was the ground contact state received from team communication. */
            combinedWorldModelReceived, /**< When was the combined world model received from team communication. */
            isUprightReceived; /**< When was the fall down state received from team communication. */
+  int mrCounter; /**< Counts the number of mr commands. */
   SensorData sensorData; /**< The most current sensor data sent. */
   FilteredSensorData filteredSensorData; /**< The received filtered sensor data. */
 
   JointCalibration jointCalibration; /**< The joint calibration received from the robot code. */
   RobotDimensions robotDimensions; /**< The robotDimensions received from the robot code. */
-  RobotBalance robotBalance; /**< Balance information received from the robot code, including the zero-moment point. */
   USRequest usRequest;  /**< The current us request received from the robot code (for simulation). */
   std::string printBuffer; /**< Buffer used for command get. */
   char drawingsViaProcess; /** Which process is used to provide field and 3D drawings */
@@ -162,7 +160,7 @@ public:
   {
   public:
     Image* image;
-    char processIdentifier;
+    char processIdentifier; /**< "c" denotes lower camera process, "d" denotes upper camera process */
     ImagePtr() : image(0), processIdentifier(0) {}
     ~ImagePtr() {reset();}
     void reset() {if(image) delete image; image = 0;}
@@ -291,7 +289,7 @@ private:
   bool joystickExecCommand(const std::string&); /**< Exec command and optionally output trace to console. */
 
   unsigned maxPlotSize; /**< The maximum number of data points to remember for plots. */
-  bool bikeView; /**Indicator if there is already a BikeView, we need it just once */
+  bool kickViewSet; /**Indicator if there is already a KikeView, we need it just once */
   int imageSaveNumber; /**< A counter for generating image file names. */
   CameraCalibratorHandler cameraCalibratorHandler;
 
@@ -365,6 +363,11 @@ public:
    */
   std::string getDebugRequest(const std::string& name);
 
+  /**
+   * Save current color calibration and send it to robot.
+   */
+  void saveColorCalibration();
+
 private:
   /**
   * Poll information of a certain kind if it needs updated.
@@ -383,7 +386,7 @@ private:
   */
   void triggerProcesses();
 
-  void addColorSpaceViews(const std::string& id, const std::string& name, bool user);
+  void addColorSpaceViews(const std::string& id, const std::string& name, bool user, bool upperCam);
 
   /**
   * The function is called when a console command has been entered.
@@ -397,7 +400,7 @@ private:
   * @param type The type to print.
   * @param field The field with that type.
   */
-  void printType(const char* type, const char* field = "");
+  void printType(std::string type, const char* field = "");
 
   /**
   * The function handles the joystick.
@@ -442,7 +445,7 @@ private:
   bool view3D(In& stream);
   bool viewField(In& stream);
   bool viewData(In& stream); /**< Creates a new representation view. Stream should contain the name of the debug data to display. */
-  bool viewBike();
+  bool kickView();
   bool viewDrawing(In& stream, RobotConsole::Views& views, const char* type);
   bool viewImage(In& stream);
   bool viewPlot(In& stream);

@@ -80,7 +80,16 @@ public:
     numOfSingleUsActuatorModes,
     bothToSame = numOfSingleUsActuatorModes,
     bothToOther
-  ),
+  );
+
+  /** Default constructor. */
+  SensorData()
+  {
+    for(int i = 0; i < numOfSensors; ++i)
+      data[i] = off;
+    for(int i = 0; i < JointData::numOfJoints; ++i)
+      currents[i] = temperatures[i] = 0;
+  },
 
   (float[numOfSensors]) data, /**< The data of all sensors. */
   (short[JointData::numOfJoints]) currents, /**< The currents of all motors. */
@@ -88,12 +97,6 @@ public:
   (unsigned)(0) timeStamp, /**< The time when the sensor data was received. */
   (UsActuatorMode)(leftToLeft) usActuatorMode, /**< The ultrasonice measure method which was used for measuring \c data[usL] and \c data[usR]. */
   (unsigned)(0) usTimeStamp, /**< The time when the ultrasonic measurements were taken. */
-
-  // Initialization
-  for(int i = 0; i < numOfSensors; ++i)
-    data[i] = off;
-  for(int i = 0; i < JointData::numOfJoints; ++i)
-    currents[i] = temperatures[i] = 0;
 });
 
 /**

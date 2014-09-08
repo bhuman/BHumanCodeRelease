@@ -26,58 +26,71 @@ QString ModuleGraphViewObject::generateDotFileContent()
   lastModulInfoTimeStamp = console.moduleInfo.timeStamp;
   const ModuleInfo& m = console.moduleInfo;
   bool success = false;
+  bool defaultCreated = false;
   std::stringstream stream;
   stream << "digraph G {" << std::endl;
-  stream << "node [style=filled,fillcolor=lightyellow,fontname=Arial,fontsize=9,height=0.2];" << std::endl;
+  stream << "node [style=filled,fillcolor=lightyellow,fontname=Arial"
+#ifdef OSX
+            "MT"
+#endif
+            ",fontsize=9,height=0.2];" << std::endl;
   stream << "concentrate = true;" << std::endl;
 
-  for(std::list<ModuleInfo::Module>::const_iterator i = m.modules.begin(); i != m.modules.end(); ++i)
-    if(i->processIdentifier == processIdentifier && (category == "" || i->category == category))
+  for(const auto& i : m.modules)
+    if(i.processIdentifier == processIdentifier && (category == "" || i.category == category))
     {
       bool used = false;
-      for(std::vector<std::string>::const_iterator j = i->representations.begin(); j != i->representations.end(); ++j)
+      for(const auto& j : i.representations)
       {
-        std::list<ModuleInfo::Provider>::const_iterator k = std::find(m.providers.begin(), m.providers.end(), *j);
-        while(k != m.providers.end() && k->selected != i->name)
-          k = std::find(++k, m.providers.end(), *j);
-        if(k != m.providers.end())
-        {
-          used = true;
-          stream << j->c_str() << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
-          stream << i->name << "->" << j->c_str() << " [len=2];" << std::endl;
-        }
+        for(const auto& k : m.config.representationProviders)
+          if(k.representation == j && k.provider == i.name)
+          {
+            used = true;
+            stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
+            stream << i.name << "->" << j.c_str() << " [len=2];" << std::endl;
+          }
       }
       if(used)
       {
-        for(std::vector<std::string>::const_iterator j = i->requirements.begin(); j != i->requirements.end(); ++j)
+        for(const auto& j : i.requirements)
         {
-          std::list<ModuleInfo::Provider>::const_iterator k = std::find(m.providers.begin(), m.providers.end(), *j);
-          while(k != m.providers.end() && (k->selected == "" || k->processIdentifier != processIdentifier))
-            k = std::find(++k, m.providers.end(), *j);
-          if(k == m.providers.end())
-          {
-            // no provider in same process
-            k = std::find(m.providers.begin(), m.providers.end(), *j);
-            while(k != m.providers.end() && k->selected == "")
-              k = std::find(++k, m.providers.end(), *j);
-            if(k == m.providers.end())
-              stream << j->c_str() << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
-            else
-              stream << j->c_str() << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
-          }
-          stream << j->c_str() << "->" << i->name << " [len=2];" << std::endl;
+          for(const auto& k : m.config.representationProviders)
+            if(k.representation == j)
+            {
+              if(k.provider == "default")
+              {
+                if(!defaultCreated)
+                {
+                  stream << "default[shape=box,fontcolor=red];" << std::endl;
+                  defaultCreated = true;
+                }
+                stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
+                stream << "default->" << j << " [len=2];" << std::endl;
+                goto providerFound;
+              }
+              else
+              {
+                const auto& l = std::find(m.modules.begin(), m.modules.end(), k.provider);
+                if(l != m.modules.end())
+                {
+                  if(l->processIdentifier != i.processIdentifier)
+                    stream << j << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
+                  goto providerFound;
+                }
+              }
+            }
+          // no provider
+          stream << j << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
+        providerFound:
+          stream << j << "->" << i.name << " [len=2];" << std::endl;
         }
-        if(i->name == "default")
-          stream << i->name.c_str() << "[shape=box,fontcolor=red];" << std::endl;
-        else
-          stream << i->name.c_str() << "[shape=box];" << std::endl;
+        stream << i.name << "[shape=box];" << std::endl;
         success = true;
       }
     }
 
   stream << "}" << std::endl;
   return success ? QString(stream.str().c_str()) : QString();
-
 }
 
 std::string ModuleGraphViewObject::compress(const std::string& s) const

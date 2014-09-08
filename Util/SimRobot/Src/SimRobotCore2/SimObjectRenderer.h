@@ -26,7 +26,7 @@ public:
   SimObjectRenderer(SimObject& simObject);
 
   /** Destructor */
-  virtual ~SimObjectRenderer() {}
+  virtual ~SimObjectRenderer() = default;
 
 private:
   SimObject& simObject;
@@ -78,10 +78,10 @@ public:
   virtual void draw();
   virtual void resize(float fovy, unsigned int width, unsigned int height);
   virtual void getSize(unsigned int& width, unsigned int& height) const;
-  virtual void setSurfaceShadeMode(ShadeMode shadeMode) {surfaceShadeMode = shadeMode;};
-  virtual ShadeMode getSurfaceShadeMode() const {return surfaceShadeMode;};
+  virtual void setSurfaceShadeMode(ShadeMode shadeMode) {surfaceShadeMode = shadeMode;}
+  virtual ShadeMode getSurfaceShadeMode() const {return surfaceShadeMode;}
   virtual void setPhysicsShadeMode(ShadeMode shadeMode) {physicsShadeMode = shadeMode;}
-  virtual ShadeMode getPhysicsShadeMode() const {return physicsShadeMode;};
+  virtual ShadeMode getPhysicsShadeMode() const {return physicsShadeMode;}
   virtual void setDrawingsShadeMode(ShadeMode shadeMode) {drawingsShadeMode = shadeMode;}
   virtual ShadeMode getDrawingsShadeMode() const {return drawingsShadeMode;}
   virtual void zoom(float change);

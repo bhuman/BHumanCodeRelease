@@ -7,9 +7,9 @@
 #pragma once
 
 #include "Tools/Streams/InStreams.h"
-#include "Representations/Configuration/CameraSettings.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/CameraSettings.h"
 
 /**
 * @class NaoCamera
@@ -18,7 +18,32 @@
 class NaoCamera
 {
 public:
+  unsigned int timeWaitedForLastImage; /**< The time (in _milliseconds_) passed while waiting for a new image. */
 
+protected:
+  CameraInfo::Camera camera; /**< The camera accessed by this driver. */
+  CameraSettings settings; /**< The camera control settings. */
+  CameraSettings appliedSettings; /**< The camera settings that are known to be applied. */
+
+  enum
+  {
+    frameBufferCount = 3, /**< Amount of available frame buffers. */
+  };
+
+  unsigned int WIDTH; /**< The width of the yuv 422 image */
+  unsigned int HEIGHT; /**< The height of the yuv 422 image */
+#ifndef NDEBUG
+  unsigned int SIZE; /**< The size of an image in bytes */
+#endif
+  int fd; /**< The file descriptor for the video device. */
+  void* mem[frameBufferCount]; /**< Frame buffer addresses. */
+  int memLength[frameBufferCount]; /**< The length of each frame buffer. */
+  struct v4l2_buffer* buf; /**< Reusable parameter struct for some ioctl calls. */
+  struct v4l2_buffer* currentBuf; /**< The last dequeued frame buffer. */
+  bool first; /**< First image grabbed? */
+  unsigned long long timeStamp; /**< Timestamp of the last captured image in microseconds. */
+
+public:
   /**
   * Constructor.
   * @param device The name of the camera device (e.g. /dev/video0).
@@ -30,19 +55,7 @@ public:
   NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip);
 
   /** Destructor. */
-  ~NaoCamera();
-
-  /**
-  * Sets the camera control settings to the camera.
-  * @param settings The settings.
-  */
-  void setSettings(const CameraSettings& settings);
-
-  /**
-  * Requests the current camera control settings of the camera.
-  * @return The settings.
-  */
-  const CameraSettings& getSettings() const { return settings; };
+  virtual ~NaoCamera();
 
   /**
   * The method blocks till a new image arrives.
@@ -75,7 +88,7 @@ public:
   * Whether an image has been captured.
   * @return true if there is one
   */
-  bool hasImage() const;
+  virtual bool hasImage();
 
   /**
   * Timestamp of the last captured image in µs.
@@ -84,64 +97,43 @@ public:
   unsigned long long getTimeStamp() const;
 
   /**
-   * Returns the frame rate used by the camera
-   * @return The frame rate in frames per second
-   */
+  * Returns the frame rate used by the camera
+  * @return The frame rate in frames per second
+  */
   float getFrameRate() const;
 
   /**
-  * Returns whether this is the lower orthe  upper camera
-  * @return Whether this is the lower or the upper camera
+  * Set frame rate in frames per 10 seconds.
   */
-  CameraInfo::Camera getCurrentCamera() { return camera; }
-
-  /**
-   * Asserts that the actual camera settings are correct.
-   */
-  void assertCameraSettings();
-
-  /**
-   * Unconditional write of the camera settings
-   *
-   * @return The time in milliseconds executing this method took.
-   */
-  unsigned int writeCameraSettings();
-
-  /**
-   * Set frame rate in frames per 10 seconds.
-   */
   void setFrameRate(unsigned numerator = 1, unsigned denominator = 30);
 
   /**
-   * The time (in _milliseconds_) passed while waiting for a new image.
-   */
-  unsigned int timeWaitedForLastImage;
+  * Requests the current camera control settings of the camera.
+  * @return The settings.
+  */
+  const CameraSettings& getSettings() const { return appliedSettings; };
 
-private:
-  CameraSettings settings; /**< The camera control settings. */
-  CameraSettings appliedSettings; /**< The camera settings that are known to be applied. */
+  /**
+  * Sets the camera control settings to the camera.
+  * @param settings The settings.
+  */
+  void setSettings(const CameraSettings& settings);
 
-  enum
-  {
-    frameBufferCount = 3, /**< Amount of available frame buffers. */
-  };
+  /**
+  * Asserts that the actual camera settings are correct.
+  */
+  void assertCameraSettings();
 
-  unsigned int WIDTH; /**< The width of the yuv 422 image */
-  unsigned int HEIGHT; /**< The height of the yuv 422 image */
-#ifndef NDEBUG
-  unsigned int SIZE; /**< The size of an image in bytes */
-#endif
-  int fd; /**< The file descriptor for the video device. */
-  void* mem[frameBufferCount]; /**< Frame buffer addresses. */
-  int memLength[frameBufferCount]; /**< The length of each frame buffer. */
-  struct v4l2_buffer* buf; /**< Reusable parameter struct for some ioctl calls. */
-  struct v4l2_buffer* currentBuf; /**< The last dequeued frame buffer. */
-  unsigned long long timeStamp; /**< Timestamp of the last captured image in microseconds. */
-  CameraInfo::Camera camera; /**< The camera accessed by this driver. */
-  bool first; /**< First image grabbed? */
-  unsigned long long lastCameraSettingTimestamp; /**< Timestamp from the last time a camera setting is been applied in microseconds. */
-  unsigned long long cameraSettingApplicationRate; /**< Minimum time in microseconds between too camera setting applications. */
+  /**
+  * Unconditional write of the camera settings
+  */
+  void writeCameraSettings();
 
+  void readCameraSettings();
+  
+  void doAutoWhiteBalance();
+
+protected:
   /**
   * Requests the value of a camera control setting from camera.
   * @param id The setting id.
@@ -157,14 +149,7 @@ private:
   */
   bool setControlSetting(unsigned int id, int value);
 
-  /**
-   * Applies a collection of camera control settings.
-   *
-   * \param list of control settings.
-   * \return True if every control setting has been applied, false otherwise.
-   */
-  bool setControlSettings(std::list<CameraSettings::V4L2Setting> controlsettings,
-                          std::list<CameraSettings::V4L2Setting> appliedControlSettings);
+  bool assertCameraSetting(CameraSettings::CameraSetting setting);
 
   void initOpenVideoDevice(const char* device);
   void initSetImageFormat();

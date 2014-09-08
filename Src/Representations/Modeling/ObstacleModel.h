@@ -16,8 +16,6 @@
 #include "Platform/BHAssert.h"
 #include <vector>
 
-class Pose3D;
-
 /**
 * @class ObstacleModel
 *
@@ -32,6 +30,9 @@ public:
   public:
     ENUM(Type, US, ROBOT, ARM, FOOT); /**< Different obstacle type */
 
+    /** Default constructor. */
+    Obstacle() = default;
+
     /** Constructor */
     Obstacle(const Vector2<>& leftCorner, const Vector2<>& rightCorner,
              const Vector2<>& center, const Vector2<>& closestPoint, const Matrix2x2<>& covariance, Type type = US),
@@ -45,9 +46,7 @@ public:
   });
 
   /** Function for drawing */
-  void draw() const;
-
-  void draw3D(const Pose3D& torsoMatrix) const,
+  void draw() const,
 
   /** A list of obstacles */
   (std::vector<Obstacle>) obstacles,
@@ -67,6 +66,7 @@ public:
   STREAMABLE(Obstacle,
   {
   public:
+    Obstacle() = default;
     Obstacle(const ObstacleModel::Obstacle& other),
 
     (Vector2<short>) leftCorner,   /**< Leftmost point of the obstacle */
@@ -88,6 +88,7 @@ public:
     (ObstacleModel::Obstacle, Type)(US) type, /**< The type of an obstacle */
   });
 
+  ObstacleModelCompressed() = default;
   ObstacleModelCompressed(const ObstacleModel& other, unsigned int maxNumberOfObstacles);
 
   operator ObstacleModel () const,

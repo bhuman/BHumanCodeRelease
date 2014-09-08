@@ -5,10 +5,7 @@
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/tools/StringTools.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
+
 #include <QGridLayout>
 #include <QDrag>
 #include <QMimeData>
@@ -17,13 +14,10 @@
 #include <QApplication>
 #include <map>
 #include <vector>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 RobotPoolDelegate::RobotPoolDelegate(RobotPool* pool)
   : robotPool(pool)
-{ }
+{}
 
 void RobotPoolDelegate::paint(QPainter* painter,
                               const QStyleOptionViewItem& option,
@@ -146,7 +140,7 @@ void RobotPool::dropEvent(QDropEvent* e)
   {
     //TODO: this is a very simple implementation which drops the order of the list
     RobotView* source = dynamic_cast<RobotView*>(e->source());
-    if(!source->getPlayerNumber())
+    if(source->getPlayerNumber() == Robot::INVALID_PLAYER_NUMBER)
       return;
     source->setRobot(0);
     source->update();

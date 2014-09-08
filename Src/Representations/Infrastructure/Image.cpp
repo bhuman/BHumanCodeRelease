@@ -43,25 +43,34 @@ Image& Image::operator=(const Image& other)
   width = other.width;
   widthStep = 2 * width;
   timeStamp = other.timeStamp;
+  isFullSize = other.isFullSize;
   if(isReference)
   {
-    // allocate full size image and keep it that way indepentent of resolution
+    // allocate full size image and keep it that way independent of resolution
     image = new Pixel[maxResolutionHeight * maxResolutionWidth * 2];
     isReference = false;
   }
+
+  const int size = width * sizeof(Pixel)* (isFullSize ? 2 : 1);
+
   for(int y = 0; y < height; ++y)
-    memcpy((*this)[y], other[y], width * sizeof(Image::Pixel));
+    memcpy((*this)[y], other[y], size);
   return *this;
 }
 
 void Image::setImage(const unsigned char* buffer)
+{
+  setImage((Pixel*) buffer);
+}
+
+void Image::setImage(Pixel* buffer)
 {
   if(!isReference)
   {
     delete[] image;
     isReference = true;
   }
-  image = (Pixel*) buffer;
+  image = buffer;
 }
 
 void Image::convertFromYCbCrToRGB(const Image& ycbcrImage)
@@ -125,16 +134,22 @@ void Image::serialize(In* in, Out* out)
   STREAM_REGISTER_BEGIN;
   STREAM(width);
   STREAM(height);
+  if(isFullSize)
+    timeStamp |= 1 << 31;
   STREAM(timeStamp);
+  isFullSize = (timeStamp & 1 << 31) != 0;
+  timeStamp &= ~(1 << 31);
+
+  const int size = width * sizeof(Pixel) * (isFullSize ? 2 : 1);
 
   if(out)
     for(int y = 0; y < height; ++y)
-      out->write((*this)[y], width * sizeof(Pixel));
+      out->write((*this)[y], size);
   else
   {
     widthStep = width * 2;
     for(int y = 0; y < height; ++y)
-      in->read((*this)[y], width * sizeof(Pixel));
+      in->read((*this)[y], size);
   }
 
   STREAM_REGISTER_FINISH;

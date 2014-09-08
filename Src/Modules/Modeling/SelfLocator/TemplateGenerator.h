@@ -9,16 +9,8 @@
 
 #pragma once
 
-#include "SelfLocatorParameters.h"
-#include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/MotionControl/OdometryData.h"
-#include "Representations/Perception/GoalPercept.h"
-#include "Representations/Perception/LinePercept.h"
+#include "SelfLocatorBase.h"
 #include "Tools/RingBuffer.h"
-#include "vector"
-
-
 
 /**
 * @class TemplateGenerator
@@ -28,12 +20,13 @@
 class TemplateGenerator
 {
 private:
-  const SelfLocatorParameters& parameters;
+  const SelfLocatorBase::Parameters& parameters;
   const GoalPercept& theGoalPercept;
   const LinePercept& theLinePercept;
   const FrameInfo& theFrameInfo;
   const FieldDimensions& theFieldDimensions;
   const OdometryData& theOdometryData;
+  const MotionRequest& theMotionRequest;
 
   /**
   * @class SampleTemplate
@@ -75,6 +68,9 @@ private:
     Pose2D odometry;
     bool centerCircleSeen;
     Vector2<> centerCircleSeenPosition;
+    bool midLineSeen;
+    bool groundLineSeen;
+    Vector2<> lineDirection;
   };
 
   class UnknownGoalpost
@@ -87,6 +83,9 @@ private:
     Pose2D odometry;
     bool centerCircleSeen;
     Vector2<> centerCircleSeenPosition;
+    bool midLineSeen;
+    bool groundLineSeen;
+    Vector2<> lineDirection;
   };
 
   enum {MAX_PERCEPTS = 10};
@@ -113,17 +112,19 @@ private:
       const Vector2<>& posReal, const Pose2D& postOdometry) const;
 
   SampleTemplate generateTemplate(const Pose2D& lastPose) const;
-
-  bool isMirrorCloser(const Pose2D& currentPose, const Pose2D& lastPose) const;
+  
+  SampleTemplate generateTemplateFromPostAndLine(const Vector2<>& postSeen, const Vector2<>& postReal, const Pose2D& postOdometry,
+                                                 const Vector2<>& lineBase, const Vector2<>& lineDirection, bool isGroundLine = true);
 
   bool halfChangeNeeded(const Pose2D& pose, const Pose2D& odometry, const Vector2<>& seenPost, const Vector2<>& realPost) const;
 
 public:
   enum ForceHalf {OWN_HALF, OPPONENT_HALF, CONSIDER_POSE, RANDOM_HALF};
 
-  TemplateGenerator(const SelfLocatorParameters& parameters,
-                     const GoalPercept& goalPercept, const LinePercept& linePercept, const FrameInfo& frameInfo,
-                     const FieldDimensions& fieldDimensions, const OdometryData& odometryData);
+  TemplateGenerator(const SelfLocatorBase::Parameters& parameters,
+                    const GoalPercept& goalPercept, const LinePercept& linePercept, const FrameInfo& frameInfo,
+                    const FieldDimensions& fieldDimensions, const OdometryData& odometryData,
+                    const MotionRequest& motionRequest);
 
   /** Empty all buffers. */
   void init();
@@ -131,7 +132,7 @@ public:
   /** Buffers current goal perceptions. */
   void bufferNewPerceptions(const Pose2D& robotPose);
 
-  Pose2D getTemplate(ForceHalf forceHalf, float mirrorLikelihood, Pose2D robotPose, const Pose2D& lastRobotPose) const;
+  Pose2D getTemplate(ForceHalf forceHalf, const Pose2D& robotPose, const Pose2D& lastRobotPose) const;
 
   Pose2D getTemplateAtReenterPosition() const;
 
@@ -140,6 +141,10 @@ public:
   Pose2D getTemplateAtManualPlacementPosition(int robotNumber);
 
   bool templatesAvailable() const;
+  
+  bool isMirrorCloser(const Pose2D& currentPose, const Pose2D& lastPose) const;
 
   void draw();
+  
+  void plot();
 };

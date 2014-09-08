@@ -24,18 +24,18 @@ void MotionCombinator::update(JointRequest& jointRequest)
 
   const JointRequest* jointRequests[MotionRequest::numOfMotions];
   jointRequests[MotionRequest::walk] = &theWalkingEngineOutput;
-  jointRequests[MotionRequest::bike] = &theBikeEngineOutput;
-  jointRequests[MotionRequest::indykick] = &theIndykickEngineOutput;
+  jointRequests[MotionRequest::kick] = &theKickEngineOutput;
   jointRequests[MotionRequest::specialAction] = &theSpecialActionsOutput;
   jointRequests[MotionRequest::stand] = &theWalkingEngineStandOutput;
   jointRequests[MotionRequest::getUp] = &theGetUpEngineOutput;
-  jointRequests[MotionRequest::takeBall] = &theBallTakingOutput;
 
   jointRequest.angles[JointData::HeadYaw] = theHeadJointRequest.pan;
   jointRequest.angles[JointData::HeadPitch] = theHeadJointRequest.tilt;
 
   copy(*jointRequests[theMotionSelection.targetMotion], jointRequest);
 
+  ASSERT(jointRequest.isValid());
+  
   int i;
   for(i = 0; i < MotionRequest::numOfMotions; ++i)
     if(theMotionSelection.ratios[i] == 1.f)
@@ -53,15 +53,11 @@ void MotionCombinator::update(JointRequest& jointRequest)
         motionInfo.walkRequest = theWalkingEngineOutput.executedWalk;
         motionInfo.upcomingOdometryOffset = theWalkingEngineOutput.upcomingOdometryOffset;
       }
-      else if(theMotionSelection.ratios[MotionRequest::bike] == 1.f)
+      else if(theMotionSelection.ratios[MotionRequest::kick] == 1.f)
       {
-        odometryData += theBikeEngineOutput.odometryOffset;
-        motionInfo.bikeRequest = theBikeEngineOutput.executedBikeRequest;
-        motionInfo.isMotionStable = theBikeEngineOutput.isStable;
-      }
-      else if(theMotionSelection.ratios[MotionRequest::indykick] == 1.0f)
-      {
-        motionInfo.indykickRequest = theIndykickEngineOutput.executedIndykickRequest;
+        odometryData += theKickEngineOutput.odometryOffset;
+        motionInfo.kickRequest = theKickEngineOutput.executedKickRequest;
+        motionInfo.isMotionStable = theKickEngineOutput.isStable;
       }
       else if(theMotionSelection.ratios[MotionRequest::specialAction] == 1.0f)
       {
@@ -80,14 +76,10 @@ void MotionCombinator::update(JointRequest& jointRequest)
         motionInfo.isMotionStable = false;
         odometryData += theGetUpEngineOutput.odometryOffset;
       }
-      else if(theMotionSelection.ratios[MotionRequest::takeBall] == 1.f)
-      {
-        motionInfo.motion = MotionRequest::takeBall;
-        motionInfo.isMotionStable = true;
-        odometryData += theBallTakingOutput.odometryOffset;
-      }
       break;
     }
+
+  ASSERT(jointRequest.isValid());
 
   if(i == MotionRequest::numOfMotions)
   {
@@ -99,6 +91,8 @@ void MotionCombinator::update(JointRequest& jointRequest)
       }
   }
 
+  ASSERT(jointRequest.isValid());
+
   if(emergencyOffEnabled)
   {
     if(theFallDownState.state == FallDownState::falling && motionInfo.motion != MotionRequest::specialAction)
@@ -106,10 +100,14 @@ void MotionCombinator::update(JointRequest& jointRequest)
       saveFall(jointRequest);
       centerHead(jointRequest);
       currentRecoveryTime = 0;
+
+      ASSERT(jointRequest.isValid());
     }
     else if((theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::onGround) && (motionInfo.motion != MotionRequest::specialAction))
     {
       centerHead(jointRequest);
+
+      ASSERT(jointRequest.isValid());
     }
     else
     {
@@ -202,7 +200,7 @@ void MotionCombinator::copy(const JointRequest& source, JointRequest& target) co
   {
     if(source.angles[i] != JointData::ignore)
       target.angles[i] = source.angles[i];
-    target.jointHardness.hardness[i] = source.angles[i] != JointData::off ? source.jointHardness.hardness[i] : 0;
+    target.jointHardness.hardness[i] = target.angles[i] != JointData::off ? source.jointHardness.hardness[i] : 0;
     if(target.jointHardness.hardness[i] == HardnessData::useDefault)
       target.jointHardness.hardness[i] = theHardnessSettings.hardness[i];
   }
@@ -273,12 +271,12 @@ void MotionCombinator::saveFall(JointRequest& jointRequest)
     jointRequest.jointHardness.hardness[i] = 30;
 
   // if ARME is moving the arms, do not lower hardness to ensure motion can be finished
-  if (theArmMotionEngineOutput.arms[ArmMotionRequest::left].move)
+  if(theArmMotionEngineOutput.arms[ArmMotionRequest::left].move)
   {
     for(int i = 0; i < 4; ++i)
       jointRequest.jointHardness.hardness[JointData::LShoulderPitch + i] = theArmMotionEngineOutput.arms[ArmMotionRequest::left].hardness[i];
   }
-  if (theArmMotionEngineOutput.arms[ArmMotionRequest::right].move)
+  if(theArmMotionEngineOutput.arms[ArmMotionRequest::right].move)
   {
     for(int i = 0; i < 4; ++i)
       jointRequest.jointHardness.hardness[JointData::RShoulderPitch + i] = theArmMotionEngineOutput.arms[ArmMotionRequest::right].hardness[i];

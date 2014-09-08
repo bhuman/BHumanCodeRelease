@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "FieldBoundaryProvider.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/Stopwatch.h"
 #include "Platform/BHAssert.h"
@@ -15,16 +16,11 @@ MAKE_MODULE(FieldBoundaryProvider, Perception)
 
 void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
 {
-  ASSERT(scanlienDistance > 0);
-
-  DECLARE_DEBUG_DRAWING("module:FieldBoundary:LowerCamSpots", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:FieldBoundary:LowerCamSpotsInterpol", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:FieldBoundary:GreaterPenaltyPoint", "drawingOnImage");
-  fieldBoundary.scanlineDistance = scanlienDistance;
+  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:LowerCamSpots", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:LowerCamSpotsInterpolated", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:GreaterPenaltyPoint", "drawingOnImage");
 
   int horizon = static_cast<int>(theImageCoordinateSystem.origin.y);
-
-  fieldBoundary.width = theImage.width;
 
   // Clear vectors.
   fieldBoundary.boundarySpots.clear();
@@ -44,11 +40,12 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     else
     {
       lowerCamConvexHullOnField.clear();
+      validLowerCamSpots = true;
     }
 
     horizon = std::max(0, horizon);
 
-    if(theCameraInfo.camera == CameraInfo::Camera::upper)
+    if(theCameraInfo.camera == CameraInfo::Camera::upper && validLowerCamSpots)
     {
       handleLowerCamSpots();
     }
@@ -67,15 +64,15 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     fieldBoundary.boundaryOnField.clear();
     lowerCamConvexHullOnField.clear();
 
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(0, theImage.height));
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(theImage.width - 1, theImage.height));
+    fieldBoundary.convexBoundary.push_back(Vector2<int>(0, theCameraInfo.height));
+    fieldBoundary.convexBoundary.push_back(Vector2<int>(theCameraInfo.width - 1, theCameraInfo.height));
 
     fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
 
     fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, 1));
     fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, -1));
 
-    fieldBoundary.highestPoint = Vector2<int>(theImage.width / 2, theImage.height);
+    fieldBoundary.highestPoint = Vector2<int>(theCameraInfo.width / 2, theCameraInfo.height);
 
     fieldBoundary.isValid = false;
     return;
@@ -87,7 +84,7 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     for(auto& p : fieldBoundary.convexBoundary)
     {
       Vector2<float> pField;
-      Geometry::calculatePointOnField(p.x, p.y, theCameraMatrix, theCameraInfo, pField);
+      Transformation::imageToRobot(p.x, p.y, theCameraMatrix, theCameraInfo, pField);
       fieldBoundary.boundaryOnField.push_back(pField);
     }
 
@@ -99,7 +96,7 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     for(auto& p : fieldBoundary.convexBoundary)
     {
       Vector2<float> pField;
-      Geometry::calculatePointOnField(p.x, p.y, theCameraMatrix, theCameraInfo, pField);
+      Transformation::imageToRobot(p.x, p.y, theCameraMatrix, theCameraInfo, pField);
       lowerCamConvexHullOnField.push_back(pField);
     }
 
@@ -114,9 +111,9 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     // update fieldBoundary.boundaryInImage
     for(auto& p : fieldBoundary.boundaryOnField)
     {
-      Vector2<int> pImg;
-      Geometry::calculatePointInImage(p, theCameraMatrix, theCameraInfo, pImg);
-      fieldBoundary.boundaryInImage.push_back(pImg);
+      Vector2<> pImg;
+      Transformation::robotToImage(p, theCameraMatrix, theCameraInfo, pImg);
+      fieldBoundary.boundaryInImage.push_back(Vector2<int>(static_cast<int>(std::floor(pImg.x + 0.5f)), static_cast<int>(std::floor(pImg.y + 0.5f))));
     }
     std::sort(fieldBoundary.boundaryInImage.begin(), fieldBoundary.boundaryInImage.end(), [](Vector2<int> a, Vector2<int> b)
     {
@@ -134,7 +131,7 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
       heighest = &spot;
     }
   }
-  fieldBoundary.highestPoint = Vector2<int>(theImage.width / 2, heighest->y);
+  fieldBoundary.highestPoint = Vector2<int>(theCameraInfo.width / 2, heighest->y);
 }
 
 void FieldBoundaryProvider::handleLowerCamSpots()
@@ -143,11 +140,11 @@ void FieldBoundaryProvider::handleLowerCamSpots()
 
   for(Vector2<float> p : lowerCamConvexHullOnField)
   {
-    Vector2<int> pImg;
+    Vector2<> pImg;
     p.rotate(-theOdometer.odometryOffset.rotation);
     p -= theOdometer.odometryOffset.translation;
-    Geometry::calculatePointInImage(p, theCameraMatrix, theCameraInfo, pImg);
-    tmpLowerCamSpotsInImage.push_back(pImg);
+    Transformation::robotToImage(p, theCameraMatrix, theCameraInfo, pImg);
+    tmpLowerCamSpotsInImage.push_back(Vector2<int>(static_cast<int>(std::floor(pImg.x + 0.5f)), static_cast<int>(std::floor(pImg.y + 0.5f))));
   }
 
   std::sort(tmpLowerCamSpotsInImage.begin(), tmpLowerCamSpotsInImage.end(), [](Vector2<int> a, Vector2<int> b)
@@ -173,132 +170,96 @@ void FieldBoundaryProvider::handleLowerCamSpots()
   // Draw Spots from last frame
   for(Vector2<int>& p : lowerCamSpotsInImage)
   {
-    DOT("module:FieldBoundary:LowerCamSpots", p.x, p.y, ColorClasses::green, ColorClasses::green);
+    DOT("module:FieldBoundaryProvider:LowerCamSpots", p.x, p.y, ColorRGBA::green, ColorRGBA::green);
   }
 }
 
 void FieldBoundaryProvider::findBundarySpots(FieldBoundary& fieldBoundary, int horizon)
 {
-  ASSERT(nearVertJump > 0);
-  ASSERT(farVertJump > 0);
-
-  int width = theImage.width;
-  int height = theImage.height;
-
-  vector<BoundaryScanline> scanlines;
-  if(theCameraInfo.camera == CameraInfo::Camera::upper && lowerCamSpotsInImage.size() > 1)
-  {
-    for(int x = scanlienDistance / 2; x < width; x += scanlienDistance)
-    {
-      int y = clipToBoundary(lowerCamSpotsInImage, x);
-      Vector2<int> p(x, y);
-      lowerCamSpostInterpol.push_back(p);
-      DOT("module:FieldBoundary:LowerCamSpotsInterpol", p.x, p.y, ColorClasses::black, ColorClasses::black);
-      int yStart = y;
-      int score = (y > height) ? (height - y) / nearVertJump : 0;
-      BoundaryScanline line = {x, yStart, yStart, score, 0, &theImage[height - 1][x]};
-      scanlines.push_back(line);
-    }
-  }
-  else
-  {
-    for(int x = scanlienDistance / 2; x < width; x += scanlienDistance)
-    {
-      int yStart = height;
-      theBodyContour.clipBottom(x, yStart, height);
-      BoundaryScanline line = {x, yStart, yStart, 0, 0, &theImage[height - 1][x]};
-      scanlines.push_back(line);
-    }
-  }
-
+  const unsigned height = theCameraInfo.height;
   // find y-coordinate where a point on the field is more than nonGreenPenaltyDistance meters away
-  int yBound = 0;
-  Vector2<float> pField;
-  for(int y = height - 1; y > horizon; y -= 5)
+  int yBound = findGreaterPenaltyY(horizon);
+
+  const int bodyContourMargin = static_cast<int>(height * 0.05);
+  int badSpots = 0;
+  for(const ScanlineRegions::Scanline& scanline : theScanlineRegions.scanlines)
   {
-    Geometry::calculatePointOnField(width / 2, y, theCameraMatrix, theCameraInfo, pField);
-    if(pField.abs() <= nonGreenPenaltyDistance)
+    SpotAccumulator spot = {static_cast<int>(height), static_cast<int>(height), 0, 0};
+    if(theCameraInfo.camera == CameraInfo::Camera::upper && lowerCamSpotsInImage.size() > 1 && validLowerCamSpots)
     {
-      yBound = y;
+      // TODO maybe also clip body contour
+      spot.yStart = clipToBoundary(lowerCamSpotsInImage, scanline.x);
+      Vector2<int> p(scanline.x, spot.yStart);
+      lowerCamSpostInterpol.push_back(p);
+      DOT("module:FieldBoundaryProvider:LowerCamSpotsInterpolated", scanline.x, spot.yStart, ColorRGBA::black, ColorRGBA::black);
+      spot.score = (spot.yStart > theCameraInfo.height) ? (height - spot.yStart) : 0; // FIXME score should be normalized by jumpsize
+      spot.yMax = spot.yStart;
     }
     else
     {
-      break;
+      spot.yStart = height;
+      theBodyContour.clipBottom(scanline.x, spot.yStart, height);
+      if(spot.yStart < bodyContourMargin)
+        ++badSpots;
+      if(theScanlineRegions.scanlines.size() - badSpots < 3 && theCameraInfo.camera == CameraInfo::Camera::lower)
+      {
+        validLowerCamSpots = false;
+        return;
+      }
     }
-  }
-  CROSS("module:FieldBoundary:GreaterPenaltyPoint", width / 2 , yBound, 5, 5, Drawings::ps_solid, ColorClasses::black);
-
-  int vertJump = nearVertJump;
-  for(int y = height - 1; y >= horizon; y -= vertJump)
-  {
-    int penalty = 1;
+    int penalty = nonGreenPenalty;
     int reward = 1;
-    if(y < yBound)
+    for(const ScanlineRegions::Region region : scanline.regions)
     {
-      vertJump = farVertJump;
-      penalty = nonGreenPenalty;
-    }
-
-    for(BoundaryScanline& line : scanlines)
-    {
-      if(y < line.yStart)
-      {
-        if(theColorReference.isGreen(line.pImg))
-        {
-          line.score += reward;
-        }
-        else
-        {
-          line.score -= penalty;
-        }
-
-        if(line.maxScore <= line.score)
-        {
-          line.maxScore = line.score;
-          line.yMax = y;
-        }
-      }
-      line.pImg -= theImage.widthStep * vertJump;
-    }
-  }
-  if(theCameraInfo.camera == CameraInfo::Camera::lower)
-  {
-    for(BoundaryScanline& line : scanlines)
-    {
-      int yEnd = line.yMax + static_cast<int>(minGreenCount * 1.5);
-      const Image::Pixel* pImg = &theImage[line.yMax][line.x];
-      if(!theColorReference.isGreen(pImg))
-      {
+      if(region.lower < yBound) // TODO nochmal gedanken dar�ber machen
+        penalty = nonGreenPenaltyGreater;
+      int regionSize;
+      if(region.upper > spot.yStart)
         continue;
-      }
-      int greenCout = 1;
-      for(int y = line.yMax + 1; y < yEnd && y < theImage.height; ++y)
+      else if(region.upper <= spot.yStart && region.lower + 1 > spot.yStart)
+        regionSize = (spot.yStart + 1) - region.upper;
+      else
+        regionSize = region.lower - region.upper;
+
+      if(region.color.is(ColorClasses::green))
+        spot.score += reward * regionSize;
+      else
+        spot.score -= penalty * regionSize;
+
+      if(spot.maxScore <= spot.score)
       {
-        if(theColorReference.isGreen(pImg))
-        {
-          ++greenCout;
-        }
-        pImg += theImage.widthStep;
-      }
-      if(greenCout >= minGreenCount) // line.yMax != line.yStart && TODO Add more stuff to prevent fuckups above shoulders
-      {
-        fieldBoundary.boundarySpots.push_back(Vector2<int>(line.x, line.yMax));
+        spot.maxScore = spot.score;
+        spot.yMax = region.upper;
       }
     }
-  }
-  else
-  {
-    for(BoundaryScanline& line : scanlines)
+    if(theCameraInfo.camera == CameraInfo::Camera::lower)
     {
-      fieldBoundary.boundarySpots.push_back(Vector2<int>(line.x, line.yMax));
+      int yEnd = spot.yMax + static_cast<int>(minGreenCount * 1.5);
+      const Image::Pixel* pImg = &theImage[spot.yMax][scanline.x];
+      if(theColorTable[*pImg].is(ColorClasses::green))
+      {
+        pImg += theImage.widthStep;
+        int greenCout = 1;
+        for(int y = spot.yMax + 1; y < yEnd && y < theImage.height; ++y)
+        {
+          if(theColorTable[*pImg].is(ColorClasses::green))
+          {
+            ++greenCout;
+          }
+          pImg += theImage.widthStep;
+        }
+        if(greenCout >= minGreenCount) // line.yMax != line.yStart && TODO Add more stuff to prevent fuckups above shoulders
+          fieldBoundary.boundarySpots.emplace_back(scanline.x, spot.yMax);
+      }
     }
+    else
+      fieldBoundary.boundarySpots.emplace_back(scanline.x, spot.yMax);
   }
 }
 
 bool FieldBoundaryProvider::cleanupBoundarySpots(InImage& boundarySpots) const
 {
-  ASSERT(nearVertJump >= farVertJump);
-  int height = theImage.height;
+  int height = theCameraInfo.height;
 
   // remove trailing pointe with y == height.
   while(boundarySpots.begin() != boundarySpots.end() && boundarySpots.back().y == height)
@@ -308,18 +269,6 @@ bool FieldBoundaryProvider::cleanupBoundarySpots(InImage& boundarySpots) const
   while(boundarySpots.begin() != boundarySpots.end() && boundarySpots.front().y == height)
     boundarySpots.erase(boundarySpots.begin());
 
-  // Due to vertJump go up until there is no more green.
-  for(Vector2<int>& point : boundarySpots)
-  {
-    for(int i = 0; i < nearVertJump; i++)
-    {
-      if(point.y > 0 && point.y < height &&  theColorReference.isGreen(&theImage[point.y - 1][point.x]))
-        --point.y;
-      else
-        break;
-    }
-  }
-
   // make sure that the boundary contains at least 2 points.
   if(boundarySpots.size() < 2)
   {
@@ -328,10 +277,7 @@ bool FieldBoundaryProvider::cleanupBoundarySpots(InImage& boundarySpots) const
     boundarySpots.push_back(Vector2<int>(theImage.width - 1, height));
     return false;
   }
-  else
-  {
-    return true;
-  }
+  return true;
 }
 
 vector<FieldBoundaryProvider::InImage> FieldBoundaryProvider::calcBoundaryCandidates(InImage boundarySpots) const
@@ -366,7 +312,7 @@ vector<FieldBoundaryProvider::InImage> FieldBoundaryProvider::calcBoundaryCandid
         val = &boundaryCandidate.back();
       }
 
-      // erase the point with the maximum x-distande to its neighbous
+      // erase the point with the maximum y-distande to its neighbous
       for(auto iter = boundaryCandidate.begin(); iter + 2 < boundaryCandidate.end(); ++iter)
       {
         int tmpDist = std::abs((iter + 1)->y - iter->y) + std::abs((iter + 2)->y - (iter + 1)->y);
@@ -400,7 +346,7 @@ void FieldBoundaryProvider::findBestBoundary(const vector<InImage>& boundaryCand
   int score;
   int y;
   int maxScore = 0;
-  const InImage* tmpBoundary =  &boundaryCandidates.front();
+  const InImage* tmpBoundary = &boundaryCandidates.front();
 
   for(const InImage& boundarycandidate : boundaryCandidates)
   {
@@ -486,4 +432,18 @@ int FieldBoundaryProvider::clipToBoundary(const InImage& boundary, int x) const
   double m = 1.0 * (right->y - left->y) / (right->x - left->x);
 
   return static_cast<int>((x * m) + right->y - (right->x * m));
+}
+
+int FieldBoundaryProvider::findGreaterPenaltyY(int horizon) const
+{
+  const Vector2<> pointInCamera(static_cast<float>(nonGreenPenaltyDistance), 0);
+  Vector2<> pointInImage;
+  Transformation::robotWithCameraRotationToImage(pointInCamera, theCameraMatrix, theCameraInfo, pointInImage);
+
+  const int yBound = static_cast<int>(pointInImage.y + 0.5f);
+  CROSS("module:FieldBoundaryProvider:GreaterPenaltyPoint", theCameraInfo.width / 2, yBound,
+        5, 5, Drawings::ps_solid, ColorRGBA::black);
+  Vector2<> pointInCamera2;
+  Vector2<int> pointInImage2(static_cast<int>(pointInImage.x + 0.5f), static_cast<int>(pointInImage.y + 0.5f));
+  return yBound;
 }

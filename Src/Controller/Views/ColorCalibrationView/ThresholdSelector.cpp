@@ -1,7 +1,7 @@
-/* 
+/*
  * File:   ThresholdSelector.cpp
  * Author: marcel
- * 
+ *
  * Created on October 16, 2013, 12:22 PM
  */
 
@@ -11,40 +11,36 @@
 #include <QHBoxLayout>
 
 ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget* parent,
-                                     const int min, const int max)
+                                     int min, int max)
 : QGroupBox(name, parent), parent(parent)
 {
   slider = new QSlider(Qt::Orientation::Horizontal, this);
   slider->setMinimum(min);
   slider->setMaximum(max);
-  
+  slider->setTickPosition(QSlider::TicksBothSides);
+
   lineEdit = new QLineEdit(QString::number(min), this);
   lineEdit->setFixedWidth(40);
   lineEdit->setValidator(new QIntValidator(min, max, lineEdit));
-  
+
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(sliderChanged(int)));
   connect(lineEdit, SIGNAL(textEdited(QString)), this, SLOT(lineEditChanged(QString)));
-  
+
   QHBoxLayout* layout = new QHBoxLayout(this);
-  this->setLayout(layout);
+  setLayout(layout);
   layout->addWidget(lineEdit);
   layout->addWidget(slider);
 }
 
 void ThresholdSelector::updateWidgets()
 {
-  ignoreUpdateColorReference = true;
-  ColorReference* cr = parent->colorReference();
-  switch(parent->currentColor)
+  if(parent->currentColor == ColorClasses::white)
   {
-    case ColorReference::white:
-      setEnabled(true);
-      updateWidgetsPrivate(cr->thresholdWhite);
-      break;
-    default:
-      setEnabled(false);
+    setEnabled(true);
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.white);
   }
-  ignoreUpdateColorReference = false;
+  else
+    setEnabled(false);
 }
 
 void ThresholdSelector::setEnabled(bool value)
@@ -53,33 +49,19 @@ void ThresholdSelector::setEnabled(bool value)
   lineEdit->setEnabled(value);
 }
 
-
-/* ---------------- Private ---------------- */
-void ThresholdSelector::updateColorReference(const int value)
+void ThresholdSelector::updateColorCalibration(int value)
 {
-  if(ignoreUpdateColorReference)
+  if(parent->currentColor == ColorClasses::white)
   {
-    return;
+    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.white);
+    parent->colorCalibrationView.console.colorCalibrationChanged = true;
   }
-  
-  ColorReference* cr = parent->colorReference();
-  switch(parent->currentColor)
-  {
-    case ColorReference::white:
-      updateColorReference(value, cr->thresholdWhite);
-      break;
-    default:
-      return;
-  }
-  cr->changed = true;
 }
 
-
-/* ---------------- Slots ---------------- */
 void ThresholdSelector::sliderChanged(int value)
 {
   lineEdit->setText(QString::number(value));
-  updateColorReference(value);
+  updateColorCalibration(value);
 }
 
 void ThresholdSelector::lineEditChanged(QString value)

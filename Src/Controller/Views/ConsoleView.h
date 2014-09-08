@@ -8,8 +8,7 @@
 
 #include <QIcon>
 #include <QTextEdit>
-
-#include "SimRobot.h"
+#include <SimRobot.h>
 
 class ConsoleRoboCupCtrl;
 class ConsoleWidget;
@@ -87,7 +86,7 @@ private:
   virtual void contextMenuEvent(QContextMenuEvent* event);
   virtual void focusInEvent(QFocusEvent * event);
 
-  virtual QMenu* createEditMenu();
+  virtual QMenu* createEditMenu() const;
 
 signals:
   void pasteAvailable(bool available);

@@ -9,14 +9,13 @@
 #pragma once
 
 #include "Controller/RobotConsole.h"
+#include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/SensorData.h"
-#include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/OrientationData.h"
-#include "Oracle.h"
+#include "SimulatedRobot.h"
 
 /**
 * @class LocalRobot
@@ -32,14 +31,14 @@ private:
   CameraInfo cameraInfo; /**< The information about the camera that took the image sent to the robot code. */
   JointData jointData; /**< The simulated joint measurements sent to the robot code. */
   SensorData sensorData; /**< The simulated sensor data sent to the robot code. */
-  GroundTruthRobotPose robotPose; /**< The simulated ground truth robot pose sent to the robot code. */
-  GroundTruthBallModel ballModel; /**< The simulated ground truth ball model sent to the robot code. */
+  Pose2D robotPose; /**< The robot's pose, used for some internal computations. */
+  GroundTruthWorldState worldState; /**< The current world state of the simulation scene, sent to the robot code. */
   GroundTruthOdometryData odometryData; /**< The simulated odometry data sent to the robot code. */
   GroundTruthOrientationData orientationData; /**< The simulated orientation data sent to the robot code. */
   unsigned nextImageTimeStamp, /**< The theoretical timestamp of the next image to be calculated. */
            imageLastTimeStampSent, /**< The timestamp of the last sent image. */
            jointLastTimeStampSent; /**< The timestamp of the last sent joint data. */
-  Oracle oracle; /**< The interface to simulated objects. */
+  SimulatedRobot simulatedRobot; /**< The interface to simulated objects. */
   Semaphore updateSignal; /**< A signal used for synchronizing main() and update(). */
   Semaphore updatedSignal; /**< A signal used for yielding processing time to main(). */
   SimRobotCore2::Body* puppet; /**< A pointer to the puppet when there is one during logfile replay. Otherwise 0. */

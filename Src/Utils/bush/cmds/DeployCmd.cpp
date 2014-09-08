@@ -66,8 +66,10 @@ Task* DeployCmd::perRobotExecution(Context &context, Robot &robot)
 
   QStringList args = QStringList();
   args.push_back(QString("-nc"));
+  args.push_back(QString("-nr"));
   args.push_back(buildConfig);
   args.push_back(fromString(robot.getBestIP()));
+  args.push_back(QString("-r"));
 
   ProcessRunner r(context, command, args);
   r.run();
@@ -85,7 +87,7 @@ bool DeployCmd::postExecution(Context &context, const std::vector<std::string> &
   return context.execute("updateSettings");
 }
 
-#ifdef WIN32
+#ifdef WINDOWS
 QString DeployCmd::getCommand()
 {
   return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/copyfiles.cmd");

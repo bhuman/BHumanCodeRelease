@@ -10,8 +10,8 @@
 
 #include <set>
 
-#include "RoboCupCtrl.h"
 #include "Tools/ProcessFramework/TeamHandler.h"
+#include "RoboCupCtrl.h"
 #include "Tools/Settings.h"
 #include "Tools/NTP.h"
 #include "RobotConsole.h"
@@ -42,10 +42,10 @@ public:
   ConsoleRoboCupCtrl(SimRobot::Application& application);
 
   /**
-  * The function returns the mode in which the robot processes constructed shall run.
-  * @return The mode for the new processes.
+  * The function returns the mode in which the current robot process runs.
+  * @return The mode for the current process.
   */
-  SystemCall::Mode getMode() const {return mode;}
+  SystemCall::Mode getMode() const;
 
   /**
   * The function returns whether the current robot constructed shall play back a log file.

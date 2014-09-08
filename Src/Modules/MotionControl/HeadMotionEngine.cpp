@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include "HeadMotionEngine.h"
-#include "Tools/Math/Common.h"
 #include "Tools/Range.h"
 #include "Tools/Debugging/DebugDrawings.h" // PLOT
 

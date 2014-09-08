@@ -8,12 +8,13 @@
 
 #include "Tools/Math/Vector3.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Module/Next.h"
 
 STREAMABLE(CameraCalibration,
 {,
-  (float)(0) cameraTiltCorrection, /**< The correction of the camera tilt angle in radians. */
-  (float)(0) cameraRollCorrection, /**< The correction of the camera roll angle in radians. */
-  (float)(0) cameraPanCorrection, /**< The correction of the camera pan angle in radians. */
+  (float)(0) lowerCameraTiltCorrection, /**< The correction of the camera tilt angle in radians. */
+  (float)(0) lowerCameraRollCorrection, /**< The correction of the camera roll angle in radians. */
+  (float)(0) lowerCameraPanCorrection, /**< The correction of the camera pan angle in radians. */
   (float)(0) upperCameraTiltCorrection, /**< The correction of the camera tilt angle in radians. */
   (float)(0) upperCameraRollCorrection, /**< The correction of the camera roll angle in radians. */
   (float)(0) upperCameraPanCorrection, /**< The correction of the camera pan angle in radians. */
@@ -21,3 +22,5 @@ STREAMABLE(CameraCalibration,
   (float)(0) bodyRollCorrection, /**< The correction of the body roll angle in radians. */
   (Vector3<>) bodyTranslationCorrection, /**< The correction of the body translation in mm. */
 });
+
+using CameraCalibrationNext = Next<CameraCalibration>;

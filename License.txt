@@ -27,7 +27,7 @@ are met:
    notice, this list of conditions and the following disclaimer.
 
 2. Redistributions in binary form must reproduce the above 
-   copyright  notice, this list of conditions and the following 
+   copyright notice, this list of conditions and the following 
    disclaimer in the documentation and/or other materials provided 
    with the distribution.
 
@@ -58,8 +58,8 @@ are met:
 
 6. If you are using this source code or parts of this source code
    and happen to meet members of B-Human at a RoboCup competition,
-   please provide these members with a few bottles of
-   your favorite beer.
+   please provide these members with a few bottles of your favorite
+   beer.
 
 7. Bug fixes regarding existing code shall be sent back to B-Human via
    GitHub pull request (https://github.com/bhuman).  

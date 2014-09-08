@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "LogConverter.h"
 #include "Tools/MessageQueue/MessageIDs.h"
 
 #define UPDATE(representation) UPDATE2(representation, )
@@ -28,14 +27,7 @@
   case id##representation:\
   { \
     ALLOC(representation); \
-    if(logConverter.isConversionRequired(message, id##representation)) \
-    { \
-      if (representationBuffer[id##representation]) \
-        delete representationBuffer[id##representation]; \
-      representationBuffer[id##representation] = logConverter.newConvertedRepresentation(message, id##representation); \
-    } \
-    else \
-      message.bin >> OUTREPRESENTATIONBUFFER(representation); \
+    message.bin >> OUTREPRESENTATIONBUFFER(representation); \
     cmd \
     return true; \
   }
@@ -43,7 +35,6 @@
 class LogDataProvider
 {
 protected:
-  LogConverter logConverter;
   Streamable* representationBuffer[numOfDataMessageIDs]; /**< The array of all logable representations. */
 
 public:

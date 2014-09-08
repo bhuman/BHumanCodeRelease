@@ -10,7 +10,6 @@
 #include <algorithm>
 #include "GlobalFieldCoverage.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Math/Common.h"
 
 unsigned char GlobalFieldCoverage::Grid::coverage(int index, unsigned time) const
 {

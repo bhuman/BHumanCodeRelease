@@ -27,7 +27,7 @@ public:
   /**
    * Default constructor.
    */
-  RotationMatrix() {}
+  RotationMatrix() = default;
 
   /**
    * Constructor.
@@ -80,7 +80,7 @@ public:
    *
    * \note: Inverted rotation matrix is transposed matrix.
    */
-  inline RotationMatrix invert() const
+  RotationMatrix invert() const
   {
     return RotationMatrix(
              Vector3<>(c0.x, c1.x, c2.x),

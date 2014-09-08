@@ -18,7 +18,7 @@ public:
   * @param m The original matrix
   * @param mODE The ODE matrix
   */
-  static inline void convertMatrix(const Matrix3x3<>& m, dMatrix3& mODE)
+  static void convertMatrix(const Matrix3x3<>& m, dMatrix3& mODE)
   {
     mODE[0] = dReal(m.c0.x);
     mODE[1] = dReal(m.c1.x);
@@ -39,7 +39,7 @@ public:
   * @param mODE The original ODE matrix as pointer to the first value
   * @param m The SimRobot matrix
   */
-  template <class V> static inline void convertMatrix(const dReal* mODE, Matrix3x3<V>& mSim)
+  template <class V> static void convertMatrix(const dReal* mODE, Matrix3x3<V>& mSim)
   {
     mSim.c0.x = (V)mODE[0];
     mSim.c1.x = (V)mODE[1];
@@ -57,7 +57,7 @@ public:
   * @param vODE The original ODE vector
   * @param vSim The SimRobot vector
   */
-  template <class V> static inline void convertVector(const dReal* vODE, Vector3<V>& vSim)
+  template <class V> static void convertVector(const dReal* vODE, Vector3<V>& vSim)
   {
     vSim.x = (V)vODE[0];
     vSim.y = (V)vODE[1];
@@ -69,7 +69,7 @@ public:
   * @param vODE The original ODE vector
   * @param farray The float array
   */
-  template <class V> static inline void convertVector(const dVector3& vODE, V* farray)
+  template <class V> static void convertVector(const dVector3& vODE, V* farray)
   {
     farray[0] = (V)vODE[0];
     farray[1] = (V)vODE[1];

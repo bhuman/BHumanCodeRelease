@@ -1,7 +1,3 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QLabel>
@@ -12,16 +8,12 @@
 #include <QScrollBar>
 #include <QtCore>
 #include <QApplication>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/ui/CommandLineEdit.h"
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/ui/TeamSelector.h"
 #include "Utils/bush/ui/VisualContext.h"
-
 
 Icons Icons::theIcons;
 
@@ -61,9 +53,9 @@ VisualContextDecoration::VisualContextDecoration(const QString &commandLine, Vis
 
 void VisualContextDecoration::updateStatus(bool status)
 {
-  if (button->icon().cacheKey() != Icons::getInstance().ICON_ORANGE.cacheKey())
+  if(button->icon().cacheKey() != Icons::getInstance().ICON_ORANGE.cacheKey())
   {
-    if (status)
+    if(status)
       button->setIcon(Icons::getInstance().ICON_GREEN);
     else
       button->setIcon(Icons::getInstance().ICON_RED);
@@ -85,7 +77,7 @@ ScrollArea::ScrollArea(QWidget *parent)
 bool ScrollArea::viewportEvent(QEvent *event)
 {
   bool ret = QScrollArea::viewportEvent(event);
-  if (event->type() == QEvent::LayoutRequest && widget() && scrollEnabled)
+  if(event->type() == QEvent::LayoutRequest && widget() && scrollEnabled)
     ensureVisible(0, widget()->size().height());
   return ret;
 }
@@ -140,7 +132,7 @@ void Console::showEvent(QShowEvent *event)
 
 void Console::fireCommand(const QString &command)
 {
-  if (command.size() > 0)
+  if(command.size() > 0)
   {
     QtConcurrent::run(visualContext, &VisualContext::executeInContext, this, teamSelector, command);
     cmdLine->setFocus();

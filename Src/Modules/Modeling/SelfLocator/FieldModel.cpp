@@ -8,14 +8,13 @@
 */
 
 #include "FieldModel.h"
-#include "SelfLocatorParameters.h"
+#include "SelfLocator.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Tools/Math/Geometry.h"
 
-
-FieldModel::FieldModel(const FieldDimensions& fieldDimensions, const SelfLocatorParameters& parameters,
-                             const CameraMatrix& cameraMatrix):
+FieldModel::FieldModel(const FieldDimensions& fieldDimensions, const SelfLocatorBase::Parameters& parameters,
+                       const CameraMatrix& cameraMatrix):
   parameters(parameters), cameraMatrix(cameraMatrix)
 {
   // Initialize goal posts
@@ -25,11 +24,26 @@ FieldModel::FieldModel(const FieldDimensions& fieldDimensions, const SelfLocator
   goalPosts[3] = Vector2<>(fieldDimensions.xPosOpponentGoalPost, fieldDimensions.yPosRightGoal);
 
   // Initialize list of relevant field lines
-  for(unsigned int i = 0, count = fieldDimensions.fieldLines.lines.size(); i < count; ++i)
+  for(size_t i = 0, count = fieldDimensions.fieldLines.lines.size(); i < count; ++i)
   {
     const FieldDimensions::LinesTable::Line& fieldLine = fieldDimensions.fieldLines.lines[i];
     if(!fieldLine.isPartOfCircle && fieldLine.length > 300.f)
     {
+      FieldLine relevantFieldLine;
+      relevantFieldLine.start = fieldLine.corner.translation;
+      relevantFieldLine.end = fieldLine.corner * Vector2<>(fieldLine.length, 0);
+      relevantFieldLine.dir = relevantFieldLine.end - relevantFieldLine.start;
+      relevantFieldLine.dir.normalize();
+      relevantFieldLine.length = fieldLine.length;
+      relevantFieldLine.vertical = std::abs(fieldLine.corner.rotation) < 0.001f || std::abs(normalize(fieldLine.corner.rotation - pi)) < 0.001f;
+      fieldLines.push_back(relevantFieldLine);
+    }
+  }
+  if(parameters.goalFrameIsPerceivedAsLines)
+  {
+    for(size_t i = 0, count = fieldDimensions.goalFrameLines.lines.size(); i < count; ++i)
+    {
+      const FieldDimensions::LinesTable::Line& fieldLine = fieldDimensions.goalFrameLines.lines[i];
       FieldLine relevantFieldLine;
       relevantFieldLine.start = fieldLine.corner.translation;
       relevantFieldLine.end = fieldLine.corner * Vector2<>(fieldLine.length, 0);
@@ -63,8 +77,14 @@ FieldModel::FieldModel(const FieldDimensions& fieldDimensions, const SelfLocator
   lCorners.push_back(Vector2<>(fieldDimensions.xPosOwnPenaltyArea, fieldDimensions.yPosLeftPenaltyArea));
   lCorners.push_back(Vector2<>(fieldDimensions.xPosOpponentPenaltyArea, fieldDimensions.yPosRightPenaltyArea));
   lCorners.push_back(Vector2<>(fieldDimensions.xPosOpponentPenaltyArea, fieldDimensions.yPosLeftPenaltyArea));
+  if(parameters.goalFrameIsPerceivedAsLines)
+  {
+    lCorners.push_back(Vector2<>(fieldDimensions.xPosOwnGoal, fieldDimensions.yPosLeftGoal));
+    lCorners.push_back(Vector2<>(fieldDimensions.xPosOwnGoal, fieldDimensions.yPosRightGoal));
+    lCorners.push_back(Vector2<>(fieldDimensions.xPosOpponentGoal, fieldDimensions.yPosLeftGoal));
+    lCorners.push_back(Vector2<>(fieldDimensions.xPosOpponentGoal, fieldDimensions.yPosRightGoal));
+  }
 }
-
 
 bool FieldModel::getAssociatedUnknownGoalPost(const Pose2D& robotPose, const Vector2<>& goalPercept, Vector2<>& associatedPost) const
 {
@@ -86,7 +106,6 @@ bool FieldModel::getAssociatedUnknownGoalPost(const Pose2D& robotPose, const Vec
   return goalPostIsValid(postInWorld, associatedPost, robotPose);
 }
 
-
 bool FieldModel::getAssociatedKnownGoalPost(const Pose2D& robotPose, const Vector2<>& goalPercept, bool isLeft, Vector2<>& associatedPost) const
 {
   const Vector2<> postInWorld = robotPose * goalPercept;
@@ -106,7 +125,6 @@ bool FieldModel::getAssociatedKnownGoalPost(const Pose2D& robotPose, const Vecto
   }
   return goalPostIsValid(postInWorld, associatedPost, robotPose);
 }
-
 
 int FieldModel::getIndexOfAssociatedLine(const Pose2D& robotPose, const Vector2<>& start, const Vector2<>& end) const
 {
@@ -143,7 +161,6 @@ int FieldModel::getIndexOfAssociatedLine(const Pose2D& robotPose, const Vector2<
   return index;
 }
 
-
 bool FieldModel::getAssociatedCorner(const Pose2D& robotPose, const LinePercept::Intersection& intersection, Vector2<>& associatedCorner) const
 {
   const std::vector< Vector2<> >* corners = &lCorners;
@@ -166,22 +183,20 @@ bool FieldModel::getAssociatedCorner(const Pose2D& robotPose, const LinePercept:
   return false;
 }
 
-
 float FieldModel::getSqrDistanceToLine(const Vector2<>& base, const Vector2<>& dir, float length, const Vector2<>& point) const
 {
   float l = (point.x - base.x) * dir.x + (point.y - base.y) * dir.y;
   if(l < 0)
     l = 0;
-  if(l > length)
+  else if(l > length)
     l = length;
   return ((base + dir * l) - point).squareAbs();
 }
 
-
 bool FieldModel::intersectLineWithLine(const Vector2<>& lineBase1, const Vector2<>& lineDir1,
     const Vector2<>& lineBase2, const Vector2<>& lineDir2, Vector2<>& intersection) const
 {
-  float h = lineDir1.x * lineDir2.y - lineDir1.y * lineDir2.x;
+  const float h = lineDir1.x * lineDir2.y - lineDir1.y * lineDir2.x;
   if(h == 0.f)
     return false;
   float scale = ((lineBase2.x - lineBase1.x) * lineDir1.y - (lineBase2.y - lineBase1.y) * lineDir1.x) / h;
@@ -190,23 +205,36 @@ bool FieldModel::intersectLineWithLine(const Vector2<>& lineBase1, const Vector2
   return true;
 }
 
-
 float FieldModel::getSqrDistanceToLine(const Vector2<>& base, const Vector2<>& dir, const Vector2<>& point) const
 {
-  float l = (point.x - base.x) * dir.x + (point.y - base.y) * dir.y;
+  const float l = (point.x - base.x) * dir.x + (point.y - base.y) * dir.y;
   return ((base + dir * l) - point).squareAbs();
 }
 
-
 bool FieldModel::goalPostIsValid(const Vector2<>& observedPosition, const Vector2<>& modelPosition, const Pose2D& robotPose) const
 {
+  // Check, if the angle to the observed goal post is small enough:
   const float modelAngle = Geometry::angleTo(robotPose, modelPosition);
   const float observedAngle = Geometry::angleTo(robotPose, observedPosition);
-  if(std::abs(normalize(modelAngle - observedAngle)) > parameters.goalAssociationMaxAngle)
-    return false;
-  const float modelDistance = (robotPose.translation - modelPosition).abs();
-  const float modelDistanceAsAngle = (pi_2 - std::atan2(cameraMatrix.translation.z , modelDistance));
   const float observedDistance = (robotPose.translation - observedPosition).abs();
+  // For very close goal posts, a larger deviation is accepted:
+  const float maxToleratedAngle = observedDistance < parameters.goalAssociationCloseThreshold ? parameters.goalAssociationMaxCloseAngle : parameters.goalAssociationMaxAngle;
+  if(std::abs(normalize(modelAngle - observedAngle)) > maxToleratedAngle)
+    return false;
+  // If the angle is OK, check the distance deviation.
+  const float modelDistance = (robotPose.translation - modelPosition).abs();
+  // Very close goal posts are - again - allowed to have a bigger deviation:
+  if(observedDistance <= parameters.goalAssociationCloseThreshold)
+    return std::abs(modelDistance - observedDistance) < parameters.goalAssociationMaxDistanceClose;
+  // The goal post seems to be somewhat far away. Different distances have different limits:
+  float maxAssociationAngularDistance = parameters.goalAssociationMaxAngularDistanceFar;
+  if(observedDistance < parameters.goalAssociationFarThreshold)
+  {
+    float factor = (observedDistance - parameters.goalAssociationCloseThreshold) / (parameters.goalAssociationFarThreshold - parameters.goalAssociationCloseThreshold);
+    float angularDistanceRange = parameters.goalAssociationMaxAngularDistanceClose - parameters.goalAssociationMaxAngularDistanceFar;
+    maxAssociationAngularDistance = parameters.goalAssociationMaxAngularDistanceClose - factor * angularDistanceRange;
+  }
+  const float modelDistanceAsAngle = (pi_2 - std::atan2(cameraMatrix.translation.z , modelDistance));
   const float observedDistanceAsAngle = (pi_2 - std::atan2(cameraMatrix.translation.z , observedDistance));
-  return std::abs(modelDistanceAsAngle - observedDistanceAsAngle) < parameters.goalAssociationMaxAngularDistance;
+  return std::abs(modelDistanceAsAngle - observedDistanceAsAngle) < maxAssociationAngularDistance;
 }

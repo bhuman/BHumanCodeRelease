@@ -28,7 +28,7 @@ public:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void writeToStream(const void* p, int size) = 0;
+  virtual void writeToStream(const void* p, size_t size) = 0;
 };
 
 /**
@@ -122,9 +122,8 @@ protected:
   * @param size The number of bytes to be written.
   * @param stream the stream to write on.
   */
-  virtual void writeData(const void* p, int size, PhysicalOutStream& stream) = 0;
+  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream) = 0;
 };
-
 
 /**
 * @class OutStream
@@ -139,7 +138,7 @@ public:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void write(const void* p, int size)
+  virtual void write(const void* p, size_t size)
   { W::writeData(p, size, *this); }
 
 protected:
@@ -210,7 +209,6 @@ protected:
   virtual void outEndL()
   { W::writeEndL(*this); }
 };
-
 
 /**
 * @class OutBinary
@@ -304,7 +302,7 @@ protected:
   * Writes a 'end of line' to a stream.
   * @param stream the stream to write on.
   */
-  virtual void writeEndL(PhysicalOutStream& stream) {};
+  virtual void writeEndL(PhysicalOutStream& stream) {}
 
   /**
   * The function writes a number of bytes into the stream.
@@ -312,7 +310,7 @@ protected:
   * @param size The number of bytes to be written.
   * @param stream the stream to write on.
   */
-  virtual void writeData(const void* p, int size, PhysicalOutStream& stream)
+  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream)
   { stream.writeToStream(p, size); }
 };
 
@@ -410,7 +408,7 @@ protected:
   * @param size The number of bytes to be written.
   * @param stream the stream to write on.
   */
-  virtual void writeData(const void* p, int size, PhysicalOutStream& stream);
+  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream);
 };
 
 /**
@@ -510,7 +508,7 @@ protected:
   * @param size The number of bytes to be written.
   * @param stream the stream to write on.
   */
-  virtual void writeData(const void* p, int size, PhysicalOutStream& stream);
+  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream);
 };
 
 /**
@@ -525,7 +523,7 @@ private:
 
 public:
   /** Default constructor */
-  OutFile() : stream(0) {};
+  OutFile() : stream(0) {}
 
   /** Destructor */
   ~OutFile();
@@ -562,7 +560,7 @@ protected:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void writeToStream(const void* p, int size);
+  virtual void writeToStream(const void* p, size_t size);
 };
 
 /**
@@ -574,7 +572,7 @@ class OutMemory : public PhysicalOutStream
 {
 private:
   char* memory; /**< Points to the next byte to write at. */
-  int length; /**< The number of stored bytes */
+  size_t length; /**< The number of stored bytes */
   void* start; /**< Points to the first byte */
 
 public:
@@ -584,7 +582,7 @@ public:
   /**
   * Returns the number of written bytes
   */
-  int getLength() { return length; }
+  size_t getLength() const { return length; }
 
   /**
   * Returns the address of the first byte
@@ -604,7 +602,7 @@ protected:
   * @param p The address the data is located at.
   * @param size The number of bytes to be written.
   */
-  virtual void writeToStream(const void* p, int size);
+  virtual void writeToStream(const void* p, size_t size);
 };
 
 /**
@@ -618,7 +616,7 @@ protected:
 class OutSize : public PhysicalOutStream
 {
 private:
-  unsigned size; /**< Accumulator of the required number of bytes. */
+  size_t size; /**< Accumulator of the required number of bytes. */
 
 public:
   /**
@@ -636,7 +634,7 @@ public:
   * data written so far.
   * @return The size of the memory block required for the data written.
   */
-  unsigned getSize() const {return size;}
+  size_t getSize() const {return size;}
 
 protected:
   /**
@@ -644,7 +642,7 @@ protected:
   * @param p The address the data is located at.
   * @param s The number of bytes to be written.
   */
-  virtual void writeToStream(const void* p, int s) {size += s;}
+  virtual void writeToStream(const void* p, size_t s) {size += s;}
 };
 
 /**
@@ -877,7 +875,7 @@ protected:
   virtual void outFloat(float value) {out(value);}
   virtual void outDouble(double value) {out(value);}
   virtual void outBool(bool value) {out(value);}
-  virtual void outString(const char* value) {out(value);}
+  virtual void outString(const char* value);
   virtual void outEndL() {}
 
 public:
@@ -896,7 +894,7 @@ public:
   virtual void deselect();
 
   /** Writing raw data is not supported. Do not call. */
-  virtual void write(const void* p, int size);
+  virtual void write(const void* p, size_t size);
 };
 
 /**
@@ -941,6 +939,11 @@ public:
    * @param singleLine Output to a single line.
    */
   OutMapMemory(void* memory, bool singleLine = false);
+
+  /**
+   * Returns the number of written bytes
+   */
+  size_t getLength() const {return stream.getLength();}
 };
 
 /**
@@ -965,5 +968,5 @@ public:
    * data written so far.
    * @return The size of the memory block required for the data written.
    */
-  unsigned getSize() const {return stream.getSize();}
+  size_t getSize() const {return stream.getSize();}
 };

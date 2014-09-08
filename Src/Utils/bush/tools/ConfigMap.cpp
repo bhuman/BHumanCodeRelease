@@ -138,16 +138,16 @@ std::string ConfigValue::str() const
 PlainConfigValue::PlainConfigValue()
   : ConfigValueBase(),
     strn("")
-{ }
+{}
 
 PlainConfigValue::PlainConfigValue(const std::string& v)
   : strn(v)
-{ }
+{}
 
 PlainConfigValue::PlainConfigValue(const PlainConfigValue& other)
   : ConfigValueBase(other),
     strn(other.strn)
-{ }
+{}
 
 size_t PlainConfigValue::length() const
 {
@@ -212,10 +212,6 @@ PlainConfigValue& PlainConfigValue::operator<<(const std::string& value)
  * ListConfigValue
  */
 
-ListConfigValue::ListConfigValue()
-  : list()
-{ }
-
 ListConfigValue::ListConfigValue(const ListConfigValue& other)
   : ConfigValueBase(other),
     list(other.list)
@@ -230,7 +226,7 @@ ListConfigValue::ListConfigValue(const ListConfigValue& other)
 
 ListConfigValue::ListConfigValue(std::vector<ConfigValue*> values)
   : list(values)
-{ }
+{}
 
 ListConfigValue::~ListConfigValue()
 {
@@ -306,9 +302,9 @@ ConfigValueProxy ListConfigValue::operator[](size_t index)
       throw invalid_key("Index " + std::string(buf) + " is not set and "
                         "cannot be appended since the next index has to be "
                         + std::string(size));
-    return ConfigValueProxy(*this, index);
+    return ConfigValueProxy(*this, (int) index);
   }
-  return ConfigValueProxy(*this, index, list[index]);
+  return ConfigValueProxy(*this, (int) index, list[index]);
 }
 
 const ConfigValue& ListConfigValue::operator[](size_t index) const
@@ -394,7 +390,7 @@ ConfigValue* ListConfigValue::replace(size_t index, const ConfigValue& cv)
  */
 ConfigMap::ConfigMap()
   : dict(), flags(0), error("")
-{ }
+{}
 
 ConfigMap::ConfigMap(const ConfigMap& other)
   : ConfigValueBase(other),
@@ -415,7 +411,7 @@ ConfigMap::ConfigMap(const ConfigMap& other)
 
 ConfigMap::ConfigMap(unsigned int flags)
   : dict(), flags(flags), error("")
-{ }
+{}
 
 ConfigMap::~ConfigMap()
 {
@@ -530,7 +526,7 @@ int ConfigMap::read(const std::string& filename, bool verbose, void (*onError)(c
     if(verbose)
       parser.setVerbose();
     result = parser.parse(true);
-    if (result < 0)
+    if(result < 0)
       error = parser.getError()->what();
   }
   if(result < 0 && onError)
@@ -577,7 +573,6 @@ bool hasComplexValue(const std::map<std::string, ConfigValue*> &map)
 
 std::ostream& ConfigMap::write(std::ostream& os, bool withComment, std::string indentation) const
 {
-
   std::string currIndent;
   bool wrap = dict.size() > 3 || hasComplexValue(dict);
   const ConfigValue* p = getParent();
@@ -664,7 +659,7 @@ ConfigValueProxy::ConfigValueProxy(ListConfigValue& lcv,
     index(index),
     key(0),
     configValue(0)
-{ }
+{}
 
 ConfigValueProxy::ConfigValueProxy(ListConfigValue& lcv,
                                    int index,
@@ -673,7 +668,7 @@ ConfigValueProxy::ConfigValueProxy(ListConfigValue& lcv,
     index(index),
     key(0),
     configValue(configValue)
-{ }
+{}
 
 ConfigValueProxy::ConfigValueProxy(ConfigMap& cm,
                                    const std::string& key)
@@ -681,7 +676,7 @@ ConfigValueProxy::ConfigValueProxy(ConfigMap& cm,
     index(-1),
     key(new std::string(key)),
     configValue(0)
-{ }
+{}
 
 ConfigValueProxy::ConfigValueProxy(ConfigMap& cm,
                                    const std::string& key,
@@ -690,7 +685,7 @@ ConfigValueProxy::ConfigValueProxy(ConfigMap& cm,
     index(-1),
     key(new std::string(key)),
     configValue(configValue)
-{ }
+{}
 
 ConfigValueProxy::~ConfigValueProxy()
 {
@@ -699,8 +694,10 @@ ConfigValueProxy::~ConfigValueProxy()
 
 ConfigValue::Type ConfigValueProxy::getType() const
 {
-  if(!configValue) return static_cast<ConfigValue::Type>(-1);
-  return configValue->getType();
+  if(!configValue)
+    return static_cast<ConfigValue::Type>(-1);
+  else
+    return configValue->getType();
 }
 
 ConfigValue* ConfigValueProxy::operator&()
@@ -899,22 +896,22 @@ ConfigValue& ConfigValueProxy::operator+=(const ConfigValue &rhs)
 ConfigValue& ListConfigValue::operator+=(const ConfigValue &rhs)
 {
   const ListConfigValue &rhsList = rhs;
-  if (list.size() != rhsList.list.size())
+  if(list.size() != rhsList.list.size())
   {
     // replace entire list
     clear();
-    for (size_t i = 0; i < rhsList.list.size(); ++i)
+    for(size_t i = 0; i < rhsList.list.size(); ++i)
     {
       append(i, *rhsList.list[i]);
     }
   }
   else
   {
-    for (size_t i = 0; i < list.size(); ++i)
+    for(size_t i = 0; i < list.size(); ++i)
     {
       ConfigValue *left = list[i];
       const ConfigValue *right = rhsList.list[i];
-      if (left->getType() != right->getType())
+      if(left->getType() != right->getType())
       {
         (*this)[i] = rhsList[i];
       }
@@ -937,9 +934,9 @@ ConfigValue& PlainConfigValue::operator+=(const ConfigValue &rhs)
 ConfigValue& ConfigMap::operator+=(const ConfigValue &rhs)
 {
   const ConfigMap &rhsMap = rhs;
-  if (rhsMap.length() == 0)
+  if(rhsMap.length() == 0)
   {
-    for (std::map<std::string, ConfigValue*>::iterator i = dict.begin();
+    for(std::map<std::string, ConfigValue*>::iterator i = dict.begin();
          i != dict.end();
          ++i)
     {
@@ -950,17 +947,17 @@ ConfigValue& ConfigMap::operator+=(const ConfigValue &rhs)
   }
   else
   {
-    for (std::map<std::string, ConfigValue*>::const_iterator i = rhsMap.dict.begin();
+    for(std::map<std::string, ConfigValue*>::const_iterator i = rhsMap.dict.begin();
          i != rhsMap.dict.end();
          ++i)
     {
       ConfigValue *left = 0;
-      if (hasKey(i->first))
+      if(hasKey(i->first))
       {
         left = dict.find(i->first)->second;
       }
       const ConfigValue *right = i->second;
-      if (left == 0 || left->getType() != right->getType())
+      if(left == 0 || left->getType() != right->getType())
       {
         (*this)[i->first] = *i->second;
       }

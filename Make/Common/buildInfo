@@ -1,0 +1,15 @@
+#!/bin/bash
+if [ ! -z "`which git 2>/dev/null`" ]; then
+  HASH=`git rev-parse HEAD`
+  if [ -z "`git status -u -s`" ]; then
+    CLEAN=true
+  else
+    CLEAN=false
+  fi
+else
+  HASH=unknown
+  CLEAN=false
+fi
+echo configuration = $1\; >"$2/build.cfg"
+echo hash = $HASH\; >>"$2/build.cfg"
+echo clean = $CLEAN\; >>"$2/build.cfg"

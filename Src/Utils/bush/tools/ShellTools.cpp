@@ -4,12 +4,11 @@
 #include "Platform/File.h"
 #include "Filesystem.h"
 
-
 std::string remoteCommand(const std::string& command, const std::string ip)
 {
   static std::string keyFile = Filesystem::getNaoKey();
   std::string ticks = "\"";
-  
+
   return "ssh -i \"" + keyFile + "\" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" +
          ip + " " + ticks + command + " < /dev/null > /dev/null 2>&1 &" + ticks;
 }
@@ -33,7 +32,7 @@ std::string scpCommand(const std::string& fromFile, const std::string& fromHost,
     to = enquoteString(getLinuxPath(toDir));
   else
     to = toHost + ":" + enquoteString(toDir);
-  
+
   return "scp -r -i \"" + getLinuxPath(keyFile) + "\" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet " + from + " " + to;
 }
 

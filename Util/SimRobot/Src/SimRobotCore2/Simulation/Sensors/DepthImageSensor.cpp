@@ -216,7 +216,6 @@ void DepthImageSensor::drawPhysics(unsigned int flags) const
     Vector3<> bl(ml.x, ml.y, -mt.z);
     Vector3<> br(ml.x, -ml.y, -mt.z);
 
-
     glBegin(GL_LINE_LOOP);
       glColor3f(0, 0, 0.5f);
       glNormal3f (0, 0, 1.f);
@@ -268,5 +267,4 @@ void DepthImageSensor::drawPhysics(unsigned int flags) const
   Sensor::drawPhysics(flags);
 
   glPopMatrix();
-
 }

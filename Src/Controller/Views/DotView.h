@@ -9,8 +9,7 @@
 #include <QString>
 #include <QIcon>
 #include <QGraphicsView>
-
-#include "SimRobot.h"
+#include <SimRobot.h>
 
 /**
 * A scene graph object for SimRobot that can be used to open the widget

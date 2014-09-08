@@ -7,14 +7,18 @@
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 
-MODULE(ManualHeadMotionProvider)
-  REQUIRES(CameraMatrix)
-  REQUIRES(CameraInfo)
-  PROVIDES_WITH_MODIFY(HeadMotionRequest)
-  DEFINES_PARAMETER(int, xImg, 0)
-  DEFINES_PARAMETER(int, yImg, 0)
-  DEFINES_PARAMETER(CameraInfo, Camera, camera, lower)
-END_MODULE
+MODULE(ManualHeadMotionProvider,
+{,
+  REQUIRES(CameraMatrix),
+  REQUIRES(CameraInfo),
+  PROVIDES_WITH_MODIFY(HeadMotionRequest),
+  DEFINES_PARAMETERS(
+  {,
+    (int)(0) xImg,
+    (int)(0) yImg,
+    (CameraInfo, Camera)(lower) camera,
+  }),
+});
 
 class ManualHeadMotionProvider: public ManualHeadMotionProviderBase
 {

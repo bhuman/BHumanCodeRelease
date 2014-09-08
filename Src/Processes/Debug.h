@@ -9,8 +9,8 @@
 
 #pragma once
 
-#define MAX_PACKAGE_SEND_SIZE 5000000
-#define MAX_PACKAGE_RECEIVE_SIZE 1400000
+#define MAX_PACKAGE_SEND_SIZE 6000000
+#define MAX_PACKAGE_RECEIVE_SIZE 3000000
 
 #include "Tools/ProcessFramework/Process.h"
 #include "Platform/DebugHandler.h"
@@ -59,6 +59,5 @@ public:
   QueueFillRequest outQueueMode; /**< The mode (behavior, filter, target) for the outgoing queue. */
   unsigned sendTime; /**< The next time the outgoing queue should be sent/written. */
   char processIdentifier; /**< The process the messages from the GUI are meant to be sent to. */
-  bool messageWasReceived; /**< If true, a message was received from the WLan or OVirtualRobotComm. */
   OutBinaryFile* fout; /**< Stream to store data on disk/stick. */
 };

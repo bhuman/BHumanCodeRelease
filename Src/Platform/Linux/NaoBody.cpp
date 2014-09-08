@@ -76,7 +76,6 @@ public:
       sem = SEM_FAILED;
     }
   }
-
 } naoBodyAccess;
 
 NaoBody::NaoBody() :  writingActuators(-1), fdCpuTemp(0) {}
@@ -163,11 +162,10 @@ const RoboCup::RoboCupGameControlData& NaoBody::getGameControlData() const
   return naoBodyAccess.lbhData->gameControlData[naoBodyAccess.lbhData->readingSensors];
 }
 
-void NaoBody::getTemperature(float& cpu, float& mb)
+float NaoBody::getCPUTemperature()
 {
-  cpu = mb = 0;
+  float cpu = 0;
 
-#ifndef NDEBUG
   if(!fdCpuTemp)
   {
     fdCpuTemp = fopen("/proc/acpi/thermal_zone/THRM/temperature", "r");
@@ -179,7 +177,8 @@ void NaoBody::getTemperature(float& cpu, float& mb)
     VERIFY(fseek(fdCpuTemp, 20, SEEK_SET) == 0);
     VERIFY(fscanf(fdCpuTemp, "%f", &cpu) == 1);
   }
-#endif
+
+  return cpu;
 }
 
 bool NaoBody::getWlanStatus()
@@ -210,11 +209,11 @@ void NaoBody::closeActuators()
   writingActuators = -1;
 }
 
-void NaoBody::setTeamInfo(int teamNumber, int teamColour, int playerNumber)
+void NaoBody::setTeamInfo(int teamNumber, int teamColor, int playerNumber)
 {
   ASSERT(naoBodyAccess.lbhData != (LBHData*)MAP_FAILED);
   naoBodyAccess.lbhData->teamInfo[::teamNumber] = teamNumber;
-  naoBodyAccess.lbhData->teamInfo[::teamColour] = teamColour;
+  naoBodyAccess.lbhData->teamInfo[::teamColor] = teamColor;
   naoBodyAccess.lbhData->teamInfo[::playerNumber] = playerNumber;
   naoBodyAccess.lbhData->bhumanStartTime = SystemCall::getSystemTimeBase() | 1; // make sure it's non zero
 }

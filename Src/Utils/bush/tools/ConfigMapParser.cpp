@@ -12,7 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include "ConfigMapParser.h"
-#include "Tools/Debugging/Asserts.h"
+#include "Platform/BHAssert.h"
 #include "Utils/bush/tools/ConfigMap.h"
 #include "Tools/Debugging/Debugging.h"
 
@@ -36,7 +36,6 @@ enum State_T
 
 #define MK_TOKEN(type, value) \
   ConfigMapLexer::Token(type, tknLine, tknColumn, value)
-
 
 std::string T::type2str(Type t)
 {
@@ -75,7 +74,7 @@ ConfigMapLexer::ConfigMapLexer(const std::string& filename)
     line(1),
     column(0),
     tkn(0)
-{ }
+{}
 
 ConfigMapLexer::~ConfigMapLexer()
 {
@@ -100,7 +99,7 @@ size_t countNL(const std::string& str)
   { \
     std::string s = value.str(); \
     value.str(""); \
-    if (s.length() > 0) \
+    if(s.length() > 0) \
     { \
       ASSERT(!tkn); \
       tkn = new L::Token(t); \
@@ -138,7 +137,7 @@ ConfigMapLexer::Token ConfigMapLexer::nextToken()
     switch(c)
     {
     case EOF:
-      if (state == EOL_C)
+      if(state == EOL_C)
       {
         RETURN_TOKEN(MK_TOKEN(T::CMT_EOF, std::string(1, c)), T::CMT_COMMENT);
       }
@@ -283,7 +282,7 @@ ConfigMapLexer::Token ConfigMapLexer::nextToken()
         value << c;
         state = STRING;
       }
-      else if (state == EOL_C || state == BLOCK_C)
+      else if(state == EOL_C || state == BLOCK_C)
       {
         value << c;
       }
@@ -347,16 +346,15 @@ bool ConfigMapLexer::isValid() const
  * ConfigMapParser
  */
 
-
 ConfigMapParser::~ConfigMapParser()
 {
   if(lexer) delete lexer;
-  if (error) delete error;
+  if(error) delete error;
 }
 
 void ConfigMapParser::setError(const ParseException& e)
 {
-  if (error) delete error;
+  if(error) delete error;
   error = new ParseException(e);
 }
 
@@ -366,7 +364,7 @@ void ConfigMapParser::nextToken()
 }
 
 #define P_ERROR(msg) \
-  if (token.type == T::CMT_ERROR) \
+  if(token.type == T::CMT_ERROR) \
     throw ParseException(token.line, token.column, "Unexpected character: `" + token.value + "`");\
   else \
     throw ParseException(token.line, token.column, msg);
@@ -385,7 +383,6 @@ bool prefixValue(const T& token)
          || token.type == T::CMT_ABL
          || token.type == T::CMT_CBL;
 }
-
 
 int ConfigMapParser::file(ConfigMap* configMap) throw(PARSEEXCEPTION_THROW)
 {
@@ -437,7 +434,7 @@ int ConfigMapParser::file(ConfigMap* configMap) throw(PARSEEXCEPTION_THROW)
   }
   expect(T::CMT_EOF);
   if(currComments) delete currComments;
-  return configMap->length() - size;
+  return int(configMap->length() - size);
 }
 
 ConfigValue* ConfigMapParser::value() throw(PARSEEXCEPTION_THROW)
@@ -621,7 +618,7 @@ int ConfigMapParser::parse(bool noThrow)
   {
     // If the returnValue indicates not that the file connot be opened, there
     // has to be a syntax error.
-    if (returnValue != ConfigMap::E_FILE)
+    if(returnValue != ConfigMap::E_FILE)
       returnValue = ConfigMap::E_SYNTAX;
 
     if(verbose)
@@ -630,7 +627,7 @@ int ConfigMapParser::parse(bool noThrow)
     std::stringstream buf;
     buf << lexer->getFilename() << ":" << pe.line << "," << pe.column << ": " << pe.what();
     ParseException e = ParseException(pe.line, pe.column, buf.str());
-    if (noThrow)
+    if(noThrow)
       setError(e);
     else
       throw e;

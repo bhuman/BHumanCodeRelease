@@ -18,7 +18,7 @@ public:
   Vector<m, V> c[n];
 
   /** Default constructor. */
-  Matrix<m, n, V>() {}
+  Matrix<m, n, V>() = default;
 
   /**
   * Constructor that initializes the diagonal of nxn matrices with a value
@@ -83,7 +83,7 @@ public:
   * @param i index
   * @return reference to column
   */
-  inline Vector<m, V>& operator[](int i)
+  Vector<m, V>& operator[](int i)
   {
     return c[i];
   }
@@ -93,7 +93,7 @@ public:
   * @param i index
   * @return reference to column
   */
-  inline const Vector<m, V>& operator[](int i) const
+  const Vector<m, V>& operator[](int i) const
   {
     return c[i];
   }
@@ -312,8 +312,9 @@ template <int m, int n, class V> In& operator>>(In& stream, Matrix<m, n, V>& mat
 */
 template <int m, int n, class V> Out& operator<<(Out& stream, const Matrix<m, n, V>& matrix)
 {
-  STREAM_REGISTER_BEGIN_EXT(matrix);
-  STREAM_EXT(stream, matrix.c);
+  Matrix<m, n, V>& matrix2(const_cast<Matrix<m, n, V>&>(matrix)); // Hack to make it compile with Visual Studio
+  STREAM_REGISTER_BEGIN_EXT(matrix2);
+  STREAM_EXT(stream, matrix2.c);
   STREAM_REGISTER_FINISH;
   return stream;
 }

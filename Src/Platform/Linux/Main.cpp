@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         int stderrPipe[2];
         bool pipeReady = true;
 
-        if (pipe(stdoutPipe) == -1 || pipe(stderrPipe) == -1)
+        if(pipe(stdoutPipe) == -1 || pipe(stderrPipe) == -1)
         {
           fprintf(stderr, "B-Human: Error while creating pipes for logging. All logs will be printed on console only! \n");
           pipeReady = false;
@@ -132,16 +132,14 @@ int main(int argc, char* argv[])
           int status;
           signal(SIGTERM, sighandlerRedirect);
           signal(SIGINT, sighandlerRedirect);
-          signal(SIGPIPE, SIG_IGN);
           if(waitpid(bhumanPid, &status, 0) != bhumanPid)
           {
             exit(EXIT_FAILURE);
           }
           signal(SIGTERM, SIG_DFL);
           signal(SIGINT, SIG_DFL);
-          signal(SIGPIPE, SIG_DFL);
 
-          if (pipeReady)
+          if(pipeReady)
           {
             // close unused write end
             close(stdoutPipe[1]);
@@ -187,7 +185,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-          if (pipeReady)
+          if(pipeReady)
           {
             // close unused read end
             close(stdoutPipe[0]);

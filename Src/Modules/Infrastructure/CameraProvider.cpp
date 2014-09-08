@@ -7,50 +7,52 @@
 #include <cstdio>
 
 #include "CameraProvider.h"
-#include "Representations/Perception/JPEGImage.h"
+#include "Representations/Infrastructure/JPEGImage.h"
 #include "Platform/SystemCall.h"
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Debugging/Stopwatch.h"
+#include "Tools/Settings.h"
 
 PROCESS_WIDE_STORAGE(CameraProvider) CameraProvider::theInstance = 0;
 
-CameraProvider::CameraProvider() : currentImageCamera(0)
+CameraProvider::CameraProvider() :
+  upperCameraInfo(CameraInfo::upper), lowerCameraInfo(CameraInfo::lower),
+  upperCameraSettings(CameraInfo::upper), lowerCameraSettings(CameraInfo::lower)
 #ifdef CAMERA_INCLUDED
-, imageTimeStamp(0), otherImageTimeStamp(0), lastImageTimeStamp(0), lastImageTimeStampLL(0)
+  , imageTimeStamp(0), otherImageTimeStamp(0), lastImageTimeStamp(0), lastImageTimeStampLL(0)
 #endif
 {
-  InMapFile upperStream("upperCameraInfo.cfg");
-  ASSERT(upperStream.exists());
-  upperStream >> upperCameraInfo;
-  InMapFile lowerStream("lowerCameraInfo.cfg");
-  ASSERT(lowerStream.exists());
-  lowerStream >> lowerCameraInfo;
+  VERIFY(readCameraSettings());
+  VERIFY(readCameraIntrinsics());
+  VERIFY(readCameraResolution());
 
-#ifdef CAMERA_INCLUDED
-  upperCamera = new NaoCamera("/dev/video0", upperCameraInfo.camera, upperCameraInfo.width, upperCameraInfo.height, true);
-  lowerCamera = new NaoCamera("/dev/video1", lowerCameraInfo.camera, lowerCameraInfo.width, lowerCameraInfo.height, false);
-  cycleTime = upperCamera->getFrameRate();
-  ASSERT(upperCamera->getFrameRate() == lowerCamera->getFrameRate());
-#else
-  upperCamera = lowerCamera = NULL;
-  cycleTime = 1.f / 30.f;
-#endif
+  setupCameras();
   theInstance = this;
 }
 
 CameraProvider::~CameraProvider()
 {
 #ifdef CAMERA_INCLUDED
+  currentImageCamera = nullptr;
   if(upperCamera)
+  {
     delete upperCamera;
+    upperCamera = nullptr;
+  }
   if(lowerCamera)
+  {
     delete lowerCamera;
+    lowerCamera = nullptr;
+  }
 #endif
-  theInstance = 0;
+  theInstance = nullptr;
 }
 
 void CameraProvider::update(Image& image)
 {
+  MODIFY_ONCE("representation:UpperCameraSettings", upperCameraSettings);
+  MODIFY_ONCE("representation:LowerCameraSettings", lowerCameraSettings);
+  DEBUG_RESPONSE_ONCE("module:CameraProvider:LoadCameraSettings", readCameraSettings(););
 #ifdef CAMERA_INCLUDED
   ASSERT(!currentImageCamera);
   if(upperCamera->hasImage() && (!lowerCamera->hasImage() || upperCamera->getTimeStamp() < lowerCamera->getTimeStamp()))
@@ -58,9 +60,12 @@ void CameraProvider::update(Image& image)
     image.setResolution(upperCameraInfo.width, upperCameraInfo.height);
     image.setImage(const_cast<unsigned char*>(upperCamera->getImage()));
     lastImageTimeStampLL = upperCamera->getTimeStamp();
-    imageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned) (upperCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
-    upperCamera->setSettings(theCameraSettings);
+    imageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned)(upperCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
+    upperCamera->setSettings(upperCameraSettings);
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceUpper", upperCamera->doAutoWhiteBalance(););
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsUpper", upperCamera->readCameraSettings(););
     upperCamera->writeCameraSettings();
+    upperCameraSettings = upperCamera->getSettings();
     currentImageCamera = upperCamera;
   }
   else if(lowerCamera->hasImage())
@@ -68,13 +73,17 @@ void CameraProvider::update(Image& image)
     image.setResolution(lowerCameraInfo.width, lowerCameraInfo.height);
     image.setImage(const_cast<unsigned char*>(lowerCamera->getImage()));
     lastImageTimeStampLL = lowerCamera->getTimeStamp();
-    otherImageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned) (lowerCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
-    lowerCamera->setSettings(theCameraSettings);
+    otherImageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned)(lowerCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
+    lowerCamera->setSettings(lowerCameraSettings);
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceLower", lowerCamera->doAutoWhiteBalance(););
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsLower", lowerCamera->readCameraSettings(););
     lowerCamera->writeCameraSettings();
+    lowerCameraSettings = lowerCamera->getSettings();
     currentImageCamera = lowerCamera;
   }
   ASSERT(image.timeStamp >= lastImageTimeStamp);
   lastImageTimeStamp = image.timeStamp;
+  MODIFY("module:CameraProvider:fullSize", image.isFullSize);
 #endif // CAMERA_INCLUDED
   STOP_TIME_ON_REQUEST("compressJPEG",
   {
@@ -88,18 +97,171 @@ void CameraProvider::update(FrameInfo& frameInfo)
   frameInfo.cycleTime = cycleTime * 0.5f;
 }
 
-void CameraProvider::update(CognitionFrameInfo& cognitionFrameInfo)
-{
-  cognitionFrameInfo.time = theImage.timeStamp;
-  cognitionFrameInfo.cycleTime = cycleTime * 0.5f;
-}
-
 void CameraProvider::update(CameraInfo& cameraInfo)
 {
   if(currentImageCamera == upperCamera)
     cameraInfo = upperCameraInfo;
   else
     cameraInfo = lowerCameraInfo;
+}
+
+void CameraProvider::update(CameraInfoFullRes& cameraInfoFullRes)
+{
+  if(currentImageCamera == upperCamera)
+    cameraInfoFullRes = upperCameraInfo;
+  else
+    cameraInfoFullRes = lowerCameraInfo;
+}
+
+void CameraProvider::update(CameraSettings& cameraSettings)
+{
+  if(currentImageCamera == upperCamera)
+    cameraSettings = upperCameraSettings;
+  else
+    cameraSettings = lowerCameraSettings;
+}
+
+void CameraProvider::update(CameraIntrinsics& cameraIntrinsics)
+{
+  cameraIntrinsics = this->cameraIntrinsics;
+}
+
+void CameraProvider::update(CameraResolution& cameraResolution)
+{
+  cameraResolution = this->cameraResolution;
+}
+
+bool CameraProvider::readCameraSettings()
+{
+  InMapFile upperStream("upperCameraSettings.cfg");
+  InMapFile lowerStream("lowerCameraSettings.cfg");
+  bool exist = upperStream.exists() && lowerStream.exists();
+  if(exist)
+  {
+    upperStream >> upperCameraSettings;
+    lowerStream >> lowerCameraSettings;
+  }
+  return exist;
+}
+
+bool CameraProvider::readCameraIntrinsics()
+{
+  InMapFile stream("cameraIntrinsics.cfg");
+  bool exist = stream.exists();
+  if(exist)
+  {
+    stream >> cameraIntrinsics;
+  }
+  return exist;
+}
+
+bool CameraProvider::readCameraResolution()
+{
+  InMapFile stream("cameraResolution.cfg");
+  bool exist = stream.exists();
+  if(exist)
+  {
+    stream >> cameraResolution;
+  }
+  return exist;
+}
+
+bool CameraProvider::processResolutionRequest()
+{
+  if(SystemCall::getMode() != SystemCall::Mode::physicalRobot)
+  {
+    return false;
+  }
+  if(theCameraResolutionRequest.getTimestamp() > cameraResolution.timestamp)
+  {
+    switch(theCameraResolutionRequest.getRequest())
+    {
+      case CameraResolution::Resolutions::noRequest:
+        break;
+      case CameraResolution::Resolutions::defaultRes:
+        if(!readCameraResolution())
+        {
+          cameraResolution.resolution = CameraResolution::Resolutions::upper640;
+          cameraResolution.timestamp = theCameraResolutionRequest.getTimestamp();
+        }
+        break;
+      case CameraResolution::Resolutions::upper640:
+      case CameraResolution::Resolutions::lower640:
+      case CameraResolution::Resolutions::both320:
+        cameraResolution.resolution = theCameraResolutionRequest.getRequest();
+        cameraResolution.timestamp = theCameraResolutionRequest.getTimestamp();
+        break;
+      default:
+        ASSERT(false);
+        return false;
+    }
+    return true;
+  }
+  else
+    return false;
+}
+
+void CameraProvider::setupCameras()
+{
+  // set resolution
+  switch(cameraResolution.resolution)
+  {
+    case CameraResolution::Resolutions::upper640:
+      upperCameraInfo.width = 640;
+      upperCameraInfo.height = 480;
+      lowerCameraInfo.width = 320;
+      lowerCameraInfo.height = 240;
+      break;
+    case CameraResolution::Resolutions::lower640:
+      upperCameraInfo.width = 320;
+      upperCameraInfo.height = 240;
+      lowerCameraInfo.width = 640;
+      lowerCameraInfo.height = 480;
+      break;
+    case CameraResolution::Resolutions::both320:
+      upperCameraInfo.width = 320;
+      upperCameraInfo.height = 240;
+      lowerCameraInfo.width = 320;
+      lowerCameraInfo.height = 240;
+      break;
+    case CameraResolution::Resolutions::both640:
+      upperCameraInfo.width = 640;
+      upperCameraInfo.height = 480;
+      lowerCameraInfo.width = 640;
+      lowerCameraInfo.height = 480;
+      break;
+    default:
+      ASSERT(false);
+      break;
+  }
+
+  // set opening angle
+  upperCameraInfo.openingAngleWidth = cameraIntrinsics.upperOpeningAngleWidth;
+  upperCameraInfo.openingAngleHeight = cameraIntrinsics.upperOpeningAngleHeight;
+  lowerCameraInfo.openingAngleWidth = cameraIntrinsics.lowerOpeningAngleWidth;
+  lowerCameraInfo.openingAngleHeight = cameraIntrinsics.lowerOpeningAngleHeight;
+  // set optical center
+  upperCameraInfo.opticalCenter.x = cameraIntrinsics.upperOpticalCenter.x * upperCameraInfo.width;
+  upperCameraInfo.opticalCenter.y = cameraIntrinsics.upperOpticalCenter.y * upperCameraInfo.height;
+  lowerCameraInfo.opticalCenter.x = cameraIntrinsics.lowerOpticalCenter.x * lowerCameraInfo.width;
+  lowerCameraInfo.opticalCenter.y = cameraIntrinsics.lowerOpticalCenter.y * lowerCameraInfo.height;
+  // update focal length
+  upperCameraInfo.updateFocalLength();
+  lowerCameraInfo.updateFocalLength();
+#ifdef CAMERA_INCLUDED
+  currentImageCamera = nullptr;
+  if(upperCamera != nullptr)
+    delete upperCamera;
+  if(lowerCamera != nullptr)
+    delete lowerCamera;
+  upperCamera = new NaoCamera("/dev/video0", upperCameraInfo.camera, upperCameraInfo.width, upperCameraInfo.height, true);
+  lowerCamera = new NaoCamera("/dev/video1", lowerCameraInfo.camera, lowerCameraInfo.width, lowerCameraInfo.height, false);
+  cycleTime = upperCamera->getFrameRate();
+  ASSERT(upperCamera->getFrameRate() == lowerCamera->getFrameRate());
+#else
+  upperCamera = lowerCamera = nullptr;
+  cycleTime = 1.f / 30.f;
+#endif
 }
 
 bool CameraProvider::isFrameDataComplete()
@@ -115,7 +277,15 @@ bool CameraProvider::isFrameDataComplete()
 void CameraProvider::waitForFrameData2()
 {
 #ifdef CAMERA_INCLUDED
+  // update cameraIntrinsics
+  if(theCameraIntrinsicsNext.hasNext())
+    cameraIntrinsics = const_cast<CameraIntrinsicsNext&>(theCameraIntrinsicsNext).getNext();
 
+  // update resolution
+  if(processResolutionRequest())
+  {
+    setupCameras();
+  }
   const unsigned int timeout = 2000 * 10;
 
   if(currentImageCamera)

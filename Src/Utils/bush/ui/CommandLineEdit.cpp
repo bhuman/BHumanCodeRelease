@@ -10,23 +10,16 @@
 #include "Utils/bush/ui/CommandLineCompleter.h"
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/cmdlib/Commands.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QKeyEvent>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 bool CommandLineEdit::eventFilter(QObject *o, QEvent *e)
 {
-  if (e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease)
+  if(e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease)
   {
     QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-    if (keyEvent->key() == Qt::Key_Tab && e->type() == QEvent::KeyPress)
+    if(keyEvent->key() == Qt::Key_Tab && e->type() == QEvent::KeyPress)
     {
-      if (completer->popup()->isVisible())
+      if(completer->popup()->isVisible())
         completer->setCurrentRow(completer->currentRow() + 1);
       else
         complete();
@@ -63,7 +56,7 @@ CommandLineEdit::CommandLineEdit(Console *parent)
 void CommandLineEdit::keyPressEvent(QKeyEvent *e)
 {
   // ignore some special keys so that the completer can handle them
-  if (completer->popup()->isVisible())
+  if(completer->popup()->isVisible())
   {
     switch (e->key())
     {
@@ -80,7 +73,7 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
     }
   }
 
-  if (e->modifiers() & Qt::ControlModifier && e->key() == Qt::Key_D)
+  if(e->modifiers() & Qt::ControlModifier && e->key() == Qt::Key_D)
   {
     console->cancel();
     e->accept();
@@ -90,17 +83,17 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
   switch (e->key())
   {
     case Qt::Key_Up:        // history up
-      if (!history.isEmpty() && historyIter != history.begin())
+      if(!history.isEmpty() && historyIter != history.begin())
       {
         setText(*--historyIter);
         completer->popup()->hide();
       }
       break;
     case Qt::Key_Down:      // history down
-      if (!history.isEmpty() && historyIter != history.end())
+      if(!history.isEmpty() && historyIter != history.end())
       {
         ++historyIter;
-        if (!history.isEmpty() && historyIter != history.end())
+        if(!history.isEmpty() && historyIter != history.end())
         {
           setText(*historyIter);
           completer->popup()->hide();
@@ -112,7 +105,7 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
     case Qt::Key_Return:
       {
         QString line = text();
-        if (line.size() > 0)
+        if(line.size() > 0)
         {
           history.removeAll(line);
           history.append(line);
@@ -133,7 +126,7 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
          */
         bool completerVisible = completer->popup()->isVisible();
         completer->setCompletionPrefix(text());
-        if (completerVisible)
+        if(completerVisible)
           complete();
       }
   }

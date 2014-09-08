@@ -36,9 +36,8 @@ public:
             unsigned short position);
   RobotView(TeamSelector* teamSelector,
             Robot* robot);
-  ~RobotView();
   void setRobot(Robot* robot);
-  inline unsigned short getPlayerNumber() const { return playerNumber; }
+  unsigned short getPlayerNumber() const { return playerNumber; }
   QString getRobotName() const;
   bool isSelected() const;
 protected:

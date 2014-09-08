@@ -7,7 +7,6 @@
 #include <unordered_map>
 
 #include "Tools/Debugging/Debugging.h"
-#include "Tools/ColorClasses.h"
 #include "Tools/Math/Vector2.h"
 
 class Drawings
@@ -35,7 +34,6 @@ public:
   };
 };
 
-
 class ColorRGBA
 {
 public:
@@ -53,59 +51,6 @@ public:
   {
   }
 
-  ColorRGBA(const ColorRGBA& other)
-  {
-    *this = other;
-  }
-
-  ColorRGBA(ColorClasses::Color colorClass)
-  {
-    switch(colorClass)
-    {
-    case ColorClasses::orange:
-      r = 255;
-      g = 128;
-      b = 64;
-      break;
-    case ColorClasses::yellow:
-      r = 255;
-      g = 255;
-      b = 0;
-      break;
-    case ColorClasses::blue:
-      r = 0;
-      g = 0;
-      b = 128;
-      break;
-    case ColorClasses::green:
-      r = 0;
-      g = 255;
-      b = 0;
-      break;
-    case ColorClasses::white:
-      r = 255;
-      g = 255;
-      b = 255;
-      break;
-    case ColorClasses::black:
-      r = 0;
-      g = 0;
-      b = 0;
-      break;
-    case ColorClasses::red:
-      r = 255;
-      g = 0;
-      b = 0;
-      break;
-    default:
-      r = 0;
-      g = 96;
-      b = 128;
-      break;
-    };
-    a = 255;
-  }
-
   ColorRGBA operator*(float scale) const
   {
     unsigned char r2 = static_cast<unsigned char>(scale * r);
@@ -119,6 +64,18 @@ public:
   unsigned char g;
   unsigned char b;
   unsigned char a;
+
+  static const ColorRGBA white;
+  static const ColorRGBA black;
+  static const ColorRGBA red;
+  static const ColorRGBA green;
+  static const ColorRGBA blue;
+  static const ColorRGBA yellow;
+  static const ColorRGBA cyan;
+  static const ColorRGBA magenta;
+  static const ColorRGBA orange;
+  static const ColorRGBA violet;
+  static const ColorRGBA gray;
 };
 
 In& operator>>(In& stream, ColorRGBA&);
@@ -732,11 +689,11 @@ Out& operator<<(Out& stream, const DrawingManager&);
     dirVec.rotate(rotation); \
     dirVec += translation; \
     LINE(id, translation.x, translation.y, dirVec.x, dirVec.y, \
-         20, Drawings::ps_solid, ColorClasses::white); \
+         20, Drawings::ps_solid, ColorRGBA::white); \
     POLYGON(id, 4, bodyPoints, 20, Drawings::ps_solid, \
-            ColorClasses::black, Drawings::bs_solid, color); \
+            ColorRGBA::black, Drawings::bs_solid, color); \
     CIRCLE(id, translation.x, translation.y, 42, 0, \
-           Drawings::ps_solid, ColorClasses::black, Drawings::bs_solid, color); \
+           Drawings::ps_solid, ColorRGBA::black, Drawings::bs_solid, color); \
   })
 
 /**

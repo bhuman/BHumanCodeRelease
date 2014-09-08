@@ -20,6 +20,7 @@
 STREAMABLE(GaussianPositionDistribution,
 {
 public:
+  GaussianPositionDistribution() = default;
   GaussianPositionDistribution(const Vector2<>& robotPosition, const Matrix2x2<>& covariance),
 
   (Vector2<>) robotPosition, /**< Position (mean) of the detected robot, mean is the center point in both cases (ultrasonic and vision) */
@@ -39,10 +40,5 @@ public:
   (std::vector<GaussianPositionDistribution>) positionsOpponentTeam, /**< positions of opponent robots */
   (BallState) ballState,                    /**< position and velocity of the ball in field coordinates. (Do not trust comments of BallState here) */
   (bool) ballIsValid,                       /**< ball state is valid, if true */
-
-  (BallState) ballStateOthers,              /**< position and velocity of the ball as seen by teammates only */
-  (bool) ballIsValidOthers,                 /**< if calculated ball state is valid as seen by teammates only */
-  (float) ballStateOthersMaxSideConfidence, /**< Maximum SideConfidence of the involved robots */
-
   (Vector2<>) expectedEndPosition,          /**< expected end position of the ball. */
 });

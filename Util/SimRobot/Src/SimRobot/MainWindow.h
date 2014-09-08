@@ -20,15 +20,17 @@
 #if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0) && QT_VERSION < QT_VERSION_CHECK(4, 9, 0)
 #define FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
 #endif
-#if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0) && QT_VERSION < QT_VERSION_CHECK(4, 6, 3)
-#define FIX_LINUX_DOCK_WIDGET_DOCK_STATE_RESTORING_BUG
-#endif
 #endif
 
-#ifdef MACOSX
+#ifdef OSX
 #define FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
 #define FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
 #define FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+#endif
+
+#ifdef WINDOWS
+#define FIX_WIN32_WINDOWS7_BLOCKING_BUG
+#define FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
 #endif
 
 class SceneGraphDockWidget;
@@ -45,6 +47,10 @@ public:
   MainWindow(int argc, char *argv[]);
 
   QMenu* createSimMenu();
+
+  // public only for FIX_WIN32_WINDOWS7_BLOCKING_BUG
+  int timerId; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
+  virtual void timerEvent(QTimerEvent* event);
 
 private:
 
@@ -63,8 +69,6 @@ private:
 
     LoadedModule(const QString& name, int flags) : QLibrary(name), module(0), flags(flags), compiled(false) {}
   };
-
-  int timerId; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
 
   QAction* fileOpenAct;
   QAction* fileCloseAct;
@@ -147,7 +151,6 @@ private:
   virtual QSettings& getLayoutSettings() {return layoutSettings;}
 
   virtual void closeEvent(QCloseEvent* event);
-  virtual void timerEvent(QTimerEvent* event);
   virtual void dragEnterEvent(QDragEnterEvent* event);
   virtual void dropEvent(QDropEvent* event);
   virtual void keyPressEvent(QKeyEvent* event);

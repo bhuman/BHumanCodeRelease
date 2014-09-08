@@ -48,6 +48,7 @@ private:
     location = other.location.c_str(); // avoid copy-on-write
     teamPort = other.teamPort;
     robot = other.robot.c_str(); // avoid copy-on-write
+    isDropInGame = other.isDropInGame;
     return *this;
   }
 
@@ -57,17 +58,22 @@ public:
     red
   );
 
+  /** Default constructor. */
+  Settings()
+  {
+    init();
+  }
+
   std::string robot; /**< The name of this robot. */
   static bool recover; /**< Start directly without the pre-initial state. */
 
-  friend class Framework, /**< To access loaded. */
+  friend class Framework; /**< To access loaded. */
 
+  bool isDropInGame;
+  ,
   (int)(0) teamNumber, /**< The number of our team in the game controller. Use theOwnTeamInfo.teamNumber instead. */
-  (TeamColor)(blue) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColour instead. */
+  (TeamColor)(blue) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColor instead. */
   (int)(0) playerNumber, /**< The number of the robot in the team. Use theRobotInfo.playerNumber instead. */
   (std::string)("Default") location, /**< The name of the location. */
   (int)(0) teamPort, /**< The UDP port our team uses for team communication. */
-
-  // Initialization
-  init();
 });

@@ -54,7 +54,4 @@ void FsrDataProvider::update(FsrData& fsrData)
 
      fsrData.centerOfPressure /= rightSum;
   }
-
-
-
 }

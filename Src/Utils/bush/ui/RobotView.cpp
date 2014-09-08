@@ -1,7 +1,3 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QDrag>
 #include <QDropEvent>
 #include <QDragEnterEvent>
@@ -13,9 +9,7 @@
 #include <QMouseEvent>
 #include <QPalette>
 #include <QProgressBar>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/ui/RobotView.h"
@@ -28,7 +22,7 @@ void RobotView::init()
 {
   QFormLayout* layout = new QFormLayout();
 
-  if(playerNumber)
+  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
     cPlayerNumber = new QLabel(QString("<font size=5><u><b>") + QString::number(playerNumber) + QString("</b></u></font>"));
 
   statusWidget = new QWidget(this);
@@ -76,12 +70,11 @@ void RobotView::init()
 
   update();
   setAcceptDrops(true);
-
 }
 
 void RobotView::update()
 {
-  if(playerNumber)
+  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
     cPlayerNumber->setVisible(false);
   statusWidget->setVisible(false);
   setCheckable(false);
@@ -89,13 +82,13 @@ void RobotView::update()
   {
     Robot* r = robot;
     robot = 0;
-    setCheckable(playerNumber);
+    setCheckable(playerNumber != Robot::INVALID_PLAYER_NUMBER);
     robot = r;
-    if (playerNumber)
+    if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
       setChecked(teamSelector->getSelectedTeam()->isPlayerSelected(robot));
     std::string ipPostfix = robot->wlan.substr(robot->wlan.length() - 2);
     setTitle(fromString(robot->name + " (." + ipPostfix + ")"));
-    if(playerNumber)
+    if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
       cPlayerNumber->setVisible(true);
     statusWidget->setVisible(true);
   }
@@ -122,15 +115,11 @@ RobotView::RobotView(TeamSelector* teamSelector,
   : QGroupBox(teamSelector),
     teamSelector(teamSelector),
     robot(robot),
-    playerNumber(0),
-    pos(0),
+    playerNumber(Robot::INVALID_PLAYER_NUMBER),
+    pos(Robot::INVALID_PLAYER_NUMBER),
     cPlayerNumber(0)
 {
   init();
-}
-
-RobotView::~RobotView()
-{
 }
 
 QString RobotView::getRobotName() const
@@ -142,7 +131,7 @@ QString RobotView::getRobotName() const
 
 bool RobotView::isSelected() const
 {
-  if (!robot)
+  if(!robot)
     return false;
   return teamSelector->getSelectedTeam()->isPlayerSelected(robot);
 }
@@ -155,7 +144,7 @@ void RobotView::setRobot(Robot* robot)
     Session::getInstance().removePowerListener(this);
   }
   this->robot = robot;
-  if(playerNumber)
+  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
   {
     Team* team = teamSelector->getSelectedTeam();
     team->changePlayer(playerNumber, pos, robot);
@@ -214,10 +203,10 @@ void RobotView::dropEvent(QDropEvent* e)
   QString robotName = e->mimeData()->text();
   Robot* r = Session::getInstance().robotsByName[toString(robotName)];
   RobotView* source = dynamic_cast<RobotView*>(e->source());
-  if(source->playerNumber)
+  if(source->playerNumber != Robot::INVALID_PLAYER_NUMBER)
   {
     bool selected = source->isSelected();
-    if (source->robot)
+    if(source->robot)
       source->setSelected(false);
     if(robot)
       source->setRobot(robot);

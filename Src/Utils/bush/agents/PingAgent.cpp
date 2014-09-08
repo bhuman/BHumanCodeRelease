@@ -9,10 +9,6 @@
 #include <QRegExp>
 #include <iostream>
 
-PingAgent::PingAgent()
-{
-}
-
 PingAgent::~PingAgent()
 {
   cleanUp();
@@ -51,7 +47,7 @@ void PingAgent::initializeProcesses(std::map<std::string, Robot*>& robotsByName)
       robots[pingProcesses[n][i]] = it->second;
       pings[n][it->second->name] = 2000.0;
 
-#ifdef WIN32
+#ifdef WINDOWS
       std::string pingParameters = "-t ";
 #else
       std::string pingParameters;

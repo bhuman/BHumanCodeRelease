@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "BallLocator.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 
 MAKE_MODULE(BallLocator, Modeling)
 
@@ -35,20 +35,23 @@ void BallLocator::update(BallModel& ballModel)
   DECLARE_DEBUG_DRAWING("module:BallLocator:Field", "drawingOnField");
   DECLARE_DEBUG_DRAWING("module:BallLocator:Image", "drawingOnImage");
 
-#ifdef TARGET_SIM
-  if(theFrameInfo.time <= lastFrameTime)
+  if(SystemCall::getMode() == SystemCall::logfileReplay &&
+     theFrameInfo.time <= lastFrameTime)
   {
     if(theFrameInfo.time < lastFrameTime)
       init();
     else
       return;
   }
-#endif
 
   // set extra members for seen ball to achieve the following behavior:
   //    if the ball has been seen in the last lower camera image, it will be ignored in
   //    the upper image to exclude any clutter in the robot's environment
-  ballWasSeenInThisFrame = theBallPercept.ballWasSeen;
+  ballWasSeenInThisFrame = theBallPercept.status == BallPercept::seen;
+
+  seenStats.add(ballWasSeenInThisFrame ? 100 : 0);
+  ballModel.seenPercentage = (unsigned char) seenStats.getAverage();
+
   if(ballWasSeenInThisFrame && theCameraInfo.camera == CameraInfo::upper && ballWasBeenSeenInLastLowerCameraImage)
     ballWasSeenInThisFrame = false;
   else if(theCameraInfo.camera == CameraInfo::lower)
@@ -66,14 +69,14 @@ void BallLocator::update(BallModel& ballModel)
   Vector2<> rightFootCenter(rightFoot.translation.x, rightFoot.translation.y);
   COMPLEX_DRAWING("module:BallLocator:Image",
   {
-    Vector2<int> leftCenterImage, leftTopImage, rightCenterImage, rightTopImage;
-    if(Geometry::calculatePointInImage(Vector3<>(leftFootCenter.x, leftFootCenter.y, 0), theCameraMatrix, theCameraInfo, leftCenterImage) &&
-    Geometry::calculatePointInImage(Vector3<>(leftFootCenter.x + footRadius, leftFootCenter.y, 0), theCameraMatrix, theCameraInfo, leftTopImage))
+    Vector2<> leftCenterImage, leftTopImage, rightCenterImage, rightTopImage;
+    if(Transformation::robotToImage(leftFootCenter, theCameraMatrix, theCameraInfo, leftCenterImage) &&
+    Transformation::robotToImage(Vector2<>(leftFootCenter.x + footRadius, leftFootCenter.y), theCameraMatrix, theCameraInfo, leftTopImage))
     {
       CIRCLE("module:BallLocator:Image", leftCenterImage.x, leftCenterImage.y, (leftCenterImage - leftTopImage).abs(), 0, Drawings::ps_solid, ColorRGBA(0, 0, 0), Drawings::bs_null, ColorRGBA());
     }
-    if(Geometry::calculatePointInImage(Vector3<>(rightFootCenter.x, rightFootCenter.y, 0), theCameraMatrix, theCameraInfo, rightCenterImage) &&
-    Geometry::calculatePointInImage(Vector3<>(rightFootCenter.x + footRadius, rightFootCenter.y, 0), theCameraMatrix, theCameraInfo, rightTopImage))
+    if(Transformation::robotToImage(rightFootCenter, theCameraMatrix, theCameraInfo, rightCenterImage) &&
+    Transformation::robotToImage(Vector2<>(rightFootCenter.x + footRadius, rightFootCenter.y), theCameraMatrix, theCameraInfo, rightTopImage))
     {
       CIRCLE("module:BallLocator:Image", rightCenterImage.x, rightCenterImage.y, (rightCenterImage - rightTopImage).abs(), 0, Drawings::ps_solid, ColorRGBA(0, 0, 0), Drawings::bs_null, ColorRGBA());
     }

@@ -10,12 +10,11 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 
-
 void RobotModelProvider::update(RobotModel& robotModel)
 {
   robotModel.setJointData(theFilteredJointData, theRobotDimensions, theMassCalibration);
 
-  DECLARE_DEBUG_DRAWING3D("module:RobotModelProvider:massOffsets", "origin",
+  DECLARE_DEBUG_DRAWING3D("module:RobotModelProvider:massOffsets", "robot",
   {
     for(int i = 0; i < MassCalibration::numOfLimbs; ++i)
     {
@@ -24,7 +23,7 @@ void RobotModelProvider::update(RobotModel& robotModel)
     }
   });
 
-  DECLARE_DEBUG_DRAWING3D("module:RobotModelProvider:joints", "origin",
+  DECLARE_DEBUG_DRAWING3D("module:RobotModelProvider:joints", "robot",
   {
     const float axisLineWidth = 1.f;
 
@@ -68,6 +67,5 @@ void RobotModelProvider::update(RobotModel& robotModel)
     }
   });
 }
-
 
 MAKE_MODULE(RobotModelProvider, Sensing)

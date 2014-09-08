@@ -14,18 +14,18 @@
 namespace vec {
 using namespace std;
 
-template <int n, class V> struct VectorData : public ImplicitlyStreamable
+template <int n, class V> struct VectorData
 {
   V v[n];
 };
 
-template <class V> struct VectorData<2, V> : public ImplicitlyStreamable
+template <class V> struct VectorData<2, V>
 {
   V x;
   V y;
 };
 
-template <class V> struct VectorData<3, V> : public ImplicitlyStreamable
+template <class V> struct VectorData<3, V>
 {
   V x;
   V y;
@@ -240,7 +240,7 @@ public:
   * @param i index of coordinate
   * @return reference to the coordinate
   */
-  inline V& operator[](int i)
+  V& operator[](int i)
   {
     return ((V*)this)[i];
   }
@@ -250,7 +250,7 @@ public:
   * @param i index of coordinate
   * @return reference to the coordinate
   */
-  inline const V& operator[](int i) const
+  const V& operator[](int i) const
   {
     return ((const V*)this)[i];
   }
@@ -283,8 +283,10 @@ public:
   Vector<n, V>& normalize()
   {
     const V length = abs();
-    if(length == V()) return *this;
-    return *this /= length;
+    if(length == V())
+      return *this;
+    else
+      return *this /= length;
   }
 };
 
@@ -378,8 +380,8 @@ template <class V> Out& operator<<(Out& stream, const Vector<3, V>& vector)
 */
 template <int n, class V> Out& operator<<(Out& stream, const Vector<n, V>& vector)
 {
-  STREAM_REGISTER_BEGIN_EXT(vector);
-  Vector<4, float>& vector2(const_cast<Vector<4, float>&>(vector)); // Hack to make it compile with Visual Studio
+  Vector<n, V>& vector2(const_cast<Vector<n, V>&>(vector)); // Hack to make it compile with Visual Studio
+  STREAM_REGISTER_BEGIN_EXT(vector2);
   STREAM_EXT(stream, vector2.v);
   STREAM_REGISTER_FINISH;
   return stream;

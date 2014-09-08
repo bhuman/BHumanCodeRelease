@@ -19,6 +19,8 @@ OffscreenRenderer::OffscreenRenderer() :
 
 OffscreenRenderer::~OffscreenRenderer()
 {
+  if(mainGlWidget)
+    mainGlWidget->makeCurrent();
   renderBuffers.clear();
   if(mainGlWidget)
     delete mainGlWidget;
@@ -44,9 +46,7 @@ bool OffscreenRenderer::makeCurrent(int width, int height)
   {
     Buffer& buffer = renderBuffers[width << 16 | height];
 
-#ifndef MAC_OS_X_VERSION_10_9 // pixel buffers do strange things on Mavericks
     if(!initPixelBuffer(width, height, buffer))
-#endif
       if(!initFrameBuffer(width, height, buffer))
         initHiddenWindow(width, height, buffer);
 
@@ -75,7 +75,7 @@ bool OffscreenRenderer::initFrameBuffer(int width, int height, Buffer& buffer)
 {
   mainGlWidget->makeCurrent();
 
-#ifndef MACOSX
+#ifndef OSX
   if(!GLEW_EXT_framebuffer_object)
     return false;
 #endif
@@ -138,7 +138,7 @@ void OffscreenRenderer::initHiddenWindow(int width, int height, Buffer& buffer)
 
 void OffscreenRenderer::initContext(bool hasSharedDisplayLists)
 {
-#ifndef MACOSX
+#ifndef OSX
   glewInit();
 #endif
 

@@ -26,12 +26,6 @@ public:
   Motion();
 
   /**
-  * Default destructor.
-  * Sets the global pointers again (only for Simulator).
-  */
-  ~Motion() {setGlobals();}
-
-  /**
   * The method is called from the framework once in every frame.
   * @return Should wait for external trigger?
   */

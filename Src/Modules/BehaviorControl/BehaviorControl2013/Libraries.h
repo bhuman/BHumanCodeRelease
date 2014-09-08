@@ -18,7 +18,7 @@ namespace Behavior2013
     std::vector<LibraryBase*> libraries; /**< All the member libraries of this class. */
 
   public:
-    LibCodeRelease           libCodeRelease; 
+    LibCodeRelease    libCodeRelease;   /**< Contains miscellaneous helper methods */
 
     Libraries(const BehaviorControl2013Base& base,
               BehaviorControlOutput& behaviorControlOutput);

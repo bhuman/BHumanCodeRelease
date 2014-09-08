@@ -10,8 +10,7 @@
 
 #include <QString>
 #include <QIcon>
-
-#include "SimRobot.h"
+#include <SimRobot.h>
 
 class RobotConsole;
 

@@ -54,6 +54,8 @@
   } \
   while(false)
 
+#define OUTPUT_TEXT(string) OUTPUT(idText, text, string)
+
 #ifdef TARGET_TOOL
 /**
  * A macro for sending warning messages.
@@ -62,7 +64,7 @@
  */
 #define OUTPUT_WARNING(message) \
   do { \
-    std::cerr <<"Error: " << message << std::endl; \
+    std::cerr <<"Warning: " << message << std::endl; \
   } \
   while(false)
 #else
@@ -77,8 +79,8 @@
     OutTextSize _size; \
     _size << "Warning: " << message; \
     char* _buf = new char[_size.getSize() + 1]; \
-    OutTextMemory _steam(_buf); \
-    _steam << "Warning: " << message; \
+    OutTextMemory _stream(_buf); \
+    _stream << "Warning: " << message; \
     _buf[_size.getSize()] = 0; \
     DebugRequestTable::print(_buf); \
     delete [] _buf; \
@@ -173,8 +175,8 @@
     OutTextSize _size; \
     _size << "Error: " << message; \
     char* _buf = new char[_size.getSize() + 1]; \
-    OutTextMemory _steam(_buf); \
-    _steam << "Error: " << message; \
+    OutTextMemory _stream(_buf); \
+    _stream << "Error: " << message; \
     _buf[_size.getSize()] = 0; \
     DebugRequestTable::print(_buf); \
     delete [] _buf; \

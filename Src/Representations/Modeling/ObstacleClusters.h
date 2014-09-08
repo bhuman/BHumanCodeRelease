@@ -1,6 +1,6 @@
 /*
  * File:   ObstacleClusters.h
- * Author: Arne Bšckmann arneboe@tzi.de
+ * Author: Arne BÃ¶ckmann arneboe@tzi.de
  */
 
 #pragma once
@@ -23,6 +23,7 @@ public:
   STREAMABLE(Obstacle,
   {
   public:
+    Obstacle() = default;
     Obstacle(const GaussianPositionDistribution& g);
     operator GaussianPositionDistribution() const,
 
@@ -32,6 +33,7 @@ public:
     (float) c11,
   });
 
+  ObstacleClustersCompressed() = default;
   ObstacleClustersCompressed(const ObstacleClusters& obstacles, unsigned int maxNumOfObstaclesToSend);
   operator ObstacleClusters() const,
 

@@ -56,7 +56,7 @@ UpdateSettingsCmd::UpdateSettingsTask::UpdateSettingsTask(Context& context,
   : RobotTask(context, robot),
     team(team),
     keyFile(keyFile)
-{ }
+{}
 
 bool UpdateSettingsCmd::UpdateSettingsTask::execute()
 {

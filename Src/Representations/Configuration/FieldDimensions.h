@@ -13,6 +13,7 @@
 #include "Tools/Math/Pose2D.h"
 #include "Tools/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Math/Geometry.h"
 
 STREAMABLE(SimpleFieldDimensions,
 {,
@@ -97,6 +98,20 @@ public:
 
     void pushCircle(const Vector2<>& center, float radius, int numOfSegments);
 
+    /**
+    * Get the the closest point to p on a field line
+    */
+    Vector2<> getClosestPoint(const Vector2<>& p) const;
+
+    /**
+    * Intersects the specified line with each field line, returns the
+    * intersection point that is closest to the base of the line.
+    * @param outLineIndex is set to the index of the line that contains the intersection
+    */
+    bool getClosestIntersection(const Geometry::Line& l, int& outLineIndex, Vector2<>& outIntersection) const;
+
+    bool getClosestIntersection(const Geometry::Line& l, Vector2<>& outIntersection) const;
+    
     /*
     * Returns whether a given point is inside the polygon described by the line segments.
     * Only valid if the line segment table describes a closed polygon.
@@ -130,9 +145,18 @@ public:
   };
 
   /**
-  * Tables of line segments
+  * Table of line segments
   */
   LinesTable fieldLines;
+
+  /**
+  * Table of line segments that contains the parts of the goal frame that
+  * are on the ground.
+  */
+  LinesTable goalFrameLines;
+  
+  /**Table of line segments that contains both fieldLines and goalFrameLines*/
+  LinesTable fieldLinesWithGoalFrame;
 
   /**
   * Describes a polygon around the border of the field carpet.
@@ -186,6 +210,17 @@ public:
   enum {numOfCornerClasses = numOfCornerClasss}; // extra, because numOfCornerClasss isn't so nice
 
   CornersTable corners[numOfCornerClasses]; /**< All corners on the field. */
+
+  /**
+  * The goals
+  */
+  STREAMABLE(GoalDimensions,
+  { ,
+    (Vector3<>) start,
+    (Vector3<>) end,
+  });
+
+  std::vector<GoalDimensions> goalDimensions;
 
   /**
   * Read field dimensions from configuration file.
@@ -246,10 +281,15 @@ public:
   void draw() const;
 
   /**
+  * Draws the goal frame.
+  */
+  void drawGoalFrame() const;
+
+  /**
   * The method draws the field polygons.
   * @param ownColor The color of the own team.
   */
-  void drawPolygons(unsigned ownColor) const;
+  void drawPolygons(int ownColor) const;
 
 private:
   virtual void serialize(In* in, Out* out);

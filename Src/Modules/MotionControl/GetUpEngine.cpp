@@ -43,22 +43,24 @@ void GetUpEngine::update(GetUpEngineOutput& output)
             state = schwalbe;   //if no more trys left let behavior cry for help.
           else
           {
-            tryCounter++;
+            if(SystemCall::getMode() != SystemCall::simulatedRobot)
+              tryCounter++;
+
             state = breakUp;
             breakUpTimeStamp = theFrameInfo.time;
           }
         }
         else //Success
         {
-          if(theGroundContactState.contact)
-          {
+         // if(theGroundContactState.contact) // this could go into deadlock
+         // {
             if(!output.isLeavingPossible) //set odometry only once!
               output.odometryOffset = internalOdometryOffset;
             else
               output.odometryOffset = Pose2D();
 
             output.isLeavingPossible = true;
-          }
+        //  }
         }
       }
     }
@@ -84,6 +86,7 @@ void GetUpEngine::update(GetUpEngineOutput& output)
   {
     wasActive = false; //the engine did not do anything
     lastNotActiveTimeStamp = theFrameInfo.time;
+    lastMotionInfo = theMotionInfo; // store the last MotionInfo
   }
 }
 
@@ -130,34 +133,32 @@ void GetUpEngine::addBalance(JointRequest& jointRequest)
 void GetUpEngine::pickMotion(GetUpEngineOutput& output)
 {
   initVariables();
+  const float& bodyAngleY = theFilteredSensorData.data[SensorData::angleY];
   switch(state)
   {
   case decideAction:
   {
-    //on front side
-    if(theFallDownState.direction == FallDownState::front &&
-       (theFallDownState.state == FallDownState::onGround || theFallDownState.state == FallDownState::undefined) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+    if(bodyAngleY > fromDegrees(65) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)//experimental use of body angle
     {
       //init stand up front
       state = working;
       setHardness(output, 90);
       setCurrentMotion(Mof::front);
     }
-    //on back side
-    else if(theFallDownState.direction == FallDownState::back &&
-            (theFallDownState.state == FallDownState::onGround || theFallDownState.state == FallDownState::undefined) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+    //on back side experimental use of body angles
+    else if(bodyAngleY < fromDegrees(-65) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
     {
       //init stand up back motion
       state = working;
-      setHardness(output, 90); //maybe 90 is enough?
+      setHardness(output, 90); 
       setCurrentMotion(Mof::back);
     }
     //not fallen at all?
-    else if(abs(theFilteredSensorData.data[SensorData::angleY]) < fromDegrees(30) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
+    else if(abs(bodyAngleY) < fromDegrees(30) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
     {
       //init stand
       state = pickUp;
-      setHardness(output, 50);
+      setHardness(output, 75);
       setCurrentMotion(Mof::stand);
     }
     else
@@ -192,7 +193,7 @@ void GetUpEngine::pickMotion(GetUpEngineOutput& output)
       //do nothing then
       state = schwalbe;
       setCurrentMotion(Mof::numOfMotions);
-      if(theFrameInfo.getTimeSince(soundTimeStamp) > 10000)
+      if(theFrameInfo.getTimeSince(soundTimeStamp) > 5000)
       {
         SystemCall::playSound("helpMe.wav");
         soundTimeStamp = theFrameInfo.time;
@@ -202,7 +203,7 @@ void GetUpEngine::pickMotion(GetUpEngineOutput& output)
     {
       //if near upright init stand
       state = pickUp;
-      setHardness(output, 50);
+      setHardness(output, 75);
       setCurrentMotion(Mof::stand);
     }
     break;
@@ -235,8 +236,9 @@ void GetUpEngine::checkCriticalParts(GetUpEngineOutput& output)
 {
   if(mofs[motionID].lines[lineCounter].critical)
   {
+    const float& bodyAngleY = theFilteredSensorData.data[SensorData::angleY];
     //if the body is not almost upright recover or cry for help
-    if(abs(theFilteredSensorData.data[SensorData::angleY]) > fromDegrees(30))
+    if(abs(bodyAngleY) > fromDegrees(30))
     {
       setHardness(output, 0);
       if(tryCounter >= maxNumOfUnsuccessfulTries) //if no more trys left let behavior cry for help.
@@ -245,7 +247,9 @@ void GetUpEngine::checkCriticalParts(GetUpEngineOutput& output)
       }
       else
       {
-        tryCounter++;
+        if(SystemCall::getMode() != SystemCall::simulatedRobot)        
+         tryCounter++;
+
         state = breakUp;
         breakUpTimeStamp = theFrameInfo.time;
       }
@@ -290,7 +294,6 @@ void GetUpEngine::setNextJoints(GetUpEngineOutput& output)
         targetJoints.angles[JointData::RHipYawPitch + i] = fromDegrees(mofs[motionID].lines[lineCounter].rightLeg[i]);
       }
       checkCriticalParts(output);
-
     }
   }
   interpolate(startJoints, targetJoints, ratio, output);

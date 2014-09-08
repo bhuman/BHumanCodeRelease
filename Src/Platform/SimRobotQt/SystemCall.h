@@ -14,7 +14,7 @@
  * by this macro. Only variables of simple types can be defined, i.e.
  * no class instantiations are allowed.
  */
-#ifdef WIN32
+#ifdef WINDOWS
 #define PROCESS_WIDE_STORAGE(type) __declspec(thread) type*
 #else
 #define PROCESS_WIDE_STORAGE(type) __thread type*
@@ -49,13 +49,13 @@ public:
   static unsigned long long getCurrentThreadTime();
 
   /** returns the time since aTime*/
-  inline static int getTimeSince(unsigned aTime)
+  static int getTimeSince(unsigned aTime)
   {
     return (int)(getCurrentSystemTime() - aTime);
   }
 
   /** returns the real time since aTime*/
-  inline static int getRealTimeSince(unsigned aTime)
+  static int getRealTimeSince(unsigned aTime)
   {
     return (int)(getRealSystemTime() - aTime);
   }
@@ -76,6 +76,13 @@ public:
 
   /** Returns the load and the physical memory usage in percent */
   static void getLoad(float& mem, float load[3]);
+
+  /**
+   * Returns the free disk space on a volume.
+   * @param path A path to a directory or file on the volume.
+   * @return The free disk space in bytes.
+   */
+  static unsigned long long getFreeDiskSpace(const char* path);
 
   /** Allocate memory of given size with given alignment. */
   static void* alignedMalloc(size_t size, size_t alignment);

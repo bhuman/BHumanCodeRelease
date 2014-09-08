@@ -29,6 +29,12 @@ public:
     cyan
   );
 
+  BehaviorLEDRequest()
+  {
+    for(int i = 0; i < numOfBehaviorLEDs; ++i)
+      modifiers[i] = LEDRequest::on;
+  }
+
   bool operator==(const BehaviorLEDRequest& other) const
   {
     for(int i = 0; i < numOfBehaviorLEDs; i++)
@@ -45,8 +51,4 @@ public:
   (LEDRequest, LEDState[numOfBehaviorLEDs]) modifiers,
   (EyeColor)(defaultColor) leftEyeColor,
   (EyeColor)(defaultColor) rightEyeColor,
-
-  // Initialization
-  for(int i = 0; i < numOfBehaviorLEDs; ++i)
-    modifiers[i] = LEDRequest::on;
 });

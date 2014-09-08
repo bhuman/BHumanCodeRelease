@@ -17,7 +17,7 @@ TeamSelector::TeamSelector()
 {
   static const size_t NUM_PLAYERS = 10;
   selectActions.reserve(NUM_PLAYERS);
-  for(size_t i = 0; i < NUM_PLAYERS; ++i)
+  for(int i = 0; i < (int) NUM_PLAYERS; ++i)
   {
     QAction* a = new QAction(this);
     a->setShortcut(QKeySequence(Qt::Key_F1 + i));
@@ -143,7 +143,7 @@ void TeamSelector::selectPlayer()
   if(!s)
     return;
   int number = -1;
-  for(size_t i = 0; i < selectActions.size(); ++i)
+  for(int i = 0; i < (int) selectActions.size(); ++i)
     if(selectActions[i] == s)
       number = i;
   if(number >= 0)
@@ -156,12 +156,12 @@ void TeamSelector::selectPlayer()
 
 void TeamSelector::selectNext()
 {
-  if (currentIndex() + 1 < count())
+  if(currentIndex() + 1 < count())
     setCurrentIndex(currentIndex() + 1);
 }
 
 void TeamSelector::selectPrev()
 {
-  if (currentIndex() > 0)
+  if(currentIndex() > 0)
     setCurrentIndex(currentIndex() - 1);
 }

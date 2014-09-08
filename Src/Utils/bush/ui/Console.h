@@ -23,7 +23,7 @@ public:
   QIcon ICON_GREEN;
   QIcon ICON_ORANGE;
   QIcon ICON_RED;
-  static inline Icons& getInstance() { return theIcons; }
+  static Icons& getInstance() { return theIcons; }
   void init();
 };
 
@@ -64,7 +64,6 @@ class Console : public QFrame
   CommandLineEdit *cmdLine;
 
 public:
-  ~Console() { }
   Console(TeamSelector *teamSelector);
   QSize minimumSizeHint() const { return QSize(100, 250); }
 

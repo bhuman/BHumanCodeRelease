@@ -25,7 +25,7 @@ public:
   Motor() : setpoint(0), joint(0) {}
 
   /** Destructor */
-  virtual ~Motor() {}
+  virtual ~Motor() = default;
 
   /**
   * Creates the physical representation of the motor

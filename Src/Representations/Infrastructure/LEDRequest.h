@@ -106,6 +106,12 @@ public:
     half
   );
 
+  LEDRequest()
+  {
+    for(int i = 0; i < numOfLEDs; ++i)
+      ledStates[i] = off;
+  }
+
   bool operator==(const LEDRequest& other) const
   {
     for(int i = 0; i < numOfLEDs; i++)
@@ -120,8 +126,4 @@ public:
   },
 
   (LEDState[numOfLEDs]) ledStates, /**< The intended states of the LEDs (use type State). */
-
-  // Initialization
-  for(int i = 0; i < numOfLEDs; ++i)
-    ledStates[i] = off;
 });

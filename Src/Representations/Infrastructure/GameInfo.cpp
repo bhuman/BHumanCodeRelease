@@ -84,8 +84,8 @@ void GameInfo::draw() const
 
   DECLARE_DEBUG_DRAWING("representation:GameInfo","drawingOnField",
   {
-    DRAWTEXT("representation:GameInfo", -5000, -3200, 200, ColorClasses::white, "Time remaining: " << (int)(secsRemaining/60) << ":" << (secsRemaining%60));
-    DRAWTEXT("representation:GameInfo", -5000, -3400, 200, ColorClasses::white, (firstHalf ? "First" : "Second") << " half");
+    DRAWTEXT("representation:GameInfo", -5000, -3200, 200, ColorRGBA::white, "Time remaining: " << (int)(secsRemaining/60) << ":" << (secsRemaining%60));
+    DRAWTEXT("representation:GameInfo", -5000, -3400, 200, ColorRGBA::white, (firstHalf ? "First" : "Second") << " half");
     std::string stateStr;
     switch(state)
     {
@@ -108,6 +108,6 @@ void GameInfo::draw() const
       stateStr = "Unknown";
     }
 
-    DRAWTEXT("representation:GameInfo", -3500, 2200, 14, ColorClasses::white, "State: " << stateStr);
+    DRAWTEXT("representation:GameInfo", -3500, 2200, 14, ColorRGBA::white, "State: " << stateStr);
   });
 }

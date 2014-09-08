@@ -22,11 +22,13 @@ private:
 
   char name[80]; /**< The name of the robot. */
   int number; /**< The player number of the robot this process communicates with. */
-  FieldDimensions fieldDimensions; /**< The field dimensions for drawing a field. */
+  FieldDimensions& fieldDimensions; /**< The field dimensions for drawing a field. */
+  OwnTeamInfo& ownTeamInfo; /**< Allow setting the team color. */
 
   /** The main loop of the process. */
   void run()
   {
+    setGlobals();
     while(isRunning())
       processMain();
   }
@@ -48,7 +50,7 @@ public:
   /**
    * Destructor.
    */
-  ~TeamRobot() {Thread<TeamRobot>::stop();}
+  ~TeamRobot();
 
   /** The function starts the process. */
   void start() {Thread<TeamRobot>::start(this, &TeamRobot::run);}

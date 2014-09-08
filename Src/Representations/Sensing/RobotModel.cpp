@@ -39,7 +39,7 @@ void RobotModel::setJointData(const JointData& joints, const RobotDimensions& ro
 
 void RobotModel::draw() const
 {
-  DECLARE_DEBUG_DRAWING3D("representation:RobotModel", "origin");
+  DECLARE_DEBUG_DRAWING3D("representation:RobotModel", "robot");
   COMPLEX_DRAWING3D("representation:RobotModel",
   {
     for(int i = 0; i < MassCalibration::numOfLimbs; ++i)
@@ -54,6 +54,6 @@ void RobotModel::draw() const
       LINE3D("representation:RobotModel", v.x, v.y, v.z, v3.x, v3.y, v3.z, 1, ColorRGBA(0, 0, 255));
     }
   });
-  DECLARE_DEBUG_DRAWING3D("representation:RobotModel:centerOfMass", "origin");
+  DECLARE_DEBUG_DRAWING3D("representation:RobotModel:centerOfMass", "robot");
   SPHERE3D("representation:RobotModel:centerOfMass", centerOfMass.x, centerOfMass.y, centerOfMass.z, 25, ColorRGBA(255, 0, 0));
 }

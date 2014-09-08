@@ -1,40 +1,25 @@
 # image views
-vi image jpeg raw gain 1.0
-vi image jpeg upperCam rawUpper gain 1.0
-vi image jpeg segmented segmented
-vid raw representation:LinePercept:Image
-vid raw representation:BallPercept:Image 
-vid raw representation:GoalPercept:Image
-vid raw representation:BodyContour
+vi image jpeg lower gain 1.0
+vi image jpeg upper upper gain 1.0
+vi image jpeg segmented segmentedLower
+vi image jpeg segmented upper segmentedUpper
 
-vid rawUpper representation:LinePercept:Image
-vid rawUpper representation:BallPercept:Image 
-vid rawUpper representation:GoalPercept:Image
-vid rawUpper representation:BodyContour
+vid lower representation:LinePercept:Image
+vid lower representation:BallPercept:Image
+vid lower representation:GoalPercept:Image
+vid lower representation:RobotPercept:Image
+vid lower representation:BodyContour
+
+vid upper representation:LinePercept:Image
+vid upper representation:BallPercept:Image
+vid upper representation:GoalPercept:Image
+vid upper representation:RobotPercept:Image
+vid upper representation:BodyContour
 
 # field views
-vf worldState
-vfd worldState fieldLines
-vfd worldState fieldPolygons
-vfd worldState representation:RobotPose 
-
-# views relative to robot
-# from now, relative to estimated robot pose
-vfd worldState origin:RobotPose
-vfd worldState representation:BallModel 
-vfd worldState representation:BallPercept:Field
-vfd worldState representation:LinePercept:Field
-vfd worldState representation:GoalPercept:Field 
-vfd worldState representation:ObstacleModel 
-# vfd worldState module:USObstacleGridProvider:us
-
-# local obstacle grid view
-# usually commented out as it is quite bandwidth/time consuming
-# vfd worldState origin:USObstacleGrid
-# vfd worldState representation:USObstacleGrid 
-
-# back to global coordinates
-vfd worldState origin:Reset
+call FieldViews1
+call FieldViews2
 
 # 3-D image views
-v3 image jpeg raw
+v3 image jpeg lower
+v3 image jpeg upper upper

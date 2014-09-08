@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Math/Common.h"
+#include <cmath>
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Enum.h"
 
@@ -47,6 +47,13 @@ public:
   // If you change those values be sure to change them in MofCompiler.cpp too. (Line ~280)
   enum {off = 1000}; /**< Special angle for switching off a joint. */
   enum {ignore = 2000}; /**< Special angle for not overwriting the previous setting. */
+
+  /** The constructor deactivates all joint angles. */
+  JointData()
+  {
+    for(int i = 0; i < numOfJoints; ++i)
+      angles[i] = off;
+  }
 
   /**
   * The method returns the angle of the mirror (left/right) of the given joint.
@@ -118,12 +125,7 @@ public:
 
   (float[numOfJoints]) angles, /**< The angles of all joints. */
   (unsigned)(0) timeStamp, /**< The time when these angles were received. */
-
-  // Initialization
-  for(int i = 0; i < numOfJoints; ++i)
-    angles[i] = off;
 });
-
 
 /**
  * @class HardnessData
@@ -134,6 +136,12 @@ STREAMABLE(HardnessData,
 {
 public:
   enum {useDefault = -1};
+
+  /** The constructor resets all data to its default value. */
+  HardnessData()
+  {
+    resetToDefault();
+  }
 
   /**
   * The method returns the hardness of the mirror (left/right) of the given joint.
@@ -204,16 +212,13 @@ public:
   /**
    * This function resets the hardness for all joints to the default value.
    */
-  inline void resetToDefault()
+  void resetToDefault()
   {
     for(int i = 0; i < JointData::numOfJoints; ++i)
       hardness[i] = useDefault;
   },
 
   (int[JointData::numOfJoints]) hardness, /**< the custom hardness for each joint */
-
-  // Initialization
-  resetToDefault();
 });
 
 class HardnessSettings : public HardnessData {};

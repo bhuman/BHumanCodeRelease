@@ -9,18 +9,10 @@
 
 #pragma once
 
-#include "SelfLocatorParameters.h"
+#include "SelfLocatorBase.h"
 #include "Tools/Math/Matrix.h"
-#include "Tools/Math/Pose2D.h"
 #include "Tools/RingBufferWithSum.h"
-
-class CameraMatrix;
-class FieldModel;
-class FieldDimensions;
-class GoalPercept;
-class LinePercept;
-class MotionInfo;
-
+#include "FieldModel.h"
 
 /**
 * @class UKFSample
@@ -31,10 +23,9 @@ class UKFSample
 {
 public:
   Vector3f   mean;          /**< The estimated pose. */
+
 private:
   Matrix3x3f cov;           /**< The covariance matrix of the estimate. */
-  bool       mirrored;      /**< The robot assumes to be have mirrored its pose recently, if true. */
-
   Vector3f sigmaPoints[7];  /**< Sigma points for updating the filter */
   Matrix3x3f l;             /**< Last computed cholesky decomposition */
   RingBufferWithSum<float,60> validityBuffer;
@@ -44,16 +35,14 @@ public:
   float weighting;
 
   float validity;
+  
+  int number;
 
   Pose2D getPose() const;
 
   Matrix3x3f& getCov() { return cov; };
 
-  bool isMirrored() const { return mirrored; }
-
   void mirror();
-
-  void setMirrored(bool newMirrored) { mirrored = newMirrored; }
 
   float computeValidity(const FieldDimensions& fieldDimensions);
 
@@ -61,35 +50,30 @@ public:
 
   void twist();
 
-  void computeWeightingBasedOnValidity(const FieldDimensions& fieldDimensions, const SelfLocatorParameters& parameters);
+  void computeWeightingBasedOnValidity(const FieldDimensions& fieldDimensions, const SelfLocatorBase::Parameters& parameters);
 
   float getVarianceWeighting() const;
 
-  void init(const Pose2D& pose, const SelfLocatorParameters& parameters);
+  void init(const Pose2D& pose, const SelfLocatorBase::Parameters& parameters, int number);
 
-  void motionUpdate(const Pose2D& odometryOffset, const SelfLocatorParameters& parameters);
+  void motionUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters);
 
-  void performOdometryUpdate(const Pose2D& odometryOffset, const SelfLocatorParameters& parameters);
+  void performOdometryUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters);
 
-  void updateByGoalPercept(const GoalPercept& goalPercept, const FieldModel& fieldModel, const SelfLocatorParameters& parameters,
+  void updateByGoalPercept(const GoalPercept& goalPercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                            const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix);
 
-  void updateByLinePercept(const LinePercept& linePercept, const FieldModel& fieldModel, const SelfLocatorParameters& parameters,
+  void updateByLinePercept(const LinePercept& linePercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                            const FieldDimensions& fieldDimensions, const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix);
-
-  void computeWeightingBasedOnBallObservation(const Vector2<>& ballObservation, const Vector2<>& teamBallPosition,
-                                              const float& camZ, const SelfLocatorParameters& parameters);
-
-  void updateMirrorFlag(bool fallen, bool armContact, const SelfLocatorParameters& parameters, const FieldDimensions& fieldDimensions);
 
   void draw(bool simple = false);
 
 private:
   Matrix2x2f getCovOfPointInWorld(const Vector2<>& pointInWorld, float pointZInWorld,
-    const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix, const SelfLocatorParameters& parameters) const;
+    const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const;
 
   Matrix2x2f getCovOfCircle(const Vector2<>& circlePos, float centerCircleRadius, const MotionInfo& motionInfo,
-    const CameraMatrix& cameraMatrix, const SelfLocatorParameters& parameters) const;
+    const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const;
 
   void landmarkSensorUpdate(const Vector2<>& landmarkPosition, const Vector2f& reading, const Matrix2x2f& readingCov);
 

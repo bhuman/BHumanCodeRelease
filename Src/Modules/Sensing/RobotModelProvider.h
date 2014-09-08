@@ -14,14 +14,13 @@
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointData.h"
 
-
-MODULE(RobotModelProvider)
-  REQUIRES(RobotDimensions)
-  REQUIRES(FilteredJointData)
-  REQUIRES(MassCalibration)
-  PROVIDES_WITH_MODIFY_AND_DRAW(RobotModel)
-END_MODULE
-
+MODULE(RobotModelProvider,
+{,
+  REQUIRES(RobotDimensions),
+  REQUIRES(FilteredJointData),
+  REQUIRES(MassCalibration),
+  PROVIDES_WITH_MODIFY_AND_DRAW(RobotModel),
+});
 
 /**
 * @class RobotModelProvider
@@ -36,5 +35,4 @@ private:
   * @param robotModel The data structure that is filled by this module
   */
   void update(RobotModel& robotModel);
-
 };

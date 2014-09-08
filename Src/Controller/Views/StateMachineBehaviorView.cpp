@@ -5,25 +5,18 @@
 * @author Colin Graf
 */
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QHeaderView>
 #include <QApplication>
 #include <QPainter>
 #include <QFontMetrics>
 #include <QKeyEvent>
 #include <QSettings>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
-#include "StateMachineBehaviorView.h"
-#include "Platform/Thread.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/Visualization/HeaderedWidget.h"
+#include "Platform/Thread.h"
+#include "StateMachineBehaviorView.h"
 
 class StateMachineBehaviorWidget : public QWidget
 {

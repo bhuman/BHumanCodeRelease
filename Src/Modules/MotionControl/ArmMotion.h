@@ -17,9 +17,9 @@ public:
    */
   STREAMABLE(ArmAngles,
   {,
-    (std::vector<float>)(4, 0.f) angles, /**< Array of size 4, containing target angles for shoulder+elbow joint */
-    (std::vector<int>)(4, 0) hardness, /**< Array of size 4, containing hardness data to set while targetting the above angles */
-    (int)(4) steps,                 /**< Duration in motion frame for reaching the target angles from the current position */
+    (std::vector<float>)({0.f, 0.f, 0.f, 0.f}) angles, /**< Array of size 4, containing target angles for shoulder+elbow joint */
+    (std::vector<int>)({0, 0, 0, 0}) hardness, /**< Array of size 4, containing hardness data to set while targetting the above angles */
+    (int)(4) steps, /**< Duration in motion frame for reaching the target angles from the current position */
   });
 
   /**

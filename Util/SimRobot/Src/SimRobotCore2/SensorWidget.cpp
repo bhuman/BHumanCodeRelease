@@ -105,6 +105,8 @@ void SensorWidget::paintEvent(QPaintEvent *event)
       delete [] buffer;
       break;
     }
+  case SimRobotCore2::SensorPort::noSensor:
+    break; // do nothing
   }
   painter.end();
 }
@@ -243,7 +245,7 @@ void SensorWidget::update()
   QWidget::update();
 }
 
-QMenu* SensorWidget::createEditMenu()
+QMenu* SensorWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Edit"));
   QAction* action;

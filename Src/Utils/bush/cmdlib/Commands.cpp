@@ -9,10 +9,6 @@ Commands& Commands::getInstance()
   return theInstance;
 }
 
-Commands::Commands()
-  : commands()
-{ }
-
 bool Commands::addCommand(Command* cmd)
 {
   std::map<std::string, Command*>::iterator iter = commands.find(cmd->getName());
@@ -95,7 +91,7 @@ std::vector<std::string> Commands::complete(const std::string& cmdLine)
   {
     // parameter completion (this is the job of the individual Command instaces)
     std::map<std::string, Command*>::const_iterator i = commands.find(commandWithArgs[0]);
-    if (i != commands.end())
+    if(i != commands.end())
     {
       std::vector<std::string> completionResult = i->second->complete(cmdLine);
       result.insert(result.begin(), completionResult.begin(), completionResult.end());
@@ -105,9 +101,9 @@ std::vector<std::string> Commands::complete(const std::string& cmdLine)
      * given command and prepend it if not. Assumes that the prefix is missing
      * in every string if it is missing in the first one.
      */
-    if (!result.empty() && !startsWidth(result[0], commandWithArgs[0]))
+    if(!result.empty() && !startsWidth(result[0], commandWithArgs[0]))
     {
-      for (size_t i = 0; i < result.size(); ++i)
+      for(size_t i = 0; i < result.size(); ++i)
         result[i] = commandWithArgs[0] + " " + result[i];
     }
   }
@@ -117,7 +113,7 @@ std::vector<std::string> Commands::complete(const std::string& cmdLine)
     for(std::map<std::string, Command*>::const_iterator i = commands.begin();
         i != commands.end(); i++)
     {
-      if (startsWidth(i->first, cmdLine))
+      if(startsWidth(i->first, cmdLine))
         result.push_back(i->first);
     }
   }

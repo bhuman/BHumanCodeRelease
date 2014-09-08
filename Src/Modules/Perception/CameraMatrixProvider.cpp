@@ -8,6 +8,7 @@
 #include "CameraMatrixProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/Settings.h"
 
 MAKE_MODULE(CameraMatrixProvider, Perception);
 
@@ -120,21 +121,21 @@ void CameraMatrixProvider::drawFieldLines(const CameraMatrix& cameraMatrix) cons
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
-  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorClasses::blue);
+  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorRGBA::blue);
 
   start0C = cameraMatrixInv * Vector3<>(100, 11, 0.); // field2camera
   end0C = cameraMatrixInv * Vector3<>(0, 11, 0.); // field2camera
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
-  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorClasses::blue);
+  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorRGBA::blue);
 
   start0C = cameraMatrixInv * Vector3<>(110, 1000, 0.); // field2camera
   end0C = cameraMatrixInv * Vector3<>(110, -1000, 0.); // field2camera
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
-  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorClasses::blue);
+  LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x, start0I.y, end0I.x, end0I.y, 0, Drawings::ps_solid, ColorRGBA::blue);
 }
 
 void CameraMatrixProvider::drawRobotParts()
@@ -173,17 +174,17 @@ void CameraMatrixProvider::drawRobotParts()
       if(k < 2)
       {
         if(projected2Image[k].x > 0 && projected2Image[k + 1].x > 0) //right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::red);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::red);
         if(projected2Image[k + 3].x > 0 && projected2Image[k + 4].x > 0) //left
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorClasses::red);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorRGBA::red);
       }
       else
       {
         if(projected2Image[k].x > 0 && projected2Image[k - 2].x > 0) //right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorClasses::red);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorRGBA::red);
 
         if(projected2Image[k + 3].x > 0 && projected2Image[k + 1].x > 0) //left
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::red);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::red);
       }
     }
   }
@@ -221,17 +222,17 @@ void CameraMatrixProvider::drawRobotParts()
        if(k < 2)
        {
          if(projected2Image[k].x > 0 && projected2Image[k + 1].x > 0) //right
-           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::green);
+           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::green);
          if(projected2Image[k + 3].x > 0 && projected2Image[k + 4].x > 0) //left
-           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorClasses::green);
+           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorRGBA::green);
        }
        else
        {
          if(projected2Image[k].x > 0 && projected2Image[k - 2].x > 0) //left
-           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorClasses::green);
+           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorRGBA::green);
 
          if(projected2Image[k + 3].x > 0 && projected2Image[k + 1].x > 0) //right
-           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::green);
+           LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::green);
        }
      }
    }
@@ -278,20 +279,20 @@ void CameraMatrixProvider::drawRobotParts()
       if(k < 2)
       {
         if(projected2Image[k].x > 0 && projected2Image[k + 1].x > 0) //right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::blue);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::blue);
         if(projected2Image[k + 3].x > 0 && projected2Image[k + 4].x > 0) //left
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorClasses::blue);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorRGBA::blue);
         if(projected2Image[k + 6].x > 0 && projected2Image[k + 7].x > 0) //mirrored right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 6].x, projected2Image[k + 6].y, projected2Image[k + 7].x, projected2Image[k + 7].y, 0, Drawings::ps_solid, ColorClasses::yellow);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 6].x, projected2Image[k + 6].y, projected2Image[k + 7].x, projected2Image[k + 7].y, 0, Drawings::ps_solid, ColorRGBA::yellow);
       }
       else
       {
         if(projected2Image[k].x > 0 && projected2Image[k - 2].x > 0) //right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorClasses::blue);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k].x, projected2Image[k].y, projected2Image[k - 2].x, projected2Image[k - 2].y, 0, Drawings::ps_solid, ColorRGBA::blue);
         if(projected2Image[k + 3].x > 0 && projected2Image[k + 1].x > 0) //left
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorClasses::blue);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 3].x, projected2Image[k + 3].y, projected2Image[k + 1].x, projected2Image[k + 1].y, 0, Drawings::ps_solid, ColorRGBA::blue);
         if(projected2Image[k + 6].x > 0 && projected2Image[k + 4].x > 0) //mirrored right
-          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 6].x, projected2Image[k + 6].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorClasses::yellow);
+          LINE("module:CameraMatrixProvider:robotParts", projected2Image[k + 6].x, projected2Image[k + 6].y, projected2Image[k + 4].x, projected2Image[k + 4].y, 0, Drawings::ps_solid, ColorRGBA::yellow);
       }
     }
   }

@@ -13,7 +13,6 @@ class ChangeWirelessCmd : public RobotCommand
                        const QString& config);
     bool status;
     bool execute();
-    ~ChangeWirelessTask() {}
   };
 
   QString config;

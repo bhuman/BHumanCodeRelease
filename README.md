@@ -1,4 +1,4 @@
-BHuman2013
+BHuman2014
 ==========
 
-The official 2013 B-Human code release.
+The official 2014 B-Human code release.

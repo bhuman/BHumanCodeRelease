@@ -1,9 +1,9 @@
 /**
 * @file Platform/Common/File.cpp
-* Declaration of class File for Win32 and Linux.
+* Declaration of class File for Windows and Linux.
 */
 
-#ifdef WIN32
+#ifdef WINDOWS
 #include <windows.h>
 //#include <direct.h>
 #else
@@ -25,18 +25,22 @@
 File::File(const std::string& name, const char* mode, bool tryAlternatives) : stream(0)
 {
   std::list<std::string> names = getFullNames(name);
-  if(tryAlternatives)
-    for(std::list<std::string>::const_iterator i = names.begin(); !stream && i != names.end(); ++i)
-      stream = fopen(i->c_str(), mode);
+  if(tryAlternatives){
+    for(auto& path : names) {
+      stream = fopen(path.c_str(), mode);
+      if(stream)
+        break;
+    }
+  }
   else
     stream = fopen(names.back().c_str(), mode);
 }
 
 std::list<std::string> File::getFullNames(const std::string& rawName)
 {
-#if (defined(LINUX) || defined(MACOSX)) && (defined(TARGET_SIM) || defined(TARGET_TOOL))
+#if (defined(LINUX) || defined(OSX)) && (defined(TARGET_SIM) || defined(TARGET_TOOL))
   std::string name(rawName);
-  for(int i = name.length(); i >= 0; i--)
+  for(int i = (int) name.length(); i >= 0; i--)
     if(name[i] == '\\')
       name[i] = '/';
 #else
@@ -49,11 +53,16 @@ std::list<std::string> File::getFullNames(const std::string& rawName)
 #ifndef TARGET_TOOL
     if(&Global::getSettings())
     {
-      names.push_back(std::string(getBHDir()) + "/Config/Robots/" + Global::getSettings().robot + "/" + name);
-      names.push_back(std::string(getBHDir()) + "/Config/Robots/Default/" + name);
-      names.push_back(std::string(getBHDir()) + "/Config/Locations/" + Global::getSettings().location + "/" + name);
+      const std::string prefix = std::string(getBHDir()) + "/Config/";
+
+      names.push_back(prefix + "Robots/" + Global::getSettings().robot + "/" + name);
+      names.push_back(prefix + "Robots/Default/" + name);
+      names.push_back(prefix + "Locations/" + Global::getSettings().location + "/" + name);
+
       if(Global::getSettings().location != "Default")
-        names.push_back(std::string(getBHDir()) + "/Config/Locations/Default/" + name);
+      {
+        names.push_back(prefix + "Locations/Default/" + name);
+      }
     }
 #endif
     names.push_back(std::string(getBHDir()) + "/Config/" + name);
@@ -69,19 +78,19 @@ File::~File()
     fclose((FILE*)stream);
 }
 
-void File::read(void* p, unsigned size)
+void File::read(void* p, size_t size)
 {
   VERIFY(!eof());
   VERIFY(fread(p, 1, size, (FILE*)stream) > 0);
 }
 
-char* File::readLine(char* p, unsigned size)
+char* File::readLine(char* p, size_t size)
 {
   VERIFY(!eof());
-  return fgets(p, size, (FILE*)stream);
+  return fgets(p, (int) size, (FILE*)stream);
 }
 
-void File::write(const void* p, unsigned size)
+void File::write(const void* p, size_t size)
 {
   //if opening failed, stream will be 0 and fwrite would crash
   ASSERT(stream != 0);
@@ -99,9 +108,9 @@ void File::printf(const char* format, ...)
 bool File::eof()
 {
   //never use feof(stream), because it informs you only after reading
-  //to far and is never reset, e.g. if the stream grows afterwards
+  //too far and is never reset, e.g. if the stream grows afterwards,
   //our implementation can handle both correctly:
-  if(! stream)
+  if(!stream)
     return false;
   else
   {
@@ -116,19 +125,19 @@ bool File::eof()
   }
 }
 
-unsigned File::getSize()
+size_t File::getSize()
 {
   if(!stream)
     return 0;
   long currentPos = ftell((FILE*)stream);
   ASSERT(currentPos >= 0);
   VERIFY(fseek((FILE*)stream, 0, SEEK_END) == 0);
-  long size =  ftell((FILE*)stream);
+  long size = ftell((FILE*)stream);
   VERIFY(fseek((FILE*)stream, currentPos, SEEK_SET) == 0);
-  return (unsigned)size;
+  return (size_t) size;
 }
 
-#ifdef WIN32
+#ifdef WINDOWS
 const char* File::getBHDir()
 {
   static char dir[MAX_PATH] = {0};
@@ -138,7 +147,7 @@ const char* File::getBHDir()
 
     // determine module file from command line
     const char* commandLine = GetCommandLine();
-    int len;
+    size_t len;
     if(*commandLine == '"')
     {
       commandLine++;
@@ -202,7 +211,7 @@ const char* File::getBHDir()
 }
 #endif
 
-#if defined(LINUX) || defined(MACOSX)
+#if defined(LINUX) || defined(OSX)
 const char* File::getBHDir()
 {
   static char dir[FILENAME_MAX] = {0};
@@ -235,13 +244,7 @@ const char* File::getBHDir()
 }
 #endif
 
-
 bool File::isAbsolute(const char* path)
 {
   return (path[0] && path[1] == ':') || path[0] == '/' || path[0] == '\\';
-}
-
-bool File::isExplicitRelative(const char* path)
-{
-  return path[0] == '.' && (path[1] == '/' || path[1] == '\\');
 }

@@ -145,7 +145,7 @@ public:
   class Rectangle : public Element
   {
   public:
-    int topLX, topLY, w, h, width;
+    int topLX, topLY, w, h;
     float rotation;
     Drawings::FillStyle fillStyle;
     ColorRGBA fillColor;

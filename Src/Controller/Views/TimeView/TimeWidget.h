@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <QWidget>
-#include "SimRobot.h"
+#include <SimRobot.h>
 #include <QString>
 
 struct Row;
@@ -24,6 +24,7 @@ class TimeWidget : public QWidget, public SimRobot::Widget
 
 public:
   TimeWidget(TimeView& timeView);
+  virtual ~TimeWidget();
 
   virtual QWidget* getWidget();
   virtual void update();

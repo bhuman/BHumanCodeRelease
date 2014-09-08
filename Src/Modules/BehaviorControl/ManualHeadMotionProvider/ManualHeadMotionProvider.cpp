@@ -1,5 +1,5 @@
 #include "ManualHeadMotionProvider.h"
-#include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 #include "Tools/Debugging/Debugging.h"
 
 MAKE_MODULE(ManualHeadMotionProvider, Behavior Control)
@@ -15,27 +15,29 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
     currentX = xImg;
     currentY = yImg;
 
-    headMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
-    headMotionRequest.watchField = false;
     Vector2<float> targetOnField;
-    Geometry::calculatePointOnField(currentX, currentY, theCameraMatrix, theCameraInfo, targetOnField);
-    headMotionRequest.target.x = targetOnField.x;
-    headMotionRequest.target.y = targetOnField.y;
-    headMotionRequest.target.z = 0;
-
-    //Use the camera that the user is seeing right now.
-    switch(camera)
+    if(Transformation::imageToRobot(currentX, currentY, theCameraMatrix, theCameraInfo, targetOnField))
     {
-      case CameraInfo::lower:
-          headMotionRequest.cameraControlMode = HeadMotionRequest::lowerCamera;
-        break;
-      case CameraInfo::upper:
-         headMotionRequest.cameraControlMode = HeadMotionRequest::upperCamera;
-        break;
-      default:
-        ASSERT(false);
-    }
+      headMotionRequest.target.x = targetOnField.x;
+      headMotionRequest.target.y = targetOnField.y;
+      headMotionRequest.target.z = 0;
+      headMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
+      headMotionRequest.watchField = false;
 
-    headMotionRequest.speed = fromDegrees(150);
+      //Use the camera that the user is seeing right now.
+      switch(camera)
+      {
+        case CameraInfo::lower:
+          headMotionRequest.cameraControlMode = HeadMotionRequest::lowerCamera;
+          break;
+        case CameraInfo::upper:
+          headMotionRequest.cameraControlMode = HeadMotionRequest::upperCamera;
+          break;
+        default:
+          ASSERT(false);
+      }
+
+      headMotionRequest.speed = fromDegrees(150);
+    }
   }
 }

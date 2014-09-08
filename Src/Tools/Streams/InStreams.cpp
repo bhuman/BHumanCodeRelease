@@ -16,7 +16,7 @@
 #include "Platform/File.h"
 #include "Tools/Debugging/Debugging.h"
 
-void StreamReader::skipData(int size, PhysicalInStream& stream)
+void StreamReader::skipData(size_t size, PhysicalInStream& stream)
 {
   // default implementation
   char* dummy = new char[size];
@@ -24,7 +24,7 @@ void StreamReader::skipData(int size, PhysicalInStream& stream)
   delete [] dummy;
 }
 
-void PhysicalInStream::skipInStream(int size)
+void PhysicalInStream::skipInStream(size_t size)
 {
   // default implementation
   char* dummy = new char[size];
@@ -60,9 +60,9 @@ void InText::readString(std::string& value, PhysicalInStream& stream)
   skipWhitespace(stream);
 }
 
-void InText::readData(void* p, int size, PhysicalInStream& stream)
+void InText::readData(void* p, size_t size, PhysicalInStream& stream)
 {
-  for(int i = 0; i < size; ++i)
+  for(size_t i = 0; i < size; ++i)
     readChar(*((char*&) p)++, stream);
 }
 
@@ -114,6 +114,8 @@ void InText::readInt(int& d, PhysicalInStream& stream)
     sign = -1;
     nextChar(stream);
   }
+  else if(!isEof(stream) && theChar == '+')
+    nextChar(stream);
   unsigned u;
   readUInt(u, stream);
   d = sign * (int) u;
@@ -143,7 +145,7 @@ void InText::readDouble(double& d, PhysicalInStream& stream)
 {
   buf = "";
   skipWhitespace(stream);
-  if(!isEof(stream) && theChar == '-')
+  if(!isEof(stream) && (theChar == '-' || theChar == '+'))
   {
     buf += theChar;
     nextChar(stream);
@@ -168,7 +170,7 @@ void InText::readDouble(double& d, PhysicalInStream& stream)
     buf += theChar;
     nextChar(stream);
   }
-  if(!isEof(stream) && theChar == '-')
+  if(!isEof(stream) && (theChar == '-' || theChar == '+'))
   {
     buf += theChar;
     nextChar(stream);
@@ -298,10 +300,10 @@ bool InFile::getEof() const
 { return (stream != 0 ? stream->eof() : false); }
 void InFile::open(const std::string& name)
 { if(stream == 0) stream = new File(name, "rb"); }
-void InFile::readFromStream(void* p, int size)
+void InFile::readFromStream(void* p, size_t size)
 { if(stream != 0) stream->read(p, size); }
 
-void InMemory::readFromStream(void* p, int size)
+void InMemory::readFromStream(void* p, size_t size)
 {
   if(memory != 0)
   {
@@ -425,7 +427,7 @@ void InMap::inUInt(unsigned int& value)
     {
       const SimpleMap::Array* array = dynamic_cast<const SimpleMap::Array*>(e.value);
       if(array)
-        value = array->size();
+        value = (unsigned) array->size();
       else
         printError("array expected");
     }
@@ -447,12 +449,12 @@ void InMap::inUInt(unsigned int& value)
   }
 }
 
-void InMap::read(void* p, int size)
+void InMap::read(void* p, size_t size)
 {
   ASSERT(false);
 }
 
-void InMap::skip(int size)
+void InMap::skip(size_t size)
 {
   ASSERT(false);
 }
@@ -519,7 +521,7 @@ InMapFile::InMapFile(const std::string& name) :
     parse(stream, name);
 }
 
-InMapMemory::InMapMemory(const void* memory, unsigned size) :
+InMapMemory::InMapMemory(const void* memory, size_t size) :
   stream(memory, size)
 {
   parse(stream);

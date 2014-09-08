@@ -9,17 +9,15 @@
 
 #pragma once
 
-
 #include "Tools/Module/Module.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Modeling/RobotPose.h"
 
-
-MODULE(OdometryOnlySelfLocator)
-  REQUIRES(OdometryData)
-  PROVIDES_WITH_OUTPUT(RobotPose)
-END_MODULE
-
+MODULE(OdometryOnlySelfLocator,
+{,
+  REQUIRES(OdometryData),
+  PROVIDES_WITH_OUTPUT_AND_DRAW(RobotPose),
+});
 
 /**
 * @class OdometryOnlySelfLocator

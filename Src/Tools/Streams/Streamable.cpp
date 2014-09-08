@@ -1,12 +1,10 @@
-#include <typeinfo>
 #include <cstring>
 
-#ifndef WIN32
+#ifndef WINDOWS
 #include <cxxabi.h>
 #endif
 
 #include "Streamable.h"
-#include "Tools/Math/Common.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Streams/StreamHandler.h"
 #include "Tools/Global.h"
@@ -62,7 +60,7 @@ namespace Streaming
 
   std::string demangle(const char* name)
   {
-#ifdef WIN32
+#ifdef WINDOWS
     return name;
 #else
     char realName[1000]; // This should be big enough, so realloc is never called.
@@ -81,6 +79,7 @@ namespace Streaming
 
   const char* skipDot(const char* name)
   {
-    return strchr(name, '.') + 1;
+    const char* dotPos = strchr(name, '.');
+    return dotPos ? dotPos + 1 : name;
   }
 }

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "Tools/Enum.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
 /**
 * @class ColorClasses
@@ -21,65 +22,33 @@ class ColorClasses
 public:
   ENUM(Color,
     none,                   /*<! all other objects */
-    orange,                 /*<! ball */
-    yellow,                 /*<! yellow goal */
-    blue,                   /*<! color of blue robots> */
     white,                  /*<! lines */
     green,                  /*<! field */
-    black,                  /*<! most probably: nothing */
-    red                     /*<! color of red robots> */
+    blue,                   /*<! color of blue robots */
+    red,                    /*<! color of red robots */
+    orange,                 /*<! ball */
+    yellow,                 /*<! yellow goal */
+    black                   /*<! most probably: nothing */
   );
 
   /**
   * The method returns prototypical color values for a color class for visualization.
   * @param colorClass The color class.
-  * @param y The Y channel of the prototypical color.
-  * @param cr The Cr channel of the prototypical color.
-  * @param cb The Cb channel of the prototypical color.
+  * @return A reference to the corresponding RGB color.
   */
-  static inline void getColorClassColor(ColorClasses::Color colorClass, unsigned char& y, unsigned char& cr, unsigned char& cb)
+  static const ColorRGBA& getColorRGBA(ColorClasses::Color colorClass)
   {
-    switch(colorClass)
+    static const ColorRGBA colors[ColorClasses::numOfColors] =
     {
-    case ColorClasses::white:
-      y = 255;
-      cr = 127;
-      cb = 127;
-      break;
-    case ColorClasses::green:
-      y = 180;
-      cr = 0;
-      cb = 0;
-      break;
-    case ColorClasses::orange:
-      y = 164;
-      cr = 255;
-      cb = 0;
-      break;
-    case ColorClasses::yellow:
-      y = 255;
-      cr = 170;
-      cb = 0;
-      break;
-    case ColorClasses::blue:
-      y = 60;
-      cr = 80;
-      cb = 255;
-      break;
-    case ColorClasses::black:
-      y = 0;
-      cr = 127;
-      cb = 127;
-      break;
-    case ColorClasses::red:
-      y = 105;
-      cr = 234;
-      cb = 127;
-      break;
-    default:
-      y = 70;
-      cr = 127;
-      cb = 127;
-    }
+      ColorRGBA::gray,
+      ColorRGBA::white,
+      ColorRGBA::green,
+      ColorRGBA::blue,
+      ColorRGBA::red,
+      ColorRGBA::orange,
+      ColorRGBA::yellow,
+      ColorRGBA::black
+    };
+    return colors[colorClass];
   }
 };

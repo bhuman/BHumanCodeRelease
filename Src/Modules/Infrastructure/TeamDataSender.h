@@ -7,49 +7,48 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
+#include "Representations/BehaviorControl/BehaviorControlOutput.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/TeamMateData.h"
-#include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/Infrastructure/SensorData.h"
-#include "Representations/Infrastructure/JointData.h"
+#include "Representations/Infrastructure/TeammateData.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Modeling/CombinedWorldModel.h"
-#include "Representations/Modeling/FreePartOfOpponentGoalModel.h"
-#include "Representations/Modeling/SideConfidence.h"
 #include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/LinePercept.h"
 #include "Representations/Modeling/ObstacleClusters.h"
+#include "Representations/Perception/GoalPercept.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/MotionRequest.h"
 
-
-MODULE(TeamDataSender)
-  REQUIRES(FrameInfo)
-  REQUIRES(TeamMateData)
-  REQUIRES(RobotPose)
-  REQUIRES(SideConfidence)
-  REQUIRES(BallModel)
-  REQUIRES(RobotsModel)
-  REQUIRES(ObstacleModel)
-  REQUIRES(MotionRequest)
-  REQUIRES(FilteredSensorData)
-  REQUIRES(JointRequest)
-  REQUIRES(RobotHealth)
-  REQUIRES(RobotInfo)
-  REQUIRES(GroundContactState)
-  REQUIRES(FallDownState)
-  REQUIRES(CombinedWorldModel)
-  REQUIRES(FreePartOfOpponentGoalModel)
-  REQUIRES(CameraMatrix)
-  REQUIRES(LinePercept)
-  REQUIRES(ObstacleClusters)
-  PROVIDES(TeamDataSenderOutput)
-  LOADS_PARAMETER(unsigned int, maxNumberOfRobotsToSend)           /**< Do not send more robots than this. */
-  LOADS_PARAMETER(unsigned int, maxNumberOfObstaclesToSend)        /**< Do not send more obstacles than this. */
-  LOADS_PARAMETER(unsigned int, maxNumberOfObstacleClustersToSend) /**< Do not send more obstacle clusters than this. */
-END_MODULE
-
+MODULE(TeamDataSender,
+{,
+  REQUIRES(BallModel),
+  REQUIRES(BehaviorControlOutput),
+  REQUIRES(CameraMatrix),
+  REQUIRES(FallDownState),
+  REQUIRES(FrameInfo),
+  REQUIRES(GoalPercept),
+  REQUIRES(GroundContactState),
+  REQUIRES(MotionInfo),
+  REQUIRES(MotionRequest),
+  REQUIRES(ObstacleClusters),
+  REQUIRES(ObstacleModel),
+  REQUIRES(OwnTeamInfo),
+  REQUIRES(RobotHealth),
+  REQUIRES(RobotInfo),
+  REQUIRES(RobotPose),
+  REQUIRES(SideConfidence),
+  REQUIRES(TeammateData),
+  PROVIDES(TeamDataSenderOutput),
+  LOADS_PARAMETERS(
+  {,
+    (unsigned) maxNumberOfRobotsToSend, /**< Do not send more robots than this. */
+    (unsigned) maxNumberOfObstaclesToSend, /**< Do not send more obstacles than this. */
+    (unsigned) maxNumberOfObstacleClustersToSend, /**< Do not send more obstacle clusters than this. */
+  }),
+});
 
 /**
 * @class TeamDataSender

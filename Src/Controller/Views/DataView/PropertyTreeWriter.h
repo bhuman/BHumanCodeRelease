@@ -84,10 +84,10 @@ public:
   virtual void deselect() {stack.pop_back();}
 
   /** Not allowed for this stream! */
-  virtual void read(void* p, int size) {ASSERT(false);}
+  virtual void read(void* p, size_t size) {ASSERT(false);}
 
   /** Not allowed for this stream! */
-  virtual void skip(int size) {ASSERT(false);}
+  virtual void skip(size_t size) {ASSERT(false);}
 
   /** Not allowed for this stream! */
   virtual bool eof() const {ASSERT(false); return false;}

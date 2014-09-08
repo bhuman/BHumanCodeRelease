@@ -16,21 +16,23 @@
 #include "Tools/Module/Module.h"
 #include "Tools/RingBufferWithSum.h"
 
-
-MODULE(FallDownStateDetector)
-  REQUIRES(FilteredSensorData)
-  REQUIRES(InertiaSensorData)
-  USES(MotionInfo)
-  REQUIRES(FrameInfo)
-  PROVIDES_WITH_MODIFY_AND_DRAW(FallDownState)
-  LOADS_PARAMETER(int, fallTime) /**< The time (in ms) to remain in state 'falling' after a detected fall */
-  LOADS_PARAMETER(float, staggeringAngleX) /**< The threshold angle which is used to detect the robot is staggering to the back or front*/
-  LOADS_PARAMETER(float, staggeringAngleY) /**< The threshold angle which is used to detect the robot is staggering sidewards*/
-  LOADS_PARAMETER(float, fallDownAngleY) /**< The threshold angle which is used to detect a fall to the back or front*/
-  LOADS_PARAMETER(float, fallDownAngleX) /**< The threshold angle which is used to detect a sidewards fall */
-  LOADS_PARAMETER(float, onGroundAngle) /**< The threshold angle which is used to detect the robot lying on the ground */
-END_MODULE
-
+MODULE(FallDownStateDetector,
+{,
+  REQUIRES(FilteredSensorData),
+  REQUIRES(InertiaSensorData),
+  USES(MotionInfo),
+  REQUIRES(FrameInfo),
+  PROVIDES_WITH_MODIFY_AND_DRAW(FallDownState),
+  LOADS_PARAMETERS(
+  {,
+    (int) fallTime, /**< The time (in ms) to remain in state 'falling' after a detected fall */
+    (float) staggeringAngleX, /**< The threshold angle which is used to detect the robot is staggering to the back or front*/
+    (float) staggeringAngleY, /**< The threshold angle which is used to detect the robot is staggering sidewards*/
+    (float) fallDownAngleY, /**< The threshold angle which is used to detect a fall to the back or front*/
+    (float) fallDownAngleX, /**< The threshold angle which is used to detect a sidewards fall */
+    (float) onGroundAngle, /**< The threshold angle which is used to detect the robot lying on the ground */
+  }),
+});
 
 /**
 * @class FallDownStateDetector
@@ -54,6 +56,13 @@ private:
   FallDownState::Sidestate sidewardsOf(FallDownState::Direction dir);
 
   unsigned lastFallDetected;
+
+  ENUM(KeeperJumped,
+    None,
+    KeeperJumpedLeft,
+    KeeperJumpedRight
+  );
+  KeeperJumped keeperJumped; /**< Whether the keeper has recently executed a jump motion that has to be integrated in odometry offset. */
 
   /** Indices for buffers of sensor data */
   ENUM(BufferEntry, accX, accY, accZ);

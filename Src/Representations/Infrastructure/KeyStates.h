@@ -21,11 +21,13 @@ public:
     leftFootRight,
     leftFootLeft,
     chest
-  ),
+  )
+  
+  KeyStates()
+  {
+    for(int i = 0; i < numOfKeys; ++i)
+      pressed[i] = false;
+  },
 
   (bool[numOfKeys]) pressed,
-
-  // Initialization
-  for(int i = 0; i < numOfKeys; ++i)
-    pressed[i] = false;
 });

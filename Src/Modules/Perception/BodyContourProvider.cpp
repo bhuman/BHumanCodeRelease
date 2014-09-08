@@ -12,19 +12,22 @@
 
 void BodyContourProvider::update(BodyContour& bodyContour)
 {
-  DECLARE_DEBUG_DRAWING3D("module:BodyContourProvider:contour", "origin");
+  DECLARE_DEBUG_DRAWING3D("module:BodyContourProvider:contour", "robot");
 
   bodyContour.cameraResolution.x = theCameraInfo.width;
   bodyContour.cameraResolution.y = theCameraInfo.height;
   bodyContour.lines.clear();
 
   robotCameraMatrixInverted = theRobotCameraMatrix.invert();
-
   add(Pose3D(), torso, 1, bodyContour);
+  add(theRobotModel.limbs[MassCalibration::bicepsLeft], shoulder, 1, bodyContour);
+  add(theRobotModel.limbs[MassCalibration::bicepsRight], shoulder, -1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::bicepsLeft], upperArm, 1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::bicepsRight], upperArm, -1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::foreArmLeft], lowerArm, 1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::foreArmRight], lowerArm, -1, bodyContour);
+  add(theRobotModel.limbs[MassCalibration::foreArmLeft], lowerArm2, 1, bodyContour);
+  add(theRobotModel.limbs[MassCalibration::foreArmRight], lowerArm2, -1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::thighLeft], upperLeg1, 1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::thighRight], upperLeg1, -1, bodyContour);
   add(theRobotModel.limbs[MassCalibration::thighLeft], upperLeg2, 1, bodyContour);

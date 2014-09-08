@@ -9,7 +9,9 @@
 #pragma once
 
 #include "Tools/MessageQueue/InMessage.h"
+#include "Tools/Module/ModuleManager.h"
 #include <list>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -52,42 +54,9 @@ public:
     }
   };
 
-  class Provider
-  {
-  public:
-    std::string representation; /**< The name of the representation provided. */
-    std::string selected; /**< The selected module. Empty if no provider is selected for this representation. */
-    std::vector<std::string> modules; /**< The names of the modules providing it. */
-    char processIdentifier; /** The process in which this represenation is provided. */
-
-    /**
-    * Comparison operator. Only uses the representaion name for comparison.
-    * @param other The representaion name this one is compared to.
-    * @return Are the representation names the same?
-    */
-    bool operator==(const std::string& other) const {return representation == other;}
-
-    /**
-    * Comparison operator. Only uses the representaion name and the process identifier for comparison.
-    * @param other The other provider this one is compared to.
-    * @return Are the representation names and processIdentifiers the same?
-    */
-    bool operator==(const Provider& other) const {return representation == other.representation && processIdentifier == other.processIdentifier;}
-
-    /**
-    * Comparison operator. Uses the process identifier and the representation name for comparison.
-    * @param other The other provider this one is compared to.
-    * @return Is this module "provider" that the other?
-    */
-    bool operator<(const Provider& other) const
-    {
-      return processIdentifier != other.processIdentifier ? processIdentifier < other.processIdentifier :
-             representation < other.representation;
-    }
-  };
-
   std::list<Module> modules; /**< All available modules. */
-  std::list<Provider> providers; /**< All available providers. */
+  std::set<std::string> representations; /**< All available representations. */
+  ModuleManager::Configuration config; /**< The current module configuration. */
   unsigned timeStamp; /**< The time when the module information was last changed. */
 
   /**
@@ -112,7 +81,6 @@ public:
   * The method writes a module request to a stream.
   * @param stream The stream the request is written to.
   * @param sort Should the provider and representationlist be sorted?
-  * @return An error message. If empty, everything was ok.
   */
-  std::string sendRequest(Out& stream, bool sort = false) const;
+  void sendRequest(Out& stream, bool sort = false);
 };

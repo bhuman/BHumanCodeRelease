@@ -19,6 +19,11 @@
 STREAMABLE(BallSpots,
 {
 public:
+  BallSpots()
+  {
+    ballSpots.reserve(50);
+  }
+
   void addBallSpot(int x, int y)
   {
     BallSpot bs;
@@ -35,14 +40,11 @@ public:
     {
       for(std::vector<BallSpot>::const_iterator i = ballSpots.begin(); i != ballSpots.end(); ++i)
       {
-        CROSS("representation:BallSpots:Image", i->position.x, i->position.y, 2, 3, Drawings::ps_solid, ColorClasses::orange);
-        CROSS("representation:BallSpots:Image", i->position.x, i->position.y, 2, 0, Drawings::ps_solid, ColorClasses::black);
+        CROSS("representation:BallSpots:Image", i->position.x, i->position.y, 2, 3, Drawings::ps_solid, ColorRGBA::orange);
+        CROSS("representation:BallSpots:Image", i->position.x, i->position.y, 2, 0, Drawings::ps_solid, ColorRGBA::black);
       }
     });
   },
 
   (std::vector<BallSpot>) ballSpots,
-
-  // Initialization
-  ballSpots.reserve(50);
 });

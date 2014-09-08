@@ -13,35 +13,27 @@
 
 using namespace std;
 
-
-SelfLocator::SelfLocator() : fieldModel(theFieldDimensions, parameters, theCameraMatrix),
-  sampleGenerator(parameters, theGoalPercept, theLinePercept, theFrameInfo,
-  theFieldDimensions, theOdometryData), mirrorLikelihood(0.f), lastPenalty(-1), lastGameState(-1),
-  timeOfLastFall(0), lastTimeWithoutArmContact(0), lastTimeFarGoalSeen(0)
+SelfLocator::SelfLocator() : fieldModel(theFieldDimensions, *this, theCameraMatrix),
+  sampleGenerator(*this, theGoalPercept, theLinePercept, theFrameInfo,
+  theFieldDimensions, theOdometryData, theMotionInfo), lastPenalty(-1), lastGameState(-1),
+  lastTimeFarGoalSeen(0), lastTimeKeeperJumped(0), nextSampleNumber(0), numberOfLastBestSample(-1)
 {
-  // Read parameters from disk
-  InMapFile stream("selfLocator.cfg");
-  ASSERT(stream.exists());
-  stream >> parameters;
-
   // Set up subcomponent for sample resetting
   sampleGenerator.init();
 
   // Create sample set with samples at the typical walk-in positions
-  samples = new SampleSet<UKFSample>(parameters.numberOfSamples);
+  samples = new SampleSet<UKFSample>(numberOfSamples);
   for(int i=0; i<samples->size(); ++i)
   {
     Pose2D pose = sampleGenerator.getTemplateAtWalkInPosition();
-    samples->at(i).init(pose, parameters);
+    samples->at(i).init(pose, *this, nextSampleNumber++);
   }
 }
-
 
 SelfLocator::~SelfLocator()
 {
   delete samples;
 }
-
 
 void SelfLocator::update(RobotPose& robotPose)
 {
@@ -69,34 +61,31 @@ void SelfLocator::update(RobotPose& robotPose)
 
   /* Integrate perceptions
   *  - goal posts, lines, corners ...
-  *  - mirror flag of samples is treated in a separate method
-  *     -- update depending on arm contacts, falls, ...
   */
-  //mirrorFlagUpdate();    <--------- Deactivated for GO/RC 2013 (needs rethinking)
   sensorUpdate();
 
   /* After motion update and sensor update: Maintain some variables
-  *  - mirror likelihood
   *  - sample validity
   */
-  computeMirrorLikelihoodAndAdaptMirrorFlags();
-  computeSampleValidities();
+  if(lastTimeKeeperJumped == 0 || theFrameInfo.getTimeSince(lastTimeKeeperJumped) > goalieJumpTimeout)
+  {
+    computeSampleValidities();
+  }
 
   /* Handle mirror information from SideConfidence
-   * - Only for GO 2013
    */
   handleSideConfidence();
 
-  /* Detect mirrored samples and put the back
+  /* Detect mirrored samples and put them back
    * - IS THIS USEFUL ???!?!?
    */
   if(theGameInfo.state == STATE_PLAYING && theGameInfo.secondaryState != STATE2_PENALTYSHOOT &&
     !theSideConfidence.mirror && !sampleSetHasBeenResetted)
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
       const Pose2D samplePose =  samples->at(i).getPose();
-      if(isMirrorCloser(samplePose, robotPose))
+      if(sampleGenerator.isMirrorCloser(samplePose, robotPose))
         samples->at(i).mirror();
     }
   }
@@ -129,13 +118,13 @@ void SelfLocator::update(RobotPose& robotPose)
   {
     if(sampleGenerator.templatesAvailable())
     {
-      for(int i = 0; i < parameters.numberOfSamples; ++i)
+      for(int i = 0; i < numberOfSamples; ++i)
       {
         UKFSample newSample;
         if(theOwnSideModel.stillInOwnSide)
-          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::OWN_HALF, mirrorLikelihood, robotPose, lastRobotPose), parameters);
+          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::OWN_HALF, robotPose, lastRobotPose), *this, nextSampleNumber++);
         else
-          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, mirrorLikelihood, robotPose, lastRobotPose), parameters);
+          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, robotPose, lastRobotPose), *this, nextSampleNumber++);
         samples->at(i) = newSample;
       }
     }
@@ -144,61 +133,13 @@ void SelfLocator::update(RobotPose& robotPose)
   lastRobotPose = robotPose;
   MODIFY("representation:RobotPose", robotPose);
 
-  MODIFY("parameters:SelfLocator", parameters);
-
-  draw();
-  EXECUTE_ONLY_IN_DEBUG(robotPose.draw(theOwnTeamInfo.teamColor != TEAM_BLUE););
+  draw(robotPose);
   DECLARE_DEBUG_DRAWING("origin:Odometry", "drawingOnField",
   {
     Pose2D origin = robotPose + theOdometryData.invert();
     ORIGIN("origin:Odometry", origin.translation.x, origin.translation.y, origin.rotation);
   });
 }
-
-
-void SelfLocator::update(SideConfidence& sideConfidence)
-{
-  // mirror flag is not computed by this module
-  sideConfidence.mirror = false;
-
-  // Compute confidence value
-  // Not playing -> sideConfidence 100%
-  if(theGameInfo.state != STATE_PLAYING || theRobotInfo.penalty != PENALTY_NONE)
-  {
-    sideConfidence.sideConfidence = parameters.sideConfidenceConfident;
-  }
-  // Playing but on the safe side -> sideConfidence 100%
-  else if(theOwnSideModel.stillInOwnSide)
-  {
-    sideConfidence.sideConfidence = parameters.sideConfidenceConfident;
-  }
-  // Leaving the safe side -> sideConfidence max 95%
-  else
-  {
-    float confidence = parameters.sideConfidenceAlmostConfident;
-    int numberOfMirroredSamples = 0;
-    const int numberOfSamples = samples->size();
-    for(int i=0; i<numberOfSamples; ++i)
-    {
-      if(samples->at(i).isMirrored())
-        ++numberOfMirroredSamples;
-    }
-    if(numberOfMirroredSamples > numberOfSamples / 2)
-      numberOfMirroredSamples = numberOfSamples / 2; // FIXME
-    sideConfidence.sideConfidence = confidence * (1.f - static_cast<float>(numberOfMirroredSamples) / (numberOfSamples / 2));
-  }
-
-  // Set confidence state:
-  if(sideConfidence.sideConfidence == parameters.sideConfidenceConfident)
-    sideConfidence.confidenceState = SideConfidence::CONFIDENT;
-  else if(sideConfidence.sideConfidence == parameters.sideConfidenceAlmostConfident)
-    sideConfidence.confidenceState = SideConfidence::ALMOST_CONFIDENT;
-  else if(sideConfidence.sideConfidence > parameters.sideConfidenceConfused)
-    sideConfidence.confidenceState = SideConfidence::UNSURE;
-  else
-    sideConfidence.confidenceState = SideConfidence::CONFUSED;
-}
-
 
 void SelfLocator::computeModel(RobotPose& robotPose)
 {
@@ -213,8 +154,6 @@ void SelfLocator::computeModel(RobotPose& robotPose)
   int count(0);
   for(int i=0; i<samples->size(); ++i)
   {
-    if(samples->at(i).isMirrored())
-      continue;
     Pose2D p = samples->at(i).getPose();
     xDiffSum      += abs(p.translation.x - resultPose.translation.x);
     yDiffSum      += abs(p.translation.y - resultPose.translation.y);
@@ -240,8 +179,6 @@ void SelfLocator::computeModel(RobotPose& robotPose)
   int count2(1);
   for(int i=0; i<samples->size(); ++i)
   {
-    if(samples->at(i).isMirrored())
-      continue;
     Pose2D p = samples->at(i).getPose();
     if(abs(p.translation.x - resultPose.translation.x) <= avgDiffX &&
        abs(p.translation.y - resultPose.translation.y) <= avgDiffY &&
@@ -259,7 +196,7 @@ void SelfLocator::computeModel(RobotPose& robotPose)
   resultPose.rotation = atan2(rotSinSum, rotCosSum);
 
   // Override side information for testing on one side of a field only
-  if(parameters.alwaysAssumeOpponentHalf && resultPose.translation.x < 0)
+  if(alwaysAssumeOpponentHalf && resultPose.translation.x < 0)
   {
     resultPose = Pose2D(pi) + resultPose;
   }
@@ -277,74 +214,72 @@ void SelfLocator::computeModel(RobotPose& robotPose)
   robotPose.covariance[2][0] = cov[2][0];
   robotPose.covariance[2][1] = cov[2][1];
   robotPose.covariance[2][2] = cov[2][2];
-  if(robotPose.validity >= parameters.validityThreshold)
+  if(robotPose.validity >= validityThreshold)
     robotPose.validity = 1.f;
   else
-    robotPose.validity *= (1.f / parameters.validityThreshold);
+    robotPose.validity *= (1.f / validityThreshold);
+  numberOfLastBestSample = result.number;
 }
-
 
 void SelfLocator::motionUpdate()
 {
-  const float transNoise = parameters.translationNoise;
-  const float rotNoise = parameters.rotationNoise;
+  const float transNoise = translationNoise;
+  const float rotNoise = rotationNoise;
   const float transX = theOdometer.odometryOffset.translation.x;
   const float transY = theOdometer.odometryOffset.translation.y;
   const float dist = theOdometer.odometryOffset.translation.abs();
   const float angle = abs(theOdometer.odometryOffset.rotation);
 
   // precalculate rotational error that has to be adapted to all samples
-  const float rotError = max(rotNoise, max(dist * parameters.movedDistWeight, angle * parameters.movedAngleWeight));
+  const float rotError = max(rotNoise, max(dist * movedDistWeight, angle * movedAngleWeight));
 
   // precalculate translational error that has to be adapted to all samples
   const float transXError = max(transNoise,
-                                    max(abs(transX * parameters.majorDirTransWeight),
-                                        abs(transY * parameters.minorDirTransWeight)));
+                                    max(abs(transX * majorDirTransWeight),
+                                        abs(transY * minorDirTransWeight)));
   const float transYError = max(transNoise,
-                                    max(abs(transY * parameters.majorDirTransWeight),
-                                        abs(transX * parameters.minorDirTransWeight)));
+                                    max(abs(transY * majorDirTransWeight),
+                                        abs(transX * minorDirTransWeight)));
 
   // update samples
-  for(int i = 0; i < parameters.numberOfSamples; ++i)
+  for(int i = 0; i < numberOfSamples; ++i)
   {
     const Vector2<> transOffset( (transX - transXError) + (2 * transXError) * randomFloat(),
                                  (transY - transYError) + (2 * transYError) * randomFloat());
     const float rotationOffset = theOdometer.odometryOffset.rotation + (randomFloat() * 2 - 1) * rotError;
 
-    samples->at(i).motionUpdate(Pose2D(rotationOffset, transOffset), parameters);
+    samples->at(i).motionUpdate(Pose2D(rotationOffset, transOffset), *this);
   }
 }
-
 
 void SelfLocator::sensorUpdate()
 {
   // Integrate lines
   if(theLinePercept.lines.size())
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
-      samples->at(i).updateByLinePercept(theLinePercept, fieldModel, parameters, theFieldDimensions, theMotionInfo, theCameraMatrix);
+      samples->at(i).updateByLinePercept(theLinePercept, fieldModel, *this, theFieldDimensions, theMotionInfo, theCameraMatrix);
     }
   }
   // Integrate goal posts:
   if(theGoalPercept.goalPosts.size())
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
-      samples->at(i).updateByGoalPercept(theGoalPercept, fieldModel, parameters, theMotionInfo, theCameraMatrix);
+      samples->at(i).updateByGoalPercept(theGoalPercept, fieldModel, *this, theMotionInfo, theCameraMatrix);
     }
   }
   // Apply OwnSideModel:
   if(theGameInfo.secondaryState != STATE2_PENALTYSHOOT)
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
       if(samples->at(i).getPose().translation.x > theOwnSideModel.largestXPossible)
         samples->at(i).invalidate();
     }
   }
 }
-
 
 void SelfLocator::sensorResetting(const RobotPose& robotPose)
 {
@@ -354,74 +289,31 @@ void SelfLocator::sensorResetting(const RobotPose& robotPose)
     return;
   if(sampleGenerator.templatesAvailable())
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
       if(samples->at(i).computeValidity(theFieldDimensions) == 0.f)
       {
         UKFSample newSample;
         if(theOwnSideModel.stillInOwnSide)
-          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::OWN_HALF, mirrorLikelihood, robotPose, lastRobotPose), parameters);
+          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::OWN_HALF, robotPose, lastRobotPose), *this, nextSampleNumber++);
         else
-          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, mirrorLikelihood, robotPose, lastRobotPose), parameters);
+          newSample.init(sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, robotPose, lastRobotPose), *this, nextSampleNumber++);
         samples->at(i) = newSample;
       }
     }
   }
 }
 
-
-void SelfLocator::mirrorFlagUpdate()
-{
-  // Setting the time when the robot has a good stand
-  if((theFallDownState.state != theFallDownState.upright &&
-      theFallDownState.state != theFallDownState.undefined &&
-      theFallDownState.state != theFallDownState.staggering) && (theFrameInfo.getTimeSince(timeOfLastFall) > 8000))
-    timeOfLastFall = theFrameInfo.time;
-  bool robotHasFallen = (timeOfLastFall == theFrameInfo.time);
-
-  // Setting the time when the robot has no arm contact
-  if(!theArmContactModel.contactLeft && !theArmContactModel.contactRight)
-    lastTimeWithoutArmContact = theFrameInfo.time;
-  // Arm contact!? Another robot may change my direction
-  bool robotHasArmContact = theFrameInfo.getTimeSince(lastTimeWithoutArmContact) > parameters.minContinuousArmContact;
-  if(robotHasArmContact)
-    lastTimeWithoutArmContact = theFrameInfo.time;
-
-  // Update all samples
-  for(int i = 0; i < parameters.numberOfSamples; ++i)
-  {
-    samples->at(i).updateMirrorFlag(robotHasFallen, robotHasArmContact, parameters, theFieldDimensions);
-  }
-}
-
-
 void SelfLocator::resampling()
 {
   float totalWeighting(0.f);
 
-  // Try to resample based on compliance with team ball:
-  if(sampleSetIsMultimodal())
-  {
-    if(sufficientBallInformationAvailable())
-    {
-      for(int i = 0; i < parameters.numberOfSamples; ++i)
-      {
-        samples->at(i).computeWeightingBasedOnBallObservation(theBallModel.estimate.position, theCombinedWorldModel.ballStateOthers.position,
-          theCameraMatrix.translation.z, parameters);
-        totalWeighting += samples->at(i).weighting;
-      }
-    }
-    else
-    {
-      return;
-    }
-  }
   // Check, if resampling should performed based on validity (currently only when goal posts are seen):
-  else if(theGoalPercept.goalPosts.size())
+  if(theGoalPercept.goalPosts.size())
   {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
+    for(int i = 0; i < numberOfSamples; ++i)
     {
-      samples->at(i).computeWeightingBasedOnValidity(theFieldDimensions, parameters);
+      samples->at(i).computeWeightingBasedOnValidity(theFieldDimensions, *this);
       totalWeighting += samples->at(i).weighting;
     }
   }
@@ -453,44 +345,20 @@ void SelfLocator::resampling()
   // fill up missing samples (could happen in rare cases) with new poses:
   for(; j < numberOfSamples; ++j)
   {
-    const Pose2D pose = sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, mirrorLikelihood, lastRobotPose, lastRobotPose);
-    samples->at(j).init(pose, parameters);
+    const Pose2D pose = sampleGenerator.getTemplate(TemplateGenerator::CONSIDER_POSE, lastRobotPose, lastRobotPose);
+    samples->at(j).init(pose, *this, nextSampleNumber++);
   }
 }
-
-
-int SelfLocator::sampleSetIsMultimodal()
-{
-  int mirrorCount(0);
-  for(int i = 0; i < parameters.numberOfSamples; ++i)
-  {
-    if(samples->at(i).isMirrored())
-      ++mirrorCount;
-  }
-  return mirrorCount;
-}
-
-
-bool SelfLocator::sufficientBallInformationAvailable()
-{
-  return ((theBallModel.timeWhenLastSeen == theFrameInfo.time) &&
-          (theFieldDimensions.isInsideField(lastRobotPose * theBallModel.estimate.position)) && // Not 100% correct...
-          (theBallModel.estimate.velocity.abs() <= parameters.maxBallVelocity) &&
-          (theCombinedWorldModel.ballIsValidOthers) &&
-          (theCombinedWorldModel.ballStateOthers.velocity.abs() <= parameters.maxBallVelocity));
-}
-
 
 void SelfLocator::handleSideConfidence()
 {
   if(!theSideConfidence.mirror || sampleSetHasBeenResetted)
     return;
-  for(int i = 0; i < parameters.numberOfSamples; ++i)
+  for(int i = 0; i < numberOfSamples; ++i)
   {
     samples->at(i).mirror();
   }
 }
-
 
 void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
 {
@@ -501,18 +369,18 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     if((lastGameState != STATE_PLAYING && theGameInfo.state == STATE_PLAYING) ||
        (lastPenalty != PENALTY_NONE && theRobotInfo.penalty == PENALTY_NONE))
     {
-      if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamColour)
+      if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamColor)
       {
         //striker pose (1 meter behind the penalty spot, looking towards opponent goal)
         for(int i=0; i<samples->size(); ++i)
-          samples->at(i).init(Pose2D(0.f, theFieldDimensions.xPosPenaltyStrikerStartPosition, 0.f), parameters);
+          samples->at(i).init(Pose2D(0.f, theFieldDimensions.xPosPenaltyStrikerStartPosition, 0.f), *this, nextSampleNumber++);
         sampleSetHasBeenResetted = true;
       }
       else
       {
         //goalie pose (in the center of the goal, looking towards the field's center)
         for(int i=0; i<samples->size(); ++i)
-          samples->at(i).init(Pose2D(0.f, theFieldDimensions.xPosOwnGroundline, 0.f), parameters);
+          samples->at(i).init(Pose2D(0.f, theFieldDimensions.xPosOwnGroundline, 0.f), *this, nextSampleNumber++);
         sampleSetHasBeenResetted = true;
       }
     }
@@ -523,7 +391,7 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     for(int i=0; i<samples->size(); ++i)
     {
       Pose2D pose = sampleGenerator.getTemplateAtReenterPosition();
-      samples->at(i).init(pose, parameters);
+      samples->at(i).init(pose, *this, nextSampleNumber++);
     }
     sampleSetHasBeenResetted = true;
   }
@@ -533,7 +401,7 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     for(int i=0; i<samples->size(); ++i)
     {
       Pose2D pose = sampleGenerator.getTemplateAtManualPlacementPosition(theRobotInfo.number);
-      samples->at(i).init(pose, parameters);
+      samples->at(i).init(pose, *this, nextSampleNumber++);
     }
     sampleSetHasBeenResetted = true;
   }
@@ -545,7 +413,7 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     for(int i=0; i<samples->size(); ++i)
     {
       Pose2D pose = sampleGenerator.getTemplateAtManualPlacementPosition(theRobotInfo.number);
-      samples->at(i).init(pose, parameters);
+      samples->at(i).init(pose, *this, nextSampleNumber++);
     }
     sampleSetHasBeenResetted = true;
   }
@@ -555,7 +423,7 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     for(int i=0; i<samples->size(); ++i)
     {
       Pose2D pose = sampleGenerator.getTemplateAtWalkInPosition();
-      samples->at(i).init(pose, parameters);
+      samples->at(i).init(pose, *this, nextSampleNumber++);
     }
     sampleSetHasBeenResetted = true;
   }
@@ -565,67 +433,44 @@ void SelfLocator::handleGameStateChanges(const Pose2D& propagatedRobotPose)
     for(int i=0; i<samples->size(); ++i)
     {
       Pose2D pose = sampleGenerator.getTemplateAtWalkInPosition();
-      samples->at(i).init(pose, parameters);
+      samples->at(i).init(pose, *this, nextSampleNumber++);
     }
     sampleSetHasBeenResetted = true;
-  }
-  // In SET state, a robot cannot be mirrored => reset flags
-  if(lastGameState == STATE_SET && theGameInfo.state != STATE_SET)
-  {
-    for(int i=0; i<samples->size(); ++i)
-    {
-      samples->at(i).setMirrored(false);
-    }
   }
   // Update members
   lastGameState = theGameInfo.state;
   lastPenalty   = theRobotInfo.penalty;
 }
 
-
-void SelfLocator::computeMirrorLikelihoodAndAdaptMirrorFlags()
-{
-  // Count the number of samples that appear to be mirrored:
-  int mirroredSamples(0);
-  for(int i = 0; i < parameters.numberOfSamples; ++i)
-  {
-    if(samples->at(i).isMirrored())
-      mirroredSamples++;
-  }
-  // If most samples are mirrored, consider them as "normal" and
-  // flip all samples in the sample set
-  if(mirroredSamples > samples->size() / 2)
-  {
-    for(int i = 0; i < parameters.numberOfSamples; ++i)
-    {
-      const bool oldMirror = samples->at(i).isMirrored();
-      samples->at(i).setMirrored(!oldMirror);
-    }
-    mirroredSamples = samples->size() - mirroredSamples;
-  }
-  // Compute likelihood
-  mirrorLikelihood = static_cast<float>(mirroredSamples) / samples->size();
-}
-
-
 void SelfLocator::computeSampleValidities()
 {
-  for(int i=0; i < parameters.numberOfSamples; ++i)
+  for(int i=0; i < numberOfSamples; ++i)
   {
     samples->at(i).computeValidity(theFieldDimensions);
   }
 }
 
-
 UKFSample& SelfLocator::getMostValidSample()
 {
+  float validityOfLastBestSample = -1.f;
+  UKFSample* lastBestSample = 0;
+  if(numberOfLastBestSample != -1)
+  {
+    for(int i=0; i < numberOfSamples; ++i)
+    {
+      if(samples->at(i).number == numberOfLastBestSample)
+      {
+        validityOfLastBestSample = samples->at(i).validity;
+        lastBestSample = &(samples->at(i));
+        break;
+      }
+    }
+  }
   UKFSample& returnSample = samples->at(0);
   float maxValidity = -1.f;
   float minVariance = 0.f; // Initial value does not matter
-  for(int i=0; i < parameters.numberOfSamples; ++i)
+  for(int i=0; i < numberOfSamples; ++i)
   {
-    if(samples->at(i).isMirrored())
-      continue;
     const float val = samples->at(i).validity;
     if(val > maxValidity)
     {
@@ -644,21 +489,11 @@ UKFSample& SelfLocator::getMostValidSample()
       }
     }
   }
-  return returnSample;
+ /* if(returnSample.validity == validityOfLastBestSample)
+    return *lastBestSample;
+  else*/
+    return returnSample;
 }
-
-
-bool SelfLocator::isMirrorCloser(const Pose2D& samplePose, const Pose2D& robotPose) const
-{
-  const Vector2<>& translation = samplePose.translation;
-  const Vector2<> rotationWeight(std::max(parameters.useRotationThreshold - std::min(translation.abs(), robotPose.translation.abs()), 0.f), 0);
-  const Vector2<> rotation = Pose2D(samplePose.rotation) * rotationWeight;
-  const Vector2<> robotRotation = Pose2D(robotPose.rotation) * rotationWeight;
-
-  return (robotPose.translation - translation).abs() + (robotRotation - rotation).abs() >
-         (robotPose.translation + translation).abs() + (robotRotation + rotation).abs();
-}
-
 
 void SelfLocator::domainSpecificSituationHandling()
 {
@@ -676,26 +511,74 @@ void SelfLocator::domainSpecificSituationHandling()
       break;
     }
   }
+  // The robot is in its penalty area and assumes to look at the opponent half
+  // and guards its goal.
+  if(theRobotPose.translation.x < theFieldDimensions.xPosOwnPenaltyArea &&
+    abs(theRobotPose.translation.y) < theFieldDimensions.yPosLeftPenaltyArea &&
+    abs(theRobotPose.rotation) < fromDegrees(45.f) &&
+    theRobotInfo.number == 1)
+  {
+    // Calculate distance to furthest point on field boundary
+    float maxDistance = 0.f;
+    for(auto& p : theFieldBoundary.boundaryOnField)
+    {
+      if(p.abs() > maxDistance)
+        maxDistance = p.abs();
+    }
+    // It has not seen important stuff for a long time but the field border appears
+    // to be close. This means that it is probably twisted:
+    if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > goalieNoPerceptsThreshold &&
+       theFrameInfo.getTimeSince(lastTimeFarGoalSeen) > goalieNoPerceptsThreshold &&
+       theFrameInfo.getTimeSince(theLinePercept.circle.lastSeen) > goalieNoPerceptsThreshold &&
+       maxDistance < goalieFieldBorderDistanceThreshold &&
+       maxDistance > 400.f)
+    {
+      for(int i = 0; i < numberOfSamples; ++i)
+        samples->at(i).twist();
+    }
+  }
 }
 
-
-void SelfLocator::draw()
+void SelfLocator::draw(const RobotPose& robotPose)
 {
   DECLARE_DEBUG_DRAWING("module:SelfLocator:samples", "drawingOnField"); // Draws all hypotheses/samples on the field
   COMPLEX_DRAWING("module:SelfLocator:samples",
-    for(int i = 0; i < parameters.numberOfSamples; ++i) \
+    for(int i = 0; i < numberOfSamples; ++i) \
       samples->at(i).draw();
   );
 
   DECLARE_DEBUG_DRAWING("module:SelfLocator:simples", "drawingOnField"); // Draws all hypotheses/samples on the field in a simple way
   COMPLEX_DRAWING("module:SelfLocator:simples",
-    for(int i = 0; i < parameters.numberOfSamples; ++i) \
+    for(int i = 0; i < numberOfSamples; ++i) \
       samples->at(i).draw(true);
   );
 
   DECLARE_DEBUG_DRAWING("module:SelfLocator:templates", "drawingOnField"); // Draws all available templates
   COMPLEX_DRAWING("module:SelfLocator:templates", sampleGenerator.draw(););
+  
+  DECLARE_DEBUG_DRAWING("module:SelfLocator:isMirrorCloser", "drawingOnField"); // Visualizes effect of current function's parameters
+  COMPLEX_DRAWING("module:SelfLocator:isMirrorCloser",
+  {
+    const float stepSize = 500.f;
+    const float degStepSize = 30.f;
+    const float length = stepSize / 3.f;
+    for(float x=theFieldDimensions.xPosOwnFieldBorder; x<=theFieldDimensions.xPosOpponentFieldBorder; x+=stepSize)
+    {
+      for(float y=theFieldDimensions.yPosRightFieldBorder; y<=theFieldDimensions.yPosLeftFieldBorder; y+=stepSize)
+      {
+        for(float rot=0.f; rot < 360.f; rot+=degStepSize)
+        {
+          Pose2D samplePose(fromDegrees(rot), x, y);
+          ColorRGBA col = sampleGenerator.isMirrorCloser(samplePose, robotPose) ? ColorRGBA(255,0,0) : ColorRGBA(0,0,0);
+          Vector2<> vec(length,0.f);
+          vec.rotate(fromDegrees(rot));
+          LINE("module:SelfLocator:isMirrorCloser", x, y, x+vec.x, y+vec.y, 20, Drawings::ps_solid, col);
+        }
+      }
+    }
+  });
+  
+  sampleGenerator.plot();
 }
-
 
 MAKE_MODULE(SelfLocator, Modeling)

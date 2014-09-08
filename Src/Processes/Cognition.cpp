@@ -6,28 +6,24 @@
 #include "Cognition.h"
 #include "Modules/Infrastructure/CameraProvider.h"
 #include "Modules/Configuration/CognitionConfigurationDataProvider.h"
-#include "Modules/Infrastructure/CognitionLogDataProvider.h"
 #include "Modules/Infrastructure/TeamDataProvider.h"
 #include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/SensorData.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Settings.h"
 #include "Tools/Team.h"
-
-static const char* categories[] = {"Cognition Infrastructure", "Perception", "Modeling", "Behavior Control"};
+#include "Modules/Infrastructure/CognitionLogDataProvider.h" // include last because of header conflicts on Windows
 
 Cognition::Cognition() :
   INIT_DEBUGGING,
   INIT_RECEIVER(MotionToCognition),
   INIT_SENDER(CognitionToMotion),
   INIT_TEAM_COMM,
-  moduleManager(categories, sizeof(categories) / sizeof(*categories)),
-  logger(moduleManager)
+  moduleManager({"Cognition Infrastructure", "Perception", "Modeling", "Behavior Control"})
 {
-  theDebugSender.setSize(10000000);
-  theDebugReceiver.setSize(1400000);
-  theTeamSender.setSize(1384); // 1 package without timestamp, size, localId, and message queue header
-  theTeamReceiver.setSize(4 * 1450); // >= 4 packages
+  theDebugSender.setSize(5200000, 100000);
+  theDebugReceiver.setSize(2800000);
+  theTeamSender.setSize(sizeof(RoboCup::SPLStandardMessage));
+  theTeamReceiver.setSize(5 * sizeof(RoboCup::SPLStandardMessage)); // more than 4 because of additional data
   theCognitionToMotionSender.moduleManager = theMotionToCognitionReceiver.moduleManager = &moduleManager;
 }
 
@@ -55,7 +51,7 @@ bool Cognition::main()
 
   OUTPUT(idProcessBegin, bin, 'c');
 
-  if(CognitionLogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete())
+  if(CognitionLogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete())
   {
     timingManager.signalProcessStart();
 
@@ -71,9 +67,11 @@ bool Cognition::main()
 
     DEBUG_RESPONSE("process:Cognition:jointDelay",
     {
-      if(&Blackboard::theInstance->theFrameInfo && &Blackboard::theInstance->theFilteredJointData)
+      if(Blackboard::getInstance().exists("FrameInfo") &&
+         Blackboard::getInstance().exists("FilteredJointData"))
       {
-        OUTPUT(idText, text, Blackboard::theInstance->theFrameInfo.getTimeSince(Blackboard::theInstance->theFilteredJointData.timeStamp));
+        OUTPUT(idText, text, ((const FrameInfo&) Blackboard::getInstance()["FrameInfo"])
+               .getTimeSince(((const FilteredJointData&) Blackboard::getInstance()["FilteredJointData"]).timeStamp));
       }
     });
 
@@ -88,7 +86,8 @@ bool Cognition::main()
     BH_TRACE_MSG("before SEND_TEAM_COMM");
     if(!theTeamSender.isEmpty())
     {
-      if(&Blackboard::theInstance->theTeamMateData && Blackboard::theInstance->theTeamMateData.sendThisFrame)
+      if(Blackboard::getInstance().exists("TeammateData") &&
+         ((const TeammateData&) Blackboard::getInstance()["TeammateData"]).sendThisFrame)
       {
         SEND_TEAM_COMM;
       }
@@ -101,13 +100,13 @@ bool Cognition::main()
       timingManager.getData().copyAllMessages(theDebugSender);
     );
 
-    logger.run();
+    logger.execute();
 
     if(theDebugSender.getNumberOfMessages() > numberOfMessages + 1)
     {
       // messages were sent in this frame -> send process finished
-      if(&Blackboard::theInstance->theCameraInfo &&
-         Blackboard::theInstance->theCameraInfo.camera == CameraInfo::lower)
+      if(Blackboard::getInstance().exists("CameraInfo") &&
+         ((const CameraInfo&) Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::lower)
       { // lower camera -> process called 'd'
         theDebugSender.patchMessage(numberOfMessages, 0, 'd');
         OUTPUT(idProcessFinished, bin, 'd');
@@ -132,7 +131,7 @@ bool Cognition::main()
 #endif
   }
 
-  if(&Blackboard::theInstance->theImage)
+  if(Blackboard::getInstance().exists("Image"))
   {
     if(SystemCall::getMode() == SystemCall::physicalRobot)
       setPriority(10);
@@ -163,6 +162,7 @@ bool Cognition::handleMessage(InMessage& message)
 
   default:
     return CognitionLogDataProvider::handleMessage(message) ||
+           CognitionConfigurationDataProvider::handleMessage(message) ||
            Process::handleMessage(message);
   }
   BH_TRACE_MSG("after Cognition:handleMessage");

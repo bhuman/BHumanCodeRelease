@@ -10,7 +10,7 @@
 #include <fstream>
 #include <QFile>
 
-#if defined(LINUX) || defined(MACOSX)
+#if defined(LINUX) || defined(OSX)
 #include <cstdlib>
 #include <sys/types.h>
 #include <cerrno>
@@ -30,7 +30,7 @@ std::vector<std::string> Filesystem::getLocations(const std::string prefix)
 
 std::vector<std::string> Filesystem::getProjects(const std::string prefix)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   return getEntries(std::string(File::getBHDir())
                     + "/Make/" + makeDirectory() + "/" + prefix, true, false, ".vcxproj", false);
 #else
@@ -86,7 +86,7 @@ std::string Filesystem::getFileAsString(const std::string& filename)
 std::string Filesystem::getNaoKey()
 {
   static std::string keyFile = std::string(File::getBHDir()) + linuxToPlatformPath("/Config/Keys/id_rsa_nao");
-  
+
   QFile::setPermissions(QString::fromUtf8(keyFile.c_str()), QFile::ReadOwner);//set correct permissions, otherwise ssh will complain
   return keyFile;
 }

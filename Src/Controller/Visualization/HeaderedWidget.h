@@ -29,8 +29,6 @@ public:
   */
   HeaderedWidget(QWidget* parent = 0);
 
-
-
   virtual ~HeaderedWidget()
    {
      /*
@@ -44,7 +42,6 @@ public:
       */
 
    };
-
 
   /**
   * Sets the content Widget of this HeaderedWidget.

@@ -33,7 +33,7 @@ public:
   {
     QFile file(":/simrobothelp.css");
 
-    if (!file.open(QIODevice::ReadOnly))
+    if(!file.open(QIODevice::ReadOnly))
       return;
 
     QTextStream stream(&file);
@@ -60,7 +60,7 @@ private:
 HelpWidget::HelpWidget(const SimRobot::Object& object) : QSplitter(Qt::Horizontal), object(object)
 {
   QString qhc = QFileInfo(HelpModule::application->getAppPath()).dir().path() +
-#ifdef MACOSX
+#ifdef OSX
   "/../Resources" +
 #endif
   "/helpcollection.qhc";

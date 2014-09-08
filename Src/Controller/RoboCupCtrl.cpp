@@ -8,11 +8,12 @@
  * @author Colin Graf
  */
 
-#include <QIcon>
-
+#include "RobotConsole.h"
 #include "RoboCupCtrl.h"
 #include "Platform/SimRobotQt/Robot.h"
-#include "RobotConsole.h"
+
+#include <QIcon>
+
 
 RoboCupCtrl* RoboCupCtrl::controller = 0;
 SimRobot::Application* RoboCupCtrl::application = 0;
@@ -50,12 +51,10 @@ bool RoboCupCtrl::compile()
     robots.push_back(new Robot(fullName.mid(fullName.lastIndexOf('.') + 1).toUtf8().constData()));
   }
   this->robotName = 0;
-  if(!robots.empty())
-    Oracle::init();
   const SimRobot::Object* balls = (SimRobotCore2::Object*)RoboCupCtrl::application->resolveObject("RoboCup.balls", SimRobotCore2::compound);
   if(balls)
   {
-    Oracle::setBall(RoboCupCtrl::application->getObjectChild(*balls, 0));
+    SimulatedRobot::setBall(RoboCupCtrl::application->getObjectChild(*balls, 0));
     SimRobotCore2::Geometry* ballGeom = (SimRobotCore2::Geometry*)application->resolveObject("RoboCup.balls.ball.SphereGeometry", SimRobotCore2::geometry);
     if(ballGeom)
       ballGeom->registerCollisionCallback(*this);
@@ -67,7 +66,7 @@ bool RoboCupCtrl::compile()
 RoboCupCtrl::~RoboCupCtrl()
 {
   qDeleteAll(views);
-  Oracle::setBall(0);
+  SimulatedRobot::setBall(0);
   controller = 0;
   application = 0;
 }
@@ -103,9 +102,9 @@ SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const SimRobot::
     QString fullName;
     QIcon icon;
 
-    virtual const QString& getDisplayName() const {return name;};
-    virtual const QString& getFullName() const {return fullName;};
-    virtual const QIcon* getIcon() const {return &icon;};
+    virtual const QString& getDisplayName() const {return name;}
+    virtual const QString& getFullName() const {return fullName;}
+    virtual const QIcon* getIcon() const {return &icon;}
   };
 
   SimRobot::Object* category = new Category(name, parent ? parent->getFullName() + "." + name : name, icon ? icon : ":/Icons/folder.png");
@@ -129,7 +128,7 @@ SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const QString& p
 
 void RoboCupCtrl::start()
 {
-#ifdef WIN32
+#ifdef WINDOWS
   VERIFY(timeBeginPeriod(1) == TIMERR_NOERROR);
 #endif
   for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
@@ -146,7 +145,7 @@ void RoboCupCtrl::stop()
     delete *i;
   }
   controller = 0;
-#ifdef WIN32
+#ifdef WINDOWS
   VERIFY(timeEndPeriod(1) == TIMERR_NOERROR);
 #endif
 }
@@ -184,7 +183,7 @@ void RoboCupCtrl::collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geomet
   if(!body)
     return;
   body = body->getRootBody();
-  Oracle::setLastBallContactRobot(body);
+  GameController::setLastBallContactRobot(body);
 }
 
 std::string RoboCupCtrl::getRobotName() const

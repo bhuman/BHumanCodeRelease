@@ -15,7 +15,7 @@
  * The class is a helper to be able to stream the players.
  * The global RobotInfo cannot be used, because it has an additional attribute.
  */
-class PlayerInfo : public RoboCup::RobotInfo, public ImplicitlyStreamable {};
+class PlayerInfo : public RoboCup::RobotInfo {};
 
 /**
  * Write a player info to a stream.
@@ -54,14 +54,29 @@ TeamInfo::TeamInfo()
 
 void TeamInfo::serialize(In* in, Out* out)
 {
-  PlayerInfo(&players)[4] = reinterpret_cast<PlayerInfo(&)[4]>(this->players);
+  PlayerInfo (&players)[4] = reinterpret_cast<PlayerInfo(&)[4]>(this->players);
+  PlayerInfo& coach = reinterpret_cast<PlayerInfo&>(this->coach);
+  char buf[sizeof(this->coachMessage) + 1];
+  strncpy(buf, (const char*) this->coachMessage, sizeof(this->coachMessage));
+  buf[sizeof(this->coachMessage)] = 0;
+  std::string coachMessage = buf;
 
   STREAM_REGISTER_BEGIN;
   STREAM(teamNumber); // unique team number
   STREAM(teamColor); // TEAM_BLUE, TEAM_RED
   STREAM(score); // team's score
+  STREAM(coachMessage); // last coach message received
+  STREAM(coach); // team's coach
   STREAM(players); // the team's players
   STREAM_REGISTER_FINISH;
+
+  if(in)
+  {
+    if(coachMessage.empty())
+      this->coachMessage[0] = 0;
+    else
+      strncpy((char*) this->coachMessage, &coachMessage[0], sizeof(this->coachMessage));
+  }
 }
 
 static void drawDigit(int digit, const Vector3<>& pos, float size, int teamColor)
@@ -113,7 +128,7 @@ void TeamInfo::draw() const
 
 OwnTeamInfo::OwnTeamInfo()
 {
-  teamColor = &Global::getSettings() ? Global::getSettings().teamColour : TEAM_BLUE;
+  teamColor = &Global::getSettings() ? Global::getSettings().teamColor : TEAM_BLUE;
 }
 
 void OwnTeamInfo::draw() const
@@ -123,12 +138,12 @@ void OwnTeamInfo::draw() const
 
   DECLARE_DEBUG_DRAWING("representation:OwnTeamInfo", "drawingOnField",
   {
-    DRAWTEXT("representation:OwnTeamInfo", -5000, -3800, 140, ColorClasses::red, (teamColor == TEAM_BLUE ? "Blue" : "Red"));
+    DRAWTEXT("representation:OwnTeamInfo", -5000, -3800, 140, ColorRGBA::red, (teamColor == TEAM_BLUE ? "Blue" : "Red"));
   });
 }
 
 OpponentTeamInfo::OpponentTeamInfo()
 {
-  teamColor = 1 - (&Global::getSettings() ? Global::getSettings().teamColour : TEAM_BLUE);
+  teamColor = 1 - (&Global::getSettings() ? Global::getSettings().teamColor : TEAM_BLUE);
 }
 

@@ -22,13 +22,13 @@ public:
   /**
    * initializes the Ringbuffer
    */
-  inline void init() {current = n - 1; numberOfEntries = 0;}
+  void init() {current = n - 1; numberOfEntries = 0;}
 
   /**
    * adds an entry to the buffer
    * \param v value to be added
    */
-  inline void add(const V& v)
+  void add(const V& v)
   {
     add();
     buffer[current] = v;
@@ -38,7 +38,7 @@ public:
    * adds an entry to the buffer.
    * The new head is not initialized, but can be changed afterwards.
    */
-  inline void add()
+  void add()
   {
     current++;
     current %= n;
@@ -48,7 +48,7 @@ public:
   /**
    * removes the first added entry to the buffer
    */
-  inline void removeFirst()
+  void removeFirst()
   {
     --numberOfEntries;
   }
@@ -58,7 +58,7 @@ public:
    * \param i index of entry counting from last added (last=0,...)
    * \return a reference to the buffer entry
    */
-  inline V& getEntry(int i)
+  V& getEntry(int i)
   {
     return buffer[(n + current - i) % n];
   }
@@ -68,7 +68,7 @@ public:
    * \param i index of entry counting from last added (last=0,...)
    * \return a reference to the buffer entry
    */
-  inline const V& getEntry(int i) const
+  const V& getEntry(int i) const
   {
     return buffer[(n + current - i) % n];
   }
@@ -78,7 +78,7 @@ public:
    * \param i index of entry counting from last added (last=0,...)
    * \return a reference to the buffer entry
    */
-  inline V& operator[](int i)
+  V& operator[](int i)
   {
     return buffer[(n + current - i) % n];
   }
@@ -88,7 +88,7 @@ public:
    * \param i index of entry counting from last added (last=0,...)
    * \return a reference to the buffer entry
    */
-  inline const V& operator[](int i) const
+  const V& operator[](int i) const
   {
     return buffer[(n + current - i) % n];
   }
@@ -96,7 +96,7 @@ public:
   /** Returns the number of elements that are currently in the ring buffer
   * \return The number
   */
-  inline int getNumberOfEntries() const
+  int getNumberOfEntries() const
   {
     return numberOfEntries;
   }
@@ -105,7 +105,7 @@ public:
   * Returns the maximum entry count.
   * \return The maximum entry count.
   */
-  inline int getMaxEntries() const
+  int getMaxEntries() const
   {
     return n;
   }
@@ -114,7 +114,7 @@ public:
   * Determines whether maximum entry count equals actual number of entries.
   * @return true iff getMaxEntries == getNumberOfEntries.
   */
-  inline bool isFilled() const
+  bool isFilled() const
   {
     return getMaxEntries() == getNumberOfEntries();
   }
@@ -123,13 +123,15 @@ public:
    * Determines whether the buffer is empty.
    * \return True, if the number of entries is 0.
    */
-  inline bool isEmpty() const
+  bool isEmpty() const
   {
     return !numberOfEntries;
   }
 
-private:
+protected:
   int current;
+  
+private:
   int numberOfEntries;
   V buffer[n];
 };

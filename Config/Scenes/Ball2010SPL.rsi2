@@ -1,12 +1,12 @@
 <Simulation>
 
   <Surface name="ballOrange" diffuseColor="rgb(100%, 0%, 0%)" specularColor="rgb(60%, 60%, 60%)" shininess="30"/>
-  
+
   <Material name="ballPlastic">
     <Friction material="fieldCarpet" value="0.015"/>
     <RollingFriction material="fieldCarpet" value="1.7"/>
   </Material>
-  
+
   <Body name="ball">
     <SphereAppearance radius="0.0325">
       <Surface ref="ballOrange"/>

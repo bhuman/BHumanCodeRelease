@@ -5,11 +5,11 @@
 #include <QRegExp>
 #include <QString>
 
-#ifdef WIN32
+#ifdef WINDOWS
 #include <Windows.h>
-#endif // WIN32
+#endif
 
-#if defined(MACOSX)
+#if defined(OSX)
 #include <iostream>
 #include <cstdlib>
 #endif
@@ -18,11 +18,10 @@ std::string bhumandDirOnRobot = "/home/nao/";
 
 std::string makeDirectory()
 {
-#ifdef WIN32
-  char* vsPath = getenv(ENV_COMNTOOLS_11);
-  return "VS2012";
-#elif defined(MACOSX)
-  return "MacOS";
+#ifdef WINDOWS
+  return "VS2013";
+#elif defined(OSX)
+  return "OSX";
 #else
   return "Linux";
 #endif
@@ -30,10 +29,10 @@ std::string makeDirectory()
 
 std::string platformDirectory()
 {
-#ifdef WIN32
-  return "Win32";
-#elif defined(MACOSX)
-  return "MacOS";
+#ifdef WINDOWS
+  return "Windows64";
+#elif defined(OSX)
+  return "OSX";
 #else
   return "Linux";
 #endif
@@ -41,19 +40,19 @@ std::string platformDirectory()
 
 void goToConfigDirectory(const char* argv0)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   char fileName[_MAX_PATH];
   char longFileName[_MAX_PATH];
   GetModuleFileNameA(GetModuleHandleA(0), fileName, _MAX_PATH);
   GetLongPathNameA(fileName, longFileName, _MAX_PATH);
   QString applicationPath = QString(longFileName);
-  applicationPath = applicationPath.replace(QRegExp("Build\\\\bush\\\\\\w+\\\\\\w+\\\\bush.exe"), "");
-#elif defined(MACOSX)
+  applicationPath = applicationPath.replace(QRegExp("Build\\\\\\w+\\\\bush\\\\\\w+\\\\bush.exe"), "");
+#elif defined(OSX)
   QString applicationPath = QDir::cleanPath(*argv0 == '/' ? QString(argv0) : QDir::root().current().path() + "/" + argv0);
-  applicationPath = applicationPath.replace(QRegExp("Build/bush/\\w+/\\w+/bush.app/Contents/MacOS/bush"), "");
+  applicationPath = applicationPath.replace(QRegExp("Build/\\w+/bush/\\w+/bush.app/Contents/MacOS/bush"), "");
 #else
   QString applicationPath = QDir::cleanPath(*argv0 == '/' ? QString(argv0) : QDir::root().current().path() + "/" + argv0);
-  applicationPath = applicationPath.replace(QRegExp("Build/bush/\\w+/\\w+/bush"), "");
+  applicationPath = applicationPath.replace(QRegExp("Build/\\w+/bush/\\w+/bush"), "");
 #endif
 
   applicationPath += QString("Config");
@@ -62,7 +61,7 @@ void goToConfigDirectory(const char* argv0)
 
 std::string linuxToPlatformPath(const std::string& path)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   return toString(QString(path.c_str()).replace("/", "\\"));
 #else // linux and mac
   return path;
@@ -71,7 +70,7 @@ std::string linuxToPlatformPath(const std::string& path)
 
 std::string getLinuxPath(const std::string& path)
 {
-#ifdef WIN32
+#ifdef WINDOWS
   QString command("cygpath -u \"");
   command += fromString(path) + "\"";
   ProcessRunner r(command);

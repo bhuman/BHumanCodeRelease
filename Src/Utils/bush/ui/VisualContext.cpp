@@ -15,7 +15,7 @@ VisualContext::VisualContext(QWidget *parent)
     formLayout(new QFormLayout()),
     nl(true)
 {
-  if (parent && parent->inherits("VisualContext"))
+  if(parent && parent->inherits("VisualContext"))
     setFrameStyle(QFrame::Box);
   formLayout->setSpacing(1);
   formLayout->setContentsMargins(1, 1, 1, 1);
@@ -30,7 +30,7 @@ VisualContext::VisualContext(QWidget *parent)
 VisualContext::Entry::~Entry()
 {
   // do not delete context. It takes care of itself.
-  if (text) delete text;
+  if(text) delete text;
 }
 
 static inline VisualContext::Entry::Type targetToType(ConsolePrintTarget target)
@@ -40,12 +40,12 @@ static inline VisualContext::Entry::Type targetToType(ConsolePrintTarget target)
 
 void VisualContext::updateWidget(size_t index, Entry *entry)
 {
-  QWidget *widget = widgets[index];
-  if (widget->inherits("QLabel"))
+  QWidget *widget = widgets[(int) index];
+  if(widget->inherits("QLabel"))
   {
     QLabel *label = dynamic_cast<QLabel*>(widget);
     QString text;
-    if (entry->type == Entry::TEXT_ERROR)
+    if(entry->type == Entry::TEXT_ERROR)
       text = "<font color='red'>" + Qt::convertFromPlainText(*entry->text) + "</font>";
     else
       text = Qt::convertFromPlainText(*entry->text);
@@ -56,7 +56,7 @@ void VisualContext::updateWidget(size_t index, Entry *entry)
 void VisualContext::addWidget(Entry *entry, const QString &commandLine)
 {
   QWidget *widget;
-  if (entry->type == Entry::CONTEXT)
+  if(entry->type == Entry::CONTEXT)
   {
     VisualContextDecoration *vd = new VisualContextDecoration(commandLine, this, entry->context);
     widget = vd;
@@ -64,7 +64,7 @@ void VisualContext::addWidget(Entry *entry, const QString &commandLine)
   else
   {
     QString text;
-    if (entry->type == Entry::TEXT_ERROR)
+    if(entry->type == Entry::TEXT_ERROR)
       text = "<font color='red'>" + Qt::convertFromPlainText(*entry->text) + "</font>";
     else
       text = Qt::convertFromPlainText(*entry->text);
@@ -84,9 +84,9 @@ void VisualContext::doPrint(ConsolePrintTarget target, const QString &msg)
 {
   Entry::Type currentType = targetToType(target);
   Entry *lastEntry = entries.empty() ? 0 : entries.last();
-  if (lastEntry && lastEntry->type == currentType)
+  if(lastEntry && lastEntry->type == currentType)
   {
-    if (nl)
+    if(nl)
       lastEntry->text->append("\n");
     lastEntry->text->append(msg);
     updateWidget(entries.size() - 1, lastEntry);
@@ -158,6 +158,6 @@ void VisualContext::executeInContext(Console *console, TeamSelector *teamSelecto
   // Since the context is a QObject it is better to let Qt do the cleanup
   context->deleteLater();
 
-  if (doQuit)
+  if(doQuit)
     QApplication::quit();
 }

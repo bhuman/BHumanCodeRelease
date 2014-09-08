@@ -80,6 +80,13 @@ public:
   /** Returns the load and the physical memory usage in percent */
   static void getLoad(float& mem, float load[3]);
 
+  /**
+   * Returns the free disk space on a volume.
+   * @param path A path to a directory or file on the volume.
+   * @return The free disk space in bytes.
+   */
+  static unsigned long long getFreeDiskSpace(const char* path);
+
   /** Allocate memory of given size with given alignment. */
   static void* alignedMalloc(size_t size, size_t alignment);
 

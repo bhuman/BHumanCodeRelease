@@ -11,7 +11,6 @@
 
 MAKE_MODULE(OdometerProvider, Modeling)
 
-
 void OdometerProvider::update(Odometer& odometer)
 {
   odometer.odometryOffset = theOdometryData - lastOdometryData;

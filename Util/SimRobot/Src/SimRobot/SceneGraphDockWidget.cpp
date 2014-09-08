@@ -1,7 +1,3 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QTreeWidget>
 #include <QHeaderView>
 #include <QSettings>
@@ -9,9 +5,6 @@
 #include <QContextMenuEvent>
 #include <QMenu>
 #include <QApplication>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "SceneGraphDockWidget.h"
 #include "MainWindow.h"

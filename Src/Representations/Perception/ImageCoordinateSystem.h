@@ -10,7 +10,7 @@
 
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/Image.h"
-#include "Tools/Math/Common.h"
+#include "Tools/Math/BHMath.h"
 #include "Tools/Math/Matrix2x2.h"
 #include "Tools/Streams/AutoStreamable.h"
 
@@ -26,6 +26,7 @@ STREAMABLE(ImageCoordinateSystem,
   int table[6144];
 
 public:
+  ImageCoordinateSystem();
   ~ImageCoordinateSystem();
 
   void setCameraInfo(const CameraInfo& cameraInfo);
@@ -117,7 +118,7 @@ public:
   * @param imageCoords The point in image coordinates.
   * @return The corrected point.
   */
-  inline Vector2<> toCorrected(const Vector2<int>& imageCoords) const
+  Vector2<> toCorrected(const Vector2<int>& imageCoords) const
   {
     return toCorrected(Vector2<float>(float(imageCoords.x), float(imageCoords.y)));
   }
@@ -152,7 +153,7 @@ public:
   * @param coords The point in corrected image coordinates.
   * @return The incorrected point.
   */
-  inline Vector2<> fromCorrectedApprox(const Vector2<int>& coords) const
+  Vector2<> fromCorrectedApprox(const Vector2<int>& coords) const
   {
     return fromCorrectedApprox(Vector2<float>(float(coords.x), float(coords.y)));
   }
@@ -245,7 +246,4 @@ public:
   (Vector2<>) offset, /**< The offset of the previous image to the current one. */
   (float)(0) a, /**< Constant part of equation to motion distortion. */
   (float)(0) b, /**< Linear part of equation to motion distortion. */
-
-  // Initialization
-  xTable = yTable = 0;
 });

@@ -5,7 +5,7 @@
 */
 
 #include "Platform/OpenGL.h"
-#ifndef _WIN32
+#ifndef WINDOWS
 #include <alloca.h>
 #endif
 

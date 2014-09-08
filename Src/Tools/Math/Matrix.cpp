@@ -64,112 +64,9 @@ template <> Matrix<3, 3, float> Matrix<3, 3, float>::invert() const
   return adjoint().transpose() / det();
 }
 
-
 template <int m, int n, class V> V Matrix<m, n, V>::det() const
 {
   ASSERT(false); // not implemented
-  /*
-    // create copy of actual matrix
-    Matrix_nxn<T, N> m(*this);
-
-    // initialize ranking vector
-    Vector_n<int, N> ranking;
-    size_t i;
-    for (i = 0; i < N; ++i)
-      ranking[i] = i;
-
-    T z = T();
-    bool bPositive = true;
-    int c;
-    int r;
-    for (c = 0; c < (int)(N-1); ++c)
-    {
-      // find row containing highest value
-      int maxRow = c;
-      T maxValue = m[ranking[maxRow]][c];
-      if (maxValue < z)
-        maxValue = -maxValue;
-      for (r = c+1; r < (int)N; ++r)
-      {
-        T value = m[ranking[r]][c];
-        if (value < z)
-          value = -value;
-        if (value > maxValue)
-        {
-          maxRow = r;
-          maxValue = value;
-        }
-      }
-
-      // if maximum value zero --> determinant is zero
-      if (MVTools::isNearZero(maxValue))
-        return z;
-        / *if (maxValue == z)
-      return z;* /
-
-      // swap rows in ranking
-      if (c != maxRow)
-      {
-        int temp = ranking[c];
-        ranking[c] = ranking[maxRow];
-        ranking[maxRow] = temp;
-        bPositive = !bPositive;
-      }
-
-      // process all following rows
-      for (r = c+1; r < (int)N; ++r)
-      {
-        // calc factor for subtracting
-        T factor = m[ranking[r]][c] / m[ranking[c]][c];
-        if (MVTools::isNearInf(factor))
-        {
-          if (MVTools::isNearPosInf(factor))
-            throw MVException(MVException::PosInfValue);
-          else
-            throw MVException(MVException::NegInfValue);
-        }
-
-        // change matrix
-        m[ranking[r]][c] = T();
-        for (int c2 = c+1; c2 < (int)N; ++c2)
-        {
-          m[ranking[r]][c2] -= factor*m[ranking[c]][c2];
-          T sub;
-          sub = factor*m[ranking[c]][c2];
-          if (MVTools::isNearInf(sub))
-          {
-            if (MVTools::isNearPosInf(sub))
-              throw MVException(MVException::PosInfValue);
-            else
-              throw MVException(MVException::NegInfValue);
-          }
-        }
-      }
-    }
-    // if last entry of matrix zero --> determinant is zero
-    if (MVTools::isNearZero(m[ranking[N-1]][N-1]))
-      return z;
-      / *if (m[ranking[N-1]][N-1] == z)
-    return z;* /
-    // matrix has triangle form
-    // calculate determinant
-    T res = m[ranking[0]][0];
-    for (r = 1; r < (int)N; ++r)
-    {
-      res *= m[ranking[r]][r];
-      if (MVTools::isNearInf(res))
-      {
-        if (MVTools::isNearPosInf(res))
-          throw MVException(MVException::PosInfValue);
-        else
-          throw MVException(MVException::NegInfValue);
-      }
-    }
-    if (!bPositive)
-      res = -res;
-    return res;
-
-  */
   return V(0);
 }
 
@@ -211,30 +108,12 @@ template <int m, int n, class V> Matrix<m, n, V> Matrix<m, n, V>::invert() const
     int temp = ranking[r];
     ranking[r] = ranking[maxrow];
     ranking[maxrow] = temp;
-    /*
-    if (MVTools::isNearZero(left[ranking[r]][r]))
-    {
-      if (MVTools::isNearNegZero(left[ranking[r]][r]))
-        throw MVException(MVException::DivByNegZero);
-      else
-        throw MVException(MVException::DivByPosZero);
-    }
-    */
 
     for(r2 = r + 1; r2 < n; ++r2)
     {
       // calc factor for subtracting
       ASSERT(left[ranking[r]][r] != 0.f);
       V factor = left[ranking[r2]][r] / left[ranking[r]][r];
-      /*
-      if (MVTools::isNearInf(factor))
-      {
-        if (MVTools::isNearPosInf(factor))
-          throw MVException(MVException::PosInfValue);
-        else
-          throw MVException(MVException::NegInfValue);
-      }
-      */
 
       // change left matrix
       left[ranking[r2]] -= left[ranking[r]] * factor;
@@ -247,28 +126,10 @@ template <int m, int n, class V> Matrix<m, n, V> Matrix<m, n, V>::invert() const
   // bring to diagonal form
   for(r = n - 1; r > 0; --r)
   {
-    /*
-    if (MVTools::isNearZero(left[ranking[r]][r]))
-    {
-      if (MVTools::isNearNegZero(left[ranking[r]][r]))
-        throw MVException(MVException::DivByNegZero);
-      else
-        throw MVException(MVException::DivByPosZero);
-    }
-    */
     for(r2 = r - 1; r2 >= 0; --r2)
     {
       ASSERT(left[ranking[r]][r] != 0.f);
       V factor = left[ranking[r2]][r] / left[ranking[r]][r];
-      /*
-      if (MVTools::isNearInf(factor))
-      {
-        if (MVTools::isNearPosInf(factor))
-          throw MVException(MVException::PosInfValue);
-        else
-          throw MVException(MVException::NegInfValue);
-      }
-      */
 
       // change left matrix
       left[ranking[r2]] -= left[ranking[r]] * factor;
@@ -284,15 +145,6 @@ template <int m, int n, class V> Matrix<m, n, V> Matrix<m, n, V>::invert() const
   {
     res[r] = right[ranking[r]];
     ASSERT(left[ranking[r]][r] != 0.f);
-    /*
-    if (MVTools::isNearZero(left[ranking[r]][r]))
-    {
-      if (MVTools::isNearNegZero(left[ranking[r]][r]))
-        throw MVException(MVException::DivByNegZero);
-      else
-        throw MVException(MVException::DivByPosZero);
-    }
-    */
     res[r] /= left[ranking[r]][r];
   }
   return res;

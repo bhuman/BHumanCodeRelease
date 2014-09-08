@@ -15,13 +15,14 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wunused-variable"
 #endif
-#include <alcore/altypes.h>
-#include <alcore/alerror.h>
+#define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
 #include <alcommon/alproxy.h>
 #include <alproxies/dcmproxy.h>
 #include <alproxies/almemoryproxy.h>
+#undef BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -462,8 +463,8 @@ private:
       for(int i = 0; i < lbhNumOfPositionActuatorIds - 2; ++i)
         startAngles[i] = *sensorPtrs[i * 3];
 
-	  startAngles[21] = 0;
-	  startAngles[22] = 0;
+      startAngles[21] = 0;
+      startAngles[22] = 0;
 
     standingUp:
       state = standingUp;

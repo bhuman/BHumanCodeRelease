@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Common.h"
+#include <cmath>
 #include "Tools/Streams/Streamable.h"
 
 /** This class represents a 3-vector */
@@ -28,15 +28,15 @@ public:
   V x, y, z;
 
   /** Default constructor. */
-  inline Vector3<V>() : x(V()), y(V()), z(V()) {}
+  Vector3<V>() : x(V()), y(V()), z(V()) {}
 
   /** Constructor. */
-  inline Vector3<V>(V x, V y, V z) : x(x), y(y), z(z) {}
+  Vector3<V>(V x, V y, V z) : x(x), y(y), z(z) {}
 
   /** Copy constructor
   *\param other The other vector that is copied to this one
   */
-  inline Vector3<V>(const Vector3<V>& other) : x(other.x), y(other.y), z(other.z) {}
+  Vector3<V>(const Vector3<V>& other) : x(other.x), y(other.y), z(other.z) {}
 
   /** Copy constructor from different element type
    *\param O The type of other's elements
@@ -48,7 +48,7 @@ public:
   *\param other The other vector that is assigned to this one
   *\return A reference to this object after the assignment.
   */
-  inline Vector3<V>& operator=(const Vector3<V>& other)
+  Vector3<V>& operator=(const Vector3<V>& other)
   {
     x = other.x;
     y = other.y;
@@ -60,7 +60,7 @@ public:
   *\param other The other vector that will be added to this one
   *\return A reference to this object after the calculation.
   */
-  inline Vector3<V>& operator+=(const Vector3<V>& other)
+  Vector3<V>& operator+=(const Vector3<V>& other)
   {
     x += other.x;
     y += other.y;
@@ -72,7 +72,7 @@ public:
   *\param other The other vector this one will be substracted from
   *\return A reference to this object after the calculation.
   */
-  inline Vector3<V>& operator-=(const Vector3<V>& other)
+  Vector3<V>& operator-=(const Vector3<V>& other)
   {
     x -= other.x;
     y -= other.y;
@@ -84,7 +84,7 @@ public:
   *\param factor The factor this vector is multiplied by
   *\return A reference to this object after the calculation.
   */
-  inline Vector3<V>& operator*=(const V& factor)
+  Vector3<V>& operator*=(const V& factor)
   {
     x *= factor;
     y *= factor;
@@ -96,9 +96,10 @@ public:
   *\param factor The factor this vector is divided by
   *\return A reference to this object after the calculation.
   */
-  inline Vector3<V>& operator/=(const V& factor)
+  Vector3<V>& operator/=(const V& factor)
   {
-    if(factor == V()) return *this;
+    if(factor == V())
+      return *this;
     x /= factor;
     y /= factor;
     z /= factor;
@@ -109,7 +110,7 @@ public:
   *\param other The other vector that will be added to this one
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator+(const Vector3<V>& other) const
+  Vector3<V> operator+(const Vector3<V>& other) const
   {
     return Vector3<V>(*this) += other;
   }
@@ -118,7 +119,7 @@ public:
   *\param other The other vector that will be added to this one
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator-(const Vector3<V>& other) const
+  Vector3<V> operator-(const Vector3<V>& other) const
   {
     return Vector3<V>(*this) -= other;
   }
@@ -126,7 +127,7 @@ public:
   /** Negation of this vector.
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator-() const
+  Vector3<V> operator-() const
   {
     return Vector3<V>(-x, -y, -z);
   }
@@ -135,7 +136,7 @@ public:
   *\param other The other vector this one will be multiplied by
   *\return The inner product.
   */
-  inline V operator*(const Vector3<V>& other) const
+  V operator*(const Vector3<V>& other) const
   {
     return x * other.x + y * other.y + z * other.z;
   }
@@ -144,7 +145,7 @@ public:
   *\param factor The factor this vector is multiplied by
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator*(const V& factor) const
+  Vector3<V> operator*(const V& factor) const
   {
     return Vector3<V>(*this) *= factor;
   }
@@ -154,7 +155,7 @@ public:
   *\param factor The factor this vector is divided by
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator/(const V& factor) const
+  Vector3<V> operator/(const V& factor) const
   {
     return Vector3<V>(*this) /= factor;
   }
@@ -163,7 +164,7 @@ public:
   *\param other The other vector that will be compared to this one
   *\return Whether the two vectors are equal.
   */
-  inline bool operator==(const Vector3<V>& other) const
+  bool operator==(const Vector3<V>& other) const
   {
     return x == other.x && y == other.y && z == other.z;
   }
@@ -172,7 +173,7 @@ public:
   *\param other The other vector that will be compared to this one
   *\return Whether the two vectors are unequal.
   */
-  inline bool operator!=(const Vector3<V>& other) const
+  bool operator!=(const Vector3<V>& other) const
   {
     return x != other.x || y != other.y || z != other.z;
   }
@@ -182,7 +183,7 @@ public:
   * \param i index of coordinate
   * \return reference to x, y or z
   */
-  inline V& operator[](int i)
+  V& operator[](int i)
   {
     return (&x)[i];
   }
@@ -192,7 +193,7 @@ public:
   * \param i index of coordinate
   * \return reference to x or y
   */
-  inline const V& operator[](int i) const
+  const V& operator[](int i) const
   {
     return (&x)[i];
   }
@@ -200,7 +201,7 @@ public:
   /** Calculation of the length of this vector.
   *\return The length.
   */
-  inline V abs() const
+  V abs() const
   {
     return (V) sqrt(float((x * x) + (y * y) + (z * z)));
   }
@@ -208,7 +209,7 @@ public:
   /** Calculation of the square length of this vector.
   *\return length*length.
   */
-  inline V squareAbs() const
+  V squareAbs() const
   {
     return x * x + y * y + z * z;
   }
@@ -217,7 +218,7 @@ public:
   *\param other The factor this vector is multiplied with.
   *\return A new object that contains the result of the calculation.
   */
-  inline Vector3<V> operator^(const Vector3<V>& other) const
+  Vector3<V> operator^(const Vector3<V>& other) const
   {
     return Vector3<V>(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x);
   }
@@ -226,7 +227,7 @@ public:
   *\param other The factor this vector is multiplied with.
   *\return A reference to this object after the calculation.
   */
-  inline Vector3<V>& operator^=(const Vector3<V>& other)
+  Vector3<V>& operator^=(const Vector3<V>& other)
   {
     return *this = *this ^ other;
   }
@@ -238,7 +239,8 @@ public:
   Vector3<V>& normalize(V len)
   {
     const V length = abs();
-    if(length == V()) return *this;
+    if(length == V())
+      return *this;
     *this *= len;
     return *this /= length;
   }

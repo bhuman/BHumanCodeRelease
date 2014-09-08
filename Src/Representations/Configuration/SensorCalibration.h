@@ -16,8 +16,8 @@ STREAMABLE(SensorCalibration,
   (float)(1.f) accYGain, /**< The factor between sensor units and g. */
   (float)(0) accZOffset, /**< The correction offset in g. */
   (float)(1.f) accZGain, /**< The factor between sensor units and g. */
-  (float)(1.f) gyroXGain, /**< The factor between sensor units and g. */
-  (float)(1.f) gyroYGain, /**< The factor between sensor units and g. */
+  (float)(1.f) gyroXGain, /**< The factor between sensor units and radians/s. */
+  (float)(1.f) gyroYGain, /**< The factor between sensor units and radians/s. */
   (float)(0) fsrLFLOffset,
   (float)(1.f) fsrLFLGain,
   (float)(0) fsrLFROffset,

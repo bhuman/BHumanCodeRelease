@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 /**
@@ -69,8 +70,6 @@ private:
   class Particle
   {
   public:
-    Particle() {}
-
     std::vector<float> position;
     std::vector<float> velocity;
 
@@ -103,8 +102,8 @@ private:
   std::vector<Dimension> dimensions;
 
   std::vector<Particle> particles;
-  unsigned int bestParticleIndex;
-  unsigned int currentParticleIndex;
+  size_t bestParticleIndex;
+  size_t currentParticleIndex;
 
   void updateParticle(Particle& particle);
 };

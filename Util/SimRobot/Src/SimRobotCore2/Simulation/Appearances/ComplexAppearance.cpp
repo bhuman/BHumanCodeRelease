@@ -37,7 +37,7 @@ void ComplexAppearance::createGraphics()
 
   if(initializedContexts == 0)
   {
-    unsigned int verticesSize = vertices->vertices.size();
+    size_t verticesSize = vertices->vertices.size();
     if(verticesSize > 0)
     {
       const Vertex* vertexLibrary = &vertices->vertices[0];
@@ -112,7 +112,7 @@ void ComplexAppearance::assembleAppearances() const
   glPushMatrix();
   glMultMatrixf(transformation);
 
-  unsigned int verticesSize = vertices->vertices.size();
+  size_t verticesSize = vertices->vertices.size();
   if(verticesSize > 0)
   {
     surface->set(!texCoords);

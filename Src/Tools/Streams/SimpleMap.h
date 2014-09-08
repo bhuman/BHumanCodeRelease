@@ -34,7 +34,7 @@ public:
   class Value
   {
   public:
-    virtual ~Value() {}
+    virtual ~Value() = default;
   };
 
   /** A class representing a literal. */

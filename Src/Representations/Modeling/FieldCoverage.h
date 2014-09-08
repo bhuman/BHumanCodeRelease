@@ -18,6 +18,11 @@ public:
     static const int maxCoverage = 255;
     static const unsigned tick = 300; /* Milliseconds one coverage tick is worth. */
 
+    GridInterval()
+    {
+      memset(cells, 0, intervalSize);
+    }
+
     static bool assertIntervalSize() { return xSteps * ySteps % intervals == 0; }
     void nextInterval() { interval = (interval + 1) % intervals; }
 
@@ -30,14 +35,12 @@ public:
      * interval < intervals must always hold. */
     (unsigned char)(0) interval,
     (unsigned char[intervalSize]) cells,
-
-    // Initialization
-    memset(cells, 0, xSteps * ySteps / intervals);
   });
 
   STREAMABLE(Target,
   {
   public:
+    Target() = default;
     Target(float x, float y, unsigned short coverage = 0, bool valid = true);
     Target(const Vector2<>& target, unsigned short coverage = 0, bool valid = true),
 
@@ -52,7 +55,7 @@ public:
   (Target) worstNoTurnRangeTarget, /* Worst covered cell in relative coordinates which is 'close' and for which you do not have to turn around. */
   (Target) worstNoTurnTarget, /* Worst covered cell on the field in relative coordinates for which you do not have to turn around. */
   (Target) worstTarget, /* Worst covered cell on the field in field coordinates. */
-  (unsigned[GridInterval::xSteps* GridInterval::ySteps]) cells, /* cells[i] contains the last-seen timestamp of the i-th cell. */
+  (unsigned[GridInterval::xSteps * GridInterval::ySteps]) cells, /* cells[i] contains the last-seen timestamp of the i-th cell. */
   (float)(0) mean, /* The mean coverage value. */
   (float)(0) stddev, /* The variance of the coverage values.. */
   (bool)(false) throwIn, /* True if the field coverage has been modified because the ball has been thrown in. */

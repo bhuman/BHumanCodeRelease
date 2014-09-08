@@ -11,7 +11,7 @@
 #include <iosfwd>
 #include <string>
 
-#if defined WIN32
+#if defined WINDOWS
 #define PARSEEXCEPTION_THROW ...
 #else
 #define PARSEEXCEPTION_THROW ParseException
@@ -53,16 +53,16 @@ public:
     };
     static std::string type2str(Type t);
     Type type;
-    int line;
-    int column;
+    size_t line;
+    size_t column;
     std::string value;
 
-    Token(Type t, int l, int c, std::string v)
+    Token(Type t, size_t l, size_t c, std::string v)
       : type(t),
         line(l),
         column(c),
         value(v)
-    { }
+    {}
   };
 
 private:
@@ -75,7 +75,7 @@ public:
       line(1),
       column(0),
       tkn(0)
-  { }
+  {}
   ConfigMapLexer(const std::string& filename);
   ~ConfigMapLexer();
   Token nextToken();
@@ -110,8 +110,8 @@ class ConfigMapParser
 public:
   class ParseException : public std::exception
   {
-    unsigned line;
-    unsigned column;
+    size_t line;
+    size_t column;
     std::string msg;
 
   public:
@@ -119,9 +119,9 @@ public:
       : line(line),
         column(column),
         msg(msg)
-    { }
-    ~ParseException() throw() {};
-    inline const char* what() const throw()
+    {}
+    ~ParseException() throw() {}
+    const char* what() const throw()
     {
       return msg.c_str();
     }
@@ -153,37 +153,37 @@ public:
       token(TKN_EOF),
       verbose(false),
       error(0)
-  { }
+  {}
   ConfigMapParser(ConfigMap* map)
     : lexer(0),
       configMap(map),
       token(TKN_EOF),
       verbose(false),
       error(0)
-  { }
+  {}
   ConfigMapParser(ConfigMap* map, std::istream* in)
     : lexer(new ConfigMapLexer(in)),
       configMap(map),
       token(TKN_EOF),
       verbose(false),
       error(0)
-  { }
+  {}
   ConfigMapParser(ConfigMap* map, const std::string& file)
     : lexer(new ConfigMapLexer(file)),
       configMap(map),
       token(TKN_EOF),
       verbose(false),
       error(0)
-  { }
+  {}
   ~ConfigMapParser();
 
-  inline ParseException* getError() const { return error; }
+  ParseException* getError() const { return error; }
 
   /**
    * Toggles whether errors should be reported with OUTPUT_ERROR or not.
    * @param b Verbose or not
    */
-  inline void setVerbose(bool b = true)
+  void setVerbose(bool b = true)
   {
     this->verbose = b;
   }

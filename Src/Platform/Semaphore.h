@@ -13,13 +13,13 @@
 #define SEMAPHORE_INCLUDED
 #endif
 
-#ifdef MACOSX
-#include "MacOS/Semaphore.h"
+#ifdef OSX
+#include "OSX/Semaphore.h"
 #define SEMAPHORE_INCLUDED
 #endif
 
-#ifdef WIN32
-#include "Win32/Semaphore.h"
+#ifdef WINDOWS
+#include "Windows/Semaphore.h"
 #define SEMAPHORE_INCLUDED
 #endif
 

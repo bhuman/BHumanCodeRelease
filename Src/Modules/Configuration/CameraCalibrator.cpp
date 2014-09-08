@@ -9,15 +9,21 @@
 #include "CameraCalibrator.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Transformation.h"
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Settings.h"
-#include "Representations/Perception/CameraMatrix.h"
 #include <limits>
 
 using namespace std;
 
-CameraCalibrator::CameraCalibrator() : calibrationState(Idle), lastFetchedPoint(-1, -1), optimizer(NULL)
+MAKE_MODULE(CameraCalibrator, Cognition Infrastructure)
+
+CameraCalibrator::CameraCalibrator() :
+  state(Idle), lastFetchedPoint(-1, -1), currentCamera(CameraInfo::lower), currentPoint(-1, -1)
 {
+  states[Idle] = std::bind(&CameraCalibrator::idle, this);
+  states[Accumulate] = std::bind(&CameraCalibrator::accumulate, this);
+  states[Optimize] = std::bind(&CameraCalibrator::optimize, this);
 }
 
 CameraCalibrator::~CameraCalibrator()
@@ -28,130 +34,204 @@ CameraCalibrator::~CameraCalibrator()
   }
 }
 
+void CameraCalibrator::idle()
+{
+  // Doo nothing.
+}
+
+void CameraCalibrator::accumulate()
+{
+  if(theCameraInfo.camera != currentCamera)
+    return;
+
+  if(currentPoint == lastFetchedPoint)
+  {
+    return;
+  }
+
+  if(samples.size())
+  {
+    if((samples.back().pointInImage - currentPoint).abs() < 10)   // Move last point
+      samples.pop_back();
+  }
+
+  lastFetchedPoint = currentPoint;
+
+  // store all necessary information in the sample
+  Vector2<> pointOnField;
+  if(!Transformation::imageToRobot(currentPoint.x, currentPoint.y, theCameraMatrix, theCameraInfo, pointOnField))
+  {
+    OUTPUT(idText, text, "MEEEK! Point not on field!" << (theCameraInfo.camera == CameraInfo::upper ? " Upper " : " Lower "));
+    return;
+  }
+  Sample sample;
+  sample.pointInImage = currentPoint;
+  sample.pointOnField = pointOnField; // for drawing
+  sample.torsoMatrix = theTorsoMatrix;
+  sample.headYaw = theFilteredJointData.angles[JointData::HeadYaw];
+  sample.headPitch = theFilteredJointData.angles[JointData::HeadPitch];
+  sample.cameraInfo = theCameraInfo;
+
+  samples.push_back(sample);
+}
+
+void CameraCalibrator::optimize()
+{
+  if(!optimizer)
+  {
+    vector<float> initialParameters;
+    initialParameters.resize(numOfParameterTranslations);
+    // since the parameters for the robot pose are correction parameters, an empty RobotPose is used instead of theRobotPose
+    translateParameters(nextCameraCalibration, RobotPose(), initialParameters);
+    optimizer = new GaussNewtonOptimizer<Sample, CameraCalibrator>(initialParameters, samples, *this, &CameraCalibrator::computeErrorParameterVector);
+    successiveConvergations = 0;
+    framesToWait = 0;
+  }
+  else
+  {
+    // only do an iteration after some frames have passed
+    if(framesToWait <= 0)
+    {
+      framesToWait = numOfFramesToWait;
+      const float delta = optimizer->iterate();
+      OUTPUT(idText, text, "CameraCalibrator: delta = " << delta);
+
+      // the camera calibration is refreshed from the current optimizer state
+      RobotPose robotPose;
+      const vector<float> currentParameters = optimizer->getParameters();
+      translateParameters(currentParameters, nextCameraCalibration, robotPose);
+
+      if(abs(delta) < terminationCriterion)
+      {
+        ++successiveConvergations;
+      }
+      if(successiveConvergations >= minSuccessiveConvergations)
+      {
+        state = Idle;
+        OUTPUT_TEXT("CameraCalibrator: converged!");
+        OUTPUT_TEXT("RobotPoseCorrection: "
+                    << currentParameters[robotPoseCorrectionX] * 1000.0f << " "
+                    << currentParameters[robotPoseCorrectionY] * 1000.0f << " "
+                    << currentParameters[robotPoseCorrectionRot]);
+        currentRobotPose.translation.x += currentParameters[robotPoseCorrectionX] * 1000.0f;
+        currentRobotPose.translation.y += currentParameters[robotPoseCorrectionY] * 1000.0f;
+        currentRobotPose.rotation = normalize(currentRobotPose.rotation + currentParameters[robotPoseCorrectionRot]);
+        state = Idle;
+        delete optimizer;
+        optimizer = nullptr;
+      }
+    }
+    --framesToWait;
+  }
+}
+
 void CameraCalibrator::update(CameraCalibration& cameraCalibration)
 {
-  currentCameraCalibration = &cameraCalibration;
+  RobotCameraMatrix robotCameraMatrix(theRobotDimensions, theFilteredJointData.angles[JointData::HeadYaw],
+                                      theFilteredJointData.angles[JointData::HeadPitch], cameraCalibration, theCameraInfo.camera == CameraInfo::upper);
+  theCameraMatrix.computeCameraMatrix(theTorsoMatrix, robotCameraMatrix, cameraCalibration);
+
+  nextCameraCalibration = cameraCalibration;
+
+  // Select camera for current point selection
+  MODIFY("module:CameraCalibrator:currentCamera", currentCamera);
 
   // this is the interface to the ImageView of the simulator
-  Vector2<int> point(-1, -1);
-  MODIFY("module:CameraCalibrator:point", point);
+  MODIFY("module:CameraCalibrator:point", currentPoint);
 
-  // "declare" debug responses. This is necessary to be able to send out
-  // the debug requests without the necessity to poll after every state change
-  if(calibrationState != Idle)
-  {
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:collectPoints",);
-  }
-  if(calibrationState != Accumulate)
-  {
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:optimize",);
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:undo",);
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:clear",);
-  }
-  if(calibrationState != Optimize)
-  {
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:stop",);
-  }
+  MODIFY_ONCE("module:CameraCalibrator:robotPose", currentRobotPose);
 
-  // the optimizer is only needed during the state Optimize
-  if(calibrationState != Optimize && optimizer)
-  {
-    delete optimizer;
-    optimizer = NULL;
-  }
+  processManualControls();
+  states[state]();
+  draw();
 
-  switch(calibrationState)
+  cameraCalibration = nextCameraCalibration;
+}
+
+void CameraCalibrator::processManualControls()
+{
+  DEBUG_RESPONSE_ONCE("module:CameraCalibrator:collectPoints",
   {
-  case(Idle):
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:collectPoints",
+    if(state == Idle)
     {
-      calibrationState = Accumulate;
-      MODIFY("module:CameraCalibrator:point", lastFetchedPoint);
-    });
-    break;
-  case(Accumulate): // collect points used for the optimization
-    fetchPoint();
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:undo",
+      state = Accumulate;
+    }
+  });
+  DEBUG_RESPONSE_ONCE("module:CameraCalibrator:undo",
+  {
+    if(state == Accumulate && !samples.empty())
     {
       samples.pop_back();
-    });
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:clear",
+    }
+  });
+  DEBUG_RESPONSE_ONCE("module:CameraCalibrator:clear",
+  {
+    if(state == Idle || state == Accumulate)
     {
-      MODIFY("module:CameraCalibrator:point", lastFetchedPoint);
       samples.clear();
-    });
-    DEBUG_RESPONSE_ONCE("module:CameraCalibrator:optimize",
+    }
+  });
+  DEBUG_RESPONSE_ONCE("module:CameraCalibrator:optimize",
+  {
+    if(!(samples.size() > numOfParameterTranslations))
     {
-      if(!(samples.size() > numOfParameterTranslations))
-        OUTPUT(idText, text, "CameraCalibrator: Error! too few samples!");
-      else
-        calibrationState = Optimize;
-    });
-    break;
-  case(Optimize): // optimize the parameters of the cameraCalibration
-    if(!optimizer)
-    {
-      vector<float> initialParameters;
-      initialParameters.resize(calibrateBothCameras ? numOfParameterTranslations : numOfParametersLowerCamera);
-      // since the parameters for the robot pose are correction parameters, an empty RobotPose is used instead of theRobotPose
-      translateParameters(cameraCalibration, RobotPose(), initialParameters);
-      optimizer = new GaussNewtonOptimizer<Sample, CameraCalibrator>(initialParameters, samples, *this, &CameraCalibrator::computeErrorParameterVector);
-      successiveConvergations = 0;
-      framesToWait = 0;
+      OUTPUT_TEXT("CameraCalibrator: Error! Too few samples!");
     }
     else
     {
-      DEBUG_RESPONSE_ONCE("module:CameraCalibrator:stop", calibrationState = Idle;);
-      // only do an iteration after some frames have passed
-      if(framesToWait <= 0)
-      {
-        framesToWait = numOfFramesToWait;
-        const float delta = optimizer->iterate();
-        OUTPUT(idText, text, "CameraCalibrator: delta = " << delta);
-
-        // the camera calibration is refreshed from the current optimizer state
-        RobotPose robotPose;
-        const vector<float> currentParameters = optimizer->getParameters();
-        translateParameters(currentParameters, cameraCalibration, robotPose);
-
-        if(abs(delta) < terminationCriterion)
-        {
-          ++successiveConvergations;
-        }
-        if(successiveConvergations >= minSuccessiveConvergations)
-        {
-          calibrationState = Idle;
-          OUTPUT(idText, text, "CameraCalibrator: converged!");
-          OUTPUT(idText, text, "RobotPoseCorrection: " << currentParameters[robotPoseCorrectionX] * 1000.0f << " " << currentParameters[robotPoseCorrectionY] * 1000.0f << " " << currentParameters[robotPoseCorrectionRot]);
-        }
-      }
-      --framesToWait;
+      state = Optimize;
     }
-    break;
-  default:
-    ASSERT(false);
-  }
-
-  DECLARE_DEBUG_DRAWING("module:CameraCalibrator:drawFieldLines", "drawingOnImage");
-  COMPLEX_DRAWING("module:CameraCalibrator:drawFieldLines", drawFieldLines(););
-
-  DECLARE_DEBUG_DRAWING("module:CameraCalibrator:points", "drawingOnImage");
-  COMPLEX_DRAWING("module:CameraCalibrator:points",
-  {
-    DRAWTEXT("module:CameraCalibrator:points", 10, 10, 40, !(samples.size() > numOfParameterTranslations) ? ColorClasses::red : ColorClasses::green, "Points collected: " << (unsigned) samples.size());
   });
+  DEBUG_RESPONSE_ONCE("module:CameraCalibrator:stop", state = Idle;);
+}
+
+void CameraCalibrator::draw()
+{
+  DECLARE_DEBUG_DRAWING("module:CameraCalibrator:drawFieldLines", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:CameraCalibrator:drawSamples", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:CameraCalibrator:points", "drawingOnImage",
+  {
+    DRAWTEXT("module:CameraCalibrator:points", 10, -10, 40,
+    !(samples.size() > numOfParameterTranslations) ? ColorRGBA::red : ColorRGBA::green,
+    "Points collected: " << (unsigned)samples.size());
+  });
+
+  COMPLEX_DRAWING("module:CameraCalibrator:drawFieldLines", drawFieldLines(););
+  COMPLEX_DRAWING("module:CameraCalibrator:drawSamples", drawSamples(););
+}
+
+void CameraCalibrator::drawFieldLines()
+{
+  const Pose2D robotPoseInv = currentRobotPose.invert();
+  for(vector<FieldDimensions::LinesTable::Line>::const_iterator i = theFieldDimensions.fieldLines.lines.begin(); i != theFieldDimensions.fieldLines.lines.end(); ++i)
+  {
+    FieldDimensions::LinesTable::Line lineOnField(*i);
+    lineOnField.corner = robotPoseInv + lineOnField.corner;
+    Geometry::Line lineInImage;
+    if(projectLineOnFieldIntoImage(Geometry::Line(lineOnField.corner, lineOnField.length), theCameraMatrix, theCameraInfo, lineInImage))
+    {
+      LINE("module:CameraCalibrator:drawFieldLines", lineInImage.base.x, lineInImage.base.y, (lineInImage.base + lineInImage.direction).x, (lineInImage.base + lineInImage.direction).y, 1, Drawings::ps_solid, ColorRGBA::black);
+    }
+  }
+}
+
+void CameraCalibrator::drawSamples()
+{
+  for(Sample& sample : samples)
+  {
+    ColorRGBA color = sample.cameraInfo.camera == CameraInfo::upper ? ColorRGBA::orange : ColorRGBA::red;
+    Vector2<> pointInImage;
+    if(Transformation::robotToImage(sample.pointOnField, theCameraMatrix, theCameraInfo, pointInImage))
+    {
+      CROSS("module:CameraCalibrator:drawSamples", pointInImage.x, pointInImage.y, 5, 1, Drawings::ps_solid, color);
+    }
+  }
 }
 
 float CameraCalibrator::computeError(const Sample& sample, const CameraCalibration& cameraCalibration, const RobotPose& robotPose, bool inImage) const
 {
-  // a sample of the upper camera is ignored if only the lower camera is calibrated
-  if(!calibrateBothCameras && sample.upperCamera)
-  {
-    return 0.0f;
-  }
-
   // build camera matrix from sample and camera calibration
-  const RobotCameraMatrix robotCameraMatrix(theRobotDimensions, sample.headYaw, sample.headPitch, cameraCalibration, sample.upperCamera);
+  const RobotCameraMatrix robotCameraMatrix(theRobotDimensions, sample.headYaw, sample.headPitch, cameraCalibration, sample.cameraInfo.camera == CameraInfo::upper);
   const CameraMatrix cameraMatrix(sample.torsoMatrix, robotCameraMatrix, cameraCalibration);
 
   if(inImage)
@@ -165,7 +245,7 @@ float CameraCalibrator::computeError(const Sample& sample, const CameraCalibrati
       lineOnField.corner = robotPoseInv + lineOnField.corner;
       Geometry::Line lineInImage;
       float distance;
-      if(!projectLineOnFieldIntoImage(Geometry::Line(lineOnField.corner, lineOnField.length), cameraMatrix, lineInImage))
+      if(!projectLineOnFieldIntoImage(Geometry::Line(lineOnField.corner, lineOnField.length), cameraMatrix, sample.cameraInfo, lineInImage))
       {
         distance = aboveHorizonError;
       }
@@ -183,7 +263,7 @@ float CameraCalibrator::computeError(const Sample& sample, const CameraCalibrati
   else // on ground
   {
     // project point in image onto ground
-    Vector3<> cameraRay(theCameraInfo.focalLength, theCameraInfo.opticalCenter.x - sample.pointInImage.x, theCameraInfo.opticalCenter.y - sample.pointInImage.y);
+    Vector3<> cameraRay(sample.cameraInfo.focalLength, sample.cameraInfo.opticalCenter.x - sample.pointInImage.x, sample.cameraInfo.opticalCenter.y - sample.pointInImage.y);
     cameraRay = cameraMatrix * cameraRay;
     if(cameraRay.z >= 0) // above horizon
     {
@@ -210,15 +290,15 @@ float CameraCalibrator::computeError(const Sample& sample, const CameraCalibrati
 
 float CameraCalibrator::computeErrorParameterVector(const Sample& sample, const vector<float>& parameters) const
 {
-  CameraCalibration cameraCalibration = *currentCameraCalibration;
+  CameraCalibration cameraCalibration = nextCameraCalibration;
   RobotPose robotPose;
   translateParameters(parameters, cameraCalibration, robotPose);
 
   // the correction parameters for the robot pose are added to theRobotPose
   // in the parameter space the robot pose translation unit is m to keep the order of magnitude similar to the other parameters
   robotPose.translation *= 1000.0f;
-  robotPose.translation += theRobotPose.translation;
-  robotPose.rotation += theRobotPose.rotation;
+  robotPose.translation += currentRobotPose.translation;
+  robotPose.rotation += currentRobotPose.rotation;
 
   return computeError(sample, cameraCalibration, robotPose);
 }
@@ -227,8 +307,8 @@ void CameraCalibrator::translateParameters(const vector<float>& parameters, Came
 {
   ASSERT(parameters.size() == numOfParameterTranslations || parameters.size() == numOfParametersLowerCamera);
 
-  cameraCalibration.cameraTiltCorrection = parameters[cameraTiltCorrection];
-  cameraCalibration.cameraRollCorrection = parameters[cameraRollCorrection];
+  cameraCalibration.lowerCameraTiltCorrection = parameters[cameraTiltCorrection];
+  cameraCalibration.lowerCameraRollCorrection = parameters[cameraRollCorrection];
   cameraCalibration.bodyTiltCorrection = parameters[bodyTiltCorrection];
   cameraCalibration.bodyRollCorrection = parameters[bodyRollCorrection];
 
@@ -236,20 +316,17 @@ void CameraCalibrator::translateParameters(const vector<float>& parameters, Came
   robotPose.translation.y = parameters[robotPoseCorrectionY];
   robotPose.rotation = parameters[robotPoseCorrectionRot];
 
-  if(parameters.size() == numOfParameterTranslations)
-  {
-    cameraCalibration.upperCameraRollCorrection = parameters[upperCameraX];
-    cameraCalibration.upperCameraTiltCorrection = parameters[upperCameraY];
-    cameraCalibration.upperCameraPanCorrection = parameters[upperCameraZ];
-  }
+  cameraCalibration.upperCameraRollCorrection = parameters[upperCameraX];
+  cameraCalibration.upperCameraTiltCorrection = parameters[upperCameraY];
+  cameraCalibration.upperCameraPanCorrection = parameters[upperCameraZ];
 }
 
 void CameraCalibrator::translateParameters(const CameraCalibration& cameraCalibration, const RobotPose& robotPose, vector<float>& parameters) const
 {
   ASSERT(parameters.size() == numOfParameterTranslations || parameters.size() == numOfParametersLowerCamera);
 
-  parameters[cameraTiltCorrection] = cameraCalibration.cameraTiltCorrection;
-  parameters[cameraRollCorrection] = cameraCalibration.cameraRollCorrection;
+  parameters[cameraTiltCorrection] = cameraCalibration.lowerCameraTiltCorrection;
+  parameters[cameraRollCorrection] = cameraCalibration.lowerCameraRollCorrection;
   parameters[bodyTiltCorrection] = cameraCalibration.bodyTiltCorrection;
   parameters[bodyRollCorrection] = cameraCalibration.bodyRollCorrection;
 
@@ -257,38 +334,15 @@ void CameraCalibrator::translateParameters(const CameraCalibration& cameraCalibr
   parameters[robotPoseCorrectionY] = robotPose.translation.y;
   parameters[robotPoseCorrectionRot] = robotPose.rotation;
 
-  if(parameters.size() == numOfParameterTranslations)
-  {
-    parameters[upperCameraX] = cameraCalibration.upperCameraRollCorrection;
-    parameters[upperCameraY] = cameraCalibration.upperCameraTiltCorrection;
-    parameters[upperCameraZ] = cameraCalibration.upperCameraPanCorrection;
-  }
+  parameters[upperCameraX] = cameraCalibration.upperCameraRollCorrection;
+  parameters[upperCameraY] = cameraCalibration.upperCameraTiltCorrection;
+  parameters[upperCameraZ] = cameraCalibration.upperCameraPanCorrection;
 }
 
-void CameraCalibrator::fetchPoint()
+bool CameraCalibrator::projectLineOnFieldIntoImage(const Geometry::Line& lineOnField, const CameraMatrix& cameraMatrix,
+    const CameraInfo& cameraInfo, Geometry::Line& lineInImage) const
 {
-  Vector2<int> point(-1, -1);
-  MODIFY("module:CameraCalibrator:point", point);
-
-  if(point == lastFetchedPoint)
-    return;
-
-  lastFetchedPoint = point;
-
-  // store all necessary information in the sample
-  Sample sample;
-  sample.pointInImage = point;
-  sample.torsoMatrix = theTorsoMatrix;
-  sample.headYaw = theFilteredJointData.angles[JointData::HeadYaw];
-  sample.headPitch = theFilteredJointData.angles[JointData::HeadPitch];
-  sample.upperCamera = theCameraInfo.camera == CameraInfo::upper;
-
-  samples.push_back(sample);
-}
-
-bool CameraCalibrator::projectLineOnFieldIntoImage(const Geometry::Line& lineOnField, const CameraMatrix& cameraMatrix, Geometry::Line& lineInImage) const
-{
-  const float& f = theCameraInfo.focalLength;
+  const float& f = cameraInfo.focalLength;
   const Pose3D cameraMatrixInv = cameraMatrix.invert();
 
   // TODO more elegant solution directly using the direction of the line?
@@ -304,8 +358,8 @@ bool CameraCalibrator::projectLineOnFieldIntoImage(const Geometry::Line& lineOnF
   p2Camera = cameraMatrixInv * p2Camera;
 
   // handle the case that points can lie behind the camera plane
-  const bool p1Behind = p1Camera.x < theCameraInfo.focalLength;
-  const bool p2Behind = p2Camera.x < theCameraInfo.focalLength;
+  const bool p1Behind = p1Camera.x < cameraInfo.focalLength;
+  const bool p2Behind = p2Camera.x < cameraInfo.focalLength;
   if(p1Behind && p2Behind)
   {
     return false;
@@ -333,26 +387,10 @@ bool CameraCalibrator::projectLineOnFieldIntoImage(const Geometry::Line& lineOnF
       p1Camera /= (p1Camera.x / f);
     }
   }
-  const Vector2<> p1Result(theCameraInfo.opticalCenter.x - p1Camera.y, theCameraInfo.opticalCenter.y - p1Camera.z);
-  const Vector2<> p2Result(theCameraInfo.opticalCenter.x - p2Camera.y, theCameraInfo.opticalCenter.y - p2Camera.z);
+  const Vector2<> p1Result(cameraInfo.opticalCenter.x - p1Camera.y, cameraInfo.opticalCenter.y - p1Camera.z);
+  const Vector2<> p2Result(cameraInfo.opticalCenter.x - p2Camera.y, cameraInfo.opticalCenter.y - p2Camera.z);
   lineInImage.base = p1Result;
   lineInImage.direction = p2Result - p1Result;
   return true;
 }
 
-void CameraCalibrator::drawFieldLines()
-{
-  const Pose2D robotPoseInv = theRobotPose.invert();
-  for(vector<FieldDimensions::LinesTable::Line>::const_iterator i = theFieldDimensions.fieldLines.lines.begin(); i != theFieldDimensions.fieldLines.lines.end(); ++i)
-  {
-    FieldDimensions::LinesTable::Line lineOnField(*i);
-    lineOnField.corner = robotPoseInv + lineOnField.corner;
-    Geometry::Line lineInImage;
-    if(projectLineOnFieldIntoImage(Geometry::Line(lineOnField.corner, lineOnField.length), theCameraMatrix, lineInImage))
-    {
-      LINE("module:CameraCalibrator:drawFieldLines", lineInImage.base.x, lineInImage.base.y, (lineInImage.base + lineInImage.direction).x, (lineInImage.base + lineInImage.direction).y, 1, Drawings::ps_solid, ColorClasses::black);
-    }
-  }
-}
-
-MAKE_MODULE(CameraCalibrator, Cognition Infrastructure)

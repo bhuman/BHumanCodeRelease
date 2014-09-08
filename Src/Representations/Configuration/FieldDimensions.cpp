@@ -13,7 +13,7 @@
 #include "Tools/Math/Geometry.h"
 #include "Representations/Infrastructure/RoboCupGameControlData.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include <limits>
+#include <algorithm>
 
 using namespace std;
 
@@ -95,7 +95,24 @@ Pose2D FieldDimensions::randomPoseOnCarpet() const
 void FieldDimensions::draw() const
 {
   drawLines();
+  drawGoalFrame();
   drawCorners();
+}
+
+void FieldDimensions::drawGoalFrame() const
+{
+  DECLARE_DEBUG_DRAWING("goal frame", "drawingOnField");
+  COMPLEX_DRAWING("goal frame",
+  {
+    for(const LinesTable::Line& l : goalFrameLines.lines)
+    {
+      Vector2<> source = l.corner.translation;
+      Pose2D target(l.corner);
+      target.translate(l.length, 0);
+      ColorRGBA lineColor(192, 192, 192);
+      LINE("field lines", source.x, source.y, target.translation.x, target.translation.y, fieldLinesWidth * 0.7, Drawings::ps_solid, lineColor);
+    }
+  });
 }
 
 void FieldDimensions::drawLines() const
@@ -120,13 +137,13 @@ void FieldDimensions::drawLines() const
   });
 }
 
-void FieldDimensions::drawPolygons(RoboCup::uint32 ownColor) const
+void FieldDimensions::drawPolygons(int ownColor) const
 {
   DECLARE_DEBUG_DRAWING("field polygons", "drawingOnField");
   COMPLEX_DRAWING("field polygons",
   {
-    ColorRGBA own = ownColor == TEAM_BLUE ? ColorRGBA(50, 120, 127) : ColorRGBA(127, 50, 50);
-    ColorRGBA opp = ownColor != TEAM_BLUE ? ColorRGBA(50, 120, 127) : ColorRGBA(127, 50, 50);
+    ColorRGBA own = ownColor == TEAM_BLUE ? ColorRGBA(50, 120, 127) : ColorRGBA(127, 120, 50);
+    ColorRGBA opp = ownColor != TEAM_BLUE ? ColorRGBA(50, 120, 127) : ColorRGBA(127, 120, 50);
 
     Vector2<> goal[4];
     goal[0] = Vector2<>(xPosOwnGroundline - fieldLinesWidth * 0.5f, yPosLeftGoal);
@@ -142,14 +159,14 @@ void FieldDimensions::drawPolygons(RoboCup::uint32 ownColor) const
     POLYGON("field polygons", 4, goal, 0, Drawings::ps_solid, opp, Drawings::bs_solid, opp);
 
     CIRCLE("field polygons", xPosOpponentGoalPost, yPosLeftGoal, 50, 0, Drawings::ps_solid,
-    ColorRGBA(ColorClasses::yellow), Drawings::bs_solid, ColorRGBA(ColorClasses::yellow));
+           ColorRGBA::yellow, Drawings::bs_solid, ColorRGBA::yellow);
     CIRCLE("field polygons", xPosOpponentGoalPost, yPosRightGoal, 50, 0, Drawings::ps_solid,
-    ColorRGBA(ColorClasses::yellow), Drawings::bs_solid, ColorRGBA(ColorClasses::yellow));
+    ColorRGBA::yellow, Drawings::bs_solid, ColorRGBA::yellow);
 
     CIRCLE("field polygons", xPosOwnGoalPost, yPosLeftGoal, 50, 0, Drawings::ps_solid,
-    ColorRGBA(ColorClasses::yellow), Drawings::bs_solid, ColorRGBA(ColorClasses::yellow));
+    ColorRGBA::yellow, Drawings::bs_solid, ColorRGBA::yellow);
     CIRCLE("field polygons", xPosOwnGoalPost, yPosRightGoal, 50, 0, Drawings::ps_solid,
-    ColorRGBA(ColorClasses::yellow), Drawings::bs_solid, ColorRGBA(ColorClasses::yellow));
+    ColorRGBA::yellow, Drawings::bs_solid, ColorRGBA::yellow);
   });
 }
 
@@ -174,6 +191,113 @@ void FieldDimensions::LinesTable::push(const Pose2D& p, float l, bool isPartOfCi
   line.length = l;
   line.isPartOfCircle = isPartOfCircle;
   lines.push_back(line);
+}
+
+bool FieldDimensions::LinesTable::getClosestIntersection(const Geometry::Line& l, Vector2<>& outIntersection) const
+{
+  int wayne;
+  return getClosestIntersection(l, wayne, outIntersection);
+}
+
+bool FieldDimensions::LinesTable::getClosestIntersection(const Geometry::Line& l, int& outLineIndex, Vector2<>& outIntersection) const
+{
+  float currentMinimumDistance = std::numeric_limits<float>::max(); //square distance
+  Vector2<> closestPoint(-100000,-1000000);
+  bool found = false;
+  for(int i = 0; i < (int)lines.size(); ++i)
+  {
+    const Line& fieldLine = lines[i];
+    Vector2<> intersection;
+    Geometry::Line line(fieldLine.corner, 1);
+    if(Geometry::getIntersectionOfLines(l, line, intersection))
+    {
+      //we already know that the intersection is on the line,
+      //just need to know if it is inside the rectangle defined by the field line coordinates
+      const Vector2<> start = fieldLine.corner.translation;
+      const Vector2<> end = Vector2<>(fieldLine.length, 0).rotate(fieldLine.corner.rotation) + fieldLine.corner.translation;
+      Range<float> xRange(std::min(start.x, end.x), std::max(start.x, end.x));
+      Range<float> yRange(std::min(start.y, end.y), std::max(start.y, end.y));
+      if(xRange.isInside(intersection.x) &&
+         yRange.isInside(intersection.y))
+      {
+        const float squareDist = (l.base - intersection).squareAbs();
+        if(squareDist < currentMinimumDistance)
+        {
+          found = true;
+          outLineIndex = i;
+          currentMinimumDistance = squareDist;
+          closestPoint = intersection;
+        }
+      }
+    }
+  }
+  if(found)
+    outIntersection = closestPoint;
+  return found;
+}
+
+Vector2<> FieldDimensions::LinesTable::getClosestPoint(const Vector2<>& point) const
+{
+  float currentMinimumDistance = std::numeric_limits<float>::max();
+  Vector2<> closestPoint(-1,-1);
+  Vector2<> tempClosestPoint(-1,-1);
+
+  for(vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+  {
+    Geometry::Line line(i->corner, 1);
+    line.normalizeDirection();
+    //calculate orthogonal projection of point onto line (see http://de.wikipedia.org/wiki/Orthogonalprojektion)
+    const float numerator = (point - line.base) * line.direction;
+    const Vector2<> projection = line.base + ( line.direction * numerator);
+    Vector2<> endPoint(i->length, 0);
+    endPoint.rotate(i->corner.rotation);
+    endPoint += i->corner.translation;
+
+    //check if projected point is on the line segment
+    //We already know that it is on the line, therefore we just need to check
+    //if it is inside the rectangle created by start and end point of the line
+    const Vector2<>& a = line.base; //a, b and c only exist to make the following if readable
+    const Vector2<>& b = endPoint;
+    const Vector2<>& c = projection;
+
+    float distance = -1;
+    //not optimized expression
+//    if(c.x >= b.x && c.x <= a.x && c.y >= b.y && c.y <= a.y ||
+//       c.x >= a.x && c.x <= b.x && c.y >= a.y && c.y <= b.y ||
+//       c.x >= a.x && c.x <= b.x && c.y >= b.y && c.y <= a.y ||
+//       c.x >= b.x && c.x <= a.x && c.y >= a.y && c.y <= b.y)
+    //optimized expression
+    if( ((c.y >= b.y && c.y <= a.y) || (c.y >= a.y && c.y <= b.y)) &&
+        ((c.x >= b.x && c.x <= a.x) || (c.x >= a.x && c.x <= b.x)) )
+    {//If projection is on the line segment just calculate the distance between the point
+     //and it's projection.
+      distance = (projection - point).abs();
+      tempClosestPoint = projection;
+    }
+    else
+    {//If the projection is not on the line segment it is either left or
+     //right of the line segment. Therefore use distance to edge
+      const float distBase = (line.base - point).abs();
+      const float distEnd  = (endPoint - point).abs();
+      if(distBase <= distEnd)
+      {
+        distance = distBase;
+        tempClosestPoint = line.base;
+      }
+      else
+      {
+        distance = distEnd;
+        tempClosestPoint = endPoint;
+      }
+    }
+
+    if(distance < currentMinimumDistance)
+    {
+      currentMinimumDistance = distance;
+      closestPoint = tempClosestPoint;
+    }
+  }
+  return closestPoint;
 }
 
 void FieldDimensions::LinesTable::push(const Vector2<>& s, const Vector2<>& e, bool isPartOfCircle)
@@ -348,6 +472,7 @@ void FieldDimensions::serialize(In* in, Out* out)
   std::vector<LinesTable::Line>& carpetBorder(this->carpetBorder.lines);
   std::vector<LinesTable::Line>& fieldBorder(this->fieldBorder.lines);
   std::vector<LinesTable::Line>& fieldLines(this->fieldLines.lines);
+  std::vector<LinesTable::Line>& goalFrameLines(this->goalFrameLines.lines);
   LinesTable::Circle centerCircle;
   std::vector<Vector2<> >& xCorner(corners[FieldDimensions::xCorner]);
   std::vector<Vector2<> >& tCorner0(corners[FieldDimensions::tCorner0]);
@@ -362,6 +487,7 @@ void FieldDimensions::serialize(In* in, Out* out)
   STREAM_REGISTER_BEGIN;
   STREAM_BASE(SimpleFieldDimensions)
   STREAM(carpetBorder);
+  STREAM(goalFrameLines);
   STREAM(fieldBorder);
   STREAM(fieldLines);
   STREAM(centerCircle);
@@ -376,7 +502,16 @@ void FieldDimensions::serialize(In* in, Out* out)
   STREAM(lCorner90);
   STREAM(lCorner180);
   STREAM(lCorner270);
+  STREAM(goalDimensions);
   STREAM_REGISTER_FINISH;
+  
+  //merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame
+  for(LinesTable::Line& line : fieldLines)
+    fieldLinesWithGoalFrame.lines.push_back(line);
+  for(LinesTable::Line& line : goalFrameLines)
+    fieldLinesWithGoalFrame.lines.push_back(line);
+  
+  
 }
 
 void FieldDimensions::LinesTable::Line::serialize(In* in, Out* out)

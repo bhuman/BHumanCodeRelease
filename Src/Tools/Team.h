@@ -22,13 +22,13 @@
 /**
 * A macro for broadcasting team messages. This macro will only write data if it
 * will be send in the current frame. This requires the representation
-* TeamMateData.
+* TeammateData.
 * @param type The type of the message from the MessageID enum in MessageIDs.h
 * @param format The message format of the message (bin or text).
 * @param expression A streamable expression.
 */
 #define TEAM_OUTPUT_FAST(type,format,expression) \
-  if(theTeamMateData.sendThisFrame) \
+  if(theTeammateData.sendThisFrame) \
   { \
     Global::getTeamOut().format << expression; \
     Global::getTeamOut().finishMessage(type); \

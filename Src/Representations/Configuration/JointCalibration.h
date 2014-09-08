@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Representations/Infrastructure/JointData.h"
-#include "Tools/Math/Common.h"
+#include "Tools/Math/BHMath.h"
 
 class JointCalibration : public Streamable
 {

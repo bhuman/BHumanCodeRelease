@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "Tools/Math/Common.h"
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include "Tools/Math/BHMath.h"
 
 /**
 * A class that defines static conversions between color models for single pixels.

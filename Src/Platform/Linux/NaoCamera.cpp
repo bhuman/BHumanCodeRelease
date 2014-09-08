@@ -27,14 +27,17 @@
 
 NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip) :
   timeWaitedForLastImage(0),
+  camera(camera),
+  settings(camera),
+  appliedSettings(camera),
   WIDTH(width * 2),
   HEIGHT(height * 2),
 #ifndef NDEBUG
-  SIZE(WIDTH * HEIGHT * 2),
+  SIZE(WIDTH* HEIGHT * 2),
 #endif
   currentBuf(0),
-  timeStamp(0), camera(camera), first(true),
-  lastCameraSettingTimestamp(0), cameraSettingApplicationRate(16000)
+  first(true),
+  timeStamp(0)
 {
   initOpenVideoDevice(device);
 
@@ -42,7 +45,6 @@ NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, i
   initQueueAllBuffers();
 
   initSetImageFormat();
-  setFrameRate(1, 15);
   setFrameRate(1, 30);
   initDefaultControlSettings(flip);
 
@@ -68,25 +70,17 @@ NaoCamera::~NaoCamera()
   free(buf);
 }
 
-void NaoCamera::releaseImage()
-{
-  if(currentBuf)
-  {
-    VERIFY(ioctl(fd, VIDIOC_QBUF, currentBuf) != -1);
-    currentBuf = 0;
-  }
-}
-
 bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& errorCam1, bool& errorCam2)
 {
-  NaoCamera* cams[2] = { &cam1, &cam2 };
+  NaoCamera* cams[2] = {&cam1, &cam2};
 
   ASSERT(cam1.currentBuf == 0);
   ASSERT(cam2.currentBuf == 0);
 
   errorCam1 = errorCam2 = false;
 
-  struct pollfd pollfds[2] = {
+  struct pollfd pollfds[2] =
+  {
     {cams[0]->fd, POLLIN | POLLPRI, 0},
     {cams[1]->fd, POLLIN | POLLPRI, 0},
   };
@@ -191,6 +185,15 @@ bool NaoCamera::captureNew()
   return true;
 }
 
+void NaoCamera::releaseImage()
+{
+  if(currentBuf)
+  {
+    VERIFY(ioctl(fd, VIDIOC_QBUF, currentBuf) != -1);
+    currentBuf = 0;
+  }
+}
+
 const unsigned char* NaoCamera::getImage() const
 {
 #ifdef USE_USERPTR
@@ -201,7 +204,7 @@ const unsigned char* NaoCamera::getImage() const
   return imageBuffer;
 }
 
-bool NaoCamera::hasImage() const
+bool NaoCamera::hasImage()
 {
   return !!currentBuf;
 }
@@ -217,6 +220,122 @@ unsigned long long NaoCamera::getTimeStamp() const
 float NaoCamera::getFrameRate() const
 {
   return 1.f / 30.f;
+}
+
+void NaoCamera::setFrameRate(unsigned numerator, unsigned denominator)
+{
+  // set frame rate
+  struct v4l2_streamparm fps;
+  memset(&fps, 0, sizeof(struct v4l2_streamparm));
+  fps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  VERIFY(!ioctl(fd, VIDIOC_G_PARM, &fps));
+  fps.parm.capture.timeperframe.numerator = numerator;
+  fps.parm.capture.timeperframe.denominator = denominator;
+  VERIFY(ioctl(fd, VIDIOC_S_PARM, &fps) != -1);
+}
+
+void NaoCamera::setSettings(const CameraSettings& settings)
+{
+  ASSERT(settings.camera == camera);
+  if(settings.camera != camera)
+  {
+    OUTPUT_ERROR("Setting camera settings for wrong camera!");
+    return;
+  }
+  this->settings = settings;
+}
+
+void NaoCamera::assertCameraSettings()
+{
+  bool allFine = true;
+  // check frame rate
+  struct v4l2_streamparm fps;
+  memset(&fps, 0, sizeof(fps));
+  fps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  VERIFY(!ioctl(fd, VIDIOC_G_PARM, &fps));
+  if(fps.parm.capture.timeperframe.numerator != 1)
+  {
+    OUTPUT(idText, text, "fps.parm.capture.timeperframe.numerator is wrong.");
+    allFine = false;
+  }
+  if(fps.parm.capture.timeperframe.denominator != 30)
+  {
+    OUTPUT(idText, text, "fps.parm.capture.timeperframe.denominator is wrong.");
+    allFine = false;
+  }
+
+  // check camera settings
+  for(int i = 0; i < CameraSettings::numOfCameraSettings; ++i)
+  {
+    if(!assertCameraSetting(static_cast<CameraSettings::CameraSetting>(i)))
+    {
+      allFine = false;
+    }
+  }
+
+  if(allFine)
+  {
+    OUTPUT(idText, text, "Camera settings match settings stored in hardware/driver.");
+  }
+}
+
+void NaoCamera::writeCameraSettings()
+{
+  for(int i = 0; i < CameraSettings::numOfCameraSettings; ++i)
+  {
+    CameraSettings::V4L2Setting& currentSetting = settings.settings[i];
+    CameraSettings::V4L2Setting& appliedSetting = appliedSettings.settings[i];
+
+    if(currentSetting.value == appliedSetting.value)
+    {
+      continue;
+    }
+    else
+    {
+      CameraSettings::CameraSetting setting = static_cast<CameraSettings::CameraSetting>(i);
+      if(!setControlSetting(currentSetting.command, currentSetting.value))
+      {
+        OUTPUT_WARNING("NaoCamera: Setting camera control value failed: " << CameraSettings::getName(setting));
+      }
+      else
+      {
+        appliedSetting.value = currentSetting.value;
+        assertCameraSetting(setting);
+        for(auto setting : currentSetting.influendingSettings)
+        {
+          if(setting != CameraSettings::numOfCameraSettings)
+          {
+            int value = getControlSetting(settings.settings[setting].command);
+            if(settings.settings[setting].value == appliedSettings.settings[setting].value)
+            {
+              settings.settings[setting].value = appliedSettings.settings[setting].value = value;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void NaoCamera::readCameraSettings()
+{
+  for(CameraSettings::V4L2Setting& setting : appliedSettings.settings)
+  {
+    int value = getControlSetting(setting.command);
+    setting.value = value;
+  }
+}
+
+void NaoCamera::doAutoWhiteBalance()
+{
+  setControlSetting(V4L2_CID_DO_WHITE_BALANCE, 1);
+  int value = getControlSetting(V4L2_CID_WHITE_BALANCE_TEMPERATURE);
+  if(value > 0)
+  {
+    OUTPUT_TEXT("New white balance is " << value);
+    settings.settings[CameraSettings::WhiteBalance].value = value;
+    appliedSettings.settings[CameraSettings::WhiteBalance].value = value;
+  }
 }
 
 int NaoCamera::getControlSetting(unsigned int id)
@@ -249,38 +368,8 @@ int NaoCamera::getControlSetting(unsigned int id)
   return control_s.value;
 }
 
-bool NaoCamera::setControlSettings(std::list<CameraSettings::V4L2Setting> controlsettings,
-                                   std::list<CameraSettings::V4L2Setting> appliedControlSettings)
-{
-  std::list<CameraSettings::V4L2Setting>::iterator ait = appliedControlSettings.begin();
-  std::list<CameraSettings::V4L2Setting>::const_iterator it = controlsettings.begin();
-  std::list<CameraSettings::V4L2Setting>::const_iterator end = controlsettings.end();
-  bool success = true;
-  int counter = 0;
-  for(; it != end && timeStamp - lastCameraSettingTimestamp >= cameraSettingApplicationRate; ++it, ++ait, counter++)
-  {
-    if(it->value == ait->value)
-    {
-      continue; // This setting has successfully been applied, so we don't have to deal with it.
-    }
-
-    if(!setControlSetting(it->command, it->value))
-    {
-      OUTPUT_WARNING("NaoCamera: Setting camera control value failed: " << it->command);
-      success = false; // The settings should have been set but wasn't => no success.
-    }
-    else
-    {
-      appliedSettings.setSetting(*it);
-      lastCameraSettingTimestamp = timeStamp;
-    }
-  }
-  return success;
-}
-
 bool NaoCamera::setControlSetting(unsigned int id, int value)
 {
-
   struct v4l2_queryctrl queryctrl;
   queryctrl.id = id;
   if(ioctl(fd, VIDIOC_QUERYCTRL, &queryctrl) < 0)
@@ -323,13 +412,17 @@ bool NaoCamera::setControlSetting(unsigned int id, int value)
   return true;
 }
 
-void NaoCamera::setSettings(const CameraSettings& newset)
+bool NaoCamera::assertCameraSetting(CameraSettings::CameraSetting setting)
 {
-  if(settings == newset)
-    return;
-
-  // Ignore the changes since the camera provider now calls writeCameraSettings in every frame.
-  settings.getChangesAndAssign(newset);
+  int value = getControlSetting(settings.settings[setting].command);
+  if(value == settings.settings[setting].value)
+    return true;
+  else
+  {
+    OUTPUT(idText, text, "Value for command " << settings.settings[setting].command << " (" << CameraSettings::getName(setting) << ") is " << value << " but should be " << settings.settings[setting].value << ".");
+    appliedSettings.settings[setting].value = value;
+    return false;
+  }
 }
 
 void NaoCamera::initOpenVideoDevice(const char* device)
@@ -352,18 +445,6 @@ void NaoCamera::initSetImageFormat()
   VERIFY(!ioctl(fd, VIDIOC_S_FMT, &fmt));
 
   ASSERT(fmt.fmt.pix.sizeimage == SIZE);
-}
-
-void NaoCamera::setFrameRate(unsigned numerator, unsigned denominator)
-{
-  // set frame rate
-  struct v4l2_streamparm fps;
-  memset(&fps, 0, sizeof(struct v4l2_streamparm));
-  fps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  VERIFY(!ioctl(fd, VIDIOC_G_PARM, &fps));
-  fps.parm.capture.timeperframe.numerator = numerator;
-  fps.parm.capture.timeperframe.denominator = denominator;
-  VERIFY(ioctl(fd, VIDIOC_S_PARM, &fps) != -1);
 }
 
 void NaoCamera::initRequestAndMapBuffers()
@@ -415,7 +496,7 @@ void NaoCamera::initQueueAllBuffers()
 #ifdef USE_USERPTR
     buf->memory = V4L2_MEMORY_USERPTR;
     buf->m.userptr = (unsigned long)mem[i];
-    buf->length  = memLength[i];
+    buf->length = memLength[i];
 #else
     buf->memory = V4L2_MEMORY_MMAP;
 #endif
@@ -433,52 +514,4 @@ void NaoCamera::startCapturing()
 {
   int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   VERIFY(ioctl(fd, VIDIOC_STREAMON, &type) != -1);
-}
-
-void NaoCamera::assertCameraSettings()
-{
-  bool allFine = true;
-  // check frame rate
-  struct v4l2_streamparm fps;
-  memset(&fps, 0, sizeof(fps));
-  fps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  VERIFY(!ioctl(fd, VIDIOC_G_PARM, &fps));
-  if(fps.parm.capture.timeperframe.numerator != 1)
-  {
-    OUTPUT(idText, text, "fps.parm.capture.timeperframe.numerator is wrong.");
-    allFine = false;
-  }
-  if(fps.parm.capture.timeperframe.denominator != 30)
-  {
-    OUTPUT(idText, text, "fps.parm.capture.timeperframe.denominator is wrong.");
-    allFine = false;
-  }
-
-  // check camera settings
-  std::list<CameraSettings::V4L2Setting> v4l2settings = settings.getSettings();
-  std::list<CameraSettings::V4L2Setting>::const_iterator it = v4l2settings.begin();
-  std::list<CameraSettings::V4L2Setting>::const_iterator end = v4l2settings.end();
-  for(; it != end; it++)
-  {
-    int value = getControlSetting((*it).command);
-    if(value != (*it).value)
-    {
-      OUTPUT(idText, text, "Value for command " << (*it).command << " is " << value << " but should be " << (*it).value << ".");
-      allFine = false;
-    }
-  }
-
-  if(allFine)
-  {
-    OUTPUT(idText, text, "Camera settings match settings stored in hardware/driver.");
-  }
-}
-
-unsigned int NaoCamera::writeCameraSettings()
-{
-  const unsigned ts = SystemCall::getCurrentSystemTime();
-  std::list<CameraSettings::V4L2Setting> v4l2settings = settings.getSettings();
-  std::list<CameraSettings::V4L2Setting> appliedv4l2settings = appliedSettings.getSettings();
-  VERIFY(setControlSettings(v4l2settings, appliedv4l2settings));
-  return SystemCall::getCurrentSystemTime() - ts;
 }

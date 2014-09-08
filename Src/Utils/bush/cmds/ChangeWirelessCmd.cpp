@@ -20,12 +20,11 @@ ChangeWirelessCmd::ChangeWirelessTask::ChangeWirelessTask(Context &context,
     const QString& config)
   : RobotTask(context, robot),
     config(config)
-{ }
+{}
 
 bool ChangeWirelessCmd::ChangeWirelessTask::execute()
 {
   std::string ip = robot->getBestIP();
-
 
    context().printLine(robot->name + ": changing wpa_supplicant config to " + toString(config));
    std::string command = remoteCommand("setprofile " + toString(config), ip);
@@ -39,7 +38,6 @@ bool ChangeWirelessCmd::ChangeWirelessTask::execute()
    }
    context().printLine(robot->name + ": change wireless finished.");
    return true;
-
 }
 
 std::string ChangeWirelessCmd::getName() const

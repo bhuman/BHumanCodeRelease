@@ -6,7 +6,7 @@
 
 ContextRunnable::ContextRunnable(QObject *parent)
   : QThread(parent)
-{ }
+{}
 
 void ContextRunnable::run()
 {
@@ -18,7 +18,7 @@ CommandRunnable::CommandRunnable(Context *context, const std::string &cmdLine)
   : ContextRunnable(context),
     context(context),
     cmdLine(cmdLine)
-{ }
+{}
 
 bool CommandRunnable::execute()
 {
@@ -28,7 +28,7 @@ bool CommandRunnable::execute()
 TaskRunnable::TaskRunnable(QObject *parent, Task *task)
   : ContextRunnable(parent),
     task(task)
-{ }
+{}
 
 bool TaskRunnable::execute()
 {
@@ -48,7 +48,7 @@ Context::Context(Context *parent, const std::string &cmdLine)
     canceled(false),
     status(true),
     requestApplicationShutdown(false)
-{ }
+{}
 
 Context::Context(Context *parent, Task *task)
   : AbstractConsole(parent),
@@ -63,7 +63,7 @@ Context::Context(Context *parent, Task *task)
     canceled(false),
     status(true),
     requestApplicationShutdown(false)
-{ }
+{}
 
 Context::Context(Context *parent, const std::string &cmdLine, bool detach)
   : AbstractConsole(parent),
@@ -78,7 +78,7 @@ Context::Context(Context *parent, const std::string &cmdLine, bool detach)
     canceled(false),
     status(true),
     requestApplicationShutdown(false)
-{ }
+{}
 
 Context::Context(const std::vector<Robot*> &selectedRobots,
                  Team* selectedTeam)
@@ -94,14 +94,14 @@ Context::Context(const std::vector<Robot*> &selectedRobots,
     canceled(false),
     status(true),
     requestApplicationShutdown(false)
-{ }
+{}
 
 Context::~Context()
 {
-  if (cmdLine) delete cmdLine;
-  if (task && task->isAutoDelete()) delete task;
-  if (thread) thread->deleteLater();
-  for (size_t i = 0; i < cmds.size(); ++i)
+  if(cmdLine) delete cmdLine;
+  if(task && task->isAutoDelete()) delete task;
+  if(thread) thread->deleteLater();
+  for(size_t i = 0; i < cmds.size(); ++i)
   {
     Context *c = cmds[i];
     c->wait();
@@ -111,9 +111,9 @@ Context::~Context()
 
 bool Context::run()
 {
-  if (isDetached())
+  if(isDetached())
   {
-    if (task)
+    if(task)
       thread = new TaskRunnable(this, task);
     else
       thread = new CommandRunnable(this, *cmdLine);
@@ -176,14 +176,14 @@ Context* Context::executeDetached(Task *task)
 
 void Context::wait()
 {
-  if (thread)
+  if(thread)
     thread->wait();
 }
 
 bool Context::waitForChildren()
 {
   bool status = true;
-  for (size_t i = 0; i < cmds.size(); ++i)
+  for(size_t i = 0; i < cmds.size(); ++i)
   {
     Context *c = cmds[i];
     c->wait();
@@ -195,7 +195,7 @@ bool Context::waitForChildren()
 void Context::shutdown()
 {
   requestApplicationShutdown = true;
-  if (parent)
+  if(parent)
     parent->shutdown();
 }
 
@@ -203,10 +203,10 @@ void Context::cancel()
 {
   canceled = true;
 
-  for (size_t i = 0; i < cmds.size(); ++i)
+  for(size_t i = 0; i < cmds.size(); ++i)
     cmds[i]->cancel();
 
-  if (task && thread && thread->isRunning())
+  if(task && thread && thread->isRunning())
     task->cancel();
 }
 

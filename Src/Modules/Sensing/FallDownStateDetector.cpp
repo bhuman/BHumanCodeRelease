@@ -63,6 +63,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
     }
     else if(fallDownState.state == FallDownState::staggering && isFalling())
     {
+      //SystemCall::playSound("doh.wav");
       lastFallDetected = theFrameInfo.time;
       fallDownState.state = FallDownState::falling;
       fallDownState.direction = directionOf(theFilteredSensorData.data[SensorData::angleX], theFilteredSensorData.data[SensorData::angleY]);
@@ -91,9 +92,9 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
       if(abs(accelerationAngleXZ) < 0.5f)
       {
         fallDownState.direction = FallDownState::front;
+        fallDownState.state = FallDownState::onGround;
         if(theMotionInfo.motion != MotionRequest::getUp)
-        {
-          fallDownState.state = FallDownState::onGround;
+         {
           if(fallDownState.sidewards == FallDownState::leftwards)
           {
             fallDownState.odometryRotationOffset = pi_2;
@@ -108,11 +109,10 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
       }
       else if(abs(accelerationAngleXZ) > 2.5f)
       {
-
         fallDownState.direction = FallDownState::back;
-        if(theMotionInfo.motion != MotionRequest::getUp)
-        {
-          fallDownState.state = FallDownState::onGround;
+        fallDownState.state = FallDownState::onGround;
+        if(theMotionInfo.motion != MotionRequest::getUp)        
+         {
           if(fallDownState.sidewards == FallDownState::leftwards)
           {
             fallDownState.odometryRotationOffset = -pi_2;
@@ -128,38 +128,58 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
       else if(abs(accelerationAngleYZ) < 0.5f)
       {
         fallDownState.direction = FallDownState::left;
-        if(theMotionInfo.motion != MotionRequest::getUp)
-        {
-          fallDownState.state = FallDownState::onGround;
+        fallDownState.state = FallDownState::onGround;
 
+        if(theMotionInfo.motion != MotionRequest::getUp)
           if(fallDownState.sidewards != FallDownState::fallen)
-          {
-            fallDownState.sidewards = FallDownState::leftwards;
-          }
-        }
+             fallDownState.sidewards = FallDownState::leftwards;                  
       }
       else if(abs(accelerationAngleYZ) > 2.5f)
       {
         fallDownState.direction = FallDownState::right;
+        fallDownState.state = FallDownState::onGround;
+
         if(theMotionInfo.motion != MotionRequest::getUp)
-        {
-          fallDownState.state = FallDownState::onGround;
-
-          if(fallDownState.sidewards != FallDownState::fallen)
-          {
-            fallDownState.sidewards = FallDownState::rightwards;
-          }
-        }
+          if(fallDownState.sidewards != FallDownState::fallen)          
+            fallDownState.sidewards = FallDownState::rightwards;         
       }
-
     }
   }
   else
-  {
     fallDownState.state = FallDownState::undefined;
+  
+  //these odometry changes really need to be proven if they are still correct
+  if(keeperJumped != None)
+  {
+    if(theMotionInfo.motion == MotionRequest::getUp)
+    {
+      if(fallDownState.direction == FallDownState::front)
+      {
+        if(keeperJumped == KeeperJumpedLeft)
+        {
+          fallDownState.odometryRotationOffset = pi_2;
+        }
+        else
+        {
+          fallDownState.odometryRotationOffset = -pi_2;
+        }
+      }
+      else
+      {
+        // standUpBack
+        if(keeperJumped == KeeperJumpedLeft)
+        {
+          fallDownState.odometryRotationOffset = -pi_2;
+        }
+        else
+        {
+          fallDownState.odometryRotationOffset = pi_2;
+        }
+      }
+      keeperJumped = None;
+    }
   }
 }
-
 
 bool FallDownStateDetector::isUprightOrStaggering(FallDownState& fallDownState)
 {
@@ -170,7 +190,7 @@ bool FallDownStateDetector::isUprightOrStaggering(FallDownState& fallDownState)
 bool FallDownStateDetector::specialSpecialAction()
 {
   return (theMotionInfo.motion == MotionRequest::specialAction
-          && (theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead));
+          && theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead);
 }
 
 bool FallDownStateDetector::isStaggering()
@@ -194,13 +214,17 @@ FallDownState::Direction FallDownStateDetector::directionOf(float angleX, float 
 {
   if(abs(angleX) > abs(angleY) + 0.2f)
   {
-    if(angleX < 0.f) return FallDownState::left;
-    else return FallDownState::right;
+    if(angleX < 0.f)
+      return FallDownState::left;
+    else
+      return FallDownState::right;
   }
   else
   {
-    if(angleY > 0.f) return FallDownState::front;
-    else return FallDownState::back;
+    if(angleY > 0.f)
+      return FallDownState::front;
+    else
+      return FallDownState::back;
   }
 }
 

@@ -40,7 +40,7 @@ Task* ShutdownCmd::perRobotExecution(Context &context, Robot& robot)
 
 ShutdownCmd::ShutdownTask::ShutdownTask(Context &context, Robot *robot)
   : RobotTask(context, robot)
-{ }
+{}
 
 bool ShutdownCmd::ShutdownTask::execute()
 {

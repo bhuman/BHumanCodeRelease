@@ -21,7 +21,6 @@ static inline float toDeg(float angleInRad)
 static inline float toRad(float angleInDegree)
 { return (float) (angleInDegree * M_PI / 180.0f);}
 
-
 SimRobot::Widget* ActuatorsObject::createWidget()
 {
   return new ActuatorsWidget();

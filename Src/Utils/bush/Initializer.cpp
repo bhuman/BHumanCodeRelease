@@ -19,10 +19,10 @@ Initializer::Initializer(int &argc, char** argv) : logLevel(WARN), app(0)
 {
   log(TRACE, "Initializer: Initialization started.");
 
-#ifdef WIN32
+#ifdef WINDOWS
   ProcessRunner r("taskkill /F /IM ping.exe");
-#else // Linux, MacOS
-  ProcessRunner r("ps axco pid,command | grep \" ping$\" | awk '{ print $1; }' | xargs kill | echo X");
+#else // Linux, OSX
+  ProcessRunner r("ps axco pid,command | grep \" ping$\" | awk '{ print $1; }' | xargs kill");
 #endif
   r.run();
   if(r.error())
@@ -31,7 +31,7 @@ Initializer::Initializer(int &argc, char** argv) : logLevel(WARN), app(0)
     log(TRACE, "Initializer: Killed all active ping processes.");
 
   app = new QApplication(argc, argv);
-#ifdef MACOSX
+#ifdef OSX
   app->setStyle("macintosh");
 #endif
   app->setApplicationName("B-Human User Shell (bush)");

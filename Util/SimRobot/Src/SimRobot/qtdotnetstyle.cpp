@@ -910,10 +910,11 @@ void QtDotNetStyle::drawControl(ControlElement element, const QStyleOption *opti
             break;
 
         default:
-            if (QSysInfo::WindowsVersion >= QSysInfo::WV_VISTA && QSysInfo::WindowsVersion < QSysInfo::WV_NT_based)
-                QWindowsVistaStyle::drawControl(element, option, painter, widget);
-            else
-                QWindowsXPStyle::drawControl(element, option, painter, widget);
+            if (painter)
+                if (QSysInfo::WindowsVersion >= QSysInfo::WV_VISTA && QSysInfo::WindowsVersion < QSysInfo::WV_NT_based)
+                    QWindowsVistaStyle::drawControl(element, option, painter, widget);
+                else
+                    QWindowsXPStyle::drawControl(element, option, painter, widget);
             break;
     }
 }

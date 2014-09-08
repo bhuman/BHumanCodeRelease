@@ -1,0 +1,108 @@
+
+SimRobot = cppApplication + {
+
+  dependencies = { "SimRobotCore2", "SimRobotEditor", "SimRobotHelp", "SimulatedNao", "SpecialActions" },
+
+  defines += {
+    "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_SVG_LIB", "QT_NO_STL"
+    if (host == "Win32") {
+      "_CRT_SECURE_NO_DEPRECATE"
+    }
+    if (configuration != "Debug") {
+      "QT_NO_DEBUG"
+    }
+  }
+
+  includePaths = {
+    if (platform == "Linux") {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtGui",
+      "/usr/include/qt4",
+      "/usr/include/qt4/QtSvg",
+      "/usr/include/QtCore",
+      "/usr/include/QtGui",
+      "/usr/include/QtSvg",
+      "/usr/include/Qt",
+    } else if (host == "Win32") {
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtOpenGL",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtSvg",
+    }
+  },
+  libs = {
+    if (platform == "Linux") { 
+      "rt", "pthread", "QtGui", "QtCore", "QtSvg"
+    }
+    if (host == "Win32") {
+      if (configuration == "Debug") {
+        "qtmaind"
+      } else {
+        "qtmain"
+      }
+      "QtCore4", "QtGui4", "QtOpenGL4", "QtSvg4"
+    }
+  },
+  libPaths = {
+    if (host == "Win32") {
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+    }
+  },
+  
+  root = "$(utilDirRoot)/SimRobot/Src/SimRobot"
+  files = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/**.cpp" = cppSource
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/**.h"
+    if (host != "Win32") {
+      -"$(utilDirRoot)/SimRobot/Src/SimRobot/qtdotnetstyle.cpp"
+    }
+    "$(buildPlatformDir)/SimRobotHelp/$(configuration)/help.qch" = copyFile
+    "$(buildPlatformDir)/SimRobotHelp/$(configuration)/helpcollection.qhc" = copyFile
+    if (platform == "Linux") {
+      "$(buildPlatformDir)/SimRobotCore2/$(configuration)/libSimRobotCore2.so" = copyFile
+      "$(buildPlatformDir)/SimRobotEditor/$(configuration)/libSimRobotEditor.so" = copyFile
+      "$(buildPlatformDir)/SimRobotHelp/$(configuration)/libSimRobotHelp.so" = copyFile
+      "$(buildPlatformDir)/SimulatedNao/$(configuration)/libSimulatedNao.so" = copyFile
+    }
+    if (host == "Win32") {
+      "$(utilDirRoot)/SimRobot/Src/SimRobot/SimRobot.rc" = rcSource
+      "$(buildPlatformDir)/SimRobotCore2/$(configuration)/SimRobotCore2.dll" = copyFile
+      "$(buildPlatformDir)/SimRobotEditor/$(configuration)/SimRobotEditor.dll" = copyFile
+      "$(buildPlatformDir)/SimRobotHelp/$(configuration)/SimRobotHelp.dll" = copyFile
+      "$(buildPlatformDir)/SimulatedNao/$(configuration)/SimulatedNao.dll" = copyFile
+
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtCore4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtGui4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtSvg4.dll" = copyFile
+
+      // for SimRobotCore2
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtOpenGL4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/libxml2/Windows/$(archDir)/bin/libxml2.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/glew/Windows/bin/$(archDir)/glew32.dll" = copyFile
+
+      // for SimRobotHelp
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtCLucene4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtHelp4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtNetwork4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtSql4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtXml4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/$(archDir)/sqldrivers/qsqlite4.dll" = copyFile + {
+        output = "$(buildDir)/sqldrivers/qsqlite4.dll"
+      }
+    }
+  }
+  qtRessourceFiles = "$(utilDirRoot)/SimRobot/Src/SimRobot/Icons/**.png"
+  qtRccFiles = "$(utilDirRoot)/SimRobot/Src/SimRobot/SimRobot.qrc"
+  qtMocFiles = {
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/MainWindow.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/RegisteredDockWidget.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/SceneGraphDockWidget.h"
+    "$(utilDirRoot)/SimRobot/Src/SimRobot/StatusBar.h"
+  }
+  files += qtFiles
+
+  linkFlags += {
+    if (tool == "vcxproj" && configuration == "Debug") { "/NODEFAULTLIB:msvcrt.lib" }
+  }
+}

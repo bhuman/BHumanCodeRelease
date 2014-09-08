@@ -27,9 +27,7 @@ PROCESS_WIDE_STORAGE(NaoProvider) NaoProvider::theInstance = 0;
 NaoProvider::NaoProvider() : gameControlTimeStamp(0)
 {
   NaoProvider::theInstance = this;
-
-  OUTPUT(idText, text, "Hi, I am " << Global::getSettings().robot << ".");
-  OUTPUT(idRobotname, bin, Global::getSettings().robot);
+  memset(&gameControlData, 0, sizeof(gameControlData));
 
 #ifndef RELEASE
   for(int i = 0; i < JointData::numOfJoints; ++i)
@@ -49,6 +47,12 @@ bool NaoProvider::isFrameDataComplete()
 
 void NaoProvider::waitForFrameData()
 {
+  DEBUG_RESPONSE_ONCE("module:NaoProvider:robotName",
+  {
+    OUTPUT(idText, text, "Hi, I am " << Global::getSettings().robot << ".");
+    OUTPUT(idRobotname, bin, Global::getSettings().robot << Global::getSettings().location);
+  });
+
   if(theInstance)
     theInstance->naoBody.wait();
 }
@@ -234,11 +238,9 @@ void NaoProvider::update(JointData& jointData)
   PLOT("module:NaoProvider:usLeft", sensorData.data[SensorData::usL]);
   PLOT("module:NaoProvider:usRight", sensorData.data[SensorData::usR]);
 
-  if(memcmp(&gameControlData, &naoBody.getGameControlData(), sizeof(RoboCup::RoboCupGameControlData)))
-  {
-    gameControlData = naoBody.getGameControlData();
+  if(gameControlData.packetNumber != naoBody.getGameControlData().packetNumber)
     gameControlTimeStamp = theJointData.timeStamp;
-  }
+  gameControlData = naoBody.getGameControlData();
 
 #ifndef RELEASE
   JointDataDeg jointDataDeg(jointData);

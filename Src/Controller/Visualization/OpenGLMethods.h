@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include "Representations/Infrastructure/Image.h"
-#include "Representations/Perception/ColorReference.h"
+#include "Representations/Configuration/ColorTable.h"
 
 /**
 * @class OpenGLMethods
@@ -21,16 +20,6 @@ private:
   /** returns (value+offset)/scale */
   static float transformCoordinates(int scale, int offset, int value)
   {return (value + offset) / (float)scale;}
-
-  /**
-  * The method returns prototypical color values for a color class for visualization.
-  * @param colorClass The color class.
-  * @param r The red channel of the prototypical color.
-  * @param g The green channel of the prototypical color.
-  * @param b The blue channel of the prototypical color.
-  */
-  static void getColorClassColor(ColorClasses::Color colorClass,
-                                 unsigned char& r, unsigned char& g, unsigned char& b);
 
 public:
   /** writes a cube to an openGL list*/
@@ -68,6 +57,6 @@ public:
       int y1,
       int y2);
 
-  /** writes one color of the color reference to an openGL list */
-  static void paintColorReference(const ColorReference& colorReference, ColorClasses::Color color, int listID);
+  /** writes one color of the color calibration to an openGL list */
+  static void paintColorTable(const ColorTable& colorTable, ColorClasses::Color color, int listID);
 };

@@ -46,9 +46,9 @@
 /** Converts a RGB color and sets the Y, U, and V values of the specified pixel in the specified debug image */
 #define DEBUG_IMAGE_SET_PIXEL_RGB(id, xx, yy, r, g, b) \
   DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, \
-                            (unsigned char)((306 * int(r) + 601 * int(g) + 117 * int(b)) >> 10), \
-                            (unsigned char)((130560 + 512 * int(r) - 429 * int(g) - 83 * int(b)) >> 10), \
-                            (unsigned char)((130560 - 173 * int(r) - 339 * int(g) + 512 * int(b)) >> 10))
+                            (unsigned char)((306 * int(b) + 601 * int(g) + 117 * int(r)) >> 10), \
+                            (unsigned char)((130560 + 512 * int(b) - 429 * int(g) - 83 * int(r)) >> 10), \
+                            (unsigned char)((130560 - 173 * int(b) - 339 * int(g) + 512 * int(r)) >> 10))
 
 #endif // RELEASE
 
@@ -79,8 +79,8 @@
   NOT_POLLABLE_DEBUG_RESPONSE("debug images:" #id , \
   { \
     id##Image.setResolution(rwidth, rheight); \
-    for (int y = 0; y < id##Image.height; y++) \
-      for (int x = 0; x < id##Image.width; x++) \
+    for(int y = 0; y < id##Image.height; y++) \
+      for(int x = 0; x < id##Image.width; x++) \
         DEBUG_IMAGE_SET_PIXEL_BLACK(id, x, y); \
   })
 

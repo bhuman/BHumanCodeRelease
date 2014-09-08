@@ -36,7 +36,7 @@ void DownhillSimplex::start()
     startPoint.position.push_back(*dimension->variable);
   unratedPoints.push_back(&startPoint);
 
-  for(int i = 0, count = dimensions.size(); i < count; ++i)
+  for(size_t i = 0, count = dimensions.size(); i < count; ++i)
   {
     const Dimension& dimension = dimensions[i];
 
@@ -73,7 +73,7 @@ void DownhillSimplex::next()
   if(unratedPoints.size() > 0)
   {
     const Point& point = *unratedPoints.front();
-    for(int i = 0, count = dimensions.size(); i < count; ++i)
+    for(size_t i = 0, count = dimensions.size(); i < count; ++i)
       *dimensions[i].variable = point.position[i];
     return;
   }
@@ -91,17 +91,17 @@ void DownhillSimplex::next()
       centerOfGravity = points.front().position;
       for(const Point* point = &points.front() + 1, * end = &points.front() + points.size() - 1; point < end; ++point)
       {
-        for(int i = 0, count = point->position.size(); i < count; ++i)
+        for(size_t i = 0, count = point->position.size(); i < count; ++i)
           centerOfGravity[i] += point->position[i];
       }
       const float scale = 1.f / float(points.size() - 1);
-      for(int i = 0, count = centerOfGravity.size(); i < count; ++i)
+      for(size_t i = 0, count = centerOfGravity.size(); i < count; ++i)
         centerOfGravity[i] *= scale;
 
       // compute position of the reflected point
       const Point& worstPoint = points.back();
       reflectionPoint.position = centerOfGravity;
-      for(int i = 0, count = centerOfGravity.size(); i < count; ++i)
+      for(size_t i = 0, count = centerOfGravity.size(); i < count; ++i)
         reflectionPoint.position[i] += centerOfGravity[i] - worstPoint.position[i];
 
       // adopt reflected point
@@ -139,7 +139,7 @@ void DownhillSimplex::next()
     {
       const Point& worstPoint = points.back();
       expansionPoint.position = centerOfGravity;
-      for(int i = 0, count = centerOfGravity.size(); i < count; ++i)
+      for(size_t i = 0, count = centerOfGravity.size(); i < count; ++i)
         expansionPoint.position[i] += 2.f * (centerOfGravity[i] - worstPoint.position[i]);
       unratedPoints.push_back(&expansionPoint);
       state = evaluateExpansion;
@@ -165,7 +165,7 @@ void DownhillSimplex::next()
     {
       const Point& worstPoint = points.back();
       contractionPoint.position = centerOfGravity;
-      for(int i = 0, count = centerOfGravity.size(); i < count; ++i)
+      for(size_t i = 0, count = centerOfGravity.size(); i < count; ++i)
         contractionPoint.position[i] += 0.5f * (centerOfGravity[i] - worstPoint.position[i]);
       unratedPoints.push_back(&contractionPoint);
       state = evaluateContraction;
@@ -191,7 +191,7 @@ void DownhillSimplex::next()
       Point& bestPoint = points.front();
       for(Point* point = &points.front() + 1, * end = &points.front() + points.size(); point < end; ++point)
       {
-        for(int i = 0, count = point->position.size(); i < count; ++i)
+        for(size_t i = 0, count = point->position.size(); i < count; ++i)
         {
           float d = 0.5f * (point->position[i] - bestPoint.position[i]);
           if(fabs(d) < dimensions[i].minDelta)

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   LogFileFormat.h
  * Author: arne
  *
@@ -7,7 +7,6 @@
 
 #pragma once
 #include "Tools/Enum.h"
-
 
 ENUM(LogFileFormat,
   logFileRegular,

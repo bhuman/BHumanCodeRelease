@@ -10,7 +10,7 @@
 #include "Tools/RingBufferWithSum.h"
 #include <vector>
 #include <utility>
-#include "Asserts.h"
+#include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
 #include "Tools/MessageQueue/OutMessage.h"
 #include "Debugging.h"
@@ -50,8 +50,8 @@ void TimingManager::startTiming(const char* identifier)
   }
   prvt->timing[identifier] = startTime;
   prvt->dataPrepared = false;
-
 }
+
 unsigned TimingManager::stopTiming(const char* identifier)
 {
   const unsigned long long stopTime = SystemCall::getCurrentThreadTime();
@@ -122,11 +122,8 @@ void TimingManager::prepareData()
   }
   out << prvt->currentProcessStartTime;
   out << prvt->frameNo;
-  if(prvt->data.writeErrorOccurred())
-  {
+  if(!prvt->data.out.finishMessage(idStopwatch))
     OUTPUT_WARNING("TimingManager: queue is full!!!");
-  }
-  prvt->data.out.finishMessage(idStopwatch);
 }
 
 MessageQueue& TimingManager::getData()
