@@ -6,7 +6,7 @@ export scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 export baseDir="$(dirname "${scriptPath}")"
 export bhDir="$(dirname "${baseDir}")"
 export includeDir="${baseDir}/Include/"
-defaultArchive="naoqi-sdk-2.1.3.3-linux32.tar.gz"
+defaultArchive="naoqi-sdk-2.1.4.13-linux32.tar.gz"
 
 source "${includeDir}/bhumanBase"
 

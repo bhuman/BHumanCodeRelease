@@ -22,7 +22,7 @@ SimRobotHelp = cppDynamicLibrary + {
       } else {
         qhelpgenerator = "qhelpgenerator",
       }
-      command = "$(qhelpgenerator) $(file) -o $(output)",
+      command = "bash -c \"QT_SELECT=qt4 $(qhelpgenerator) $(file) -o $(output)\"",
       message = "$(if $(Win32),$(notdir $(file)),$(file)) (qhelpgenerator)",
     },
     "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/helpcollection.qhcp" = {
@@ -36,7 +36,7 @@ SimRobotHelp = cppDynamicLibrary + {
       if (host == "Win32") {
         command = "copy $(subst /,\\,$(file) $(buildDir)/helpcollection.qhcp && $(qcollectiongenerator) $(buildDir)/helpcollection.qhcp -o $(output))",
       } else {
-        command = "bash -c \"cp $(file) $(buildDir)/helpcollection.qhcp && $(qcollectiongenerator) $(buildDir)/helpcollection.qhcp -o $(output)\"",
+        command = "bash -c \"cp $(file) $(buildDir)/helpcollection.qhcp && QT_SELECT=qt4 $(qcollectiongenerator) $(buildDir)/helpcollection.qhcp -o $(output)\"",
       }
       message = "$(if $(Win32),$(notdir $(file)),$(file)) (qcollectiongenerator)",
     },
