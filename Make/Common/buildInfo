@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ ! -z "`which git 2>/dev/null`" -a "`git rev-parse 2>/dev/null`" ]; then
+if [ ! -z "`which git 2>/dev/null`" -a ! -z "`git rev-parse HEAD 2>/dev/null`" ]; then
   HASH=`git rev-parse HEAD`
   if [ -z "`git status -u -s`" ]; then
     CLEAN=true
