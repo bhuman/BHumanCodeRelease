@@ -5,15 +5,16 @@
 #include "ThumbnailProvider.h"
 #include "Platform/BHAssert.h"
 #include "Tools/SIMD.h"
-#include <cmath>
 #include <cstring>
+#include <cstddef>
+#include <cmath>
 
-MAKE_MODULE(ThumbnailProvider, Cognition Infrastructure)
+MAKE_MODULE(ThumbnailProvider, cognitionInfrastructure)
 
 void ThumbnailProvider::update(Thumbnail& thumbnail)
 {
   thumbnail.grayscale = grayscale;
-  thumbnail.scale = static_cast<int>(::pow(2.0, downScales));
+  thumbnail.scale = static_cast<int>(std::pow(2.0, downScales));
   if(grayscale)
   {
     switch(thumbnail.scale)
@@ -47,7 +48,7 @@ void ThumbnailProvider::update(Thumbnail& thumbnail)
 
 void ThumbnailProvider::shrinkNxN(const Image& srcImage, Thumbnail::ThumbnailImage& destImage)
 {
-  const int scaleFactor = static_cast<int>(::pow(2.0, downScales));;
+  const int scaleFactor = static_cast<int>(std::pow(2.0, downScales));;
   const int averagedPixels = scaleFactor * scaleFactor;
   const int width = srcImage.width;
   const int height = srcImage.height;
@@ -238,7 +239,7 @@ void ThumbnailProvider::shrink4x4SSE(const Image& srcImage, Thumbnail::Thumbnail
 
 void ThumbnailProvider::shrinkGrayscaleNxN(const Image& srcImage, Thumbnail::ThumbnailImageGrayscale& destImage)
 {
-  const int scaleFactor = static_cast<int>(::pow(2.0, downScales));;
+  const int scaleFactor = static_cast<int>(std::pow(2.0, downScales));;
   const int averagedPixels = scaleFactor * scaleFactor;
   const int width = srcImage.width;
   const int height = srcImage.height;

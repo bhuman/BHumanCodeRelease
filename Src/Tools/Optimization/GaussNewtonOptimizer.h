@@ -26,24 +26,23 @@ class GaussNewtonOptimizer
 private:
   using Vector = Eigen::Matrix<float, Eigen::Dynamic, 1>;
   using Matrix = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
+
   const unsigned int numOfMeasurements; /**< The number of measurements. */
   std::vector<float> currentParameters; /**< The vector (Nx1-matrix) containing the current parameters. */
   Vector currentValues; /**< The vector (Nx1-matrix) containing the current error values for all measurements. */
   const std::vector<M>& measurements; /**< A reference to the vector containing all measurements. */
   const C& object; /**< The object used to call the error function. */
   float(C::*pFunction)(const M& measurement, const std::vector<float>& parameters) const;  /**< A pointer to the error function. */
-  const float delta; /**< The delta used to approximate the partial derivatives of the Jacobian. */
+  const float delta = 0.001f; /**< The delta used to approximate the partial derivatives of the Jacobian. */
 
 public:
   GaussNewtonOptimizer(const std::vector<float>& parameters, const std::vector<M>& measurements, const C& object,
-                       float(C::*pFunction)(const M& measurement, const std::vector<float>& parameters) const)
-  : numOfMeasurements((unsigned) measurements.size()), currentParameters(parameters),
-  currentValues(numOfMeasurements, 1), measurements(measurements), object(object), pFunction(pFunction), delta(0.001f)
+                       float(C::*pFunction)(const M& measurement, const std::vector<float>& parameters) const) :
+    numOfMeasurements(static_cast<unsigned>(measurements.size())), currentParameters(parameters),
+    currentValues(numOfMeasurements, 1), measurements(measurements), object(object), pFunction(pFunction)
   {
     for(unsigned int i = 0; i < numOfMeasurements; ++i)
-    {
       currentValues(i, 0) = (object.*pFunction)(measurements[i], currentParameters);
-    }
   }
 
   /**
@@ -79,25 +78,20 @@ public:
     {
       Vector result = (jacobiMatrix.transpose() * jacobiMatrix).inverse() * jacobiMatrix.transpose() * currentValues;
       for(unsigned int i = 0; i < currentParameters.size(); ++i)
-      {
         currentParameters[i] -= result(i);
-      }
 
       for(unsigned int i = 0; i < numOfMeasurements; ++i)
-      {
         currentValues(i, 0) = (object.*pFunction)(measurements[i], currentParameters);
-      }
 
       float sum = 0;
       for(unsigned int i = 0; i < currentParameters.size(); ++i)
-      {
         sum += std::abs(result(i));
-      }
+
       return sum;
     }
     catch(...)
     {
-      OUTPUT(idText, text, "YELP! Catching Exception!");
+      OUTPUT_WARNING("YELP! Catching Exception!");
       return 0.0f;
     }
   }

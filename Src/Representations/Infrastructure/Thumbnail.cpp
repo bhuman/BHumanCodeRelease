@@ -1,6 +1,6 @@
 /**
-* @author Alexis Tsogias
-*/
+ * @author Alexis Tsogias
+ */
 
 #include "Thumbnail.h"
 

@@ -9,7 +9,7 @@
 
 #include "LocalizationTeamBallProvider2014.h"
 
-MAKE_MODULE(LocalizationTeamBallProvider2014,Modeling)
+MAKE_MODULE(LocalizationTeamBallProvider2014,modeling)
 
 void LocalizationTeamBallProvider2014::update(LocalizationTeamBall& localizationTeamBall)
 {
@@ -17,13 +17,13 @@ void LocalizationTeamBallProvider2014::update(LocalizationTeamBall& localization
   localizationTeamBall.isValid = false;
   hypotheses.clear();
   goalieSawTheBall = false;
-  
+
   // Gather new information from all teammates
   updateObservations();
-  
+
   // Cluster observations
   clusterObservations();
-  
+
   // Compute representation
   computeTeamBallFromBestCluster(localizationTeamBall);
 }
@@ -31,28 +31,29 @@ void LocalizationTeamBallProvider2014::update(LocalizationTeamBall& localization
 void LocalizationTeamBallProvider2014::updateObservations()
 {
   // Check list of teammates for new observations:
-  for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; i++)
+  for(auto const& teammate : theTeammateData.teammates)
   {
-    if((i != theRobotInfo.number) &&
-       (theTeammateData.isFullyActive[i]) &&
-       (theFrameInfo.getTimeSince(theTeammateData.ballModels[i].timeWhenLastSeen) < timeout) &&
-       (theTeammateData.ballModels[i].estimate.velocity.abs() < maxBallVelocity) &&
-       (theTeammateData.robotsSideConfidence[i].confidenceState == SideConfidence::CONFIDENT || theTeammateData.robotsSideConfidence[i].confidenceState == SideConfidence::ALMOST_CONFIDENT))
-    {
-      BallObservation ball;
-      ball.robotNumber = i;
-      ball.robotPose = theTeammateData.robotPoses[i];
-      ball.ballPositionAbsolute = ball.robotPose * theTeammateData.ballModels[i].estimate.position;
-      if(!theFieldDimensions.isInsideCarpet(ball.ballPositionAbsolute))
-      {
-        continue;
-      }
-      ball.timeOfObservation = theTeammateData.ballModels[i].timeWhenLastSeen;
-      ball.sideConfidence = theTeammateData.robotsSideConfidence[i].sideConfidence;
-      ball.cameraZ = theTeammateData.cameraHeights[i];
-      addObservationToList(ball);
-    }
+    if(teammate.status == Teammate::FULLY_ACTIVE &&
+       theFrameInfo.getTimeSince(teammate.ball.timeWhenLastSeen) < timeout &&
+       teammate.ball.estimate.velocity.norm() < maxBallVelocity &&
+       (teammate.sideConfidence.confidenceState == SideConfidence::CONFIDENT || teammate.sideConfidence.confidenceState == SideConfidence::ALMOST_CONFIDENT))
+       {
+         BallObservation ball;
+         ball.robotNumber = teammate.number;
+         ball.isGoalkeeper = teammate.isGoalkeeper;
+         ball.robotPose = teammate.pose;
+         ball.ballPositionAbsolute = ball.robotPose * teammate.ball.estimate.position;
+         if(!theFieldDimensions.isInsideCarpet(ball.ballPositionAbsolute))
+         {
+           continue;
+         }
+         ball.timeOfObservation = teammate.ball.timeWhenLastSeen;
+         ball.sideConfidence = teammate.sideConfidence.sideConfidence;
+         addObservationToList(ball);
+
+       }
   }
+
   // Remove old observations:
   std::vector<BallObservation>::iterator iter = balls.begin();
   while(iter != balls.end())
@@ -65,7 +66,7 @@ void LocalizationTeamBallProvider2014::updateObservations()
   // Update goalie observation information
   for(iter = balls.begin(); iter != balls.end(); ++iter)
   {
-    if(iter->robotNumber == 1)
+    if(iter->isGoalkeeper)
     {
       goalieSawTheBall = true;
       break;
@@ -75,7 +76,7 @@ void LocalizationTeamBallProvider2014::updateObservations()
 
 void LocalizationTeamBallProvider2014::addObservationToList(const LocalizationTeamBallProvider2014::BallObservation& ball)
 {
-  for(unsigned int i=0; i<balls.size(); ++i)
+  for(unsigned int i=0; i < balls.size(); ++i)
   {
     if(balls[i].robotNumber == ball.robotNumber)
     {
@@ -92,13 +93,13 @@ void LocalizationTeamBallProvider2014::clusterObservations()
   {
     TeamBallHypothesis cluster;
     cluster.observationIndizes.push_back(i);
-    bool clusterContainsGoalie = balls[i].robotNumber == 1;
-    for(unsigned int j=0; j<balls.size(); ++j)
+    bool clusterContainsGoalie = balls[i].isGoalkeeper;
+    for(unsigned int j=0; j < balls.size(); ++j)
     {
       if((j != i) && observationsAreCompatible(balls[i], balls[j]))
       {
         cluster.observationIndizes.push_back(j);
-        if(balls[j].robotNumber == 1)
+        if(balls[j].isGoalkeeper)
           clusterContainsGoalie = true;
       }
     }
@@ -112,7 +113,7 @@ void LocalizationTeamBallProvider2014::clusterObservations()
 bool LocalizationTeamBallProvider2014::observationsAreCompatible(const LocalizationTeamBallProvider2014::BallObservation& a,
                                                                  const LocalizationTeamBallProvider2014::BallObservation& b)
 {
-  return (a.ballPositionAbsolute - b.ballPositionAbsolute).abs() < clusterThreshold;
+  return (a.ballPositionAbsolute - b.ballPositionAbsolute).norm() < clusterThreshold;
 }
 
 void LocalizationTeamBallProvider2014::computeTeamBallFromBestCluster(LocalizationTeamBall& localizationTeamBall)
@@ -130,11 +131,11 @@ void LocalizationTeamBallProvider2014::computeTeamBallFromBestCluster(Localizati
   localizationTeamBall.goalieHasObserved = false;
   localizationTeamBall.ballStateOthersMaxSideConfidence = -1.f;
   localizationTeamBall.lastObservation = 0;
-  Vector2<> avgBallPos(0.f,0.f);
+  Vector2f avgBallPos(0.f, 0.f);
   for(unsigned int i=0; i<hypotheses[bestIdx].observationIndizes.size(); ++i)
   {
     BallObservation& ball = balls[hypotheses[bestIdx].observationIndizes[i]];
-    if(ball.robotNumber == 1)
+    if(ball.isGoalkeeper)
     {
       localizationTeamBall.goalieHasObserved = true;
     }

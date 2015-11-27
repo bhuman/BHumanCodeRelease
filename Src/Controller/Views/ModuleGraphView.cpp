@@ -11,7 +11,7 @@
 #include <sstream>
 #include <algorithm>
 
-ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier, const std::string& category) :
+ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier, ModuleBase::Category category) :
   DotViewObject(fullName), console(console), processIdentifier(processIdentifier), category(category), lastModulInfoTimeStamp(0) {}
 
 bool ModuleGraphViewObject::hasChanged()
@@ -37,7 +37,7 @@ QString ModuleGraphViewObject::generateDotFileContent()
   stream << "concentrate = true;" << std::endl;
 
   for(const auto& i : m.modules)
-    if(i.processIdentifier == processIdentifier && (category == "" || i.category == category))
+    if(i.processIdentifier == processIdentifier && (category == ModuleBase::numOfCategories || i.category == category))
     {
       bool used = false;
       for(const auto& j : i.representations)
@@ -54,34 +54,45 @@ QString ModuleGraphViewObject::generateDotFileContent()
       {
         for(const auto& j : i.requirements)
         {
+          bool found = false;
+          bool foundInSameProcess = false;
+          bool foundDefault = false;
+
           for(const auto& k : m.config.representationProviders)
             if(k.representation == j)
             {
               if(k.provider == "default")
-              {
-                if(!defaultCreated)
-                {
-                  stream << "default[shape=box,fontcolor=red];" << std::endl;
-                  defaultCreated = true;
-                }
-                stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
-                stream << "default->" << j << " [len=2];" << std::endl;
-                goto providerFound;
-              }
+                foundDefault = true;
               else
               {
-                const auto& l = std::find(m.modules.begin(), m.modules.end(), k.provider);
-                if(l != m.modules.end())
+                for(const auto& l : m.modules)
                 {
-                  if(l->processIdentifier != i.processIdentifier)
-                    stream << j << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
-                  goto providerFound;
+                  found |= l == k.provider;
+                  foundInSameProcess |= l == k.provider && l.processIdentifier == i.processIdentifier;
+                  if(foundInSameProcess)
+                    goto exitTwoLoops;
                 }
               }
             }
-          // no provider
-          stream << j << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
-        providerFound:
+        exitTwoLoops:
+
+          if(!foundInSameProcess)
+          {
+            if(foundDefault)
+            {
+              if(!defaultCreated)
+              {
+                stream << "default[shape=box,fontcolor=red];" << std::endl;
+                defaultCreated = true;
+              }
+              stream << j << " [style=filled,fillcolor=\"lightblue\"];" << std::endl;
+              stream << "default->" << j << " [len=2];" << std::endl;
+            }
+            else if(!found)
+              stream << j << " [style=\"filled,dashed\",color=red,fontcolor=red];" << std::endl;
+            else
+              stream << j << " [style=\"filled,dashed\",fillcolor=\"#ffdec4\"];" << std::endl;
+          }
           stream << j << "->" << i.name << " [len=2];" << std::endl;
         }
         stream << i.name << "[shape=box];" << std::endl;

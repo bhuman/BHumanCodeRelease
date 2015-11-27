@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Platform/BHAssert.h"
 
 /**
@@ -18,22 +18,23 @@
 class SelfLocatorSample
 {
 public:
-  Vector2<float> translation;   /**< The position in mm. */
-  Vector2<int> rotation;        /**< Cosinus and sinus of the rotation multiplied by 1024. */
-  float angle,                  /**< The rotation in radians. */
-        weighting;              /**< The weighting of a sample*/
-  int cluster;                  /**< The number of the cluster this sample belongs to*/
-  SelfLocatorSample* next;      /**< The next robot sample when clustering samples using binning. */
+  Vector2f translation = Vector2f::Zero(); /**< The position in mm. */
+  Vector2i rotation = Vector2i::Zero();    /**< Cosinus and sinus of the rotation multiplied by 1024. */
+  float angle,                             /**< The rotation in radians. */
+        weighting;                         /**< The weighting of a sample*/
+  int cluster;                             /**< The number of the cluster this sample belongs to*/
+  SelfLocatorSample* next;                 /**< The next robot sample when clustering samples using binning. */
 
   /** Default constructor*/
   SelfLocatorSample() : rotation(1024, 0), angle(0), weighting(1.0f), cluster(0), next(0) {}
 
-  /** Conversion to general pose
-  * @return a pose
-  */
-  Pose2D toPose() const
+  /**
+   * Conversion to general pose
+   * @return a pose
+   */
+  Pose2f toPose() const
   {
-    return Pose2D(angle, translation.x, translation.y);
+    return Pose2f(angle, translation);
   }
 };
 
@@ -50,24 +51,21 @@ protected:
       sizeOfEntries;
 
 public:
-  /**
-   * Constructor.
-   */
   SampleSetProxyBase() {numberOfSamples = 0;}
 
   /**
-  * The function returns the number of samples in the set.
-  * @return The number of samples.
-  */
+   * The function returns the number of samples in the set.
+   * @return The number of samples.
+   */
   int size() const {return numberOfSamples;}
 
   /**
-  * The function links the proxy to a sample set.
-  */
+   * The function links the proxy to a sample set.
+   */
   void link(const char* start, const char* startOld, int number, int size)
   {
-    data = (const char*) start;
-    dataOld = (const char*) startOld;
+    data = start;
+    dataOld = startOld;
     numberOfSamples = number;
     sizeOfEntries = size;
   }
@@ -103,14 +101,11 @@ public:
 template<class T> class SampleSet
 {
 private:
-  int num; /**< The number of samples. */
+  int num;    /**< The number of samples. */
   T* current, /**< The actual sample set. */
-     * other; /**< The secondary sample set. */
+   * other; /**< The secondary sample set. */
 
 public:
-  /**
-   * Constructor.
-   */
   SampleSet(int num_)
   {
     ASSERT(num_ > 0);
@@ -119,28 +114,25 @@ public:
     other = new T[num];
   }
 
-  /**
-   * Destructor.
-   */
   ~SampleSet()
   {
-    delete [] current;
-    delete [] other;
+    delete[] current;
+    delete[] other;
   }
 
   /**
-  * The function links a proxy to this sample set.
-  * @param sampleSetProxy The proxy.
-  */
+   * The function links a proxy to this sample set.
+   * @param sampleSetProxy The proxy.
+   */
   void link(SampleSetProxyBase& sampleSetProxy) const
   {
-    sampleSetProxy.link((const char*) current, (const char*) other, num, sizeof(T));
+    sampleSetProxy.link((const char*)current, (const char*)other, num, sizeof(T));
   }
 
   /**
-  * The function returns the number of samples in the set.
-  * @return The number of samples.
-  */
+   * The function returns the number of samples in the set.
+   * @return The number of samples.
+   */
   int size() const {return num;}
 
   /**

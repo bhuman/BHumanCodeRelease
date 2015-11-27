@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  
+    <Type Name="QString">
+        <DisplayString>{d->data,su}</DisplayString>
+        <StringView>d->data,su</StringView>
+        <Expand>
+            <Item Name="[size]">d-&gt;size</Item>
+            <Item Name="[referenced]">d-&gt;ref._q_value</Item>
+            <ArrayItems>
+                <Size>d-&gt;size</Size>
+                <ValuePointer>d->data,c</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+ 
+    <Type Name="QByteArray">
+        <DisplayString>{d->data,s}</DisplayString>
+        <StringView>d->data,s</StringView>
+        <Expand>
+            <Item Name="[size]">d-&gt;size</Item>
+            <Item Name="[referenced]">d-&gt;ref._q_value</Item>
+            <ArrayItems>
+                <Size>d-&gt;size</Size>
+                <ValuePointer>d->data,c</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+  
+</AutoVisualizer>

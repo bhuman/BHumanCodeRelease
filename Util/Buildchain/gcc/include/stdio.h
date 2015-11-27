@@ -1,5 +1,5 @@
 /* Define ISO C stdio on top of C++ iostreams.
-   Copyright (C) 1991, 1994-2007, 2008, 2009 Free Software Foundation, Inc.
+   Copyright (C) 1991, 1994-2008, 2009, 2010 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -74,7 +74,7 @@ typedef struct _IO_FILE __FILE;
 
 #include <libio.h>
 
-#ifdef __USE_XOPEN
+#if defined __USE_XOPEN || defined __USE_XOPEN2K8
 # ifdef __GNUC__
 #  ifndef _VA_LIST_DEFINED
 typedef _G_va_list va_list;
@@ -82,6 +82,26 @@ typedef _G_va_list va_list;
 #  endif
 # else
 #  include <stdarg.h>
+# endif
+#endif
+
+#ifdef __USE_XOPEN2K8
+# ifndef __off_t_defined
+# ifndef __USE_FILE_OFFSET64
+typedef __off_t off_t;
+# else
+typedef __off64_t off_t;
+# endif
+# define __off_t_defined
+# endif
+# if defined __USE_LARGEFILE64 && !defined __off64_t_defined
+typedef __off64_t off64_t;
+# define __off64_t_defined
+# endif
+
+# ifndef __ssize_t_defined
+typedef __ssize_t ssize_t;
+# define __ssize_t_defined
 # endif
 #endif
 
@@ -427,9 +447,9 @@ extern int __REDIRECT (fscanf, (FILE *__restrict __stream,
 		       __isoc99_fscanf) __wur;
 extern int __REDIRECT (scanf, (__const char *__restrict __format, ...),
 		       __isoc99_scanf) __wur;
-extern int __REDIRECT (sscanf, (__const char *__restrict __s,
-				__const char *__restrict __format, ...),
-		       __isoc99_sscanf) __THROW;
+extern int __REDIRECT_NTH (sscanf, (__const char *__restrict __s,
+				    __const char *__restrict __format, ...),
+			   __isoc99_sscanf);
 # else
 extern int __isoc99_fscanf (FILE *__restrict __stream,
 			    __const char *__restrict __format, ...) __wur;
@@ -481,11 +501,11 @@ extern int __REDIRECT (vfscanf,
 extern int __REDIRECT (vscanf, (__const char *__restrict __format,
 				_G_va_list __arg), __isoc99_vscanf)
      __attribute__ ((__format__ (__scanf__, 1, 0))) __wur;
-extern int __REDIRECT (vsscanf,
-		       (__const char *__restrict __s,
-			__const char *__restrict __format, _G_va_list __arg),
-		       __isoc99_vsscanf)
-     __THROW __attribute__ ((__format__ (__scanf__, 2, 0)));
+extern int __REDIRECT_NTH (vsscanf,
+			   (__const char *__restrict __s,
+			    __const char *__restrict __format,
+			    _G_va_list __arg), __isoc99_vsscanf)
+     __attribute__ ((__format__ (__scanf__, 2, 0)));
 #  else
 extern int __isoc99_vfscanf (FILE *__restrict __s,
 			     __const char *__restrict __format,

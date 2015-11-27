@@ -13,7 +13,7 @@
 #include "Tools/ProcessFramework/TeamHandler.h"
 #include "RoboCupCtrl.h"
 #include "Tools/Settings.h"
-#include "Tools/NTP.h"
+#include "Tools/Network/NTP.h"
 #include "RobotConsole.h"
 #include "BHToolBar.h"
 
@@ -75,6 +75,14 @@ public:
   * @param nextSection Progress to next section in the command.
   */
   void completeConsoleCommand(std::string& command, bool forward, bool nextSection);
+
+  /**
+  * The function is called when a key between a and z or A and z is pressed.
+  * If there is only one option how the given command line can be completed
+  * it will do that.
+  * @param command The current command line.
+  */
+  void completeConsoleCommandOnLetterEntry(std::string& command);
 
   /**
   * The function forces an update of the command completion table.
@@ -174,6 +182,7 @@ private:
   bool newLine; /**< States whether the last line of text was finished by a new line. */
   int nesting; /**< The number of recursion level during the execution of console files. */
   std::set<std::string> completion; /**< A list for command completion. */
+  std::set<std::string>::const_iterator currentCompletionIndex; /** Points to the last string that was used for auto completion */
   Settings settings; /**< The current location. */
   StreamHandler streamHandler; /**< The handler used by streams in this thread. */
   TEAM_COMM; // Listen to team communication
@@ -250,6 +259,11 @@ private:
   void createCompletion();
 
   /**
+  * Extracts the part of s that shall be used for completion
+  */
+  std::string handleCompletionString(size_t pos, const std::string& s);
+
+  /**
   * The function adds the tab-completion entries for a command followed by a file name.
   * @param command The command.
   * @param pattern The pattern for the files following the command. The pattern may include a path.
@@ -261,7 +275,7 @@ private:
   * @param message An interface to read the message from the queue.
   * @return true Was the message handled?
   */
-  bool handleMessage(InMessage& message);
+  bool handleMessage(InMessage& message) override;
 
   /**
   * Destructor.
@@ -271,17 +285,17 @@ private:
   /**
   * The function is called to initialize the module.
   */
-  virtual bool compile();
+  virtual bool compile() override;
 
   /**
   * The function is called to create connections to other scene graph objects from other modules.
   */
-  virtual void link();
+  virtual void link() override;
 
   /**
   * The function is called from SimRobot in each simulation step.
   */
-  virtual void update();
+  virtual void update() override;
 
   /**
   * The function is called from SimRobot when Shift+Ctrl+letter was pressed or released.
@@ -289,13 +303,13 @@ private:
   * above for Shift+Ctrl+A-Z.
   * @param pressed Whether the key was pressed or released.
   */
-  virtual void pressedKey(int key, bool pressed);
+  virtual void pressedKey(int key, bool pressed) override;
 
   /**
   * The function is called when a movable object has been selected.
   * @param obj The object.
   */
-  virtual void selectedObject(const SimRobot::Object& obj);
+  virtual void selectedObject(const SimRobot::Object& obj) override;
 
   /**
   * Create the user menu for this module.

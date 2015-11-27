@@ -2,7 +2,6 @@
 #define _LINUX_RESOURCE_H
 
 #include <linux/time.h>
-#include <linux/types.h>
 
 /*
  * Resource control/accounting header file for linux
@@ -42,13 +41,6 @@ struct	rusage {
 struct rlimit {
 	unsigned long	rlim_cur;
 	unsigned long	rlim_max;
-};
-
-#define RLIM64_INFINITY		(~0ULL)
-
-struct rlimit64 {
-	__u64 rlim_cur;
-	__u64 rlim_max;
 };
 
 #define	PRIO_MIN	(-20)

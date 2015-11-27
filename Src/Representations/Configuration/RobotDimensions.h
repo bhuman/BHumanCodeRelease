@@ -1,51 +1,62 @@
 /**
-* @file RobotDimensions.h
-* Description of the Dimensions of the NAO Robot
-* @author Cord Niehaus
-*/
+ * @file RobotDimensions.h
+ * Description of the dimensions of the NAO robot.
+ * @author Cord Niehaus
+ * @author Thomas Röfer
+ */
 
 #pragma once
 
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Angle.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
 
+/**
+ * This representation contains all necessary dimensions of the robot.
+ * The torso coordinate frame is considert to be in the middle between the hip joints.
+ */
 STREAMABLE(RobotDimensions,
 {
-public:
   /**
-   * forward offset between head tilt joint and current camera
+   * x-offset between the neck joint and current camera.
    * @param lowerCamera true, if lower camera is in use, false otherwise.
    */
-  float getXHeadTiltToCamera(bool lowerCamera) const {return lowerCamera ? xHeadTiltToCamera : xHeadTiltToUpperCamera;}
+  float getXOffsetNeckToCamera(bool lowerCamera) const { return lowerCamera ? xOffsetNeckToLowerCamera : xOffsetNeckToUpperCamera; }
 
   /**
-   * height offset between head tilt joint and current camera
+   * Height offset between the neck joint and current camera.
    * @param lowerCamera true, if lower camera is in use, false otherwise.
    */
-  float getZHeadTiltToCamera(bool lowerCamera) const {return lowerCamera ? zHeadTiltToCamera : zHeadTiltToUpperCamera;}
+  float getZOffsetNeckToCamera(bool lowerCamera) const { return lowerCamera ? zOffsetNeckToLowerCamera : zOffsetNeckToUpperCamera; }
 
   /**
-   * tilt of current camera against head tilt
+   * Tilt of current camera against neck.
    * @param lowerCamera true, if lower camera is in use, false otherwise.
    */
-  float getHeadTiltToCameraTilt(bool lowerCamera) const {return lowerCamera ? headTiltToCameraTilt : headTiltToUpperCameraTilt;},
+  Angle getTiltNeckToCamera(bool lowerCamera) const { return lowerCamera ? tiltNeckToLowerCamera : tiltNeckToUpperCamera; },
 
-  (float) lengthBetweenLegs,         //!<length between leg joints LL1 and LR1
-  (float) upperLegLength,            //!<length between leg joints LL2 and LL3 in z-direction
-  (float) lowerLegLength,            //!<length between leg joints LL3 and LL4 in z-direction
-  (float) heightLeg5Joint,           //!<height of leg joints LL4 and LR4 of the ground
+  (float) yHipOffset,               //!< The y offset of the left hip.
+  (float) upperLegLength,           //!< Length between leg joints HipPitch and KneePitch in z-direction.
+  (float) lowerLegLength,           //!< Length between leg joints KneePitch and AnklePitch in z-direction.
+  (float) footHeight,               //!< Height between the sole of the foot and the foot joint AnkleRoll.
+  (float) hipToNeckLength,          //!< Height offset between hip and joint headYaw.
 
-  (float) zLegJoint1ToHeadPan,       //!<height offset between LL1 and head pan joint
-  (float) xHeadTiltToCamera,         //!<forward offset between head tilt joint and lower camera
-  (float) zHeadTiltToCamera,         //!<height offset between head tilt joint and lower camera
-  (float) headTiltToCameraTilt,      //!<tilt of lower camera against head tilt
+  (float) xOffsetNeckToLowerCamera, //!< Forward offset between joint headPitch and lower camera.
+  (float) zOffsetNeckToLowerCamera, //!< Height offset between joint headPitch and lower camera.
+  (Angle) tiltNeckToLowerCamera,    //!< Tilt of lower camera against joint headPitch.
 
-  (float) xHeadTiltToUpperCamera,    //!<forward offset between head tilt joint and upper camera
-  (float) zHeadTiltToUpperCamera,    //!<height offset between head tilt joint and upper camera
-  (float) headTiltToUpperCameraTilt, //!<tilt of upper camera against head tilt
+  (float) xOffsetNeckToUpperCamera, //!< Forward offset between joint headPitch and upper camera.
+  (float) zOffsetNeckToUpperCamera, //!< Height offset between joint headPitch and upper camera.
+  (Angle) tiltNeckToUpperCamera,    //!< Tilt of upper camera against joint headPitch.
 
-  (Vector3<>) armOffset,             //!<The offset of the first left arm joint relative to the middle between the hip joints
-  (float) yElbowShoulder,            //!<The offset between the elbow joint and the shoulder joint in y
-  (float) upperArmLength,            //!<The length between the shoulder and the elbow in y-direction
-  (float) lowerArmLength,            //!<height off lower arm starting at arm2/arm3
+  (Vector3f) armOffset,             //!< The offset of joint lShoulderPitch relative to the torso coordinate frame (y must be negated for right arm).
+  (float) yOffsetElbowToShoulder,   //!< The offset between the joints lShoulderRoll and lElbowYaw in y (must be negated for right arm).
+  (float) upperArmLength,           //!< The length between the joints ShoulderRoll and ElbowYaw in x-direction.
+  (float) lowerArmLength,           //!< The length of the lower arm starting at ElbowRoll.
+  (float) xOffsetElbowToWrist,      //!< The length from Elbow to WristJoint.
+  (Vector3f) handOffset,            //!< The offset of a hand relative to his wrist coordinate frame.
+  (float) handRadius,               //!< The radius of a virtuel sphere a hand can span.
+  (float) armRadius,                //!< The radius of a arm.
+
+  (Vector3f) imuOffset,             //!< The offset of the imu relative to the torso coordinate frame.
 });

@@ -6,17 +6,14 @@
 
 #include "ModuleManager.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Streams/InStreams.h"
 #include <algorithm>
 
 ModuleManager::Configuration::RepresentationProvider::RepresentationProvider(const std::string& representation,
-                                                                             const std::string& provider)
-: representation(representation),
-  provider(provider) {}
+                                                                             const std::string& provider) :
+  representation(representation), provider(provider)
+{}
 
-ModuleManager::ModuleManager(const std::set<std::string>& categories) :
-  timeStamp(0),
-  nextTimeStamp(0)
+ModuleManager::ModuleManager(const std::set<ModuleBase::Category>& categories)
 {
   for(ModuleBase* i = ModuleBase::first; i; i = i->next)
     if(categories.find(i->category) != categories.end())
@@ -220,7 +217,7 @@ bool ModuleManager::sortProviders(const std::list<std::string>& providedByDefaul
   for(const char* r : received)
     provided.push_back(r);
 
-  int remaining = (int) providers.size(), // The number of entries not correct sequence so far.
+  int remaining = static_cast<int>(providers.size()), // The number of entries not correct sequence so far.
       pushBackCount = remaining; // The number of push_backs still allowed. If zero, no valid sequence is possible.
   std::list<Provider>::iterator i = providers.begin();
   while(i != providers.end())
@@ -329,12 +326,12 @@ void ModuleManager::execute()
       toReceive.push_back(&Blackboard::getInstance()[r]);
   }
 
-  DEBUG_RESPONSE_ONCE("automated requests:ModuleTable",
+  DEBUG_RESPONSE_ONCE("automated requests:ModuleTable")
   {
-    Global::getDebugOut().bin << (unsigned) modules.size();
+    Global::getDebugOut().bin << static_cast<unsigned>(modules.size());
     for(auto& m : modules)
     {
-      Global::getDebugOut().bin << m.module->name << m.module->category;
+      Global::getDebugOut().bin << m.module->name << static_cast<unsigned char>(m.module->category);
 
       unsigned requirementsSize = 0;
       unsigned providersSize = 0;
@@ -344,12 +341,12 @@ void ModuleManager::execute()
         else
           ++requirementsSize;
 
-      Global::getDebugOut().bin << (unsigned) requirementsSize;
+      Global::getDebugOut().bin << static_cast<unsigned>(requirementsSize);
       for(const ModuleBase::Info* j = m.module->info; j->representation; ++j)
         if(!j->update)
           Global::getDebugOut().bin << j->representation;
 
-      Global::getDebugOut().bin << (unsigned) providersSize;
+      Global::getDebugOut().bin << static_cast<unsigned>(providersSize);
       for(const ModuleBase::Info* j = m.module->info; j->representation; ++j)
         if(j->update)
           Global::getDebugOut().bin << j->representation;
@@ -357,7 +354,7 @@ void ModuleManager::execute()
 
     Global::getDebugOut().bin << config;
     Global::getDebugOut().finishMessage(idModuleTable);
-  });
+  }
 }
 
 void ModuleManager::readPackage(In& stream)

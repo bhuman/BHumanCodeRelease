@@ -10,11 +10,17 @@
 #include "TeammateReliabilityProvider.h"
 #include "Tools/Math/Transformation.h"
 
-MAKE_MODULE(TeammateReliabilityProvider,Modeling)
+MAKE_MODULE(TeammateReliabilityProvider,modeling)
 
 void TeammateReliabilityProvider::update(TeammateReliability& teammateReliability)
 {
-  for(int i=TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i)
+  const int minPlayerNum = Global::getSettings().lowestValidPlayerNumber;
+  const int maxPlayerNum = Global::getSettings().highestValidPlayerNumber;
+  if(teammateReliability.states.size() != static_cast<unsigned int>(maxPlayerNum + 1))
+    teammateReliability.states.resize(maxPlayerNum  + 1);
+  if(teammates.size() != static_cast<unsigned int>(maxPlayerNum + 1))
+    teammates.resize(maxPlayerNum  + 1);
+  for(int i=minPlayerNum; i <= maxPlayerNum; ++i)
   {
     if(i == theRobotInfo.number)
       continue;
@@ -24,6 +30,10 @@ void TeammateReliabilityProvider::update(TeammateReliability& teammateReliabilit
     computeReliability(teammates[i], teammateReliability.states[i]);
   }
 }
+
+// TODO:
+// (5.) Die Varianz der Positionen berechnen
+
 
 void TeammateReliabilityProvider::updateTeammateInformation(const SPLStandardMessage& msg,
                                                             unsigned timestamp, int robotNumber,
@@ -46,8 +56,8 @@ void TeammateReliabilityProvider::updateTeammateInformation(const SPLStandardMes
   // We have new information about a teammate
   teammate.lastPackageReceived = timestamp;
   teammate.isPenalized = theOwnTeamInfo.players[robotNumber-1].penalty != 0;
-  teammate.hasInvalidPose = !(theFieldDimensions.isInsideCarpet(Vector2<>(msg.pose[0], msg.pose[1])) && std::abs(msg.pose[2]) <= pi);
-  teammate.seesBallOutsideField = !(theFieldDimensions.isInsideCarpet(Vector2<>(msg.ball[0], msg.ball[1])));
+  teammate.hasInvalidPose = !(theFieldDimensions.isInsideCarpet(Vector2f(msg.pose[0], msg.pose[1])) && std::abs(msg.pose[2]) <= pi);
+  teammate.seesBallOutsideField = !(theFieldDimensions.isInsideCarpet(Vector2f(msg.ball[0], msg.ball[1])));
   if(!teammate.isPenalized)
   {
     if(theGameInfo.state == STATE_READY)
@@ -64,13 +74,13 @@ void TeammateReliabilityProvider::updateTeammateInformation(const SPLStandardMes
       teammate.yPosRange.add(msg.pose[1]);
       teammate.rotRange.add(msg.pose[2]);
       // Check, if the teammate perceives the ball at the same position than us:
-      if(msg.ballAge < 500 && theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 100)
+      if(msg.ballAge < 0.5f && theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 100)
       {
-        Pose2D teammatePose(msg.pose[2], msg.pose[0], msg.pose[1]);
-        Vector2<> teammateRelBall(msg.ball[0], msg.ball[1]);
-        Vector2<> teammateAbsBall = Transformation::robotToField(teammatePose, teammateRelBall);
-        Vector2<> ownAbsBall = Transformation::robotToField(theRobotPose, theBallModel.estimate.position);
-        if((ownAbsBall - teammateAbsBall).abs() < maxBallAgreementDistance)
+        Pose2f teammatePose(msg.pose[2], msg.pose[0], msg.pose[1]);
+        Vector2f teammateRelBall(msg.ball[0], msg.ball[1]);
+        Vector2f teammateAbsBall = Transformation::robotToField(teammatePose, teammateRelBall);
+        Vector2f ownAbsBall = Transformation::robotToField(theRobotPose, theBallModel.estimate.position);
+        if((ownAbsBall - teammateAbsBall).norm() < maxBallAgreementDistance)
           teammate.lastTimeAgreedOnBall = theFrameInfo.time;
       }
     }

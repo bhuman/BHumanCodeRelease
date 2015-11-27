@@ -2,10 +2,6 @@ import os
 import sys
 import time
 
-path = `os.environ.get("AL_DIR")`
-home = `os.environ.get("HOME")`
-
-# import naoqi lib
 import naoqi
 from naoqi import ALBroker
 from naoqi import ALModule

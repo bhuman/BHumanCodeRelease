@@ -1,8 +1,9 @@
-call teamPort
+call Includes/teamPort
 su Robot1 1
 su Robot2 2
 su Robot3 3
 su Robot4 4
+su Robot5 5
 echo set teamColor 0
 echo set teamColor 1
 robot all
@@ -14,13 +15,11 @@ vfd worldState robotState
 vfd worldState robotOffline
 vfd worldState representation:RobotPose
 vfd worldState representation:RobotPose:deviation
-vfd worldState representation:CombinedWorldModel
+vfd worldState representation:TeamBallModel
+vfd worldState representation:TeamPlayersModel
 vfd worldState origin:RobotPose
 vfd worldState representation:BallModel
 vfd worldState representation:GoalPercept:Field
 vfd worldState representation:MotionRequest
+vfd worldState representation:ObstacleModelCompressed:CenterCross
 vfd worldState representation:LinePercept:Field
-vfd worldState representation:ObstacleModelReduced
-vp ballTimes 100 0 10000
-vpd ballTimes tob blue
-vpd ballTimes tgb red

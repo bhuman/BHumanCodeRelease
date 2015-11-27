@@ -4,6 +4,7 @@
  * Copyright by
  * Philips Automation Projects
  * Kassel (Germany)
+ * http://www.pap-philips.de
  * -----------------------------------------------------------
  * This software may be used and distributed according to the terms of
  * the GNU General Public License, incorporated herein by reference.

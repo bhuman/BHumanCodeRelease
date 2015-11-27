@@ -1,0 +1,220 @@
+name = "SimRobot"
+
+buildDirRoot = "../../Build"
+utilDirRoot = "../../.."
+simRobotDir = "../.."
+buildPlatformDir = {
+  if (host == "Win32") {
+    "$(buildDirRoot)/Windows"
+  } else {
+    "$(buildDirRoot)/$(platform)"
+  }
+}
+buildDir = "$(buildPlatformDir)/$(target)/$(configuration)"
+
+configurations = {
+  Debug
+  Release
+}
+
+if (tool == "vcxproj") {
+  platforms = { "x64" }
+}
+
+defines = {
+  if (platform == "Linux") {
+    "LINUX"
+  } else if (host == "Win32") {
+    "WINDOWS"
+  } else if (platform == "MacOSX") {
+    "OSX"
+  }
+  if (configuration == "Debug") {
+    "_DEBUG"
+  } else {
+    "NDEBUG"
+  }
+}
+
+if (host == "Linux") {
+  cppCompiler = {
+    "env CCACHE_CPP2=yes $(utilDirRoot)/Buildchain/Linux/bin/ccache clang++ -D__extern_always_inline=inline"
+  }
+}
+
+cppFlags = {
+  if (tool == "vcxproj") {
+    "/W3" // warning level 3
+    "/GF" // enable string pooling
+    "/Gm- /MP" // disable minimal rebuild and enable multi processor compilation
+    "/Zc:wchar_t-" // required for Qt
+    if (configuration == "Debug") {
+      "/Od /ZI"
+    } else {
+      "/Ox /Ob2 /Oi /Ot /Oy /GT /fp:fast"
+    }
+  } else {
+    "-std=c++11"
+    "-pipe"
+    "-mssse3"
+    "-ffast-math"
+    "-Wall"
+    "-Wconversion"
+    "-Wliteral-conversion"
+    "-Wsign-compare"
+    "-Wno-deprecated" // This is necessary for users of clang 3.4 and qt. Warnings can be fixed by updating to qt5 and newer qcc headers
+    "-Wno-shorten-64-to-32" // Warnings in qt4. Warnings can be fixed by updating to qt5.
+    "-Wno-sign-conversion" // Alot of warning in Streaming. Also in qt.
+    if (configuration == "Debug") {
+      "-g"
+    } else {
+      "-O3 -fomit-frame-pointer"
+    }
+  }
+}
+
+linkFlags = {
+  if (tool == "vcxproj") {
+    "/SUBSYSTEM:WINDOWS"
+    if (configuration == "Debug") {
+      "/INCREMENTAL /DEBUG"
+    } else {
+      "/OPT:REF /OPT:ICF"
+    }
+  } else {
+    if (configuration != "Debug") {
+      "-s"
+    }
+  }
+}
+
+targets = {
+  all = {
+    dependencies = { "SimRobot" },
+  }
+
+  include "SimRobot.mare"
+
+  include "SimRobotCore2.mare"
+  include "SimRobotEditor.mare"
+  include "SimRobotHelp.mare"
+
+  include "SimpleVehicle.mare"
+  include "Factory.mare"
+}
+
+
+// a table for adding Qt files (given $(qtRessourceFiles), $(qtRccFiles) and $(qtMocFiles)) to a "files" table
+qtFiles = {
+  "$(qtRccFiles)" = qtRccSource + { input += qtRessourceFiles }
+  "$(foreach file,$(qtRccFiles),$(buildDir)/qrc_$(basename $(notdir $(file)))$(configuration)$(platform).cpp)" = cppSource + { folder = ".Qt" }
+  if (tool == "vcxproj") { "$(qtRessourceFiles)" } // list ressource files in Visual Studio
+
+  "$(qtMocFiles)" = qtMocSource
+  "$(foreach file,$(qtMocFiles),$(buildDir)/moc_$(basename $(notdir $(file)))$(configuration)$(platform).cpp)" = cppSource + { folder = ".Qt" }
+}
+
+qtFilesNew = {
+  "$(qtRccFiles)" = qtRccSource + { input += qtRessourceFiles }
+  "$(foreach file,$(qtRccFiles),$(buildDir)/qrc_$(basename $(notdir $(file)))$(configuration)$(platform).cpp)" = cppSource + { folder = ".Qt" }
+  if (tool == "vcxproj") { "$(qtRessourceFiles)" } // list ressource files in Visual Studio
+
+  "$(qtMocFiles)" = qtMocSource
+  "$(foreach file,$(qtMocFiles),$(buildDir)/moc_$(basename $(notdir $(file)))$(configuration)$(platform).cpp)" = cppSource + { folder = ".Qt" }
+
+  "$(qtMocFilesNew)" = qtMocSourceNew
+
+  "$(patsubst %.h,%.cpp,$(qtMocFilesNew))" = cppSource + {
+    name = "$(basename $(notdir $(file)))"
+    input += "$(buildDir)/moc_$(name).cpp $(buildDir)/$(name).moc"
+  },
+}
+
+// a rule for compiling a file with Qt's ressouce compiler (rcc)
+qtRccSource = {
+  message = "$(if $(Win32),$(notdir $(file)),$(file)) (Qt rcc)"
+  input = file
+  name = "$(basename $(notdir $(file)))"
+  output = "$(buildDir)/qrc_$(name)$(configuration)$(platform).cpp"
+  if (host == "Win32") {
+    rcc = "$(simRobotDir)/Util/qt/Windows/bin/rcc.exe"
+  } else {
+    rcc = "rcc"
+  }
+  command = "$(rcc) -name $(name) $(file) -o $(output)"
+}
+
+// a rule for compiling a file with Qt's meta object compiler (moc)
+qtMocSource = {
+  message = "$(if $(Win32),$(notdir $(file)),$(file)) (Qt moc)"
+  input = file
+  name = "$(basename $(notdir $(file)))"
+  output = "$(buildDir)/moc_$(name)$(configuration)$(platform).cpp"
+  if (host == "Win32") {
+    moc = "$(simRobotDir)/Util/qt/Windows/bin/moc.exe"
+    mocFlags = "-D_MSC_VER=1800"
+  } else {
+    moc = "moc-qt4"
+    mocFlags = ""
+  }
+  command = "$(moc) $(patsubst %,-D%,$(defines)) $(mocFlags) $(patsubst %,-I%,$(includePaths)) $(file) -o $(output)"
+}
+qtMocSourceNew = {
+  message = "$(if $(Win32),$(notdir $(file)),$(file)) (Qt moc)"
+  input = file
+  name = "$(basename $(notdir $(file)))"
+  output = "$(buildDir)/moc_$(name).cpp $(buildDir)/$(name).moc"
+  if (host == "Win32") {
+    moc = "$(simRobotDir)/Util/qt/Windows/bin/moc.exe"
+    mocFlags = "-D_MSC_VER=1800"
+  } else {
+    moc = "moc-qt4"
+    mocFlags = ""
+  }
+  command = {
+    "$(moc) $(patsubst %,-D%,$(defines)) $(mocFlags) $(patsubst %,-I%,$(includePaths)) $(file) -o $(buildDir)/moc_$(name).cpp",
+    "$(moc) $(patsubst %,-D%,$(defines)) $(mocFlags) $(patsubst %,-I%,$(includePaths)) $(patsubst %.h,%.cpp,$(file)) -nw -o $(buildDir)/$(name).moc",
+  }
+}
+
+// a rule for copying a file into the build directory
+copyFile = {
+  message = "$(if $(Win32),$(notdir $(file)),$(file)) (copy)"
+  input = file
+  output = "$(buildDir)/$(notdir $(file))"
+  if (host == "Win32") {
+    command = "copy $(subst /,\\,$(file)) $(subst /,\\,$(output))"
+  } else {
+    command = "cp $(file) $(output)"
+  }
+  folder = ".copy"
+}
+
+// use mare as buildsystem in CodeLite, CodeBlocks and NetBeans
+if (tool == "CodeLite" || tool == "CodeBlocks" || tool == "NetBeans") {
+  if (tool == "CodeBlocks")
+    mare = "$(utilDirRoot)/mare/Linux/bin/mare --ignore-dependencies"
+  else
+    mare = "$(utilDirRoot)/mare/Linux/bin/mare"
+
+  cppApplication += {
+    buildCommand = "$(mare) $(target) config=$(configuration)"
+    cleanCommand = "$(mare) clean $(target) config=$(configuration)"
+    reBuildCommand = "$(mare) rebuild $(target) config=$(configuration)"
+  }
+  cppStaticLibrary += {
+    buildCommand = "$(mare) $(target) config=$(configuration)"
+    cleanCommand = "$(mare) clean $(target) config=$(configuration)"
+    reBuildCommand = "$(mare) rebuild $(target) config=$(configuration)"
+  }
+  cppDynamicLibrary += {
+    buildCommand = "$(mare) $(target) config=$(configuration)"
+    cleanCommand = "$(mare) clean $(target) config=$(configuration)"
+    reBuildCommand = "$(mare) rebuild $(target) config=$(configuration)"
+  }
+  customTool += {
+    buildCommand = "$(mare) $(target) config=$(configuration)"
+    cleanCommand = "$(mare) clean $(target) config=$(configuration)"
+    reBuildCommand = "$(mare) rebuild $(target) config=$(configuration)"
+  }
+}

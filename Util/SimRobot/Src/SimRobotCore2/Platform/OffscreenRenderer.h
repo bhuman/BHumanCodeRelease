@@ -44,9 +44,10 @@ public:
   * Selects the OpenGL context of the off-screen renderer. Call prepareRendering() before "drawing" the OpenGL image.
   * @param width The width of an image that will be rendered using this off-screen renderer
   * @param height The height of an image that will be rendered using this off-screen renderer
+  * @param sampleBuffers Are sample buffers for multi-sampling required?
   * @return Whether the OpenGL context was successfully selected
   */
-  bool makeCurrent(int width, int height);
+  bool makeCurrent(int width, int height, bool sampleBuffers = true);
 
   /**
   * Reads an image from current rendering context.
@@ -108,6 +109,6 @@ private:
   void initContext(bool hasSharedDisplayLists);
 
   bool initFrameBuffer(int width, int height, Buffer& buffer);
-  bool initPixelBuffer(int width, int height, Buffer& buffer);
+  bool initPixelBuffer(int width, int height, bool sampleBuffers, Buffer& buffer);
   void initHiddenWindow(int width, int height, Buffer& buffer);
 };

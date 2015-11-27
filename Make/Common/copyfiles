@@ -6,9 +6,10 @@ usage()
   echo "usage: copyfiles [Release|Develop|Debug] [<ipaddress>|(-m n <ipaddress>)*] {options}"
   echo "  options:"
   echo "    -l <location>          set location"
-  echo "    -t <color>             set team color to blue or red"
+  echo "    -t <color>             set team color to blue, red, yellow, or black"
   echo "    -p <number>            set player number"
   echo "    -n <number>            set team number"
+  echo "    -o <port>              overwrite team port"
   echo "    -r                     restart bhuman"
   echo "    -rr                    force restart bhuman and naoqi"
   echo "    -m n <ip>              copy to <ip>, and set playernumber to n (one -m per robot)"
@@ -17,6 +18,7 @@ usage()
   echo "    -nr                    do not check whether target is reachable"
   echo "    -d                     remove all log files before copying"
   echo "    -v <percent>           set NAO's volume"
+  echo "    -w <profile>           set wireless profile"
   echo "    -h | --help | /h | /?  print this text"
   echo "  examples:"
   echo "    ./copyfiles Develop 192.168.5.14 -p 1"
@@ -29,6 +31,11 @@ copy()
 {
   REMOTE=$1
   PLAYER=$2
+
+  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 6 )) ); then
+    echo "Error: Player number is $PLAYER!"
+    exit 1
+  fi
 
   if [ ! -z $CHECK ]; then
     if [ `ping ${pingoptions} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
@@ -45,48 +52,54 @@ copy()
     ssh $sshoptions nao@$REMOTE "rm -rf /home/nao/logs/* > /dev/null"
   fi
 
-  echo "updating configs"
-  rsync --del --exclude=*.stx --exclude=*.log --exclude=.* --exclude=*.tc --exclude=.svn --exclude=/Images --exclude=/Logs --exclude=/Scenes --exclude=/Keys --exclude=bhuman --exclude=libbhuman.so --exclude=libgamectrl.so --exclude=build.cfg --chmod=u+rw,go+r,Dugo+x -rche "ssh $sshoptions" ../../Config/. nao@$REMOTE:/home/nao/Config
-  
-  echo "updating libbhuman"
-  if [ `rsync --chmod=u+rw,go+r,Dugo+x --stats -che "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so nao@$REMOTE:/home/nao/Config/libbhuman.so | grep -c 'transferred: 1'` == 1 ]; then
+  echo "updating wireless profiles"
+  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $sshoptions" ../../Install/Network/Profiles/. nao@$REMOTE:/home/nao/Profiles
+  if [ ! -z $PROFILE ]; then
+    RESULT=`ssh $sshoptions nao@$REMOTE "setprofile $PROFILE"`
+    if [ -n "$RESULT" ]; then
+      if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
+        RESULT=""
+      fi
+    fi
+    if [ ! -z "$RESULT" ]; then
+      echo "$RESULT" | grep -v usage >&2
+      exit 1
+    fi
+  fi
+
+  echo "updating bhuman"
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --exclude=/Keys --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. ../../Build/Linux/libgamectrl/$CONFIG/build.cfg nao@$REMOTE:/home/nao/Config
+
+  echo "updating libs"
+  RESULT=`rsync --chmod=u+rw,go+r,Dugo+x --stats -zce "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config`
+  if [ `echo "$RESULT" | grep -c 'transferred: 0'` != 1 ]; then
     RESTARTNAOQI=1
   fi
-  
-  echo "updating libgamectrl"
-  if [ `rsync --chmod=u+rw,go+r,Dugo+x --stats -che "ssh $sshoptions" ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config/libgamectrl.so | grep -c 'transferred: 1'` == 1 ]; then
-    RESTARTNAOQI=1
-  fi
-  
-  echo "updating build information"
-  rsync -che "ssh $sshoptions" ../../Build/Linux/libgamectrl/$CONFIG/build.cfg nao@$REMOTE:/home/nao/Config/build.cfg
 
   if [ ! -z $STOPPEDNAOQI ]; then
     echo "starting naoqi"
-	ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi start &> /dev/null"
+    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi start &> /dev/null"
   elif [ ! -z $RESTARTNAOQI ]; then
     echo "restarting naoqi"
     ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi restart &> /dev/null"
   fi
 
-  echo "updating bhuman"
-  rsync --chmod=u+rw,go+r,Dugo+x -che "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman nao@$REMOTE:/home/nao/Config/bhuman
-
   # set volume
   echo "setting volume to $VOLUME%"
-  ssh $sshoptions nao@$REMOTE "amixer set PCM $VOLUME% unmute &> /dev/null"
+
+  #New naoqi versions use "Master", old use "PCM" as amixer SCONTROL
+  ssh $sshoptions nao@$REMOTE "amixer set Master $VOLUME% unmute &> /dev/null"
 
   # set settings on robot
-  if [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ]; then
+  if [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ]; then
+    echo "updating settings"
     SEDFLAGS=""
-  [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location.*/location = $LOCATION;/'"
-  [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor.*/teamColor = $TEAM;/'"
-  [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber.*/playerNumber = $PLAYER;/'"
-  [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber.*/teamNumber = $NUMBER;/'"
-  [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort.*/teamPort = 10${NUMBER}01;/'"
-  [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort = 1.*\([0-9][0-9]\)01;/teamPort = 1\101;/'"
+    [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location.*/location = $LOCATION;/'"
+    [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor.*/teamColor = $TEAM;/'"
+    [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber.*/playerNumber = $PLAYER;/'"
+    [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber.*/teamNumber = $NUMBER;/'"
+    [ ! -z $PORT ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort.*/teamPort = $PORT;/'"
     ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS < /home/nao/Config/settings.cfg > /home/nao/Config/settingsTEMP.cfg && mv /home/nao/Config/settingsTEMP.cfg /home/nao/Config/settings.cfg"
-  [ $? -ne 0 ] && exit 1
   fi
 
   if [ ! -z $RESTART ]; then
@@ -97,11 +110,13 @@ copy()
   true
 }
 
+set -e
+
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 basePath=$(dirname "${scriptPath}")
 currPath=$(pwd)
 keyFile=../../Config/Keys/id_rsa_nao
-sshoptions="-i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
+sshoptions="-c arcfour -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [[ $(uname) == *CYGWIN* ]]; then
   pingoptions="-w 1 -n 1"
 elif [ $(uname) == "Darwin" ]; then
@@ -129,6 +144,8 @@ RESTARTNAOQI=
 MULTIPLEDATA=
 REMOVE_LOGS=
 VOLUME=100
+PROFILE=
+PORT=
 
 # parse options
 [ "x" = "x$*" ] && usage
@@ -152,6 +169,13 @@ while true; do
     "-n" | "/n")
       shift
       NUMBER=$1
+      if [ -z $PORT ]; then
+        PORT=`printf "100%02d" $NUMBER`
+      fi
+      ;;
+    "-o" | "/o")
+      shift
+      PORT=$1
       ;;
     "-wc" | "/wc")
       WINDOWSCOMPILE=1
@@ -181,12 +205,15 @@ while true; do
       MULTIPLEDATA[$NUMMULTIPLE]=$1
       shift
       MULTIPLEDATA[$NUMMULTIPLE + 1]=$1
-      echo "Found -m, num=$NUMMULTIPLE with [$NUMMULTIPLE]=${MULTIPLEDATA[$NUMMULTIPLE]}, [$NUMMULTIPLE+1]=${MULTIPLEDATA[$NUMMULTIPLE + 1]}"
       let "NUMMULTIPLE+=2"
       ;;
     "-v" | "/v")
       shift
       VOLUME=$1
+      ;;
+    "-w" | "/w")
+      shift
+      PROFILE=$1
       ;;
     "Nao")
       COMPONENT="Nao"
@@ -223,7 +250,7 @@ if [ ! -z $COMPILE ]; then
     if [ ! -z $WINDOWSCOMPILE ]; then
       echo "------ Compiling $COMPONENT ($CONFIG) ------"
       DEVENV="$(cygpath -u "$(cygpath -m -s "${VS120COMNTOOLS}")../IDE/devenv.com")"
-      CMD="${DEVENV} ../VS2013/${SOLUTION} /Build ${CONFIG} /Project ${COMPONENT}"
+      CMD="${DEVENV} ../VS2015/${SOLUTION} /Build ${CONFIG} /Project ${COMPONENT}"
       $CMD
       [ $? -ne 0 ] && exit 1
       echo "------ Successfully compiled ------"
@@ -237,8 +264,9 @@ else # try to deploy to multiple targets
   if [ "$NUMMULTIPLE" -ne 0 ]; then
     for ((i=0; i < NUMMULTIPLE; i+=2))
     do
-      copy ${MULTIPLEDATA[i+1]} ${MULTIPLEDATA[i]}
+      copy ${MULTIPLEDATA[i+1]} ${MULTIPLEDATA[i]} | sed "s%^%[${MULTIPLEDATA[i+1]}] %" &
     done
+    wait
   else
     cd "${currPath}"
     exit 1

@@ -6,7 +6,9 @@
 
 #include "BHAssert.h"
 #include "Semaphore.h"
+#define pi _pi
 #include <CoreServices.h>
+#undef pi
 
 Semaphore::Semaphore(unsigned value)
 {

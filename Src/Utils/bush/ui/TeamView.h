@@ -4,6 +4,7 @@
 #include <vector>
 
 class Team;
+class QPushButton;
 class QComboBox;
 class QLineEdit;
 class QSpinBox;
@@ -21,12 +22,15 @@ class TeamView : public QFrame
   Team* team;
 
   std::vector<RobotView*> robotViews;
+  QPushButton* pbSave;
   QComboBox* cbColor;
   QSpinBox* sbNumber;
   QLineEdit* lePort;
   QComboBox* cbLocation;
   QComboBox* cbWlanConfig;
   QComboBox* cbBuildConfig;
+  QComboBox* cbDeployDevice;
+  QSlider* sVolume;
 
   void init();
 public:
@@ -37,9 +41,9 @@ public:
 private slots:
   void colorChanged(const QString& color);
   void numberChanged(int number);
-  void portChanged(const QString& port);
-  void setPort(const int port);
   void locationChanged(const QString& location);
   void wlanConfigChanged(const QString& config);
   void buildConfigChanged(const QString& build);
+  void volumeChanged(const int volume);
+  void deployDeviceChanged(const QString& device);
 };

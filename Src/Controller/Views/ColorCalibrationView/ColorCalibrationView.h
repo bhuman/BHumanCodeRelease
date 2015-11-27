@@ -1,6 +1,7 @@
 /*
  * File:   ColorCalibrationView.h
- * Author: Marcel
+ * @author marcel
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
  *
  * Created on June 25, 2013, 8:13 PM
  */
@@ -12,6 +13,8 @@
 #include "Controller/RobotConsole.h"
 #include "RangeSelector.h"
 #include "ThresholdSelector.h"
+#include "History.h"
+#include "Representations/Infrastructure/Image.h"
 
 class ColorCalibrationWidget;
 
@@ -39,6 +42,7 @@ class ColorCalibrationWidget : public QWidget, public SimRobot::Widget
 public:
   ColorCalibrationView& colorCalibrationView;
   ColorClasses::Color currentColor;
+  bool expandColorMode;
   unsigned timeStamp;
 
   ColorCalibrationWidget(ColorCalibrationView& colorCalibrationView);
@@ -48,9 +52,8 @@ public:
   void updateWidgets(ColorClasses::Color currentColor);
   virtual QMenu* createUserMenu() const;
 
-private slots:
-  void saveColorCalibration();
-  void colorAct(int color) {updateWidgets((ColorClasses::Color) color);}
+  void setUndoRedo();
+  void expandCurrentColor(const Image::Pixel& pixel, const bool reduce);
 
 private:
   HueSelector* hue;
@@ -61,5 +64,44 @@ private:
   ThresholdSelector* minR;
   ThresholdSelector* minB;
   ThresholdSelector* minRB;
-};
 
+  QAction* redoAction;
+  QAction* undoAction;
+
+  History<ColorCalibration::HSIRanges> historyColors[ColorClasses::numOfColors];
+  History<ColorCalibration::WhiteThresholds> historyWhite;
+
+  bool expandColor(const unsigned char value, int& min, int& max, const bool noWrapAround);
+  bool reduceColor(const unsigned char value, int& min, int& max, const bool boolChangeOnlyMin);
+  int calcColorValueDistance(const int a, const int b) const;
+
+public slots:
+  void currentCalibrationChanged();
+  void undoColorCalibration();
+  void redoColorCalibration();
+
+private slots:
+  void saveColorCalibration();
+  void colorAct(int color);
+  void expandColorAct();
+
+private:
+  /* The toolbar of a widget (and therefore the containing actions) is deleted by the
+   * SimRobot mainwindow if another view receives focus. If this happens there is no
+   * way to know for this widget that the toolbar (and therefor the undo/redo buttons)
+   * is deleted. So this work around sets the undo/redo button bointers to nullptr if
+   * they are deleted.
+   */
+  class WorkAroundAction : public QAction
+  {
+  private:
+    QAction** toBeSetToNULL;
+  public:
+    WorkAroundAction(QAction** toBeSetToNULL, const QIcon& icon, const QString& text, QObject* parent)
+      : QAction(icon, text, parent), toBeSetToNULL(toBeSetToNULL) {}
+    ~WorkAroundAction()
+    {
+      (*toBeSetToNULL) = nullptr;
+    }
+  };
+};

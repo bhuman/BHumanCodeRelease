@@ -8,19 +8,16 @@
 
 #include "DebugHandler.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Global.h"
-#include "Tools/Settings.h"
 #include "Tools/Streams/OutStreams.h"
 #include "Tools/Streams/InStreams.h"
 
-DebugHandler::DebugHandler(MessageQueue& in, MessageQueue& out, int maxPackageSendSize, int maxPackageReceiveSize)
-  : TcpConnection(0, 0xA1BD, TcpConnection::receiver, maxPackageSendSize, maxPackageReceiveSize),
-    in(in),
-    out(out),
-    sendData(0),
-    sendSize(0)
-{
-}
+DebugHandler::DebugHandler(MessageQueue& in, MessageQueue& out, int maxPackageSendSize, int maxPackageReceiveSize) :
+  TcpConnection(0, 0xA1BD, TcpConnection::receiver, maxPackageSendSize, maxPackageReceiveSize),
+  in(in),
+  out(out),
+  sendData(0),
+  sendSize(0)
+{}
 
 void DebugHandler::communicate(bool send)
 {

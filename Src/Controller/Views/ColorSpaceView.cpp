@@ -16,7 +16,7 @@
 #include <GL/gl.h>
 #endif
 
-ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3<>& b, bool upperCam)
+ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, bool upperCam)
   : View3D(fullName, b),
     console(c),
     name(n),
@@ -48,18 +48,18 @@ void ColorSpaceView::updateDisplayLists()
                                            cubeId, true,
                                            127, //scale
                                            -127, -127, -127, // offsets
-                                           int(background.x * 255) ^ 0xc0,
-                                           int(background.y * 255) ^ 0xc0,
-                                           int(background.z * 255) ^ 0xc0);
+                                           int(background.x() * 255) ^ 0xc0,
+                                           int(background.y() * 255) ^ 0xc0,
+                                           int(background.z() * 255) ^ 0xc0);
     else
       OpenGLMethods::paintCubeToOpenGLList(
         image->width, image->height, 128,
         cubeId, true,
         127, //scale
         -image->width / 2, -image->height / 2, -65, // offsets
-        int(background.x * 255) ^ 0xc0,
-        int(background.y * 255) ^ 0xc0,
-        int(background.z * 255) ^ 0xc0);
+        int(background.x() * 255) ^ 0xc0,
+        int(background.y() * 255) ^ 0xc0,
+        int(background.z() * 255) ^ 0xc0);
 
     OpenGLMethods::paintImagePixelsToOpenGLList(*image, colorModel, channel - 1, false, colorsId);
     lastTimeStamp = image->timeStamp;
@@ -85,4 +85,3 @@ bool ColorSpaceView::needsUpdate() const
   return ((image && image->timeStamp != lastTimeStamp) ||
           (!image && lastTimeStamp));
 }
-

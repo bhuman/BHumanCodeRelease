@@ -1,47 +1,31 @@
 /**
-* @file GameInfo.cpp
-* The file implements a class that encapsulates the structure RoboCupGameControlData
-* defined in the file RoboCupGameControlData.h that is provided with the GameController.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file GameInfo.cpp
+ * The file implements a struct that encapsulates the structure RoboCupGameControlData
+ * defined in the file RoboCupGameControlData.h that is provided with the GameController.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "GameInfo.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Vector3.h"
-#include <cstring>
+#include "Tools/Math/Eigen.h"
 
-GameInfo::GameInfo() : timeLastPackageReceived(0)
+GameInfo::GameInfo()
 {
   memset((RoboCup::RoboCupGameControlData*) this, 0, sizeof(RoboCup::RoboCupGameControlData));
 }
 
-void GameInfo::serialize(In* in, Out* out)
+static void drawDigit(int digit, const Vector3f& pos, float size, const ColorRGBA& color)
 {
-  STREAM_REGISTER_BEGIN;
-  STREAM(state); // STATE_READY, STATE_PLAYING, ...
-  STREAM(firstHalf); // 1 = game in first half, 0 otherwise
-  STREAM(kickOffTeam); // TEAM_BLUE, TEAM_RED
-  STREAM(secsRemaining); // estimate of number of seconds remaining in the half.
-  STREAM(dropInTeam); // TEAM_BLUE, TEAM_RED
-  STREAM(dropInTime); // number of seconds passed since the last drop in. -1 before first dropin.
-  STREAM(secondaryState);  // Extra state information - (STATE2_NORMAL, STATE2_PENALTYSHOOT, etc)
-  STREAM(timeLastPackageReceived) // used to decide wether a gameController is running
-  STREAM_REGISTER_FINISH;
-}
-
-#ifndef RELEASE
-static void drawDigit(int digit, const Vector3<>& pos, float size, const ColorRGBA& color)
-{
-  static const Vector3<> points[8] =
+  static const Vector3f points[8] =
   {
-    Vector3<>(1, 0, 1),
-    Vector3<>(1, 0, 0),
-    Vector3<>(0, 0, 0),
-    Vector3<>(0, 0, 1),
-    Vector3<>(0, 0, 2),
-    Vector3<>(1, 0, 2),
-    Vector3<>(1, 0, 1),
-    Vector3<>(0, 0, 1)
+    Vector3f(1, 0, 1),
+    Vector3f(1, 0, 0),
+    Vector3f(0, 0, 0),
+    Vector3f(0, 0, 1),
+    Vector3f(0, 0, 2),
+    Vector3f(1, 0, 2),
+    Vector3f(1, 0, 1),
+    Vector3f(0, 0, 1)
   };
   static const unsigned char digits[10] =
   {
@@ -60,54 +44,65 @@ static void drawDigit(int digit, const Vector3<>& pos, float size, const ColorRG
   for(int i = 0; i < 7; ++i)
     if(digit & (1 << i))
     {
-      Vector3<> from = pos - points[i] * size;
-      Vector3<> to = pos - points[i + 1] * size;
-      LINE3D("representation:GameInfo", from.x, from.y, from.z, to.x, to.y, to.z, 2, color);
+      Vector3f from = pos - points[i] * size;
+      Vector3f to = pos - points[i + 1] * size;
+      LINE3D("representation:GameInfo", from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), 2, color);
     }
 }
-#endif
 
 void GameInfo::draw() const
 {
-  DECLARE_DEBUG_DRAWING3D("representation:GameInfo", "field",
+  DEBUG_DRAWING3D("representation:GameInfo", "field")
   {
-    int mins = std::abs((int) (short) secsRemaining) / 60;
-    int secs = std::abs((int) (short) secsRemaining) % 60;
-    ColorRGBA color = (short) secsRemaining < 0 ? ColorRGBA(255, 0, 0) : ColorRGBA();
-    drawDigit(mins / 10, Vector3<>(-350, 3500, 1000), 200, color);
-    drawDigit(mins % 10, Vector3<>(-80, 3500, 1000), 200, color);
-    drawDigit(secs / 10, Vector3<>(280, 3500, 1000), 200, color);
-    drawDigit(secs % 10, Vector3<>(550, 3500, 1000), 200, color);
+    const int mins = std::abs((int)(short)secsRemaining) / 60;
+    const int secs = std::abs((int)(short)secsRemaining) % 60;
+    const ColorRGBA color = (short)secsRemaining < 0 ? ColorRGBA::red : ColorRGBA::black;
+    drawDigit(mins / 10, Vector3f(-350, 3500, 1000), 200, color);
+    drawDigit(mins % 10, Vector3f(-80, 3500, 1000), 200, color);
+    drawDigit(secs / 10, Vector3f(280, 3500, 1000), 200, color);
+    drawDigit(secs % 10, Vector3f(550, 3500, 1000), 200, color);
     LINE3D("representation:GameInfo", 0, 3500, 890, 0, 3500, 910, 3, color);
     LINE3D("representation:GameInfo", 0, 3500, 690, 0, 3500, 710, 3, color);
-  });
+  }
 
-  DECLARE_DEBUG_DRAWING("representation:GameInfo","drawingOnField",
+  DEBUG_DRAWING("representation:GameInfo", "drawingOnField")
   {
-    DRAWTEXT("representation:GameInfo", -5000, -3200, 200, ColorRGBA::white, "Time remaining: " << (int)(secsRemaining/60) << ":" << (secsRemaining%60));
+    DRAWTEXT("representation:GameInfo", -5000, -3200, 200, ColorRGBA::white, "Time remaining: " << (int)(secsRemaining / 60) << ":" << (secsRemaining % 60));
     DRAWTEXT("representation:GameInfo", -5000, -3400, 200, ColorRGBA::white, (firstHalf ? "First" : "Second") << " half");
-    std::string stateStr;
-    switch(state)
-    {
-    case STATE_INITIAL:
-      stateStr = "Initial";
-      break;
-    case STATE_READY:
-      stateStr = "Ready";
-      break;
-    case STATE_SET:
-      stateStr = "Set";
-      break;
-    case STATE_PLAYING:
-      stateStr = "Playing";
-      break;
-    case STATE_FINISHED:
-      stateStr = "Finished";
-      break;
-    default:
-      stateStr = "Unknown";
-    }
+    DRAWTEXT("representation:GameInfo", -3500, -3400, 180, ColorRGBA::white, "State: " << getStateAsString());
+  }
+}
 
-    DRAWTEXT("representation:GameInfo", -3500, 2200, 14, ColorRGBA::white, "State: " << stateStr);
-  });
+std::string GameInfo::getStateAsString() const
+{
+  switch(state)
+  {
+    case STATE_INITIAL:
+      return "Initial";
+    case STATE_READY:
+      return "Ready";
+    case STATE_SET:
+      return "Set";
+    case STATE_PLAYING:
+      return "Playing";
+    case STATE_FINISHED:
+      return "Finished";
+    default:
+      return "Unknown";
+  }
+}
+
+void GameInfo::serialize(In* in, Out* out)
+{
+  STREAM_REGISTER_BEGIN;
+  STREAM(gameType); // type of the game (GAME_ROUNDROBIN, GAME_PLAYOFF, GAME_DROPIN)
+  STREAM(state); // STATE_READY, STATE_PLAYING, ...
+  STREAM(firstHalf); // 1 = game in first half, 0 otherwise
+  STREAM(kickOffTeam); // team number
+  STREAM(secondaryState);  // Extra state information - (STATE2_NORMAL, STATE2_PENALTYSHOOT, etc)
+  STREAM(dropInTeam); // team number
+  STREAM(dropInTime); // number of seconds passed since the last drop in. -1 before first dropin.
+  STREAM(secsRemaining); // estimate of number of seconds remaining in the half.
+  STREAM(timeLastPackageReceived) // used to decide whether a gameController is running
+  STREAM_REGISTER_FINISH;
 }

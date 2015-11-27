@@ -1,54 +1,53 @@
 /****************************************************************************
 **
-** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** This file is part of the tools applications of the Qt Toolkit.
 **
-** This file is part of a Qt Solutions component.
+** $QT_BEGIN_LICENSE:LGPL$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
-** You may use this file under the terms of the BSD license as follows:
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** "Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above copyright
-**     notice, this list of conditions and the following disclaimer in
-**     the documentation and/or other materials provided with the
-**     distribution.
-**   * Neither the name of Nokia Corporation and its Subsidiary(-ies) nor
-**     the names of its contributors may be used to endorse or promote
-**     products derived from this software without specific prior written
-**     permission.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
+**
+** $QT_END_LICENSE$
 **
 ****************************************************************************/
 
-
 #include "qtgroupboxpropertybrowser.h"
-#include <QSet>
-#include <QGridLayout>
-#include <QLabel>
-#include <QGroupBox>
-#include <QTimer>
-#include <QMap>
+#include <QtCore/QSet>
+#include <QtGui/QGridLayout>
+#include <QtGui/QLabel>
+#include <QtGui/QGroupBox>
+#include <QtCore/QTimer>
+#include <QtCore/QMap>
 
-#if QT_VERSION >= 0x040400
 QT_BEGIN_NAMESPACE
-#endif
 
 class QtGroupBoxPropertyBrowserPrivate
 {
@@ -144,8 +143,6 @@ void QtGroupBoxPropertyBrowserPrivate::slotUpdate()
             item->widgetLabel->setParent(w);
         } else {
             item->widgetLabel = new QLabel(w);
-            item->widgetLabel->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed));
-            item->widgetLabel->setTextFormat(Qt::PlainText);
         }
         int span = 1;
         if (item->widget)
@@ -253,8 +250,6 @@ void QtGroupBoxPropertyBrowserPrivate::propertyInserted(QtBrowserItem *index, Qt
     newItem->widget = createEditor(index->property(), parentWidget);
     if (!newItem->widget) {
         newItem->widgetLabel = new QLabel(parentWidget);
-        newItem->widgetLabel->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed));
-        newItem->widgetLabel->setTextFormat(Qt::PlainText);
     } else {
         QObject::connect(newItem->widget, SIGNAL(destroyed()), q_ptr, SLOT(slotEditorDestroyed()));
         m_widgetToItem[newItem->widget] = newItem;
@@ -313,10 +308,15 @@ void QtGroupBoxPropertyBrowserPrivate::propertyRemoved(QtBrowserItem *index)
     } else {
         WidgetItem *par = parentItem->parent;
         QGridLayout *l = 0;
+        int oldRow = -1;
         if (!par) {
             l = m_mainLayout;
+            oldRow = m_children.indexOf(parentItem);
         } else {
             l = par->layout;
+            oldRow = par->children.indexOf(parentItem);
+            if (hasHeader(par))
+                oldRow += 2;
         }
 
         if (parentItem->widget) {
@@ -426,7 +426,6 @@ void QtGroupBoxPropertyBrowserPrivate::updateItem(WidgetItem *item)
         font.setUnderline(false);
         item->widgetLabel->setFont(font);
         item->widgetLabel->setText(property->valueText());
-        item->widgetLabel->setToolTip(property->valueText());
         item->widgetLabel->setEnabled(property->isEnabled());
     }
     if (item->widget) {
@@ -443,6 +442,9 @@ void QtGroupBoxPropertyBrowserPrivate::updateItem(WidgetItem *item)
 
 /*!
     \class QtGroupBoxPropertyBrowser
+    \internal
+    \inmodule QtDesigner
+    \since 4.4
 
     \brief The QtGroupBoxPropertyBrowser class provides a QGroupBox
     based property browser.
@@ -471,9 +473,8 @@ void QtGroupBoxPropertyBrowserPrivate::updateItem(WidgetItem *item)
     Creates a property browser with the given \a parent.
 */
 QtGroupBoxPropertyBrowser::QtGroupBoxPropertyBrowser(QWidget *parent)
-    : QtAbstractPropertyBrowser(parent)
+    : QtAbstractPropertyBrowser(parent), d_ptr(new QtGroupBoxPropertyBrowserPrivate)
 {
-    d_ptr = new QtGroupBoxPropertyBrowserPrivate;
     d_ptr->q_ptr = this;
 
     d_ptr->init(this);
@@ -494,7 +495,6 @@ QtGroupBoxPropertyBrowser::~QtGroupBoxPropertyBrowser()
     const QMap<QtGroupBoxPropertyBrowserPrivate::WidgetItem *, QtBrowserItem *>::ConstIterator icend = d_ptr->m_itemToIndex.constEnd();
     for (QMap<QtGroupBoxPropertyBrowserPrivate::WidgetItem *, QtBrowserItem *>::ConstIterator it = d_ptr->m_itemToIndex.constBegin(); it != icend; ++it)
         delete it.key();
-    delete d_ptr;
 }
 
 /*!
@@ -521,8 +521,6 @@ void QtGroupBoxPropertyBrowser::itemChanged(QtBrowserItem *item)
     d_ptr->propertyChanged(item);
 }
 
-#if QT_VERSION >= 0x040400
 QT_END_NAMESPACE
-#endif
 
 #include "moc_qtgroupboxpropertybrowser.cpp"

@@ -1,10 +1,10 @@
 /**
-* @file Representations/Infrastructure/LEDRequest.h
-*
-* This file contains the LEDRequest class.
-*
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-*/
+ * @file Representations/Infrastructure/LEDRequest.h
+ *
+ * This file contains the LEDRequest struct.
+ *
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ */
 
 #pragma once
 
@@ -12,13 +12,13 @@
 #include "Tools/Enum.h"
 
 /**
-* This describes a LEDRequest
-*/
+ * This describes a LEDRequest
+ */
 STREAMABLE(LEDRequest,
 {
-public:
   /** ids for all LEDs */
   ENUM(LED,
+  {,
     faceLeftRed0Deg,
     faceLeftRed45Deg,
     faceLeftRed90Deg,
@@ -90,21 +90,34 @@ public:
     chestRed,
     chestGreen,
     chestBlue,
+    headLedRearLeft0,
+    headLedRearLeft1,
+    headLedRearLeft2,
+    headLedRearRight0,
+    headLedRearRight1,
+    headLedRearRight2,
+    headLedMiddleRight0,
+    headLedFrontRight0,
+    headLedFrontRight1,
+    headLedFrontLeft0,
+    headLedFrontLeft1,
+    headLedMiddleLeft0,
     footLeftRed,
     footLeftGreen,
     footLeftBlue,
     footRightRed,
     footRightGreen,
-    footRightBlue
-  );
+    footRightBlue,
+  });
 
   ENUM(LEDState,
+  {,
     off,
     on,
     blinking,
     fastBlinking,
-    half
-  );
+    half,
+  });
 
   LEDRequest()
   {
@@ -123,7 +136,7 @@ public:
   bool operator!=(const LEDRequest& other) const
   {
     return !(*this == other);
-  },
-
+  }
+  ,
   (LEDState[numOfLEDs]) ledStates, /**< The intended states of the LEDs (use type State). */
 });

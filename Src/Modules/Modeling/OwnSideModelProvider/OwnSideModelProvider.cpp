@@ -7,20 +7,17 @@
  */
 
 #include "OwnSideModelProvider.h"
-#include "Representations/Infrastructure/TeammateData.h"
-#include "Tools/Debugging/Debugging.h"
-#include "Tools/Streams/InStreams.h"
+#include "Tools/Settings.h"
 
-OwnSideModelProvider::OwnSideModelProvider()
-: lastPenalty(PENALTY_NONE),
+OwnSideModelProvider::OwnSideModelProvider() :
+  lastPenalty(PENALTY_NONE),
   lastGameState(STATE_INITIAL),
   distanceWalkedAtKnownPosition(0),
   largestXPossibleAtKnownPosition(0),
   manuallyPlaced(false),
   timeWhenPenalized(0),
   gameStateWhenPenalized(STATE_INITIAL)
-{
-}
+{}
 
 void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
 {
@@ -49,7 +46,8 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
       largestXPossibleAtKnownPosition = -theFieldDimensions.centerCircleRadius - awayFromLineDistance;
       ownSideModel.returnFromManualPenalty = true;
     }
-    else if(lastPenalty != PENALTY_NONE && theRobotInfo.penalty == PENALTY_NONE &&
+    else if(lastPenalty != PENALTY_NONE && lastPenalty != PENALTY_SPL_ILLEGAL_MOTION_IN_SET &&
+            theRobotInfo.penalty == PENALTY_NONE &&
             (theFrameInfo.getTimeSince(timeWhenPenalized) > minPenaltyTime || theGameInfo.state != gameStateWhenPenalized))
     {
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
@@ -61,15 +59,13 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
       if(manuallyPlaced)
       {
-        if(theRobotInfo.number == TeammateData::firstPlayer)
+        if(Global::getSettings().isGoalkeeper)
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;
-        else if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamColor)
+        else if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber)
           largestXPossibleAtKnownPosition = -theFieldDimensions.centerCircleRadius - awayFromLineDistance;
         else
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyArea + awayFromLineDistance;
       }
-      else if(theRobotInfo.number == TeammateData::firstPlayer)
-        largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyArea;
       else
         largestXPossibleAtKnownPosition = -awayFromLineDistance;
     }
@@ -77,7 +73,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
   else if(lastGameState == STATE_SET)
   {
     distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
-    if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamColor)
+    if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber)
       largestXPossibleAtKnownPosition = theFieldDimensions.xPosPenaltyStrikerStartPosition;
     else
       largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;
@@ -92,4 +88,4 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
     manuallyPlaced = false;
 }
 
-MAKE_MODULE(OwnSideModelProvider, Modeling)
+MAKE_MODULE(OwnSideModelProvider, modeling)

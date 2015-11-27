@@ -1,64 +1,25 @@
-
-A short guide on how to compile the Qt library with Visual Studio 2008:
+A short guide on how to compile the Qt library with Visual Studio 2015:
 
 Requirements:
-  Visual Studio 2008 (Command Prompt)
-  Cygwin
+  Visual Studio 2015 (Command Prompt)
+  ActivePerl (http://www.activestate.com/activeperl/downloads)
   some free disk space
   a lot of time
 
-1. Download and unpack the package (e.g. qt-win-opensource-src-4.5.3.zip) to the path <builddir> (e.g. F:\qt-win-opensource-src-4.5.3)
+1. Download and unpack the package (e.g. qt-everywhere-opensource-src-4.8.7.zip) to the path <builddir> (e.g. C:\Qt\qt-everywhere-opensource-src-4.8.7)
 
-2. Open the "Visual Studio 2008 Command Prompt" and go to <builddir>.
+2. Open the "Visual Studio 2015 x64 Command Prompt" and go to <builddir>.
 
-3. Type: 
+3. Type: configure.exe -debug-and-release -opensource -no-qt3support -opengl desktop -platform win32-msvc2015 -no-script -no-scripttools -no-webkit -nomake examples -nomake demos -mp
 
-   configure.exe -release -opensource -fast -no-stl -no-qt3support -platform win32-msvc2008
-	
 4. *wait*
 
-5. Type:
-   
-   nmake
+5. Type: nmake
    
 6. *wait*
 
-7. *wait*
+7. Type nmake install
 
 8. *wait*
 
 9. Done? The binaries (*.dll) and imports libraries (*.lib) are located at <builddir>\lib.
-
-10. Actually the header files are located at <builddir>\include, but the files in this directory just point on other files somewhere in <builddir>\src. Therefore, i suggest to use the following script to create a working set of header files.
-
-		#!/bin/bash
-
-		pushd include &>/dev/null
-		for dir in *; do 
-
-		  if [ $dir == Qt3Support ]; then continue; fi
-
-		  pushd $dir &>/dev/null
-		  mkdir -p ../../exportedInclude/$dir
-		  for name in *; do
-			case $name in	  
-				private) ;;
-				*.pri) ;;
-				*.h)
-				  read wayne file < $name
-				  cp $(echo $file | tr -d \") ../../exportedInclude/$dir
-				  ;;
-				*)
-				  cp -R $name ../../exportedInclude/$dir
-				  ;;
-			esac
-		  done
-		  popd &>/dev/null
-
-		done
-		popd &>/dev/null
-  
-   Paste the script into <builddir>\exportInclude, open a cygwin shell, change the working directory to <builddir> and run the script using ./exportInclude.
-   
-   When the script has finished, the exported header files are located at <builddir>\exportedInclude.
-   

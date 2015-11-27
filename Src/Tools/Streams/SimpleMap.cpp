@@ -25,7 +25,7 @@ SimpleMap::Literal::operator In&() const
   if(!stream)
     stream = new InTextMemory(literal.c_str(), literal.size());
   else
-    *(InTextMemory*) stream = InTextMemory(literal.c_str(), literal.size());
+    *(InTextMemory*)stream = InTextMemory(literal.c_str(), literal.size());
   return *stream;
 }
 
@@ -73,85 +73,85 @@ void SimpleMap::nextSymbol()
     string = "";
     switch(c)
     {
-    case 0:
-      symbol = eof;
-      return; // skip nextChar()
-    case '=':
-      symbol = equals;
-      break;
-    case ',':
-      symbol = comma;
-      break;
-    case ';':
-      symbol = semicolon;
-      break;
-    case '[':
-      symbol = lBracket;
-      break;
-    case ']':
-      symbol = rBracket;
-      break;
-    case '{':
-      symbol = lBrace;
-      break;
-    case '}':
-      symbol = rBrace;
-      break;
-    case '"':
-      string = c;
-      nextChar();
-      while(c && c != '"')
-      {
-        if(c == '\\')
+      case 0:
+        symbol = eof;
+        return; // skip nextChar()
+      case '=':
+        symbol = equals;
+        break;
+      case ',':
+        symbol = comma;
+        break;
+      case ';':
+        symbol = semicolon;
+        break;
+      case '[':
+        symbol = lBracket;
+        break;
+      case ']':
+        symbol = rBracket;
+        break;
+      case '{':
+        symbol = lBrace;
+        break;
+      case '}':
+        symbol = rBrace;
+        break;
+      case '"':
+        string = c;
+        nextChar();
+        while(c && c != '"')
+        {
+          if(c == '\\')
+            nextChar();
+          if(c)
+          {
+            string += c;
+            nextChar();
+          }
+        }
+        if(!c)
+          throw std::logic_error("Unexpected EOF in string");
+        string += c;
+        symbol = literal;
+        break;
+
+      case '/':
+        nextChar();
+        if(c == '*')
+        {
           nextChar();
-        if(c)
+          char prevChar = 0;
+          while(c && (c != '/' || prevChar != '*'))
+          {
+            prevChar = c;
+            nextChar();
+          }
+          if(!c)
+            throw new std::logic_error("Unexpected EOF in comment");
+          nextChar();
+          continue; // jump back to skipping whitespace
+        }
+        else if(c == '/')
+        {
+          nextChar();
+          while(c && c != '\n')
+            nextChar();
+          if(!c)
+            nextChar();
+          continue; // jump back to skipping whitespace
+        }
+        string = "/";
+        // no break;
+
+      default:
+        while(c && !isspace(c) && c != '=' && c != ',' && c != ';' && c != ']' && c != '}')
         {
           string += c;
           nextChar();
         }
-      }
-      if(!c)
-        throw std::logic_error("Unexpected EOF in string");
-      string += c;
-      symbol = literal;
-      break;
-
-    case '/':
-      nextChar();
-      if(c == '*')
-      {
-        nextChar();
-        char prevChar = 0;
-        while(c && (c != '/' || prevChar != '*'))
-        {
-          prevChar = c;
-          nextChar();
-        }
-        if(!c)
-          throw new std::logic_error("Unexpected EOF in comment");
-        nextChar();
-        continue; // jump back to skipping whitespace
-      }
-      else if(c == '/')
-      {
-        nextChar();
-        while(c && c != '\n')
-          nextChar();
-        if(!c)
-          nextChar();
-        continue; // jump back to skipping whitespace
-      }
-      string = "/";
-      // no break;
-
-    default:
-      while(c && !isspace(c) && c != '=' && c != ',' && c != ';' && c != ']')
-      {
-        string += c;
-        nextChar();
-      }
-      symbol = literal;
-      return; // skip nextChar
+        symbol = literal;
+        return; // skip nextChar
     }
 
     nextChar();

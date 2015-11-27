@@ -3,9 +3,9 @@
 
 bool MacFullscreen::available = false;
 
-void MacFullscreen::enable(MainWindow *window)
+void MacFullscreen::enable(MainWindow* window)
 {
-  NSString *string = [NSString string];
+  NSString* string = [NSString string];
   available = [string respondsToSelector:@selector(linguisticTagsInRange:scheme:options:orthography:tokenRanges:)] != NO;
   if(available)
   {
@@ -15,7 +15,7 @@ void MacFullscreen::enable(MainWindow *window)
   }
 }
 
-bool MacFullscreen::isActive(MainWindow *window)
+bool MacFullscreen::isActive(MainWindow* window)
 {
   NSView* nsview = (NSView*) window->winId();
   NSWindow* nswindow = [nsview window];

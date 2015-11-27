@@ -18,7 +18,7 @@ DataView::DataView(const QString& fullName,
                                        RobotConsole& console,
                                        StreamHandler& streamHandler) :
   theFullName(fullName), theIcon(":/Icons/tag_green.png"),
-  theConsole(console), theName(repName), pTheWidget(NULL),
+  theConsole(console), theName(repName), pTheWidget(nullptr),
   theStreamHandler(streamHandler),
   lastUpdated(0),
   theAutoSetModeIsEnabled(true),
@@ -29,7 +29,7 @@ bool DataView::handleMessage(InMessage& msg, const std::string& type, const std:
 {
   SYNC;
 
-  if(NULL != pTheWidget && //do nothing if no widget is associated with this view.
+  if(nullptr != pTheWidget && //do nothing if no widget is associated with this view.
      !theIgnoreUpdatesFlag && //Or updates should be ignored.
      SystemCall::getRealTimeSince(lastUpdated) > theUpdateTime)
   {
@@ -59,7 +59,7 @@ SimRobot::Widget* DataView::createWidget()
 
 QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyType, const QString& name, QtProperty* pParent)
 {
-  QtVariantProperty* pProp = NULL;
+  QtVariantProperty* pProp = nullptr;
   PropertiesMapType::iterator propIt = theProperties.find(fqn);
 
   if(propIt == theProperties.end())
@@ -75,7 +75,7 @@ QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyTyp
   }
 
   //add to parent if there is one.
-  if(NULL != pParent)
+  if(nullptr != pParent)
   {
     pParent->addSubProperty(pProp);
   }
@@ -86,7 +86,7 @@ QtVariantProperty* DataView::getProperty(const std::string& fqn, int propertyTyp
 void DataView::removeWidget()
 {
   SYNC;
-  pTheWidget = NULL;
+  pTheWidget = nullptr;
   theProperties.clear();
 }
 
@@ -114,7 +114,7 @@ void DataView::set()
   MessageQueue tempQ; //temp queue used to build the message
   {
     SYNC;
-    if(NULL != pTheCurrentRootNode)
+    if(nullptr != pTheCurrentRootNode)
     {
       tempQ.out.bin << debugRequest << char(1);
 

@@ -8,9 +8,15 @@
 #include "PropertyEditorFactory.h"
 #include <qtpropertybrowser.h>
 #include <limits>
+#include <cmath>
 #include "EditorEventFilter.h"
 #include "Platform/BHAssert.h"
+#include "Tools/Math/Angle.h"
 #include <QLabel>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QComboBox>
+#include <QAbstractItemView>
 
 /**
  * The class fixes the strange behavior that QSpinBox accepts the decimal
@@ -74,7 +80,7 @@ protected:
   }
 
 public:
-  FloatSpinBox(QWidget* parent) : QDoubleSpinBox(parent) {}
+  FloatSpinBox(QWidget* parent = 0) : QDoubleSpinBox(parent) {}
 };
 
 QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent)
@@ -83,7 +89,8 @@ QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager,
    * Whenever the user wants to edit a property a new editor is created.
    * The editor is destroyed as soon as the user finished editing the property.
    */
-  QWidget* pReturnWidget = NULL;
+  QWidget* pReturnWidget = nullptr;
+  QWidget* pFilterWidget = nullptr;
   //FIXME copy&paste code
   if(TypeDescriptor::getTypeId<unsigned int>() == pManager->propertyType(pProperty))
   {
@@ -152,15 +159,33 @@ QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager,
     connect(pBox, SIGNAL(valueChanged(int)), this, SLOT(slotSpinBoxValueChanged(int)));
     connect(pBox, SIGNAL(destroyed(QObject*)), this, SLOT(slotEditorDestroyed(QObject*)));
   }
+  else if(TypeDescriptor::getTypeId<AngleWithUnity>() == pManager->propertyType(pProperty))
+  {
+    AngleEditor* aEdit = new AngleEditor(pParent);
+    pFilterWidget = aEdit->fBox;
+    propertyToAngleEditor[pProperty] = aEdit;
+    angleEditorToProperty[aEdit] = pProperty;
+    AngleWithUnity angle = pManager->value(pProperty).value<AngleWithUnity>();
+    aEdit->setValue(angle);
+
+    connect(aEdit, SIGNAL(valueChanged(float)), this, SLOT(slotAngleEditorValueChanged(float)));
+    connect(aEdit, SIGNAL(unityChanged(int)), this, SLOT(slotAngleEditorUnityChanged(int)));
+    connect(aEdit, SIGNAL(destroyed(QObject*)), this, SLOT(slotEditorDestroyed(QObject*)));
+
+    pReturnWidget = aEdit;
+  }
   else
   {
     pReturnWidget = QtVariantEditorFactory::createEditor(pManager, pProperty, pParent);
   }
 
-  if(NULL != pReturnWidget)
+  if(nullptr != pReturnWidget)
   {
+    if(!pFilterWidget)
+      pFilterWidget = pReturnWidget;
+
     //The event filter is used to forward all events to the DataView
-    pReturnWidget->installEventFilter(new EditorEventFilter(this, pTheView, pReturnWidget, pProperty));
+    pFilterWidget->installEventFilter(new EditorEventFilter(this, pTheView, pFilterWidget, pProperty));
   }
   else
   {
@@ -176,34 +201,14 @@ QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager,
 
 void PropertyEditorFactory::connectPropertyManager(QtVariantPropertyManager* manager)
 {
-  connect(manager, SIGNAL(valueChanged(QtProperty*, const QVariant&)), this, SLOT(slotManagerValueChanged(QtProperty*, const QVariant&)));
   pTheManager = manager;
   QtVariantEditorFactory::connectPropertyManager(manager);
 }
 
 void PropertyEditorFactory::disconnectPropertyManager(QtVariantPropertyManager* manager)
 {
-  //FIXME disconnect signals that have been connected in connectPropertyManager
-}
-
-/**
- * This slot is invoked whenever a properties value changes.
- * It updates the editors value.
- */
-void PropertyEditorFactory::slotManagerValueChanged(QtProperty* property, const QVariant& val)
-{
-  //This method does not get called usually because the auto updating is disabled while editing.
-  if(propertyToSpinBox.contains(property))
-  {
-    int value = val.value<int>();
-    QSpinBox* pBox = propertyToSpinBox[property];
-    pBox->setValue(value);
-  }
-  else if(propertyToDoubleSpinBox.contains(property))
-  {
-    //FIXME float -> double
-    propertyToDoubleSpinBox[property]->setValue(val.value<float>()); //the variant contains a float not a double
-  }
+  QtVariantEditorFactory::disconnectPropertyManager(manager);
+  pTheManager = nullptr;
 }
 
 /**
@@ -214,9 +219,9 @@ void PropertyEditorFactory::slotSpinBoxValueChanged(int newValue)
 {
   QSpinBox* pCaller = qobject_cast<QSpinBox*>(QObject::sender());
 
-  ASSERT(pCaller != NULL); //qobject_cast returns NULL in case of error
+  ASSERT(pCaller != nullptr); //qobject_cast returns nullptr in case of error
   ASSERT(spinBoxToProperty.contains(pCaller));
-  ASSERT(NULL != pTheManager);
+  ASSERT(nullptr != pTheManager);
 
   pTheManager->setValue(spinBoxToProperty[pCaller], QVariant::fromValue(newValue));
 }
@@ -229,19 +234,47 @@ void PropertyEditorFactory::slotFloatSpinBoxValueChanged(double newValue)
 {
   QDoubleSpinBox* pCaller = qobject_cast<QDoubleSpinBox*>(QObject::sender());
 
-  ASSERT(NULL != pCaller); //qobject_cast returns NULL in case of error
+  ASSERT(nullptr != pCaller); //qobject_cast returns nullptr in case of error
   ASSERT(doubleSpinBoxToProperty.contains(pCaller));
-  ASSERT(NULL != pTheManager);
+  ASSERT(nullptr != pTheManager);
 
-  float val = (float)newValue;//this is ok because the spinBox was limited to float ranges
+  float val = static_cast<float>(newValue);//this is ok because the spinBox was limited to float ranges
   pTheManager->setValue(doubleSpinBoxToProperty[pCaller], QVariant::fromValue(val));
+}
+
+void PropertyEditorFactory::slotAngleEditorValueChanged(float newValue)
+{
+  AngleEditor* pCaller = qobject_cast<AngleEditor*>(QObject::sender());
+
+  ASSERT(nullptr != pCaller); //qobject_cast returns nullptr in case of error
+  ASSERT(angleEditorToProperty.contains(pCaller));
+  ASSERT(nullptr != pTheManager);
+
+  AngleWithUnity oldAngle = pTheManager->value(angleEditorToProperty[pCaller]).value<AngleWithUnity>();
+  AngleWithUnity newAngle = oldAngle.deg ? Angle::fromDegrees(newValue) : Angle(newValue);
+  newAngle.deg = oldAngle.deg;
+  pTheManager->setValue(angleEditorToProperty[pCaller], QVariant::fromValue(newAngle));
+}
+
+void PropertyEditorFactory::slotAngleEditorUnityChanged(int index)
+{
+  AngleEditor* pCaller = qobject_cast<AngleEditor*>(QObject::sender());
+
+  ASSERT(nullptr != pCaller); //qobject_cast returns nullptr in case of error
+  ASSERT(angleEditorToProperty.contains(pCaller));
+  ASSERT(nullptr != pTheManager);
+
+  AngleWithUnity angle = pTheManager->value(angleEditorToProperty[pCaller]).value<AngleWithUnity>();
+  angle.deg = index == 0;
+  pTheManager->setValue(angleEditorToProperty[pCaller], QVariant::fromValue(angle));
+  pCaller->setValue(angle);
 }
 
 void PropertyEditorFactory::slotEditorDestroyed(QObject* pObject)
 {
   //since we only get a pointer to QObject and not to QSpinBox or QDoubleSpinBox
   //we have to search all maps to find the right one :(
-  //note: qobject_cast does not work. Casting pObject to QSpinBox always returns NULL, even if it is a QSpinBox ...
+  //note: qobject_cast does not work. Casting pObject to QSpinBox always returns nullptr, even if it is a QSpinBox ...
 
   QMap<QSpinBox*, QtProperty*>::ConstIterator itEditor = spinBoxToProperty.constBegin();
   while(itEditor != spinBoxToProperty.constEnd())
@@ -269,5 +302,76 @@ void PropertyEditorFactory::slotEditorDestroyed(QObject* pObject)
       return; //there can only be one editor in any of the lists.
     }
     itEditorDouble++;
+  }
+
+  QMap<AngleEditor*, QtProperty*>::ConstIterator itEditorAngle = angleEditorToProperty.constBegin();
+  while(itEditorAngle != angleEditorToProperty.constEnd())
+  {
+    if(itEditorAngle.key() == pObject)
+    {
+      AngleEditor* editor = itEditorAngle.key();
+      QtProperty* property = itEditorAngle.value();
+      propertyToAngleEditor.remove(property);
+      angleEditorToProperty.remove(editor);
+      return; //there can only be one editor in any of the lists.
+    }
+    itEditorAngle++;
+  }
+}
+
+AngleEditor::AngleEditor(QWidget* parent) :
+  QWidget(parent)
+{
+  QGridLayout* layout = new QGridLayout();
+  setLayout(layout);
+  fBox = new FloatSpinBox();
+  unityBox = new QComboBox();
+  layout->addWidget(fBox, 0, 0);
+
+#ifdef OSX
+  setAttribute(Qt::WA_MacShowFocusRect);
+  QWidget* w = new QWidget();
+  w->setLayout(new QHBoxLayout);
+  w->layout()->addWidget(unityBox);
+  w->layout()->setContentsMargins(0, 0, 0, 0);
+  layout->addWidget(w, 0, 1);
+#else
+  layout->addWidget(unityBox, 0, 1);
+#endif
+
+  layout->setColumnStretch(0, 100);
+  layout->setContentsMargins(0, 0, 0, 0);
+
+  fBox->setKeyboardTracking(false);
+  fBox->setDecimals(5);
+  fBox->setMinimum(-std::numeric_limits<float>::max());
+  fBox->setMaximum(std::numeric_limits<float>::max());
+
+  unityBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+  unityBox->setMinimumContentsLength(1);
+  unityBox->view()->setTextElideMode(Qt::ElideRight);
+  QStringList enumNames;
+  enumNames.push_back("deg");
+  enumNames.push_back("rad");
+  unityBox->addItems(enumNames);
+
+  connect(fBox, SIGNAL(valueChanged(double)), this, SLOT(updateValue(double)));
+  connect(unityBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUnity(int)));
+}
+
+void AngleEditor::setValue(const AngleWithUnity& value)
+{
+  unityBox->setCurrentIndex(value.deg ? 0 : 1);
+  if(value.deg)
+  {
+    // round to two decimals. Using the setDecimals() of the Spinbox
+    // triggers another valueChanged witch leads to some problems..
+    fBox->setValue(round(value.toDegrees() * 100) / 100);
+    fBox->setSingleStep(1.f);
+  }
+  else
+  {
+    fBox->setValue(value);
+    fBox->setSingleStep(1_deg);
   }
 }

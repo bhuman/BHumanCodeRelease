@@ -9,7 +9,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <semaphore.h>
-#include <cstdio>
 #include <string>
 #include <unistd.h>
 #include <ctime>

@@ -1,15 +1,18 @@
 /**
-* @file Process.cpp
-*
-* Implementation of class Process.
-*/
+ * @file Process.cpp
+ *
+ * Implementation of class Process.
+ */
 
 #include "Process.h"
 #include "Tools/Global.h"
 
-Process::Process(MessageQueue& debugIn, MessageQueue& debugOut)
-  : debugIn(debugIn), debugOut(debugOut)
+bool MultiDebugSenderBase::terminating = false;
+
+Process::Process(MessageQueue& debugIn, MessageQueue& debugOut) :
+  debugIn(debugIn), debugOut(debugOut)
 {
+  setGlobals();
   initialized = false;
 }
 
@@ -21,14 +24,11 @@ bool Process::processMain()
     initialized = true;
   }
 
-#ifndef RELEASE
-  debugIn.handleAllMessages(*this);
+  handleAllMessages(debugIn);
   debugIn.clear();
-#endif
 
   bool wait = main();
 
-#ifndef RELEASE
   if(Global::getDebugRequestTable().poll)
   {
     if(Global::getDebugRequestTable().pollCounter++ > 10)
@@ -37,12 +37,17 @@ bool Process::processMain()
       OUTPUT(idDebugResponse, text, "pollingFinished");
     }
   }
-#endif
   return wait;
+}
+
+void Process::handleAllMessages(MessageQueue& messageQueue)
+{
+  debugIn.handleAllMessages(*this);
 }
 
 void Process::setGlobals()
 {
+  Global::theAnnotationManager = &annotationManager;
   Global::theDebugOut = &debugOut.out;
   Global::theSettings = &settings;
   Global::theDebugRequestTable = &debugRequestTable;
@@ -59,17 +64,18 @@ bool Process::handleMessage(InMessage& message)
 {
   switch(message.getMessageID())
   {
-  case idDebugRequest:
-  {
-    DebugRequest debugRequest;
-    message.bin >> debugRequest;
-    Global::getDebugRequestTable().addRequest(debugRequest);
-    return true;
-  }
-  case idDebugDataChangeRequest:
-    Global::getDebugDataTable().processChangeRequest(message);
-    return true;
-  default:
-    return false;
+    case idDebugRequest:
+    {
+      DebugRequest debugRequest;
+      message.bin >> debugRequest;
+      Global::getDebugRequestTable().addRequest(debugRequest);
+      return true;
+    }
+    case idDebugDataChangeRequest:
+      Global::getDebugDataTable().processChangeRequest(message);
+      return true;
+    default:
+      return false;
   }
 }
+

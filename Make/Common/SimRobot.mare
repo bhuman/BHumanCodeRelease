@@ -1,7 +1,7 @@
 
 SimRobot = cppApplication + {
 
-  dependencies = { "SimRobotCore2", "SimRobotEditor", "SimRobotHelp", "SimulatedNao", "SpecialActions" },
+  dependencies = { "SimRobotCore2", "SimRobotEditor", "SimRobotHelp", "SimulatedNao" },
 
   defines += {
     "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_SVG_LIB", "QT_NO_STL"
@@ -30,9 +30,10 @@ SimRobot = cppApplication + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtOpenGL",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtSvg",
     }
-  },
+  }
+
   libs = {
-    if (platform == "Linux") { 
+    if (platform == "Linux") {
       "rt", "pthread", "QtGui", "QtCore", "QtSvg"
     }
     if (host == "Win32") {
@@ -43,13 +44,14 @@ SimRobot = cppApplication + {
       }
       "QtCore4", "QtGui4", "QtOpenGL4", "QtSvg4"
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
     }
-  },
-  
+  }
+
   root = "$(utilDirRoot)/SimRobot/Src/SimRobot"
   files = {
     "$(utilDirRoot)/SimRobot/Src/SimRobot/**.cpp" = cppSource
@@ -72,22 +74,22 @@ SimRobot = cppApplication + {
       "$(buildPlatformDir)/SimRobotHelp/$(configuration)/SimRobotHelp.dll" = copyFile
       "$(buildPlatformDir)/SimulatedNao/$(configuration)/SimulatedNao.dll" = copyFile
 
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtCore4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtGui4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtSvg4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtCore4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtGui4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtSvg4.dll" = copyFile
 
       // for SimRobotCore2
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtOpenGL4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/libxml2/Windows/$(archDir)/bin/libxml2.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/glew/Windows/bin/$(archDir)/glew32.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtOpenGL4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/libxml2/Windows/bin/libxml2.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/glew/Windows/bin/glew32.dll" = copyFile
 
       // for SimRobotHelp
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtCLucene4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtHelp4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtNetwork4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtSql4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtXml4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/$(archDir)/sqldrivers/qsqlite4.dll" = copyFile + {
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtCLucene4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtHelp4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtNetwork4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtSql4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtXml4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/sqldrivers/qsqlite4.dll" = copyFile + {
         output = "$(buildDir)/sqldrivers/qsqlite4.dll"
       }
     }
@@ -104,5 +106,9 @@ SimRobot = cppApplication + {
 
   linkFlags += {
     if (tool == "vcxproj" && configuration == "Debug") { "/NODEFAULTLIB:msvcrt.lib" }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
   }
 }

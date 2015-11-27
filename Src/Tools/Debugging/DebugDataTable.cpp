@@ -1,4 +1,4 @@
-/*
+/**
  * @file Tools/Debugging/DebugDataTable.cpp
  * This file implements a table for generic handling of streamable debug data.
  * Representations mentioned in the table will be overwritten with the table
@@ -15,7 +15,7 @@
 DebugDataTable::~DebugDataTable()
 {
   for(std::unordered_map< std::string, char*>::iterator iter = table.begin(); iter != table.end(); ++iter)
-    delete iter->second;
+    delete[] iter->second;
 }
 
 void DebugDataTable::processChangeRequest(InMessage& in)

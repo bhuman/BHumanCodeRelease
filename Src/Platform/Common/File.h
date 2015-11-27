@@ -92,6 +92,15 @@ public:
   size_t getSize();
 
   /**
+   * The function returns the full path of the file.
+   * @return The full path name actually used or the file searched for
+   *         if it was not found. If the file was opened, the path can
+   *         still be relative to the current directory if the B-Human
+   *         directory was specified this way.
+   */
+  std::string getFullName() const {return fullName;}
+
+  /**
   * The function returns the current BH directory,
   * e.g. /home/nao or <..>/B-Human
   * @return The current BHDir
@@ -108,4 +117,5 @@ public:
 
 private:
   void* stream; /**< File handle. */
+  std::string fullName; /**< The full path name actually used or the file searched for if it was not found. */
 };

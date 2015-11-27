@@ -98,6 +98,12 @@ QString CABSLGraphViewObject::generateDotFileContent()
 
   // Create dot file
   QString dotSource = "digraph G {\n";
+  dotSource += "node [style=filled,fontname=Arial"
+#ifdef OSX
+  "MT"
+#endif
+  ",fontsize=9,height=0.2];\n";
+  dotSource += "concentrate = true;\n";
   foreach(Option* option, options)
     dotSource += option->declareNode();
   foreach(Option* option, options)

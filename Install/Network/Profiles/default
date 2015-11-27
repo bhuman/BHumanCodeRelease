@@ -4,8 +4,8 @@ ap_scan=1
 
 network={
   ssid="NAME OF THE NETWORK"
-  key_mgmt=NONE
-  wep_tx_keyidx=0
-  wep_key0="THE PASSWORD"
+  key_mgmt=WPA-PSK
+  pairwise=CCMP
+  group=CCMP
+  psk="PASSWORD"
 }
-

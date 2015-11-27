@@ -31,7 +31,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <string.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -39,10 +38,6 @@
 #include <sys/poll.h>
 #include <errno.h>
 #include <stdarg.h>
-
-#ifndef __GNUC__
-#define __inline__ inline
-#endif
 
 #include <alsa/asoundef.h>
 #include <alsa/version.h>

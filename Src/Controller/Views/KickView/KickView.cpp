@@ -175,13 +175,13 @@ bool KickViewHeaderedWidget::canClose()
     return true;
   switch(QMessageBox::warning(this, tr("KickView"), tr("Do you want to save changes to %1?").arg(fileName), QMessageBox::Save  | QMessageBox::Discard | QMessageBox::Cancel))
   {
-  case QMessageBox::Save:
-    saveButtonClicked();
-    break;
-  case QMessageBox::Discard:
-    break;
-  default:
-    return false;
+    case QMessageBox::Save:
+      saveButtonClicked();
+      break;
+    case QMessageBox::Discard:
+      break;
+    default:
+      return false;
   }
   return true;
 }
@@ -192,8 +192,8 @@ void KickViewHeaderedWidget::newButtonClicked()
   strcpy(parameters.name, "newKick");
   fileName = QString("newKick.kmc");
   parameters.numberOfPhases = 0;
-  parameters.footOrigin = Vector3<> (0.f, 60.f, -210.f);
-  parameters.armOrigin = Vector3<>(0.f, 100.f, 30.f);
+  parameters.footOrigin = Vector3f(0.f, 60.f, -210.f);
+  parameters.armOrigin = Vector3f(0.f, 100.f, 30.f);
   parameters.kdx = 0;
   parameters.kix = 0;
   parameters.kpx = 0;
@@ -204,7 +204,7 @@ void KickViewHeaderedWidget::newButtonClicked()
   parameters.loop = false;
   parameters.preview = 100;
   parameters.autoComTra = false;
-  parameters.comOrigin = Vector2<>(10.f, 0.f);
+  parameters.comOrigin = Vector2f(10.f, 0.f);
 
   undo.clear();
   redo.clear();
@@ -280,12 +280,12 @@ void KickViewHeaderedWidget::saveButtonClicked()
 void KickViewHeaderedWidget::writeParametersToFile(const std::string& name)
 {
   OutTextFile file(name, false);
-  file << "footOrigin" << "=" << "{x" << "=" << parameters.footOrigin.x << ";" << "y"  << "=" << parameters.footOrigin.y << ";" << "z"  << "=" << parameters.footOrigin.z << ";};" << endl;
-  file << "footRotOrigin" << "=" << "{x" << "=" << parameters.footRotOrigin.x << ";" << "y"  << "=" << parameters.footRotOrigin.y << ";" << "z"  << "=" << parameters.footRotOrigin.z << ";};" << endl;
-  file << "armOrigin" << "=" << "{x" << "=" << parameters.armOrigin.x << ";" << "y"  << "=" << parameters.armOrigin.y << ";" << "z"  << "=" << parameters.armOrigin.z << ";};" << endl;
-  file << "handRotOrigin" << "=" << "{x" << "=" << parameters.handRotOrigin.x << ";" << "y"  << "=" << parameters.handRotOrigin.y << ";" << "z"  << "=" << parameters.handRotOrigin.z << ";};" << endl;
-  file << "comOrigin" << "=" << "{x" << "=" << parameters.comOrigin.x << ";" << "y"  << "=" << parameters.comOrigin.y << ";};" << endl;
-  file << "headOrigin" << "=" << "{x" << "=" << parameters.headOrigin.x << ";" << "y"  << "=" << parameters.comOrigin.y << ";};" << endl;
+  file << "footOrigin" << "=" << "{x" << "=" << parameters.footOrigin.x() << ";" << "y"  << "=" << parameters.footOrigin.y() << ";" << "z"  << "=" << parameters.footOrigin.z() << ";};" << endl;
+  file << "footRotOrigin" << "=" << "{x" << "=" << parameters.footRotOrigin.x() << ";" << "y"  << "=" << parameters.footRotOrigin.y() << ";" << "z"  << "=" << parameters.footRotOrigin.z() << ";};" << endl;
+  file << "armOrigin" << "=" << "{x" << "=" << parameters.armOrigin.x() << ";" << "y"  << "=" << parameters.armOrigin.y() << ";" << "z"  << "=" << parameters.armOrigin.z() << ";};" << endl;
+  file << "handRotOrigin" << "=" << "{x" << "=" << parameters.handRotOrigin.x() << ";" << "y"  << "=" << parameters.handRotOrigin.y() << ";" << "z"  << "=" << parameters.handRotOrigin.z() << ";};" << endl;
+  file << "comOrigin" << "=" << "{x" << "=" << parameters.comOrigin.x() << ";" << "y"  << "=" << parameters.comOrigin.y() << ";};" << endl;
+  file << "headOrigin" << "=" << "{x" << "=" << parameters.headOrigin.x() << ";" << "y"  << "=" << parameters.comOrigin.y() << ";};" << endl;
   file << "kpx" << "=" << parameters.kpx << ";" << endl;
   file << "kix" << "=" << parameters.kix << ";" << endl;
   file << "kdx" << "=" << parameters.kdx << ";" << endl;
@@ -314,70 +314,70 @@ void KickViewHeaderedWidget::writeParametersToFile(const std::string& name)
   {
     file << "{" << endl;
     file << "duration" << "=" << parameters.phaseParameters[i].duration << ";" << endl;
-    file << "leftFootTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].z << ";};" << endl;
-    file << "leftFootTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].z << ";};" << endl;
-    file << "leftFootRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].z << ";};" << endl;
-    file << "leftFootRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].z << ";};" << endl;
-    file << "rightFootTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].z << ";};" << endl;
-    file << "rightFootTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].z << ";};" << endl;
-    file << "rightFootRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].z << ";};" << endl;
-    file << "rightFootRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].z << ";};" << endl;
+    file << "leftFootTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].z() << ";};" << endl;
+    file << "leftFootTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].z() << ";};" << endl;
+    file << "leftFootRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].z() << ";};" << endl;
+    file << "leftFootRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].z() << ";};" << endl;
+    file << "rightFootTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].z() << ";};" << endl;
+    file << "rightFootTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].z() << ";};" << endl;
+    file << "rightFootRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].z() << ";};" << endl;
+    file << "rightFootRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].z() << ";};" << endl;
 
-    file << "leftArmTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].z << ";};" << endl;
-    file << "leftArmTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].z << ";};" << endl;
-    file << "leftHandRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].z << ";};" << endl;
-    file << "leftHandRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].z << ";};" << endl;
+    file << "leftArmTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].z() << ";};" << endl;
+    file << "leftArmTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].z() << ";};" << endl;
+    file << "leftHandRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].z() << ";};" << endl;
+    file << "leftHandRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].z() << ";};" << endl;
 
-    file << "rightArmTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].z << ";};" << endl;
-    file << "rightArmTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].z << ";};" << endl;
-    file << "rightHandRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].z << ";};" << endl;
-    file << "rightHandRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].z << ";};" << endl;
+    file << "rightArmTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].z() << ";};" << endl;
+    file << "rightArmTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].z() << ";};" << endl;
+    file << "rightHandRot1" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].z() << ";};" << endl;
+    file << "rightHandRot2" << "=" << "{x" << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].z() << ";};" << endl;
 
-    file << "comTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].comTra[1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].comTra[1].y << ";};" << endl;
-    file << "comTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].comTra[2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].comTra[2].y << ";};" << endl;
+    file << "comTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].comTra[1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].comTra[1].y() << ";};" << endl;
+    file << "comTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].comTra[2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].comTra[2].y() << ";};" << endl;
 
-    file << "headTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].headTra[1].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].headTra[1].y << ";};" << endl;
-    file << "headTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].headTra[2].x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].headTra[2].y << ";};" << endl;
+    file << "headTra1" << "=" << "{x" << "=" << parameters.phaseParameters[i].headTra[1].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].headTra[1].y() << ";};" << endl;
+    file << "headTra2" << "=" << "{x" << "=" << parameters.phaseParameters[i].headTra[2].x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].headTra[2].y() << ";};" << endl;
 
-    file << "odometryOffset" << "=" << "{x" << "=" << parameters.phaseParameters[i].odometryOffset.x
-         << ";" << "y"  << "=" << parameters.phaseParameters[i].odometryOffset.y
-         << ";" << "z"  << "=" << parameters.phaseParameters[i].odometryOffset.z << ";};" << endl;
+    file << "odometryOffset" << "=" << "{x" << "=" << parameters.phaseParameters[i].odometryOffset.x()
+         << ";" << "y"  << "=" << parameters.phaseParameters[i].odometryOffset.y()
+         << ";" << "z"  << "=" << parameters.phaseParameters[i].odometryOffset.z() << ";};" << endl;
 
     if(i < parameters.numberOfPhases - 1)
       file << "}," << endl;
@@ -472,12 +472,13 @@ void KickViewHeaderedWidget::redoChanges()
     emit redoAvailable(false);
 }
 
-KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointData& jointData, const JointCalibration& jc, const SensorData& sensorData, const RobotDimensions& rd, const std::string& mr, SimRobotCore2::Body* robot) :
-  fullName(fullName), console(console), motionRequest(motionRequest), jointData(jointData), jointCalibration(jc), sensorData(sensorData), robotDimensions(rd), motionRequestCommand(mr),
-  robot(robot) {}
+KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, 
+           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
+  fullName(fullName), console(console), motionRequest(motionRequest), jointAngles(jointAngles),
+  jointCalibration(jointCalibration), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
+{}
 
 SimRobot::Widget* KickView::createWidget()
 {
   return new KickViewHeaderedWidget(*this);
 }
-

@@ -29,7 +29,7 @@ public:
   {
   public:
     std::string name; /**< The name of the module. */
-    std::string category; /**< The category of the module. */
+    ModuleBase::Category category; /**< The category of the module. */
     std::vector<std::string> requirements; /**< The requirements of this module. */
     std::vector<std::string> representations; /**< The representations provided by this module. */
     char processIdentifier; /** The process in which this module is defined. */

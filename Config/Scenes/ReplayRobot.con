@@ -6,22 +6,30 @@ sl LOG ${Logfile:,../Logs/*.log}
 st on
 
 # all views are defined in another script
-call Views
+call Includes/ImageViews
+call Includes/FieldViews1
+call Includes/FieldViews2
+
+vid upper representation:FieldBoundary:Image
+vid lower representation:FieldBoundary:Image
+vid upper representation:PenaltyMarkPercept:Image
+vid lower representation:PenaltyMarkPercept:Image
 
 vfd worldState representation:GameInfo
 vfd worldState representation:SideConfidence
 vfd worldState representation:OwnTeamInfo
+
 # navigate in log file using shortcuts
 jc press 1 log pause # Shift+Crtl+A
-jc press 17 log goto 1 # Shift+Crtl+Q
 jc press 19 log start # Shift+Crtl+S
-jc press 23 log repeat # Shift+Crtl+W
-jc press 24 log forward # Shift+Crtl+X
+jc press 4 log goto 1 # Shift+Crtl+D
+jc press 6 log repeat # Shift+Crtl+F
 jc press 25 log backward # Shift+Crtl+Y
-jc press 6 log forward image # Shift+Crtl+F
-jc press 4 log backward image # Shift+Crtl+D
-jc press 10 log fast_forward # Shift+Ctrl+J  jump forward 100 frames
-jc press 11 log fast_rewind # Shift+Ctrl*k   jump back 100 frames
+jc press 24 log forward # Shift+Crtl+X
+jc press 3 log backward image # Shift+Crtl+C
+jc press 22 log forward image # Shift+Crtl+V
+jc press 2 log fast_rewind # Shift+Ctrl+B
+jc press 14 log fast_forward # Shift+Ctrl+N
 
 set representation:GroundContactState contact = true;
 ac both
@@ -37,15 +45,16 @@ log mr
 #enable behavior graph
 dr representation:ActivationGraph
 
-echo = Keys:
-echo = ctrl+shift+A: Pause replay
-echo = ctrl+shift+Q: Goto first frame
-echo = ctrl+shift+S: Start replaying the log
-echo = ctrl+shift+W: Loop forever
-echo = ctrl+shift+X: One frame forward
-echo = ctrl+shift+Y: One frame backward
-echo = ctrl+shift+F: Jump to next frame that contains an image
-echo = ctrl+shift+D: Jump to previous frame that contains an image
-echo = ctrl+shift+J: Jump forward 100 frames
-echo = ctrl+shift+K: Jump backward 100 frames
+echo Use keyboard to navigate the log.
+echo - Ctrl+Shift+A: Pause replay
+echo - Ctrl+Shift+S: Start/continue replaying the log
+echo - Ctrl+Shift+D: Goto first frame
+echo - Ctrl+Shift+F: Repeat current frame
+echo - Ctrl+Shift+Y: One frame backward
+echo - Ctrl+Shift+X: One frame forward
+echo - Ctrl+Shift+C: Jump to previous frame that contains an image
+echo - Ctrl+Shift+V: Jump to next frame that contains an image
+echo - Ctrl+Shift+B: Jump backward 100 frames
+echo - Ctrl+Shift+N: Jump forward 100 frames
+echo
 

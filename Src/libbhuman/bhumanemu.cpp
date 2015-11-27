@@ -72,7 +72,7 @@ int create()
   }
 
   // map the shared memory
-  if((data = (LBHData*)mmap(NULL, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
+  if((data = (LBHData*)mmap(nullptr, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
   {
     perror("libbhuman: mmap");
     close();

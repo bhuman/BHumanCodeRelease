@@ -26,9 +26,10 @@ public:
     float max;
     float stopCFM;
     float stopERP;
+    float offset;
 
     /** Default constructor */
-    Deflection() : min(0), max(0), stopCFM(-1.f), stopERP(-1.f) {}
+    Deflection() : min(0), max(0), stopCFM(-1.f), stopERP(-1.f), offset(0.f) {}
   };
 
   float x;

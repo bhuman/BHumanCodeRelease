@@ -9,7 +9,6 @@
 #include "TimeInfo.h"
 #include "Tools/MessageQueue/InMessage.h"
 #include "Platform/SystemCall.h"
-#include <cfloat>
 #include "Platform/BHAssert.h"
 #include <iostream>
 
@@ -59,7 +58,7 @@ bool TimeInfo::handleMessage(InMessage& message)
       unsigned time;
       message.bin >> watchId;
       message.bin >> time;
-      infos[watchId].add(static_cast<float>(time));
+      infos[watchId].push_front(static_cast<float>(time));
     }
     unsigned processStartTime;
     message.bin >> processStartTime;
@@ -69,10 +68,10 @@ bool TimeInfo::handleMessage(InMessage& message)
     int diff = frameNo - lastFrameNo;
     //sometimes we do not get data every frame. Compensate by assuming that the missing frames have
     // the same timing as the last one
-    if(lastFrameNo && diff < processDeltas.getMaxEntries())
+    if(lastFrameNo && diff < static_cast<int>(processDeltas.capacity()))
       for(int i = 0; i < diff; ++i)
       {
-        processDeltas.add(static_cast<float>(processStartTime - lastStartTime) / static_cast<float>(diff));
+        processDeltas.push_front(static_cast<float>(processStartTime - lastStartTime) / static_cast<float>(diff));
       }
 
     lastFrameNo = frameNo;
@@ -85,14 +84,14 @@ bool TimeInfo::handleMessage(InMessage& message)
 
 void TimeInfo::getStatistics(const Info& info, float& minTime, float& maxTime, float& avgTime) const
 {
-  avgTime = info.getAverage() / 1000.0f;
-  minTime = info.getMinimum() / 1000.0f;
-  maxTime = info.getMaximum() / 1000.0f;
+  avgTime = info.average() / 1000.0f;
+  minTime = info.minimum() / 1000.0f;
+  maxTime = info.maximum() / 1000.0f;
 }
 
 void TimeInfo::getProcessStatistics(float& outAvgFreq) const
 {
-  outAvgFreq = 1000.0f / processDeltas.getAverage();
+  outAvgFreq = processDeltas.sum() != 0.f ? 1000.0f / processDeltas.average() : 0.f;
 }
 
 std::string TimeInfo::getName(unsigned short watchId) const

@@ -1,18 +1,19 @@
 /**
  * @file Image.cpp
  *
- * Implementation of class Image.
+ * Implementation of struct Image.
  */
 
 #include <cstring>
 
 #include "Image.h"
-#include "Tools/ImageProcessing/ColorModelConversions.h"
+#include "Tools/ColorModelConversions.h"
 #include "Platform/BHAssert.h"
 
+const int Image::maxResolutionWidth;
+const int Image::maxResolutionHeight;
+
 Image::Image(bool initialize, int width, int height) :
-  timeStamp(0),
-  isReference(false),
   width(width),
   height(height),
   widthStep(width * 2)
@@ -25,8 +26,8 @@ Image::Image(bool initialize, int width, int height) :
         p->color = 0x80008000;
 }
 
-Image::Image(const Image& other)
-  : isReference(true)
+Image::Image(const Image& other) :
+  isReference(true)
 {
   *this = other;
 }
@@ -44,6 +45,7 @@ Image& Image::operator=(const Image& other)
   widthStep = 2 * width;
   timeStamp = other.timeStamp;
   isFullSize = other.isFullSize;
+
   if(isReference)
   {
     // allocate full size image and keep it that way independent of resolution
@@ -52,15 +54,15 @@ Image& Image::operator=(const Image& other)
   }
 
   const int size = width * sizeof(Pixel)* (isFullSize ? 2 : 1);
-
   for(int y = 0; y < height; ++y)
     memcpy((*this)[y], other[y], size);
+
   return *this;
 }
 
-void Image::setImage(const unsigned char* buffer)
+void Image::setImage(unsigned char* buffer)
 {
-  setImage((Pixel*) buffer);
+  setImage(reinterpret_cast<Pixel*>(buffer));
 }
 
 void Image::setImage(Pixel* buffer)
@@ -129,6 +131,25 @@ void Image::convertFromHSIToYCbCr(const Image& hsiImage)
                                             (*this)[y][x].cr);
 }
 
+void Image::setResolution(int newWidth, int newHeight, bool fullSize)
+{
+  width = newWidth;
+  height = newHeight;
+  widthStep = width * 2;
+  isFullSize = fullSize;
+}
+
+float Image::getColorDistance(const Image::Pixel& a, const Image::Pixel& b)
+{
+  int dy = int(a.y) - b.y;
+  int dcb = int(a.cb) - b.cb;
+  int dcr = int(a.cr) - b.cr;
+  dy *= dy;
+  dcb *= dcb;
+  dcr *= dcr;
+  return std::sqrt(float(dy + dcb + dcr));
+}
+
 void Image::serialize(In* in, Out* out)
 {
   STREAM_REGISTER_BEGIN;
@@ -153,15 +174,4 @@ void Image::serialize(In* in, Out* out)
   }
 
   STREAM_REGISTER_FINISH;
-}
-
-float Image::getColorDistance(const Image::Pixel& a, const Image::Pixel& b)
-{
-  int dy = int(a.y) - b.y;
-  int dcb = int(a.cb) - b.cb;
-  int dcr = int(a.cr) - b.cr;
-  dy *= dy;
-  dcb *= dcb;
-  dcr *= dcr;
-  return std::sqrt(float(dy + dcb + dcr));
 }

@@ -14,19 +14,15 @@ class Blackboard
 {
 private:
   /** A single entry of the blackboard. */
-  class Entry
+  struct Entry
   {
-  public:
-    Streamable* data; /**< The representation. */
-    int counter; /**< How many modules requested its existance? */
-
-    /** The default constructor zeros both values. */
-    Entry() : data(0), counter(0) {}
+    Streamable* data = nullptr; /**< The representation. */
+    int counter = 0; /**< How many modules requested its existance? */
   };
 
   class Entries; /**< Type of the map for all entries. */
   Entries& entries; /**< All entries of the blackboard. */
-  int version; /**< A version that is increased with each configuration change. */
+  int version = 0; /**< A version that is increased with each configuration change. */
 
   /**
    * Set the blackboard instance of a process.

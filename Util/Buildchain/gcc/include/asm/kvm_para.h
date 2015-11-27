@@ -2,7 +2,6 @@
 #define _ASM_X86_KVM_PARA_H
 
 #include <linux/types.h>
-#include <asm/hyperv.h>
 
 /* This CPUID returns the signature 'KVMKVMKVM' in ebx, ecx, and edx.  It
  * should be used to determine that a VM is running under KVM.
@@ -16,29 +15,11 @@
 #define KVM_FEATURE_CLOCKSOURCE		0
 #define KVM_FEATURE_NOP_IO_DELAY	1
 #define KVM_FEATURE_MMU_OP		2
-/* This indicates that the new set of kvmclock msrs
- * are available. The use of 0x11 and 0x12 is deprecated
- */
-#define KVM_FEATURE_CLOCKSOURCE2        3
-#define KVM_FEATURE_ASYNC_PF		4
-
-/* The last 8 bits are used to indicate how to interpret the flags field
- * in pvclock structure. If no bits are set, all flags are ignored.
- */
-#define KVM_FEATURE_CLOCKSOURCE_STABLE_BIT	24
 
 #define MSR_KVM_WALL_CLOCK  0x11
 #define MSR_KVM_SYSTEM_TIME 0x12
 
-/* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
-#define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
-#define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
-#define MSR_KVM_ASYNC_PF_EN 0x4b564d02
-
 #define KVM_MAX_MMU_OP_BATCH           32
-
-#define KVM_ASYNC_PF_ENABLED			(1 << 0)
-#define KVM_ASYNC_PF_SEND_ALWAYS		(1 << 1)
 
 /* Operations for KVM_HC_MMU_OP */
 #define KVM_MMU_OP_WRITE_PTE            1
@@ -64,15 +45,6 @@ struct kvm_mmu_op_flush_tlb {
 struct kvm_mmu_op_release_pt {
 	struct kvm_mmu_op_header header;
 	__u64 pt_phys;
-};
-
-#define KVM_PV_REASON_PAGE_NOT_PRESENT 1
-#define KVM_PV_REASON_PAGE_READY 2
-
-struct kvm_vcpu_pv_apf_data {
-	__u32 reason;
-	__u8 pad[60];
-	__u32 enabled;
 };
 
 

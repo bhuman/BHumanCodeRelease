@@ -7,21 +7,19 @@
 
 #include "USControl.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Streams/InStreams.h"
 
-USControl::USControl()
-: lastSendTime(0),
+USControl::USControl() :
+  lastSendTime(0),
   lastSwitchTime(0),
   currentMode(0),
   commandSent(false)
-{
-}
+{}
 
 void USControl::update(USRequest& usRequest)
 {
-  if(stopOnPlayDead &&
+  if(!enable || (stopOnPlayDead &&
      theMotionRequest.motion == MotionRequest::specialAction &&
-     theMotionRequest.specialActionRequest.specialAction == SpecialActionRequest::playDead)
+     theMotionRequest.specialActionRequest.specialAction == SpecialActionRequest::playDead))
   {
     usRequest.sendMode = -1;
     usRequest.receiveMode = -1;
@@ -58,4 +56,4 @@ void USControl::update(USRequest& usRequest)
   }
 }
 
-MAKE_MODULE(USControl, Sensing)
+MAKE_MODULE(USControl, sensing)

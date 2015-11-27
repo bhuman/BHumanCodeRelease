@@ -8,8 +8,6 @@
 
 #include <linux/limits.h>
 #include <linux/ioctl.h>
-#include <linux/blk_types.h>
-#include <linux/types.h>
 
 /*
  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
@@ -33,17 +31,11 @@
 #define SEEK_END	2	/* seek relative to end of file */
 #define SEEK_MAX	SEEK_END
 
-struct fstrim_range {
-	__u64 start;
-	__u64 len;
-	__u64 minlen;
-};
-
 /* And dynamically-tunable limits and defaults: */
 struct files_stat_struct {
-	unsigned long nr_files;		/* read only */
-	unsigned long nr_free_files;	/* read only */
-	unsigned long max_files;		/* tunable */
+	int nr_files;		/* read only */
+	int nr_free_files;	/* read only */
+	int max_files;		/* tunable */
 };
 
 struct inodes_stat_t {
@@ -61,7 +53,6 @@ struct inodes_stat_t {
 #define MAY_APPEND 8
 #define MAY_ACCESS 16
 #define MAY_OPEN 32
-#define MAY_CHDIR 64
 
 /*
  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
@@ -69,24 +60,24 @@ struct inodes_stat_t {
  */
 
 /* file is open for reading */
-#define FMODE_READ		((fmode_t)0x1)
+#define FMODE_READ		((fmode_t)1)
 /* file is open for writing */
-#define FMODE_WRITE		((fmode_t)0x2)
+#define FMODE_WRITE		((fmode_t)2)
 /* file is seekable */
-#define FMODE_LSEEK		((fmode_t)0x4)
+#define FMODE_LSEEK		((fmode_t)4)
 /* file can be accessed using pread */
-#define FMODE_PREAD		((fmode_t)0x8)
+#define FMODE_PREAD		((fmode_t)8)
 /* file can be accessed using pwrite */
-#define FMODE_PWRITE		((fmode_t)0x10)
+#define FMODE_PWRITE		((fmode_t)16)
 /* File is opened for execution with sys_execve / sys_uselib */
-#define FMODE_EXEC		((fmode_t)0x20)
+#define FMODE_EXEC		((fmode_t)32)
 /* File is opened with O_NDELAY (only set for block devices) */
-#define FMODE_NDELAY		((fmode_t)0x40)
+#define FMODE_NDELAY		((fmode_t)64)
 /* File is opened with O_EXCL (only set for block devices) */
-#define FMODE_EXCL		((fmode_t)0x80)
+#define FMODE_EXCL		((fmode_t)128)
 /* File is opened using open(.., 3, ..) and is writeable only for ioctls
    (specialy hack for floppy.c) */
-#define FMODE_WRITE_IOCTL	((fmode_t)0x100)
+#define FMODE_WRITE_IOCTL	((fmode_t)256)
 
 /*
  * Don't update ctime and mtime.
@@ -94,16 +85,10 @@ struct inodes_stat_t {
  * Currently a special hack for the XFS open_by_handle ioctl, but we'll
  * hopefully graduate it to a proper O_CMTIME flag supported by open(2) soon.
  */
-#define FMODE_NOCMTIME		((fmode_t)0x800)
+#define FMODE_NOCMTIME		((fmode_t)2048)
 
 /* Expect random access pattern */
-#define FMODE_RANDOM		((fmode_t)0x1000)
-
-/* File is huge (eg. /dev/kmem): treat loff_t as unsigned */
-#define FMODE_UNSIGNED_OFFSET	((fmode_t)0x2000)
-
-/* File was opened by fanotify and shouldn't generate fanotify events */
-#define FMODE_NONOTIFY		((fmode_t)0x1000000)
+#define FMODE_RANDOM		((fmode_t)4096)
 
 /*
  * The below are the various read and write types that we support. Some of
@@ -132,9 +117,12 @@ struct inodes_stat_t {
  *			immediately wait on this read without caring about
  *			unplugging.
  * READA		Used for read-ahead operations. Lower priority, and the
- *			block layer could (in theory) choose to ignore this
+ *			 block layer could (in theory) choose to ignore this
  *			request if it runs into resource problems.
  * WRITE		A normal async write. Device will be plugged.
+ * SWRITE		Like WRITE, but a special case for ll_rw_block() that
+ *			tells it to lock the buffer first. Normally a buffer
+ *			must be locked before doing IO.
  * WRITE_SYNC_PLUG	Synchronous write. Identical to WRITE, but passes down
  *			the hint that someone will be waiting on this IO
  *			shortly. The device must still be unplugged explicitly,
@@ -145,33 +133,40 @@ struct inodes_stat_t {
  *			immediately after submission. The write equivalent
  *			of READ_SYNC.
  * WRITE_ODIRECT_PLUG	Special case write for O_DIRECT only.
- * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
- * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
- *			non-volatile media on completion.
- * WRITE_FLUSH_FUA	Combination of WRITE_FLUSH and FUA. The IO is preceded
- *			by a cache flush and data is guaranteed to be on
- *			non-volatile media on completion.
+ * SWRITE_SYNC
+ * SWRITE_SYNC_PLUG	Like WRITE_SYNC/WRITE_SYNC_PLUG, but locks the buffer.
+ *			See SWRITE.
+ * WRITE_BARRIER	Like WRITE, but tells the block layer that all
+ *			previously submitted writes must be safely on storage
+ *			before this one is started. Also guarantees that when
+ *			this write is complete, it itself is also safely on
+ *			storage. Prevents reordering of writes on both sides
+ *			of this IO.
  *
  */
-#define RW_MASK			REQ_WRITE
-#define RWA_MASK		REQ_RAHEAD
+#define RW_MASK		1
+#define RWA_MASK	2
+#define READ 0
+#define WRITE 1
+#define READA 2		/* read-ahead  - don't block if no resources */
+#define SWRITE 3	/* for ll_rw_block() - wait for buffer lock */
+#define READ_SYNC	(READ | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG))
+#define READ_META	(READ | (1 << BIO_RW_META))
+#define WRITE_SYNC_PLUG	(WRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
+#define WRITE_SYNC	(WRITE_SYNC_PLUG | (1 << BIO_RW_UNPLUG))
+#define WRITE_ODIRECT_PLUG	(WRITE | (1 << BIO_RW_SYNCIO))
+#define WRITE_META	(WRITE | (1 << BIO_RW_META))
+#define SWRITE_SYNC_PLUG	\
+			(SWRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
+#define SWRITE_SYNC	(SWRITE_SYNC_PLUG | (1 << BIO_RW_UNPLUG))
+#define WRITE_BARRIER	(WRITE | (1 << BIO_RW_BARRIER))
 
-#define READ			0
-#define WRITE			RW_MASK
-#define READA			RWA_MASK
-
-#define READ_SYNC		(READ | REQ_SYNC | REQ_UNPLUG)
-#define READ_META		(READ | REQ_META)
-#define WRITE_SYNC_PLUG		(WRITE | REQ_SYNC | REQ_NOIDLE)
-#define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG)
-#define WRITE_ODIRECT_PLUG	(WRITE | REQ_SYNC)
-#define WRITE_META		(WRITE | REQ_META)
-#define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
-				 REQ_FLUSH)
-#define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
-				 REQ_FUA)
-#define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
-				 REQ_FLUSH | REQ_FUA)
+/*
+ * These aren't really reads or writes, they pass down information about
+ * parts of device that are now unused by the file system.
+ */
+#define DISCARD_NOBARRIER (WRITE | (1 << BIO_RW_DISCARD))
+#define DISCARD_BARRIER (DISCARD_NOBARRIER | (1 << BIO_RW_BARRIER))
 
 #define SEL_IN		1
 #define SEL_OUT		2
@@ -214,7 +209,6 @@ struct inodes_stat_t {
 #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
 #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
 #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-#define MS_BORN		(1<<29)
 #define MS_ACTIVE	(1<<30)
 #define MS_NOUSER	(1<<31)
 
@@ -241,8 +235,6 @@ struct inodes_stat_t {
 #define S_NOCMTIME	128	/* Do not update file c/mtime */
 #define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
 #define S_PRIVATE	512	/* Inode is fs-internal */
-#define S_IMA		1024	/* Inode has an associated IMA struct */
-#define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
 
 /*
  * Note that nosuid etc flags are inode-specific: setting some file-system
@@ -277,8 +269,6 @@ struct inodes_stat_t {
 #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
 #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
 #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
-#define IS_IMA(inode)		((inode)->i_flags & S_IMA)
-#define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
 
 /* the read-only stuff doesn't really belong here, but any other place is
    probably as bad and I don't want to create yet another include file. */
@@ -319,14 +309,12 @@ struct inodes_stat_t {
 #define BLKALIGNOFF _IO(0x12,122)
 #define BLKPBSZGET _IO(0x12,123)
 #define BLKDISCARDZEROES _IO(0x12,124)
-#define BLKSECDISCARD _IO(0x12,125)
 
 #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
 #define FIBMAP	   _IO(0x00,1)	/* bmap access */
 #define FIGETBSZ   _IO(0x00,2)	/* get the block size used for bmap */
 #define FIFREEZE	_IOWR('X', 119, int)	/* Freeze */
 #define FITHAW		_IOWR('X', 120, int)	/* Thaw */
-#define FITRIM		_IOWR('X', 121, struct fstrim_range)	/* Trim */
 
 #define	FS_IOC_GETFLAGS			_IOR('f', 1, long)
 #define	FS_IOC_SETFLAGS			_IOW('f', 2, long)

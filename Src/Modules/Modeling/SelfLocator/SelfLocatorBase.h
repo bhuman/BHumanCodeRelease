@@ -8,13 +8,13 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
-#include "Representations/BehaviorControl/BehaviorControlOutput.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/LocalizationTeamBall.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
@@ -22,13 +22,11 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/Perception/BallPercept.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Perception/FieldBoundary.h"
 #include "Representations/Perception/GoalPercept.h"
 #include "Representations/Perception/LinePercept.h"
-#include "Representations/Sensing/ArmContactModel.h"
-#include "Representations/Sensing/FallDownState.h"
+#include "Representations/Perception/PenaltyMarkPercept.h"
 
 MODULE(SelfLocator,
 {,
@@ -44,35 +42,30 @@ MODULE(SelfLocator,
   REQUIRES(FrameInfo),
   REQUIRES(MotionInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(CameraInfo),
   REQUIRES(BallModel),
-  REQUIRES(FallDownState),
-  REQUIRES(ArmContactModel),
   REQUIRES(FieldBoundary),
   REQUIRES(RobotPose),
   REQUIRES(SideConfidence),
-  USES(LocalizationTeamBall),
-  USES(BehaviorControlOutput),
+  REQUIRES(PenaltyMarkPercept),
   USES(MotionRequest),
-  PROVIDES_WITH_OUTPUT_AND_DRAW(RobotPose),
+  PROVIDES(RobotPose),
   LOADS_PARAMETERS(
   {,
     (int) numberOfSamples,                 /**< The number of samples used by the self-locator */
-    (Pose2D) defaultPoseDeviation,         /**< Standard deviation used for creating new hypotheses */
-    (Pose2D) filterProcessDeviation,       /**< The process noise for estimating the robot pose. */
-    (Pose2D) odometryDeviation,            /**< The percentage inaccuracy of the odometry. */
-    (Vector2<>) odometryRotationDeviation, /**< A rotation deviation of each walked mm. */
+    (Pose2f) defaultPoseDeviation,         /**< Standard deviation used for creating new hypotheses */
+    (Pose2f) filterProcessDeviation,       /**< The process noise for estimating the robot pose. */
+    (Pose2f) odometryDeviation,            /**< The percentage inaccuracy of the odometry. */
+    (Vector2f) odometryRotationDeviation, /**< A rotation deviation of each walked mm. */
     (float) goalAssociationMaxAngle,
-    (float) goalAssociationMaxCloseAngle,
-    (float) goalAssociationCloseThreshold,
-    (float) goalAssociationFarThreshold,
-    (float) goalAssociationMaxDistanceClose,
-    (float) goalAssociationMaxAngularDistanceClose,
-    (float) goalAssociationMaxAngularDistanceFar,
+    (float) goalAssociationMaxAngularDistance,
     (float) centerCircleAssociationDistance,
+    (float) penaltyMarkAssociationDistance,
     (float) lineAssociationCorridor, /**< The corridor used for relating seen lines with field lines. */
     (float) cornerAssociationDistance,
-    (Vector2<>) robotRotationDeviation, /**< Deviation of the rotation of the robot's torso */
-    (Vector2<>) robotRotationDeviationInStand, /**< Deviation of the rotation of the robot's torso when he is standing. */
+    (float) centerCircleGoalPostMaxDistanceDiff,
+    (Vector2f) robotRotationDeviation, /**< Deviation of the rotation of the robot's torso */
+    (Vector2f) robotRotationDeviationInStand, /**< Deviation of the rotation of the robot's torso when he is standing. */
     (float) standardDeviationGoalpostSamplingDistance,
     (int) templateMaxKeepTime,
     (float) templateUnknownPostAssumptionMaxDistance,
@@ -92,5 +85,6 @@ MODULE(SelfLocator,
     (float) goalieFieldBorderDistanceThreshold,
     (float) goalieNoPerceptsThreshold,
     (int) goalieJumpTimeout,
+    (float) positionJumpNotificationDistance,
   }),
 });

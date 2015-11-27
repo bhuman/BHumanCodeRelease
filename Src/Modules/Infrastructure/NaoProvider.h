@@ -1,97 +1,97 @@
 /**
-* @file Modules/Infrastructure/NaoProvider.h
-* The file declares a module that provides information from the Nao via DCM.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Modules/Infrastructure/NaoProvider.h
+ * The file declares a module that provides information from the Nao via DCM.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Platform/Linux/NaoBody.h"
 #include "Representations/Configuration/JointCalibration.h"
-#include "Representations/Infrastructure/JointData.h"
-#include "Representations/Infrastructure/SensorData.h"
-#include "Representations/Configuration/SensorCalibration.h"
-#include "Representations/Infrastructure/KeyStates.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JointRequest.h"
+#include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/USRequest.h"
-#include "Platform/Linux/NaoBody.h"
+#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
+#include "Representations/Infrastructure/SensorData/UsSensorData.h"
+#include "Tools/Module/Module.h"
 
 MODULE(NaoProvider,
 {,
   REQUIRES(JointCalibration),
-  REQUIRES(JointData),
   REQUIRES(LEDRequest),
-  REQUIRES(SensorCalibration),
   REQUIRES(USRequest),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(JointData),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(SensorData),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(KeyStates),
-  PROVIDES_WITH_MODIFY(FrameInfo),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(RobotInfo),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OwnTeamInfo),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(OpponentTeamInfo),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(GameInfo),
+
+  PROVIDES(FrameInfo),
+  REQUIRES(FrameInfo),
+
+  PROVIDES(FsrSensorData),
+  PROVIDES(InertialSensorData),
+  PROVIDES(JointSensorData),
+  PROVIDES(KeyStates),
+  PROVIDES(OpponentTeamInfo),
+  PROVIDES(OwnTeamInfo),
+  PROVIDES(RawGameInfo),
+  PROVIDES(RobotInfo),
+  PROVIDES(SystemSensorData),
+  PROVIDES(UsSensorData),
   USES(JointRequest), // Will be accessed in send()
+  LOADS_PARAMETERS(
+  {,
+    ((RobotInfo) NaoVersion) naoVersion, ///< V33, V4, V5 ...
+    ((RobotInfo) NaoType) naoBodyType, ///< H21, H25 ...
+    ((RobotInfo) NaoType) naoHeadType,
+  }),
 });
 
 #ifdef TARGET_ROBOT
 
 /**
-* @class NaoProvider
-* A module that provides information from the Nao.
-*/
+ * @class NaoProvider
+ * A module that provides information from the Nao.
+ */
 class NaoProvider : public NaoProviderBase
 {
 private:
-  static PROCESS_WIDE_STORAGE(NaoProvider) theInstance; /**< The only instance of this module. */
+  static PROCESS_LOCAL NaoProvider* theInstance; /**< The only instance of this module. */
 
   NaoBody naoBody;
-  SensorData sensorData; /**< The last sensor data received. */
-  KeyStates keyStates; /**< The last key states received. */
   RoboCup::RoboCupGameControlData gameControlData; /**< The last game control data received. */
   unsigned gameControlTimeStamp; /**< The time when the last gameControlData was received (kind of). */
-
-#ifndef RELEASE
-  float clippedLastFrame[JointData::numOfJoints]; /**< Array that indicates whether a certain joint value was clipped in the last frame (and what was the value)*/
-#endif
-
-  void update(JointData& jointData);
-  void update(SensorData& sensorData) {sensorData = this->sensorData;}
-  void update(KeyStates& keyStates) {keyStates = this->keyStates;}
-  void update(FrameInfo& frameInfo) {frameInfo.time = theJointData.timeStamp; frameInfo.cycleTime = 0.01f;}
-  void update(RobotInfo& robotInfo);
-  void update(OwnTeamInfo& ownTeamInfo);
-  void update(OpponentTeamInfo& opponentTeamInfo);
-  void update(GameInfo& gameInfo);
-
-  /**
-  * The function sends a command to the Nao.
-  */
-  void send();
+  float clippedLastFrame[Joints::numOfJoints]; /**< Array that indicates whether a certain joint value was clipped in the last frame (and what was the value)*/
+  unsigned lastBodyTemperatureReadTime = 0;
 
 public:
-  /**
-  * Constructor.
-  */
   NaoProvider();
-
-  /**
-  * Destructor.
-  */
   ~NaoProvider();
 
-  /**
-  * The method is called by process Motion to send the requests to the Nao.
-  */
+  /** The method is called by process Motion to send the requests to the Nao. */
   static void finishFrame();
-
-  static bool isFrameDataComplete();
-
   static void waitForFrameData();
+
+private:
+  void update(FrameInfo& frameInfo);
+  void update(FsrSensorData& fsrSensorData);
+  void update(InertialSensorData& inertialSensorData);
+  void update(JointSensorData& jointSensorData);
+  void update(KeyStates& keyStates);
+  void update(OpponentTeamInfo& opponentTeamInfo);
+  void update(OwnTeamInfo& ownTeamInfo);
+  void update(RawGameInfo& rawGameInfo);
+  void update(RobotInfo& robotInfo);
+  void update(SystemSensorData& systemSensorData);
+  void update(UsSensorData& usSensorData);
+
+  /** The function sends a command to the Nao. */
+  void send();
 };
 
 #else
@@ -100,19 +100,21 @@ public:
 class NaoProvider : public NaoProviderBase
 {
 private:
-  void update(JointData& jointData) {}
-  void update(SensorData& sensorData) {}
-  void update(KeyStates& keyStates) {}
   void update(FrameInfo& frameInfo) {}
-  void update(RobotInfo& robotInfo) {}
-  void update(OwnTeamInfo& ownTeamInfo) {}
+  void update(FsrSensorData& fsrSensorData) {}
+  void update(InertialSensorData& inertialSensorData) {}
+  void update(JointSensorData& jointSensorData) {}
+  void update(KeyStates& keyStates) {}
   void update(OpponentTeamInfo& opponentTeamInfo) {}
-  void update(GameInfo& gameInfo) {}
+  void update(OwnTeamInfo& ownTeamInfo) {}
+  void update(RawGameInfo& rawGameInfo) {}
+  void update(RobotInfo& robotInfo) {}
+  void update(SystemSensorData& systemSensorData) {}
+  void update(UsSensorData& usSensorData) {}
   void send();
 
 public:
   static void finishFrame() {}
-  static bool isFrameDataComplete() {return true;}
   static void waitForFrameData() {}
 };
 

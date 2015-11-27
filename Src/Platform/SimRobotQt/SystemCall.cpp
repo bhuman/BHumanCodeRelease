@@ -24,6 +24,7 @@
 #    endif
 #    include <unistd.h>
 #  else
+#    define NOMINMAX
 #    include <Windows.h>
 #  endif
 #  include <cstring>
@@ -32,6 +33,8 @@
 
 #ifndef WINDOWS
 #  ifdef OSX
+#    include <mach/mach_init.h>
+#    include <mach/thread_act.h>
 #    include <mach/mach_time.h>
 #    include <sys/param.h>
 #    include <sys/mount.h>
@@ -85,8 +88,12 @@ unsigned long long SystemCall::getCurrentThreadTime()
   LARGE_INTEGER timeLL;
   QueryPerformanceCounter(&timeLL);
   return static_cast<unsigned long long>(timeLL.QuadPart * 1000000 / frequency.QuadPart);
-#elif defined(OSX) // FIXME
-  return (unsigned long long) getRealSystemTime() * 1000;
+#elif defined(OSX)
+  thread_basic_info_data_t tbid;
+  mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
+  VERIFY(!thread_info(mach_thread_self(), THREAD_BASIC_INFO, (thread_info_t) &tbid, &count));
+  return (tbid.user_time.seconds + tbid.system_time.seconds) * 1000000ll +
+         tbid.user_time.microseconds + tbid.system_time.microseconds;
 #else
   clockid_t cid;
   struct timespec ts;
@@ -206,7 +213,7 @@ unsigned long long SystemCall::getFreeDiskSpace(const char* path)
     fullPath += '\\';
 
   ULARGE_INTEGER freeBytesAvailable;
-  if(GetDiskFreeSpaceEx(fullPath.c_str(), &freeBytesAvailable, NULL, NULL))
+  if(GetDiskFreeSpaceEx(fullPath.c_str(), &freeBytesAvailable, nullptr, nullptr))
     return freeBytesAvailable.QuadPart;
   else
     return 0;

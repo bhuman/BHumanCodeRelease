@@ -1,0 +1,28 @@
+if ENABLE_SWIG
+
+BUILT_SOURCES = ode_wrap.cpp
+
+SWIG_SOURCES = ode.i
+
+CLEANFILES = ode.py ode_wrap.cpp
+
+python_PYTHON = ode.py
+pyexec_LTLIBRARIES = _ode.la
+
+_ode_la_SOURCES = ode_wrap.cpp $(SWIG_SOURCES)
+
+AM_CPPFLAGS = \
+    $(AX_SWIG_PYTHON_CPPFLAGS) \
+    -I$(top_srcdir)/include
+
+AM_LDFLAGS = -module $(AX_SWIG_PYTHON_LIBS)
+
+_ode_la_LIBADD = $(top_builddir)/ode/src/libode.la
+
+ode_wrap.cpp : $(SWIG_SOURCES)
+	$(SWIG) -c++ $(AX_SWIG_PYTHON_OPT) $(AM_CPPFLAGS) \
+		-I$(top_srcdir)/include \
+		-I$(top_builddir)/include \
+		-o $@ $<
+
+endif

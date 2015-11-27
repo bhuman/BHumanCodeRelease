@@ -1,7 +1,7 @@
 /**
-* @file Representations/MotionControl/kickRequest.h
-* @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
-*/
+ * @file Representations/MotionControl/kickRequest.h
+ * @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
+ */
 
 #pragma once
 
@@ -10,12 +10,11 @@
 
 STREAMABLE(KickRequest,
 {
-public:
   ENUM(KickMotionID,
+  {,
     kickForward,
-    newKick,
-    none
-  );
+    none,
+  });
 
   static KickMotionID getKickMotionFromName(const char* name),
 

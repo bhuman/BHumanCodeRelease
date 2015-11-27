@@ -216,6 +216,7 @@ namespace SimRobotCore2
 
     virtual void setCamera(const float* pos, const float* target) = 0;
     virtual void getCamera(float* pos, float* target) = 0;
+    virtual void rotateCamera(float x, float y) = 0;
   };
 
   /**

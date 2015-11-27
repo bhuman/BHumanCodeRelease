@@ -21,24 +21,26 @@ MODULE(CognitionConfigurationDataProvider,
 {,
   REQUIRES(OwnTeamInfo),
   USES(CameraCalibrationNext),
-  PROVIDES_WITH_DRAW(FieldDimensions),
-  PROVIDES_WITH_MODIFY(CameraCalibration),
-  PROVIDES(ColorTable),
-  PROVIDES_WITH_MODIFY(RobotDimensions),
-  PROVIDES_WITH_MODIFY(DamageConfiguration),
-  PROVIDES_WITH_MODIFY_AND_DRAW(HeadLimits),
+  PROVIDES_WITHOUT_MODIFY(FieldDimensions),
+  PROVIDES(CameraCalibration),
+  PROVIDES_WITHOUT_MODIFY(ColorTable),
+  PROVIDES(RobotDimensions),
+  PROVIDES(DamageConfigurationBody),
+  PROVIDES(DamageConfigurationHead),
+  PROVIDES(HeadLimits),
 });
 
 class CognitionConfigurationDataProvider : public CognitionConfigurationDataProviderBase
 {
 private:
-  static PROCESS_WIDE_STORAGE(CognitionConfigurationDataProvider) theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static PROCESS_LOCAL CognitionConfigurationDataProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
 
   FieldDimensions* theFieldDimensions = nullptr;
   CameraCalibration* theCameraCalibration = nullptr;
   ColorCalibration* theColorCalibration = nullptr;
   RobotDimensions* theRobotDimensions = nullptr;
-  DamageConfiguration* theDamageConfiguration = nullptr;
+  DamageConfigurationBody* theDamageConfigurationBody = nullptr;
+  DamageConfigurationHead* theDamageConfigurationHead = nullptr;
   HeadLimits* theHeadLimits = nullptr;
   ColorCalibration colorCalibration;
 
@@ -46,15 +48,16 @@ private:
   void update(CameraCalibration& cameraCalibration);
   void update(ColorTable& cameraCalibration);
   void update(RobotDimensions& robotDimensions);
-  void update(DamageConfiguration& damageConfiguration);
+  void update(DamageConfigurationBody& damageConfigurationBody);
+  void update(DamageConfigurationHead& damageConfigurationHead);
   void update(HeadLimits& headLimits);
 
   void readFieldDimensions();
   void readCameraCalibration();
   void readColorCalibration();
-  void readCoachParameters();
   void readRobotDimensions();
-  void readDamageConfiguration();
+  void readDamageConfigurationBody();
+  void readDamageConfigurationHead();
   void readHeadLimits();
 
 public:

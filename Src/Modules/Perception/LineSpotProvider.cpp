@@ -1,19 +1,17 @@
+
 #include "LineSpotProvider.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Geometry.h"
 #include <algorithm>
-#include <iomanip>
 #include <limits>
 #include <deque>
 #include <algorithm>
-#include <cmath>
 #include <tuple>
-#include <Eigen/Geometry>
 
 using namespace std;
 
-MAKE_MODULE(LineSpotProvider, Perception)
+MAKE_MODULE(LineSpotProvider, perception)
 
 void LineSpotProvider::update(LinePercept& linePercept)
 {
@@ -33,12 +31,11 @@ void LineSpotProvider::update(LinePercept& linePercept)
     }
     linePercept.lines.emplace_back();
     PerceptLine& pLine = linePercept.lines.back();
-    pLine.dead = false;
-    pLine.midLine = false; 
+    pLine.midLine = false;
     if(theLineSpots.circleSeen)
     {//check if this is the midline
-      Vector2<> intersectionA;
-      Vector2<> intersectionB;
+      Vector2f intersectionA;
+      Vector2f intersectionB;
       const int numIntersections = Geometry::getIntersectionOfLineAndCircle(line.line,
                                    theLineSpots.circle, intersectionA, intersectionB);
       if(numIntersections == 2)
@@ -53,11 +50,13 @@ void LineSpotProvider::update(LinePercept& linePercept)
 
     pLine.first = line.firstField;
     pLine.last = line.lastField;
-    pLine.startInImage = Vector2<>(line.firstImg);
-    pLine.endInImage = Vector2<>(line.lastImg);
+    pLine.startInImage.x() = static_cast<float>(line.firstImg.x());
+    pLine.startInImage.y() = static_cast<float>(line.firstImg.y());
+    pLine.endInImage.x() = static_cast<float>(line.lastImg.x());
+    pLine.endInImage.y() = static_cast<float>(line.lastImg.y());
 
-    pLine.alpha = (pLine.last - pLine.first).rotateLeft().angle();
-    pLine.d = Geometry::getDistanceToLine(Geometry::Line(pLine.first, (pLine.last - pLine.first)), Vector2<>(0.f, 0.f));
+    pLine.alpha = Vector2f(pLine.last - pLine.first).rotateLeft().angle();
+    pLine.d = Geometry::getDistanceToLine(Geometry::Line(pLine.first, (pLine.last - pLine.first)), Vector2f::Zero());
   }
 
   if(theLineSpots.circleSeen)
@@ -72,6 +71,9 @@ void LineSpotProvider::update(LinePercept& linePercept)
     linePercept.intersections.emplace_back();
     linePercept.intersections.back().pos = i.pos;
     linePercept.intersections.back().type = (LinePercept::Intersection::IntersectionType) i.type;
+    linePercept.intersections.back().dir1 = i.dir1.normalized();
+    linePercept.intersections.back().dir2 = i.dir2.normalized();
+
   }
 }
 
@@ -97,20 +99,33 @@ void LineSpotProvider::update(LineSpots& lineSpotsExp)
   if(!theCameraMatrix.isValid)
     return; //cannot do anything without camera matrix
   //FIXME give attributes to methods instead of accessing them directly
-  STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:spots", findPotentialLineSpots(););
+  //STOPWATCH_WITH_PLOT("LineSpotProvider:spots") findPotentialLineSpots();
+  scanlinesVert.clear();
+  scanlinesVert.resize(thePotentialLineSpots.numOfScanlines);
+  for(const PotentialScanlineSpot& spot : thePotentialLineSpots.spots)
+  {
+    scanlinesVert.at(spot.scanlineIdx).emplace_back();
+    ScanlineSpot& last = scanlinesVert.at(spot.scanlineIdx).back();
+    last.heightInImg = spot.heightInImg;
+    last.spotInField = spot.spotInField;
+    last.spotInImg = spot.spotInImg;
+    last.usedAsStartingPoint = spot.usedAsStartingPoint;
+  }
   if(scanlinesVert.size() > 0)//if spots have been found
   {
-    STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:removeRobots",removeSpotsInsideRobots(););  
-    STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:lines", findLines(lineSpotsExp););
-    STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:validate", validateLines(lineSpotsExp););
-    STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:circles", findCircle(lineSpotsExp););
-    STOP_TIME_ON_REQUEST_WITH_PLOT("LineSpotProvider:intersect", findIntersections(lineSpotsExp););
+    STOPWATCH_WITH_PLOT("LineSpotProvider:removePlayers") removeSpotsInsidePlayers();
+    STOPWATCH_WITH_PLOT("LineSpotProvider:lines") findLines(lineSpotsExp);
+    STOPWATCH_WITH_PLOT("LineSpotProvider:validate") validateLines(lineSpotsExp);
+    STOPWATCH_WITH_PLOT("LineSpotProvider:circles") findCircle(lineSpotsExp);
+    STOPWATCH_WITH_PLOT("LineSpotProvider:intersect") findIntersections(lineSpotsExp);
   }
 }
 
 void calcVariance(const std::vector<int>& data, float& variance)
 {
   //see http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+  //NOTE: This code has been duplicated to the PenaltyMarkPerceptor, if you fix
+  //      a bug in here, fix it over there as well
   int n = 0;
   float Sum = 0;
   float Sum_sqr = 0;
@@ -128,7 +143,7 @@ void LineSpotProvider::validateLines(LineSpots& lineSpots) const
 {
   //For each line the hight of all spots should be roughly the same
   //if it is not that is an indication that for the line being made up of
-  //spots on a robot and a line
+  //spots on a player and a line
   for(vector<Line>::iterator line = lineSpots.lines.begin(); line < lineSpots.lines.end();)
   {
     float variance;
@@ -145,18 +160,23 @@ void LineSpotProvider::validateLines(LineSpots& lineSpots) const
 }
 
 void LineSpotProvider::addIntersection(LineSpots& ls, LineSpots::Intersection::IntersectionType type,
-                                       const Vector2<>& intersection) const
+                                       const Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2,
+                                       const Line& line1, const Line& line2) const
 {
-  COMPLEX_DRAWING("module:LineSpotProvider:intersections",
+  COMPLEX_DRAWING("module:LineSpotProvider:intersections")
   {
-    Vector2<> pInImg;
-    Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg);
-    DRAWTEXT("module:LineSpotProvider:intersections", pInImg.x, pInImg.y, 30,
-             ColorRGBA::black, LineSpots::Intersection::getName(type));
-  });
+    Vector2f pInImg;
+    if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
+      DRAWTEXT("module:LineSpotProvider:intersections", pInImg.x(), pInImg.y(), 30,
+               ColorRGBA::black, LineSpots::Intersection::getName(type));
+  }
   ls.intersections.emplace_back();
   ls.intersections.back().type = type;
   ls.intersections.back().pos = intersection;
+  ls.intersections.back().dir1 = dir1;
+  ls.intersections.back().dir2 = dir2;
+  ls.intersections.back().line1 = line1;
+  ls.intersections.back().line2 = line2;
 }
 
 void LineSpotProvider::findIntersections(LineSpots& lineSpots)
@@ -167,52 +187,86 @@ void LineSpotProvider::findIntersections(LineSpots& lineSpots)
     for(vector<Line>::iterator line2 = line + 1; line2 < lineSpots.lines.end(); ++line2)
     {
       //only continue if the angle between the two lines is roughly 90°
-      const float dot = line->line.direction.normalize() * line2->line.direction.normalize();
+      const float dot = line->line.direction.normalized().dot(line2->line.direction.normalized());
       const float angle = acos(dot);//angle between lines (in rad)
       const float angleDiff = abs(angle - pi_2);
       if(angleDiff > maxAllowedIntersectionAngleDifference)
       {
         continue;
       }
-      Vector2<> intersection;
+      Vector2f intersection;
       if(Geometry::getIntersectionOfLines(line->line, line2->line, intersection))
       {
-        Vector2<> lineEnd;
-        Vector2<> line2End;
-        const float lineDist = getCloserPoint(line->firstField, line->lastField, intersection, lineEnd);
-        const float line2Dist = getCloserPoint(line2->firstField, line2->lastField, intersection, line2End);
+        Vector2f lineEndCloser;//the end of line that is closest to the intersection
+        Vector2f line2EndCloser;//the end of line that is further away from the intersection
+        Vector2f lineEndFurther;
+        Vector2f line2EndFurther;
+        const float lineDist = getCloserPoint(line->firstField, line->lastField, intersection, lineEndCloser, lineEndFurther);
+        const float line2Dist = getCloserPoint(line2->firstField, line2->lastField, intersection, line2EndCloser, line2EndFurther);
 
         if(isPointOnLine(*line, intersection) && isPointOnLine(*line2, intersection) &&
            lineDist > maxIntersectionDistance2 && line2Dist > maxIntersectionDistance2)
         {
-          addIntersection(lineSpots, LineSpots::Intersection::X, intersection);
+          addIntersection(lineSpots, LineSpots::Intersection::X, intersection, line->line.direction, line2->line.direction, *line, *line2);
         }
         else if(isPointOnLine(*line, intersection) && isPointOnLine(*line2, intersection) &&
-                ((lineDist <= maxIntersectionDistance2 && line2Dist > maxIntersectionDistance2) ||
-                 (lineDist > maxIntersectionDistance2 && line2Dist <= maxIntersectionDistance2)))
+               lineDist <= maxIntersectionDistance2 && line2Dist > maxIntersectionDistance2)
         {
-          addIntersection(lineSpots, LineSpots::Intersection::T, intersection);          
+          //line2 is horizontal
+          Vector2f vertical = lineEndFurther - intersection;
+          Vector2f horizontal = line2EndFurther - intersection;
+          enforceTIntersectionDirections(vertical, horizontal);
+          addIntersection(lineSpots, LineSpots::Intersection::T, intersection, vertical, horizontal, *line2, *line);
+        }
+        else if(isPointOnLine(*line, intersection) && isPointOnLine(*line2, intersection) &&
+                lineDist > maxIntersectionDistance2 && line2Dist <= maxIntersectionDistance2)
+        {
+          //line is horizontal
+          Vector2f vertical = line2EndFurther - intersection;
+          Vector2f horizontal = lineEndFurther - intersection;
+          enforceTIntersectionDirections(vertical, horizontal);
+          addIntersection(lineSpots, LineSpots::Intersection::T, intersection, vertical, horizontal, *line, *line2);
         }
         else if(isPointOnLine(*line, intersection) && lineDist > maxIntersectionDistance2 &&
                 (!isPointOnLine(*line2, intersection)) && line2Dist <= maxIntersectionDistance)
         {
-          addIntersection(lineSpots, LineSpots::Intersection::T, intersection);  
+          //line is the horizontal line, line2 the vertical line
+          Vector2f vertical = line2EndFurther - intersection;
+          Vector2f horizontal = lineEndFurther - intersection;
+          enforceTIntersectionDirections(vertical, horizontal);
+          addIntersection(lineSpots, LineSpots::Intersection::T, intersection, vertical, horizontal, *line, *line2);
         }
         else if(isPointOnLine(*line2, intersection) && line2Dist > maxIntersectionDistance2 &&
                 (!isPointOnLine(*line, intersection)) && lineDist <= maxIntersectionDistance)
         {
-          addIntersection(lineSpots, LineSpots::Intersection::T, intersection);  
-        }        
+          //line2 is the horizontal line
+          Vector2f vertical = lineEndFurther - intersection;
+          Vector2f horizontal = line2EndFurther - intersection;
+          enforceTIntersectionDirections(vertical, horizontal);
+          addIntersection(lineSpots, LineSpots::Intersection::T, intersection, vertical, horizontal, *line2, *line);
+        }
         else if(lineDist <= maxIntersectionDistance && line2Dist <= maxIntersectionDistance)
         {
-          addIntersection(lineSpots, LineSpots::Intersection::L, intersection);  
+          const Vector2f dir1 = lineEndFurther - intersection;
+          const Vector2f dir2 = line2EndFurther - intersection;
+          addIntersection(lineSpots, LineSpots::Intersection::L, intersection, dir1, dir2, *line, *line2);
         }
       }
     }
   }
 }
 
-bool LineSpotProvider::isPointOnLine(const Line& line, const Vector2<>& point) const
+void LineSpotProvider::enforceTIntersectionDirections(const Vector2f& vertical, Vector2f& horizontal) const
+{
+  Vector2f vertical90 = vertical;
+  vertical90.rotate(pi_2); //vertical rotated by +90°
+  if(vertical90.angleTo(horizontal) > pi_2)
+  {
+    horizontal.mirror();
+  }
+}
+
+bool LineSpotProvider::isPointOnLine(const Line& line, const Vector2f& point) const
 {
   //First check if the point is inside the rectangle created by line.first and line.last
   //If it is check if it is close enough to the line to be considered 'on the line'
@@ -220,16 +274,18 @@ bool LineSpotProvider::isPointOnLine(const Line& line, const Vector2<>& point) c
   //FIXME remove method!
 }
 
-float LineSpotProvider::getCloserPoint(const Vector2<>& a, const Vector2<>& b, const Vector2<> target, Vector2<>& out) const
+float LineSpotProvider::getCloserPoint(const Vector2f& a, const Vector2f& b, const Vector2f target, Vector2f& closer, Vector2f& further) const
 {
-  const float aDist = (a - target).squareAbs();
-  const float bDist = (b - target).squareAbs();
+  const float aDist = (a - target).squaredNorm();
+  const float bDist = (b - target).squaredNorm();
   if(aDist < bDist)
   {
-    out = a;
+    closer = a;
+    further = b;
     return sqrt(aDist);
   }
-  out = b;
+  closer = b;
+  further = a;
   return sqrt(bDist);
 }
 
@@ -247,18 +303,18 @@ void LineSpotProvider::findCircle(LineSpots& lineSpots)
   for(LineSpots::Line& line : lineSpots.lines)
   {
     //calculate normals
-    Vector2<> leftNormal = line.line.direction;
-    leftNormal = leftNormal.rotateLeft();
+    Vector2f leftNormal = line.line.direction;
+    leftNormal.rotateLeft();
     leftNormal.normalize(theFieldDimensions.centerCircleRadius);
-    Vector2<> rightNormal = leftNormal;
-    rightNormal = rightNormal.mirror();
+    Vector2f rightNormal = leftNormal;
+    rightNormal.mirror();
 
     //shift normals to center
-    const Vector2<> lineCenter = (line.firstField + line.lastField) / 2.0f;
+    const Vector2f lineCenter = (line.firstField + line.lastField) / 2.0f;
     leftNormal += lineCenter;
     rightNormal += lineCenter;
-    LINE("module:LineSpotProvider:circleNormals", lineCenter.x, lineCenter.y, leftNormal.x, leftNormal.y, 20, Drawings::ps_dot, ColorRGBA::red);
-    LINE("module:LineSpotProvider:circleNormals", lineCenter.x, lineCenter.y, rightNormal.x, rightNormal.y, 20, Drawings::ps_dot, ColorRGBA::red);
+    LINE("module:LineSpotProvider:circleNormals", lineCenter.x(), lineCenter.y(), leftNormal.x(), leftNormal.y(), 20, Drawings::dottedPen, ColorRGBA::red);
+    LINE("module:LineSpotProvider:circleNormals", lineCenter.x(), lineCenter.y(), rightNormal.x(), rightNormal.y(), 20, Drawings::dottedPen, ColorRGBA::red);
     clusters.emplace_back(&line, leftNormal);
     clusters.emplace_back(&line, rightNormal);
   }
@@ -274,7 +330,7 @@ void LineSpotProvider::findCircle(LineSpots& lineSpots)
   {
     for(size_t j = i + 1; j < clusters.size(); ++j)
     {
-      currentDistances->emplace_back(&clusters[i], &clusters[j], (clusters[i].center - clusters[j].center).squareAbs());
+      currentDistances->emplace_back(&clusters[i], &clusters[j], (clusters[i].center - clusters[j].center).squaredNorm());
     }
   }
   while(currentDistances->size() > 1)
@@ -287,7 +343,7 @@ void LineSpotProvider::findCircle(LineSpots& lineSpots)
     Cluster* a = get<0>(min);
     Cluster* b = get<1>(min);
     a->lines.insert(a->lines.end(), b->lines.begin(), b->lines.end());
-    for(const Vector2<>& point : b->normalSpots)
+    for(const Vector2f& point : b->normalSpots)
     {
       a->sum += point;
       a->normalSpots.emplace_back(point);
@@ -307,7 +363,7 @@ void LineSpotProvider::findCircle(LineSpots& lineSpots)
     {
       if(!cluster.deleted && &cluster != a)
       {
-        currentDistances->emplace_back(a, &cluster, (a->center - cluster.center).squareAbs());
+        currentDistances->emplace_back(a, &cluster, (a->center - cluster.center).squaredNorm());
       }
     }
   }
@@ -344,7 +400,7 @@ void LineSpotProvider::findCircle(LineSpots& lineSpots)
 
 float LineSpotProvider::evaluateCircle(const Cluster& cluster, Geometry::Circle& circle)
 {
-  std::vector<Vector2<>> XY;
+  std::vector<Vector2f> XY;
   for(LineSpots::Line* line : cluster.lines)
   {
     XY.insert(XY.end(), line->spotsInField.begin(), line->spotsInField.end());
@@ -354,27 +410,27 @@ float LineSpotProvider::evaluateCircle(const Cluster& cluster, Geometry::Circle&
   float radiusSqr = theFieldDimensions.centerCircleRadius * theFieldDimensions.centerCircleRadius;
   for(unsigned i = 0; i < XY.size(); ++i)
   {
-    const Vector2<>& point = XY[i];
-    A.row(i) = Eigen::Vector3f(point.x, point.y, 1.f);
-    B(i) = point.x * point.x + point.y * point.y - radiusSqr;
+    const Vector2f& point = XY[i];
+    A.row(i) = Vector3f(point.x(), point.y(), 1.f);
+    B(i) = point.x() * point.x() + point.y() * point.y() - radiusSqr;
   }
   Eigen::Matrix3Xf AT = A.transpose();
-  Eigen::Vector3f V = (AT * A).inverse() * (AT * B);
+  Vector3f V = (AT * A).inverse() * (AT * B);
 
-  circle.center.x = V.x() / 2.f;
-  circle.center.y = V.y() / 2.f;
+  circle.center.x() = V.x() / 2.f;
+  circle.center.y() = V.y() / 2.f;
   circle.radius = theFieldDimensions.centerCircleRadius;
 
   float error = 0;
-  for(const Vector2<>& point : XY)
-    error += std::pow(std::abs((circle.center - point).absFloat() - circle.radius), 2);
+  for(const Vector2f& point : XY)
+    error += std::pow(std::abs((circle.center - point).norm() - circle.radius), 2);
   return error / XY.size();
 }
 
-Vector2<> LineSpotProvider::mean(const std::vector<Vector2<>>& vector)
+Vector2f LineSpotProvider::mean(const std::vector<Vector2f>& vector)
 {
-  Vector2<> m(0.0f, 0.0f);
-  for(const Vector2<>& point : vector)
+  Vector2f m(0.0f, 0.0f);
+  for(const Vector2f& point : vector)
     m += point;
   return m / (float) vector.size();
 }
@@ -417,7 +473,7 @@ void LineSpotProvider::findLines(LineSpots& lineSpots)
       foundSpots.emplace_front(leftScanline, leftSpot);
       foundSpots.emplace_back(rightScanline, rightSpot);
       //initialize line based on the first two spots
-      const Vector2<> direction = leftSpot->spotInField - rightSpot->spotInField;
+      const Vector2f direction = leftSpot->spotInField - rightSpot->spotInField;
       lines.emplace_back(leftSpot->spotInField, direction); //use leftSpot as base
       Line& possibleLine = lines.back();
       //search for additional spots that fit the line
@@ -453,7 +509,7 @@ void LineSpotProvider::findLines(LineSpots& lineSpots)
         }
       }
       const float dist = (foundSpots.front().second->spotInField -
-                          foundSpots.back().second->spotInField).abs(); //FIXME use squareAbs to gain some speed
+                          foundSpots.back().second->spotInField).norm(); //FIXME use squaredNorm() to gain some speed
       if(dist >= minLineLength && foundSpots.size() >= minSpotsOnLine)
       {
         //move spots to line and update parameters
@@ -497,10 +553,10 @@ bool LineSpotProvider::compareSpots(pair<ScanlineIter, SpotIter>& i, pair<Scanli
 {
   //we compare the coordinate with the higher distance, this way it works for both
   //perfectly vertical and perfectly horizontal lines
-  const float iy = i.second->spotInField.y;
-  const float ix = i.second->spotInField.x;
-  const float jy = j.second->spotInField.y;
-  const float jx = j.second->spotInField.x;
+  const float iy = i.second->spotInField.y();
+  const float ix = i.second->spotInField.x();
+  const float jy = j.second->spotInField.y();
+  const float jx = j.second->spotInField.x();
   const float yDist = (iy - jy) * (iy - jy);
   const float xDist = (ix - jx) * (ix - jx);
   if(yDist > xDist)
@@ -516,14 +572,14 @@ bool LineSpotProvider::compareSpots(pair<ScanlineIter, SpotIter>& i, pair<Scanli
 void LineSpotProvider::updateLine(Line& line, deque<pair<ScanlineIter, SpotIter>>& spots) const
 {
     //see http://de.wikipedia.org/wiki/Lineare_Regression
-  
-  //NOTE: x and y is swapped 
+
+  //NOTE: x and y is swapped
   float avgX = 0;
   float avgY = 0;
   for(auto& p : spots)
   {
-    const float x = p.second->spotInField.y;
-    const float y = p.second->spotInField.x;
+    const float x = p.second->spotInField.y();
+    const float y = p.second->spotInField.x();
     avgX += x;
     avgY += y;
   }
@@ -539,8 +595,8 @@ void LineSpotProvider::updateLine(Line& line, deque<pair<ScanlineIter, SpotIter>
   float SSxx = 0; //down
   for(auto& p : spots)
   {
-    const float x = p.second->spotInField.y;
-    const float y = p.second->spotInField.x;
+    const float x = p.second->spotInField.y();
+    const float y = p.second->spotInField.x();
     const float xx = x - avgX;
     SSxy += xx * (y - avgY);
     SSxx += xx * xx;
@@ -557,20 +613,20 @@ void LineSpotProvider::updateLine(Line& line, deque<pair<ScanlineIter, SpotIter>
   ASSERT(!std::isinf(a));
 
   //update the line by using the points (x0, f(x0)) and (xn, f(xn))
-  //Due to the head movement the front() and back() spots in field coordinates are not 
-  //necessarily the end points of the line. Therefore we have to find the start and end points 
+  //Due to the head movement the front() and back() spots in field coordinates are not
+  //necessarily the end points of the line. Therefore we have to find the start and end points
   const auto firstLast = std::minmax_element(spots.begin(), spots.end(), compareSpots);
-  const float x0 = firstLast.first->second->spotInField.y; //use y instead of x because x and y are swapped
-  const float x1 = firstLast.second->second->spotInField.y;
-  
-  CROSS("module:LineSpotProvider:lowHigh", firstLast.first->second->spotInField.x, firstLast.first->second->spotInField.y, 20, 2, Drawings::ps_solid, ColorRGBA::yellow);
-  CROSS("module:LineSpotProvider:lowHigh", firstLast.second->second->spotInField.x, firstLast.second->second->spotInField.y, 20, 2, Drawings::ps_solid, ColorRGBA::yellow);
-  
+  const float x0 = firstLast.first->second->spotInField.y(); //use y instead of x because x and y are swapped
+  const float x1 = firstLast.second->second->spotInField.y();
+
+  CROSS("module:LineSpotProvider:lowHigh", firstLast.first->second->spotInField.x(), firstLast.first->second->spotInField.y(), 20, 2, Drawings::solidPen, ColorRGBA::yellow);
+  CROSS("module:LineSpotProvider:lowHigh", firstLast.second->second->spotInField.x(), firstLast.second->second->spotInField.y(), 20, 2, Drawings::solidPen, ColorRGBA::yellow);
+
   //FIXME this does not work correctly for nearly vertical lines in field coordinates
-  line.firstField.x = a + b * x0; //swap back
-  line.firstField.y = x0;
-  line.lastField.x = a + b * x1;
-  line.lastField.y = x1;
+  line.firstField.x() = a + b * x0; //swap back
+  line.firstField.y() = x0;
+  line.lastField.x() = a + b * x1;
+  line.lastField.y() = x1;
   line.line.base = line.firstField;
   line.line.direction = line.lastField - line.line.base;
 }
@@ -699,235 +755,54 @@ bool LineSpotProvider::getConnectedPair(const unsigned lineAIdx, const unsigned 
   return false;
 }
 
-bool LineSpotProvider::isWhite(Vector2<int> a, Vector2<int> b) const
+bool LineSpotProvider::isWhite(Vector2i a, Vector2i b) const
 {
   Geometry::PixeledLine line(a, b);
-  const int numPixels = line.getNumberOfPixels();
   unsigned whiteCount = 0;
-  for(int i = 0; i < numPixels; ++i)
+  for(const Vector2i& p : line)
   {
     //FIXME is it possible to use pointer magic instead of [y][x]??
-    const int x = line.getPixelX(i);
-    const int y = line.getPixelY(i);
-    if(theColorTable[theImage[y][x]].is(ColorClasses::white))
+    if(theColorTable[theImage[p.y()][p.x()]].is(ColorClasses::white))
     {
       //fixme break as soon as the whiteCoun can no longer be reached
       ++whiteCount;
     }
   }
-  return whiteCount / ((float)numPixels) >= whitePercent;
+  return whiteCount / ((float) line.size()) >= whitePercent;
 }
 
-void LineSpotProvider::findPotentialLineSpots()
-{
-  scanlinesVert.clear();
-  for(const RScanline& line : theScanlineRegionsClipped.scanlines)
-  {
-    runVerticalScanline(line);
-  }
-}
 
-void LineSpotProvider::removeSpotsInsideRobots()
+void LineSpotProvider::removeSpotsInsidePlayers()
 {
   for(Scanline& line : scanlinesVert)
   {
     for(Scanline::iterator spot = line.begin(); spot < line.end();)
     {
-      if(isSpotInsideRobot(spot->spotInImg.x, spot->spotInImg.y))
+      if(isSpotInsidePlayer(spot->spotInImg.x(), spot->spotInImg.y()))
       {
-        CROSS("module:LineSpotProvider:spotsWithoutBot", spot->spotInImg.x, spot->spotInImg.y, 5, 2, Drawings::ps_solid, ColorRGBA::red);
+        CROSS("module:LineSpotProvider:spotsWithoutBot", spot->spotInImg.x(), spot->spotInImg.y(), 5, 2, Drawings::solidPen, ColorRGBA::red);
         spot = line.erase(spot);
       }
       else
       {
-        CROSS("module:LineSpotProvider:spotsWithoutBot", spot->spotInImg.x, spot->spotInImg.y, 5, 2, Drawings::ps_solid, ColorRGBA::blue);
+        CROSS("module:LineSpotProvider:spotsWithoutBot", spot->spotInImg.x(), spot->spotInImg.y(), 5, 2, Drawings::solidPen, ColorRGBA::blue);
         ++spot;
       }
     }
   }
 }
 
-bool LineSpotProvider::isSpotInsideRobot(const int x, const int y) const
+bool LineSpotProvider::isSpotInsidePlayer(const int x, const int y) const
 {
-  using RobotBox = RobotPercept::RobotBox;
-  for(const RobotBox& robot : theRobotPercept.robots)
+  for(const PlayersPercept::Player& player : thePlayersPercept.players)
   {
-    if(robot.detectedFeet)//only use box if the robots feet have been detected
+    if(player.detectedFeet)//only use box if the player's feet have been detected
     {
-      if(x >= robot.x1FeetOnly && x <= robot.x2FeetOnly && y >= robot.y1 && y <= robot.y2)
+      if(x >= player.x1FeetOnly && x <= player.x2FeetOnly && y >= player.y1 && y <= player.y2)
       {
         return true;
       }
     }
   }
-  return false;
-}
-
-
-void LineSpotProvider::runVerticalScanline(const RScanline& line)
-{
-  scanlinesVert.emplace_back();
-  Scanline& scanline = scanlinesVert.back();
-  vector<Edge> edgeBuffer; //used to buffer first edge while searching for next edge
-  //start searching for non-white<->white edges
-  const int x = line.x;
-
-  EdgeType expectedEdge = GreenToWhite; //first edge we expect is greenToWhite
-
-  for(unsigned i = 0; i < line.regions.size();) //i is increased inside the loop
-  {
-    int nextRegion = -1;
-    int edgeY = -1;
-    if(expectedEdge == GreenToWhite &&
-       line.regions[i].color.is(ColorClasses::green) &&
-       isEdgeTowards(line, i, nextRegion, edgeY, ColorClasses::white))
-    {
-      i = nextRegion;
-      ASSERT(line.regions[nextRegion].color.is(ColorClasses::white));
-      edgeBuffer.emplace_back(GreenToWhite, edgeY);
-      expectedEdge = WhiteToGreen;
-    }
-    else if(expectedEdge == WhiteToGreen &&
-            line.regions[i].color.is(ColorClasses::white) &&
-            isEdgeTowards(line, i, nextRegion, edgeY, ColorClasses::green))
-    {
-      i = nextRegion;
-      ASSERT(line.regions[nextRegion].color.is(ColorClasses::green));
-      edgeBuffer.emplace_back(WhiteToGreen, edgeY);
-      expectedEdge = GreenToWhite;
-    }
-    else
-    {
-      ++i;
-    }
-
-    if(edgeBuffer.size() == 2)
-    {
-      if(validateEdges(edgeBuffer[0], edgeBuffer[1], x))//check if edges roughly fit a field line
-      {
-        CROSS("module:LineSpotProvider:spotEdges", x, edgeBuffer[0].y, 2, 1, Drawings::ps_solid, ColorRGBA::blue);
-        CROSS("module:LineSpotProvider:spotEdges", x, edgeBuffer[1].y, 2, 1, Drawings::ps_solid, ColorRGBA::blue);
-        const int middleY = static_cast<int>((edgeBuffer[0].y + edgeBuffer[1].y) / 2);
-        const int height = edgeBuffer[0].y - edgeBuffer[1].y;
-        ASSERT(height > 0);
-        ASSERT(scanline.size() > 0 ? scanline.back().spotInImg.y > middleY : true);
-        scanline.emplace_back(x, middleY, false, theCameraMatrix, theCameraInfo, height);
-        CROSS("module:LineSpotProvider:spots", x, middleY, 2, 1, Drawings::ps_solid, ColorRGBA::red);
-      }
-      else
-      {
-        CROSS("module:LineSpotProvider:invalidEdges", x, edgeBuffer[0].y, 2, 1, Drawings::ps_solid, ColorRGBA::red);
-        CROSS("module:LineSpotProvider:invalidEdges", x, edgeBuffer[1].y, 2, 1, Drawings::ps_solid, ColorRGBA::red);
-      }
-      edgeBuffer.clear();
-    }
-  }
-}
-
-Vector2<> LineSpotProvider::calculateEdgeDirection(const int y, const int x) const
-{
-  //FIXME compare performance of different sobel implementations
-
-  const int increment = sizeof(Image::Pixel);
-  const int widthstep = theImage.widthStep * sizeof(Image::Pixel); //because we add it to char*
-  const unsigned char* p = ((const unsigned char*)(&theImage[y - 1][x - 1])) + offsetof(Image::Pixel, y);
-  int sumX = *p;
-  ASSERT(*p == theImage[y - 1][x - 1].y);
-  int sumY = sumX;
-  p += increment;
-  ASSERT(*p == theImage[y - 1][x].y);
-  sumY += 2 * (*p);
-  p += increment;
-  ASSERT(*p == theImage[y - 1][x + 1].y);
-  sumY += *p;
-  sumX -= *p;
-
-  p += widthstep;
-  ASSERT(*p == theImage[y][x + 1].y);
-
-  sumX -= 2 * (*p);
-  p -= 2 * increment;
-  ASSERT(*p == theImage[y][x - 1].y);
-  sumX += 2 * (*p);
-
-  p += widthstep;
-  ASSERT(*p == theImage[y + 1][x - 1].y);
-
-  sumX += *p;
-  sumY -= *p;
-  p += increment;
-  ASSERT(*p == theImage[y + 1][x].y);
-  sumY -= 2 * (*p);
-  p += increment;
-  ASSERT(*p == theImage[y + 1][x + 1].y);
-  sumX -= *p;
-  sumY -= *p;
-
-  Vector2<> ret((float)sumX, (float)sumY);
-  ARROW("module:LineSpotProvider:verticalEdges", x, y, x + ret.x, y + ret.y,
-        1, Drawings::ps_solid, ColorRGBA::red);
-
-  return ret;
-}
-
-bool LineSpotProvider::validateEdges(const Edge& gToW, const Edge& wToG, const int x) const
-{
-  const float expectedDistance = calculateExpectedLineWidth(x, gToW.y) * maxAllowedLineHeightFactor;
-  return abs(gToW.y - wToG.y) <= expectedDistance;
-}
-
-float LineSpotProvider::calculateExpectedLineWidth(const int x, const int y) const
-{
-  const float lineSize = calculateLineSize(Vector2<>((float)x, (float)y));
-  return lineSize;
-  if(x > theImage.width - 2 || y > theImage.height - 2 || x < 1 || y < 1)
-  {
-    //cannot detect line direction therefore we just return the default size
-    return lineSize;
-  }
-
-  Vector2<> lineDir = calculateEdgeDirection(y, x);
-  if(lineDir.y < 0.1f) //should be <= 0 but values like 0.0000001 break the calculation as well
-  {
-    //rarely happens at corners or junctions and breaks the calculation below
-    return 0;
-  }
-
-  lineDir = lineDir.mirror();
-  lineDir = lineDir.normalize(lineSize);
-
-  //calculate the hypotenuse of the triangle.
-  const float alpha = atan2(-lineDir.y, lineDir.x) - pi_2; //use -y to compensate
-  const float c = lineSize / cos(alpha);
-  ASSERT(c >= 0);
-  return c;
-}
-
-bool LineSpotProvider::isEdgeTowards(const RScanline& line, const int currentIndex, int& outNewIndex,
-                                     int& outEdgeY, ColorClasses::Color color)
-{
-  int noiseCounter = 0;
-  const int startIndex = std::min(currentIndex + 1, static_cast<int>(line.regions.size() - 1));
-  const int firstLower = line.regions[startIndex].lower;
-  for(unsigned i = startIndex; i < line.regions.size(); ++i)
-  {
-    const Region& r = line.regions[i];
-    if(r.color.is(color))
-    {
-      //found desired region
-      outNewIndex = i;
-      outEdgeY = static_cast<int>((r.lower + firstLower) / 2);
-      return true;
-    }
-    else
-    {
-      noiseCounter += r.lower - r.upper;
-      if(noiseCounter > maxEdgeNoisePixels)
-      {
-        return false;
-      }
-    }
-  }
-
   return false;
 }

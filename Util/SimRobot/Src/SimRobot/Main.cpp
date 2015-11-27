@@ -39,6 +39,15 @@ protected:
 };
 
 #define QApplication SimRobotApp
+
+const char* _fromQString(const QString& string)
+{
+  static char buffer[1000];
+  strncpy(buffer, string.toUtf8().constData(), sizeof(buffer));
+  buffer[sizeof(buffer) - 1] = 0;
+  return buffer;
+}
+
 #endif
 
 int main(int argc, char *argv[])

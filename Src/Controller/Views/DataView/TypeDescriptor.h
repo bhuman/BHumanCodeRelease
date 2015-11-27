@@ -3,6 +3,7 @@
 #include <QString>
 #include <QVariant>
 #include "TypeDeclarations.h"
+#include "Tools/SensorData.h"
 
 namespace Type //The namespace is here to fix a VC-compiler bug
 {
@@ -47,11 +48,11 @@ namespace Type //The namespace is here to fix a VC-compiler bug
     static int getEnumTypeId();
   };
 
-  template <> int TypeDescriptor::getTypeId <int>();
-  template <> int TypeDescriptor::getTypeId <double>();
-  template <> int TypeDescriptor::getTypeId <char>();
-  template <> int TypeDescriptor::getTypeId <bool>();
-  template <> int TypeDescriptor::getTypeId <std::string>();
+  template<> int TypeDescriptor::getTypeId<int>();
+  template<> int TypeDescriptor::getTypeId<double>();
+  template<> int TypeDescriptor::getTypeId<char>();
+  template<> int TypeDescriptor::getTypeId<bool>();
+  template<> int TypeDescriptor::getTypeId<std::string>();
 
   /**
    * This is the default implementation of getTypeId.
@@ -112,4 +113,27 @@ namespace Type //The namespace is here to fix a VC-compiler bug
    * Type descriptor for float
    */
   class FloatDescriptor : public NumericValueTypeDescriptor<float, 0> {};
+
+  /**
+   * Type descriptor to display angles correctly, i.e. as 12deg or 0.3rad
+   */
+  class AngleTypeDescriptor : public TypeDescriptor
+  {
+  public:
+    int getSupportedTypeId()
+    {
+      return getTypeId<AngleWithUnity>();
+    }
+
+    QString toString(const QVariant& var) const
+    {
+      AngleWithUnity value = var.value<AngleWithUnity>();
+      return value == SensorData::off ? "off" : QString::number(value.deg ? value.toDegrees() : value) + " " + (value.deg ? "deg" : "rad");
+    }
+
+    QVariant createDefault()
+    {
+      return QVariant::fromValue<AngleWithUnity>(AngleWithUnity());
+    }
+  };
 }

@@ -44,8 +44,9 @@ void SoundPlayer::playDirect(const std::string& basename)
 {
   std::string fileName(filePrefix);
   fileName += basename;
-  @autoreleasepool {
-    NSSound *sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
+  @autoreleasepool
+  {
+    NSSound* sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
     [sound play];
   }
 }

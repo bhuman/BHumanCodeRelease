@@ -88,8 +88,6 @@ public:
    */
   void setAutoSet(bool value);
 
-protected:
-
 private:
   /**
    * Handles all events coming from the property editors.

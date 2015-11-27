@@ -18,7 +18,7 @@ bool RobotCommand::execute(Context &context, const std::vector<std::string> &par
       robot != selectedRobots.end(); robot++)
   {
     std::string ip;
-    if(!Session::getInstance().isReachable(*robot))
+    if(!Session::getInstance().isReachable(context, *robot))
     {
       context.errorLine("\"" + (*robot)->name + "\" is not reachable.");;
       status = false;

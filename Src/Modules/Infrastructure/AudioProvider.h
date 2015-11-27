@@ -11,10 +11,12 @@
 #endif
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/AudioData.h"
+#include "Representations/Infrastructure/GameInfo.h"
 
 MODULE(AudioProvider,
 {,
-  PROVIDES_WITH_OUTPUT(AudioData),
+  REQUIRES(GameInfo),
+  PROVIDES_WITHOUT_MODIFY(AudioData),
   DEFINES_PARAMETERS(
   {,
     (unsigned)(10) retries, /**< Number of tries to open device. */

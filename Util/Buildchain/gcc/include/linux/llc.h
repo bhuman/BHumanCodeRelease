@@ -36,7 +36,6 @@ enum llc_sockopts {
 	LLC_OPT_BUSY_TMR_EXP,	/* busy state expire time (secs). */
 	LLC_OPT_TX_WIN,		/* tx window size. */
 	LLC_OPT_RX_WIN,		/* rx window size. */
-	LLC_OPT_PKTINFO,	/* ancillary packet information. */
 	LLC_OPT_MAX
 };
 
@@ -70,11 +69,5 @@ enum llc_sockopts {
 #define LLC_SAP_LAR	0xDC		/* LAN Address Resolution 	*/
 #define LLC_SAP_RM	0xD4		/* Resource Management 		*/
 #define LLC_SAP_GLOBAL	0xFF		/* Global SAP. 			*/
-
-struct llc_pktinfo {
-	int lpi_ifindex;
-	unsigned char lpi_sap;
-	unsigned char lpi_mac[IFHWADDRLEN];
-};
 
 #endif /* __LINUX_LLC_H */

@@ -147,6 +147,10 @@ namespace SimRobot
     virtual const QString& getAppPath() const = 0;
     virtual QSettings& getSettings() = 0;
     virtual QSettings& getLayoutSettings() = 0;
+    virtual void simReset() = 0;
+    virtual void simStart() = 0;
+    virtual void simStep() = 0;
+    virtual void simStop() = 0;
   };
 }
 

@@ -70,14 +70,6 @@ enum can_state {
 };
 
 /*
- * CAN bus error counters
- */
-struct can_berr_counter {
-	__u16 txerr;
-	__u16 rxerr;
-};
-
-/*
  * CAN controller mode
  */
 struct can_ctrlmode {
@@ -85,11 +77,9 @@ struct can_ctrlmode {
 	__u32 flags;
 };
 
-#define CAN_CTRLMODE_LOOPBACK		0x01	/* Loopback mode */
-#define CAN_CTRLMODE_LISTENONLY		0x02 	/* Listen-only mode */
-#define CAN_CTRLMODE_3_SAMPLES		0x04	/* Triple sampling mode */
-#define CAN_CTRLMODE_ONE_SHOT		0x08	/* One-Shot mode */
-#define CAN_CTRLMODE_BERR_REPORTING	0x10	/* Bus-error reporting */
+#define CAN_CTRLMODE_LOOPBACK	0x1	/* Loopback mode */
+#define CAN_CTRLMODE_LISTENONLY	0x2 	/* Listen-only mode */
+#define CAN_CTRLMODE_3_SAMPLES	0x4	/* Triple sampling mode */
 
 /*
  * CAN device statistics
@@ -115,7 +105,6 @@ enum {
 	IFLA_CAN_CTRLMODE,
 	IFLA_CAN_RESTART_MS,
 	IFLA_CAN_RESTART,
-	IFLA_CAN_BERR_COUNTER,
 	__IFLA_CAN_MAX
 };
 

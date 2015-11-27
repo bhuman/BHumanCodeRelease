@@ -6,6 +6,7 @@
 #include <QString>
 
 #ifdef WINDOWS
+#define NOMINMAX
 #include <Windows.h>
 #endif
 
@@ -19,7 +20,7 @@ std::string bhumandDirOnRobot = "/home/nao/";
 std::string makeDirectory()
 {
 #ifdef WINDOWS
-  return "VS2013";
+  return "VS2015";
 #elif defined(OSX)
   return "OSX";
 #else
@@ -30,7 +31,7 @@ std::string makeDirectory()
 std::string platformDirectory()
 {
 #ifdef WINDOWS
-  return "Windows64";
+  return "Windows";
 #elif defined(OSX)
   return "OSX";
 #else

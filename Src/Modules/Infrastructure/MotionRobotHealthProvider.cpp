@@ -6,17 +6,17 @@
 
 #include "MotionRobotHealthProvider.h"
 
+MAKE_MODULE(MotionRobotHealthProvider, motionInfrastructure)
+
 void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
 {
   // Compute frame rate of motion process:
   unsigned now = SystemCall::getCurrentSystemTime();
   if(lastExecutionTime != 0)
-    timeBuffer.add(now - lastExecutionTime);
-  motionRobotHealth.motionFrameRate = timeBuffer.getSum() ? 1000.0f / (static_cast<float>(timeBuffer.getSum()) / timeBuffer.getNumberOfEntries()) : 0.0f;
-  motionRobotHealth.avgMotionTime = float(timeBuffer.getAverage());
-  motionRobotHealth.maxMotionTime = float(timeBuffer.getMaximum());
-  motionRobotHealth.minMotionTime = float(timeBuffer.getMinimum());
+    timeBuffer.push_front(now - lastExecutionTime);
+  motionRobotHealth.motionFrameRate = timeBuffer.sum() ? 1000.0f / timeBuffer.averagef() : 0.f;
+  motionRobotHealth.avgMotionTime = float(timeBuffer.average());
+  motionRobotHealth.maxMotionTime = float(timeBuffer.maximum());
+  motionRobotHealth.minMotionTime = float(timeBuffer.minimum());
   lastExecutionTime = now;
 }
-
-MAKE_MODULE(MotionRobotHealthProvider, Motion Infrastructure)

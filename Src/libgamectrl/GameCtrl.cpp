@@ -10,8 +10,10 @@
 
 #ifdef __clang__
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
 #endif
 #define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
@@ -23,12 +25,13 @@
 #pragma clang diagnostic pop
 #endif
 
+#include <arpa/inet.h>
 #include <RoboCupGameControlData.h>
 #include "UdpComm.h"
 
 static const int BUTTON_DELAY = 30; /**< Button state changes are ignored when happening in less than 30 ms. */
 static const int GAMECONTROLLER_TIMEOUT = 2000; /**< Connected to GameController when packet was received within the last 2000 ms. */
-static const int ALIVE_DELAY = 500; /**< Send an alive signal every 500 ms. */
+static const int ALIVE_DELAY = 1000; /**< Send an alive signal every 1000 ms. */
 
 enum Button
 {
@@ -85,6 +88,7 @@ private:
   AL::ALMemoryProxy* memory; /**< Give access to ALMemory. */
   AL::ALValue ledRequest; /**< Prepared request to set the LEDs. */
   UdpComm* udp; /**< The socket used to communicate. */
+  in_addr gameControllerAddress; /**< The address of the GameController PC. */
   const float* buttons[numOfButtons]; /**< Pointers to where ALMemory stores the current button states. */
   const int* playerNumber; /** Points to where ALMemory stores the player number. */
   const int* teamNumberPtr; /** Points to where ALMemory stores the team number. The number be set to 0 after it was read. */
@@ -110,6 +114,7 @@ private:
    */
   void init()
   {
+    memset(&gameControllerAddress, 0, sizeof(gameControllerAddress));
     previousState = (uint8_t) -1;
     previousSecondaryState = (uint8_t) -1;
     previousKickOffTeam = (uint8_t) -1;
@@ -134,7 +139,7 @@ private:
   {
     unsigned now = (unsigned) proxy->getTime(0);
 
-    if(teamNumber && *playerNumber >= 0 &&
+    if(teamNumber && *playerNumber &&
        *playerNumber <= gameCtrlData.playersPerTeam &&
        (gameCtrlData.teams[0].teamNumber == teamNumber ||
         gameCtrlData.teams[1].teamNumber == teamNumber))
@@ -146,22 +151,32 @@ private:
          team.teamColour != previousTeamColour ||
          team.players[*playerNumber - 1].penalty != previousPenalty)
       {
-        if(team.teamColour == TEAM_BLUE)
-          setLED(leftFootRed, 0.f, 0.f, 1.f);
-        else
-          setLED(leftFootRed, 1.f, 0.f, 0.f);
+        switch(team.teamColour)
+        {
+          case TEAM_BLUE:
+            setLED(leftFootRed, 0.f, 0.f, 1.f);
+            break;
+          case TEAM_RED:
+            setLED(leftFootRed, 1.f, 0.f, 0.f);
+            break;
+          case TEAM_YELLOW:
+            setLED(leftFootRed, 1.f, 1.f, 0.f);
+            break;
+          default:
+            setLED(leftFootRed, 0.f, 0.f, 0.f);
+        }
 
         if(gameCtrlData.state == STATE_INITIAL &&
            gameCtrlData.secondaryState == STATE2_PENALTYSHOOT &&
-           gameCtrlData.kickOffTeam == team.teamColour)
+           gameCtrlData.kickOffTeam == team.teamNumber)
           setLED(rightFootRed, 0.f, 1.f, 0.f);
         else if(gameCtrlData.state == STATE_INITIAL &&
                 gameCtrlData.secondaryState == STATE2_PENALTYSHOOT &&
-                gameCtrlData.kickOffTeam != team.teamColour)
+                gameCtrlData.kickOffTeam != team.teamNumber)
           setLED(rightFootRed, 1.f, 1.0f, 0.f);
         else if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
                 gameCtrlData.state <= STATE_SET &&
-                gameCtrlData.kickOffTeam == team.teamColour)
+                gameCtrlData.kickOffTeam == team.teamNumber)
           setLED(rightFootRed, 1.f, 1.f, 1.f);
         else
           setLED(rightFootRed, 0.f, 0.f, 0.f);
@@ -240,16 +255,18 @@ private:
       publish();
     }
 
-    if(teamNumber && *playerNumber >= 0)
+    if(teamNumber && *playerNumber)
     {
       // init gameCtrlData if invalid
       if(gameCtrlData.teams[0].teamNumber != teamNumber &&
          gameCtrlData.teams[1].teamNumber != teamNumber)
       {
-        uint8_t teamColour = *defaultTeamColour == TEAM_RED ? 1 : 0;
-        gameCtrlData.teams[teamColour].teamNumber = (uint8_t) teamNumber;
-        gameCtrlData.teams[teamColour].teamColour = teamColour;
-        gameCtrlData.teams[1 - teamColour].teamColour = 1 - teamColour;
+        uint8_t teamColour = (uint8_t) *defaultTeamColour;
+        if(teamColour != TEAM_BLUE && teamColour != TEAM_RED && teamColour != TEAM_YELLOW)
+          teamColour = TEAM_BLACK;
+        gameCtrlData.teams[0].teamNumber = (uint8_t) teamNumber;
+        gameCtrlData.teams[0].teamColour = teamColour;
+        gameCtrlData.teams[1].teamColour = teamColour ^ 1; // we don't know better
         if(!gameCtrlData.playersPerTeam)
           gameCtrlData.playersPerTeam = (uint8_t) *playerNumber; // we don't know better
         publish();
@@ -274,10 +291,11 @@ private:
             else
             {
               player.penalty = PENALTY_NONE;
-              gameCtrlData.state = STATE_PLAYING;
               if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
                  send(GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE))
                 whenPacketWasSent = now;
+              else
+                gameCtrlData.state = STATE_PLAYING;
             }
             publish();
           }
@@ -293,8 +311,7 @@ private:
           {
             if(leftFootButtonPressed)
             {
-              team.teamColour ^= 1;
-              gameCtrlData.kickOffTeam ^= 1;
+              team.teamColour = (team.teamColour + 1) & 3; // cycle between TEAM_BLUE .. TEAM_BLACK
               publish();
             }
             previousLeftFootButtonPressed = leftFootButtonPressed;
@@ -309,10 +326,10 @@ private:
               if(gameCtrlData.secondaryState == STATE2_NORMAL)
               {
                 gameCtrlData.secondaryState = STATE2_PENALTYSHOOT;
-                gameCtrlData.kickOffTeam = team.teamColour;
+                gameCtrlData.kickOffTeam = team.teamNumber;
               }
-              else if(gameCtrlData.kickOffTeam == team.teamColour)
-                gameCtrlData.kickOffTeam ^= 1;
+              else if(gameCtrlData.kickOffTeam == team.teamNumber)
+                gameCtrlData.kickOffTeam = 0;
               else
                 gameCtrlData.secondaryState = STATE2_NORMAL;
               publish();
@@ -351,7 +368,8 @@ private:
     bool received = false;
     int size;
     RoboCupGameControlData buffer;
-    while(udp && (size = udp->read((char*) &buffer, sizeof(buffer))) > 0)
+    struct sockaddr_in from;
+    while(udp && (size = udp->read((char*) &buffer, sizeof(buffer), from)) > 0)
     {
       if(size == sizeof(buffer) &&
          !std::memcmp(&buffer, GAMECONTROLLER_STRUCT_HEADER, 4) &&
@@ -361,6 +379,12 @@ private:
           buffer.teams[1].teamNumber == teamNumber))
       {
         gameCtrlData = buffer;
+        if(memcmp(&gameControllerAddress, &from.sin_addr, sizeof(in_addr)))
+        {
+          memcpy(&gameControllerAddress, &from.sin_addr, sizeof(in_addr));
+          udp->setTarget(inet_ntoa(gameControllerAddress), GAMECONTROLLER_PORT);
+        }
+
         received = true;
       }
     }
@@ -461,6 +485,11 @@ public:
       for(int i = 0; i < numOfButtons; ++i)
         buttons[i] = (float*) memory->getDataPtr(buttonNames[i]);
 
+      // If no color was set, set it to black (no LED).
+      // This actually has a race condition.
+      if(memory->getDataList("GameCtrl/teamColour").empty())
+        memory->insertData("GameCtrl/teamColour", TEAM_BLACK);
+
       playerNumber = (int*) memory->getDataPtr("GameCtrl/playerNumber");
       teamNumberPtr = (int*) memory->getDataPtr("GameCtrl/teamNumber");
       defaultTeamColour = (int*) memory->getDataPtr("GameCtrl/teamColour");
@@ -474,7 +503,6 @@ public:
       if(!udp->setBlocking(false) ||
          !udp->setBroadcast(true) ||
          !udp->bind("0.0.0.0", GAMECONTROLLER_PORT) ||
-         !udp->setTarget(UdpComm::getWifiBroadcastAddress(), GAMECONTROLLER_PORT) ||
          !udp->setLoopback(false))
       {
         fprintf(stderr, "libgamectrl: Could not open UDP port\n");

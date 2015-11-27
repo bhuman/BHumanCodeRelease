@@ -1,0 +1,20 @@
+vi image jpeg lower gain 1.0
+vi image jpeg upper upper gain 1.0
+vi image jpeg segmented segmentedLower
+vi image jpeg segmented upper segmentedUpper
+
+vid lower representation:LinePercept:Image
+vid lower representation:BallPercept:Image
+vid lower representation:GoalPercept:Image
+vid lower representation:PlayersPercept:Image
+vid lower representation:BodyContour
+
+vid upper representation:LinePercept:Image
+vid upper representation:BallPercept:Image
+vid upper representation:GoalPercept:Image
+vid upper representation:PlayersPercept:Image
+vid upper representation:BodyContour
+
+# 3-D image views
+v3 image jpeg lower
+v3 image jpeg upper upper

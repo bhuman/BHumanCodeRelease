@@ -6,6 +6,16 @@ class QString;
 
 class DeployCmd : public RobotCommand
 {
+  class DeployTask : public RobotTask
+  {
+    QString buildConfig;
+    Team* team;
+
+  public:
+    DeployTask(Context &context, const QString& buildConfig, Team* team, Robot* robot);
+    virtual bool execute();
+  };
+
   Team* team;
   QString buildConfig;
 
@@ -15,9 +25,8 @@ class DeployCmd : public RobotCommand
   virtual std::vector<std::string> complete(const std::string& cmdLine) const;
   virtual bool preExecution(Context &context, const std::vector<std::string> &params);
   virtual Task* perRobotExecution(Context &context, Robot &robot);
-  virtual bool postExecution(Context &context, const std::vector<std::string> &params);
 
-  QString getCommand();
+  static QString getCommand();
 public:
   static DeployCmd theDeployCmd;
 };

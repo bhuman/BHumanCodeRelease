@@ -6,9 +6,6 @@
 
 #pragma once
 
-class NaoCamera;
-
-#include "Tools/Module/Module.h"
 #include "Platform/Camera.h"
 #include "Representations/Infrastructure/CameraSettings.h"
 #include "Representations/Infrastructure/Image.h"
@@ -16,25 +13,27 @@ class NaoCamera;
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraIntrinsics.h"
 #include "Representations/Infrastructure/CameraResolution.h"
+#include "Tools/Module/Module.h"
+
+class NaoCamera;
 
 MODULE(CameraProvider,
 {,
   USES(CameraIntrinsicsNext),
   USES(CameraResolutionRequest),
   REQUIRES(Image),
-  PROVIDES_WITH_OUTPUT(Image),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(FrameInfo),
-  PROVIDES_WITH_OUTPUT(CameraInfo),
-  PROVIDES(CameraInfoFullRes),
-  PROVIDES(CameraSettings),
-  PROVIDES_WITH_MODIFY(CameraIntrinsics),
+  PROVIDES_WITHOUT_MODIFY(Image),
+  PROVIDES(FrameInfo),
+  PROVIDES(CameraInfo),
+  PROVIDES_WITHOUT_MODIFY(CameraSettings),
+  PROVIDES(CameraIntrinsics),
   PROVIDES(CameraResolution),
 });
 
 class CameraProvider : public CameraProviderBase
 {
 private:
-  static PROCESS_WIDE_STORAGE(CameraProvider) theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static PROCESS_LOCAL CameraProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
 
   NaoCamera* upperCamera = nullptr;
   NaoCamera* lowerCamera = nullptr;
@@ -82,7 +81,6 @@ private:
   void update(Image& image);
   void update(FrameInfo& frameInfo);
   void update(CameraInfo& cameraInfo);
-  void update(CameraInfoFullRes& cameraInfoFullRes);
   void update(CameraSettings& cameraSettings);
   void update(CameraIntrinsics& cameraIntrinsics);
   void update(CameraResolution& cameraResolution);

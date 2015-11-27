@@ -1,5 +1,5 @@
 /* This file defines standard ELF types, structures, and macros.
-   Copyright (C) 1995-2003,2004,2005,2006,2007,2008,2009
+   Copyright (C) 1995-2003,2004,2005,2006,2007,2008,2009,2010
 	Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -150,6 +150,7 @@ typedef struct
 #define ELFOSABI_TRU64		10	/* Compaq TRU64 UNIX.  */
 #define ELFOSABI_MODESTO	11	/* Novell Modesto.  */
 #define ELFOSABI_OPENBSD	12	/* OpenBSD.  */
+#define ELFOSABI_ARM_AEABI	64	/* ARM EABI */
 #define ELFOSABI_ARM		97	/* ARM */
 #define ELFOSABI_STANDALONE	255	/* Standalone (embedded) application */
 
@@ -558,6 +559,12 @@ typedef struct
   Elf64_Xword	p_align;		/* Segment alignment */
 } Elf64_Phdr;
 
+/* Special value for e_phnum.  This indicates that the real number of
+   program headers is too large to fit into e_phnum.  Instead the real
+   value is in the field sh_info of section 0.  */
+
+#define PN_XNUM		0xffff
+
 /* Legal values for p_type (segment type).  */
 
 #define	PT_NULL		0		/* Program header table entry unused */
@@ -573,6 +580,7 @@ typedef struct
 #define PT_GNU_EH_FRAME	0x6474e550	/* GCC .eh_frame_hdr segment */
 #define PT_GNU_STACK	0x6474e551	/* Indicates stack executability */
 #define PT_GNU_RELRO	0x6474e552	/* Read-only after relocation */
+#define PT_PAX_FLAGS	0x65041580	/* Indicates PaX flag markings */
 #define PT_LOSUNW	0x6ffffffa
 #define PT_SUNWBSS	0x6ffffffa	/* Sun Specific segment */
 #define PT_SUNWSTACK	0x6ffffffb	/* Stack segment */
@@ -586,6 +594,18 @@ typedef struct
 #define PF_X		(1 << 0)	/* Segment is executable */
 #define PF_W		(1 << 1)	/* Segment is writable */
 #define PF_R		(1 << 2)	/* Segment is readable */
+#define PF_PAGEEXEC	(1 << 4)	/* Enable  PAGEEXEC */
+#define PF_NOPAGEEXEC	(1 << 5)	/* Disable PAGEEXEC */
+#define PF_SEGMEXEC	(1 << 6)	/* Enable  SEGMEXEC */
+#define PF_NOSEGMEXEC	(1 << 7)	/* Disable SEGMEXEC */
+#define PF_MPROTECT	(1 << 8)	/* Enable  MPROTECT */
+#define PF_NOMPROTECT	(1 << 9)	/* Disable MPROTECT */
+#define PF_RANDEXEC	(1 << 10)	/* Enable  RANDEXEC */
+#define PF_NORANDEXEC	(1 << 11)	/* Disable RANDEXEC */
+#define PF_EMUTRAMP	(1 << 12)	/* Enable  EMUTRAMP */
+#define PF_NOEMUTRAMP	(1 << 13)	/* Disable EMUTRAMP */
+#define PF_RANDMMAP	(1 << 14)	/* Enable  RANDMMAP */
+#define PF_NORANDMMAP	(1 << 15)	/* Disable RANDMMAP */
 #define PF_MASKOS	0x0ff00000	/* OS-specific */
 #define PF_MASKPROC	0xf0000000	/* Processor-specific */
 
@@ -613,6 +633,7 @@ typedef struct
 #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
 #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
 #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
+#define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
 
 /* Legal values for the note segment descriptor types for object files.  */
 
@@ -1117,8 +1138,29 @@ typedef struct
 #define R_68K_GLOB_DAT	20		/* Create GOT entry */
 #define R_68K_JMP_SLOT	21		/* Create PLT entry */
 #define R_68K_RELATIVE	22		/* Adjust by program base */
+#define R_68K_TLS_GD32      25          /* 32 bit GOT offset for GD */
+#define R_68K_TLS_GD16      26          /* 16 bit GOT offset for GD */
+#define R_68K_TLS_GD8       27          /* 8 bit GOT offset for GD */
+#define R_68K_TLS_LDM32     28          /* 32 bit GOT offset for LDM */
+#define R_68K_TLS_LDM16     29          /* 16 bit GOT offset for LDM */
+#define R_68K_TLS_LDM8      30          /* 8 bit GOT offset for LDM */
+#define R_68K_TLS_LDO32     31          /* 32 bit module-relative offset */
+#define R_68K_TLS_LDO16     32          /* 16 bit module-relative offset */
+#define R_68K_TLS_LDO8      33          /* 8 bit module-relative offset */
+#define R_68K_TLS_IE32      34          /* 32 bit GOT offset for IE */
+#define R_68K_TLS_IE16      35          /* 16 bit GOT offset for IE */
+#define R_68K_TLS_IE8       36          /* 8 bit GOT offset for IE */
+#define R_68K_TLS_LE32      37          /* 32 bit offset relative to
+					   static TLS block */
+#define R_68K_TLS_LE16      38          /* 16 bit offset relative to
+					   static TLS block */
+#define R_68K_TLS_LE8       39          /* 8 bit offset relative to
+					   static TLS block */
+#define R_68K_TLS_DTPMOD32  40          /* 32 bit module number */
+#define R_68K_TLS_DTPREL32  41          /* 32 bit module-relative offset */
+#define R_68K_TLS_TPREL32   42          /* 32 bit TP-relative offset */
 /* Keep this the last entry.  */
-#define R_68K_NUM	23
+#define R_68K_NUM	43
 
 /* Intel 80386 specific definitions.  */
 
@@ -1297,6 +1339,8 @@ typedef struct
 #define R_SPARC_H34		85
 #define R_SPARC_SIZE32		86
 #define R_SPARC_SIZE64		87
+#define R_SPARC_JMP_IREL	248
+#define R_SPARC_IRELATIVE	249
 #define R_SPARC_GNU_VTINHERIT	250
 #define R_SPARC_GNU_VTENTRY	251
 #define R_SPARC_REV32		252
@@ -2446,6 +2490,30 @@ typedef Elf32_Addr Elf32_Conflict;
 
 /* SH specific declarations */
 
+/* Processor specific flags for the ELF header e_flags field.  */
+#define EF_SH_MACH_MASK		0x1f
+#define EF_SH_UNKNOWN		0x0
+#define EF_SH1			0x1
+#define EF_SH2			0x2
+#define EF_SH3			0x3
+#define EF_SH_DSP		0x4
+#define EF_SH3_DSP		0x5
+#define EF_SH4AL_DSP		0x6
+#define EF_SH3E			0x8
+#define EF_SH4			0x9
+#define EF_SH2E			0xb
+#define EF_SH4A			0xc
+#define EF_SH2A			0xd
+#define EF_SH4_NOFPU		0x10
+#define EF_SH4A_NOFPU		0x11
+#define EF_SH4_NOMMU_NOFPU	0x12
+#define EF_SH2A_NOFPU		0x13
+#define EF_SH3_NOMMU		0x14
+#define EF_SH2A_SH4_NOFPU	0x15
+#define EF_SH2A_SH3_NOFPU	0x16
+#define EF_SH2A_SH4		0x17
+#define EF_SH2A_SH3E		0x18
+
 /* SH relocs.  */
 #define	R_SH_NONE		0
 #define	R_SH_DIR32		1
@@ -2486,6 +2554,12 @@ typedef Elf32_Addr Elf32_Conflict;
 #define	R_SH_GOTPC		167
 /* Keep this the last entry.  */
 #define	R_SH_NUM		256
+
+/* S/390 specific definitions.  */
+
+/* Valid values for the e_flags field.  */
+
+#define EF_S390_HIGH_GPRS    0x00000001  /* High GPRs kernel facility needed.  */
 
 /* Additional s390 relocs */
 
@@ -2630,7 +2704,15 @@ typedef Elf32_Addr Elf32_Conflict;
 #define R_X86_64_GOTOFF64	25	/* 64 bit offset to GOT */
 #define R_X86_64_GOTPC32	26	/* 32 bit signed pc relative
 					   offset to GOT */
-/* 27 .. 33 */
+#define R_X86_64_GOT64		27	/* 64-bit GOT entry offset */
+#define R_X86_64_GOTPCREL64	28	/* 64-bit PC relative offset
+					   to GOT entry */
+#define R_X86_64_GOTPC64	29	/* 64-bit PC relative offset to GOT */
+#define R_X86_64_GOTPLT64	30 	/* like GOT64, says PLT entry needed */
+#define R_X86_64_PLTOFF64	31	/* 64-bit GOT relative offset
+					   to PLT entry */
+#define R_X86_64_SIZE32		32	/* Size of symbol plus 32-bit addend */
+#define R_X86_64_SIZE64		33	/* Size of symbol plus 64-bit addend */
 #define R_X86_64_GOTPC32_TLSDESC 34	/* GOT offset for TLS descriptor.  */
 #define R_X86_64_TLSDESC_CALL   35	/* Marker for call through TLS
 					   descriptor.  */

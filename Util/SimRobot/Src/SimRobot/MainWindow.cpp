@@ -341,26 +341,23 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::timerEvent(QTimerEvent* event)
 {
-  if(running || performStep)
+  performStep = false;
+
+  foreach(LoadedModule* loadedModule, loadedModules)
+    loadedModule->module->update();
+
+  // update gui
+  unsigned int now = getSystemTime();
+  if(!running || now - lastGuiUpdate > (unsigned int)guiUpdateRate)
   {
-    performStep = false;
-
-    foreach(LoadedModule* loadedModule, loadedModules)
-      loadedModule->module->update();
-
-    // update gui
-    unsigned int now = getSystemTime();
-    if(now - lastGuiUpdate > (unsigned int)guiUpdateRate)
-    {
-      lastGuiUpdate = now;
-      foreach(RegisteredDockWidget* dockWidget, openedObjectsByName)
-        if(dockWidget->isReallyVisible())
-          dockWidget->update();
-      if(statusBar->isVisible())
-        statusBar->update();
-    }
+    lastGuiUpdate = now;
+    foreach(RegisteredDockWidget* dockWidget, openedObjectsByName)
+      if(dockWidget->isReallyVisible())
+        dockWidget->update();
+    if(statusBar->isVisible())
+      statusBar->update();
   }
-  else
+  if(!running)
   {
 #ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
     if(event)
@@ -407,6 +404,13 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
         module->module->pressedKey(key, true);
       return;
     }
+  }
+  else if(event->key() == Qt::Key_F11)
+  {
+    if(isFullScreen())
+      showNormal();
+    else
+      showFullScreen();
   }
 
   QMainWindow::keyPressEvent(event);
@@ -1010,9 +1014,6 @@ bool MainWindow::closeFile()
   }
   foreach(RegisteredDockWidget* dockWidget, openedObjectsByName)
   {
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
-    dockWidget->setFloating(false);
-#endif
     delete dockWidget;
   }
   openedObjects.clear();
@@ -1165,7 +1166,11 @@ void MainWindow::simStart()
     running = true;
     simStartAct->setChecked(true);
     if(!timerId)
+#ifdef OSX
+      timerId = startTimer(1);
+#else
       timerId = startTimer(0);
+#endif
   }
 }
 
@@ -1176,6 +1181,12 @@ void MainWindow::simStep()
   performStep = true;
   if(!timerId)
     timerId = startTimer(0);
+}
+
+void MainWindow::simStop()
+{
+  simStartAct->setChecked(false);
+  running = false;
 }
 
 void MainWindow::help()

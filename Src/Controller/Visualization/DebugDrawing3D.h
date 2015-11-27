@@ -9,11 +9,10 @@
 
 #include <vector>
 
-#include "Tools/Math/Pose2D.h"
-#include "Tools/Math/Pose3D.h"
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Pose3f.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/MessageQueue/InMessage.h"
-#include "SimRobotCore2.h"
+#include <SimRobotCore2.h>
 
 class DebugDrawing3D;
 class RobotConsole;
@@ -68,7 +67,7 @@ public:
   class Element
   {
   public:
-    enum {DOT, LINE, POLYGON, QUAD, SPHERE, CYLINDER, IMAGE} type;
+    enum {DOT, LINE, POLYGON, QUAD, SPHERE, ELLIPSOID, CYLINDER, PARTDISC, IMAGE} type;
     ColorRGBA color;
     float width;
   };
@@ -77,7 +76,7 @@ public:
   class Quad : public Element
   {
   public:
-    Vector3<> points[4];
+    Vector3f points[4];
     Quad() { type = QUAD; }
   };
 
@@ -85,7 +84,7 @@ public:
   class Polygon : public Element
   {
   public:
-    Vector3<> points[3];
+    Vector3f points[3];
     Polygon() { type = POLYGON; }
   };
 
@@ -93,41 +92,61 @@ public:
   class Line : public Element
   {
   public:
-    Vector3<> points[2];
+    Vector3f points[2];
     Line() { type = LINE; }
   };
 
   class Dot : public Element
   {
   public:
-    Vector3<> point;
+    Vector3f point;
     Dot() { type = DOT; }
   };
 
   class Sphere : public Element
   {
   public:
-    Vector3<> point;
+    Vector3f point;
     float radius;
     Sphere() { type = SPHERE; }
+  };
+
+  class Ellipsoid : public Element
+  {
+  public:
+    Pose3f pose;
+    Vector3f radii;
+    Ellipsoid() { type = ELLIPSOID; }
   };
 
   class Cylinder : public Element
   {
   public:
-    Vector3<> point;
-    Vector3<> rotation;
+    Vector3f point;
+    Vector3f rotation;
     float baseRadius;
     float topRadius;
     float height;
     Cylinder() { type = CYLINDER; }
   };
 
+  class PartDisc : public Element
+  {
+  public:
+    Vector3f point;
+    Vector3f rotation;
+    float innerRadius;
+    float outerRadius;
+    float startAngle;
+    float sweeptAngle;
+    PartDisc() { type = PARTDISC; }
+  };
+
   class Image3D : public Element
   {
   public:
-    Vector3<> point;
-    Vector3<> rotation;
+    Vector3f point;
+    Vector3f rotation;
     float width,
           height;
     Image* image;
@@ -148,16 +167,9 @@ public:
   * @param width Specifies the width of the line.
   * @param color Specifies the color of the line.
   */
-  void line(
-    float xStart,
-    float yStart,
-    float zStart,
-    float xEnd,
-    float yEnd,
-    float zEnd,
-    float width,
-    ColorRGBA color
-  );
+  void line(float xStart, float yStart, float zStart,
+            float xEnd, float yEnd, float zEnd,
+            float width, ColorRGBA color);
 
   /**
   * Adds a line to the debug drawing. The line is a solid black line with width 1.
@@ -169,7 +181,7 @@ public:
   * @param zEnd Specifies the z-coordinate of the endpoint for the line.
   */
   void line(float xStart, float yStart, float zStart, float xEnd, float yEnd, float zEnd);
-  void line(Vector3<> *points, float width, ColorRGBA color);
+  void line(Vector3f* points, float width, ColorRGBA color);
 
   /**
    * Adds a quad to the debug drawing.
@@ -177,11 +189,7 @@ public:
    * @param width Specifies the width of the border.
    * @param color Specifies the color of the polygon.
    */
-  void quad(
-    const Vector3<>* points,
-    float width,
-    ColorRGBA color
-  );
+  void quad(const Vector3f* points, float width, ColorRGBA color);
 
   /**
   * Adds a polygon to the debug drawing.
@@ -189,11 +197,7 @@ public:
   * @param width Specifies the width of the border.
   * @param color Specifies the color of the polygon.
   */
-  void polygon(
-    const Vector3<>* points,
-    float width,
-    ColorRGBA color
-  );
+  void polygon(const Vector3f* points, float width, ColorRGBA color);
 
   /**
   * Adds a filled square to the debug drawing. The border of the square is a solid line with width 0.
@@ -202,19 +206,23 @@ public:
   * @param w The size of the dot
   * @param color The color of the dot.
   */
-  void dot(
-    Vector3<> v, float w, ColorRGBA color
-  );
+  void dot(Vector3f v, float w, ColorRGBA color);
 
   /**
   * Adds a sphere to the debug drawing.
-  * @param v Position of the sphere
-  * @param radius Radius of the sphere
+  * @param v Position of the sphere.
+  * @param radius Radius of the sphere.
   * @param color The color of the sphere.
   */
-  void sphere(
-    Vector3<> v, float radius, ColorRGBA color
-  );
+  void sphere(Vector3f v, float radius, ColorRGBA color);
+
+  /**
+  * Adds an ellypsoid to the debug drawing.
+  * @param pose Pose of the ellypsoid.
+  * @param radii Radii of the ellypsoid.
+  * @param color The color of the ellypsoid.
+  */
+  void ellypsoid(const Pose3f& pose, Vector3f radii, ColorRGBA color);
 
   /**
   * Adds a cylinder to the debug drawing.
@@ -225,7 +233,19 @@ public:
   * @param h Height of the cylinder
   * @param color The color of the cylinder.
   */
-  void cylinder(Vector3<> v, Vector3<> rot, float baseRadius, float topRadius, float h, ColorRGBA color);
+  void cylinder(Vector3f v, Vector3f rot, float baseRadius, float topRadius, float h, ColorRGBA color);
+
+  /**
+  * Adds a partial disc to the debug drawing.
+  * @param v Position of the disc
+  * @param rot Rotation of the disc around x/y/z axes
+  * @param innerRadius Inner Radius of the disc
+  * @param outerRadius Outer radius of the disc
+  * @param startAngle Angle to start the part
+  * @param sweepAngle Angle to end the part
+  * @param color The color of the partial disc.
+  */
+  void partDisc(Vector3f v, Vector3f rot, float innerRadius, float outerRadius, float startAngle, float sweepAngle, ColorRGBA color);
 
   /**
   * Adds an image to the debug drawing.
@@ -235,9 +255,7 @@ public:
   * @param h Height of the height
   * @param i Pointer to the image. The image will automatically be freed.
   */
-  void image(
-    Vector3<> v, Vector3<> rot, float w, float h, Image* i
-  );
+  void image(Vector3f v, Vector3f rot, float w, float h, Image* i);
 
   bool addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType, char identifier);
 
@@ -252,13 +270,15 @@ private:
   float rotateX, rotateY, rotateZ;
   float transX,  transY,  transZ;
 
-  std::vector<Line>     lines;
-  std::vector<Dot>      dots;
-  std::vector<Polygon>  polygons;
-  std::vector<Quad>     quads;
-  std::vector<Sphere>   spheres;
-  std::vector<Cylinder> cylinders;
-  std::vector<Image3D>  images;
+  std::vector<Line>      lines;
+  std::vector<Dot>       dots;
+  std::vector<Polygon>   polygons;
+  std::vector<Quad>      quads;
+  std::vector<Sphere>    spheres;
+  std::vector<Ellipsoid> ellipsoids;
+  std::vector<Cylinder>  cylinders;
+  std::vector<PartDisc>  partDiscs;
+  std::vector<Image3D>   images;
 
   char* copyImage(const Image& srcImage, int& width, int& height) const;
 };

@@ -108,14 +108,13 @@ void RemoteRobot::update()
 
   if(puppet)
   {
-    JointData dummy;
-    simulatedRobot.getAndSetJointData((const JointRequest&) jointData, dummy);
+    simulatedRobot.setJointRequest(jointRequest);
     if(moveOp != noMove)
     {
       if(moveOp == moveBoth)
-        simulatedRobot.moveRobot(movePos,moveRot * (pi / 180),true);
+        simulatedRobot.moveRobot(movePos, moveRot * 1_deg,true);
       else if(moveOp == movePosition)
-        simulatedRobot.moveRobot(movePos,Vector3<>(),false);
+        simulatedRobot.moveRobot(movePos, Vector3f::Zero(),false);
       else if(moveOp == moveBallPosition)
         simulatedRobot.moveBall(movePos);
       moveOp = noMove;

@@ -26,7 +26,7 @@ public:
   * @param color The color that is visualized.
   * @param b The background color.
   */
-  ColorTableView(const QString& fullName, RobotConsole& c, ColorClasses::Color color, const Vector3<>& b);
+  ColorTableView(const QString& fullName, RobotConsole& c, ColorClasses::Color color, const Vector3f& b);
 
 protected:
   /**

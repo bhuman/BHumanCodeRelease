@@ -9,8 +9,9 @@
 #include "Tools/Module/Module.h"
 #include "Tools/RingBufferWithSum.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Infrastructure/SensorData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/Perception/BallPercept.h"
 #include "Representations/Perception/LinePercept.h"
 #include "Representations/Perception/GoalPercept.h"
@@ -21,17 +22,21 @@
 MODULE(RobotHealthProvider,
 {,
   REQUIRES(BallPercept),
-  REQUIRES(LinePercept),
-  REQUIRES(GoalPercept),
-  REQUIRES(MotionRobotHealth),
-  REQUIRES(FilteredSensorData),
   REQUIRES(FrameInfo),
-  PROVIDES_WITH_MODIFY_AND_DRAW(RobotHealth),
+  REQUIRES(GoalPercept),
+  REQUIRES(JointSensorData),
+  REQUIRES(LinePercept),
+  REQUIRES(MotionRobotHealth),
+  REQUIRES(SystemSensorData),
+  PROVIDES(RobotHealth),
   LOADS_PARAMETERS(
   {,
-    (char) batteryLow, /**< The voltage below which the robot gives low battery warnings. */
-    (int) temperatureHigh, /**< The temperature the robot starts complaining about the temperature. */
-    (bool) enableName,
+    (char) batteryLow,                    /**< The voltage below which the robot gives low battery warnings. */
+    (int) temperatureHeat,                /**< The temperature that makes the robot complaining about the temperature. */
+    (int) temperatureFire,                /**< The temperature that makes the robot complaining stronger about the temperature. */
+    (int) temperatureFireExclamationMark, /**< The temperature ... */
+    (int) cpuHeat,
+    (bool) enableName,                    /**< The robots mentions its name when complaining, if true */
   }),
 });
 
@@ -48,7 +53,7 @@ public:
 private:
   STREAMABLE(BuildInfo,
   {,
-    (RobotHealth, Configuration)(Develop) configuration, /**< The configuration that was deployed. */
+    ((RobotHealth) Configuration)(Develop) configuration, /**< The configuration that was deployed. */
     (std::string)("unknown") hash, /**< The first 5 digits of the hash of the git HEAD that was deployed. */
     (bool)(false) clean, /**< Was the working copy clean when it was deployed? */
   });
@@ -61,9 +66,9 @@ private:
   float lastBatteryLevel;
   bool batteryVoltageFalling;
   unsigned highTemperatureSince;
+  unsigned highCPUTemperatureSince = 0;
 #ifdef TARGET_ROBOT
   NaoBody naoBody;
-  unsigned int lastBodyTemperatureReadTime;
   unsigned int lastWlanCheckedTime;
 #endif
 

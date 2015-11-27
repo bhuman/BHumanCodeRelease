@@ -7,19 +7,11 @@
  */
 
 #include "FallDownStateDetector.h"
-#include "Representations/Infrastructure/JointData.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
 using namespace std;
 
-FallDownStateDetector::FallDownStateDetector() : lastFallDetected(0)
-{
-  fallDownAngleX *= pi_180;
-  fallDownAngleY *= pi_180;
-  onGroundAngle  *= pi_180;
-  staggeringAngleX *= pi_180;
-  staggeringAngleY *= pi_180;
-}
+MAKE_MODULE(FallDownStateDetector, sensing)
 
 void FallDownStateDetector::update(FallDownState& fallDownState)
 {
@@ -27,14 +19,14 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
   DECLARE_PLOT("module:FallDownStateDetector:accelerationAngleYZ");
 
   // Buffer data:
-  buffers[accX].add(theFilteredSensorData.data[SensorData::accX]);
-  buffers[accY].add(theFilteredSensorData.data[SensorData::accY]);
-  buffers[accZ].add(theFilteredSensorData.data[SensorData::accZ]);
+  accXbuffer.push_front(theInertialData.acc.x());
+  accYbuffer.push_front(theInertialData.acc.y());
+  accZbuffer.push_front(theInertialData.acc.z());
 
   // Compute average acceleration values and angles:
-  float accXaverage(buffers[accX].getAverage());
-  float accYaverage(buffers[accY].getAverage());
-  float accZaverage(buffers[accZ].getAverage());
+  float accXaverage(accXbuffer.average());
+  float accYaverage(accYbuffer.average());
+  float accZaverage(accZbuffer.average());
   float accelerationAngleXZ(atan2(accZaverage, accXaverage));
   float accelerationAngleYZ(atan2(accZaverage, accYaverage));
   MODIFY("module:FallDownStateDetector:accX",  accXaverage);
@@ -47,14 +39,14 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
 
   fallDownState.odometryRotationOffset = 0;
 
-  if(isCalibrated() && !specialSpecialAction())
+  if(!specialSpecialAction())
   {
     if(theFrameInfo.getTimeSince(lastFallDetected) <= fallTime)
     {
       fallDownState.state = FallDownState::falling;
     }
-    else if((abs(theFilteredSensorData.data[SensorData::angleX]) <= staggeringAngleX - pi_180
-             && abs(theFilteredSensorData.data[SensorData::angleY]) <= staggeringAngleY - pi_180)
+    else if((abs(theInertialData.angle.x()) <= staggeringAngleX - 1_deg
+             && abs(theInertialData.angle.y()) <= staggeringAngleY - 1_deg)
             || (fallDownState.state == FallDownState::upright && !isStaggering()))
     {
       fallDownState.state = FallDownState::upright;
@@ -66,7 +58,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
       //SystemCall::playSound("doh.wav");
       lastFallDetected = theFrameInfo.time;
       fallDownState.state = FallDownState::falling;
-      fallDownState.direction = directionOf(theFilteredSensorData.data[SensorData::angleX], theFilteredSensorData.data[SensorData::angleY]);
+      fallDownState.direction = directionOf(theInertialData.angle);
       if(fallDownState.sidewards != FallDownState::fallen)
       {
         fallDownState.sidewards = sidewardsOf(fallDownState.direction);
@@ -75,11 +67,11 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
     else if((isUprightOrStaggering(fallDownState)
              && isStaggering())
             || (fallDownState.state == FallDownState::staggering
-                && abs(theFilteredSensorData.data[SensorData::angleX]) <= staggeringAngleX - pi_180
-                && abs(theFilteredSensorData.data[SensorData::angleY]) <= staggeringAngleY - pi_180))
+                && abs(theInertialData.angle.x()) <= staggeringAngleX - 1_deg
+                && abs(theInertialData.angle.y()) <= staggeringAngleY - 1_deg))
     {
       fallDownState.state = FallDownState::staggering;
-      fallDownState.direction = directionOf(theFilteredSensorData.data[SensorData::angleX], theFilteredSensorData.data[SensorData::angleY]);
+      fallDownState.direction = directionOf(theInertialData.angle);
       if(fallDownState.sidewards != FallDownState::fallen)
       {
         fallDownState.sidewards = sidewardsOf(fallDownState.direction);
@@ -89,7 +81,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
     {
       fallDownState.state = FallDownState::undefined;
 
-      if(abs(accelerationAngleXZ) < 0.5f)
+      if(abs(accelerationAngleXZ) > 2.5f)
       {
         fallDownState.direction = FallDownState::front;
         fallDownState.state = FallDownState::onGround;
@@ -107,11 +99,11 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
           }
         }
       }
-      else if(abs(accelerationAngleXZ) > 2.5f)
+      else if(abs(accelerationAngleXZ) < 0.5f)
       {
         fallDownState.direction = FallDownState::back;
         fallDownState.state = FallDownState::onGround;
-        if(theMotionInfo.motion != MotionRequest::getUp)        
+        if(theMotionInfo.motion != MotionRequest::getUp)
          {
           if(fallDownState.sidewards == FallDownState::leftwards)
           {
@@ -125,29 +117,30 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
           }
         }
       }
-      else if(abs(accelerationAngleYZ) < 0.5f)
+      else if(abs(accelerationAngleYZ) > 2.5f)
       {
         fallDownState.direction = FallDownState::left;
         fallDownState.state = FallDownState::onGround;
 
         if(theMotionInfo.motion != MotionRequest::getUp)
           if(fallDownState.sidewards != FallDownState::fallen)
-             fallDownState.sidewards = FallDownState::leftwards;                  
+             fallDownState.sidewards = FallDownState::leftwards;
       }
-      else if(abs(accelerationAngleYZ) > 2.5f)
+      else if(abs(accelerationAngleYZ) < 0.5f)
       {
         fallDownState.direction = FallDownState::right;
         fallDownState.state = FallDownState::onGround;
 
         if(theMotionInfo.motion != MotionRequest::getUp)
-          if(fallDownState.sidewards != FallDownState::fallen)          
-            fallDownState.sidewards = FallDownState::rightwards;         
+          if(fallDownState.sidewards != FallDownState::fallen)
+            fallDownState.sidewards = FallDownState::rightwards;
       }
     }
   }
   else
     fallDownState.state = FallDownState::undefined;
-  
+
+
   //these odometry changes really need to be proven if they are still correct
   if(keeperJumped != None)
   {
@@ -190,38 +183,33 @@ bool FallDownStateDetector::isUprightOrStaggering(FallDownState& fallDownState)
 bool FallDownStateDetector::specialSpecialAction()
 {
   return (theMotionInfo.motion == MotionRequest::specialAction
-          && theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead);
+          && (theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead));
 }
 
 bool FallDownStateDetector::isStaggering()
 {
-  return abs(theFilteredSensorData.data[SensorData::angleX]) >= staggeringAngleX + pi_180
-         || abs(theFilteredSensorData.data[SensorData::angleY]) >= staggeringAngleY + pi_180;
+  return abs(theInertialData.angle.x()) >= staggeringAngleX + 1_deg
+         || abs(theInertialData.angle.y()) >= staggeringAngleY + 1_deg;
 }
 
 bool FallDownStateDetector::isFalling()
 {
-  return abs(theFilteredSensorData.data[SensorData::angleX]) >= fallDownAngleX
-         || abs(theFilteredSensorData.data[SensorData::angleY]) >= fallDownAngleY;
+  return abs(theInertialData.angle.x()) >= fallDownAngleX
+         || abs(theInertialData.angle.y()) >= fallDownAngleY;
 }
 
-bool FallDownStateDetector::isCalibrated()
+FallDownState::Direction FallDownStateDetector::directionOf(Vector2a angle)
 {
-  return theInertiaSensorData.calibrated;
-}
-
-FallDownState::Direction FallDownStateDetector::directionOf(float angleX, float angleY)
-{
-  if(abs(angleX) > abs(angleY) + 0.2f)
+  if(abs(angle.x()) > abs(angle.y()) + 0.2f)
   {
-    if(angleX < 0.f)
+    if(angle.x() < 0.f)
       return FallDownState::left;
     else
       return FallDownState::right;
   }
   else
   {
-    if(angleY > 0.f)
+    if(angle.y() > 0.f)
       return FallDownState::front;
     else
       return FallDownState::back;
@@ -232,13 +220,11 @@ FallDownState::Sidestate FallDownStateDetector::sidewardsOf(FallDownState::Direc
 {
   switch(dir)
   {
-  case FallDownState::left:
-    return FallDownState::leftwards;
-  case FallDownState::right:
-    return FallDownState::rightwards;
-  default:
-    return FallDownState::noot;
+    case FallDownState::left:
+      return FallDownState::leftwards;
+    case FallDownState::right:
+      return FallDownState::rightwards;
+    default:
+      return FallDownState::noot;
   }
 }
-
-MAKE_MODULE(FallDownStateDetector, Sensing)

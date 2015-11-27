@@ -1,5 +1,5 @@
 #!/bin/bash
 pushd "$(dirname $0)" >/dev/null
-../../Util/mare/Linux/bin/mare --codelite
+../../Util/SimRobot/Util/mare/Linux/bin/mare --codelite
 popd >/dev/null
 

@@ -23,7 +23,8 @@ qtpropertybrowser = cppStaticLibrary + {
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
-  },
+  }
+
   includePaths = {
     "$(buildDir)",
     if (platform == "Linux") {
@@ -38,19 +39,22 @@ qtpropertybrowser = cppStaticLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
     }
-  },
+  }
+
   libs = {
     if (host == "Win32") {
       "QtCore4", "QtGui4"
     } else if (platform == "Linux") {
       "QtCore", "QtGui"
     }
-  },
+  }
+
   cppFlags += {
     if (platform == "Linux") {
       "-fPIC",  -"-Wconversion"

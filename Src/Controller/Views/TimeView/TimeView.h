@@ -55,4 +55,3 @@ private:
 
   friend class TimeWidget;//TimeWidget needs access to console
 };
-

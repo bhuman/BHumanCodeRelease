@@ -47,7 +47,7 @@ Simulation::~Simulation()
     dThreadingImplementationShutdownProcessing(threading);
     dThreadingThreadPoolWaitIdleState(pool);
     dThreadingFreeThreadPool(pool);
-    dWorldSetStepThreadingImplementation(physicalWorld, NULL, NULL);
+    dWorldSetStepThreadingImplementation(physicalWorld, nullptr, nullptr);
     dThreadingFreeImplementation(threading);
 #endif
     dWorldDestroy(physicalWorld);
@@ -84,7 +84,7 @@ bool Simulation::loadFile(const std::string& filename, std::list<std::string>& e
     dWorldSetQuickStepNumIterations(physicalWorld, scene->quickSolverIterations);
 #ifdef MULTI_THREADING
   threading = dThreadingAllocateMultiThreadedImplementation();
-  pool = dThreadingAllocateThreadPool(std::thread::hardware_concurrency(), 0, dAllocateFlagBasicData, NULL);
+  pool = dThreadingAllocateThreadPool(std::thread::hardware_concurrency(), 0, dAllocateFlagBasicData, nullptr);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
   dWorldSetStepThreadingImplementation(physicalWorld, dThreadingImplementationGetFunctions(threading), threading);
 #endif
@@ -186,32 +186,34 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
     if(bodyId1)
       switch(dGeomGetClass(geomId1))
       {
-      case dSphereClass:
-      case dCCylinderClass:
-      case dCylinderClass:
-        if(geometry1->material->getRollingFriction(*geometry2->material, rollingFriction))
-        {
-          Vector3<> angularVel;
-          ODETools::convertVector(dBodyGetAngularVel(bodyId1), angularVel);
-          angularVel -= Vector3<>(angularVel).normalize(std::min(angularVel.abs(), std::abs(simulation->scene->gravity) * rollingFriction * simulation->scene->stepLength));
-          dBodySetAngularVel(bodyId1, angularVel.x, angularVel.y, angularVel.z);
-        }
-        break;
+        case dSphereClass:
+        case dCCylinderClass:
+        case dCylinderClass:
+          if(geometry1->material->getRollingFriction(*geometry2->material, rollingFriction))
+          {
+            dBodySetAngularDamping(bodyId1, 0.2);
+            Vector3<> linearVel;
+            ODETools::convertVector(dBodyGetLinearVel(bodyId1), linearVel);
+            linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));
+            dBodySetLinearVel(bodyId1, linearVel.x, linearVel.y, linearVel.z);
+          }
+          break;
       }
     if(bodyId2)
       switch(dGeomGetClass(geomId2))
       {
-      case dSphereClass:
-      case dCCylinderClass:
-      case dCylinderClass:
-        if(geometry2->material->getRollingFriction(*geometry1->material, rollingFriction))
-        {
-          Vector3<> angularVel;
-          ODETools::convertVector(dBodyGetAngularVel(bodyId2), angularVel);
-          angularVel -= Vector3<>(angularVel).normalize(std::min(angularVel.abs(), std::abs(simulation->scene->gravity) * rollingFriction * simulation->scene->stepLength));
-          dBodySetAngularVel(bodyId2, angularVel.x, angularVel.y, angularVel.z);
-        }
-        break;
+        case dSphereClass:
+        case dCCylinderClass:
+        case dCylinderClass:
+          if(geometry2->material->getRollingFriction(*geometry1->material, rollingFriction))
+          {
+            dBodySetAngularDamping(bodyId2, 0.2);
+            Vector3<> linearVel;
+            ODETools::convertVector(dBodyGetLinearVel(bodyId2), linearVel);
+            linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));
+            dBodySetLinearVel(bodyId2, linearVel.x, linearVel.y, linearVel.z);
+          }
+          break;
       }
   }
 

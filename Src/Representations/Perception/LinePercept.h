@@ -1,55 +1,36 @@
 /**
-* @file LinePercept.h
-* Declaration of a class that represents the fieldline percepts
-* @author jeff
-*/
+ * @file LinePercept.h
+ * Declaration of a struct that represents the fieldline percepts
+ * @author jeff
+ */
 
 #pragma once
 
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/ImageCoordinateSystem.h"
-#include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Configuration/FieldDimensions.h"
-#include <list>
+#include "Tools/Enum.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 /**
-* @class LinePercept
-* A class that represents the found fieldlines, center circle and intersections.
-*/
+ * @struct LinePercept
+ * A struct that represents the found fieldlines, center circle and intersections.
+ */
 STREAMABLE(LinePercept,
 {
-public:
   /**
-   * @class Linesegment
+   * @struct Line
    *
-   * This class represents a linesegment generated from a linespot.
-   */
-  STREAMABLE(LineSegment,
-  {,
-    (float) alpha, /**< direction of representation in Hesse norm form of this linesegment */
-    (float) d, /**< distance of representation in Hesse norm form of this linesegment */
-    (Vector2<>) p1, /**< start point of this linesegment in field coordinates */
-    (Vector2<>) p2, /**< end point of this linesegment in field coordinates */
-    (Vector2<int>) p1Img, /**< start point of this linesegment in image coordinates */
-    (Vector2<int>) p2Img, /**< end point of this linesegment in image coordinates */
-  });
-
-  /**
-   * @class Line
-   *
-   * This class represents a found fieldline.
+   * This struct represents a found fieldline.
    */
   STREAMABLE(Line,
   {
-  public:
     /**
      * Calculates the distance of a point p to this line
      * @param p a point
      * @return the distance
      */
-    float calculateDistToLine(const Vector2<>& p) const
+    float calculateDistToLine(const Vector2f& p) const
     {
-      return p.x * std::cos(alpha) + p.y * std::sin(alpha) - d;
+      return p.x() * std::cos(alpha) + p.y() * std::sin(alpha) - d;
     }
 
     /**
@@ -57,73 +38,67 @@ public:
      * @param p a point
      * @return the closest point on this line
      */
-    Vector2<> calculateClosestPointOnLine(const Vector2<>& p) const,
+    Vector2f calculateClosestPointOnLine(const Vector2f& p) const,
 
     (float) alpha, /**< direction of this line in Hesse norm form */
     (float) d, /**< distance of this line in Hesse norm form */
-    (bool) dead, /**< This is needed for merging lines */
     (bool) midLine, /**< Whether this is the line throught the center circle */
-    (std::vector<LineSegment>) segments, /**< The linesegments forming this line */
-    (Vector2<>) first, /**< The starting point of this line in field coordinates */
-    (Vector2<>) last, /**< The end point of this line in field coordinates */
-    (Vector2<>) startInImage, /**< The start point of this line in image coordinates */
-    (Vector2<>) endInImage, /**< The end point of this line in image coordinates */
+    (Vector2f) first, /**< The starting point of this line in field coordinates */
+    (Vector2f) last, /**< The end point of this line in field coordinates */
+    (Vector2f) startInImage, /**< The start point of this line in image coordinates */
+    (Vector2f) endInImage, /**< The end point of this line in image coordinates */
   });
 
   /**
-   * @class CircleSpot
-   *
-   * This class represents circle spots. A circle spot
-   * is a point calculated from a linesegment where the
-   * center circle would be if the linesegment is part
-   * of the center circle.
-   * This is also used for the found circle.
+   * @struct Circle
+   * The center circle.
    */
-  STREAMABLE(CircleSpot,
-  {
-    friend class LinePerceptor; // Access to iterator
-    std::list<LineSegment>::iterator iterator, /**< An temporary iterator pointing to the according segment
-                                                    in the singleSegs list */
-    (Vector2<float>) pos, /**< The position of the center of the center circle in field coordinates */
+  STREAMABLE(Circle,
+  {,
+    (Vector2f)(Vector2f::Zero()) pos, /**< The position of the center of the center circle in field coordinates */
     (bool)(false) found, /**< Whether the center circle was found in this frame */
     (unsigned)(0) lastSeen, /**< The last time the center circle was seen */
   });
 
   /**
-   * @class Intersection
-   * A class representing a intersection of two fieldlines
+   * @struct Intersection
+   * A struct representing a intersection of two fieldlines
    */
   STREAMABLE(Intersection,
   {
-  public:
     /**
-     * Intersection types are inclusive. 
+     * Intersection types are inclusive.
      * T includes L; X includes T and L */
     ENUM(IntersectionType,
+    {,
       L,
       T,
-      X
-    ),
+      X,
+    }),
 
     (IntersectionType) type,
-    (Vector2<>) pos, /**< The fieldcoordinates of the intersection */
-    (Vector2<>) dir1, /**< The first direction of the lines intersected. */
-    (Vector2<>) dir2, /**< The second direction of the lines intersected. */
+    (Vector2f) pos, /**< The fieldcoordinates of the intersection */
+    /** dir1 and dir2 are the directions of the field lines.
+     * If the type is T: dir1 shows the direction of the vertical line.
+     *                   dir2 shows the direction of the horizontal line +90° relative to dir1.
+     * dir1 and dir2 point always from the intersection towards the lines */
+    (Vector2f) dir1,
+    (Vector2f) dir2,
   });
 
   /** Determines the closest line to a given point
-  * @param point the given point
-  * @param retLine the closest line
-  * @return the distance from point to retLine
-  * */
-  float getClosestLine(Vector2<> point, Line& retLine) const;
+   * @param point the given point
+   * @param retLine the closest line
+   * @return the distance from point to retLine
+   * */
+  float getClosestLine(Vector2f point, Line& retLine) const;
 
   /**
-  * The method draws the percepts to image/field/3D scene.
-  */
+   * The method draws the percepts to image/field/3D scene.
+   */
   void draw() const,
 
   (std::vector<Line>) lines, /**< The found fieldlines */
   (std::vector<Intersection>) intersections, /**< The intersections of the lines */
-  (CircleSpot) circle, /**< The position of the center circle if found */
+  (Circle) circle, /**< The position of the center circle if found */
 });

@@ -78,9 +78,9 @@ bool SCPCmd::preExecution(Context &context, const std::vector<std::string> &para
 Task* SCPCmd::perRobotExecution(Context &context, Robot &robot)
 {
   if(fromRobot)
-    return new SCPTask(context, &robot, scpCommandFromRobot(fromFile, robot.getBestIP(), toFile));
+    return new SCPTask(context, &robot, scpCommandFromRobot(fromFile, robot.getBestIP(context), toFile));
   else
-    return new SCPTask(context, &robot, scpCommandToRobot(fromFile, robot.getBestIP(), toFile));
+    return new SCPTask(context, &robot, scpCommandToRobot(fromFile, robot.getBestIP(context), toFile));
 }
 
 SCPCmd::SCPTask::SCPTask(Context &context, Robot *robot, const std::string &command)

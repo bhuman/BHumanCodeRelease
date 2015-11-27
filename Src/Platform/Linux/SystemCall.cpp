@@ -15,11 +15,9 @@
 #include "SoundPlayer.h"
 #include "BHAssert.h"
 #include <sys/sysinfo.h>
-#include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <cstring>
-#include <pthread.h>
 #include <ctime>
 #include <sys/statvfs.h>
 

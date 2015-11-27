@@ -1,0 +1,33 @@
+#!/bin/sh
+
+echo "Please make sure that you use automake 1.11 or later"
+    echo "Warnings about underquoted definitions are harmless"
+if [ `uname -s` = Darwin ]; then
+    echo "On OSX, install latest libtool, as the OS provided glibtoolize will not work"
+fi
+ 
+echo "Running aclocal"
+aclocal -I m4 --install || exit 1
+# on Mac libtoolize is called glibtoolize
+LIBTOOLIZE=libtoolize
+#if [ `uname -s` = Darwin ]; then
+#    LIBTOOLIZE=glibtoolize
+#fi
+echo "Running $LIBTOOLIZE"
+$LIBTOOLIZE --copy --automake --install || exit 1
+echo "Running autoheader"
+autoheader || exit 1
+echo "Running automake"
+automake --foreign --add-missing --copy || exit 1
+echo "Running autoconf"
+autoconf || exit 1
+
+echo "Running bootstrap in ou directory"
+(cd ou && ./bootstrap)
+
+if [ -d libccd ]; then
+    echo "Running bootstrap in libccd directory"
+    (cd libccd && ./bootstrap)
+fi;
+
+echo "Now you are ready to run ./configure"

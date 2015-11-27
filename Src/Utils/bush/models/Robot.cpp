@@ -1,5 +1,6 @@
-#include "Controller/Platform/Directory.h"
+#include "Utils/bush/tools/Directory.h"
 #include "Platform/File.h"
+#include "Tools/Streams/InStreams.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/Session.h"
@@ -12,20 +13,9 @@
 #include <cerrno>
 #endif
 
-std::string Robot::getSettingsString(const Team& team) const
+std::string Robot::getBestIP(const Context& context) const
 {
-  ConfigMap cm;
-  cm["teamNumber"] << team.number;
-  cm["teamPort"] << team.port;
-  cm["teamColor"] << team.color;
-  cm["playerNumber"] << team.getPlayerNumber(*this);
-  cm["location"] << team.location;
-  return cm.str();
-}
-
-std::string Robot::getBestIP() const
-{
-  return Session::getInstance().getBestIP(this);
+  return Session::getInstance().getBestIP(context, this);
 }
 
 std::vector<Robot> Robot::getRobots()
@@ -41,13 +31,11 @@ std::vector<Robot> Robot::getRobots()
     {
       if(isDir)
       {
-        ConfigMap cm;
-        std::string s = linuxToPlatformPath(dir + "/network.cfg");
-        int status = cm.read(s);
-        if(status > 0)
+        InMapFile stream(linuxToPlatformPath(dir + "/network.cfg"));
+        if(stream.exists())
         {
           Robot r;
-          cm >> r;
+          stream >> r;
           robots.push_back(r);
         }
       }
@@ -65,23 +53,4 @@ void Robot::initRobotsByName(std::map<std::string, Robot*> &robotsByName)
   {
     robotsByName[robots[i].name] = new Robot(robots[i]);
   }
-}
-
-CONFIGMAP_STREAM_IN(ConfigMap, Robot);
-CONFIGMAP_STREAM_OUT(ConfigMap, Robot);
-
-ConfigMap& operator << (ConfigMap& cv, const Robot& robot)
-{
-  cv["lan"] << robot.lan;
-  cv["wlan"] << robot.wlan;
-  cv["name"] << robot.name;
-  return cv;
-}
-
-const ConfigMap& operator >> (const ConfigMap& cv, Robot& robot)
-{
-  cv["lan"] >> robot.lan;
-  cv["wlan"] >> robot.wlan;
-  cv["name"] >> robot.name;
-  return cv;
 }

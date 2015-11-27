@@ -1,62 +1,68 @@
 /**
-* @file MotionConfigurationDataProvider.h
-* This file declares a module that provides data loaded from configuration files.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file MotionConfigurationDataProvider.h
+ * This file declares a module that provides data loaded from configuration files.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #pragma once
 
 #include "Tools/Module/Module.h"
-#include "Tools/MessageQueue/InMessage.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointCalibration.h"
-#include "Representations/Configuration/SensorCalibration.h"
-#include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/MassCalibration.h"
-#include "Representations/Infrastructure/JointData.h"
+#include "Representations/Configuration/MotionSettings.h"
+#include "Representations/Configuration/RobotDimensions.h"
+#include "Representations/Configuration/UsConfiguration.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/StiffnessData.h"
 
 MODULE(MotionConfigurationDataProvider,
 {,
-  PROVIDES_WITH_MODIFY(JointCalibration),
-  PROVIDES_WITH_MODIFY(SensorCalibration),
-  PROVIDES_WITH_MODIFY(RobotDimensions),
-  PROVIDES_WITH_MODIFY(MassCalibration),
-  PROVIDES_WITH_MODIFY(HardnessSettings),
-  PROVIDES_WITH_MODIFY(DamageConfiguration),
+  PROVIDES(DamageConfigurationBody),
+  PROVIDES(DamageConfigurationHead),
+  PROVIDES(StiffnessSettings),
+  PROVIDES(JointCalibration),
+  PROVIDES(MassCalibration),
+  PROVIDES(MotionSettings),
+  PROVIDES(RobotDimensions),
+  PROVIDES(UsConfiguration),
+  PROVIDES_WITHOUT_MODIFY(FieldDimensions),
 });
 
 class MotionConfigurationDataProvider : public MotionConfigurationDataProviderBase
 {
 private:
-  JointCalibration* theJointCalibration;
-  SensorCalibration* theSensorCalibration;
-  RobotDimensions* theRobotDimensions;
-  MassCalibration* theMassCalibration;
-  HardnessSettings* theHardnessSettings;
-  DamageConfiguration* theDamageConfiguration;
+  DamageConfigurationBody* theDamageConfigurationBody = nullptr;
+  DamageConfigurationHead* theDamageConfigurationHead = nullptr;
+  StiffnessSettings* theStiffnessSettings = nullptr;
+  JointCalibration* theJointCalibration = nullptr;
+  MassCalibration* theMassCalibration = nullptr;
+  MotionSettings* theMotionSettings = nullptr;
+  RobotDimensions* theRobotDimensions = nullptr;
+  UsConfiguration* theUsConfiguration = nullptr;
+  FieldDimensions* theFieldDimensions = nullptr;
 
+  void update(DamageConfigurationBody& damageConfigurationBody);
+  void update(DamageConfigurationHead& damageConfigurationHead);
+  void update(FieldDimensions& fieldDimensions);
   void update(JointCalibration& jointCalibration);
-  void update(SensorCalibration& sensorCalibration);
-  void update(RobotDimensions& robotDimensions);
   void update(MassCalibration& massCalibration);
-  void update(HardnessSettings& hardnessSettings);
-  void update(DamageConfiguration& damageConfiguration);
+  void update(MotionSettings& motionSettings);
+  void update(RobotDimensions& robotDimensions);
+  void update(StiffnessSettings& stiffnessSettings);
+  void update(UsConfiguration& usConfiguration);
 
+  void readDamageConfigurationBody();
+  void readDamageConfigurationHead();
+  void readFieldDimensions();
   void readJointCalibration();
-  void readSensorCalibration();
-  void readRobotDimensions();
   void readMassCalibration();
-  void readHardnessSettings();
-  void readDamageConfiguration();
+  void readMotionSettings();
+  void readRobotDimensions();
+  void readStiffnessSettings();
+  void readUsConfiguration();
 
 public:
-  /**
-  * Default constructor.
-  */
   MotionConfigurationDataProvider();
-
-  /**
-  * Destructor.
-  */
   ~MotionConfigurationDataProvider();
 };

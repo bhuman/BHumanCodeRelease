@@ -1,7 +1,7 @@
-/* 
+/**
  * File:   QuarticPolynomial.cpp
  * Author: arne
- * 
+ *
  * Created on May 1, 2014, 10:34 AM
  */
 
@@ -19,7 +19,7 @@ int PolynomialSolver::solveLinear(float c[2], float s[1])
 {
   if(isZero(c[1]))
     return 0;
-  s[0] = - c[0] / c[1];
+  s[0] = -c[0] / c[1];
   return 1;
 }
 
@@ -30,7 +30,7 @@ int PolynomialSolver::solveQuadric(float c[3], float s[2])
   // make sure we have a d2 equation
   if(isZero(c[2]))
     return solveLinear(c, s);
-  
+
   // normal for: x^2 + px + q
   p = c[1] / (2.0f * c[2]);
   q = c[0] / c[2];
@@ -57,26 +57,21 @@ int PolynomialSolver::solveQuadric(float c[3], float s[2])
 
 int PolynomialSolver::solveCubic(float c[4], float s[3])
 {
-  int	i, num;
-  float	sub,
-    A, B, C,
-    sq_A, p, q,
-    cb_p, D;
-
   // normalize the equation:x ^ 3 + Ax ^ 2 + Bx  + C = 0
-  A = c[2] / c[3];
-  B = c[1] / c[3];
-  C = c[0] / c[3];
+  const float A = c[2] / c[3];
+  const float B = c[1] / c[3];
+  const float C = c[0] / c[3];
 
   // substitute x = y - A / 3 to eliminate the quadric term: x^3 + px + q = 0
-  sq_A = A * A;
-  p = 1.0f/3.0f * (-1.0f/3.0f * sq_A + B);
-  q = 1.0f/2.0f * (2.0f/27.0f * A *sq_A - 1.0f/3.0f * A * B + C);
+  const float sq_A = A * A;
+  const float p = 1.0f / 3.0f * (-1.0f / 3.0f * sq_A + B);
+  const float q = 1.0f / 2.0f * (2.0f / 27.0f * A * sq_A - 1.0f / 3.0f * A * B + C);
 
   // use Cardano's formula
-  cb_p = p * p * p;
-  D = q * q + cb_p;
+  const float cb_p = p * p * p;
+  const float D = q * q + cb_p;
 
+  int num;
   if(isZero(D))
   {
     if(isZero(q))
@@ -88,48 +83,47 @@ int PolynomialSolver::solveCubic(float c[4], float s[3])
     else
     {
       // one single and one float solution
-      float u = cbrtf(-q);
+      const float u = cbrtf(-q);
       s[0] = 2.0f * u;
-      s[1] = - u;
+      s[1] = -u;
       num = 2;
     }
   }
   else if(D < 0.0)
-	{
+  {
     // casus irreductibilis: three real solutions
-    float phi = 1.0f/3.0f * std::acos(-q / std::sqrt(-cb_p));
-    float t = 2.0f * std::sqrt(-p);
+    const float phi = 1.0f / 3.0f * std::acos(-q / std::sqrt(-cb_p));
+    const float t = 2.0f * std::sqrt(-p);
     s[0] = t * std::cos(phi);
     s[1] = -t * std::cos(phi + pi / 3.0f);
     s[2] = -t * std::cos(phi - pi / 3.0f);
     num = 3;
-	}
+  }
   else
-	{
+  {
     // one real solution
-    float sqrt_D = std::sqrt(D);
-    float u = cbrtf(sqrt_D + std::abs(q));
+    const float sqrt_D = std::sqrt(D);
+    const float u = cbrtf(sqrt_D + std::abs(q));
     if(q > 0.0f)
-      s[0] = - u + p / u;
+      s[0] = -u + p / u;
     else
       s[0] = u - p / u;
     num = 1;
-	}
+  }
 
   // resubstitute
-  sub = 1.0f / 3.0f * A;
-  for(i = 0; i < num; i++)
+  const float sub = 1.0f / 3.0f * A;
+  for(int i = 0; i < num; i++)
     s[i] -= sub;
   return num;
 }
 
 int PolynomialSolver::solveQuartic(float c[5], float s[4])
 {
-  float	coeffs[4],
+  float coeffs[4],
         z, u, v, sub,
         A, B, C, D,
         sq_A, p, q, r;
-  int i, num;
 
   // normalize the equation:x ^ 4 + Ax ^ 3 + Bx ^ 2 + Cx + D = 0
   A = c[3] / c[4];
@@ -143,6 +137,7 @@ int PolynomialSolver::solveQuartic(float c[5], float s[4])
   q = 1.0f / 8.0f * sq_A * A - 1.0f / 2.0f * A * B + C;
   r = -3.0f / 256.0f * sq_A * sq_A + 1.0f / 16.0f * sq_A * B - 1.0f / 4.0f * A * C + D;
 
+  int num;
   if(isZero(r))
   {
     // no absolute term:y(y ^ 3 + py + q) = 0
@@ -161,7 +156,7 @@ int PolynomialSolver::solveQuartic(float c[5], float s[4])
     coeffs[1] = -r;
     coeffs[2] = -1.0f / 2.0f * p;
     coeffs[3] = 1.0f;
-    (void) solveCubic(coeffs, s);
+    (void)solveCubic(coeffs, s);
 
     // ...and take the one real solution...
     z = s[0];
@@ -199,10 +194,8 @@ int PolynomialSolver::solveQuartic(float c[5], float s[4])
 
   // resubstitute
   sub = 1.0f / 4 * A;
-  for(i = 0; i < num; i++)
+  for(int i = 0; i < num; i++)
     s[i] -= sub;
 
-return num;
+  return num;
 }
-
-

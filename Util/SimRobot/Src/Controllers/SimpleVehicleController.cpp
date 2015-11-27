@@ -12,10 +12,10 @@
  *
  * @author <A href="mailto:Tim.Laue@dfki.de">Tim Laue</A>
  */
-
+#define _USE_MATH_DEFINES // for C++
 
 #include <SimRobotCore2.h>
-#include "Platform/OpenGL.h"
+#include <Platform/OpenGL.h>
 #include <QString>
 #include <QVector>
 #include <cmath>
@@ -130,7 +130,7 @@ public:
   {
     ballFound = false;
     // Find closest measurement:
-    float* distanceData = (float*)distanceSensor->getValue().floatArray;
+    const float* distanceData = distanceSensor->getValue().floatArray;
     float minDist = distanceData[0];
     int minDistIdx = 0;
     const int numOfDist = distanceSensor->getDimensions()[0];

@@ -15,11 +15,7 @@ class ShortcutBar : public QToolBar
 public:
   ShortcutBar(Console *console);
   QAction* addShortcut(const QString& name,
-                       const QString& command,
-                       QIcon* icon = 0);
-  QAction* addShortcut(const QString& name,
-                       const QString& command,
-                       const QString& icon);
+                       const QString& command);
 private slots:
   void actionTriggered();
 };

@@ -31,7 +31,7 @@ template <class V> inline V normalize(const V& data)
 SimObjectRenderer::SimObjectRenderer(SimObject& simObject) :
   simObject(simObject), width(0), height(0),
   cameraMode(targetCam), defaultCameraPos(3.f, 6.f, 4.f), cameraPos(defaultCameraPos), fovy(40.f),
-  surfaceShadeMode(smoothShading), physicsShadeMode(noShading), drawingsShadeMode(noShading), renderFlags(enableLights | enableTextures | showCoordinateSystem),
+  surfaceShadeMode(smoothShading), physicsShadeMode(noShading), drawingsShadeMode(smoothShading), renderFlags(enableLights | enableTextures | showCoordinateSystem),
   dragging(false), dragPlane(xyPlane), dragMode(keepDynamics),
   moving(false), movingLeftStartTime(0), movingRightStartTime(0), movingUpStartTime(0), movingDownStartTime(0)
 {
@@ -151,21 +151,21 @@ void SimObjectRenderer::draw()
   {
     switch(surfaceShadeMode)
     {
-    case flatShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_FLAT);
-      break;
-    case wireframeShading:
-      glPolygonMode(GL_FRONT, GL_LINE);
-      glShadeModel(GL_FLAT);
-      break;
-    case smoothShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_SMOOTH);
-      break;
-    default:
-      ASSERT(false);
-      break;
+      case flatShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_FLAT);
+        break;
+      case wireframeShading:
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glShadeModel(GL_FLAT);
+        break;
+      case smoothShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_SMOOTH);
+        break;
+      default:
+        ASSERT(false);
+        break;
     }
     graphicalObject->drawAppearances();
 
@@ -185,26 +185,26 @@ void SimObjectRenderer::draw()
     unsigned int renderFlags = (this->renderFlags | showPhysics) & ~showControllerDrawings;
     switch(physicsShadeMode)
     {
-    case noShading:
-      glPolygonMode(GL_FRONT, GL_LINE);
-      glShadeModel(GL_FLAT);
-      renderFlags &= ~showPhysics;
-      break;
-    case flatShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_FLAT);
-      break;
-    case wireframeShading:
-      glPolygonMode(GL_FRONT, GL_LINE);
-      glShadeModel(GL_FLAT);
-      break;
-    case smoothShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_SMOOTH);
-      break;
-    default:
-      ASSERT(false);
-      break;
+      case noShading:
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glShadeModel(GL_FLAT);
+        renderFlags &= ~showPhysics;
+        break;
+      case flatShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_FLAT);
+        break;
+      case wireframeShading:
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glShadeModel(GL_FLAT);
+        break;
+      case smoothShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_SMOOTH);
+        break;
+      default:
+        ASSERT(false);
+        break;
     }
     physicalObject->drawPhysics(renderFlags);
 
@@ -237,14 +237,14 @@ void SimObjectRenderer::draw()
 
     switch(dragPlane)
     {
-    case xyPlane:
-      break; // do nothing
-    case xzPlane:
-      glRotatef(90.f, 1.f, 0.f, 0.f);
-      break;
-    case yzPlane:
-      glRotatef(90.f, 0.f, 1.f, 0.f);
-      break;
+      case xyPlane:
+        break; // do nothing
+      case xzPlane:
+        glRotatef(90.f, 1.f, 0.f, 0.f);
+        break;
+      case yzPlane:
+        glRotatef(90.f, 0.f, 1.f, 0.f);
+        break;
     }
 
     GLUquadricObj* q = gluNewQuadric();
@@ -268,21 +268,21 @@ void SimObjectRenderer::draw()
 
     switch(drawingsShadeMode)
     {
-    case flatShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_FLAT);
-      break;
-    case wireframeShading:
-      glPolygonMode(GL_FRONT, GL_LINE);
-      glShadeModel(GL_FLAT);
-      break;
-    case smoothShading:
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glShadeModel(GL_SMOOTH);
-      break;
-    default:
-      ASSERT(false);
-      break;
+      case flatShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_FLAT);
+        break;
+      case wireframeShading:
+        glPolygonMode(GL_FRONT, GL_LINE);
+        glShadeModel(GL_FLAT);
+        break;
+      case smoothShading:
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glShadeModel(GL_SMOOTH);
+        break;
+      default:
+        ASSERT(false);
+        break;
     }
 
     if(renderFlags & (enableDrawingsTransparentOcclusion | enableDrawingsOcclusion))
@@ -551,9 +551,9 @@ bool SimObjectRenderer::startDrag(int x, int y, DragType type)
     {
       switch(dragPlane)
       {
-      case xyPlane: dragPlaneVector = Vector3<>(0.f, 0.f, 1.f); break;
-      case xzPlane: dragPlaneVector = Vector3<>(0.f, 1.f, 0.f); break;
-      case yzPlane: dragPlaneVector = Vector3<>(1.f, 0.f, 0.f); break;
+        case xyPlane: dragPlaneVector = Vector3<>(0.f, 0.f, 1.f); break;
+        case xzPlane: dragPlaneVector = Vector3<>(0.f, 1.f, 0.f); break;
+        case yzPlane: dragPlaneVector = Vector3<>(1.f, 0.f, 0.f); break;
       }
       if(type == dragRotate || type == dragNormalObject)
         dragPlaneVector = dragSelection->pose.rotation * dragPlaneVector;

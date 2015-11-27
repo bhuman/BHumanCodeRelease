@@ -1,0 +1,35 @@
+/**
+ * The file declares a module that provides the description of a grid for scanning
+ * the image. The grid resolution adapts to the camera perspective.
+ * @author Thomas Röfer
+ */
+
+#pragma once
+
+#include "Tools/Module/Module.h"
+#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Perception/BodyContour.h"
+#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/ScanGrid.h"
+
+MODULE(ScanGridProvider,
+{,
+  REQUIRES(BodyContour),
+  REQUIRES(CameraInfo),
+  REQUIRES(CameraMatrix),
+  REQUIRES(FieldDimensions),
+  PROVIDES(ScanGrid),
+  DEFINES_PARAMETERS(
+  {,
+    (int)(3) minStepSize, /**< The minimum pixel distance between two neigboring scanlines. */
+    (int)(25) minNumOfLowResScanlines, /**< The minimum number of scanlines for low resolution. */
+    (float)(0.9f) lineWidthRatio, /**< The ratio of field line width that is sampled when scanning the image. */
+    (float)(0.8f) ballWidthRatio, /**< The ratio of ball width that is sampled when scanning the image. */
+  }),
+});
+
+class ScanGridProvider : public ScanGridProviderBase
+{
+  void update(ScanGrid& scanGrid);
+};

@@ -2,13 +2,12 @@
 
 class Power
 {
-  unsigned char value;
 public:
+  int value;
+
   Power();
 
-  Power(unsigned char value);
+  Power(int value);
 
   bool isValid();
-
-  operator int();
 };

@@ -24,12 +24,12 @@ class DebugDataStreamer : public Streamable
 {
 private:
   StreamHandler& streamHandler; /**< The stream handler that provides the specification of the data streamed. */
-  In* inData; /**< The debug data stream to read from. 0 if we are writing. */
-  Out* outData; /**< The debug data stream to write to. 0 if we are reading. */
+  In* inData = nullptr; /**< The debug data stream to read from. 0 if we are writing. */
+  Out* outData = nullptr; /**< The debug data stream to write to. 0 if we are reading. */
   std::string type; /**< The string representation of the type of the next data streamed. */
   const char* name; /**< The name of the next entry streamed. 0 if it does not have a name, because it is an array element. */
-  int index; /**< The index of the next element streamed or -2 if we are currently not streaming an array. */
-  static PROCESS_WIDE_STORAGE(const std::vector<const char*>) enumNames; /**< Helper to provide element names for the enum currently streamed. */
+  int index = -2; /**< The index of the next element streamed or -2 if we are currently not streaming an array. */
+  static PROCESS_LOCAL const std::vector<const char*>* enumNames; /**< Helper to provide element names for the enum currently streamed. */
 
   /**
    * The method streams the debug data according to its specification.
@@ -52,24 +52,7 @@ private:
    * @param out The stream to which the object is written. Must be 0 if this object was constructed for a writing stream.
    * @param enumToString A function that can provide element names if we are stream an enum value. Otherwise 0.
    */
-  template<typename T> void streamIt(In* in, Out* out, const char* (*enumToString)(int) = 0)
-  {
-    T t;
-    if(in)
-    {
-      in->select(name, index, enumToString);
-      *in >> t;
-      *outData << t;
-      in->deselect();
-    }
-    else
-    {
-      out->select(name, index, enumToString);
-      *inData >> t;
-      *out << t;
-      out->deselect();
-    }
-  }
+  template<typename T> void streamIt(In* in, Out* out, const char* (*enumToString)(int) = 0);
 
 public:
   /**
@@ -92,3 +75,22 @@ public:
    */
   DebugDataStreamer(StreamHandler& streamHandler, Out& stream, const std::string& type, const char* name = 0);
 };
+
+template<typename T> void DebugDataStreamer::streamIt(In* in, Out* out, const char* (*enumToString)(int))
+{
+  T t = T();
+  if(in)
+  {
+    in->select(name, index, enumToString);
+    *in >> t;
+    *outData << t;
+    in->deselect();
+  }
+  else
+  {
+    out->select(name, index, enumToString);
+    *inData >> t;
+    *out << t;
+    out->deselect();
+  }
+}

@@ -39,7 +39,7 @@ class PropertyTreeCreator : public Out
      * @param name The name of this node.
      */
     Entry(int type, const char* (*enumToString)(int), QtVariantProperty* parent, const std::string& path, const char* name) :
-    type(type), enumToString(enumToString), parent(parent), property(0)
+      type(type), enumToString(enumToString), parent(parent), property(0)
     {
       if(type >= 0)
       {
@@ -67,6 +67,7 @@ protected:
   }
 
   virtual void outChar(char value) {out((int) value);}
+  virtual void outSChar(signed char value) {out((int) value);}
   virtual void outUChar(unsigned char value);
   virtual void outShort(short value) {out(value);}
   virtual void outUShort(unsigned short value) {out(value);}
@@ -76,6 +77,7 @@ protected:
   virtual void outDouble(double value) {out(value);}
   virtual void outBool(bool value) {out(value);}
   virtual void outString(const char* value) {out(QString(value));}
+  virtual void outAngle(const Angle& value);
   virtual void outEndL() {}
 
 public:

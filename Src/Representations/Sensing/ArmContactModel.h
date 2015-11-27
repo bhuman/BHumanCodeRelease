@@ -1,12 +1,12 @@
 /**
-* @file ArmContactModel.h
-*
-* Declaration of class ArmContactModel.
-* @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>
-* @author <a href="mailto:simont@informatik.uni-bremen.de">Simon Taddiken</a>
-* @author <a href="mailto:arneboe@informatik.uni-bremen.de">Arne Böckmann</a>
-*
-*/
+ * @file ArmContactModel.h
+ *
+ * Declaration of struct ArmContactModel.
+ * @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>
+ * @author <a href="mailto:simont@informatik.uni-bremen.de">Simon Taddiken</a>
+ * @author <a href="mailto:arneboe@informatik.uni-bremen.de">Arne Böckmann</a>
+ *
+ */
 
 #pragma once
 
@@ -14,12 +14,12 @@
 #include "Tools/Streams/AutoStreamable.h"
 
 /**
-* @class ArmContactModel
-*/
+ * @struct ArmContactModel
+ */
 STREAMABLE(ArmContactModel,
 {
-public:
   ENUM(PushDirection,
+  {,
     N,    /**< Arm is being pushed to the front */
     S,    /**< Arm is being pushed to the back */
     W,    /**< Arm is being pushed to the left */
@@ -28,8 +28,8 @@ public:
     NE,   /**< Arm is being pushed to the front and the right */
     SW,   /**< Arm is being pushed to the back and the left */
     SE,   /**< Arm is being pushed to the back and the right */
-    NONE  /**< If no contact is detected */
-  ),
+    NONE, /**< If no contact is detected */
+  }),
 
   (bool)(false) contactLeft, /**< The contact state of the robot's left arm. */
   (bool)(false) contactRight, /**< The contact state of the robot's right arm. */

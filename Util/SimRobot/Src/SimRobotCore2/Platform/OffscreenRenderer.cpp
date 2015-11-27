@@ -34,19 +34,19 @@ OffscreenRenderer::Buffer::~Buffer()
     delete pbuffer;
 }
 
-bool OffscreenRenderer::makeCurrent(int width, int height)
+bool OffscreenRenderer::makeCurrent(int width, int height, bool sampleBuffers)
 {
   ASSERT(mainGlWidget);
 
   // Considering weak graphics cards glClear is faster when the color and depth buffers are not greater then they have to be.
   // So we create an individual buffer for each size in demand.
 
-  std::unordered_map<unsigned int, Buffer>::iterator it = renderBuffers.find(width << 16 | height);
+  std::unordered_map<unsigned int, Buffer>::iterator it = renderBuffers.find(width << 16 | height << 1 | (sampleBuffers ? 1 : 0));
   if(it == renderBuffers.end())
   {
-    Buffer& buffer = renderBuffers[width << 16 | height];
+    Buffer& buffer = renderBuffers[width << 16 | height << 1 | (sampleBuffers ? 1 : 0)];
 
-    if(!initPixelBuffer(width, height, buffer))
+    if(!initPixelBuffer(width, height, sampleBuffers, buffer))
       if(!initFrameBuffer(width, height, buffer))
         initHiddenWindow(width, height, buffer);
 
@@ -104,9 +104,9 @@ bool OffscreenRenderer::initFrameBuffer(int width, int height, Buffer& buffer)
   return true;
 }
 
-bool OffscreenRenderer::initPixelBuffer(int width, int height, Buffer& buffer)
+bool OffscreenRenderer::initPixelBuffer(int width, int height, bool sampleBuffers, Buffer& buffer)
 {
-  const QGLFormat format(QGL::NoStencilBuffer | QGL::SingleBuffer | QGL::SampleBuffers);
+  const QGLFormat format(QGL::NoStencilBuffer | QGL::SingleBuffer | (sampleBuffers ? QGL::SampleBuffers : QGL::NoSampleBuffers));
   buffer.pbuffer = new QGLPixelBuffer(QSize(width, height), format, mainGlWidget);
   if(!buffer.pbuffer->isValid())
   {

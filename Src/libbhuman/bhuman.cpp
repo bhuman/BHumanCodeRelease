@@ -14,8 +14,11 @@
 
 #ifdef __clang__
 #pragma clang diagnostic push
+
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
 #endif
 #define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
@@ -31,6 +34,7 @@
 
 static const char* sensorNames[] =
 {
+  // joint sensors
   "Device/SubDeviceList/HeadYaw/Position/Sensor/Value",
   "Device/SubDeviceList/HeadYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/HeadYaw/Temperature/Sensor/Value",
@@ -49,6 +53,12 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/LElbowRoll/Position/Sensor/Value",
   "Device/SubDeviceList/LElbowRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LElbowRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LWristYaw/Position/Sensor/Value",
+  "Device/SubDeviceList/LWristYaw/ElectricCurrent/Sensor/Value",
+  "Device/SubDeviceList/LWristYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LHand/Position/Sensor/Value",
+  "Device/SubDeviceList/LHand/ElectricCurrent/Sensor/Value",
+  "Device/SubDeviceList/LHand/Temperature/Sensor/Value",
   "Device/SubDeviceList/RShoulderPitch/Position/Sensor/Value",
   "Device/SubDeviceList/RShoulderPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RShoulderPitch/Temperature/Sensor/Value",
@@ -61,6 +71,12 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/RElbowRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RElbowRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RElbowRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RWristYaw/Position/Sensor/Value",
+  "Device/SubDeviceList/RWristYaw/ElectricCurrent/Sensor/Value",
+  "Device/SubDeviceList/RWristYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RHand/Position/Sensor/Value",
+  "Device/SubDeviceList/RHand/ElectricCurrent/Sensor/Value",
+  "Device/SubDeviceList/RHand/Temperature/Sensor/Value",
   "Device/SubDeviceList/LHipYawPitch/Position/Sensor/Value",
   "Device/SubDeviceList/LHipYawPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LHipYawPitch/Temperature/Sensor/Value",
@@ -94,22 +110,36 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/RAnkleRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/Temperature/Sensor/Value",
+  
+  // touch sensors
+  "Device/SubDeviceList/Head/Touch/Front/Sensor/Value",
+  "Device/SubDeviceList/Head/Touch/Middle/Sensor/Value",
+  "Device/SubDeviceList/Head/Touch/Rear/Sensor/Value",
+  "Device/SubDeviceList/LHand/Touch/Back/Sensor/Value",
+  "Device/SubDeviceList/LHand/Touch/Left/Sensor/Value",
+  "Device/SubDeviceList/LHand/Touch/Right/Sensor/Value",
+  "Device/SubDeviceList/RHand/Touch/Back/Sensor/Value",
+  "Device/SubDeviceList/RHand/Touch/Left/Sensor/Value",
+  "Device/SubDeviceList/RHand/Touch/Right/Sensor/Value",
 
-  "Device/SubDeviceList/InertialSensor/GyrX/Sensor/Value",
-  "Device/SubDeviceList/InertialSensor/GyrY/Sensor/Value",
-  "Device/SubDeviceList/InertialSensor/GyrRef/Sensor/Value",
+  // switches
+  "Device/SubDeviceList/LFoot/Bumper/Left/Sensor/Value",
+  "Device/SubDeviceList/LFoot/Bumper/Right/Sensor/Value",
+  "Device/SubDeviceList/RFoot/Bumper/Left/Sensor/Value",
+  "Device/SubDeviceList/RFoot/Bumper/Right/Sensor/Value",
+  "Device/SubDeviceList/ChestBoard/Button/Sensor/Value",
+
+  // inertial sensors
+  "Device/SubDeviceList/InertialSensor/GyroscopeX/Sensor/Value",
+  "Device/SubDeviceList/InertialSensor/GyroscopeY/Sensor/Value",
+  "Device/SubDeviceList/InertialSensor/GyroscopeZ/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AccelerometerX/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AccelerometerY/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AccelerometerZ/Sensor/Value",
-  "Device/SubDeviceList/Battery/Charge/Sensor/Value",
-  "Device/SubDeviceList/LFoot/FSR/FrontLeft/Sensor/Value",
-  "Device/SubDeviceList/LFoot/FSR/FrontRight/Sensor/Value",
-  "Device/SubDeviceList/LFoot/FSR/RearLeft/Sensor/Value",
-  "Device/SubDeviceList/LFoot/FSR/RearRight/Sensor/Value",
-  "Device/SubDeviceList/RFoot/FSR/FrontLeft/Sensor/Value",
-  "Device/SubDeviceList/RFoot/FSR/FrontRight/Sensor/Value",
-  "Device/SubDeviceList/RFoot/FSR/RearLeft/Sensor/Value",
-  "Device/SubDeviceList/RFoot/FSR/RearRight/Sensor/Value",
+  "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
+  "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",
+
+  // sonar sensors
   "Device/SubDeviceList/US/Left/Sensor/Value",
   "Device/SubDeviceList/US/Left/Sensor/Value1",
   "Device/SubDeviceList/US/Left/Sensor/Value2",
@@ -130,13 +160,23 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/US/Right/Sensor/Value7",
   "Device/SubDeviceList/US/Right/Sensor/Value8",
   "Device/SubDeviceList/US/Right/Sensor/Value9",
-  "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
-  "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",
-  "Device/SubDeviceList/RFoot/Bumper/Right/Sensor/Value",
-  "Device/SubDeviceList/RFoot/Bumper/Left/Sensor/Value",
-  "Device/SubDeviceList/LFoot/Bumper/Right/Sensor/Value",
-  "Device/SubDeviceList/LFoot/Bumper/Left/Sensor/Value",
-  "Device/SubDeviceList/ChestBoard/Button/Sensor/Value",
+
+  // battery sensors
+  "Device/SubDeviceList/Battery/Current/Sensor/Value",
+  "Device/SubDeviceList/Battery/Charge/Sensor/Value",
+  "Device/SubDeviceList/Battery/Temperature/Sensor/Value",
+  
+  // fsr sensors
+  "Device/SubDeviceList/LFoot/FSR/FrontLeft/Sensor/Value",
+  "Device/SubDeviceList/LFoot/FSR/FrontRight/Sensor/Value",
+  "Device/SubDeviceList/LFoot/FSR/RearLeft/Sensor/Value",
+  "Device/SubDeviceList/LFoot/FSR/RearRight/Sensor/Value",
+  "Device/SubDeviceList/RFoot/FSR/FrontLeft/Sensor/Value",
+  "Device/SubDeviceList/RFoot/FSR/FrontRight/Sensor/Value",
+  "Device/SubDeviceList/RFoot/FSR/RearLeft/Sensor/Value",
+  "Device/SubDeviceList/RFoot/FSR/RearRight/Sensor/Value",
+  "Device/SubDeviceList/LFoot/FSR/TotalWeight/Sensor/Value",
+  "Device/SubDeviceList/RFoot/FSR/TotalWeight/Sensor/Value",
 };
 
 static const char* actuatorNames[] =
@@ -147,10 +187,14 @@ static const char* actuatorNames[] =
   "LShoulderRoll/Position/Actuator/Value",
   "LElbowYaw/Position/Actuator/Value",
   "LElbowRoll/Position/Actuator/Value",
+  "LWristYaw/Position/Actuator/Value",
+  "LHand/Position/Actuator/Value",
   "RShoulderPitch/Position/Actuator/Value",
   "RShoulderRoll/Position/Actuator/Value",
   "RElbowYaw/Position/Actuator/Value",
   "RElbowRoll/Position/Actuator/Value",
+  "RWristYaw/Position/Actuator/Value",
+  "RHand/Position/Actuator/Value",
   "LHipYawPitch/Position/Actuator/Value",
   "LHipRoll/Position/Actuator/Value",
   "LHipPitch/Position/Actuator/Value",
@@ -162,8 +206,6 @@ static const char* actuatorNames[] =
   "RKneePitch/Position/Actuator/Value",
   "RAnklePitch/Position/Actuator/Value",
   "RAnkleRoll/Position/Actuator/Value",
-  "LHand/Position/Actuator/Value",
-  "RHand/Position/Actuator/Value",
 
   "HeadYaw/Hardness/Actuator/Value",
   "HeadPitch/Hardness/Actuator/Value",
@@ -171,10 +213,14 @@ static const char* actuatorNames[] =
   "LShoulderRoll/Hardness/Actuator/Value",
   "LElbowYaw/Hardness/Actuator/Value",
   "LElbowRoll/Hardness/Actuator/Value",
+  "LWristYaw/Hardness/Actuator/Value",
+  "LHand/Hardness/Actuator/Value",
   "RShoulderPitch/Hardness/Actuator/Value",
   "RShoulderRoll/Hardness/Actuator/Value",
   "RElbowYaw/Hardness/Actuator/Value",
   "RElbowRoll/Hardness/Actuator/Value",
+  "RWristYaw/Hardness/Actuator/Value",
+  "RHand/Hardness/Actuator/Value",
   "LHipYawPitch/Hardness/Actuator/Value",
   "LHipRoll/Hardness/Actuator/Value",
   "LHipPitch/Hardness/Actuator/Value",
@@ -186,8 +232,6 @@ static const char* actuatorNames[] =
   "RKneePitch/Hardness/Actuator/Value",
   "RAnklePitch/Hardness/Actuator/Value",
   "RAnkleRoll/Hardness/Actuator/Value",
-  "LHand/Hardness/Actuator/Value",
-  "RHand/Hardness/Actuator/Value",
 
   "Face/Led/Red/Left/0Deg/Actuator/Value",
   "Face/Led/Red/Left/45Deg/Actuator/Value",
@@ -259,7 +303,19 @@ static const char* actuatorNames[] =
   "Ears/Led/Right/324Deg/Actuator/Value",
   "ChestBoard/Led/Red/Actuator/Value",
   "ChestBoard/Led/Green/Actuator/Value",
-  "ChestBoard/Led/Blue/Actuator/Value",
+  "ChestBoard/Led/Blue/Actuator/Value", 
+  "Head/Led/Rear/Left/0/Actuator/Value",
+  "Head/Led/Rear/Left/1/Actuator/Value",
+  "Head/Led/Rear/Left/2/Actuator/Value",
+  "Head/Led/Rear/Right/0/Actuator/Value",
+  "Head/Led/Rear/Right/1/Actuator/Value",
+  "Head/Led/Rear/Right/2/Actuator/Value",
+  "Head/Led/Middle/Right/0/Actuator/Value",
+  "Head/Led/Front/Right/0/Actuator/Value",
+  "Head/Led/Front/Right/1/Actuator/Value",
+  "Head/Led/Front/Left/0/Actuator/Value",
+  "Head/Led/Front/Left/1/Actuator/Value",
+  "Head/Led/Middle/Left/0/Actuator/Value",
   "LFoot/Led/Red/Actuator/Value",
   "LFoot/Led/Green/Actuator/Value",
   "LFoot/Led/Blue/Actuator/Value",
@@ -277,7 +333,7 @@ static const char* teamInfoNames[] =
   "GameCtrl/playerNumber"
 };
 
-static const float sitDownAngles[21] =
+static const float sitDownAngles[25] =
 {
   0.f,
   0.f,
@@ -286,11 +342,15 @@ static const float sitDownAngles[21] =
   0.06f,
   0.26f,
   -0.62f,
+  -1.57f,
+  0.f,
 
   0.89f,
   -0.06f,
   -0.26f,
   0.62f,
+  1.57f,
+  0.f,
 
   0.f,
   0.f,
@@ -311,7 +371,11 @@ class BHuman : public AL::ALModule
 private:
   static BHuman* theInstance; /**< The only instance of this class. */
 
+#ifdef NDEBUG
   static const int allowedFrameDrops = 3; /**< Maximum number of frame drops allowed before Nao sits down. */
+#else
+  static const int allowedFrameDrops = 6; /**< Maximum number of frame drops allowed before Nao sits down. */
+#endif
 
   int memoryHandle; /**< The file handle of the shared memory. */
   LBHData* data; /**< The shared memory. */
@@ -319,7 +383,7 @@ private:
   AL::DCMProxy* proxy;
   AL::ALMemoryProxy* memory;
   AL::ALValue positionRequest;
-  AL::ALValue hardnessRequest;
+  AL::ALValue stiffnessRequest;
   AL::ALValue usRequest;
   AL::ALValue ledRequest;
   float* sensorPtrs[lbhNumOfSensorIds]; /** Pointers to where NaoQi stores the current sensor values. */
@@ -332,14 +396,14 @@ private:
   int actuatorDrops; /**< The number of frames without seemingly new data from bhuman. */
   int frameDrops; /**< The number frames without a reaction from bhuman. */
 
-  enum State {sitting, standingUp, standing, sittingDown, preShuttingDown, shuttingDown} state;
+  enum State {sitting, standingUp, standing, sittingDown, preShuttingDown, preShuttingDownWhileSitting, shuttingDown} state;
   float phase; /**< How far is the Nao in its current standing up or sitting down motion [0 ... 1]? */
   int ledIndex; /**< The index of the last LED set. */
 
   int rightEarLEDsChangedTime; // Last time when the right ear LEDs were changed by the B-Human code
 
   float startAngles[lbhNumOfPositionActuatorIds]; /**< Start angles for standing up or sitting down. */
-  float startHardness[lbhNumOfPositionActuatorIds]; /**< Start hardness for sitting down. */
+  float startStiffness[lbhNumOfPositionActuatorIds]; /**< Start stiffness for sitting down. */
 
   int startPressedTime; /**< The last time the chest button was not pressed. */
   unsigned lastBHumanStartTime; /**< The last time bhuman was started. */
@@ -451,74 +515,84 @@ private:
 
     switch(state)
     {
-    sitting:
-      state = sitting;
+      sitting:
+        state = sitting;
 
-    case sitting:
-      memset(controlledActuators, 0, sizeof(controlledActuators));
-      if(frameDrops > allowedFrameDrops ||
-         (actuators[lHipPitchHardnessActuator] == 0.f && actuators[rHipPitchHardnessActuator] == 0.f))
-        return controlledActuators;
-
-      for(int i = 0; i < lbhNumOfPositionActuatorIds - 2; ++i)
-        startAngles[i] = *sensorPtrs[i * 3];
-
-      startAngles[21] = 0;
-      startAngles[22] = 0;
-
-    standingUp:
-      state = standingUp;
-      phase = 0.f;
-
-    case standingUp:
-      if(phase < 1.f && frameDrops <= allowedFrameDrops)
-      {
+      case sitting:
         memset(controlledActuators, 0, sizeof(controlledActuators));
-        phase = std::min(phase + 0.005f, 1.f);
+        if(frameDrops > allowedFrameDrops ||
+           (actuators[lHipPitchStiffnessActuator] == 0.f && actuators[rHipPitchStiffnessActuator] == 0.f))
+          return controlledActuators;
+
+        for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
+          startAngles[i] = *sensorPtrs[i * 3];
+
+      standingUp:
+        state = standingUp;
+        phase = 0.f;
+
+      case standingUp:
+        if(phase < 1.f && frameDrops <= allowedFrameDrops)
+        {
+          memset(controlledActuators, 0, sizeof(controlledActuators));
+          phase = std::min(phase + 0.005f, 1.f);
+          for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
+          {
+            controlledActuators[i] = actuators[i] * phase + startAngles[i] * (1.f - phase);
+            float h = std::min(actuators[i + headYawStiffnessActuator], 0.5f);
+            controlledActuators[i + headYawStiffnessActuator] = actuators[i + headYawStiffnessActuator] * phase + h * (1.f - phase);
+          }
+          return controlledActuators;
+        }
+        state = standing;
+
+      case standing:
+        if(frameDrops <= allowedFrameDrops)
+          return actuators; // use original actuators
+
+      case preShuttingDown:
         for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
         {
-          controlledActuators[i] = actuators[i] * phase + startAngles[i] * (1.f - phase);
-          float h = std::min(actuators[i + headYawHardnessActuator], 0.5f);
-          controlledActuators[i + headYawHardnessActuator] = actuators[i + headYawHardnessActuator] * phase + h * (1.f - phase);
-        }
-        return controlledActuators;
-      }
-      state = standing;
-
-    case standing:
-      if(frameDrops <= allowedFrameDrops)
-        return actuators; // use original actuators
-
-    case preShuttingDown:
-      for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
-      {
-        startAngles[i] = positionRequest[5][i][0];
-        startHardness[i] = std::min<float>(hardnessRequest[5][i][0], 0.3f);
-      }
-      state = state == preShuttingDown ? shuttingDown : sittingDown;
-      phase = 0.f;
-
-    case sittingDown:
-    case shuttingDown:
-      if((phase < 1.f && frameDrops > allowedFrameDrops) || state == shuttingDown)
-      {
-        memset(controlledActuators, 0, sizeof(controlledActuators));
-        phase = std::min(phase + 0.005f, 1.f);
-        for(int i = 0; i < lbhNumOfPositionActuatorIds - 2; ++i)
-        {
-          controlledActuators[i] = sitDownAngles[i] * phase + startAngles[i] * (1.f - phase);
-          controlledActuators[i + headYawHardnessActuator] = startHardness[i];
-        }
-        return controlledActuators;
-      }
-      else if(frameDrops <= allowedFrameDrops)
-      {
-        for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
           startAngles[i] = positionRequest[5][i][0];
-        goto standingUp;
-      }
-      else
-        goto sitting;
+          if(actuators[lHipPitchStiffnessActuator] == 0.f && actuators[rHipPitchStiffnessActuator] == 0.f)
+            startStiffness[i] = 0.f;
+          else if(i >= lShoulderPitchPositionActuator && i <= rElbowRollPositionActuator)
+            startStiffness[i] = 0.4f;
+          else
+            startStiffness[i] = std::min<float>(stiffnessRequest[5][i][0], 0.3f);
+        }
+        state = state == preShuttingDown ? shuttingDown : sittingDown;
+        phase = 0.f;
+
+      case sittingDown:
+      case shuttingDown:
+      shuttingDown:
+        if((phase < 1.f && frameDrops > allowedFrameDrops) || state == shuttingDown)
+        {
+          memset(controlledActuators, 0, sizeof(controlledActuators));
+          phase = std::min(phase + 0.005f, 1.f);
+          for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
+          {
+            controlledActuators[i] = sitDownAngles[i] * phase + startAngles[i] * (1.f - phase);
+            controlledActuators[i + headYawStiffnessActuator] = startStiffness[i];
+          }
+          return controlledActuators;
+        }
+        else if(frameDrops <= allowedFrameDrops)
+        {
+          for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
+            startAngles[i] = positionRequest[5][i][0];
+          goto standingUp;
+        }
+        else
+          goto sitting;
+
+      case preShuttingDownWhileSitting:
+        for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
+          startStiffness[i] = 0.f;
+        state = shuttingDown;
+        phase = 0.995f;
+        goto shuttingDown;
     }
   }
 
@@ -558,16 +632,16 @@ private:
         positionRequest[5][i][0] = actuators[i];
       proxy->setAlias(positionRequest);
 
-      // set hardness actuators
-      bool requestedHardness = false;
-      for(int i = headYawHardnessActuator; i < headYawHardnessActuator + lbhNumOfHardnessActuatorIds; ++i)
+      // set stiffness actuators
+      bool requestedStiffness = false;
+      for(int i = headYawStiffnessActuator; i < headYawStiffnessActuator + lbhNumOfStiffnessActuatorIds; ++i)
         if(actuators[i] != requestedActuators[i])
         {
-          hardnessRequest[4][0] = dcmTime; // 0 delay!
-          for(int j = 0; j < lbhNumOfHardnessActuatorIds; ++j)
-            hardnessRequest[5][j][0] = requestedActuators[headYawHardnessActuator + j] = actuators[headYawHardnessActuator + j];
-          proxy->setAlias(hardnessRequest);
-          requestedHardness = true;
+          stiffnessRequest[4][0] = dcmTime; // 0 delay!
+          for(int j = 0; j < lbhNumOfStiffnessActuatorIds; ++j)
+            stiffnessRequest[5][j][0] = requestedActuators[headYawStiffnessActuator + j] = actuators[headYawStiffnessActuator + j];
+          proxy->setAlias(stiffnessRequest);
+          requestedStiffness = true;
           break;
         }
 
@@ -587,7 +661,7 @@ private:
       }
 
       // set led
-      if(!requestedHardness && !requestedUs)
+      if(!requestedStiffness && !requestedUs)
         for(int i = 0; i < lbhNumOfLedActuatorIds; ++i)
         {
           int index = faceLedRedLeft0DegActuator + ledIndex;
@@ -652,12 +726,8 @@ private:
         startPressedTime = dcmTime;
       else if(state != shuttingDown && startPressedTime && dcmTime - startPressedTime > 3000)
       {
-        if(*sensorPtrs[rBumperRightSensor] != 0.f || *sensorPtrs[rBumperLeftSensor] != 0.f ||
-           *sensorPtrs[lBumperRightSensor] != 0.f || *sensorPtrs[lBumperLeftSensor] != 0.f)
-          (void) !system("( /home/nao/bin/bhumand stop && sudo shutdown -r now ) &");
-        else
-          (void) !system("( /home/nao/bin/bhumand stop && sudo shutdown -h now ) &");
-        state = preShuttingDown;
+        (void) !system("( /home/nao/bin/bhumand stop && sudo shutdown -h now ) &");
+        state = state == sitting ? preShuttingDownWhileSitting : preShuttingDown;
       }
     }
     catch(AL::ALError& e)
@@ -744,7 +814,7 @@ public:
     else
     {
       // map the shared memory
-      data = (LBHData*) mmap(NULL, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, memoryHandle, 0);
+      data = (LBHData*) mmap(nullptr, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, memoryHandle, 0);
       if(data == MAP_FAILED)
         perror("libbhuman: mmap");
       else
@@ -764,7 +834,7 @@ public:
             std::string robotName = (std::string) memory->getData("Device/DeviceList/ChestBoard/BodyNickName", 0);
             strncpy(data->robotName, robotName.c_str(), sizeof(data->robotName));
 
-            // create "positionRequest" and "hardnessRequest" alias
+            // create "positionRequest" and "stiffnessRequest" alias
             proxy = new AL::DCMProxy(pBroker);
 
             AL::ALValue params;
@@ -778,10 +848,10 @@ public:
               params[1][i] = std::string(actuatorNames[i]);
             result = proxy->createAlias(params);
 
-            params[0] = std::string("hardnessActuators");
-            params[1].arraySetSize(lbhNumOfHardnessActuatorIds);
-            for(int i = 0; i < lbhNumOfHardnessActuatorIds; ++i)
-              params[1][i] = std::string(actuatorNames[headYawHardnessActuator + i]);
+            params[0] = std::string("stiffnessActuators");
+            params[1].arraySetSize(lbhNumOfStiffnessActuatorIds);
+            for(int i = 0; i < lbhNumOfStiffnessActuatorIds; ++i)
+              params[1][i] = std::string(actuatorNames[headYawStiffnessActuator + i]);
             result = proxy->createAlias(params);
 
             params[0] = std::string("usRequest");
@@ -800,16 +870,16 @@ public:
             for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
               positionRequest[5][i].arraySetSize(1);
 
-            // prepare hardnessRequest
-            hardnessRequest.arraySetSize(6);
-            hardnessRequest[0] = std::string("hardnessActuators");
-            hardnessRequest[1] = std::string("ClearAll");
-            hardnessRequest[2] = std::string("time-separate");
-            hardnessRequest[3] = 0;
-            hardnessRequest[4].arraySetSize(1);
-            hardnessRequest[5].arraySetSize(lbhNumOfHardnessActuatorIds);
-            for(int i = 0; i < lbhNumOfHardnessActuatorIds; ++i)
-              hardnessRequest[5][i].arraySetSize(1);
+            // prepare stiffnessRequest
+            stiffnessRequest.arraySetSize(6);
+            stiffnessRequest[0] = std::string("stiffnessActuators");
+            stiffnessRequest[1] = std::string("ClearAll");
+            stiffnessRequest[2] = std::string("time-separate");
+            stiffnessRequest[3] = 0;
+            stiffnessRequest[4].arraySetSize(1);
+            stiffnessRequest[5].arraySetSize(lbhNumOfStiffnessActuatorIds);
+            for(int i = 0; i < lbhNumOfStiffnessActuatorIds; ++i)
+              stiffnessRequest[5][i].arraySetSize(1);
 
             // prepare usRequest
             usRequest.arraySetSize(6);

@@ -1,27 +1,29 @@
 /**
-* @file Modules/MotionControl/SpecialActions.h
-* This file declares a module that creates the motions of special actions.
-* @author <A href="mailto:dueffert@informatik.hu-berlin.de">Uwe Düffert</A>
-* @author Martin Lötzsch
-* @author Max Risler
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-*/
+ * @file Modules/MotionControl/SpecialActions.h
+ * This file declares a module that creates the motions of special actions.
+ * @author <A href="mailto:dueffert@informatik.hu-berlin.de">Uwe Düffert</A>
+ * @author Martin Lötzsch
+ * @author Max Risler
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ */
 
 #pragma once
 
-#include "Tools/Module/Module.h"
 #include "Representations/MotionControl/MotionSelection.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JointRequest.h"
 #include "Tools/MessageQueue/InMessage.h"
+#include "Tools/Module/Module.h"
 
 MODULE(SpecialActions,
 {,
-  REQUIRES(FilteredJointData),
   REQUIRES(FrameInfo),
+  REQUIRES(JointAngles),
   REQUIRES(MotionSelection),
-  REQUIRES(HardnessSettings),
-  PROVIDES_WITH_MODIFY(SpecialActionsOutput),
+  REQUIRES(StiffnessSettings),
+  PROVIDES(SpecialActionsOutput),
 });
 
 class SpecialActions : public SpecialActionsBase
@@ -35,12 +37,14 @@ private:
   {
   public:
     ENUM(NodeType,
+    {,
       typeConditionalTransition, /**< The current node is a conditional transition. */
       typeTransition, /**< The current node is a transition. */
       typeData, /**< The current node is a motor data vector. */
-      typeHardness /**< The current node is a motor hardness tuple. */
-    );
-    float d[JointRequest::numOfJoints + 4]; /**< Represent a set of values from a data line. */
+      typeStiffness, /**< The current node is a motor stiffness tuple. */
+    });
+
+    float d[Joints::numOfJoints + 4]; /**< Represent a set of values from a data line. */
     /*
     //possible content:
     {typeData, d[0]..d[21], interpolationMode, dataRepetitionCounter, execMotionRequest}
@@ -50,23 +54,23 @@ private:
 
     void toJointRequest(JointRequest& jointRequest, int& dataRepetitionCounter, bool& interpolationMode, bool& deShakeMode) const
     {
-      for(int i = 0; i < JointRequest::numOfJoints; ++i)
-        jointRequest.angles[i] = (float) d[i + 1];
-      interpolationMode = (int(d[JointRequest::numOfJoints + 1]) & 1) != 0;
-      deShakeMode = (int(d[JointRequest::numOfJoints + 1]) & 2) != 0;
-      dataRepetitionCounter = int(d[JointRequest::numOfJoints + 2]);
+      for(int i = 0; i < Joints::numOfJoints; ++i)
+        jointRequest.angles[i] = static_cast<float>(d[i + 1]);
+      interpolationMode = (static_cast<int>(d[Joints::numOfJoints + 1]) & 1) != 0;
+      deShakeMode = (static_cast<int>(d[Joints::numOfJoints + 1]) & 2) != 0;
+      dataRepetitionCounter = static_cast<int>(d[Joints::numOfJoints + 2]);
     }
 
-    void toHardnessRequest(HardnessData& hardnessRequest, int& hardnessInterpolationTime)
+    void toStiffnessRequest(StiffnessData& stiffnessRequest, int& stiffnessInterpolationTime)
     {
-      for(int i = 0; i < JointRequest::numOfJoints; i++)
-        hardnessRequest.hardness[i] = (int) d[i + 1];
-      hardnessInterpolationTime = int(d[JointRequest::numOfJoints + 1]);
+      for(int i = 0; i < Joints::numOfJoints; i++)
+        stiffnessRequest.stiffnesses[i] = static_cast<int>(d[i + 1]);
+      stiffnessInterpolationTime = static_cast<int>(d[Joints::numOfJoints + 1]);
     }
 
     SpecialActionRequest::SpecialActionID getSpecialActionID() const
     {
-      return SpecialActionRequest::SpecialActionID(short(d[JointRequest::numOfJoints + 3]));
+      return SpecialActionRequest::SpecialActionID(short(d[Joints::numOfJoints + 3]));
     }
   };
 
@@ -82,8 +86,8 @@ private:
     /** Destructor. */
     ~MotionNetData() {if(nodeArray) delete[] nodeArray;}
 
-    /** Loads the motion net from a file or another stream. */
-    void load(In& stream);
+    /** Loads the motion net. */
+    void load(std::vector<float>& motionData);
 
     /** jump table from extern.mof: get start index from request */
     short label_extern_start[SpecialActionRequest::numOfSpecialActionIDs + 1];
@@ -95,7 +99,7 @@ private:
   /**
   * Odometry table entry.
   */
-  class SpecialActionInfo: public Streamable
+  class SpecialActionInfo : public Streamable
   {
   private:
     /**
@@ -119,14 +123,15 @@ private:
     * Enum for odometry types
     */
     ENUM(OdometryType,
+    {,
       none, /**< No odometry, means no movement. */
       once, /**< Odometry pose is used once the motion is executed. */
-      homogeneous /**< Odometry pose describes speed and is used each tick. */
-    );
+      homogeneous, /**< Odometry pose describes speed and is used each tick. */
+    });
 
     SpecialActionRequest::SpecialActionID id; /**< The id to which belongs this SpecialActionInfo. */
     OdometryType type; /**< The type of this odometry entry. */
-    Pose2D odometryOffset; /**< The displacement performed by the special action. */
+    Pose2f odometryOffset; /**< The displacement performed by the special action. */
     bool isMotionStable; /**< Is the position of the camera directly related to the kinematic chain of joint angles? */
 
     /**
@@ -140,13 +145,13 @@ private:
     (std::vector<SpecialActionInfo>) specialActionInfos,
   });
 
-  HardnessData currentHardnessRequest,/**< The current hardness of the joints */
-               lastHardnessRequest;/**< The last hardness data*/
+  StiffnessData currentStiffnessRequest, /**< The current stiffness of the joints */
+               lastStiffnessRequest; /**< The last stiffness data*/
   bool wasEndOfSpecialAction; /**< Was the SpecialAction at the end in the last frame? */
-  int hardnessInterpolationCounter, /**< Cycle counter for current hardness interpolation */
-      hardnessInterpolationLength; /**< Length of the current hardness interpolation */
+  int stiffnessInterpolationCounter, /**< Cycle counter for current stiffness interpolation */
+      stiffnessInterpolationLength; /**< Length of the current stiffness interpolation */
 
-  static PROCESS_WIDE_STORAGE(SpecialActions) theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static PROCESS_LOCAL SpecialActions* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
   bool wasActive; /**< Was this module active in the previous frame? */
   MotionNetData motionNetData; /**< The motion data array. */
   short currentNode; /**< Current motion net node */

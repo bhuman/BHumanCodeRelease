@@ -9,7 +9,7 @@
 #include "CognitionConfigurationDataProvider.h"
 #include "Platform/File.h"
 
-PROCESS_WIDE_STORAGE(CognitionConfigurationDataProvider) CognitionConfigurationDataProvider::theInstance = 0;
+PROCESS_LOCAL CognitionConfigurationDataProvider* CognitionConfigurationDataProvider::theInstance = 0;
 
 CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
 {
@@ -19,7 +19,8 @@ CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
   readCameraCalibration();
   readColorCalibration();
   readRobotDimensions();
-  readDamageConfiguration();
+  readDamageConfigurationBody();
+  readDamageConfigurationHead();
   readHeadLimits();
 }
 
@@ -31,8 +32,12 @@ CognitionConfigurationDataProvider::~CognitionConfigurationDataProvider()
     delete theCameraCalibration;
   if(theColorCalibration)
     delete theColorCalibration;
-  if(theDamageConfiguration)
-    delete theDamageConfiguration;
+  if(theRobotDimensions)
+    delete theRobotDimensions;
+  if(theDamageConfigurationBody)
+    delete theDamageConfigurationBody;
+  if(theDamageConfigurationHead)
+    delete theDamageConfigurationHead;
   if(theHeadLimits)
     delete theHeadLimits;
   theInstance = 0;
@@ -46,7 +51,7 @@ void CognitionConfigurationDataProvider::update(FieldDimensions& fieldDimensions
     delete theFieldDimensions;
     theFieldDimensions = 0;
   }
-  EXECUTE_ONLY_IN_DEBUG(fieldDimensions.drawPolygons(theOwnTeamInfo.teamColor););
+  fieldDimensions.drawPolygons(theOwnTeamInfo.teamColor);
 }
 
 void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
@@ -59,7 +64,7 @@ void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibra
   }
   else
   {
-    if (theCameraCalibrationNext.hasNext())
+    if(theCameraCalibrationNext.hasNext())
     {
       cameraCalibration = const_cast<CameraCalibrationNext&>(theCameraCalibrationNext).getNext();
     }
@@ -75,10 +80,10 @@ void CognitionConfigurationDataProvider::update(ColorTable& colorTable)
     theColorCalibration = 0;
   }
 
-  DEBUG_RESPONSE_ONCE("representation:ColorCalibration",
+  DEBUG_RESPONSE_ONCE("representation:ColorCalibration:once")
   {
     OUTPUT(idColorCalibration, bin, colorCalibration);
-  });
+  }
 }
 
 void CognitionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
@@ -91,13 +96,23 @@ void CognitionConfigurationDataProvider::update(RobotDimensions& robotDimensions
   }
 }
 
-void CognitionConfigurationDataProvider::update(DamageConfiguration& damageConfiguration)
+void CognitionConfigurationDataProvider::update(DamageConfigurationBody& damageConfigurationBody)
 {
-  if(theDamageConfiguration)
+  if(theDamageConfigurationBody)
   {
-    damageConfiguration = *theDamageConfiguration;
-    delete theDamageConfiguration;
-    theDamageConfiguration = 0;
+    damageConfigurationBody = *theDamageConfigurationBody;
+    delete theDamageConfigurationBody;
+    theDamageConfigurationBody = 0;
+  }
+}
+
+void CognitionConfigurationDataProvider::update(DamageConfigurationHead& damageConfigurationHead)
+{
+  if(theDamageConfigurationHead)
+  {
+    damageConfigurationHead = *theDamageConfigurationHead;
+    delete theDamageConfigurationHead;
+    theDamageConfigurationHead = 0;
   }
 }
 
@@ -155,15 +170,27 @@ void CognitionConfigurationDataProvider::readRobotDimensions()
   }
 }
 
-void CognitionConfigurationDataProvider::readDamageConfiguration()
+void CognitionConfigurationDataProvider::readDamageConfigurationBody()
 {
-  ASSERT(!theDamageConfiguration);
+  ASSERT(!theDamageConfigurationBody);
 
-  InMapFile stream("damageConfiguration.cfg");
+  InMapFile stream("damageConfigurationBody.cfg");
   if(stream.exists())
   {
-    theDamageConfiguration = new DamageConfiguration;
-    stream >> *theDamageConfiguration;
+    theDamageConfigurationBody = new DamageConfigurationBody;
+    stream >> *theDamageConfigurationBody;
+  }
+}
+
+void CognitionConfigurationDataProvider::readDamageConfigurationHead()
+{
+  ASSERT(!theDamageConfigurationHead);
+
+  InMapFile stream("damageConfigurationHead.cfg");
+  if(stream.exists())
+  {
+    theDamageConfigurationHead = new DamageConfigurationHead;
+    stream >> *theDamageConfigurationHead;
   }
 }
 
@@ -192,4 +219,4 @@ bool CognitionConfigurationDataProvider::handleMessage(InMessage& message)
     return false;
 }
 
-MAKE_MODULE(CognitionConfigurationDataProvider, Cognition Infrastructure)
+MAKE_MODULE(CognitionConfigurationDataProvider, cognitionInfrastructure)

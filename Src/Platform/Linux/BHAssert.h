@@ -49,8 +49,8 @@ public:
   static void logAdd(int track, const char* file, int line, const char* message);
 
   /**
-  * Dumps the content of the log message ring buffers to stderr or /var/log/bhuman
-  * @param toStderr Whether to dump the content to stderr or /var/log/bhuman
+  * Dumps the content of the log message ring buffers to stderr or /home/nao/logs
+  * @param toStderr Whether to dump the content to stderr or /home/nao/logs
   * @param termSignal A signal that was emitted to terminate the bhuman process
   */
   static void logDump(bool toStderr, int termSignal);

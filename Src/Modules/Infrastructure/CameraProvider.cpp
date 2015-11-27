@@ -7,13 +7,12 @@
 #include <cstdio>
 
 #include "CameraProvider.h"
-#include "Representations/Infrastructure/JPEGImage.h"
 #include "Platform/SystemCall.h"
+#include "Representations/Infrastructure/JPEGImage.h"
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Debugging/Stopwatch.h"
-#include "Tools/Settings.h"
 
-PROCESS_WIDE_STORAGE(CameraProvider) CameraProvider::theInstance = 0;
+PROCESS_LOCAL CameraProvider* CameraProvider::theInstance = 0;
 
 CameraProvider::CameraProvider() :
   upperCameraInfo(CameraInfo::upper), lowerCameraInfo(CameraInfo::lower),
@@ -52,7 +51,7 @@ void CameraProvider::update(Image& image)
 {
   MODIFY_ONCE("representation:UpperCameraSettings", upperCameraSettings);
   MODIFY_ONCE("representation:LowerCameraSettings", lowerCameraSettings);
-  DEBUG_RESPONSE_ONCE("module:CameraProvider:LoadCameraSettings", readCameraSettings(););
+  DEBUG_RESPONSE_ONCE("module:CameraProvider:LoadCameraSettings") readCameraSettings();
 #ifdef CAMERA_INCLUDED
   ASSERT(!currentImageCamera);
   if(upperCamera->hasImage() && (!lowerCamera->hasImage() || upperCamera->getTimeStamp() < lowerCamera->getTimeStamp()))
@@ -62,8 +61,8 @@ void CameraProvider::update(Image& image)
     lastImageTimeStampLL = upperCamera->getTimeStamp();
     imageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned)(upperCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
     upperCamera->setSettings(upperCameraSettings);
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceUpper", upperCamera->doAutoWhiteBalance(););
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsUpper", upperCamera->readCameraSettings(););
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceUpper") upperCamera->doAutoWhiteBalance();
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsUpper") upperCamera->readCameraSettings();
     upperCamera->writeCameraSettings();
     upperCameraSettings = upperCamera->getSettings();
     currentImageCamera = upperCamera;
@@ -75,8 +74,8 @@ void CameraProvider::update(Image& image)
     lastImageTimeStampLL = lowerCamera->getTimeStamp();
     otherImageTimeStamp = image.timeStamp = std::max(lastImageTimeStamp + 1, (unsigned)(lowerCamera->getTimeStamp() / 1000) - SystemCall::getSystemTimeBase());
     lowerCamera->setSettings(lowerCameraSettings);
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceLower", lowerCamera->doAutoWhiteBalance(););
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsLower", lowerCamera->readCameraSettings(););
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:DoWhiteBalanceLower") lowerCamera->doAutoWhiteBalance();
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:ReadCameraSettingsLower") lowerCamera->readCameraSettings();
     lowerCamera->writeCameraSettings();
     lowerCameraSettings = lowerCamera->getSettings();
     currentImageCamera = lowerCamera;
@@ -85,10 +84,10 @@ void CameraProvider::update(Image& image)
   lastImageTimeStamp = image.timeStamp;
   MODIFY("module:CameraProvider:fullSize", image.isFullSize);
 #endif // CAMERA_INCLUDED
-  STOP_TIME_ON_REQUEST("compressJPEG",
+  STOPWATCH("compressJPEG")
   {
-    DEBUG_RESPONSE("representation:JPEGImage", OUTPUT(idJPEGImage, bin, JPEGImage(image)););
-  });
+    DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(image));
+  }
 }
 
 void CameraProvider::update(FrameInfo& frameInfo)
@@ -103,14 +102,6 @@ void CameraProvider::update(CameraInfo& cameraInfo)
     cameraInfo = upperCameraInfo;
   else
     cameraInfo = lowerCameraInfo;
-}
-
-void CameraProvider::update(CameraInfoFullRes& cameraInfoFullRes)
-{
-  if(currentImageCamera == upperCamera)
-    cameraInfoFullRes = upperCameraInfo;
-  else
-    cameraInfoFullRes = lowerCameraInfo;
 }
 
 void CameraProvider::update(CameraSettings& cameraSettings)
@@ -172,9 +163,9 @@ bool CameraProvider::processResolutionRequest()
   {
     return false;
   }
-  if(theCameraResolutionRequest.getTimestamp() > cameraResolution.timestamp)
+  if(theCameraResolutionRequest.timestamp > cameraResolution.timestamp)
   {
-    switch(theCameraResolutionRequest.getRequest())
+    switch(theCameraResolutionRequest.resolution)
     {
       case CameraResolution::Resolutions::noRequest:
         break;
@@ -182,14 +173,14 @@ bool CameraProvider::processResolutionRequest()
         if(!readCameraResolution())
         {
           cameraResolution.resolution = CameraResolution::Resolutions::upper640;
-          cameraResolution.timestamp = theCameraResolutionRequest.getTimestamp();
+          cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
         }
         break;
       case CameraResolution::Resolutions::upper640:
       case CameraResolution::Resolutions::lower640:
       case CameraResolution::Resolutions::both320:
-        cameraResolution.resolution = theCameraResolutionRequest.getRequest();
-        cameraResolution.timestamp = theCameraResolutionRequest.getTimestamp();
+        cameraResolution.resolution = theCameraResolutionRequest.resolution;
+        cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
         break;
       default:
         ASSERT(false);
@@ -241,10 +232,10 @@ void CameraProvider::setupCameras()
   lowerCameraInfo.openingAngleWidth = cameraIntrinsics.lowerOpeningAngleWidth;
   lowerCameraInfo.openingAngleHeight = cameraIntrinsics.lowerOpeningAngleHeight;
   // set optical center
-  upperCameraInfo.opticalCenter.x = cameraIntrinsics.upperOpticalCenter.x * upperCameraInfo.width;
-  upperCameraInfo.opticalCenter.y = cameraIntrinsics.upperOpticalCenter.y * upperCameraInfo.height;
-  lowerCameraInfo.opticalCenter.x = cameraIntrinsics.lowerOpticalCenter.x * lowerCameraInfo.width;
-  lowerCameraInfo.opticalCenter.y = cameraIntrinsics.lowerOpticalCenter.y * lowerCameraInfo.height;
+  upperCameraInfo.opticalCenter.x() = cameraIntrinsics.upperOpticalCenter.x() * upperCameraInfo.width;
+  upperCameraInfo.opticalCenter.y() = cameraIntrinsics.upperOpticalCenter.y() * upperCameraInfo.height;
+  lowerCameraInfo.opticalCenter.x() = cameraIntrinsics.lowerOpticalCenter.x() * lowerCameraInfo.width;
+  lowerCameraInfo.opticalCenter.y() = cameraIntrinsics.lowerOpticalCenter.y() * lowerCameraInfo.height;
   // update focal length
   upperCameraInfo.updateFocalLength();
   lowerCameraInfo.updateFocalLength();
@@ -279,7 +270,22 @@ void CameraProvider::waitForFrameData2()
 #ifdef CAMERA_INCLUDED
   // update cameraIntrinsics
   if(theCameraIntrinsicsNext.hasNext())
+  {
     cameraIntrinsics = const_cast<CameraIntrinsicsNext&>(theCameraIntrinsicsNext).getNext();
+    // set opening angle
+    upperCameraInfo.openingAngleWidth = cameraIntrinsics.upperOpeningAngleWidth;
+    upperCameraInfo.openingAngleHeight = cameraIntrinsics.upperOpeningAngleHeight;
+    lowerCameraInfo.openingAngleWidth = cameraIntrinsics.lowerOpeningAngleWidth;
+    lowerCameraInfo.openingAngleHeight = cameraIntrinsics.lowerOpeningAngleHeight;
+    // set optical center
+    upperCameraInfo.opticalCenter.x() = cameraIntrinsics.upperOpticalCenter.x() * upperCameraInfo.width;
+    upperCameraInfo.opticalCenter.y() = cameraIntrinsics.upperOpticalCenter.y() * upperCameraInfo.height;
+    lowerCameraInfo.opticalCenter.x() = cameraIntrinsics.lowerOpticalCenter.x() * lowerCameraInfo.width;
+    lowerCameraInfo.opticalCenter.y() = cameraIntrinsics.lowerOpticalCenter.y() * lowerCameraInfo.height;
+    // update focal length
+    upperCameraInfo.updateFocalLength();
+    lowerCameraInfo.updateFocalLength();
+  }
 
   // update resolution
   if(processResolutionRequest())
@@ -359,4 +365,4 @@ void CameraProvider::waitForFrameData()
 #endif
 }
 
-MAKE_MODULE(CameraProvider, Cognition Infrastructure)
+MAKE_MODULE(CameraProvider, cognitionInfrastructure)

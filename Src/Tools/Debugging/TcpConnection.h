@@ -1,21 +1,21 @@
 /**
-* @file Tools/Debugging/TcpConnection.h
-*
-* Declaration of class TcpConnection.
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Tools/Debugging/TcpConnection.h
+ *
+ * Declaration of class TcpConnection.
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #pragma once
 
-#include "Platform/TcpComm.h"
+#include "Tools/Network/TcpComm.h"
 
 #define MAX_PACKAGE_SIZE 67108864 // max package size that can be received. prevent from allocating too much buffer (max ~64 MB)
 
 /**
-* @class TcpConnection
-* The class implements a tcp connection.
-*/
+ * @class TcpConnection
+ * The class implements a tcp connection.
+ */
 class TcpConnection
 {
 public:
@@ -27,26 +27,13 @@ public:
   };
 
 private:
-  TcpComm* tcpComm; /**< The TCP/IP connection. */
-  bool ack,
-       client;
-  Handshake handshake; /**< The handshake mode. */
-
-  /**
-  * The function tries to receive a package.
-  * @param buffer A pointer that will be initialized with the address of
-  *               the data received. It is valid and has to be freed only
-  *               if the function returns a value larger than 0.
-  * @return Success of the function: -1: failure, 0: nothing read,
-  *         > 0: success, size of data, and buffer points to data.
-  */
-  int receive(unsigned char*& buffer);
+  TcpComm* tcpComm = nullptr; /**< The TCP/IP connection. */
+  bool ack = false;
+  bool client = false;;
+  Handshake handshake = noHandshake; /**< The handshake mode. */
 
 public:
-  /**
-  * Default constructor.
-  */
-  TcpConnection() : tcpComm(0), client(false) {}
+  TcpConnection() = default;
 
   /**
   * Constructor.
@@ -64,12 +51,11 @@ public:
   */
   TcpConnection(const char* ip, int port, Handshake handshake = noHandshake,
                 int maxPackageSendSize = 0, int maxPackageReceiveSize = 0)
-  {connect(ip, port, handshake, maxPackageSendSize, maxPackageReceiveSize);}
+  {
+    connect(ip, port, handshake, maxPackageSendSize, maxPackageReceiveSize);
+  }
 
-  /**
-  * Destructor.
-  */
-  ~TcpConnection() {if(tcpComm) delete tcpComm;}
+  ~TcpConnection() { if(tcpComm) delete tcpComm; }
 
   /**
   * The function will first try to connect another process as
@@ -102,29 +88,40 @@ public:
   * The function states whether the connection is still established.
   * @return Does the connection still exist?
   */
-  bool isConnected() const {return tcpComm && tcpComm->connected();}
+  bool isConnected() const { return tcpComm && tcpComm->connected(); }
 
   /**
   * The function states whether this system is the client in the connection.
   * @return Is it the client?
   */
-  bool isClient() const {return client;}
+  bool isClient() const { return client; }
 
   /**
   * The function returns the overall number of bytes sent so far by this object.
   * @return The number of bytes sent since this object was created.
   */
-  int getOverallBytesSent() const {return tcpComm ? tcpComm->getOverallBytesSent() : 0;}
+  int getOverallBytesSent() const { return tcpComm ? tcpComm->getOverallBytesSent() : 0; }
 
   /**
   * The function returns the overall number of bytes received so far by this object.
   * @return The number of bytes received since this object was created.
   */
-  int getOverallBytesReceived() const {return tcpComm ? tcpComm->getOverallBytesReceived() : 0;}
+  int getOverallBytesReceived() const { return tcpComm ? tcpComm->getOverallBytesReceived() : 0; }
 
   /**
   * The functions sends a heartbeart.
   * @return Was the heartbeat successfully sent?
   */
   bool sendHeartbeat();
+
+private:
+  /**
+   * The function tries to receive a package.
+   * @param buffer A pointer that will be initialized with the address of
+   *               the data received. It is valid and has to be freed only
+   *               if the function returns a value larger than 0.
+   * @return Success of the function: -1: failure, 0: nothing read,
+   *         > 0: success, size of data, and buffer points to data.
+   */
+  int receive(unsigned char*& buffer);
 };

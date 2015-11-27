@@ -16,7 +16,7 @@
 MODULE(OdometerProvider,
 {,
   REQUIRES(OdometryData),
-  PROVIDES_WITH_MODIFY(Odometer),
+  PROVIDES(Odometer),
 });
 
 /*
@@ -27,7 +27,7 @@ MODULE(OdometerProvider,
 class OdometerProvider : public OdometerProviderBase
 {
 private:
-  Pose2D lastOdometryData; /**< Odometry data in last frame */
+  Pose2f lastOdometryData; /**< Odometry data in last frame */
 
   /**
   * The method that computes the odometry information

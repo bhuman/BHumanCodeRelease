@@ -27,7 +27,7 @@ MODULE(OwnSideModelProvider,
   REQUIRES(RobotInfo),
   REQUIRES(GroundContactState),
   REQUIRES(Odometer),
-  PROVIDES_WITH_MODIFY(OwnSideModel),
+  PROVIDES(OwnSideModel),
   LOADS_PARAMETERS(
   {,
     (float) distanceUncertaintyOffset, /**< Estimated odometry and localization base error (mm). */

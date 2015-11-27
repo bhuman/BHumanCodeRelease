@@ -14,7 +14,7 @@
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Enum.h"
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Tools/Streams/InOut.h"
 
 class SimulatedRobot;
@@ -31,34 +31,35 @@ private:
     SimulatedRobot* simulatedRobot;
     RobotInfo info;
     unsigned timeWhenPenalized;
-    Pose2D lastPose;
+    Pose2f lastPose;
     bool manuallyPlaced;
 
     Robot() : simulatedRobot(0), timeWhenPenalized(0), manuallyPlaced(false) {}
   };
 
   ENUM(Penalty,
+  {,
     none,
-    ballHolding,
+    illegalBallContact,
     playerPushing,
-    obstruction, // deprecated
+    illegalMotionInSet,
     inactivePlayer,
     illegalDefender,
     leavingTheField,
-    playingWithHands,
+    kickOffGoal,
     requestForPickup,
-    manual
-  );
+    manual,
+  });
   static const int numOfPenalties = numOfPenaltys; /**< Correct typo. */
 
   DECLARE_SYNC;
-  static const int numOfRobots = 14;
-  static const int numOfFieldPlayers = numOfRobots / 2 - 3; //Coach, Keeper, Substitute
+  static const int numOfRobots = 12;
+  static const int numOfFieldPlayers = numOfRobots / 2 - 2; // Keeper, Substitute
   static const int durationOfHalf = 600;
   static const float footLength; /**< foot length for position check and manual placement at center circle. */
   static const float safeDistance; /**< safe distance from penalty areas for manual placement. */
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
-  static Pose2D lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
+  static Pose2f lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
   static FieldDimensions fieldDimensions;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
@@ -102,7 +103,7 @@ private:
 
   /**
    * Manually place a goalie if required.
-   * @param robot The robot number of the goalie to place [0 ... numOfRobots-1].
+   * @param robot The robot number of the goalie to place (0 or numOfRobots/2).
    */
   void placeGoalie(int robot);
 
@@ -110,23 +111,29 @@ private:
    * Move a field player to a new pose from a set of possible poses.
    * Pick the pose the teammates would not pick.
    * @param robot The number of the robot to place [0 ... numOfRobots-1].
-   * @param minRobot The number of the first field player in the team [0 ... numOfRobots-1].
+   * @param minRobot The number of the first field player in the team (1 or numOfRobots/2+1).
    * @param poses Possible placepent poses for the robot.
-   * @param numOfPoses The number of possible poses.
    */
-  void placeFromSet(int robot, int minRobot, const Pose2D* poses, int numOfPoses);
+  void placeFromSet(int robot, int minRobot, const Pose2f* poses);
 
   /**
    * Manually place the field players of the offensive team if required.
-   * @param minRobot The number of the first robot to place [0 ... numOfRobots-1].
+   * @param minRobot The number of the first robot to place (1 or numOfRobots/2+1).
    */
   void placeOffensivePlayers(int minRobot);
 
   /**
    * Manually place the field players of the defensive team if required.
-   * @param minRobot The number of the first robot to place [0 ... numOfRobots-1].
+   * @param minRobot The number of the first robot to place (1 or numOfRobots/2+1).
    */
   void placeDefensivePlayers(int minRobot);
+
+  /**
+   * Remove all but one field players from the penalty area.
+   * @param minRobot The number of the first field player in the team (1 or numOfRobots/2+1).
+   * @param poses Possible placepent poses robots.
+   */
+  void freePenaltyArea(int minRobot, const Pose2f* poses);
 
   /** Execute the manual placements decided before. */
   void executePlacement();

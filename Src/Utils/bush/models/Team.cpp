@@ -1,12 +1,11 @@
-#include <iostream>
-
 #include "Platform/File.h"
+#include "Tools/Streams/InStreams.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/tools/Platform.h"
 
-static const size_t MAX_PLAYERS = 7;
+static const size_t MAX_PLAYERS = 6;
 
 void Team::init()
 {
@@ -30,7 +29,9 @@ Team::Team()
     color(""),
     location(""),
     wlanConfig(""),
-    buildConfig("")
+    buildConfig(""),
+    volume(100),
+    deployDevice("")
 {
   init();
 }
@@ -44,10 +45,12 @@ Team::Team(const std::string& name, unsigned short number)
     color(""),
     location(""),
     wlanConfig(""),
-    buildConfig("")
+    buildConfig(""),
+    volume(100),
+    deployDevice("")
 {
   init();
-  this->port = number * 100 + 10001;
+  this->port = number + 10000;
 }
 
 /**
@@ -114,41 +117,49 @@ std::vector<Team> Team::getTeams(const std::string& filename)
     _filename = "teams.cfg";
 
   std::vector<Team> teams;
-  ConfigMap cm;
-  int status = cm.read(linuxToPlatformPath(_filename));
-  if(status < 1)
+  InMapFile stream(linuxToPlatformPath(_filename));
+  if(!stream.exists())
   {
     Session::getInstance().log(CRITICAL, "Team: Cannot read teams from " + _filename);
     return teams;
   }
-  readTeams(cm, teams);
+  readTeams(stream, teams);
   return teams;
 }
 
 void Team::changePlayer(unsigned short number, unsigned short pos, Robot* robot)
 {
-  players[number][pos] = robot;
+  players[number - 1][pos] = robot;
 }
 
-ConfigMap& operator<< (ConfigMap& cv, const Team& team)
+void Team::serialize(In* in, Out* out)
 {
-  cv["number"]      << team.number;
-  cv["port"]        << team.port;
-  cv["color"]       << team.color;
-  cv["location"]    << team.location;
-  cv["buildConfig"] << team.buildConfig;
-  cv["wlanConfig"]  << team.wlanConfig;
-
-  std::vector<Robot*> robots = team.getPlayersWrapped();
-  for(size_t i = 0; i < robots.size(); ++i)
+  STREAM_REGISTER_BEGIN
+  STREAM(name);
+  STREAM(number);
+  STREAM(port);
+  STREAM(color);
+  STREAM(location);
+  STREAM(buildConfig);
+  STREAM(wlanConfig);
+  STREAM(volume);
+  STREAM(deployDevice);
+  std::vector<std::string> players;
+  if(out)
   {
-    Robot* r = robots[i];
-    if(r)
-      cv["players"][i] << r->name;
-    else
-      cv["players"][i] << "_";
+    std::vector<Robot*> robots = getPlayersWrapped();
+    for(Robot* r : robots)
+      players.push_back(r ? r->name : "_");
   }
-  return cv;
+  STREAM(players);
+  if(in)
+  {
+    std::map<std::string, Robot*> robots = Session::getInstance().robotsByName;
+    for(size_t i = 0; i < players.size(); ++i)
+      if(players[i] != "_")
+        addPlayer(i % MAX_PLAYERS, i / MAX_PLAYERS, *robots[players[i]]);
+  }
+  STREAM_REGISTER_FINISH
 }
 
 void Team::setSelectPlayer(Robot* robot, bool select)
@@ -193,65 +204,28 @@ unsigned short Team::getPlayerNumber(const Robot& robot) const
   std::vector<Robot*> robots = getPlayersWrapped();
   for(size_t i = 0; i < robots.size(); ++i)
     if(robots[i] != 0 && robots[i]->name == robot.name)
-      return i % MAX_PLAYERS;
+      return i % MAX_PLAYERS + 1;
   return 0;
 }
 
-const ConfigMap& operator>> (const ConfigMap& cv, Team& team)
+void Team::writeTeams(Out& stream, const std::vector<Team>& teams)
 {
-  std::map<std::string, Robot*> robots = Session::getInstance().robotsByName;
-
-  cv["number"] >> team.number;
-  if(cv.hasKey("port", false))
-    cv["port"] >> team.port;
-  else
-    team.port = team.number * 100 + 10001;
-  if(cv.hasKey("color", false))
-    cv["color"] >> team.color;
-  else
-    team.color = "red";
-  if(cv.hasKey("location", false))
-    cv["location"] >> team.location;
-  else
-    team.location = "Default";
-  if(cv.hasKey("wlanConfig", false))
-    cv["wlanConfig"] >> team.wlanConfig;
-  if(cv.hasKey("buildConfig", false))
-    cv["buildConfig"] >> team.buildConfig;
-  std::vector<std::string> playerNames;
-  cv["players"] >> playerNames;
-  for(size_t i = 0; i < playerNames.size(); ++i)
-    if(playerNames[i] != "_")
-    {
-      team.addPlayer(i % MAX_PLAYERS, i / MAX_PLAYERS, *robots[playerNames[i]]);
-    }
-  return cv;
+  STREAMABLE(S,
+  {
+    S(std::vector<Team>& teams) : teams(teams) {},
+    (std::vector<Team>&) teams,
+  }) s(const_cast<std::vector<Team>&>(teams));
+  stream << s;
 }
 
-void Team::writeTeams(ConfigMap& cv, const std::vector<Team>& teams)
+void Team::readTeams(In& stream, std::vector<Team>& teams)
 {
-  for(size_t i = 0; i < teams.size(); ++i)
+  STREAMABLE(S,
   {
-    const Team& t = teams[i];
-    cv[t.name] << t;
-  }
-}
-
-void Team::readTeams(const ConfigMap& cv, std::vector<Team>& teams)
-{
-  teams.clear();
-  std::vector<std::string> keys = cv.getKeys(false);
-  for(size_t i = 0; i < keys.size(); ++i)
-  {
-    std::string& key = keys[i];
-    Team t;
-    cv[key] >> t;
-    t.name = key;
-    teams.push_back(t);
+    S(std::vector<Team>& teams) : teams(teams) {},
+    (std::vector<Team>&) teams,
+  }) s(teams);
+  stream >> s;
+  for(Team& t : teams)
     Session::getInstance().log(TRACE, "Team: Loaded team \"" + t.name + "\".");
-  }
 }
-
-CONFIGMAP_STREAM_IN(ConfigMap, Team);
-CONFIGMAP_STREAM_OUT(ConfigMap, Team);
-

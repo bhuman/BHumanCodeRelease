@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2008, 2009 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2008, 2009, 2010 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -51,11 +51,6 @@
 # define __need_wint_t
 # include <stddef.h>
 
-/* Tell the caller that we provide correct C++ prototypes.  */
-#if defined __cplusplus && __GNUC_PREREQ (4, 4)
-# define __CORRECT_ISO_CPP_WCHAR_H_PROTO
-#endif
-
 /* We try to get wint_t from <stddef.h>, but not all GCC versions define it
    there.  So define it ourselves if it remains undefined.  */
 # ifndef _WINT_T
@@ -74,6 +69,11 @@ __BEGIN_NAMESPACE_STD
 typedef __WINT_TYPE__ wint_t;
 __END_NAMESPACE_STD
 #  endif
+# endif
+
+/* Tell the caller that we provide correct C++ prototypes.  */
+# if defined __cplusplus && __GNUC_PREREQ (4, 4)
+#  define __CORRECT_ISO_CPP_WCHAR_H_PROTO
 # endif
 #endif
 
@@ -219,7 +219,7 @@ __BEGIN_NAMESPACE_STD
 extern "C++" wchar_t *wcschr (wchar_t *__wcs, wchar_t __wc)
      __THROW __asm ("wcschr") __attribute_pure__;
 extern "C++" __const wchar_t *wcschr (__const wchar_t *__wcs, wchar_t __wc)
-     __THROW __asm ("wcschr")  __attribute_pure__;
+     __THROW __asm ("wcschr") __attribute_pure__;
 #else
 extern wchar_t *wcschr (__const wchar_t *__wcs, wchar_t __wc)
      __THROW __attribute_pure__;
@@ -555,17 +555,17 @@ extern float wcstof_l (__const wchar_t *__restrict __nptr,
 extern long double wcstold_l (__const wchar_t *__restrict __nptr,
 			      wchar_t **__restrict __endptr,
 			      __locale_t __loc) __THROW;
-#endif /* GNU */
 
 
-#ifdef	__USE_XOPEN2K8
 /* Copy SRC to DEST, returning the address of the terminating L'\0' in
    DEST.  */
-extern wchar_t *wcpcpy (wchar_t *__dest, __const wchar_t *__src) __THROW;
+extern wchar_t *wcpcpy (wchar_t *__restrict __dest,
+			__const wchar_t *__restrict __src) __THROW;
 
 /* Copy no more than N characters of SRC to DEST, returning the address of
    the last character written into DEST.  */
-extern wchar_t *wcpncpy (wchar_t *__dest, __const wchar_t *__src, size_t __n)
+extern wchar_t *wcpncpy (wchar_t *__restrict __dest,
+			 __const wchar_t *__restrict __src, size_t __n)
      __THROW;
 #endif	/* use GNU */
 
@@ -658,10 +658,10 @@ extern int __REDIRECT (fwscanf, (__FILE *__restrict __stream,
 extern int __REDIRECT (wscanf, (__const wchar_t *__restrict __format, ...),
 		       __isoc99_wscanf)
      /* __attribute__ ((__format__ (__wscanf__, 1, 2))) */;
-extern int __REDIRECT (swscanf, (__const wchar_t *__restrict __s,
-				 __const wchar_t *__restrict __format, ...),
-		       __isoc99_swscanf)
-     __THROW /* __attribute__ ((__format__ (__wscanf__, 2, 3))) */;
+extern int __REDIRECT_NTH (swscanf, (__const wchar_t *__restrict __s,
+				     __const wchar_t *__restrict __format,
+				     ...), __isoc99_swscanf)
+     /* __attribute__ ((__format__ (__wscanf__, 2, 3))) */;
 #  else
 extern int __isoc99_fwscanf (__FILE *__restrict __stream,
 			     __const wchar_t *__restrict __format, ...);
@@ -712,10 +712,10 @@ extern int __REDIRECT (vfwscanf, (__FILE *__restrict __s,
 extern int __REDIRECT (vwscanf, (__const wchar_t *__restrict __format,
 				 __gnuc_va_list __arg), __isoc99_vwscanf)
      /* __attribute__ ((__format__ (__wscanf__, 1, 0))) */;
-extern int __REDIRECT (vswscanf, (__const wchar_t *__restrict __s,
-				  __const wchar_t *__restrict __format,
-				  __gnuc_va_list __arg), __isoc99_vswscanf)
-     __THROW /* __attribute__ ((__format__ (__wscanf__, 2, 0))) */;
+extern int __REDIRECT_NTH (vswscanf, (__const wchar_t *__restrict __s,
+				      __const wchar_t *__restrict __format,
+				      __gnuc_va_list __arg), __isoc99_vswscanf)
+     /* __attribute__ ((__format__ (__wscanf__, 2, 0))) */;
 #  else
 extern int __isoc99_vfwscanf (__FILE *__restrict __s,
 			      __const wchar_t *__restrict __format,
@@ -892,7 +892,7 @@ __END_DECLS
 
 #endif /* wchar.h  */
 
-/* Undefined all __need_* constants in case we are included to get those
+/* Undefine all __need_* constants in case we are included to get those
    constants but the whole file was already read.  */
 #undef __need_mbstate_t
 #undef __need_wint_t

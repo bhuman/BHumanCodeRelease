@@ -61,9 +61,9 @@ bool VelocityMotor::getMinAndMax(float& min, float& max) const
 
 void VelocityMotor::PositionSensor::updateValue()
 {
-  data.floatValue = dJointGetType(joint->joint) == dJointTypeHinge
-                    ? (float) dJointGetHingeAngle(joint->joint)
-                    : (float) dJointGetSliderPosition(joint->joint);
+  data.floatValue = (dJointGetType(joint->joint) == dJointTypeHinge
+                     ? (float) dJointGetHingeAngle(joint->joint)
+                     : (float) dJointGetSliderPosition(joint->joint)) + (joint->axis->deflection ? joint->axis->deflection->offset : 0.f);
 }
 
 bool VelocityMotor::PositionSensor::getMinAndMax(float& min, float& max) const

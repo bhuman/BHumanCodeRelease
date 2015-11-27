@@ -28,11 +28,12 @@ public:
   * The image formats available.
   */
   ENUM(ColorModel,
+  {,
     YCbCr,
     RGB,
     HSI,
-    user
-  );
+    user,
+  });
 
   /**
   * Constructor.
@@ -43,7 +44,7 @@ public:
   * @param ch The channel to display (1..3) or 0 to display all channels.
   * @param b The background color.
   */
-  ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3<>& b, bool upperCam);
+  ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, bool upperCam);
 
   /**
   * The function returns the name of a channel in a certain color model as string.

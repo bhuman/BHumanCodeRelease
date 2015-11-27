@@ -1,0 +1,53 @@
+# Configuration for simulation scenes with oracled world models
+
+# activate simulation time
+st on
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameInfo
+dr debugDrawing3d:representation:TeamInfo
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+mr GroundTruthWorldState CognitionLogDataProvider
+mr BallModel OracledWorldModelProvider
+mr RobotPose OracledWorldModelProvider
+mr ObstacleModel OracledWorldModelProvider
+mr GroundTruthRobotPose OracledWorldModelProvider
+mr GroundTruthBallModel OracledWorldModelProvider
+mr FrameInfo CognitionLogDataProvider
+mr JointSensorData MotionLogDataProvider
+mr InertialSensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr UsSensorData MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+
+# Fast, because we do not compute images
+ci off
+mr Image default
+
+# Deactivate unused modules
+mr RobotHealth default
+mr Thumbnail off
+
+# Deactivate modules depending on images
+mr FieldBoundary default
+
+mr PlayersPercept default
+mr GoalPercept default
+mr LinePercept default
+mr PenaltyMarkPercept default
+mr BallPercept off
+mr LineSpots off
+mr PotentialLineSpots off
+mr BallSpots off
+mr ScanlineRegionsClipped off
+mr ScanlineRegions off
+mr ScanGrid off
+mr ColorTable off
+mr BodyContour off
+
+call Includes/DebugResponses
+call Includes/GameStates

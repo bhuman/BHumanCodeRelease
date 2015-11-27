@@ -78,7 +78,7 @@ class TranspositionsBase
     #endif
 
     /** \returns the number of transpositions */
-    inline Index size() const { return (Index)(indices().size()); }
+    inline Index size() const { return static_cast<Index>(indices().size()); }
 
     /** Direct access to the underlying index vector */
     inline const Index& coeff(Index i) const { return indices().coeff(i); }

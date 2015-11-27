@@ -1,4 +1,4 @@
-/*
+/**
  * @file Tools/Debugging/DebugDataTable.h
  * This file declares a table for generic handling of streamable debug data.
  * Representations mentioned in the table will be overwritten with the table
@@ -11,36 +11,30 @@
 
 #pragma once
 
-#include "Tools/Streams/Streamable.h"
 #include "Tools/Streams/InStreams.h"
-#include "Tools/Debugging/Debugging.h"
 #include <string>
 
 class Framework;
 class InMessage;
 
 /**
-* @class DebugDataTable
-*
-* A singleton class that maintains the debug data table.
-*/
+ * @class DebugDataTable
+ *
+ * A singleton class that maintains the debug data table.
+ */
 class DebugDataTable
 {
 private:
   std::unordered_map<std::string, char*> table;
 
+  friend class Process; /**< A process is allowed to create the instance. */
+  friend class Framework; /**< A framework is allowed to create the instance. */
+
   /**
-   * Default constructor.
    * No other instance of this class is allowed except the one accessible via getDebugDataTable
    * therefore the constructor is private.
    */
   DebugDataTable() = default;
-
-  /**
-   * Copy constructor.
-   * Copying instances of this class is not allowed
-   * therefore the copy constructor is delted.
-   */
   DebugDataTable(const DebugDataTable&) = delete;
 
 public:
@@ -50,24 +44,22 @@ public:
    * Registers the object with the debug data table and updates the object if the
    * respective entry in the table has been modified through RobotControl.
    */
-  template<class T> void updateObject(const char* name, T& t, bool once)
+  template<class T> void updateObject(const char* name, T& t, bool once);
+  void processChangeRequest(InMessage& in);
+};
+
+template<class T> void DebugDataTable::updateObject(const char* name, T& t, bool once)
+{
+  // Find entry in debug data table
+  std::unordered_map<std::string, char*>::iterator iter = table.find(name);
+  if(iter != table.end())
   {
-    // Find entry in debug data table
-    std::unordered_map<std::string, char*>::iterator iter = table.find(name);
-    if(iter != table.end())
+    InBinaryMemory stream(iter->second);
+    stream >> t;
+    if(once)
     {
-      InBinaryMemory stream(iter->second);
-      stream >> t;
-      if(once)
-      {
-        delete[] iter->second;
-        table.erase(iter);
-      }
+      delete[] iter->second;
+      table.erase(iter);
     }
   }
-
-  void processChangeRequest(InMessage& in);
-
-  friend class Process; /**< A process is allowed to create the instance. */
-  friend class Framework; /**< A framework is allowed to create the instance. */
-};
+}

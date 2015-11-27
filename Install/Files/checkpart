@@ -1,0 +1,646 @@
+#!/sbin/runscript
+##
+## checkpart
+##
+## Copyright (C) 2010-2012 Aldebaran Robotics
+##
+
+source /etc/init.d/checkpart.in
+
+#
+# remove_part_from_table DEVICE PART_NUMBER
+#
+# Remove the given partition of the given device
+#
+# param        node           : eg. /dev/sdb2
+# exit code    0 if succedded
+#              1 invalid argument
+#              2 internal commands failed
+#              * reserved for future uses
+#
+remove_partition() {
+  edebug "remove_partition: args=\"$@\""
+  local device="${1}"
+  local part_nr="${2}"
+  local node=$(get_node "${device}" "${part_nr}")
+  # sanity checks:
+  local new_part_count= old_part_count="$(count_part "${device}")"
+  [ -n "${old_part_count}" ] || old_part_count=0
+  [ -b "${node}" ] && watchdog 30 "umount -f ${node}"
+  ewarn "Removing the partition: ${node}."
+  watchdog 120 "echo -e 'd\n${part_nr}\nw\n' | fdisk -u ${device} ; sync ; sync"
+  sleep 1
+  new_part_count=$(watchdog 10 "fdisk -l ${device} | grep '^${device}' | wc -l")
+  [ -n "${new_part_count}" ] || new_part_count=0
+  [ ${new_part_count} -lt ${old_part_count} ] || \
+    log 255 "remove_partition" "altering the partition table failed" || return $?
+  watchdog 10 "fdisk -l ${device} | grep -q '^${node}'" && \
+    log 255 "remove_partition" "${node} has not been removed" || return $?
+
+  ## update the kernel partition table
+  watchdog 15 "delpart ${device} ${part_nr}"
+
+  ## wait some time to get change updated
+  wait_for_sync ! -e "${node}" || return 3
+
+  return 0
+}
+
+
+#
+# clean_partition_table ${device}
+#
+# Remove all partitions of the given device,
+# except the system one if it is on the given device
+#
+# param        device           : eg. /dev/sdb
+#
+# return
+#
+# exit code    0 if succedded
+#              1 invalid argument
+#              * internal commands failed
+#
+# clean_partition_table "${device}"
+clean_table() {
+  edebug "clean_partition_table: args=\"$@\""
+  local device="${1}"
+  local failure_=0
+  local device_="$(basename "${device}")"
+  local part_mask_="${device_} $(basename "${FSTAB_ROOT_NODE}")"
+  [ $(get_device "${FSTAB_ROOT_NODE}") != $(get_device "${CHKPART_INTERN_NODE}") ] || \
+    part_mask_="${part_mask_} $(basename "${CHKPART_INTERN_NODE}")"
+  local part_rm_=$(grep "${device_}" /proc/partitions | \
+    sed -e 's/[ \t]\+/ /' -e 's/.*\? \([a-z]\+.*\)/\1/' | \
+    grep -v "^\(${part_mask_// /\|}\)$" | \
+    sed -e 's/[^ 0-9]*\([0-9] \?\)/\1/g')
+  edebug "clean_table: before removing partitions ..." && \
+    watchdog 10 "fdisk -u -l ${device}"
+  edebug "clean_table: partition number to be removed from ${device}: ${part_rm_}"
+  for i in ${part_rm_} ; do
+    remove_partition "${device}" "${i}" || failure_=$(( ${failure_} + 1 ))
+  done
+  sync
+  edebug "clean_table: After removing partitions ..." && \
+    watchdog 10 "fdisk -u -l ${device}"
+  [ ${failure_} -eq 0 ] || \
+    log 255 "clean_table" "cleaning device partition table of ${device} failed" || \
+    return $?
+  return 0
+}
+
+
+#
+# add_part_to_table DEVICE PART_NUMBER START_BYTE LENGHT_BYTE
+#
+# Add a partition to the given device
+#
+# exit code    0 if succedded
+#              * error
+#
+# add_part_to_table "${node}" "${start_kb}" "${size_kb}"
+add_partition() {
+  edebug "add_partition: args=\"$@\""
+  local node="${1}" start_kb="${2}" size_kb="${3}"
+  local device=$(get_device "${node}")
+  local part_nr=$(get_part_nr "${node}")
+  edebug "add_partition: dev=${device} part_nr=${part_nr} start_kb=${start_kb} size_kb=${size_kb}" && \
+    watchdog 10 "fdisk -u -l ${device}"
+  # alter partition table
+  local new_part_count= old_part_count=$(count_part "${device}")
+  [ -n "${old_part_count}" ] || old_part_count=0
+  local unit_size_b=$(watchdog 10 "fdisk -u -l ${device}" | \
+    sed -e 's/.*\?= \([0-9]\+\) bytes$/\1/' | grep '^[0-9]\+$')
+  assert_decimal "${unit_size_b}" || return 1
+  local start= size=
+  [ -z "${start_kb}" ] || start=$(( ${start} 1024 / ${unit_size_b} ))
+  [ -z "${size_kb}" ]  || size="+${size_kb}K"
+  edebug "add_partition: part: ${partnr}, start: ${start}, length: ${length} (block size=${unit_size_byte})"
+  watchdog 30 "echo -e 'n\np\n${part_nr}\n${start}\n${size}\n\nw\n' | fdisk -u ${device}"
+  sleep 1
+  new_part_count=$(watchdog 10 "fdisk -l ${device}" | grep "^${device}" | wc -l)
+  [ -n "${new_part_count}" ] || new_part_count=0
+  [ ${new_part_count} -gt ${old_part_count} ] || \
+    log 255 "add_partition" "altering the partition table failed" || return $?
+  ${_DEBUG} && watchdog 10 "fdisk -l ${device}"
+  watchdog 10 "fdisk -l ${device}" | grep -q "^${node}" || \
+    log 255 "add_partition" "${node} has not been created" || return $?
+
+  ## update the kernel partition table
+  local newpart=$(watchdog 10 "fdisk -u -l ${device}" | grep "^${node}" | sed -e 's/[ ]\+/ /g')
+  local kstart=$(( $(echo "${newpart}" | cut -d' ' -f2) * ${unit_size_b} / 512 ))
+  local ksize=$(( $(echo "${newpart}" | cut -d' ' -f4 | sed -e 's/[^0-9]//g') * ${unit_size_b} / 512 ))
+
+  cmd="addpart ${device} ${part_nr} ${kstart} ${ksize} &>/dev/null"
+  cmd="${cmd} ; sleep 1 ; while [ ! -b ${node} ] ; do sleep 1 ; done"
+  # don't fail here, the detection will take care of this if fails, just avoid to be stucked here
+  local cmd1="partx -a --nr ${part_nr} ${device} ;"
+  cmd1="${cmd1} ; sleep 1 ; while [ ! -b ${node} ] ; do sleep 1 ; done"
+  watchdog 15 true "${cmd}" || \
+    watchdog 15 true "${cmd1}" || \
+    log 255 "add_partition" "cannot declare ${node} to the kernel" || return $?
+
+  ## wait some time to get change updated
+  wait_for_sync -b "${node}" || return 3
+
+  return 0
+}
+
+
+#
+# restore_partition RESTORATION_STEP DEVICE PART_NUMBER FS UUID LABEL START_BYTE
+#
+# Restore a partition.
+# Steps:
+#   0. do nothing
+#   1. run tune2fs
+#   2. run mkfs.${fs} and all previous actions
+#   3. add a new partition to the table and run all previous actions
+#   4. remove all partitions, but the system one from the table and run all previous actions
+#   *. reserved for future uses
+#
+#
+# exit code:   0: ok
+#              *: error
+#
+#  restore "${id}" "${step}" "${node}" "${fs}" "${uuid}" "${label}" "$S{size_kb}" "${start_kb}" || \
+restore_partition() {
+  edebug "restore_partition: args=\"$@\""
+  local id="${1}" step="${2}" ; shift 2
+  local node="${1}" fs="${2}" uuid="${3}" label="${4}" ; shift 4
+  local size_kb="${1}" start_kb="${2}" ; shift 2
+
+  # sanity checks: not needed, all args have passed the caller function checks
+
+  # local part_nr=$(get_part_nr "${node}")
+  # assert_decimal "${part_nr}" || \
+  #   log 255 "restoring ${id}" "wrong partition number" || return $?
+
+  local notif_id_offset=0
+  case "${id}" in
+    'persistent') notif_id_offset=${_NOTIF_BASE_TO_PERSISTENT} ;;
+    'internal')   notif_id_offset=${_NOTIF_BASE_TO_INTERNAL} ;;
+    *) ;;
+  esac
+
+  case "${step}" in
+    '0'|'none')                         step=0 ;;
+    '1'|'tune-part')                    step=1 ;;
+    '2'|'format-part')                  step=2 ;;
+    '3'|'add-part')                     step=3 ;;
+    '4'|'clean-part-table')             step=4 ;;
+    *) eerror "Unknown step: ${step}" ; step=255 ;;
+  esac
+
+  [ ${step} -eq 0 ] && return 0 # nothing to do, so exit now
+  [ "${id}" = 'persistent' ] && \
+    grep -q "liveimage" /proc/cmdline && return 0 # do nothing, so exit now
+  [ ${step} -le 4 ] || return 1 # unknown restoration step
+
+  # not allowed restoration cases:
+  if [ $(get_target) != 'geode' ] && [ "${id}" = 'internal' ] && [ ${step} -ge 2 ] ; then
+    log 255 "restoring ${id}" "forbidden operation"
+    step=1
+  fi
+
+  # sanity checks
+  ( [ -z "${size_kb}" ]  || assert_decimal "${size_kb}" )  || \
+    log 255 "restoring ${id}" "internal error" || return $?
+  ( [ -z "${start_kb}" ] || assert_decimal "${start_kb}" ) || \
+    log 255 "restoring ${id}" "internal error" || return $?
+
+  ## Add partition steps:
+  local status=
+
+  # 4: clean partition table
+  if [ ${step} -ge 4 ] ; then
+    edebug "restore_partition: remove all partitions from the device, except the system one"
+    local device=$(get_device "${node}") || \
+      log $? "restoring ${id}" "device not found: ${device}" || return $?
+    [ -b "${device}" ] || \
+      log 255 "restoring ${id}" "device not found: ${device}" || return $?
+    ewarn "The device ${device} will be cleaned."
+    clean_table "${device}"
+    status=$?
+    if [ ${status} -ne 0 ] ; then
+      enotify poll $(( ${NOTIF_BASE_CLEAN_PARTTABLE_ERR} + ${notif_id_offset} ))
+      eerror "Cleaning the partition table of ${device} failed"
+      log ${status} "restoring ${id}" "cleaning partition table failed"
+      return ${status}
+    fi
+  fi
+
+  # 3: add a new partition to the table
+  if [ ${step} -ge 3 ] ; then
+    edebug "restore_partition: add a new partition"
+    add_partition "${node}" "${start_kb}" "${size_kb}"
+    status=$?
+    if [ ${status} -ne 0 ] ; then
+      enotify poll $(( ${NOTIF_BASE_ADD_PART_ERR} + ${notif_id_offset} ))
+      eerror "Adding a new partition failed"
+      log ${status} "restoring ${id}" "adding partition failed"
+      return ${status}
+    fi
+  fi
+
+  # 2: format the new partition
+  if [ ${step} -ge 2 ] ; then
+    edebug "restore_partition: format the new partition"
+    ewarn "The partition ${node} will be formated."
+    # mkfs and bad-block ckecking:
+    #   with   : too long (~50min for 8GB)
+    #   without: ok ~8min for 8GB
+    # do not check for bad-block
+    watchdog 1200 "mkfs.${fs} -q ${node}"
+    status=$?
+    if [ ${status} -ne 0 ] ; then
+      enotify poll $(( ${NOTIF_BASE_FORMAT_PART_ERR} + ${notif_id_offset} ))
+      eerror "Adding a new partition failed"
+      log ${status} "restoring ${id}" "format partition failed"
+      return ${status}
+    fi
+    enotify poll $(( ${NOTIF_BASE_FORMAT_PART_INFO} + ${notif_id_offset} ))
+  fi
+
+  # 1: tune the new partition
+  if [ ${step} -ge 1 ] ; then
+    edebug "restore_partition: tune the new partition"
+    # disable maximale mount count and interval between 2 checks ( -c and -i options)
+    # do not specify any journalize option
+    watchdog 300 "tune2fs -c 0 -i 0 -f -L ${label} -U ${uuid} ${node} &>/dev/null"
+    status=$?
+    if [ ${status} -ne 0 ] ; then
+      enotify poll $(( ${NOTIF_BASE_TUNE_PART_INFO} + ${notif_id_offset} ))
+      eerror "Tuning the filesystem failed"
+      log ${status} "restoring ${id}" "filesystem tuning failed"
+      return ${status}
+    fi
+  fi
+
+  return 0
+}
+
+# Handle legacy stuff...
+update_nao_home() {
+  local mnt="${1}"
+  local user="$(id -u ${2})"
+  local group="$(id -g ${2})"
+
+  [ -d "${mnt}" ]          || return 1
+  [ -d "${mnt}/home/nao" ] || return 1
+  [ -h "${mnt}/nao" ]      && return 0
+  local cmd=
+  #no previous /nao .. do nothing
+  if [ -d "${mnt}/nao" ] ; then
+    cmd="${cmd} ; chown -R ${user}:${group} '${mnt}/nao'"
+    #tar? what... yeah!!! because tar can extract only file that does not exists
+    cmd="${cmd} ; ( cd ${mnt}/nao/ ; tar cv . | tar xvk -C '../home/nao/' )"
+    #remove the previous home and create a symlink (mostly for nao-autoflash)
+    cmd="${cmd} ; rm -rf '${mnt}/nao/'"
+  fi
+  cmd="${cmd} ; ln -sf home/nao '${mnt}/nao'"
+  watchdog 1500 "${cmd}"
+}
+
+populate_persistent() {
+  edebug "populate_persistent: args=\"$@\""
+  local mnt="${1}" username="${2}" data="${3}"
+  [ -n "${data}" ] || data="${INSTALL_STFULDATA_ARCHIVEPATH}"
+  local user="$(id -u ${username})"
+  local group="$(id -g ${username})"
+  # Sanity checks
+  [ -d "${mnt}" ]  || return 1
+  [ -f "${data}" ] || return 1
+  # extract data archive keeping existing files in place
+  _extract_archive "${data}" "${mnt}" || \
+    log 255 "populate_persistent" "installing default data failed"
+  [ $(get_target) = 'geode' ] && update_nao_home "${mnt}" "${username}"
+  [ -d /home/nao ] || return 1
+  local cmd="status=true"
+  cmd="${cmd} ; chown -R ${user}:${group} /home/nao || status=false"
+  cmd="${cmd} ; chown ${user}:${group} ${mnt}/etc/hostname || status=false"
+  cmd="${cmd} ; chown -h ${user}:${group} ${mnt}/etc/localtime || status=false"
+  cmd="${cmd} ; chown -h 0:${group} ${mnt}/etc || status=false"
+  cmd="${cmd} ; chmod g+w ${mnt}/etc || status=false"
+  cmd="${cmd} ; \${status}"
+  watchdog 1200 "${cmd}" || return 1
+}
+
+populate_internal() {
+  edebug "populate_internal: args=\"$@\""
+  local mnt="${1}" username="${2}"
+  local user="$(id -u ${username})"
+  local group="$(id -g ${username})"
+  [ -d "${mnt}" ] || return 1
+  local cmd="status=true"
+  for item in temperatureLog DeviceHeadInternalGeode.xml ; do
+    cmd="${cmd} ; touch ${mnt}/${item} && chmod 644 ${mnt}/${item} || status=false"
+  done
+  cmd="${cmd} ; chown -R ${user}:${group} $(readlink -f ${mnt}) || status=false"
+  watchdog 600 "${cmd}" || \
+    log 255 "populate_internal" "installing default data failed" || return 1
+}
+
+_mount_partition() {
+  local restore_status="${1}"
+  local corrupted="${2}"
+  local id="${3}"
+  local node="${4}"
+  local mnt="${5}"
+  local mntopts="${6}"
+  local mnt_args=
+
+  if [ ${restore_status} = 0 -a ${corrupted} != 'y' ] ; then
+    [ -z "${mntopts}" ] || mnt_args="-o ${mntopts}"
+    watchdog 120 "mount ${node} '${mnt}' ${mnt_args} &>/dev/null" || \
+      log 255 "checking ${id}" "mounting device failed (${node} marked as corrupted)" || \
+      log $? "checking ${id}" "${node} marked as corrupted"
+  fi
+
+  if ! mount | grep -q "^${node}" ; then
+    mount -t tmpfs tmpfs "${mnt}"
+    log 255 "checking ${id}" "${node} corrupted, mounting tmpfs on ${mnt} instead"
+    case "${id}" in
+      'persistent')
+        enotify poll $(( ${NOTIF_BASE_MOUNT_PART_ERR} + ${_NOTIF_BASE_TO_PERSISTENT} )) ;;
+      'internal')
+        enotify poll $(( ${NOTIF_BASE_MOUNT_PART_ERR} + ${_NOTIF_BASE_TO_INTERNAL} )) ;;
+      *)
+        log 255 "checking ${id}" "unknown partition id: ${id}" ;;
+    esac
+  fi
+}
+
+check_partition() {
+  edebug "check_partition: args=\"$@\""
+  local id="${1}" ; shift
+  local mnt="${1}" node="${2}" fs="${3}" uuid="${4}" label="${5}" ; shift 5
+  local mntopts="${1}" size_kb="${2}" start_kb="${3}" ; shift 3
+  local check_size="${1}" min_size="${2}" max_size="${3}" ; shift 3
+  local status= step= corrupted="n" target=$(get_target)
+
+  edebug "id        =${id}"
+  edebug "mnt       =${mnt}"
+  edebug "node      =${node}"
+  edebug "fs        =${fs}"
+  edebug "uuid      =${uuid}"
+  edebug "label     =${label}"
+  edebug "mntopts   =${mntopts}"
+  edebug "size_kb   =${size_kb}"
+  edebug "start_kb  =${start_kb}"
+  edebug "check_size=${check_size}"
+  edebug "min_size  =${min_size}"
+  edebug "max_size  =${max_size}"
+
+  # sanity checks
+  assert_part_id "${id}" || log 255 "checking ${id}" "internal error: id"    || return $?
+  [ -n "${mnt}" ]        || log 255 "checking ${id}" "internal error: mnt"   || return $?
+  [ -n "${node}" ]       || log 255 "checking ${id}" "internal error: node"  || return $?
+  [ -n "${fs}" ]         || log 255 "checking ${id}" "internal error: fs"    || return $?
+  [ -n "${label}" ]      || log 255 "checking ${id}" "internal error: label" || return $?
+  assert_uuid "${uuid}"  || log 255 "checking ${id}" "internal error: uuid"  || return $?
+
+  # quit if the partition is already mounted
+  mount | grep -qE " ${mnt} " && return 0
+
+  _mount_partition 0 ${corrupted} ${id} ${node} ${mnt} ${mntopts}
+  return 0
+
+  # checking mount-point
+  [ -e "${mnt}" ] || \
+    log 255 "checking ${id}" "missing mount-point: ${mnt}" || return $?
+  [ -d "${mnt}" ] || \
+    log 255 "checking ${id}" "not a directory: ${mnt}" || return $?
+
+  # checking partition
+  local dev="$(get_device "${node}")"
+  if [ "${target}" = atom -a "${id}" = persistent -a ! -e "${dev}" ] ; then
+    log 255 "checking ${id}" "missing device: ${dev}. reload module"
+    rmmod sdhci_pci ; rmmod sdhci
+    modprobe sdhci ; modprobe sdhci_pci ; sleep 5
+    if [ ! -e "${dev}" ] ; then
+      log 255 "checking ${id}" "failed to detect device: ${dev}"
+    fi
+  fi
+
+  [ -b "${node}" ] || \
+    log 255 "checking ${id}" "missing device: ${node}" || step='add-part'
+
+  # checking filesystem format
+  [ -n "${step}" ] || is_extN_fs "${node}" "${fs}" || \
+    log 255 "checking ${id}" "not an ${fs} filesystem" || step='format-part'
+  [ -n "${step}" -o "$(watchdog 120 "findfs UUID=${uuid}")" = "${node}" ] || \
+    log 255 "checking ${id}" "wrong filesystem UUID" || step='tune-part'
+
+  # checking partition size
+  if [ "${target}" = 'geode' ] && [ "${check_size}" = 'y' ] ; then
+    assert_decimal "${min_size}" || log 255 "checking ${id}" "internal error: min. size" || return $?
+    assert_decimal "${max_size}" || log 255 "checking ${id}" "internal error: max. size" || return $?
+
+    [ -n "${step}" ] || check_size_kb "${node}" "${min_size}" "${max_size}" || \
+      log 255 "checking ${id}" "not an ${fs} filesystem" || corrupted='y'
+  fi
+
+  # checking filesystem integrity...
+
+  [ -n "${step}" ] || step='none'
+
+  restore_partition "${id}" "${step}" "${node}" "${fs}" "${uuid}" "${label}" "${size_kb}" "${start_kb}" || \
+    log 255 "checking ${id}" "restoring device failed once (action=${step})"
+  local restore_status=$?
+  if [ ${restore_status} -ne 0 ] ; then
+    corrupted='y'
+  else
+    # e2fsck and bad-block ckecking:
+    #   with   : too long (~45min for 8GB)
+    #   without: ok <5min for 8GB
+    # do not check for bad-block
+    # first: trying to repair,
+    watchdog 600 "e2fsck -p ${node} &>/dev/null"
+    local fsck_code=$?
+    if [ ${fsck_code} -eq 4 ] && false ; then # disable bad-block check (too too long)
+      # if trying to repair is not enougth, then force a little bit more, then check again
+      eerror "Partition is corrupted"
+      ewarn  "Forcing fsck to repair"
+      watchdog 3600 "e2fsck -c -y ${node} &>/dev/null ; e2fsck -c -p ${node} &>/dev/null"
+      fsck_code=$?
+    fi
+    # process fsck status
+    if [ -z "${step}" ] ; then
+      edebug "check_fs: fsck status=${fsck_code}"
+      case ${fsck_code} in
+      0|1) # 0: Partition is ok
+           # 1: Partition was corrupted but fsck succeded to fix errors
+           # anyway, do nothing
+        : ;;
+      2) # Partition is corrupted; fsck tryed to fix it but needs the system reboot
+        ewarn "Partition was corrupted, but has been fixed."
+        ewarn "System is about to reboot"
+        reboot ;;
+      *) # Partition is corrupted, recreate it
+        eerror "Partition is corrupted, repair failed."
+        corrupted='y'
+      esac
+    fi
+  fi
+
+  _mount_partition ${restore_status} ${corrupted} ${id} ${node} ${mnt} ${mntopts}
+
+  return 0
+}
+
+set_node() {
+  local id="${1}" root="${2}" uuid="${3}" node="${4}"
+  local target=$(get_target)
+  [ -b "${root}" ] || root=$(findfs "UUID=${root}" 2>/dev/null)
+  [ -n "${node}" ] || node=$(findfs "UUID=${uuid}" 2>/dev/null)
+  case "${target}" in
+    'atom')
+      case "${id}" in
+        'persistent')
+          local live_dev=$(grep -o "liveimage[^ ]*" /proc/cmdline | cut -d'=' -f2)
+          [ -z "${live_dev}" ] || node="${live_dev}" ;;
+        'internal') : ;;
+        *)
+          eerror "unknown partition identifier: ${id}"
+          return 255 ;;
+      esac ;;
+    'geode')
+      case "${id}" in
+        'persistent')
+          node=$(get_node $(get_device "${root}") $(( $(get_part_nr "${root}") + 1 ))) ;;
+        'internal')
+          case "${root}" in
+            '/dev/sda1') node=/dev/sdb1 ;;
+            '/dev/sdb1') node=/dev/sda1 ;;
+            *) eerror "unknown root device: ${root}"
+              return 255 ;;
+          esac ;;
+        *)
+          eerror "unknown partition identifier: ${id}"
+          return 255 ;;
+      esac ;;
+    *)
+      eerror "unknown target: ${target}"
+      return 255 ;;
+  esac
+  echo "${node}"
+}
+
+fill_check_args() {
+  local id="${1}" rootdev="${2}" target="${3}"
+  local args= err= part= misc=
+
+  case "${id}" in
+    'persistent') part='PERSIST' ; misc="n 0 0" ;;
+    'internal')   part='INTERN'
+      case "${target}" in
+        'atom')  misc="n 0 0" ;;
+        'geode') misc='y 100000 140000' ;;
+        *) eerror "unknown target: ${target}"
+          err='y' ;;
+      esac ;;
+    *)
+      eerror "unknown partition identifier: ${id}"
+      return 255 ;;
+  esac
+  args="${args} ${id}"
+  for key in MNT NODE FS UUID LABEL MNTOPTS SIZE_B START_B ; do
+    local vname="CHKPART_${part}_${key}"
+    case "${key}" in
+      'NODE')
+        args="${args} $(set_node "${id}" "${root_dev}" "$(eval "echo \${${vname//NODE/UUID}}")" "$(eval "echo \${${vname}}")" | tail -n1)" || err='y' ;;
+      'MNT'|'FS'|'UUID'|'LABEL'|'MNTOPTS')
+        args="${args} $(eval "echo \${${vname}}")" ;;
+      'SIZE_B'|'START_B')
+        local num="''"
+        [ -z "$(eval "echo \${${vname}}")" ] || num="$(( $(eval "echo \${${vname}}") / 1024 ))"
+        args="${args} ${num}" ;;
+      *)
+        eerror "unknown variable: ${vname}"
+        return 255 ;;
+    esac
+  done
+  args="${args} ${misc}"
+  [ -z "${err}" ] || return 255
+  echo "${args}"
+  return 0
+}
+
+fill_populate_args() {
+  local id="${1}" rootdev="${2}" target="${3}"
+  local part= args=
+  case "${id}" in
+    'persistent') part='PERSIST' ;;
+    'internal')   part='INTERN'  ;;
+    *)
+      eerror "unknown partition identifier: ${id}"
+      return 255 ;;
+  esac
+  args="$(eval "echo \${CHKPART_${part}_MNT}") nao" || return 255
+  echo "${args}"
+  return 0
+}
+
+
+################################################################################
+##                               MAIN FUNCTIONS
+################################################################################
+
+depend() {
+  need udev
+}
+
+
+start() {
+  ebegin "Checking partitions"
+
+  mount -o remount,noatime,barrier=1 /dev/root /
+
+  local loc="$(get_location)"
+  test -z "${loc}" || loc="-${loc}"
+  loc="${loc:--head}"
+
+  edebug "Using layout${loc} configuration."
+  source /etc/system.d/layout${loc}.conf
+  source /etc/system.d/defaults.conf
+
+  local status=0
+  local target=$(get_target)
+  local check_args= populate_args= mnt=
+  local root_dev="${FSTAB_ROOT_UUID}"
+  [ -n "${root_dev}" ] || root_dev=$(findfs "UUID=${FSTAB_ROOT_UUID}" 2>/dev/null)
+  for id in persistent internal ; do
+    check_args="$(fill_check_args "${id}" "${root_dev}" "${target}")" || continue
+    populate_args="$(fill_populate_args "${id}" "${root_dev}" "${target}")" || continue
+    ebegin "Checking ${id} partitions"
+    eval "check_partition ${check_args}" || \
+      log $? "checkpart" "checking ${id} partition"
+    status=$(( ${status} + $? ))
+    #eval "populate_${id} ${populate_args}" || \
+    #  log $? "checkpart" "checking ${id} partition"
+  done
+  write_notification
+  print_logs | tee "${LOG_FILE}" 2>/dev/null
+  if [ ${status} -ne 0 ] ; then
+    ewarn "Checking partitions failed."
+    ewarn "The system is not working as usual; it is running in a degraded mode."
+  fi
+  eend 0
+}
+
+stop() {
+  ebegin "Stopping checkpart"
+  ping_chest --stop
+  watchdog 300 "sync"
+  if test -f /var/run/checkpart/factory-reset.requested -o \
+      -f /var/run/factory-reset.requested ; then
+    test -x /usr/libexec/system/factory-reset && \
+      /usr/libexec/system/factory-reset --initd
+  fi
+  eend $?
+}
+
+restart() {
+  :
+}

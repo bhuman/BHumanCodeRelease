@@ -1,159 +1,155 @@
 /**
-* \file RotationMatrix.h
-* Delcaration of class RotationMatrix
-* \author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
-* \author <a href="mailto:thomas.kindler@gmx.de">Thomas Kindler</a>
-* \author Max Risler
-*/
+ * @file Tools/Math/RotationMatrix.h
+ * Delcaration of class RotationMatrix
+ * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
+ * @author <a href="mailto:thomas.kindler@gmx.de">Thomas Kindler</a>
+ * @author Max Risler
+ * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
+ */
 
 #pragma once
 
-#include "Matrix3x3.h"
+#include "Eigen.h"
+#include "Tools/Streams/Eigen.h"
+
+class KickViewWidget;
+class KickEngineData;
+class RotationMatrix_getPackedAngleAxisFaulty_Test;
 
 /**
  * Representation for 3x3 RotationMatrices
  */
-class RotationMatrix : public Matrix3x3<>
+class RotationMatrix : public Matrix3f
 {
-protected:
-  virtual void serialize(In* in, Out* out)
+public:
+  RotationMatrix() : Matrix3f(Matrix3f::Identity()) {}
+  RotationMatrix(const Matrix3f& other) : Matrix3f(other) {}
+  RotationMatrix(const AngleAxisf& angleAxis) : Matrix3f(angleAxis.toRotationMatrix()) {}
+  RotationMatrix(const Quaternionf& quat) : Matrix3f(quat.toRotationMatrix()) {}
+
+  RotationMatrix& operator=(const Matrix3f& other)
   {
-    STREAM_REGISTER_BEGIN;
-    STREAM_BASE(Matrix3x3<>);
-    STREAM_REGISTER_FINISH;
+    Matrix3f::operator=(other);
+    return *this;
   }
 
-public:
-  /**
-   * Default constructor.
-   */
-  RotationMatrix() = default;
-
-  /**
-   * Constructor.
-   *
-   * \param  c0  the first column of the matrix.
-   * \param  c1  the second column of the matrix.
-   * \param  c2  the third column of the matrix.
-   */
-  RotationMatrix(
-    const Vector3<>& c0,
-    const Vector3<>& c1,
-    const Vector3<>& c2) : Matrix3x3<>(c0, c1, c2) {}
-
-  /**
-   * Copy constructor.
-   *
-   * \param  other  The other matrix that is copied to this one
-   */
-  explicit RotationMatrix(const Matrix3x3<>& other) : Matrix3x3<>(other) {}
-
-  /**
-   * Assignment operator.
-   *
-   * \param  other  The other matrix that is assigned to this one
-   * \return        A reference to this object after the assignment.
-   */
-  RotationMatrix& operator=(const Matrix3x3<>& other)
+  RotationMatrix& operator=(const AngleAxisf& angleAxis)
   {
-    c0 = other.c0;
-    c1 = other.c1;
-    c2 = other.c2;
+    Matrix3f::operator=(angleAxis.toRotationMatrix());
+    return *this;
+  }
+
+  RotationMatrix& operator=(const Quaternionf& quat)
+  {
+    Matrix3f::operator=(quat.toRotationMatrix());
     return *this;
   }
 
   /**
-   * RotationMatrix from rotation around any axis.
-  * \param axis The axis.
-   * \param angle The angle to rotate around the axis.
-   */
-  RotationMatrix(const Vector3<>& axis, float angle);
+  * Multiplication of this matrix by vector.
+  * @param  vector  The vector this one is multiplied by
+  * @return         A new vector containing the result
+  */
+  Vector3f operator*(const Vector3f& vector) const
+  {
+    return Matrix3f::operator*(vector);
+  }
 
   /**
-   * RotationMatrix from rotation around any axis with an angle given as the length of the axis.
-   * \param axis The axis.
+   * Multiplication of this rotation matrix by another rotation matrix.
+   * @param  other  The other matrix this one is multiplied by
+   * @return        A new matrix containing the result
+   *                of the calculation.
    */
-  RotationMatrix(const Vector3<>& axis);
+  RotationMatrix operator*(const RotationMatrix& other) const
+  {
+    return RotationMatrix(Base::operator*(other));
+  }
+
+  RotationMatrix& operator*=(const AngleAxisf& rot)
+  {
+    Matrix3f::operator*=(rot.toRotationMatrix());
+    return *this;
+  }
+
+  RotationMatrix& operator*=(const Quaternionf& rot)
+  {
+    Matrix3f::operator*=(rot.toRotationMatrix());
+    return *this;
+  }
+
+  RotationMatrix& operator*=(const RotationMatrix& rot)
+  {
+    Matrix3f::operator*=(rot);
+    return *this;
+  }
 
   /**
    * Invert the matrix.
    *
-   * \note: Inverted rotation matrix is transposed matrix.
+   * @note: Inverted rotation matrix is transposed matrix.
    */
-  RotationMatrix invert() const
+  RotationMatrix& invert()
   {
-    return RotationMatrix(
-             Vector3<>(c0.x, c1.x, c2.x),
-             Vector3<>(c0.y, c1.y, c2.y),
-             Vector3<>(c0.z, c1.z, c2.z)
-           );
+    transposeInPlace();
+    return *this;
+  }
+
+  RotationMatrix inverse() const
+  {
+    return RotationMatrix(transpose());
+  }
+
+  void normalize()
+  {
+    *this = Quaternionf(*this).normalized();
+  }
+
+  RotationMatrix normalized() const
+  {
+    return Quaternionf(*this).normalized();
   }
 
   /**
-   * Multiplication of this rotation matrix by another matrix.
-   * This function is reimplemented here to avoid hidden Matrix3x3<> to RotationMatrix (copy) casts.
-   * \param  other  The other matrix this one is multiplied by
-   * \return        A new matrix containing the result
-   *                of the calculation.
-  */
-  RotationMatrix operator*(const Matrix3x3<>& other) const
-  {
-    RotationMatrix result;
-    result.c0.x = c0.x * other.c0.x + c1.x * other.c0.y + c2.x * other.c0.z;
-    result.c0.y = c0.y * other.c0.x + c1.y * other.c0.y + c2.y * other.c0.z;
-    result.c0.z = c0.z * other.c0.x + c1.z * other.c0.y + c2.z * other.c0.z;
-    result.c1.x = c0.x * other.c1.x + c1.x * other.c1.y + c2.x * other.c1.z;
-    result.c1.y = c0.y * other.c1.x + c1.y * other.c1.y + c2.y * other.c1.z;
-    result.c1.z = c0.z * other.c1.x + c1.z * other.c1.y + c2.z * other.c1.z;
-    result.c2.x = c0.x * other.c2.x + c1.x * other.c2.y + c2.x * other.c2.z;
-    result.c2.y = c0.y * other.c2.x + c1.y * other.c2.y + c2.y * other.c2.z;
-    result.c2.z = c0.z * other.c2.x + c1.z * other.c2.y + c2.z * other.c2.z;
-    return result;
-  }
+   * Converts the rotation matrix into an angleAxis.
+   * @return The rotation matrix as angleAxis.
+   */
+  AngleAxisf getAngleAxis() const;
 
   /**
-  * Multiplication of this matrix by vector.
-  * This function is reimpletened here since the RotationMatrix * Matrix3x3<> reimplementation makes Matrix3x3<> * Vector3<> inaccessible
-  * \param  vector  The vector this one is multiplied by
-  * \return         A new vector containing the result
-  *                 of the calculation.
-  */
-  Vector3<> operator*(const Vector3<>& vector) const
-  {
-    return Vector3<>(
-             c0.x * vector.x + c1.x * vector.y + c2.x * vector.z,
-             c0.y * vector.x + c1.y * vector.y + c2.y * vector.z,
-             c0.z * vector.x + c1.z * vector.y + c2.z * vector.z);
-  }
+   * Converts the rotation matrix into an angleAxis in single vector format.
+   * @return The rotation matrix as angleAxis.
+   */
+  Vector3f getPackedAngleAxis() const;
 
   /**
    * Rotation around the x-axis.
    *
-   * \param   angle  The angle this pose will be rotated by
-   * \return  A reference to this object after the calculation.
+   * @param   angle  The angle this pose will be rotated by
+   * @return  A reference to this object after the calculation.
    */
   RotationMatrix& rotateX(const float angle);
 
   /**
    * Rotation around the y-axis.
    *
-   * \param   angle  The angle this pose will be rotated by
-   * \return  A reference to this object after the calculation.
+   * @param   angle  The angle this pose will be rotated by
+   * @return  A reference to this object after the calculation.
    */
   RotationMatrix& rotateY(const float angle);
 
   /**
    * Rotation around the z-axis.
    *
-   * \param   angle  The angle this pose will be rotated by
-   * \return  A reference to this object after the calculation.
+   * @param   angle  The angle this pose will be rotated by
+   * @return  A reference to this object after the calculation.
    */
   RotationMatrix& rotateZ(const float angle);
 
   /**
    * Get the x-angle of a RotationMatrix.
    *
-   * \return  The angle around the x-axis between the original
+   * @return  The angle around the x-axis between the original
    *          and the rotated z-axis projected on the y-z-plane
    */
   float getXAngle() const;
@@ -161,7 +157,7 @@ public:
   /**
    * Get the y-angle of a RotationMatrix.
    *
-   * \return  The angle around the y-axis between the original
+   * @return  The angle around the y-axis between the original
    *          and the rotated x-axis projected on the x-z-plane
    */
   float getYAngle() const;
@@ -169,7 +165,7 @@ public:
   /**
    * Get the z-angle of a RotationMatrix.
    *
-   * \return  The angle around the z-axis between the original
+   * @return  The angle around the z-axis between the original
    *          and the rotated x-axis projected on the x-y-plane
    */
   float getZAngle() const;
@@ -177,30 +173,72 @@ public:
   /**
    * Create and return a RotationMatrix, rotated around x-axis
    *
-   * \param   angle
-   * \return  rotated RotationMatrix
+   * @param   angle
+   * @return  rotated RotationMatrix
    */
-  static RotationMatrix fromRotationX(const float angle);
+  static RotationMatrix aroundX(const float angle);
 
   /**
    * Create and return a RotationMatrix, rotated around y-axis
    *
-   * \param   angle
-   * \return  rotated RotationMatrix
+   * @param   angle
+   * @return  rotated RotationMatrix
    */
-  static RotationMatrix fromRotationY(const float angle);
+  static RotationMatrix aroundY(const float angle);
 
   /**
    * Create and return a RotationMatrix, rotated around z-axis
    *
-   * \param   angle
-   * \return  rotated RotationMatrix
+   * @param   angle
+   * @return  rotated RotationMatrix
    */
-  static RotationMatrix fromRotationZ(const float angle);
+  static RotationMatrix aroundZ(const float angle);
 
   /**
-  * Converts the rotation matrix into the single vector format.
-  * @return The rotation matrix as angleAxis.
-  */
-  Vector3<> getAngleAxis() const;
+   * Creates a RotationMatrix rotated around z, y and x (in this order!).
+   * Equivalent to fromRotationZ(z).rotateY(y).rotateX(x);
+   */
+  static RotationMatrix fromEulerAngles(const float x, const float y, const float z);
+
+  /**
+   * Creates a RotationMatrix rotatied around the z, y and x components of the Vector3 (in this order!).
+   * Equivalent to fromRotationZ(rotation.z).rotateY(rotation.y).rotateX(rotation.x);
+   */
+  static RotationMatrix fromEulerAngles(const Vector3f rotation);
+
+private:
+  // The following is a hack in order to keep the kicks from the Kickengine working...
+  friend class KickViewWidget;
+  friend class KickEngineData;
+  friend class RotationMatrix_getPackedAngleAxisFaulty_Test;
+
+  Vector3f getPackedAngleAxisFaulty() const;
 };
+
+/**
+ * External streaming operator to write a RotationMatrix.
+ * @param stream The stream to write to.
+ * @param rotationMatrix The matrix to write.
+ * @return The stream after writing.
+ */
+inline Out& operator<<(Out& stream, const RotationMatrix& rotationMatrix)
+{
+  STREAM_REGISTER_BEGIN_EXT(rotationMatrix);
+  STREAM_BASE_EXT(stream, rotationMatrix, Matrix3f);
+  STREAM_REGISTER_FINISH;
+  return stream;
+}
+
+/**
+ * External streaming operator to read a RotationMatrix.
+ * @param stream The stream to read from.
+ * @param rotationMatrix The matrix to read.
+ * @return The stream after reading.
+ */
+inline In& operator>>(In& stream, RotationMatrix& rotationMatrix)
+{
+  STREAM_REGISTER_BEGIN_EXT(rotationMatrix);
+  STREAM_BASE_EXT(stream, rotationMatrix, Matrix3f);
+  STREAM_REGISTER_FINISH;
+  return stream;
+}

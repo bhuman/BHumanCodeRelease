@@ -1,22 +1,21 @@
 /**
  * @file ColorTable.h
- * The file implements a class that represents the tabularized color calibration.
+ * The file implements a struct that represents the tabularized color calibration.
  * @author: marcel
  */
 
 #include "ColorTable.h"
 #include "ColorCalibration.h"
 #include "Platform/BHAssert.h"
-#include "Tools/ImageProcessing/ColorModelConversions.h"
-#include "snappy-c.h"
+#include "Tools/ColorModelConversions.h"
+#include <snappy-c.h>
 
 /**
  * Tables that map YCbCr color values to HSI or RB color values.
- * The resolution of this table is the one used by the ColorCalibration class.
+ * The resolution of this table is the one used by the ColorCalibration struct.
  */
-static class ColorSpaceMapper
+static const struct ColorSpaceMapper
 {
-public:
   struct RB
   {
     unsigned char r;
@@ -32,19 +31,19 @@ public:
     Image::Pixel* p = &hsi[0][0][0];
     RB* q = &rb[0][0][0];
     unsigned char g;
-    for(int y = 0; y < 256; y += 8)
+    for(int y = 7; y < 256; y += 8)
       for(int cb = 0; cb < 256; ++cb)
         for(int cr = 0; cr < 256; ++cr, ++p, ++q)
         {
-          ColorModelConversions::fromYCbCrToHSI((unsigned char) y,
-                                                (unsigned char) cb,
-                                                (unsigned char) cr,
+          ColorModelConversions::fromYCbCrToHSI(static_cast<unsigned char>(y),
+                                                static_cast<unsigned char>(cb),
+                                                static_cast<unsigned char>(cr),
                                                 p->h, p->s, p->i);
-          ColorModelConversions::fromYCbCrToRGB((unsigned char) y,
-                                                (unsigned char) cb,
-                                                (unsigned char) cr,
+          ColorModelConversions::fromYCbCrToRGB(static_cast<unsigned char>(y),
+                                                static_cast<unsigned char>(cb),
+                                                static_cast<unsigned char>(cr),
                                                 q->r, g, q->b);
-          q->rb = (unsigned short) q->r + q->b;
+          q->rb = static_cast<unsigned short>(q->r) + q->b;
         }
   }
 } colorSpaceMapper;
@@ -55,7 +54,7 @@ void ColorTable::fromColorCalibration(const ColorCalibration& colorCalibration, 
   for(unsigned i = 0; i < ColorClasses::numOfColors - 2; ++i)
     if(colorCalibration.ranges[i] != prevCalibration.ranges[i])
     {
-      update(colorCalibration.ranges[i], (unsigned char) (1 << (i + 1)));
+      update(colorCalibration.ranges[i], static_cast<unsigned char>(1 << (i + 1)));
       prevCalibration.ranges[i] = colorCalibration.ranges[i];
     }
 
@@ -106,7 +105,7 @@ void ColorTable::serialize(In* in, Out* out)
   {
     ctCompressedSize = snappy_max_compressed_length(ctUncompressedSize);
     ctCompressed.resize(ctCompressedSize);
-    VERIFY(snappy_compress((char*) &colorTable[0][0][0], ctUncompressedSize, ctCompressed.data(), &ctCompressedSize) == SNAPPY_OK);
+    VERIFY(snappy_compress(reinterpret_cast<char*>(&colorTable[0][0][0]), ctUncompressedSize, ctCompressed.data(), &ctCompressedSize) == SNAPPY_OK);
     out->write(&ctCompressedSize, sizeof(int));
     out->write(ctCompressed.data(), ctCompressedSize);
   }
@@ -115,7 +114,7 @@ void ColorTable::serialize(In* in, Out* out)
     in->read(&ctCompressedSize, sizeof(int));
     ctCompressed.resize(ctCompressedSize);
     in->read(ctCompressed.data(), ctCompressedSize);
-    VERIFY(snappy_uncompress(ctCompressed.data(), ctCompressedSize, (char*) &colorTable[0][0][0], &ctUncompressedSize) == SNAPPY_OK);
+    VERIFY(snappy_uncompress(ctCompressed.data(), ctCompressedSize, reinterpret_cast<char*>(&colorTable[0][0][0]), &ctUncompressedSize) == SNAPPY_OK);
     ASSERT(ctUncompressedSize == sizeof(colorTable));
   }
   STREAM_REGISTER_FINISH;

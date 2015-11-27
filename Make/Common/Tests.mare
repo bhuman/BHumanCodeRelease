@@ -1,0 +1,113 @@
+Tests = cppApplication + {
+  folder = "Utils"
+  root = { "$(srcDirRoot)/Utils/Tests", "$(srcDirRoot)" }
+
+  files = {
+    "$(srcDirRoot)/Platform/**.cpp" = cppSource,
+    "$(srcDirRoot)/Platform/**.h",
+    if (platform != "Linux") {
+      -"$(srcDirRoot)/Platform/Linux/**.cpp",
+      -"$(srcDirRoot)/Platform/Linux/**.h"
+    }
+    if (platform != "MacOSX") {
+      -"$(srcDirRoot)/Platform/OSX/**.cpp",
+      -"$(srcDirRoot)/Platform/OSX/**.h"
+    }
+    if (host != "Win32") {
+      -"$(srcDirRoot)/Platform/Windows/**.cpp",
+      -"$(srcDirRoot)/Platform/Windows/**.h"
+    }
+    if (platform == "Linux") {
+      -"$(srcDirRoot)/Platform/Linux/SystemCall.cpp",
+      -"$(srcDirRoot)/Platform/Linux/SystemCall.h",
+      -"$(srcDirRoot)/Platform/Linux/Robot.cpp",
+      -"$(srcDirRoot)/Platform/Linux/Robot.h",
+      -"$(srcDirRoot)/Platform/Linux/Main.cpp",
+      -"$(srcDirRoot)/Platform/Linux/NaoBody.cpp",
+      -"$(srcDirRoot)/Platform/Linux/NaoBody.h",
+      -"$(srcDirRoot)/Platform/Linux/NaoCamera.cpp",
+      -"$(srcDirRoot)/Platform/Linux/NaoCamera.h",
+    }
+    -"$(srcDirRoot)/Platform/SimRobotQt/Robot.cpp",
+    -"$(srcDirRoot)/Platform/SimRobotQt/Robot.h",
+    "$(srcDirRoot)/Representations/Sensing/BodyBoundary.cpp" = cppSource,
+    "$(srcDirRoot)/Representations/Sensing/BodyBoundary.h",
+    "$(srcDirRoot)/Utils/Tests/**.cpp" = cppSource,
+    "$(srcDirRoot)/Utils/Tests/**.h",
+    "$(srcDirRoot)/Tools/Debugging/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Debugging/*.h",
+    -"$(srcDirRoot)/Tools/Debugging/AnnotationManager.cpp",
+    "$(srcDirRoot)/Tools/MessageQueue/*.h",
+    "$(srcDirRoot)/Tools/MessageQueue/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/MessageQueue/*.h",
+    "$(srcDirRoot)/Tools/Math/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Math/*.h",
+    "$(srcDirRoot)/Tools/Motion/InverseKinematic/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Motion/InverseKinematic/*.h",
+    "$(srcDirRoot)/Tools/Network/TcpComm.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Network/TcpComm.h",
+    "$(srcDirRoot)/Tools/Streams/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/Streams/*.h",
+    "$(srcDirRoot)/Tools/*.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/*.h",
+  }
+
+  defines += {
+    "TARGET_TOOL"
+    if (tool == "vcxproj") {
+        "_CRT_SECURE_NO_WARNINGS"
+    }
+    if (configuration == "Develop") {
+      -"NDEBUG"
+    }
+  }
+
+  includePaths = {
+    "$(srcDirRoot)",
+    "$(srcDirRoot)/Tools/Precompiled",
+    "$(utilDirRoot)/Eigen",
+    "$(utilDirRoot)/GameController/include",
+    "$(utilDirRoot)/gtest/include",
+    "$(utilDirRoot)/snappy/include",
+    if (host == "Win32") {
+      "$(utilDirRoot)/Buildchain/Windows/include",
+    }
+  }
+
+  libs = {
+    "ws2_32"
+    "winmm"
+    if (configuration == "Debug") {
+      "gtestd"
+      "snappyd"
+    } else {
+      "gtest"
+      "snappy"
+    }
+    if (platform == "Linux") {
+      "pthread"
+    }
+  }
+
+  libPaths = {
+    if (platform == "Linux") {
+      "$(utilDirRoot)/snappy/lib/Linux/x64",
+      "$(utilDirRoot)/gtest/lib/Linux",
+    } else if (host == "Win32") {
+      "$(utilDirRoot)/gtest/lib/Windows",
+      "$(utilDirRoot)/snappy/lib/Windows"
+    }
+  }
+
+  linkFlags += {
+    if (tool == "vcxproj") {
+      -"/SUBSYSTEM:WINDOWS"
+      "/SUBSYSTEM:CONSOLE"
+    }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
+    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
+  }
+}

@@ -7,7 +7,7 @@
 
 #include "TypeDescriptor.h"
 #include <string>
-#include "qtvariantproperty.h"
+#include <qtvariantproperty.h>
 
 using namespace Type;
 
@@ -19,31 +19,31 @@ using namespace Type;
  */
 
 template <>
-int TypeDescriptor::getTypeId <int>()
+int TypeDescriptor::getTypeId<int>()
 {
   return QVariant::Int;
 }
 
 template <>
-int TypeDescriptor::getTypeId <double>()
+int TypeDescriptor::getTypeId<double>()
 {
   return QVariant::Double;
 }
 
 template <>
-int TypeDescriptor::getTypeId <char>()
+int TypeDescriptor::getTypeId<char>()
 {
   return QVariant::Char;
 }
 
 template <>
-int TypeDescriptor::getTypeId <bool>()
+int TypeDescriptor::getTypeId<bool>()
 {
   return QVariant::Bool;
 }
 
 template <>
-int TypeDescriptor::getTypeId <std::string>()
+int TypeDescriptor::getTypeId<std::string>()
 {
   return QVariant::String;
 }

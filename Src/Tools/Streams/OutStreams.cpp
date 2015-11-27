@@ -1,11 +1,11 @@
 /**
-* @file OutStreams.cpp
-*
-* Implementation of out stream classes.
-*
-* @author Thomas Röfer
-* @author Martin Lötzsch
-*/
+ * @file OutStreams.cpp
+ *
+ * Implementation of out stream classes.
+ *
+ * @author Thomas Röfer
+ * @author Martin Lötzsch
+ */
 
 #include <cstdio>
 #include <cstring>
@@ -13,10 +13,21 @@
 #include "OutStreams.h"
 #include "Platform/File.h"
 #include "Platform/BHAssert.h"
+#include "Tools/SensorData.h"
 #include "Tools/Debugging/Debugging.h"
+#include "Tools/Math/Angle.h"
 
 void OutBinary::writeString(const char* d, PhysicalOutStream& stream)
-{size_t size = strlen(d); stream.writeToStream(&size, sizeof(unsigned)); stream.writeToStream(d, size);}
+{
+  size_t size = strlen(d);
+  stream.writeToStream(&size, sizeof(unsigned));
+  stream.writeToStream(d, size);
+}
+
+void OutBinary::writeAngle(const Angle& d, PhysicalOutStream& stream)
+{
+  writeFloat(d, stream);
+}
 
 void OutText::writeBool(bool value, PhysicalOutStream& stream)
 {
@@ -52,27 +63,74 @@ void OutText::writeString(const char* value, PhysicalOutStream& stream)
 void OutText::writeData(const void* p, size_t size, PhysicalOutStream& stream)
 {
   for(size_t i = 0; i < size; ++i)
-    writeChar(*((const char*&) p)++, stream);
+    writeChar(*((const char*&)p)++, stream);
 }
 
 void OutText::writeChar(char d, PhysicalOutStream& stream)
-{ sprintf(buf, " %d", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %d", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
+void OutText::writeSChar(signed char d, PhysicalOutStream& stream)
+{
+  sprintf(buf, " %u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeUChar(unsigned char d, PhysicalOutStream& stream)
-{ sprintf(buf, " %u", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeShort(short d, PhysicalOutStream& stream)
-{ sprintf(buf, " %d", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %d", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeUShort(unsigned short d, PhysicalOutStream& stream)
-{ sprintf(buf, " %u", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeInt(int d, PhysicalOutStream& stream)
-{ sprintf(buf, " %d", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %d", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeUInt(unsigned int d, PhysicalOutStream& stream)
-{ sprintf(buf, " %u", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %u", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeFloat(float d, PhysicalOutStream& stream)
-{ sprintf(buf, " %g", double(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %g", double(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeDouble(double d, PhysicalOutStream& stream)
-{ sprintf(buf, " %g", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, " %g", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
+void OutText::writeAngle(const Angle& d, PhysicalOutStream& stream)
+{
+  sprintf(buf, " %gdeg", d.toDegrees());
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutText::writeEndL(PhysicalOutStream& stream)
-{ sprintf(buf, "\n"); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "\n");
+  stream.writeToStream(buf, strlen(buf));
+}
 
 void OutTextRaw::writeBool(bool value, PhysicalOutStream& stream)
 {
@@ -90,45 +148,123 @@ void OutTextRaw::writeString(const char* value, PhysicalOutStream& stream)
 void OutTextRaw::writeData(const void* p, size_t size, PhysicalOutStream& stream)
 {
   for(size_t i = 0; i < size; ++i)
-    writeChar(*((const char*&) p)++, stream);
+    writeChar(*((const char*&)p)++, stream);
 }
 
 void OutTextRaw::writeChar(char d, PhysicalOutStream& stream)
-{ sprintf(buf, "%d", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%d", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
+void OutTextRaw::writeSChar(signed char d, PhysicalOutStream& stream)
+{
+  sprintf(buf, "%u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeUChar(unsigned char d, PhysicalOutStream& stream)
-{ sprintf(buf, "%u", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeShort(short d, PhysicalOutStream& stream)
-{ sprintf(buf, "%d", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%d", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeUShort(unsigned short d, PhysicalOutStream& stream)
-{ sprintf(buf, "%u", int(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%u", int(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeInt(int d, PhysicalOutStream& stream)
-{ sprintf(buf, "%d", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%d", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeUInt(unsigned int d, PhysicalOutStream& stream)
-{ sprintf(buf, "%u", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%u", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeFloat(float d, PhysicalOutStream& stream)
-{ sprintf(buf, "%g", double(d)); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%g", double(d));
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeDouble(double d, PhysicalOutStream& stream)
-{ sprintf(buf, "%g", d); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "%g", d);
+  stream.writeToStream(buf, strlen(buf));
+}
+
+void OutTextRaw::writeAngle(const Angle& d, PhysicalOutStream& stream)
+{
+  if(d == SensorData::off)
+    sprintf(buf, "%g", static_cast<float>(d));
+  else
+    sprintf(buf, "%gdeg", d.toDegrees());
+  stream.writeToStream(buf, strlen(buf));
+}
+
 void OutTextRaw::writeEndL(PhysicalOutStream& stream)
-{ sprintf(buf, "\n"); stream.writeToStream(buf, strlen(buf)); }
+{
+  sprintf(buf, "\n");
+  stream.writeToStream(buf, strlen(buf));
+}
 
 OutFile::~OutFile()
-{ if(stream != 0) delete stream; }
+{
+  if(stream != nullptr)
+    delete stream;
+}
+
 bool OutFile::exists() const
-{return (stream != 0 ? stream->exists() : false);}
+{
+  return stream != nullptr && stream->exists();
+}
+
 void OutFile::open(const std::string& name)
-{ stream = new File(name, "wb", false); }
+{
+  stream = new File(name, "wb", false);
+}
+
 void OutFile::open(const std::string& name, bool append)
-{ stream = append ? new File(name, "ab", false) : new File(name, "wb", false);}
+{
+  stream = append ? new File(name, "ab", false) : new File(name, "wb", false);
+}
+
 void OutFile::writeToStream(const void* p, size_t size)
-{ if(stream != 0) stream->write(p, size); }
+{
+  if(stream != nullptr)
+    stream->write(p, size);
+}
+
+std::string OutFile::getFullName() const
+{
+  ASSERT(stream);
+  return stream->getFullName();
+}
 
 void OutMemory::writeToStream(const void* p, size_t size)
-{ if(memory != 0) { memcpy(memory, p, size); memory += size; length += size; } }
+{
+  if(memory != nullptr)
+  {
+    memcpy(memory, p, size);
+    memory += size;
+    length += size;
+  }
+}
 
 OutMap::OutMap(Out& stream, bool singleLine) :
-  stream(stream),
-  singleLine(singleLine)
+  stream(stream), singleLine(singleLine)
 {}
 
 void OutMap::writeLn()
@@ -145,7 +281,7 @@ void OutMap::outUChar(unsigned char value)
   if(e.enumToString)
     stream << e.enumToString(value);
   else
-    stream << (unsigned) value;
+    stream << static_cast<unsigned>(value);
 }
 
 void OutMap::outUInt(unsigned int value)
@@ -157,11 +293,11 @@ void OutMap::outUInt(unsigned int value)
 void OutMap::outString(const char* value)
 {
   char buf[2] = {0};
-  bool containsSpaces = !*value || *value == '"' || strcspn(value, " \n\r\t") < strlen(value);
-  if(containsSpaces)
+  bool containsSpecialChars = !*value || *value == '"' || strcspn(value, " \n\r\t=,;]}") < strlen(value);
+  if(containsSpecialChars)
     stream << "\"";
   for(; *value; ++value)
-    if(*value == '"' && containsSpaces)
+    if(*value == '"' && containsSpecialChars)
       stream << "\\\"";
     else if(*value == '\n')
       stream << "\\n";
@@ -176,7 +312,7 @@ void OutMap::outString(const char* value)
       buf[0] = *value;
       stream << buf;
     }
-  if(containsSpaces)
+  if(containsSpecialChars)
     stream << "\"";
 }
 

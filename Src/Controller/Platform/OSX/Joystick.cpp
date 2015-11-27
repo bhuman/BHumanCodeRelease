@@ -101,26 +101,26 @@ bool Joystick::init()
             if(IOHIDElementGetUsagePage(elem) == kHIDPage_GenericDesktop)
               switch(IOHIDElementGetUsage(elem))
               {
-              case kHIDUsage_GD_X:
-              case kHIDUsage_GD_Y:
-              case kHIDUsage_GD_Z:
-              case kHIDUsage_GD_Rx:
-              case kHIDUsage_GD_Ry:
-              case kHIDUsage_GD_Rz:
-              {
-                CFRetain(elem);
-                int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
-                axisIds[axis] = elem;
-                axisMin[axis] = (int) IOHIDElementGetLogicalMin(elem);
-                axisMax[axis] = (int) IOHIDElementGetLogicalMax(elem);
-                break;
-              }
-              case kHIDUsage_GD_Hatswitch:
-                CFRetain(elem);
-                hatId = elem;
-                axisMin[6] = axisMin[7] = -1;
-                axisMax[6] = axisMax[7] = 1;
-                break;
+                case kHIDUsage_GD_X:
+                case kHIDUsage_GD_Y:
+                case kHIDUsage_GD_Z:
+                case kHIDUsage_GD_Rx:
+                case kHIDUsage_GD_Ry:
+                case kHIDUsage_GD_Rz:
+                {
+                  CFRetain(elem);
+                  int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
+                  axisIds[axis] = elem;
+                  axisMin[axis] = (int) IOHIDElementGetLogicalMin(elem);
+                  axisMax[axis] = (int) IOHIDElementGetLogicalMax(elem);
+                  break;
+                }
+                case kHIDUsage_GD_Hatswitch:
+                  CFRetain(elem);
+                  hatId = elem;
+                  axisMin[6] = axisMin[7] = -1;
+                  axisMax[6] = axisMax[7] = 1;
+                  break;
               }
             else if(IOHIDElementGetUsagePage(elem) == kHIDPage_Button)
             {

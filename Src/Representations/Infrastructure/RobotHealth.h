@@ -1,45 +1,44 @@
 /**
-* @file RobotHealth.h
-* The file declares two classes to transport information about the current robot health
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
-*/
+ * @file RobotHealth.h
+ * The file declares two classes to transport information about the current robot health
+ * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ */
 
 #pragma once
 
-#include "Representations/Infrastructure/JointData.h"
+#include "Tools/Joints.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include <cstring>
 
 /**
-* @class MotionRobotHealth
-* All information collected within motion process.
-*/
+ * @struct MotionRobotHealth
+ * All information collected within motion process.
+ */
 STREAMABLE(MotionRobotHealth,
 {,
   (float)(0) motionFrameRate, /**< Frames per second within process "Motion" */
-  (float) avgMotionTime, /**< average execution time */
-  (float) maxMotionTime, /**< Maximum execution time */
-  (float) minMotionTime, /**< Minimum execution time */
+  (float)(0) avgMotionTime, /**< average execution time */
+  (float)(0) maxMotionTime, /**< Maximum execution time */
+  (float)(0) minMotionTime, /**< Minimum execution time */
 });
 
 /**
-* @class RobotHealth
-* Full information about the robot.
-*/
+ * @struct RobotHealth
+ * Full information about the robot.
+ */
 STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
 {
-public:
   /**
    * Configurations that can be deployed-
    * Note that they must start with an uppercase letter.
    */
   ENUM(Configuration,
+  {,
     Debug,
     Develop,
-    Release
-  );
+    Release,
+  });
 
-  /** Default constructor. */
   RobotHealth()
   {
     load[0] = load[1] = load[2] = 0;
@@ -47,9 +46,10 @@ public:
     strncpy(location, "unknown", sizeof(location));
   }
 
-  /** Assigning MotionRobotHealth
-  * @param motionRobotHealth Information from the motion process
-  */
+  /**
+   * Assigning MotionRobotHealth
+   * @param motionRobotHealth Information from the motion process
+   */
   void operator=(const MotionRobotHealth& motionRobotHealth)
   {
     motionFrameRate = motionRobotHealth.motionFrameRate;
@@ -60,19 +60,29 @@ public:
 
   void draw() const
   {
-    DECLARE_PLOT("representation:RobotHealth:batteryLevel");
     PLOT("representation:RobotHealth:batteryLevel", batteryLevel);
-    DECLARE_PLOT("representation:RobotHealth:maxJointTemperature");
     PLOT("representation:RobotHealth:maxJointTemperature", maxJointTemperature);
-    DECLARE_PLOT("representation:RobotHealth:totalCurrent");
     PLOT("representation:RobotHealth:totalCurrent", totalCurrent);
+  }
+  
+  std::string csv() const
+  {
+    static bool first = true;
+    if(first)
+    {
+      first = false;
+      return "motionFrameRate,avgMotionTime,maxMotionTime,minMotionTime,cognitionFrameRate,batteryLevel,totalCurrent,maxJointTemperature,jointWithMaxTeperature,cpuTemperature,load,memoryUsage,ballPercepts,linePercepts,goalPercepots,robotName\n" +
+        std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + std::to_string(goalPercepts) + "," + robotName + "\n";
+    }
+    else
+      return std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + std::to_string(goalPercepts) + "," + robotName + "\n";
   },
 
   (float)(0.f) cognitionFrameRate, /**< Frames per second within process "Cognition" */
   (unsigned char)(0) batteryLevel, /**< Current batteryLevel of robot battery in percent */
   (float)(0.f) totalCurrent, /**< Sum of all motor currents ( as a measure for the robot's current load) */
   (unsigned char)(0) maxJointTemperature, /**< Highest temperature of a robot actuator */
-  (JointData, Joint)(HeadYaw) jointWithMaxTemperature, /**< The hottest joint. */
+  ((Joints) Joint)(headYaw) jointWithMaxTemperature, /**< The hottest joint. */
   (unsigned char)(0) cpuTemperature, /**< The temperature of the cpu */
   (unsigned char[3]) load, /**< load averages */
   (unsigned char)(0) memoryUsage, /**< Percentage of used memory */

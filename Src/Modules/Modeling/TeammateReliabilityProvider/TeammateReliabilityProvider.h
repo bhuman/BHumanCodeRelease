@@ -17,6 +17,7 @@
 #include "Representations/Infrastructure/ReceivedSPLStandardMessages.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
+#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Modeling/TeammateReliability.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -31,7 +32,7 @@ MODULE(TeammateReliabilityProvider,
   REQUIRES(BallModel),
   REQUIRES(FieldDimensions),
   USES(RobotPose),      // <-- Use old pose to avoid conflicts with module order
-  PROVIDES_WITH_MODIFY_AND_DRAW(TeammateReliability),
+  PROVIDES(TeammateReliability),
   LOADS_PARAMETERS(
   {,
     (int) timeout,                  /**< Add some comment here */
@@ -59,26 +60,26 @@ class TeammateReliabilityProvider : public TeammateReliabilityProviderBase
                           hasInvalidPose(false), seesBallOutsideField(false)
     {
     }
-    
+
     unsigned firstPackageReceived;
     unsigned lastPackageReceived;
     unsigned lastTimeAgreedOnBall;
     bool isPenalized;
     int receivedPackagesInReady;
     int receivedPackagesInPlaying;
-    Range<> xPosRange;
-    Range<> yPosRange;
-    Range<> rotRange;
+    Rangef xPosRange;
+    Rangef yPosRange;
+    Rangef rotRange;
     bool hasInvalidPose;
     bool seesBallOutsideField;
   };
-  
-  TeammateInformation teammates[TeammateData::numOfPlayers];
-  
+
+  std::vector<TeammateInformation> teammates;
+
   /** Provides the reliability data*/
   void update(TeammateReliability& teammateReliability);
-  
+
   void updateTeammateInformation(const SPLStandardMessage& msg, unsigned timestamp, int robotNumber, TeammateInformation& teammate);
-  
+
   void computeReliability(const TeammateInformation& teammate, TeammateReliability::ReliabilityState& state);
 };

@@ -66,7 +66,7 @@ Task* ShowCmd::perRobotExecution(Context &context, Robot &robot)
   {
     context.printLine("-- " + files[i] + ":");
     std::string cmd = remoteCommandForQProcess(
-                        "cat /home/nao/Config/" + files[i], robot.getBestIP());
+                        "cat /home/nao/Config/" + files[i], robot.getBestIP(context));
 
     ProcessRunner r(context, cmd);
     r.run();
@@ -76,7 +76,7 @@ Task* ShowCmd::perRobotExecution(Context &context, Robot &robot)
     context.printLine("");
   }
 
-  return NULL;
+  return nullptr;
 }
 
 ShowCmd ShowCmd::theShowCmd;

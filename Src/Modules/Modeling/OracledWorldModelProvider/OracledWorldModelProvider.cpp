@@ -7,11 +7,13 @@
 */
 
 #include "OracledWorldModelProvider.h"
+#include "Tools/Global.h"
+#include "Tools/Settings.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
 OracledWorldModelProvider::OracledWorldModelProvider():
-lastBallModelComputation(0), lastRobotPoseComputation(0)
-{
-}
+  lastBallModelComputation(0), lastRobotPoseComputation(0)
+{}
 
 void OracledWorldModelProvider::computeRobotPose()
 {
@@ -29,11 +31,11 @@ void OracledWorldModelProvider::computeBallModel()
   if(lastBallModelComputation == theFrameInfo.time || theGroundTruthWorldState.balls.size() == 0)
     return;
   computeRobotPose();
-  Vector2<> ballPosition = theGroundTruthWorldState.balls[0];
+  Vector2f ballPosition = theGroundTruthWorldState.balls[0];
 
-  Vector2<float> velocity((ballPosition - lastBallPosition) / float(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen)) * 1000.0f);
-  theBallModel.estimate.position = theRobotPose.invert() * ballPosition;
-  theBallModel.estimate.velocity = Vector2<>(velocity).rotate(-theRobotPose.rotation);
+  Vector2f velocity((ballPosition - lastBallPosition) / float(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen)) * 1000.f);
+  theBallModel.estimate.position = theRobotPose.inverse() * ballPosition;
+  theBallModel.estimate.velocity = velocity.rotate(-theRobotPose.rotation);
   theBallModel.lastPerception = theBallModel.estimate.position;
   theBallModel.timeWhenLastSeen = theFrameInfo.time;
   theBallModel.timeWhenDisappeared = theFrameInfo.time;
@@ -61,55 +63,44 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
 {
   computeRobotPose();
   obstacleModel.obstacles.clear();
-  for(unsigned int i = 0; i<theGroundTruthWorldState.blueRobots.size(); ++i)
-    robotToObstacle(theGroundTruthWorldState.blueRobots[i], obstacleModel);
-  for(unsigned int i = 0; i<theGroundTruthWorldState.redRobots.size(); ++i)
-    robotToObstacle(theGroundTruthWorldState.redRobots[i],obstacleModel);
+  if(!Global::settingsExist())
+    return;
+
+  // Simulation scene should only use blue and red for now
+  ASSERT(Global::getSettings().teamColor == Settings::blue || Global::getSettings().teamColor == Settings::red);
+
+  const bool teammate = Global::getSettings().teamColor == Settings::blue;
+  for(unsigned int i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
+    playerToObstacle(theGroundTruthWorldState.bluePlayers[i], obstacleModel, teammate);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
+    playerToObstacle(theGroundTruthWorldState.redPlayers[i], obstacleModel, !teammate);
+
+  //add goal posts
+  float squaredObstacleModelMaxDistance = sqr(obstacleModelMaxDistance);
+  Vector2f goalPost = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal);
+  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
+    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, Obstacle::goalpost);
+  goalPost = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal);
+  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
+    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, Obstacle::goalpost);
+  goalPost = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
+  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
+    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, Obstacle::goalpost);
+  goalPost = theRobotPose.inverse() * Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
+  if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
+    obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, Obstacle::goalpost);
 }
 
-void OracledWorldModelProvider::update(ExpObstacleModel& expObstacleModel)
+void OracledWorldModelProvider::playerToObstacle(const GroundTruthWorldState::GroundTruthPlayer& player, ObstacleModel& obstacleModel, const bool isTeammate) const
 {
-  computeRobotPose();
-  expObstacleModel.eobs.clear();
-  for(unsigned int i = 0; i < theGroundTruthWorldState.blueRobots.size(); ++i)
-    robotToObstacle(theGroundTruthWorldState.blueRobots[i], expObstacleModel, false);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.redRobots.size(); ++i)
-    robotToObstacle(theGroundTruthWorldState.redRobots[i], expObstacleModel, true);
-}
-
-void OracledWorldModelProvider::robotToObstacle(const GroundTruthWorldState::GroundTruthRobot& robot,ObstacleModel& obstacleModel) const
-{
-  const float robotRadius(120.f);   // Hardcoded as this code will vanish as soon as the new obstacle model has been finished
-  ObstacleModel::Obstacle obstacle;
-  obstacle.center = theRobotPose.invert() * robot.pose.translation;
-  obstacle.leftCorner = obstacle.rightCorner = obstacle.closestPoint = obstacle.center;
-  float distance = obstacle.center.abs();
-  if(distance > robotRadius)
-  {
-    obstacle.closestPoint.normalize();
-    obstacle.closestPoint *= (distance - robotRadius);
-  }
-  Vector2<> leftOffset = obstacle.center;
-  leftOffset.normalize();
-  leftOffset *= robotRadius;
-  Vector2<> rightOffset = leftOffset;
-  leftOffset.rotateLeft();
-  rightOffset.rotateRight();
-  obstacle.leftCorner += leftOffset;
-  obstacle.rightCorner += rightOffset;
-  obstacle.type = ObstacleModel::Obstacle::ROBOT;
-  obstacleModel.obstacles.push_back(obstacle);
-}
-
-void OracledWorldModelProvider::robotToObstacle(const GroundTruthWorldState::GroundTruthRobot& robot, ExpObstacleModel& expObstacleModel, const bool isRed) const
-{
-  ExpObstacleModel::ExpObstacle obstacle;
-  obstacle.center = theRobotPose.invert() * robot.pose.translation;
-  obstacle.type = isRed ? ExpObstacleModel::ExpObstacle::ROBOTRED : ExpObstacleModel::ExpObstacle::ROBOTBLUE;
-  obstacle.lastMeasurement = theFrameInfo.time;
-  obstacle.seenCount = 14;
-  obstacle.velocity = Vector2<>(1.f, 1.f);
-  expObstacleModel.eobs.emplace_back(obstacle);
+  Vector2f center(theRobotPose.inverse() * player.pose.translation);
+  if(center.squaredNorm() >= sqr(obstacleModelMaxDistance))
+    return;
+  Obstacle obstacle(Matrix2f::Identity(), center,
+                    isTeammate ? (player.upright ? Obstacle::teammate : Obstacle::fallenTeammate)
+                               : player.upright ? Obstacle::opponent : Obstacle::fallenOpponent);
+  obstacle.setLeftRight(Obstacle::getRobotDepth());
+  obstacleModel.obstacles.emplace_back(obstacle);
 }
 
 void OracledWorldModelProvider::update(RobotPose& robotPose)
@@ -130,4 +121,4 @@ void OracledWorldModelProvider::update(GroundTruthRobotPose& groundTruthRobotPos
   groundTruthRobotPose.timestamp = theFrameInfo.time;
 }
 
-MAKE_MODULE(OracledWorldModelProvider,Cognition Infrastructure)
+MAKE_MODULE(OracledWorldModelProvider, cognitionInfrastructure)

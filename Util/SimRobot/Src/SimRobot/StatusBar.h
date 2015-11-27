@@ -38,6 +38,7 @@ private:
   QAction* toggleViewAct;
   QList<RegisteredLabel> registeredLables;
   QString userMessage;
+  QString latestMessage;
 
   virtual void hideEvent(QHideEvent* event);
   virtual void showEvent(QShowEvent* event);

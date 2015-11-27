@@ -1,30 +1,41 @@
+#include "Platform/BHAssert.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/agents/PingAgent.h"
-#include "Utils/bush/agents/TeamCommAgent.h"
-#include "Utils/bush/agents/RemoteRobotAgent.h"
+#include "Utils/bush/agents/PowerAgent.h"
 #include "Utils/bush/cmdlib/IConsole.h"
+#include "Utils/bush/cmdlib/Context.h"
 #include <iostream>
 
 Session::Session()
   : console(0),
     logLevel(ALL),
     pingAgent(0),
-    teamCommAgents(),
-    remoteRobotAgent(0),
+    powerAgent(0),
     robotsByName()
 {
 }
 
-std::string Session::getBestIP(const Robot* robot)
+std::string Session::getBestIP(const Context& context, const Robot* robot)
 {
   std::string ip;
-  ENetwork best = getBestNetwork(robot);
-  if(best == WLAN)
+  Team* team = context.getSelectedTeam();
+
+  if(team->deployDevice == "wlan")
     ip = robot->wlan;
-  else if(best == LAN)
+  else if(team->deployDevice == "lan")
     ip = robot->lan;
+  else if(team->deployDevice == "auto")
+  {
+    ENetwork best = getBestNetwork(robot);
+    if(best == WLAN)
+      ip = robot->wlan;
+    else if(best == LAN)
+      ip = robot->lan;
+  }
+  else
+    ASSERT(false);
 
   return ip;
 }
@@ -57,9 +68,16 @@ void Session::log(LogLevel logLevel, const std::string& error)
   }
 }
 
-bool Session::isReachable(const Robot* robot)
+bool Session::isReachable(const Context& context, const Robot* robot)
 {
-  return  getBestNetwork(robot) != NONE;
+  Team* team = context.getSelectedTeam();
+
+  if(team->deployDevice == "wlan")
+    return pingAgent->getWLanPing(robot) < 2000.0;
+  else if(team->deployDevice == "lan")
+    return pingAgent->getLanPing(robot) < 2000.0;
+  else
+    return getBestNetwork(robot) != NONE;
 }
 
 ENetwork Session::getBestNetwork(const Robot* robot)
@@ -88,52 +106,25 @@ void Session::removePingListener(QObject* qObject)
                       qObject, SLOT(setPings(ENetwork, std::map<std::string, double>*)));
 }
 
-void Session::registerPowerListener(QObject* qObject)
+void Session::registerPowerListener(QObject* qObject, Robot* robot)
 {
-  if(teamCommAgents.empty())
+  if(powerAgent)
   {
-    log(WARN, "Session: Could not register power listener. No teamCommAgents initialized.");
+    log(TRACE, "Session: Registered power listener.");
+    QObject::connect(powerAgent, SIGNAL(powerChanged(std::map<std::string, Power>*)),
+                     qObject, SLOT(setPower(std::map<std::string, Power>*)));
+    powerAgent->reset(robot);
   }
   else
   {
-    log(TRACE, "Session: Registered power listener.");
-    for(std::vector<TeamCommAgent*>::iterator it = teamCommAgents.begin();
-        it != teamCommAgents.end(); it++)
-      QObject::connect(*it, SIGNAL(powerChanged(std::map<std::string, Power>*)),
-                       qObject, SLOT(setPower(std::map<std::string, Power>*)));
+    log(WARN, "Session: Could not register power listener. No powerAgent initialized.");
   }
 }
 
-void Session::removePowerListener(QObject* qObject)
+void Session::removePowerListener(QObject* qObject, Robot* robot)
 {
   log(TRACE, "Session: Removed power listener.");
-  for(std::vector<TeamCommAgent*>::iterator it = teamCommAgents.begin();
-      it != teamCommAgents.end(); it++)
-    QObject::disconnect(*it, SIGNAL(powerChanged(std::map<std::string, Power>*)),
-                        qObject, SLOT(setPower(std::map<std::string, Power>*)));
-}
-
-std::vector<std::string> Session::sendDebugRequest(const Robot* robot, const std::string& command)
-{
-  return remoteRobotAgent->sendDebugRequestToRobot(robot, command);
-}
-
-void Session::addTeamCommAgent(Team* team)
-{
-  TeamCommAgent* tca = new TeamCommAgent(team->port);
-  teamCommAgents.push_back(tca);
-  tca->start(tca, &TeamCommAgent::run);
-}
-
-void Session::removeTeamCommAgent(Team* team)
-{
-  for(size_t i = 0; i < teamCommAgents.size(); ++i)
-  {
-    TeamCommAgent* tca = teamCommAgents[i];
-    if(tca->getPort() == team->port)
-    {
-      teamCommAgents.erase(teamCommAgents.begin() + i);
-      tca->deleteLater();
-    }
-  }
+  QObject::disconnect(powerAgent, SIGNAL(powerChanged(std::map<std::string, Power>*)),
+                      qObject, SLOT(setPower(std::map<std::string, Power>*)));
+  powerAgent->reset(robot);
 }

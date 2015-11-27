@@ -6,6 +6,8 @@
 
 #include "AudioProvider.h"
 
+MAKE_MODULE(AudioProvider, cognitionInfrastructure)
+
 #ifdef TARGET_ROBOT
 
 AudioProvider::AudioProvider()
@@ -43,6 +45,9 @@ AudioProvider::~AudioProvider()
 
 void AudioProvider::update(AudioData& audioData)
 {
+  if(theGameInfo.state != STATE_SET)
+    return;
+
   audioData.channels = channels;
   audioData.sampleRate = sampleRate;
 
@@ -68,5 +73,3 @@ AudioProvider::~AudioProvider() {}
 void AudioProvider::update(AudioData& audioData) {}
 
 #endif
-
-MAKE_MODULE(AudioProvider, Cognition Infrastructure)

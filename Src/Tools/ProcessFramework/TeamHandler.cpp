@@ -1,15 +1,16 @@
 /**
-* @file Tools/ProcessFramework/TeamHandler.cpp
-* The file implements a class for team communication between robots.
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file Tools/ProcessFramework/TeamHandler.cpp
+ * The file implements a class for team communication between robots.
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #include "TeamHandler.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
 #include "Tools/Streams/OutStreams.h"
 #include "Tools/Streams/InStreams.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
 #if defined(TARGET_ROBOT) || defined(TARGET_SIM)
 #include "Modules/Infrastructure/ReceivedSPLStandardMessagesProvider.h"
@@ -18,11 +19,8 @@
 #endif
 
 TeamHandler::TeamHandler(MessageQueue& in, MessageQueue& out) :
-  in(in),
-  out(out),
-  port(0), localId(0)
-{
-}
+  in(in), out(out)
+{}
 
 void TeamHandler::startLocal(int port, unsigned localId)
 {
@@ -58,16 +56,15 @@ void TeamHandler::send()
   if(!port || out.isEmpty())
     return;
 
-  char buffer[sizeof(RoboCup::SPLStandardMessage)];
+  SPLStandardMessage outMsg(out);
 
-  SPLStandardMessage outMsg;
-  const unsigned size = outMsg.fromMessageQueue(out);
-
-  OutBinaryMemory memory(buffer);
-  memory << outMsg;
-
-  if(socket.write(buffer, size))
+  if(socket.write((char*)&(RoboCup::SPLStandardMessage&) outMsg, offsetof(RoboCup::SPLStandardMessage, data) + outMsg.numOfDataBytes))
     out.clear();
+
+  // Plot usage of data buffer in percent:
+  DECLARE_PLOT("module:TeamHandler:standardMessageDataBufferUsageInPercent");
+  const float usageInPercent = outMsg.numOfDataBytes * 100.f / static_cast<float>(SPL_STANDARD_MESSAGE_DATA_SIZE);
+  PLOT("module:TeamHandler:standardMessageDataBufferUsageInPercent", usageInPercent);
 }
 
 unsigned TeamHandler::receive()
@@ -75,23 +72,19 @@ unsigned TeamHandler::receive()
   if(!port)
     return 0; // not started yet
 
-  char buffer[sizeof(RoboCup::SPLStandardMessage)];
+  SPLStandardMessage inMsg;
   int size;
   unsigned remoteIp = 0;
   unsigned receivedSize = 0;
 
   do
   {
-    size = localId ? socket.readLocal(buffer, sizeof(buffer)) : socket.read(buffer, sizeof(buffer), remoteIp);
-    if(size >= (int)(sizeof(RoboCup::SPLStandardMessage) - SPL_STANDARD_MESSAGE_DATA_SIZE) && size <= (int)(sizeof(RoboCup::SPLStandardMessage)))
+    size = localId ? socket.readLocal((char*)&(RoboCup::SPLStandardMessage&) inMsg, sizeof(RoboCup::SPLStandardMessage))
+                   : socket.read((char*)&(RoboCup::SPLStandardMessage&) inMsg, sizeof(RoboCup::SPLStandardMessage), remoteIp);
+    if(size >= static_cast<int>(offsetof(RoboCup::SPLStandardMessage, data)) && size <= static_cast<int>(sizeof(RoboCup::SPLStandardMessage)))
     {
-      receivedSize = (unsigned) size;
-
-      SPLStandardMessage inMsg;
-      InBinaryMemory memory(buffer, size);
-      memory >> inMsg;
-
-      inMsg.toMessageQueue(in, remoteIp);
+      receivedSize = static_cast<unsigned>(size);
+      inMsg.toMessageQueue(in, remoteIp, receivedSize - offsetof(RoboCup::SPLStandardMessage, data));
 
 #if defined(TARGET_ROBOT) || defined(TARGET_SIM)
       ReceivedSPLStandardMessagesProvider::addMessage(inMsg);

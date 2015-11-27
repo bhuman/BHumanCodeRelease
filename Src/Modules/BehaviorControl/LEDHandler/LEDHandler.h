@@ -8,33 +8,29 @@
 
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/SensorData.h"
+#include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/Infrastructure/TeammateData.h"
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/GoalPercept.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Representations/BehaviorControl/BehaviorControlOutput.h"
+#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/BehaviorLEDRequest.h"
-#include "Representations/BehaviorControl/Role.h"
 
 MODULE(LEDHandler,
 {,
+  REQUIRES(BallModel),
+  REQUIRES(BehaviorLEDRequest),
+  REQUIRES(BehaviorStatus),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
-  REQUIRES(RobotInfo),
-  REQUIRES(OwnTeamInfo),
-  REQUIRES(BallModel),
   REQUIRES(GoalPercept),
-  REQUIRES(FilteredSensorData),
-  REQUIRES(TeammateData),
   REQUIRES(GroundContactState),
-  REQUIRES(BehaviorControlOutput),
-  REQUIRES(BehaviorLEDRequest),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(LEDRequest),
+  REQUIRES(RobotInfo),
+  REQUIRES(SystemSensorData),
+  REQUIRES(TeammateData),
+  PROVIDES(LEDRequest),
 });
 
 class LEDHandler : public LEDHandlerBase
@@ -51,5 +47,6 @@ private:
   void setLeftEar(LEDRequest& ledRequest);
   void setLeftEye(LEDRequest& ledRequest);
   void setRightEye(LEDRequest& ledRequest);
+  void setHead(LEDRequest& ledRequest);
+  void setChestButton(LEDRequest& ledRequest);
 };
-

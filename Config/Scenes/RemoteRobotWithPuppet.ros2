@@ -1,0 +1,21 @@
+<Simulation>
+  
+  <Include href="Includes/NaoV4H21.rsi2"/>
+  <Include href="Includes/Field2015SPL.rsi2"/>
+  
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.01" color="rgb(50%, 50%, 50%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <!-- <QuickSolver iterations="100" skip="2"/>  -->
+    <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="puppets">
+      <Body ref="Nao" name="Remote">
+        <Translation z="300mm"/>
+       </Body>
+    </Compound>
+
+    <Compound name="field">
+      <Compound ref="field"/>
+    </Compound>
+
+  </Scene>
+</Simulation>

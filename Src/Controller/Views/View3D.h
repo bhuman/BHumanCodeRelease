@@ -12,7 +12,7 @@
 #include <QIcon>
 #include <SimRobot.h>
 
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Eigen.h"
 
 /**
 * @class View3D
@@ -29,7 +29,7 @@ public:
   * @param fullName The path to this view in the scene graph
   * @param background The background color.
   */
-  View3D(const QString& fullName, const Vector3<>& background);
+  View3D(const QString& fullName, const Vector3f& background);
 
 protected:
   enum
@@ -56,8 +56,8 @@ protected:
   virtual float getViewDistance() const {return 8.0;}
 
 protected:
-  const Vector3<>& background; /**< The background color. */
-  Vector3<> lastBackground; /**< The last background color used. */
+  const Vector3f& background; /**< The background color. */
+  Vector3f lastBackground; /**< The last background color used. */
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */

@@ -50,7 +50,9 @@ private:
   }
 
 protected:
-  virtual void inChar(char& value) {in(value);}
+  virtual void inBool(bool& value) {in(value);}
+  virtual void inChar(char& value) { in(value); }
+  virtual void inSChar(signed char& value) { in(value); }
   virtual void inUChar(unsigned char& value) {in(value);}
   virtual void inShort(short& value) {in(value);}
   virtual void inUShort(unsigned short& value) {in(value);}
@@ -58,8 +60,8 @@ protected:
   virtual void inUInt(unsigned int& value);
   virtual void inFloat(float& value) {in(value);}
   virtual void inDouble(double& value) {in(value);}
-  virtual void inBool(bool& value) {in(value);}
   virtual void inString(std::string& value) {in(value);}
+  virtual void inAngle(Angle& value);
   virtual void inEndL() {}
 
 public:

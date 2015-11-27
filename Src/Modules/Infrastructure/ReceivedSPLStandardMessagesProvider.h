@@ -14,16 +14,16 @@
 MODULE(ReceivedSPLStandardMessagesProvider,
 {,
   REQUIRES(FrameInfo),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(ReceivedSPLStandardMessages),
+  PROVIDES(ReceivedSPLStandardMessages),
 });
 
 class ReceivedSPLStandardMessagesProvider : public ReceivedSPLStandardMessagesProviderBase
 {
 private:
-  static PROCESS_WIDE_STORAGE(ReceivedSPLStandardMessagesProvider) theInstance;
+  static PROCESS_LOCAL ReceivedSPLStandardMessagesProvider* theInstance;
 
-  SPLStandardMessageWithoutData recentMessages[TeammateData::numOfPlayers];
-  unsigned recentMessagesTimestamps[TeammateData::numOfPlayers];
+  std::vector<SPLStandardMessageWithoutData> recentMessages;
+  std::vector<unsigned> recentMessagesTimestamps;
 
 public:
   ReceivedSPLStandardMessagesProvider();

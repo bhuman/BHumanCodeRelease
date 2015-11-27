@@ -152,7 +152,6 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
       }
       if((closeTagOffset > -1) && ((lowest == -1) || (closeTagOffset < lowest)))
       {
-        lowest = closeTagOffset;
         newState = inCloseTag;
         matchedLength = xmlCloseTagStartExpression.matchedLength();
       }
@@ -269,7 +268,6 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
       }
       if((openTagEndOffset > -1) && ((lowest == -1) || (openTagEndOffset < lowest)))
       {
-        lowest = openTagEndOffset;
         newState = inNothing;
         matchedLength = xmlOpenTagEndExpression.matchedLength();
       }

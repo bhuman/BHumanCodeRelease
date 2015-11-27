@@ -5,10 +5,10 @@
 #include <vector>
 #include <QObject>
 
+class Context;
 class PingAgent;
-class RemoteRobotAgent;
-class TeamCommAgent;
-class Robot;
+class PowerAgent;
+struct Robot;
 class Team;
 class IConsole;
 class CommandContext;
@@ -41,8 +41,7 @@ class Session : public QObject
   LogLevel logLevel;
 
   PingAgent* pingAgent;
-  std::vector<TeamCommAgent*> teamCommAgents;
-  RemoteRobotAgent* remoteRobotAgent;
+  PowerAgent* powerAgent;
 
   Session();
 
@@ -58,19 +57,16 @@ public:
 
   void log(LogLevel logLevel, const std::string& message);
 
-  std::string getBestIP(const Robot* robot);
-  bool isReachable(const Robot* robot);
+  std::string getBestIP(const Context& context, const Robot* robot);
+  bool isReachable(const Context& context, const Robot* robot);
 
   void registerPingListener(QObject* qObject);
   void removePingListener(QObject* qObject);
 
-  void registerPowerListener(QObject* qObject);
-  void removePowerListener(QObject* qObject);
+  void registerPowerListener(QObject* qObject, Robot* robot = nullptr);
+  void removePowerListener(QObject* qObject, Robot* robot = nullptr);
 
-  std::vector<std::string> sendDebugRequest(const Robot* robot, const std::string& command);
-
-  void addTeamCommAgent(Team* team);
-  void removeTeamCommAgent(Team* team);
+  std::vector<std::string> sendDebugRequest(const Context& context, const Robot* robot, const std::string& command);
 
 signals:
   void robotsChanged();

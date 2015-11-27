@@ -8,6 +8,10 @@
 
 #include "QueueFillRequest.h"
 
+QueueFillRequest::QueueFillRequest(Behavior behavior, Filter filter, Target target, int timingMilliseconds) :
+  behavior(behavior), filter(filter), target(target), timingMilliseconds(timingMilliseconds)
+{}
+
 In& operator>>(In& stream, QueueFillRequest& queueFillRequest)
 {
   // The streamed data must be 8 bytes long (same as the previous version, to avoid corruption of the input queue)

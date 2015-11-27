@@ -2,8 +2,13 @@
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 basePath=$(dirname ${scriptPath})
 if [ ! "$4" = "-Link" -a ! "$6" = "-Link" ]; then
-  export CCACHE_CPP2=1
-  ${basePath}/ccache `xcrun -find clang++` $*
+  if [ "$2" = "c++-header" -o "$2" = "objective-c++-header" ]; then
+    `xcrun -find clang++` $*
+  else
+    export CCACHE_CPP2=1
+    export CCACHE_SLOPPINESS=pch_defines,time_macros
+    ${basePath}/ccache `xcrun -find clang++` $*
+  fi
 else
   CALL=
   SHARED=
@@ -39,8 +44,8 @@ else
     shift
   done
   if [ -z $SHARED ]; then
-    ${basePath}/i586-pc-linux-ld --eh-frame-hdr -m elf_i386 -dynamic-linker /lib/ld-linux.so.2 ../../Util/Buildchain/gcc/lib/crt1.o ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.17 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtend.o ../../Util/Buildchain/gcc/lib/crtn.o
+    ${basePath}/ld --eh-frame-hdr -m elf_i386 -dynamic-linker=/lib/ld-linux.so.2 ../../Util/Buildchain/gcc/lib/crt1.o ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.21 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtend.o ../../Util/Buildchain/gcc/lib/crtn.o
   else
-    ${basePath}/i586-pc-linux-ld --eh-frame-hdr -m elf_i386 -shared ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbeginS.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.17 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtendS.o ../../Util/Buildchain/gcc/lib/crtn.o
+    ${basePath}/ld --eh-frame-hdr -m elf_i386 -shared ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbeginS.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.21 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtendS.o ../../Util/Buildchain/gcc/lib/crtn.o
   fi
 fi

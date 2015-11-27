@@ -1,17 +1,9 @@
 #pragma once
 
-#include "Platform/SystemCall.h"
-#include "Tools/Streams/Streamable.h"
+#include "Tools/Streams/AutoStreamable.h"
 
-template<class T>
-class Next : public Streamable
+template<typename T> STREAMABLE(Next,
 {
-private:
-  T next;
-  unsigned readCounter = 0;
-  unsigned writeCounter = 0;
-
-public:
   Next() = default;
   Next(const Next& other) = delete;
 
@@ -32,15 +24,9 @@ public:
   {
     readCounter = writeCounter;
     return next;
-  }
+  },
 
-private:
-  virtual void serialize(In* in, Out* out)
-  {
-    STREAM_REGISTER_BEGIN;
-    STREAM(next);
-    STREAM(readCounter);
-    STREAM(writeCounter);
-    STREAM_REGISTER_FINISH;
-  }
-};
+  (T) next,
+  (unsigned)(0) readCounter,
+  (unsigned)(0) writeCounter,
+});

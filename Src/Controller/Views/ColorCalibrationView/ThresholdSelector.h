@@ -105,4 +105,3 @@ public:
                 int min, int max)
   : ThresholdSelector(name, parent, min, max) {}
 };
-

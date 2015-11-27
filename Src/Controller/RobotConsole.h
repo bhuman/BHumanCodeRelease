@@ -9,7 +9,8 @@
 #pragma once
 
 #ifdef WINDOWS
-#include <WinSock2.h> // This must be included first to prevent errors, since windows.h is included in one of the following headers. 
+#define NOMINMAX
+#include <WinSock2.h> // This must be included first to prevent errors, since windows.h is included in one of the following headers.
 #endif
 
 #include "Representations/BehaviorControl/ActivationGraph.h"
@@ -18,17 +19,21 @@
 #include "Representations/Configuration/ColorTable.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/JointData.h"
-#include "Representations/Infrastructure/SensorData.h"
-#include "Representations/Infrastructure/LEDRequest.h"
+#include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/USRequest.h"
+#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/Infrastructure/SensorData/SystemSensorData.h"
+#include "Representations/Infrastructure/SensorData/UsSensorData.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/CombinedWorldModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
+#include "Representations/Modeling/TeamBallModel.h"
+#include "Representations/Modeling/TeamPlayersModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Perception/GoalPercept.h"
 #include "Representations/Perception/LinePercept.h"
@@ -37,8 +42,11 @@
 #include "Tools/ProcessFramework/Process.h"
 
 #include "CameraCalibratorHandler.h"
+#include "AutomaticCameraCalibratorHandlerInsertion.h"
+#include "AutomaticCameraCalibratorHandlerDeletion.h"
 #include "LogPlayer.h" // Must be included after Process.h
 #include "Platform/Joystick.h"
+#include "Representations/AnnotationInfo.h"
 #include "Representations/ModuleInfo.h"
 #include "Representations/TimeInfo.h"
 #include "Views/DataView/DataView.h"
@@ -51,6 +59,7 @@
 
 class ConsoleRoboCupCtrl;
 class ColorCalibrationView;
+class ImageView;
 
 /**
 * @class RobotConsole
@@ -91,22 +100,38 @@ private:
   };
 
 public:
+  ENUM(Color, /**< Colors for plot drawings. */
+  {,
+    black,
+    red,
+    green,
+    blue,
+    yellow,
+    cyan,
+    magenta,
+    orange,
+    violet,
+    gray,
+  });
+
   DECLARE_SYNC; /**< Make this object synchronizable. */
   ColorCalibration colorCalibration; /**< The color calibration */
   ColorCalibration prevColorCalibration; /**< The previous color calibration */
-  bool colorCalibrationChanged; /**< Was the color calibration changed since the color table was updated? */
+  bool colorCalibrationChanged = false; /**< Was the color calibration changed since the color table was updated? */
   ColorTable colorTable; /**< The color table */
-  unsigned colorTableTimeStamp; /**< The last time when the last color table was updated. */
+  unsigned colorTableTimeStamp = 0; /**< The last time when the last color table was updated. */
+  ColorCalibrationView* colorCalibrationView = nullptr;
+  std::vector<ImageView*> segmentedImageViews;
   SystemCall::Mode mode; /**< Defines mode in which this process runs. */
 
 protected:
   ConsoleRoboCupCtrl* ctrl; /** A pointer to the controller object. */
   QString robotFullName; /**< The full name of the robot. (e.g. "RoboCup.Robot1") */
   QString robotName; /**< The name of the robot. (e.g. "Robot1") */
-  bool printMessages, /**< Decides whether to output text messages in the console window. */
-       handleMessages, /**< Decides whether messages are handled or not. */
-       logAcknowledged, /**< The flag is true whenever log data sent to the robot code was processed. */
-       destructed; /**< A flag stating that this object has already been destructed. */
+  bool printMessages = true; /**< Decides whether to output text messages in the console window. */
+  bool handleMessages = true; /**< Decides whether messages are handled or not. */
+  bool logAcknowledged = true; /**< The flag is true whenever log data sent to the robot code was processed. */
+  bool destructed = false; /**< A flag stating that this object has already been destructed. */
   std::string logFile; /**< The name of the log file replayed. */
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
   MessageQueue& debugOut; /**< The outgoing debug queue. */
@@ -114,56 +139,60 @@ protected:
   DrawingManager drawingManager;
   DrawingManager3D drawingManager3D;
   DebugRequestTable debugRequestTable;
-  const char* pollingFor; /**< The information the console is waiting for. */
-  JointData jointRequest; /**< The joint angles request received from the robot code. */
-  JointData jointData; /**< The most current set of joint angles sent. */
-  LEDRequest ledRequest; /**< The led state request received from the robot code. */
-  enum MoveOp {noMove, movePosition, moveBoth, moveBallPosition} moveOp; /**< The move operation to perform. */
-  Vector3<> movePos; /**< The position the robot is moved to. */
-  Vector3<> moveRot; /**< The rotation the robot is moved to. */
-  ObstacleModel obstacleModel; /**< Obstacle model from team communication. */
+  const char* pollingFor = nullptr; /**< The information the console is waiting for. */
+  JointRequest jointRequest; /**< The joint angles request received from the robot code. */
+  JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
+  FsrSensorData fsrSensorData; /**< The most current set of fsr sensor data received from the robot code. */
+  InertialSensorData inertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
+  KeyStates keyStates; /**< The most current set of key states received from the robot code. */
+  SystemSensorData systemSensorData; /**< The most current set of system sensor data received from the robot code. */
+  UsSensorData usSensorData; /**< The most current set of us sensor data received from the robot code. */
+  enum MoveOp {noMove, movePosition, moveBoth, moveBallPosition} moveOp = noMove; /**< The move operation to perform. */
+  Vector3f movePos = Vector3f::Zero(); /**< The position the robot is moved to. */
+  Vector3f moveRot = Vector3f::Zero(); /**< The rotation the robot is moved to. */
+  ObstacleModelCompressed obstacleModelCompressed; /**< Obstacle model from team communication. */
   RobotPose robotPose; /**< Robot pose from team communication. */
   BallModel ballModel; /**< Ball model from team communication. */
-  CombinedWorldModel combinedWorldModel; /**< combined world model from team communication */
+  TeamBallModel teamBallModel; /**< combined ball information from team communication */
+  TeamPlayersModel teamPlayersModel; /**< combined player information from team communication */
   GoalPercept goalPercept; /**< Goal percept from team communication. */
   LinePercept linePercept; /**< Line percept from team communication. */
   BehaviorStatus behaviorStatus; /**< Behavior data from team communication. */
-  OdometryData odometryData; /**< Odometry data from logfile. */
   RobotHealth robotHealth; /**< Robot Health from team communication. */
   MotionRequest motionRequest; /**< Motion Request from team communication. */
-  bool isPenalized, /**< Penalized state from team communication. */
-       hasGroundContact, /**< Ground contact state from team communication. */
-       isUpright; /**<fall down state from team communication */
-  unsigned obstacleModelReceived, /**< When was the obstacle model received from team communication. */
-           robotPoseReceived, /**< When was the robot pose received from team communication. */
-           ballModelReceived, /**< When was the ball model received from team communication. */
-           goalPerceptReceived, /**< When was the goal percept received from team communication. */
-           linePerceptReceived, /**< When was the line percept received from team communication. */
-           robotHealthReceived, /**< When was the robot health received from team communication. */
-           motionRequestReceived, /**< When was the motion request received from team communication. */
-           isPenalizedReceived, /**< When was the penalized state received from team communication. */
-           hasGroundContactReceived, /**< When was the ground contact state received from team communication. */
-           combinedWorldModelReceived, /**< When was the combined world model received from team communication. */
-           isUprightReceived; /**< When was the fall down state received from team communication. */
-  int mrCounter; /**< Counts the number of mr commands. */
-  SensorData sensorData; /**< The most current sensor data sent. */
-  FilteredSensorData filteredSensorData; /**< The received filtered sensor data. */
-
+  bool isPenalized = false; /**< Penalized state from team communication. */
+  bool hasGroundContact = true; /**< Ground contact state from team communication. */
+  bool isUpright = true; /**<fall down state from team communication */
+  unsigned obstacleModelCompressedReceived = 0; /**< When was the obstacle model received from team communication. */
+  unsigned robotPoseReceived = 0; /**< When was the robot pose received from team communication. */
+  unsigned ballModelReceived = 0; /**< When was the ball model received from team communication. */
+  unsigned goalPerceptReceived = 0; /**< When was the goal percept received from team communication. */
+  unsigned linePerceptReceived = 0; /**< When was the line percept received from team communication. */
+  unsigned robotHealthReceived = 0; /**< When was the robot health received from team communication. */
+  unsigned motionRequestReceived = 0; /**< When was the motion request received from team communication. */
+  unsigned isPenalizedReceived = 0; /**< When was the penalized state received from team communication. */
+  unsigned hasGroundContactReceived = 0; /**< When was the ground contact state received from team communication. */
+  unsigned teamBallModelReceived = 0; /**< When was the team ball model received from team communication. */
+  unsigned teamPlayersModelReceived = 0; /**< When was the team players model received from team communication. */
+  unsigned isUprightReceived = 0; /**< When was the fall down state received from team communication. */
+  int mrCounter = 0; /**< Counts the number of mr commands. */
   JointCalibration jointCalibration; /**< The joint calibration received from the robot code. */
   RobotDimensions robotDimensions; /**< The robotDimensions received from the robot code. */
   USRequest usRequest;  /**< The current us request received from the robot code (for simulation). */
   std::string printBuffer; /**< Buffer used for command get. */
-  char drawingsViaProcess; /** Which process is used to provide field and 3D drawings */
+  char drawingsViaProcess = 'b'; /** Which process is used to provide field and 3D drawings */
+  std::unordered_map<char, AnnotationInfo> annotationInfos;
 
 public:
   class ImagePtr
   {
   public:
-    Image* image;
-    char processIdentifier; /**< "c" denotes lower camera process, "d" denotes upper camera process */
-    ImagePtr() : image(0), processIdentifier(0) {}
+    Image* image = nullptr;
+    char processIdentifier = 0; /**< "c" denotes lower camera process, "d" denotes upper camera process */
+
     ~ImagePtr() {reset();}
-    void reset() {if(image) delete image; image = 0;}
+
+    void reset() {if(image) delete image; image = nullptr;}
   };
   typedef std::unordered_map<std::string, ImagePtr> Images; /**< The type of the map of images. */
 
@@ -171,31 +200,27 @@ public:
   Images lowerCamImages;
 
   typedef std::unordered_map<std::string, DebugDrawing> Drawings;
-  Drawings upperCamImageDrawings, lowerCamImageDrawings, /**< Buffers for image drawings from the debug queue. */
-           upperCamFieldDrawings, lowerCamFieldDrawings; /**< Buffers for field drawings from the debug queue. */
+  Drawings upperCamImageDrawings, lowerCamImageDrawings, motionImageDrawings; /**< Buffers for image drawings from the debug queue. */
+  Drawings upperCamFieldDrawings, lowerCamFieldDrawings, motionFieldDrawings; /**< Buffers for field drawings from the debug queue. */
   typedef std::unordered_map<std::string, DebugDrawing3D> Drawings3D;
-  Drawings3D upperCamDrawings3D, lowerCamDrawings3D; /**< Buffers for 3d drawings from the debug queue. */
+  Drawings3D upperCamDrawings3D, lowerCamDrawings3D, motionDrawings3D; /**< Buffers for 3d drawings from the debug queue. */
 
-  Images* currentImages;
-  Drawings* currentImageDrawings;
-  Drawings* currentFieldDrawings;
-  Drawings3D* currentDrawings3D;
+  Images* currentImages = nullptr;
+  Drawings* currentImageDrawings = nullptr;
+  Drawings* currentFieldDrawings = nullptr;
+  Drawings3D* currentDrawings3D = nullptr;
 
-  class Plot
+  struct Plot
   {
-  public:
     std::list<float> points;
-    unsigned timeStamp;
-
-    Plot() : timeStamp(0) {}
+    unsigned timeStamp = 0;
   };
 
   typedef std::unordered_map<std::string, Plot> Plots;
   Plots plots; /**< Buffers for plots from the debug queue. */
 
-  class Layer
+  struct Layer
   {
-  public:
     std::string layer;
     std::string description;
     ColorRGBA color;
@@ -207,15 +232,15 @@ public:
   typedef std::unordered_map<std::string, std::list<std::string> > Views;
   PlotViews plotViews; /**< The map of all plot views. */
 
-  Views fieldViews, /**< The map of all field views. */
-        imageViews, /**< The map of all image views. */
-        imageViews3D; /**< The map of all 3-D image views. */
+  Views fieldViews; /**< The map of all field views. */
+  Views imageViews; /**< The map of all image views. */
+  Views imageViews3D; /**< The map of all 3-D image views. */
   ModuleInfo moduleInfo; /**< The current state of all solution requests. */
 
   /**List of currently active representation views. Key: representation name, value: pointer to the view */
   std::map<std::string, DataView*> representationViews;
 
-  std::map<std::string, void*> actualImageViews;
+  std::map<std::string, ImageView*> actualImageViews;
 
   /**
   * A MessageHandler that parses debug responses containing representation data and forwards them to the correct representation view
@@ -245,33 +270,33 @@ private:
   DebugDataInfos debugDataInfos; /** All debug data information. */
 
   Images incompleteImages; /** Buffers images of this frame (created on demand). */
-  Drawings incompleteImageDrawings, /**< Buffers incomplete image drawings from the debug queue. */
-           incompleteFieldDrawings; /**< Buffers incomplete field drawings from the debug queue. */
+  Drawings incompleteImageDrawings; /**< Buffers incomplete image drawings from the debug queue. */
+  Drawings incompleteFieldDrawings; /**< Buffers incomplete field drawings from the debug queue. */
   Drawings3D incompleteDrawings3D; /**< Buffers incomplete 3d drawings from the debug queue. */
 
-  ActivationGraph activationGraph ;/**< Graph of active options and states. */
-  unsigned activationGraphReceived; /**< When was the last activation graph received? */
-  std::fstream* logMessages; /** The file messages from the robot are written to. */
+  ActivationGraph activationGraph;/**< Graph of active options and states. */
+  unsigned activationGraphReceived = 0; /**< When was the last activation graph received? */
+  std::fstream* logMessages = nullptr; /** The file messages from the robot are written to. */
   typedef std::unordered_map<char, TimeInfo> TimeInfos;
   TimeInfos timeInfos; /**< Information about the timing of modules per process. */
-  Vector3<> background; /**< The background color of all 3-D views. */
+  Vector3f background = Vector3f(0.5f, 0.5f, 0.5f); /**< The background color of all 3-D views. */
   std::list<std::string> lines; /**< Console lines buffered because the process is currently waiting. */
   int waitingFor[numOfMessageIDs]; /**< Each entry states for how many information packages the process waits. */
   bool polled[numOfMessageIDs]; /**< Each entry states whether certain information is up-to-date (if not waiting for). */
   std::string getOrSetWaitsFor; /**< The name of the representation get or set are waiting for. If empty, they are not waiting for any. */
-  bool updateCompletion, /**< Determines whether the tab-completion table has to be updated. */
-       directMode, /**< Console is in direct mode, not replaying a script. */
-       logImagesAsJPEGs; /**< Compress images before they are stored in a log file. */
+  bool updateCompletion = false; /**< Determines whether the tab-completion table has to be updated. */
+  bool directMode = false; /**< Console is in direct mode, not replaying a script. */
+  bool logImagesAsJPEGs = false; /**< Compress images before they are stored in a log file. */
   std::list<std::string> commands; /**< Commands to execute in the next update step. */
 
   //Joystick
   Joystick joystick; /**< The joystick interface. */
-  bool joystickTrace; /**< Display joystick commands when executed. */
-  float joystickAxisMaxSpeeds[Joystick::numOfAxes], /**< The maximum speeds in dimensions x, y, and rotation. */
-        joystickAxisThresholds[Joystick::numOfAxes], /**< The thresholds below which joystick commands are suppressed. */
-        joystickAxisCenters[Joystick::numOfAxes]; /**< The zero offset for each axis. */
+  bool joystickTrace = false; /**< Display joystick commands when executed. */
+  float joystickAxisMaxSpeeds[Joystick::numOfAxes]; /**< The maximum speeds in dimensions x, y, and rotation. */
+  float joystickAxisThresholds[Joystick::numOfAxes]; /**< The thresholds below which joystick commands are suppressed. */
+  float joystickAxisCenters[Joystick::numOfAxes]; /**< The zero offset for each axis. */
   unsigned int joystickAxisMappings[Joystick::numOfAxes];
-  unsigned joystickLastTime; /**< The last time when joystick commands were handled. */
+  unsigned joystickLastTime = 0; /**< The last time when joystick commands were handled. */
   struct JoystickMotionCommand
   {
     int indices[Joystick::numOfAxes]; /**< Indices for the sequence of $x, $y, and $r in motionCommand. */
@@ -288,13 +313,15 @@ private:
   std::string joystickButtonReleaseCommand[Joystick::numOfButtons]; /**< Command for each button release. */
   bool joystickExecCommand(const std::string&); /**< Exec command and optionally output trace to console. */
 
-  unsigned maxPlotSize; /**< The maximum number of data points to remember for plots. */
-  bool kickViewSet; /**Indicator if there is already a KikeView, we need it just once */
-  int imageSaveNumber; /**< A counter for generating image file names. */
+  unsigned maxPlotSize = 0; /**< The maximum number of data points to remember for plots. */
+  bool kickViewSet = false; /**Indicator if there is already a KikeView, we need it just once */
+  int imageSaveNumber = 0; /**< A counter for generating image file names. */
   CameraCalibratorHandler cameraCalibratorHandler;
+  AutomaticCameraCalibratorHandlerInsertion automaticCameraCalibratorHandlerInsertion;
+  AutomaticCameraCalibratorHandlerDeletion automaticCameraCalibratorHandlerDeletion;
 
 public:
-  char processIdentifier; /** The process from which messages are currently read. */
+  char processIdentifier = 0; /** The process from which messages are currently read. */
 
   /**
   * Constructor.
@@ -368,6 +395,13 @@ public:
    */
   void saveColorCalibration();
 
+protected:
+  /**
+   * Called by the Process (the base class) to get the
+   * "debug in" message queue handled.
+   */
+  virtual void handleAllMessages(MessageQueue& messageQueue);
+
 private:
   /**
   * Poll information of a certain kind if it needs updated.
@@ -423,7 +457,7 @@ private:
   bool joystickCommand(In& stream);
   bool joystickSpeeds(In& stream);
   bool joystickMaps(In& stream);
-  bool log(In& stream);
+  bool log(In& stream, bool first = true);
   bool get(In& stream, bool first, bool print);
   bool set(In& stream);
   bool penalizeRobot(In& stream);
@@ -434,12 +468,6 @@ private:
   bool repoll(In& stream);
   bool queueFillRequest(In& stream);
   bool moduleRequest(In&);
-
-  /**
-   * Only call this method if you used SYNC before.
-   * Otherwise use moduleRequest()!
-   */
-  bool moduleRequestWithoutSync(In&);
   bool moveRobot(In&);
   bool moveBall(In&);
   bool view3D(In& stream);
@@ -455,4 +483,6 @@ private:
   //!@}
 
   friend class CameraCalibratorHandler;
+  friend class AutomaticCameraCalibratorHandlerInsertion;
+  friend class AutomaticCameraCalibratorHandlerDeletion;
 };

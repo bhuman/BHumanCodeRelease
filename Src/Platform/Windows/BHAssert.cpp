@@ -9,13 +9,11 @@
 #include "BHAssert.h"
 
 #include <cstdio>
-#include <cstdarg>
+#define NOMINMAX
 #include <windows.h>
 
-#ifdef WINDOWS
 #define snprintf sprintf_s
 #define vsnprintf vsprintf_s
-#endif
 
 void Assert::print(const char* file, int line, const char* format, ...)
 {
@@ -34,12 +32,7 @@ void Assert::print(const char* file, int line, const char* format, ...)
   va_end(ap);
   data[length++] = '\n';
   data[length] = '\0';
-#ifdef WINDOWS
   OutputDebugString(data);
-#else
-  fputs(data, stderr);
-  fflush(stderr);
-#endif
 }
 
 #endif // NDEBUG

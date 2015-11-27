@@ -10,6 +10,7 @@
   <file>Icons/opening_angle.png</file>
   <file>Icons/transmit_go.png</file>
   <file>Icons/link.png</file>
+  <file>Icons/slider.png</file>
   <file>Icons/note.png</file>
 </qresource>
 </RCC>

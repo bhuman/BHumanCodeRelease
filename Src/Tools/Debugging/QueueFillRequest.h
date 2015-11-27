@@ -17,7 +17,7 @@
  */
 class QueueFillRequest
 {
-public: // nested stuff
+public:
   /**
    * Options for the actions and timing.
    */
@@ -53,40 +53,20 @@ public: // nested stuff
 public: // members
 
   /** Queue fill and send timing behaviour. */
-  Behavior behavior;
+  Behavior behavior = sendImmediately;
 
   /** Filter applied before sending/storing messages. */
-  Filter filter;
+  Filter filter = latestOnly;
 
   /** Target of the messages (network or stick). */
-  Target target;
+  Target target = sendViaNetwork;
 
   /** Timing parameter (used by some of the behaviours). */
-  int timingMilliseconds;
+  int timingMilliseconds = 0;
 
-public: // methods
-
-  /**
-   * Default constructor.
-   */
-  QueueFillRequest()
-    : behavior(sendImmediately),
-      filter(latestOnly),
-      target(sendViaNetwork),
-      timingMilliseconds(0)
-  {
-  }
-
-  /**
-   * Constructor setting all values.
-   */
-  QueueFillRequest(Behavior behavior, Filter filter, Target target, int timingMilliseconds)
-    : behavior(behavior),
-      filter(filter),
-      target(target),
-      timingMilliseconds(timingMilliseconds)
-  {
-  }
+public:
+  QueueFillRequest() = default;
+  QueueFillRequest(Behavior behavior, Filter filter, Target target, int timingMilliseconds);
 };
 
 /**

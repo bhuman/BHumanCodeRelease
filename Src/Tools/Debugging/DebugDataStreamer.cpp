@@ -8,27 +8,21 @@
 #include "DebugDataStreamer.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Debugging/Debugging.h"
+#include "Tools/Math/Angle.h"
+#include "Tools/Streams/InStreams.h"
 #include "Tools/Streams/StreamHandler.h"
 #include <cstdlib>
 #include <cstring>
 
-PROCESS_WIDE_STORAGE(const std::vector<const char*>) DebugDataStreamer::enumNames = 0;
+PROCESS_LOCAL const std::vector<const char*>* DebugDataStreamer::enumNames = nullptr;
 
-DebugDataStreamer::DebugDataStreamer(StreamHandler& streamHandler, In& stream, const std::string& type, const char* name)
-: streamHandler(streamHandler),
-  inData(&stream),
-  outData(0),
-  type(type),
-  name(name),
-  index(-2) {}
+DebugDataStreamer::DebugDataStreamer(StreamHandler& streamHandler, In& stream, const std::string& type, const char* name) :
+  streamHandler(streamHandler), inData(&stream), type(type), name(name)
+{}
 
-DebugDataStreamer::DebugDataStreamer(StreamHandler& streamHandler, Out& stream, const std::string& type, const char* name)
-: streamHandler(streamHandler),
-  inData(0),
-  outData(&stream),
-  type(type),
-  name(name),
-  index(-2) {}
+DebugDataStreamer::DebugDataStreamer(StreamHandler& streamHandler, Out& stream, const std::string& type, const char* name) :
+  streamHandler(streamHandler), outData(&stream), type(type), name(name)
+{}
 
 void DebugDataStreamer::serialize(In* in, Out* out)
 {
@@ -49,6 +43,11 @@ void DebugDataStreamer::serialize(In* in, Out* out)
         --i;
       size_t j = type[i - 2] == ' ' ? i - 2 : i - 1;
       size = atoi(&type[i]);
+      if(type[j - 1] == ')')
+      {
+        j -= type[j - 2] == '4' ? 8 : 0; // " __ptr64"
+        j -= type[j - 4] == ' ' ? 4 : 3;
+      }
       elementType = std::string(type).substr(0, j);
     }
     else
@@ -72,8 +71,14 @@ void DebugDataStreamer::serialize(In* in, Out* out)
       {
         char buf[100];
         sprintf(buf, "array has %d elements instead of %d", dynamicSize, size);
-        OUTPUT_ERROR(buf);
-        size = dynamicSize;
+        InMap* inMap = dynamic_cast<InMap*>(in);
+        if(inMap)
+          inMap->printError(buf);
+        else
+        {
+          OUTPUT_ERROR(buf);
+          size = dynamicSize;
+        }
       }
     }
     else
@@ -87,7 +92,7 @@ void DebugDataStreamer::serialize(In* in, Out* out)
       // set attributes for recursive call to this method
       type = elementType;
       name = 0;
-      index = (int) i;
+      index = static_cast<int>(i);
       if(in)
         *in >> *this;
       else
@@ -141,6 +146,8 @@ void DebugDataStreamer::serialize(In* in, Out* out)
     {
       if(!strcmp("char", t))
         streamIt<char>(in, out);
+      else if(!strcmp("signed char", t))
+        streamIt<signed char>(in, out);
       else if(!strcmp("unsigned char", t))
         streamIt<unsigned char>(in, out);
       else if(!strcmp("short", t))
@@ -159,6 +166,8 @@ void DebugDataStreamer::serialize(In* in, Out* out)
         streamIt<bool>(in, out);
       else if(std::string(t).find("string") != std::string::npos)
         streamIt<std::string>(in, out);
+      else if(std::string(t).find("Angle") != std::string::npos)
+        streamIt<Angle>(in, out);
       else
         ASSERT(false);
     }
@@ -174,8 +183,8 @@ void DebugDataStreamer::serialize(In* in, Out* out)
 
 const char* DebugDataStreamer::getName(int value)
 {
-  if(value >= 0 && value < (int) enumNames->size())
+  if(value >= 0 && value < static_cast<int>(enumNames->size()))
     return (*enumNames)[value];
   else
-    return 0;
+    return nullptr;
 }

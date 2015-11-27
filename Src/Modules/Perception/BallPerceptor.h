@@ -22,7 +22,6 @@
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Perception/ImageCoordinateSystem.h"
 #include "Representations/Perception/BallPercept.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/BallSpots.h"
@@ -38,8 +37,7 @@ MODULE(BallPerceptor,
   REQUIRES(Odometer),
   REQUIRES(BallSpots),
   USES(RobotPose),
-  USES(BallModel),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(BallPercept),
+  PROVIDES(BallPercept),
   DEFINES_PARAMETERS(
   {,
     (float)(2.f) clippingApproxRadiusScale,
@@ -123,17 +121,14 @@ protected:
 class BallPerceptor : public BallPerceptorScaler
 {
 private:
-  class BallPoint
+  struct BallPoint
   {
-  public:
-    Vector2<int> step;
-    Vector2<int> start;
-    Vector2<int> point;
-    Vector2<> pointf;
-    bool atBorder;
-    bool isValid;
-
-    BallPoint() : atBorder(false), isValid(false) {}
+    Vector2i step;
+    Vector2i start;
+    Vector2i point;
+    Vector2f pointf;
+    bool atBorder = false;
+    bool isValid = false;
   };
 
   float sqrMaxBallDistance; /**< The square of the maximal allowed ball distance. */
@@ -160,16 +155,16 @@ private:
 
   Image::Pixel startPixel; /**< The ball spot pixel. */
   BallPoint ballPoints[8]; /**< Points on the outer edge of the ball. */
-  Vector2<int> approxCenter2;
+  Vector2i approxCenter2;
   int totalPixelCount;
   int totalCbSum;
   int totalCrSum;
 
-  bool searchBallPoint(const Vector2<int>& start, Image::Pixel startPixel,
-                         const Vector2<int>& step, float maxLength, BallPoint& ballPoint);
-  void drawBall(const Vector2<int>& pos, float approxDiameter, unsigned char opacity) const;
+  bool searchBallPoint(const Vector2i& start, Image::Pixel startPixel,
+                         const Vector2i& step, float maxLength, BallPoint& ballPoint);
+  void drawBall(const Vector2i& pos, float approxDiameter, unsigned char opacity) const;
   bool checkBallPoints();
-  bool getBallFromBallPoints(Vector2<>& center, float& radius) const;
+  bool getBallFromBallPoints(Vector2f& center, float& radius) const;
 
   unsigned int validBallPoints; /**< Count of usable points on the outer edge of the ball. */
 

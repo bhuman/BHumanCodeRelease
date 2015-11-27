@@ -1,0 +1,15 @@
+CODE:
+* (setup.py) add package information (version, authors, etc.)
+* (setup.py) add 'install' action
+* (setup.py) add configurable ODE DLL (currently hard-coded to default single precision)
+* (ode.pxd)  clean up, add more comments
+* (ode.pyx)  refactor for a more Pythonic implementation (e.g. replace getters and setters with
+             properties)?
+* (?)        Add option to build bindings in ODE's makefiles
+
+
+DOCS:
+
+* Update and include API docs from PyODE
+* Adapt and include PyODE tutorials/demos
+* Update license text in ode.pxd and ode.pyx

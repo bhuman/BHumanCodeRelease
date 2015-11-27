@@ -10,7 +10,7 @@
 #pragma once
 
 #include "SelfLocatorBase.h"
-#include "Tools/Math/Matrix.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/RingBufferWithSum.h"
 #include "FieldModel.h"
 
@@ -22,25 +22,25 @@
 class UKFSample
 {
 public:
-  Vector3f   mean;          /**< The estimated pose. */
+  Vector3f mean = Vector3f::Zero();   /**< The estimated pose. */
 
 private:
-  Matrix3x3f cov;           /**< The covariance matrix of the estimate. */
-  Vector3f sigmaPoints[7];  /**< Sigma points for updating the filter */
-  Matrix3x3f l;             /**< Last computed cholesky decomposition */
-  RingBufferWithSum<float,60> validityBuffer;
+  Matrix3f cov = Matrix3f::Zero(); /**< The covariance matrix of the estimate. */
+  Vector3f sigmaPoints[7];                    /**< Sigma points for updating the filter */
+  Matrix3f l = Matrix3f::Zero();   /**< Last computed cholesky decomposition */
+  RingBufferWithSum<float, 60> validityBuffer;
 
 public:
 
   float weighting;
 
   float validity;
-  
-  int number;
 
-  Pose2D getPose() const;
+  int id;
 
-  Matrix3x3f& getCov() { return cov; };
+  Pose2f getPose() const;
+
+  Matrix3f& getCov() { return cov; };
 
   void mirror();
 
@@ -54,14 +54,17 @@ public:
 
   float getVarianceWeighting() const;
 
-  void init(const Pose2D& pose, const SelfLocatorBase::Parameters& parameters, int number);
+  void init(const Pose2f& pose, const SelfLocatorBase::Parameters& parameters, int number);
 
-  void motionUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters);
+  void motionUpdate(const Pose2f& odometryOffset, const SelfLocatorBase::Parameters& parameters);
 
-  void performOdometryUpdate(const Pose2D& odometryOffset, const SelfLocatorBase::Parameters& parameters);
+  void performOdometryUpdate(const Pose2f& odometryOffset, const SelfLocatorBase::Parameters& parameters);
 
   void updateByGoalPercept(const GoalPercept& goalPercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                            const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix);
+  
+  void updateByPenaltyMarkPercept(const PenaltyMarkPercept& penaltyMarkPercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
+                                  const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix);
 
   void updateByLinePercept(const LinePercept& linePercept, const FieldModel& fieldModel, const SelfLocatorBase::Parameters& parameters,
                            const FieldDimensions& fieldDimensions, const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix);
@@ -69,25 +72,25 @@ public:
   void draw(bool simple = false);
 
 private:
-  Matrix2x2f getCovOfPointInWorld(const Vector2<>& pointInWorld, float pointZInWorld,
+  Matrix2f getCovOfPointInWorld(const Vector2f& pointInWorld, float pointZInWorld,
     const MotionInfo& motionInfo, const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const;
 
-  Matrix2x2f getCovOfCircle(const Vector2<>& circlePos, float centerCircleRadius, const MotionInfo& motionInfo,
+  Matrix2f getCovOfCircle(const Vector2f& circlePos, float centerCircleRadius, const MotionInfo& motionInfo,
     const CameraMatrix& cameraMatrix, const SelfLocatorBase::Parameters& parameters) const;
 
-  void landmarkSensorUpdate(const Vector2<>& landmarkPosition, const Vector2f& reading, const Matrix2x2f& readingCov);
+  void landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vector2f& reading, const Matrix2f& readingCov);
 
-  void lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2x2f& readingCov);
+  void lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2f& readingCov);
 
-  void poseSensorUpdate(const Vector3f& reading, const Matrix3x3f& readingCov);
+  void poseSensorUpdate(const Vector3f& reading, const Matrix3f& readingCov);
 
   void generateSigmaPoints();
 
-  Vector2<> getOrthogonalProjection(const Vector2<>& base, const Vector2<>& dir, const Vector2<>& point) const;
+  Vector2f getOrthogonalProjection(const Vector2f& base, const Vector2f& dir, const Vector2f& point) const;
 
-  float computeAngleWeighting(float measuredAngle, const Vector2<>& modelPosition,
-                              const Pose2D& robotPose, float standardDeviation) const;
+  float computeAngleWeighting(float measuredAngle, const Vector2f& modelPosition,
+                              const Pose2f& robotPose, float standardDeviation) const;
 
-  float computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2<>& modelPosition,
-                              const Pose2D& robotPose, float cameraZ, float standardDeviation) const;
+  float computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2f& modelPosition,
+                              const Pose2f& robotPose, float cameraZ, float standardDeviation) const;
 };

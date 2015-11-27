@@ -1,0 +1,66 @@
+/* ode.i */
+
+%module ode
+
+%{
+#include <vector>
+#include <ode/ode.h>
+%}
+
+
+%include <ode/precision.h>
+%include <ode/odeconfig.h>
+%include <ode/common.h>
+
+%ignore ode::World::impulseToForce;
+%ignore ode::Body;
+%ignore ode::Joint;
+%ignore ode::BallJoint;
+%ignore ode::HingeJoint;
+%ignore ode::SliderJoint;
+%ignore ode::PRJoint;
+%ignore ode::PUJoint;
+%ignore ode::PistonJoint;
+
+
+%include <ode/odecpp.h>
+
+
+namespace ode {
+
+    %extend Vector3 {
+
+        void setItem(size_t i, dReal v)
+        {
+            $self->operator[](i) = v;
+        }
+
+        %pythoncode %{
+
+            def __getitem__(self, i):
+                return [self.x, self.y, self.z][i]
+
+            def __setitem__(self, i, v):
+                if isinstance(i, slice):
+                    for idx, val in zip(range(*slice.indices(3)), v):
+                        self.__setitem__(idx, val)
+                elif isinstance(i, int):
+                    if i < 0:
+                        self.__setitem__(3+i, v)
+                    else:
+                        if i > 2:
+                            raise IndexError("index out of bounds: " + str(i))
+                        self.setItem(i, v)
+                else:
+                    raise TypeError("invalid key type: " + str(type(i)))
+                    
+
+            def __len__(self):
+                return 3
+
+            def __repr__(self):
+                return repr((self.x, self.y, self.z))
+        %}
+     };
+
+}

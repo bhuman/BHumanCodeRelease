@@ -9,9 +9,8 @@
 #include "SideConfidenceProvider.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Probabilistics.h"
-#include "Tools/Streams/InStreams.h"
 
-MAKE_MODULE(SideConfidenceProvider, Modeling)
+MAKE_MODULE(SideConfidenceProvider, modeling)
 
 SideConfidenceProvider::SideConfidenceProvider()
 : lost(false),
@@ -20,9 +19,9 @@ SideConfidenceProvider::SideConfidenceProvider()
   timeOfLastBallObservation(0),
   timeOfLastTeamBallObservation(0)
 {
-  const Vector2<> maxPos(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
-  maxDistanceToFieldCenterForArmConsideration = maxPos.abs() / 2.f;
-  maxDistanceToFieldCenterForFallDownConsideration = maxPos.abs() / 3.f;
+  const Vector2f maxPos(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
+  maxDistanceToFieldCenterForArmConsideration = maxPos.norm() / 2.f;
+  maxDistanceToFieldCenterForFallDownConsideration = maxPos.norm() / 3.f;
 }
 
 void SideConfidenceProvider::update(SideConfidence& sideConfidence)
@@ -41,12 +40,12 @@ void SideConfidenceProvider::update(SideConfidence& sideConfidence)
   // Setting the time when the robot not has arm contact
   if(!theArmContactModel.contactLeft && !theArmContactModel.contactRight)
     lastTimeWithoutArmContact = theFrameInfo.time;
-  
+
   // Remove old entries from confidence buffer
-  while(confidenceBuffer.getNumberOfEntries())
+  while(!confidenceBuffer.empty())
   {
-    if(theFrameInfo.getTimeSince(confidenceBuffer.getEntry(confidenceBuffer.getNumberOfEntries() - 1).timeStamp) > maxBufferAge)
-      confidenceBuffer.removeFirst();
+    if(theFrameInfo.getTimeSince(confidenceBuffer.back().timeStamp) > maxBufferAge)
+      confidenceBuffer.pop_back();
     else
       break;
   }
@@ -66,21 +65,21 @@ void SideConfidenceProvider::updateBallConfidences(SideConfidence& sideConfidenc
   // Check, if a mirrorcle has occured in the last frame
   if(sideConfidence.mirror)
   {
-    confidenceBuffer.init();
+    confidenceBuffer.clear();
     averageBallConfidence = UNKNOWN;
     sideConfidence.mirror = false;
   }
   // Special handling for certain game states:
   if(theGameInfo.state != STATE_PLAYING || theRobotInfo.penalty != PENALTY_NONE)
   {
-    confidenceBuffer.init();
+    confidenceBuffer.clear();
     averageBallConfidence = UNKNOWN;
   }
   // Save current local ball observation:
-  if((theBallModel.timeWhenLastSeen == theFrameInfo.time) &&
+  if((theBallModel.timeWhenLastSeen == theFrameInfo.time && theFrameInfo.time != 0) &&
      (theFieldDimensions.isInsideField(theRobotPose * theBallModel.estimate.position)) &&
-     (theBallModel.estimate.velocity.abs() <= maxBallVelocity) &&
-     (theRobotPose * theBallModel.estimate.position).abs() > centerBanZoneRadius)
+     (theBallModel.estimate.velocity.norm() <= maxBallVelocity) &&
+     (theRobotPose * theBallModel.estimate.position).norm() > centerBanZoneRadius)
   {
     lastBallObservation = theBallModel.estimate.position;
     timeOfLastBallObservation = theFrameInfo.time;
@@ -88,18 +87,18 @@ void SideConfidenceProvider::updateBallConfidences(SideConfidence& sideConfidenc
   // Odometry update for buffered perception
   else if(theFrameInfo.getTimeSince(timeOfLastBallObservation) < ballBufferingInterval)
   {
-    lastBallObservation = theOdometer.odometryOffset.invert() * lastBallObservation;
+    lastBallObservation = theOdometer.odometryOffset.inverse() * lastBallObservation;
   }
   // Add current confidence to buffer:
   if((theFrameInfo.getTimeSince(timeOfLastBallObservation) < ballBufferingInterval) &&
      (theLocalizationTeamBall.isValid) &&
-     (theLocalizationTeamBall.position.abs() > centerBanZoneRadius) &&
+     (theLocalizationTeamBall.position.norm() > centerBanZoneRadius) &&
      (theLocalizationTeamBall.lastObservation > timeOfLastTeamBallObservation))
   {
     SideConfidenceMeasurement scm;
     scm.ballConfidence = computeCurrentBallConfidence();
     scm.timeStamp = timeOfLastBallObservation;
-    confidenceBuffer.add(scm);
+    confidenceBuffer.push_front(scm);
     timeOfLastBallObservation = 0; //For next confidence computation, a "fresh" observation is needed
     timeOfLastTeamBallObservation = theLocalizationTeamBall.lastObservation;
   }
@@ -108,21 +107,21 @@ void SideConfidenceProvider::updateBallConfidences(SideConfidence& sideConfidenc
     return;
   }
   // Check current buffer content for possible mirror situation
-  if(confidenceBuffer.getNumberOfEntries() != confidenceBuffer.getMaxEntries())
+  if(!confidenceBuffer.full())
   {
     return;
   }
-  int mirrorCount(0);
-  int okCount(0);
-  for(int i=0; i<confidenceBuffer.getNumberOfEntries(); ++i)
+  size_t mirrorCount(0);
+  size_t okCount(0);
+  for(const SideConfidenceMeasurement& confidence : confidenceBuffer)
   {
-    switch(confidenceBuffer[i].ballConfidence)
+    switch(confidence.ballConfidence)
     {
       case MIRROR: ++mirrorCount; break;
       case OK:     ++okCount; break;
     }
   }
-  int unknownCount = confidenceBuffer.getNumberOfEntries() - mirrorCount - okCount;
+  size_t unknownCount = confidenceBuffer.size() - mirrorCount - okCount;
   if((okCount == 0) && (mirrorCount > unknownCount))
     averageBallConfidence = MIRROR;
   else if((okCount > unknownCount) && (mirrorCount == 0))
@@ -134,27 +133,27 @@ void SideConfidenceProvider::updateBallConfidences(SideConfidence& sideConfidenc
 SideConfidenceProvider::BallModelSideConfidence SideConfidenceProvider::computeCurrentBallConfidence()
 {
   // Some constant parameters
-  const float distanceObserved = lastBallObservation.abs();
+  const float distanceObserved = lastBallObservation.norm();
   const float angleObserved = lastBallObservation.angle();
-  const float& camZ = theCameraMatrix.translation.z;
+  const float& camZ = theCameraMatrix.translation.z();
   const float distanceAsAngleObserved = (pi_2 - std::atan2(camZ,distanceObserved));
-  
+
   // Weighting for original pose
   float originalWeighting = computeAngleWeighting(angleObserved, theLocalizationTeamBall.position, theRobotPose,
                                                   standardDeviationBallAngle);
   originalWeighting *= computeDistanceWeighting(distanceAsAngleObserved, theLocalizationTeamBall.position, theRobotPose,
                                                 camZ, standardDeviationBallDistance);
-  
+
   // Weighting for mirrored pose
-  const Pose2D  mirroredPose = Pose2D(pi) + (Pose2D)(theRobotPose);
+  const Pose2f  mirroredPose = Pose2f(pi) + (Pose2f)(theRobotPose);
   float mirroredWeighting = computeAngleWeighting(angleObserved, theLocalizationTeamBall.position, mirroredPose,
                                                   standardDeviationBallAngle);
   mirroredWeighting *= computeDistanceWeighting(distanceAsAngleObserved, theLocalizationTeamBall.position, mirroredPose,
                                                 camZ, standardDeviationBallDistance);
-  
+
   PLOT("module:SideConfidenceProvider:originalWeighting", originalWeighting);
   PLOT("module:SideConfidenceProvider:mirroredWeighting", mirroredWeighting);
-  
+
   // Decide state based on weights
   if((mirroredWeighting < minWeighting) && (originalWeighting < minWeighting))
     return UNKNOWN;
@@ -163,17 +162,17 @@ SideConfidenceProvider::BallModelSideConfidence SideConfidenceProvider::computeC
   return UNKNOWN;
 }
 
-float SideConfidenceProvider::computeAngleWeighting(float measuredAngle, const Vector2<>& modelPosition,
-                                                    const Pose2D& robotPose, float standardDeviation) const
+float SideConfidenceProvider::computeAngleWeighting(float measuredAngle, const Vector2f& modelPosition,
+                                                    const Pose2f& robotPose, float standardDeviation) const
 {
   const float modelAngle = Geometry::angleTo(robotPose, modelPosition);
-  return gaussianProbability(std::abs(normalize(modelAngle-measuredAngle)), standardDeviation);
+  return gaussianProbability(std::abs(Angle::normalize(modelAngle-measuredAngle)), standardDeviation);
 }
 
-float SideConfidenceProvider::computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2<>& modelPosition,
-                                                       const Pose2D& robotPose, float cameraZ, float standardDeviation) const
+float SideConfidenceProvider::computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2f& modelPosition,
+                                                       const Pose2f& robotPose, float cameraZ, float standardDeviation) const
 {
-  const float modelDistance = (robotPose.translation - modelPosition).abs();
+  const float modelDistance = (robotPose.translation - modelPosition).norm();
   const float modelDistanceAsAngle = (pi_2 - std::atan2(cameraZ,modelDistance));
   return gaussianProbability(std::abs(modelDistanceAsAngle-measuredDistanceAsAngle), standardDeviation);
 }
@@ -225,7 +224,7 @@ void SideConfidenceProvider::updateSideConfidenceFromOwn(SideConfidence& sideCon
   //robot has fallen down
   if(theFrameInfo.getTimeSince(timeOfLastFall) == 0) // fallen now
   {
-    const float distToFieldCenter(theRobotPose.translation.abs());
+    const float distToFieldCenter(theRobotPose.translation.norm());
     if(distToFieldCenter < maxDistanceToFieldCenterForFallDownConsideration)
     {
       float currentFallDownModificator(1.0);
@@ -241,7 +240,7 @@ void SideConfidenceProvider::updateSideConfidenceFromOwn(SideConfidence& sideCon
   //arm contact, another robot may change my direction
   if(theFrameInfo.getTimeSince(lastTimeWithoutArmContact) > minContinuousArmContact)
   {
-    const float distToFieldCenter(theRobotPose.translation.abs());
+    const float distToFieldCenter(theRobotPose.translation.norm());
     if(distToFieldCenter < maxDistanceToFieldCenterForArmConsideration)
     {
       float currentArmContactModificator(armContactModificator);
@@ -274,14 +273,14 @@ void SideConfidenceProvider::updateSideConfidenceFromOwn(SideConfidence& sideCon
 
 void SideConfidenceProvider::updateConfidenceState(SideConfidence& sideConfidence)
 {
-  if(theRobotInfo.number == 1) // I AM THE GOALIE, RULER OF ALL SIDES!
+  if(Global::getSettings().isGoalkeeper) // I AM THE GOALIE, RULER OF ALL SIDES!
   {
     sideConfidence.sideConfidence = sideConfidenceConfident;
     sideConfidence.mirror = false;
   }
   if(sideConfidence.sideConfidence == sideConfidenceConfident)
     sideConfidence.confidenceState = SideConfidence::CONFIDENT;
-  else if(sideConfidence.sideConfidence == sideConfidenceAlmostConfident)
+  else if(sideConfidence.sideConfidence >= sideConfidenceAlmostConfident)
     sideConfidence.confidenceState = SideConfidence::ALMOST_CONFIDENT;
   else if(sideConfidence.sideConfidence > sideConfidenceConfused)
     sideConfidence.confidenceState = SideConfidence::UNSURE;

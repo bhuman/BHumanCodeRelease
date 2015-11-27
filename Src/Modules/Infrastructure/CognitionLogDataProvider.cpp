@@ -1,30 +1,98 @@
 /**
-* @file CognitionLogDataProvider.cpp
-* This file implements a module that provides data replayed from a log file.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file CognitionLogDataProvider.cpp
+ * This file implements a module that provides data replayed from a log file.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "CognitionLogDataProvider.h"
 #include "Representations/Infrastructure/Thumbnail.h"
-#include "Tools/Settings.h"
-#include <vector>
+#include "Tools/Debugging/DebugDrawings3D.h"
 
-PROCESS_WIDE_STORAGE(CognitionLogDataProvider) CognitionLogDataProvider::theInstance = 0;
+PROCESS_LOCAL CognitionLogDataProvider* CognitionLogDataProvider::theInstance = nullptr;
 
-#define ASSIGN(target, source) \
-  ALLOC(target) \
-  (target&) *representationBuffer[id##target] = (target&) *representationBuffer[id##source];
+MAKE_MODULE(CognitionLogDataProvider, cognitionInfrastructure)
 
 CognitionLogDataProvider::CognitionLogDataProvider() :
-  LogDataProvider(),
-  frameDataComplete(false)
+  frameDataComplete(false),
+  lowFrameRateImage(nullptr)
 {
   theInstance = this;
 }
 
 CognitionLogDataProvider::~CognitionLogDataProvider()
 {
+  if(lowFrameRateImage)
+    delete lowFrameRateImage;
   theInstance = 0;
+}
+
+void CognitionLogDataProvider::update(Image& image)
+{
+  if(SystemCall::getMode() == SystemCall::logfileReplay)
+  {
+    CameraInfo& info = (CameraInfo&) Blackboard::getInstance()["CameraInfo"];
+    if(lowFrameRateImage)
+    {
+      if(lowFrameRateImage->imageUpdated)
+        lastImages[info.camera] = lowFrameRateImage->image;
+      image = lastImages[info.camera];
+    }
+    else if(info.width != image.width || info.height != image.height)
+      image = Image(true, info.width, info.height);
+  }
+
+  static const float distance = 300.f;
+
+  DECLARE_DEBUG_DRAWING3D("representation:Image", "camera");
+  IMAGE3D("representation:Image", distance, 0, 0, 0, 0, 0,
+          distance * theCameraInfo.width / theCameraInfo.focalLength,
+          distance * theCameraInfo.height / theCameraInfo.focalLength,
+          image);
+  DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(image));
+}
+
+void CognitionLogDataProvider::update(ImageCoordinateSystem& imageCoordinateSystem)
+{
+  imageCoordinateSystem.setCameraInfo(theCameraInfo);
+  DECLARE_DEBUG_DRAWING("loggedHorizon", "drawingOnImage"); // displays the horizon
+  ARROW("loggedHorizon",
+        imageCoordinateSystem.origin.x(),
+        imageCoordinateSystem.origin.y(),
+        imageCoordinateSystem.origin.x() + imageCoordinateSystem.rotation(0, 0) * 50,
+        imageCoordinateSystem.origin.y() + imageCoordinateSystem.rotation(1, 0) * 50,
+        0, Drawings::solidPen, ColorRGBA(255, 0, 0));
+  ARROW("loggedHorizon",
+        imageCoordinateSystem.origin.x(),
+        imageCoordinateSystem.origin.y(),
+        imageCoordinateSystem.origin.x() + imageCoordinateSystem.rotation(0, 1) * 50,
+        imageCoordinateSystem.origin.y() + imageCoordinateSystem.rotation(1, 1) * 50,
+        0, Drawings::solidPen, ColorRGBA(255, 0, 0));
+  COMPLEX_IMAGE(corrected)
+  {
+    if(Blackboard::getInstance().exists("Image"))
+    {
+      const Image& image = (const Image&) Blackboard::getInstance()["Image"];
+      INIT_DEBUG_IMAGE_BLACK(corrected, theCameraInfo.width, theCameraInfo.height);
+      int yDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, 0).y();
+      for(int ySrc = 0; ySrc < theCameraInfo.height; ++ySrc)
+        for(int yDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).y(); yDest <= yDest2; ++yDest)
+        {
+          int xDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).x();
+          for(int xSrc = 0; xSrc < theCameraInfo.width; ++xSrc)
+          {
+            for(int xDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(xSrc, ySrc).x(); xDest <= xDest2; ++xDest)
+            {
+              DEBUG_IMAGE_SET_PIXEL_YUV(corrected, xDest + int(theCameraInfo.opticalCenter.x() + 0.5f),
+                                        yDest + int(theCameraInfo.opticalCenter.y() + 0.5f),
+                                        image[ySrc][xSrc].y,
+                                        image[ySrc][xSrc].cb,
+                                        image[ySrc][xSrc].cr);
+            }
+          }
+        }
+      SEND_DEBUG_IMAGE(corrected);
+    }
+  }
 }
 
 bool CognitionLogDataProvider::handleMessage(InMessage& message)
@@ -50,108 +118,77 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
 {
   switch(message.getMessageID())
   {
-    HANDLE(OwnTeamInfo)
-    HANDLE(OpponentTeamInfo)
-    HANDLE(GameInfo)
-    HANDLE2(RobotInfo, ((RobotInfo&) *representationBuffer[idRobotInfo]).number = Global::getSettings().playerNumber;)
-    HANDLE(AudioData)
-    HANDLE2(Image,
-    {
-      ALLOC(FrameInfo)
-      FrameInfo& frameInfo = (FrameInfo&) *representationBuffer[idFrameInfo];
-      const Image& image = (const Image&) *representationBuffer[idImage];
-      frameInfo.cycleTime = (float) (image.timeStamp - frameInfo.time) * 0.001f;
-      frameInfo.time = image.timeStamp;
-    })
-    HANDLE(LowFrameRateImage)
-    HANDLE(CameraInfo)
-    HANDLE2(FrameInfo,
-    {
-      ALLOC(Image)
-      Image& image = (Image&) *representationBuffer[idImage];
-      const FrameInfo& frameInfo = (FrameInfo&) *representationBuffer[idFrameInfo];
-      image.timeStamp = frameInfo.time;
-    })
-    HANDLE(LinePercept)
-    HANDLE(ActivationGraph)
-    HANDLE(BallPercept)
-    HANDLE(GoalPercept)
-    HANDLE(FieldBoundary)
-    HANDLE(BallModel)
-    HANDLE(ObstacleWheel)
-    HANDLE(BodyContour)
-    HANDLE2(Thumbnail,
-    {
-      ALLOC(Image)
-      Thumbnail& thumbnail = (Thumbnail&) *representationBuffer[idThumbnail];
-      thumbnail.toImage((Image&) *representationBuffer[idImage]);
+    case idFrameInfo:
+      if(handle(message) && Blackboard::getInstance().exists("Image"))
+        ((Image&) Blackboard::getInstance()["Image"]).timeStamp = ((const FrameInfo&) Blackboard::getInstance()["FrameInfo"]).time;
       return true;
-    })
-    HANDLE(TeammateReliability)
-    HANDLE2(TeammateDataCompressed,
-    {
-      ALLOC(TeammateData)
-      TeammateData& teammateData = (TeammateData&) *representationBuffer[idTeammateData];
-      TeammateDataCompressed& teammateDataCompressed = (TeammateDataCompressed&) *representationBuffer[idTeammateDataCompressed];
-      teammateData = TeammateData(teammateDataCompressed);
-    })
-    HANDLE(RobotHealth)
-    HANDLE2(FilteredSensorData,
-    {
-      ALLOC(FrameInfo)
-      FrameInfo& frameInfo = (FrameInfo&) *representationBuffer[idFrameInfo];
-      const FilteredSensorData& filteredSensorData = (const FilteredSensorData&) *representationBuffer[idFilteredSensorData];
-      frameInfo.cycleTime = (float) (filteredSensorData.timeStamp - frameInfo.time) * 0.001f;
-      frameInfo.time = filteredSensorData.timeStamp;
-    })
-    HANDLE2(BehaviorControlOutput,
-    {
-      behaviorControlOutput = (const BehaviorControlOutput&) *representationBuffer[idBehaviorControlOutput];
-    })
-    HANDLE(ObstacleModel)
-    HANDLE(FilteredJointData)
-    HANDLE(CombinedWorldModel)
-    HANDLE(CameraMatrix)
-    HANDLE(RobotPercept)
-    HANDLE(ImageCoordinateSystem)
-    HANDLE(LineSpots)
-    HANDLE(LocalizationTeamBall)
-    HANDLE(RobotPose)
-    HANDLE(SideConfidence)
-    HANDLE(MotionInfo)
-    HANDLE(GroundTruthWorldState)
-    HANDLE(Odometer)
-    HANDLE(GroundContactState)
-    HANDLE(ReceivedSPLStandardMessages)
 
-  case idProcessFinished:
-    frameDataComplete = true;
-    return true;
+    case idImage:
+      if(handle(message) && Blackboard::getInstance().exists("FrameInfo"))
+      {
+        FrameInfo& frameInfo = (FrameInfo&) Blackboard::getInstance()["FrameInfo"];
+        const Image& image = (const Image&) Blackboard::getInstance()["Image"];
+        frameInfo.cycleTime = (float) (image.timeStamp - frameInfo.time) * 0.001f;
+        frameInfo.time = image.timeStamp;
+      }
+      return true;
 
-  case idStopwatch:
-  {
-    const int size = message.getMessageSize();
-    std::vector<unsigned char> data;
-    data.resize(size);
-    message.bin.read(&data[0], size);
-    Global::getDebugOut().bin.write(&data[0], size);
-    Global::getDebugOut().finishMessage(idStopwatch);
-    return true;
-  }
-  case idJPEGImage:
-    ALLOC(Image)
+    case idThumbnail:
+      if(Blackboard::getInstance().exists("Image"))
+      {
+        Thumbnail thumbnail;
+        message.bin >> thumbnail;
+        thumbnail.toImage((Image&) Blackboard::getInstance()["Image"]);
+      }
+      return true;
+
+    case idProcessFinished:
+      frameDataComplete = true;
+      return true;
+
+    case idStopwatch:
     {
-      JPEGImage jpegImage;
-      message.bin >> jpegImage;
-      jpegImage.toImage((Image&) *representationBuffer[idImage]);
+      const int size = message.getMessageSize();
+      std::vector<unsigned char> data;
+      data.resize(size);
+      message.bin.read(&data[0], size);
+      Global::getDebugOut().bin.write(&data[0], size);
+      Global::getDebugOut().finishMessage(idStopwatch);
+      return true;
     }
-    ALLOC(FrameInfo)
-    ((FrameInfo&) *representationBuffer[idFrameInfo]).time = ((Image&) *representationBuffer[idImage]).timeStamp;
-    return true;
 
-  default:
-    return false;
+    case idAnnotation:
+    {
+      const int size = message.getMessageSize();
+      std::vector<unsigned char> data;
+      data.resize(size);
+      message.bin.read(&data[0], size);
+      Global::getDebugOut().bin.write(&data[0], size);
+      Global::getDebugOut().finishMessage(idAnnotation);
+      return true;
+    }
+
+    case idJPEGImage:
+      if(Blackboard::getInstance().exists("Image"))
+      {
+        JPEGImage jpegImage;
+        message.bin >> jpegImage;
+        jpegImage.toImage((Image&) Blackboard::getInstance()["Image"]);
+      }
+      if(Blackboard::getInstance().exists("FrameInfo"))
+        ((FrameInfo&) Blackboard::getInstance()["FrameInfo"]).time = ((Image&) Blackboard::getInstance()["Image"]).timeStamp;
+      return true;
+
+    case idLowFrameRateImage:
+      if(Blackboard::getInstance().exists("Image"))
+      {
+        if(!lowFrameRateImage)
+          lowFrameRateImage = new LowFrameRateImage;
+        message.bin >> *lowFrameRateImage;
+      }
+      return true;
+
+    default:
+      return LogDataProvider::handle(message);
   }
 }
-
-MAKE_MODULE(CognitionLogDataProvider, Cognition Infrastructure)

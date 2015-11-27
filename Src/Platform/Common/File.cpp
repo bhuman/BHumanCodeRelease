@@ -4,16 +4,13 @@
 */
 
 #ifdef WINDOWS
+#define NOMINMAX
 #include <windows.h>
-//#include <direct.h>
 #else
-#include <cstdlib> // for getenv
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
 #include <cstring>
-#include <cstdio>
-#include <cstdarg>
 
 #include "Platform/BHAssert.h"
 #include "File.h"
@@ -24,16 +21,26 @@
 
 File::File(const std::string& name, const char* mode, bool tryAlternatives) : stream(0)
 {
+  fullName = name;
   std::list<std::string> names = getFullNames(name);
-  if(tryAlternatives){
-    for(auto& path : names) {
+  if(tryAlternatives)
+  {
+    for(auto& path : names)
+    {
       stream = fopen(path.c_str(), mode);
       if(stream)
+      {
+        fullName = path;
         break;
+      }
     }
   }
   else
+  {
     stream = fopen(names.back().c_str(), mode);
+    if(stream)
+      fullName = names.back();
+  }
 }
 
 std::list<std::string> File::getFullNames(const std::string& rawName)
@@ -48,21 +55,20 @@ std::list<std::string> File::getFullNames(const std::string& rawName)
 #endif
 
   std::list<std::string> names;
-  if(name[0] != '.' && !isAbsolute(name.c_str())) // given path is relative to getBHDir()
+  if((name[0] != '.' || (name.size() >= 2 && name[1] == '.')) && !isAbsolute(name.c_str())) // given path is relative to getBHDir()
   {
 #ifndef TARGET_TOOL
-    if(&Global::getSettings())
+    if(Global::settingsExist())
     {
       const std::string prefix = std::string(getBHDir()) + "/Config/";
-
-      names.push_back(prefix + "Robots/" + Global::getSettings().robot + "/" + name);
+      names.push_back(prefix + "Robots/" + Global::getSettings().robotName + "/Head/" + name);
+      names.push_back(prefix + "Robots/" + Global::getSettings().bodyName + "/Body/" + name);
+      names.push_back(prefix + "Robots/" + Global::getSettings().robotName + "/" + Global::getSettings().bodyName + "/" + name);
+      names.push_back(prefix + "Robots/" + Global::getSettings().robotName + "/" + name);
       names.push_back(prefix + "Robots/Default/" + name);
       names.push_back(prefix + "Locations/" + Global::getSettings().location + "/" + name);
-
       if(Global::getSettings().location != "Default")
-      {
         names.push_back(prefix + "Locations/Default/" + name);
-      }
     }
 #endif
     names.push_back(std::string(getBHDir()) + "/Config/" + name);

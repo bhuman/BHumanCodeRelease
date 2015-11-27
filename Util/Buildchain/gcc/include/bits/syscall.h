@@ -49,8 +49,6 @@
 #define SYS_fadvise64 __NR_fadvise64
 #define SYS_fadvise64_64 __NR_fadvise64_64
 #define SYS_fallocate __NR_fallocate
-#define SYS_fanotify_init __NR_fanotify_init
-#define SYS_fanotify_mark __NR_fanotify_mark
 #define SYS_fchdir __NR_fchdir
 #define SYS_fchmod __NR_fchmod
 #define SYS_fchmodat __NR_fchmodat
@@ -197,7 +195,6 @@
 #define SYS_prctl __NR_prctl
 #define SYS_pread64 __NR_pread64
 #define SYS_preadv __NR_preadv
-#define SYS_prlimit64 __NR_prlimit64
 #define SYS_prof __NR_prof
 #define SYS_profil __NR_profil
 #define SYS_pselect6 __NR_pselect6

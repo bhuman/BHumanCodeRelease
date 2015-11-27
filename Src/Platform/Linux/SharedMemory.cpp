@@ -5,14 +5,14 @@
  */
 #include "SharedMemory.h"
 
-SharedMemory::SharedMemory(const std::string& identifier, size_t maxSize)
-  : identifier(identifier),
-    maxSize(maxSize),
-    fileDescriptor(-1),
-    sharedMemory(MAP_FAILED),
-    semaphore(SEM_FAILED),
-    successful(true),
-    initialized(false)
+SharedMemory::SharedMemory(const std::string& identifier, size_t maxSize) :
+  identifier(identifier),
+  maxSize(maxSize),
+  fileDescriptor(-1),
+  sharedMemory(MAP_FAILED),
+  semaphore(SEM_FAILED),
+  successful(true),
+  initialized(false)
 {
   reinitialize(identifier);
 }

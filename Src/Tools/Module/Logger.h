@@ -4,7 +4,9 @@
  * in the background while the robot is playing soccer.
  *
  * Logfile format:
- * magic byte | size of next compressed block | compressed block | size | compressed block | etc...
+ * logFileMessageIDs | number of message ids | streamed message id names |
+ * logFileStreamSpecification | streamed StreamHandler |
+ * idLogFileCompressed | size of next compressed block | compressed block | size | compressed block | etc...
  * Each block is compressed using libsnappy
  *
  * Block format (after decompression):
@@ -25,7 +27,6 @@
 #include "Platform/Semaphore.h"
 #include "Platform/Thread.h"
 #include "Representations/Infrastructure/GameInfo.h"
-#include "Tools/Settings.h"
 #include "Tools/Cabsl.h"
 
 class Logger : public Cabsl<Logger>
@@ -43,6 +44,17 @@ private:
     (unsigned) minFreeSpace, /**< Minimum free space left on the device in MB. */
   });
 
+  STREAMABLE(TeamList,
+  {
+    STREAMABLE(Team,
+    {,
+      (uint8_t) number,
+      (std::string) name,
+    }),
+
+    (std::vector<Team>) teams,
+  });
+
   class Loggable
   {
   public:
@@ -54,17 +66,21 @@ private:
   };
 
   Parameters parameters;
-  int blackboardVersion; /**< The blackboard version the logger is currently configured for. */
+  TeamList teamList; /**< The list of all teams for naming the log file after the opponent. */
+  int blackboardVersion = 0; /**< The blackboard version the logger is currently configured for. */
   std::vector<Loggable> loggables; /**< The representations that should be logged. */
   std::vector<MessageQueue*> buffer; /**< Ring buffer of message queues. Shared with the writer thread. */
   std::string logFilename; /**< Path and name of the log file. Set in initial state. */
-  volatile int readIndex; /**< The first index of the buffer that should be read by the writer thread. */
-  volatile int writeIndex; /**< Index of the buffer that is currently used for writing. */
-  int frameCounter; /**< Number of frames that are already in the current message queue. */
+  bool receivedGameControllerPacket = false; /**< Ever received a packet from the GameController? */
+  volatile int readIndex = 0; /**< The first index of the buffer that should be read by the writer thread. */
+  volatile int writeIndex = 0; /**< Index of the buffer that is currently used for writing. */
+  int frameCounter = 0; /**< Number of frames that are already in the current message queue. */
   Thread<Logger> writerThread;/**< Used to write the buffer to disk in the background */
   Semaphore framesToWrite; /**< How many frames the writer thread should write? */
-  volatile bool writerIdle; /**< Is true if the writer thread has nothing to do. */
-  volatile unsigned writerIdleStart; /**< The system time at which the writer thread went idle. */
+  volatile bool writerIdle = true; /**< Is true if the writer thread has nothing to do. */
+  volatile unsigned writerIdleStart = 0; /**< The system time at which the writer thread went idle. */
+  OutBinaryFile* file = nullptr; /**< The stream that writes the log file. */
+  std::vector<char> streamSpecification; /**< Streamed specification created in main thread and used in logger thread. */
 
   /**
    * Generate a filename containing the robot's player number, its name, and the current
@@ -72,6 +88,9 @@ private:
    * @return A log file name that starts with the path defined in the parameters.
    */
   std::string generateFilename() const;
+
+  /** Create streamed data type specification to be used in the logger thread. */
+  void createStreamSpecification();
 
   /** Write all loggable representations to a buffer. */
   void logFrame();
@@ -83,7 +102,8 @@ private:
   option(Root)
   {
     ASSERT(Blackboard::getInstance().exists("GameInfo"));
-    const GameInfo& gameInfo = (const GameInfo&) Blackboard::getInstance()["GameInfo"];
+    const GameInfo& gameInfo = static_cast<const GameInfo&>(Blackboard::getInstance()["GameInfo"]);
+    receivedGameControllerPacket |= static_cast<const RoboCup::RoboCupGameControlData&>(gameInfo).packetNumber != 0 || gameInfo.secsRemaining != 0;
 
     initial_state(initial)
     {
@@ -97,7 +117,7 @@ private:
     {
       transition
       {
-        goto idle;
+        goto waiting;
       }
       action
       {
@@ -105,12 +125,26 @@ private:
       }
     }
 
-    state(idle)
+    state(waiting)
     {
       transition
       {
         if(gameInfo.state == STATE_READY || gameInfo.state == STATE_SET || gameInfo.state == STATE_PLAYING)
-          goto running;
+          goto prepareWriting;
+      }
+    }
+
+    state(prepareWriting)
+    {
+      transition
+      {
+        goto running;
+      }
+      action
+      {
+        logFilename = generateFilename();
+        logFrame(); // Stream all data once and theerby create stream specification for them
+        createStreamSpecification(); // Serialize stream specification
       }
     }
 
@@ -120,7 +154,7 @@ private:
       {
         if(gameInfo.state == STATE_INITIAL || gameInfo.state == STATE_FINISHED)
           goto delayPlaySound;
-        else if(SystemCall::getFreeDiskSpace(logFilename.c_str()) >> 20 < parameters.minFreeSpace)
+        else if(file && SystemCall::getFreeDiskSpace(logFilename.c_str()) >> 20 < parameters.minFreeSpace)
           goto error;
       }
       action
@@ -149,6 +183,15 @@ private:
       action
       {
         SystemCall::playSound("logWritten.wav");
+      }
+    }
+
+    state(idle)
+    {
+      transition
+      {
+        if(gameInfo.state == STATE_READY || gameInfo.state == STATE_SET || gameInfo.state == STATE_PLAYING)
+          goto running;
       }
     }
 

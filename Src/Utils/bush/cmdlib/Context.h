@@ -6,7 +6,7 @@
 #include "Utils/bush/cmdlib/AbstractConsole.h"
 
 class Context;
-class Robot;
+struct Robot;
 class Team;
 
 /** A Interface which allows to define some code, which should be executed in a
@@ -25,16 +25,16 @@ class Task
   const bool autoDelete;
 
   /** The context which should be used to interact with the environment. */
-  Context *mContext;
+  Context* mContext;
 public:
 
   Context& context() { return *mContext; }
-  virtual void setContext(Context *context) { mContext = context; }
+  virtual void setContext(Context* context) { mContext = context; }
 
   /** Constructs a Task.
    * @see autoDelete
    */
-  explicit Task(Context &context, bool autoDelete = true)
+  explicit Task(Context& context, bool autoDelete = true)
     : autoDelete(autoDelete),
       mContext(&context)
   {}
@@ -60,7 +60,7 @@ class ContextRunnable : public QThread
   Q_OBJECT
 
 public:
-  explicit ContextRunnable(QObject *parent);
+  explicit ContextRunnable(QObject* parent);
   void run();
 
 protected:
@@ -72,47 +72,47 @@ signals:
 
 class CommandRunnable : public ContextRunnable
 {
-  Context *context;
+  Context* context;
   const std::string cmdLine;
 
   bool execute();
 
 public:
-  CommandRunnable(Context *context, const std::string &cmdLine);
+  CommandRunnable(Context* context, const std::string& cmdLine);
 };
 
 class TaskRunnable : public ContextRunnable
 {
-  Task *task;
+  Task* task;
 
   bool execute();
 
 public:
-  TaskRunnable(QObject *parent, Task *task);
+  TaskRunnable(QObject* parent, Task* task);
 };
 
 class Context : public AbstractConsole
 {
   Q_OBJECT
 
-  Context *parent;
-  std::string *cmdLine;
-  Task *task;
-  ContextRunnable *thread;
+  Context* parent;
+  std::string* cmdLine;
+  Task* task;
+  ContextRunnable* thread;
   std::vector<Robot*> selectedRobots;
-  Team *selectedTeam;
+  Team* selectedTeam;
   std::vector<Context*> cmds;
 
   const bool detached;
   volatile bool canceled;
 
   // do not copy it
-  Context(const Context &other) : detached(false) {}
-  Context& operator=(const Context &other) { return *this; }
+  Context(const Context& other) : detached(false) {}
+  Context& operator=(const Context& other) { return *this; }
 
-  Context(Context *parent, const std::string &cmdLine);
-  Context(Context *parent, Task *task);
-  Context(Context *parent, const std::string &cmdLine, bool detach);
+  Context(Context* parent, const std::string& cmdLine);
+  Context(Context* parent, Task* task);
+  Context(Context* parent, const std::string& cmdLine, bool detach);
 
   bool run();
 protected:
@@ -121,12 +121,12 @@ protected:
 
 public:
 
-  Context(const std::vector<Robot*> &selectedRobots,
+  Context(const std::vector<Robot*>& selectedRobots,
           Team* selectedTeam);
   ~Context();
-  bool execute(const std::string &cmdLine);
-  Context* executeDetached(const std::string &cmdLine);
-  Context* executeDetached(Task *task);
+  bool execute(const std::string& cmdLine);
+  Context* executeDetached(const std::string& cmdLine);
+  Context* executeDetached(Task* task);
 
   void wait();
   bool waitForChildren();
@@ -137,14 +137,14 @@ public:
   bool isCanceled() const { return canceled; }
   void cleanupFinished() { emit sCancelFinished(); }
   void shutdown();
-  bool isShudown() { return requestApplicationShutdown; }
+  bool isShutdown() { return requestApplicationShutdown; }
 
 public slots:
   void threadFinished(bool status);
   void cancel();
 
 signals:
-  void sExecute(Context *context, const QString &cmdLine);
+  void sExecute(Context* context, const QString& cmdLine);
   void sFinished(bool status);
   void sCancelFinished();
 };

@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include "InOut.h"
+#include "Tools/Enum.h"
+
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "Tools/Enum.h"
-#include "InOut.h"
 
 /**
  * The class is simple backend for the stream classes that work on
@@ -42,11 +43,17 @@ public:
   {
   private:
     std::string literal; /**< The literal. */
-    mutable In* stream; /**< A stream that can parse the literal. */
+    mutable In* stream = nullptr; /**< A stream that can parse the literal. */
 
   public:
-    Literal(const std::string& literal) : literal(literal), stream(0) {}
-    ~Literal() {if(stream) delete stream;}
+    Literal(const std::string& literal) : literal(literal) {}
+    
+    ~Literal()
+    {
+      if(stream != nullptr)
+        delete stream;
+    }
+
     operator In&() const; /**< Returns a stream that can parse the literal. */
   };
 
@@ -81,12 +88,13 @@ public:
 private:
   /** Lexicographical symbols. */
   ENUM(Symbol,
+  {,
     literal, equals,
     comma, semicolon,
     lBracket, rBracket,
     lBrace, rBrace,
-    eof
-  );
+    eof,
+  });
 
   In& stream; /**< The stream from which is read. */
   char c; /**< The current character. 0 means EOF reached. */

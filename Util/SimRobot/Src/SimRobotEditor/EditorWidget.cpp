@@ -211,13 +211,13 @@ bool EditorWidget::canClose()
     return true;
   switch(QMessageBox::warning(this, tr("SimRobotEditor"), tr("Do you want to save changes to %1?").arg(editorObject->name), QMessageBox::Save  | QMessageBox::Discard | QMessageBox::Cancel))
   {
-  case QMessageBox::Save:
-    save();
-    break;
-  case QMessageBox::Discard:
-    break;
-  default:
-    return false;
+    case QMessageBox::Save:
+      save();
+      break;
+    case QMessageBox::Discard:
+      break;
+    default:
+      return false;
   }
   return true;
 }

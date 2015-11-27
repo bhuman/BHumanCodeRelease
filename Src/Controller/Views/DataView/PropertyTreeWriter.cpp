@@ -15,7 +15,13 @@ void PropertyTreeWriter::inUInt(unsigned int& value)
     in(value);
 }
 
-void PropertyTreeWriter::select(const char* name, int type, const char * (*enumToString)(int))
+void PropertyTreeWriter::inAngle(Angle& value)
+{
+  Entry& e = stack.back();
+  value = propertyManager.value(e.property).value<AngleWithUnity>();
+}
+
+void PropertyTreeWriter::select(const char* name, int type, const char* (*enumToString)(int))
 {
   Entry& e = stack.back();
   const QtProperty* property;

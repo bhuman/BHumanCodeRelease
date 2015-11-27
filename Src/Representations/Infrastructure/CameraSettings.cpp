@@ -1,33 +1,32 @@
 /**
-* @file CameraSettings.cpp
-* Implementation of class CameraSettings.
-*/
+ * @file CameraSettings.cpp
+ * Implementation of struct CameraSettings.
+ */
 
+#include "CameraSettings.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Camera.h"
+
+#include <limits>
 
 #ifdef CAMERA_INCLUDED
 #undef __STRICT_ANSI__
 #include <linux/videodev2.h>
 #define __STRICT_ANSI__
 
-#define V4L2_MT9M114_FADE_TO_BLACK   V4L2_CID_PRIVATE_BASE
+#define V4L2_MT9M114_FADE_TO_BLACK V4L2_CID_PRIVATE_BASE
 #endif
-
-#include "CameraSettings.h"
-#include <limits>
 
 CameraSettings::V4L2Setting::V4L2Setting() :
   V4L2Setting(0, 0, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())
 {}
 
 CameraSettings::V4L2Setting::V4L2Setting(int command, int value, int min, int max) :
-  command(command), value(value), min(min), max(max)
+  command(command), min(min), max(max), value(value)
 {
   ASSERT(min <= max);
-  for(CameraSetting& influenced : influendingSettings) {
+  for(CameraSetting& influenced : influencingSettings)
     influenced = numOfCameraSettings;
-  }
 }
 
 bool CameraSettings::V4L2Setting::operator==(const V4L2Setting& other) const
@@ -48,22 +47,15 @@ void CameraSettings::V4L2Setting::enforceBounds()
     value = max;
 }
 
-void CameraSettings::V4L2Setting::serialize(In* in, Out* out)
-{
-  STREAM_REGISTER_BEGIN;
-  STREAM(value);
-  STREAM_REGISTER_FINISH;
-}
-
-#ifdef CAMERA_INCLUDED
 CameraSettings::CameraSettings(CameraInfo::Camera camera) :
   camera(camera)
+#ifdef CAMERA_INCLUDED
 {
   settings[AutoExposure] = V4L2Setting(V4L2_CID_EXPOSURE_AUTO, -1000, 0, 1);
-  settings[AutoExposure].influendingSettings[0] = Exposure;
-  settings[AutoExposure].influendingSettings[1] = Gain;
+  settings[AutoExposure].influencingSettings[0] = Exposure;
+  settings[AutoExposure].influencingSettings[1] = Gain;
   settings[AutoWhiteBalance] = V4L2Setting(V4L2_CID_AUTO_WHITE_BALANCE, -1000, 0, 1);
-  settings[AutoWhiteBalance].influendingSettings[0] = WhiteBalance;
+  settings[AutoWhiteBalance].influencingSettings[0] = WhiteBalance;
   settings[Contrast] = V4L2Setting(V4L2_CID_CONTRAST, -1000, 16, 64);
   settings[Exposure] = V4L2Setting(V4L2_CID_EXPOSURE, -1000, 0, 1000);
   settings[FadeToBlack] = V4L2Setting(V4L2_MT9M114_FADE_TO_BLACK, -1000, 0, 1);
@@ -73,9 +65,7 @@ CameraSettings::CameraSettings(CameraInfo::Camera camera) :
   settings[Sharpness] = V4L2Setting(V4L2_CID_SHARPNESS, -1000, -7, 7);
   settings[WhiteBalance] = V4L2Setting(V4L2_CID_WHITE_BALANCE_TEMPERATURE, -1000, 2700, 6500);
 }
-#else // !CAMERA_INCLUDED
-CameraSettings::CameraSettings(CameraInfo::Camera camera) :
-  camera(camera)
+#else
 {}
 #endif
 
@@ -84,9 +74,7 @@ bool CameraSettings::operator==(const CameraSettings& other) const
   for(int i = 0; i < numOfCameraSettings; ++i)
   {
     if(settings[i] != other.settings[i])
-    {
       return false;
-    }
   }
   return true;
 }
@@ -99,9 +87,7 @@ bool CameraSettings::operator!=(const CameraSettings& other) const
 void CameraSettings::enforceBounds()
 {
   for(int i = 0; i < numOfCameraSettings; ++i)
-  {
     settings[i].enforceBounds();
-  }
 }
 
 void CameraSettings::serialize(In* in, Out* out)
@@ -131,7 +117,6 @@ void CameraSettings::serialize(In* in, Out* out)
   STREAM(whiteBalance);
   STREAM_REGISTER_FINISH;
 
-  if(in) {
+  if(in)
     enforceBounds();
-  }
 }

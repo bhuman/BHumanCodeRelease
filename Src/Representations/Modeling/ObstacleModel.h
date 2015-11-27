@@ -1,98 +1,51 @@
 /**
-* @file ObstacleModel.h
-*
-* Declaration of class ObstacleModel
-*
-* @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
-*/
-
+ * @file ObstacleModel.h
+ *
+ * Declaration of struct ObstacleModel.
+ *
+ * @author Florian Maaß
+ */
 #pragma once
 
-#include "Tools/Math/Vector2.h"
-#include "Tools/Math/Matrix2x2.h"
-#include "Tools/Math/Random.h"
-#include "Tools/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include "Platform/BHAssert.h"
-#include <vector>
+#include "Tools/Enum.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Modeling/Obstacle.h"
 
 /**
-* @class ObstacleModel
-*
-* A class that represents the current state of the robot's environment
-*/
+ * @struct ObstacleModel
+ *
+ * A struct that represents all kind of obstacles seen by vision, detected by arm contact,
+ * foot bumper contact.
+ */
+
 STREAMABLE(ObstacleModel,
 {
-public:
-  /** A single obstacle */
-  STREAMABLE(Obstacle,
-  {
-  public:
-    ENUM(Type, US, ROBOT, ARM, FOOT); /**< Different obstacle type */
-
-    /** Default constructor. */
-    Obstacle() = default;
-
-    /** Constructor */
-    Obstacle(const Vector2<>& leftCorner, const Vector2<>& rightCorner,
-             const Vector2<>& center, const Vector2<>& closestPoint, const Matrix2x2<>& covariance, Type type = US),
-
-    (Vector2<>) leftCorner,      /**< Leftmost point of the obstacle */
-    (Vector2<>) rightCorner,     /**< Rightmost point of the obstacle */
-    (Vector2<>) center,          /**< Center of mass of obstacle */
-    (Vector2<>) closestPoint,    /**< Point of obstacle that is closest to the robot */
-    (Matrix2x2<>) covariance,
-    (Type)(US) type,             /**< The type of an obstacle */
-  });
-
-  /** Function for drawing */
+  ObstacleModel() = default;
   void draw() const,
 
-  /** A list of obstacles */
-  (std::vector<Obstacle>) obstacles,
+  (std::vector<Obstacle>) obstacles, /**< List of obstacles (all entries are somewhat valid obstacles)*/
 });
 
-class USObstacleModel : public ObstacleModel {};
-
-/**
- * A compressed version of the obstacleModel.
- */
 STREAMABLE(ObstacleModelCompressed,
 {
-public:
-  /**
-   * private obstacle with compressed streaming.
-   */
-  STREAMABLE(Obstacle,
+  // Definition of an compressed obstacle
+  STREAMABLE(ObstacleCompressed,
   {
-  public:
-    Obstacle() = default;
-    Obstacle(const ObstacleModel::Obstacle& other),
+    ObstacleCompressed() = default;
+    ObstacleCompressed(const Obstacle& other),
 
-    (Vector2<short>) leftCorner,   /**< Leftmost point of the obstacle */
-    (Vector2<short>) rightCorner,  /**< Rightmost point of the obstacle */
-    (Vector2<short>) center,       /**< Center of mass of obstacle */
-    (Vector2<short>) closestPoint, /**< Point of obstacle that is closest to the robot */
-
-    /**
-    * The covariance is a 2x2 matrix. however x12 and x21 are always identical.
-    * Therefore we only store 3 floats instead of 4: x11, x12 and x22
-    * |x11  x12|
-    * |        |
-    * |x21  x22|
-    */
-    (float) x11,
-    (float) x12,
-    (float) x22,
-
-    (ObstacleModel::Obstacle, Type)(US) type, /**< The type of an obstacle */
+    (float) covXX,
+    (float) covYY,
+    (float) covXY,                        /**< Covariance matrix of an obstacle */
+    (Vector2f) center,                    /**< Center point of an Obstacle */
+    (Vector2f) left,                      /**< Left point of an Obstacle */
+    (Vector2f) right,                     /**< Right point of an Obstacle */
+    ((Obstacle) Type) type, /**< See enumeration 'Type' above */
   });
-
   ObstacleModelCompressed() = default;
-  ObstacleModelCompressed(const ObstacleModel& other, unsigned int maxNumberOfObstacles);
+  ObstacleModelCompressed(const ObstacleModel& other, size_t maxNumberOfObstacles);
+  void draw() const,
 
-  operator ObstacleModel () const,
-
-  (std::vector<Obstacle>) obstacles,
+  (std::vector<ObstacleCompressed>) obstacles, /**< List of obstacles (all entries are somewhat valid obstacles)*/
 });
-

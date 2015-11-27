@@ -8,7 +8,6 @@ usage() {
   echo "    $scriptname [-g] [-t] [-f] [repo]..."
   echo ""
   echo "  -g        Do not enable generate hooks in the git config (per repo)"
-  echo "            [not recommended for the simulator repo]"
   echo ""
   echo "  -t        Do not enable pre-commit hook (checkTab, per repo)"
   echo ""

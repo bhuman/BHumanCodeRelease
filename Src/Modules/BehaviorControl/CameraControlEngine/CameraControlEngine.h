@@ -10,35 +10,25 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
-#include "Tools/InverseKinematic.h"
+#include "Tools/Math/Eigen.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/HeadLimits.h"
-#include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/JointData.h"
-#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/GoalPercept.h"
-#include "Representations/Modeling/RobotPose.h"
-#include "Representations/MotionControl/HeadJointRequest.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Representations/Perception/BodyContour.h"
 
 MODULE(CameraControlEngine,
 {,
   REQUIRES(RobotDimensions),
   REQUIRES(CameraCalibration),
-  REQUIRES(CameraInfo),
   REQUIRES(HeadLimits),
   REQUIRES(HeadMotionRequest),
   REQUIRES(RobotCameraMatrix),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
-  PROVIDES_WITH_MODIFY(HeadAngleRequest),
+  PROVIDES(HeadAngleRequest),
   LOADS_PARAMETERS(
   {,
     (float) moveHeadThreshold,
@@ -56,6 +46,6 @@ private:
 
   void update(HeadAngleRequest& headAngleRequest);
 
-  void calculatePanTiltAngles(const Vector3<>& hip2Target, bool lowerCamera, Vector2<>& panTilt) const;
-  void adjustTiltBoundToShoulder(const float pan, const bool lowerCamera, Vector2<>& tiltBound) const;
+  void calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2f& panTilt) const;
+  void adjustTiltBoundToShoulder(const float pan, const bool lowerCamera, Vector2f& tiltBound) const;
 };

@@ -1,6 +1,7 @@
 bush = cppApplication + {
   folder = "Utils"
   root = { "$(srcDirRoot)/Utils/bush", "$(srcDirRoot)" }
+
   files = {
     "$(srcDirRoot)/Utils/bush/**.cpp" = cppSource,
     "$(srcDirRoot)/Utils/bush/**.h",
@@ -21,51 +22,31 @@ bush = cppApplication + {
     "$(srcDirRoot)/Platform/SimRobotQt/SystemCall.cpp" = cppSource,
     "$(srcDirRoot)/Platform/SimRobotQt/SystemCall.h",
     "$(srcDirRoot)/Platform/*.h",
-    "$(srcDirRoot)/Platform/Common/*.cpp" = cppSource,
-    "$(srcDirRoot)/Platform/Common/*.h",
-    if (platform == "Linux") {
-      "$(srcDirRoot)/Controller/Platform/Linux/Directory.cpp" = cppSource,
-      "$(srcDirRoot)/Controller/Platform/Linux/Directory.h",
-    }
-    if (host == "Win32") {
-      "$(srcDirRoot)/Controller/Platform/Windows/Directory.cpp" = cppSource,
-      "$(srcDirRoot)/Controller/Platform/Windows/Directory.h",
-    }
+    "$(srcDirRoot)/Platform/Common/File.cpp" = cppSource,
+    "$(srcDirRoot)/Platform/Common/File.h",
     "$(srcDirRoot)/Controller/Platform/Directory.h",
-    "$(srcDirRoot)/Representations/Infrastructure/SPLStandardMessage.cpp" = cppSource,
-    "$(srcDirRoot)/Representations/Infrastructure/SPLStandardMessage.h",
+    "$(srcDirRoot)/Tools/AlignedMemory.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/AlignedMemory.h",
     "$(srcDirRoot)/Tools/Enum.cpp" = cppSource,
     "$(srcDirRoot)/Tools/Enum.h",
     "$(srcDirRoot)/Tools/Global.cpp" = cppSource,
     "$(srcDirRoot)/Tools/Global.h",
-    "$(srcDirRoot)/Tools/Debugging/DebugDataTable.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Debugging/DebugDataTable.h",
-    "$(srcDirRoot)/Tools/Debugging/DebugRequest.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Debugging/DebugRequest.h",
-    "$(srcDirRoot)/Tools/Debugging/TcpConnection.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Debugging/TcpConnection.h",
     "$(srcDirRoot)/Tools/Streams/**.cpp" = cppSource,
     "$(srcDirRoot)/Tools/Streams/**.h",
-    "$(srcDirRoot)/Tools/MessageQueue/**.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/MessageQueue/**.h",
-    "$(srcDirRoot)/Tools/ProcessFramework/TeamHandler.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/ProcessFramework/TeamHandler.h",
-    "$(srcDirRoot)/Tools/Settings.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Settings.h",
 
     if (host == "Win32") {
       "$(srcDirRoot)/Utils/bush/bush.rc" = rcSource
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtCore4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)/QtGui4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtCore4.dll" = copyFile
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtGui4.dll" = copyFile
     }
-  },
+  }
 
   qtRessourceFiles = "$(srcDirRoot)/Utils/bush/icons/*.png"
   qtRccFiles = "$(srcDirRoot)/Utils/bush/*.qrc",
   qtMocFiles = {
     "$(srcDirRoot)/Utils/bush/Session.h"
     "$(srcDirRoot)/Utils/bush/agents/PingAgent.h"
-    "$(srcDirRoot)/Utils/bush/agents/TeamCommAgent.h"
+    "$(srcDirRoot)/Utils/bush/agents/PowerAgent.h"
     "$(srcDirRoot)/Utils/bush/cmdlib/ProcessRunner.h"
     "$(srcDirRoot)/Utils/bush/cmdlib/Context.h"
     "$(srcDirRoot)/Utils/bush/cmdlib/AbstractConsole.h"
@@ -96,14 +77,17 @@ bush = cppApplication + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
+      "$(utilDirRoot)/Buildchain/Windows/include",
     }
-  },
+  }
+
   defines += {
     "TARGET_TOOL", "QT_NO_DEBUG", "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
     }
-  },
+  }
+
   libs = {
     if (platform == "Linux") {
       "rt", "pthread", "QtGui", "QtCore"
@@ -116,15 +100,21 @@ bush = cppApplication + {
       }
       "QtGui4", "QtCore4", "ws2_32", "winmm"
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
     }
-  },
+  }
+
   linkFlags += {
     if (tool == "vcxproj" && configuration == "Debug") {
       "/NODEFAULTLIB:msvcrt.lib"
     }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
   }
 }

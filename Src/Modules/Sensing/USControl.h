@@ -14,9 +14,10 @@
 MODULE(USControl,
 {,
   REQUIRES(MotionRequest),
-  PROVIDES_WITH_MODIFY_AND_OUTPUT(USRequest),
+  PROVIDES(USRequest),
   LOADS_PARAMETERS(
   {,
+    (bool) enable, /**< Enable ultrasound. */
     (int) sendInterval, /**< Time to wait between sending two requests (in ms). */
     (int) switchInterval,  /**< Time to wait until switching to the next firing mode (in ms). */
     (int) timeBetweenSendAndReceive, /**< time to wait between send an receive command (in ms). */

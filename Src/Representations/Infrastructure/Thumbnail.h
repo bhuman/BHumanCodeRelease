@@ -1,6 +1,6 @@
 /**
-* @author Alexis Tsogias
-*/
+ * @author Alexis Tsogias
+ */
 
 #pragma once
 
@@ -10,19 +10,16 @@
 #include "Platform/SystemCall.h"
 #include "Platform/BHAssert.h"
 
-class Thumbnail : public Streamable
+struct Thumbnail : public Streamable
 {
-public:
-
-  template<class Pixel>
-  class TImage : public Streamable
+  template<typename Pixel>
+  struct TImage : public Streamable
   {
-  public:
-    typedef Pixel PixelType;
-    static const int maxWidth = maxResolutionWidth;
-    static const int maxHeight = maxResolutionHeight;
-    int width;
-    int height;
+    using PixelType = Pixel;
+    static const int maxWidth = Image::maxResolutionWidth;
+    static const int maxHeight = Image::maxResolutionHeight;
+    int width = maxWidth;
+    int height = maxHeight;
 
   private:
     static const int padding = 16;      /**< Some padding needed for the SSE instructions. */
@@ -33,8 +30,6 @@ public:
     TImage();
     TImage(const TImage& other);
     virtual ~TImage();
-
-    void setResolution(int width, int height);
 
     TImage& operator=(const TImage& other);
 
@@ -48,14 +43,15 @@ public:
       return image + y * width;
     }
 
+    void setResolution(int width, int height);
+
   private:
     virtual void serialize(In* in, Out* out);
   };
 
-  template<class Pixel, class PixelUncompressed>
-  class TImageCompressed : public TImage<Pixel>
+  template<typename Pixel, typename PixelUncompressed>
+  struct TImageCompressed : public TImage<Pixel>
   {
-  public:
     void compress(const TImage<PixelUncompressed>& uncompressedImage);
     void uncompress(TImage<PixelUncompressed>& uncompressedImage) const;
   };
@@ -78,37 +74,29 @@ private:
   virtual void serialize(In* in, Out* out);
 };
 
-template<class Pixel>
-Thumbnail::TImage<Pixel>::TImage() : width(maxWidth), height(maxHeight)
+template<typename Pixel>
+Thumbnail::TImage<Pixel>::TImage() : 
+  width(maxWidth), height(maxHeight)
 {
   imagePadding = static_cast<Pixel*>(SystemCall::alignedMalloc(maxWidth * maxHeight * sizeof(Pixel) + (padding * 2), 16));
   image = imagePadding + (padding / sizeof(Pixel));
 }
 
-template<class Pixel>
-Thumbnail::TImage<Pixel>::TImage(const TImage& other) : width(other.maxWidth), height(other.maxHeight)
+template<typename Pixel>
+Thumbnail::TImage<Pixel>::TImage(const TImage& other) : 
+  Thumbnail::TImage<Pixel>::TImage(),
+  width(other.width), height(other.height)
 {
-  imagePadding = static_cast<Pixel*>(SystemCall::alignedMalloc(maxWidth * maxHeight * sizeof(Pixel) + (padding * 2), 16));
-  image = imagePadding + (padding / sizeof(Pixel));
   memcpy(image, other.image, maxWidth * maxHeight * sizeof(Pixel));
 }
 
-template<class Pixel>
+template<typename Pixel>
 Thumbnail::TImage<Pixel>::~TImage()
 {
   SystemCall::alignedFree(imagePadding);
 }
 
-template<class Pixel>
-void Thumbnail::TImage<Pixel>::setResolution(int width, int height)
-{
-  ASSERT(width <= maxWidth);
-  ASSERT(height <= maxHeight);
-  this->width = width;
-  this->height = height;
-}
-
-template<class Pixel>
+template<typename Pixel>
 Thumbnail::TImage<Pixel>& Thumbnail::TImage<Pixel>::operator=(const TImage& other)
 {
   width = other.width;
@@ -117,7 +105,16 @@ Thumbnail::TImage<Pixel>& Thumbnail::TImage<Pixel>::operator=(const TImage& othe
   return *this;
 }
 
-template<class Pixel>
+template<typename Pixel>
+void Thumbnail::TImage<Pixel>::setResolution(int width, int height)
+{
+  ASSERT(width <= maxWidth);
+  ASSERT(height <= maxHeight);
+  this->width = width;
+  this->height = height;
+}
+
+template<typename Pixel>
 void Thumbnail::TImage<Pixel>::serialize(In* in, Out* out)
 {
   STREAM_REGISTER_BEGIN;
@@ -132,7 +129,7 @@ void Thumbnail::TImage<Pixel>::serialize(In* in, Out* out)
   STREAM_REGISTER_FINISH;
 }
 
-template<class Pixel, class PixelUncompressed>
+template<typename Pixel, typename PixelUncompressed>
 void Thumbnail::TImageCompressed<Pixel, PixelUncompressed>::compress(const TImage<PixelUncompressed>& uncompressedImage)
 {
   ASSERT(this->maxWidth >= uncompressedImage.width);
@@ -155,7 +152,7 @@ void Thumbnail::TImageCompressed<Pixel, PixelUncompressed>::compress(const TImag
   }
 }
 
-template<class Pixel, class PixelUncompressed>
+template<typename Pixel, typename PixelUncompressed>
 void Thumbnail::TImageCompressed<Pixel, PixelUncompressed>::uncompress(TImage<PixelUncompressed>& uncompressedImage) const
 {
   ASSERT(uncompressedImage.maxWidth >= this->width);

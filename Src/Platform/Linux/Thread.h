@@ -173,19 +173,11 @@ public:
   */
   SyncObject()
   {
-#ifndef NDEBUG
     pthread_mutexattr_t attr;
-    VERIFY(pthread_mutexattr_init(&attr) == 0);
-#ifdef OSX
-    VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK) == 0);
-#else
-    VERIFY(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP) == 0);
-#endif
-    VERIFY(pthread_mutex_init(&mutex, &attr) == 0);
-    VERIFY(pthread_mutexattr_destroy(&attr) == 0);
-#else
-    pthread_mutex_init(&mutex, NULL);
-#endif
+    VERIFY(!pthread_mutexattr_init(&attr));
+    VERIFY(!pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE));
+    VERIFY(!pthread_mutex_init(&mutex, &attr));
+    VERIFY(!pthread_mutexattr_destroy(&attr));
   }
 
   /**
@@ -193,7 +185,7 @@ public:
   */
   ~SyncObject()
   {
-    pthread_mutex_destroy(&mutex);
+    VERIFY(!pthread_mutex_destroy(&mutex));
   }
 
   /**
@@ -203,11 +195,7 @@ public:
   */
   void enter()
   {
-#ifndef NDEBUG
-    ASSERT(pthread_mutex_lock(&mutex) == 0); // the mutex was problably already locked by this thread. THERE ARE NESTED SYNC BLOCKS !!!
-#else
-    pthread_mutex_lock(&mutex);
-#endif
+    VERIFY(!pthread_mutex_lock(&mutex));
   }
 
   /**
@@ -215,7 +203,7 @@ public:
   */
   void leave()
   {
-    pthread_mutex_unlock(&mutex);
+    VERIFY(!pthread_mutex_unlock(&mutex));
   }
 };
 
@@ -252,7 +240,6 @@ public:
 * The macro SYNC ensures that the access to member variables is synchronized.
 * So only one thread can enter a SYNC block for this object at the same time.
 * The SYNC is automatically released at the end of the current code block.
-* Never nest SYNC blocks, because this will result in a deadlock!
 */
 #define SYNC Sync _sync(_syncObject)
 
@@ -260,7 +247,6 @@ public:
 * The macro SYNC_WITH ensures that the access to the member variables of an
 * object is synchronized. So only one thread can enter a SYNC block for the
 * object at the same time. The SYNC is automatically released at the end of
-* the current code block. Never nest SYNC blocks, because this will result
-* in a deadlock!
+* the current code block.
 */
 #define SYNC_WITH(obj) Sync _sync((obj)._syncObject)

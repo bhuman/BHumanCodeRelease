@@ -1,4 +1,4 @@
-/* Copyright (C) 1991, 1992, 1995-2004, 2005, 2006, 2007, 2009
+/* Copyright (C) 1991, 1992, 1995-2004, 2005, 2006, 2007, 2009, 2010
    Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -29,7 +29,7 @@
 #include <bits/types.h>		/* For __mode_t and __dev_t.  */
 
 #if defined __USE_XOPEN || defined __USE_XOPEN2K || defined __USE_MISC \
-         || defined __USE_ATFILE
+	 || defined __USE_ATFILE
 # if defined __USE_XOPEN || defined __USE_XOPEN2K
 #  define __need_time_t
 # endif
@@ -143,9 +143,11 @@ __BEGIN_DECLS
 # define S_ISLNK(mode)  0
 #endif
 
-#if (defined __USE_BSD || defined __USE_UNIX98) \
+#if (defined __USE_BSD || defined __USE_UNIX98 || defined __USE_XOPEN2K) \
     && defined __S_IFSOCK
 # define S_ISSOCK(mode) __S_ISTYPE((mode), __S_IFSOCK)
+#elif defined __USE_XOPEN2K
+# define S_ISSOCK(mode) 0
 #endif
 
 /* These are from POSIX.1b.  If the objects are not implemented using separate
@@ -293,7 +295,7 @@ extern int lchmod (__const char *__file, __mode_t __mode)
 #endif
 
 /* Set file access permissions of the file FD is open on to MODE.  */
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 extern int fchmod (int __fd, __mode_t __mode) __THROW;
 #endif
 

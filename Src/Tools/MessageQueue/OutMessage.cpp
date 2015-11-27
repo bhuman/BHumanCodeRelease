@@ -1,19 +1,14 @@
 /**
-* @file OutMessage.cpp
-*
-* Implementation of class OutMessage, OutBinaryMessage, OutTextMessage,
-* OutConfigMessage and OutMessageQueue.
-*
-* @author Martin Lötzsch
-*/
+ * @file OutMessage.cpp
+ *
+ * Implementation of class OutMessage, OutBinaryMessage, OutTextMessage,
+ * OutConfigMessage and OutMessageQueue.
+ *
+ * @author Martin Lötzsch
+ */
 
 #include "OutMessage.h"
 #include "MessageQueue.h"
-
-OutMessageQueue::OutMessageQueue()
-  : queue(0)
-{
-}
 
 void OutMessageQueue::open(MessageQueueBase* q)
 {
@@ -40,10 +35,9 @@ OutTextRawMessage::OutTextRawMessage(MessageQueueBase* q)
   open(q);
 }
 
-OutMessage::OutMessage(MessageQueueBase& queue)
-  : queue(queue), bin(&queue), text(&queue), textRaw(&queue)
-{
-}
+OutMessage::OutMessage(MessageQueueBase& queue) :
+  queue(queue), bin(&queue), text(&queue), textRaw(&queue)
+{}
 
 bool OutMessage::finishMessage(MessageID id)
 {

@@ -1,12 +1,11 @@
 /**
-* @file Platform/Linux/NaoCamera.cpp
-* Interface to a camera of the NAO.
-* @author Colin Graf
-* @author Thomas Röfer
-*/
+ * @file Platform/Linux/NaoCamera.cpp
+ * Interface to a camera of the NAO.
+ * @author Colin Graf
+ * @author Thomas Röfer
+ */
 
 #include <cstring>
-#include <cstdlib>
 #include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
@@ -15,29 +14,22 @@
 #include <cerrno>
 #include <poll.h>
 #include <linux/videodev2.h>
-#ifdef USE_USERPTR
-#include <malloc.h> // memalign
-#endif
 
 #include "NaoCamera.h"
 #include "BHAssert.h"
 #include "SystemCall.h"
 #include "Tools/Debugging/Debugging.h"
-#include "Tools/Streams/InStreams.h"
 
 NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip) :
-  timeWaitedForLastImage(0),
   camera(camera),
   settings(camera),
   appliedSettings(camera),
   WIDTH(width * 2),
-  HEIGHT(height * 2),
+  HEIGHT(height * 2)
 #ifndef NDEBUG
-  SIZE(WIDTH* HEIGHT * 2),
+  ,
+  SIZE(WIDTH * HEIGHT * 2)
 #endif
-  currentBuf(0),
-  first(true),
-  timeStamp(0)
 {
   initOpenVideoDevice(device);
 
@@ -59,11 +51,7 @@ NaoCamera::~NaoCamera()
 
   // unmap buffers
   for(int i = 0; i < frameBufferCount; ++i)
-#ifdef USE_USERPTR
-    free(mem[i]);
-#else
     munmap(mem[i], memLength[i]);
-#endif
 
   // close the device
   close(fd);
@@ -74,8 +62,8 @@ bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& 
 {
   NaoCamera* cams[2] = {&cam1, &cam2};
 
-  ASSERT(cam1.currentBuf == 0);
-  ASSERT(cam2.currentBuf == 0);
+  ASSERT(cam1.currentBuf == nullptr);
+  ASSERT(cam2.currentBuf == nullptr);
 
   errorCam1 = errorCam2 = false;
 
@@ -101,9 +89,7 @@ bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& 
   {
     if(pollfds[i].revents & POLLIN)
     {
-      //VERIFY(ioctl(cams[i]->fd, VIDIOC_DQBUF, cams[i]->buf) != -1);
-      int error = ioctl(cams[i]->fd, VIDIOC_DQBUF, cams[i]->buf);
-      if(error == -1)
+      if(ioctl(cams[i]->fd, VIDIOC_DQBUF, cams[i]->buf) == -1)
       {
         OUTPUT_ERROR("VIDIOC_DQBUF failed: " << strerror(errno));
         (i == 0 ? errorCam1 : errorCam2) = true;
@@ -113,7 +99,7 @@ bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& 
         //OUTPUT_ERROR("VIDIOC_DQBUF success revents=" << pollfds[i].revents);
         //ASSERT(buf->bytesused == SIZE);
         cams[i]->currentBuf = cams[i]->buf;
-        cams[i]->timeStamp = (unsigned long long) cams[i]->currentBuf->timestamp.tv_sec * 1000000ll + cams[i]->currentBuf->timestamp.tv_usec;
+        cams[i]->timeStamp = static_cast<unsigned long long>(cams[i]->currentBuf->timestamp.tv_sec) * 1000000ll + cams[i]->currentBuf->timestamp.tv_usec;
 
         if(cams[i]->first)
         {
@@ -172,7 +158,7 @@ bool NaoCamera::captureNew()
   BH_TRACE;
   //ASSERT(buf->bytesused == SIZE);
   currentBuf = buf;
-  timeStamp = (unsigned long long) currentBuf->timestamp.tv_sec * 1000000ll + currentBuf->timestamp.tv_usec;
+  timeStamp = static_cast<unsigned long long>(currentBuf->timestamp.tv_sec) * 1000000ll + currentBuf->timestamp.tv_usec;
   const unsigned endPollingTimestamp = SystemCall::getCurrentSystemTime();
   timeWaitedForLastImage = endPollingTimestamp - startPollingTimestamp;
 
@@ -190,18 +176,13 @@ void NaoCamera::releaseImage()
   if(currentBuf)
   {
     VERIFY(ioctl(fd, VIDIOC_QBUF, currentBuf) != -1);
-    currentBuf = 0;
+    currentBuf = nullptr;
   }
 }
 
 const unsigned char* NaoCamera::getImage() const
 {
-#ifdef USE_USERPTR
-  unsigned char* imageBuffer = currentBuf ? (unsigned char*)currentBuf->m.userptr : 0;
-#else
-  unsigned char* imageBuffer = currentBuf ? static_cast<unsigned char*>(mem[currentBuf->index]) : 0;
-#endif
-  return imageBuffer;
+  return currentBuf ? static_cast<unsigned char*>(mem[currentBuf->index]) : nullptr;
 }
 
 bool NaoCamera::hasImage()
@@ -255,12 +236,12 @@ void NaoCamera::assertCameraSettings()
   VERIFY(!ioctl(fd, VIDIOC_G_PARM, &fps));
   if(fps.parm.capture.timeperframe.numerator != 1)
   {
-    OUTPUT(idText, text, "fps.parm.capture.timeperframe.numerator is wrong.");
+    OUTPUT_ERROR("fps.parm.capture.timeperframe.numerator is wrong.");
     allFine = false;
   }
   if(fps.parm.capture.timeperframe.denominator != 30)
   {
-    OUTPUT(idText, text, "fps.parm.capture.timeperframe.denominator is wrong.");
+    OUTPUT_ERROR("fps.parm.capture.timeperframe.denominator is wrong.");
     allFine = false;
   }
 
@@ -268,14 +249,12 @@ void NaoCamera::assertCameraSettings()
   for(int i = 0; i < CameraSettings::numOfCameraSettings; ++i)
   {
     if(!assertCameraSetting(static_cast<CameraSettings::CameraSetting>(i)))
-    {
       allFine = false;
-    }
   }
 
   if(allFine)
   {
-    OUTPUT(idText, text, "Camera settings match settings stored in hardware/driver.");
+    OUTPUT_TEXT("Camera settings match settings stored in hardware/driver.");
   }
 }
 
@@ -287,29 +266,25 @@ void NaoCamera::writeCameraSettings()
     CameraSettings::V4L2Setting& appliedSetting = appliedSettings.settings[i];
 
     if(currentSetting.value == appliedSetting.value)
-    {
       continue;
-    }
     else
     {
       CameraSettings::CameraSetting setting = static_cast<CameraSettings::CameraSetting>(i);
       if(!setControlSetting(currentSetting.command, currentSetting.value))
       {
-        OUTPUT_WARNING("NaoCamera: Setting camera control value failed: " << CameraSettings::getName(setting));
+        OUTPUT_WARNING("NaoCamera: Setting camera control " << CameraSettings::getName(setting) << " failed for value: " << currentSetting.value);
       }
       else
       {
         appliedSetting.value = currentSetting.value;
         assertCameraSetting(setting);
-        for(auto setting : currentSetting.influendingSettings)
+        for(auto setting : currentSetting.influencingSettings)
         {
           if(setting != CameraSettings::numOfCameraSettings)
           {
             int value = getControlSetting(settings.settings[setting].command);
             if(settings.settings[setting].value == appliedSettings.settings[setting].value)
-            {
               settings.settings[setting].value = appliedSettings.settings[setting].value = value;
-            }
           }
         }
       }
@@ -374,17 +349,17 @@ bool NaoCamera::setControlSetting(unsigned int id, int value)
   queryctrl.id = id;
   if(ioctl(fd, VIDIOC_QUERYCTRL, &queryctrl) < 0)
   {
-    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL call failed");
+    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL " << id << " call failed (value: " << value << ")!");
     return false;
   }
   if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
   {
-    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL call failed. Command " << id << " disabled");
+    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL call failed. Command " << id << " disabled!");
     return false; // not available
   }
   if(queryctrl.type != V4L2_CTRL_TYPE_BOOLEAN && queryctrl.type != V4L2_CTRL_TYPE_INTEGER && queryctrl.type != V4L2_CTRL_TYPE_MENU)
   {
-    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL call failed. Command " << id << " not supported");
+    OUTPUT_WARNING("NaoCamera:  VIDIOC_QUERYCTRL call failed. Command " << id << " not supported!");
     return false; // not supported
   }
   // clip value
@@ -419,7 +394,7 @@ bool NaoCamera::assertCameraSetting(CameraSettings::CameraSetting setting)
     return true;
   else
   {
-    OUTPUT(idText, text, "Value for command " << settings.settings[setting].command << " (" << CameraSettings::getName(setting) << ") is " << value << " but should be " << settings.settings[setting].value << ".");
+    OUTPUT_ERROR("Value for command " << settings.settings[setting].command << " (" << CameraSettings::getName(setting) << ") is " << value << " but should be " << settings.settings[setting].value << ".");
     appliedSettings.settings[setting].value = value;
     return false;
   }
@@ -454,27 +429,14 @@ void NaoCamera::initRequestAndMapBuffers()
   memset(&rb, 0, sizeof(struct v4l2_requestbuffers));
   rb.count = frameBufferCount;
   rb.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-#ifdef USE_USERPTR
-  rb.memory = V4L2_MEMORY_USERPTR;
-#else
   rb.memory = V4L2_MEMORY_MMAP;
-#endif
   VERIFY(ioctl(fd, VIDIOC_REQBUFS, &rb) != -1);
   ASSERT(rb.count == frameBufferCount);
 
   // map or prepare the buffers
   buf = static_cast<struct v4l2_buffer*>(calloc(1, sizeof(struct v4l2_buffer)));
-#ifdef USE_USERPTR
-  unsigned int bufferSize = SIZE;
-  unsigned int pageSize = getpagesize();
-  bufferSize = (bufferSize + pageSize - 1) & ~(pageSize - 1);
-#endif
   for(int i = 0; i < frameBufferCount; ++i)
   {
-#ifdef USE_USERPTR
-    memLength[i] = bufferSize;
-    mem[i] = memalign(pageSize, bufferSize);
-#else
     buf->index = i;
     buf->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf->memory = V4L2_MEMORY_MMAP;
@@ -482,7 +444,6 @@ void NaoCamera::initRequestAndMapBuffers()
     memLength[i] = buf->length;
     mem[i] = mmap(0, buf->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf->m.offset);
     ASSERT(mem[i] != MAP_FAILED);
-#endif
   }
 }
 
@@ -493,13 +454,7 @@ void NaoCamera::initQueueAllBuffers()
   {
     buf->index = i;
     buf->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-#ifdef USE_USERPTR
-    buf->memory = V4L2_MEMORY_USERPTR;
-    buf->m.userptr = (unsigned long)mem[i];
-    buf->length = memLength[i];
-#else
     buf->memory = V4L2_MEMORY_MMAP;
-#endif
     VERIFY(ioctl(fd, VIDIOC_QBUF, buf) != -1);
   }
 }

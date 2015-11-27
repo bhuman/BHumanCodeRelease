@@ -1,16 +1,5 @@
 #include "CameraResolution.h"
-
-#include "CameraInfo.h"
-#include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
-
-void CameraResolution::serialize(In* in, Out* out)
-{
-  STREAM_REGISTER_BEGIN;
-  STREAM(resolution);
-  STREAM(timestamp);
-  STREAM_REGISTER_FINISH;
-}
 
 bool CameraResolutionRequest::setRequest(CameraResolution::Resolutions requestedResolution)
 {
@@ -30,12 +19,4 @@ bool CameraResolutionRequest::setRequest(CameraResolution::Resolutions requested
     default:
       return false;
   }
-}
-
-void CameraResolutionRequest::serialize(In* in, Out* out)
-{
-  STREAM_REGISTER_BEGIN;
-  STREAM(resolution, CameraResolution);
-  STREAM(timestamp);
-  STREAM_REGISTER_FINISH;
 }

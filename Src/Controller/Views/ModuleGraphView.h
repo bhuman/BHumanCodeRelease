@@ -8,6 +8,7 @@
 #pragma once
 
 #include "DotView.h"
+#include "Tools/Module/Module.h"
 
 #include <string>
 
@@ -24,14 +25,14 @@ public:
   * @param fullName The path to this view in the scene graph
   * @param console The console object.
   * @param processIdentifier The identifier of the process the modules of which are displayed.
-  * @param category The category of the modules of this view. If "", show all categories.
+  * @param category The category of the modules of this view. If numOfCategories, show all categories.
   */
-  ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier, const std::string& category);
+  ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier, ModuleBase::Category category = static_cast<ModuleBase::Category>(ModuleBase::numOfCategories));
 
 private:
   RobotConsole& console; /**< A reference to the console object. */
   char processIdentifier; /**< The name of the view. */
-  std::string category; /**< The category of the modules of this view. If "", show all categories. */
+  ModuleBase::Category category; /**< The category of the modules of this view. If numOfCategories, show all categories. */
   unsigned int lastModulInfoTimeStamp; /**< Module Info timestamp when the image was created. */
 
   /**

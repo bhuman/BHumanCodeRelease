@@ -1,52 +1,37 @@
 /**
-* @file MassCalibration.h
-* Declaration of a class for representing the relative positions and masses of mass points.
-* @author <a href="mailto:allli@informatik.uni-bremen.de">Alexander Härtl</a>
-*/
+ * @file MassCalibration.h
+ * Declaration of a struct for representing the relative positions and masses of mass points.
+ * @author <a href="mailto:allli@informatik.uni-bremen.de">Alexander Härtl</a>
+ */
 
 #pragma once
 
-#include "Tools/Math/Vector3.h"
 #include "Tools/Enum.h"
+#include "Tools/Limbs.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
 
-STREAMABLE(MassCalibration,
+struct MassCalibration : public Streamable
 {
-public:
-  ENUM(Limb,
-    neck,
-    head,
-    shoulderLeft,
-    bicepsLeft,
-    elbowLeft,
-    foreArmLeft,
-    shoulderRight,
-    bicepsRight,
-    elbowRight,
-    foreArmRight,
-    pelvisLeft,
-    hipLeft,
-    thighLeft,
-    tibiaLeft,
-    ankleLeft,
-    footLeft,
-    pelvisRight,
-    hipRight,
-    thighRight,
-    tibiaRight,
-    ankleRight,
-    footRight,
-    torso
-  );
-
   /**
-  * Information on the mass distribution of a limb of the robot.
-  */
+   * Information on the mass distribution of a limb of the robot.
+   */
   STREAMABLE(MassInfo,
   {,
     (float)(0) mass, /**< The mass of this limb. */
-    (Vector3<>) offset, /**< The offset of the center of mass of this limb relative to its hinge. */
-  }),
+    (Vector3f) offset, /**< The offset of the center of mass of this limb relative to its hinge. */
+  });
 
-  (MassInfo[numOfLimbs]) masses, /**< Information on the mass distribution of all joints. */
-});
+  std::array<MassInfo, Limbs::numOfLimbs> masses; /**< Information on the mass distribution of all joints. */
+
+private:
+  virtual void serialize(In* in, Out* out);
+};
+
+inline void MassCalibration::serialize(In* in, Out* out)
+{
+  STREAM_REGISTER_BEGIN
+  for(int i = 0; i < Limbs::numOfLimbs; ++i)
+    Streaming::streamIt(in, out, Limbs::getName(static_cast<Limbs::Limb>(i)), masses[i], nullptr);
+  STREAM_REGISTER_FINISH
+}

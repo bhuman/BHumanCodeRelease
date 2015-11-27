@@ -1,41 +1,76 @@
 /**
-* @file MotionConfigurationDataProvider.cpp
-* This file implements a module that provides data loaded from configuration files.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file MotionConfigurationDataProvider.cpp
+ * This file implements a module that provides data loaded from configuration files.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "MotionConfigurationDataProvider.h"
 
-MotionConfigurationDataProvider::MotionConfigurationDataProvider() :
-  theJointCalibration(0),
-  theSensorCalibration(0),
-  theRobotDimensions(0),
-  theMassCalibration(0),
-  theHardnessSettings(0),
-  theDamageConfiguration(0)
+MAKE_MODULE(MotionConfigurationDataProvider, motionInfrastructure)
+
+MotionConfigurationDataProvider::MotionConfigurationDataProvider()
 {
+  readDamageConfigurationBody();
+  readDamageConfigurationHead();
+  readFieldDimensions();
   readJointCalibration();
-  readSensorCalibration();
-  readRobotDimensions();
   readMassCalibration();
-  readHardnessSettings();
-  readDamageConfiguration();
+  readMotionSettings();
+  readRobotDimensions();
+  readStiffnessSettings();
+  readUsConfiguration();
 }
 
 MotionConfigurationDataProvider::~MotionConfigurationDataProvider()
 {
+  if(theDamageConfigurationBody)
+    delete theDamageConfigurationBody;
+  if(theDamageConfigurationHead)
+    delete theDamageConfigurationHead;
+  if(theFieldDimensions)
+    delete theFieldDimensions;
   if(theJointCalibration)
     delete theJointCalibration;
-  if(theSensorCalibration)
-    delete theSensorCalibration;
-  if(theRobotDimensions)
-    delete theRobotDimensions;
   if(theMassCalibration)
     delete theMassCalibration;
-  if(theHardnessSettings)
-    delete theHardnessSettings;
-  if(theDamageConfiguration)
-    delete theDamageConfiguration;
+  if(theMotionSettings)
+    delete theMotionSettings;
+  if(theRobotDimensions)
+    delete theRobotDimensions;
+  if(theStiffnessSettings)
+    delete theStiffnessSettings;
+  if(theUsConfiguration)
+    delete theUsConfiguration;
+}
+
+void MotionConfigurationDataProvider::update(DamageConfigurationBody& damageConfigurationBody)
+{
+  if(theDamageConfigurationBody)
+  {
+    damageConfigurationBody = *theDamageConfigurationBody;
+    delete theDamageConfigurationBody;
+    theDamageConfigurationBody = 0;
+  }
+}
+
+void MotionConfigurationDataProvider::update(DamageConfigurationHead& damageConfigurationHead)
+{
+  if(theDamageConfigurationHead)
+  {
+    damageConfigurationHead = *theDamageConfigurationHead;
+    delete theDamageConfigurationHead;
+    theDamageConfigurationHead = 0;
+  }
+}
+
+void MotionConfigurationDataProvider::update(FieldDimensions& fieldDimensions)
+{
+  if(theFieldDimensions)
+  {
+    fieldDimensions = *theFieldDimensions;
+    delete theFieldDimensions;
+    theFieldDimensions = nullptr;
+  }
 }
 
 void MotionConfigurationDataProvider::update(JointCalibration& jointCalibration)
@@ -44,18 +79,28 @@ void MotionConfigurationDataProvider::update(JointCalibration& jointCalibration)
   {
     jointCalibration = *theJointCalibration;
     delete theJointCalibration;
-    theJointCalibration = 0;
+    theJointCalibration = nullptr;
   }
-  DEBUG_RESPONSE_ONCE("representation:JointCalibration", OUTPUT(idJointCalibration, bin, jointCalibration););
+  DEBUG_RESPONSE_ONCE("representation:JointCalibration:once") OUTPUT(idJointCalibration, bin, jointCalibration);
 }
 
-void MotionConfigurationDataProvider::update(SensorCalibration& sensorCalibration)
+void MotionConfigurationDataProvider::update(MassCalibration& massCalibration)
 {
-  if(theSensorCalibration)
+  if(theMassCalibration)
   {
-    sensorCalibration = *theSensorCalibration;
-    delete theSensorCalibration;
-    theSensorCalibration = 0;
+    massCalibration = *theMassCalibration;
+    delete theMassCalibration;
+    theMassCalibration = nullptr;
+  }
+}
+
+void MotionConfigurationDataProvider::update(MotionSettings& motionSettings)
+{
+  if(theMotionSettings)
+  {
+    motionSettings = *theMotionSettings;
+    delete theMotionSettings;
+    theMotionSettings = nullptr;
   }
 }
 
@@ -65,39 +110,63 @@ void MotionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
   {
     robotDimensions = *theRobotDimensions;
     delete theRobotDimensions;
-    theRobotDimensions = 0;
+    theRobotDimensions = nullptr;
   }
-  DEBUG_RESPONSE_ONCE("representation:RobotDimensions", OUTPUT(idRobotDimensions, bin, robotDimensions););
+  DEBUG_RESPONSE_ONCE("representation:RobotDimensions:once") OUTPUT(idRobotDimensions, bin, robotDimensions);
 }
 
-void MotionConfigurationDataProvider::update(MassCalibration& massCalibration)
+void MotionConfigurationDataProvider::update(StiffnessSettings& stiffnessSettings)
 {
-  if(theMassCalibration)
+  if(theStiffnessSettings)
   {
-    massCalibration = *theMassCalibration;
-    delete theMassCalibration;
-    theMassCalibration = 0;
-  }
-}
-
-void MotionConfigurationDataProvider::update(HardnessSettings& hardnessSettings)
-{
-  if(theHardnessSettings)
-  {
-    hardnessSettings = *theHardnessSettings;
-    delete theHardnessSettings;
-    theHardnessSettings = 0;
+    stiffnessSettings = *theStiffnessSettings;
+    delete theStiffnessSettings;
+    theStiffnessSettings = nullptr;
   }
 }
 
-void MotionConfigurationDataProvider::update(DamageConfiguration& damageConfiguration)
+void MotionConfigurationDataProvider::update(UsConfiguration& usConfiguration)
 {
-  if(theDamageConfiguration)
+  if(theUsConfiguration)
   {
-    damageConfiguration = *theDamageConfiguration;
-    delete theDamageConfiguration;
-    theDamageConfiguration = 0;
+    usConfiguration = *theUsConfiguration;
+    delete theUsConfiguration;
+    theUsConfiguration = nullptr;
   }
+}
+
+void MotionConfigurationDataProvider::readDamageConfigurationBody()
+{
+  ASSERT(!theDamageConfigurationBody);
+
+  InMapFile stream("damageConfigurationBody.cfg");
+
+  if(stream.exists())
+  {
+    theDamageConfigurationBody = new DamageConfigurationBody;
+    stream >> *theDamageConfigurationBody;
+  }
+}
+
+void MotionConfigurationDataProvider::readDamageConfigurationHead()
+{
+  ASSERT(!theDamageConfigurationHead);
+
+  InMapFile stream("damageConfigurationHead.cfg");
+
+  if(stream.exists())
+  {
+    theDamageConfigurationHead = new DamageConfigurationHead;
+    stream >> *theDamageConfigurationHead;
+  }
+}
+
+void MotionConfigurationDataProvider::readFieldDimensions()
+{
+  ASSERT(!theFieldDimensions);
+
+  theFieldDimensions = new FieldDimensions;
+  theFieldDimensions->load();
 }
 
 void MotionConfigurationDataProvider::readJointCalibration()
@@ -109,30 +178,6 @@ void MotionConfigurationDataProvider::readJointCalibration()
   {
     theJointCalibration = new JointCalibration;
     stream >> *theJointCalibration;
-  }
-}
-
-void MotionConfigurationDataProvider::readSensorCalibration()
-{
-  ASSERT(!theSensorCalibration);
-
-  InMapFile stream("sensorCalibration.cfg");
-  if(stream.exists())
-  {
-    theSensorCalibration = new SensorCalibration;
-    stream >> *theSensorCalibration;
-  }
-}
-
-void MotionConfigurationDataProvider::readRobotDimensions()
-{
-  ASSERT(!theRobotDimensions);
-
-  InMapFile stream("robotDimensions.cfg");
-  if(stream.exists())
-  {
-    theRobotDimensions = new RobotDimensions;
-    stream >> *theRobotDimensions;
   }
 }
 
@@ -148,29 +193,50 @@ void MotionConfigurationDataProvider::readMassCalibration()
   }
 }
 
-void MotionConfigurationDataProvider::readHardnessSettings()
+void MotionConfigurationDataProvider::readMotionSettings()
 {
-  ASSERT(!theHardnessSettings);
+  ASSERT(!theMotionSettings);
 
-  InMapFile stream("hardnessSettings.cfg");
+  InMapFile stream("motionSettings.cfg");
   if(stream.exists())
   {
-    theHardnessSettings = new HardnessSettings;
-    stream >> *theHardnessSettings;
+    theMotionSettings = new MotionSettings;
+    stream >> *theMotionSettings;
   }
 }
 
-void MotionConfigurationDataProvider::readDamageConfiguration()
+void MotionConfigurationDataProvider::readRobotDimensions()
 {
-  ASSERT(!theDamageConfiguration);
+  ASSERT(!theRobotDimensions);
 
-  InMapFile stream("damageConfiguration.cfg");
-
+  InMapFile stream("robotDimensions.cfg");
   if(stream.exists())
   {
-    theDamageConfiguration = new DamageConfiguration;
-    stream >> *theDamageConfiguration;
+    theRobotDimensions = new RobotDimensions;
+    stream >> *theRobotDimensions;
   }
 }
 
-MAKE_MODULE(MotionConfigurationDataProvider, Motion Infrastructure)
+void MotionConfigurationDataProvider::readStiffnessSettings()
+{
+  ASSERT(!theStiffnessSettings);
+
+  InMapFile stream("stiffnessSettings.cfg");
+  if(stream.exists())
+  {
+    theStiffnessSettings = new StiffnessSettings;
+    stream >> *theStiffnessSettings;
+  }
+}
+
+void MotionConfigurationDataProvider::readUsConfiguration()
+{
+  ASSERT(!theUsConfiguration);
+
+  InMapFile stream("usConfiguration.cfg");
+  if(stream.exists())
+  {
+    theUsConfiguration = new UsConfiguration;
+    stream >> *theUsConfiguration;
+  }
+}

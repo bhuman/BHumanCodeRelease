@@ -143,4 +143,5 @@ struct ncp_nls_ioctl
 #define NCP_MAXPATHLEN 255
 #define NCP_MAXNAMELEN 14
 
+
 #endif				/* _LINUX_NCP_FS_H */

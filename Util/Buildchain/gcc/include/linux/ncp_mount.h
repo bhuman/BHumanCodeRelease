@@ -68,4 +68,5 @@ struct ncp_mount_data_v4 {
 
 #define NCP_MOUNT_VERSION_V5	(5)	/* Text only */
 
+
 #endif

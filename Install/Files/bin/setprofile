@@ -18,5 +18,4 @@ if [ ! -e "$baseDir/../Profiles/$1" ]; then
   usage
 fi
 
-cp $baseDir"/../Profiles/"$1 $baseDir"/../Profiles/default"
-sudo /etc/init.d/wireless restart
+cmp -s $baseDir"/../Profiles/"$1 $baseDir"/../Profiles/default" || ( cp $baseDir"/../Profiles/"$1 $baseDir"/../Profiles/default" && sudo /etc/init.d/wireless restart 2>&1 | grep -v "you are stopping" | ( grep -v ipv6 || true ) )

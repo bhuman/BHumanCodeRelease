@@ -1,16 +1,16 @@
 /**
-* @file FieldDimensions.h
-*
-* Description of the dimensions of the field.
-*
-* @author Matthias Jüngel
-* @author Thomas Röfer
-*/
+ * @file FieldDimensions.h
+ *
+ * Description of the dimensions of the field.
+ *
+ * @author Matthias Jüngel
+ * @author Thomas Röfer
+ */
 
 #pragma once
 
 #include "Tools/Boundary.h"
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Tools/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Geometry.h"
@@ -50,153 +50,114 @@ STREAMABLE(SimpleFieldDimensions,
   (float) fieldLinesWidth,
   (float) centerCircleRadius,
   (float) goalPostRadius,
+  (float) crossBarRadius,
   (float) goalHeight,
   (float) ballRadius,
   (float) ballFriction, // in 1/s
+  (float) penaltyMarkSize, //vertical (and horizontal) size of a penaltyMark
+  (float) penaltyMarkDistance, //distance between penaltyMark and Goal line
+  (float) penaltyAreaLength, //length of penaltyArea
+  (float) penaltyAreaWidth, //width of penaltyArea
 });
 
 /**
-* Class containing definitions and functions
-* regarding field dimensions.
-*
-* @author Max Risler
-*/
-class FieldDimensions : public Boundary<>, public SimpleFieldDimensions
+ * Class containing definitions and functions
+ * regarding field dimensions.
+ *
+ * @author Max Risler
+ */
+struct FieldDimensions : public SimpleFieldDimensions
 {
-public:
   /**
-  * This is a collection of line- or boundary segments with start-Pose2D and length.
-  */
-  class LinesTable
+   * This is a collection of line- or boundary segments with start-Pose2f and length.
+   */
+  struct LinesTable
   {
-  public:
-    class Line : public Streamable
+    STREAMABLE(Line,
     {
-    private:
-      virtual void serialize(In* in, Out* out);
+      bool isPartOfCircle = false, /**< Whether the line is a part of a circle. */
 
-    public:
-      Pose2D corner; /**< The field corners. */
-      float length; /**< The lengths of the border segments starting at a corresponding corner. */
-      bool isPartOfCircle; /**< Whether the line is a part of a circle. */
-
-      Line() : length(0), isPartOfCircle(false) {}
-    };
+      (Vector2f)(Vector2f::Zero()) from, /**< Begin of the line. */
+      (Vector2f)(Vector2f::Zero()) to, /**< End of the line. */
+    });
 
     STREAMABLE(Circle,
     {,
-      (Vector2<>) center, /**< The center of the circle. */
+      (Vector2f) center, /**< The center of the circle. */
       (float) radius, /**< The radius of the circle. */
       (int) numOfSegments, /**< The number of segments used to discretize the circle. */
     });
 
     std::vector<Line> lines;
 
-    void push(const Pose2D& p, float l, bool isPartOfCircle = false);
-
-    void push(const Vector2<>& s, const Vector2<>& e, bool isPartOfCircle = false);
-
-    void pushCircle(const Vector2<>& center, float radius, int numOfSegments);
+    void push(const Pose2f& p, float l, bool isPartOfCircle = false);
+    void push(const Vector2f& s, const Vector2f& e, bool isPartOfCircle = false);
+    void pushCircle(const Vector2f& center, float radius, int numOfSegments);
 
     /**
-    * Get the the closest point to p on a field line
-    */
-    Vector2<> getClosestPoint(const Vector2<>& p) const;
+     * Get the the closest point to p on a field line
+     */
+    Vector2f getClosestPoint(const Vector2f& p) const;
 
     /**
-    * Intersects the specified line with each field line, returns the
-    * intersection point that is closest to the base of the line.
-    * @param outLineIndex is set to the index of the line that contains the intersection
-    */
-    bool getClosestIntersection(const Geometry::Line& l, int& outLineIndex, Vector2<>& outIntersection) const;
+     * Intersects the specified line with each field line, returns the
+     * intersection point that is closest to the base of the line.
+     * @param outLineIndex is set to the index of the line that contains the intersection
+     */
+    bool getClosestIntersection(const Geometry::Line& l, int& outLineIndex, Vector2f& outIntersection) const;
+    bool getClosestIntersection(const Geometry::Line& l, Vector2f& outIntersection) const;
 
-    bool getClosestIntersection(const Geometry::Line& l, Vector2<>& outIntersection) const;
-    
     /*
-    * Returns whether a given point is inside the polygon described by the line segments.
-    * Only valid if the line segment table describes a closed polygon.
-    */
-    bool isInside(const Vector2<>& v) const;
+     * Returns whether a given point is inside the polygon described by the line segments.
+     * Only valid if the line segment table describes a closed polygon.
+     */
+    bool isInside(const Vector2f& v) const;
 
     /**
-    * The function clips a point to the polygon described by the line segments.
-    * Only valid if the line segment table describes a closed polygon.
-    * @param v The point.
-    * @return How far was the point moved?
-    */
-    float clip(Vector2<>& v) const;
+     * The function clips a point to the polygon described by the line segments.
+     * Only valid if the line segment table describes a closed polygon.
+     * @param v The point.
+     * @return How far was the point moved?
+     */
+    float clip(Vector2f& v) const;
 
     /**
-    * The function returns the point on a line of a certain type closest to given a point.
-    * @param point The point on a line.
-    * @param p The reference point and the rotation of the line.
-    * @param numberOfRotations The number of discretizations of line rotations.
-    * @param minLength The minimum length of the line segments that are considered.
-    * @return whether there is a matching point in that direction
-    */
-    bool getClosestPoint(Vector2<>& point, const Pose2D& p, int numberOfRotations, float minLength) const;
+     * The function returns the point on a line of a certain type closest to given a point.
+     * @param point The point on a line.
+     * @param p The reference point and the rotation of the line.
+     * @param numberOfRotations The number of discretizations of line rotations.
+     * @param minLength The minimum length of the line segments that are considered.
+     * @return whether there is a matching point in that direction
+     */
+    bool getClosestPoint(Vector2f& point, const Pose2f& p, int numberOfRotations, float minLength) const;
 
     /**
-    * The function returns the distance between a point and the closest point on a line of a certain type in a certain direction.
-    * @param pose The reference point and direction.
-    * @return The distance. It is -1 if no line of that type exists in the certain direction.
-    */
-    float getDistance(const Pose2D& pose) const;
+     * The function returns the distance between a point and the closest point on a line of a certain type in a certain direction.
+     * @param pose The reference point and direction.
+     * @return The distance. It is -1 if no line of that type exists in the certain direction.
+     */
+    float getDistance(const Pose2f& pose) const;
   };
 
   /**
-  * Table of line segments
-  */
-  LinesTable fieldLines;
-
-  /**
-  * Table of line segments that contains the parts of the goal frame that
-  * are on the ground.
-  */
-  LinesTable goalFrameLines;
-  
-  /**Table of line segments that contains both fieldLines and goalFrameLines*/
-  LinesTable fieldLinesWithGoalFrame;
-
-  /**
-  * Describes a polygon around the border of the field carpet.
-  * All legal robot positions are inside this polygon.
-  */
-  LinesTable carpetBorder;
-
-  /**
-  * Describes a polygon around the border of the playing field.
-  * All legal ball positions are inside this polygon.
-  */
-  LinesTable fieldBorder;
-
-  /**
-  * The class represents all corners of a certain type.
-  */
-  class CornersTable : public std::vector<Vector2<> >
+   * The struct represents all corners of a certain type.
+   */
+  struct CornersTable : public std::vector<Vector2f>
   {
-  public:
     /**
      * The method returns the position of the corner closest to a point.
      * The method is only defined if !empty().
      * @param p The point.
      * @return The position of the closest corner.
      */
-    const Vector2<>& getClosest(const Vector2<>& p) const;
-
-    /**
-    * The method returns the position of the corner closest to a point.
-    * The method is only defined if !empty().
-    * @param p The point.
-    * @return The position of the closest corner.
-    */
-    Vector2<int> getClosest(const Vector2<int>& p) const;
+    const Vector2f& getClosest(const Vector2f& p) const;
   };
 
   /**
-  * All different corner classes.
-  */
+   * All different corner classes.
+   */
   ENUM(CornerClass,
+  {,
     xCorner,
     tCorner0,
     tCorner90,
@@ -205,102 +166,97 @@ public:
     lCorner0,
     lCorner90,
     lCorner180,
-    lCorner270
-  );
-  enum {numOfCornerClasses = numOfCornerClasss}; // extra, because numOfCornerClasss isn't so nice
-
-  CornersTable corners[numOfCornerClasses]; /**< All corners on the field. */
-
-  /**
-  * The goals
-  */
-  STREAMABLE(GoalDimensions,
-  { ,
-    (Vector3<>) start,
-    (Vector3<>) end,
+    lCorner270,
   });
+  enum { numOfCornerClasses = numOfCornerClasss }; // extra, because numOfCornerClasss isn't so nice
 
-  std::vector<GoalDimensions> goalDimensions;
+  Boundaryf boundary; ///< The outer boundary of the field.
+  LinesTable fieldLines; ///< Table of line segments
+  LinesTable goalFrameLines; ///< Table of line segments that contains the parts of the goal frame that are on the ground.
+  LinesTable fieldLinesWithGoalFrame; ///< Table of line segments that contains both fieldLines and goalFrameLines
+  LinesTable carpetBorder; ///< Describes a polygon around the border of the field carpet. All legal robot positions are inside this polygon.
+  LinesTable fieldBorder; ///< Describes a polygon around the border of the playing field. All legal ball positions are inside this polygon.
+  CornersTable corners[numOfCornerClasses]; ///< All corners on the field.
 
   /**
-  * Read field dimensions from configuration file.
-  */
+   * Read field dimensions from configuration file.
+   */
   void load();
 
   /**
-  * Returns true when p is inside the carpet.
-  */
-  bool isInsideCarpet(const Vector2<> &p) const
+   * Returns true when p is inside the carpet.
+   */
+  bool isInsideCarpet(const Vector2f &p) const
   {
     return carpetBorder.isInside(p);
   }
 
   /**
-  * The function clips a point to the carpet.
-  * @param v The point.
-  * @return How far was the point moved?
-  */
-  float clipToCarpet(Vector2<>& v) const
+   * The function clips a point to the carpet.
+   * @param v The point.
+   * @return How far was the point moved?
+   */
+  float clipToCarpet(Vector2f& v) const
   {
     return carpetBorder.clip(v);
   }
 
   /**
-  * Returns true when p is inside the playing field.
-  */
-  bool isInsideField(const Vector2<> &p) const
+   * Returns true when p is inside the playing field.
+   */
+  bool isInsideField(const Vector2f &p) const
   {
     return fieldBorder.isInside(p);
   }
 
   /**
-  * The function clips a point to the field.
-  * @param v The point.
-  * @return How far was the point moved?
-  */
-  float clipToField(Vector2<>& v) const
+   * The function clips a point to the field.
+   * @param v The point.
+   * @return How far was the point moved?
+   */
+  float clipToField(Vector2f& v) const
   {
     return fieldBorder.clip(v);
   }
 
   /**
-  * The function returns a random pose inside the field.
-  * @return The random pose.
-  */
-  Pose2D randomPoseOnField() const;
+   * The function returns a random pose inside the field.
+   * @return The random pose.
+   */
+  Pose2f randomPoseOnField() const;
 
   /**
-  * The function returns a random pose on the carpet.
-  * @return The random pose.
-  */
-  Pose2D randomPoseOnCarpet() const;
+   * The function returns a random pose on the carpet.
+   * @return The random pose.
+   */
+  Pose2f randomPoseOnCarpet() const;
 
   /**
-  * The method draws the field lines.
-  */
+   * The method draws the field lines.
+   */
   void draw() const;
 
   /**
-  * Draws the goal frame.
-  */
+   * Draws the goal frame.
+   */
   void drawGoalFrame() const;
 
   /**
-  * The method draws the field polygons.
-  * @param ownColor The color of the own team.
-  */
+   * The method draws the field polygons.
+   * @param ownColor The color of the own team.
+   */
   void drawPolygons(int ownColor) const;
 
 private:
   virtual void serialize(In* in, Out* out);
 
   /**
-  * The method draws the field lines.
-  */
+   * The method draws the field lines.
+   */
   void drawLines() const;
 
   /**
-  * The method draws the field lines.
-  */
+   * The method draws the field lines.
+   */
   void drawCorners() const;
 };

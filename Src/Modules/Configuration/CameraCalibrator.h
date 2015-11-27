@@ -1,34 +1,35 @@
 /**
-* @file CameraCalibrator.h
-*
-* This file implements a module that can provide a semiautomatic camera calibration.
-*
-* @author Alexander Härtl
-*/
+ * @file CameraCalibrator.h
+ *
+ * This file implements a module that can provide a semiautomatic camera calibration.
+ *
+ * @author Alexander Härtl
+ */
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/Optimization/GaussNewtonOptimizer.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Module/Module.h"
+#include "Tools/Optimization/GaussNewtonOptimizer.h"
+
 #include <algorithm>
 
 MODULE(CameraCalibrator,
 {,
+  REQUIRES(CameraInfo),
   REQUIRES(FieldDimensions),
-  REQUIRES(FilteredJointData),
+  REQUIRES(JointAngles),
   REQUIRES(RobotDimensions),
   REQUIRES(TorsoMatrix),
-  REQUIRES(CameraInfo),
-  PROVIDES_WITH_MODIFY(CameraCalibration),
+  PROVIDES(CameraCalibration),
   DEFINES_PARAMETERS(
   {,
     (float)(0.001f) terminationCriterion, /**< The difference of two succesive parameter sets that are taken as a convergation */
@@ -45,10 +46,11 @@ private:
    * The current state of the calibrator.
    */
   ENUM(State,
+  {,
     Idle,
     Accumulate,
-    Optimize
-  );
+    Optimize,
+  });
 
   /**
    * A class representing a single reference point within the calibration procedure.
@@ -58,8 +60,8 @@ private:
   class Sample
   {
   public:
-    Vector2<int> pointInImage;
-    Vector2<> pointOnField;   /**< For drawing */
+    Vector2i pointInImage = Vector2i::Zero();
+    Vector2f pointOnField = Vector2f::Zero();   /**< For drawing */
     TorsoMatrix torsoMatrix;
     float headYaw, headPitch;
     CameraInfo cameraInfo;
@@ -70,34 +72,35 @@ private:
    * optimizer and their actual meaning.
    */
   ENUM(ParameterTranslation,
-    cameraTiltCorrection,
-    cameraRollCorrection,
-    bodyTiltCorrection,
+  {,
+    lowerCameraRollCorrection,
+    lowerCameraTiltCorrection,
+    //lowerCameraPanCorrection,
+    upperCameraRollCorrection,
+    upperCameraTiltCorrection,
+    //upperCameraPanCorrection,
     bodyRollCorrection,
-    robotPoseCorrectionX,
-    robotPoseCorrectionY,
-    robotPoseCorrectionRot,
-    numOfParametersLowerCamera,
-    upperCameraX = numOfParametersLowerCamera,
-    upperCameraY,
-    upperCameraZ
-  );
+    bodyTiltCorrection,
+    robotPoseXCorrection,
+    robotPoseYCorrection,
+    robotPoseRotationCorrection,
+  });
 
   State state; /**< The state of the calibrator. */
   std::function<void()> states[numOfStates];
 
   // overall variables
-  Pose2D currentRobotPose;                     /**< the pose used to set the calibration points */
+  Pose2f currentRobotPose;                     /**< the pose used to set the calibration points */
   CameraMatrix theCameraMatrix;                   /**< The camera matrix that fits the current image (not the current camera) */
   std::vector<Sample> samples; /**< The set of samples used to calibrate the camera. */
 
   // accumulation variables
-  Vector2<int> lastFetchedPoint; /**< The coordinates of the last fetched point in the image. */
+  Vector2i lastFetchedPoint = Vector2i::Zero(); /**< The coordinates of the last fetched point in the image. */
   CameraInfo::Camera currentCamera;           /**< The camera that is currently used for selecting points. */
-  Vector2<int> currentPoint;
+  Vector2i currentPoint = Vector2i::Zero();
 
   // optimization variables
-  GaussNewtonOptimizer<Sample, CameraCalibrator>* optimizer = nullptr; /**< A pointer to the currently used optimizer, or NULL if there is none. */
+  GaussNewtonOptimizer<Sample, CameraCalibrator>* optimizer = nullptr; /**< A pointer to the currently used optimizer, or nullptr if there is none. */
   CameraCalibration nextCameraCalibration;
   unsigned successiveConvergations; /**< The number of consecutive iterations that fulfil the termination criterion. */
   int framesToWait; /**< The remaining number of frames to wait for the next iteration. */
@@ -130,17 +133,17 @@ private:
   /**
    * Declares the drawings of the configurator
    */
-  void draw();
+  void draw() const;
 
   /**
    * This method creates a debug drawing in which all field lines are projected into the image.
    */
-  void drawFieldLines();
+  void drawFieldLines() const;
 
   /**
    * This method creates a debug drawing in which all selected points are projected into the image.
    */
-  void drawSamples();
+  void drawSamples() const;
 
   /**
    * This method computes the distance of a sampled point to the next field line, either in image

@@ -13,7 +13,7 @@ private:
 public:
   CameraCalibratorHandler(RobotConsole* console) : robotConsole(console) {}
 
-  void deliverPoint(const Vector2<int>& point, bool upper);
+  void deliverPoint(const Vector2i& point, bool upper, bool deletionRequired);
 
   void setActive(std::string view);
 

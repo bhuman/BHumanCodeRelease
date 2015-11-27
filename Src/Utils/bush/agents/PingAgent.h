@@ -5,7 +5,7 @@
 #include <QList>
 #include <map>
 
-class Robot;
+struct Robot;
 class QProcess;
 
 class PingAgent : public QObject
@@ -21,6 +21,8 @@ public:
   void cleanUp();
   void initializeProcesses(std::map<std::string, Robot*>& robotsByName);
   ENetwork getBestNetwork(const Robot* robot);
+  double getWLanPing(const Robot* robot);
+  double getLanPing(const Robot* robot);
   void updatePing(ENetwork network, QProcess* process);
 
 public slots:

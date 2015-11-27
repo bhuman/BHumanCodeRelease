@@ -1,0 +1,653 @@
+/**
+ * @file ObstacleModelProvider.cpp
+ *
+ * This is the implementation of a module that combines arm contacts, foot bumper contacts,
+ * obstacle percepts (from the module PlayersPerceptor) and ultrasound obstacles (from the UsObstacleModel) into one obstacle model.
+ *
+ * @author Florin
+ */
+
+#include "ObstacleModelProvider.h"
+#include "Representations/Configuration/MassCalibration.h"
+#include "Tools/Debugging/Annotation.h"
+#include "Tools/Math/Angle.h"
+#include "Tools/Math/EigenTools.h"
+#include "Tools/Math/Transformation.h"
+#include <algorithm>
+
+MAKE_MODULE(ObstacleModelProvider, Modeling)
+
+#define degreeOfFreedom 4
+const float MAX_DIST_ON_FIELD2 = 10400.f * 10400.f + 7400.f * 7400.f;
+
+void ObstacleModelProvider::update(ObstacleModel& ObstacleModel)
+{
+  DEBUG_RESPONSE_ONCE("module:ObstacleModelProvider:clear")
+  {
+    iWantToBeAnObstacle.clear();
+  }
+  if(theRobotInfo.penalty != PENALTY_NONE
+     || (theFallDownState.state == FallDownState::onGround || theFallDownState.state == FallDownState::falling)
+     || (theGameInfo.state == STATE_FINISHED || theGameInfo.state == STATE_INITIAL)
+     || theMotionInfo.motion == MotionRequest::getUp)
+  {
+    ObstacleModel.obstacles.clear();
+    iWantToBeAnObstacle.clear();
+    lastFrame = theFrameInfo.time;
+    return;
+  }
+  maxPercepts = minPercepts + deleteValue;
+  //deltaTime = static_cast<float>(theFrameInfo.time - lastFrame);
+  STOPWATCH("ObstacleModelProvider:delete") deleteObstacles();
+  STOPWATCH("ObstacleModelProvider:dynamic") dynamic();
+  STOPWATCH("ObstacleModelProvider:addArm") addArmContacts();
+  STOPWATCH("ObstacleModelProvider:addFoot") addFootContacts();
+  STOPWATCH("ObstacleModelProvider:addUS") addUSObstacles();
+  STOPWATCH("ObstacleModelProvider:addGoal") addGoalPercepts();
+  STOPWATCH("ObstacleModelProvider:addPlayers") addPlayerPercepts();
+  STOPWATCH("ObstacleModelProvider:considerTeammates") considerTeammates();
+  STOPWATCH("ObstacleModelProvider:mergeOverlapping") mergeOverlapping();
+  STOPWATCH("ObstacleModelProvider:propagate") propagateObstacles(ObstacleModel); //put valid obstacles in representation
+  lastFrame = theFrameInfo.time;
+  DEBUG_RESPONSE_ONCE("module:ObstacleModelProvider:sortOutGoalsDebug")
+  {
+    OUTPUT_TEXT("minDistance: " << minDistance << " maxDistance: " << maxDistance << " minAngle: " << minAngle << " maxAngle: " << maxAngle);
+  }
+}
+
+void ObstacleModelProvider::addArmContacts()
+{
+  merged.clear();
+  merged.resize(iWantToBeAnObstacle.size());
+  Vector2f center;
+  //left arm
+  if(theArmContactModel.contactLeft && theFrameInfo.getTimeSince(theArmContactModel.timeOfLastContactLeft) <= 2000)
+  {
+    center = EigenTools::toEigen(theTorsoMatrix.invert() * theRobotModel.limbs[MassCalibration::shoulderLeft].translation).topRows(2);
+    center.y() += robotDepth;
+    //Insert valid obstacle
+    tryToMerge(InternalObstacle(armCov, center, theFrameInfo.time, maxPercepts, unknownVarianceVelocity));
+  }
+  //right arm
+  if(theArmContactModel.contactRight && theFrameInfo.getTimeSince(theArmContactModel.timeOfLastContactRight) <= 2000)
+  {
+    center = EigenTools::toEigen(theTorsoMatrix.invert() * theRobotModel.limbs[MassCalibration::shoulderRight].translation).topRows(2);
+    center.y() -= robotDepth;
+    //Insert valid obstacle
+    tryToMerge(InternalObstacle(armCov, center, theFrameInfo.time, maxPercepts, unknownVarianceVelocity));
+  }
+}
+
+void ObstacleModelProvider::addFootContacts()
+{
+  merged.clear();
+  merged.resize(iWantToBeAnObstacle.size());
+  Vector2f center;
+  //left foot
+  if(theFootContactModel.contactLeft && theFrameInfo.getTimeSince(theFootContactModel.lastContactLeft) <= 2000)
+  {
+    center = EigenTools::toEigen(theTorsoMatrix.invert() * theRobotModel.limbs[MassCalibration::footLeft].translation).topRows(2);
+    center.x() += robotDepth + 65.f;
+    //65mm is the distance between the bumper and the joint
+    //Insert valid obstacle
+    tryToMerge(InternalObstacle(feetCov, center, theFrameInfo.time, maxPercepts, unknownVarianceVelocity));
+  }
+  //right foot
+  if(theFootContactModel.contactRight && theFrameInfo.getTimeSince(theFootContactModel.lastContactRight) <= 2000)
+  {
+    center = EigenTools::toEigen(theTorsoMatrix.invert() * theRobotModel.limbs[MassCalibration::footRight].translation).topRows(2);
+    center.x() += robotDepth + 65.f;
+    //65mm is the distance between the bumper and the joint
+    //Insert valid obstacle
+    tryToMerge(InternalObstacle(feetCov, center, theFrameInfo.time, maxPercepts, unknownVarianceVelocity));
+  }
+}
+
+void ObstacleModelProvider::addUSObstacles()
+{
+  merged.clear();
+  merged.resize(iWantToBeAnObstacle.size());
+  for(const auto& obstacle : theUsObstacleModel.obstacles)
+  {
+    tryToMerge(InternalObstacle(obstacle.covariance, obstacle.center,
+                                   theFrameInfo.time, 1, unknownVarianceVelocity, InternalObstacle::US));
+  }
+}
+
+void ObstacleModelProvider::addPlayerPercepts()
+{
+  merged.clear();
+  merged.resize(iWantToBeAnObstacle.size());
+  for(const auto& percept : thePlayersPercept.players)
+  {
+    if(!percept.detectedFeet)
+      continue;
+
+    const Vector2<> correctedImageCoordinates = theImageCoordinateSystem.toCorrected(Vector2<int>(percept.realCenterX, percept.y2));
+    // ignore percepts that are (probably) goal posts
+    bool drop = false;
+    for(const auto& goalPost : theGoalPercept.goalPosts)
+    {
+      if(std::abs(goalPost.positionInImage.x() - static_cast<int>(correctedImageCoordinates.x)) <= playersPerceptGoalPerceptdiff &&
+         goalPost.positionInImage.y() >= correctedImageCoordinates.y)
+      {
+        drop = true;
+        break;
+      }
+    }
+    if(drop)
+      continue;
+
+    if(percept.centerOnField.squareAbs() >= MAX_DIST_ON_FIELD2)
+      continue;
+
+    InternalObstacle::Type t = InternalObstacle::SOMEROBOT;
+
+    if(percept.detectedJersey && percept.teamRed)
+    {
+      if(percept.fallen)
+      {
+        t = InternalObstacle::FALLENRED;
+      }
+      else
+      {
+        t = InternalObstacle::ROBOTRED;
+      }
+    }
+    else if(percept.detectedJersey)
+    {
+      if(percept.fallen)
+      {
+        t = InternalObstacle::FALLENBLUE;
+      }
+      else
+      {
+        t = InternalObstacle::ROBOTBLUE;
+      }
+    }
+    else if(percept.fallen)
+    {
+      t = InternalObstacle::SOMEFALLENROBOT;
+    }
+
+    tryToMerge(InternalObstacle(getCovOfPointInWorld(EigenTools::toEigen(percept.centerOnField)),
+                                   EigenTools::toEigen(percept.centerOnField), theFrameInfo.time, 1, varianceVel, t));
+  }
+}
+
+void ObstacleModelProvider::dynamic()
+{
+  for(auto& obstacle : iWantToBeAnObstacle)
+  {
+    dynamic(obstacle);
+  }
+}
+
+void ObstacleModelProvider::deleteObstacles()
+{
+  if(iWantToBeAnObstacle.empty())
+    return;
+  //Sort out some goals
+  for(size_t i = 0; i < iWantToBeAnObstacle.size(); ++i)
+  {
+    for(size_t j = iWantToBeAnObstacle.size() - 1; j > i; --j)
+    {
+      if(iWantToBeAnObstacle[i].type == InternalObstacle::GOALPOST &&
+         iWantToBeAnObstacle[j].type == InternalObstacle::GOALPOST)
+      {
+        //now make sure, there are only four goal posts
+        //closest goal percept to an goal post should be the best candidate to merge
+        //big distances between goals indicate to different goals
+        //merge somewhat plausible goal posts
+        const float distance = (iWantToBeAnObstacle[i].center - iWantToBeAnObstacle[j].center).norm();
+        const float squaredDistance = distance * distance;
+        const float angle = std::abs(normalize(iWantToBeAnObstacle[i].center.angle() - iWantToBeAnObstacle[j].center.angle())); //should be less than maxAngle
+        if(distance < 4000.f)//debugoutput
+        {
+          minDistance = std::min(minDistance, distance);
+          maxDistance = std::max(maxDistance, distance);
+          minAngle = std::min(minAngle, angle);
+          maxAngle = std::max(maxAngle, angle);
+        }
+        if(squaredDistance <= maxGoalToGoalDistSqr && angle < maxGoalAngle && iWantToBeAnObstacle[i].seenCount >= iWantToBeAnObstacle[j].seenCount)
+        {
+          fusion(iWantToBeAnObstacle[i], iWantToBeAnObstacle[j]);
+          considerType(iWantToBeAnObstacle[i], iWantToBeAnObstacle[j]);
+          iWantToBeAnObstacle.erase(iWantToBeAnObstacle.begin() + j);
+        }
+        //else if(squaredDistance > lowerDistOtherGoalSqr)// && distance < upperDistOtherGoal)
+        //{
+        //  continue; //probably a different goal post
+        //}
+        //else
+        //{
+        //  //OUTPUT_TEXT("dist: " << distance << " angle: " << angle); //debugoutput
+        //  iWantToBeAnObstacle.erase(iWantToBeAnObstacle.begin() + j);
+        //}
+        /*
+        else if(distance > maxGoalToGoalDist && distance <= theFieldDimensions.xPosOpponentGroundline && angle < maxAngle && obstacle->seenCount >= otherObstacle->seenCount)
+        {
+        otherObstacle = iWantToBeAnObstacle.erase(otherObstacle);
+        if(otherObstacle < obstacle)
+        --obstacle;
+        }*/
+      }
+    }
+  }
+
+  for(auto obstacle = iWantToBeAnObstacle.begin(); obstacle != iWantToBeAnObstacle.end();)
+  {
+    ASSERT(obstacle->seenCount <= maxPercepts);
+    //Decrease seencount once per second (if lastMeasurement is one second old)
+    if(theCameraInfo.camera && obstacle->seenCount >= 1 && (obstacle->lastMeasurement + 1000) <= theFrameInfo.time)
+    {
+      obstacle->seenCount -= 1;
+      obstacle->lastMeasurement = theFrameInfo.time;
+    }
+    if(obstacle->seenCount == 0 || //Delete old obstacles
+       obstacle->center.squaredNorm() >= MAX_DIST_ON_FIELD2 || obstacle->velocity.norm() > maxVelocity ||
+       (obstacle->type == InternalObstacle::US && (obstacle->lastMeasurement + 1000) <= theFrameInfo.time) //US obstacles are not that trustworthy
+      )
+    {
+      obstacle = iWantToBeAnObstacle.erase(obstacle);
+    }
+    else
+    {
+      ++obstacle;
+    }
+  }
+}
+
+void ObstacleModelProvider::addGoalPercepts()
+{
+  merged.clear();
+  merged.resize(iWantToBeAnObstacle.size());
+  for(const auto& goalPost : theGoalPercept.goalPosts)
+  {
+    if(goalPost.positionOnField.squaredNorm() >= MAX_DIST_ON_FIELD2)
+      continue;
+    unsigned confidence = 1;
+    if(goalPost.position != GoalPost::IS_UNKNOWN)
+      confidence *= 2;
+    if(theGoalPercept.timeWhenCompleteGoalLastSeen == theFrameInfo.time)
+    {
+      confidence = minPercepts;
+      ANNOTATION("ObstacleModelProvider", "Both goalposts seen in this frame");
+    }
+
+    tryToMerge(InternalObstacle(getCovOfPointInWorld(goalPost.positionOnField),
+                                   goalPost.positionOnField, theFrameInfo.time, confidence, 0.f, InternalObstacle::GOALPOST));
+  }
+}
+
+Matrix2f ObstacleModelProvider::getCovOfPointInWorld(const Vector2f& pointInWorld2) const
+{
+  const Vector3f unscaledVectorToPoint = EigenTools::toEigen(theCameraMatrix.invert()) *
+                                         Vector3f(pointInWorld2.x(), pointInWorld2.y(), 0.f);
+  const Vector3f unscaledWorld = EigenTools::toEigen(theCameraMatrix.rotation) * unscaledVectorToPoint;
+  const float scale = theCameraMatrix.translation.z / -unscaledWorld.z();
+  const Vector2f pointInWorld(unscaledWorld.x() * scale, unscaledWorld.y() * scale);
+  const float distance = pointInWorld.norm();
+  Vector2f cossin;
+  if(distance == 0.f)
+  {
+    cossin << 1.f, 0.f;
+  }
+  else
+  {
+    cossin = pointInWorld * (1.f / distance);
+  }
+  Matrix2f rot;
+  rot << cossin.x(), -cossin.y(), cossin.y(), cossin.x();
+  const Vector2f& robotRotationDeviation = (theMotionInfo.motion == MotionRequest::stand ||
+      (theMotionInfo.motion == MotionRequest::specialAction && theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::standHigh))
+      ? pRobotRotationDeviationInStand : pRobotRotationDeviation;
+  Matrix2f cov;
+  cov << sqr(theCameraMatrix.translation.z / std::tan((distance == 0.f ? pi_2 : std::atan(theCameraMatrix.translation.z / distance))
+             - robotRotationDeviation.x()) - distance), 0.f,
+             0.f, sqr(std::tan(robotRotationDeviation.y()) * distance);
+  const Matrix2f result = rot * cov * rot.transpose();
+  return result;
+}
+
+void ObstacleModelProvider::propagateObstacles(ObstacleModel& ObstacleModel) const
+{
+  ObstacleModel.obstacles.clear();
+  for(const auto& ob : iWantToBeAnObstacle)
+  {
+    if(debug || ob.seenCount >= minPercepts)
+      ObstacleModel.obstacles.emplace_back(ob);
+  }
+}
+
+void ObstacleModelProvider::tryToMerge(const InternalObstacle& measurement)
+{
+  if(iWantToBeAnObstacle.empty())
+  {
+    iWantToBeAnObstacle.emplace_back(measurement);
+    merged.push_back(true);
+    return;
+  }
+  float distance = 0.f;
+  const float thisMergeDistance = measurement.type == InternalObstacle::GOALPOST ? goalMergeDistanceSqr : mergeDistanceSqr;
+  float possibleMergeDist = MAX_DIST_ON_FIELD2;
+  size_t atMerge = 0; //element matching the merge condition
+  size_t noEKF = SIZE_MAX; // hopefully, this is not reached
+  for(size_t i = 0; i < iWantToBeAnObstacle.size(); ++i)
+  {
+    if(merged[i])
+      continue;
+
+    distance = (measurement.center - iWantToBeAnObstacle[i].center).squaredNorm();
+    if(distance <= thisMergeDistance) //found probably matching obstacle
+    {
+      if(iWantToBeAnObstacle[i].type == InternalObstacle::GOALPOST && measurement.type != InternalObstacle::GOALPOST)
+      {
+        if(distance >= minimalDistancetoGoalpostSqr) //measured (maybe) a robot
+          continue;
+
+        // no EKF, old goalpercepts are more trustworthy.
+        // maybe the goal frame was measured
+        noEKF = i;
+      }
+      if(distance <= possibleMergeDist)
+      {
+        possibleMergeDist = distance;
+        atMerge = i;
+      }
+    }
+  }
+
+  if(possibleMergeDist < MAX_DIST_ON_FIELD2)
+  {
+    // Avoid merging ultrasound with other measurements. Just drop them because the other measurements are much more precise.
+    // Possible improvement: Use distance, but ignore direction.
+    if((measurement.type != InternalObstacle::US || iWantToBeAnObstacle[atMerge].type == InternalObstacle::US) && noEKF != atMerge)
+    {
+      ObstacleModelProvider::measurement(iWantToBeAnObstacle[atMerge], measurement); //EKF
+    }
+    considerType(iWantToBeAnObstacle[atMerge], measurement);
+    merged[atMerge] = true;
+  }
+  else
+  {
+    iWantToBeAnObstacle.emplace_back(measurement);
+    merged.push_back(true);
+  }
+}
+
+void ObstacleModelProvider::dynamic(InternalObstacle& obstacle)
+{
+  float thisPNv2 = pNv2;
+  //update the state
+  const float rot = -theOdometer.odometryOffset.rotation; //obstacle has to move in the opposite direction
+  const Vector2f translation = EigenTools::toEigen(theOdometer.odometryOffset.translation) * -1.f;
+  Matrix2f rotationMatrix;
+  rotationMatrix << std::cos(rot), -std::sin(rot), std::sin(rot), std::cos(rot); //common 2D rotation
+  obstacle.center = rotationMatrix * obstacle.center;
+  //create jacobian
+  Matrix4f jacobian;
+  jacobian << std::cos(rot), -std::sin(rot), theFrameInfo.cycleTime, 0.f,
+              std::sin(rot), std::cos(rot), 0.f, theFrameInfo.cycleTime,
+              0.f, 0.f, std::cos(rot), -std::sin(rot),
+              0.f, 0.f, std::sin(rot), std::cos(rot);
+  if(obstacle.type == InternalObstacle::GOALPOST || obstacle.type == InternalObstacle::US)
+  {
+    obstacle.velocity.setZero();
+    obstacle.center.noalias() += translation;
+    thisPNv2 = 0.f;
+  }
+  else
+  {
+    obstacle.velocity = rotationMatrix * obstacle.velocity;
+    obstacle.center.noalias() += translation + obstacle.velocity * theFrameInfo.cycleTime;
+  }
+  //noise
+  Matrix4f processNoise;
+  processNoise << pNp2, 0.f, 0.f, 0.f,
+               0.f, pNp2, 0.f, 0.f,
+               0.f, 0.f, thisPNv2, 0.f,
+               0.f, 0.f, 0.f, thisPNv2;
+  //process new covariance matrix
+  obstacle.covariance = jacobian * obstacle.covariance * jacobian.transpose() + processNoise;
+}
+
+void ObstacleModelProvider::measurement(InternalObstacle& obstacle, const InternalObstacle& measurement)
+{
+  //jacobian matrix
+  Matrix2x4f jacobian;
+  jacobian << 1.f, 0.f, 0.f, 0.f,
+           0.f, 1.f, 0.f, 0.f;
+
+  //coariance matrices
+  //computation of kalman gain, new state and covariance matrix
+  //here: unreadable but eigen efficient
+  Matrix4x2f CXZ = obstacle.covariance * jacobian.transpose();
+  Matrix2f CZZ = getCovOfPointInWorld(measurement.center); //...+CovZ
+  CZZ.noalias() += jacobian * CXZ;
+  Matrix4x2f K = CXZ * CZZ.inverse();
+  Vector4f muX;
+  muX << obstacle.center, obstacle.velocity;
+  muX.noalias() += K * (measurement.center - obstacle.center);
+  obstacle.covariance.noalias() -= K * jacobian * obstacle.covariance;
+
+  obstacle.center << muX(0), muX(1);
+
+  if(obstacle.type != InternalObstacle::GOALPOST && obstacle.type != InternalObstacle::US)
+    obstacle.velocity << muX(2), muX(3);
+}
+
+void ObstacleModelProvider::considerType(InternalObstacle& obstacle, const InternalObstacle& measurement)
+{
+  obstacle.lastMeasurement = std::max(obstacle.lastMeasurement, measurement.lastMeasurement);
+  obstacle.seenCount = std::min(obstacle.seenCount += measurement.seenCount, maxPercepts);
+  obstacle.color = std::min(colorThreshold * colorThreshold, std::max(measurement.color + obstacle.color, -colorThreshold * colorThreshold));
+  obstacle.upright = std::min(2 * uprightThreshold, std::max(measurement.upright + obstacle.upright, -2 * uprightThreshold)); //'2' seems to be chosen wisely
+
+  if(obstacle.type == measurement.type || measurement.type == InternalObstacle::UNKNOWN || measurement.type == InternalObstacle::US)
+    return;
+  if(obstacle.type == InternalObstacle::UNKNOWN || obstacle.type == InternalObstacle::US)
+  {
+    obstacle.type = measurement.type;
+    return;
+  }
+  if(obstacle.type == InternalObstacle::GOALPOST || measurement.type == InternalObstacle::US)
+    return;
+  if(measurement.type == InternalObstacle::GOALPOST)
+  {
+    obstacle.type = InternalObstacle::GOALPOST;
+    return;
+  }
+
+  //the following code should perfectly consider whether a robot is fallen/upright and red/blue
+  if(obstacle.color < colorThreshold && obstacle.color > -colorThreshold)
+  {
+    if(obstacle.upright <= -uprightThreshold)
+    {
+      obstacle.type = InternalObstacle::SOMEFALLENROBOT;
+      return;
+    }
+    obstacle.type = InternalObstacle::SOMEROBOT;
+    return;
+  }
+
+  if(obstacle.color >= colorThreshold)
+  {
+    if(obstacle.upright <= -uprightThreshold)
+    {
+      obstacle.type = InternalObstacle::FALLENRED;
+      return;
+    }
+    obstacle.type = InternalObstacle::ROBOTRED;
+    return;
+  }
+  else
+  {
+    if(obstacle.upright <= -uprightThreshold)
+    {
+      obstacle.type = InternalObstacle::FALLENBLUE;
+      return;
+    }
+    obstacle.type = InternalObstacle::ROBOTBLUE;
+    return;
+  }
+}
+
+void ObstacleModelProvider::mergeOverlapping()
+{
+  const float overlap = (2 * robotDepth) * (2 * robotDepth);
+  for(size_t i = 0; i < iWantToBeAnObstacle.size(); ++i)
+  {
+    for(size_t j = iWantToBeAnObstacle.size() - 1; j > i; --j)
+    {
+      if(((iWantToBeAnObstacle[j].center - iWantToBeAnObstacle[i].center).squaredNorm() <= overlap &&
+          ((iWantToBeAnObstacle[i].type >= InternalObstacle::UNKNOWN && iWantToBeAnObstacle[j].type >= InternalObstacle::UNKNOWN)
+           || iWantToBeAnObstacle[i].type == iWantToBeAnObstacle[j].type))/* the following should eliminate obstacles overlapping with goalposts*/
+         || ((iWantToBeAnObstacle[j].center - iWantToBeAnObstacle[i].center).squaredNorm() <= minimalDistancetoGoalpostSqr &&
+             (iWantToBeAnObstacle[i].type >= InternalObstacle::GOALPOST && iWantToBeAnObstacle[j].type >= InternalObstacle::GOALPOST)))
+      {
+        if(iWantToBeAnObstacle[i].lastMeasurement > iWantToBeAnObstacle[j].lastMeasurement ? (iWantToBeAnObstacle[i].lastMeasurement - iWantToBeAnObstacle[j].lastMeasurement) >= mergeOverlapTimeDiff : (iWantToBeAnObstacle[j].lastMeasurement - iWantToBeAnObstacle[i].lastMeasurement) >= mergeOverlapTimeDiff
+           || (iWantToBeAnObstacle[i].lastMeasurement == theFrameInfo.time && iWantToBeAnObstacle[j].lastMeasurement == theFrameInfo.time))
+          continue;
+        fusion(iWantToBeAnObstacle[i], iWantToBeAnObstacle[j]);
+        considerType(iWantToBeAnObstacle[i], iWantToBeAnObstacle[j]);
+        iWantToBeAnObstacle.erase(iWantToBeAnObstacle.begin() + j);
+      }
+    }
+  }
+}
+
+void ObstacleModelProvider::considerTeammates()
+{
+  if(iWantToBeAnObstacle.size() == 0 || theTeammateData.teammates.size() == 0)
+    return;
+
+  std::vector<size_t> other;
+  for(const auto& teammate : theTeammateData.teammates)
+  {
+    if(teammate.status != Teammate::FULLY_ACTIVE)
+      continue;
+
+    Matrix2f cov;
+    cov << teammate.pose.covariance.c0.x, teammate.pose.covariance.c1.x,
+        teammate.pose.covariance.c0.y, teammate.pose.covariance.c1.y;
+
+    const InternalObstacle measurement(cov, EigenTools::toEigen(theRobotPose.invert() * teammate.pose.translation),
+                                          teammate.timeWhenLastPacketReceived, minPercepts, varianceVel,
+                                          theOwnTeamInfo.teamColor == TEAM_RED ? InternalObstacle::ROBOTRED : InternalObstacle::ROBOTBLUE);
+    float distance = 0.f;
+    float possibleMergeDist = MAX_DIST_ON_FIELD2;
+    size_t atMerge = 0; //element matching the merge condition
+    for(size_t i = 0; i < iWantToBeAnObstacle.size(); ++i)
+    {
+      if(iWantToBeAnObstacle[i].type <= InternalObstacle::UNKNOWN)
+        continue;
+
+      distance = (measurement.center - iWantToBeAnObstacle[i].center).squaredNorm();
+      if(distance <= mergeDistanceSqr && distance <= possibleMergeDist) //found probably matching obstacle
+      {
+        possibleMergeDist = distance;
+        atMerge = i;
+      }
+    }
+    if(possibleMergeDist < MAX_DIST_ON_FIELD2)
+    {
+      //measurement(iWantToBeAnObstacle[atMerge], obstacle); //EKF
+      considerType(iWantToBeAnObstacle[atMerge], measurement);
+      other.emplace_back(atMerge);
+    }
+  }
+
+  InternalObstacle opponent(theOwnTeamInfo.teamColor == TEAM_RED ? InternalObstacle::ROBOTBLUE : InternalObstacle::ROBOTRED);
+
+  // merged all my teammates? other robots should be in the other team
+  //if(other.size() != static_cast<size_t>(theTeammateData.numberOfActiveTeammates))
+  //  return;
+
+  for(size_t i = 0; i < iWantToBeAnObstacle.size();)
+  {
+    bool skip = false;
+    for(const auto& entry : other)
+    {
+      if(i == entry)
+      {
+        ++i;
+        skip = true;
+      }
+    }
+    if(skip)
+      continue;
+    if(iWantToBeAnObstacle[i].type >= InternalObstacle::UNKNOWN)
+      considerType(iWantToBeAnObstacle[i], opponent);
+    ++i;
+  }
+}
+
+/*Mahalanobis distance cannot be used, due to bug in getCovOfPointInWorld
+float ObstacleModelProvider::mahalanobisDistance(const InternalObstacle& one, const InternalObstacle& two) const
+{
+const Vector2f diff(one.center.x - two.center.x, one.center.y - two.center.y);
+if(diff.isZero(1.f))
+return 0.f;
+const Eigen::RowVector2f diffT(one.center.x - two.center.x, one.center.y - two.center.y);
+Matrix2f cov;
+cov << one.covariance[0][0] + two.covariance[0][0], one.covariance[1][0] + two.covariance[1][0],
+one.covariance[0][1] + two.covariance[0][1], one.covariance[1][1] + two.covariance[1][1];
+
+Matrix2f covInv;
+bool invertible;
+cov.computeInverseWithCheck(covInv, invertible);
+ASSERT(invertible);
+return std::sqrt(diffT * (covInv * diff));
+}
+*/
+
+void ObstacleModelProvider::fusion(InternalObstacle& one, const InternalObstacle& other)
+{
+  //multidimensional square equation (german: "Multidimensionale quadratische Ausgleichsrechnung" aus dem Skript
+  //"Theorie der Sensorfusion"
+  const Eigen::Matrix<float, 8, 4> A = (Eigen::Matrix<float, 8, 4>() << Matrix4f::Identity(), Matrix4f::Identity()).finished();
+  const Eigen::Matrix<float, 4, 8> AT = A.transpose();
+  const Eigen::Matrix<float, 8, 8> Sigma = ((Eigen::Matrix<float, 8, 8>() << one.covariance, Matrix4f::Zero(4, 4), Matrix4f::Zero(4, 4), other.covariance
+    ).finished());
+  ASSERT(Sigma.determinant() != 0);
+  const Eigen::Matrix<float, 8, 8> SigmaInv = Sigma.inverse();
+  const Eigen::Matrix<float, 8, 1> z = (Eigen::Matrix<float, 8, 1>() << one.center, one.velocity,
+                                         other.center, other.velocity).finished();
+  const Eigen::Matrix4f ATSigmaInvAINV = ((AT * SigmaInv) * A).inverse();
+  const Vector4f X = ATSigmaInvAINV * AT * SigmaInv * z;
+  ASSERT(X.allFinite());
+  ASSERT(ATSigmaInvAINV.allFinite());
+  one.center << X(0), X(1);
+  if(one.type != InternalObstacle::GOALPOST && one.type != InternalObstacle::US)
+    one.velocity << X(2), X(3);
+  one.covariance = ATSigmaInvAINV;
+}
+
+InternalObstacle::InternalObstacle(const Matrix2f& cov, const Vector2f pCenter, const unsigned time, const unsigned sC, const float varianceVel, const Type t)
+{
+  covariance << cov, Matrix2f::Zero(), Matrix2f::Zero(), Matrix2f::Identity();
+  center = pCenter;
+  type = t;
+  lastMeasurement = time;
+  velocity.setZero();
+  seenCount = sC;
+  upright = type < SOMEFALLENROBOT ? 1 : -1;
+  if(type == FALLENBLUE || type == ROBOTBLUE)
+    color = -1;
+  else if(type == FALLENRED || type == ROBOTRED)
+    color = 1;
+  else
+    color = 0;
+}
+
+InternalObstacle::InternalObstacle(const Type t)
+{
+  upright = type < SOMEFALLENROBOT ? 1 : -1;
+  if(type == FALLENBLUE || type == ROBOTBLUE)
+    color = -1;
+  else if(type == FALLENRED || type == ROBOTRED)
+    color = 1;
+  else
+    color = 0;
+}

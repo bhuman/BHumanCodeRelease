@@ -7,133 +7,140 @@
 */
 
 #include "OracledPerceptsProvider.h"
+#include "Tools/Global.h"
+#include "Tools/Settings.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Math/Probabilistics.h"
+#include "Tools/Math/RotationMatrix.h"
+#include "Tools/Modeling/Obstacle.h"
 
 OracledPerceptsProvider::OracledPerceptsProvider()
 {
   // Four goal posts
-  goalPosts.push_back(Vector2<>(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal));
-  goalPosts.push_back(Vector2<>(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal));
-  goalPosts.push_back(Vector2<>(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal));
-  goalPosts.push_back(Vector2<>(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal));
+  goalPosts.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal));
+  goalPosts.push_back(Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal));
+  goalPosts.push_back(Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal));
+  goalPosts.push_back(Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal));
+  // Two penalty marks
+  penaltyMarks.push_back(Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f));
+  penaltyMarks.push_back(Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f));
   // Five points roughly approximating the center circle
-  ccPoints.push_back(Vector2<>(0.f, 0.f));
-  ccPoints.push_back(Vector2<>(0.f, theFieldDimensions.centerCircleRadius));
-  ccPoints.push_back(Vector2<>(0.f, -theFieldDimensions.centerCircleRadius));
-  ccPoints.push_back(Vector2<>(theFieldDimensions.centerCircleRadius, 0.f));
-  ccPoints.push_back(Vector2<>(-theFieldDimensions.centerCircleRadius, 0.f));
+  ccPoints.push_back(Vector2f::Zero());
+  ccPoints.push_back(Vector2f(0.f, theFieldDimensions.centerCircleRadius));
+  ccPoints.push_back(Vector2f(0.f, -theFieldDimensions.centerCircleRadius));
+  ccPoints.push_back(Vector2f(theFieldDimensions.centerCircleRadius, 0.f));
+  ccPoints.push_back(Vector2f(-theFieldDimensions.centerCircleRadius, 0.f));
   // Half of the intersections
   LinePercept::Intersection oppLeftCorner;
   oppLeftCorner.type = LinePercept::Intersection::L;
-  oppLeftCorner.pos = Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
-  oppLeftCorner.dir1 = Vector2<>(-1.f, 0.f);
-  oppLeftCorner.dir2 = Vector2<>(0.f, -1.f);
+  oppLeftCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
+  oppLeftCorner.dir1 = Vector2f(-1.f, 0.f);
+  oppLeftCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftCorner);
   LinePercept::Intersection oppLeftPenaltyArea;
   oppLeftPenaltyArea.type = LinePercept::Intersection::T;
-  oppLeftPenaltyArea.pos = Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftPenaltyArea);
-  oppLeftPenaltyArea.dir1 = Vector2<>(-1.f, 0.f);
-  oppLeftPenaltyArea.dir2 = Vector2<>(0.f, -1.f);
+  oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftPenaltyArea);
+  oppLeftPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
+  oppLeftPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyArea);
   LinePercept::Intersection oppRightPenaltyArea;
   oppRightPenaltyArea.type = LinePercept::Intersection::T;
-  oppRightPenaltyArea.pos = Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightPenaltyArea);
-  oppRightPenaltyArea.dir1 = Vector2<>(-1.f, 0.f);
-  oppRightPenaltyArea.dir2 = Vector2<>(0.f, -1.f);
+  oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightPenaltyArea);
+  oppRightPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
+  oppRightPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppRightPenaltyArea);
   LinePercept::Intersection oppRightCorner;
   oppRightCorner.type = LinePercept::Intersection::L;
-  oppRightCorner.pos = Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
-  oppRightCorner.dir1 = Vector2<>(-1.f, 0.f);
-  oppRightCorner.dir2 = Vector2<>(0.f, 1.f);
+  oppRightCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
+  oppRightCorner.dir1 = Vector2f(-1.f, 0.f);
+  oppRightCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightCorner);
   LinePercept::Intersection oppLeftPenaltyCorner;
   oppLeftPenaltyCorner.type = LinePercept::Intersection::L;
-  oppLeftPenaltyCorner.pos = Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
-  oppLeftPenaltyCorner.dir1 = Vector2<>(1.f, 0.f);
-  oppLeftPenaltyCorner.dir2 = Vector2<>(0.f, -1.f);
+  oppLeftPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
+  oppLeftPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
+  oppLeftPenaltyCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyCorner);
   LinePercept::Intersection oppRightPenaltyCorner;
   oppRightPenaltyCorner.type = LinePercept::Intersection::L;
-  oppRightPenaltyCorner.pos = Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
-  oppRightPenaltyCorner.dir1 = Vector2<>(1.f, 0.f);
-  oppRightPenaltyCorner.dir2 = Vector2<>(0.f, 1.f);
+  oppRightPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+  oppRightPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
+  oppRightPenaltyCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightPenaltyCorner);
   LinePercept::Intersection leftCenterLineCrossing;
   leftCenterLineCrossing.type = LinePercept::Intersection::T;
-  leftCenterLineCrossing.pos = Vector2<>(0.f, theFieldDimensions.yPosLeftSideline);
-  leftCenterLineCrossing.dir1 = Vector2<>(1.f, 0.f);
-  leftCenterLineCrossing.dir2 = Vector2<>(0.f, -1.f);
+  leftCenterLineCrossing.pos = Vector2f(0.f, theFieldDimensions.yPosLeftSideline);
+  leftCenterLineCrossing.dir1 = Vector2f(1.f, 0.f);
+  leftCenterLineCrossing.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(leftCenterLineCrossing);
   LinePercept::Intersection leftCenterCircleCrossing;
   leftCenterCircleCrossing.type = LinePercept::Intersection::X;
-  leftCenterCircleCrossing.pos = Vector2<>(0.f, theFieldDimensions.centerCircleRadius);
-  leftCenterCircleCrossing.dir1 = Vector2<>(1.f, 0.f);
-  leftCenterCircleCrossing.dir2 = Vector2<>(0.f, -1.f);
+  leftCenterCircleCrossing.pos = Vector2f(0.f, theFieldDimensions.centerCircleRadius);
+  leftCenterCircleCrossing.dir1 = Vector2f(1.f, 0.f);
+  leftCenterCircleCrossing.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(leftCenterCircleCrossing);
   // The other half of the intersections is mirrored to the first half:
   const size_t numOfIntersections = intersections.size();
   for(unsigned int i = 0; i < numOfIntersections; i++)
   {
     LinePercept::Intersection mirroredIntersection = intersections[i];
-    mirroredIntersection.pos = Pose2D(pi) * mirroredIntersection.pos;
-    mirroredIntersection.dir1 = Pose2D(pi) * mirroredIntersection.dir1;
-    mirroredIntersection.dir2 = Pose2D(pi) * mirroredIntersection.dir2;
+    mirroredIntersection.pos = Pose2f(pi) * mirroredIntersection.pos;
+    mirroredIntersection.dir1 = Pose2f(pi) * mirroredIntersection.dir1;
+    mirroredIntersection.dir2 = Pose2f(pi) * mirroredIntersection.dir2;
     intersections.push_back(mirroredIntersection);
   }
   // The lines
-  std::pair<Vector2<>, Vector2<>> line;
+  std::pair<Vector2f, Vector2f> line;
   // ground lines and center line:
-  line.first =  Vector2<>(0, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2<>(0, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(0, theFieldDimensions.yPosLeftSideline);
+  line.second = Vector2f(0, theFieldDimensions.yPosRightSideline);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftSideline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightSideline);
   lines.push_back(line);
   // side lines:
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftSideline);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightSideline);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
+  line.second = Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightSideline);
   lines.push_back(line);
   // opponent penalty area:
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
   // own penalty area:
-  line.first =  Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
+  line.first =  Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
+  line.second = Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   lines.push_back(line);
   // The field boundary
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
-  line.second = Vector2<>(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightFieldBorder);
+  line.first = Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
+  line.second =  Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
   fieldBoundaryLines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightFieldBorder);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
+  line.second = Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightFieldBorder);
   fieldBoundaryLines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
+  line.first =  Vector2f(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightFieldBorder);
+  line.second = Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightFieldBorder);
   fieldBoundaryLines.push_back(line);
-  line.first =  Vector2<>(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosRightFieldBorder);
-  line.second = Vector2<>(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightFieldBorder);
+  line.first = Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightFieldBorder);
+  line.second =  Vector2f(theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosLeftFieldBorder);
   fieldBoundaryLines.push_back(line);
 }
 
@@ -144,19 +151,19 @@ void OracledPerceptsProvider::update(BallPercept& ballPercept)
     return;
   if(theGroundTruthWorldState.balls.size() != 0)
   {
-    const Vector2<>& ballOnField = theGroundTruthWorldState.balls[0];
-    Vector2<> ballOffset = theGroundTruthWorldState.ownPose.invert() * ballOnField;
-    if(ballOffset.abs() > ballMaxVisibleDistance)
+    const Vector2f ballOnField = theGroundTruthWorldState.balls[0];
+    Vector2f ballOffset = theGroundTruthWorldState.ownPose.inverse() * ballOnField;
+    if(ballOffset.norm() > ballMaxVisibleDistance)
       return;
     if(randomFloat() > ballRecognitionRate)
       return;
     Geometry::Circle circle;
     if(Geometry::calculateBallInImage(ballOffset, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
     {
-      if((circle.center.x >= -circle.radius / 1.5f) &&
-         (circle.center.x < theCameraInfo.width + circle.radius / 1.5f) &&
-         (circle.center.y >= -circle.radius / 1.5f) &&
-         (circle.center.y < theCameraInfo.height + circle.radius / 1.5f))
+      if((circle.center.x() >= -circle.radius / 1.5f) &&
+         (circle.center.x() < theCameraInfo.width + circle.radius / 1.5f) &&
+         (circle.center.y() >= -circle.radius / 1.5f) &&
+         (circle.center.y() < theCameraInfo.height + circle.radius / 1.5f))
       {
         ballPercept.status = BallPercept::seen;
         ballPercept.positionInImage = circle.center;
@@ -166,8 +173,11 @@ void OracledPerceptsProvider::update(BallPercept& ballPercept)
         if(applyBallNoise)
         {
           applyNoise(ballCenterInImageStdDev, ballPercept.positionInImage);
-          Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theFieldDimensions.ballRadius, theCameraMatrix,
-              theCameraInfo, ballPercept.relativePositionOnField);
+          if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theFieldDimensions.ballRadius, theCameraMatrix,theCameraInfo,ballPercept.relativePositionOnField))
+          {
+            ballPercept.status = BallPercept::notSeen;
+            return;
+          }
         }
       }
     }
@@ -179,36 +189,39 @@ void OracledPerceptsProvider::update(GoalPercept& goalPercept)
   goalPercept.goalPosts.clear();
   if(!theCameraMatrix.isValid)
     return;
-  const Pose2D robotPoseInv = theGroundTruthWorldState.ownPose.invert();
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   for(unsigned int i = 0; i < goalPosts.size(); i++)
   {
-    const Vector2<> relativePostPos = robotPoseInv * goalPosts[i];
-    if(relativePostPos.abs() > goalPostMaxVisibleDistance)
+    const Vector2f relativePostPos = robotPoseInv * goalPosts[i];
+    if(relativePostPos.norm() > goalPostMaxVisibleDistance)
       continue;
     if(randomFloat() > goalPostRecognitionRate)
       continue;
-    Vector2<> postInImage;
+    Vector2f postInImage;
     if(pointIsInImage(relativePostPos, postInImage))
     {
       GoalPost newPost; // GoalPost::IS_UNKNOWN is the default side information
-      newPost.positionInImage.x = static_cast<int>(std::floor(postInImage.x + 0.5f));
-      newPost.positionInImage.y = static_cast<int>(std::floor(postInImage.y + 0.5f));
+      newPost.positionInImage.x() = static_cast<int>(std::floor(postInImage.x() + 0.5f));
+      newPost.positionInImage.y() = static_cast<int>(std::floor(postInImage.y() + 0.5f));
       newPost.positionOnField = relativePostPos;
       // Add some noise:
       if(applyGoalPostNoise)
       {
         applyNoise(ballCenterInImageStdDev, newPost.positionInImage);
-        Transformation::imageToRobot(newPost.positionInImage.x, newPost.positionInImage.y, theCameraMatrix, theCameraInfo, newPost.positionOnField);
+        if(!Transformation::imageToRobot(newPost.positionInImage.x(), newPost.positionInImage.y(), theCameraMatrix, theCameraInfo, newPost.positionOnField))
+        {
+          continue;
+        }
       }
       // If a part of the goal bar might be in the image, there is also a side information:
-      const Vector3<> relativeBarPos(relativePostPos.x, relativePostPos.y, theFieldDimensions.goalHeight);
-      Vector2<> barInImage;
+      const Vector3f relativeBarPos(relativePostPos.x(), relativePostPos.y(), theFieldDimensions.goalHeight);
+      Vector2f barInImage;
       if(Transformation::robotToImage(relativeBarPos, theCameraMatrix, theCameraInfo, barInImage))
       {
-        if((barInImage.x >= 0.f) && (barInImage.x < static_cast<float>(theCameraInfo.width)) &&
-           (barInImage.y >= 0.f) && (barInImage.y < static_cast<float>(theCameraInfo.height)))
+        if((barInImage.x() >= 0.f) && (barInImage.x() < static_cast<float>(theCameraInfo.width)) &&
+           (barInImage.y() >= 0.f) && (barInImage.y() < static_cast<float>(theCameraInfo.height)))
         {
-          if((goalPosts[i].x > 0 && goalPosts[i].y > 0) || (goalPosts[i].x < 0 && goalPosts[i].y < 0))
+          if((goalPosts[i].x() > 0 && goalPosts[i].y() > 0) || (goalPosts[i].x() < 0 && goalPosts[i].y() < 0))
             newPost.position = GoalPost::IS_LEFT;
           else
             newPost.position = GoalPost::IS_RIGHT;
@@ -222,8 +235,8 @@ void OracledPerceptsProvider::update(GoalPercept& goalPercept)
   if(goalPercept.goalPosts.size() == 2)
   {
     goalPercept.timeWhenCompleteGoalLastSeen = theFrameInfo.time;
-    float angleToFirst  = std::atan2(goalPercept.goalPosts[0].positionOnField.y, goalPercept.goalPosts[0].positionOnField.x);
-    float angleToSecond = std::atan2(goalPercept.goalPosts[1].positionOnField.y, goalPercept.goalPosts[1].positionOnField.x);
+    float angleToFirst = std::atan2(goalPercept.goalPosts[0].positionOnField.y(), goalPercept.goalPosts[0].positionOnField.x());
+    float angleToSecond = std::atan2(goalPercept.goalPosts[1].positionOnField.y(), goalPercept.goalPosts[1].positionOnField.x());
     if(angleToFirst < angleToSecond)
     {
       goalPercept.goalPosts[0].position = GoalPost::IS_RIGHT;
@@ -246,17 +259,17 @@ void OracledPerceptsProvider::update(LinePercept& linePercept)
   if(!theCameraMatrix.isValid)
     return;
   updateViewPolygon();
-  const Pose2D robotPoseInv = theGroundTruthWorldState.ownPose.invert();
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
 
   // Find center circle (at least one out of five center circle points must be inside the current image)
   bool pointFound = false;
-  if((theGroundTruthWorldState.ownPose.translation.abs() <= centerCircleMaxVisibleDistance) &&
+  if((theGroundTruthWorldState.ownPose.translation.norm() <= centerCircleMaxVisibleDistance) &&
      (randomFloat() < centerCircleRecognitionRate))
   {
     for(unsigned int i = 0; i < ccPoints.size(); ++i)
     {
-      const Vector2<> relPos = robotPoseInv * ccPoints[i];
-      Vector2<> posInImage;
+      const Vector2f relPos = robotPoseInv * ccPoints[i];
+      Vector2f posInImage;
       if(pointIsInImage(relPos, posInImage))
       {
         pointFound = true;
@@ -266,42 +279,52 @@ void OracledPerceptsProvider::update(LinePercept& linePercept)
   }
   if(pointFound)
   {
-    linePercept.circle.found = true;
-    linePercept.circle.lastSeen = theFrameInfo.time;
-    linePercept.circle.pos = robotPoseInv * Vector2<>(0.f, 0.f);
+    linePercept.circle.pos = robotPoseInv * Vector2f::Zero();
     // Add some noise:
+    linePercept.circle.found = true;
     if(applyCenterCircleNoise)
     {
-      Vector2<> nPImg;
-      Transformation::robotToImage(linePercept.circle.pos, theCameraMatrix, theCameraInfo, nPImg);
-      applyNoise(centerCircleCenterInImageStdDev, nPImg);
-      Transformation::imageToRobot(nPImg.x, nPImg.y, theCameraMatrix, theCameraInfo, linePercept.circle.pos);
+      Vector2f nPImg;
+      if(Transformation::robotToImage(linePercept.circle.pos, theCameraMatrix, theCameraInfo, nPImg))
+      {
+        applyNoise(centerCircleCenterInImageStdDev, nPImg);
+        if(!Transformation::imageToRobot(nPImg, theCameraMatrix, theCameraInfo, linePercept.circle.pos))
+        {
+          linePercept.circle.found = false;
+        }
+      }
     }
+    if(linePercept.circle.found)
+      linePercept.circle.lastSeen = theFrameInfo.time;
   }
 
   // Find intersections:
   for(unsigned int i = 0; i < intersections.size(); i++)
   {
-    const Vector2<> relativeIntersectionPos = robotPoseInv * intersections[i].pos;
-    if(relativeIntersectionPos.abs() > intersectionMaxVisibleDistance)
+    const Vector2f relativeIntersectionPos = robotPoseInv * intersections[i].pos;
+    if(relativeIntersectionPos.norm() > intersectionMaxVisibleDistance)
       continue;
     if(randomFloat() > intersectionRecognitionRate)
       continue;
-    Vector2<> intersectionInImage;
+    Vector2f intersectionInImage;
     if(pointIsInImage(relativeIntersectionPos, intersectionInImage))
     {
       LinePercept::Intersection newIntersection;
       newIntersection.pos = relativeIntersectionPos;
       newIntersection.type = intersections[i].type;
-      newIntersection.dir1 = (Pose2D(robotPoseInv.rotation) * intersections[i].dir1);
-      newIntersection.dir2 = (Pose2D(robotPoseInv.rotation) * intersections[i].dir2);
+      newIntersection.dir1 = (Pose2f(robotPoseInv.rotation) * intersections[i].dir1);
+      newIntersection.dir2 = (Pose2f(robotPoseInv.rotation) * intersections[i].dir2);
+      bool success = true;
       if(applyIntersectionNoise)
       {
         applyNoise(intersectionPosInImageStdDev, intersectionInImage);
-        Transformation::imageToRobot(intersectionInImage.x, intersectionInImage.y, theCameraMatrix, theCameraInfo, newIntersection.pos);
+        success = Transformation::imageToRobot(intersectionInImage, theCameraMatrix, theCameraInfo, newIntersection.pos);
         // noise on directions is not implemented, but if you need it, feel free to add it right here
       }
-      linePercept.intersections.push_back(newIntersection);
+      if(success)
+      {
+        linePercept.intersections.push_back(newIntersection);
+      }
     }
   }
 
@@ -310,53 +333,93 @@ void OracledPerceptsProvider::update(LinePercept& linePercept)
   {
     if(randomFloat() > lineRecognitionRate)
       continue;
-    Vector2<> start, end;
+    Vector2f start, end;
     if(partOfLineIsVisible(lines[i], start, end))
     {
       LinePercept::Line line;
       line.first = robotPoseInv * start;
       line.last = robotPoseInv * end;
-      if(line.first.abs() > lineMaxVisibleDistance || line.last.abs() > lineMaxVisibleDistance)
+      if(line.first.norm() > lineMaxVisibleDistance || line.last.norm() > lineMaxVisibleDistance)
         continue;
       line.midLine = (i == 0);
-      Vector2<> pImg;
-      Transformation::robotToImage(line.first, theCameraMatrix, theCameraInfo, pImg);
-      line.startInImage = pImg;
-      Transformation::robotToImage(line.last, theCameraMatrix, theCameraInfo, pImg);
-      line.endInImage = pImg;
-      if(applyLineNoise)
+      Vector2f pImg;
+      if(Transformation::robotToImage(line.first, theCameraMatrix, theCameraInfo, pImg))
       {
-        applyNoise(linePosInImageStdDev, line.startInImage);
-        applyNoise(linePosInImageStdDev, line.endInImage);
-        Transformation::imageToRobot(line.startInImage.x, line.startInImage.y, theCameraMatrix, theCameraInfo, line.first);
-        Transformation::imageToRobot(line.endInImage.x, line.endInImage.y, theCameraMatrix, theCameraInfo, line.last);
+        line.startInImage = pImg;
+        if(Transformation::robotToImage(line.last, theCameraMatrix, theCameraInfo, pImg))
+        {
+          line.endInImage = pImg;
+          bool success = true;
+          if(applyLineNoise)
+          {
+            applyNoise(linePosInImageStdDev, line.startInImage);
+            applyNoise(linePosInImageStdDev, line.endInImage);
+            success = Transformation::imageToRobot(line.startInImage.x(), line.startInImage.y(), theCameraMatrix, theCameraInfo, line.first) &&
+              Transformation::imageToRobot(line.endInImage.x(), line.endInImage.y(), theCameraMatrix, theCameraInfo, line.last);
+          }
+          if(success)
+          {
+            line.alpha = (line.first - line.last).angle() + pi_2;
+            while(line.alpha < 0)
+              line.alpha += pi;
+            while(line.alpha >= pi)
+              line.alpha -= pi;
+            const float c = std::cos(line.alpha),
+              s = std::sin(line.alpha);
+            line.d = line.first.x() * c + line.first.y() * s;
+            linePercept.lines.push_back(line);
+          }
+        }
       }
-      line.dead = false;
-
-      line.alpha = (line.first - line.last).angle() + pi_2;
-      while(line.alpha < 0)
-        line.alpha += pi;
-      while(line.alpha >= pi)
-        line.alpha -= pi;
-      const float c = std::cos(line.alpha),
-                  s = std::sin(line.alpha);
-      line.d = line.first.x * c + line.first.y * s;
-
-      line.segments.clear(); // has to remain empty
-      linePercept.lines.push_back(line);
     }
   }
 }
 
-void OracledPerceptsProvider::update(RobotPercept& robotPercept)
+void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
 {
-  robotPercept.robots.clear();
   if(!theCameraMatrix.isValid)
     return;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.blueRobots.size(); ++i)
-    createRobotBox(theGroundTruthWorldState.blueRobots[i], true, robotPercept);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.redRobots.size(); ++i)
-    createRobotBox(theGroundTruthWorldState.redRobots[i], false, robotPercept);
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  for(auto& pos : penaltyMarks)
+  {
+    Vector2f relativeMarkPos = robotPoseInv * pos;
+    if(relativeMarkPos.norm() > penaltyMarkMaxVisibleDistance)
+      continue;
+    if(randomFloat() > penaltyMarkRecognitionRate)
+      continue;
+    Vector2f penaltyMarkInImage;
+    if(pointIsInImage(relativeMarkPos, penaltyMarkInImage))
+    {
+      bool success = true;
+      if(applyPenaltyMarkNoise)
+      {
+        applyNoise(penaltyMarkPosInImageStdDev, penaltyMarkInImage);
+        success = Transformation::imageToRobot(penaltyMarkInImage, theCameraMatrix, theCameraInfo, relativeMarkPos);
+      }
+      if(success)
+      {
+        penaltyMarkPercept.positionOnField = relativeMarkPos;
+        penaltyMarkPercept.position        = Vector2i(static_cast<int>(penaltyMarkInImage.x()), static_cast<int>(penaltyMarkInImage.y()));
+        penaltyMarkPercept.timeLastSeen    = theFrameInfo.time;
+      }
+    }
+  }
+}
+
+void OracledPerceptsProvider::update(PlayersPercept& playersPercept)
+{
+  playersPercept.players.clear();
+  if(!theCameraMatrix.isValid || !Global::settingsExist())
+    return;
+
+  // Simulation scene should only use blue and red for now
+  ASSERT(Global::getSettings().teamColor == Settings::blue || Global::getSettings().teamColor == Settings::red);
+  
+  const bool isBlue = Global::getSettings().teamColor == Settings::blue;
+  for(unsigned int i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
+    createPlayerBox(theGroundTruthWorldState.bluePlayers[i], !isBlue, playersPercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
+    createPlayerBox(theGroundTruthWorldState.redPlayers[i], isBlue, playersPercept);
 }
 
 void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
@@ -368,79 +431,91 @@ void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
   fieldBoundary.convexBoundary.clear();
   if(!theCameraMatrix.isValid)
   {
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(0, theCameraInfo.height));
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(theCameraInfo.width - 1, theCameraInfo.height));
+    fieldBoundary.convexBoundary.push_back(Vector2i(0, theCameraInfo.height));
+    fieldBoundary.convexBoundary.push_back(Vector2i(theCameraInfo.width - 1, theCameraInfo.height));
     fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
-    fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, 1));
-    fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, -1));
-    fieldBoundary.highestPoint = Vector2<int>(theCameraInfo.width / 2, theCameraInfo.height);
+    fieldBoundary.boundaryOnField.push_back(Vector2f(0, 1));
+    fieldBoundary.boundaryOnField.push_back(Vector2f(0, -1));
     fieldBoundary.isValid = false;
     return;
   }
   updateViewPolygon();
-  const Pose2D robotPoseInv = theGroundTruthWorldState.ownPose.invert();
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
 
   // Find boundary lines:
   for(unsigned int i = 0; i < fieldBoundaryLines.size(); i++)
   {
-    Vector2<> start, end;
+    Vector2f start, end;
     if(partOfLineIsVisible(fieldBoundaryLines[i], start, end))
     {
-      fieldBoundary.boundaryOnField.push_back(start);
-      fieldBoundary.boundaryOnField.push_back(end);
-      Vector2<> pImgStart, pImgEnd;
-      Transformation::robotToImage(start, theCameraMatrix, theCameraInfo, pImgStart);
-      Transformation::robotToImage(end, theCameraMatrix, theCameraInfo, pImgEnd);
-      fieldBoundary.boundaryInImage.push_back(Vector2<int>(static_cast<int>(pImgStart.x), static_cast<int>(pImgStart.y)));
-      fieldBoundary.boundaryInImage.push_back(Vector2<int>(static_cast<int>(pImgEnd.x), static_cast<int>(pImgEnd.y)));
+      Vector2f pRobotStart = robotPoseInv * start;
+      Vector2f pRobotEnd = robotPoseInv * end;
+      fieldBoundary.boundaryOnField.push_back(pRobotStart);
+      fieldBoundary.boundaryOnField.push_back(pRobotEnd);
+      Vector2f pImgStart, pImgEnd;
+      VERIFY(Transformation::robotToImage(pRobotStart, theCameraMatrix, theCameraInfo, pImgStart));
+      VERIFY(Transformation::robotToImage(pRobotEnd, theCameraMatrix, theCameraInfo, pImgEnd));
+      fieldBoundary.boundaryInImage.push_back(pImgStart.cast<int>());
+      fieldBoundary.boundaryInImage.push_back(pImgEnd.cast<int>());
     }
   }
   fieldBoundary.isValid = fieldBoundary.boundaryOnField.size() != 0;
   if(fieldBoundary.boundaryOnField.size() < 2)
   {
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(0, theCameraInfo.height));
-    fieldBoundary.convexBoundary.push_back(Vector2<int>(theCameraInfo.width - 1, theCameraInfo.height));
+    fieldBoundary.convexBoundary.push_back(Vector2i(0, theCameraInfo.height));
+    fieldBoundary.convexBoundary.push_back(Vector2i(theCameraInfo.width - 1, theCameraInfo.height));
     fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
-    fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, 1));
-    fieldBoundary.boundaryOnField.push_back(Vector2<float>(0, -1));
-    fieldBoundary.highestPoint = Vector2<int>(theCameraInfo.width / 2, theCameraInfo.height);
+    fieldBoundary.boundaryOnField.push_back(Vector2f(0, 1));
+    fieldBoundary.boundaryOnField.push_back(Vector2f(0, -1));
     fieldBoundary.isValid = false;
   }
 }
 
-void OracledPerceptsProvider::createRobotBox(const GroundTruthWorldState::GroundTruthRobot& robot, bool isBlue, RobotPercept& robotPercept)
+void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, PlayersPercept& playersPercept)
 {
-  const Pose2D robotPoseInv = theGroundTruthWorldState.ownPose.invert();
-  Vector2<> relativeRobotPos = robotPoseInv * robot.pose.translation;
-  if(relativeRobotPos.abs() > robotMaxVisibleDistance)
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
+  if(relativePlayerPos.norm() > playerMaxVisibleDistance)
     return;
-  if(randomFloat() > robotRecognitionRate)
+  if(randomFloat() > playerRecognitionRate)
     return;
-  Vector2<> robotInImage;
-  if(pointIsInImage(relativeRobotPos, robotInImage))
+  Vector2f playerInImage;
+  if(pointIsInImage(relativePlayerPos, playerInImage))
   {
-    if(applyRobotNoise)
+    bool success = true;
+    if(applyPlayerNoise)
     {
-      applyNoise(robotPosInImageStdDev, robotInImage);
-      Transformation::imageToRobot(robotInImage.x, robotInImage.y, theCameraMatrix, theCameraInfo, relativeRobotPos);
+      applyNoise(playerPosInImageStdDev, playerInImage);
+      success = Transformation::imageToRobot(playerInImage, theCameraMatrix, theCameraInfo, relativePlayerPos);
     }
-    RobotPercept::RobotBox r;
-    r.x1 = r.x2 = r.x1FeetOnly = r.x2FeetOnly = r.realCenterX = static_cast<int>(std::floor(robotInImage.x + 0.5f));
-    r.y1 = r.y2 = static_cast<int>(std::floor(robotInImage.y + 0.5f));
-    r.lowerCamera = theCameraInfo.camera == CameraInfo::lower;
-    r.detectedJersey = true;
-    r.detectedFeet   = true;
-    r.teamRed = !isBlue;
-    r.fallen  = false;
-    robotPercept.robots.push_back(r);
+    if(success)
+    {
+      PlayersPercept::Player p;
+      p.x1 = p.x2 = p.x1FeetOnly = p.x2FeetOnly = p.realCenterX = static_cast<int>(std::floor(playerInImage.x() + 0.5f));
+      p.y1 = p.y2 = static_cast<int>(std::floor(playerInImage.y() + 0.5f));
+      p.lowerCamera = theCameraInfo.camera == CameraInfo::lower;
+      p.detectedJersey = true;
+      p.detectedFeet   = true;
+      p.ownTeam = !isOpponent;
+      p.fallen = !player.upright;
+      p.rightOnField = p.centerOnField = p.leftOnField = relativePlayerPos;
+      p.rightOnField.normalize(Obstacle::getRobotDepth());
+      p.leftOnField.normalize(Obstacle::getRobotDepth());
+      p.rightOnField.rotateRight();
+      p.leftOnField.rotateLeft();
+      p.rightOnField += p.centerOnField;
+      p.leftOnField += p.centerOnField;
+
+      playersPercept.players.push_back(p);
+    }
   }
 }
 
-bool OracledPerceptsProvider::pointIsInImage(const Vector2<>& p, Vector2<>& pImg) const
+bool OracledPerceptsProvider::pointIsInImage(const Vector2f& p, Vector2f& pImg) const
 {
   if(Transformation::robotToImage(p, theCameraMatrix, theCameraInfo, pImg))
   {
-    if((pImg.x >= 0) && (pImg.x < theCameraInfo.width) && (pImg.y >= 0) && (pImg.y < theCameraInfo.height))
+    if((pImg.x() >= 0) && (pImg.x() < theCameraInfo.width) && (pImg.y() >= 0) && (pImg.y() < theCameraInfo.height))
     {
       return true;
     }
@@ -451,21 +526,21 @@ bool OracledPerceptsProvider::pointIsInImage(const Vector2<>& p, Vector2<>& pImg
 void OracledPerceptsProvider::updateViewPolygon()
 {
   // code is copied from FieldCoverageProvider::drawFieldView()
-  const Vector3<> vectorToCenter(1, 0, 0);
+  const Vector3f vectorToCenter(1, 0, 0);
 
   RotationMatrix r = theCameraMatrix.rotation;
   r.rotateY(theCameraInfo.openingAngleHeight / 2);
   r.rotateZ(theCameraInfo.openingAngleWidth / 2);
-  Vector3<> vectorToCenterWorld = r * vectorToCenter;
+  Vector3f vectorToCenterWorld = r * vectorToCenter;
 
-  const float a1 = theCameraMatrix.translation.x,
-              a2 = theCameraMatrix.translation.y,
-              a3 = theCameraMatrix.translation.z;
-  float b1 = vectorToCenterWorld.x,
-        b2 = vectorToCenterWorld.y,
-        b3 = vectorToCenterWorld.z,
+  const float a1 = theCameraMatrix.translation.x(),
+              a2 = theCameraMatrix.translation.y(),
+              a3 = theCameraMatrix.translation.z();
+  float b1 = vectorToCenterWorld.x(),
+        b2 = vectorToCenterWorld.y(),
+        b3 = vectorToCenterWorld.z(),
         f = a3 / b3;
-  Vector2<> pof = Vector2<>(a1 - f * b1, a2 - f * b2);
+  Vector2f pof = Vector2f(a1 - f * b1, a2 - f * b2);
 
   if(f > 0.f)
     viewPolygon[0] = theGroundTruthWorldState.ownPose.translation;
@@ -477,11 +552,11 @@ void OracledPerceptsProvider::updateViewPolygon()
   r.rotateZ(-(theCameraInfo.openingAngleWidth / 2));
   vectorToCenterWorld = r * vectorToCenter;
 
-  b1 = vectorToCenterWorld.x;
-  b2 = vectorToCenterWorld.y;
-  b3 = vectorToCenterWorld.z;
+  b1 = vectorToCenterWorld.x();
+  b2 = vectorToCenterWorld.y();
+  b3 = vectorToCenterWorld.z();
   f = a3 / b3;
-  pof = Vector2<>(a1 - f * b1, a2 - f * b2);
+  pof = Vector2f(a1 - f * b1, a2 - f * b2);
 
   if(f > 0.f)
     viewPolygon[1] = theGroundTruthWorldState.ownPose.translation;
@@ -493,16 +568,16 @@ void OracledPerceptsProvider::updateViewPolygon()
   r.rotateZ(-(theCameraInfo.openingAngleWidth / 2));
   vectorToCenterWorld = r * vectorToCenter;
 
-  b1 = vectorToCenterWorld.x;
-  b2 = vectorToCenterWorld.y;
-  b3 = vectorToCenterWorld.z;
+  b1 = vectorToCenterWorld.x();
+  b2 = vectorToCenterWorld.y();
+  b3 = vectorToCenterWorld.z();
   f = a3 / b3;
-  pof = Vector2<>(a1 - f * b1, a2 - f * b2);
+  pof = Vector2f(a1 - f * b1, a2 - f * b2);
 
   const float maxDist = std::sqrt(4.f * theFieldDimensions.xPosOpponentFieldBorder * theFieldDimensions.xPosOpponentFieldBorder +
                                   4.f * theFieldDimensions.yPosLeftFieldBorder * theFieldDimensions.yPosLeftFieldBorder);
   if(f > 0.f)
-    viewPolygon[2] = theGroundTruthWorldState.ownPose.translation + Vector2<>(maxDist, 0).rotate(theGroundTruthWorldState.ownPose.rotation + (-theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
+    viewPolygon[2] = theGroundTruthWorldState.ownPose.translation + Vector2f(maxDist, 0).rotate(theGroundTruthWorldState.ownPose.rotation + (-theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
   else
     viewPolygon[2] = (theGroundTruthWorldState.ownPose + pof).translation;
 
@@ -511,70 +586,81 @@ void OracledPerceptsProvider::updateViewPolygon()
   r.rotateZ(theCameraInfo.openingAngleWidth / 2);
   vectorToCenterWorld = r * vectorToCenter;
 
-  b1 = vectorToCenterWorld.x;
-  b2 = vectorToCenterWorld.y;
-  b3 = vectorToCenterWorld.z;
+  b1 = vectorToCenterWorld.x();
+  b2 = vectorToCenterWorld.y();
+  b3 = vectorToCenterWorld.z();
   f = a3 / b3;
-  pof = Vector2<>(a1 - f * b1, a2 - f * b2);
+  pof = Vector2f(a1 - f * b1, a2 - f * b2);
 
   if(f > 0.f)
-    viewPolygon[3] = theGroundTruthWorldState.ownPose.translation + Vector2<>(maxDist, 0).rotate(theGroundTruthWorldState.ownPose.rotation + (theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
+    viewPolygon[3] = theGroundTruthWorldState.ownPose.translation + Vector2f(maxDist, 0).rotate(theGroundTruthWorldState.ownPose.rotation + (theCameraInfo.openingAngleWidth / 2) + theCameraMatrix.rotation.getZAngle());
   else
     viewPolygon[3] = (theGroundTruthWorldState.ownPose + pof).translation;
 }
 
-bool OracledPerceptsProvider::partOfLineIsVisible(const std::pair<Vector2<>, Vector2<>>& line, Vector2<>& start, Vector2<>& end) const
+bool OracledPerceptsProvider::partOfLineIsVisible(const std::pair<Vector2f, Vector2f>& line, Vector2f& start, Vector2f& end) const
 {
   // First case: both points are inside:
-  if(Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) && Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
+  if(Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) &&
+     Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
   {
     start = line.first;
     end = line.second;
     return true;
   }
   // Second case: start is inside but end is outside
-  if(Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) && !Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
+  if(Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) &&
+     !Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
   {
     start = line.first;
     for(int i = 0; i < 4; i++)
     {
       if(Geometry::checkIntersectionOfLines(line.first, line.second, viewPolygon[i], viewPolygon[(i + 1) % 4]))
       {
-        Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
-                                         Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), end);
-        return true;
+        if(Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
+                                            Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), end))
+        {
+          return true;
+        }
       }
     }
+    return false; // should not happen ...
   }
   // Third case: end is inside but start is outside
-  if(!Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) && Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
+  if(!Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.first) &&
+     Geometry::isPointInsideConvexPolygon(viewPolygon, 4, line.second))
   {
     start = line.second;
     for(int i = 0; i < 4; i++)
     {
       if(Geometry::checkIntersectionOfLines(line.first, line.second, viewPolygon[i], viewPolygon[(i + 1) % 4]))
       {
-        Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
-                                         Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), end);
-        return true;
+        if(Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
+                                            Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), end))
+        {
+          return true;
+        }
       }
     }
+    return false; // should not happen ...
   }
   // Fourth case: both points are outside the polygon but maybe intersect it:
-  std::vector<Vector2<>> intersectionPoints;
+  std::vector<Vector2f> intersectionPoints;
   for(int i = 0; i < 4; i++)
   {
     if(Geometry::checkIntersectionOfLines(line.first, line.second, viewPolygon[i], viewPolygon[(i + 1) % 4]))
     {
-      Vector2<> point;
-      Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
-                                       Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), point);
-      intersectionPoints.push_back(point);
+      Vector2f point;
+      if(Geometry::getIntersectionOfLines(Geometry::Line(line.first, line.second - line.first),
+                                          Geometry::Line(viewPolygon[i], viewPolygon[(i + 1) % 4] - viewPolygon[i]), point))
+      {
+        intersectionPoints.push_back(point);
+      }
     }
   }
   // There are some more special cases that could be treated but in general, there should be two intersections that are not at the same place.
   // Other cases are ignored here
-  if(intersectionPoints.size() == 2 && (intersectionPoints[0] - intersectionPoints[1]).abs() > 100.f)
+  if(intersectionPoints.size() == 2 && (intersectionPoints[0] - intersectionPoints[1]).norm() > 100.f)
   {
     start = intersectionPoints[0];
     end   = intersectionPoints[1];
@@ -584,18 +670,18 @@ bool OracledPerceptsProvider::partOfLineIsVisible(const std::pair<Vector2<>, Vec
   return false;
 }
 
-void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2<>& p) const
+void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2f& p) const
 {
-  p.x += sampleNormalDistribution(standardDeviation);
-  p.y += sampleNormalDistribution(standardDeviation);
+  p.x() += sampleNormalDistribution(standardDeviation);
+  p.y() += sampleNormalDistribution(standardDeviation);
 }
 
-void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2<int>& p) const
+void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2i& p) const
 {
   const float errorX = sampleNormalDistribution(standardDeviation);
   const float errorY = sampleNormalDistribution(standardDeviation);
-  p.x += static_cast<int>(floor(errorX + 0.5f));
-  p.y += static_cast<int>(floor(errorY + 0.5f));
+  p.x() += static_cast<int>(floor(errorX + 0.5f));
+  p.y() += static_cast<int>(floor(errorY + 0.5f));
 }
 
-MAKE_MODULE(OracledPerceptsProvider, Cognition Infrastructure)
+MAKE_MODULE(OracledPerceptsProvider, cognitionInfrastructure)

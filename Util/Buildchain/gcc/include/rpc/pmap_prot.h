@@ -2,7 +2,7 @@
  * pmap_prot.h
  * Protocol for the local binder service, or pmap.
  *
- * Copyright (C) 1984, Sun Microsystems, Inc.
+ * Copyright (c) 2010, Oracle America, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -14,7 +14,7 @@
  *       copyright notice, this list of conditions and the following
  *       disclaimer in the documentation and/or other materials
  *       provided with the distribution.
- *     * Neither the name of Sun Microsystems, Inc. nor the names of its
+ *     * Neither the name of the "Oracle America, Inc." nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
  *
@@ -44,10 +44,10 @@ __BEGIN_DECLS
 /* The following procedures are supported by the protocol:
  *
  * PMAPPROC_NULL() returns ()
- * 	takes nothing, returns nothing
+ *	takes nothing, returns nothing
  *
  * PMAPPROC_SET(struct pmap) returns (bool_t)
- * 	TRUE is success, FALSE is failure.  Registers the tuple
+ *	TRUE is success, FALSE is failure.  Registers the tuple
  *	[prog, vers, prot, port].
  *
  * PMAPPROC_UNSET(struct pmap) returns (bool_t)
@@ -61,9 +61,9 @@ __BEGIN_DECLS
  * PMAPPROC_DUMP() RETURNS (struct pmaplist *)
  *
  * PMAPPROC_CALLIT(unsigned, unsigned, unsigned, string<>)
- * 	RETURNS (port, string<>);
+ *	RETURNS (port, string<>);
  * usage: encapsulatedresults = PMAPPROC_CALLIT(prog, vers, proc, encapsulatedargs);
- * 	Calls the procedure on the local machine.  If it is not registered,
+ *	Calls the procedure on the local machine.  If it is not registered,
  *	this procedure is quite; ie it does not return error information!!!
  *	This procedure only is supported on rpc/udp and calls via
  *	rpc/udp.  This routine only passes null authentication parameters.

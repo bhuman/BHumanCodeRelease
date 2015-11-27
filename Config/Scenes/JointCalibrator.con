@@ -1,0 +1,12 @@
+mr JointCalibration JointCalibrator
+dr module:JointCalibrator:init 
+
+mr StandOutput CalibrationStand
+dr module:CalibrationStand:height
+
+echo dr module:JointCalibrator:reset
+echo dr module:JointCalibrator:reload
+echo dr module:JointCalibrator:capture
+echo save representation:JointCalibration
+
+get module:JointCalibrator:offsets 

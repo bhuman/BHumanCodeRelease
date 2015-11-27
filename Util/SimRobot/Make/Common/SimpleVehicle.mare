@@ -1,0 +1,73 @@
+SimpleVehicle = cppDynamicLibrary + {
+  dependencies = { "SimRobotCore2" },
+
+  folder = "Controllers"
+  root = "$(simRobotDir)/Src/Controllers"
+  files = {
+    "$(simRobotDir)/Src/Controllers/SimpleVehicleController.cpp" = cppSource
+    "$(simRobotDir)/Src/Controllers/SimpleVehicleControllerh"
+  }
+  files += qtFiles
+
+  defines += {
+    "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
+    if (host == "Win32") {
+      "_CRT_SECURE_NO_DEPRECATE"
+    }
+    if (configuration != "Debug") {
+      "QT_NO_DEBUG"
+    }
+  }
+  
+  includePaths = {
+    "$(simRobotDir)/Src/Controllers",
+    "$(simRobotDir)/Src/SimRobotCore2",
+    if (platform == "Linux") {
+      "/usr/include/qt4/QtCore",
+      "/usr/include/qt4/QtOpenGL",
+      "/usr/include/qt4",
+      "/usr/include/QtCore",
+      "/usr/include/QtOpenGL",
+      "/usr/include/Qt",
+    } else if (host == "Win32") {
+      "$(simRobotDir)/Util/glew/Windows/include",
+      "$(simRobotDir)/Util/qt/Windows/include",
+      "$(simRobotDir)/Util/qt/Windows/include/QtCore",
+      "$(simRobotDir)/Util/qt/Windows/include/QtOpenGL",
+    }
+  }
+  
+  libPaths = {
+    if (host == "Win32") {
+      "$(simRobotDir)/Util/glew/Windows/lib",
+      "$(simRobotDir)/Util/qt/Windows/lib",
+    }
+  }
+  
+  libs = {
+    if (platform == "Linux") {
+      "GLEW", "QtCore", "GLU", "GL"
+    } else if (host == "Win32") {
+      "glu32", "glew32", "QtCore4", "QtOpenGL4"
+    }
+  }
+
+  cppFlags += {
+    if (tool == "vcxproj") {
+      "/wd4503"
+      if (configuration != "Debug") {
+        "/GL /GS-"
+      }
+    }
+  }
+  
+  linkFlags += {
+    if (tool == "vcxproj") {
+      if (configuration == "Debug") {
+        "/NODEFAULTLIB:msvcrt.lib"
+      } else {
+        "/LTCG"
+      }
+    }
+  }
+}

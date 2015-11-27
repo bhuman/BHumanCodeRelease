@@ -11,11 +11,15 @@
 #define __stub___kernel_sinl
 #define __stub___kernel_tanl
 #define __stub_chflags
+#define __stub_fanotify_init
+#define __stub_fanotify_mark
 #define __stub_fattach
 #define __stub_fchflags
 #define __stub_fdetach
 #define __stub_gtty
 #define __stub_lchmod
+#define __stub_prlimit
+#define __stub_prlimit64
 #define __stub_revoke
 #define __stub_setlogin
 #define __stub_sigreturn

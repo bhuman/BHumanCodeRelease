@@ -1,23 +1,23 @@
 /**
-* @file OdometryData.h
-* Contains the OdometryData class.
-* @author Max Risler
-*/
+ * @file OdometryData.h
+ * Contains the OdometryData struct.
+ * @author Max Risler
+ */
 
 #pragma once
 
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 
 /**
-* @class OdometryData
-* OdometryData contains an approximation of overall movement the robot has done.
-* @attention Only use differences of OdometryData at different times.
-* Position in mm
-*/
-class OdometryData : public Pose2D {};
+ * @struct OdometryData
+ * OdometryData contains an approximation of overall movement the robot has done.
+ * @attention Only use differences of OdometryData at different times.
+ * Position in mm
+ */
+struct OdometryData : public Pose2f {};
 
 /**
-* @class GroundTruthOdometryData
-* Contains an observed overall movement the robot has done.
-*/
-class GroundTruthOdometryData : public OdometryData {};
+ * @struct GroundTruthOdometryData
+ * Contains an observed overall movement the robot has done.
+ */
+struct GroundTruthOdometryData : public OdometryData {};

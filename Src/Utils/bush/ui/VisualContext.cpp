@@ -8,7 +8,7 @@
 #include "Utils/bush/ui/TeamSelector.h"
 #include "Utils/bush/ui/VisualContext.h"
 
-VisualContext::VisualContext(QWidget *parent)
+VisualContext::VisualContext(QWidget* parent)
   : QFrame(parent),
     entries(),
     widgets(),
@@ -38,12 +38,12 @@ static inline VisualContext::Entry::Type targetToType(ConsolePrintTarget target)
   return target == CPT_PRINT || target == CPT_PRINT_LINE ? VisualContext::Entry::TEXT_OUTPUT : VisualContext::Entry::TEXT_ERROR;
 }
 
-void VisualContext::updateWidget(size_t index, Entry *entry)
+void VisualContext::updateWidget(size_t index, Entry* entry)
 {
-  QWidget *widget = widgets[(int) index];
+  QWidget* widget = widgets[(int) index];
   if(widget->inherits("QLabel"))
   {
-    QLabel *label = dynamic_cast<QLabel*>(widget);
+    QLabel* label = dynamic_cast<QLabel*>(widget);
     QString text;
     if(entry->type == Entry::TEXT_ERROR)
       text = "<font color='red'>" + Qt::convertFromPlainText(*entry->text) + "</font>";
@@ -53,12 +53,12 @@ void VisualContext::updateWidget(size_t index, Entry *entry)
   }
 }
 
-void VisualContext::addWidget(Entry *entry, const QString &commandLine)
+void VisualContext::addWidget(Entry* entry, const QString& commandLine)
 {
-  QWidget *widget;
+  QWidget* widget;
   if(entry->type == Entry::CONTEXT)
   {
-    VisualContextDecoration *vd = new VisualContextDecoration(commandLine, this, entry->context);
+    VisualContextDecoration* vd = new VisualContextDecoration(commandLine, this, entry->context);
     widget = vd;
   }
   else
@@ -69,21 +69,21 @@ void VisualContext::addWidget(Entry *entry, const QString &commandLine)
     else
       text = Qt::convertFromPlainText(*entry->text);
 
-    QLabel *label = new QLabel(text, this);
+    QLabel* label = new QLabel(text, this);
     label->setTextInteractionFlags(label->textInteractionFlags() | Qt::TextSelectableByMouse);
     label->setMargin(1);
     widget = label;
   }
-  QFormLayout *l = getLayout();
+  QFormLayout* l = getLayout();
   l->addRow(widget);
   widget->setAutoFillBackground(true);
   widgets << widget;
 }
 
-void VisualContext::doPrint(ConsolePrintTarget target, const QString &msg)
+void VisualContext::doPrint(ConsolePrintTarget target, const QString& msg)
 {
   Entry::Type currentType = targetToType(target);
-  Entry *lastEntry = entries.empty() ? 0 : entries.last();
+  Entry* lastEntry = entries.empty() ? 0 : entries.last();
   if(lastEntry && lastEntry->type == currentType)
   {
     if(nl)
@@ -93,27 +93,27 @@ void VisualContext::doPrint(ConsolePrintTarget target, const QString &msg)
   }
   else
   {
-    Entry *entry = new Entry(currentType, msg);
+    Entry* entry = new Entry(currentType, msg);
     entries << entry;
     addWidget(entry);
   }
   nl = target == CPT_ERROR_LINE || target == CPT_PRINT_LINE;
 }
 
-void VisualContext::commandExecuted(Context *context, const QString &cmdLine)
+void VisualContext::commandExecuted(Context* context, const QString& cmdLine)
 {
-  VisualContext *sub = new VisualContext(this);
+  VisualContext* sub = new VisualContext(this);
 
-  connect(context, SIGNAL(sExecute(Context *, const QString &)),
-          sub, SLOT(commandExecuted(Context *, const QString &)),
+  connect(context, SIGNAL(sExecute(Context*, const QString&)),
+          sub, SLOT(commandExecuted(Context*, const QString&)),
           Qt::BlockingQueuedConnection);
-  connect(context, SIGNAL(sPrint(ConsolePrintTarget, const QString &)),
-          sub, SLOT(doPrint(ConsolePrintTarget, const QString &)));
+  connect(context, SIGNAL(sPrint(ConsolePrintTarget, const QString&)),
+          sub, SLOT(doPrint(ConsolePrintTarget, const QString&)));
   connect(context, SIGNAL(sFinished(bool)), sub, SLOT(commandFinished(bool)));
   connect(context, SIGNAL(sCancelFinished()), sub, SLOT(commandCanceled()));
   connect(sub, SIGNAL(sCancel()), context, SLOT(cancel()), Qt::DirectConnection);
 
-  Entry *entry = new Entry(sub);
+  Entry* entry = new Entry(sub);
   entries << entry;
   addWidget(entry, cmdLine);
 }
@@ -133,15 +133,15 @@ void VisualContext::cancel()
   emit sCancel();
 }
 
-void VisualContext::executeInContext(Console *console, TeamSelector *teamSelector, const QString &cmdLine)
+void VisualContext::executeInContext(Console* console, TeamSelector* teamSelector, const QString& cmdLine)
 {
-  Context *context = new Context(teamSelector->getSelectedRobots(),
+  Context* context = new Context(teamSelector->getSelectedRobots(),
                                  teamSelector->getSelectedTeam());
 
   /* Important: Use BlockingQueuedConnection so that the newly created thread
    * cannot emits all its print signals before they can be handled. */
-  connect(context, SIGNAL(sExecute(Context *, const QString &)),
-          this, SLOT(commandExecuted(Context *, const QString &)),
+  connect(context, SIGNAL(sExecute(Context*, const QString&)),
+          this, SLOT(commandExecuted(Context*, const QString&)),
           Qt::BlockingQueuedConnection);
   connect(context, SIGNAL(sCancelFinished()), this, SLOT(commandCanceled()));
 
@@ -154,7 +154,7 @@ void VisualContext::executeInContext(Console *console, TeamSelector *teamSelecto
    * the scrolling. */
   disconnect(context);
 
-  bool doQuit = context->isShudown();
+  bool doQuit = context->isShutdown();
   // Since the context is a QObject it is better to let Qt do the cleanup
   context->deleteLater();
 

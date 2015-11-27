@@ -1,5 +1,5 @@
 /* O_*, F_*, FD_* bit values for Linux.
-   Copyright (C) 1995, 1996, 1997, 1998, 2000, 2004, 2006, 2007, 2009
+   Copyright (C) 1995, 1996, 1997, 1998, 2000, 2004, 2006, 2007, 2009, 2010
    Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -29,7 +29,7 @@
 
 
 /* open/fcntl - O_SYNC is only implemented on blocks devices and on files
-   located on an ext2 file system */
+   located on a few file systems.  */
 #define O_ACCMODE	   0003
 #define O_RDONLY	     00
 #define O_WRONLY	     01
@@ -41,23 +41,25 @@
 #define O_APPEND	  02000
 #define O_NONBLOCK	  04000
 #define O_NDELAY	O_NONBLOCK
-#define O_SYNC		 010000
+#define O_SYNC	       04010000
 #define O_FSYNC		 O_SYNC
 #define O_ASYNC		 020000
 
-#ifdef __USE_GNU
-# define O_DIRECT	 040000	/* Direct disk access.	*/
+#ifdef __USE_XOPEN2K8
 # define O_DIRECTORY	0200000	/* Must be a directory.	 */
 # define O_NOFOLLOW	0400000	/* Do not follow links.	 */
-# define O_NOATIME     01000000 /* Do not set atime.  */
 # define O_CLOEXEC     02000000 /* Set close_on_exec.  */
+#endif
+#ifdef __USE_GNU
+# define O_DIRECT	 040000	/* Direct disk access.	*/
+# define O_NOATIME     01000000 /* Do not set atime.  */
 #endif
 
 /* For now Linux has synchronisity options for data and read operations.
    We define the symbols here but let them do the same as O_SYNC since
    this is a superset.	*/
 #if defined __USE_POSIX199309 || defined __USE_UNIX98
-# define O_DSYNC	O_SYNC	/* Synchronize data.  */
+# define O_DSYNC	010000	/* Synchronize data.  */
 # define O_RSYNC	O_SYNC	/* Synchronize read operations.	 */
 #endif
 
@@ -84,7 +86,7 @@
 #define F_SETLK64	13	/* Set record locking info (non-blocking).  */
 #define F_SETLKW64	14	/* Set record locking info (blocking).	*/
 
-#if defined __USE_BSD || defined __USE_UNIX98
+#if defined __USE_BSD || defined __USE_UNIX98 || defined __USE_XOPEN2K8
 # define F_SETOWN	8	/* Get owner (process receiving SIGIO).  */
 # define F_GETOWN	9	/* Set owner (process receiving SIGIO).  */
 #endif
@@ -100,6 +102,10 @@
 # define F_SETLEASE	1024	/* Set a lease.	 */
 # define F_GETLEASE	1025	/* Enquire what lease is active.  */
 # define F_NOTIFY	1026	/* Request notfications on a directory.	 */
+# define F_SETPIPE_SZ	1031	/* Set pipe page size array.  */
+# define F_GETPIPE_SZ	1032	/* Set pipe page size array.  */
+#endif
+#ifdef __USE_XOPEN2K8
 # define F_DUPFD_CLOEXEC 1030	/* Duplicate file descriptor with
 				   close-on-exit set.  */
 #endif
@@ -172,9 +178,10 @@ struct flock64
 /* Owner types.  */
 enum __pid_type
   {
-    F_OWNER_TID = 0,	/* Kernel thread.  */
-    F_OWNER_PID,	/* Process.  */
-    F_OWNER_GID		/* Process group.  */
+    F_OWNER_TID = 0,		/* Kernel thread.  */
+    F_OWNER_PID,		/* Process.  */
+    F_OWNER_PGRP,		/* Process group.  */
+    F_OWNER_GID = F_OWNER_PGRP	/* Alternative, obsolete name.  */
   };
 
 /* Structure to use with F_GETOWN_EX and F_SETOWN_EX.  */
@@ -237,7 +244,7 @@ extern ssize_t readahead (int __fd, __off64_t __offset, size_t __count)
 
 
 /* Selective file content synch'ing.  */
-extern int sync_file_range (int __fd, __off64_t __from, __off64_t __to,
+extern int sync_file_range (int __fd, __off64_t __offset, __off64_t __count,
 			    unsigned int __flags);
 
 

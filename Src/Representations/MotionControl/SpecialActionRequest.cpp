@@ -1,8 +1,8 @@
 /**
-* @file Representations/MotionControl/SpecialActionRequest.cpp
-* This file implements a class to represent special action requests.
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-*/
+ * @file Representations/MotionControl/SpecialActionRequest.cpp
+ * This file implements a struct to represent special action requests.
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ */
 
 #include <cstring>
 

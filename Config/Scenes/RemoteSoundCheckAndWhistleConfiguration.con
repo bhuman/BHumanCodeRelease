@@ -1,0 +1,16 @@
+# Script for checking the sound recognition capabilities of a connected robot
+
+set representation:GameInfo state = 2; gameType = 0; firstHalf = 0; kickOffTeam = 0; secsRemaining = 0; dropInTeam = 0; dropInTime = 0; secondaryState = 0; timeLastPackageReceived = 0;
+
+poll
+
+vp WhistleCorrelation 600 0 1
+vpd WhistleCorrelation module:WhistleRecognizer:whistleCorrelationChannel0 red
+vpd WhistleCorrelation module:WhistleRecognizer:whistleCorrelationChannel1 blue
+
+vp AudioInput60Hz 600 -1 1
+vpd AudioInput60Hz module:WhistleRecognizer:audioInput60HzChannel0 red
+vpd AudioInput60Hz module:WhistleRecognizer:audioInput60HzChannel1 blue
+
+vp Volume 600 0 1
+vpd Volume module:WhistleRecognizer:currentVolume blue

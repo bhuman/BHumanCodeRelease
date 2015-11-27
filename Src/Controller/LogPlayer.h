@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "Tools/MessageQueue/MessageQueue.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/JointData.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JPEGImage.h"
+#include "Tools/MessageQueue/MessageQueue.h"
+#include "Tools/Streams/StreamHandler.h"
 
 /**
 * @class LogPlayer
@@ -31,6 +31,9 @@ public:
   */
   LogPlayer(MessageQueue& targetQueue);
 
+  /** Destructor. */
+  ~LogPlayer() {if(streamHandler) delete streamHandler;}
+
   /** Deletes all messages from the queue */
   void init();
 
@@ -42,8 +45,8 @@ public:
   bool open(const char* fileName);
 
   /**
-  * Playes the queue.
-  * Note that you have to call replay() regularely if you want to use that function
+  * Plays the queue.
+  * Note that you have to call replay() regularly if you want to use that function
   */
   void play();
 
@@ -85,9 +88,11 @@ public:
   /**
   * Writes all messages in the log player queue to a log file.
   * @param fileName the name of the file to write
-  * @return if the writing was successful
+  * @param streamHandler Specification of logged data types. Will be ignored if
+  *                      it is a nullptr or logger already has a specification.
+  * @return Whether the writing was successful
   */
-  bool save(const char* fileName);
+  bool save(const char* fileName, const StreamHandler* streamHandler);
 
   /**
   * Writes all audio data in the log player queue to a single wav file.
@@ -97,10 +102,10 @@ public:
   bool saveAudioFile(const char* fileName);
 
   /**
-  * Writes all images in the log player queue to a bunch of files (*.bmp or *.jpg).
-  * @param raw Savecolor unconverted
-  * @param fileName the name of one file to write, all files will be enumerated by appending a 3 digit number to the filename.
-  * @return if the writing of all files was successful
+  * Writes all images in the log player queue to a bunch of image files (.png).
+  * @param raw Save color unconverted
+  * @param fileName The name of one file to write, all files will be enumerated by appending a 3 digit number to the filename.
+  * @return if writing all files was successful
   */
   bool saveImages(const bool raw, const char* fileName);
 
@@ -113,7 +118,7 @@ public:
   /**
   * Save an image to a file.
   * @param image The image to save.
-  * @param fileName The intended file name of the image.
+  * @param fileName The intended file name of the image. Its extension determines the file format (e.g. .jpg, .png, ...).
   * @param imageNumber A number that will be integrated into the file name. -1: ignore.
   * @param YUV2RGB Convert from YUV to RGB?
   * @return Was writing successful?
@@ -151,14 +156,21 @@ public:
   * The function creates a histogram on the message ids contained in the log file.
   * @param frequency An array that is filled with the frequency of message ids.
   */
-  void statistics(int frequency[numOfDataMessageIDs]);
+  void statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes = nullptr, char processIdentifier = 0);
 
   /** different states of the logplayer */
-  ENUM(LogPlayerState, initial, recording, paused, playing);
+  ENUM(LogPlayerState,
+  {,
+    initial,
+    recording,
+    paused,
+    playing,
+  });
 
   LogPlayerState state; /**< The state of the log player. */
   int currentFrameNumber; /**< The number of the current frame. */
   int numberOfFrames; /**< The overall number of frames available. */
+  bool streamSpecificationReplayed; /**< The stream specification has to be replayed once. Already done? */
 
 private:
   MessageQueue& targetQueue; /**< The queue into that messages from played logfiles shall be stored. */
@@ -168,6 +180,7 @@ private:
   int lastImageFrameNumber; /**< The number of the last frame that contained an image. */
   int replayOffset;
   std::vector<int> frameIndex; /**< The message numbers the frames start at. */
+  StreamHandler* streamHandler; /**< The stream specification of the log file entries. */
 
   /**
   * The method counts the number of frames.
@@ -189,9 +202,18 @@ private:
   static std::string expandImageFileName(const char* fileName, int imageNumber);
 
   /**
-  * The method reads a compressed log to get it´s uncompressed size.
-  * @param fileName The short file name of the compressed log.
-  * @return The uncompressed size.
+  * Insert the stream specifiation into the target queue if one is available
+  * and it has not been replayed yet.
   */
-  static unsigned long long getUncompressedSize(const std::string& fileName);
+  void replayStreamSpecification();
+
+  template<class T>
+  std::string represetation2csv(Streamable *stream);
 };
+
+
+template<class T>
+std::string LogPlayer::represetation2csv(Streamable *stream)
+{
+  return ((T*)stream)->csv();
+}

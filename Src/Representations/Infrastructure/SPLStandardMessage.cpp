@@ -1,6 +1,6 @@
 /**
  * @file SPLStandardMessage.cpp
- * The file implements a class that encapsulates the structure SPLStandardMessage
+ * The file implements a struct that encapsulates the structure SPLStandardMessage
  * defined in the file SPLStandardMessage.h that is provided with the GameController.
  * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
  */
@@ -8,26 +8,68 @@
 #include "SPLStandardMessage.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
+#include "Representations/BehaviorControl/Role.h"
+#include "Representations/BehaviorControl/SPLStandardBehaviorStatus.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/SideConfidence.h"
 #include "Tools/Debugging/Debugging.h"
 #include <algorithm>
 
-/** Sorry, offsetof cannot be used in constants with Microsoft's compiler */
-#define bhumanHeaderSize offsetof(BHumanHeader, sizeMarker)
-
 /**
-* This macro converts a timeStamp from DropIn Players into local time.
-*/
+ * This macro converts a timeStamp from DropIn Players into local time.
+ */
 #define PSEUDO_REMOTE_TIMESTAMP (SystemCall::getCurrentSystemTime() - 500) \
+
+#define BHUMAN_AVG_WALK_SPEED 220
+#define BHUMAN_MAX_KICK_DISTANCE 7000
 
 SPLStandardMessage::SPLStandardMessage()
 {
+  teamNum = static_cast<uint8_t>(Global::getSettings().teamNumber);
   theOutMsgData.setSize(SPL_STANDARD_MESSAGE_DATA_SIZE);
 }
 
-void SPLStandardMessage::toMessageQueue(MessageQueue& in, const unsigned remoteIp)
+SPLStandardMessage::SPLStandardMessage(const SPLStandardMessage& other) :
+  RoboCup::SPLStandardMessage(other)
+{
+  // do not copy theOutMsgData, because it is not possible and not needed
+}
+
+SPLStandardMessage::SPLStandardMessage(MessageQueue& out) : 
+  SPLStandardMessage()
+{
+  out.handleAllMessages(*this);
+
+  BHumanHeader& header = (BHumanHeader&)*data;
+  header.timestamp = SystemCall::getCurrentSystemTime();
+  OutBinarySize sizeStream;
+  sizeStream << theOutMsgData;
+  numOfDataBytes = static_cast<uint16_t>(sizeStream.getSize() + bhumanHeaderSize);
+
+  if(numOfDataBytes <= SPL_STANDARD_MESSAGE_DATA_SIZE)
+  {
+    OutBinaryMemory memory(data + bhumanHeaderSize);
+    memory << theOutMsgData;
+  }
+  else
+  {
+    numOfDataBytes = static_cast<uint16_t>(bhumanHeaderSize);
+    OUTPUT_ERROR("SPL_STANDARD_MESSAGE_DATA_SIZE exceeded!");
+    ASSERT(false);
+  }
+
+  theOutMsgData.clear();
+}
+
+SPLStandardMessage& SPLStandardMessage::operator=(const SPLStandardMessage& other)
+{
+  static_cast<RoboCup::SPLStandardMessage&>(*this) = other;
+  // do not copy theOutMsgData, because it is not possible and not needed
+  return *this;
+}
+
+void SPLStandardMessage::toMessageQueue(MessageQueue& in, const unsigned remoteIp, const unsigned realNumOfDataBytes)
 {
   if(header[0] != 'S' || header[1] != 'P' || header[2] != 'L' || header[3] != ' ')
   {
@@ -41,63 +83,73 @@ void SPLStandardMessage::toMessageQueue(MessageQueue& in, const unsigned remoteI
     return;
   }
 
+  if(numOfDataBytes != static_cast<uint16_t>(realNumOfDataBytes))
+  {
+    OUTPUT_WARNING("SPL Message: numOfDataBytes is '" << numOfDataBytes << "' but realNumOfDataBytes is '" << realNumOfDataBytes << "'.");
+    numOfDataBytes = std::min(numOfDataBytes, static_cast<uint16_t>(realNumOfDataBytes));
+
+    if(!Global::getSettings().isDropInGame)
+    {
+      OUTPUT_WARNING("... ignoring package!");
+      return;
+    }
+  }
+
+  if(!Global::getSettings().isDropInGame && numOfDataBytes < bhumanHeaderSize)
+  {
+    OUTPUT_WARNING("Ignoring SPL Message because: 'numOfDataBytes < bhumanHeaderSize'.");
+    return;
+  }
+
   if(Global::getSettings().isDropInGame)
   {
-    const unsigned preudoRemoteTimestemp = PSEUDO_REMOTE_TIMESTAMP;
+    const unsigned pseudoRemoteTimestamp = PSEUDO_REMOTE_TIMESTAMP;
 
-    in.out.bin << (int)playerNum;
-    in.out.bin << teamColor; // for TeamComm3D
+    in.out.bin << static_cast<int>(playerNum);
     in.out.finishMessage(idRobot);
 
-    in.out.bin << fallen;
-    in.out.bin << preudoRemoteTimestemp;
     in.out.bin << ballAge;
+    in.out.bin << fallen;
+    in.out.bin << pseudoRemoteTimestamp;
     in.out.finishMessage(idDropInPlayer);
 
     RobotPoseCompressed robotPose;
-    robotPose.translation.x = pose[0];
-    robotPose.translation.y = pose[1];
+    robotPose.translation.x() = pose[0];
+    robotPose.translation.y() = pose[1];
     robotPose.rotation = pose[2];
-    robotPose.deviation = 300.f;
-    robotPose.validity = 255; // 255 == 1 uncompressed
+    robotPose.deviation = 100.f + std::max(0.f, 1.f - static_cast<float>(currentPositionConfidence) / 100.f) * 3000.f;
+    robotPose.validity = static_cast<unsigned char>(static_cast<int>(currentPositionConfidence) * 255 / 100);
     in.out.bin << robotPose;
-    in.out.finishMessage(idTeammateRobotPose);
+    in.out.finishMessage(idRobotPose);
+
+    SideConfidence sideConfidence;
+    if(intention == DROPIN_INTENTION_LOST)
+      sideConfidence.sideConfidence = 0.f;
+    else
+      sideConfidence.sideConfidence = static_cast<float>(currentSideConfidence) / 100.f;
+
+    if(sideConfidence.sideConfidence >= 0.95f)
+      sideConfidence.confidenceState = SideConfidence::ALMOST_CONFIDENT;
+    else if(sideConfidence.sideConfidence > 0.f)
+      sideConfidence.confidenceState = SideConfidence::UNSURE;
+    else
+      sideConfidence.confidenceState = SideConfidence::CONFUSED;
+    in.out.bin << sideConfidence;
+    in.out.finishMessage(idSideConfidence);
 
     BallModelCompressed ballModel;
-    ballModel.position.x = ball[0];
-    ballModel.position.y = ball[1];
-    ballModel.velocity.x = ballVel[0];
-    ballModel.velocity.y = ballVel[1];
-    if(ballAge >= 0)
-    {
-      ballModel.timeWhenLastSeen = preudoRemoteTimestemp - ballAge;
-      ballModel.timeWhenDisappeared = preudoRemoteTimestemp - ballAge;
-      if(ballAge == 0)
-      {
-        ballModel.lastPerception.x = (short)ball[0];
-        ballModel.lastPerception.y = (short)ball[1];
-      }
-    }
+    ballModel.position.x() = ball[0];
+    ballModel.position.y() = ball[1];
+    ballModel.velocity.x() = ballVel[0];
+    ballModel.velocity.y() = ballVel[1];
+    ballModel.lastPerception.x() = static_cast<short>(ball[0]);
+    ballModel.lastPerception.y() = static_cast<short>(ball[1]);
+    if(ballAge >= 0.f && ballModel.position.squaredNorm() > 30.f * 30.f)
+      ballModel.timeWhenLastSeen = ballModel.timeWhenDisappeared = std::max(0u, pseudoRemoteTimestamp - static_cast<unsigned>(ballAge * 1000.f));
     else
-    {
-      ballModel.timeWhenLastSeen = 0;
-    }
+      ballModel.timeWhenLastSeen = ballModel.timeWhenDisappeared = 0u;
     in.out.bin << ballModel;
-    in.out.finishMessage(idTeammateBallModel);
-
-    SideConfidence confidence;
-    if(intention == DROPIN_INTENTION_LOST)
-    {
-      confidence.sideConfidence = 0.f;
-      confidence.confidenceState = SideConfidence::CONFUSED;
-    }
-    else
-    {
-      confidence.sideConfidence = 0.3f;
-      confidence.confidenceState = SideConfidence::UNSURE;
-    }
-    in.out.bin << confidence;
-    in.out.finishMessage(idTeammateSideConfidence);
+    in.out.finishMessage(idBallModel);
 
     bool upright = !fallen;
     in.out.bin << upright;
@@ -108,92 +160,76 @@ void SPLStandardMessage::toMessageQueue(MessageQueue& in, const unsigned remoteI
   }
   else
   {
-    const BHumanHeader& header = (const BHumanHeader&) *data;
+    const BHumanHeader& header = (const BHumanHeader&)*data;
 
-    in.out.bin << (remoteIp ? remoteIp : (int)playerNum);
+    in.out.bin << (remoteIp ? remoteIp : static_cast<int>(playerNum));
     in.out.bin << header.timestamp;
     in.out.bin << SystemCall::getCurrentSystemTime();
-    in.out.bin << header.messageSize;
     in.out.finishMessage(idNTPHeader);
 
-    in.out.bin << (int)playerNum;
+    in.out.bin << static_cast<int>(playerNum);
     in.out.finishMessage(idRobot);
 
     InBinaryMemory memory(data + bhumanHeaderSize, numOfDataBytes - bhumanHeaderSize);
     memory >> in;
 
     RobotPoseCompressed robotPose;
-    robotPose.translation.x = pose[0];
-    robotPose.translation.y = pose[1];
+    robotPose.translation.x() = pose[0];
+    robotPose.translation.y() = pose[1];
     robotPose.rotation = pose[2];
     robotPose.deviation = header.robotPoseDeviation;
     robotPose.validity = header.robotPoseValidity;
     in.out.bin << robotPose;
-    in.out.finishMessage(idTeammateRobotPose);
+    in.out.finishMessage(idRobotPose);
 
     BallModelCompressed ballModel;
-    ballModel.position.x = ball[0];
-    ballModel.position.y = ball[1];
-    ballModel.velocity.x = ballVel[0];
-    ballModel.velocity.y = ballVel[1];
+    ballModel.position.x() = ball[0];
+    ballModel.position.y() = ball[1];
+    ballModel.velocity.x() = ballVel[0];
+    ballModel.velocity.y() = ballVel[1];
     ballModel.timeWhenLastSeen = header.ballTimeWhenLastSeen;
     ballModel.timeWhenDisappeared = header.ballTimeWhenDisappeared;
-    ballModel.lastPerception.x = header.ballLastPerceptX;
-    ballModel.lastPerception.y = header.ballLastPerceptY;
+    ballModel.lastPerception.x() = header.ballLastPerceptX;
+    ballModel.lastPerception.y() = header.ballLastPerceptY;
     in.out.bin << ballModel;
-    in.out.finishMessage(idTeammateBallModel);
+    in.out.finishMessage(idBallModel);
   }
 
-  Vector2<> target;
-  target.x = walkingTo[0];
-  target.y = walkingTo[1];
-  in.out.bin << target;
-  in.out.finishMessage(idWalkTarget);
+  TeammateRoles roles;
+  for(size_t i = 0; i < 5; ++i)
+    switch(suggestion[i])
+    {
+      case DROPIN_SUGGESTION_KEEPER:
+        roles[i + 1] = Role::keeper;
+        break;
+      case DROPIN_SUGGESTION_DEFENSIVE:
+        roles[i + 1] = Role::defender;
+        break;
+      case DROPIN_SUGGESTION_OFFENSIVE:
+        roles[i + 1] = Role::supporter;
+        break;
+      case DROPIN_SUGGESTION_KICK:
+        roles[i + 1] = Role::striker;
+        break;
+      default:
+        roles[i + 1] = Role::none;
+    }
+  in.out.bin << roles;
+  in.out.finishMessage(idTeammateRoles);
 
-  Vector2<> kickTarget;
-  kickTarget.x = shootingTo[0];
-  kickTarget.y = shootingTo[1];
-  in.out.bin << kickTarget;
-  in.out.finishMessage(idKickTarget);
-
-  in.out.bin << intention;
-  in.out.finishMessage(idTeammateIntention);
-}
-
-unsigned SPLStandardMessage::fromMessageQueue(MessageQueue& out)
-{
-  intention = DROPIN_INTENTION_DEFAULT;
-
-  out.handleAllMessages(*this);
-
-  BHumanHeader& header = (BHumanHeader&) *data;
-  header.timestamp = SystemCall::getCurrentSystemTime();
-  header.messageSize = (unsigned short)(sizeof(RoboCup::SPLStandardMessage) - SPL_STANDARD_MESSAGE_DATA_SIZE);
-
-  OutBinarySize sizeStream;
-  sizeStream << theOutMsgData;
-  numOfDataBytes = (uint16_t)(sizeStream.getSize() + bhumanHeaderSize);
-
-  if(numOfDataBytes <= SPL_STANDARD_MESSAGE_DATA_SIZE)
-  {
-    header.messageSize += numOfDataBytes;
-
-    OutBinaryMemory memory(data + bhumanHeaderSize);
-    memory << theOutMsgData;
-  }
-  else
-  {
-    OUTPUT_ERROR("SPL_STANDARD_MESSAGE_DATA_SIZE exceeded!");
-    ASSERT(false);
-  }
-
-  theOutMsgData.clear();
-  return header.messageSize;
+  SPLStandardBehaviorStatus standardBehaviorStatus;
+  standardBehaviorStatus.walkingTo  = Vector2f(walkingTo[0], walkingTo[1]);
+  standardBehaviorStatus.shootingTo = Vector2f(shootingTo[0], shootingTo[1]);
+  standardBehaviorStatus.intention  = intention;
+  standardBehaviorStatus.averageWalkSpeed = averageWalkSpeed;
+  standardBehaviorStatus.maxKickDistance  = maxKickDistance;
+  in.out.bin << standardBehaviorStatus;
+  in.out.finishMessage(idSPLStandardBehaviorStatus);
 }
 
 bool SPLStandardMessage::handleMessage(InMessage& message)
 {
-  BHumanHeader& header = (BHumanHeader&) *data;
+  BHumanHeader& header = (BHumanHeader&)*data;
   switch(message.getMessageID())
   {
     case idRobot:
@@ -201,32 +237,28 @@ bool SPLStandardMessage::handleMessage(InMessage& message)
       message.bin >> playerNum;
       return true;
     }
-    case idTeam:
-    {
-      message.bin >> teamColor;
-      return true;
-    }
-    case idTeammateRobotPose:
+    case idRobotPose:
     {
       RobotPoseCompressed robotPose;
       message.bin >> robotPose;
-      pose[0] = robotPose.translation.x;
-      pose[1] = robotPose.translation.y;
+      pose[0] = robotPose.translation.x();
+      pose[1] = robotPose.translation.y();
       pose[2] = robotPose.rotation;
-      header.robotPoseDeviation = robotPose.deviation;
+      currentPositionConfidence = static_cast<int8_t>(static_cast<int>(robotPose.validity) * 100 / 255);
       header.robotPoseValidity = robotPose.validity;
+      header.robotPoseDeviation = robotPose.deviation;
       return true;
     }
-    case idTeammateBallModel:
+    case idBallModel:
     {
       BallModelCompressed ballModel;
       message.bin >> ballModel;
-      ball[0] = ballModel.position.x;
-      ball[1] = ballModel.position.y;
-      ballVel[0] = ballModel.velocity.x;
-      ballVel[1] = ballModel.velocity.y;
-      header.ballLastPerceptX = ballModel.lastPerception.x;
-      header.ballLastPerceptY = ballModel.lastPerception.y;
+      ball[0] = ballModel.position.x();
+      ball[1] = ballModel.position.y();
+      ballVel[0] = ballModel.velocity.x();
+      ballVel[1] = ballModel.velocity.y();
+      header.ballLastPerceptX = ballModel.lastPerception.x();
+      header.ballLastPerceptY = ballModel.lastPerception.y();
       header.ballTimeWhenLastSeen = ballModel.timeWhenLastSeen;
       header.ballTimeWhenDisappeared = ballModel.timeWhenDisappeared;
       return true;
@@ -236,25 +268,50 @@ bool SPLStandardMessage::handleMessage(InMessage& message)
       message.bin >> ballAge;
       return true;
     }
-    case idWalkTarget:
+    case idSPLStandardBehaviorStatus:
     {
-      Vector2<> target;
-      message.bin >> target;
-      walkingTo[0] = target.x;
-      walkingTo[1] = target.y;
+      SPLStandardBehaviorStatus standardBehaviorStatus;
+      message.bin >> standardBehaviorStatus;
+      walkingTo[0]     = standardBehaviorStatus.walkingTo.x();
+      walkingTo[1]     = standardBehaviorStatus.walkingTo.y();
+      shootingTo[0]    = standardBehaviorStatus.shootingTo.x();
+      shootingTo[1]    = standardBehaviorStatus.shootingTo.y();
+      intention        = standardBehaviorStatus.intention;
+      averageWalkSpeed = BHUMAN_AVG_WALK_SPEED;
+      maxKickDistance  = BHUMAN_MAX_KICK_DISTANCE;
       return true;
     }
-    case idKickTarget:
+    case idTeammateRoles:
     {
-      Vector2<> target;
-      message.bin >> target;
-      shootingTo[0] = target.x;
-      shootingTo[1] = target.y;
+      TeammateRoles roles;
+      message.bin >> roles;
+      for(size_t i = 0; i < 5; ++i)
+        switch(roles[i + 1])
+        {
+          case Role::keeper:
+            suggestion[i] = DROPIN_SUGGESTION_KEEPER;
+            break;
+          case Role::defender:
+            suggestion[i] = DROPIN_SUGGESTION_DEFENSIVE;
+            break;
+          case Role::supporter:
+            suggestion[i] = DROPIN_SUGGESTION_OFFENSIVE;
+            break;
+          case Role::striker:
+            suggestion[i] = DROPIN_SUGGESTION_KICK;
+            break;
+          default:
+            suggestion[i] = DROPIN_SUGGESTION_DEFAULT;
+        }
       return true;
     }
-    case idTeammateIntention:
+    case idSideConfidence:
     {
-      message.bin >> intention;
+      SideConfidence sideConfidence;
+      message.bin >> sideConfidence;
+      currentSideConfidence = static_cast<int8_t>(sideConfidence.sideConfidence * 100);
+      theOutMsgData.out.bin << sideConfidence;
+      theOutMsgData.out.finishMessage(idSideConfidence);
       return true;
     }
     case idTeammateHasGroundContact:
@@ -289,7 +346,7 @@ void SPLStandardMessage::serialize(In* in, Out* out)
   STREAM(header);
   STREAM(version);
   STREAM(playerNum);
-  STREAM(teamColor);
+  STREAM(teamNum);
   STREAM(fallen);
   STREAM(pose);
   STREAM(walkingTo);
@@ -297,14 +354,19 @@ void SPLStandardMessage::serialize(In* in, Out* out)
   STREAM(ballAge);
   STREAM(ball);
   STREAM(ballVel);
+  STREAM(suggestion);
   STREAM(intention);
+  STREAM(averageWalkSpeed);
+  STREAM(maxKickDistance);
+  STREAM(currentPositionConfidence);
+  STREAM(currentSideConfidence);
   STREAM(numOfDataBytes);
 
+  size_t safeNumOfDataBytes = std::min(static_cast<size_t>(numOfDataBytes), static_cast<size_t>(SPL_STANDARD_MESSAGE_DATA_SIZE));
   if(out)
-    out->write(data, numOfDataBytes);
-  else {
-    in->read(data, std::min(static_cast<size_t>(numOfDataBytes), static_cast<size_t>(SPL_STANDARD_MESSAGE_DATA_SIZE)));
-  }
+    out->write(data, safeNumOfDataBytes);
+  else
+    in->read(data, safeNumOfDataBytes);
 
   STREAM_REGISTER_FINISH;
 }
@@ -313,40 +375,9 @@ void SPLStandardMessage::serialize(In* in, Out* out)
 // SPLStandardMessageWithoutData
 ////
 
-SPLStandardMessageWithoutData::SPLStandardMessageWithoutData(const SPLStandardMessageWithoutData& other) : SPLStandardMessage()
-{
-  *this = other;
-}
-
-SPLStandardMessageWithoutData::SPLStandardMessageWithoutData(const SPLStandardMessage& other) : SPLStandardMessage()
-{
-  *this = other;
-}
-
-SPLStandardMessageWithoutData& SPLStandardMessageWithoutData::operator=(const SPLStandardMessageWithoutData& other)
-{
-  return *this = static_cast<const SPLStandardMessage&>(other);
-}
-
 SPLStandardMessageWithoutData& SPLStandardMessageWithoutData::operator=(const SPLStandardMessage& other)
 {
-  playerNum = other.playerNum;
-  teamColor = other.teamColor;
-  fallen = other.fallen;
-  pose[0] = other.pose[0];
-  pose[1] = other.pose[1];
-  pose[2] = other.pose[2];
-  walkingTo[0] = other.walkingTo[0];
-  walkingTo[1] = other.walkingTo[1];
-  shootingTo[0] = other.shootingTo[0];
-  shootingTo[1] = other.shootingTo[1];
-  ballAge = other.ballAge;
-  ball[0] = other.ball[0];
-  ball[1] = other.ball[1];
-  ballVel[0] = other.ballVel[0];
-  ballVel[1] = other.ballVel[1];
-  intention = other.intention;
-
+  static_cast<SPLStandardMessage&>(*this) = other;
   return *this;
 }
 
@@ -356,7 +387,7 @@ void SPLStandardMessageWithoutData::serialize(In* in, Out* out)
   STREAM(header);
   STREAM(version);
   STREAM(playerNum);
-  STREAM(teamColor);
+  STREAM(teamNum);
   STREAM(fallen);
   STREAM(pose);
   STREAM(walkingTo);
@@ -364,6 +395,11 @@ void SPLStandardMessageWithoutData::serialize(In* in, Out* out)
   STREAM(ballAge);
   STREAM(ball);
   STREAM(ballVel);
+  STREAM(suggestion);
   STREAM(intention);
+  STREAM(averageWalkSpeed);
+  STREAM(maxKickDistance);
+  STREAM(currentPositionConfidence);
+  STREAM(currentSideConfidence);
   STREAM_REGISTER_FINISH;
 }

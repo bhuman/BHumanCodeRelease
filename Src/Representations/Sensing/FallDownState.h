@@ -1,7 +1,7 @@
 /**
  * @file Representations/Sensing/FallDownState.h
  *
- * Declaration of class FallDownState
+ * Declaration of struct FallDownState
  *
  * @author <A href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</A>
  */
@@ -12,35 +12,37 @@
 #include "Tools/Enum.h"
 
 /**
- * @class FallDownState
+ * @struct FallDownState
  *
- * A class that represents the current state of the robot's body
+ * A struct that represents the current state of the robot's body
  */
 STREAMABLE(FallDownState,
 {
-public:
   ENUM(State,
+  {,
     undefined,
     upright,
     onGround,
     staggering,
-    falling
-  );
+    falling,
+  });
 
   ENUM(Direction,
+  {,
     none,
     front,
     left,
     back,
-    right
-  );
+    right,
+  });
 
   ENUM(Sidestate,
+  {,
     noot, // since "not" is already a keyword...
     leftwards,
     rightwards,
-    fallen // robot did not get up since last sideward fall
-  );
+    fallen, // robot did not get up since last sideward fall
+  });
 
   /** Debug drawing. */
   void draw() const,

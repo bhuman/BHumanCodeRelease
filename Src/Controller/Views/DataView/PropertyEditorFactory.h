@@ -13,6 +13,8 @@
 #include <QSpinBox>
 #include "DataView.h"
 
+class AngleEditor;
+
 /**
  * Extended QtVariantFactory to provide custom controls for certain types.
  * The factory is responsible for creating editor widgets for certain types.
@@ -20,13 +22,25 @@
  */
 class PropertyEditorFactory : public QtVariantEditorFactory
 {
+private:
   Q_OBJECT
+
+  DataView* pTheView;
+  //FIXME comments
+  QMap<QtProperty*, QSpinBox*> propertyToSpinBox;
+  QMap<QSpinBox*, QtProperty*> spinBoxToProperty;
+  QMap<QtProperty*, QDoubleSpinBox*> propertyToDoubleSpinBox;
+  QMap<QDoubleSpinBox*, QtProperty*> doubleSpinBoxToProperty;
+  QMap<QtProperty*, AngleEditor*> propertyToAngleEditor;
+  QMap<AngleEditor*, QtProperty*> angleEditorToProperty;
+  QtVariantPropertyManager* pTheManager;
 
 public:
   /**
    * @param pView All editor events will be send to this view.
    */
-  PropertyEditorFactory(DataView* pView) : pTheView(pView), pTheManager(NULL)
+  PropertyEditorFactory(DataView* pView) :
+    pTheView(pView), pTheManager(nullptr)
   {}
 
   QWidget* createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent);
@@ -37,14 +51,6 @@ protected:
   void disconnectPropertyManager(QtVariantPropertyManager* manager);
 
 protected slots:
-  //FIXME override slotEditorDestroyed to remove the editor from the maps
-
-  /**
-   * This slot is invoked whenever a properties value changes.
-   * It updates the editors value.
-   */
-  void slotManagerValueChanged(QtProperty* property, const QVariant& val);
-
   /**
    * This slot is invoked whenever one of the managed spinboxes changes its value.
    * It updates the value in the property belonging to the box.
@@ -57,15 +63,41 @@ protected slots:
    */
   void slotFloatSpinBoxValueChanged(double newValue);
 
+  void slotAngleEditorValueChanged(float newValue);
+  void slotAngleEditorUnityChanged(int index);
+
 private slots:
   void slotEditorDestroyed(QObject* pObject);
+};
 
+class FloatSpinBox;
+class QComboBox;
+
+class AngleEditor : public QWidget
+{
 private:
-  DataView* pTheView;
-  //FIXME comments
-  QMap<QtProperty*, QSpinBox*> propertyToSpinBox;
-  QMap<QSpinBox*, QtProperty*> spinBoxToProperty;
-  QMap<QtProperty*, QDoubleSpinBox*> propertyToDoubleSpinBox;
-  QMap<QDoubleSpinBox*, QtProperty*> doubleSpinBoxToProperty;
-  QtVariantPropertyManager* pTheManager;
+  Q_OBJECT;
+
+public:
+  FloatSpinBox* fBox;
+  QComboBox* unityBox;
+
+  AngleEditor(QWidget* parent = nullptr);
+
+  void setValue(const AngleWithUnity& value);
+
+signals:
+  void valueChanged(float value);
+  void unityChanged(int index);
+
+private slots:
+  void updateValue(double value)
+  {
+    emit valueChanged(static_cast<float>(value));
+  }
+
+  void updateUnity(int index)
+  {
+    emit unityChanged(index);
+  }
 };

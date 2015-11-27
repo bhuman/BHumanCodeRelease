@@ -9,50 +9,49 @@
 #include "FootContactModelProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
-MAKE_MODULE(FootContactModelProvider, Sensing);
+MAKE_MODULE(FootContactModelProvider, sensing);
 
-FootContactModelProvider::FootContactModelProvider():
+FootContactModelProvider::FootContactModelProvider() :
   contactDurationLeft(0), contactDurationRight(0), leftFootLeftDuration(0), leftFootRightDuration(0), rightFootLeftDuration(0), rightFootRightDuration(0)
-{
-}
+{}
 
 void FootContactModelProvider::update(FootContactModel& model)
 {
   // Check, if any bumper is pressed
-  const bool leftFootLeft = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootLeft, leftFootLeftDuration);
-  const bool leftFootRight = !theDamageConfiguration.leftFootBumperDefect && checkContact(KeyStates::leftFootRight, leftFootRightDuration);
-  const bool rightFootLeft = !theDamageConfiguration.rightFootBumperDefect &&  checkContact(KeyStates::rightFootLeft, rightFootLeftDuration);
-  const bool rightFootRight = !theDamageConfiguration.rightFootBumperDefect && checkContact(KeyStates::rightFootRight, rightFootRightDuration);
+  const bool leftFootLeft = !theDamageConfigurationBody.leftFootBumperDefect && checkContact(KeyStates::leftFootLeft, leftFootLeftDuration);
+  const bool leftFootRight = !theDamageConfigurationBody.leftFootBumperDefect && checkContact(KeyStates::leftFootRight, leftFootRightDuration);
+  const bool rightFootLeft = !theDamageConfigurationBody.rightFootBumperDefect &&  checkContact(KeyStates::rightFootLeft, rightFootLeftDuration);
+  const bool rightFootRight = !theDamageConfigurationBody.rightFootBumperDefect && checkContact(KeyStates::rightFootRight, rightFootRightDuration);
   const bool contactLeftFoot = leftFootLeft || leftFootRight;
   const bool contactRightFoot = rightFootLeft || rightFootRight;
   // Update statistics
   if(contactLeftFoot)
   {
-    contactBufferLeft.add(1);
+    contactBufferLeft.push_front(1);
     contactDurationLeft++;
   }
   else
   {
-    contactBufferLeft.add(0);
+    contactBufferLeft.push_front(0);
     contactDurationLeft = 0;
   }
   if(contactRightFoot)
   {
-    contactBufferRight.add(1);
+    contactBufferRight.push_front(1);
     contactDurationRight++;
   }
   else
   {
-    contactBufferRight.add(0);
+    contactBufferRight.push_front(0);
     contactDurationRight = 0;
   }
 
   // Generate model
   if((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
-      (theGameInfo.state == STATE_READY || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_PLAYING) && //The bumper is used for configuration in initial
-      (theFallDownState.state == FallDownState::upright))
+     (theGameInfo.state == STATE_READY || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_PLAYING) && //The bumper is used for configuration in initial
+     (theFallDownState.state == FallDownState::upright))
   {
-    if(contactBufferLeft.getSum() > contactThreshold)
+    if(contactBufferLeft.sum() > contactThreshold)
     {
       model.contactLeft = true;
       model.contactDurationLeft = contactDurationLeft;
@@ -64,7 +63,7 @@ void FootContactModelProvider::update(FootContactModel& model)
       model.contactLeft = false;
       model.contactDurationLeft = 0;
     }
-    if(contactBufferRight.getSum() > contactThreshold)
+    if(contactBufferRight.sum() > contactThreshold)
     {
       model.contactRight = true;
       model.contactDurationRight = contactDurationRight;
@@ -87,8 +86,7 @@ void FootContactModelProvider::update(FootContactModel& model)
 
   // Debugging stuff:
 
-  if(debug && theFrameInfo.getTimeSince(lastSoundTime) > (int) soundDelay &&
-    (model.contactLeft || model.contactRight))
+  if(debug && theFrameInfo.getTimeSince(lastSoundTime) > (int) soundDelay && (model.contactLeft || model.contactRight))
   {
     lastSoundTime = theFrameInfo.time;
     SystemCall::playSound("doh.wav");
@@ -104,9 +102,9 @@ void FootContactModelProvider::update(FootContactModel& model)
   DECLARE_PLOT("module:FootContactModelProvider:leftFootRight");
   DECLARE_PLOT("module:FootContactModelProvider:rightFootLeft");
   DECLARE_PLOT("module:FootContactModelProvider:rightFootRight");
-  PLOT("module:FootContactModelProvider:sumLeft", contactBufferLeft.getSum());
+  PLOT("module:FootContactModelProvider:sumLeft", contactBufferLeft.sum());
   PLOT("module:FootContactModelProvider:durationLeft", contactDurationLeft);
-  PLOT("module:FootContactModelProvider:sumRight", contactBufferRight.getSum());
+  PLOT("module:FootContactModelProvider:sumRight", contactBufferRight.sum());
   PLOT("module:FootContactModelProvider:durationRight", contactDurationRight);
   PLOT("module:FootContactModelProvider:contactLeft", model.contactLeft ? 10 : 0);
   PLOT("module:FootContactModelProvider:contactRight", model.contactRight ? 10 : 0);

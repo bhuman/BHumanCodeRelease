@@ -1,8 +1,8 @@
 /**
-* @file Representations/BehaviorControl/BehaviorLEDRequest.h
-* This file contains the BehaviorLEDRequest class.
-* @author jeff
-*/
+ * @file Representations/BehaviorControl/BehaviorLEDRequest.h
+ * This file contains the BehaviorLEDRequest struct.
+ * @author jeff
+ */
 
 #pragma once
 
@@ -10,15 +10,16 @@
 
 STREAMABLE(BehaviorLEDRequest,
 {
-public:
   ENUM(BehaviorLED,
+  {,
     leftEye,
     rightEye,
     leftEar,
-    rightEar
-  );
+    rightEar,
+  });
 
   ENUM(EyeColor,
+  {,
     defaultColor,
     red,
     green,
@@ -26,8 +27,8 @@ public:
     white,
     magenta,
     yellow,
-    cyan
-  );
+    cyan,
+  });
 
   BehaviorLEDRequest()
   {
@@ -48,7 +49,7 @@ public:
     return !(*this == other);
   },
 
-  (LEDRequest, LEDState[numOfBehaviorLEDs]) modifiers,
+  ((LEDRequest) LEDState[numOfBehaviorLEDs]) modifiers,
   (EyeColor)(defaultColor) leftEyeColor,
   (EyeColor)(defaultColor) rightEyeColor,
 });

@@ -22,9 +22,9 @@ execute() {
 if [ "$(git config hooks.generateProject)" = "true" ]
 then
   case "$OSTYPE" in
-    "cygwin"|"msys") if [ -f "${scriptPath}/../../Make/VS2013/generate.cmd" ]
+    "cygwin"|"msys") if [ -f "${scriptPath}/../../Make/VS2015/generate.cmd" ]
                      then
-                       cmd "/C call $(cygpath -t windows "${scriptPath}/../../Make/VS2013/generate.cmd")"
+                       cmd "/C call $(cygpath -t windows "${scriptPath}/../../Make/VS2015/generate.cmd")"
                      fi
     ;;
 #    linux*)          execute "${scriptPath}/../../Make/Linux/generate";;

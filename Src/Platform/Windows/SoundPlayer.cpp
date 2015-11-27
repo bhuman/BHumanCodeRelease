@@ -5,8 +5,8 @@
 * @author Colin Graf
 */
 
+#define NOMINMAX
 #include <windows.h>
-#include <mmsystem.h>
 
 #include "SoundPlayer.h"
 #include "Platform/File.h"
@@ -16,7 +16,6 @@ int SoundPlayer::play(const std::string& name)
   std::string filePath(File::getBHDir());
   filePath += "/Config/Sounds/";
   filePath += name;
-  PlaySound(filePath.c_str(), NULL, SND_ASYNC | SND_FILENAME);
+  PlaySound(filePath.c_str(), nullptr, SND_ASYNC | SND_FILENAME);
   return 1;
 }
-

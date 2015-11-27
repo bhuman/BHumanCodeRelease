@@ -2,8 +2,6 @@
 
 #include "Tools/Module/Module.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Streams/Streamable.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 
@@ -11,12 +9,12 @@ MODULE(ManualHeadMotionProvider,
 {,
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
-  PROVIDES_WITH_MODIFY(HeadMotionRequest),
+  PROVIDES(HeadMotionRequest),
   DEFINES_PARAMETERS(
   {,
     (int)(0) xImg,
     (int)(0) yImg,
-    (CameraInfo, Camera)(lower) camera,
+    ((CameraInfo) Camera)(lower) camera,
   }),
 });
 

@@ -25,6 +25,9 @@ void Hinge::createPhysics()
   //
   axis->create();
 
+  if(axis->deflection && axis->deflection->offset != 0.f)
+    pose.rotate(Matrix3x3<>(Vector3<>(axis->x, axis->y, axis->z) * axis->deflection->offset));
+
   //
   ::PhysicalObject::createPhysics();
 
@@ -61,10 +64,10 @@ void Hinge::createPhysics()
       minHingeLimit -= internalTolerance;
       maxHingeLimit += internalTolerance;
     }
-    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit));
-    dJointSetHingeParam(joint, dParamHiStop, dReal(maxHingeLimit));
+    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit - axis->deflection->offset));
+    dJointSetHingeParam(joint, dParamHiStop, dReal(maxHingeLimit - axis->deflection->offset));
     // this has to be done due to the way ODE sets joint stops
-    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit));
+    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit - axis->deflection->offset));
     if(deflection.stopCFM != -1.f)
       dJointSetHingeParam(joint, dParamStopCFM, dReal(deflection.stopCFM));
     if(deflection.stopERP != -1.f)
@@ -73,7 +76,11 @@ void Hinge::createPhysics()
 
   // create motor
   if(axis->motor)
+  {
     axis->motor->create(this);
+    if(axis->deflection) // Move setpoint to a position inside the deflection range
+      axis->motor->setpoint = axis->deflection->offset;
+  }
 
   OpenGLTools::convertTransformation(rotation, translation, transformation);
 }

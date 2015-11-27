@@ -41,14 +41,7 @@ bool UdpComm::resolve(const char* addrStr, int port, struct sockaddr_in* addr)
 {
   memset(addr, 0, sizeof(struct sockaddr_in));
   addr->sin_family = AF_INET;
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
-  addr->sin_port = htons(port);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+  addr->sin_port = htons(static_cast<unsigned short>(port));
   if(inet_pton(AF_INET, addrStr, &(addr->sin_addr.s_addr)) != 1)
   {
     std::cerr << addrStr << " is not a valid dotted ipv4 address" << std::endl;
@@ -101,14 +94,7 @@ bool UdpComm::bind(const char* addr_str, int port)
   static const int yes = 1;
   struct sockaddr_in addr;
   addr.sin_addr.s_addr = INADDR_ANY;
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
-  addr.sin_port = htons(port);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+  addr.sin_port = htons(static_cast<unsigned short>(port));
   addr.sin_family = AF_INET;
 
   if(inet_pton(AF_INET, addr_str, &(addr.sin_addr)) <= 0)
@@ -139,6 +125,12 @@ int UdpComm::read(char* data, int len)
   return ::recv(sock, data, len, 0);
 }
 
+int UdpComm::read(char* data, int len, sockaddr_in& from)
+{
+  socklen_t fromLen = sizeof(from);
+  return ::recvfrom(sock, data, len, 0, (sockaddr*) &from, &fromLen);
+}
+
 bool UdpComm::write(const char* data, const int len)
 {
   return ::sendto(sock, data, len, 0,
@@ -147,15 +139,15 @@ bool UdpComm::write(const char* data, const int len)
 
 const char* UdpComm::getWifiBroadcastAddress()
 {
-  struct ifaddrs* ifAddrStruct = NULL;
-  struct ifaddrs* ifa = NULL;
+  struct ifaddrs* ifAddrStruct = nullptr;
+  struct ifaddrs* ifa = nullptr;
 
   //determine ip address
   getifaddrs(&ifAddrStruct);
-  for(ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
+  for(ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
   {
        // manpage getifaddrs    // check it is IP4
-    if(ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_INET)
+    if(ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET)
     {
       std::string interfaceName(ifa->ifa_name);
       if(interfaceName.find("wlan") != std::string::npos)

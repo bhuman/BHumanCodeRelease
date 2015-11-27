@@ -7,18 +7,21 @@ baseDir="$(dirname "${scriptPath}")"
 bhDir="$(dirname "${baseDir}")"
 includeDir="${baseDir}/Include/"
 privateKey="${baseDir}/../Config/Keys/id_rsa_nao"
-SSHOPTIONS="-o PreferredAuthentications=keyboard-interactive,publickey -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no"
+SSHOPTIONS="-c arcfour -o PreferredAuthentications=publickey,keyboard-interactive -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 source "${includeDir}/bhumanBase"
 
 robotName=""
+bodyName=""
 naoPw="nao"
+robotVersion=""
 
 usage() {
   echo "usage:"
-  echo "${0} <name> <ipaddress>"
+  echo "${0} <name> [<body>] <ipaddress>"
   echo ""
-  echo " <name>    : name of the robot"
+  echo " <name>    : name of the robot (head)"
+  echo " <body>    : name of the body"
   echo " <address> : the current dns name or ip address of the robot to install"
   echo " -h|--help : displays this help"
   exit 1
@@ -31,29 +34,39 @@ parseOptions() {
       usage
     fi
   fi
-    
-  # not enough parameter => print help
-  if [ $# -lt 2 ] ; then
+
+  # setting up variables
+  if [ $# = 2 ]; then
+    robotName=${1}
+    bodyName=${1}
+    robotIp=${2}
+  elif [ $# = 3 ]; then
+    robotName=${1}
+    bodyName=${2}
+    robotIp=${3}
+  else
+    # not enough parameter => print help
     echo "[ERROR] missing parameters"
     echo ""
     usage
   fi
 
-  # setting up variables
-  robotName=${1}
-  robotIp=${2}
   robotDir="${baseDir}/Robots/${robotName}"
-  
+
   # try to ping robot
   if [ `ping ${pingoptions} ${robotIp} > /dev/null && echo 1 || echo 0` == "0" ]; then
     echo "[ERROR] robot not reachable at ${robotIp}"
     echo ""
     usage
   fi
-  
+
   # does the robot exist?
   if [ ! -d "${robotDir}" ]; then
     echo "[ERROR] robot \"${robotName}\" does not exist"
+    echo ""
+    usage
+  elif [ ! -d "${baseDir}/Robots/${bodyName}" ]; then
+    echo "[ERROR] body \"${bodyName}\" does not exist"
     echo ""
     usage
   fi
@@ -61,29 +74,52 @@ parseOptions() {
   echo ""
   echo "using parameters"
   echo "  name:    ${robotName}"
-  echo "  address: ${robotIp}" 
+  echo "  body:    ${bodyName}"
+  echo "  address: ${robotIp}"
   echo ""
 }
 
 copyFiles() {
   copyTo="/tmp/NaoInstall/${robotName}"
+  sshCommand="ssh -i \"${privateKey}\" ${SSHOPTIONS}"
+  if [ `uname` = Darwin ]; then
+    rsyncOptions="-qzPha --delete"
+  else
+    rsyncOptions="-qzPEha --delete"
+  fi
+
+  echo "[INFO] copying authorized keys. If prompted please enter password twice (usually nao)."
+  chmod 600 "${fileDir}/authorized_keys"
+  if [[ $(uname) == "*CYGWIN*" ]] ; then
+    which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${fileDir}/authorized_keys" #due to windows 8
+  fi
+  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "mkdir -p .ssh && chmod -R 700 .ssh"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/authorized_keys" nao@${robotIp}:.ssh/authorized_keys
   
+  networkDriver=$(ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} lspci -k -s 02:00.0 | grep "Kernel driver in use:" | awk 'NF>1{print $NF}')
+  if [[ ${networkDriver} == "r8169" ]] ; then
+    echo "[INFO] Buggy Ethernet driver detected! Limiting bandwidth to 100 kb/s"
+    rsyncOptions="${rsyncOptions} --bwlimit=100"
+  fi
+
   echo "[INFO] Copying files to ${copyTo}"
-  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} 'rm -rf /tmp/NaoInstall && mkdir /tmp/NaoInstall'
   if [[ $(uname) == "*CYGWIN*" ]] ; then
     chmod -R 755 "${fileDir}"
+    setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${fileDir}" #due to windows 8
   fi
-  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${fileDir}" nao@${robotIp}:${copyTo}
-  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${robotDir}" nao@${robotIp}:${copyTo}/Robot
-  "${sshpass}" -p ${naoPw} scp -i "${privateKey}" ${SSHOPTIONS} -r "${baseDir}/Network/Profiles" nao@${robotIp}:${copyTo}/Robot
+  
+  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "rm -Rf ${copyTo}"
+
+  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "mkdir -p ${copyTo}"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}"/* nao@${robotIp}:${copyTo}
+  rsync ${rsyncOptions} -e "${sshCommand}" "${robotDir}"/* nao@${robotIp}:${copyTo}/Robot/
+  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "echo ${bodyName} >${copyTo}/Robot/bodyname"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${baseDir}/Network/Profiles" nao@${robotIp}:${copyTo}/Robot/
 }
 
 runInstallation() {
   echo "[INFO] launching install process"
-  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install"
-  
-  echo "[INFO] clean up and restart"
-  "${sshpass}" -p ${naoPw} ssh -i "${privateKey}" -t ${SSHOPTIONS} nao@${robotIp} 'rm -rf /tmp/NaoInstall && reboot'
+  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install"
 }
 
 ###############################################################################
@@ -92,14 +128,12 @@ runInstallation() {
 ##                                                                           ##
 ###############################################################################
 
-checkApp "scp" "secure copy"
-if [ "Linux" == `uname -s` ]; then
-  checkApp "${sshpass}"
-fi
+checkApp "rsync"
 parseOptions "$@"
 
 chmod 600 "${privateKey}"
-
+if [[ $(uname) == "*CYGWIN*" ]] ; then
+  which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${privateKey}" #due to windows 8
+fi
 copyFiles
 runInstallation
-

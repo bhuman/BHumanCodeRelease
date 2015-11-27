@@ -12,9 +12,8 @@
 #include "KickViewGLWidget.h"
 #include "TabWidget.h"
 #include "KickMenuBar.h"
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Eigen.h"
 #include "Modules/MotionControl/KickEngine/KickEngineParameters.h"
-#include "Representations/Infrastructure/JointData.h"
 #include "Representations/MotionControl/MotionRequest.h"
 
 #include <QWidget>
@@ -68,7 +67,7 @@ private slots:
   void standRobot();
   void setMirrored(int state);;
   void recordPose();
-  void setHardness(int limb);
+  void setStiffness(int limb);
   //Sliders
   void transparencyChanged(const int& i);
   //Tab
@@ -132,7 +131,7 @@ private:
        velocityWindows,//show one curves velocity
        accelWindows, //show one curves acceleration
        followMode;
-  Vector3<> dragPlane; //plane for the 3D View where a selected point is moved
+  Vector3f dragPlane = Vector3f::Zero(); //plane for the 3D View where a selected point is moved
   Selected selectedPoint; //Infos about the actual selected Point
 
   int getString,

@@ -25,7 +25,6 @@
 #ifdef OSX
 #define FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
 #define FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
-#define FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
 #endif
 
 #ifdef WINDOWS
@@ -179,9 +178,6 @@ private slots:
 
   void open();
   bool closeFile();
-  void simReset();
-  void simStart();
-  void simStep();
   void help();
   void about();
   void loadAddon(const QString& name);
@@ -192,4 +188,10 @@ private slots:
   void visibilityChanged(bool visible);
 
   void focusChanged(QWidget *old, QWidget* now);
+
+public slots:
+  void simReset();
+  void simStart();
+  void simStep();
+  void simStop();
 };

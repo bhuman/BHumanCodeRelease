@@ -8,45 +8,32 @@
 
 #pragma once
 
-#include "Tools/Streams/InOut.h"
-#include "Tools/Streams/Streamable.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 /**
  * A template class to represent ranges. It also defines the 13 Allen relations
  */
-template <class T = float> class Range : public Streamable
+template<typename T> STREAMABLE(Range,
 {
-public:
-  virtual void serialize(In* in, Out* out)
-  {
-    STREAM_REGISTER_BEGIN;
-    STREAM(min);
-    STREAM(max);
-    STREAM_REGISTER_FINISH;
-  }
-
-  T min, max;                   /**< The limits of the range. */
-
   /**
    * Constructor.
    * Defines an empty range.
    */
-  Range() {min = max = T();}
+  Range();
 
   /**
    * Constructor.
    * Defines an empty range.
    * @param minmax A conjoined starting and ending point of the empty range.
    */
-  Range(T minmax) {min = max = minmax;}
+  Range(T minmax);
 
   /**
    * Constructor.
    * @param min The minimum of the range.
    * @param max The maximum of the range.
    */
-  Range(T min, T max)
-  {Range::min = min; Range::max = max;}
+  Range(T min, T max);
 
   /**
    * The function enlarges the range so that a certain value will be part of it.
@@ -74,14 +61,19 @@ public:
     return *this;
   }
 
+  /** A range between 0 and 1. */
+  static const Range<T>& ZeroOneRange();
+
+  /** A range between -1 and 1. */
+  static const Range<T>& OneRange();
+
   /**
    * The function checks whether a certain value is in the range.
    * Note that the function is able to handle circular range, i.e. max < min.
    * @param t The value.
    * @return Is the value inside the range?
    */
-  bool isInside(T t) const
-  {return min <= max ? t >= min && t <= max : t >= min || t <= max;}
+  bool isInside(T t) const {return min <= max ? t >= min && t <= max : t >= min || t <= max;}
 
   /**
    * The function limits a certain value to the range.
@@ -127,4 +119,31 @@ public:
   bool during(const Range<T>& r) const {return min > r.min && max < r.max;}
   bool contains(const Range<T>& r) const {return min < r.min && max > r.max;}
   //!@}
-};
+
+  // The size of the intersection of to ranges or 0 if there is no intersection
+  T intersectionSizeWith(const Range<T>& r) const {return std::max(0.f, std::min(max, r.max) - std::max(min, r.min));},
+
+  (T) min,
+  (T) max, /**< The limits of the range. */
+});
+
+template<typename T> Range<T>::Range() : min(T()), max(T()) {}
+template<typename T> Range<T>::Range(T minmax) : min(minmax), max(minmax) {}
+template<typename T> Range<T>::Range(T min, T max) : min(min), max(max) {}
+
+template<typename T>
+const Range<T>& Range<T>::ZeroOneRange()
+{
+  static Range<T> range(0, 1);
+  return range;
+}
+
+template<typename T>
+const Range<T>& Range<T>::OneRange()
+{
+  static Range<T> range(-1, 1);
+  return range;
+}
+
+using Rangei = Range<int>;
+using Rangef = Range<float>;

@@ -6,15 +6,24 @@
 #define GAMECONTROLLER_PORT            3838
 
 #define GAMECONTROLLER_STRUCT_HEADER   "RGme"
-#define GAMECONTROLLER_STRUCT_VERSION  8
+#define GAMECONTROLLER_STRUCT_VERSION  9
 
 #define MAX_NUM_PLAYERS             11
 
-#define TEAM_BLUE                   0
+// SPL
+#define TEAM_BLUE                   0 // cyan, blue, violet
+#define TEAM_RED                    1 // magenta, pink (not red/orange)
+#define TEAM_YELLOW                 2 // yellow
+#define TEAM_BLACK                  3 // black, dark gray
+
+// HL
 #define TEAM_CYAN                   0
-#define TEAM_RED                    1
 #define TEAM_MAGENTA                1
-#define DROPBALL                    2
+#define DROPBALL                    255
+
+#define GAME_ROUNDROBIN             0
+#define GAME_PLAYOFF                1
+#define GAME_DROPIN                 2
 
 #define STATE_INITIAL               0
 #define STATE_READY                 1
@@ -29,13 +38,13 @@
 
 #define PENALTY_NONE                        0
 // SPL
-#define PENALTY_SPL_BALL_HOLDING            1
+#define PENALTY_SPL_ILLEGAL_BALL_CONTACT    1 // ball holding / playing with hands
 #define PENALTY_SPL_PLAYER_PUSHING          2
-#define PENALTY_SPL_OBSTRUCTION             3
-#define PENALTY_SPL_INACTIVE_PLAYER         4
-#define PENALTY_SPL_ILLEGAL_DEFENDER        5
+#define PENALTY_SPL_ILLEGAL_MOTION_IN_SET   3 // heard whistle too early?
+#define PENALTY_SPL_INACTIVE_PLAYER         4 // fallen, inactive, local game stuck
+#define PENALTY_SPL_ILLEGAL_DEFENDER        5 // own penalty area, center circle during kick-off
 #define PENALTY_SPL_LEAVING_THE_FIELD       6
-#define PENALTY_SPL_PLAYING_WITH_HANDS      7
+#define PENALTY_SPL_KICK_OFF_GOAL           7 // scored from inside center circle after kick-off
 #define PENALTY_SPL_REQUEST_FOR_PICKUP      8
 #define PENALTY_SPL_COACH_MOTION            9
 // HL Kid Size
@@ -71,6 +80,7 @@ struct TeamInfo
   uint8_t score;                // team's score
   uint8_t penaltyShot;          // penalty shot counter
   uint16_t singleShots;         // bits represent penalty shot success
+  uint8_t coachSequence;        // sequence number of the coach's message
   uint8_t coachMessage[SPL_COACH_MESSAGE_SIZE]; // the coach's message to the team
   RobotInfo coach;
   RobotInfo players[MAX_NUM_PLAYERS]; // the team's players
@@ -79,15 +89,16 @@ struct TeamInfo
 struct RoboCupGameControlData
 {
   char header[4];               // header to identify the structure
-  uint8_t version;              // version of the data structure
+  uint16_t version;             // version of the data structure
   uint8_t packetNumber;         // number incremented with each packet sent (with wraparound)
-  uint8_t playersPerTeam;       // The number of players on a team
+  uint8_t playersPerTeam;       // the number of players on a team
+  uint8_t gameType;             // type of the game (GAME_ROUNDROBIN, GAME_PLAYOFF, GAME_DROPIN)
   uint8_t state;                // state of the game (STATE_READY, STATE_PLAYING, etc)
   uint8_t firstHalf;            // 1 = game in first half, 0 otherwise
-  uint8_t kickOffTeam;          // the next team to kick off (TEAM_BLUE, TEAM_RED)
-  uint8_t secondaryState;       // Extra state information - (STATE2_NORMAL, STATE2_PENALTYSHOOT, etc)
-  uint8_t dropInTeam;           // team that caused last drop in
-  uint16_t dropInTime;          // number of seconds passed since the last drop in.  -1 before first dropin
+  uint8_t kickOffTeam;          // the team number of the next team to kick off or DROPBALL
+  uint8_t secondaryState;       // extra state information - (STATE2_NORMAL, STATE2_PENALTYSHOOT, etc)
+  uint8_t dropInTeam;           // number of team that caused last drop in
+  uint16_t dropInTime;          // number of seconds passed since the last drop in. -1 (0xffff) before first dropin
   uint16_t secsRemaining;       // estimate of number of seconds remaining in the half
   uint16_t secondaryTime;       // number of seconds shown as secondary time (remaining ready, until free ball, etc)
   TeamInfo teams[2];
@@ -111,10 +122,11 @@ struct RoboCupGameControlReturnData
 
 #ifdef __cplusplus
   // constructor
-  RoboCupGameControlReturnData()
+  RoboCupGameControlReturnData() : version(GAMECONTROLLER_RETURN_STRUCT_VERSION)
   {
-    *(uint32_t*) header = *(const uint32_t*) GAMECONTROLLER_RETURN_STRUCT_HEADER;
-    version = GAMECONTROLLER_RETURN_STRUCT_VERSION;
+    const char* init = GAMECONTROLLER_RETURN_STRUCT_HEADER;
+    for(unsigned int i = 0; i < sizeof(header); ++i)
+      header[i] = init[i];
   }
 #endif
 };

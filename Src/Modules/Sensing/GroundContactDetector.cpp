@@ -5,14 +5,9 @@
 */
 
 #include "GroundContactDetector.h"
-#include "Tools/Debugging/DebugDrawings.h" // PLOT
-#include "Tools/Streams/InStreams.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
-MAKE_MODULE(GroundContactDetector, Sensing)
-
-GroundContactDetector::GroundContactDetector() : contact(false), contactStartTime(0), useAngle(false)
-{
-}
+MAKE_MODULE(GroundContactDetector, sensing)
 
 void GroundContactDetector::update(GroundContactState& groundContactState)
 {
@@ -26,7 +21,7 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
 
   MODIFY("module:GroundContactDetector:contact", contact);
 
-  if(theMotionInfo.motion == MotionRequest::getUp) //hack to avoid long pause after get up 
+  if(theMotionInfo.motion == MotionRequest::getUp) //hack to avoid long pause after get up
   {
     contact = true;
     useAngle = false;
@@ -39,24 +34,26 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
                        (theMotionRequest.motion != MotionRequest::walk && theMotionRequest.motion != MotionRequest::stand &&
                         theMotionRequest.motion != MotionRequest::specialAction && theMotionRequest.motion != MotionRequest::getUp) ||
                        (theMotionInfo.motion == MotionRequest::walk && theMotionInfo.walkRequest.kickType != WalkRequest::none) ||
-                       (theMotionRequest.motion == MotionRequest::walk && theMotionRequest.walkRequest.kickType != WalkRequest::none);
+                       (theMotionRequest.motion == MotionRequest::walk && theMotionRequest.walkRequest.kickType != WalkRequest::none) ||
+                       (theMotionInfo.motion == MotionRequest::specialAction && theMotionInfo.specialActionRequest.specialAction != SpecialActionRequest::standHigh) ||
+                       (theMotionRequest.motion == MotionRequest::specialAction && theMotionRequest.specialActionRequest.specialAction != SpecialActionRequest::standHigh);
   if(!ignoreSensors)
   {
     if(contact)
     {
-      calibratedAccZValues.add(theSensorData.data[SensorData::accZ]);
+      calibratedAccZValues.push_front(theInertialData.acc.z());
 
-      Vector3<> angleDiff = ((const RotationMatrix&)(theTorsoMatrix.rotation * expectedRotationInv)).getAngleAxis();
-      angleNoises.add(Vector2<>(sqr(angleDiff.x), sqr(angleDiff.y)));
-      Vector2<> angleNoise = angleNoises.getAverage();
-      PLOT("module:GroundContactDetector:angleNoiseX", angleNoise.x);
-      PLOT("module:GroundContactDetector:angleNoiseY", angleNoise.y);
+      Vector3f angleDiff = (theTorsoMatrix.rotation * expectedRotationInv).getPackedAngleAxis();
+      angleNoises.push_front(Vector2f(sqr(angleDiff.x()), sqr(angleDiff.y())));
+      Vector2f angleNoise = angleNoises.average();
+      PLOT("module:GroundContactDetector:angleNoiseX", angleNoise.x());
+      PLOT("module:GroundContactDetector:angleNoiseY", angleNoise.y());
 
-      if(!useAngle && angleNoises.isFull() && angleNoise.x < contactAngleActivationNoise && angleNoise.y < contactAngleActivationNoise)
+      if(!useAngle && angleNoises.full() && angleNoise.x() < contactAngleActivationNoise && angleNoise.y() < contactAngleActivationNoise)
         useAngle = true;
 
-      if((useAngle && (angleNoise.x > contactMaxAngleNoise || angleNoise.y > contactMaxAngleNoise)) ||
-         (calibratedAccZValues.isFull() && calibratedAccZValues.getAverage() > contactMaxAccZ))
+      if((useAngle && (angleNoise.x() > contactMaxAngleNoise || angleNoise.y() > contactMaxAngleNoise)) ||
+         (calibratedAccZValues.full() && calibratedAccZValues.average() > contactMaxAccZ))
       {
         /*
         if((useAngle && (angleNoise.x > p.contactMaxAngleNoise || angleNoise.y > p.contactMaxAngleNoise)))
@@ -77,29 +74,29 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
     }
     else
     {
-      const Vector3<> accAverage = accValues.getAverage();
-      const Vector2<> gyroAverage = gyroValues.getAverage();
-      const Vector2<> gyro = Vector2<>(theSensorData.data[SensorData::gyroX], theSensorData.data[SensorData::gyroY]);
-      const Vector3<> acc = Vector3<>(theSensorData.data[SensorData::accX], theSensorData.data[SensorData::accY], theSensorData.data[SensorData::accZ]);
-      accValues.add(acc);
-      gyroValues.add(gyro);
-      if(accValues.isFull())
+      const Vector3f accAverage = accValues.average();
+      const Vector2f gyroAverage = gyroValues.average();
+      const Vector2f gyro = theInertialData.gyro.head<2>().cast<float>();
+      const Vector3f acc = theInertialData.acc.cast<float>();
+      accValues.push_front(acc);
+      gyroValues.push_front(gyro);
+      if(accValues.full())
       {
-        accNoises.add(Vector3<>(sqr(acc.x - accAverage.x), sqr(acc.y - accAverage.y), sqr(acc.z - accAverage.z)));
-        gyroNoises.add(Vector2<>(sqr(gyro.x - gyroAverage.x), sqr(gyro.y - gyroAverage.y)));
+        accNoises.push_front((acc - accAverage).array().square());
+        gyroNoises.push_front((gyro - gyroAverage).array().square());
       }
-      Vector3<> accNoise = accNoises.getAverage();
-      Vector2<> gyroNoise = gyroNoises.getAverage();
-      PLOT("module:GroundContactDetector:accNoiseX", accNoise.x);
-      PLOT("module:GroundContactDetector:accNoiseY", accNoise.y);
-      PLOT("module:GroundContactDetector:accNoiseZ", accNoise.z);
-      PLOT("module:GroundContactDetector:gyroNoiseX", gyroNoise.x);
-      PLOT("module:GroundContactDetector:gyroNoiseY", gyroNoise.y);
+      Vector3f accNoise = accNoises.average();
+      Vector2f gyroNoise = gyroNoises.average();
+      PLOT("module:GroundContactDetector:accNoiseX", accNoise.x());
+      PLOT("module:GroundContactDetector:accNoiseY", accNoise.y());
+      PLOT("module:GroundContactDetector:accNoiseZ", accNoise.z());
+      PLOT("module:GroundContactDetector:gyroNoiseX", gyroNoise.x());
+      PLOT("module:GroundContactDetector:gyroNoiseY", gyroNoise.y());
 
-      if(accNoises.isFull() &&
-         accAverage.z < -5.f && std::abs(accAverage.x) < 5.f && std::abs(accAverage.y) < 5.f &&
-         accNoise.x < noContactMinAccNoise && accNoise.y < noContactMinAccNoise && accNoise.z < noContactMinAccNoise &&
-         gyroNoise.x < noContactMinGyroNoise && gyroNoise.y < noContactMinGyroNoise)
+      if(accNoises.full() &&
+         std::abs(accAverage.z() - Constants::g_1000) < 5.f && std::abs(accAverage.x()) < 5.f && std::abs(accAverage.y()) < 5.f &&
+         accNoise.x() < noContactMinAccNoise && accNoise.y() < noContactMinAccNoise && accNoise.z() < noContactMinAccNoise &&
+         gyroNoise.x() < noContactMinGyroNoise && gyroNoise.y() < noContactMinGyroNoise)
       {
         contact = true;
         useAngle = false;
@@ -112,5 +109,5 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
 
   groundContactState.contact = contact;
 
-  expectedRotationInv = theRobotModel.limbs[MassCalibration::footLeft].translation.z > theRobotModel.limbs[MassCalibration::footRight].translation.z ? theRobotModel.limbs[MassCalibration::footLeft].rotation : theRobotModel.limbs[MassCalibration::footRight].rotation;
+  expectedRotationInv = theRobotModel.limbs[Limbs::footLeft].translation.z() > theRobotModel.limbs[Limbs::footRight].translation.z() ? theRobotModel.limbs[Limbs::footLeft].rotation : theRobotModel.limbs[Limbs::footRight].rotation;
 }

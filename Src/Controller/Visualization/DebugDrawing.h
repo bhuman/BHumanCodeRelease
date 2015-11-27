@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
 #include "Tools/MessageQueue/InMessage.h"
@@ -70,7 +70,7 @@ public:
   class Element
   {
   public:
-    enum {LINE, POLYGON, ELLIPSE, TIP, ORIGIN, TEXT, GRID_RGBA, GRID_MONO, RECTANGLE} type;
+    enum {LINE, POLYGON, ELLIPSE, ARC, TIP, ORIGIN, TEXT, GRID_RGBA, GRID_MONO, RECTANGLE} type;
     Drawings::PenStyle penStyle;
     ColorRGBA penColor;
     int width;
@@ -81,8 +81,8 @@ public:
   {
   public:
     int nCount;
-    Drawings::FillStyle fillStyle;
-    ColorRGBA fillColor;
+    Drawings::BrushStyle brushStyle;
+    ColorRGBA brushColor;
     Polygon() {type = POLYGON;}
   };
 
@@ -136,9 +136,20 @@ public:
   public:
     int x, y, radiusX, radiusY;
     float rotation;
-    Drawings::FillStyle fillStyle;
-    ColorRGBA fillColor;
+    Drawings::BrushStyle brushStyle;
+    ColorRGBA brushColor;
     Ellipse() {type = ELLIPSE;}
+  };
+
+  /** Stores an ellipse */
+  class Arc : public Element
+  {
+  public:
+    int x, y, radius;
+    int startAngle, spanAngle;
+    Drawings::BrushStyle brushStyle;
+    ColorRGBA brushColor;
+    Arc() {type = ARC;}
   };
 
   /** Stores a Rectangle */
@@ -147,8 +158,8 @@ public:
   public:
     int topLX, topLY, w, h;
     float rotation;
-    Drawings::FillStyle fillStyle;
-    ColorRGBA fillColor;
+    Drawings::BrushStyle brushStyle;
+    ColorRGBA brushColor;
     Rectangle() {type = RECTANGLE;}
   };
 
@@ -180,8 +191,8 @@ public:
   * @param color The color
   */
   void arrow(
-    Vector2<> start,
-    Vector2<> end,
+    Vector2f start,
+    Vector2f end,
     Drawings::PenStyle penStyle,
     int width,
     ColorRGBA color
@@ -232,17 +243,17 @@ public:
   * @param width Specifies the width of the border.
   * @param penStyle Specifies the penStyle of the border.
   * @param penColor Specifies the color of the border.
-  * @param fillStyle Specifies the fillStyle of the polygon.
-  * @param fillColor Specifies the color of the polygon.
+  * @param brushStyle Specifies the brushStyle of the polygon.
+  * @param brushColor Specifies the color of the polygon.
   */
   void polygon(
-    const Vector2<int>* points,
+    const Vector2i* points,
     int nCount,
     int width,
     Drawings::PenStyle penStyle,
     ColorRGBA penColor,
-    Drawings::FillStyle fillStyle,
-    ColorRGBA fillColor
+    Drawings::BrushStyle brushStyle,
+    ColorRGBA brushColor
   );
 
   void gridRGBA(int x, int y, int cellSize, int cellsX, int cellsY, ColorRGBA* cells);
@@ -255,9 +266,9 @@ public:
   * @param x Specifies the center of the dot.
   * @param y Specifies the center of the dot.
   * @param penColor Specifies the penColor of the dot.
-  * @param fillColor Specifies the fillColor of the dot.
+  * @param brushColor Specifies the brushColor of the dot.
   */
-  void dot(int x, int y, ColorRGBA penColor, ColorRGBA fillColor);
+  void dot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor);
 
   /**
   * Adds a filled square to the debug drawing. The border of the square is a solid line with width 5.
@@ -265,18 +276,18 @@ public:
   * @param x Specifies the center of the dot.
   * @param y Specifies the center of the dot.
   * @param penColor Specifies the penColor of the dot.
-  * @param fillColor Specifies the fillColor of the dot.
+  * @param brushColor Specifies the brushColor of the dot.
   */
-  void largeDot(int x, int y, ColorRGBA penColor, ColorRGBA fillColor);
+  void largeDot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor);
 
   /**
   * Adds a filled midsize dot to the debug drawing. The border of the square is a solid line with width 1.
   * @param x Specifies the center of the dot.
   * @param y Specifies the center of the dot.
   * @param penColor Specifies the penColor of the dot.
-  * @param fillColor Specifies the fillColor of the dot.
+  * @param brushColor Specifies the brushColor of the dot.
   */
-  void midDot(int x, int y, ColorRGBA penColor, ColorRGBA fillColor);
+  void midDot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor);
 
   /**
   * Adds a text to the debug drawing

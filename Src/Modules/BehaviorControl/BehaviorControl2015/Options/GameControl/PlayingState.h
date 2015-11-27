@@ -1,0 +1,10 @@
+option(PlayingState)
+{
+  initial_state(play)
+  {
+    action
+    {
+      Striker();
+    }
+  }
+}

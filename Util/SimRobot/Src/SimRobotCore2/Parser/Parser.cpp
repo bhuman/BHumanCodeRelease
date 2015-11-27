@@ -13,6 +13,7 @@
 #include "Simulation/Body.h"
 #include "Simulation/Scene.h"
 #include "Simulation/Compound.h"
+#include "Simulation/UserInput.h"
 #include "Simulation/Actuators/Hinge.h"
 #include "Simulation/Actuators/Slider.h"
 #include "Simulation/Axis.h"
@@ -52,16 +53,16 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
       0, 0, 0},
 
     {"Scene", sceneClass, &Parser::sceneElement,0, 0,
-      0, solverClass, setClass | bodyClass | compoundClass | lightClass},
+      0, solverClass, setClass | bodyClass | compoundClass | lightClass | userInputClass},
     {"QuickSolver", solverClass, &Parser::quickSolverElement, 0, 0,
       0, 0, 0},
     {"Light", lightClass, &Parser::lightElement, 0, 0,
       0, 0, 0},
 
     {"Compound", compoundClass, &Parser::compoundElement, 0, 0,
-      0, translationClass | rotationClass, setClass | jointClass | compoundClass | bodyClass | appearanceClass | geometryClass | extSensorClass},
+      0, translationClass | rotationClass, setClass | jointClass | compoundClass | bodyClass | appearanceClass | geometryClass | extSensorClass | userInputClass},
     {"Body", bodyClass, &Parser::bodyElement, 0, 0,
-      massClass, translationClass | rotationClass, setClass | jointClass | appearanceClass | geometryClass | massClass | intSensorClass | extSensorClass},
+      massClass, translationClass | rotationClass, setClass | jointClass | appearanceClass | geometryClass | massClass | intSensorClass | extSensorClass | userInputClass},
 
     {"Translation", translationClass, &Parser::translationElement, 0, 0,
       0, 0, 0},
@@ -106,9 +107,11 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
     {"CapsuleAppearance", appearanceClass, &Parser::capsuleAppearanceElement, 0, constantFlag,
       surfaceClass, translationClass | rotationClass, setClass | appearanceClass},
     {"ComplexAppearance", appearanceClass, &Parser::complexAppearanceElement, 0, constantFlag,
-      surfaceClass | verticesClass | primitiveGroupClass, translationClass | rotationClass | texCoordsClass, setClass | primitiveGroupClass | appearanceClass},
+      surfaceClass | verticesClass | primitiveGroupClass, translationClass | rotationClass | normalsClass | texCoordsClass, setClass | primitiveGroupClass | appearanceClass},
 
     {"Vertices", verticesClass, &Parser::verticesElement, &Parser::verticesText, textFlag | constantFlag,
+      0, 0, 0},
+    {"Normals", normalsClass, &Parser::normalsElement, &Parser::normalsText, textFlag | constantFlag,
       0, 0, 0},
     {"TexCoords", texCoordsClass, &Parser::texCoordsElement, &Parser::texCoordsText, textFlag | constantFlag,
       0, 0, 0},
@@ -147,6 +150,9 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
       0, translationClass | rotationClass, 0},
     {"DepthImageSensor", extSensorClass, &Parser::depthImageSensorElement, 0, 0,
       0, translationClass | rotationClass, 0},
+
+    {"UserInput", userInputClass, &Parser::userInputElement, 0, 0,
+      0, 0, 0},
   };
 
   // prepare proc info map
@@ -494,6 +500,39 @@ void Parser::verticesText(std::string& text)
 breakTwice: ;
 }
 
+Element* Parser::normalsElement()
+{
+  return new ComplexAppearance::Normals();
+}
+
+void Parser::normalsText(std::string& text)
+{
+  ComplexAppearance::Normals* normals = dynamic_cast<ComplexAppearance::Normals*>(element);
+  ASSERT(normals);
+  std::vector<ComplexAppearance::Normal>& ns = normals->normals;
+  char* str = (char*)text.c_str();
+  double x, y, z;
+  while(isspace(*str))
+    ++str;
+  while(*str)
+  {
+    while(*str == '#') { while(*str && *str != '\n' && *str != '\r') ++str;  while(isspace(*str)) ++str; if(!*str) goto breakTwice; }
+    x = strtod(str, &str);
+    while(isspace(*str))
+      ++str;
+    while(*str == '#') { while(*str && *str != '\n' && *str != '\r') ++str;  while(isspace(*str)) ++str; if(!*str) goto breakTwice; }
+    y = strtod(str, &str);
+    while(isspace(*str))
+      ++str;
+    while(*str == '#') { while(*str && *str != '\n' && *str != '\r') ++str;  while(isspace(*str)) ++str; if(!*str) goto breakTwice; }
+    z = strtod(str, &str);
+    while(isspace(*str))
+      ++str;
+    ns.push_back(ComplexAppearance::Normal((float) x, (float) y, (float) z, 1));
+  }
+breakTwice: ;
+}
+
 Element* Parser::texCoordsElement()
 {
   return new ComplexAppearance::TexCoords();
@@ -589,6 +628,7 @@ Element* Parser::deflectionElement()
   {
     deflection->min = getAngle("min", true, 0.f);
     deflection->max = getAngle("max", true, 0.f);
+    deflection->offset = getAngle("init", false, 0.f);
   }
   else if(dynamic_cast<Slider*>(axis->joint))
   {
@@ -738,6 +778,53 @@ Element* Parser::depthImageSensorElement()
     handleError("Unexpected projection type \"" + projection + "\" (expected one of \"perspective, spherical\")");
 
   return depthImageSensor;
+}
+
+Element* Parser::userInputElement()
+{
+  UserInput* userInput = new UserInput();
+
+  userInput->name = getString("name", false);
+  std::string type = getString("type", false);
+  if(type == "angle")
+  {
+    userInput->inputPort.unit = QString::fromUtf8("°");
+    userInput->inputPort.min = getAngle("min", true, 0.f);
+    userInput->inputPort.max = getAngle("max", true, 0.f);
+    userInput->inputPort.defaultValue = getAngle("default", false, 0.f);
+  }
+  else if(type == "angularVelocity")
+  {
+    userInput->inputPort.unit = QString::fromUtf8("°/s");
+    userInput->inputPort.min = getAngularVelocity("min", true, 0.f);
+    userInput->inputPort.max = getAngularVelocity("max", true, 0.f);
+    userInput->inputPort.defaultValue = getAngularVelocity("default", false, 0.f);
+  }
+  else if(type == "length" || type == "")
+  {
+    userInput->inputPort.unit = QString::fromUtf8("m");
+    userInput->inputPort.min = getLength("min", true, 0.f);
+    userInput->inputPort.max = getLength("max", true, 0.f);
+    userInput->inputPort.defaultValue = getLength("default", false, 0.f);
+  }
+  else if(type == "velocity")
+  {
+    userInput->inputPort.unit = QString::fromUtf8("m/s");
+    userInput->inputPort.min = getVelocity("min", true, 0.f);
+    userInput->inputPort.max = getVelocity("max", true, 0.f);
+    userInput->inputPort.defaultValue = getVelocity("default", false, 0.f);
+  }
+  else if(type == "acceleration")
+  {
+    userInput->inputPort.unit = QString::fromUtf8("m/s^2");
+    userInput->inputPort.min = getAcceleration("min", true, 0.f);
+    userInput->inputPort.max = getAcceleration("max", true, 0.f);
+    userInput->inputPort.defaultValue = getAcceleration("default", false, 0.f);
+  }
+  else
+    handleError("Unexpected user input type \"" + type + "\" (expected one of \"length, velocity, acceleration, angle, angularVelocity\")");
+
+  return userInput;
 }
 
 Parser::~Parser()
@@ -1710,33 +1797,33 @@ bool Parser::getColor(const char* key, bool required, float* color)
     }
     switch(endPtr - strclr)
     {
-    case 3:
-      color[0] = float(lcol >> 8) * f1_255;
-      color[1] = float((lcol >> 4) & 0xf) * f1_255;
-      color[2] = float(lcol & 0xf) * f1_255;
-      color[3] = 1.f;
-      return true;
-    case 4:
-      color[0] = float(lcol >> 12) * f1_255;
-      color[1] = float((lcol >> 8) & 0xf) * f1_255;
-      color[2] = float((lcol >> 4) & 0xf) * f1_255;
-      color[3] = float(lcol & 0xf) * f1_255;
-      return true;
-    case 6:
-      color[0] = float(lcol >> 16) * f1_255;
-      color[1] = float((lcol >> 8) & 0xff) * f1_255;
-      color[2] = float(lcol & 0xff) * f1_255;
-      color[3] = 1.f;
-      return true;
-    case 8:
-      color[0] = float(lcol >> 24) * f1_255;
-      color[1] = float((lcol >> 16) & 0xff) * f1_255;
-      color[2] = float((lcol >> 8) & 0xff) * f1_255;
-      color[3] = float(lcol & 0xff) * f1_255;
-      return true;
-    default:
-      handleError("Invalid color format");
-      return false;
+      case 3:
+        color[0] = float(lcol >> 8) * f1_255;
+        color[1] = float((lcol >> 4) & 0xf) * f1_255;
+        color[2] = float(lcol & 0xf) * f1_255;
+        color[3] = 1.f;
+        return true;
+      case 4:
+        color[0] = float(lcol >> 12) * f1_255;
+        color[1] = float((lcol >> 8) & 0xf) * f1_255;
+        color[2] = float((lcol >> 4) & 0xf) * f1_255;
+        color[3] = float(lcol & 0xf) * f1_255;
+        return true;
+      case 6:
+        color[0] = float(lcol >> 16) * f1_255;
+        color[1] = float((lcol >> 8) & 0xff) * f1_255;
+        color[2] = float(lcol & 0xff) * f1_255;
+        color[3] = 1.f;
+        return true;
+      case 8:
+        color[0] = float(lcol >> 24) * f1_255;
+        color[1] = float((lcol >> 16) & 0xff) * f1_255;
+        color[2] = float((lcol >> 8) & 0xff) * f1_255;
+        color[3] = float(lcol & 0xff) * f1_255;
+        return true;
+      default:
+        handleError("Invalid color format");
+        return false;
     }
   }
   else if(strncmp(strclr, "rgb(", 4) == 0)

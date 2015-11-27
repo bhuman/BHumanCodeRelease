@@ -19,18 +19,6 @@
 			name = Deploy;
 			productName = "Deploy to Nao";
 		};
-		209C6C1212008D6B007E5C2E /* SpecialActions */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 209C6C1512008D8A007E5C2E /* Build configuration list for PBXAggregateTarget "SpecialActions" */;
-			buildPhases = (
-				209C6C1112008D6B007E5C2E /* Compile MOF Files */,
-			);
-			dependencies = (
-				209C6C1712008DCB007E5C2E /* PBXTargetDependency */,
-			);
-			name = SpecialActions;
-			productName = SpecialActions;
-		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
@@ -54,7 +42,7 @@
 		2007C2491786242D002033FC /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
 		2007C24A1786242D002033FC /* QtSvg.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22417861AD1002033FC /* QtSvg.framework */; };
 		200C742F17F76EC60081E703 /* SimulatedNao.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200C742E17F76E940081E703 /* SimulatedNao.dylib */; };
-		201231421950B32C004B1C6C /* libdl.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 201231411950B322004B1C6C /* libdl.so */; };
+		201231421950B32C004B1C6C /* libdl-2.13.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 201231411950B322004B1C6C /* libdl-2.13.so */; };
 		2024529F12041A9300C3BCD9 /* libController.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20245219120416DB00C3BCD9 /* libController.a */; };
 		202B6E5A17FB347B00555411 /* qt_menu.nib in Copy QtGui Resources */ = {isa = PBXBuildFile; fileRef = 202B6E5817FB341200555411 /* qt_menu.nib */; };
 		202B6E5D17FB35C000555411 /* QtNetwork in Copy QtNetwork Framework */ = {isa = PBXBuildFile; fileRef = 202B6E5C17FB358B00555411 /* QtNetwork */; };
@@ -332,27 +320,6 @@
 			remoteGlobalIDString = 20909CF9176BB55200A997C2;
 			remoteInfo = libgamectrl;
 		};
-		209C6C1612008DCB007E5C2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 209C6BDD120078F3007E5C2E;
-			remoteInfo = URC;
-		};
-		209C6C39120090E6007E5C2E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 209C6C1212008D6B007E5C2E;
-			remoteInfo = SpecialActions;
-		};
-		20B7664C1230040200F11A62 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 209C6C1212008D6B007E5C2E;
-			remoteInfo = SpecialActions;
-		};
 		20C301B812304BCB0014668E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 91B15E841AA80083484172DE /* Project object */;
@@ -546,7 +513,7 @@
 		2007C22B17861C43002033FC /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../Util/SimRobot/Util/qt/OSX/Frameworks/QtOpenGL.framework; sourceTree = SOURCE_ROOT; };
 		2007C23317861D21002033FC /* QtHelp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtHelp.framework; path = ../../Util/SimRobot/Util/qt/OSX/Frameworks/QtHelp.framework; sourceTree = SOURCE_ROOT; };
 		200C742E17F76E940081E703 /* SimulatedNao.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimulatedNao.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		201231411950B322004B1C6C /* libdl.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = libdl.so; path = ../../Util/Buildchain/gcc/lib/libdl.so; sourceTree = SOURCE_ROOT; };
+		201231411950B322004B1C6C /* libdl-2.13.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libdl-2.13.so"; path = "../../Util/Buildchain/gcc/lib/libdl-2.13.so"; sourceTree = SOURCE_ROOT; };
 		20245219120416DB00C3BCD9 /* libController.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libController.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		202B6E5817FB341200555411 /* qt_menu.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = qt_menu.nib; path = ../../Util/SimRobot/Util/qt/OSX/Frameworks/QtGui.framework/Versions/4/Resources/qt_menu.nib; sourceTree = "<group>"; };
 		202B6E5C17FB358B00555411 /* QtNetwork */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtNetwork; path = ../../Util/SimRobot/Util/qt/OSX/Frameworks/QtNetwork.framework/Versions/4/QtNetwork; sourceTree = SOURCE_ROOT; };
@@ -568,7 +535,6 @@
 		2098CD05175CE13100E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/Linux/x86/libsnappy.a; sourceTree = SOURCE_ROOT; };
 		2098CD07175CE16C00E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/OSX/libsnappy.a; sourceTree = "<group>"; };
 		209C6D111200A9C2007E5C2E /* SimRobot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRobot.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		209C6D131200A9C2007E5C2E /* URC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = URC; sourceTree = BUILT_PRODUCTS_DIR; };
 		20A0EB141217F49C0033F048 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		20B288071966851900E08377 /* libfftw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3.a; path = "../../Util/fftw-3.3/OSX/libfftw3.a"; sourceTree = SOURCE_ROOT; };
 		20B288091966862000E08377 /* libfftw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3.a; path = "../../Util/fftw-3.3/Linux32/libfftw3.a"; sourceTree = SOURCE_ROOT; };
@@ -634,13 +600,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		209C6BDC120078F3007E5C2E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		20B7663E123001A300F11A62 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -648,7 +607,7 @@
 				2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */,
 				20432DA2194F55500082B079 /* libasound.so in Frameworks */,
 				20B2880A1966862000E08377 /* libfftw3.a in Frameworks */,
-				201231421950B32C004B1C6C /* libdl.so in Frameworks */,
+				201231421950B32C004B1C6C /* libdl-2.13.so in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -743,7 +702,6 @@
 			isa = PBXGroup;
 			children = (
 				000000000000200393726512 /* SimRobot */,
-				000000000000000024286971 /* URC */,
 				000000000000000048744670 /* bush */,
 			);
 			name = Utils;
@@ -765,7 +723,6 @@
 				20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */,
 				20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */,
 				200C742E17F76E940081E703 /* SimulatedNao.dylib */,
-				209C6D131200A9C2007E5C2E /* URC */,
 			);
 			name = "Target Files";
 			sourceTree = "<group>";
@@ -778,7 +735,7 @@
 				202B6E6217FB397A00555411 /* libqsqlite.dylib */,
 				202B6E5E17FB361200555411 /* libQtCLucene.4.dylib */,
 				20432DA1194F55270082B079 /* libasound.so */,
-				201231411950B322004B1C6C /* libdl.so */,
+				201231411950B322004B1C6C /* libdl-2.13.so */,
 				20B288071966851900E08377 /* libfftw3.a */,
 				20B288091966862000E08377 /* libfftw3.a */,
 				2098CD07175CE16C00E764EF /* libsnappy.a */,
@@ -928,22 +885,6 @@
 			productReference = 20909D01176BB55200A997C2 /* libgamectrl.so */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		209C6BDD120078F3007E5C2E /* URC */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 209C6BE21200794C007E5C2E /* Build configuration list for PBXNativeTarget "URC" */;
-			buildPhases = (
-				209C6BDB120078F3007E5C2E /* Sources */,
-				209C6BDC120078F3007E5C2E /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = URC;
-			productName = URC;
-			productReference = 209C6D131200A9C2007E5C2E /* URC */;
-			productType = "com.apple.product-type.tool";
-		};
 		20B7663F123001A300F11A62 /* Nao */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20B76649123001F600F11A62 /* Build configuration list for PBXNativeTarget "Nao" */;
@@ -956,7 +897,6 @@
 			dependencies = (
 				2099D31F1868EF3F00AEF9C0 /* PBXTargetDependency */,
 				2099D3211868EF4600AEF9C0 /* PBXTargetDependency */,
-				20B7664D1230040200F11A62 /* PBXTargetDependency */,
 			);
 			name = Nao;
 			productName = Nao;
@@ -1026,10 +966,15 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */;
 			buildPhases = (
-				2046C1E71446E11F00CADD6F /* Get Libraries */,
 				20844D9211FDF51B0037FA87 /* Check Resource Dependencies */,
 				C29B8785722055ED95EF7B57 /* Sources */,
 				2A1043669E6E5A7426EA502A /* Frameworks & Libraries */,
+				2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */,
+				207DB5481A8297EB0012AD4E /* Get SimRobotEditor Library */,
+				207DB5491A8297F50012AD4E /* Get SimRobotHelp Library */,
+				207DB54B1A8297F90012AD4E /* Get SimRobot Help File */,
+				207DB54C1A829A360012AD4E /* Get SimRobot Help Collection */,
+				207DB54A1A8297F70012AD4E /* Get SimulatedNao Library */,
 				3787F99312C85FF0073FD7BA /* Bundle Resources */,
 				20C115211793473400961A38 /* Copy QtCore Framework */,
 				20C115241793478A00961A38 /* Copy QtGui Framework */,
@@ -1052,7 +997,6 @@
 				20844B2411FC73AD0037FA87 /* PBXTargetDependency */,
 				20844BCD11FCC5120037FA87 /* PBXTargetDependency */,
 				2061F289152DC68E0089659C /* PBXTargetDependency */,
-				209C6C3A120090E6007E5C2E /* PBXTargetDependency */,
 			);
 			name = SimRobot;
 			productName = SimRobotDemo;
@@ -1065,7 +1009,7 @@
 		91B15E841AA80083484172DE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0600;
+				LastUpgradeCheck = 0700;
 			};
 			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "B-Human" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -1090,8 +1034,6 @@
 				20C3017F12303D200014668E /* libbhuman */,
 				20909CF9176BB55200A997C2 /* libgamectrl */,
 				203184E5173D0FE000E25227 /* qtpropertybrowser */,
-				209C6BDD120078F3007E5C2E /* URC */,
-				209C6C1212008D6B007E5C2E /* SpecialActions */,
 				20EF877313B37D7500508E6A /* bush */,
 			);
 		};
@@ -1203,7 +1145,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-r\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nCOMMAND=\"`head -1 ../../Config/Scenes/connect.con | sed -e \"s%\\# This script connects to a remote robot.%<ipaddress>%\" -e \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`$OPTIONS\"\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `./getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"<ipaddress>\\n-a\t\t(auto deploy these settings in future)\\n-d\t\t(delete all logs)\\n-l <location>\\n-n <team number>\\n-p <player number>\\n-r\t\t(restart bhuman)\\n-rr\t\t(restart bhuman and naoqi)\\n-t <team color>\\n-v <volume percent>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  echo \"$COMMAND\" | sed \"s% *\\([^ ]*\\).*%sc Remote \\1%\" >../../Config/Scenes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<ipaddress>%%\"`\nfi";
+			shellScript = "if [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-r\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nCOMMAND=\"`head -1 ../../Config/Scenes/Includes/connect.con | sed -e \"s%\\# This script connects to a remote robot.%<ipaddress>%\" -e \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`$OPTIONS\"\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `../../Util/Buildchain/OSX/bin/getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"usage:\t<ipaddress> {options}\\noptions:\\n    -a\t(auto deploy these settings in future)\\n    -d\t(delete all logs)\\n    -l <location>\\n    -n <team number>\\n    -o <team port>\\n    -p <player number>\\n    -r \t(restart bhuman)\\n    -rr\t(restart bhuman and naoqi)\\n    -t <team color>\\n    -v <volume percent>\\n    -w <wireless profile>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  echo \"$COMMAND\" | sed \"s% *\\([^ ]*\\).*%sc Remote \\1%\" >../../Config/Scenes/Includes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<ipaddress>%%\"`\nfi";
 			showEnvVarsInLog = 0;
 		};
 		2046C1E61446DE7900CADD6F /* Get Libraries */ = {
@@ -1225,31 +1167,106 @@
 			shellScript = "cp $BUILD_DIR/Controller/$SIMROBOT_CONFIG/libController.a $CONFIGURATION_TEMP_DIR/libController.a\ncp $BUILD_DIR/qtpropertybrowser/$SIMROBOT_CONFIG/libqtpropertybrowser.a $CONFIGURATION_TEMP_DIR/libqtpropertybrowser.a";
 			showEnvVarsInLog = 0;
 		};
-		2046C1E71446E11F00CADD6F /* Get Libraries */ = {
+		2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 				"$(BUILD_DIR)/SimRobotCore2/$(SIMROBOT_CONFIG)/SimRobotCore2.dylib",
-				"$(BUILD_DIR)/SimRobotEditor/$(SIMROBOT_CONFIG)/SimRobotEditor.dylib",
-				"$(BUILD_DIR)/SimRobotHelp/$(SIMROBOT_CONFIG)/SimRobotHelp.dylib",
-				"$(BUILD_DIR)/SimulatedNao/$(CONFIGURATION)/SimulatedNao.dylib",
-				"$(BUILD_DIR)/SimRobotHelp/help.qch",
-				"$(BUILD_DIR)/SimRobotHelp/helpcollection.qhc",
 			);
-			name = "Get Libraries";
+			name = "Get SimRobotCore2 Library";
 			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/SimRobotCore2.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimRobotCore2/$SIMROBOT_CONFIG/SimRobotCore2.dylib $CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib";
+			showEnvVarsInLog = 0;
+		};
+		207DB5481A8297EB0012AD4E /* Get SimRobotEditor Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimRobotEditor/$(SIMROBOT_CONFIG)/SimRobotEditor.dylib",
+			);
+			name = "Get SimRobotEditor Library";
+			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/SimRobotEditor.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimRobotEditor/$SIMROBOT_CONFIG/SimRobotEditor.dylib $CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB5491A8297F50012AD4E /* Get SimRobotHelp Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimRobotHelp/$(SIMROBOT_CONFIG)/SimRobotHelp.dylib",
+			);
+			name = "Get SimRobotHelp Library";
+			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/SimRobotHelp.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimRobotHelp/$SIMROBOT_CONFIG/SimRobotHelp.dylib $CONFIGURATION_TEMP_DIR/SimRobotHelp.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB54A1A8297F70012AD4E /* Get SimulatedNao Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimulatedNao/$(CONFIGURATION)/SimulatedNao.dylib",
+			);
+			name = "Get SimulatedNao Library";
+			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/SimulatedNao.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimulatedNao/$CONFIGURATION/SimulatedNao.dylib $CONFIGURATION_TEMP_DIR/SimulatedNao.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB54B1A8297F90012AD4E /* Get SimRobot Help File */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimRobotHelp/help.qch",
+			);
+			name = "Get SimRobot Help File";
+			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/help.qch",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/SimRobotHelp/help.qch $CONFIGURATION_TEMP_DIR/help.qch";
+			showEnvVarsInLog = 0;
+		};
+		207DB54C1A829A360012AD4E /* Get SimRobot Help Collection */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/SimRobotHelp/helpcollection.qhc",
+			);
+			name = "Get SimRobot Help Collection";
+			outputPaths = (
 				"$(CONFIGURATION_TEMP_DIR)/helpcollection.qhc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp $BUILD_DIR/SimRobotCore2/$SIMROBOT_CONFIG/SimRobotCore2.dylib $CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib\ncp $BUILD_DIR/SimRobotEditor/$SIMROBOT_CONFIG/SimRobotEditor.dylib $CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\ncp $BUILD_DIR/SimRobotHelp/$SIMROBOT_CONFIG/SimRobotHelp.dylib $CONFIGURATION_TEMP_DIR/SimRobotHelp.dylib\ncp $BUILD_DIR/SimulatedNao/$CONFIGURATION/SimulatedNao.dylib $CONFIGURATION_TEMP_DIR/SimulatedNao.dylib\ncp $BUILD_DIR/SimRobotHelp/help.qch $CONFIGURATION_TEMP_DIR/help.qch\ncp $BUILD_DIR/SimRobotHelp/helpcollection.qhc $CONFIGURATION_TEMP_DIR/helpcollection.qhc";
+			shellScript = "cp $BUILD_DIR/SimRobotHelp/helpcollection.qhc $CONFIGURATION_TEMP_DIR/helpcollection.qhc";
 			showEnvVarsInLog = 0;
 		};
 		20844D9211FDF51B0037FA87 /* Check Resource Dependencies */ = {
@@ -1314,22 +1331,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/Help/help.qhp";
-			showEnvVarsInLog = 0;
-		};
-		209C6C1112008D6B007E5C2E /* Compile MOF Files */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Compile MOF Files";
-			outputPaths = (
-				../../Config/specialActions.dat,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = $BUILD_DIR/URC/Release/URC;
 			showEnvVarsInLog = 0;
 		};
 		20A05D4612115F1E00BE52B1 /* Check Resource Dependencies */ = {
@@ -1427,13 +1428,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		209C6BDB120078F3007E5C2E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		20B7663D123001A300F11A62 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1508,21 +1502,6 @@
 			target = 20909CF9176BB55200A997C2 /* libgamectrl */;
 			targetProxy = 2099D3201868EF4600AEF9C0 /* PBXContainerItemProxy */;
 		};
-		209C6C1712008DCB007E5C2E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 209C6BDD120078F3007E5C2E /* URC */;
-			targetProxy = 209C6C1612008DCB007E5C2E /* PBXContainerItemProxy */;
-		};
-		209C6C3A120090E6007E5C2E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 209C6C1212008D6B007E5C2E /* SpecialActions */;
-			targetProxy = 209C6C39120090E6007E5C2E /* PBXContainerItemProxy */;
-		};
-		20B7664D1230040200F11A62 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 209C6C1212008D6B007E5C2E /* SpecialActions */;
-			targetProxy = 20B7664C1230040200F11A62 /* PBXContainerItemProxy */;
-		};
 		20C301B912304BCB0014668E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 20B7663F123001A300F11A62 /* Nao */;
@@ -1543,7 +1522,8 @@
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/ControllerPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -1552,10 +1532,10 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 					TARGET_SIM,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
-				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
+					../../Util/Eigen,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Src/SimRobotEditor,
@@ -1573,8 +1553,8 @@
 					/System/Library/Frameworks/CoreServices.framework/Headers,
 				);
 				MACH_O_TYPE = staticlib;
-				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = Controller;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Debug;
 		};
@@ -1586,6 +1566,8 @@
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/ControllerPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1595,9 +1577,10 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 					TARGET_SIM,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Src,
+					../../Util/Eigen,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Src/SimRobotEditor,
@@ -1616,6 +1599,7 @@
 				);
 				MACH_O_TYPE = staticlib;
 				PRODUCT_NAME = Controller;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Develop;
 		};
@@ -1626,7 +1610,8 @@
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/ControllerPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1637,9 +1622,8 @@
 					QT_NO_STL,
 					TARGET_SIM,
 				);
-				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
+					../../Util/Eigen,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Src/SimRobotEditor,
@@ -1658,6 +1642,7 @@
 				);
 				MACH_O_TYPE = staticlib;
 				PRODUCT_NAME = Controller;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Release;
 		};
@@ -1668,7 +1653,6 @@
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -1676,7 +1660,6 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 				);
-				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(CONFIGURATION_TEMP_DIR)",
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -1684,7 +1667,6 @@
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				MACH_O_TYPE = staticlib;
-				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = qtpropertybrowser;
 			};
 			name = Debug;
@@ -1723,7 +1705,6 @@
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1732,7 +1713,6 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 				);
-				GENERATE_MASTER_OBJECT_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(CONFIGURATION_TEMP_DIR)",
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -1747,7 +1727,6 @@
 		2042274D1202418600B9944D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				PRODUCT_NAME = "Deploy to Nao";
 			};
 			name = Debug;
@@ -1755,7 +1734,6 @@
 		2042274E1202418600B9944D /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				PRODUCT_NAME = "Deploy to Nao";
 			};
 			name = Develop;
@@ -1763,7 +1741,6 @@
 		204227501202418600B9944D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				PRODUCT_NAME = "Deploy to Nao";
 			};
 			name = Release;
@@ -1772,46 +1749,35 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				CC = "$(SRCROOT)/../../Util/Buildchain/OSX/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++11";
 				CLANG_CXX_LIBRARY = "libc++";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = YES;
 				GCC_FAST_MATH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					NDEBUG,
 				);
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
-				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
-				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
-				INSTALL_OWNER = "$(USER)";
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = (
-					"-mtune=native",
-					"-fomit-frame-pointer",
-				);
+				MACOSX_DEPLOYMENT_TARGET = "";
 				QT_DIR = ../../Util/SimRobot/Util/qt/OSX;
 				SIMROBOT_CONFIG = Release;
 				SKIP_INSTALL = YES;
 				SYMROOT = ../../Build/OSX;
-				VALID_ARCHS = x86_64;
 				WARNING_CFLAGS = (
 					"-Wall",
+					"-Wextra",
 					"-Wconversion",
 					"-Wliteral-conversion",
-					"-Wsign-compare",
-					"-Wno-sign-conversion",
 					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+					"-Wno-unused-parameter",
 				);
 			};
 			name = Develop;
@@ -1821,7 +1787,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1829,7 +1794,6 @@
 					QT_GUI_LIB,
 					QT_CORE_LIB,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
@@ -1837,6 +1801,7 @@
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
 				PRODUCT_NAME = SimRobot;
 			};
 			name = Develop;
@@ -1846,9 +1811,7 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1858,13 +1821,12 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotEditor,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
-				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = SimRobotEditor;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotEditor;
 			};
 			name = Develop;
 		};
@@ -1874,7 +1836,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -1885,13 +1846,13 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotHelp,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtHelp.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				PRODUCT_NAME = SimRobotHelp;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotHelp;
 			};
 			name = Develop;
 		};
@@ -1901,10 +1862,10 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_DEBUGGING_SYMBOLS = default;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					_DEBUG,
@@ -1915,9 +1876,9 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 					TARGET_SIM,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/Eigen,
@@ -1941,39 +1902,12 @@
 					../../Util/libjpeg/lib/OSX,
 					../../Util/snappy/lib/OSX,
 				);
-				OTHER_CFLAGS = "-mtune=native";
-				OTHER_LDFLAGS = "-w";
 				PRODUCT_NAME = SimulatedNao;
-				SEPARATE_SYMBOL_EDIT = NO;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
 				);
-				WARNING_LDFLAGS = "";
-			};
-			name = Develop;
-		};
-		208179A11201800A0005F60F /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				COPY_PHASE_STRIP = YES;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					TARGET_TOOL,
-				);
-				HEADER_SEARCH_PATHS = ../../Src;
-				INSTALL_PATH = /usr/local/bin;
-				PRODUCT_NAME = URC;
-			};
-			name = Develop;
-		};
-		208179A21201800A0005F60F /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				PRODUCT_NAME = SpecialActions;
 			};
 			name = Develop;
 		};
@@ -1981,9 +1915,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -1992,13 +1924,12 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotEditor,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
-				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = SimRobotEditor;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotEditor;
 			};
 			name = Debug;
 		};
@@ -2006,9 +1937,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -2018,13 +1947,12 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotEditor,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
-				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = SimRobotEditor;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotEditor;
 			};
 			name = Release;
 		};
@@ -2033,7 +1961,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -2043,13 +1970,13 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotHelp,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtHelp.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				PRODUCT_NAME = SimRobotHelp;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotHelp;
 			};
 			name = Debug;
 		};
@@ -2058,7 +1985,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -2069,13 +1995,13 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotHelp,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
 					$QT_DIR/Frameworks/QtHelp.framework/Headers,
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				PRODUCT_NAME = SimRobotHelp;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotHelp;
 			};
 			name = Release;
 		};
@@ -2084,7 +2010,8 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -2093,9 +2020,9 @@
 					QT_CORE_LIB,
 					QT_NO_STL,
 					TARGET_SIM,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/Eigen,
@@ -2120,6 +2047,7 @@
 					../../Util/snappy/lib/OSX,
 				);
 				PRODUCT_NAME = SimulatedNao;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
@@ -2132,7 +2060,8 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -2144,7 +2073,6 @@
 					TARGET_SIM,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/SimRobot/Src/SimRobot,
 					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/Eigen,
@@ -2169,6 +2097,7 @@
 					../../Util/snappy/lib/OSX,
 				);
 				PRODUCT_NAME = SimulatedNao;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
@@ -2187,22 +2116,23 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					_DEBUG,
+				);
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2213,7 +2143,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2242,22 +2171,18 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = LINUX;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2268,7 +2193,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2297,22 +2221,21 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					NDEBUG,
+				);
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2323,7 +2246,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2342,63 +2264,6 @@
 			};
 			name = Release;
 		};
-		209C6BE0120078F4007E5C2E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				COPY_PHASE_STRIP = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					OSX,
-					NDEBUG,
-					TARGET_TOOL,
-				);
-				HEADER_SEARCH_PATHS = ../../Src;
-				INSTALL_PATH = /usr/local/bin;
-				OTHER_CFLAGS = (
-					"-mtune=native",
-					"-fomit-frame-pointer",
-				);
-				PRODUCT_NAME = URC;
-			};
-			name = Debug;
-		};
-		209C6BE1120078F4007E5C2E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					TARGET_TOOL,
-				);
-				HEADER_SEARCH_PATHS = ../../Src;
-				INSTALL_PATH = /usr/local/bin;
-				PRODUCT_NAME = URC;
-			};
-			name = Release;
-		};
-		209C6C1312008D6C007E5C2E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				GCC_OPTIMIZATION_LEVEL = 0;
-				PRODUCT_NAME = SpecialActions;
-			};
-			name = Debug;
-		};
-		209C6C1412008D6C007E5C2E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
-				PRODUCT_NAME = SpecialActions;
-			};
-			name = Release;
-		};
 		20B76642123001A300F11A62 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2410,24 +2275,27 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
 					_DEBUG,
+					USEPCH,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/Eigen,
 					../../Util/GameController/include,
 					"../../Util/fftw-3.3",
 					../../Util/libjpeg/src,
 					../../Util/snappy/include,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2439,7 +2307,6 @@
 					../../Util/snappy/lib/Linux/x86,
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2453,6 +2320,7 @@
 					"-lpthread_nonshared",
 				);
 				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
@@ -2472,23 +2340,26 @@
 				GCC_ENABLE_PASCAL_STRINGS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
+					USEPCH,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/Eigen,
 					../../Util/GameController/include,
 					"../../Util/fftw-3.3",
 					../../Util/libjpeg/src,
 					../../Util/snappy/include,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2500,7 +2371,6 @@
 					../../Util/snappy/lib/Linux/x86,
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2514,6 +2384,7 @@
 					"-lpthread_nonshared",
 				);
 				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
@@ -2533,24 +2404,26 @@
 				GCC_ENABLE_PASCAL_STRINGS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
 					NDEBUG,
+					USEPCH,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/Eigen,
 					../../Util/GameController/include,
 					"../../Util/fftw-3.3",
 					../../Util/libjpeg/src,
 					../../Util/snappy/include,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2562,7 +2435,6 @@
 					../../Util/snappy/lib/Linux/x86,
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2576,6 +2448,7 @@
 					"-lpthread_nonshared",
 				);
 				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
@@ -2594,23 +2467,22 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					_DEBUG,
+				);
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2621,7 +2493,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2637,6 +2508,7 @@
 					"-s",
 				);
 				PRODUCT_NAME = libbhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Debug;
 		};
@@ -2650,23 +2522,17 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = LINUX;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2677,7 +2543,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2693,6 +2558,7 @@
 					"-s",
 				);
 				PRODUCT_NAME = libbhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Develop;
 		};
@@ -2706,23 +2572,20 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = so;
-				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GCC_CW_ASM_SYNTAX = NO;
 				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					NDEBUG,
+				);
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					../../Util/alcommon/include,
 					../../Util/boost/linux,
 					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/4.7.1",
-					"../../Util/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0",
+					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
 					../../Util/Buildchain/clang/include,
 				);
 				LD_DEPENDENCY_INFO_FILE = "";
@@ -2733,7 +2596,6 @@
 				);
 				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
 					"-Qunused-arguments",
 					"-march=atom",
@@ -2749,6 +2611,7 @@
 					"-s",
 				);
 				PRODUCT_NAME = libbhuman;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Release;
 		};
@@ -2757,7 +2620,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
@@ -2767,7 +2629,6 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Util/ode/OSX/include,
 					/usr/include/libxml2,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2780,6 +2641,7 @@
 					../../Util/SimRobot/Util/ode/OSX/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
 					"-Wno-deprecated-writable-strings",
@@ -2793,7 +2655,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					dNODEBUG,
@@ -2805,7 +2666,6 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Util/ode/OSX/include,
 					/usr/include/libxml2,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2818,6 +2678,7 @@
 					../../Util/SimRobot/Util/ode/OSX/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
 					"-Wno-deprecated-writable-strings",
@@ -2830,7 +2691,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					dNODEBUG,
@@ -2842,7 +2702,6 @@
 					QT_NO_STL,
 				);
 				HEADER_SEARCH_PATHS = (
-					../../Util/SimRobot/Src/SimRobotCore2,
 					../../Util/SimRobot/Util/ode/OSX/include,
 					/usr/include/libxml2,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2855,6 +2714,7 @@
 					../../Util/SimRobot/Util/ode/OSX/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
+				USER_HEADER_SEARCH_PATHS = ../../Util/SimRobot/Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
 					"-Wno-deprecated-writable-strings",
@@ -2867,16 +2727,13 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					_DEBUG,
 					QT_NO_STL,
 					TARGET_TOOL,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2885,7 +2742,9 @@
 					/System/Library/Frameworks/CoreServices.framework/Headers,
 				);
 				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.bush";
 				PRODUCT_NAME = bush;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Debug;
 		};
@@ -2894,16 +2753,13 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					NDEBUG,
 					QT_NO_STL,
 					TARGET_TOOL,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2912,7 +2768,9 @@
 					/System/Library/Frameworks/CoreServices.framework/Headers,
 				);
 				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.bush";
 				PRODUCT_NAME = bush;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Develop;
 		};
@@ -2921,16 +2779,13 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					NDEBUG,
 					QT_NO_STL,
 					TARGET_TOOL,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Src,
 					../../Util/GameController/include,
 					$QT_DIR/Frameworks/QtConcurrent.framework/Headers,
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
@@ -2939,7 +2794,9 @@
 					/System/Library/Frameworks/CoreServices.framework/Headers,
 				);
 				INFOPLIST_FILE = "bush-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.bush";
 				PRODUCT_NAME = bush;
+				USER_HEADER_SEARCH_PATHS = ../../Src;
 			};
 			name = Release;
 		};
@@ -2948,14 +2805,12 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_SHARED,
 					QT_GUI_LIB,
 					QT_CORE_LIB,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
@@ -2963,6 +2818,7 @@
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
 				PRODUCT_NAME = SimRobot;
 			};
 			name = Debug;
@@ -2972,7 +2828,6 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					QT_NO_DEBUG,
@@ -2980,7 +2835,6 @@
 					QT_GUI_LIB,
 					QT_CORE_LIB,
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				HEADER_SEARCH_PATHS = (
 					$QT_DIR/Frameworks/QtCore.framework/Headers,
 					$QT_DIR/Frameworks/QtGui.framework/Headers,
@@ -2988,6 +2842,7 @@
 					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
 				);
 				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
 				PRODUCT_NAME = SimRobot;
 			};
 			name = Release;
@@ -2996,44 +2851,35 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				CC = "$(SRCROOT)/../../Util/Buildchain/OSX/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++11";
 				CLANG_CXX_LIBRARY = "libc++";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = NO;
 				GCC_FAST_MATH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					_DEBUG,
 				);
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
-				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
-				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
-				INSTALL_OWNER = "$(USER)";
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-mtune=native";
-				OTHER_LDFLAGS = "-w";
+				MACOSX_DEPLOYMENT_TARGET = "";
 				QT_DIR = ../../Util/SimRobot/Util/qt/OSX;
 				SIMROBOT_CONFIG = "$(CONFIGURATION)";
 				SKIP_INSTALL = YES;
 				SYMROOT = ../../Build/OSX;
-				VALID_ARCHS = x86_64;
 				WARNING_CFLAGS = (
 					"-Wall",
+					"-Wextra",
 					"-Wconversion",
 					"-Wliteral-conversion",
-					"-Wsign-compare",
-					"-Wno-sign-conversion",
 					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+					"-Wno-unused-parameter",
 				);
 			};
 			name = Debug;
@@ -3042,46 +2888,35 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				CC = "$(SRCROOT)/../../Util/Buildchain/OSX/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++11";
 				CLANG_CXX_LIBRARY = "libc++";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = YES;
 				GCC_FAST_MATH = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					OSX,
 					NDEBUG,
 				);
-				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
-				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
-				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
-				INSTALL_OWNER = "$(USER)";
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = (
-					"-mtune=native",
-					"-fomit-frame-pointer",
-				);
+				MACOSX_DEPLOYMENT_TARGET = "";
 				QT_DIR = ../../Util/SimRobot/Util/qt/OSX;
 				SIMROBOT_CONFIG = "$(CONFIGURATION)";
 				SKIP_INSTALL = YES;
 				SYMROOT = ../../Build/OSX;
-				VALID_ARCHS = x86_64;
 				WARNING_CFLAGS = (
 					"-Wall",
+					"-Wextra",
 					"-Wconversion",
 					"-Wliteral-conversion",
-					"-Wsign-compare",
-					"-Wno-sign-conversion",
 					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+					"-Wno-unused-parameter",
 				);
 			};
 			name = Release;
@@ -3155,26 +2990,6 @@
 				20909CFE176BB55200A997C2 /* Debug */,
 				20909CFF176BB55200A997C2 /* Develop */,
 				20909D00176BB55200A997C2 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		209C6BE21200794C007E5C2E /* Build configuration list for PBXNativeTarget "URC" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				209C6BE0120078F4007E5C2E /* Debug */,
-				208179A11201800A0005F60F /* Develop */,
-				209C6BE1120078F4007E5C2E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		209C6C1512008D8A007E5C2E /* Build configuration list for PBXAggregateTarget "SpecialActions" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				209C6C1312008D6C007E5C2E /* Debug */,
-				208179A21201800A0005F60F /* Develop */,
-				209C6C1412008D6C007E5C2E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

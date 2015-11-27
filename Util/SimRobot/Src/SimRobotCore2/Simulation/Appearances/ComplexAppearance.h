@@ -113,6 +113,22 @@ public:
   };
 
   /**
+   * A normals library
+   */
+  class Normals : public Element
+  {
+  public:
+    std::vector<Normal> normals; /**< Available normals */
+
+  private:
+    /**
+     * Registers an element as parent
+     * @param element The element to register
+     */
+    virtual void addParent(Element& element);
+  };
+  
+  /**
   * @class TexCoords
   * A texture point library
   */
@@ -154,12 +170,13 @@ public:
   };
 
   Vertices* vertices; /**< The vertex library used for drawing the primitives */
+  Normals* normals; /**< The normals library used for drawing the primitives */
   TexCoords* texCoords; /**< Optional texture points for textured primitives */
   std::list<PrimitiveGroup*> primitiveGroups; /** The primitives that define the complex shape */
-  std::vector<Normal> normals; /**< The normals of all vertices used from the vertex library */
+  bool normalsDefined; /**< Normals were manually defined */
 
   /** Default constructor */
-  ComplexAppearance() : vertices(0), texCoords(0) {}
+  ComplexAppearance() : vertices(0), normals(0), texCoords(0), normalsDefined(false) {}
 
 private:
   /**

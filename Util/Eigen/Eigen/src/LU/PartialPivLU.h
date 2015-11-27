@@ -171,6 +171,12 @@ template<typename _MatrixType> class PartialPivLU
     inline Index cols() const { return m_lu.cols(); }
 
   protected:
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+    }
+    
     MatrixType m_lu;
     PermutationType m_p;
     TranspositionType m_rowsTranspositions;
@@ -201,8 +207,8 @@ PartialPivLU<MatrixType>::PartialPivLU(Index size)
 template<typename MatrixType>
 PartialPivLU<MatrixType>::PartialPivLU(const MatrixType& matrix)
   : m_lu(matrix.rows(), matrix.rows()),
-    m_p((int)(matrix.rows())),
-    m_rowsTranspositions(int(matrix.rows())),
+    m_p(static_cast<typename PermutationType::Index>(matrix.rows())),
+    m_rowsTranspositions(static_cast<typename TranspositionType::Index>(matrix.rows())),
     m_det_p(0),
     m_isInitialized(false)
 {
@@ -386,6 +392,8 @@ void partial_lu_inplace(MatrixType& lu, TranspositionType& row_transpositions, t
 template<typename MatrixType>
 PartialPivLU<MatrixType>& PartialPivLU<MatrixType>::compute(const MatrixType& matrix)
 {
+  check_template_parameters();
+  
   // the row permutation is stored as int indices, so just to be sure:
   eigen_assert(matrix.rows()<NumTraits<int>::highest());
   
@@ -394,7 +402,7 @@ PartialPivLU<MatrixType>& PartialPivLU<MatrixType>::compute(const MatrixType& ma
   eigen_assert(matrix.rows() == matrix.cols() && "PartialPivLU is only for square (and moreover invertible) matrices");
   const Index size = matrix.rows();
 
-  m_rowsTranspositions.resize((int)(size));
+  m_rowsTranspositions.resize(static_cast<typename TranspositionType::Index>(size));
 
   typename TranspositionType::Index nb_transpositions;
   internal::partial_lu_inplace(m_lu, m_rowsTranspositions, nb_transpositions);

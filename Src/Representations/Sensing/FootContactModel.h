@@ -1,4 +1,4 @@
-/*
+/**
  * FootContactModel.h
  *
  *  Created on: Mar 14, 2012

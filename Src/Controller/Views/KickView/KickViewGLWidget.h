@@ -11,8 +11,9 @@
 #include "KickView.h"
 #include "Tools/Math/RotationMatrix.h"
 #include "Modules/MotionControl/KickEngine/KickEngineParameters.h"
-#include "Representations/Infrastructure/JointData.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Tools/Joints.h"
+#include "Tools/Math/Eigen.h"
 
 #include <QGLWidget>
 
@@ -30,11 +31,11 @@ private:
   KickViewWidget& widget;
   KickView& kickView;
   SimRobotCore2::Renderer& renderer;
-  Vector3<> targetPosOffset,
-          cameraPosOffset;
+  Vector3f targetPosOffset = Vector3f::Zero(),
+           cameraPosOffset = Vector3f::Zero();
   RotationMatrix originRot;
   KickEngineParameters& parameters; //the actual Parameters
-  std::vector<Vector3<> > reachedPositions[Phase::numOfLimbs];
+  std::vector<Vector3f> reachedPositions[Phase::numOfLimbs];
 
   bool moveDrag,  //a Point in the 3DView is moved or not
        moveViewOfViewDragXY, //a Point in the XY(t)View (2D) is moved or not
@@ -55,22 +56,23 @@ private:
   GLvoid setMatrix(const float* translation, const RotationMatrix& rotation);
   void drawPhases();
   void drawBezierCurves(const int& phaseNumber);
-  void calculateControlPointRot(const Vector3 <>& point0, const Vector3<>& point1, const Vector3<> point2, Vector3<>& rotation);
-  void drawArrow(const Vector3 <>& point, const Vector3<>& rotation);
-  void drawControlPoint(const Vector3 <>& point, const float& cubeFaktor);
+  void calculateControlPointRot(const Vector3f& point0, const Vector3f& point1, const Vector3f& point2, Vector3f& rotation);
+  void drawArrow(const Vector3f& point, const Vector3f& rotation);
+  void drawControlPoint(const Vector3f& point, const float& cubeFaktor);
   void draw2dCurves(const float& minA, const float& minB, const float& maxA, const float& maxB, const float& scaleFactorA,
                     const float& scaleFactorB, const float& transA, const float& transB, float* colorA, float* colorB,
-                    const float& window, const std::vector<Vector2<> >& cp, const std::vector<Vector2<> >& point);
+                    const float& window, const std::vector<Vector2f>& cp, const std::vector<Vector2f>& point);
   bool clickControlPoint(const int& x, const int& y);
-  void gluUnProjectClick(int x, int y, Vector3<>& vecFar, Vector3<>& vecNear);
+  void gluUnProjectClick(int x, int y, Vector3f& vecFar, Vector3f& vecNear);
 
   void setSteadyDiff();
   void showPlane();
-  void clipCurve(Vector3<>& translationVec);
-  bool clipLegJointsWithLimits(float& leg1, float& leg2, float& leg3, const JointData::Joint& joint);
+  void clipCurve(Vector3f& translationVec);
+  bool clipLegJointsWithLimits(float& leg1, float& leg2, float& leg3, const Joints::Joint& joint);
 
   //QT-Widget-Events
   void keyPressEvent(QKeyEvent* event);
+  bool event(QEvent* event);
   void wheelEvent(QWheelEvent* event);
   void mouseMoveEvent(QMouseEvent* event);
   void mousePressEvent(QMouseEvent* event);

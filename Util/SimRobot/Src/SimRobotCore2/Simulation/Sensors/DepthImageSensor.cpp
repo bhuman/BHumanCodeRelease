@@ -121,7 +121,7 @@ void DepthImageSensor::DistanceSensor::updateValue()
 
   OffscreenRenderer& renderer = Simulation::simulation->renderer;
 
-  renderer.makeCurrent(renderWidth, renderHeight);
+  renderer.makeCurrent(renderWidth, renderHeight, false);
   glViewport(0, 0, renderWidth, renderHeight);
 
   // setup image size and angle of view

@@ -1,34 +1,32 @@
 /**
-* @file GroundTruthWorldModel.h
-*
-* The file declares a class that contains the state of the world in the current simulation szene.
-*
-* @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
-*/
+ * @file GroundTruthWorldModel.h
+ *
+ * The file declares a struct that contains the state of the world in the current simulation szene.
+ *
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ */
 
 #pragma once
 
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include <vector>
 
 /**
-* @class GroundTruthWorldState
-* A class that contains the state of the world in the current simulation szene.
-*/
+ * @struct GroundTruthWorldState
+ * A struct that contains the state of the world in the current simulation szene.
+ */
 STREAMABLE(GroundTruthWorldState,
 {
-public:
-  STREAMABLE(GroundTruthRobot,
-  {
-  public:,
+  STREAMABLE(GroundTruthPlayer,
+  {,
     (int) number,
-    (Pose2D) pose,
-    ;
+    (Pose2f) pose,
+    (bool) upright,
   }),
 
-  (std::vector<GroundTruthRobot>) blueRobots,
-  (std::vector<GroundTruthRobot>) redRobots,
-  (std::vector<Vector2<>>) balls,
-  (Pose2D) ownPose,
+  (std::vector<GroundTruthPlayer>) bluePlayers,
+  (std::vector<GroundTruthPlayer>) redPlayers,
+  (std::vector<Vector2f>) balls,
+  (Pose2f) ownPose,
 });

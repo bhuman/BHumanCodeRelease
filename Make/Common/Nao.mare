@@ -1,16 +1,16 @@
 Nao = cppApplication + {
-  dependencies = { "SpecialActions", "libbhuman", "libgamectrl" }
+  dependencies = { "libbhuman", "libgamectrl" }
 
   // overwrite platform and c++-compiler for cross compiling
   platform = "Linux"
 
-  if (host == "Win32") {
-    cppCompiler = "env CCACHE_CPP2=yes $(utilDirRoot)/Buildchain/Windows/bin/ccache.sh $(utilDirRoot)/Buildchain/Windows/bin/clang.exe -D__extern_always_inline=inline"
-    linker = "$(utilDirRoot)/Buildchain/Windows/bin/i686-unknown-linux-gnu-ld.bfd.exe"
+  if (host == "Win32") { // Even on a 64 Windows host will be Win32
+    cppCompiler = "env CCACHE_CPP2=yes ccache clang++ -D__extern_always_inline=inline"
+    linker = "$(utilDirRoot)/Buildchain/Windows/bin/ld.exe"
   } else {
     linker = "ld"
   }
-  command = "$(linker) -o $(output) --eh-frame-hdr -m elf_i386 -dynamic-linker /lib/ld-linux.so.2 $(utilDirRoot)/Buildchain/gcc/lib/crt1.o $(utilDirRoot)/Buildchain/gcc/lib/crti.o $(utilDirRoot)/Buildchain/gcc/lib/crtbegin.o $(patsubst %,-L%,$(libPaths)) $(input) $(linkFlags) $(LDFLAGS) $(patsubst %,-l%,$(libs)) $(utilDirRoot)/Buildchain/gcc/lib/libstdc++.so.6.0.17 $(utilDirRoot)/Buildchain/gcc/lib/libm-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/ld-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/crtend.o $(utilDirRoot)/Buildchain/gcc/lib/crtn.o"
+  command = "$(linker) -o $(output) --eh-frame-hdr -m elf_i386 -dynamic-linker=/lib/ld-linux.so.2 $(utilDirRoot)/Buildchain/gcc/lib/crt1.o $(utilDirRoot)/Buildchain/gcc/lib/crti.o $(utilDirRoot)/Buildchain/gcc/lib/crtbegin.o $(patsubst %,-L%,$(libPaths)) $(input) $(linkFlags) $(LDFLAGS) $(patsubst %,-l%,$(libs)) $(utilDirRoot)/Buildchain/gcc/lib/libstdc++.so.6.0.21 $(utilDirRoot)/Buildchain/gcc/lib/libm-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/ld-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/crtend.o $(utilDirRoot)/Buildchain/gcc/lib/crtn.o"
 
   root = "$(srcDirRoot)"
 
@@ -33,34 +33,34 @@ Nao = cppApplication + {
   defines += {
     "TARGET_ROBOT", "__STRICT_ANSI__"
     if (configuration == "Develop") { -"NDEBUG" }
-  },
+  }
 
-  output = "$(buildDir)/bhuman",
+  output = "$(buildDir)/bhuman"
 
   includePaths = {
     "$(srcDirRoot)",
+    "$(srcDirRoot)/Tools/Precompiled",
     "$(utilDirRoot)/Eigen",
     "$(utilDirRoot)/GameController/include",
     "$(utilDirRoot)/Buildchain/gcc/include",
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/4.7.1",
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/4.7.1/i486-linux-gnu",
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0",
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
     "$(utilDirRoot)/Buildchain/clang/include",
     "$(utilDirRoot)/fftw-3.3",
     "$(utilDirRoot)/libjpeg/src",
     "$(utilDirRoot)/snappy/include",
-  },
+  }
 
   libPaths = {
     "$(utilDirRoot)/fftw-3.3/Linux32",
     "$(utilDirRoot)/libjpeg/lib/Linux",
     "$(utilDirRoot)/Buildchain/gcc/lib",
     "$(utilDirRoot)/snappy/lib/Linux/x86",
-  },
+  }
 
   libs = {
-    "rt-2.13", "jpeg-atom", "pthread-2.13", "pthread_nonshared", "fftw3", "snappy",
-    "asound", "dl"
-  },
+    "rt-2.13", "jpeg-atom", "pthread-2.13", "pthread_nonshared", "fftw3", "snappy", "asound", "dl-2.13"
+  }
 
   cppFlags += {
     "-nostdinc -march=atom -target i686-pc-linux-gnu"
@@ -73,8 +73,8 @@ Nao = cppApplication + {
   linkFlags += "-nostdlib",
 
   if (tool == "vcxproj") {
-    buildCommand = "bash -c \"$(utilDirRoot)/mare/Windows/bin/mare.exe --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
-    reBuildCommand = "bash -c \"$(utilDirRoot)/mare/Windows/bin/mare.exe --ignore-dependencies rebuild $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
-    cleanCommand = "$(utilDirRoot)/mare/Windows/bin/mare.exe --ignore-dependencies clean $(target) config=$(configuration)"
+    buildCommand = "bash -c \"$(winMarePath) --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    reBuildCommand = "bash -c \"$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    cleanCommand = "$(winMarePath) --ignore-dependencies clean $(target) config=$(configuration)"
   }
 }

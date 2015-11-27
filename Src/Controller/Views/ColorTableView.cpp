@@ -10,7 +10,7 @@
 #include "ColorTableView.h"
 #include "Controller/Visualization/OpenGLMethods.h"
 
-ColorTableView::ColorTableView(const QString& fullName, RobotConsole& c, ColorClasses::Color color, const Vector3<>& b)
+ColorTableView::ColorTableView(const QString& fullName, RobotConsole& c, ColorClasses::Color color, const Vector3f& b)
   : View3D(fullName, b),
     console(c),
     color(color),
@@ -25,9 +25,9 @@ void ColorTableView::updateDisplayLists()
                                        cubeId, true,
                                        127, //scale
                                        -127, -127, -127, // offsets
-                                       int(background.x * 255) ^ 0xc0,
-                                       int(background.y * 255) ^ 0xc0,
-                                       int(background.z * 255) ^ 0xc0);
+                                       int(background.x() * 255) ^ 0xc0,
+                                       int(background.y() * 255) ^ 0xc0,
+                                       int(background.z() * 255) ^ 0xc0);
   OpenGLMethods::paintColorTable(console.colorTable, color, colorsId);
   lastTimeStamp = console.colorTableTimeStamp;
 }

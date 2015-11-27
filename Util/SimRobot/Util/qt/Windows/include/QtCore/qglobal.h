@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
-** Contact: http://www.qt-project.org/legal
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
@@ -10,20 +10,21 @@
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Digia.  For licensing terms and
-** conditions see http://qt.digia.com/licensing.  For further information
-** use the contact form at http://qt.digia.com/contact-us.
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU Lesser General Public License version 2.1 requirements
-** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Digia gives you certain additional
-** rights.  These rights are described in the Digia Qt LGPL Exception
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
@@ -34,7 +35,6 @@
 ** ensure the GNU General Public License version 3.0 requirements will be
 ** met: http://www.gnu.org/copyleft/gpl.html.
 **
-**
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
@@ -44,19 +44,19 @@
 
 #include <stddef.h>
 
-#define QT_VERSION_STR "4.8.6"
+#define QT_VERSION_STR "4.8.7"
 /*
    QT_VERSION is (major << 16) + (minor << 8) + patch.
 */
-#define QT_VERSION 0x040806
+#define QT_VERSION 0x040807
 /*
    can be used like #if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
 */
 #define QT_VERSION_CHECK(major, minor, patch) ((major<<16)|(minor<<8)|(patch))
 
-#define QT_PACKAGEDATE_STR "2014-04-10"
+#define QT_PACKAGEDATE_STR "2015-05-07"
 
-#define QT_PACKAGE_TAG "68a911862e05400ced87971c43fb27fb5d5d8ebd"
+#define QT_PACKAGE_TAG "445d29dbb8135944ff3a9283b7622de75d68e747"
 
 #if !defined(QT_BUILD_MOC)
 #include <QtCore/qconfig.h>
@@ -304,31 +304,69 @@ namespace QT_NAMESPACE {}
 #endif
 
 #ifdef Q_OS_DARWIN
-#  ifdef MAC_OS_X_VERSION_MIN_REQUIRED
-#    undef MAC_OS_X_VERSION_MIN_REQUIRED
-#  endif
-#  define MAC_OS_X_VERSION_MIN_REQUIRED MAC_OS_X_VERSION_10_4
 #  include <AvailabilityMacros.h>
-#  if !defined(MAC_OS_X_VERSION_10_3)
-#     define MAC_OS_X_VERSION_10_3 MAC_OS_X_VERSION_10_2 + 1
+#
+#  // Availability.h was introduced with the OS X 10.6 SDK
+#  if (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060) || \
+      (defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1060)
+#    include <Availability.h>
+#  endif
+#
+#  ifdef Q_OS_MACX
+#    if !defined(__MAC_OS_X_VERSION_MIN_REQUIRED) || __MAC_OS_X_VERSION_MIN_REQUIRED < 1040
+#       undef __MAC_OS_X_VERSION_MIN_REQUIRED
+#       define __MAC_OS_X_VERSION_MIN_REQUIRED 1040
+#    endif
+#    if !defined(MAC_OS_X_VERSION_MIN_REQUIRED) || MAC_OS_X_VERSION_MIN_REQUIRED < 1040
+#       undef MAC_OS_X_VERSION_MIN_REQUIRED
+#       define MAC_OS_X_VERSION_MIN_REQUIRED 1040
+#    endif
+#  endif
+#
+#  // Numerical checks are preferred to named checks, but to be safe
+#  // we define the missing version names in case Qt uses them.
+#
+#  if !defined(__MAC_10_4)
+#       define __MAC_10_4 1040
+#  endif
+#  if !defined(__MAC_10_5)
+#       define __MAC_10_5 1050
+#  endif
+#  if !defined(__MAC_10_6)
+#       define __MAC_10_6 1060
+#  endif
+#  if !defined(__MAC_10_7)
+#       define __MAC_10_7 1070
+#  endif
+#  if !defined(__MAC_10_8)
+#       define __MAC_10_8 1080
+#  endif
+#  if !defined(__MAC_10_9)
+#       define __MAC_10_9 1090
+#  endif
+#  if !defined(__MAC_10_10)
+#       define __MAC_10_10 101000
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_4)
-#       define MAC_OS_X_VERSION_10_4 MAC_OS_X_VERSION_10_3 + 1
+#       define MAC_OS_X_VERSION_10_4 1040
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_5)
-#       define MAC_OS_X_VERSION_10_5 MAC_OS_X_VERSION_10_4 + 1
+#       define MAC_OS_X_VERSION_10_5 1050
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_6)
-#       define MAC_OS_X_VERSION_10_6 MAC_OS_X_VERSION_10_5 + 1
+#       define MAC_OS_X_VERSION_10_6 1060
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_7)
-#       define MAC_OS_X_VERSION_10_7 MAC_OS_X_VERSION_10_6 + 1
+#       define MAC_OS_X_VERSION_10_7 1070
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_8)
-#       define MAC_OS_X_VERSION_10_8 MAC_OS_X_VERSION_10_7 + 1
+#       define MAC_OS_X_VERSION_10_8 1080
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_9)
-#       define MAC_OS_X_VERSION_10_9 MAC_OS_X_VERSION_10_8 + 1
+#       define MAC_OS_X_VERSION_10_9 1090
+#  endif
+#  if !defined(MAC_OS_X_VERSION_10_10)
+#       define MAC_OS_X_VERSION_10_10 101000
 #  endif
 #endif
 
@@ -425,17 +463,6 @@ namespace QT_NAMESPACE {}
 #    undef QT_HAVE_3DNOW
 #  endif
 
-#if defined(Q_CC_MSVC) && _MSC_VER >= 1600
-#      define Q_COMPILER_RVALUE_REFS
-#      define Q_COMPILER_AUTO_FUNCTION
-#      define Q_COMPILER_AUTO_TYPE
-#      define Q_COMPILER_LAMBDA
-#      define Q_COMPILER_DECLTYPE
-//  MSCV has std::initilizer_list, but do not support the braces initialization
-//#      define Q_COMPILER_INITIALIZER_LISTS
-#  endif
-
-
 #elif defined(__BORLANDC__) || defined(__TURBOC__)
 #  define Q_CC_BOR
 #  define Q_INLINE_TEMPLATE
@@ -467,6 +494,7 @@ namespace QT_NAMESPACE {}
 /* work-around for missing compiler intrinsics */
 #  define __is_empty(X) false
 #  define __is_pod(X) false
+
 #elif defined(__GNUC__)
 #  define Q_CC_GNU
 #  define Q_C_CALLBACKS
@@ -480,6 +508,10 @@ namespace QT_NAMESPACE {}
 #  if defined(__clang__)
 /* Clang also masquerades as GCC 4.2.1 */
 #    define Q_CC_CLANG
+#    if !defined(__has_extension)
+#      /* Compatibility with older Clang versions */
+#      define __has_extension __has_feature
+#    endif
 #  endif
 #  ifdef __APPLE__
 #    define Q_NO_DEPRECATED_CONSTRUCTORS
@@ -519,33 +551,6 @@ namespace QT_NAMESPACE {}
 #    ifndef __ARM_EABI__
 #      define QT_NO_ARM_EABI
 #    endif
-#  endif
-#  if defined(__GXX_EXPERIMENTAL_CXX0X__)
-#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 403
-       /* C++0x features supported in GCC 4.3: */
-#      define Q_COMPILER_RVALUE_REFS
-#      define Q_COMPILER_DECLTYPE
-#    endif
-#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 404
-       /* C++0x features supported in GCC 4.4: */
-#      define Q_COMPILER_VARIADIC_TEMPLATES
-#      define Q_COMPILER_AUTO_FUNCTION
-#      define Q_COMPILER_AUTO_TYPE
-#      define Q_COMPILER_EXTERN_TEMPLATES
-#      define Q_COMPILER_DEFAULT_DELETE_MEMBERS
-#      define Q_COMPILER_CLASS_ENUM
-#      define Q_COMPILER_INITIALIZER_LISTS
-#    endif
-#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 405
-       /* C++0x features supported in GCC 4.5: */
-#      define Q_COMPILER_LAMBDA
-#      define Q_COMPILER_UNICODE_STRINGS
-#    endif
-#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 406
-       /* C++0x features supported in GCC 4.6: */
-#      define Q_COMPILER_CONSTEXPR
-#    endif
-
 #  endif
 
 /* IBM compiler versions are a bit messy. There are actually two products:
@@ -791,12 +796,33 @@ namespace QT_NAMESPACE {}
 #  error "Qt has not been tested with this compiler - talk to qt-bugs@trolltech.com"
 #endif
 
+/*
+ * C++11 support
+ *
+ *  Paper           Macro                               SD-6 macro
+ *  N2541           Q_COMPILER_AUTO_FUNCTION
+ *  N1984 N2546     Q_COMPILER_AUTO_TYPE
+ *  N2437           Q_COMPILER_CLASS_ENUM
+ *  N2235           Q_COMPILER_CONSTEXPR                __cpp_constexpr = 200704
+ *  N2343 N3276     Q_COMPILER_DECLTYPE                 __cpp_decltype = 200707
+ *  N2346           Q_COMPILER_DEFAULT_DELETE_MEMBERS
+ *  N1987           Q_COMPILER_EXTERN_TEMPLATES
+ *  N2672           Q_COMPILER_INITIALIZER_LISTS
+ *  N2658 N2927     Q_COMPILER_LAMBDA                   __cpp_lambdas = 200907
+ *  N2118 N2844 N3053 Q_COMPILER_RVALUE_REFS            __cpp_rvalue_references = 200610
+ *  N2442           Q_COMPILER_UNICODE_STRINGS          __cpp_unicode_literals = 200710
+ *  N2242 N2555     Q_COMPILER_VARIADIC_TEMPLATES       __cpp_variadic_templates = 200704
+ *
+ * For any future version of the C++ standard, we use only the SD-6 macro.
+ * For full listing, see
+ *  http://isocpp.org/std/standing-documents/sd-6-sg10-feature-test-recommendations
+ */
 
 #ifdef Q_CC_INTEL
 #  if __INTEL_COMPILER < 1200
 #    define Q_NO_TEMPLATE_FRIENDS
 #  endif
-#  if defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(__GXX_EXPERIMENTAL_CPP0X__)
+#  if __cplusplus >= 201103L
 #    if __INTEL_COMPILER >= 1100
 #      define Q_COMPILER_RVALUE_REFS
 #      define Q_COMPILER_EXTERN_TEMPLATES
@@ -807,6 +833,91 @@ namespace QT_NAMESPACE {}
 #      define Q_COMPILER_DEFAULT_DELETE_MEMBERS
 #      define Q_COMPILER_CLASS_ENUM
 #      define Q_COMPILER_LAMBDA
+#    endif
+#  endif
+#endif
+
+#if defined(Q_CC_CLANG) && !defined(Q_CC_INTEL)
+#  if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+    /* Detect C++ features using __has_feature(), see http://clang.llvm.org/docs/LanguageExtensions.html#cxx11 */
+#    if __has_feature(cxx_auto_type)
+#      define Q_COMPILER_AUTO_FUNCTION
+#      define Q_COMPILER_AUTO_TYPE
+#    endif
+#    if __has_feature(cxx_constexpr)
+#      define Q_COMPILER_CONSTEXPR
+#    endif
+#    if __has_feature(cxx_decltype) /* && __has_feature(cxx_decltype_incomplete_return_types) */
+#      define Q_COMPILER_DECLTYPE
+#    endif
+#    if __has_feature(cxx_defaulted_functions) && __has_feature(cxx_deleted_functions)
+#      define Q_COMPILER_DEFAULT_DELETE_MEMBERS
+#    endif
+#    if __has_feature(cxx_generalized_initializers)
+#      define Q_COMPILER_INITIALIZER_LISTS
+#    endif
+#    if __has_feature(cxx_lambdas)
+#      define Q_COMPILER_LAMBDA
+#    endif
+#    if __has_feature(cxx_rvalue_references)
+#      define Q_COMPILER_RVALUE_REFS
+#    endif
+#    if __has_feature(cxx_strong_enums)
+#      define Q_COMPILER_CLASS_ENUM
+#    endif
+#    if __has_feature(cxx_unicode_literals)
+#      define Q_COMPILER_UNICODE_STRINGS
+#    endif
+#    if __has_feature(cxx_variadic_templates)
+#      define Q_COMPILER_VARIADIC_TEMPLATES
+#    endif
+    /* Features that have no __has_feature() check */
+#    if ((__clang_major__ * 100) + __clang_minor__) >= 209 /* since clang 2.9 */
+#      define Q_COMPILER_EXTERN_TEMPLATES
+#    endif
+#  endif
+#endif
+
+#if defined(Q_CC_GNU) && !defined(Q_CC_INTEL) && !defined(Q_CC_CLANG)
+#  if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
+#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 403
+       /* C++0x features supported in GCC 4.3: */
+#      define Q_COMPILER_RVALUE_REFS
+#      define Q_COMPILER_DECLTYPE
+#    endif
+#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 404
+       /* C++0x features supported in GCC 4.4: */
+#      define Q_COMPILER_VARIADIC_TEMPLATES
+#      define Q_COMPILER_AUTO_FUNCTION
+#      define Q_COMPILER_AUTO_TYPE
+#      define Q_COMPILER_EXTERN_TEMPLATES
+#      define Q_COMPILER_DEFAULT_DELETE_MEMBERS
+#      define Q_COMPILER_CLASS_ENUM
+#      define Q_COMPILER_INITIALIZER_LISTS
+#    endif
+#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 405
+       /* C++0x features supported in GCC 4.5: */
+#      define Q_COMPILER_LAMBDA
+#      define Q_COMPILER_UNICODE_STRINGS
+#    endif
+#    if (__GNUC__ * 100 + __GNUC_MINOR__) >= 406
+       /* C++0x features supported in GCC 4.6: */
+#      define Q_COMPILER_CONSTEXPR
+#    endif
+#  endif
+#endif
+
+#if defined(Q_CC_MSVC) && !defined(Q_CC_INTEL)
+#  if defined(__cplusplus)
+#    if _MSC_VER >= 1600
+       /* C++11 features supported in VC10 = VC2010: */
+#      define Q_COMPILER_AUTO_FUNCTION
+#      define Q_COMPILER_AUTO_TYPE
+#      define Q_COMPILER_DECLTYPE
+#      define Q_COMPILER_LAMBDA
+#      define Q_COMPILER_RVALUE_REFS
+//  MSVC's library has std::initializer_list, but the compiler does not support the braces initialization
+//#      define Q_COMPILER_INITIALIZER_LISTS
 #    endif
 #  endif
 #endif
@@ -1175,7 +1286,7 @@ redefine to built-in booleans to make autotests work properly */
 #  else
 #    define QT_ENSURE_STACK_ALIGNED_FOR_SSE
 #  endif
-#  define QT_WIN_CALLBACK CALLBACK QT_ENSURE_STACK_ALIGNED_FOR_SSE 
+#  define QT_WIN_CALLBACK CALLBACK QT_ENSURE_STACK_ALIGNED_FOR_SSE
 #endif
 
 typedef int QNoImplicitBoolCast;
@@ -1592,6 +1703,7 @@ public:
         WV_WINDOWS7 = 0x0090,
         WV_WINDOWS8 = 0x00a0,
         WV_WINDOWS8_1 = 0x00b0,
+        WV_WINDOWS10 = 0x00c0,
         WV_NT_based = 0x00f0,
 
         /* version numbers */
@@ -1603,6 +1715,7 @@ public:
         WV_6_1      = WV_WINDOWS7,
         WV_6_2      = WV_WINDOWS8,
         WV_6_3      = WV_WINDOWS8_1,
+        WV_10_0     = WV_WINDOWS10,
 
         WV_CE       = 0x0100,
         WV_CENET    = 0x0200,
@@ -1630,6 +1743,7 @@ public:
         MV_10_7 = 0x0009,
         MV_10_8 = 0x000A,
         MV_10_9 = 0x000B,
+        MV_10_10 = 0x000C,
 
         /* codenames */
         MV_CHEETAH = MV_10_0,
@@ -1641,7 +1755,8 @@ public:
         MV_SNOWLEOPARD = MV_10_6,
         MV_LION = MV_10_7,
         MV_MOUNTAINLION = MV_10_8,
-        MV_MAVERICKS = MV_10_9
+        MV_MAVERICKS = MV_10_9,
+        MV_YOSEMITE = MV_10_10
     };
     static const MacVersion MacintoshVersion;
 #endif
@@ -1721,7 +1836,7 @@ inline QT3_SUPPORT int qWinVersion() { return QSysInfo::WindowsVersion; }
    Avoid "unused parameter" warnings
 */
 
-#if defined(Q_CC_INTEL) && !defined(Q_OS_WIN) || defined(Q_CC_RVCT)
+#if defined(Q_CC_RVCT)
 template <typename T>
 inline void qUnused(T &x) { (void)x; }
 #  define Q_UNUSED(x) qUnused(x);

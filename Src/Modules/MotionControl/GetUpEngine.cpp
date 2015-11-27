@@ -1,10 +1,9 @@
 /*
-* @file GetUpEngine.cpp
-* @author <A href="mailto:judy@tzi.de">Judith Müller</A>
-*/
+ * @file GetUpEngine.cpp
+ * @author <A href="mailto:judy@tzi.de">Judith Müller</A>
+ */
 
 #include "GetUpEngine.h"
-
 #include "Tools/Debugging/Modify.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 
@@ -12,20 +11,20 @@ using namespace std;
 
 void GetUpEngine::update(GetUpEngineOutput& output)
 {
-  output.odometryOffset = Pose2D();
+  output.odometryOffset = Pose2f();
   if(theMotionSelection.ratios[MotionRequest::getUp] > 0.f)
   {
     if(!wasActive)
     {
       wasActive = true;
-      tryCounter = 0;
+      output.tryCounter = 0;
       output.isLeavingPossible = false; //no leaving anymore
       soundTimeStamp = theFrameInfo.time;
       state = decideAction;
       //save the joint angles from last frame
-      output.jointHardness.resetToDefault();
-      for(int i = 0; i < JointData::numOfJoints; ++i)
-        output.angles[i] = theFilteredJointData.angles[i];
+      output.stiffnessData.resetToDefault();
+      for(int i = 0; i < Joints::numOfJoints; ++i)
+        output.angles[i] = theJointAngles.angles[i];
     }
 
     if(state == decideAction || state == breakUp || state == schwalbe)
@@ -36,15 +35,15 @@ void GetUpEngine::update(GetUpEngineOutput& output)
       setNextJoints(output);
       if(lineCounter >= maxCounter)
       {
-        if(abs(theFilteredSensorData.data[SensorData::angleY]) > fromDegrees(30))
+        if(abs(theInertialData.angle.y()) > 30_deg)
         {
-          setHardness(output, 0);
-          if(tryCounter >= maxNumOfUnsuccessfulTries)
+          setStiffness(output, 0);
+          if(output.tryCounter >= maxNumOfUnsuccessfulTries)
             state = schwalbe;   //if no more trys left let behavior cry for help.
           else
           {
             if(SystemCall::getMode() != SystemCall::simulatedRobot)
-              tryCounter++;
+              output.tryCounter++;
 
             state = breakUp;
             breakUpTimeStamp = theFrameInfo.time;
@@ -57,7 +56,7 @@ void GetUpEngine::update(GetUpEngineOutput& output)
             if(!output.isLeavingPossible) //set odometry only once!
               output.odometryOffset = internalOdometryOffset;
             else
-              output.odometryOffset = Pose2D();
+              output.odometryOffset = Pose2f();
 
             output.isLeavingPossible = true;
         //  }
@@ -85,30 +84,31 @@ void GetUpEngine::update(GetUpEngineOutput& output)
   else
   {
     wasActive = false; //the engine did not do anything
+    output.tryCounter = 0;
     lastNotActiveTimeStamp = theFrameInfo.time;
     lastMotionInfo = theMotionInfo; // store the last MotionInfo
   }
 }
 
-void GetUpEngine::interpolate(const JointData& from, const JointRequest& to, float& ratio, JointRequest& target)
+void GetUpEngine::interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target)
 {
-  for(int i = 0; i < JointData::numOfJoints; ++i)
+  for(int i = 0; i < Joints::numOfJoints; ++i)
   {
     float f = from.angles[i];
     float t = to.angles[i];
 
-    if(t == JointData::ignore && f == JointData::ignore)
+    if(t == JointAngles::ignore && f == JointAngles::ignore)
       continue;
 
-    if(t == JointData::ignore)
+    if(t == JointAngles::ignore)
       t = target.angles[i];
-    if(f == JointData::ignore)
+    if(f == JointAngles::ignore)
       f = target.angles[i];
 
-    if(t == JointData::off || t == JointData::ignore)
-      t = theFilteredJointData.angles[i];
-    if(f == JointData::off || f == JointData::ignore)
-      f = theFilteredJointData.angles[i];
+    if(t == JointAngles::off || t == JointAngles::ignore)
+      t = theJointAngles.angles[i];
+    if(f == JointAngles::off || f == JointAngles::ignore)
+      f = theJointAngles.angles[i];
 
     target.angles[i] = ratio * (t - f) + f;
   }
@@ -116,16 +116,16 @@ void GetUpEngine::interpolate(const JointData& from, const JointRequest& to, flo
 
 void GetUpEngine::addBalance(JointRequest& jointRequest)
 {
-  if(theFilteredSensorData.data[SensorData::gyroY] != 0 && balance && motionID > -1)
+  if(theInertialData.gyro.y() != 0 && balance && motionID > -1)
   {
     float cycletime = theFrameInfo.cycleTime;
-    float gyroDiff((theFilteredSensorData.data[SensorData::gyroY] - gLast) / cycletime);
-    gLast = theFilteredSensorData.data[SensorData::gyroY];
+    float gyroDiff((theInertialData.gyro.y() - gLast) / cycletime);
+    gLast = theInertialData.gyro.y();
     float calcVelocity(kp * gLast - kd * gyroDiff - ki * gBuffer);
-    jointRequest.angles[JointData::RHipPitch] += calcVelocity * cycletime;
-    jointRequest.angles[JointData::LHipPitch] += calcVelocity * cycletime;
-    jointRequest.angles[JointData::LAnklePitch] +=  calcVelocity * cycletime;
-    jointRequest.angles[JointData::RAnklePitch] += calcVelocity * cycletime;
+    jointRequest.angles[Joints::rHipPitch] += calcVelocity * cycletime;
+    jointRequest.angles[Joints::lHipPitch] += calcVelocity * cycletime;
+    jointRequest.angles[Joints::lAnklePitch] += calcVelocity * cycletime;
+    jointRequest.angles[Joints::rAnklePitch] += calcVelocity * cycletime;
     gBuffer += gLast;
   }
 }
@@ -133,87 +133,95 @@ void GetUpEngine::addBalance(JointRequest& jointRequest)
 void GetUpEngine::pickMotion(GetUpEngineOutput& output)
 {
   initVariables();
-  const float& bodyAngleY = theFilteredSensorData.data[SensorData::angleY];
+  const float& bodyAngleY = theInertialData.angle.y();
+  const float& bodyAngleX = theInertialData.angle.x();
   switch(state)
   {
-  case decideAction:
-  {
-    if(bodyAngleY > fromDegrees(65) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)//experimental use of body angle
+    case decideAction:
     {
-      //init stand up front
-      state = working;
-      setHardness(output, 90);
-      setCurrentMotion(Mof::front);
-    }
-    //on back side experimental use of body angles
-    else if(bodyAngleY < fromDegrees(-65) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
-    {
-      //init stand up back motion
-      state = working;
-      setHardness(output, 90); 
-      setCurrentMotion(Mof::back);
-    }
-    //not fallen at all?
-    else if(abs(bodyAngleY) < fromDegrees(30) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
-    {
-      //init stand
-      state = pickUp;
-      setHardness(output, 75);
-      setCurrentMotion(Mof::stand);
-    }
-    else
-    {
-      //do nothing until the fall down state is decided
-      state = decideAction;
-      setCurrentMotion(Mof::numOfMotions);
-    }
-    break;
-  }
-  case breakUp:
-  {
-    if(theFrameInfo.getTimeSince(breakUpTimeStamp) < 2000)
-    {
-      // do nothing in order to wait if there is a distress (other robots etc.)
-      state = breakUp;
-      setCurrentMotion(Mof::numOfMotions);
-    }
-    else
-    {
-      //init recover motion
-      state = recover;
-      setHardness(output, 90);
-      setCurrentMotion(Mof::recovering);
-    }
-    break;
-  }
-  case schwalbe:
-  {
-    if(abs(theFilteredSensorData.data[SensorData::angleY]) > fromDegrees(30)) //not near upright
-    {
-      //do nothing then
-      state = schwalbe;
-      setCurrentMotion(Mof::numOfMotions);
-      if(theFrameInfo.getTimeSince(soundTimeStamp) > 5000)
+      if((theFallDownState.direction == FallDownState::left || theFallDownState.direction == FallDownState::right) && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
       {
-        SystemCall::playSound("helpMe.wav");
-        soundTimeStamp = theFrameInfo.time;
+        //init recover motion
+        state = recover;
+        setStiffness(output, 70);
+        setCurrentMotion(Mof::recoverFromSide);
       }
+      else if(bodyAngleY > 65_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+      {
+        //init stand up front
+        state = working;
+        setStiffness(output, 90);
+        setCurrentMotion(Mof::front);
+      }
+      //on back side experimental use of body angles
+      else if(bodyAngleY < -65_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+      {
+        //init stand up back motion
+        state = working;
+        setStiffness(output, 90);
+        setCurrentMotion(Mof::back);
+      }
+      //not fallen at all?
+      else if(abs(bodyAngleY) < 30_deg && abs(bodyAngleX) < 50_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
+      {
+        //init stand
+        state = pickUp;
+        setStiffness(output, 75);
+        setCurrentMotion(Mof::stand);
+      }
+      else
+      {
+        //do nothing until the fall down state is decided
+        state = decideAction;
+        setCurrentMotion(Mof::numOfMotions);
+      }
+      break;
     }
-    else
+    case breakUp:
     {
-      //if near upright init stand
-      state = pickUp;
-      setHardness(output, 75);
-      setCurrentMotion(Mof::stand);
+      if(theFrameInfo.getTimeSince(breakUpTimeStamp) < 2000)
+      {
+        // do nothing in order to wait if there is a distress (other robots etc.)
+        state = breakUp;
+        setCurrentMotion(Mof::numOfMotions);
+      }
+      else
+      {
+        //init recover motion
+        state = recover;
+        setStiffness(output, 90);
+        setCurrentMotion(Mof::recovering);
+      }
+      break;
     }
-    break;
-  }
-  default: //should never happen
-  {
-    setCurrentMotion(Mof::numOfMotions);
-    state = decideAction;
-    break;
-  }
+    case schwalbe:
+    {
+      if(abs(theInertialData.angle.y()) > 30_deg) //not near upright
+      {
+        //do nothing then
+        state = schwalbe;
+        setCurrentMotion(Mof::numOfMotions);
+        if(theFrameInfo.getTimeSince(soundTimeStamp) > 5000)
+        {
+          SystemCall::playSound("helpMe.wav");
+          soundTimeStamp = theFrameInfo.time;
+        }
+      }
+      else
+      {
+        //if near upright init stand
+        state = pickUp;
+        setStiffness(output, 75);
+        setCurrentMotion(Mof::stand);
+      }
+      break;
+    }
+    default: //should never happen
+    {
+      setCurrentMotion(Mof::numOfMotions);
+      state = decideAction;
+      break;
+    }
   }
 }
 
@@ -222,33 +230,31 @@ void GetUpEngine::initVariables()
   //init global variables
   lineCounter = 0; //start at the beginning each time the engine gets active again after being not active
   lineStartTimeStamp = theFrameInfo.time; //save the start time
-  startJoints = theFilteredJointData; //save the current joint angles
+  startJoints = theJointAngles; //save the current joint angles
   gLast = 0.f; //reset
   gBuffer = 0.f;
-  internalOdometryOffset = Pose2D();
+  internalOdometryOffset = Pose2f();
   balance = false;
   //reset all last balancing angles
-  for(int i = 0; i < 22; ++i)
-    lastUnbalanced.angles[i] = theFilteredJointData.angles[i];
+  lastUnbalanced.angles = theJointAngles.angles;
 }
 
 void GetUpEngine::checkCriticalParts(GetUpEngineOutput& output)
 {
   if(mofs[motionID].lines[lineCounter].critical)
   {
-    const float& bodyAngleY = theFilteredSensorData.data[SensorData::angleY];
     //if the body is not almost upright recover or cry for help
-    if(abs(bodyAngleY) > fromDegrees(30))
+    if(abs(theInertialData.angle.y()) > 30_deg)
     {
-      setHardness(output, 0);
-      if(tryCounter >= maxNumOfUnsuccessfulTries) //if no more trys left let behavior cry for help.
+      setStiffness(output, 0);
+      if(output.tryCounter >= maxNumOfUnsuccessfulTries) //if no more trys left let behavior cry for help.
       {
         state = schwalbe;
       }
       else
       {
-        if(SystemCall::getMode() != SystemCall::simulatedRobot)        
-         tryCounter++;
+        if(SystemCall::getMode() != SystemCall::simulatedRobot)
+          output.tryCounter++;
 
         state = breakUp;
         breakUpTimeStamp = theFrameInfo.time;
@@ -280,18 +286,18 @@ void GetUpEngine::setNextJoints(GetUpEngineOutput& output)
       balance = (lineCounter >= mofs[motionID].balanceStartLine && mofs[motionID].balanceStartLine > -1);
       //set head joints
       for(int i = 0; i < 2; ++i)
-        targetJoints.angles[i] = fromDegrees(mofs[motionID].lines[lineCounter].head[i]);
+        targetJoints.angles[i] = Angle::fromDegrees(mofs[motionID].lines[lineCounter].head[i]);
       //set arm joints
-      for(int i = 0; i < 4; ++i)
+      for(int i = 0; i < 6; ++i)
       {
-        targetJoints.angles[JointData::LShoulderPitch + i] = fromDegrees(mofs[motionID].lines[lineCounter].leftArm[i]);
-        targetJoints.angles[JointData::RShoulderPitch + i] = fromDegrees(mofs[motionID].lines[lineCounter].rightArm[i]);
+        targetJoints.angles[Joints::lShoulderPitch + i] = Angle::fromDegrees(mofs[motionID].lines[lineCounter].leftArm[i]);
+        targetJoints.angles[Joints::rShoulderPitch + i] = Angle::fromDegrees(mofs[motionID].lines[lineCounter].rightArm[i]);
       }
       //set leg joints
       for(int i = 0; i < 6; ++i)
       {
-        targetJoints.angles[JointData::LHipYawPitch + i] = fromDegrees(mofs[motionID].lines[lineCounter].leftLeg[i]);
-        targetJoints.angles[JointData::RHipYawPitch + i] = fromDegrees(mofs[motionID].lines[lineCounter].rightLeg[i]);
+        targetJoints.angles[Joints::lHipYawPitch + i] = Angle::fromDegrees(mofs[motionID].lines[lineCounter].leftLeg[i]);
+        targetJoints.angles[Joints::rHipYawPitch + i] = Angle::fromDegrees(mofs[motionID].lines[lineCounter].rightLeg[i]);
       }
       checkCriticalParts(output);
     }
@@ -301,11 +307,11 @@ void GetUpEngine::setNextJoints(GetUpEngineOutput& output)
   addBalance(output);
 }
 
-void GetUpEngine::setHardness(GetUpEngineOutput& output, int hardness)
+void GetUpEngine::setStiffness(GetUpEngineOutput& output, int stiffness)
 {
   //maybe we need different modes to save the ankles and the head
-  for(int i = 0; i < JointData::numOfJoints; ++i)
-    output.jointHardness.hardness[i] = hardness;
+  for(int i = 0; i < Joints::numOfJoints; ++i)
+    output.stiffnessData.stiffnesses[i] = stiffness;
 }
 
 void GetUpEngine::setCurrentMotion(Mof::Motion current)
@@ -320,12 +326,11 @@ void GetUpEngine::setCurrentMotion(Mof::Motion current)
   if(motionID < 0)
   {
     maxCounter = -1;
-    internalOdometryOffset = Pose2D(0.f, 0.f, 0.f);
+    internalOdometryOffset = Pose2f();
     return;
   }
-  maxCounter = (int) mofs[motionID].lines.size();
+  maxCounter = static_cast<int>(mofs[motionID].lines.size());
   internalOdometryOffset = mofs[motionID].odometryOffset;
 }
 
-MAKE_MODULE(GetUpEngine, Motion Control)
-
+MAKE_MODULE(GetUpEngine, motionControl)

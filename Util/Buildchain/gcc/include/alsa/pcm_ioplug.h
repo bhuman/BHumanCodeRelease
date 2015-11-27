@@ -54,11 +54,6 @@ enum {
 typedef struct snd_pcm_ioplug snd_pcm_ioplug_t;
 /** Callback table of ioplug */
 typedef struct snd_pcm_ioplug_callback snd_pcm_ioplug_callback_t;
-#ifdef DOC_HIDDEN
-/* redefine typedefs for stupid doxygen */
-typedef snd_pcm_ioplug snd_pcm_ioplug_t;
-typedef snd_pcm_ioplug_callback snd_pcm_ioplug_callback_t;
-#endif
 
 /*
  * bit flags for additional conditions
@@ -71,7 +66,7 @@ typedef snd_pcm_ioplug_callback snd_pcm_ioplug_callback_t;
  */
 #define SND_PCM_IOPLUG_VERSION_MAJOR	1	/**< Protocol major version */
 #define SND_PCM_IOPLUG_VERSION_MINOR	0	/**< Protocol minor version */
-#define SND_PCM_IOPLUG_VERSION_TINY	2	/**< Protocol tiny version */
+#define SND_PCM_IOPLUG_VERSION_TINY	1	/**< Protocol tiny version */
 /**
  * IO-plugin protocol version
  */
@@ -191,21 +186,9 @@ struct snd_pcm_ioplug_callback {
 	 */
 	void (*dump)(snd_pcm_ioplug_t *io, snd_output_t *out);
 	/**
-	 * get the delay for the running PCM; optional; since v1.0.1
+	 * get the delay for the running PCM; optional
 	 */
 	int (*delay)(snd_pcm_ioplug_t *io, snd_pcm_sframes_t *delayp);
-	/**
-	 * query the channel maps; optional; since v1.0.2
-	 */
-	snd_pcm_chmap_query_t **(*query_chmaps)(snd_pcm_ioplug_t *io);
-	/**
-	 * get the channel map; optional; since v1.0.2
-	 */
-	snd_pcm_chmap_t *(*get_chmap)(snd_pcm_ioplug_t *io);
-	/**
-	 * set the channel map; optional; since v1.0.2
-	 */
-	int (*set_chmap)(snd_pcm_ioplug_t *io, const snd_pcm_chmap_t *map);
 };
 
 

@@ -124,7 +124,7 @@ bool CompileCmd::execute(Context &context, const std::vector<std::string> &param
 #ifdef WINDOWS
 QString CompileCmd::getCommand()
 {
-  return QString(getenv(ENV_COMNTOOLS_12)) + "..\\IDE\\devenv.com";
+  return QString(getenv("VS140COMNTOOLS")) + "..\\IDE\\devenv.com";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)

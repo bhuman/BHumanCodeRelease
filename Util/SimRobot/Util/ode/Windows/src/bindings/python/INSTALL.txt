@@ -1,0 +1,64 @@
+1. REQUIREMENTS:
+
+1. Python 2.4 or higher (http://www.python.org/)
+   - Tested with Python 2.7 (2.6 on earlier builds)
+2. Cython 0.14.1** or higher (http://cython.org/)
+   - Tested with Cython 0.15 (0.14.1 on earlier builds)
+3. ODE shared*** library (or static with -fPIC)
+   - See the notes on building ODE below.
+4. pkg-config (http://www.freedesktop.org/wiki/Software/pkg-config)
+   - Windows executable (and GLib dependency) can be downloaded from
+     http://www.gtk.org/download/win32.php
+   - If you used premake to configure ODE, you may need to create an ode.pc file
+     in your PKG_CONFIG_PATH manually.  See <ODE_DIR>/ode.pc.in
+
+
+
+2. BUILDING ODE
+
+ On certain systems (*nix) there is a requirement that a shared library
+ (such as the python module) contains only position-independent code
+ (PIC). In those cases, ODE needs to be either compiled as a shared library
+ too (--enable-shared), or as a static library with PIC (-fPIC).
+
+ Once ODE is built and installed in your desired destination, proceed with
+ building the wrapper.
+
+
+
+3a. BUILDING WITH Visual Studio (Windows)
+
+   python setup.py build_ext
+
+
+3b. BUILDING WITH MINGW (Windows)
+
+   python setup.py build_ext -c mingw32
+
+
+3c. BUILDING WITH GCC/G++ (Linux, OS X, etc.)
+
+   python setup.py build_ext
+
+
+
+4. INSTALLATION
+
+4a. For system-wide installation (needs administrator privileges):
+
+    python setup.py install
+    
+4b. For user installation:
+
+    python setup.py install --user
+
+
+
+5. DEMOS and DOCUMENTATION
+
+ Try running the tutorials in the 'demos' directory.  The tutorials were taken
+ from the PyODE website (http://pyode.sourceforge.net/).
+
+ For usage documentation, please refer to the PyODE API documentation at
+ http://pyode.sourceforge.net/api-1.2.0/index.html.
+

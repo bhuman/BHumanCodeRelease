@@ -9,7 +9,7 @@
 #include <QSettings>
 
 DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager) : theView(view),
-  pTheCurrentProperty(NULL), theEditorFactory(&view), theManager(manager), theRootPropertyHasChanged(false)
+  pTheCurrentProperty(nullptr), theEditorFactory(&view), theManager(manager), theRootPropertyHasChanged(false)
 {
   setFocusPolicy(Qt::StrongFocus);
 
@@ -58,7 +58,7 @@ void DataWidget::update()
   //Therefore this is done in the gui thread.
   SYNC_WITH(theView); //without this lock pTheCurrentProperty might be changed while adding it.
 
-  if(theRootPropertyHasChanged && NULL != pTheCurrentProperty)
+  if(theRootPropertyHasChanged && nullptr != pTheCurrentProperty)
   {
     //If the property has children it is only a container.
     //Discard the container and add the children directly for a more compact view.

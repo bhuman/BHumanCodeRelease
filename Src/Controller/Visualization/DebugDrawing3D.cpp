@@ -56,7 +56,9 @@ const DebugDrawing3D& DebugDrawing3D::operator+=(const DebugDrawing3D& other)
   polygons.insert(polygons.end(), other.polygons.begin(), other.polygons.end());
   quads.insert(quads.end(), other.quads.begin(), other.quads.end());
   spheres.insert(spheres.end(), other.spheres.begin(), other.spheres.end());
+  ellipsoids.insert(ellipsoids.end(), other.ellipsoids.begin(), other.ellipsoids.end());
   cylinders.insert(cylinders.end(), other.cylinders.begin(), other.cylinders.end());
+  partDiscs.insert(partDiscs.end(), other.partDiscs.begin(), other.partDiscs.end());
   images.insert(images.end(), other.images.begin(), other.images.end());
   return *this;
 }
@@ -92,18 +94,18 @@ void DebugDrawing3D::draw2()
   glPushMatrix();
 
   if(flip)
-    glRotated(180.f, 0, 0, 1);
+    glRotated(180., 0., 0., 1.);
 
   // Convert mm to m.
   glScaled(0.001, 0.001, 0.001);
 
   // Custom scaling.
-  glScaled(scaleX, scaleY, scaleZ);
+  glScalef(scaleX, scaleY, scaleZ);
 
   // Custom rotation.
-  if(rotateX != 0) glRotated(toDegrees(rotateX), 1, 0, 0);
-  if(rotateY != 0) glRotated(toDegrees(rotateY), 0, 1, 0);
-  if(rotateZ != 0) glRotated(toDegrees(rotateZ), 0, 0, 1);
+  if(rotateZ != 0) glRotatef(toDegrees(rotateZ), 0., 0., 1.);
+  if(rotateY != 0) glRotatef(toDegrees(rotateY), 0., 1., 0.);
+  if(rotateX != 0) glRotatef(toDegrees(rotateX), 1., 0., 0.);
 
   // Custom translation.
   glTranslated(transX, transY, transZ);
@@ -115,14 +117,13 @@ void DebugDrawing3D::draw2()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Draw all polygons/triangles.
-  std::vector<Polygon>::iterator p;
-  for(p = polygons.begin(); p != polygons.end(); ++p)
+  for(const Polygon& p : polygons)
   {
-    glColor4ub(p->color.r, p->color.g, p->color.b, p->color.a);
+    glColor4ub(p.color.r, p.color.g, p.color.b, p.color.a);
     glBegin(GL_TRIANGLES);
-    glVertex3d(p->points[0].x, p->points[0].y, p->points[0].z);
-    glVertex3d(p->points[1].x, p->points[1].y, p->points[1].z);
-    glVertex3d(p->points[2].x, p->points[2].y, p->points[2].z);
+    glVertex3f(p.points[0].x(), p.points[0].y(), p.points[0].z());
+    glVertex3f(p.points[1].x(), p.points[1].y(), p.points[1].z());
+    glVertex3f(p.points[2].x(), p.points[2].y(), p.points[2].z());
     glEnd();
   }
 
@@ -130,14 +131,13 @@ void DebugDrawing3D::draw2()
   if(!lines.empty())
   {
     glPushAttrib(GL_LINE_BIT);
-    std::vector<Line>::iterator l;
-    for(l = lines.begin(); l != lines.end(); ++l)
+    for(const Line& l : lines)
     {
-      glLineWidth(l->width);
-      glColor4ub(l->color.r, l->color.g, l->color.b, l->color.a);
+      glLineWidth(l.width);
+      glColor4ub(l.color.r, l.color.g, l.color.b, l.color.a);
       glBegin(GL_LINES);
-      glVertex3d(l->points[0].x, l->points[0].y, l->points[0].z);
-      glVertex3d(l->points[1].x, l->points[1].y, l->points[1].z);
+      glVertex3f(l.points[0].x(), l.points[0].y(), l.points[0].z());
+      glVertex3f(l.points[1].x(), l.points[1].y(), l.points[1].z());
       glEnd();
     }
     glPopAttrib();
@@ -147,82 +147,113 @@ void DebugDrawing3D::draw2()
   if(!dots.empty())
   {
     glPushAttrib(GL_POINT_BIT);
-    std::vector<Dot>::iterator d;
-    for(d = dots.begin(); d != dots.end(); ++d)
+    for(const Dot& d : dots)
     {
       // Since each point may have a different size we can't handle all
       // points in a single glBegin(GL_POINTS).
       // ( glPointSize is not allowed in a glBegin(...). )
-      glPointSize(d->width);
-      glColor4ub(d->color.r, d->color.g, d->color.b, d->color.a);
+      glPointSize(d.width);
+      glColor4ub(d.color.r, d.color.g, d.color.b, d.color.a);
       glBegin(GL_POINTS);
-      glVertex3d(d->point.x, d->point.y, d->point.z);
+      glVertex3f(d.point.x(), d.point.y(), d.point.z());
       glEnd();
     }
     glPopAttrib();
   }
 
   // draw spheres
-  std::vector<Sphere>::iterator s;
-  for(s = spheres.begin(); s != spheres.end(); ++s)
+  for(const Sphere& s : spheres)
   {
-    glColor4ub(s->color.r, s->color.g, s->color.b, s->color.a);
+    glColor4ub(s.color.r, s.color.g, s.color.b, s.color.a);
     glPushMatrix();
-    glTranslated(s->point.x, s->point.y, s->point.z);
+    glTranslatef(s.point.x(), s.point.y(), s.point.z());
     GLUquadric* q = gluNewQuadric();
-    gluSphere(q, s->radius, 16, 16);
+    gluSphere(q, s.radius, 16, 16);
+    gluDeleteQuadric(q);
+    glPopMatrix();
+  }
+
+  // draw ellypsoids
+  for(const Ellipsoid& e : ellipsoids)
+  {
+    glColor4ub(e.color.r, e.color.g, e.color.b, e.color.a);
+    glPushMatrix();
+    glTranslatef(e.pose.translation.x(), e.pose.translation.y(), e.pose.translation.z());
+    AngleAxisf aa(e.pose.rotation);
+    glRotatef(toDegrees(aa.angle()), aa.axis().x(), aa.axis().y(), aa.axis().z());
+    glScalef(e.radii.x(), e.radii.y(), e.radii.z());
+    GLUquadric* q = gluNewQuadric();
+    gluSphere(q, 1, 16, 16);
     gluDeleteQuadric(q);
     glPopMatrix();
   }
 
   // Draw all quads.
-  std::vector<Quad>::iterator q;
-  for(q = quads.begin(); q != quads.end(); ++q)
+  for(const Quad& q : quads)
   {
-    glColor4ub(q->color.r, q->color.g, q->color.b, q->color.a);
+    glColor4ub(q.color.r, q.color.g, q.color.b, q.color.a);
     glBegin(GL_QUADS);
 
-    const Vector3<>& p1 = q->points[0];
-    const Vector3<>& p2 = q->points[1];
-    const Vector3<>& p3 = q->points[2];
-    const Vector3<>& p4 = q->points[3];
-    Vector3<> u(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
-    Vector3<> v(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
-    Vector3<> n(u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x);
+    const Vector3f& p1 = q.points[0];
+    const Vector3f& p2 = q.points[1];
+    const Vector3f& p3 = q.points[2];
+    const Vector3f& p4 = q.points[3];
+    Vector3f u(p2.x() - p1.x(), p2.y() - p1.y(), p2.z() - p1.z());
+    Vector3f v(p3.x() - p1.x(), p3.y() - p1.y(), p3.z() - p1.z());
+    Vector3f n(u.y() * v.z() - u.z() * v.y(), u.z() * v.x() - u.x() * v.z(), u.x() * v.y() - u.y() * v.x());
     n.normalize();
 
-    glNormal3fv(&n.x);
-    glVertex3fv(&p1.x);
-    glVertex3fv(&p2.x);
-    glVertex3fv(&p3.x);
-    glVertex3fv(&p4.x);
+    glNormal3fv(&n.x());
+    glVertex3fv(&p1.x());
+    glVertex3fv(&p2.x());
+    glVertex3fv(&p3.x());
+    glVertex3fv(&p4.x());
     glEnd();
   }
 
   // draw cylinders
-  std::vector<Cylinder>::iterator c;
-  for(c = cylinders.begin(); c != cylinders.end(); ++c)
+  for(const Cylinder& c : cylinders)
   {
-    glColor4ub(c->color.r, c->color.g, c->color.b, c->color.a);
+    glColor4ub(c.color.r, c.color.g, c.color.b, c.color.a);
 
     glPushMatrix();
-    glTranslated(c->point.x, c->point.y, c->point.z);
-    if(c->rotation.x != 0)
-      glRotated(toDegrees(c->rotation.x), 1, 0, 0);
-    if(c->rotation.y != 0)
-      glRotated(toDegrees(c->rotation.y), 0, 1, 0);
-    if(c->rotation.z != 0)
-      glRotated(toDegrees(c->rotation.z), 0, 0, 1);
-    glTranslated(0, 0, -c->height / 2);
+    glTranslated(c.point.x(), c.point.y(), c.point.z());
+    if(c.rotation.x() != 0)
+      glRotated(toDegrees(c.rotation.x()), 1, 0, 0);
+    if(c.rotation.y() != 0)
+      glRotated(toDegrees(c.rotation.y()), 0, 1, 0);
+    if(c.rotation.z() != 0)
+      glRotated(toDegrees(c.rotation.z()), 0, 0, 1);
+    glTranslated(0, 0, -c.height / 2);
     GLUquadric* q = gluNewQuadric();
-    gluCylinder(q, c->baseRadius, c->topRadius, c->height, 16, 1);
+    gluCylinder(q, c.baseRadius, c.topRadius, c.height, 16, 1);
     glRotated(180, 0, 1, 0);
-    if(c->baseRadius > 0.f)
-      gluDisk(q, 0, c->baseRadius, 16, 1);
+    if(c.baseRadius > 0.f)
+      gluDisk(q, 0, c.baseRadius, 16, 1);
     glRotated(180, 0, 1, 0);
-    glTranslated(0, 0, c->height);
-    if(c->topRadius > 0.f)
-      gluDisk(q, 0, c->topRadius, 16, 1);
+    glTranslated(0, 0, c.height);
+    if(c.topRadius > 0.f)
+      gluDisk(q, 0, c.topRadius, 16, 1);
+    gluDeleteQuadric(q);
+    glPopMatrix();
+  }
+
+  for(const PartDisc& pD : partDiscs)
+  {
+    glColor4ub(pD.color.r, pD.color.g, pD.color.b, pD.color.a);
+
+    glPushMatrix();
+    glTranslated(pD.point.x(), pD.point.y(), pD.point.z());
+    if(pD.rotation.x() != 0)
+      glRotated(toDegrees(pD.rotation.x()), 1, 0, 0);
+    if(pD.rotation.y() != 0)
+      glRotated(toDegrees(pD.rotation.y()), 0, 1, 0);
+    if(pD.rotation.z() != 0)
+      glRotated(toDegrees(pD.rotation.z()), 0, 0, 1);
+
+    GLUquadric* q = gluNewQuadric();
+    gluPartialDisk(q, pD.innerRadius, pD.outerRadius, 16, 10, toDegrees(pD.startAngle), toDegrees(pD.sweeptAngle));
+
     gluDeleteQuadric(q);
     glPopMatrix();
   }
@@ -234,15 +265,14 @@ void DebugDrawing3D::draw2()
     glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    std::vector<Image3D>::iterator i;
-    for(i = images.begin(); i != images.end(); ++i)
+    for(const Image3D& i : images)
     {
       GLuint t;
       glGenTextures(1, &t);
       glBindTexture(GL_TEXTURE_2D, t);
 
       int width, height;
-      char* imageData = copyImage(*i->image, width, height);
+      char* imageData = copyImage(*i.image, width, height);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                    width, height,
                    0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
@@ -252,24 +282,24 @@ void DebugDrawing3D::draw2()
       delete [] imageData;
 
       glPushMatrix();
-      glTranslated(i->point.x, i->point.y, i->point.z);
-      if(i->rotation.x != 0)
-        glRotated(toDegrees(i->rotation.x), 1, 0, 0);
-      if(i->rotation.y != 0)
-        glRotated(toDegrees(i->rotation.y), 0, 1, 0);
-      if(i->rotation.z != 0)
-        glRotated(toDegrees(i->rotation.z), 0, 0, 1);
+      glTranslated(i.point.x(), i.point.y(), i.point.z());
+      if(i.rotation.x() != 0)
+        glRotated(toDegrees(i.rotation.x()), 1, 0, 0);
+      if(i.rotation.y() != 0)
+        glRotated(toDegrees(i.rotation.y()), 0, 1, 0);
+      if(i.rotation.z() != 0)
+        glRotated(toDegrees(i.rotation.z()), 0, 0, 1);
       glBegin(GL_QUADS);
-      float right = (float) i->image->width / width;
-      float top = (float) i->image->height / height;
+      float right = (float) i.image->width / width;
+      float top = (float) i.image->height / height;
       glTexCoord2d(right, top);
-      glVertex3d(0, -i->width / 2, i->height / 2);
+      glVertex3d(0, -i.width / 2, i.height / 2);
       glTexCoord2d(0, top);
-      glVertex3d(0, i->width / 2, i->height / 2);
+      glVertex3d(0, i.width / 2, i.height / 2);
       glTexCoord2d(0, 0);
-      glVertex3d(0, i->width / 2, -i->height / 2);
+      glVertex3d(0, i.width / 2, -i.height / 2);
       glTexCoord2d(right, 0);
-      glVertex3d(0, -i->width / 2, -i->height / 2);
+      glVertex3d(0, -i.width / 2, -i.height / 2);
       glEnd();
       glPopMatrix();
       glDeleteTextures(1, &t);
@@ -290,11 +320,13 @@ void DebugDrawing3D::reset()
   polygons.clear();
   quads.clear();
   spheres.clear();
+  ellipsoids.clear();
   cylinders.clear();
+  partDiscs.clear();
   images.clear();
 }
 
-void DebugDrawing3D::quad(const Vector3<>* points, float width, ColorRGBA color)
+void DebugDrawing3D::quad(const Vector3f* points, float width, ColorRGBA color)
 {
   Quad element;
   element.points[0] = points[0];
@@ -306,22 +338,19 @@ void DebugDrawing3D::quad(const Vector3<>* points, float width, ColorRGBA color)
   quads.push_back(element);
 }
 
-void DebugDrawing3D::line
-(
-  float xStart, float yStart, float zStart,
-  float xEnd,   float yEnd,   float zEnd,
-  float width,   ColorRGBA color
-)
+void DebugDrawing3D::line(float xStart, float yStart, float zStart,
+                          float xEnd,   float yEnd,   float zEnd,
+                          float width,   ColorRGBA color)
 {
   Line element;
-  element.points[0] = Vector3<float>(xStart, yStart, zStart);
-  element.points[1] = Vector3<float>(xEnd,   yEnd,   zEnd);
+  element.points[0] = Vector3f(xStart, yStart, zStart);
+  element.points[1] = Vector3f(xEnd,   yEnd,   zEnd);
   element.color = color;
   element.width = width;
   lines.push_back(element);
 }
 
-void DebugDrawing3D::line(Vector3<> *points, float width, ColorRGBA color)
+void DebugDrawing3D::line(Vector3f* points, float width, ColorRGBA color)
 {
   Line element;
   element.points[0] = points[0];
@@ -331,25 +360,13 @@ void DebugDrawing3D::line(Vector3<> *points, float width, ColorRGBA color)
   lines.push_back(element);
 }
 
-void DebugDrawing3D::line
-(
-  float xStart,
-  float yStart,
-  float zStart,
-  float xEnd,
-  float yEnd,
-  float zEnd
-)
+void DebugDrawing3D::line(float xStart, float yStart, float zStart,
+                          float xEnd, float yEnd, float zEnd)
 {
   line(xStart, yStart, zStart, xEnd, yEnd, zEnd, 1, ColorRGBA(0, 0, 0));
 }
 
-void DebugDrawing3D::polygon
-(
-  const Vector3<>* points,
-  float width,
-  ColorRGBA color
-)
+void DebugDrawing3D::polygon(const Vector3f* points, float width, ColorRGBA color)
 {
   Polygon element;
   for(int i = 0; i < 3; i++)
@@ -359,12 +376,7 @@ void DebugDrawing3D::polygon
   polygons.push_back(element);
 }
 
-void DebugDrawing3D::dot
-(
-  Vector3<> v,
-  float  w,
-  ColorRGBA color
-)
+void DebugDrawing3D::dot(Vector3f v, float w, ColorRGBA color)
 {
   Dot element;
   element.point = v;
@@ -373,12 +385,7 @@ void DebugDrawing3D::dot
   dots.push_back(element);
 }
 
-void DebugDrawing3D::sphere
-(
-  Vector3<> v,
-  float r,
-  ColorRGBA color
-)
+void DebugDrawing3D::sphere(Vector3f v, float r, ColorRGBA color)
 {
   Sphere element;
   element.point = v;
@@ -387,15 +394,18 @@ void DebugDrawing3D::sphere
   spheres.push_back(element);
 }
 
-void DebugDrawing3D::cylinder
-(
-  Vector3<> v,
-  Vector3<> rot,
-  float baseRadius,
-  float topRadius,
-  float h,
-  ColorRGBA color
-)
+void DebugDrawing3D::ellypsoid(const Pose3f& pose, Vector3f radii, ColorRGBA color)
+{
+  Ellipsoid element;
+  element.pose = pose;
+  element.radii = radii;
+  element.color = color;
+  ellipsoids.push_back(element);
+}
+
+void DebugDrawing3D::cylinder(Vector3f v, Vector3f rot,
+                              float baseRadius, float topRadius,
+                              float h, ColorRGBA color)
 {
   Cylinder element;
   element.point = v;
@@ -407,14 +417,23 @@ void DebugDrawing3D::cylinder
   cylinders.push_back(element);
 }
 
-void DebugDrawing3D::image
-(
-  Vector3<> v,
-  Vector3<> rot,
-  float w,
-  float h,
-  Image* i
-)
+void DebugDrawing3D::partDisc(Vector3f v, Vector3f rot, 
+                              float innerRadius, float outerRadius, 
+                              float startAngle, float sweepAngle, 
+                              ColorRGBA color)
+{
+  PartDisc element;
+  element.point = v;
+  element.rotation = rot;
+  element.innerRadius = innerRadius;
+  element.outerRadius = outerRadius;
+  element.startAngle = startAngle;
+  element.sweeptAngle = sweepAngle;
+  element.color = color;
+  partDiscs.push_back(element);
+}
+
+void DebugDrawing3D::image(Vector3f v, Vector3f rot, float w, float h, Image* i)
 {
   Image3D element;
   element.point = v;
@@ -425,179 +444,201 @@ void DebugDrawing3D::image
   images.push_back(element);
 }
 
-bool DebugDrawing3D::addShapeFromQueue
-(
-  InMessage& message,
-  Drawings3D::ShapeType shapeType,
-  char identifier
-)
+bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType, char identifier)
 {
   processIdentifier = identifier;
 
   switch((Drawings3D::ShapeType)shapeType)
   {
-  case Drawings3D::translate:
-  {
-    message.bin >> transX;
-    message.bin >> transY;
-    message.bin >> transZ;
-  }
-  break;
-  case Drawings3D::scale:
-  {
-    message.bin >> scaleX;
-    message.bin >> scaleY;
-    message.bin >> scaleZ;
-  }
-  break;
-  case Drawings3D::rotate:
-  {
-    message.bin >> rotateX;
-    message.bin >> rotateY;
-    message.bin >> rotateZ;
-  }
-  break;
-  case Drawings3D::coordinates:
-  {
-    float width;
-    float length;
-    message.bin >> length;
-    message.bin >> width;
-    this->line(0, 0, 0, length, 0, 0, width, ColorRGBA(255, 0, 0));
-    this->line(0, 0, 0, 0, length, 0, width, ColorRGBA(0, 255, 0));
-    this->line(0, 0, 0, 0, 0, length, width, ColorRGBA(0, 0, 255));
-  }
-  break;
-  case Drawings3D::quad:
-  {
-    Vector3<> points[4];
-    ColorRGBA c;
-    message.bin >> points[0];
-    message.bin >> points[1];
-    message.bin >> points[2];
-    message.bin >> points[3];
-    message.bin >> c;
-    this->quad(points, 1.0f, c);
-  }
-  break;
-  case Drawings3D::polygon:
-  {
-    Vector3<> points[3];
-    ColorRGBA c;
-    message.bin >> points[0];
-    message.bin >> points[1];
-    message.bin >> points[2];
-    message.bin >> c;
-    this->polygon(points, 1.0f, c);
-  }
-  break;
-  case Drawings3D::line:
-  {
-    Vector3<> points[2];
-    float width;
-    ColorRGBA c;
-    message.bin >> points[0];
-    message.bin >> points[1];
-    message.bin >> width;
-    message.bin >> c;
-    this->line(points, width, c);
-  }
-  break;
-  case Drawings3D::cube:
-  {
-    Vector3<> points[8];
-    float width;
-    ColorRGBA c;
-    for(int i = 0; i < 8; i++)
+    case Drawings3D::translate:
     {
-      message.bin >> points[i];
+      message.bin >> transX;
+      message.bin >> transY;
+      message.bin >> transZ;
+      break;
     }
-    message.bin >> width;
-    message.bin >> c;
-    this->line(points[0].x, points[0].y, points[0].z, points[1].x, points[1].y, points[1].z, width, c); //AB
-    this->line(points[0].x, points[0].y, points[0].z, points[2].x, points[2].y, points[2].z, width, c); //AC
-    this->line(points[0].x, points[0].y, points[0].z, points[4].x, points[4].y, points[4].z, width, c); //AE
-    this->line(points[1].x, points[1].y, points[1].z, points[3].x, points[3].y, points[3].z, width, c); //BD
-    this->line(points[1].x, points[1].y, points[1].z, points[5].x, points[5].y, points[5].z, width, c); //BF
-    this->line(points[2].x, points[2].y, points[2].z, points[3].x, points[3].y, points[3].z, width, c); //CD
-    this->line(points[2].x, points[2].y, points[2].z, points[6].x, points[6].y, points[6].z, width, c); //CG
-    this->line(points[3].x, points[3].y, points[3].z, points[7].x, points[7].y, points[7].z, width, c); //DH
-    this->line(points[4].x, points[4].y, points[4].z, points[6].x, points[6].y, points[6].z, width, c); //EG
-    this->line(points[4].x, points[4].y, points[4].z, points[5].x, points[5].y, points[5].z, width, c); //EF
-    this->line(points[5].x, points[5].y, points[5].z, points[7].x, points[7].y, points[7].z, width, c); //FH
-    this->line(points[6].x, points[6].y, points[6].z, points[7].x, points[7].y, points[7].z, width, c); //GH
-  }
-  break;
-  case Drawings3D::dot:
-  {
-    Vector3<> v;
-    float w;
-    ColorRGBA c;
-    bool withLines;
-    message.bin >> v;
-    message.bin >> w;
-    message.bin >> c;
-    message.bin >> withLines;
-    this->dot(v, w, c);
+    case Drawings3D::scale:
+    {
+      message.bin >> scaleX;
+      message.bin >> scaleY;
+      message.bin >> scaleZ;
+      break;
+    }
+    case Drawings3D::rotate:
+    {
+      message.bin >> rotateX;
+      message.bin >> rotateY;
+      message.bin >> rotateZ;
+      break;
+    }
+    case Drawings3D::coordinates:
+    {
+      float width;
+      float length;
+      message.bin >> length;
+      message.bin >> width;
+      this->line(0, 0, 0, length, 0, 0, width, ColorRGBA(255, 0, 0));
+      this->line(0, 0, 0, 0, length, 0, width, ColorRGBA(0, 255, 0));
+      this->line(0, 0, 0, 0, 0, length, width, ColorRGBA(0, 0, 255));
+      break;
+    }
+    case Drawings3D::quad:
+    {
+      Vector3f points[4];
+      ColorRGBA c;
+      message.bin >> points[0];
+      message.bin >> points[1];
+      message.bin >> points[2];
+      message.bin >> points[3];
+      message.bin >> c;
+      this->quad(points, 1.0f, c);
+      break;
+    }
+    case Drawings3D::polygon:
+    {
+      Vector3f points[3];
+      ColorRGBA c;
+      message.bin >> points[0];
+      message.bin >> points[1];
+      message.bin >> points[2];
+      message.bin >> c;
+      this->polygon(points, 1.0f, c);
+      break;
+    }
+    case Drawings3D::line:
+    {
+      Vector3f points[2];
+      float width;
+      ColorRGBA c;
+      message.bin >> points[0];
+      message.bin >> points[1];
+      message.bin >> width;
+      message.bin >> c;
+      this->line(points, width, c);
+      break;
+    }
+    case Drawings3D::cube:
+    {
+      Vector3f points[8];
+      float width;
+      ColorRGBA c;
+      for(int i = 0; i < 8; i++)
+      {
+        message.bin >> points[i];
+      }
+      message.bin >> width;
+      message.bin >> c;
+      this->line(points[0].x(), points[0].y(), points[0].z(), points[1].x(), points[1].y(), points[1].z(), width, c); //AB
+      this->line(points[0].x(), points[0].y(), points[0].z(), points[2].x(), points[2].y(), points[2].z(), width, c); //AC
+      this->line(points[0].x(), points[0].y(), points[0].z(), points[4].x(), points[4].y(), points[4].z(), width, c); //AE
+      this->line(points[1].x(), points[1].y(), points[1].z(), points[3].x(), points[3].y(), points[3].z(), width, c); //BD
+      this->line(points[1].x(), points[1].y(), points[1].z(), points[5].x(), points[5].y(), points[5].z(), width, c); //BF
+      this->line(points[2].x(), points[2].y(), points[2].z(), points[3].x(), points[3].y(), points[3].z(), width, c); //CD
+      this->line(points[2].x(), points[2].y(), points[2].z(), points[6].x(), points[6].y(), points[6].z(), width, c); //CG
+      this->line(points[3].x(), points[3].y(), points[3].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //DH
+      this->line(points[4].x(), points[4].y(), points[4].z(), points[6].x(), points[6].y(), points[6].z(), width, c); //EG
+      this->line(points[4].x(), points[4].y(), points[4].z(), points[5].x(), points[5].y(), points[5].z(), width, c); //EF
+      this->line(points[5].x(), points[5].y(), points[5].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //FH
+      this->line(points[6].x(), points[6].y(), points[6].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //GH
+      break;
+    }
+    case Drawings3D::dot:
+    {
+      Vector3f v;
+      float w;
+      ColorRGBA c;
+      bool withLines;
+      message.bin >> v;
+      message.bin >> w;
+      message.bin >> c;
+      message.bin >> withLines;
+      this->dot(v, w, c);
 
-    if(withLines)
-    {
-      this->line(0,  0,  0,   v.x,  0,  0, 1.0f, c);
-      this->line(0,  0,  0,     0, v.y,  0, 1.0f, c);
-      this->line(0,  0,  0,     0,  0, v.z, 1.0f, c);
-      this->line(v.x,  0,  0,   v.x, v.y,  0, 1.0f, c);
-      this->line(v.x,  0,  0,   v.x,  0, v.z, 1.0f, c);
-      this->line(0, v.y,  0,     0, v.y, v.z, 1.0f, c);
-      this->line(v.x, v.y,  0,     0, v.y,  0, 1.0f, c);
-      this->line(v.x, v.y,  0,   v.x, v.y, v.z, 1.0f, c);
-      this->line(v.x,  0, v.z,   v.x, v.y, v.z, 1.0f, c);
-      this->line(v.x,  0, v.z,     0,  0, v.z, 1.0f, c);
-      this->line(0, v.y, v.z,     0,  0, v.z, 1.0f, c);
-      this->line(0, v.y, v.z,   v.x, v.y, v.z, 1.0f, c);
+      if(withLines)
+      {
+        this->line(0,  0,  0,   v.x(),  0,  0, 1.0f, c);
+        this->line(0,  0,  0,     0, v.y(),  0, 1.0f, c);
+        this->line(0,  0,  0,     0,  0, v.z(), 1.0f, c);
+        this->line(v.x(),  0,  0,   v.x(), v.y(),  0, 1.0f, c);
+        this->line(v.x(),  0,  0,   v.x(),  0, v.z(), 1.0f, c);
+        this->line(0, v.y(),  0,     0, v.y(), v.z(), 1.0f, c);
+        this->line(v.x(), v.y(),  0,     0, v.y(),  0, 1.0f, c);
+        this->line(v.x(), v.y(),  0,   v.x(), v.y(), v.z(), 1.0f, c);
+        this->line(v.x(),  0, v.z(),   v.x(), v.y(), v.z(), 1.0f, c);
+        this->line(v.x(),  0, v.z(),     0,  0, v.z(), 1.0f, c);
+        this->line(0, v.y(), v.z(),     0,  0, v.z(), 1.0f, c);
+        this->line(0, v.y(), v.z(),   v.x(), v.y(), v.z(), 1.0f, c);
+      }
+      break;
     }
-  }
-  break;
-  case Drawings3D::sphere:
-  {
-    Vector3<> v;
-    float r;
-    ColorRGBA c;
-    message.bin >> v;
-    message.bin >> r;
-    message.bin >> c;
-    this->sphere(v, r, c);
-  }
-  break;
-  case Drawings3D::cylinder:
-  {
-    Vector3<> v,
-            rot;
-    float r, r2, h;
-    ColorRGBA c;
-    message.bin >> v;
-    message.bin >> rot;
-    message.bin >> r;
-    message.bin >> r2;
-    message.bin >> h;
-    message.bin >> c;
-    this->cylinder(v, rot, r, r2, h, c);
-  }
-  break;
-  case Drawings3D::image:
-  {
-    Vector3<> v,
-            rot;
-    float w,
-          h;
-    Image* i = new Image;
-    message.bin >> v;
-    message.bin >> rot;
-    message.bin >> w;
-    message.bin >> h;
-    message.bin >> *i;
-    this->image(v, rot, w, h, i);
-  }
-  break;
+    case Drawings3D::sphere:
+    {
+      Vector3f v;
+      float r;
+      ColorRGBA c;
+      message.bin >> v;
+      message.bin >> r;
+      message.bin >> c;
+      this->sphere(v, r, c);
+      break;
+    }
+    case Drawings3D::ellipsoid:
+    {
+      Pose3f p;
+      Vector3f s;
+      ColorRGBA c;
+      message.bin >> p;
+      message.bin >> s;
+      message.bin >> c;
+      this->ellypsoid(p, s, c);
+      break;
+    }
+    case Drawings3D::cylinder:
+    {
+      Vector3f v,
+              rot;
+      float r, r2, h;
+      ColorRGBA c;
+      message.bin >> v;
+      message.bin >> rot;
+      message.bin >> r;
+      message.bin >> r2;
+      message.bin >> h;
+      message.bin >> c;
+      this->cylinder(v, rot, r, r2, h, c);
+      break;
+    }
+    case Drawings3D::partDisc:
+    {
+      Vector3f v,
+        rot;
+      float r, r2, a, a2;
+      ColorRGBA c;
+      message.bin >> v;
+      message.bin >> rot;
+      message.bin >> r;
+      message.bin >> r2;
+      message.bin >> a;
+      message.bin >> a2;
+      message.bin >> c;
+      this->partDisc(v, rot, r, r2, a, a2, c);
+      break;
+    }
+    case Drawings3D::image:
+    {
+      Vector3f v,
+              rot;
+      float w,
+            h;
+      Image* i = new Image;
+      message.bin >> v;
+      message.bin >> rot;
+      message.bin >> w;
+      message.bin >> h;
+      message.bin >> *i;
+      this->image(v, rot, w, h, i);
+      break;
+    }
   }
   return true;
 }
@@ -633,9 +674,9 @@ char* DebugDrawing3D::copyImage(const Image& srcImage, int& width, int& height) 
       g = (yImage - factor2 * vImage - factor4 * uImage) >> 14;
       b = (yImage + factor1 * vImage) >> 14;
 
-      *p++ = (char) (r < 0 ? 0 : (r > 255 ? 255 : r));
-      *p++ = (char) (g < 0 ? 0 : (g > 255 ? 255 : g));
-      *p++ = (char) (b < 0 ? 0 : (b > 255 ? 255 : b));
+      *p++ = (char)(r < 0 ? 0 : (r > 255 ? 255 : r));
+      *p++ = (char)(g < 0 ? 0 : (g > 255 ? 255 : g));
+      *p++ = (char)(b < 0 ? 0 : (b > 255 ? 255 : b));
     }
   }
   return imageData;

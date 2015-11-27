@@ -218,12 +218,14 @@ private:
     surfaceClass        = (1 << 14),
     primitiveGroupClass = (1 << 15),
     verticesClass       = (1 << 16),
-    texCoordsClass      = (1 << 17),
-    intSensorClass      = (1 << 18),
-    extSensorClass      = (1 << 19),
-    materialClass       = (1 << 20),
-    frictionClass       = (1 << 21),
-    lightClass          = (1 << 22),
+    normalsClass        = (1 << 17),
+    texCoordsClass      = (1 << 18),
+    intSensorClass      = (1 << 19),
+    extSensorClass      = (1 << 20),
+    materialClass       = (1 << 21),
+    frictionClass       = (1 << 22),
+    lightClass          = (1 << 23),
+    userInputClass      = (1 << 24),
   };
 
   // element handlers
@@ -258,6 +260,8 @@ private:
   void trianglesAndQuadsText(std::string& text);
   Element* verticesElement();
   void verticesText(std::string& text);
+  Element* normalsElement();
+  void normalsText(std::string& text);
   Element* texCoordsElement();
   void texCoordsText(std::string& text);
   Element* hingeElement();
@@ -276,4 +280,5 @@ private:
   Element* singleDistanceSensorElement();
   Element* approxDistanceSensorElement();
   Element* depthImageSensorElement();
+  Element* userInputElement();
 };

@@ -5,7 +5,8 @@
 
 StatusBar::StatusBar(QWidget* parent) : QStatusBar(parent), toggleViewAct(0)
 {
-  showMessage(tr("Ready"));
+  userMessage = latestMessage = tr("Ready");
+  showMessage(userMessage);
   connect(this, SIGNAL(messageChanged(const QString&)), this, SLOT(messageChanged(const QString&)));
 }
 
@@ -27,34 +28,34 @@ void StatusBar::removeAllLabels()
 
 void StatusBar::removeLabelsFromModule(const SimRobot::Module* module)
 {
-for(QList<RegisteredLabel>::iterator it = registeredLables.begin(); it != registeredLables.end();)
-  if(it->module == module)
-  {
-    removeWidget(it->label->getWidget());
-    delete it->label;
-    it = registeredLables.erase(it);
-  }
-  else
-    ++it;
+  for(QList<RegisteredLabel>::iterator it = registeredLables.begin(); it != registeredLables.end();)
+    if(it->module == module)
+    {
+      removeWidget(it->label->getWidget());
+      delete it->label;
+      it = registeredLables.erase(it);
+    }
+    else
+      ++it;
 }
 
 void StatusBar::setUserMessage(const QString& userMessage)
 {
-  QString currentMessage = this->currentMessage();
-  if(currentMessage.isEmpty() || currentMessage == this->userMessage)
-  {
-    this->userMessage = userMessage;
-    if(!currentMessage.isEmpty() || !userMessage.isEmpty())
-      showMessage(userMessage);
-  }
-  else
-    this->userMessage = userMessage;
+  latestMessage = userMessage;
 }
 
 void StatusBar::update()
 {
   for(QList<RegisteredLabel>::iterator it = registeredLables.begin(), end = registeredLables.end(); it != end; ++it)
     it->label->update();
+
+  QString currentMessage = this->currentMessage();
+  if(currentMessage.isEmpty() || currentMessage == userMessage)
+  {
+    userMessage = latestMessage;
+    if(!currentMessage.isEmpty() || !userMessage.isEmpty())
+      showMessage(userMessage);
+  }
 }
 
 QAction* StatusBar::toggleViewAction()
@@ -86,6 +87,9 @@ void StatusBar::showEvent(QShowEvent* event)
 
 void StatusBar::messageChanged(const QString& message)
 {
-  if(message.isEmpty() && !userMessage.isEmpty())
+  if(message.isEmpty() && (!userMessage.isEmpty() || latestMessage != userMessage))
+  {
+    userMessage = latestMessage;
     showMessage(userMessage);
+  }
 }

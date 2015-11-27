@@ -9,11 +9,11 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2D.h"
+#include "Tools/Math/Pose2f.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(Odometer,
 {,
-  (float)(10000.f) distanceWalked,  /** Total distance walked since start of B-Human software */
-  (Pose2D) odometryOffset, /** Odometry difference since last frame */
+  (float)(10000.f) distanceWalked, /** Total distance walked since start of B-Human software */
+  (Pose2f) odometryOffset, /** Odometry difference since last frame */
 });

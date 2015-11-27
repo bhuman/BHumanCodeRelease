@@ -13,4 +13,9 @@ else
   SUBNET=$WIRED$TEAM.
 fi
 read -p "Connect to $SUBNET" IP
-./login $SUBNET$IP
+REMOTE=$SUBNET$IP
+if [ `ping -t 1 -c 1 $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
+  read -p "$REMOTE not reachable" DUMMY
+  exit 1
+fi
+./login $REMOTE

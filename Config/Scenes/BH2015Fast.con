@@ -1,0 +1,17 @@
+call Includes/Fast
+
+# field views
+vf worldState
+vfd worldState fieldLines
+vfd worldState fieldPolygons
+vfd worldState representation:RobotPose
+
+# views relative to robot
+vfd worldState origin:RobotPose
+vfd worldState representation:BallModel
+vfd worldState representation:MotionRequest
+vfd worldState representation:ObstacleModel:CenterCross
+
+msg off
+
+gc playing

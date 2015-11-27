@@ -6,7 +6,7 @@
 #include <vector>
 
 class Team;
-class Robot;
+struct Robot;
 class QFrame;
 class QAction;
 class RobotView;
@@ -26,7 +26,7 @@ public:
   TeamSelector();
   void addTeam(Team* team);
   /** Deletes delivered team.
-   * Do not use the pointer after a call of removeTeam if it poited to the same
+   * Do not use the pointer after a call of removeTeam if it pointed to the same
    * memory as the pointer in teams.
    */
   void removeTeam(Team* team);
@@ -38,4 +38,5 @@ private slots:
   void selectPlayer();
   void selectNext();
   void selectPrev();
+  void saveTeams();
 };

@@ -1,6 +1,6 @@
 /**
  * @file ColorTable.h
- * The file declares a class that represents the tabularized color calibration.
+ * The file declares a struct that represents the tabularized color calibration.
  * @author: marcel
  */
 
@@ -9,17 +9,15 @@
 #include "Representations/Infrastructure/Image.h"
 #include "ColorCalibration.h"
 
-class ColorTable : public Streamable
+struct ColorTable : public Streamable
 {
-public:
   struct Colors
   {
-    unsigned char colors;
+    unsigned char colors = 0;
 
-    Colors() : colors(0) {}
+    Colors() = default;
     Colors(unsigned char colors) : colors(colors) {}
-    Colors(ColorClasses::Color color)
-    : colors(color == ColorClasses::none ? 0 : (unsigned char) (1 << (color - 1))) {}
+    Colors(ColorClasses::Color color) : colors(color == ColorClasses::none ? 0 : static_cast<unsigned char>(1 << (color - 1))) {}
 
     bool is(ColorClasses::Color color) const
     {
@@ -28,6 +26,10 @@ public:
     }
   };
 
+private:
+  Colors colorTable[32][256][256];
+
+public:
   void fromColorCalibration(const ColorCalibration& colorCalibration, ColorCalibration& prevCalibration);
 
   const Colors& operator[](const Image::Pixel& pixel) const
@@ -36,8 +38,6 @@ public:
   }
 
 private:
-  Colors colorTable[32][256][256];
-
   void update(const ColorCalibration::HSIRanges& ranges, unsigned char color);
   void update(const ColorCalibration::WhiteThresholds& thresholds, unsigned char color);
 

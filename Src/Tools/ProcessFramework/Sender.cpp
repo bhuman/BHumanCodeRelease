@@ -5,10 +5,12 @@
  *
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
+
+#include "Sender.h"
 #include "ProcessFramework.h"
+#include "PlatformProcess.h"
 
 SenderList::SenderList(PlatformProcess* p, const std::string& senderName) :
-  next(0),
   name(senderName), // copy the sender's name. The name of the process is still missing.
   process(p)
 {

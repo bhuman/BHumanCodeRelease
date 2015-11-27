@@ -10,7 +10,7 @@
 MODULE(ThumbnailProvider,
 {,
   REQUIRES(Image),
-  PROVIDES_WITH_OUTPUT(Thumbnail),
+  PROVIDES_WITHOUT_MODIFY(Thumbnail),
   LOADS_PARAMETERS(
   {,
     (unsigned) downScales,

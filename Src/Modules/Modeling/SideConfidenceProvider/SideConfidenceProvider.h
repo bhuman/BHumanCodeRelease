@@ -18,19 +18,16 @@
 #include "Representations/Modeling/OwnSideModel.h"
 #include "Representations/Perception/CameraMatrix.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Modeling/SideConfidence.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/LocalizationTeamBall.h"
-#include "Representations/BehaviorControl/BehaviorControlOutput.h"
 
 MODULE(SideConfidenceProvider,
 {,
   USES(RobotPose),
   USES(LocalizationTeamBall),
-  USES(BehaviorControlOutput),
   REQUIRES(OwnSideModel),
   REQUIRES(Odometer),
   REQUIRES(BallModel),
@@ -41,7 +38,7 @@ MODULE(SideConfidenceProvider,
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(RobotInfo),
-  PROVIDES_WITH_MODIFY_AND_DRAW(SideConfidence),
+  PROVIDES(SideConfidence),
   LOADS_PARAMETERS(
   {,
     (float) standardDeviationBallAngle,    /**< As the name says... */
@@ -77,22 +74,23 @@ private:
   bool lost; /** sideConfidence 0% and lost-sound played */
   enum {BUFFER_SIZE = 12};               /**< Number of ball state observations */
   ENUM(BallModelSideConfidence,
+  {,
     OK,
     MIRROR,
-    UNKNOWN
-  );                                     /**< Discrete states of confidence resulting from comparison of ball models (own vs. others) */
-  
+    UNKNOWN,
+  });                                     /**< Discrete states of confidence resulting from comparison of ball models (own vs. others) */
+
   struct SideConfidenceMeasurement
   {
     BallModelSideConfidence ballConfidence;
     unsigned timeStamp;
   };
-  
+
   RingBuffer<SideConfidenceMeasurement, BUFFER_SIZE> confidenceBuffer; /**< Buffer of last confidences */
   BallModelSideConfidence averageBallConfidence; /**< The average side confidence based on buffered confidences */
   unsigned timeOfLastFall;               /**< Timestamp to see if the robot has fallen down */
   unsigned lastTimeWithoutArmContact;
-  Vector2<> lastBallObservation;         /**< Position (relative to the robot) of the last estimated ball that has actually been observed */
+  Vector2f lastBallObservation = Vector2f::Zero();         /**< Position (relative to the robot) of the last estimated ball that has actually been observed */
   unsigned timeOfLastBallObservation;        /**< Point of time of last observation */
   unsigned timeOfLastTeamBallObservation;    /**< Point of time of last observation of others */
   float maxDistanceToFieldCenterForArmConsideration; /**< Just as the name says ... */
@@ -120,9 +118,9 @@ private:
   /** Combines confidence based on current ball models */
   BallModelSideConfidence computeCurrentBallConfidence();
 
-  float computeAngleWeighting(float measuredAngle, const Vector2<>& modelPosition,
-    const Pose2D& robotPose, float standardDeviation) const;
+  float computeAngleWeighting(float measuredAngle, const Vector2f& modelPosition,
+    const Pose2f& robotPose, float standardDeviation) const;
 
-  float computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2<>& modelPosition,
-    const Pose2D& robotPose, float cameraZ, float standardDeviation) const;
+  float computeDistanceWeighting(float measuredDistanceAsAngle, const Vector2f& modelPosition,
+    const Pose2f& robotPose, float cameraZ, float standardDeviation) const;
 };

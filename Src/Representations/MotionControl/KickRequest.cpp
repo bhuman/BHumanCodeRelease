@@ -1,7 +1,7 @@
 /**
-* @file Representations/MotionControl/KickRequest.cpp
-* @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
-*/
+ * @file Representations/MotionControl/KickRequest.cpp
+ * @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
+ */
 
 #include <cstring>
 

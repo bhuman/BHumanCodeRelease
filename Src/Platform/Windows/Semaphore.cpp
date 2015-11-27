@@ -1,18 +1,20 @@
 /**
-* @file Platform/Windows/Semaphore.cpp
-* Windows implementation of class Semaphore for thread synchronization.
-* @author Colin Graf
-*/
+ * @file Platform/Windows/Semaphore.cpp
+ * Windows implementation of class Semaphore for thread synchronization.
+ * @author Colin Graf
+ */
 
 #include "BHAssert.h"
 #include "Semaphore.h"
 
-#include <climits>
+#define NOMINMAX
 #include <windows.h>
+
+#include <limits>
 
 Semaphore::Semaphore(unsigned int value)
 {
-  VERIFY(handle = CreateSemaphore(NULL, value, LONG_MAX, NULL));
+  VERIFY(handle = CreateSemaphore(nullptr, value, std::numeric_limits<long>::max(), nullptr));
 }
 
 Semaphore::~Semaphore()

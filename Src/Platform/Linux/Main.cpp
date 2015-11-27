@@ -6,18 +6,13 @@
 
 #include <csignal>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <sys/types.h>
 #include <sys/file.h> // flock
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #include "Robot.h"
 #include "NaoBody.h"
-#include "Tools/Global.h"
 #include "Tools/Settings.h"
 #include "libbhuman/bhuman.h"
 
@@ -162,8 +157,8 @@ int main(int argc, char* argv[])
               naoBody.cleanup();
             }
             Assert::logDump(true, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
+            Assert::logDump(false, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
           }
-          Assert::logDump(false, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
 
           // quit here?
           if(normalExit)
@@ -210,7 +205,14 @@ int main(int argc, char* argv[])
       }
       while(!naoBody.init());
     }
-    printf("Hi, I am %s.\n", naoBody.getName());
+    {
+      const std::string headName = SystemCall::getHostName();
+      const std::string bodyName = naoBody.getName();
+      if(headName == bodyName)
+        printf("Hi, I am %s.\n", headName.c_str());
+      else
+        printf("Hi, I am %s (using %ss Body).\n", headName.c_str(), bodyName.c_str());
+    }
 
     // load first settings instance
     Settings settings;

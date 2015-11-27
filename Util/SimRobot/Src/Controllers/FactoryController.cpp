@@ -15,6 +15,7 @@
  * @author <A href="mailto:Tim.Laue@dfki.de">Tim Laue</A>
  * @author Kai Spiess
  */
+#define _USE_MATH_DEFINES // for C++
 
 #include <SimRobotCore2.h>
 #include <QString>

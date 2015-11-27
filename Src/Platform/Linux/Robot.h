@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Tools/ProcessFramework/ProcessFramework.h"
-#include "Platform/SystemCall.h"
 
 /**
 * The class implements a robot as a list of processes.

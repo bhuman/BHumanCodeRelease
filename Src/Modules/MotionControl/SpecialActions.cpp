@@ -1,27 +1,28 @@
 /**
-* @file SpecialActions.cpp
-* This file implements a module that creates the motions of special actions.
-* @author <A href="mailto:dueffert@informatik.hu-berlin.de">Uwe Düffert</A>
-* @author Martin Lötzsch
-* @author Max Risler
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-*/
+ * @file SpecialActions.cpp
+ * This file implements a module that creates the motions of special actions.
+ * @author <A href="mailto:dueffert@informatik.hu-berlin.de">Uwe Düffert</A>
+ * @author Martin Lötzsch
+ * @author Max Risler
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ */
 
 #include "SpecialActions.h"
-#include "Platform/BHAssert.h"
-#include "Tools/Streams/InStreams.h"
-#include "Tools/Math/Random.h"
+#include "Tools/Motion/MofCompiler.h"
 
-PROCESS_WIDE_STORAGE(SpecialActions) SpecialActions::theInstance = 0;
+MAKE_MODULE(SpecialActions, motionControl)
 
-void SpecialActions::MotionNetData::load(In& stream)
+PROCESS_LOCAL SpecialActions* SpecialActions::theInstance = 0;
+
+void SpecialActions::MotionNetData::load(std::vector<float>& motionData)
 {
+  int dataCounter = 0;
+
   for(int i = 0; i < SpecialActionRequest::numOfSpecialActionIDs; ++i)
-    stream >> label_extern_start[i];
+    label_extern_start[i] = static_cast<short>(motionData[dataCounter++]);
   label_extern_start[SpecialActionRequest::numOfSpecialActionIDs] = 0;
 
-  int numberOfNodes;
-  stream >> numberOfNodes;
+  int numberOfNodes = static_cast<int>(motionData[dataCounter++]);
 
   if(nodeArray)
     delete[] nodeArray;
@@ -30,45 +31,47 @@ void SpecialActions::MotionNetData::load(In& stream)
 
   for(int i = 0; i < numberOfNodes; ++i)
   {
-    short s;
-    stream >> s;
+    short s = static_cast<short>(motionData[dataCounter++]);
 
     switch(s)
     {
-    case 2:
-      nodeArray[i].d[0] = (short) MotionNetNode::typeTransition;
-      stream >> nodeArray[i].d[1] >> nodeArray[i].d[JointData::numOfJoints + 3];
-      break;
-    case 1:
-      nodeArray[i].d[0] = (short) MotionNetNode::typeConditionalTransition;
-      stream >> nodeArray[i].d[1] >> nodeArray[i].d[2] >> nodeArray[i].d[JointData::numOfJoints + 3];
-      break;
-    case 4:
-      nodeArray[i].d[0] = (short) MotionNetNode::typeHardness;
-      for(int j = 1; j < JointData::numOfJoints + 3; j++)
-        stream >> nodeArray[i].d[j];
-      break;
-    case 3:
-      nodeArray[i].d[0] = (short) MotionNetNode::typeData;
-      for(int j = 1; j < JointData::numOfJoints + 1; ++j)
-      {
-        stream >> nodeArray[i].d[j];
-        if(nodeArray[i].d[j] != JointData::off    &&
-           nodeArray[i].d[j] != JointData::ignore)
-          nodeArray[i].d[j] = fromDegrees(nodeArray[i].d[j]);
-      }
-      for(int k = JointData::numOfJoints + 1; k < JointData::numOfJoints + 4; ++k)
-        stream >> nodeArray[i].d[k];
-      break;
+      case 2:
+        nodeArray[i].d[0] = static_cast<short>(MotionNetNode::typeTransition);
+        nodeArray[i].d[1] = motionData[dataCounter++];
+        nodeArray[i].d[Joints::numOfJoints + 3] = motionData[dataCounter++];
+        break;
+      case 1:
+        nodeArray[i].d[0] = static_cast<short>(MotionNetNode::typeConditionalTransition);
+        nodeArray[i].d[1] = motionData[dataCounter++];
+        nodeArray[i].d[2] = motionData[dataCounter++];
+        nodeArray[i].d[Joints::numOfJoints + 3] = motionData[dataCounter++];
+        break;
+      case 4:
+        nodeArray[i].d[0] = static_cast<short>(MotionNetNode::typeStiffness);
+        for(int j = 1; j < Joints::numOfJoints + 3; j++)
+          nodeArray[i].d[j] = motionData[dataCounter++];
+        break;
+      case 3:
+        nodeArray[i].d[0] = static_cast<short>(MotionNetNode::typeData);
+        for(int j = 1; j < Joints::numOfJoints + 1; ++j)
+        {
+          nodeArray[i].d[j] = motionData[dataCounter++];
+          if(nodeArray[i].d[j] != JointAngles::off    &&
+             nodeArray[i].d[j] != JointAngles::ignore)
+            nodeArray[i].d[j] = Angle::fromDegrees(nodeArray[i].d[j]);
+        }
+        for(int k = Joints::numOfJoints + 1; k < Joints::numOfJoints + 4; ++k)
+          nodeArray[i].d[k] = motionData[dataCounter++];
+        break;
     }
   }
 }
 
 SpecialActions::SpecialActions() :
   wasEndOfSpecialAction(false),
-//hardnessInterpolationStart(0),
-  hardnessInterpolationCounter(0),
-  hardnessInterpolationLength(0),
+  //stiffnessInterpolationStart(0),
+  stiffnessInterpolationCounter(0),
+  stiffnessInterpolationLength(0),
   wasActive(false),
   dataRepetitionCounter(0),
   lastSpecialAction(SpecialActionRequest::numOfSpecialActionIDs),
@@ -76,13 +79,17 @@ SpecialActions::SpecialActions() :
 {
   theInstance = this;
 
-  InConfigFile file("specialActions.dat");
-  if(!file.exists() || file.eof())
-  {
-    OUTPUT(idText, text, "SpecialActions : Error, 'specialActions.dat' not found.");
-  }
+  std::vector<float> motionData;
+  char errorBuffer[10000];
+  MofCompiler* mofCompiler = new MofCompiler;
+  if(!mofCompiler->compileMofs(errorBuffer, sizeof(errorBuffer), motionData))
+    OUTPUT_TEXT("Error while parsing mof files:");
   else
-    motionNetData.load(file);
+    motionNetData.load(motionData);
+  delete mofCompiler;
+
+  if(*errorBuffer)
+    OUTPUT_TEXT("  " << errorBuffer);
 
   // create an uninitialised motion request to set startup motion
   currentNode = motionNetData.label_extern_start[SpecialActionRequest().specialAction];
@@ -91,7 +98,7 @@ SpecialActions::SpecialActions() :
   InMapFile cm("specialActions.cfg");
   if(!cm.exists())
   {
-    OUTPUT(idText, text, "SpecialActions : Error, 'specialActions.cfg' not found.");
+    OUTPUT_ERROR("'specialActions.cfg' not found.");
   }
   else
   {
@@ -107,8 +114,8 @@ SpecialActions::SpecialActions() :
         {
           // convert from mm/seconds to mm/tick
           float motionCycleTime = theFrameInfo.cycleTime;
-          infoTable[it->type].odometryOffset.translation.x *= motionCycleTime;
-          infoTable[it->type].odometryOffset.translation.y *= motionCycleTime;
+          infoTable[it->type].odometryOffset.translation.x() *= motionCycleTime;
+          infoTable[it->type].odometryOffset.translation.y() *= motionCycleTime;
           // convert from rad/seconds to rad/tick
           infoTable[it->type].odometryOffset.rotation *= motionCycleTime;
         }
@@ -120,36 +127,36 @@ SpecialActions::SpecialActions() :
 bool SpecialActions::getNextData(const SpecialActionRequest& specialActionRequest,
                                  SpecialActionsOutput& specialActionsOutput)
 {
-  while((MotionNetNode::NodeType)short(motionNetData.nodeArray[currentNode].d[0]) != MotionNetNode::typeData)
+  while(static_cast<MotionNetNode::NodeType>(short(motionNetData.nodeArray[currentNode].d[0])) != MotionNetNode::typeData)
   {
-    switch((MotionNetNode::NodeType)short(motionNetData.nodeArray[currentNode].d[0]))
+    switch(static_cast<MotionNetNode::NodeType>(short(motionNetData.nodeArray[currentNode].d[0])))
     {
-    case MotionNetNode::typeHardness:
-      lastHardnessRequest = specialActionsOutput.jointHardness;//currentHardnessRequest;
-      motionNetData.nodeArray[currentNode].toHardnessRequest(currentHardnessRequest, hardnessInterpolationLength);
-      hardnessInterpolationCounter = hardnessInterpolationLength;
-      currentNode++;
-      break;
-    case MotionNetNode::typeConditionalTransition:
-      if(motionNetData.nodeArray[currentNode].d[2] != (short) specialActionRequest.specialAction)
-      {
+      case MotionNetNode::typeStiffness:
+        lastStiffnessRequest = specialActionsOutput.stiffnessData;//currentStiffnessRequest;
+        motionNetData.nodeArray[currentNode].toStiffnessRequest(currentStiffnessRequest, stiffnessInterpolationLength);
+        stiffnessInterpolationCounter = stiffnessInterpolationLength;
         currentNode++;
         break;
-      }
-      //no break here: if condition is true, continue with transition!
-    case MotionNetNode::typeTransition:
-      // follow transition
-      if(currentNode == 0)  //we come from extern
-        currentNode = motionNetData.label_extern_start[(short) specialActionRequest.specialAction];
-      else
-        currentNode = short(motionNetData.nodeArray[currentNode].d[1]);
-      mirror = specialActionRequest.mirror;
-      // leave if transition to external motion
-      if(currentNode == 0)
-        return false;
-      break;
-    case MotionNetNode::typeData:
-      break;
+      case MotionNetNode::typeConditionalTransition:
+        if(motionNetData.nodeArray[currentNode].d[2] != static_cast<short>(specialActionRequest.specialAction))
+        {
+          currentNode++;
+          break;
+        }
+        //no break here: if condition is true, continue with transition!
+      case MotionNetNode::typeTransition:
+        // follow transition
+        if(currentNode == 0)  //we come from extern
+          currentNode = motionNetData.label_extern_start[static_cast<short>(specialActionRequest.specialAction)];
+        else
+          currentNode = static_cast<short>(motionNetData.nodeArray[currentNode].d[1]);
+        mirror = specialActionRequest.mirror;
+        // leave if transition to external motion
+        if(currentNode == 0)
+          return false;
+        break;
+      case MotionNetNode::typeData:
+        break;
     }
   }
 
@@ -177,24 +184,24 @@ void SpecialActions::calculateJointRequest(JointRequest& jointRequest)
   //joint angles
   if(interpolationMode)
   {
-    ratio = dataRepetitionCounter / (float) dataRepetitionLength;
-    for(int i = 0; i < JointData::numOfJoints; ++i)
+    ratio = dataRepetitionCounter / static_cast<float>(dataRepetitionLength);
+    for(int i = 0; i < Joints::numOfJoints; ++i)
     {
       f = lastRequest.angles[i];
       if(!mirror)
         t = currentRequest.angles[i];
       else
-        t = currentRequest.mirror((JointData::Joint)i);
-      // if fromAngle is off or ignore use JointData for further calculation
-      if(f == JointData::off || f == JointData::ignore)
-        f = theFilteredJointData.angles[i];
+        t = currentRequest.mirror(static_cast<Joints::Joint>(i));
+      // if fromAngle is off or ignore use JointAngles for further calculation
+      if(f == JointAngles::off || f == JointAngles::ignore)
+        f = theJointAngles.angles[i];
 
       // if toAngle is off or ignore -> turn joint off/ignore
-      if(t == JointData::off || t == JointData::ignore)
+      if(t == JointAngles::off || t == JointAngles::ignore)
         jointRequest.angles[i] = t;
       //interpolate
       else
-        jointRequest.angles[i] = (float)(t + (f - t) * ratio);
+        jointRequest.angles[i] = static_cast<float>(t + (f - t) * ratio);
     }
   }
   else
@@ -205,34 +212,34 @@ void SpecialActions::calculateJointRequest(JointRequest& jointRequest)
       jointRequest.mirror(currentRequest);
   }
 
-  //hardness stuff
-  if(hardnessInterpolationCounter <= 0)
+  //stiffness stuff
+  if(stiffnessInterpolationCounter <= 0)
   {
     if(!mirror)
-      jointRequest.jointHardness = currentHardnessRequest;
+      jointRequest.stiffnessData = currentStiffnessRequest;
     else
-      jointRequest.jointHardness.mirror(currentHardnessRequest);
+      jointRequest.stiffnessData.mirror(currentStiffnessRequest);
   }
   else
   {
-    ratio = ((float)hardnessInterpolationCounter) / hardnessInterpolationLength;
+    ratio = static_cast<float>(stiffnessInterpolationCounter) / stiffnessInterpolationLength;
     int f, t;
-    for(int i = 0; i < JointData::numOfJoints; i++)
+    for(int i = 0; i < Joints::numOfJoints; i++)
     {
-      f = lastHardnessRequest.hardness[i];
+      f = lastStiffnessRequest.stiffnesses[i];
       if(!mirror)
-        t = currentHardnessRequest.hardness[i];
+        t = currentStiffnessRequest.stiffnesses[i];
       else
-        t = currentHardnessRequest.mirror((JointData::Joint)i);
+        t = currentStiffnessRequest.mirror(static_cast<Joints::Joint>(i));
       if(t == f)
-        jointRequest.jointHardness.hardness[i] = t;
+        jointRequest.stiffnessData.stiffnesses[i] = t;
       else
       {
-        if(f == HardnessData::useDefault)
-          f = theHardnessSettings.hardness[i];
-        if(t == HardnessData::useDefault)
-          t = mirror ? theHardnessSettings.mirror((JointData::Joint)i) : theHardnessSettings.hardness[i];
-        jointRequest.jointHardness.hardness[i] = int(float(t) + float(f - t) * ratio);
+        if(f == StiffnessData::useDefault)
+          f = theStiffnessSettings.stiffnesses[i];
+        if(t == StiffnessData::useDefault)
+          t = mirror ? theStiffnessSettings.mirror(static_cast<Joints::Joint>(i)) : theStiffnessSettings.stiffnesses[i];
+        jointRequest.stiffnessData.stiffnesses[i] = int(float(t) + float(f - t) * ratio);
       }
     }
   }
@@ -240,6 +247,13 @@ void SpecialActions::calculateJointRequest(JointRequest& jointRequest)
 
 void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
 {
+  if(!motionNetData.nodeArray)
+  {
+    specialActionsOutput.angles.fill(0);
+    specialActionsOutput.stiffnessData.stiffnesses.fill(0);
+    return;
+  }
+
   float speedFactor = 1.0f;
   MODIFY("parameters:SpecialActions:speedFactor", speedFactor);
   if(theMotionSelection.specialActionMode != MotionSelection::deactive)
@@ -251,21 +265,21 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
       {
         //entered from external motion
         currentNode = 0;
-        for(int i = 0; i < JointData::numOfJoints; ++i)
-          lastRequest.angles[i] = theFilteredJointData.angles[i];
+        for(int i = 0; i < Joints::numOfJoints; ++i)
+          lastRequest.angles[i] = theJointAngles.angles[i];
         lastSpecialAction = SpecialActionRequest::numOfSpecialActionIDs;
       }
 
       // this is need when a special actions gets executed directly after another without
-      // switching to a different motion for interpolating the hardness
+      // switching to a different motion for interpolating the stiffness
       if(wasEndOfSpecialAction)
       {
-        specialActionsOutput.jointHardness.resetToDefault();
+        specialActionsOutput.stiffnessData.resetToDefault();
         if(!mirror)
-          lastHardnessRequest = currentHardnessRequest;
+          lastStiffnessRequest = currentStiffnessRequest;
         else
-          lastHardnessRequest.mirror(currentHardnessRequest);
-        currentHardnessRequest.resetToDefault();
+          lastStiffnessRequest.mirror(currentStiffnessRequest);
+        currentStiffnessRequest.resetToDefault();
       }
       wasEndOfSpecialAction = false;
       // search next data, leave on transition to external motion
@@ -273,14 +287,14 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
       {
         wasActive = true;
         wasEndOfSpecialAction = true;
-        specialActionsOutput.odometryOffset = Pose2D();
+        specialActionsOutput.odometryOffset = Pose2f();
         return;
       }
     }
     else
     {
       dataRepetitionCounter -= int(theFrameInfo.cycleTime * 1000 * speedFactor);
-      hardnessInterpolationCounter -= int(theFrameInfo.cycleTime * 1000 * speedFactor);
+      stiffnessInterpolationCounter -= int(theFrameInfo.cycleTime * 1000 * speedFactor);
     }
 
     //set current joint values
@@ -289,11 +303,11 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
     //odometry update
     if(currentInfo.type == SpecialActionInfo::homogeneous || currentInfo.type == SpecialActionInfo::once)
       if(mirror)
-        specialActionsOutput.odometryOffset = Pose2D(-currentInfo.odometryOffset.rotation, currentInfo.odometryOffset.translation.x, -currentInfo.odometryOffset.translation.y);
+        specialActionsOutput.odometryOffset = Pose2f(-currentInfo.odometryOffset.rotation, currentInfo.odometryOffset.translation.x(), -currentInfo.odometryOffset.translation.y());
       else
         specialActionsOutput.odometryOffset = currentInfo.odometryOffset;
     else
-      specialActionsOutput.odometryOffset = Pose2D();
+      specialActionsOutput.odometryOffset = Pose2f();
     if(currentInfo.type == SpecialActionInfo::once)
       currentInfo.type = SpecialActionInfo::none;
 
@@ -307,11 +321,11 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
     }
     specialActionsOutput.isLeavingPossible = false;
     if(deShakeMode)
-      for(int i = JointData::LShoulderPitch; i <= JointData::RElbowRoll; ++i)
+      for(int i = Joints::lShoulderPitch; i <= Joints::rElbowRoll; ++i)
         if(randomFloat() < 0.25)
-          specialActionsOutput.angles[i] = JointData::off;
+          specialActionsOutput.angles[i] = JointAngles::off;
   }
-  wasActive = theMotionSelection.specialActionMode == MotionSelection::active;
+  wasActive = theMotionSelection.specialActionMode != MotionSelection::deactive;
 }
 
 bool SpecialActions::handleMessage(InMessage& message)
@@ -323,7 +337,14 @@ bool SpecialActions::handleMessage2(InMessage& message)
 {
   if(message.getMessageID() == idMotionNet)
   {
-    motionNetData.load(message.config);
+    std::vector<float> motionData;
+    float f;
+    while(!message.bin.eof())
+    {
+      message.bin >> f;
+      motionData.push_back(f);
+    }
+    motionNetData.load(motionData);
     wasActive = false;
     dataRepetitionCounter = 0;
     return true;
@@ -331,5 +352,3 @@ bool SpecialActions::handleMessage2(InMessage& message)
   else
     return false;
 }
-
-MAKE_MODULE(SpecialActions, Motion Control)

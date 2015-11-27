@@ -85,6 +85,7 @@ void PropertyManager::initTypes()
   theDescriptors[UShortDescriptor().getSupportedTypeId()] = new UShortDescriptor();
   theDescriptors[FloatDescriptor().getSupportedTypeId()] = new FloatDescriptor();
   theDescriptors[ShortDescriptor().getSupportedTypeId()] = new ShortDescriptor();
+  theDescriptors[AngleTypeDescriptor().getSupportedTypeId()] = new AngleTypeDescriptor();
 }
 
 void PropertyManager::setValue(QtProperty* pProperty, const QVariant& val)

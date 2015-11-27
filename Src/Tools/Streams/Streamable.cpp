@@ -5,18 +5,19 @@
 #endif
 
 #include "Streamable.h"
-#include "Platform/BHAssert.h"
 #include "Tools/Streams/StreamHandler.h"
 #include "Tools/Global.h"
 
+#include <typeinfo>
+
 void Streamable::streamOut(Out& out) const
 {
-  const_cast<Streamable*>(this)->serialize(NULL, &out);
+  const_cast<Streamable*>(this)->serialize(nullptr, &out);
 }
 
 void Streamable::streamIn(In& in)
 {
-  serialize(&in, NULL);
+  serialize(&in, nullptr);
 }
 
 In& operator>>(In& in, Streamable& streamable)
@@ -61,14 +62,21 @@ namespace Streaming
   std::string demangle(const char* name)
   {
 #ifdef WINDOWS
-    return name;
+    if(!strncmp(name, "struct ", 7))
+      return name + 7;
+    else if(!strncmp(name, "class ", 6))
+      return name + 6;
+    else
+      return name;
 #else
     char realName[1000]; // This should be big enough, so realloc is never called.
     int status;
     size_t length = sizeof(realName);
     abi::__cxa_demangle(name, realName, &length, &status);
-    ASSERT(!status);
-    return realName;
+    if(!status)
+      return realName;
+    else
+      return "UNKNOWN";
 #endif
   }
 

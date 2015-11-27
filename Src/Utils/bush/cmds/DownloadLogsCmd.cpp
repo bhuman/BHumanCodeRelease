@@ -65,7 +65,7 @@ bool DownloadLogsCmd::DownloadLogsTask::execute()
   args.push_back("-d"); //delete files after download.
 
   args.push_back(fromString(robot->name));
-  args.push_back(fromString(robot->getBestIP()));
+  args.push_back(fromString(robot->getBestIP(context())));
 
   ProcessRunner r(context(), command, args);
   r.run();

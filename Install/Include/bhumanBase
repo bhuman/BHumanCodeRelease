@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [ -z "${bhDir:-""}" ]; then
   echo "This script is only useful when included into other scripts"
   exit 125
@@ -10,7 +9,6 @@ export fileDir="${baseDir}/Files/"
 
 export configDir="${bhDir}/Config/"
 export makeDir="${bhDir}/Make/"
-
 
 stdout="/dev/null"
 stderr="/dev/null"
@@ -25,13 +23,10 @@ if [ "${verbosity}" -ge 6 ]; then
 fi
 
 if [[ $(uname) == *CYGWIN* ]]; then
-  export sshpass="${bhDir}/Util/Buildchain/Win32/bin/sshpass"
   export pingoptions="-w 1 -n 1"
 elif [ $(uname) == "Darwin" ]; then
-  export sshpass="${bhDir}/Util/Buildchain/MacOS/bin/sshpass"
   export pingoptions="-t 1 -c 1"
 else
-  export sshpass=sshpass
   export pingoptions="-w 1 -c 1"
 fi
 
@@ -43,14 +38,12 @@ debug() {
   echo "$@"
 }
 
-
 message() {
   if [ ${verbosity} -lt 4 ]; then
     return
   fi
   echo "$@"
 }
-
 
 warning() {
   if [ ${verbosity} -lt 3 ]; then
@@ -59,7 +52,6 @@ warning() {
   echo -n "warning: "
   echo "$@"
 }                                                                                                                                                                     
-
 
 error() {
   echo -n "error  : "
@@ -71,7 +63,6 @@ fatal() {
   echo "$@"
   exit 1
 }
-
 
 # checkApp
 # return if $1 is found, else calls fatal

@@ -2,14 +2,15 @@
 #downloads all log files from the robot
 #set -x
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+scriptPath=$(echo ${0} | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 basePath=$(dirname ${scriptPath})
 currPath=$(pwd)
 
 usage()
 {
-  echo "usage: downloadLogs [-d] <robot name> <ip>"
-  echo " -d  - Delete log files after download."
+  echo "usage: downloadLogs [-d | --just-delete] <robot name> <ip>"
+  echo " -d            - Delete log files after download."
+  echo " --just-delete - Just delete log files."
   echo "  examples:"
   echo "    ./downloadLogs Leonard 192.168.2.28"
   echo "    ./downloadLogs -d Leonard 192.168.2.28"
@@ -18,8 +19,8 @@ usage()
 
 #Variables
 logpath="/home/nao/logs/"
-keyFile=$basePath/../../Config/Keys/id_rsa_nao
-sshoptions="-i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
+keyFile="${basePath}/../../Config/Keys/id_rsa_nao"
+sshoptions="-c arcfour -i ${keyFile} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 chmod 400 $keyFile
 
@@ -30,37 +31,49 @@ fi
 
 if [ "$1" = "-d" ]
 then
+    download=true
+    delete=true
+    name=$2
+    ip=$3
+elif [ "$1" = "--just-delete" ]
+then
+    download=false
     delete=true
     name=$2
     ip=$3
 else
+    download=true
     delete=false
     name=$1
     ip=$2
 fi
 
-localLogpath="$basePath/../../Config/Logs/$name/"
-
-#check if log file dir  exists
-if [ ! -d "$basePath/../../Config/Logs/$name" ]; then
-    mkdir -p $basePath/../../Config/Logs/$name
-fi
-
-#check if log dir exist on the remote robot
-ssh $sshoptions nao@$ip "test -d $logpath"
-logPathExists=$?
-if [ "$logPathExists" -ne 0 ]
+if $download
 then
-    echo "Logfile directory does not exist on robot."
-    exit 1
+  localLogpath="${basePath}/../../Config/Logs/$name/"
+
+  #check if log file dir exists
+  if [ ! -d "${basePath}/../../Config/Logs/$name" ]; then
+      mkdir -p ${basePath}/../../Config/Logs/$name
+  fi
+
+  #check if log dir exist on the remote robot
+  ssh $sshoptions nao@$ip "test -d $logpath"
+  logPathExists=$?
+  if [ "$logPathExists" -ne 0 ]
+  then
+      echo "Logfile directory does not exist on robot."
+      exit 1
+  fi
+
+  #check if log directory is not empty
+  LOGS=`ssh $sshoptions nao@$ip "ls $logpath | grep .log"`
+  if [ -z "$LOGS" ]; then
+      echo "No log files on robot."
+      exit 1
+  fi
 fi
 
-#check if log directory is not empty
-LOGS=`ssh $sshoptions nao@$ip "ls $logpath | grep .log"`
-if [ -z "$LOGS" ]; then
-    echo "No log files on robot."
-    exit 1
-fi
 PROCESSES=`ssh $sshoptions nao@$ip "pgrep bhuman"`
 if [ ! -z "$PROCESSES" ]; then
   RESTART=1
@@ -68,23 +81,33 @@ if [ ! -z "$PROCESSES" ]; then
   ssh $sshoptions nao@$ip "bhumand stop > /dev/null"
 fi
 
-#download all log files
-echo "Downloading log files..."
-#-p = preserve original date and time
-scp -C $sshoptions -p nao@$ip:$logpath*.log $localLogpath
-
-scpResult=$?
-if [ $scpResult -ne 0 ]
+if $download
 then
-   echo "scp failed!"
-   exit 1
+  #download all log files
+  echo "Downloading log files..."
+  #-p = preserve original date and time
+  scp $sshoptions -p nao@$ip:$logpath*.log $localLogpath
+  scpResult=$?
+  if [ $scpResult -ne 0 ]
+  then
+     echo "scp failed!"
+     exit 1
+  fi
+  echo "Downloading bhumand.log"
+  scp $sshoptions -p nao@$ip:/tmp/bhumand.log $localLogpath
+  scpResult=$?
+  if [ $scpResult -ne 0 ]
+  then
+     echo "scp failed!"
+     exit 1
+  fi
 fi
 
 if $delete
 then
     #remove log files from robot
     echo "Deleting log files from robot"
-    ssh $sshoptions nao@$ip "rm $logpath*"
+    ssh $sshoptions nao@$ip "rm -f $logpath*"
 fi
 
 if [ ! -z $RESTART ]; then

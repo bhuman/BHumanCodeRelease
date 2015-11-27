@@ -24,6 +24,14 @@ void ComplexAppearance::Vertices::addParent(Element& element)
   complexAppearance->vertices = this;
 }
 
+void ComplexAppearance::Normals::addParent(Element& element)
+{
+  ComplexAppearance* complexAppearance = dynamic_cast<ComplexAppearance*>(&element);
+  ASSERT(!complexAppearance->normals);
+  complexAppearance->normals = this;
+  complexAppearance->normalsDefined = true;
+}
+
 void ComplexAppearance::TexCoords::addParent(Element& element)
 {
   ComplexAppearance* complexAppearance = dynamic_cast<ComplexAppearance*>(&element);
@@ -38,11 +46,12 @@ void ComplexAppearance::createGraphics()
   if(initializedContexts == 0)
   {
     size_t verticesSize = vertices->vertices.size();
-    if(verticesSize > 0)
+    if(verticesSize > 0 && !normalsDefined)
     {
       const Vertex* vertexLibrary = &vertices->vertices[0];
-      normals.resize(verticesSize);
-      Normal* vertexNormals = &normals[0];
+      normals = new Normals();
+      normals->normals.resize(verticesSize);
+      Normal* vertexNormals = &normals->normals[0];
 
       for(std::list<PrimitiveGroup*>::const_iterator iter = primitiveGroups.begin(), end = primitiveGroups.end(); iter != end; ++iter)
       {
@@ -118,7 +127,7 @@ void ComplexAppearance::assembleAppearances() const
     surface->set(!texCoords);
 
     const Vertex* vertexLibrary = &vertices->vertices[0];
-    const Normal* vertexNormals = &normals[0];
+    const Normal* vertexNormals = &normals->normals[0];
 
     for(std::list<PrimitiveGroup*>::const_iterator iter = primitiveGroups.begin(), end = primitiveGroups.end(); iter != end; ++iter)
     {
@@ -129,32 +138,19 @@ void ComplexAppearance::assembleAppearances() const
         const unsigned int i = *iter;
         if(texCoords && i < texCoords->coords.size())
           glTexCoord2fv(&texCoords->coords[i].x);
-        glNormal3fv(&vertexNormals[i].x);
+        if(normalsDefined)
+        {
+          if(++iter != end)
+            glNormal3fv(&vertexNormals[*iter].x);
+          else
+            break;
+        }
+        else
+          glNormal3fv(&vertexNormals[i].x);
         glVertex3fv(&vertexLibrary[i].x);
       }
       glEnd();
     }
-
-    /*
-    glBegin(GL_LINES);
-    glColor3f(0.f, 0.f, 1.f);
-    for(std::list<PrimitiveGroup*>::const_iterator iter = primitiveGroups.begin(), end = primitiveGroups.end(); iter != end; ++iter)
-    {
-      const PrimitiveGroup& primitiveGroup = *(*iter);
-      glBegin(primitiveGroup.mode);
-      for(std::list<unsigned int>::const_iterator iter = primitiveGroup.vertices.begin(), end = primitiveGroup.vertices.end(); iter != end; ++iter)
-      {
-        const unsigned int i = *iter;
-        glVertex3fv(&vertexLibrary[i].x);
-        Vertex b = vertexLibrary[i];
-        b.x += vertexNormals[i].x * 0.01f;
-        b.y += vertexNormals[i].y * 0.01f;
-        b.z += vertexNormals[i].z * 0.01f;
-        glVertex3fv(&b.x);
-      }
-    }
-    glEnd();
-    */
 
     surface->unset(!texCoords);
   }

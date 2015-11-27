@@ -9,11 +9,11 @@
 
 #include "OdometerProvider.h"
 
-MAKE_MODULE(OdometerProvider, Modeling)
+MAKE_MODULE(OdometerProvider, modeling)
 
 void OdometerProvider::update(Odometer& odometer)
 {
   odometer.odometryOffset = theOdometryData - lastOdometryData;
-  odometer.distanceWalked += odometer.odometryOffset.translation.abs();
+  odometer.distanceWalked += odometer.odometryOffset.translation.norm();
   lastOdometryData = theOdometryData;
 }

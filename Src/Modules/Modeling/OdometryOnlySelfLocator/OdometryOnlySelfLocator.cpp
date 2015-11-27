@@ -11,14 +11,14 @@
 
 void OdometryOnlySelfLocator::update(RobotPose& robotPose)
 {
-  Pose2D offset = theOdometryData - referenceOdometry;
+  Pose2f offset = theOdometryData - referenceOdometry;
   robotPose = base + offset;
 
   MODIFY("module:OdometryOnlySelfLocator:basePose", base);
-  DEBUG_RESPONSE_ONCE("module:OdometrOnlySelfLocator:resetReferenceOdometry",
+  DEBUG_RESPONSE_ONCE("module:OdometrOnlySelfLocator:resetReferenceOdometry")
   {
     referenceOdometry = theOdometryData;
-  });
+  }
 }
 
-MAKE_MODULE(OdometryOnlySelfLocator, Modeling)
+MAKE_MODULE(OdometryOnlySelfLocator, modeling)

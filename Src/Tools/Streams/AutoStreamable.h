@@ -1,15 +1,15 @@
 /**
  * @file Tools/Streams/AutoStreamable.h
  *
- * This file provides two macros that allow to declare classes that automatically stream all
- * attributes and optionally also initialize them.
+ * This file provides two macros that allow to declare classes (actually structs) that
+ * automatically stream all attributes and optionally also initialize them.
  *
  * The first is:
  *
  * STREAMABLE(<class>,
  * { <header>,
  *   <comma-separated-declarations>,
- * })
+ * });
  *
  * The second is very similar:
  *
@@ -19,15 +19,15 @@
  * <base>:  Its base class. It must be streamable and its serialize method must not be private.
  *          The default (without "_WITH_BASE") is the class Streamable.
  * <header>: Everything that can be part of a class body except for the attributes that should
- *          be streamable and the default constructor. Please note that this part must not
- *          contain commas that are not surrounded by parentheses, because C++ would consider
- *          it to be more than a single macro parameter otherwise.
+ *          be streamable. Please note that this part must not contain commas that are not
+ *          surrounded by parentheses, because C++ would consider it to be more than a single
+ *          macro parameter otherwise.
  * <comma-separated-declarations>: Declarations of the streamable attributes in four possible
  *          forms:
  *          (<type>) <var>
  *          (<type>)(<init>) <var>
- *          (<enum-domain>, <type>) <var>
- *          (<enum-domain>, <type>)(init) <var>
+ *          ((<enum-domain>) <type>) <var>
+ *          ((<enum-domain>) <type>)(init) <var>
  *
  *          <type>: The type of the attribute that is declared.
  *          <var>:  The name of the attribute that is declared.
@@ -50,16 +50,21 @@
  *
  * STREAMABLE(Example,
  * {
- *   ENUM(ABC, a, b, c);
+ *   ENUM(ABC,
+ *   {,
+ *     a,
+ *     b,
+ *     c,
+ *   });
  *
  *   Example() {memset(array, 0, sizeof(array));},
  *
  *   (int) anInt,
  *   (float)(3.14f) pi,
  *   (int[4]) array;
- *   (Vector2<>)(1.f, 2.f) aVector,
+ *   (Vector2f)(1.f, 2.f) aVector,
  *   (ABC) aLetter,
- *   (MotionRequest, Motion)(stand) motionId,
+ *   ((MotionRequest) Motion)(stand) motionId,
  * });
  *
  * In this example, all attributes except from anInt and aLetter would be initialized.
@@ -106,16 +111,19 @@
  * In the first case, 1 is returned, otherwise 2.
  */
 #if !defined(WINDOWS) || defined(__INTELLISENSE__)
-#define _STREAM_SEQ_SIZE(seq) _STREAM_CAT(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_0 seq))
+#define _STREAM_SEQ_SIZE(...) _STREAM_CAT(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_0 __VA_ARGS__))
 #define _STREAM_SEQ_SIZE_0(...) _STREAM_SEQ_SIZE_1
 #define _STREAM_SEQ_SIZE_1(...) _STREAM_SEQ_SIZE_2
+#define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_0 0 _STREAM_DROP(
 #define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_1 1 _STREAM_DROP(
 #define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_2 2 _STREAM_DROP(
 #else
-#define _STREAM_SEQ_SIZE(seq) _STREAM_JOIN(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE1(_STREAM_SEQ_SIZE1(_STREAM_SEQ_SIZE1(seq)))))
-#define _STREAM_SEQ_SIZE1(seq) _STREAM_CAT(_STREAM_DROP, seq)
+#define _STREAM_SEQ_SIZE(...) _STREAM_JOIN(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_I(_STREAM_SEQ_SIZE_I(_STREAM_SEQ_SIZE_II(__VA_ARGS__)))))
+#define _STREAM_SEQ_SIZE_I(...) _STREAM_CAT(_STREAM_DROP, __VA_ARGS__)
+#define _STREAM_SEQ_SIZE_II(...) _STREAM_DROP __VA_ARGS__
 #define _STREAM_SEQ_SIZE_STREAM_DROP 2 _STREAM_DROP(
 #define _STREAM_SEQ_SIZE_STREAM_DROP_STREAM_DROP 1 _STREAM_DROP (
+#define _STREAM_SEQ_SIZE_STREAM_DROP_STREAM_DROP_STREAM_DROP 0 _STREAM_DROP (
 #endif
 
 /**
@@ -199,66 +207,72 @@
 #define _STREAM_CAT(a, ...) _STREAM_CAT_I(a, __VA_ARGS__)
 #define _STREAM_CAT_I(a, ...) a ## __VA_ARGS__
 
+#define _STREAM_CAT2(a, ...) _STREAM_CAT2_I(a, __VA_ARGS__)
+#define _STREAM_CAT2_I(a, ...) a __VA_ARGS__
+
 /** Concatenate the two parameters. Works in other situations. */
 #define _STREAM_JOIN(a, b) _STREAM_JOIN_I(a, b)
 #define _STREAM_JOIN_I(a, b) _STREAM_JOIN_II(a ## b)
 #define _STREAM_JOIN_II(res) res
 
 /** Extract the variable from the declaration. */
-#define _STREAM_VAR(seq) _STREAM_JOIN(_STREAM_VAR_, _STREAM_SEQ_SIZE(seq))(seq)
-#define _STREAM_VAR_1(seq) _STREAM_VAR_1_I(seq)
-#define _STREAM_VAR_1_I(seq) _STREAM_VAR_1_II seq
+#define _STREAM_VAR(...) _STREAM_JOIN(_STREAM_VAR_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)
+#define _STREAM_VAR_0(...) __VA_ARGS__
+#define _STREAM_VAR_1(...) _STREAM_VAR_1_I(__VA_ARGS__)
+#define _STREAM_VAR_1_I(...) _STREAM_VAR_1_II __VA_ARGS__
 #define _STREAM_VAR_1_II(...)
-#define _STREAM_VAR_2(seq) _STREAM_VAR_2_I(seq)
-#define _STREAM_VAR_2_I(seq) _STREAM_VAR_2_II seq
+#define _STREAM_VAR_2(...) _STREAM_VAR_2_I(__VA_ARGS__)
+#define _STREAM_VAR_2_I(...) _STREAM_VAR_2_II __VA_ARGS__
 #define _STREAM_VAR_2_II(...) _STREAM_VAR_2_III
 #define _STREAM_VAR_2_III(...)
 
 /** Generate streaming code from declaration. */
-#define _STREAM_SER(seq) {auto& _var = _STREAM_VAR(seq); Streaming::streamIt(in, out, #seq, _var, Streaming::_STREAM_SER_I seq));}
-#define _STREAM_SER_I(...) _STREAM_SER_II((__VA_ARGS__, _STREAM_SER_WITH_CLASS, _STREAM_SER_WITHOUT_CLASS))
-#define _STREAM_SER_II(params) _STREAM_SER_III params
-#define _STREAM_SER_III(class, type, fn, ...) fn(class) _STREAM_DROP(
-#define _STREAM_SER_WITH_CLASS(class) castFunction(_var, class::getName)
-#define _STREAM_SER_WITHOUT_CLASS(class) Casting<std::is_enum<decltype(Streaming::unwrap(_var))>::value>::getNameFunction(*this, _var)
+#define _STREAM_SER(seq) {auto& _var = _STREAM_VAR(seq); Streaming::streamIt(in, out, #seq, _var, Streaming:: _STREAM_SER_I seq));}
+#define _STREAM_SER_I(...) _STREAM_JOIN(_STREAM_SER_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)
+#define _STREAM_SER_0(...) Casting<std::is_enum<decltype(Streaming::unwrap(_var))>::value>::getNameFunction(*this, _var) _STREAM_DROP(
+#define _STREAM_SER_1(...) _STREAM_SER_1_I __VA_ARGS__)
+#define _STREAM_SER_1_I(...) castFunction(_var, __VA_ARGS__::getName) _STREAM_DROP(_STREAM_DROP(
 
 /** Generate the actual declaration. */
-#define _STREAM_DECL(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)) _STREAM_VAR(seq) _STREAM_INIT(seq);
-#define _STREAM_DECL_I(...) _STREAM_DECL_II((__VA_ARGS__, _STREAM_DECL_WITH_CLASS, _STREAM_DECL_WITHOUT_CLASS))
-#define _STREAM_DECL_II(params) _STREAM_DECL_III params
-#define _STREAM_DECL_III(class, type, fn, ...) fn(class, type) _STREAM_DROP(
-#define _STREAM_DECL_WITH_CLASS(class, theType) class::theType>::type
-#define _STREAM_DECL_WITHOUT_CLASS(theType, _) theType>::type
+#define _STREAM_DECL(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)_STREAM_DECL_IV seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq);
+#define _STREAM_DECL_I(...) _STREAM_JOIN(_STREAM_DECL_II_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)
+#define _STREAM_DECL_II_0(...) _STREAM_DROP(
+#define _STREAM_DECL_II_1(...) _STREAM_DECL_III __VA_ARGS__
+#define _STREAM_DECL_III(...) __VA_ARGS__:: _STREAM_DROP(
+#define _STREAM_DECL_IV(...) _STREAM_VAR(__VA_ARGS__) _STREAM_DROP(_STREAM_DROP(
 
 /** Generate the initialisation code from the declaration if required. */
 #define _STREAM_INIT(seq) _STREAM_JOIN(_STREAM_INIT_I_, _STREAM_SEQ_SIZE(seq))(seq)
-#define _STREAM_INIT_I_1(seq)
-#define _STREAM_INIT_I_2(seq) = decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))( _STREAM_INIT_II seq) _STREAM_INIT_I_2_I(seq) )
-#define _STREAM_INIT_I_2_I(seq) _STREAM_INIT_I_2_II seq)
+#define _STREAM_INIT_I_1(...)
+#define _STREAM_INIT_I_2(...) = decltype(Streaming::TypeWrapper<_STREAM_DECL_I __VA_ARGS__)_STREAM_DECL_IV __VA_ARGS__))>::type)(_STREAM_INIT_II __VA_ARGS__) _STREAM_INIT_I_2_I(__VA_ARGS__))
+#define _STREAM_INIT_I_2_I(...) _STREAM_INIT_I_2_II __VA_ARGS__)
 #define _STREAM_INIT_I_2_II(...) _STREAM_INIT_I_2_III
 #define _STREAM_INIT_I_2_III(...) __VA_ARGS__ _STREAM_DROP(
-#define _STREAM_INIT_II(...) _STREAM_INIT_III((__VA_ARGS__, _STREAM_INIT_WITH_CLASS, _STREAM_DROP))
-#define _STREAM_INIT_III(params) _STREAM_INIT_IV params
-#define _STREAM_INIT_IV(class, type, fn, ...) fn(class) _STREAM_DROP(
-#define _STREAM_INIT_WITH_CLASS(class) class::
+#define _STREAM_INIT_II(...) _STREAM_JOIN(_STREAM_INIT_III_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)>::type _STREAM_INIT_V
+#define _STREAM_INIT_III_0(...) _STREAM_DROP(
+#define _STREAM_INIT_III_1(...) _STREAM_INIT_IV __VA_ARGS__
+#define _STREAM_INIT_IV(...) __VA_ARGS__::_STREAM_DROP(
+#define _STREAM_INIT_V(...) _STREAM_DROP(
 
 /** Generate streamable class. */
 #define _STREAM_STREAMABLE(name, base, streamBase, header, ...) \
-  class name : public base \
+  struct name : public base \
   _STREAM_UNWRAP header; \
   _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, streamBase, __VA_ARGS__)
 #define _STREAM_STREAMABLE_I(n, name, streamBase, ...) _STREAM_STREAMABLE_II(n, name, streamBase, (_STREAM_SER, __VA_ARGS__), (_STREAM_DECL, __VA_ARGS__))
 #define _STREAM_STREAMABLE_II(n, name, streamBase, params1, params2) \
+    _STREAM_ATTR_##n params2 \
   protected: \
+    friend struct Streaming::OnRead<name, true>; \
     void serialize(In* in, Out* out) \
     { \
       STREAM_REGISTER_BEGIN \
       streamBase \
       _STREAM_ATTR_##n params1 \
       STREAM_REGISTER_FINISH \
+      if(in) \
+        Streaming::onRead(*this); \
     } \
-  public: \
-    _STREAM_ATTR_##n params2 \
   }
 
 /**
@@ -267,9 +281,7 @@
  * @param header A header that starts with a curly bracket and can contain
  *               arbitrary declarations. Please note that commas are only
  *               allowed if enclosed by parantheses.
- * @param ... The actual declarations. However, the last entry can contain
- *            code for the body of the default constructor. In any case, it
- *            must end with a closing curly bracket.
+ * @param ... The actual declarations. It must end with a closing curly bracket.
  */
 #ifdef WINDOWS
 #define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , header, __VA_ARGS__)
@@ -287,9 +299,7 @@
  * @param header A header that starts with a curly bracket and can contain
  *               arbitrary declarations. Please note that commas are only
  *               allowed if enclosed by parantheses.
- * @param ... The actual declarations. However, the last entry can contain
- *            code for the body of the default constructor. In any case, it
- *            must end with a closing curly bracket.
+ * @param ... The actual declarations. It must end with a closing curly bracket.
  */
 #ifdef WINDOWS
 #define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), header, __VA_ARGS__)
@@ -297,3 +307,48 @@
 #define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), (header), __VA_ARGS__)
 #endif
 
+/**
+ * Use this macro to protect code with commas that are not enclosed by parantheses
+ * inside the header of a streamable class.
+ */
+#define PROTECT(...) __VA_ARGS__
+
+namespace Streaming
+{
+  /**
+   * Helper class to check whether a class defines an onRead() method itself.
+   */
+  template<typename T> struct HasOnReadMethod
+  {
+    template<typename U, void (U::*)()> struct OnRead {};
+    template<typename U, void (U::*)() const> struct ConstOnRead {};
+    template<typename U> static char Test(OnRead<U, &U::onRead>*);
+    template<typename U> static char Test(ConstOnRead<U, &U::onRead>*);
+    template<typename U> static int Test(...);
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);
+  };
+
+  /**
+   * This class defines a method that is called when a class has an onRead() method. The latter is called.
+   * @param T The type of the representation.
+   * @param hasDraw States, whether T has a draw() method.
+   */
+  template<typename T, bool hasOnRead = true> struct OnRead
+  {
+    static void onRead(T& t) {t.onRead();}
+  };
+
+  /**
+   * This class defines a method that is called when a class does not have an onRead() method.
+   * @param T The type of the representation.
+   */
+  template<typename T> struct OnRead<T, false>
+  {
+    static void onRead(T& t) {}
+  };
+
+  template<typename T> static void onRead(T& t)
+  {
+    OnRead<T, HasOnReadMethod<T>::value>::onRead(t);
+  }
+}

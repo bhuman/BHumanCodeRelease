@@ -1,41 +1,56 @@
-
 #pragma once
 
-#include <cmath>
+#include "BHMath.h"
+#include "Constants.h"
 
- /**
- * An approximation of atan2 with an error < 0.005f.
- * 3-5x times faster than atan2 from cmath
- */
-inline float approxAtan2(float y, float x)
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
+namespace Approx
 {
-  if(x == 0.f)
+  template<typename T>
+  bool isZero(T a, T prec = std::numeric_limits<T>::epsilon())
   {
-    if(y > 0.0f)
-      return 1.5707963f;
-    else if(y == 0.0f)
-      return 0.0f;
-    else
-      return -1.5707963f;
+    return std::abs(a) < prec;
   }
-  float atan;
-  float z = y / x;
-  if(fabs(z) < 1.f)
+
+  template<typename T>
+  bool isEqual(T a, T b, T prec = std::numeric_limits<T>::epsilon())
   {
-    atan = z / (1.f + 0.28f * z * z);
-    if(x < 0.0f)
+    const T diff = std::abs(a - b);
+    return diff < prec || diff < prec * std::max(std::abs(a), std::abs(b));
+  }
+
+  /**
+   * An approximation of atan2 with an error < 0.005f.
+   * 3-5x times faster than atan2 from cmath
+   */
+  inline float atan2(float y, float x)
+  {
+    if(x == 0.f)
+      return sgn(y) * pi_2;
+    const float z = y / x;
+    if(std::abs(z) < 1.f)
     {
-      if(y < 0.0f)
-        return atan - 3.14159265f;
+      const float atan = z / (1.f + 0.28f * z * z);
+      if(x < 0.f)
+      {
+        if(y < 0.f)
+          return atan - pi;
+        else
+          return atan + pi;
+      }
       else
-        return atan + 3.14159265f;
+        return atan;
+    }
+    else
+    {
+      const float atan = pi_2 - z / (z * z + 0.28f);
+      if(y < 0.f)
+        return atan - pi;
+      else
+        return atan;
     }
   }
-  else
-  {
-    atan = 1.5707963f - z / (z * z + 0.28f);
-    if(y < 0.f)
-      return atan - 3.14159265f;
-  }
-  return atan;
 }

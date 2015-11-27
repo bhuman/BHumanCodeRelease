@@ -1,31 +1,30 @@
 /**
-* @file WalkingEngineKicks.h
-* Declaration of walking engine kicks and tools to use them
-* @author Colin Graf
-*/
+ * @file WalkingEngineKicks.h
+ * Declaration of walking engine kicks and tools to use them
+ * @author Colin Graf
+ */
 
 #pragma once
 
-#include "Representations/Infrastructure/JointData.h"
 #include "Representations/MotionControl/WalkRequest.h"
-#include "Tools/Math/Vector2.h"
-#include "Tools/Math/Pose3D.h"
+#include "Tools/Joints.h"
+#include "Tools/Math/Pose3f.h"
 
 class WalkingEngineKick
 {
 public:
   enum Track
   {
-    headYaw = JointData::HeadYaw,
-    headPitch = JointData::HeadPitch,
-    lShoulderPitch = JointData::LShoulderPitch,
-    lShoulderRoll = JointData::LShoulderRoll,
-    lElbowYaw = JointData::LElbowYaw,
-    lElbowRoll = JointData::LElbowRoll,
-    rShoulderPitch = JointData::RShoulderPitch,
-    rShoulderRoll = JointData::RShoulderRoll,
-    rElbowYaw = JointData::RElbowYaw,
-    rElbowRoll = JointData::RElbowRoll,
+    headYaw = Joints::headYaw,
+    headPitch = Joints::headPitch,
+    lShoulderPitch = Joints::lShoulderPitch,
+    lShoulderRoll = Joints::lShoulderRoll,
+    lElbowYaw = Joints::lElbowYaw,
+    lElbowRoll = Joints::lElbowRoll,
+    rShoulderPitch = Joints::rShoulderPitch,
+    rShoulderRoll = Joints::rShoulderRoll,
+    rElbowYaw = Joints::rElbowYaw,
+    rElbowRoll = Joints::rElbowRoll,
     numOfJointTracks,
     footTranslationX = numOfJointTracks,
     footTranslationY,
@@ -41,8 +40,8 @@ public:
 
   bool load(const char* filePath);
   bool load(const char* filePath, char* data);
-  void getPreStepSize(float& rotation, Vector3<>& translation) const;
-  void getStepSize(float& rotation, Vector3<>& translation) const;
+  void getPreStepSize(float& rotation, Vector3f& translation) const;
+  void getStepSize(float& rotation, Vector3f& translation) const;
   float getStepDuration() const;
   float getRefX(float defaultValue) const;
 
@@ -194,8 +193,8 @@ public:
   void load(WalkRequest::KickType type, char* data);
 
   bool isKickMirrored(WalkRequest::KickType type) const {return (type - 1) % 2 != 0;}
-  void getKickStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const;
-  void getKickPreStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const;
+  void getKickStepSize(WalkRequest::KickType type, float& rotation, Vector3f& translation) const;
+  void getKickPreStepSize(WalkRequest::KickType type, float& rotation, Vector3f& translation) const;
   float getKickStepDuration(WalkRequest::KickType type) const;
   float getKickRefX(WalkRequest::KickType type, float defaultValue) const;
   const WalkingEngineKick* getKick(WalkRequest::KickType type) const;
@@ -233,7 +232,7 @@ public:
   */
   float getLength() const {return length * 0.001f;}
 
-  void applyFoot(Pose3D& leftOriginToFoot, Pose3D& rightOriginToFoot);
+  void applyFoot(Pose3f& leftOriginToFoot, Pose3f& rightOriginToFoot);
   void applyHeadAndArms(float headJointAngles[2], float leftArmJointAngles[4], float rightArmJointAngles[4]);
 
   /**

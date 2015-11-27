@@ -1,14 +1,17 @@
-/*
-* @file Tools/Enum.h
-* Implements a function that converts a single comma-separated string
-* of enum names into single entries that can be accessed in
-* constant time.
-* @author Thomas Röfer
-*/
+/**
+ * @file Tools/Enum.cpp
+ * Implements a function that converts a single comma-separated string
+ * of enum names into single entries that can be accessed in
+ * constant time.
+ * @author Thomas Röfer
+ */
 
 #include "Enum.h"
 #include "Platform/BHAssert.h"
+#include "Platform/Thread.h"
 #include <cstring>
+
+static SyncObject _syncObject;
 
 static char* trim(char* pBegin, char* pEnd)
 {
@@ -22,6 +25,7 @@ static char* trim(char* pBegin, char* pEnd)
 
 void enumInit(char* enums, const char** names, int numOfEnums)
 {
+  SYNC;
   char* pEnd = enums - 1;
   int index = 0;
   bool end;
@@ -42,6 +46,5 @@ void enumInit(char* enums, const char** names, int numOfEnums)
     }
     ASSERT(index < numOfEnums);
     names[index++] = name;
-  }
-  while(!end);
+  } while(!end);
 }

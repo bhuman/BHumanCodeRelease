@@ -7,7 +7,7 @@
 
 #include "OpenGLMethods.h"
 #include <Platform/OpenGL.h>
-#include "Tools/ImageProcessing/ColorModelConversions.h"
+#include "Tools/ColorModelConversions.h"
 
 void OpenGLMethods::paintCubeToOpenGLList
 (
@@ -107,15 +107,15 @@ void OpenGLMethods::paintImagePixelsToOpenGLList
   Image convertedImage;
   switch(colorModel)
   {
-  case 0: //yuv
-    convertedImage = image;
-    break;
-  case 1: //rgb
-    convertedImage.convertFromYCbCrToRGB(image);
-    break;
-  case 2: //hsi
-    convertedImage.convertFromYCbCrToHSI(image);
-    break;
+    case 0: //yuv
+      convertedImage = image;
+      break;
+    case 1: //rgb
+      convertedImage.convertFromYCbCrToRGB(image);
+      break;
+    case 2: //hsi
+      convertedImage.convertFromYCbCrToHSI(image);
+      break;
   }
 
   for(int j = y1; j < y2 - 2; j++)
@@ -212,4 +212,3 @@ void OpenGLMethods::paintColorTable(const ColorTable& colorTable,
   glPolygonMode(GL_BACK, GL_LINE);
   ::glEndList();
 }
-

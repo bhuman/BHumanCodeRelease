@@ -1,8 +1,0 @@
-set representation:RobotPose rotation = 0; translation = { x = -1200; y = 0; }; validity = 1; deviation = 100000; covariance = { c0 = { x = 1000; y = 0; z = 0; }; c1 = { x = 0; y = 1000 ; z = 0; }; c2 = { x = 0; y = 0; z = 1000; }; };
-set representation:HeadAngleRequest pan = 1000; tilt = 1000; speed = 0.5;
-vid lower module:CameraMatrixProvider:calibrationHelper
-vid lower representation:LinePercept:Image off
-vid lower representation:BallPercept:Image off
-vid lower representation:GoalPercept:Image off
-vid lower representation:BodyContour off
-get representation:CameraCalibration

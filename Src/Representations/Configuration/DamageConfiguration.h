@@ -9,14 +9,20 @@
 
 #include "Tools/Streams/AutoStreamable.h"
 
-STREAMABLE(DamageConfiguration,
+STREAMABLE(DamageConfigurationBody,
 {,
-  (bool) (false) weakLeftLeg,
-  (bool) (false) weakRightLeg,
-  (bool) (false) usLDefect,
-  (bool) (false) usRDefect,
-  (bool) (false) leftFootBumperDefect,
-  (bool) (false) rightFootBumperDefect,
-  (bool) (false) noFieldGenuflect,
-  (bool) (false) noBackwardKick,
+  (bool)(false) weakLeftLeg,
+  (bool)(false) weakRightLeg,
+  (bool)(false) usLDefect,
+  (bool)(false) usRDefect,
+  (bool)(false) leftFootBumperDefect,
+  (bool)(false) rightFootBumperDefect,
+  (bool)(false) noFieldGenuflect,
+  (bool)(false) noBackwardKick,
+});
+
+STREAMABLE(DamageConfigurationHead,
+{,
+  (bool)(false) audioChannel0Defect,
+  (bool)(false) audioChannel1Defect,
 });

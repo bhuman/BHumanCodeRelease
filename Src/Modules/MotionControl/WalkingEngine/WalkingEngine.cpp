@@ -1,28 +1,34 @@
 /**
-* @file WalkingEngine.cpp
-* Implementation of a module that creates the walking motions
-* @author Colin Graf
-*/
+ * @file WalkingEngine.cpp
+ * Implementation of a module that creates the walking motions
+ * @author Colin Graf
+ */
 
 #include "WalkingEngine.h"
-#include "Tools/Debugging/DebugDrawings.h" // PLOT
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/InverseKinematic.h"
-#include "Tools/MessageQueue/InMessage.h"
-#include "Tools/Streams/InStreams.h"
+#include "Tools/SensorData.h"
 #include "Tools/Settings.h"
+#include "Tools/Debugging/Annotation.h"
+#include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/MessageQueue/InMessage.h"
+#include "Tools/Math/Rotation.h"
+#include "Tools/Motion/InverseKinematic.h"
+#include "Tools/Streams/InStreams.h"
 #include <algorithm>
 
 using namespace std;
 
-MAKE_MODULE(WalkingEngine, Motion Control)
+MAKE_MODULE(WalkingEngine, motionControl)
 
-PROCESS_WIDE_STORAGE(WalkingEngine) WalkingEngine::theInstance = 0;
+PROCESS_LOCAL WalkingEngine* WalkingEngine::theInstance = 0;
 
 WalkingEngine::WalkingEngine() : optimizeStarted(false)
 {
   theInstance = this;
 
+  // init() is not called automatically when parameters are first read,
+  // because this object has not been constructed at that time. So
+  // it has to be called manually.
   init();
 
   if(SystemCall::getMode() == SystemCall::simulatedRobot)
@@ -53,23 +59,17 @@ bool WalkingEngine::handleMessage(InMessage& message)
   return false;
 }
 
-void WalkingEngine::serialize(In* in, Out* out)
+void WalkingEngine::onRead()
 {
-  STREAM_REGISTER_BEGIN
-  STREAM_BASE(Parameters)
-  STREAM_REGISTER_FINISH
-
-  if(in)
-    init();
+  init();
 }
 
 void WalkingEngine::init()
 {
   // pre compute constants
-  const float g = 9806.65f;;
-  walkK.x = sqrt(g / walkHeight.x);
-  walkK.y = sqrt(g / walkHeight.y);
-  standBodyRotation = RotationMatrix(Vector3<>(0.f, standBodyTilt, 0.f));
+  walkK.x() = sqrt(Constants::g / walkHeight.x());
+  walkK.y() = sqrt(Constants::g / walkHeight.y());
+  standBodyRotation = RotationMatrix::aroundY(standBodyTilt);
   walkPhaseDuration = walkStepDuration * (0.001f * 0.5f);
   walkPhaseDurationAtFullSpeedX = walkStepDurationAtFullSpeedX * (0.001f * 0.5f);
   walkPhaseDurationAtFullSpeedY = walkStepDurationAtFullSpeedY * (0.001f * 0.5f);
@@ -82,7 +82,7 @@ void WalkingEngine::init()
 
   // xv0 = ns * 0.5f * k / sinh(k * td)
 
-  const float k = walkK.x;
+  const float k = walkK.x();
   const float tt = walkPhaseDurationAtFullSpeedX;
   const float td = tt * 0.5f;
   const float coshKTd = cosh(k * td);
@@ -119,13 +119,13 @@ void WalkingEngine::reset()
   generateFirstPendulumPhase(pendulumPlayer.phase);
   generateNextPendulumPhase(pendulumPlayer.phase, pendulumPlayer.nextPhase);
   pendulumPlayer.seek(0.f);
-  lastRequestedSpeedRel = Pose2D();
+  lastRequestedSpeedRel = Pose2f();
 
-  lastExpectedLeftToCom = Vector3<>();
-  lastExpectedRightToCom = Vector3<>();
+  lastExpectedLeftToCom = Vector3f::Zero();
+  lastExpectedRightToCom = Vector3f::Zero();
 
   lastGyroErrorY = 0.0f;
-  lastSmoothedGyroY = InertiaSensorData::off;
+  lastSmoothedGyroY = SensorData::off;
 }
 
 void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
@@ -135,30 +135,30 @@ void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
   DECLARE_PLOT("module:WalkingEngine:gyroY");
   DECLARE_PLOT("module:WalkingEngine:smoothedGyroY");
   MODIFY("module:WalkingEngine:optimizeBestParameters", optimizeBestParameters);
-  DEBUG_RESPONSE("module:WalkingEngine:optimize",
+  DEBUG_RESPONSE("module:WalkingEngine:optimize")
   {
     if(theMotionSelection.ratios[MotionRequest::walk] > 0.9f)
     {
       if(!optimizeOptimizer.isRunning())
       {
-        optimizeOptimizer.addDimension(walkHeight.y, walkHeight.y - 200.f, walkHeight.y + 200.f, 1.f);
-        optimizeOptimizer.addDimension(walkRef.y, walkRef.y - 20.f, walkRef.y + 20.f, 0.5f);
+        optimizeOptimizer.addDimension(walkHeight.y(), walkHeight.y() - 200.f, walkHeight.y() + 200.f, 1.f);
+        optimizeOptimizer.addDimension(walkRef.y(), walkRef.y() - 20.f, walkRef.y() + 20.f, 0.5f);
         optimizeOptimizer.start();
-        (Parameters&) optimizeBestParameters = *this;
+        static_cast<Parameters&>(optimizeBestParameters) = *this;
       }
       if(optimizeStarted && theFrameInfo.getTimeSince(optimizeStartTime) > 4000)
       {
-        const float rating = optimizeFitness.getAverage();
-        optimizeFitness.init();
+        const float rating = optimizeFitness.average();
+        optimizeFitness.clear();
         optimizeOptimizer.setRating(rating);
         if(rating == optimizeOptimizer.getBestRating())
         {
-          OUTPUT(idText, text, "optimize: rating=" << rating << " (new optimum)");
-          (Parameters&) optimizeBestParameters = *this;
+          OUTPUT_TEXT("optimize: rating=" << rating << " (new optimum)");
+          static_cast<Parameters&>(optimizeBestParameters) = *this;
         }
         else
         {
-          OUTPUT(idText, text, "optimize: rating=" << rating);
+          OUTPUT_TEXT("optimize: rating=" << rating);
         }
         optimizeStarted = false;
       }
@@ -171,15 +171,14 @@ void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
         init();
       }
     }
-  });
-  DEBUG_RESPONSE_NOT("module:WalkingEngine:optimize",
+  }
+  else if(optimizeStarted)
   {
-    if(optimizeStarted)
-    {
-      optimizeStarted = false;
-      (Parameters&) *this = optimizeBestParameters;
-    }
-  });
+    optimizeStarted = false;
+    static_cast<Parameters&>(*this) = optimizeBestParameters;
+  }
+
+
 
   if(theMotionSelection.ratios[MotionRequest::walk] > 0.f || theMotionSelection.ratios[MotionRequest::stand] > 0.f)
   {
@@ -195,16 +194,6 @@ void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
     generateJointRequest();
     computeOdometryOffset();
     generateOutput(walkingEngineOutput);
-    if(theArmMotionEngineOutput.arms[ArmMotionRequest::left].move)
-    {
-      for(int i = JointData::LShoulderPitch; i < JointData::RShoulderPitch; i++)
-        walkingEngineOutput.jointHardness.hardness[i] = 50;
-    }
-    if(theArmMotionEngineOutput.arms[ArmMotionRequest::right].move)
-    {
-      for(int i = JointData::RShoulderPitch; i < JointData::LHipYawPitch; i++)
-        walkingEngineOutput.jointHardness.hardness[i] = 50;
-    }
   }
   else
   {
@@ -212,24 +201,26 @@ void WalkingEngine::update(WalkingEngineOutput& walkingEngineOutput)
     generateDummyOutput(walkingEngineOutput);
   }
 
-  DEBUG_RESPONSE("module:WalkingEngine:initialPosition",
-    for(int i = 0; i < JointData::numOfJoints; ++i)
+  DEBUG_RESPONSE("module:WalkingEngine:initialPosition")
+  {
+    for(int i = 0; i < Joints::numOfJoints; ++i)
       jointRequest.angles[i] = walkingEngineOutput.angles[i] = 0.f;
-  );
+  }
 
-  DECLARE_DEBUG_DRAWING3D("module:WalkingEngine:zmp", "field", drawZmp(); );
+  DEBUG_DRAWING3D("module:WalkingEngine:zmp", "field") drawZmp();
 
-  PLOT("module:WalkingEngine:measuredComX", pendulumPlayer.phase.type == leftSupportPhase ? measuredLeftToCom.x : measuredRightToCom.x);
-  PLOT("module:WalkingEngine:measuredComY", pendulumPlayer.phase.type == leftSupportPhase ? measuredLeftToCom.y : measuredRightToCom.y);
-  PLOT("module:WalkingEngine:expectedComX", pendulumPlayer.phase.type == leftSupportPhase ? expectedLeftToCom.x : expectedRightToCom.x);
-  PLOT("module:WalkingEngine:expectedComY", pendulumPlayer.phase.type == leftSupportPhase ? expectedLeftToCom.y : expectedRightToCom.y);
-  PLOT("module:WalkingEngine:nsx", pendulumPlayer.nextPhase.s.translation.x);
+  PLOT("module:WalkingEngine:measuredComX", pendulumPlayer.phase.type == leftSupportPhase ? measuredLeftToCom.x() : measuredRightToCom.x());
+  PLOT("module:WalkingEngine:measuredComY", pendulumPlayer.phase.type == leftSupportPhase ? measuredLeftToCom.y() : measuredRightToCom.y());
+  PLOT("module:WalkingEngine:expectedComX", pendulumPlayer.phase.type == leftSupportPhase ? expectedLeftToCom.x() : expectedRightToCom.x());
+  PLOT("module:WalkingEngine:expectedComY", pendulumPlayer.phase.type == leftSupportPhase ? expectedLeftToCom.y() : expectedRightToCom.y());
+  PLOT("module:WalkingEngine:nsx", pendulumPlayer.nextPhase.s.translation.x());
 
 #ifdef TARGET_SIM
-  DECLARE_DEBUG_DRAWING3D("module:WalkingEngine:W", "field", drawW(); );
-  DECLARE_DEBUG_DRAWING3D("module:WalkingEngine:P", "robot", drawP(); );
-  DECLARE_DEBUG_DRAWING3D("module:WalkingEngine:Q", "robot", drawQ(walkingEngineOutput); );
+  DEBUG_DRAWING3D("module:WalkingEngine:W", "field") drawW();
+  DEBUG_DRAWING3D("module:WalkingEngine:P", "robot") drawP();
+  DEBUG_DRAWING3D("module:WalkingEngine:Q", "robot") drawQ(walkingEngineOutput);
 #endif
+  drawStats();
 }
 
 void WalkingEngine::updateMotionRequest()
@@ -238,26 +229,19 @@ void WalkingEngine::updateMotionRequest()
   {
     if(theMotionRequest.walkRequest.mode == WalkRequest::targetMode)
     {
-      if(theMotionRequest.walkRequest.target != Pose2D() && theMotionRequest.walkRequest.target != lastCopiedWalkTarget)
+      if(theMotionRequest.walkRequest.target != Pose2f() && theMotionRequest.walkRequest.target != lastCopiedWalkTarget)
         lastCopiedWalkTarget = requestedWalkTarget = theMotionRequest.walkRequest.target;
     }
   }
-  else if(theMotionRequest.walkRequest.target != Pose2D() && theMotionRequest.walkRequest.target != lastCopiedWalkTarget)
+  else if(theMotionRequest.walkRequest.target != Pose2f() && theMotionRequest.walkRequest.target != lastCopiedWalkTarget)
     lastCopiedWalkTarget = requestedWalkTarget = theMotionRequest.walkRequest.target;
 
   // get requested motion state
   requestedMotionType = stand;
-  if(theInertiaSensorData.calibrated && theGroundContactState.contact && theMotionSelection.ratios[MotionRequest::walk] >= 1.f)
+  if(theGroundContactState.contact && theMotionSelection.ratios[MotionRequest::walk] >= 1.f)
     if(theMotionRequest.motion == MotionRequest::walk)
     {
-      if(currentMotionType == stand)
-      {
-        Vector3<> angleDiff = ((const RotationMatrix&)(standBodyRotation.invert() * theTorsoMatrix.rotation)).getAngleAxis();
-        if(angleDiff.squareAbs() < 0.0001f) // don't start walking until the robot stopped fluctuating
-          requestedMotionType = stepping;
-      }
-      else
-        requestedMotionType = stepping;
+      requestedMotionType = stepping;
     }
 }
 
@@ -272,7 +256,7 @@ void WalkingEngine::updatePendulumPlayer()
   }
 
   // change motion type from stand to stepping
-  if(currentMotionType==stand && requestedMotionType == stepping)
+  if(currentMotionType == stand && requestedMotionType == stepping)
   {
     generateFirstPendulumPhase(pendulumPlayer.phase);
     generateNextPendulumPhase(pendulumPlayer.phase, pendulumPlayer.nextPhase);
@@ -283,8 +267,8 @@ void WalkingEngine::updatePendulumPlayer()
 
 void WalkingEngine::computeMeasuredPosture()
 {
-  measuredLeftToCom = -Pose3D(theTorsoMatrix.rotation).translate(-theRobotModel.centerOfMass).conc(theRobotModel.limbs[MassCalibration::footLeft]).translate(0.f, 0.f, -theRobotDimensions.heightLeg5Joint).translation;
-  measuredRightToCom = -Pose3D(theTorsoMatrix.rotation).translate(-theRobotModel.centerOfMass).conc(theRobotModel.limbs[MassCalibration::footRight]).translate(0.f, 0.f, -theRobotDimensions.heightLeg5Joint).translation;
+  measuredLeftToCom = -Pose3f(theTorsoMatrix.rotation).translate(-theRobotModel.centerOfMass).conc(theRobotModel.limbs[Limbs::footLeft]).translate(0.f, 0.f, -theRobotDimensions.footHeight).translation;
+  measuredRightToCom = -Pose3f(theTorsoMatrix.rotation).translate(-theRobotModel.centerOfMass).conc(theRobotModel.limbs[Limbs::footRight]).translate(0.f, 0.f, -theRobotDimensions.footHeight).translation;
 }
 
 void WalkingEngine::computeExpectedPosture()
@@ -299,18 +283,19 @@ void WalkingEngine::computeExpectedPosture()
 
 void WalkingEngine::computeEstimatedPosture()
 {
-  if(lastExpectedLeftToCom.z == 0.f)
+  if(lastExpectedLeftToCom.z() == 0.f)
   {
     estimatedLeftToCom = expectedLeftToCom;
     estimatedRightToCom = expectedRightToCom;
     estimatedComVelocity = expectedComVelocity;
 
-    covX = Matrix3x3f(Vector3f(sqr(observerProcessDeviation[0]), 0, observerProcessDeviation[0] * observerProcessDeviation[2]),
-                      Vector3f(0, sqr(observerProcessDeviation[0]), observerProcessDeviation[0] * observerProcessDeviation[2]),
-                      Vector3f(observerProcessDeviation[0] * observerProcessDeviation[2], observerProcessDeviation[0] * observerProcessDeviation[2], sqr(observerProcessDeviation[2])));
-    covY = Matrix3x3f(Vector3f(sqr(observerProcessDeviation[1]), 0, observerProcessDeviation[1] * observerProcessDeviation[3]),
-                      Vector3f(0, sqr(observerProcessDeviation[1]), observerProcessDeviation[1] * observerProcessDeviation[3]),
-                      Vector3f(observerProcessDeviation[1] * observerProcessDeviation[3], observerProcessDeviation[1] * observerProcessDeviation[3], sqr(observerProcessDeviation[3])));
+    covX << sqr(observerProcessDeviation[0]),                       0,                                                         observerProcessDeviation[0] * observerProcessDeviation[2],
+         0,                                                         sqr(observerProcessDeviation[0]),                          observerProcessDeviation[0] * observerProcessDeviation[2],
+         observerProcessDeviation[0] * observerProcessDeviation[2], observerProcessDeviation[0] * observerProcessDeviation[2], sqr(observerProcessDeviation[2]);
+
+    covY << sqr(observerProcessDeviation[1]),                       0,                                                          observerProcessDeviation[1] * observerProcessDeviation[3],
+         0,                                                         sqr(observerProcessDeviation[1]),                           observerProcessDeviation[1] * observerProcessDeviation[3],
+         observerProcessDeviation[1] * observerProcessDeviation[3], observerProcessDeviation[1] * observerProcessDeviation[3], sqr(observerProcessDeviation[3]);
   }
   else
   {
@@ -319,45 +304,47 @@ void WalkingEngine::computeEstimatedPosture()
     estimatedComVelocity = expectedComVelocity;
   }
 
-  static const Matrix2x3f c(Vector2f(1, 0), Vector2f(0, 1), Vector2f());
+  static const Matrix2x3f c = Matrix2x3f::Identity();
   static const Matrix3x2f cTransposed = c.transpose();
-  const Matrix3x3f a(Vector3f(1, 0, 0), Vector3f(0, 1, 0),
-                     Vector3f(pendulumPlayer.phase.type == leftSupportPhase ? theFrameInfo.cycleTime : 0,
-                              pendulumPlayer.phase.type == rightSupportPhase ? theFrameInfo.cycleTime : 0,
-                              1));
+  Matrix3f a;
+  a <<
+    1, 0, pendulumPlayer.phase.type == leftSupportPhase ? theFrameInfo.cycleTime : 0,
+    0, 1, pendulumPlayer.phase.type == rightSupportPhase ? theFrameInfo.cycleTime : 0,
+    0, 0, 1;
+
   covX = a * covX * a.transpose();
   covY = a * covY * a.transpose();
 
-  covX[0][0] += sqr(observerProcessDeviation[0]);
-  covX[1][1] += sqr(observerProcessDeviation[0]);
-  covX[2][2] += sqr(observerProcessDeviation[2]);
-  covY[0][0] += sqr(observerProcessDeviation[1]);
-  covY[1][1] += sqr(observerProcessDeviation[1]);
-  covY[2][2] += sqr(observerProcessDeviation[3]);
+  covX(0, 0) += sqr(observerProcessDeviation[0]);
+  covX(1, 1) += sqr(observerProcessDeviation[0]);
+  covX(2, 2) += sqr(observerProcessDeviation[2]);
+  covY(0, 0) += sqr(observerProcessDeviation[1]);
+  covY(1, 1) += sqr(observerProcessDeviation[1]);
+  covY(2, 2) += sqr(observerProcessDeviation[3]);
 
-  Matrix2x2f covXPlusSensorCov = c * covX * cTransposed;
-  covXPlusSensorCov[0][0] += sqr(observerMeasurementDeviation[0]);
-  covXPlusSensorCov[1][1] += sqr(observerMeasurementDeviation[0]);
+  Matrix2f covXPlusSensorCov = c * covX * cTransposed;
+  covXPlusSensorCov(0, 0) += sqr(observerMeasurementDeviation[0]);
+  covXPlusSensorCov(1, 1) += sqr(observerMeasurementDeviation[0]);
 
-  Matrix2x2f covYPlusSensorCov = c * covY * cTransposed;
-  covYPlusSensorCov[0][0] += sqr(observerMeasurementDeviation[1]);
-  covYPlusSensorCov[1][1] += sqr(observerMeasurementDeviation[1]);
+  Matrix2f covYPlusSensorCov = c * covY * cTransposed;
+  covYPlusSensorCov(0, 0) += sqr(observerMeasurementDeviation[1]);
+  covYPlusSensorCov(1, 1) += sqr(observerMeasurementDeviation[1]);
 
-  Matrix3x2f kalmanGainX = covX * cTransposed * covXPlusSensorCov.invert();
+  Matrix3x2f kalmanGainX = covX * cTransposed * covXPlusSensorCov.inverse();
   covX -= kalmanGainX * c * covX;
-  Vector3f correctionX = kalmanGainX * Vector2f(measuredLeftToCom.x - estimatedLeftToCom.x, measuredRightToCom.x - estimatedRightToCom.x);
+  Vector3f correctionX = kalmanGainX * Vector2f(measuredLeftToCom.x() - estimatedLeftToCom.x(), measuredRightToCom.x() - estimatedRightToCom.x());
 
-  Matrix3x2f kalmanGainY = covY * cTransposed * covYPlusSensorCov.invert();
+  Matrix3x2f kalmanGainY = covY * cTransposed * covYPlusSensorCov.inverse();
   covY -= kalmanGainY * c * covY;
-  Vector3f correctionY = kalmanGainY * Vector2f(measuredLeftToCom.y - estimatedLeftToCom.y, measuredRightToCom.y - estimatedRightToCom.y);
+  Vector3f correctionY = kalmanGainY * Vector2f(measuredLeftToCom.y() - estimatedLeftToCom.y(), measuredRightToCom.y() - estimatedRightToCom.y());
 
-  estimatedLeftToCom.x += correctionX[0];
-  estimatedRightToCom.x += correctionX[1];
-  estimatedComVelocity.x += correctionX[2];
+  estimatedLeftToCom.x() += correctionX[0];
+  estimatedRightToCom.x() += correctionX[1];
+  estimatedComVelocity.x() += correctionX[2];
 
-  estimatedLeftToCom.y += correctionY[0];
-  estimatedRightToCom.y += correctionY[1];
-  estimatedComVelocity.y += correctionY[2];
+  estimatedLeftToCom.y() += correctionY[0];
+  estimatedRightToCom.y() += correctionY[1];
+  estimatedComVelocity.y() += correctionY[2];
 
   lastExpectedLeftToCom = expectedLeftToCom;
   lastExpectedRightToCom = expectedRightToCom;
@@ -371,21 +358,21 @@ void WalkingEngine::computeError()
     errorLeft = estimatedLeftToCom - expectedLeftToCom;
     errorRight = estimatedRightToCom - expectedRightToCom;
     errorVelocity = estimatedComVelocity - expectedComVelocity;
-    instability.add(sqr((errorLeft.y + errorRight.y) * 0.5f));
+    instability.push_front(sqr((errorLeft.y() + errorRight.y()) * 0.5f));
   }
   else
   {
-    errorLeft = errorRight = Vector3<>();
-    errorVelocity = Vector2<>();
+    errorLeft = errorRight = Vector3f::Zero();
+    errorVelocity = Vector2f::Zero();
   }
 
-  DEBUG_RESPONSE("module:WalkingEngine:optimize",
+  DEBUG_RESPONSE("module:WalkingEngine:optimize")
   {
     if(theGroundContactState.contact && currentMotionType == stepping)
-      optimizeFitness.add(sqr((errorLeft.y + errorRight.y) * 0.5f));
+      optimizeFitness.push_front(sqr((errorLeft.y() + errorRight.y()) * 0.5f));
     else
-      optimizeFitness.add(sqr((20.f + 20.f) * 0.5f));
-  });
+      optimizeFitness.push_front(sqr((20.f + 20.f) * 0.5f));
+  }
 }
 
 void WalkingEngine::correctPendulumPlayer()
@@ -411,47 +398,51 @@ void WalkingEngine::generateTargetPosture()
 void WalkingEngine::generateJointRequest()
 {
   // use head and arm joint angles
-  jointRequest.angles[JointData::HeadYaw] = targetPosture.headJointAngles[0];
-  jointRequest.angles[JointData::HeadPitch] = targetPosture.headJointAngles[1];
-  jointRequest.angles[JointData::LShoulderPitch] = targetPosture.leftArmJointAngles[0];
-  jointRequest.angles[JointData::LShoulderRoll] = targetPosture.leftArmJointAngles[1];
-  jointRequest.angles[JointData::LElbowYaw] = targetPosture.leftArmJointAngles[2];
-  jointRequest.angles[JointData::LElbowRoll] = targetPosture.leftArmJointAngles[3];
-  jointRequest.angles[JointData::RShoulderPitch] = targetPosture.rightArmJointAngles[0];
-  jointRequest.angles[JointData::RShoulderRoll] = targetPosture.rightArmJointAngles[1];
-  jointRequest.angles[JointData::RElbowYaw] = targetPosture.rightArmJointAngles[2];
-  jointRequest.angles[JointData::RElbowRoll] = targetPosture.rightArmJointAngles[3];
+  jointRequest.angles[Joints::headYaw] = targetPosture.headJointAngles[0];
+  jointRequest.angles[Joints::headPitch] = targetPosture.headJointAngles[1];
+  jointRequest.angles[Joints::lShoulderPitch] = targetPosture.leftArmJointAngles[0];
+  jointRequest.angles[Joints::lShoulderRoll] = targetPosture.leftArmJointAngles[1];
+  jointRequest.angles[Joints::lElbowYaw] = targetPosture.leftArmJointAngles[2];
+  jointRequest.angles[Joints::lElbowRoll] = targetPosture.leftArmJointAngles[3];
+  jointRequest.angles[Joints::lWristYaw] = -90_deg;
+  jointRequest.angles[Joints::lHand] = 0.f;
+  jointRequest.angles[Joints::rShoulderPitch] = targetPosture.rightArmJointAngles[0];
+  jointRequest.angles[Joints::rShoulderRoll] = targetPosture.rightArmJointAngles[1];
+  jointRequest.angles[Joints::rElbowYaw] = targetPosture.rightArmJointAngles[2];
+  jointRequest.angles[Joints::rElbowRoll] = targetPosture.rightArmJointAngles[3];
+  jointRequest.angles[Joints::rWristYaw] = 90_deg;
+  jointRequest.angles[Joints::rHand] = 0.f;
 
   // compute torso orientation
-  bool transition = theMotionSelection.ratios[MotionRequest::specialAction] > 0 || theMotionSelection.ratios[MotionRequest::kick] > 0 || theMotionSelection.ratios[MotionRequest::getUp] > 0;
-  float additionalBodyRotation = (((targetPosture.rightOriginToCom.y - targetPosture.rightOriginToFoot.translation.y) - standComPosition.y) + ((targetPosture.leftOriginToCom.y - targetPosture.leftOriginToFoot.translation.y) + standComPosition.y)) * 0.5f;
+  bool transition = theMotionSelection.ratios[MotionRequest::specialAction] > 0 || theMotionSelection.ratios[MotionRequest::dmpKick] > 0 || theMotionSelection.ratios[MotionRequest::kick] > 0 || theMotionSelection.ratios[MotionRequest::getUp] > 0;
+  float additionalBodyRotation = (targetPosture.rightOriginToCom.y() - targetPosture.rightOriginToFoot.translation.y() + targetPosture.leftOriginToCom.y() - targetPosture.leftOriginToFoot.translation.y()) * 0.5f;
   additionalBodyRotation *= 1.f / (22.5f - 50.f);
   additionalBodyRotation *= walkComBodyRotation;
-  RotationMatrix bodyRotation(Vector3<>(additionalBodyRotation, 0.0f, 0.0f));
+  RotationMatrix bodyRotation = RotationMatrix::aroundX(additionalBodyRotation);
   bodyRotation *= standBodyRotation;
 
   float angularVelocityCorrection = 0.0f;
-  if(!transition && theGroundContactState.contact && theInertiaSensorData.calibrated && theInertiaSensorData.gyro.y != InertiaSensorData::off)
+  if(!transition && theGroundContactState.contact && theInertialData.gyro.y() != SensorData::off)
   {
     // Buffer the relative rotations of the torso around its y-axis.
-    const RotationMatrix relativeRotation = bodyRotation.invert() * lastBodyRotationMatrix;
-    const float relativeRotationY = atan2(relativeRotation.c2.x, relativeRotation.c2.z);
-    relativeRotations.add(relativeRotationY);
+    const RotationMatrix relativeRotation = bodyRotation.inverse() * lastBodyRotationMatrix;
+    const float relativeRotationY = atan2(relativeRotation(0, 2), relativeRotation(2, 2));
+    relativeRotations.push_front(relativeRotationY);
 
     // Calculate the moving average of the gyro measurements.
-    if(lastSmoothedGyroY == InertiaSensorData::off)
-      lastSmoothedGyroY = theInertiaSensorData.gyro.y;
-    const float smoothedGyro = theInertiaSensorData.gyro.y * gyroSmoothing + lastSmoothedGyroY * (1.0f - gyroSmoothing);
+    if(lastSmoothedGyroY == SensorData::off)
+      lastSmoothedGyroY = theInertialData.gyro.y();
+    const float smoothedGyro = theInertialData.gyro.y() * gyroSmoothing + lastSmoothedGyroY * (1.0f - gyroSmoothing);
 
     // Use the difference between the buffered and measured angular velocities of the torso to calculate a
     // relative y-axis angle offset to control the torso's angular velocity.
     const int frameDelay = static_cast<int>(observerMeasurementDelay / (theFrameInfo.cycleTime * 1000.0f));
     ASSERT(frameDelay < 10);
-    if(relativeRotations.getNumberOfEntries() == 10)
+    if(relativeRotations.size() == 10)
     {
-      const float angularVelocityY = (relativeRotations.getEntry(frameDelay - 1) - relativeRotations.getEntry(frameDelay)) / theFrameInfo.cycleTime;
+      const float angularVelocityY = (relativeRotations[frameDelay - 1] - relativeRotations[frameDelay]) / theFrameInfo.cycleTime;
       PLOT("module:WalkingEngine:torsoAngularVelocityY", toDegrees(angularVelocityY));
-      PLOT("module:WalkingEngine:gyroY", toDegrees(theInertiaSensorData.gyro.y));
+      PLOT("module:WalkingEngine:gyroY", toDegrees(theInertialData.gyro.y()));
       PLOT("module:WalkingEngine:smoothedGyroY", toDegrees(smoothedGyro));
       const float errorY = angularVelocityY - smoothedGyro;
       const float approxDerivative = (errorY - lastGyroErrorY) / theFrameInfo.cycleTime;
@@ -462,61 +453,95 @@ void WalkingEngine::generateJointRequest()
   }
   else
   {
-    lastSmoothedGyroY = InertiaSensorData::off;
-    relativeRotations.init();
+    lastSmoothedGyroY = SensorData::off;
+    relativeRotations.clear();
   }
   lastBodyRotationMatrix = bodyRotation;
 
   // compute foot position relative to the center of mass
-  const Pose3D comToLeftOrigin = Pose3D(bodyRotation, targetPosture.leftOriginToCom).invert(); // TODO: optimize this by calculating the inverted left/rightOriginToCom pose directly
-  const Pose3D comToRightOrigin = Pose3D(bodyRotation, targetPosture.rightOriginToCom).invert();
-  const Pose3D comToLeftAnkle = Pose3D(comToLeftOrigin).conc(targetPosture.leftOriginToFoot).translate(0.f, 0.f, theRobotDimensions.heightLeg5Joint);
-  const Pose3D comToRightAnkle = Pose3D(comToRightOrigin).conc(targetPosture.rightOriginToFoot).translate(0.f, 0.f, theRobotDimensions.heightLeg5Joint);
+  const Pose3f comToLeftOrigin = Pose3f(bodyRotation, targetPosture.leftOriginToCom).inverse(); // TODO: optimize this by calculating the inverted left/rightOriginToCom pose directly
+  const Pose3f comToRightOrigin = Pose3f(bodyRotation, targetPosture.rightOriginToCom).inverse();
+  const Pose3f comToLeftAnkle = Pose3f(comToLeftOrigin).conc(targetPosture.leftOriginToFoot).translate(0.f, 0.f, theRobotDimensions.footHeight);
+  const Pose3f comToRightAnkle = Pose3f(comToRightOrigin).conc(targetPosture.rightOriginToFoot).translate(0.f, 0.f, theRobotDimensions.footHeight);
 
   // try to guess bodyToCom
-  const Vector3<> averageComToAnkle = (comToLeftAnkle.translation + comToRightAnkle.translation) * 0.5f;
-  Vector3<> bodyToComOffset = lastAverageComToAnkle != Vector3<>() ? (averageComToAnkle - lastAverageComToAnkle) * 0.4f : Vector3<>();
+  const Vector3f averageComToAnkle = (comToLeftAnkle.translation + comToRightAnkle.translation) * 0.5f;
+  Vector3f bodyToComOffset = lastAverageComToAnkle != Vector3f::Zero() ? Vector3f((averageComToAnkle - lastAverageComToAnkle) * 0.4f) : Vector3f::Zero();
   lastAverageComToAnkle = averageComToAnkle;
   bodyToCom += bodyToComOffset;
 
   RobotModel robotModel;
+  Vector3f offsetFootHeight(0.f, 0.f, -theRobotDimensions.footHeight);
   // find bodyToCom
   for(int i = 0; ; ++i)
   {
-    Pose3D bodyToLeftAnkle = Pose3D(bodyToCom).conc(comToLeftAnkle);
-    Pose3D bodyToRightAnkle = Pose3D(bodyToCom).conc(comToRightAnkle);
-    InverseKinematic::calcLegJoints(bodyToLeftAnkle, bodyToRightAnkle, jointRequest, theRobotDimensions, 0.5f);
+    Pose3f bodyToLeftAnkle = Pose3f(bodyToCom).conc(comToLeftAnkle).translate(offsetFootHeight);
+    Pose3f bodyToRightAnkle = Pose3f(bodyToCom).conc(comToRightAnkle).translate(offsetFootHeight);
+    bool reachable = InverseKinematic::calcLegJoints(bodyToLeftAnkle, bodyToRightAnkle, theStandBodyRotation.bodyRotation, jointRequest, theRobotDimensions, 0.5f);
     robotModel.setJointData(jointRequest, theRobotDimensions, theMassCalibration); // TODO: improve this by not calculating the whole limb/mass model in each iteration
 
-    Vector3<> delta = (robotModel.centerOfMass - bodyToCom) * 1.3f;
+    Vector3f delta = (robotModel.centerOfMass - bodyToCom) * 1.3f;
     bodyToCom += delta;
-    if(i >= 7 || (abs(delta.x) < 0.05 && abs(delta.y) < 0.05 && abs(delta.z) < 0.05))
+    if(i >= 7 || (abs(delta.x()) < 0.05 && abs(delta.y()) < 0.05 && abs(delta.z()) < 0.05))
     {
       bodyToCom = robotModel.centerOfMass;
+      if(!reachable)
+      {
+        ANNOTATION("WalkingEngine", "bodyToCom based on unreachable foot pose");
+        OUTPUT_WARNING("WalkingEngine: bodyToCom based on unreachable foot pose");
+      }
       break;
     }
   }
 
   // Correct the torso's angular velocity.
-  Pose3D torsoInLeftFoot = robotModel.limbs[MassCalibration::footLeft].invert();
-  Pose3D torsoInRightFoot = robotModel.limbs[MassCalibration::footRight].invert();
+  Pose3f torsoInLeftFoot = robotModel.limbs[Limbs::footLeft].inverse();
+  Pose3f torsoInRightFoot = robotModel.limbs[Limbs::footRight].inverse();
   torsoInLeftFoot.rotateY(angularVelocityCorrection);
   torsoInRightFoot.rotateY(angularVelocityCorrection);
-  const Pose3D leftFootInTorso = torsoInLeftFoot.invert();
-  const Pose3D rightFootInTorso = torsoInRightFoot.invert();
-  InverseKinematic::calcLegJoints(leftFootInTorso, rightFootInTorso, jointRequest, theRobotDimensions, 0.5f);
+  const Pose3f leftFootInTorso = torsoInLeftFoot.inverse().translate(offsetFootHeight);
+  const Pose3f rightFootInTorso = torsoInRightFoot.inverse().translate(offsetFootHeight);
+  if(!InverseKinematic::calcLegJoints(leftFootInTorso, rightFootInTorso, theStandBodyRotation.bodyRotation, jointRequest, theRobotDimensions, 0.5f))
+  {
+    ANNOTATION("WalkingEngine", "At least one foot pose unreachable");
+    OUTPUT_WARNING("WalkingEngine: At least one foot pose unreachable");
+  }
 
   // turn head joints off?
-  if(theHeadJointRequest.pan == JointData::off)
-    jointRequest.angles[JointData::HeadYaw] = JointData::off;
-  if(theHeadJointRequest.tilt == JointData::off)
-    jointRequest.angles[JointData::HeadPitch] = JointData::off;
+  if(theHeadJointRequest.pan == JointAngles::off)
+    jointRequest.angles[Joints::headYaw] = JointAngles::off;
+  if(theHeadJointRequest.tilt == JointAngles::off)
+    jointRequest.angles[Joints::headPitch] = JointAngles::off;
 
-  // set hardness
-  jointRequest.jointHardness.hardness[JointData::LAnklePitch] = theDamageConfiguration.weakLeftLeg ? 100 : standHardnessAnklePitch;
-  jointRequest.jointHardness.hardness[JointData::LAnkleRoll] = standHardnessAnkleRoll;
-  jointRequest.jointHardness.hardness[JointData::RAnklePitch] = theDamageConfiguration.weakRightLeg ? 100 : standHardnessAnklePitch;
-  jointRequest.jointHardness.hardness[JointData::RAnkleRoll] = standHardnessAnkleRoll;
+  // set stiffness
+  jointRequest.stiffnessData.stiffnesses[Joints::lAnklePitch] = theDamageConfigurationBody.weakLeftLeg ? 100 : standStiffnessAnklePitch;
+  jointRequest.stiffnessData.stiffnesses[Joints::lAnkleRoll] = standStiffnessAnkleRoll;
+  jointRequest.stiffnessData.stiffnesses[Joints::rAnklePitch] = theDamageConfigurationBody.weakRightLeg ? 100 : standStiffnessAnklePitch;
+  jointRequest.stiffnessData.stiffnesses[Joints::rAnkleRoll] = standStiffnessAnkleRoll;
+
+
+  /*
+  * Making sure that the walkingengine-output arm-angles are the angles the walkingengine would normaly set, but
+  * letting her to calculate on the real (motion combinator) angles
+  */
+  //left arm
+  if(theArmMotionSelection.armRatios[ArmMotionRequest::none] < 1.f)
+  {
+    jointRequest.angles[Joints::lShoulderPitch] = targetPosture.walkingArms.leftArmJointAngles[0];
+    jointRequest.angles[Joints::lShoulderRoll] = targetPosture.walkingArms.leftArmJointAngles[1];
+    jointRequest.angles[Joints::lElbowYaw] = targetPosture.walkingArms.leftArmJointAngles[2];
+    jointRequest.angles[Joints::lElbowRoll] = targetPosture.walkingArms.leftArmJointAngles[3];
+    jointRequest.angles[Joints::lWristYaw] = -90_deg;
+    jointRequest.angles[Joints::lHand] = 0.f;
+  }
+  //right arm
+  if(theArmMotionSelection.armRatios[theArmMotionSelection.rightArmRatiosOffset + ArmMotionRequest::none] < 1.f)
+  {
+    jointRequest.angles[Joints::rShoulderPitch] = targetPosture.walkingArms.rightArmJointAngles[0];
+    jointRequest.angles[Joints::rShoulderRoll] = targetPosture.walkingArms.rightArmJointAngles[1];
+    jointRequest.angles[Joints::rElbowYaw] = targetPosture.walkingArms.rightArmJointAngles[2];
+    jointRequest.angles[Joints::rElbowRoll] = targetPosture.walkingArms.rightArmJointAngles[3];
+  }
 }
 
 void WalkingEngine::generateOutput(WalkingEngineOutput& walkingEngineOutput)
@@ -524,11 +549,11 @@ void WalkingEngine::generateOutput(WalkingEngineOutput& walkingEngineOutput)
   if(pendulumPlayer.phase.type != standPhase)
   {
     const float stepDuration = (pendulumPlayer.phase.td - pendulumPlayer.nextPhase.tu) * 2.f;
-    walkingEngineOutput.speed.translation = Vector2<>(pendulumPlayer.phase.s.translation.x + pendulumPlayer.nextPhase.s.translation.x, pendulumPlayer.phase.s.translation.y + pendulumPlayer.nextPhase.s.translation.y) / stepDuration;
+    walkingEngineOutput.speed.translation = Vector2f(pendulumPlayer.phase.s.translation.x() + pendulumPlayer.nextPhase.s.translation.x(), pendulumPlayer.phase.s.translation.y() + pendulumPlayer.nextPhase.s.translation.y()) / stepDuration;
     walkingEngineOutput.speed.rotation = (pendulumPlayer.phase.s.rotation + pendulumPlayer.nextPhase.s.rotation) / stepDuration;
   }
   else
-    walkingEngineOutput.speed = Pose2D();
+    walkingEngineOutput.speed = Pose2f();
   walkingEngineOutput.odometryOffset = odometryOffset;
 
   walkingEngineOutput.upcomingOdometryOffset = upcomingOdometryOffset;
@@ -554,9 +579,9 @@ void WalkingEngine::generateOutput(WalkingEngineOutput& walkingEngineOutput)
 void WalkingEngine::generateDummyOutput(WalkingEngineOutput& walkingEngineOutput)
 {
   walkingEngineOutput.standing = false;
-  walkingEngineOutput.speed = Pose2D();
-  walkingEngineOutput.odometryOffset = Pose2D();
-  walkingEngineOutput.upcomingOdometryOffset = Pose2D();
+  walkingEngineOutput.speed = Pose2f();
+  walkingEngineOutput.odometryOffset = Pose2f();
+  walkingEngineOutput.upcomingOdometryOffset = Pose2f();
   walkingEngineOutput.upcomingOdometryOffsetValid = true;
   walkingEngineOutput.isLeavingPossible = true;
   walkingEngineOutput.positionInWalkCycle = 0.f;
@@ -572,31 +597,31 @@ void WalkingEngine::generateFirstPendulumPhase(WalkingEngine::PendulumPhase& pha
   phase.k = walkK;
   phase.td = observerMeasurementDelay * (0.001f * 0.5f);
   phase.tu = -phase.td;
-  phase.l = Vector3<>();
-  phase.cl = Vector3<>();
+  phase.l = Vector3f::Zero();
+  phase.cl = Vector3f::Zero();
   phase.s = StepSize();
-  phase.rOpt = phase.rRef = phase.r = Vector2<>(walkRef.x, 0.f);
-  phase.x0 = Vector2<>();
-  phase.xv0 = Vector2<>();
+  phase.rOpt = phase.rRef = phase.r = Vector2f(walkRef.x(), 0.f);
+  phase.x0 = Vector2f::Zero();
+  phase.xv0 = Vector2f::Zero();
   phase.toStand = false;
   phase.fromStand = false;
   phase.kickType = WalkRequest::none;
-  phase.id = phaseBuffer.getNumberOfEntries() == 0 ? 1 : (phaseBuffer[0].id + 1);
+  phase.id = phaseBuffer.empty() ? 1 : (phaseBuffer.front().id + 1);
 
-  phaseBuffer.add(phase);
+  phaseBuffer.push_front(phase);
 }
 
 void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase& phase, WalkingEngine::PendulumPhase& nextPhase)
 {
   // phase may have already been generated, if so do not generate it again
   unsigned int nextPhaseId = phase.id + 1;
-  ASSERT(phaseBuffer.getNumberOfEntries() > 0);
-  if(nextPhaseId <= phaseBuffer[0].id)
+  ASSERT(!phaseBuffer.empty());
+  if(nextPhaseId <= phaseBuffer.front().id)
   {
-    for(int i = 0; i < phaseBuffer.getNumberOfEntries(); ++i)
-      if(phaseBuffer[i].id == nextPhaseId)
+    for(const PendulumPhase& phase : phaseBuffer)
+      if(phase.id == nextPhaseId)
       {
-        nextPhase = phaseBuffer[i];
+        nextPhase = phase;
         return;
       }
     ASSERT(false);
@@ -605,7 +630,7 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
   // get next phase type
   if(requestedMotionType == stepping && phase.type == standPhase)
   {
-    nextPhase.type = ((theMotionRequest.walkRequest.mode == WalkRequest::targetMode ? requestedWalkTarget.translation.y : theMotionRequest.walkRequest.speed.translation.y) > 0.f) ? rightSupportPhase : leftSupportPhase;
+    nextPhase.type = ((theMotionRequest.walkRequest.mode == WalkRequest::targetMode ? requestedWalkTarget.translation.y() : theMotionRequest.walkRequest.speed.translation.y()) > 0.f) ? rightSupportPhase : leftSupportPhase;
     // TODO: check sign
   }
   else if((requestedMotionType == stepping && !phase.toStand) || (phase.type != standPhase && requestedMotionType == stand && !phase.toStand))
@@ -623,29 +648,29 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
     generateFirstPendulumPhase(nextPhase);
     ASSERT(nextPhase.type == standPhase);
     ASSERT(nextPhase.id == nextPhaseId);
-    ASSERT(phaseBuffer[0].id == nextPhaseId);
+    ASSERT(phaseBuffer.front().id == nextPhaseId);
     return;
   }
 
   // leftSupportPhase or rightSupportPhase
   nextPhase.id = nextPhaseId;
   const float sign = nextPhase.type == leftSupportPhase ? 1.f : -1.f;
-  nextPhase.r = Vector2<>(walkRef.x, walkRef.y * sign);
+  nextPhase.r = Vector2f(walkRef.x(), walkRef.y() * sign);
   nextPhase.k = walkK;
   nextPhase.toStand = requestedMotionType == stand && !phase.fromStand;
   nextPhase.fromStand = phase.type == standPhase;
   nextPhase.kickType = WalkRequest::none;
-  nextPhase.l = Vector3<>(walkLiftOffset.x, walkLiftOffset.y * sign, walkLiftOffset.z);
-  nextPhase.cl = Vector3<>(walkComLiftOffset.x, walkComLiftOffset.y * sign, walkComLiftOffset.z);
+  nextPhase.l = Vector3f(walkLiftOffset.x(), walkLiftOffset.y() * sign, walkLiftOffset.z());
+  nextPhase.cl = Vector3f(walkComLiftOffset.x(), walkComLiftOffset.y() * sign, walkComLiftOffset.z());
 
-  if(nextPhase.toStand && (abs(phase.s.translation.x) < walkStepSizeXPlanningLimit.max * 0.5f || theFallDownState.state != FallDownState::upright))
+  if(nextPhase.toStand && (abs(phase.s.translation.x()) < walkStepSizeXPlanningLimit.max * 0.5f || theFallDownState.state != FallDownState::upright))
   {
     nextPhase.td = 0;
     nextPhase.tu = walkPhaseDuration * -0.5f;
     nextPhase.s = StepSize();
-    nextPhase.x0.x = 0;
-    nextPhase.x0.y = -nextPhase.r.y;
-    nextPhase.xv0 = Vector2<>();
+    nextPhase.x0.x() = 0;
+    nextPhase.x0.y() = -nextPhase.r.y();
+    nextPhase.xv0 = Vector2f::Zero();
   }
   else
   {
@@ -656,7 +681,7 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
     float kickPhaseDuration = 0.f;
     if(nextPhase.fromStand || phase.fromStand)
     {
-      nextPhase.l = Vector3<>();
+      nextPhase.l = Vector3f::Zero();
       nextPhase.s = StepSize();
     }
     else if(phase.kickType != WalkRequest::none)
@@ -664,7 +689,7 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
       nextPhase.s = StepSize();
 
       float additionRotation;
-      Vector3<> additionalTranslation;
+      Vector3f additionalTranslation;
       kicks.getKickStepSize(phase.kickType, additionRotation, additionalTranslation);
       nextPhase.s.rotation += additionRotation;
       nextPhase.s.translation += additionalTranslation;
@@ -676,9 +701,9 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
       nextPhase.s = StepSize();
 
       float additionRotation;
-      Vector3<> additionalTranslation;
+      Vector3f additionalTranslation;
       kicks.getKickPreStepSize(nextPhase.kickType, additionRotation, additionalTranslation);
-      nextPhase.r.x += kicks.getKickRefX(nextPhase.kickType, 0.f);
+      nextPhase.r.x() += kicks.getKickRefX(nextPhase.kickType, 0.f);
       nextPhase.s.rotation += additionRotation;
       nextPhase.s.translation += additionalTranslation;
     }
@@ -687,32 +712,32 @@ void WalkingEngine::generateNextPendulumPhase(const WalkingEngine::PendulumPhase
       generateNextStepSize(nextPhase.type, nextPhase.s);
     }
 
-    nextPhase.r.x += abs(nextPhase.s.translation.x) * (walkRefAtFullSpeedX.x - walkRef.x) / (speedMax.translation.x * 0.5f);
-    float rYSpeedFix = (abs(nextPhase.s.translation.x) * (walkRefAtFullSpeedX.y - walkRef.y) / (speedMax.translation.x * 0.5f));
-    nextPhase.r.y += sign * rYSpeedFix;
+    nextPhase.r.x() += abs(nextPhase.s.translation.x()) * (walkRefAtFullSpeedX.x() - walkRef.x()) / (speedMax.translation.x() * 0.5f);
+    float rYSpeedFix = (abs(nextPhase.s.translation.x()) * (walkRefAtFullSpeedX.y() - walkRef.y()) / (speedMax.translation.x() * 0.5f));
+    nextPhase.r.y() += sign * rYSpeedFix;
 
-    nextPhase.l.x += abs(nextPhase.s.translation.x) * (walkLiftOffsetAtFullSpeedX.x - walkLiftOffset.x) / (speedMax.translation.x * 0.5f);
-    nextPhase.l.y += sign * (abs(nextPhase.s.translation.x) * (walkLiftOffsetAtFullSpeedX.y - walkLiftOffset.y) / (speedMax.translation.x * 0.5f));
-    nextPhase.l.z += abs(nextPhase.s.translation.x) * (walkLiftOffsetAtFullSpeedX.z - walkLiftOffset.z) / (speedMax.translation.x * 0.5f);
+    nextPhase.l.x() += abs(nextPhase.s.translation.x()) * (walkLiftOffsetAtFullSpeedX.x() - walkLiftOffset.x()) / (speedMax.translation.x() * 0.5f);
+    nextPhase.l.y() += sign * (abs(nextPhase.s.translation.x()) * (walkLiftOffsetAtFullSpeedX.y() - walkLiftOffset.y()) / (speedMax.translation.x() * 0.5f));
+    nextPhase.l.z() += abs(nextPhase.s.translation.x()) * (walkLiftOffsetAtFullSpeedX.z() - walkLiftOffset.z()) / (speedMax.translation.x() * 0.5f);
 
-    nextPhase.l.x += abs(nextPhase.s.translation.y) * (walkLiftOffsetAtFullSpeedY.x - walkLiftOffset.x) / (speedMax.translation.y);
-    nextPhase.l.y += sign * (abs(nextPhase.s.translation.y) * (walkLiftOffsetAtFullSpeedY.y - walkLiftOffset.y) / (speedMax.translation.y));
-    nextPhase.l.z += abs(nextPhase.s.translation.y) * (walkLiftOffsetAtFullSpeedY.z - walkLiftOffset.z) / (speedMax.translation.y);
+    nextPhase.l.x() += abs(nextPhase.s.translation.y()) * (walkLiftOffsetAtFullSpeedY.x() - walkLiftOffset.x()) / speedMax.translation.y();
+    nextPhase.l.y() += sign * abs(nextPhase.s.translation.y()) * (walkLiftOffsetAtFullSpeedY.y() - walkLiftOffset.y()) / speedMax.translation.y();
+    nextPhase.l.z() += abs(nextPhase.s.translation.y()) * (walkLiftOffsetAtFullSpeedY.z() - walkLiftOffset.z()) / speedMax.translation.y();
 
-    if(nextPhase.l.z > 0.f)
-      nextPhase.lRotation = Vector3<>(
-                    walkLiftRotation.x * sign * fabs(nextPhase.s.translation.y) / speedMax.translation.y,
-                    nextPhase.s.translation.x > 0.f ? (walkLiftRotation.y * nextPhase.s.translation.x / (speedMax.translation.x * 0.5f)) : 0,
-                    walkLiftRotation.z * sign);
+    if(nextPhase.l.z() > 0.f)
+      nextPhase.lRotation = Vector3f(
+                    walkLiftRotation.x() * sign * fabs(nextPhase.s.translation.y()) / speedMax.translation.y(),
+                    nextPhase.s.translation.x() > 0.f ? (walkLiftRotation.y() * nextPhase.s.translation.x() / (speedMax.translation.x() * 0.5f)) : 0,
+                    walkLiftRotation.z() * sign);
 
-    const float walkPhaseDurationX = walkPhaseDuration + abs(nextPhase.s.translation.x) * (walkPhaseDurationAtFullSpeedX - walkPhaseDuration) / (speedMax.translation.x * 0.5f);
-    const float walkPhaseDurationY = walkPhaseDurationX + abs(nextPhase.s.translation.y) * (walkPhaseDurationAtFullSpeedY - walkPhaseDuration) / speedMax.translation.y;
-    computeNextPendulumParamtersY(nextPhase, walkPhaseDurationX, kickPhaseDuration != 0.f ? kickPhaseDuration : walkPhaseDurationY);
-    computeNextPendulumParamtersX(nextPhase);
+    const float walkPhaseDurationX = walkPhaseDuration + abs(nextPhase.s.translation.x()) * (walkPhaseDurationAtFullSpeedX - walkPhaseDuration) / (speedMax.translation.x() * 0.5f);
+    const float walkPhaseDurationY = walkPhaseDurationX + abs(nextPhase.s.translation.y()) * (walkPhaseDurationAtFullSpeedY - walkPhaseDuration) / speedMax.translation.y();
+    computeNextPendulumParametersY(nextPhase, walkPhaseDurationX, kickPhaseDuration != 0.f ? kickPhaseDuration : walkPhaseDurationY);
+    computeNextPendulumParametersX(nextPhase);
   }
 
   nextPhase.rOpt = nextPhase.rRef = nextPhase.r;
-  phaseBuffer.add(nextPhase);
+  phaseBuffer.push_front(nextPhase);
 }
 
 void WalkingEngine::updatePendulumPhase(PendulumPhase& phase, PendulumPhase& nextPhase, bool init) const
@@ -720,35 +745,35 @@ void WalkingEngine::updatePendulumPhase(PendulumPhase& phase, PendulumPhase& nex
   if(phase.type == standPhase)
   {
     ASSERT(nextPhase.type == standPhase || nextPhase.fromStand);
-    ASSERT(fabs(phase.xv0.x) < 0.1f && fabs(phase.xv0.y) < 0.1f);
-    ASSERT(nextPhase.s.translation == Vector3<>());
+    ASSERT(fabs(phase.xv0.x()) < 0.1f && fabs(phase.xv0.y()) < 0.1f);
+    ASSERT(nextPhase.s.translation == Vector3f::Zero());
     return;
   }
 
 #ifndef NDEBUG
-  Vector2<> px = phase.r + phase.x0;
-  Vector2<> pxv = phase.xv0;
+  Vector2f px = phase.r + phase.x0;
+  Vector2f pxv = phase.xv0;
 #endif
 
   updatePendulumParametersY(phase, nextPhase);
   updatePendulumParametersX(phase, nextPhase, init);
 
   ASSERT(nextPhase.tu < 0.f);
-  ASSERT(nextPhase.x0.x == 0.f || nextPhase.toStand);
-  ASSERT(nextPhase.xv0.y == 0.f);
+  ASSERT(nextPhase.x0.x() == 0.f || nextPhase.toStand);
+  ASSERT(nextPhase.xv0.y() == 0.f);
 
-  ASSERT(fabs(phase.r.y + phase.x0.y * cosh(phase.k.y * phase.td) + phase.xv0.y * sinh(phase.k.y * phase.td) / phase.k.y -
-    (nextPhase.s.translation.y + nextPhase.r.y + nextPhase.x0.y * cosh(nextPhase.k.y * nextPhase.tu))) < (phase.td > 0.8f ? 1.f : 0.1f));
-  ASSERT(fabs(phase.x0.y * phase.k.y * sinh(phase.k.y * phase.td) + phase.xv0.y * cosh(phase.k.y * phase.td) -
-    nextPhase.x0.y * nextPhase.k.y * sinh(nextPhase.k.y * nextPhase.tu)) < (phase.td > 0.8f ? 1.f : 0.1f));
+  ASSERT(fabs(phase.r.y() + phase.x0.y() * cosh(phase.k.y() * phase.td) + phase.xv0.y() * sinh(phase.k.y() * phase.td) / phase.k.y() -
+    (nextPhase.s.translation.y() + nextPhase.r.y() + nextPhase.x0.y() * cosh(nextPhase.k.y() * nextPhase.tu))) < (phase.td > 0.8f ? 1.f : 0.1f));
+  ASSERT(fabs(phase.x0.y() * phase.k.y() * sinh(phase.k.y() * phase.td) + phase.xv0.y() * cosh(phase.k.y() * phase.td) -
+    nextPhase.x0.y() * nextPhase.k.y() * sinh(nextPhase.k.y() * nextPhase.tu)) < (phase.td > 0.8f ? 1.f : 0.1f));
 
-  ASSERT(fabs(phase.r.x + phase.x0.x - px.x) < 0.1f || phase.toStand);
-  ASSERT(fabs(phase.r.y + phase.x0.y - px.y) < 0.1f || phase.toStand);
-  ASSERT(fabs(phase.xv0.x - pxv.x) < 0.1f || phase.toStand);
-  ASSERT(fabs(phase.xv0.y - pxv.y) < 0.1f || phase.toStand);
+  ASSERT(fabs(phase.r.x() + phase.x0.x() - px.x()) < 0.1f || phase.toStand);
+  ASSERT(fabs(phase.r.y() + phase.x0.y() - px.y()) < 0.1f || phase.toStand);
+  ASSERT(fabs(phase.xv0.x() - pxv.x()) < 0.1f || phase.toStand);
+  ASSERT(fabs(phase.xv0.y() - pxv.y()) < 0.1f || phase.toStand);
 }
 
-void WalkingEngine::computeNextPendulumParamtersY(PendulumPhase& nextPhase, float walkPhaseDurationX, float walkPhaseDurationY) const
+void WalkingEngine::computeNextPendulumParametersY(PendulumPhase& nextPhase, float walkPhaseDurationX, float walkPhaseDurationY) const
 {
   // compute tu and td using walkPhaseDurationX
   nextPhase.td = walkPhaseDurationX * 0.5f;
@@ -756,24 +781,24 @@ void WalkingEngine::computeNextPendulumParamtersY(PendulumPhase& nextPhase, floa
 
   // compute x0 using walkPhaseDurationY
   const float td = walkPhaseDurationY * 0.5f;
-  const float r = nextPhase.r.y;
-  const float k = nextPhase.k.y;
+  const float r = nextPhase.r.y();
+  const float k = nextPhase.k.y();
   ASSERT(cosh(k * td) != 0.f);
-  const float x0  = -r / cosh(k * td);
-  nextPhase.x0.y = x0;
-  nextPhase.xv0.y = 0.f;
+  const float x0 = -r / cosh(k * td);
+  nextPhase.x0.y() = x0;
+  nextPhase.xv0.y() = 0.f;
   ASSERT(fabs(r + x0 * cosh(k * td)) < 0.1f);
 }
 
-void WalkingEngine::computeNextPendulumParamtersX(PendulumPhase& nextPhase) const
+void WalkingEngine::computeNextPendulumParametersX(PendulumPhase& nextPhase) const
 {
   const float td = nextPhase.td;
-  const float ns =  nextPhase.s.translation.x;
-  const float k = nextPhase.k.x;
+  const float ns = nextPhase.s.translation.x();
+  const float k = nextPhase.k.x();
   ASSERT(sinh(k * td) != 0.f);
   const float xv0 = ns * 0.5f * k / sinh(k * td);
-  nextPhase.x0.x = 0.f;
-  nextPhase.xv0.x = xv0;
+  nextPhase.x0.x() = 0.f;
+  nextPhase.xv0.x() = xv0;
   ASSERT(fabs((xv0 * sinh(k * td) / k) - (ns * 0.5f)) < 0.1f);
 }
 
@@ -781,7 +806,7 @@ void WalkingEngine::generateNextStepSize(PhaseType nextSupportLeg, WalkingEngine
 {
   ASSERT(nextSupportLeg == leftSupportPhase || nextSupportLeg == rightSupportPhase);
 
-  const Pose2D speedMaxMin(0.2f, 20.f, 0.f);
+  const Pose2f speedMaxMin(0.2f, 20.f, 0.f);
 
   if(requestedMotionType != stepping)
   {
@@ -790,38 +815,38 @@ void WalkingEngine::generateNextStepSize(PhaseType nextSupportLeg, WalkingEngine
   }
 
   // get requested walk target and speed
-  Pose2D walkTarget = requestedWalkTarget;
-  Pose2D requestedSpeed = theMotionRequest.walkRequest.speed;
+  Pose2f walkTarget = requestedWalkTarget;
+  Pose2f requestedSpeed = theMotionRequest.walkRequest.speed;
   if(theMotionRequest.walkRequest.mode == WalkRequest::targetMode) // remove upcoming odometry offset
   {
     walkTarget -= upcomingOdometryOffset;
 
-    requestedSpeed = Pose2D(walkTarget.rotation * 2.f / odometryScale.rotation, walkTarget.translation.x * 2.f / odometryScale.translation.x, walkTarget.translation.y * 2.f / odometryScale.translation.y);
+    requestedSpeed = Pose2f(walkTarget.rotation * 2.f / odometryScale.rotation, walkTarget.translation.array() * 2.f / odometryScale.translation.array());
 
-    if(theMotionRequest.walkRequest.speed.translation.x == 0.f)
-      requestedSpeed.translation.x = 0.f;
-    if(theMotionRequest.walkRequest.speed.translation.y == 0.f)
-      requestedSpeed.translation.y = 0.f;
+    if(theMotionRequest.walkRequest.speed.translation.x() == 0.f)
+      requestedSpeed.translation.x() = 0.f;
+    if(theMotionRequest.walkRequest.speed.translation.y() == 0.f)
+      requestedSpeed.translation.y() = 0.f;
     if(theMotionRequest.walkRequest.speed.rotation == 0.f)
       requestedSpeed.rotation = 0.f;
   }
   else if(theMotionRequest.walkRequest.mode == WalkRequest::percentageSpeedMode)
   {
     requestedSpeed.rotation *= speedMax.rotation;
-    requestedSpeed.translation.x *= (theMotionRequest.walkRequest.speed.translation.x >= 0.f ? speedMax.translation.x : speedMaxBackwards);
-    requestedSpeed.translation.y *= speedMax.translation.y;
+    requestedSpeed.translation.x() *= (theMotionRequest.walkRequest.speed.translation.x() >= 0.f ? speedMax.translation.x() : speedMaxBackwards);
+    requestedSpeed.translation.y() *= speedMax.translation.y();
   }
 
   // reduce speed for target walks near the target to handle limited deceleration
   if(theMotionRequest.walkRequest.mode == WalkRequest::targetMode)
   {
-    float maxSpeedForTargetX = sqrt(2.f * abs(requestedSpeed.translation.x) * speedMaxChange.translation.x);
-    if(abs(requestedSpeed.translation.x) > maxSpeedForTargetX)
-      requestedSpeed.translation.x = requestedSpeed.translation.x >= 0.f ? maxSpeedForTargetX : -maxSpeedForTargetX;
+    float maxSpeedForTargetX = sqrt(2.f * abs(requestedSpeed.translation.x()) * speedMaxChange.translation.x());
+    if(abs(requestedSpeed.translation.x()) > maxSpeedForTargetX)
+      requestedSpeed.translation.x() = requestedSpeed.translation.x() >= 0.f ? maxSpeedForTargetX : -maxSpeedForTargetX;
 
-    float maxSpeedForTargetY = sqrt(2.f * abs(requestedSpeed.translation.y) * speedMaxChange.translation.y);
-    if(abs(requestedSpeed.translation.y) > maxSpeedForTargetY)
-      requestedSpeed.translation.y = requestedSpeed.translation.y >= 0.f ? maxSpeedForTargetY : -maxSpeedForTargetY;
+    float maxSpeedForTargetY = sqrt(2.f * abs(requestedSpeed.translation.y()) * speedMaxChange.translation.y());
+    if(abs(requestedSpeed.translation.y()) > maxSpeedForTargetY)
+      requestedSpeed.translation.y() = requestedSpeed.translation.y() >= 0.f ? maxSpeedForTargetY : -maxSpeedForTargetY;
 
     float maxSpeedForTargetR = sqrt(2.f * abs(requestedSpeed.rotation) * speedMaxChange.rotation);
     if(abs(requestedSpeed.rotation) > maxSpeedForTargetR)
@@ -829,69 +854,69 @@ void WalkingEngine::generateNextStepSize(PhaseType nextSupportLeg, WalkingEngine
   }
 
   // normalize x-y-speed
-  const Pose2D maxSpeed(speedMax.rotation, requestedSpeed.translation.x < 0.f ? speedMaxBackwards : speedMax.translation.x, speedMax.translation.y);
+  const Pose2f maxSpeed(speedMax.rotation, requestedSpeed.translation.x() < 0.f ? speedMaxBackwards : speedMax.translation.x(), speedMax.translation.y());
   {
-    Vector2<> tmpSpeed(
-      requestedSpeed.translation.x / (speedMaxMin.translation.x + maxSpeed.translation.x),
-      requestedSpeed.translation.y / (speedMaxMin.translation.y + maxSpeed.translation.y));
-    const float tmpSpeedAbs = tmpSpeed.abs();
+    Vector2f tmpSpeed(
+      requestedSpeed.translation.x() / (speedMaxMin.translation.x() + maxSpeed.translation.x()),
+      requestedSpeed.translation.y() / (speedMaxMin.translation.y() + maxSpeed.translation.y()));
+    const float tmpSpeedAbs = tmpSpeed.norm();
     if(tmpSpeedAbs > 1.f)
     {
       tmpSpeed /= tmpSpeedAbs;
-      tmpSpeed.x *= (speedMaxMin.translation.x + maxSpeed.translation.x);
-      tmpSpeed.y *= (speedMaxMin.translation.y + maxSpeed.translation.y);
-      requestedSpeed.translation.x = Range<>(-maxSpeed.translation.x, maxSpeed.translation.x).limit(tmpSpeed.x);
-      requestedSpeed.translation.y = Range<>(-maxSpeed.translation.y, maxSpeed.translation.y).limit(tmpSpeed.y);
+      tmpSpeed.x() *= speedMaxMin.translation.x() + maxSpeed.translation.x();
+      tmpSpeed.y() *= speedMaxMin.translation.y() + maxSpeed.translation.y();
+      requestedSpeed.translation.x() = Rangef(-maxSpeed.translation.x(), maxSpeed.translation.x()).limit(tmpSpeed.x());
+      requestedSpeed.translation.y() = Rangef(-maxSpeed.translation.y(), maxSpeed.translation.y()).limit(tmpSpeed.y());
     }
   }
 
   // normalize speed (including rotation)
   {
-    Vector3<> tmpSpeed(
-      requestedSpeed.translation.x / (speedMaxMin.translation.x + maxSpeed.translation.x),
-      requestedSpeed.translation.y / (speedMaxMin.translation.y + maxSpeed.translation.y),
+    Vector3f tmpSpeed(
+      requestedSpeed.translation.x() / (speedMaxMin.translation.x() + maxSpeed.translation.x()),
+      requestedSpeed.translation.y() / (speedMaxMin.translation.y() + maxSpeed.translation.y()),
       requestedSpeed.rotation / (speedMaxMin.rotation + maxSpeed.rotation));
-    const float tmpSpeedAbs = tmpSpeed.abs();
+    const float tmpSpeedAbs = tmpSpeed.norm();
     if(tmpSpeedAbs > 1.f)
     {
       tmpSpeed /= tmpSpeedAbs;
-      tmpSpeed.x *= (speedMaxMin.translation.x + maxSpeed.translation.x);
-      tmpSpeed.y *= (speedMaxMin.translation.y + maxSpeed.translation.y);
-      tmpSpeed.z *= (speedMaxMin.rotation + maxSpeed.rotation);
-      requestedSpeed.translation.x = Range<>(-maxSpeed.translation.x, maxSpeed.translation.x).limit(tmpSpeed.x);
-      requestedSpeed.translation.y = Range<>(-maxSpeed.translation.y, maxSpeed.translation.y).limit(tmpSpeed.y);
-      requestedSpeed.rotation = Range<>(-maxSpeed.rotation, maxSpeed.rotation).limit(tmpSpeed.z);
+      tmpSpeed.x() *= speedMaxMin.translation.x() + maxSpeed.translation.x();
+      tmpSpeed.y() *= speedMaxMin.translation.y() + maxSpeed.translation.y();
+      tmpSpeed.z() *= speedMaxMin.rotation + maxSpeed.rotation;
+      requestedSpeed.translation.x() = Rangef(-maxSpeed.translation.x(), maxSpeed.translation.x()).limit(tmpSpeed.x());
+      requestedSpeed.translation.y() = Rangef(-maxSpeed.translation.y(), maxSpeed.translation.y()).limit(tmpSpeed.y());
+      requestedSpeed.rotation = Rangef(-maxSpeed.rotation, maxSpeed.rotation).limit(tmpSpeed.z());
     }
   }
 
   // max rotation speed change clipping (rotation-only)
-  requestedSpeed.rotation = Range<>(lastSelectedSpeed.rotation - speedMaxChange.rotation, lastSelectedSpeed.rotation + speedMaxChange.rotation).limit(requestedSpeed.rotation);
+  requestedSpeed.rotation = Rangef(lastSelectedSpeed.rotation - speedMaxChange.rotation, lastSelectedSpeed.rotation + speedMaxChange.rotation).limit(requestedSpeed.rotation);
   lastSelectedSpeed = requestedSpeed;
 
   // clip requested walk speed to a target walk speed limit
   if(theMotionRequest.walkRequest.mode == WalkRequest::targetMode)
   {
-    requestedSpeed.translation.x = Range<>(-speedMax.translation.x * theMotionRequest.walkRequest.speed.translation.x, speedMax.translation.x * theMotionRequest.walkRequest.speed.translation.x).limit(requestedSpeed.translation.x);
-    requestedSpeed.translation.y = Range<>(-speedMax.translation.y * theMotionRequest.walkRequest.speed.translation.y, speedMax.translation.y * theMotionRequest.walkRequest.speed.translation.y).limit(requestedSpeed.translation.y);
-    requestedSpeed.rotation = Range<>(-speedMax.rotation * theMotionRequest.walkRequest.speed.rotation, speedMax.rotation * theMotionRequest.walkRequest.speed.rotation).limit(requestedSpeed.rotation);
+    requestedSpeed.translation.x() = Rangef(-speedMax.translation.x() * theMotionRequest.walkRequest.speed.translation.x(), speedMax.translation.x() * theMotionRequest.walkRequest.speed.translation.x()).limit(requestedSpeed.translation.x());
+    requestedSpeed.translation.y() = Rangef(-speedMax.translation.y() * theMotionRequest.walkRequest.speed.translation.y(), speedMax.translation.y() * theMotionRequest.walkRequest.speed.translation.y()).limit(requestedSpeed.translation.y());
+    requestedSpeed.rotation = Rangef(-speedMax.rotation * theMotionRequest.walkRequest.speed.rotation, speedMax.rotation * theMotionRequest.walkRequest.speed.rotation).limit(requestedSpeed.rotation);
   }
 
   // generate step size from requested walk speed
-  nextStepSize = StepSize(requestedSpeed.rotation, requestedSpeed.translation.x * 0.5f, requestedSpeed.translation.y);
+  nextStepSize = StepSize(requestedSpeed.rotation, requestedSpeed.translation.x() * 0.5f, requestedSpeed.translation.y());
 
   // just move the outer foot, when walking sidewards or when rotating
-  if((nextStepSize.translation.y < 0.f && nextSupportLeg == leftSupportPhase) || (nextStepSize.translation.y > 0.f && nextSupportLeg != leftSupportPhase))
-    nextStepSize.translation.y = 0.f;
+  if((nextStepSize.translation.y() < 0.f && nextSupportLeg == leftSupportPhase) || (nextStepSize.translation.y() > 0.f && nextSupportLeg != leftSupportPhase))
+    nextStepSize.translation.y() = 0.f;
   if((nextStepSize.rotation < 0.f && nextSupportLeg == leftSupportPhase) || (nextStepSize.rotation > 0.f && nextSupportLeg != leftSupportPhase))
     nextStepSize.rotation = 0.f;
 
   // clip to walk target
   if(theMotionRequest.walkRequest.mode == WalkRequest::targetMode)
   {
-    if((nextStepSize.translation.x > 0.f && walkTarget.translation.x > 0.f && nextStepSize.translation.x * odometryScale.translation.x > walkTarget.translation.x) || (nextStepSize.translation.x < 0.f && walkTarget.translation.x < 0.f && nextStepSize.translation.x * odometryScale.translation.x < walkTarget.translation.x))
-      nextStepSize.translation.x = walkTarget.translation.x / odometryScale.translation.x;
-    if((nextStepSize.translation.y > 0.f && walkTarget.translation.y > 0.f && nextStepSize.translation.y * odometryScale.translation.y > walkTarget.translation.y) || (nextStepSize.translation.y < 0.f && walkTarget.translation.y < 0.f && nextStepSize.translation.y * odometryScale.translation.y < walkTarget.translation.y))
-      nextStepSize.translation.y = walkTarget.translation.y / odometryScale.translation.y;
+    if((nextStepSize.translation.x() > 0.f && walkTarget.translation.x() > 0.f && nextStepSize.translation.x() * odometryScale.translation.x() > walkTarget.translation.x()) || (nextStepSize.translation.x() < 0.f && walkTarget.translation.x() < 0.f && nextStepSize.translation.x() * odometryScale.translation.x() < walkTarget.translation.x()))
+      nextStepSize.translation.x() = walkTarget.translation.x() / odometryScale.translation.x();
+    if((nextStepSize.translation.y() > 0.f && walkTarget.translation.y() > 0.f && nextStepSize.translation.y() * odometryScale.translation.y() > walkTarget.translation.y()) || (nextStepSize.translation.y() < 0.f && walkTarget.translation.y() < 0.f && nextStepSize.translation.y() * odometryScale.translation.y() < walkTarget.translation.y()))
+      nextStepSize.translation.y() = walkTarget.translation.y() / odometryScale.translation.y();
     if((nextStepSize.rotation > 0.f && walkTarget.rotation > 0.f && nextStepSize.rotation * odometryScale.rotation > walkTarget.rotation) || (nextStepSize.rotation < 0.f && walkTarget.rotation < 0.f && nextStepSize.rotation * odometryScale.rotation < walkTarget.rotation))
       nextStepSize.rotation = walkTarget.rotation / odometryScale.rotation;
   }
@@ -900,38 +925,35 @@ void WalkingEngine::generateNextStepSize(PhaseType nextSupportLeg, WalkingEngine
 void WalkingEngine::computeOdometryOffset()
 {
   {
-    Pose3D footLeft = Pose3D(theRobotModel.limbs[MassCalibration::footLeft]).translate(0.f, 0.f, -theRobotDimensions.heightLeg5Joint);
-    Pose3D footRight = Pose3D(theRobotModel.limbs[MassCalibration::footRight]).translate(0.f, 0.f, -theRobotDimensions.heightLeg5Joint);
-    Vector3<> odometryOrigin = (footLeft.translation + footRight.translation) * 0.5f;
-    if(lastOdometryOrigin.z != 0.f)
+    Pose3f footLeft = theRobotModel.limbs[Limbs::footLeft].translated(0.f, 0.f, -theRobotDimensions.footHeight);
+    Pose3f footRight = theRobotModel.limbs[Limbs::footRight].translated(0.f, 0.f, -theRobotDimensions.footHeight);
+    Vector3f odometryOrigin = (footLeft.translation + footRight.translation) * 0.5f;
+    if(lastOdometryOrigin.z() != 0.f)
     {
-      Pose3D& footSupport = pendulumPlayer.phase.type == leftSupportPhase ? footLeft : footRight;
-      Pose3D& lastFootSupport = pendulumPlayer.phase.type == leftSupportPhase ? lastFootLeft : lastFootRight;
-      Pose3D odometryOffset3DinP = (Pose3D(-odometryOrigin).conc(footSupport).conc(lastFootSupport.invert()).conc(lastOdometryOrigin)).invert();
-      Pose3D odometryOffset3D = Pose3D(theTorsoMatrix).conc(odometryOffset3DinP).conc(theTorsoMatrix.invert());
+      Pose3f& footSupport = pendulumPlayer.phase.type == leftSupportPhase ? footLeft : footRight;
+      Pose3f& lastFootSupport = pendulumPlayer.phase.type == leftSupportPhase ? lastFootLeft : lastFootRight;
+      Pose3f odometryOffset3DinP = (Pose3f(-odometryOrigin).conc(footSupport).conc(lastFootSupport.inverse()).conc(lastOdometryOrigin)).inverse();
+      Pose3f odometryOffset3D = Pose3f(theTorsoMatrix).conc(odometryOffset3DinP).conc(theTorsoMatrix.inverse());
       odometryOffset.rotation = odometryOffset3D.rotation.getZAngle() * odometryScale.rotation;
-      odometryOffset.translation.x = odometryOffset3D.translation.x * odometryScale.translation.x;
-      odometryOffset.translation.y = odometryOffset3D.translation.y * odometryScale.translation.y;
+      odometryOffset.translation.x() = odometryOffset3D.translation.x() * odometryScale.translation.x();
+      odometryOffset.translation.y() = odometryOffset3D.translation.y() * odometryScale.translation.y();
     }
     else
-      odometryOffset = Pose2D();
+      odometryOffset = Pose2f();
     lastFootLeft = footLeft;
     lastFootRight = footRight;
     lastOdometryOrigin = odometryOrigin;
   }
 
   // compute upcoming odometry offset
-  upcomingOdometryOffset = Pose2D((pendulumPlayer.nextPhase.s.rotation - observedStepOffset.rotation) * 0.5f * odometryScale.rotation,
-                                  (pendulumPlayer.nextPhase.s.translation.x - observedStepOffset.translation.x) * 0.5f * odometryScale.translation.x,
-                                  (pendulumPlayer.nextPhase.s.translation.y - observedStepOffset.translation.y) * 0.5f * odometryScale.translation.y);
-  upcomingOdometryOffset += Pose2D(pendulumPlayer.nextPhase.s.rotation * 0.5f * odometryScale.rotation,
-                                   pendulumPlayer.nextPhase.s.translation.x * 0.5f * odometryScale.translation.x,
-                                   pendulumPlayer.nextPhase.s.translation.y * 0.5f * odometryScale.translation.y);
+  upcomingOdometryOffset = Pose2f((pendulumPlayer.nextPhase.s.rotation - observedStepOffset.rotation) * 0.5f * odometryScale.rotation,
+                                  (pendulumPlayer.nextPhase.s.translation.head<2>() - observedStepOffset.translation).array() * 0.5f * odometryScale.translation.array());
+  upcomingOdometryOffset += Pose2f(pendulumPlayer.nextPhase.s.rotation * 0.5f * odometryScale.rotation,
+                                   pendulumPlayer.nextPhase.s.translation.head<2>().array() * 0.5f * odometryScale.translation.array());
   if(predictedPendulumPlayer.nextPhase.id > pendulumPlayer.nextPhase.id)
   {
-    Pose2D upcomingOdometryOffsetNextPhase(predictedPendulumPlayer.nextPhase.s.rotation * odometryScale.rotation,
-                                           predictedPendulumPlayer.nextPhase.s.translation.x * odometryScale.translation.x,
-                                           predictedPendulumPlayer.nextPhase.s.translation.y * odometryScale.translation.y);
+    Pose2f upcomingOdometryOffsetNextPhase(predictedPendulumPlayer.nextPhase.s.rotation * odometryScale.rotation,
+                                           predictedPendulumPlayer.nextPhase.s.translation.head<2>().array() * odometryScale.translation.array());
     upcomingOdometryOffset += upcomingOdometryOffsetNextPhase;
   }
 
@@ -942,7 +964,7 @@ void WalkingEngine::computeOdometryOffset()
 
 void WalkingEngine::applyCorrection(PendulumPhase& phase, PendulumPhase& nextPhase)
 {
-  Vector3<>* directError, * indirectError;
+  Vector3f* directError, *indirectError;
   if(phase.type == leftSupportPhase)
   {
     directError = &errorLeft;
@@ -957,36 +979,36 @@ void WalkingEngine::applyCorrection(PendulumPhase& phase, PendulumPhase& nextPha
 
   if(phase.type != standPhase)
   {
-    const Vector2<> px = phase.r + phase.x0;
-    const Vector2<> xv = phase.xv0;
-    const Vector2<> xa(phase.x0.x * phase.k.x * phase.k.x, phase.x0.y * phase.k.y * phase.k.y);
+    const Vector2f px = phase.r + phase.x0;
+    const Vector2f xv = phase.xv0;
+    const Vector2f xa(phase.x0.x() * phase.k.x() * phase.k.x(), phase.x0.y() * phase.k.y() * phase.k.y());
 
-    measuredPx = Vector2<>(px.x + directError->x, px.y + directError->y);
-    const Vector2<> measuredPx = Vector2<>(px.x + directError->x * balanceCom.x, px.y + directError->y * balanceCom.y);
-    Vector2<> measuredXv = xv + (measuredPx - px) / theFrameInfo.cycleTime;
-    const Vector2<> measuredXa = xa + (measuredXv - xv) / theFrameInfo.cycleTime;
+    measuredPx = Vector2f(px.x() + directError->x(), px.y() + directError->y());
+    const Vector2f measuredPx = Vector2f(px.x() + directError->x() * balanceCom.x(), px.y() + directError->y() * balanceCom.y());
+    Vector2f measuredXv = xv + (measuredPx - px) / theFrameInfo.cycleTime;
+    const Vector2f measuredXa = xa + (measuredXv - xv) / theFrameInfo.cycleTime;
 
-    const Vector2<> measuredX(measuredXa.x / (phase.k.x * phase.k.x), measuredXa.y / (phase.k.y * phase.k.y));
+    const Vector2f measuredX(measuredXa.x() / (phase.k.x() * phase.k.x()), measuredXa.y() / (phase.k.y() * phase.k.y()));
     measuredR = measuredPx - measuredX;
 
-    measuredXv = Vector2<>(xv.x + errorVelocity.x * balanceComVelocity.x, xv.y + errorVelocity.y * balanceComVelocity.y);
+    measuredXv = Vector2f(xv.x() + errorVelocity.x() * balanceComVelocity.x(), xv.y() + errorVelocity.y() * balanceComVelocity.y());
 
     const float rYSign = phase.type == leftSupportPhase ? 1.f : -1.f;
-    Range<> rYLimit = Range<>(phase.rOpt.y + walkRefYLimit.min * rYSign).add(phase.rOpt.y + walkRefYLimit.max * rYSign);
+    Rangef rYLimit = Rangef(phase.rOpt.y() + walkRefYLimit.min * rYSign).add(phase.rOpt.y() + walkRefYLimit.max * rYSign);
 
-    Vector2<> newR = phase.r;
+    Vector2f newR = phase.r;
 
     // method #1: use measured ZMP as new ref
     //newR = measuredR; // ???
     //newR.y = rYLimit.limit(newR.y);
 
     // method #2: p-control
-    newR.x = phase.rRef.x - (measuredR.x - phase.rRef.x) * balanceRef.x; // ????
-    newR.y = phase.rRef.y - (measuredR.y - phase.rRef.y) * balanceRef.y; // ????
-    newR.y = rYLimit.limit(newR.y);
+    newR.x() = phase.rRef.x() - (measuredR.x() - phase.rRef.x()) * balanceRef.x(); // ????
+    newR.y() = phase.rRef.y() - (measuredR.y() - phase.rRef.y()) * balanceRef.y(); // ????
+    newR.y() = rYLimit.limit(newR.y());
 
-    Vector2<> newX = measuredPx - newR;
-    Vector2<> newXv = measuredXv;
+    Vector2f newX = measuredPx - newR;
+    Vector2f newXv = measuredXv;
 
     phase.x0 = newX;
     phase.xv0 = newXv;
@@ -995,21 +1017,21 @@ void WalkingEngine::applyCorrection(PendulumPhase& phase, PendulumPhase& nextPha
 
   if(nextPhase.type != standPhase && !nextPhase.toStand)
   {
-    nextPhase.r.x = nextPhase.rOpt.x + indirectError->x * balanceNextRef.x;
-    nextPhase.r.y = nextPhase.rOpt.y + indirectError->y * balanceNextRef.y;
+    nextPhase.r.x() = nextPhase.rOpt.x() + indirectError->x() * balanceNextRef.x();
+    nextPhase.r.y() = nextPhase.rOpt.y() + indirectError->y() * balanceNextRef.y();
 
-    Range<> nrXLimit(nextPhase.rOpt.x + walkRefXLimit.min, nextPhase.rOpt.x + walkRefXLimit.max);
+    Rangef nrXLimit(nextPhase.rOpt.x() + walkRefXLimit.min, nextPhase.rOpt.x() + walkRefXLimit.max);
     const float nrYSign = nextPhase.type == leftSupportPhase ? 1.f : -1.f;
-    Range<> nrYLimit = Range<>(nextPhase.rOpt.y + walkRefYLimit.min * nrYSign).add(nextPhase.rOpt.y + walkRefYLimit.max * nrYSign);
+    Rangef nrYLimit = Rangef(nextPhase.rOpt.y() + walkRefYLimit.min * nrYSign).add(nextPhase.rOpt.y() + walkRefYLimit.max * nrYSign);
 
-    nextPhase.r.x = nrXLimit.limit(nextPhase.r.x);
-    nextPhase.r.y = nrYLimit.limit(nextPhase.r.y);
+    nextPhase.r.x() = nrXLimit.limit(nextPhase.r.x());
+    nextPhase.r.y() = nrYLimit.limit(nextPhase.r.y());
 
-    float nsxapprox = 2.f * nextPhase.xv0.x * cosh(nextPhase.k.x * nextPhase.tu);
-    nsxapprox += indirectError->x * balanceStepSize.x;
-    nextPhase.xv0.x = nsxapprox / (2.f * cosh(nextPhase.k.x * nextPhase.tu));
+    float nsxapprox = 2.f * nextPhase.xv0.x() * cosh(nextPhase.k.x() * nextPhase.tu);
+    nsxapprox += indirectError->x() * balanceStepSize.x();
+    nextPhase.xv0.x() = nsxapprox / (2.f * cosh(nextPhase.k.x() * nextPhase.tu));
 
-    nextPhase.s.translation.y += indirectError->y * balanceStepSize.y;
+    nextPhase.s.translation.y() += indirectError->y() * balanceStepSize.y();
   }
 
   repairPendulumParametersY(phase, nextPhase);
@@ -1029,37 +1051,35 @@ void WalkingEngine::PendulumPlayer::seek(float deltaTime)
     phase.tu -= dt;
     switch(phase.type)
     {
-    case standPhase:
-      ASSERT(fabs(phase.xv0.x) < 0.1f);
-      ASSERT(fabs(phase.xv0.y) < 0.1f);
-      ASSERT(fabs(phase.x0.x) < 0.1f);
-      ASSERT(fabs(phase.x0.y) < 0.1f);
-      break;
+      case standPhase:
+        ASSERT(fabs(phase.xv0.x()) < 0.1f);
+        ASSERT(fabs(phase.xv0.y()) < 0.1f);
+        ASSERT(fabs(phase.x0.x()) < 0.1f);
+        ASSERT(fabs(phase.x0.y()) < 0.1f);
+        break;
 
-    case leftSupportPhase:
-    case rightSupportPhase:
-      // y
-      {
-        const float k = phase.k.y;
+      case leftSupportPhase:
+      case rightSupportPhase:
+      { // y
+        const float k = phase.k.y();
         const float kDt = k * dt;
         const float coshKDt = cosh(kDt);
         const float sinhKDt = sinh(kDt);
-        const float x0 = phase.x0.y;
-        const float xv0 = phase.xv0.y;
-        phase.x0.y = x0 * coshKDt + xv0 / k * sinhKDt;
-        phase.xv0.y = x0 * k * sinhKDt + xv0 * coshKDt;
+        const float x0 = phase.x0.y();
+        const float xv0 = phase.xv0.y();
+        phase.x0.y() = x0 * coshKDt + xv0 / k * sinhKDt;
+        phase.xv0.y() = x0 * k * sinhKDt + xv0 * coshKDt;
       }
 
-      // x
-      {
-        const float k = phase.k.x;
+      { // x
+        const float k = phase.k.x();
         const float kDt = k * dt;
         const float coshKDt = cosh(kDt);
         const float sinhKDt = sinh(kDt);
-        const float x0 = phase.x0.x;
-        const float xv0 = phase.xv0.x;
-        phase.x0.x = x0 * coshKDt + xv0 / k * sinhKDt;
-        phase.xv0.x = x0 * k * sinhKDt + xv0 * coshKDt;
+        const float x0 = phase.x0.x();
+        const float xv0 = phase.xv0.x();
+        phase.x0.x() = x0 * coshKDt + xv0 / k * sinhKDt;
+        phase.xv0.x() = x0 * k * sinhKDt + xv0 * coshKDt;
       }
 
       if(kickPlayer.isActive() && deltaTime == 0)
@@ -1067,9 +1087,9 @@ void WalkingEngine::PendulumPlayer::seek(float deltaTime)
 
       break;
 
-    default:
-      ASSERT(false);
-      break;
+      default:
+        ASSERT(false);
+        break;
     }
 
     if(deltaTime == 0.f)
@@ -1079,11 +1099,11 @@ void WalkingEngine::PendulumPlayer::seek(float deltaTime)
 
     // phase transition
     kickPlayer.stop();
-    Vector2<> px = phase.r + phase.x0;
-    Vector2<> pxv = phase.xv0;
+    Vector2f px = phase.r + phase.x0;
+    Vector2f pxv = phase.xv0;
     phase = nextPhase;
     engine->generateNextPendulumPhase(phase, nextPhase);
-    phase.x0 = (px - Vector2<>(phase.s.translation.x, phase.s.translation.y)) - phase.r;
+    phase.x0 = (px - Vector2f(phase.s.translation.x(), phase.s.translation.y())) - phase.r;
     phase.xv0 = pxv;
     phase.td -= phase.tu;
     phase.tu = 0.f;
@@ -1093,31 +1113,31 @@ void WalkingEngine::PendulumPlayer::seek(float deltaTime)
   }
 }
 
-void WalkingEngine::PendulumPlayer::getPosture(LegPosture& stance, float* leftArmAngle, float* rightArmAngle, Pose2D* stepOffset)
+void WalkingEngine::PendulumPlayer::getPosture(LegPosture& stance, float* leftArmAngle, float* rightArmAngle, Pose2f* stepOffset)
 {
   const WalkingEngine& p = *engine;
   switch(phase.type)
   {
-  case standPhase:
-    ASSERT(fabs(phase.xv0.x) < 0.1f && fabs(phase.xv0.y) < 0.1f);
-    stance.leftOriginToCom = stance.rightOriginToCom = Vector3<>(phase.r.x + phase.x0.x, phase.r.y + phase.x0.y, p.standComPosition.z);
-    stance.leftOriginToFoot = Pose3D(Vector3<>(0.f, p.standComPosition.y, 0.f));
-    stance.rightOriginToFoot = Pose3D(Vector3<>(0.f, -p.standComPosition.y, 0.f));
+    case standPhase:
+      ASSERT(fabs(phase.xv0.x()) < 0.1f && fabs(phase.xv0.y()) < 0.1f);
+      stance.leftOriginToCom = stance.rightOriginToCom = Vector3f(phase.r.x() + phase.x0.x(), phase.r.y() + phase.x0.y(), p.standComPosition.z);
+      stance.leftOriginToFoot = Pose3f(Vector3f(0.f, p.standComPosition.y, 0.f));
+      stance.rightOriginToFoot = Pose3f(Vector3f(0.f, -p.standComPosition.y, 0.f));
       // TODO: nextPhase.s?
 
-    if(stepOffset)
-      *stepOffset = Pose2D();
+      if(stepOffset)
+        *stepOffset = Pose2f();
 
-    break;
+      break;
 
-  default:
+    default:
     {
       const float ratio = -phase.tu / (phase.td - phase.tu);
       const float swingMoveFadeIn = ratio < p.walkMovePhase.start ? 0.f : ratio > p.walkMovePhase.start + p.walkMovePhase.duration ? 1.f : blend((ratio - p.walkMovePhase.start) / p.walkMovePhase.duration);
       const float swingMoveFadeOut = 1.f - swingMoveFadeIn;
       const float swingLift = ratio < p.walkLiftPhase.start || ratio > p.walkLiftPhase.start + p.walkLiftPhase.duration ? 0.f : blend((ratio - p.walkLiftPhase.start) / p.walkLiftPhase.duration * 2.f);
 
-      Vector3<> comLift;
+      Vector3f comLift;
       if(phase.fromStand || phase.toStand)
       {
         ASSERT(phase.fromStand != phase.toStand);
@@ -1132,44 +1152,44 @@ void WalkingEngine::PendulumPlayer::getPosture(LegPosture& stance, float* leftAr
       switch(phase.type)
       {
         case leftSupportPhase:
-          {
-            stance.leftOriginToCom = Vector3<>(phase.r.x + phase.x0.x, phase.r.y + phase.x0.y, p.standComPosition.z) - comLift;
-            const Vector3<>& leftOriginToRightOrigin = nextPhase.s.translation;
-            stance.rightOriginToCom = stance.leftOriginToCom - leftOriginToRightOrigin;
+        {
+          stance.leftOriginToCom = Vector3f(phase.r.x() + phase.x0.x(), phase.r.y() + phase.x0.y(), p.standComPosition.z) - comLift;
+          const Vector3f& leftOriginToRightOrigin = nextPhase.s.translation;
+          stance.rightOriginToCom = stance.leftOriginToCom - leftOriginToRightOrigin;
 
-            Vector3<> rightStepOffsetRotation = nextPhase.lRotation * swingLift;
-            rightStepOffsetRotation.z += nextPhase.s.rotation * swingMoveFadeIn;
-            const Vector3<> leftStepOffsetRotation(0.f, swingLift * (phase.rRef.x - phase.rOpt.x) * p.walkSupportRotation, phase.s.rotation * swingMoveFadeOut);
+          Vector3f rightStepOffsetRotation = nextPhase.lRotation * swingLift;
+          rightStepOffsetRotation.z() += nextPhase.s.rotation * swingMoveFadeIn;
+          const Vector3f leftStepOffsetRotation(0.f, swingLift * (phase.rRef.x() - phase.rOpt.x()) * p.walkSupportRotation, phase.s.rotation * swingMoveFadeOut);
 
-            stance.leftOriginToFoot = Pose3D(RotationMatrix(leftStepOffsetRotation), Vector3<>(0.f, p.standComPosition.y, 0.f));
-            stance.rightOriginToFoot = Pose3D(RotationMatrix(rightStepOffsetRotation), Vector3<>(0.f, -p.standComPosition.y, 0.f) + nextPhase.l * swingLift - (nextPhase.s.translation + phase.s.translation) * swingMoveFadeOut);
+          stance.leftOriginToFoot = Pose3f(Rotation::AngleAxis::unpack(leftStepOffsetRotation), Vector3f(0.f, p.standComPosition.y, 0.f));
+          stance.rightOriginToFoot = Pose3f(Rotation::AngleAxis::unpack(rightStepOffsetRotation), Vector3f(0.f, -p.standComPosition.y, 0.f) + nextPhase.l * swingLift - (nextPhase.s.translation + phase.s.translation) * swingMoveFadeOut);
 
-            if(leftArmAngle)
-              *leftArmAngle = (nextPhase.s.translation.x * swingMoveFadeIn - phase.s.translation.x * swingMoveFadeOut) / p.speedMax.translation.x * p.walkArmRotationAtFullSpeedX;
-            if(rightArmAngle)
-              *rightArmAngle = (phase.s.translation.x * swingMoveFadeOut - nextPhase.s.translation.x * swingMoveFadeIn) / p.speedMax.translation.x * p.walkArmRotationAtFullSpeedX;
-          }
-          break;
+          if(leftArmAngle)
+            *leftArmAngle = (nextPhase.s.translation.x() * swingMoveFadeIn - phase.s.translation.x() * swingMoveFadeOut) / p.speedMax.translation.x() * p.walkArmRotationAtFullSpeedX;
+          if(rightArmAngle)
+            *rightArmAngle = (phase.s.translation.x() * swingMoveFadeOut - nextPhase.s.translation.x() * swingMoveFadeIn) / p.speedMax.translation.x() * p.walkArmRotationAtFullSpeedX;
+        }
+        break;
 
         case rightSupportPhase:
-          {
-            stance.rightOriginToCom = Vector3<>(phase.r.x + phase.x0.x, phase.r.y + phase.x0.y, p.standComPosition.z) - comLift;
-            const Vector3<>& rightOriginToLeftOrigin = nextPhase.s.translation;
-            stance.leftOriginToCom = stance.rightOriginToCom - rightOriginToLeftOrigin;
+        {
+          stance.rightOriginToCom = Vector3f(phase.r.x() + phase.x0.x(), phase.r.y() + phase.x0.y(), p.standComPosition.z) - comLift;
+          const Vector3f& rightOriginToLeftOrigin = nextPhase.s.translation;
+          stance.leftOriginToCom = stance.rightOriginToCom - rightOriginToLeftOrigin;
 
-            Vector3<> leftStepOffsetRotation = nextPhase.lRotation * swingLift;
-            leftStepOffsetRotation.z += nextPhase.s.rotation * swingMoveFadeIn;
-            const Vector3<> rightStepOffsetRotation(0.f, swingLift * (phase.rRef.x - phase.rOpt.x) * p.walkSupportRotation, phase.s.rotation * swingMoveFadeOut);
+          Vector3f leftStepOffsetRotation = nextPhase.lRotation * swingLift;
+          leftStepOffsetRotation.z() += nextPhase.s.rotation * swingMoveFadeIn;
+          const Vector3f rightStepOffsetRotation(0.f, swingLift * (phase.rRef.x() - phase.rOpt.x()) * p.walkSupportRotation, phase.s.rotation * swingMoveFadeOut);
 
-            stance.leftOriginToFoot = Pose3D(RotationMatrix(leftStepOffsetRotation), Vector3<>(0.f, p.standComPosition.y, 0.f) + nextPhase.l * swingLift - (nextPhase.s.translation + phase.s.translation) * swingMoveFadeOut);
-            stance.rightOriginToFoot = Pose3D(RotationMatrix(rightStepOffsetRotation), Vector3<>(0.f, -p.standComPosition.y, 0.f)) ;
+          stance.leftOriginToFoot = Pose3f(Rotation::AngleAxis::unpack(leftStepOffsetRotation), Vector3f(0.f, p.standComPosition.y, 0.f) + nextPhase.l * swingLift - (nextPhase.s.translation + phase.s.translation) * swingMoveFadeOut);
+          stance.rightOriginToFoot = Pose3f(Rotation::AngleAxis::unpack(rightStepOffsetRotation), Vector3f(0.f, -p.standComPosition.y, 0.f));
 
-            if(rightArmAngle)
-              *rightArmAngle = (nextPhase.s.translation.x * swingMoveFadeIn - phase.s.translation.x * swingMoveFadeOut) / p.speedMax.translation.x * p.walkArmRotationAtFullSpeedX;
-            if(leftArmAngle)
-              *leftArmAngle = (phase.s.translation.x * swingMoveFadeOut - nextPhase.s.translation.x * swingMoveFadeIn) / p.speedMax.translation.x * p.walkArmRotationAtFullSpeedX;
-          }
-          break;
+          if(rightArmAngle)
+            *rightArmAngle = (nextPhase.s.translation.x() * swingMoveFadeIn - phase.s.translation.x() * swingMoveFadeOut) / p.speedMax.translation.x() * p.walkArmRotationAtFullSpeedX;
+          if(leftArmAngle)
+            *leftArmAngle = (phase.s.translation.x() * swingMoveFadeOut - nextPhase.s.translation.x() * swingMoveFadeIn) / p.speedMax.translation.x() * p.walkArmRotationAtFullSpeedX;
+        }
+        break;
 
         default:
           ASSERT(false);
@@ -1178,8 +1198,8 @@ void WalkingEngine::PendulumPlayer::getPosture(LegPosture& stance, float* leftAr
 
       if(stepOffset)
       {
-        stepOffset->translation.x = nextPhase.s.translation.x * swingMoveFadeIn - phase.s.translation.x * swingMoveFadeOut;
-        stepOffset->translation.y = nextPhase.s.translation.y * swingMoveFadeIn - phase.s.translation.y * swingMoveFadeOut;
+        stepOffset->translation.x() = nextPhase.s.translation.x() * swingMoveFadeIn - phase.s.translation.x() * swingMoveFadeOut;
+        stepOffset->translation.y() = nextPhase.s.translation.y() * swingMoveFadeIn - phase.s.translation.y() * swingMoveFadeOut;
         stepOffset->rotation = nextPhase.s.rotation * swingMoveFadeIn - phase.s.rotation * swingMoveFadeOut;
       }
 
@@ -1194,8 +1214,8 @@ void WalkingEngine::PendulumPlayer::getPosture(Posture& stance)
   const WalkingEngine& p = *engine;
 
   // head
-  stance.headJointAngles[0] = engine->theHeadJointRequest.pan == JointData::off ? 0 : engine->theHeadJointRequest.pan;
-  stance.headJointAngles[1] = engine->theHeadJointRequest.tilt == JointData::off ? 0 : engine->theHeadJointRequest.tilt;
+  stance.headJointAngles[0] = engine->theHeadJointRequest.pan == JointAngles::off ? Angle(0.f) : engine->theHeadJointRequest.pan;
+  stance.headJointAngles[1] = engine->theHeadJointRequest.tilt == JointAngles::off ? Angle(0.f) : engine->theHeadJointRequest.tilt;
 
   // legs
   float leftArmAngle = 0.f, rightArmAngle = 0.f;
@@ -1204,30 +1224,27 @@ void WalkingEngine::PendulumPlayer::getPosture(Posture& stance)
   // arms
   float halfArmRotation = p.walkArmRotationAtFullSpeedX * 0.5f;
 
-  if(engine->theArmMotionEngineOutput.arms[ArmMotionRequest::left].move)
-  { // ARME arm movement
+  // normal WalkingEngine arm movement
+  stance.leftArmJointAngles[0] = stance.walkingArms.leftArmJointAngles[0] = pi_2 - p.standArmJointAngles.y() - leftArmAngle;
+  stance.leftArmJointAngles[1] = stance.walkingArms.leftArmJointAngles[1] = p.standArmJointAngles.x();
+  stance.leftArmJointAngles[2] = stance.walkingArms.leftArmJointAngles[2] = -pi_2;
+  stance.leftArmJointAngles[3] = stance.walkingArms.leftArmJointAngles[3] = -p.standArmJointAngles.y() - leftArmAngle - halfArmRotation;
+
+  stance.rightArmJointAngles[0] = stance.walkingArms.rightArmJointAngles[0] = pi_2 - p.standArmJointAngles.y() - rightArmAngle;
+  stance.rightArmJointAngles[1] = stance.walkingArms.rightArmJointAngles[1] = -p.standArmJointAngles.x();
+  stance.rightArmJointAngles[2] = stance.walkingArms.rightArmJointAngles[2] = pi_2;
+  stance.rightArmJointAngles[3] = stance.walkingArms.rightArmJointAngles[3] = p.standArmJointAngles.y() + rightArmAngle + halfArmRotation;
+
+  if(engine->theArmMotionSelection.armRatios[ArmMotionRequest::none] < 1.f)
+  {
     for(int i = 0; i < 4; ++i)
-      stance.leftArmJointAngles[i] = engine->theArmMotionEngineOutput.arms[ArmMotionRequest::left].angles[i];
-  }
-  else
-  { // normal WalkingEngine arm movement
-    stance.leftArmJointAngles[0] = -pi_2 + p.standArmJointAngles.y + leftArmAngle;
-    stance.leftArmJointAngles[1] = p.standArmJointAngles.x;
-    stance.leftArmJointAngles[2] = -pi_2;
-    stance.leftArmJointAngles[3] = -p.standArmJointAngles.y - leftArmAngle - halfArmRotation;
+      stance.leftArmJointAngles[i] = engine->theJointRequest.angles[Joints::lShoulderPitch + i];
   }
 
-  if(engine->theArmMotionEngineOutput.arms[ArmMotionRequest::right].move)
-  { // ARME arm movement
+  if(engine->theArmMotionSelection.armRatios[engine->theArmMotionSelection.rightArmRatiosOffset + ArmMotionRequest::none] < 1.f)
+  {
     for(int i = 0; i < 4; ++i)
-      stance.rightArmJointAngles[i] = engine->theArmMotionEngineOutput.arms[ArmMotionRequest::right].angles[i];
-  }
-  else
-  { // normal WalkingEngine arm movement
-    stance.rightArmJointAngles[0] = -pi_2 + p.standArmJointAngles.y + rightArmAngle;
-    stance.rightArmJointAngles[1] = p.standArmJointAngles.x;
-    stance.rightArmJointAngles[2] = -pi_2;
-    stance.rightArmJointAngles[3] = -p.standArmJointAngles.y - rightArmAngle - halfArmRotation;
+      stance.rightArmJointAngles[i] = engine->theJointRequest.angles[Joints::rShoulderPitch + i];
   }
 
   // kick mutations
@@ -1252,10 +1269,10 @@ void WalkingEngine::repairPendulumParametersY(PendulumPhase& phase, const Pendul
 { // this function ensures that phase.r, phase.x0 and phase.xv0 can be used to solve equation (4.60) and (4.61)
 
   float sign = phase.type == leftSupportPhase ? 1.f : -1.f;
-  float x = phase.x0.y;
-  float xv = phase.xv0.y;
-  const float k = phase.k.y;
-  float r = phase.r.y;
+  float x = phase.x0.y();
+  float xv = phase.xv0.y();
+  const float k = phase.k.y();
+  float r = phase.r.y();
   float px = r + x;
 
   // check #1: ensure pendulum pivot point is atleast 1mm away from pendulum deflection
@@ -1278,7 +1295,7 @@ void WalkingEngine::repairPendulumParametersY(PendulumPhase& phase, const Pendul
 
   const float tanhKTl1 = -xv / (x * k);
   float x0 = 0.f;
-  float t0;
+  float t0 = 0.f;
   if(tanhKTl1 > -1.f && tanhKTl1 < 1.f)
   {
     const float kT = atanh(tanhKTl1);
@@ -1302,10 +1319,10 @@ void WalkingEngine::repairPendulumParametersY(PendulumPhase& phase, const Pendul
   ASSERT(fabs(x0 * k * sinh(k * t0) - xv) < 0.1f);
 
   //check #4:
-  if((r + x0 - (nextPhase.r.y + nextPhase.x0.y)) * -sign > nextPhase.s.translation.y * -sign - 1.f)
+  if((r + x0 - (nextPhase.r.y() + nextPhase.x0.y())) * -sign > nextPhase.s.translation.y() * -sign - 1.f)
   {
     //r + x0  = nextPhase.s.translation.y + 1.f * sign + (nextPhase.r.y + nextPhase.x0.y);
-    const float px0 = nextPhase.s.translation.y + 1.f * sign + (nextPhase.r.y + nextPhase.x0.y);
+    const float px0 = nextPhase.s.translation.y() + 1.f * sign + (nextPhase.r.y() + nextPhase.x0.y());
 
     // r + x0 = px0
     // r + x0 * cosh(k * t) = px
@@ -1337,19 +1354,19 @@ void WalkingEngine::repairPendulumParametersY(PendulumPhase& phase, const Pendul
   ASSERT(x0 * -sign >= 1.f);
   ASSERT(fabs(r + x0 * cosh(k * t0) - px) < 0.1f);
   ASSERT(fabs(x0 * k * sinh(k * t0) - xv) < 0.1f);
-  ASSERT((r + x0 - (nextPhase.r.y + nextPhase.x0.y)) * -sign < nextPhase.s.translation.y * -sign);
+  ASSERT((r + x0 - (nextPhase.r.y() + nextPhase.x0.y())) * -sign < nextPhase.s.translation.y() * -sign);
 
-  phase.r.y = r;
-  phase.x0.y = x;
-  phase.xv0.y = xv;
+  phase.r.y() = r;
+  phase.x0.y() = x;
+  phase.xv0.y() = xv;
 }
 
 void WalkingEngine::updatePendulumParametersY(PendulumPhase& phase, PendulumPhase& nextPhase) const
 {
   if(phase.toStand)
   {
-    ASSERT(nextPhase.x0.y == -nextPhase.r.y);
-    ASSERT(nextPhase.xv0.y == 0.f);
+    ASSERT(nextPhase.x0.y() == -nextPhase.r.y());
+    ASSERT(nextPhase.xv0.y() == 0.f);
 
     // find x, r and xv? in:
     // r + x = px
@@ -1373,15 +1390,15 @@ void WalkingEngine::updatePendulumParametersY(PendulumPhase& phase, PendulumPhas
       }
     } d;
 
-    d.px = phase.r.y + phase.x0.y;
-    d.npx = nextPhase.r.y + nextPhase.x0.y;
-    d.npxv = nextPhase.xv0.y;
-    d.k = phase.k.y;
+    d.px = phase.r.y() + phase.x0.y();
+    d.npx = nextPhase.r.y() + nextPhase.x0.y();
+    d.npxv = nextPhase.xv0.y();
+    d.k = phase.k.y();
     d.coshKTd = cosh(d.k * phase.td);
     d.sinhKTd = sinh(d.k * phase.td);
 
     bool clipped;
-    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.y, 0.1f, 0.05f, clipped, "updatePendulumParametersYtoStand");
+    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.y(), 0.1f, 0.05f, clipped, "updatePendulumParametersYtoStand");
     float x = d.px - r;
     float xv = (d.npxv - x * d.k * d.sinhKTd) / d.coshKTd;
     if(clipped)
@@ -1411,9 +1428,9 @@ void WalkingEngine::updatePendulumParametersY(PendulumPhase& phase, PendulumPhas
       xv = (d.npxv - x * d.k * d.sinhKTd) / d.coshKTd;
     }
 
-    phase.r.y = r;
-    phase.x0.y = x;
-    phase.xv0.y = xv;
+    phase.r.y() = r;
+    phase.x0.y() = x;
+    phase.xv0.y() = xv;
     return;
   }
 
@@ -1432,9 +1449,9 @@ void WalkingEngine::updatePendulumParametersY(PendulumPhase& phase, PendulumPhas
   // x0 * k * sinh(k * td) + xv0 * cosh(k * td) = nx0 * nk * sinh(nk * ntu)
   // (td > t0)
 
-  const float x = phase.x0.y;
-  const float xv = phase.xv0.y;
-  const float k = phase.k.y;
+  const float x = phase.x0.y();
+  const float xv = phase.xv0.y();
+  const float k = phase.k.y();
   const float tanhKTl1 = -xv / (x * k);
   ASSERT(x != 0.f && tanhKTl1 > -1.f && tanhKTl1 < 1.f);
   const float kT = abs(tanhKTl1) < 1.f ? atanh(tanhKTl1) : tanhKTl1 * 1.e15f;
@@ -1463,27 +1480,27 @@ void WalkingEngine::updatePendulumParametersY(PendulumPhase& phase, PendulumPhas
     }
   } d;
 
-  d.x0 = phase.x0.y;
-  d.xv0 = phase.xv0.y;
-  d.nx0 = nextPhase.x0.y;
-  d.nk = nextPhase.k.y;
-  d.k = phase.k.y;
-  d.r = phase.r.y;
-  d.nr = nextPhase.r.y;
-  d.ns = nextPhase.s.translation.y;
+  d.x0 = phase.x0.y();
+  d.xv0 = phase.xv0.y();
+  d.nx0 = nextPhase.x0.y();
+  d.nk = nextPhase.k.y();
+  d.k = phase.k.y();
+  d.r = phase.r.y();
+  d.nr = nextPhase.r.y();
+  d.ns = nextPhase.s.translation.y();
 
   const float tdStart = t0 + asinh(d.nx0 * d.nk * sinh(d.nk * nextPhase.tu) / (x0 * d.k)) / d.k;
 
   bool clipped;
   const float td = d.minimize(t0, 1000000.f, max(t0 + 0.01f, tdStart), 0.001f, 0.05f, clipped, "updatePendulumParametersY");
-  const float xvdy = d.x0 * d.k * sinh(d.k * td) + d. xv0 * cosh(d.k * td);
+  const float xvdy = d.x0 * d.k * sinh(d.k * td) + d.xv0 * cosh(d.k * td);
   const float ntu = asinh(xvdy / (d.nx0 * d.nk)) / d.nk;
   ASSERT(ntu < 0.f);
   ASSERT(!clipped || td > 0.8f);
   if(clipped)
   {
-    ASSERT(fabs((d.r + phase.x0.y * cosh(d.k * td) + phase.xv0.y * sinh(d.k * td) / d.k) - (d.ns + d.nr + d.nx0 * cosh(d.nk * ntu))) < 1.f);
-    ASSERT(fabs(d.x0 * d.k * sinh(d.k * td) + d. xv0 * cosh(d.k * td) - (d.nx0 * d.nk * sinh(d.nk * ntu))) < 0.1f);
+    ASSERT(fabs((d.r + phase.x0.y() * cosh(d.k * td) + phase.xv0.y() * sinh(d.k * td) / d.k) - (d.ns + d.nr + d.nx0 * cosh(d.nk * ntu))) < 1.f);
+    ASSERT(fabs(d.x0 * d.k * sinh(d.k * td) + d.xv0 * cosh(d.k * td) - (d.nx0 * d.nk * sinh(d.nk * ntu))) < 0.1f);
   }
 
   phase.td = td;
@@ -1494,9 +1511,9 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
 {
   if(phase.toStand)
   {
-    ASSERT(nextPhase.x0.x == 0);
-    ASSERT(nextPhase.xv0.x == 0);
-    ASSERT(nextPhase.r.x == walkRef.x);
+    ASSERT(nextPhase.x0.x() == 0);
+    ASSERT(nextPhase.xv0.x() == 0);
+    ASSERT(nextPhase.r.x() == walkRef.x());
 
     // find x, r and xv? in:
     // r + x = px
@@ -1520,15 +1537,15 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
       }
     } d;
 
-    d.px = phase.r.x + phase.x0.x;
-    d.npx = nextPhase.r.x + nextPhase.x0.x;
-    d.npxv = nextPhase.xv0.x;
-    d.k = phase.k.x;
+    d.px = phase.r.x() + phase.x0.x();
+    d.npx = nextPhase.r.x() + nextPhase.x0.x();
+    d.npxv = nextPhase.xv0.x();
+    d.k = phase.k.x();
     d.coshKTd = cosh(d.k * phase.td);
     d.sinhKTd = sinh(d.k * phase.td);
 
     bool clipped;
-    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.x, 0.1f, 0.05f, clipped, "updatePendulumParametersXtoStand");
+    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.x(), 0.1f, 0.05f, clipped, "updatePendulumParametersXtoStand");
     float x = d.px - r;
     float xv = (d.npxv - x * d.k * d.sinhKTd) / d.coshKTd;
     if(clipped)
@@ -1537,9 +1554,9 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
       xv = (d.npxv - x * d.k * d.sinhKTd) / d.coshKTd;
     }
 
-    phase.r.x = r;
-    phase.x0.x = x;
-    phase.xv0.x = xv;
+    phase.r.x() = r;
+    phase.x0.x() = x;
+    phase.xv0.x() = xv;
     return;
   }
 
@@ -1573,29 +1590,29 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
       }
     } d;
 
-    d.px = phase.r.x + phase.x0.x;
-    d.xv = phase.xv0.x;
-    d.ns = nextPhase.s.translation.x;
-    d.k = phase.k.x;
+    d.px = phase.r.x() + phase.x0.x();
+    d.xv = phase.xv0.x();
+    d.ns = nextPhase.s.translation.x();
+    d.k = phase.k.x();
     d.coshKTd = cosh(d.k * phase.td);
     d.sinhKTd = sinh(d.k * phase.td);
-    d.nk = nextPhase.k.x;
-    d.npx = nextPhase.r.x + nextPhase.x0.x;
+    d.nk = nextPhase.k.x();
+    d.npx = nextPhase.r.x() + nextPhase.x0.x();
     d.coshNkNtu = cosh(d.nk * nextPhase.tu);
     d.sinhNkNtu = sinh(d.nk * nextPhase.tu);
 
     bool clipped;
-    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.x, 0.1f, 0.05f, clipped, "updatePendulumParametersXnextToStand");
+    const float r = d.minimize(-1000000.f, 1000000.f, phase.r.x(), 0.1f, 0.05f, clipped, "updatePendulumParametersXnextToStand");
     const float x = d.px - r;
     const float nx = (x * d.k * d.sinhKTd + d.xv * d.coshKTd) / (d.nk * d.sinhNkNtu);
     const float nr = d.npx - nx;
     // if(clipped) // do nothing... !
 
-    phase.r.x = r;
-    phase.x0.x = x;
-    nextPhase.r.x = nr;
-    nextPhase.x0.x = nx;
-    nextPhase.s.translation.x = d.ns;
+    phase.r.x() = r;
+    phase.x0.x() = x;
+    nextPhase.r.x() = nr;
+    nextPhase.x0.x() = nx;
+    nextPhase.s.translation.x() = d.ns;
     return;
   }
 
@@ -1603,8 +1620,8 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
 
   bool clipped;
   float r, x;
-  float sinhKTd = sinh(phase.k.x * phase.td);
-  float coshKTd = cosh(phase.k.x * phase.td);
+  float sinhKTd = sinh(phase.k.x() * phase.td);
+  float coshKTd = cosh(phase.k.x() * phase.td);
 
   //if(init)
   {
@@ -1628,25 +1645,25 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
       }
     } d;
 
-    d.px = phase.r.x + phase.x0.x;
-    d.xv = phase.xv0.x;
+    d.px = phase.r.x() + phase.x0.x();
+    d.xv = phase.xv0.x();
     d.sinhKTd = sinhKTd;
     d.coshKTd = coshKTd;
-    d.k = phase.k.x;
-    ASSERT(nextPhase.x0.x == 0.f);
-    d.nxvu = nextPhase.xv0.x * cosh(nextPhase.k.x * nextPhase.tu);
+    d.k = phase.k.x();
+    ASSERT(nextPhase.x0.x() == 0.f);
+    d.nxvu = nextPhase.xv0.x() * cosh(nextPhase.k.x() * nextPhase.tu);
 
-    Range<> rLimit(phase.rOpt.x + (init ? walkRefXPlanningLimit.min : walkRefXLimit.min), phase.rOpt.x + (init ? walkRefXPlanningLimit.max : walkRefXLimit.max));
-    r = d.minimize(rLimit.min, rLimit.max, phase.r.x, 0.1f, 0.05f, clipped, "updatePendulumParametersXinit");
+    Rangef rLimit(phase.rOpt.x() + (init ? walkRefXPlanningLimit.min : walkRefXLimit.min), phase.rOpt.x() + (init ? walkRefXPlanningLimit.max : walkRefXLimit.max));
+    r = d.minimize(rLimit.min, rLimit.max, phase.r.x(), 0.1f, 0.05f, clipped, "updatePendulumParametersXinit");
     x = d.px - r;
   }
 
   if(clipped)
   {
-    float xvd = x * phase.k.x * sinhKTd + phase.xv0.x * coshKTd;
+    float xvd = x * phase.k.x() * sinhKTd + phase.xv0.x() * coshKTd;
 
     // limit step size
-    const Range<>& xvdxLimit = init ? walkXvdXPlanningLimit : walkXvdXLimit;
+    const Rangef& xvdxLimit = init ? walkXvdXPlanningLimit : walkXvdXLimit;
     if(!xvdxLimit.isInside(xvd))
     {
       xvd = xvdxLimit.limit(xvd);
@@ -1671,14 +1688,14 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
         }
       } d2;
 
-      d2.px = phase.r.x + phase.x0.x;;
-      d2.xv = phase.xv0.x;
+      d2.px = phase.r.x() + phase.x0.x();
+      d2.xv = phase.xv0.x();
       d2.xvd = xvd;
-      d2.k = phase.k.x;
+      d2.k = phase.k.x();
       d2.sinhKTd = sinhKTd;
       d2.coshKTd = coshKTd;
 
-      r = d2.minimize(-1000000.f, 1000000.f, phase.r.x, 0.1f, 0.05f, clipped, "updatePendulumParametersXklhglk");
+      r = d2.minimize(-1000000.f, 1000000.f, phase.r.x(), 0.1f, 0.05f, clipped, "updatePendulumParametersXklhglk");
       x = d2.px - r;
       if(clipped)
         xvd = x * d2.k * d2.sinhKTd + d2.xv * d2.coshKTd;
@@ -1686,15 +1703,15 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
       // TODO: improve this: reduce nsy? reduce td?
     }
 
-    const float nxv0 = xvd / cosh(nextPhase.k.x * nextPhase.tu);
+    const float nxv0 = xvd / cosh(nextPhase.k.x() * nextPhase.tu);
 
-    nextPhase.xv0.x = nxv0;
+    nextPhase.xv0.x() = nxv0;
   }
 
-  const float ns = r + x * coshKTd + phase.xv0.x * sinhKTd / phase.k.x - (nextPhase.r.x + nextPhase.xv0.x * sinh(nextPhase.k.x * nextPhase.tu) / nextPhase.k.x);
-  nextPhase.s.translation.x = ns;
-  phase.r.x = r;
-  phase.x0.x = x;
+  const float ns = r + x * coshKTd + phase.xv0.x() * sinhKTd / phase.k.x() - (nextPhase.r.x() + nextPhase.xv0.x() * sinh(nextPhase.k.x() * nextPhase.tu) / nextPhase.k.x());
+  nextPhase.s.translation.x() = ns;
+  phase.r.x() = r;
+  phase.x0.x() = x;
 
   if(init)
     phase.rRef = phase.r;
@@ -1703,114 +1720,82 @@ void WalkingEngine::updatePendulumParametersX(PendulumPhase& phase, PendulumPhas
 void WalkingEngine::drawW() const
 {
   const float scale = 8.f;
-  Vector3<> p0 = Vector3<>(0.f, 0.f, 0.f);
-  Vector3<> px2 = Vector3<>(200.f * scale * 0.75f, 0.f, 0.f);
-  Vector3<> py2 = Vector3<>(0.f, 200.f * scale * 0.75f, 0.f);
-  Vector3<> pz2 = Vector3<>(0.f, 0.f, 200.f * scale * 0.75f);
-  CYLINDERARROW3D("module:WalkingEngine:W", p0, Vector3<>(px2.x, px2.y, px2.z), 2 * scale, 20 * scale, 10 * scale, ColorRGBA(255, 0, 0));
-  CYLINDERARROW3D("module:WalkingEngine:W", p0, Vector3<>(py2.x, py2.y, py2.z), 2 * scale, 20 * scale, 10 * scale, ColorRGBA(0, 255, 0));
-  CYLINDERARROW3D("module:WalkingEngine:W", p0, Vector3<>(pz2.x, pz2.y, pz2.z), 2 * scale, 20 * scale, 10 * scale, ColorRGBA(0, 0, 255));
+  Vector3f p0 = Vector3f::Zero();
+  Vector3f px2 = Vector3f(200.f * scale * 0.75f, 0.f, 0.f);
+  Vector3f py2 = Vector3f(0.f, 200.f * scale * 0.75f, 0.f);
+  Vector3f pz2 = Vector3f(0.f, 0.f, 200.f * scale * 0.75f);
+  CYLINDERARROW3D("module:WalkingEngine:W", p0, px2, 2 * scale, 20 * scale, 10 * scale, ColorRGBA(255, 0, 0));
+  CYLINDERARROW3D("module:WalkingEngine:W", p0, py2, 2 * scale, 20 * scale, 10 * scale, ColorRGBA(0, 255, 0));
+  CYLINDERARROW3D("module:WalkingEngine:W", p0, pz2, 2 * scale, 20 * scale, 10 * scale, ColorRGBA(0, 0, 255));
 }
 
 void WalkingEngine::drawP() const
 {
-  Vector3<> p0 = Vector3<>(0.f, 0.f, 85.f);
-  Vector3<> px2 = Vector3<>(200.f * 0.75f, 0.f, 0.f);
-  Vector3<> py2 = Vector3<>(0.f, 200.f * 0.75f, 0.f);
-  Vector3<> pz2 = Vector3<>(0.f, 0.f, 200.f * 0.75f);
-  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3<>(px2.x, px2.y, px2.z + 85.f), 2, 20, 10, ColorRGBA(255, 0, 0));
-  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3<>(py2.x, py2.y, py2.z + 85.f), 2, 20, 10, ColorRGBA(0, 255, 0));
-  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3<>(pz2.x, pz2.y, pz2.z + 85.f), 2, 20, 10, ColorRGBA(0, 0, 255));
+  Vector3f p0 = Vector3f(0.f, 0.f, 85.f);
+  Vector3f px2 = Vector3f(200.f * 0.75f, 0.f, 0.f);
+  Vector3f py2 = Vector3f(0.f, 200.f * 0.75f, 0.f);
+  Vector3f pz2 = Vector3f(0.f, 0.f, 200.f * 0.75f);
+  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3f(px2.x(), px2.y(), px2.z() + 85.f), 2, 20, 10, ColorRGBA(255, 0, 0));
+  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3f(py2.x(), py2.y(), py2.z() + 85.f), 2, 20, 10, ColorRGBA(0, 255, 0));
+  CYLINDERARROW3D("module:WalkingEngine:P", p0, Vector3f(pz2.x(), pz2.y(), pz2.z() + 85.f), 2, 20, 10, ColorRGBA(0, 0, 255));
 }
 
 void WalkingEngine::drawQ(const WalkingEngineOutput& walkingEngineOutput) const
 {
   RobotModel robotModel(walkingEngineOutput, theRobotDimensions, theMassCalibration);
-  Pose3D originToQ = robotModel.limbs[predictedPendulumPlayer.phase.type == leftSupportPhase ? MassCalibration::footLeft : MassCalibration::footRight];
-  originToQ.translate(0, 0, -theRobotDimensions.heightLeg5Joint);
-  originToQ.conc(predictedPendulumPlayer.phase.type == leftSupportPhase ? targetPosture.leftOriginToFoot.invert() : targetPosture.rightOriginToFoot.invert());
+  Pose3f originToQ = robotModel.limbs[predictedPendulumPlayer.phase.type == leftSupportPhase ? Limbs::footLeft : Limbs::footRight];
+  originToQ.translate(0, 0, -theRobotDimensions.footHeight);
+  originToQ.conc(predictedPendulumPlayer.phase.type == leftSupportPhase ? targetPosture.leftOriginToFoot.inverse() : targetPosture.rightOriginToFoot.inverse());
 
-  Vector3<> px2 = originToQ * Vector3<>(200.f * 0.75f, 0.f, 0.f);
-  Vector3<> p0 = originToQ * Vector3<>(0.f, 0.f, 0.f);
-  Vector3<> py2 = originToQ * Vector3<>(0.f, 200.f * 0.75f, 0.f);
-  Vector3<> pz2 = originToQ * Vector3<>(0.f, 0.f, 200.f * 0.75f);
-  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3<>(px2.x, px2.y, px2.z), 2, 20, 10, ColorRGBA(255, 0, 0));
-  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3<>(py2.x, py2.y, py2.z), 2, 20, 10, ColorRGBA(0, 255, 0));
-  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3<>(pz2.x, pz2.y, pz2.z), 2, 20, 10, ColorRGBA(0, 0, 255));
+  Vector3f px2 = originToQ * Vector3f(200.f * 0.75f, 0.f, 0.f);
+  Vector3f p0 = originToQ * Vector3f::Zero();
+  Vector3f py2 = originToQ * Vector3f(0.f, 200.f * 0.75f, 0.f);
+  Vector3f pz2 = originToQ * Vector3f(0.f, 0.f, 200.f * 0.75f);
+  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3f(px2.x(), px2.y(), px2.z()), 2, 20, 10, ColorRGBA(255, 0, 0));
+  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3f(py2.x(), py2.y(), py2.z()), 2, 20, 10, ColorRGBA(0, 255, 0));
+  CYLINDERARROW3D("module:WalkingEngine:Q", p0, Vector3f(pz2.x(), pz2.y(), pz2.z()), 2, 20, 10, ColorRGBA(0, 0, 255));
 }
-
-const Vector3<> WalkingEngine::drawFootPoints[] =
-{
-  Vector3<>(0.00897f, 0.03318f, -0.04517f),
-  Vector3<>(0.0577f, 0.03877f, -0.04526f),
-  Vector3<>(0.07395f, 0.03729f, -0.04528f),
-  Vector3<>(0.08765f, 0.03148f, -0.04531f),
-  Vector3<>(0.09687f, 0.0188f, -0.04532f),
-  Vector3<>(0.09942f, 0.01015f, -0.04533f),
-
-  Vector3<>(0.09899f, -0.00869f, -0.04533f),
-  Vector3<>(0.094f, -0.02418f, -0.04532f),
-  Vector3<>(0.08454f, -0.0361f, -0.04531f),
-  Vector3<>(0.06568f, -0.04615f, -0.04527f),
-  Vector3<>(0.04991f, -0.04818f, -0.04525f),
-  Vector3<>(0.00956f, -0.03881f, -0.04518f),
-
-  Vector3<>(-0.00842f, -0.03954f, -0.04515f),
-  Vector3<>(-0.02199f, -0.04758f, -0.04513f),
-  Vector3<>(-0.03125f, -0.05002f, -0.04511f),
-  Vector3<>(-0.04905f, -0.0376f, -0.04508f),
-
-  Vector3<>(-0.05072f, 0.02138f, -0.04507f),
-  Vector3<>(-0.04262f, 0.0306f, -0.04509f),
-  Vector3<>(-0.03297f, 0.03435f, -0.0451f),
-  Vector3<>(-0.00901f, 0.03272f, -0.04514f),
-};
-const unsigned int WalkingEngine::drawNumOfFootPoints = sizeof(drawFootPoints) / sizeof(*drawFootPoints);
-
-#define DRAW_FOOT(id, pose, left, color) \
-    for(unsigned int i = 0; i < drawNumOfFootPoints; ++i) \
-    { \
-      Vector3<> p1 = drawFootPoints[i] * 1000.f; \
-      Vector3<> p2 = drawFootPoints[(i + 1) % drawNumOfFootPoints] * 1000.f; \
-      if(left) \
-      { \
-        p1.y = -p1.y; \
-        p2.y = -p2.y; \
-      } \
-      p1 = (pose) * p1; \
-      p2 = (pose) * p2; \
-      LINE3D(id, p1.x, p1.y, 0.f, p2.x, p2.y, 0.f, 2, color); \
-    }
 
 void WalkingEngine::drawZmp()
 {
-   Vector3<> leftFoot(0.f, standComPosition.y, 0.f);
-   Vector3<> rightFoot(0.f, -standComPosition.y, 0.f);
+  Vector3f leftFoot(0.f, standComPosition.y, 0.f);
+  Vector3f rightFoot(0.f, -standComPosition.y, 0.f);
 
-   if(pendulumPlayer.phase.type == leftSupportPhase)
-     rightFoot += Vector3<>(pendulumPlayer.nextPhase.s.translation.x, pendulumPlayer.nextPhase.s.translation.y, 0.f);
-   if(pendulumPlayer.phase.type == rightSupportPhase)
-     leftFoot += Vector3<>(pendulumPlayer.nextPhase.s.translation.x, pendulumPlayer.nextPhase.s.translation.y, 0.f);
+  if(pendulumPlayer.phase.type == leftSupportPhase)
+    rightFoot += Vector3f(pendulumPlayer.nextPhase.s.translation.x(), pendulumPlayer.nextPhase.s.translation.y(), 0.f);
+  if(pendulumPlayer.phase.type == rightSupportPhase)
+    leftFoot += Vector3f(pendulumPlayer.nextPhase.s.translation.x(), pendulumPlayer.nextPhase.s.translation.y(), 0.f);
 
-  DRAW_FOOT("module:WalkingEngine:zmp", Pose3D(leftFoot), true, ColorRGBA(0, 0, 0));
-  DRAW_FOOT("module:WalkingEngine:zmp", Pose3D(rightFoot), false, ColorRGBA(0, 0, 0));
+  FOOT3D("module:WalkingEngine:zmp", Pose3f(leftFoot), true, ColorRGBA(0, 0, 0));
+  FOOT3D("module:WalkingEngine:zmp", Pose3f(rightFoot), false, ColorRGBA(0, 0, 0));
 
-  Vector2<> r = pendulumPlayer.phase.r;
-  Vector2<> rOpt = pendulumPlayer.phase.rOpt;
-  Vector2<> px = r + pendulumPlayer.phase.x0;
+  Vector2f r = pendulumPlayer.phase.r;
+  Vector2f rOpt = pendulumPlayer.phase.rOpt;
+  Vector2f px = r + pendulumPlayer.phase.x0;
 
-  SPHERE3D("module:WalkingEngine:zmp", px.x, px.y, walkHeight.y, 6, ColorRGBA(0, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", measuredPx.x, measuredPx.y, walkHeight.y, 6, ColorRGBA(0, 255, 0));
+  SPHERE3D("module:WalkingEngine:zmp", px.x(), px.y(), walkHeight.y(), 6, ColorRGBA(0, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", measuredPx.x(), measuredPx.y(), walkHeight.y(), 6, ColorRGBA(0, 255, 0));
 
-  LINE3D("module:WalkingEngine:zmp", r.x, r.y, 0.f, px.x, px.y, walkHeight.y, 2, ColorRGBA(0, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", r.x, r.y, 0.f, 1, ColorRGBA(0, 0, 0));
+  LINE3D("module:WalkingEngine:zmp", r.x(), r.y(), 0.f, px.x(), px.y(), walkHeight.y(), 2, ColorRGBA(0, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", r.x(), r.y(), 0.f, 1, ColorRGBA(0, 0, 0));
 
-  SPHERE3D("module:WalkingEngine:zmp", pendulumPlayer.phase.rOpt.x, pendulumPlayer.phase.rOpt.y, 0.f, 1, ColorRGBA(0, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", pendulumPlayer.phase.rRef.x, pendulumPlayer.phase.rRef.y, 0.f, 1, ColorRGBA(0, 0, 255));
-  SPHERE3D("module:WalkingEngine:zmp", measuredR.x, measuredR.y, 0.f, 1, ColorRGBA(0, 255, 0));
+  SPHERE3D("module:WalkingEngine:zmp", pendulumPlayer.phase.rOpt.x(), pendulumPlayer.phase.rOpt.y(), 0.f, 1, ColorRGBA(0, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", pendulumPlayer.phase.rRef.x(), pendulumPlayer.phase.rRef.y(), 0.f, 1, ColorRGBA(0, 0, 255));
+  SPHERE3D("module:WalkingEngine:zmp", measuredR.x(), measuredR.y(), 0.f, 1, ColorRGBA(0, 255, 0));
 
-  SPHERE3D("module:WalkingEngine:zmp", rOpt.x + walkRefXLimit.max, rOpt.y, 0.f, 1, ColorRGBA(255, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", rOpt.x + walkRefXLimit.min, rOpt.y, 0.f, 1, ColorRGBA(255, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", rOpt.x, rOpt.y + walkRefYLimit.max, 0.f, 1, ColorRGBA(255, 0, 0));
-  SPHERE3D("module:WalkingEngine:zmp", rOpt.x, rOpt.y + walkRefYLimit.min, 0.f, 1, ColorRGBA(255, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", rOpt.x() + walkRefXLimit.max, rOpt.y(), 0.f, 1, ColorRGBA(255, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", rOpt.x() + walkRefXLimit.min, rOpt.y(), 0.f, 1, ColorRGBA(255, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", rOpt.x(), rOpt.y() + walkRefYLimit.max, 0.f, 1, ColorRGBA(255, 0, 0));
+  SPHERE3D("module:WalkingEngine:zmp", rOpt.x(), rOpt.y() + walkRefYLimit.min, 0.f, 1, ColorRGBA(255, 0, 0));
+}
+
+void WalkingEngine::drawStats()
+{
+  DEBUG_DRAWING("module:WalkingEngine:stats", "drawingOnImage")
+  {
+    DRAWTEXT("module:WalkingEngine:stats", 5, 15, 10, ColorRGBA::black, "max velocity:");
+    DRAWTEXT("module:WalkingEngine:stats", 5, 30, 10, ColorRGBA::black, "    x: " << (speedMax.translation.x() / (walkStepDurationAtFullSpeedX / 1000.f)) << " mm/s");
+    DRAWTEXT("module:WalkingEngine:stats", 5, 45, 10, ColorRGBA::black, "    y: " << (speedMax.translation.y() / (walkStepDurationAtFullSpeedY / 1000.f)) << " mm/s");
+    DRAWTEXT("module:WalkingEngine:stats", 5, 60, 10, ColorRGBA::black, "  rot: " << (speedMax.rotation.toDegrees() / (walkStepDuration / 1000.f)) << " deg/s");
+  }
 }

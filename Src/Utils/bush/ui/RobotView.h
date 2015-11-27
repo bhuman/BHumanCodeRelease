@@ -5,7 +5,7 @@
 #include "Utils/bush/Session.h"
 #include "Utils/bush/models/Power.h"
 
-class Robot;
+struct Robot;
 class TeamSelector;
 class QMouseEvent;
 class QDropEvent;
@@ -24,8 +24,8 @@ class RobotView : public QGroupBox
   unsigned short pos;
   QLabel* cPlayerNumber;
   QWidget* statusWidget;
-  QProgressBar* pingBarWLAN;
-  QProgressBar* pingBarLAN;
+  QLabel* pingBarWLAN;
+  QLabel* pingBarLAN;
   QProgressBar* powerBar;
   void init();
 public:

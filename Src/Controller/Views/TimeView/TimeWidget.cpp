@@ -117,7 +117,7 @@ void TimeWidget::update()
     for(TimeInfo::Infos::const_iterator i = timeView.info.infos.begin(), end = timeView.info.infos.end(); i != end; ++i)
     {
       std::string name = timeView.info.getName(i->first);
-      Row* currentRow = NULL;
+      Row* currentRow = nullptr;
       if(items.find(i->first) != items.end())
       {//already know this one
         currentRow = items[i->first];
@@ -160,14 +160,8 @@ void TimeWidget::applyFilter()
 {
   for(int i = 0; i < table->rowCount(); ++i)
   {
-    QTableWidgetItem *item = table->item(i, 0); //assuming that column 0 is the name column
-    if(NULL != item && item->text().contains(filter.trimmed()))
-    {
-      table->setRowHidden(i, false);
-    }
-    else
-    {
-      table->setRowHidden(i, true);
-    }
+    QTableWidgetItem* item = table->item(i, 0); //assuming that column 0 is the name column
+    QTableWidgetItem* maximum = table->item(i, 2); //assuming that column 2 is the maximum column
+    table->setRowHidden(i, !item || !maximum || maximum->text() == "0" || !item->text().toLower().contains(filter.trimmed().toLower()));
   }
 }

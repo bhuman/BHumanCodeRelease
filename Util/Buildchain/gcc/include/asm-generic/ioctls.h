@@ -62,17 +62,13 @@
 #define TCSETSW2	_IOW('T', 0x2C, struct termios2)
 #define TCSETSF2	_IOW('T', 0x2D, struct termios2)
 #define TIOCGRS485	0x542E
-#ifndef TIOCSRS485
 #define TIOCSRS485	0x542F
-#endif
 #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
 #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
-#define TIOCGDEV	_IOR('T', 0x32, unsigned int) /* Get primary device node of /dev/console */
 #define TCGETX		0x5432 /* SYS5 TCGETX compatibility */
 #define TCSETX		0x5433
 #define TCSETXF		0x5434
 #define TCSETXW		0x5435
-#define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
 
 #define FIONCLEX	0x5450
 #define FIOCLEX		0x5451
@@ -91,10 +87,12 @@
 #define TIOCGICOUNT	0x545D	/* read serial port __inline__ interrupt counts */
 
 /*
- * Some arches already define FIOQSIZE due to a historical
- * conflict with a Hayes modem-specific ioctl value.
+ * some architectures define FIOQSIZE as 0x545E, which is used for
+ * TIOCGHAYESESP on others
  */
 #ifndef FIOQSIZE
+# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
+# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
 # define FIOQSIZE	0x5460
 #endif
 
@@ -106,7 +104,6 @@
 #define TIOCPKT_START		 8
 #define TIOCPKT_NOSTOP		16
 #define TIOCPKT_DOSTOP		32
-#define TIOCPKT_IOCTL		64
 
 #define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
 

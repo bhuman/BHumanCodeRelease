@@ -1,14 +1,13 @@
 /**
-* @file WalkingEngineTools.h
-* Declaration of tools utilized by the WalkingEngine
-* @author Colin Graf
-*/
+ * @file WalkingEngineTools.h
+ * Declaration of tools utilized by the WalkingEngine
+ * @author Colin Graf
+ */
 
 #include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(VectorYZ,
 {
-public:
   VectorYZ() = default;
   VectorYZ(float y, float z),
 

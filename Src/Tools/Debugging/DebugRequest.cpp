@@ -1,8 +1,7 @@
 /**
-* @file DebugRequest.cpp
-* Implementation of class DebugRequest
-*
-*/
+ * @file DebugRequest.cpp
+ * Implementation of class DebugRequest
+ */
 
 #include <cstring>
 #include <cstdio>
@@ -10,25 +9,9 @@
 #include "DebugRequest.h"
 #include "Platform/BHAssert.h"
 
-DebugRequest::DebugRequest()
-{
-  description = "empty";
-  enable = true;
-}
-
-DebugRequest::DebugRequest(const std::string& description, bool enable)
-  : description(description),
-    enable(enable)
-{
-}
-
-DebugRequestTable::DebugRequestTable()
-{
-  currentNumberOfDebugRequests = 0;
-  poll = false;
-  alreadyPolledDebugRequestCounter = 0;
-  lastName = 0;
-}
+DebugRequest::DebugRequest(const std::string& description, bool enable) :
+  description(description), enable(enable)
+{}
 
 void DebugRequestTable::addRequest(const DebugRequest& debugRequest, bool force)
 {

@@ -1,0 +1,80 @@
+usage()
+{
+  echo "usage: setDate <ipaddress>"
+  echo "  options:"
+  echo "    -f                     forces update"
+  echo "    -h | --help | /h | /?  print this text"
+  echo "  examples:"
+  echo "    ./setDate 192.168.5.14"
+  echo "    ./setDate 10.0.5.14 -f"
+  echo "  bhuman and NAOqi will be stopped. Afterwards the robot will be rebooted."
+  exit 1
+}
+
+work()
+{
+  REMOTE=$1
+  FORCE=$2
+  DATECMD="date +%F/%H:%M"
+  robotDate=$(ssh $sshoptions nao@$REMOTE "$DATECMD")
+  if [ ! $robotDate -eq $($DATECMD) ] || [ -n "$FORCE" ]; then
+    echo "stopping bhuman"
+    ssh $sshoptions nao@$REMOTE "/home/nao/bin/bhumand stop > /dev/null"
+    echo "stopping naoqi, due to time change"
+    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi stop &> /dev/null"
+    echo "set current time"
+    currenttime=`export LC_ALL=C && date -u`
+    ssh $sshoptions nao@$REMOTE "sudo date -u -s '$currenttime' > /dev/null && sudo hwclock -w -u --noadjfile"
+    CHANGED=1
+  fi
+  if [ ! -z $CHANGED ]; then
+    echo "reboot"
+    ssh $sshoptions nao@$REMOTE "reboot"
+  else
+    echo "no update required"
+  fi
+  true
+}
+
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname "${scriptPath}")
+currPath=$(pwd)
+keyFile=../../Config/Keys/id_rsa_nao
+sshoptions="-i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
+if [[ $(uname) == *CYGWIN* ]]; then
+  pingoptions="-w 1 -n 1"
+elif [ $(uname) == "Darwin" ]; then
+  pingoptions="-t 1 -c 1"
+else
+  pingoptions="-w 1 -c 1"
+fi
+
+cd "${basePath}"
+
+REMOTE=
+FORCE=
+# parse options
+[ "x" = "x$*" ] && usage
+while true; do
+  case $1 in
+    "")
+      break
+      ;;
+    "-f" | "/f")
+      FORCE=true
+      ;;
+    *)
+      REMOTE=$1
+      ;;
+  esac
+  shift
+done
+
+#key may only be accessed by the owner. Otherwise ssh will complain
+chmod 400 $keyFile
+
+if [ ! -z $REMOTE ]; then
+  work $REMOTE $FORCE
+fi
+
+cd "${currPath}"

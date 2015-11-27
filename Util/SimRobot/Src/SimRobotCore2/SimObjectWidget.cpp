@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QSettings>
 #include <QMenu>
+#include <QPinchGesture>
 #include <QSignalMapper>
 #include <QClipboard>
 #include <QFileDialog>
@@ -23,6 +24,8 @@ SimObjectWidget::SimObjectWidget(SimObject& simObject) : QGLWidget(QGLFormat(QGL
   wkey(false), akey(false), skey(false), dkey(false)
 {
   setFocusPolicy(Qt::StrongFocus);
+  grabGesture(Qt::PinchGesture);
+  setAttribute(Qt::WA_AcceptTouchEvents);
 
   // load layout settings
   QSettings* settings = &CoreModule::application->getLayoutSettings();
@@ -107,7 +110,7 @@ void SimObjectWidget::mouseMoveEvent(QMouseEvent* event)
   if(objectRenderer.moveDrag(event->x(), event->y()))
   {
     event->accept();
-    updateGL();
+    update();
   }
 }
 
@@ -121,7 +124,7 @@ void SimObjectWidget::mousePressEvent(QMouseEvent* event)
     if(objectRenderer.startDrag(event->x(), event->y(), m & Qt::ShiftModifier ? (m & Qt::ControlModifier ? SimObjectRenderer::dragRotateWorld : SimObjectRenderer::dragRotate) : (m & Qt::ControlModifier ? SimObjectRenderer::dragNormalObject : SimObjectRenderer::dragNormal)))
     {
       event->accept();
-      updateGL();
+      update();
     }
   }
 }
@@ -133,7 +136,7 @@ void SimObjectWidget::mouseReleaseEvent(QMouseEvent* event)
   if(objectRenderer.releaseDrag(event->x(), event->y()))
   {
     event->accept();
-    updateGL();
+    update();
   }
 }
 
@@ -159,39 +162,39 @@ void SimObjectWidget::keyPressEvent(QKeyEvent* event)
 
   switch(event->key())
   {
-  case Qt::Key_PageUp:
-  case Qt::Key_Plus:
-    event->accept();
-    objectRenderer.zoom(-100.);
-    updateGL();
-    break;
+    case Qt::Key_PageUp:
+    case Qt::Key_Plus:
+      event->accept();
+      objectRenderer.zoom(-100.);
+      update();
+      break;
 
-  case Qt::Key_PageDown:
-  case Qt::Key_Minus:
-    event->accept();
-    objectRenderer.zoom(100.);
-    updateGL();
-    break;
+    case Qt::Key_PageDown:
+    case Qt::Key_Minus:
+      event->accept();
+      objectRenderer.zoom(100.);
+      update();
+      break;
 
-  case Qt::Key_W:
-  case Qt::Key_A:
-  case Qt::Key_S:
-  case Qt::Key_D:
-    event->accept();
-    switch(event->key())
-    {
-    case Qt::Key_W: wkey = true; break;
-    case Qt::Key_A: akey = true; break;
-    case Qt::Key_S: skey = true; break;
-    case Qt::Key_D: dkey = true; break;
-    }
-    objectRenderer.setCameraMove(akey, dkey, wkey, skey);
-    updateGL();
-    break;
+    case Qt::Key_W:
+    case Qt::Key_A:
+    case Qt::Key_S:
+    case Qt::Key_D:
+      event->accept();
+      switch(event->key())
+      {
+        case Qt::Key_W: wkey = true; break;
+        case Qt::Key_A: akey = true; break;
+        case Qt::Key_S: skey = true; break;
+        case Qt::Key_D: dkey = true; break;
+      }
+      objectRenderer.setCameraMove(akey, dkey, wkey, skey);
+      update();
+      break;
 
-  default:
-    QGLWidget::keyPressEvent(event);
-    break;
+    default:
+      QGLWidget::keyPressEvent(event);
+      break;
   }
 }
 
@@ -205,41 +208,71 @@ void SimObjectWidget::keyReleaseEvent(QKeyEvent* event)
 
   switch(event->key())
   {
-  case Qt::Key_W:
-  case Qt::Key_A:
-  case Qt::Key_S:
-  case Qt::Key_D:
-    event->accept();
-    updateGL();
-    if(!event->isAutoRepeat())
-    {
-      switch(event->key())
+    case Qt::Key_W:
+    case Qt::Key_A:
+    case Qt::Key_S:
+    case Qt::Key_D:
+      event->accept();
+      update();
+      if(!event->isAutoRepeat())
       {
-      case Qt::Key_W: wkey = false; break;
-      case Qt::Key_A: akey = false; break;
-      case Qt::Key_S: skey = false; break;
-      case Qt::Key_D: dkey = false; break;
+        switch(event->key())
+        {
+          case Qt::Key_W: wkey = false; break;
+          case Qt::Key_A: akey = false; break;
+          case Qt::Key_S: skey = false; break;
+          case Qt::Key_D: dkey = false; break;
+        }
+        objectRenderer.setCameraMove(akey, dkey, wkey, skey);
       }
-      objectRenderer.setCameraMove(akey, dkey, wkey, skey);
-    }
-    break;
+      break;
 
-  default:
-    QGLWidget::keyReleaseEvent(event);
-    break;
+    default:
+      QGLWidget::keyReleaseEvent(event);
+      break;
   }
+}
+
+bool SimObjectWidget::event(QEvent* event)
+{
+  if(event->type() == QEvent::Gesture)
+  {
+    QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
+    if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
+    {
+      float change = static_cast<float>(pinch->scaleFactor() > pinch->lastScaleFactor()
+                     ? -pinch->scaleFactor() / pinch->lastScaleFactor()
+                     : pinch->lastScaleFactor() / pinch->scaleFactor());
+      objectRenderer.zoom(change * 100.f);
+      update();
+      return true;
+    }
+  }
+  return QGLWidget::event(event);
 }
 
 void SimObjectWidget::wheelEvent(QWheelEvent* event)
 {
+#ifndef OSX
   if(event->orientation() == Qt::Vertical)
   {
     objectRenderer.zoom(event->delta());
-    updateGL();
+    update();
     event->accept();
+    return;
   }
-  else
-    QGLWidget::wheelEvent(event);
+#else
+  if(event->delta())
+  {
+    if(event->orientation() == Qt::Horizontal)
+      objectRenderer.rotateCamera(static_cast<float>(event->delta()) * -0.002f, 0.f);
+    else
+      objectRenderer.rotateCamera(0.f, static_cast<float>(event->delta()) * -0.002f);
+    update();
+    return;
+  }
+#endif
+  QGLWidget::wheelEvent(event);
 }
 
 void SimObjectWidget::update()
@@ -592,6 +625,9 @@ QMenu* SimObjectWidget::createUserMenu() const
     action = subMenu->addAction(tr("3840x2160"));
     signalMapper->setMapping(action, (3840 << 16) | 2160);
     connect(action, SIGNAL(triggered()), signalMapper, SLOT(map()));
+    action = subMenu->addAction(tr("2880x1620"));
+    signalMapper->setMapping(action, (2880 << 16) | 1620);
+    connect(action, SIGNAL(triggered()), signalMapper, SLOT(map()));
     action = subMenu->addAction(tr("1920x1080"));
     signalMapper->setMapping(action, (1920 << 16) | 1080);
     connect(action, SIGNAL(triggered()), signalMapper, SLOT(map()));
@@ -628,7 +664,11 @@ void SimObjectWidget::exportAsImage(int resolution)
     // render object using a temporary widget
     QGLFormat format = this->format();
     format.setDoubleBuffer(false);
-    QGLWidget widget(format);
+    QGLWidget widget(format, 0, 0, Qt::CustomizeWindowHint);
+#ifdef OSX
+    widget.setWindowOpacity(0.f);
+    widget.show();
+#endif
     widget.setMaximumSize(width, height);
     widget.resize(width, height);
     widget.makeCurrent();
@@ -647,19 +687,19 @@ void SimObjectWidget::exportAsImage(int resolution)
 void SimObjectWidget::setSurfaceShadeMode(int style)
 {
   objectRenderer.setSurfaceShadeMode(SimRobotCore2::Renderer::ShadeMode(style));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setPhysicsShadeMode(int style)
 {
   objectRenderer.setPhysicsShadeMode(SimRobotCore2::Renderer::ShadeMode(style));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setDrawingsShadeMode(int style)
 {
   objectRenderer.setDrawingsShadeMode(SimRobotCore2::Renderer::ShadeMode(style));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setDrawingsOcclusion(int flag)
@@ -668,13 +708,13 @@ void SimObjectWidget::setDrawingsOcclusion(int flag)
   flags &= ~(SimRobotCore2::Renderer::enableDrawingsOcclusion | SimRobotCore2::Renderer::enableDrawingsTransparentOcclusion);
   flags |= flag;
   objectRenderer.setRenderFlags(flags);
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setCameraMode(int mode)
 {
   objectRenderer.setCameraMode(SimRobotCore2::Renderer::CameraMode(mode));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setFovY(int fovy)
@@ -684,38 +724,38 @@ void SimObjectWidget::setFovY(int fovy)
   objectRenderer.getSize(width, height);
   makeCurrent();
   objectRenderer.resize(fovy, width, height);
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setDragPlane(int plane)
 {
   objectRenderer.setDragPlane(SimRobotCore2::Renderer::DragAndDropPlane(plane));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::setDragMode(int mode)
 {
   objectRenderer.setDragMode(SimRobotCore2::Renderer::DragAndDropMode(mode));
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::resetCamera()
 {
   objectRenderer.resetCamera();
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::toggleCameraMode()
 {
   objectRenderer.toggleCameraMode();
-  updateGL();
+  update();
 }
 
 void SimObjectWidget::fitCamera()
 {
   /*
   objectRenderer.fitCamera();
-  updateGL();
+  update();
   */
 }
 
@@ -728,5 +768,5 @@ void SimObjectWidget::toggleRenderFlag(int flag)
     flags |= flag;
   objectRenderer.setRenderFlags(flags);
 
-  updateGL();
+  update();
 }

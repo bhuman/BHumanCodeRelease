@@ -2,11 +2,14 @@ Controller = cppStaticLibrary + {
 
   folder = "Libs"
   root = "$(srcDirRoot)"
+
+  precompiledHeader = {
+    "$(srcDirRoot)/Tools/Precompiled/ControllerPch.h"
+  }
+
   files = {
-    "$(srcDirRoot)/Controller/**.cpp" = cppSource,
+    "$(srcDirRoot)/Controller/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Controller/**.h",
-    "$(srcDirRoot)/Utils/URC/**.cpp" = cppSource,
-    "$(srcDirRoot)/Utils/URC/**.h",
     if (platform != "Linux") {
       -"$(srcDirRoot)/Controller/Platform/Linux/**.cpp",
       -"$(srcDirRoot)/Controller/Platform/Linux/**.h"
@@ -19,12 +22,14 @@ Controller = cppStaticLibrary + {
       -"$(srcDirRoot)/Controller/Platform/Windows/**.cpp",
       -"$(srcDirRoot)/Controller/Platform/Windows/**.h"
     }
-    -"$(srcDirRoot)/Utils/URC/UniversalResourceCompiler.cpp"
+    "$(srcDirRoot)/Tools/Precompiled/BHumanPch.h"
   }
+  files += pchFiles
 
   qtRessourceFiles = "$(srcDirRoot)/Controller/Icons/*.png"
   qtRccFiles = "$(srcDirRoot)/Controller/*.qrc"
   qtMocFiles = {
+    "$(srcDirRoot)/Controller/Views/AnnotationView/AnnotationWidget.h"
     "$(srcDirRoot)/Controller/Views/DataView/DataWidget.h"
     "$(srcDirRoot)/Controller/Views/DataView/PropertyManager.h"
     "$(srcDirRoot)/Controller/Views/DataView/PropertyEditorFactory.h"
@@ -47,14 +52,16 @@ Controller = cppStaticLibrary + {
   defines += {
     "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "TARGET_SIM", "QT_NO_STL", "QXT_STATIC"
     if (host == "Win32") {
-      "NOMINMAX", "_CRT_SECURE_NO_DEPRECATE"
+      "_CRT_SECURE_NO_DEPRECATE"
     }
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
-  },
+  }
+
   includePaths = {
     "$(srcDirRoot)",
+    "$(utilDirRoot)/Eigen",
     "$(utilDirRoot)/SimRobot/Src/SimRobot",
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2",
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor",
@@ -70,6 +77,7 @@ Controller = cppStaticLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtOpenGL",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtSvg",
       "$(utilDirRoot)/SimRobot/Util/glew/Windows/include",
+      "$(utilDirRoot)/Buildchain/Windows/include",
     }
     if (platform == "Linux") {
       "/usr/include/qt4/QtCore",
@@ -83,9 +91,11 @@ Controller = cppStaticLibrary + {
       "/usr/include/QtSvg",
       "/usr/include/Qt",
     }
-  },
+  }
+
   cppFlags += {
     if (tool == "vcxproj") {
+      "/Zm200"
       "/wd4503"
       if (configuration == "Release") {
         "/GS-"
@@ -94,5 +104,11 @@ Controller = cppStaticLibrary + {
     if (platform == "Linux") {
       "-fPIC"
     }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
+    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
   }
 }

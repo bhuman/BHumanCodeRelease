@@ -1,7 +1,7 @@
 /**
-* @file KickEngineParameters.h
-* @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
-*/
+ * @file KickEngineParameters.h
+ * @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
+ */
 
 #pragma once
 
@@ -9,44 +9,55 @@
 
 #include <vector>
 
-#include "Tools/Math/Vector2.h"
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(DynPoint,
 {
-public:
   DynPoint() = default;
-  DynPoint(int limb, int phaseNumber, int duration, const Vector3<>& translation, const Vector3<>& angle, const Vector3<>& odometryOffset);
-  DynPoint(int limb, int phaseNumber, const Vector3<>& translation),
+  DynPoint(int limb, int phaseNumber, int duration, const Vector3f& translation, const Vector3f& angle, const Vector3f& odometryOffset);
+  DynPoint(int limb, int phaseNumber, const Vector3f& translation);
+
+  bool operator==(const DynPoint& other) const
+  {
+    return limb == other.limb &&
+           phaseNumber == other.phaseNumber &&
+           duration == other.duration &&
+           translation == other.translation &&
+           angle == other.angle &&
+           odometryOffset == other.odometryOffset;
+  },
 
   (int) limb,
   (int) phaseNumber,
   (int) duration,
-  (Vector3<>) translation,
-  (Vector3<>) angle,
-  (Vector3<>) odometryOffset,
+  (Vector3f)(Vector3f::Zero()) translation,
+  (Vector3f)(Vector3f::Zero()) angle,
+  (Vector3f)(Vector3f::Zero()) odometryOffset,
 });
 
-inline DynPoint::DynPoint(int limb, int phaseNumber, int duration, const Vector3<>& translation, const Vector3<>& angle, const Vector3<>& odometryOffset)
-: limb(limb),
+inline DynPoint::DynPoint(int limb, int phaseNumber, int duration, const Vector3f& translation, const Vector3f& angle, const Vector3f& odometryOffset) :
+  limb(limb),
   phaseNumber(phaseNumber),
   duration(duration),
   translation(translation),
   angle(angle),
-  odometryOffset(odometryOffset) {}
+  odometryOffset(odometryOffset)
+{}
 
-inline DynPoint::DynPoint(int limb, int phaseNumber, const Vector3<>& translation)
-: limb(limb),
+inline DynPoint::DynPoint(int limb, int phaseNumber, const Vector3f& translation) :
+  limb(limb),
   phaseNumber(phaseNumber),
   duration(0), //no change
-  translation(translation) {}
+  translation(translation)
+{}
 
-class Phase: public Streamable
+class Phase : public Streamable
 {
 public:
   ENUM(Limb,
+  {,
     leftFootTra,
     leftFootRot,
     rightFootTra,
@@ -54,18 +65,20 @@ public:
     leftArmTra,
     leftHandRot,
     rightArmTra,
-    rightHandRot
-  );
+    rightHandRot,
+  });
 
   unsigned int duration;
 
-  Vector3<> controlPoints[Phase::numOfLimbs][NUM_OF_POINTS];
-  Vector2<> comTra[NUM_OF_POINTS];
-  Vector2<> headTra[NUM_OF_POINTS];
+  Vector3f controlPoints[Phase::numOfLimbs][NUM_OF_POINTS];
+  Vector2f comTra[NUM_OF_POINTS];
+  Vector2f headTra[NUM_OF_POINTS];
 
-  Vector3<> originPos[Phase::numOfLimbs];
-  Vector2<> comOriginPos, comOriginOffset, headOrigin;
-  Vector3<> odometryOffset;
+  Vector3f originPos[Phase::numOfLimbs];
+  Vector2f comOriginPos = Vector2f::Zero();
+  Vector2f comOriginOffset = Vector2f::Zero();
+  Vector2f headOrigin = Vector2f::Zero();
+  Vector3f odometryOffset = Vector3f::Zero();
 
   virtual void serialize(In* in, Out* out);
 };
@@ -73,14 +86,17 @@ public:
 class KickEngineParameters : public Streamable
 {
 public:
-
   int numberOfPhases;
   float preview;
   bool loop, autoComTra, ignoreHead;
   char name[260];
 
-  Vector3<> footOrigin, armOrigin, footRotOrigin, handRotOrigin;
-  Vector2<> comOrigin, headOrigin;
+  Vector3f footOrigin = Vector3f::Zero();
+  Vector3f armOrigin = Vector3f::Zero();
+  Vector3f footRotOrigin = Vector3f::Zero();
+  Vector3f handRotOrigin = Vector3f::Zero();
+  Vector2f comOrigin = Vector2f::Zero();
+  Vector2f headOrigin = Vector2f::Zero();
 
   std::vector<Phase> phaseParameters;
   float kpx, kdx, kix, kpy, kdy, kiy;
@@ -94,25 +110,21 @@ public:
 
   void calcControlPoints();
 
-  Vector3<> getPosition(const float& phase, const int& phaseNumber, const int& limb);
+  Vector3f getPosition(const float& phase, const int& phaseNumber, const int& limb);
 
-  Vector2<> getComRefPosition(const float& phase, const int& phaseNumber);
-  Vector2<> getHeadRefPosition(const float& phase, const int& phaseNumber);
+  Vector2f getComRefPosition(const float& phase, const int& phaseNumber);
+  Vector2f getHeadRefPosition(const float& phase, const int& phaseNumber);
 
   void initFirstPhase();
-  void initFirstPhase(Vector3<>* origins, Vector2<> head);
-  void initFirstPhaseLoop(Vector3<> *origins, Vector2<> lastCom, Vector2<> head);
+  void initFirstPhase(Vector3f* origins, Vector2f head);
+  void initFirstPhaseLoop(Vector3f *origins, Vector2f lastCom, Vector2f head);
 
-  KickEngineParameters():
+  KickEngineParameters() :
     numberOfPhases(0),
     preview(150),
     loop(false),
+    autoComTra(false),
     ignoreHead(false),
-    footOrigin(0.f, 0.f, 0.f),
-    armOrigin(0.f, 0.f, 0.f),
-    footRotOrigin(0.f, 0.f, 0.f),
-    handRotOrigin(0.f, 0.f, 0.f),
-    headOrigin(0.f, 0.f),
     phaseParameters(0),
     kpx(0.f),
     kdx(0.f),
@@ -120,6 +132,5 @@ public:
     kpy(0.f),
     kdy(0.f),
     kiy(0.f)
-  {
-  }
+  {}
 };

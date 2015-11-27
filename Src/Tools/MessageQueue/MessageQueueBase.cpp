@@ -12,22 +12,19 @@
 
 #include "MessageQueueBase.h"
 #include "Platform/BHAssert.h"
+#include "Tools/Streams/InOut.h"
 
 MessageQueueBase::MessageQueueBase()
-  : buf(0),
-    messageIndex(0),
-    reserveForInfrastructure(0),
 #ifndef TARGET_ROBOT
-    maximumSize(0x4000000), // 64 MB
-    reservedSize(16384)
+  :
+  maximumSize(0x4000000), // 64 MB
+  reservedSize(16384)
 {
-  buf = (char*) malloc(reservedSize + queueHeaderSize) + queueHeaderSize;
+  buf = (char*)malloc(reservedSize + queueHeaderSize) + queueHeaderSize;
   ASSERT(buf);
 #else
-    maximumSize(0)
 {
 #endif
-  clear();
 }
 
 MessageQueueBase::~MessageQueueBase()
@@ -35,6 +32,11 @@ MessageQueueBase::~MessageQueueBase()
   freeIndex();
   if(buf)
     free(buf - queueHeaderSize);
+  if(mappedIDs)
+  {
+    delete[] mappedIDs;
+    delete[] mappedIDNames;
+  }
 }
 
 void MessageQueueBase::setSize(unsigned size, unsigned reserveForInfrastructure)
@@ -43,13 +45,13 @@ void MessageQueueBase::setSize(unsigned size, unsigned reserveForInfrastructure)
   size = std::min(std::numeric_limits<unsigned>::max() - queueHeaderSize, size);
 #ifdef TARGET_ROBOT
   ASSERT(!buf);
-  buf = (char*) malloc(size + queueHeaderSize) + queueHeaderSize;
+  buf = (char*)malloc(size + queueHeaderSize) + queueHeaderSize;
   ASSERT(buf);
 #else
   ASSERT(size >= usedSize);
   if(size < reservedSize)
   {
-    char* newBuf = (char*) realloc(buf - queueHeaderSize, size + queueHeaderSize) + queueHeaderSize;
+    char* newBuf = (char*)realloc(buf - queueHeaderSize, size + queueHeaderSize) + queueHeaderSize;
     if(newBuf)
     {
       buf = newBuf;
@@ -69,6 +71,13 @@ void MessageQueueBase::clear()
   selectedMessageForReadingPosition = 0;
   readPosition = 0;
   lastMessage = 0;
+  numOfMappedIDs = 0;
+  if(mappedIDs)
+  {
+    delete[] mappedIDs;
+    mappedIDs = 0;
+    delete[] mappedIDNames;
+  }
   freeIndex();
 }
 
@@ -88,7 +97,7 @@ void MessageQueueBase::freeIndex()
 {
   if(messageIndex)
   {
-    delete [] messageIndex;
+    delete[] messageIndex;
     messageIndex = 0;
   }
 }
@@ -123,21 +132,21 @@ char* MessageQueueBase::reserve(size_t size)
   {
 #ifndef TARGET_ROBOT
     unsigned long long r = reservedSize;
-    if((unsigned long long) currentSize + size >= r)
+    if(static_cast<unsigned long long>(currentSize) + size >= r)
     {
       r *= 2;
-      if((unsigned long long) currentSize + size >= r)
-        r = ((unsigned long long) currentSize + size) * 4;
+      if(static_cast<unsigned long long>(currentSize) + size >= r)
+        r = (static_cast<unsigned long long>(currentSize) + size) * 4;
     }
-    if(r > (unsigned long long) maximumSize)
+    if(r > static_cast<unsigned long long>(maximumSize))
       r = maximumSize;
-    if(r > (unsigned long long) reservedSize)
+    if(r > static_cast<unsigned long long>(reservedSize))
     {
-      char* newBuf = (char*) realloc(buf - queueHeaderSize, (size_t) r + queueHeaderSize) + queueHeaderSize;
+      char* newBuf = (char*)realloc(buf - queueHeaderSize, static_cast<size_t>(r) + queueHeaderSize) + queueHeaderSize;
       if(newBuf)
       {
         buf = newBuf;
-        reservedSize = (unsigned) r;
+        reservedSize = static_cast<unsigned>(r);
       }
       else
       {
@@ -166,6 +175,7 @@ void MessageQueueBase::write(const void* p, size_t size)
 
 bool MessageQueueBase::finishMessage(MessageID id)
 {
+  ASSERT(buf);
   ASSERT(!messageIndex);
   bool success = !writingOfLastMessageFailed;
   if(success)
@@ -249,51 +259,53 @@ void MessageQueueBase::removeRepetitions()
     switch(getMessageID())
     {
       // accept up to 20 times, process id is not important
-    case idText:
-      copy = --messagesPerType[currentProcess][idText] <= 20;
-      break;
+      case idText:
+        copy = --messagesPerType[currentProcess][idText] <= 20;
+        break;
 
       // accept always, process id is not important
-    case idDebugRequest:
-    case idDebugResponse:
-    case idDebugDataResponse:
-    case idPlot:
-    case idConsole:
-    case idAudioData:
-      copy = true;
-      break;
+      case idDebugRequest:
+      case idDebugResponse:
+      case idDebugDataResponse:
+      case idPlot:
+      case idConsole:
+      case idAudioData:
+      case idAnnotation:
+      case idLogResponse:
+        copy = true;
+        break;
 
       // data only from latest frame
-    case idStopwatch:
-    case idDebugImage:
-    case idDebugJPEGImage:
-    case idDebugDrawing:
-    case idDebugDrawing3D:
-      copy = messagesPerType[currentProcess][idProcessFinished] == 1;
-      break;
+      case idStopwatch:
+      case idDebugImage:
+      case idDebugJPEGImage:
+      case idDebugDrawing:
+      case idDebugDrawing3D:
+        copy = messagesPerType[currentProcess][idProcessFinished] == 1;
+        break;
 
       // always accept, but may be reverted later
-    case idProcessBegin:
-      if(frameBegin != -1) // nothing between last idProcessBegin and this one, so remove idProcessBegin as well
-      {
-        usedSize = frameBegin;
-        ++numOfDeleted;
-      }
-      currentProcess = processes[getData()[0] - 'a'];
-      copy = true;
-      break;
+      case idProcessBegin:
+        if(frameBegin != -1) // nothing between last idProcessBegin and this one, so remove idProcessBegin as well
+        {
+          usedSize = frameBegin;
+          ++numOfDeleted;
+        }
+        currentProcess = processes[getData()[0] - 'a'];
+        copy = true;
+        break;
 
-    case idProcessFinished:
-      ASSERT(currentProcess == processes[getData()[0] - 'a']);
-      copy = !frameEmpty; // nothing since last idProcessBegin or idProcessFinished, no new idProcessFinished required
-      --messagesPerType[currentProcess][idProcessFinished];
-      break;
+      case idProcessFinished:
+        ASSERT(currentProcess == processes[getData()[0] - 'a']);
+        copy = !frameEmpty; // nothing since last idProcessBegin or idProcessFinished, no new idProcessFinished required
+        --messagesPerType[currentProcess][idProcessFinished];
+        break;
 
-    default:
-      if(getMessageID() < numOfDataMessageIDs) // data only from latest frame
-        copy = messagesPerType[currentProcess][idProcessFinished] == 1;
-      else // only the latest other messages
-        copy = --messagesPerType[currentProcess][getMessageID()] == 0;
+      default:
+        if(getMessageID() < numOfDataMessageIDs) // data only from latest frame
+          copy = messagesPerType[currentProcess][idProcessFinished] == 1;
+        else // only the latest other messages
+          copy = --messagesPerType[currentProcess][getMessageID()] == 0;
     }
 
     if(copy)
@@ -328,6 +340,12 @@ void MessageQueueBase::removeRepetitions()
   lastMessage = 0;
 }
 
+MessageID MessageQueueBase::getMessageID() const
+{
+  MessageID id = MessageID(buf[selectedMessageForReadingPosition]);
+  return id < numOfMappedIDs ? mappedIDs[id] : id;
+}
+
 void MessageQueueBase::setSelectedMessageForReading(int message)
 {
   ASSERT(message >= 0);
@@ -356,7 +374,43 @@ void MessageQueueBase::setSelectedMessageForReading(int message)
 
 void MessageQueueBase::read(void* p, size_t size)
 {
-  ASSERT(readPosition + (int) size <= getMessageSize());
+  ASSERT(readPosition + static_cast<int>(size) <= getMessageSize());
   memcpy(p, buf + selectedMessageForReadingPosition + headerSize + readPosition, size);
   readPosition += static_cast<int>(size);
+}
+
+void MessageQueueBase::writeMessageIDs(Out& stream, MessageID numOfMessageIDs) const
+{
+  if(mappedIDs)
+  {
+    stream << numOfMappedIDs;
+    for(int i = 0; i < numOfMappedIDs; ++i)
+      stream << mappedIDNames[i];
+  }
+  else
+  {
+    stream << static_cast<unsigned char>(numOfMessageIDs);
+    for(int i = 0; i < numOfMessageIDs; ++i)
+      stream << ::getName(static_cast<MessageID>(i));
+  }
+}
+
+void MessageQueueBase::readMessageIDMapping(In& stream)
+{
+  ASSERT(!mappedIDs);
+  stream >> numOfMappedIDs;
+  mappedIDs = new MessageID[numOfMappedIDs];
+  mappedIDNames = new std::string[numOfMappedIDs];
+  memset(mappedIDs, undefined, numOfMappedIDs);
+
+  for(int i = 0; i < numOfMappedIDs; ++i)
+  {
+    stream >> mappedIDNames[i];
+    for(int j = 0; j < numOfMessageIDs; ++j)
+      if(mappedIDNames[i] == ::getName(static_cast<MessageID>(j)))
+      {
+        mappedIDs[i] = static_cast<MessageID>(j);
+        break;
+      }
+  }
 }

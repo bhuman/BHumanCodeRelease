@@ -10,12 +10,9 @@
         <file>Icons/allColors.png</file>
         <file>Icons/blue.png</file>
         <file>Icons/red.png</file>
-        <file>Icons/yellow.png</file>
         <file>Icons/black.png</file>
         <file>Icons/delete.png</file>
         <file>Icons/headAngle.png</file>
-        <file>Icons/camDown.png</file>
-        <file>Icons/camUp.png</file>
         <file>Icons/arrow_refresh.png</file>
         <file>Icons/upload.png</file>
         <file>Icons/page_white_h.png</file>
@@ -23,5 +20,8 @@
         <file>Icons/stand.png</file>
         <file>Icons/sitDown.png</file>
         <file>Icons/chestButton.png</file>
+        <file>Icons/edit_undo.png</file>
+        <file>Icons/edit_redo.png</file>
+        <file>Icons/rainbowcursor.png</file>
     </qresource>
 </RCC>

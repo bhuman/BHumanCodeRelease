@@ -16,7 +16,7 @@
 MODULE(OdometryOnlySelfLocator,
 {,
   REQUIRES(OdometryData),
-  PROVIDES_WITH_OUTPUT_AND_DRAW(RobotPose),
+  PROVIDES(RobotPose),
 });
 
 /**
@@ -27,8 +27,8 @@ MODULE(OdometryOnlySelfLocator,
 class OdometryOnlySelfLocator : public OdometryOnlySelfLocatorBase
 {
 private:
-  Pose2D base;
-  Pose2D referenceOdometry;
+  Pose2f base;
+  Pose2f referenceOdometry;
 
   /**
   * The method provides the robot pose

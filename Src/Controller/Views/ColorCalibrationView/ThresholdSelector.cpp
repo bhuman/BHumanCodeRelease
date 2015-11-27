@@ -26,6 +26,9 @@ ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(sliderChanged(int)));
   connect(lineEdit, SIGNAL(textEdited(QString)), this, SLOT(lineEditChanged(QString)));
 
+  connect(slider, SIGNAL(sliderReleased()), parent, SLOT(currentCalibrationChanged()));
+  connect(lineEdit, SIGNAL(editingFinished()), parent, SLOT(currentCalibrationChanged()));
+
   QHBoxLayout* layout = new QHBoxLayout(this);
   setLayout(layout);
   layout->addWidget(lineEdit);

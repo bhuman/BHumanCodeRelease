@@ -13,14 +13,14 @@
 #include <cmath>
 #include <algorithm>
 
-/** constant for e*/
-const float e = 2.71828182845902353602874713527f;
-
 /** constant for an expression used by the gaussian function*/
 const float sqrt2pi = std::sqrt(2.0f * pi);
 
 /** constant for triangular distribution*/
 const float sqrt6dividedBy2 = std::sqrt(6.0f) / 2.0f;
+
+/** constant for sqrt(2) */
+const float sqrt2 = std::sqrt(2.f);
 
 /**
 * Returns a gaussian random deviate
@@ -113,4 +113,19 @@ inline int sampleTriangularDistribution(int b)
   }
   else
     return 0;
+}
+
+/**
+* The probability that a normal distributed random variable X(mu,s)
+*  will take a value inside the interval (a,b), where a < b
+* @param mu The mean of the normal distribution
+* @param s  The standard deviation of the normal distribution
+* @param a  The lower bound of the interval
+* @param b  The upper bound of the interval
+*/
+inline float probabiltyOfInterval(float mu, float s, float a, float b)
+{
+  const float pa = std::erf((a - mu) / (sqrt2 * s));
+  const float pb = std::erf((b - mu) / (sqrt2 * s));
+  return (pb - pa) / 2;
 }

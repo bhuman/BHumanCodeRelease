@@ -1,6 +1,6 @@
 /**
  * @file AudioData.h
- * The file declares a class that stores audio data of up to four channels.
+ * The file declares a struct that stores audio data of up to four channels.
  * On a V4, the four channels are:
  * 0: left microphone
  * 1: right microphone

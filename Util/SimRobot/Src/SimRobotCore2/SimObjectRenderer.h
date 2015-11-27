@@ -62,7 +62,6 @@ private:
   unsigned int movingUpStartTime;
   unsigned int movingDownStartTime;
 
-  void rotateCamera(float x, float y);
   void moveCamera(float x, float y);
   void updateCameraTransformation();
 
@@ -104,4 +103,5 @@ public:
   virtual bool releaseDrag(int x, int y);
   virtual void setCamera(const float* pos, const float* target);
   virtual void getCamera(float* pos, float* target);
+  virtual void rotateCamera(float x, float y);
 };

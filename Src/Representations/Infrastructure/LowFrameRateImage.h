@@ -1,7 +1,7 @@
 /**
  * @file Image.h
  *
- * Declaration of class Image
+ * Declaration of struct Image
  */
 
 #pragma once
@@ -9,9 +9,11 @@
 #include "Tools/Streams/Streamable.h"
 #include "Image.h"
 
-class LowFrameRateImage : public Streamable
+struct LowFrameRateImage : public Streamable
 {
-public:
+  Image image;
+  bool imageUpdated = false; /**< True if image was updated this frame */
+
   virtual void serialize(In* in, Out* out)
   {
     STREAM_REGISTER_BEGIN;
@@ -22,7 +24,4 @@ public:
       }
     STREAM_REGISTER_FINISH;
   }
-
-  Image image;
-  bool imageUpdated; /**< True if image was updated this frame */
 };

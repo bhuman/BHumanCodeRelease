@@ -6,13 +6,15 @@ buildDirRoot = "../../Build"
 utilDirRoot = "../../Util"
 docDirRoot = "../../Doc"
 buildPlatformDir = {
-  if (archName == "Windows32" || archName == "Windows64") {
-    "$(buildDirRoot)/$(archName)"
+  if (host == "Win32" && platform != "Linux") {
+    "$(buildDirRoot)/Windows"
   } else {
     "$(buildDirRoot)/$(platform)"
   }
 }
 buildDir = "$(buildPlatformDir)/$(target)/$(configuration)"
+
+winMarePath = "$(utilDirRoot)/SimRobot/Util/mare/Windows/bin/mare.exe"
 
 configurations = {
   Develop
@@ -21,28 +23,7 @@ configurations = {
 }
 
 if (tool == "vcxproj") {
-  platforms = { "x64", "Win32" }
-}
-
-archName = {
-  if (platform == "Linux") {
-    if (architecture == "x86_64") {
-      "Linux64"
-    } else {
-      "Linux32"
-    }
-  }
-  if (platform == "Win32") { "Windows32" }
-  if (platform == "x64") { "Windows64" }
-  if (platform == "MacOSX") { "OSX" } //there is no 32 bit on mac
-}
-
-archDir = {
-  if (archName == "Windows32") {
-    "x86"
-  } else if (archName == "Windows64") {
-    "x64"
-  }
+  platforms = { "x64" }
 }
 
 defines = {
@@ -56,13 +37,16 @@ defines = {
   if (configuration == "Debug") {
     "_DEBUG"
   } else {
-    "NDEBUG" 
+    "NDEBUG"
+  }
+  if (configuration != "Release") {
+    "EIGEN_INITIALIZE_MATRICES_BY_NAN"
   }
 }
 
 if (host == "Linux") {
   cppCompiler = {
-    "env CCACHE_CPP2=yes ../../Util/Buildchain/Linux/bin/ccache clang++ -D__extern_always_inline=inline"
+    "env CCACHE_CPP2=yes $(utilDirRoot)/Buildchain/Linux/bin/ccache clang++ -D__extern_always_inline=inline"
   }
 }
 
@@ -73,20 +57,14 @@ cppFlags = {
     "/Gm- /MP" // disable minimal rebuild and enable multi processor compilation
     "/Zc:wchar_t-" // required for Qt
     if (configuration == "Debug") {
-      "/Od" 
-      if(archName == "Windows32") {
-        "/ZI"
-      } else if(archName == "Windows64") {
-        "/Zi"
-      }
+      "/Od /ZI"
     } else {
-      "/Ox /Ob2 /Oi /Ot /Oy /GT /fp:fast"
+      "/Ox /Ob2 /Oi /Ot /Oy /GT"
     }
   } else {
     "-std=c++11"
     "-pipe"
     "-mssse3"
-    "-ffast-math"
     "-Wall"
     "-Wconversion"
     "-Wliteral-conversion"
@@ -105,9 +83,9 @@ cppFlags = {
 linkFlags = {
   if (tool == "vcxproj") {
     "/SUBSYSTEM:WINDOWS"
-    if (configuration == "Debug") { 
-      "/INCREMENTAL /DEBUG" 
-    } else { 
+    if (configuration == "Debug") {
+      "/INCREMENTAL /DEBUG"
+    } else {
       "/OPT:REF /OPT:ICF"
     }
   } else {
@@ -137,12 +115,34 @@ targets = {
   include "libgamectrl.mare"
   include "Nao.mare"
 
-  include "URC.mare"
   include "bush.mare"
   include "copyfiles.mare"
+  include "Tests.mare"
+}
 
-  include "SpecialActions.mare"
+// given $(precompiledHeader) build pch table
+pchFiles = {
+  "$(firstword $(precompiledHeader))"
+  if (platform != "Linux" && tool == "vcxproj" && "$(firstword $(precompiledHeader))" != "") {
+    "$(dir $(firstword $(precompiledHeader)))/$(basename $(notdir $(firstword $(precompiledHeader)))).cpp" = cppSource + {
+      pch = "$(basename $(notdir $(file))).h"
+      cppFlags += {
+        "/Yc\"$(pch)\""
+        "/Fp\"$(buildDir)/$(pch).pch\""
+      }
+    }
+  }
+}
 
+bhCppSource = cppSource + {
+  pch = "$(notdir $(firstword $(precompiledHeader)))"
+  cppFlags += {
+    if (platform != "Linux" && tool == "vcxproj" && "$(pch)" != "") {
+      "/FI\"$(pch)\""
+      "/Yu\"$(pch)\""
+      "/Fp\"$(buildDir)/$(pch).pch\""
+    }
+  }
 }
 
 // a table for adding Qt files (given $(qtRessourceFiles), $(qtRccFiles) and $(qtMocFiles)) to a "files" table
@@ -234,9 +234,9 @@ copyFile = {
 // use mare as buildsystem in CodeLite, CodeBlocks and NetBeans
 if (tool == "CodeLite" || tool == "CodeBlocks" || tool == "NetBeans") {
   if (tool == "CodeBlocks")
-    mare = "$(utilDirRoot)/mare/Linux/bin/mare --ignore-dependencies"
+    mare = "$(utilDirRoot)/SimRobot/Util/mare/Linux/bin/mare --ignore-dependencies"
   else
-    mare = "$(utilDirRoot)/mare/Linux/bin/mare"
+    mare = "$(utilDirRoot)/SimRobot/Util/mare/Linux/bin/mare"
 
   cppApplication += {
     buildCommand = "$(mare) $(target) config=$(configuration)"

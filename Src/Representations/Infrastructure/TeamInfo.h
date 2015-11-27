@@ -1,45 +1,43 @@
 /**
-* @file TeamInfo.h
-* The file declares a class that encapsulates the structure TeamInfo defined in
-* the file RoboCupGameControlData.h that is provided with the GameController.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file TeamInfo.h
+ * The file declares a struct that encapsulates the structure TeamInfo defined in
+ * the file RoboCupGameControlData.h that is provided with the GameController.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #pragma once
 
 #include "RoboCupGameControlData.h"
 #include "Tools/Streams/Streamable.h"
 
-class TeamInfo : public RoboCup::TeamInfo, public Streamable
+struct TeamInfo : public RoboCup::TeamInfo, public Streamable
 {
 private:
   using RoboCup::TeamInfo::penaltyShot; // Hide, because it is not streamed.
   using RoboCup::TeamInfo::singleShots; // Hide, because it is not streamed.
 
-  /**
-  * The method makes the object streamable.
-  * @param in The stream from which the object is read (if in != 0).
-  * @param out The stream to which the object is written (if out != 0).
-  */
-  virtual void serialize(In* in, Out* out);
-
 public:
-  /** Default constructor. */
   TeamInfo();
 
   /** Draws the score in the scene view. */
-  virtual void draw() const;
+  void draw() const;
+private:
+  /**
+   * The method makes the object streamable.
+   * @param in The stream from which the object is read (if in != 0).
+   * @param out The stream to which the object is written (if out != 0).
+   */
+  virtual void serialize(In* in, Out* out);
 };
 
-class OwnTeamInfo : public TeamInfo
+struct OwnTeamInfo : public TeamInfo
 {
-public:
   OwnTeamInfo();
-  virtual void draw() const;
+  void draw() const;
 };
 
-class OpponentTeamInfo : public TeamInfo
+struct OpponentTeamInfo : public TeamInfo
 {
-public:
   OpponentTeamInfo();
+  void draw() const { TeamInfo::draw(); }
 };

@@ -83,7 +83,7 @@ void RestartCmd::RestartTask::reportStatus(const ProcessRunner &r)
 
 bool RestartCmd::RestartTask::execute()
 {
-  std::string ip = robot->getBestIP();
+  std::string ip = robot->getBestIP(context());
 
   context().printLine("restart: using ip " + ip + " for " + robot->name + ".");
 

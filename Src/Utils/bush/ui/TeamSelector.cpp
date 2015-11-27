@@ -2,6 +2,7 @@
 #include <QGridLayout>
 #include <QAction>
 
+#include "Tools/Streams/OutStreams.h"
 #include "Utils/bush/models/Team.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/tools/StringTools.h"
@@ -15,7 +16,7 @@ TeamSelector::TeamSelector()
     teamPages(),
     teamViews()
 {
-  static const size_t NUM_PLAYERS = 10;
+  static const size_t NUM_PLAYERS = 12; //due to F1..F12 keys and two rows with 1-6 players
   selectActions.reserve(NUM_PLAYERS);
   for(int i = 0; i < (int) NUM_PLAYERS; ++i)
   {
@@ -39,9 +40,6 @@ TeamSelector::TeamSelector()
 
 void TeamSelector::addTeam(Team* team)
 {
-  //FIXME: this fails if there is a team with the same port
-  Session::getInstance().addTeamCommAgent(team);
-
   teams.push_back(team);
   teamsMap[team->number] = team;
   std::map<unsigned short, int>::iterator i = teamPages.find(team->number);
@@ -53,11 +51,11 @@ void TeamSelector::addTeam(Team* team)
     QWidget* oldPage = widget(index);
     removeTab(index);
     oldPage->deleteLater();
-    insertTab(index, teamPage, fromString("Team: "+team->name));
+    insertTab(index, teamPage, fromString("Team: " + team->name));
   }
   else
   {
-    index = addTab(teamPage, fromString("Team: "+team->name));
+    index = addTab(teamPage, fromString("Team: " + team->name));
   }
   teamViews[team->number] = teamPage;
   teamPages[team->number] = index;
@@ -77,7 +75,6 @@ void TeamSelector::removeTeam(Team* team)
     viewIndexIter->second->deleteLater();
     teamViews.erase(viewIndexIter);
   }
-  Session::getInstance().removeTeamCommAgent(team);
   teamsMap.erase(team->number);
   for(size_t i = 0; i < teams.size(); ++i)
   {
@@ -131,10 +128,13 @@ void TeamSelector::saveTeams(const QString& filename)
   _teams.reserve(teams.size());
   for(size_t i = 0; i < teams.size(); ++i)
     _teams.push_back(*teams[i]);
-  ConfigMap cm;
-  Team::writeTeams(cm, _teams);
-  std::string fn = toString(filename);
-  cm.write(&fn);
+  OutMapFile stream(toString(filename));
+  Team::writeTeams(stream, _teams);
+}
+
+void TeamSelector::saveTeams()
+{
+  saveTeams("teams.cfg");
 }
 
 void TeamSelector::selectPlayer()
@@ -146,6 +146,7 @@ void TeamSelector::selectPlayer()
   for(int i = 0; i < (int) selectActions.size(); ++i)
     if(selectActions[i] == s)
       number = i;
+
   if(number >= 0)
   {
     Team* t = getSelectedTeam();

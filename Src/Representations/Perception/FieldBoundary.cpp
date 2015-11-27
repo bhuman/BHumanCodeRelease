@@ -1,6 +1,6 @@
 /**
-* @author Alexis Tsogias
-*/
+ * @author Alexis Tsogias
+ */
 
 #include "FieldBoundary.h"
 #include "Platform/BHAssert.h"
@@ -9,105 +9,98 @@
 
 void FieldBoundary::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:BoundarySpots", "drawingOnImage");
-  for(const Vector2<int>& p : boundarySpots)
-  {
-    DOT("representation:FieldBoundary:BoundarySpots", p.x, p.y, ColorRGBA::blue, ColorRGBA::blue);
-  }
-
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:ConvexBoundary", "drawingOnImage");
-  const Vector2<int>* previ = nullptr;
-  for(const Vector2<int>& p : convexBoundary)
-  {
-    DOT_AS_VECTOR("representation:FieldBoundary:ConvexBoundary", p, ColorRGBA::red, ColorRGBA::red);
-    if(previ != nullptr)
+  DEBUG_DRAWING("representation:FieldBoundary:BoundarySpots", "drawingOnImage")
+    for(const Vector2i& p : boundarySpots)
     {
-      LINE("representation:FieldBoundary:ConvexBoundary", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorRGBA::red);
+      DOT("representation:FieldBoundary:BoundarySpots", p.x(), p.y(), ColorRGBA::blue, ColorRGBA::blue);
     }
-    previ = &p;
+
+  DEBUG_DRAWING("representation:FieldBoundary:ConvexBoundary", "drawingOnImage")
+  {
+    const Vector2i* previ = nullptr;
+    for(const Vector2i& p : convexBoundary)
+    {
+      DOT("representation:FieldBoundary:ConvexBoundary", p.x(), p.y(), ColorRGBA::red, ColorRGBA::red);
+      if(previ != nullptr)
+      {
+        LINE("representation:FieldBoundary:ConvexBoundary", p.x(), p.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::red);
+      }
+      previ = &p;
+    }
   }
 
-  int selected = -1;
-  MODIFY("representation:FieldBoundary:SelectedCandidate", selected);
-
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:BoundaryCandidates", "drawingOnImage");
-  int num = (int) convexBoundaryCandidates.size();
-  float step = 255.0f / (num - 1);
-  int pos = 0;
-  for(const InImage& tmpBoundary : convexBoundaryCandidates)
-  {
-    previ = nullptr;
-    unsigned char colorMod = static_cast<unsigned char>(step * pos);
-    ColorRGBA col = ColorRGBA(colorMod, colorMod, 255 - colorMod);
-    if(pos == selected || selected < 0 || selected >= num)
+  DEBUG_DRAWING("representation:FieldBoundary:Image", "drawingOnImage")
+    if(isValid && !boundaryInImage.empty() && !boundarySpots.empty())
     {
-      for(const Vector2<int>& p : tmpBoundary)
+      const Vector2i* previ = nullptr;
+      Vector2i point;
+      if(boundaryInImage.front().x() > boundarySpots.front().x())
       {
-        DOT_AS_VECTOR("representation:FieldBoundary:BoundaryCandidates", p, col, col);
+        point = Vector2i(boundarySpots.front().x(), getBoundaryY(boundarySpots.front().x()));
+        previ = &point;
+        DOT("representation:FieldBoundary:Image", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
+      }
+      for(const Vector2i& p : boundaryInImage)
+      {
+        DOT("representation:FieldBoundary:Image", p.x(), p.y(), ColorRGBA::orange, ColorRGBA::orange);
         if(previ != nullptr)
         {
-          LINE("representation:FieldBoundary:BoundaryCandidates", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, col);
+          LINE("representation:FieldBoundary:Image", p.x(), p.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::orange);
         }
         previ = &p;
       }
+      if(boundaryInImage.back().x() < boundarySpots.back().x())
+      {
+        point = Vector2i(boundarySpots.back().x(), getBoundaryY(boundarySpots.back().x()));
+        DOT("representation:FieldBoundary:Image", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
+        if(previ != nullptr)
+        {
+          LINE("representation:FieldBoundary:Image", point.x(), point.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::orange);
+        }
+      }
     }
-    pos++;
-  }
 
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:Image", "drawingOnImage");
-  previ = nullptr;
-  for(const Vector2<int>& p : boundaryInImage)
-  {
-    DOT_AS_VECTOR("representation:FieldBoundary:Image", p, ColorRGBA::orange, ColorRGBA::orange);
-    if(previ != nullptr)
+  DEBUG_DRAWING("representation:FieldBoundary:Field", "drawingOnField")
+    if(isValid)
     {
-      LINE("representation:FieldBoundary:Image", p.x, p.y, previ->x, previ->y, 1, Drawings::ps_solid, ColorRGBA::orange);
+      const Vector2f* prevf = nullptr;
+      for(const Vector2f& p : boundaryOnField)
+      {
+        DOT("representation:FieldBoundary:Field", p.x(), p.y(), ColorRGBA::black, ColorRGBA::black);
+        if(prevf != nullptr)
+        {
+          LINE("representation:FieldBoundary:Field", p.x(), p.y(), prevf->x(), prevf->y(), 20, Drawings::solidPen, ColorRGBA::black);
+        }
+        prevf = &p;
+      }
     }
-    previ = &p;
-  }
-
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:Field", "drawingOnField");
-  const Vector2<float>* prevf = nullptr;
-  for(const Vector2<float>& p : boundaryOnField)
-  {
-    DOT("representation:FieldBoundary:Field", p.x, p.y, ColorRGBA::black, ColorRGBA::black);
-    if(prevf != nullptr)
-    {
-      LINE("representation:FieldBoundary:Field", p.x, p.y, prevf->x, prevf->y, 20, Drawings::ps_solid, ColorRGBA::black);
-    }
-    prevf = &p;
-  }
-
-  DECLARE_DEBUG_DRAWING("representation:FieldBoundary:HighestPoint", "drawingOnImage");
-  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x + 20, highestPoint.y, 2, Drawings::ps_solid, ColorRGBA::black);
-  LINE("representation:FieldBoundary:HighestPoint", highestPoint.x, highestPoint.y, highestPoint.x, highestPoint.y + 20, 2, Drawings::ps_solid, ColorRGBA::black);
 }
 
 int FieldBoundary::getBoundaryY(int x) const
 {
   ASSERT(boundaryInImage.size() >= 2);
 
-  const Vector2<int>* left = &boundaryInImage.front();
-  const Vector2<int>* right = &boundaryInImage.back();
+  const Vector2i* left = &boundaryInImage.front();
+  const Vector2i* right = &boundaryInImage.back();
 
-  if(x < left->x)
+  if(x < left->x())
     right = &(*(boundaryInImage.begin() + 1));
-  else if(x > right->x)
+  else if(x > right->x())
     left = &(*(boundaryInImage.end() - 2));
   else
   {
-    for(const Vector2<int>& point : boundaryInImage)
+    for(const Vector2i& point : boundaryInImage)
     {
-      if(point.x == x)
-        return point.y;
-      else if(point.x < x && point.x > left->x)
+      if(point.x() == x)
+        return point.y();
+      else if(point.x() < x && point.x() > left->x())
         left = &point;
-      else if(point.x > x && point.x < right->x)
+      else if(point.x() > x && point.x() < right->x())
         right = &point;
     }
   }
 
-  double m = 1.0 * (right->y - left->y) / (right->x - left->x);
+  float m = static_cast<float>(right->y() - left->y()) / static_cast<float>(right->x() - left->x());
 
-  return static_cast<int>((x * m) + right->y - (right->x * m));
+  return static_cast<int>(static_cast<float>(x - left->x()) * m) + left->y();
 }

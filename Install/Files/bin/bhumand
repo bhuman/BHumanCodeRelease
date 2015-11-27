@@ -12,7 +12,12 @@ case "$1" in
   stop)
     killall bhuman 2> /dev/null
     sleep 2
-    killall -9 bhuman 2> /dev/null
+    if [ ! -z "`pgrep '^bhuman$'`" ]; then
+      echo `pgrep '^bhuman$'`
+      echo "killing bhuman"
+      killall -9 bhuman 2> /dev/null
+      sleep 1
+    fi
     ;;
 
   restart)

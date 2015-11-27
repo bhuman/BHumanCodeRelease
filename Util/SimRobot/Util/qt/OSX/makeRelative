@@ -6,7 +6,7 @@ export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 export baseDir=$(dirname "${scriptPath}")
 cd "$baseDir/Frameworks"
 
-export qtPath=/usr/local/Trolltech/Qt-4.8.6/lib
+export qtPath=/usr/local/Trolltech/Qt-4.8.6/lib # NOTE: currently not used!
 
 for i in */Versions/4/Qt* lib*; do
   install_name_tool -id @executable_path/../Frameworks/$i $i
@@ -14,6 +14,6 @@ done
 
 for i in */Versions/4/Qt* lib* ../plugins/*/* ../bin/moc ../bin/rcc ../bin/qcollectiongenerator ../bin/qhelpgenerator; do
   for j in */Versions/4/Qt* lib*; do
-    install_name_tool -change $qtPath/$j @executable_path/../Frameworks/$j $i
+    install_name_tool -change $j @executable_path/../Frameworks/$j $i
   done
 done

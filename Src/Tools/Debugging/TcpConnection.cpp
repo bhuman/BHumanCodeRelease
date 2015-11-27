@@ -49,7 +49,7 @@ bool TcpConnection::sendAndReceive(const unsigned char* dataToSend, int sendSize
   if((handshake != receiver || ack) &&
      isConnected() && sendSize > 0)
   {
-    if(tcpComm->send((unsigned char*) &sendSize, sizeof(sendSize)) && // sends size of block
+    if(tcpComm->send((unsigned char*)&sendSize, sizeof(sendSize)) && // sends size of block
        tcpComm->send(dataToSend, sendSize))                           // sends data
     {
       ack = false;
@@ -65,13 +65,13 @@ bool TcpConnection::sendHeartbeat()
 {
   ASSERT(tcpComm);
   int empty = 0;
-  return tcpComm->send((unsigned char*) &empty, sizeof(empty));
+  return tcpComm->send((unsigned char*)&empty, sizeof(empty));
 }
 
 int TcpConnection::receive(unsigned char*& buffer)
 {
   int size;
-  if(tcpComm->receive((unsigned char*) &size, sizeof(size), false))
+  if(tcpComm->receive((unsigned char*)&size, sizeof(size), false))
   {
     if(size == 0)
     {
@@ -88,7 +88,7 @@ int TcpConnection::receive(unsigned char*& buffer)
       ASSERT(buffer);
       if(!tcpComm->receive(buffer, size, true)) // read complete package (wait and read size bytes)
       {
-        delete [] buffer;
+        delete[] buffer;
         return -1; // error
       }
       else

@@ -6,17 +6,13 @@ export baseDir=$(dirname ${scriptPath})
 
 if [ "$(whoami)" != "root" ]; then
   # We are still user nao
-  # Install ssh key
-  mkdir -p /home/nao/.ssh
-  chmod 700 /home/nao/.ssh 
-  cp ${baseDir}/authorized_keys /home/nao/.ssh/authorized_keys
-
+  
   # Create B-Human directory
   mkdir -p /home/nao/Config
 
   # Create logs dir for logger
   mkdir -p /home/nao/logs
-    
+
   # Copy wireless profiles
   cp -r ${baseDir}/Robot/Profiles /home/nao
 
@@ -30,9 +26,6 @@ if [ "$(whoami)" != "root" ]; then
   # Continue as root
   echo "Please enter password for user 'root' (usually also 'root')."
   python -c 'import pty; pty.spawn(("/bin/su", "-c", "${scriptPath}"))'
-
-  sync
-  sync
 else
   # Now we are root
 
@@ -43,28 +36,20 @@ else
   # Make sudo work
   cp -f ${baseDir}/sudoers /etc
   chmod 440 /etc/sudoers
-  chown root /etc/sudoers
-  chgrp root /etc/sudoers
-  mkdir -p /var/db  
+  chown root:root /etc/sudoers
+  mkdir -p /var/db
 
   # Copy wireless-tools
   cp ${baseDir}/wireless-tools/* /usr/bin/
 
-  # Install library compatible with gcc 4.5.2
-  cp ${baseDir}/libstdc++.so.6.0.17 /usr/lib
-  chmod 777 /usr/lib/libstdc++.so.6.0.17
-  ln -sf /usr/lib/libstdc++.so.6.0.17 /usr/lib/libstdc++.so.6
-  ln -sf /usr/lib/libstdc++.so.6.0.17 /usr/lib/libstdc++.so
+  # Install newer libstdc++
+  cp ${baseDir}/libstdc++.so.6.0.21 /usr/lib
+  chmod 777 /usr/lib/libstdc++.so.6.0.21
+  ln -sf /usr/lib/libstdc++.so.6.0.21 /usr/lib/libstdc++.so.6
+  ln -sf /usr/lib/libstdc++.so.6.0.21 /usr/lib/libstdc++.so
 
   # Change name
-  cp ${baseDir}/Robot/hostname /etc
-
-  # Save original naoqi autoload file (but do not overwrite if backup already exists) and install B-Human's
-  if [ ! -f /etc/naoqi/autoload.org ] ; then
-    cp -n /etc/naoqi/autoload.ini /etc/naoqi/autoload.org
-  fi
-  cp ${baseDir}/autoload.ini /etc/naoqi/autoload.bh
-  /home/nao/bin/tobhuman
+  cp ${baseDir}/Robot/hostname /etc/hostname
 
   # Speed up boot process
   if [ -f /usr/libexec/hal-prestarter ] ; then
@@ -73,23 +58,11 @@ else
   echo "#!/bin/sh" > /usr/libexec/hal-prestarter
   chmod +x /usr/libexec/hal-prestarter
 
-  # Remove all services not needed
-  rc-update >${baseDir}/temp
-  for i in crash-report-uploader connman ntpd vsftpd lighttpd naopathe laser bootprogress_0 bootprogress_25 bootprogress_50 bootprogress_75 bootprogress_100 avahi-daemon lircd bluetooth sshd hwclock sysctl local urandom termencoding root netmount mtab sysklogd hostname modules savecache
-  do
-    if [ ! -z "$(grep "$i |" ${baseDir}/temp)" ]; then
-      rc-update del $(echo "$(grep "$i |" ${baseDir}/temp)" | sed "s%[ ]*\([^ ]*\) |[ ]*\([^ ]*\).*%\1 \2%")
-    fi
-  done
-
   # wpa_supplicant
   cp ${baseDir}/Robot/wired /etc/init.d
   cp ${baseDir}/Robot/wireless /etc/init.d
   rc-update add wired boot
   rc-update add wireless boot
-
-  # Load sshd later
-  rc-update add sshd
 
   # Start bhuman during boot
   cp ${baseDir}/init-bhumand /etc/init.d/bhumand
@@ -103,20 +76,48 @@ else
   if [ ! -f "/etc/ssh.conf/sshd_config" -o -z "$(grep "UseDNS no" "/etc/ssh.conf/sshd_config" 2>/dev/null)" ]; then
     echo "UseDNS no" >> "/etc/ssh.conf/sshd_config"
   fi
+
+  # Set the timezone and localtime
+  cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+  echo "Europe/Berlin" > /etc/timezone
   
-  # Install alternative kernel
-  cp ${baseDir}/kernel/vmlinuz-2.6.33.9-rt31-aldebaran-rt /boot
-  cp ${baseDir}/kernel/config-2.6.33.9-rt31-aldebaran-rt /boot
-  cp ${baseDir}/kernel/System.map-2.6.33.9-rt31-aldebaran-rt /boot
-  cp ${baseDir}/kernel/initrd.img-2.6.33.9-rt31-aldebaran-rt /boot
+  # Save original naoqi autoload file (but do not overwrite if backup already exists) and install B-Human's
+  if [ ! -f /etc/naoqi/autoload.org ] ; then
+    cp -n /etc/naoqi/autoload.ini /etc/naoqi/autoload.org
+  fi
+  cp ${baseDir}/autoload.ini /etc/naoqi/autoload.bh
+  /home/nao/bin/tobhuman
+
+  # Save original checkpart script (but do not overwrite if backup already exists) and install B-Human's
+  if [ ! -f /etc/init.d/checkpart.org ] ; then
+    cp -n /etc/init.d/checkpart /etc/init.d/checkpart.org
+  fi
+  cp ${baseDir}/checkpart /etc/init.d/checkpart
+
+  # Remove all services not needed
+  rc-update >${baseDir}/temp
+  for i in crash-report-uploader connman proxydaemon vsftpd nginx naopathe laser bootprogress_0 bootprogress_25 bootprogress_50 bootprogress_75 bootprogress_100 avahi-daemon lircd bluetooth sshd hwclock sysctl local urandom termencoding root netmount mtab sysklogd hostname modules savecache firewall_mode ofono pulseaudio qimessaging-json udev-postmount
+  do
+    if [ ! -z "$(grep "$i |" ${baseDir}/temp)" ]; then
+      rc-update del $(echo "$(grep "$i |" ${baseDir}/temp)" | sed "s%[ ]*\([^ ]*\) |[ ]*\([^ ]*\).*%\1 \2%")
+    fi
+  done
+
+  # Load sshd later
+  rc-update add sshd
+  
+  # Install alternative modules
   cp -r ${baseDir}/kernel/2.6.33.9-rt31-aldebaran-rt /lib/modules
-
-  # Install dat file of wifi driver
-  mkdir -p /etc/Wireless/RT2870STA/
-  cp ${baseDir}/RT2870STA.dat /etc/Wireless/RT2870STA/
-
-  /home/nao/bin/setbodyname `cat ${baseDir}/Robot/hostname` #sometimes this fails. if this fails here, the name of the robot should already be the right one
-
+  
   sync
+  
+  # Restart NAOqi before setting body name. Replacing the runtime library can have strange effects.
+  /etc/init.d/naoqi restart
+  sleep 1
+  /home/nao/bin/setbodyname `cat ${baseDir}/Robot/bodyname` || true
+  
   sync
+  
+  echo "[INFO] rebooting"
+  reboot
 fi

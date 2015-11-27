@@ -49,18 +49,13 @@ enum {
 typedef struct snd_pcm_extplug snd_pcm_extplug_t;
 /** Callback table of extplug */
 typedef struct snd_pcm_extplug_callback snd_pcm_extplug_callback_t;
-#ifdef DOC_HIDDEN
-/* redefine typedefs for stupid doxygen */
-typedef snd_pcm_extplug snd_pcm_extplug_t;
-typedef snd_pcm_extplug_callback snd_pcm_extplug_callback_t;
-#endif
 
 /*
  * Protocol version
  */
 #define SND_PCM_EXTPLUG_VERSION_MAJOR	1	/**< Protocol major version */
 #define SND_PCM_EXTPLUG_VERSION_MINOR	0	/**< Protocol minor version */
-#define SND_PCM_EXTPLUG_VERSION_TINY	2	/**< Protocol tiny version */
+#define SND_PCM_EXTPLUG_VERSION_TINY	1	/**< Protocol tiny version */
 /**
  * Filter-plugin protocol version
  */
@@ -156,18 +151,6 @@ struct snd_pcm_extplug_callback {
 	 * init; optional initialization called at prepare or reset
 	 */
 	int (*init)(snd_pcm_extplug_t *ext);
-	/**
-	 * query the channel maps; optional; since v1.0.2
-	 */
-	snd_pcm_chmap_query_t **(*query_chmaps)(snd_pcm_extplug_t *ext);
-	/**
-	 * get the channel map; optional; since v1.0.2
-	 */
-	snd_pcm_chmap_t *(*get_chmap)(snd_pcm_extplug_t *ext);
-	/**
-	 * set the channel map; optional; since v1.0.2
-	 */
-	int (*set_chmap)(snd_pcm_extplug_t *ext, const snd_pcm_chmap_t *map);
 };
 
 
@@ -188,7 +171,7 @@ int snd_pcm_extplug_set_slave_param_minmax(snd_pcm_extplug_t *extplug, int type,
 /**
  * set the parameter constraint with a single value
  */
-static __inline__ int snd_pcm_extplug_set_param(snd_pcm_extplug_t *extplug, int type, unsigned int val)
+static inline int snd_pcm_extplug_set_param(snd_pcm_extplug_t *extplug, int type, unsigned int val)
 {
 	return snd_pcm_extplug_set_param_list(extplug, type, 1, &val);
 }
@@ -196,7 +179,7 @@ static __inline__ int snd_pcm_extplug_set_param(snd_pcm_extplug_t *extplug, int 
 /**
  * set the parameter constraint for slave PCM with a single value
  */
-static __inline__ int snd_pcm_extplug_set_slave_param(snd_pcm_extplug_t *extplug, int type, unsigned int val)
+static inline int snd_pcm_extplug_set_slave_param(snd_pcm_extplug_t *extplug, int type, unsigned int val)
 {
 	return snd_pcm_extplug_set_slave_param_list(extplug, type, 1, &val);
 }

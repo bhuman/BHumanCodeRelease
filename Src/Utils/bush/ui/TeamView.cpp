@@ -5,28 +5,40 @@
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/tools/Filesystem.h"
 
+#include <QPushButton>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QFormLayout>
-#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QSlider>
+#include <QToolTip>
+#include <QCursor>
 
 void TeamView::init()
 {
   if(team)
   {
     QFormLayout* layout = new QFormLayout();
-    QGridLayout* settingsGrid = new QGridLayout();
-    settingsGrid->setColumnStretch(13,1);
+    QHBoxLayout * settingsGrid = new QHBoxLayout();
+    settingsGrid->setSpacing(6);
+    settingsGrid->setAlignment(Qt::AlignmentFlag::AlignLeft);
+
+    pbSave = new QPushButton(QIcon(":icons/disk.png"), "");
+    pbSave->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+    pbSave->setToolTip("Save Team Configuration");
+    settingsGrid->addWidget(pbSave);
+    connect(pbSave, SIGNAL(clicked()), teamSelector, SLOT(saveTeams()));
 
     cbColor = new QComboBox(this);
     cbColor->addItem("red");
     cbColor->addItem("blue");
+    cbColor->addItem("yellow");
+    cbColor->addItem("black");
     cbColor->setCurrentIndex(cbColor->findText(fromString(team->color)));
-    settingsGrid->addWidget(new QLabel("Color:", cbColor), 0, 0);
-    settingsGrid->addWidget(cbColor, 0, 1);
+    settingsGrid->addWidget(new QLabel("Color:", cbColor));
+    settingsGrid->addWidget(cbColor);
     connect(cbColor, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(colorChanged(const QString&)));
 
     sbNumber = new QSpinBox(this);
@@ -34,20 +46,17 @@ void TeamView::init()
     sbNumber->setButtonSymbols(QAbstractSpinBox::NoButtons);
     sbNumber->setMaximumWidth(18);
     sbNumber->setValue(team->number);
-    settingsGrid->addWidget(new QLabel("Number:", sbNumber), 0, 2);
-    settingsGrid->addWidget(sbNumber, 0, 3);
+    settingsGrid->addWidget(new QLabel("Number:", sbNumber));
+    settingsGrid->addWidget(sbNumber);
     connect(sbNumber, SIGNAL(valueChanged(int)), this, SLOT(numberChanged(int)));
-
-    const int port = 10001+(100*team->number);
-    setPort(port);
 
     cbLocation = new QComboBox(this);
     std::vector<std::string> locations = Filesystem::getLocations();
     for(size_t i = 0; i < locations.size(); ++i)
       cbLocation->addItem(fromString(locations[i]));
     cbLocation->setCurrentIndex(cbLocation->findText(fromString(team->location)));
-    settingsGrid->addWidget(new QLabel("Location:", lePort), 0, 4);
-    settingsGrid->addWidget(cbLocation, 0, 5);
+    settingsGrid->addWidget(new QLabel("Location:", lePort));
+    settingsGrid->addWidget(cbLocation);
     connect(cbLocation, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(locationChanged(const QString&)));
 
     cbWlanConfig = new QComboBox(this);
@@ -55,8 +64,8 @@ void TeamView::init()
     for(size_t i = 0; i < configs.size(); ++i)
       cbWlanConfig->addItem(fromString(configs[i]));
     cbWlanConfig->setCurrentIndex(cbWlanConfig->findText(fromString(team->wlanConfig)));
-    settingsGrid->addWidget(new QLabel("Wlan:", cbWlanConfig), 0, 6);
-    settingsGrid->addWidget(cbWlanConfig, 0, 7);
+    settingsGrid->addWidget(new QLabel("Wlan:", cbWlanConfig));
+    settingsGrid->addWidget(cbWlanConfig);
     connect(cbWlanConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(wlanConfigChanged(const QString&)));
 
     cbBuildConfig = new QComboBox(this);
@@ -64,9 +73,30 @@ void TeamView::init()
     cbBuildConfig->addItem("Release");
     cbBuildConfig->addItem("Debug");
     cbBuildConfig->setCurrentIndex(cbBuildConfig->findText(fromString(team->buildConfig)));
-    settingsGrid->addWidget(new QLabel("Conf:", cbBuildConfig), 0, 8);
-    settingsGrid->addWidget(cbBuildConfig, 0, 9);
+    settingsGrid->addWidget(new QLabel("Conf:", cbBuildConfig));
+    settingsGrid->addWidget(cbBuildConfig);
     connect(cbBuildConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(buildConfigChanged(const QString&)));
+
+    sVolume = new QSlider(this);
+    sVolume->setMinimum(0);
+    sVolume->setMaximum(100);
+    sVolume->setTickInterval(1);
+    sVolume->setValue(team->volume);
+    settingsGrid->addWidget(new QLabel("Vol:", sVolume));
+    settingsGrid->addWidget(sVolume);
+    connect(sVolume, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(const int)));
+
+    settingsGrid->addStretch();
+
+    cbDeployDevice = new QComboBox(this);
+    cbDeployDevice->addItem("auto");
+    cbDeployDevice->addItem("lan");
+    cbDeployDevice->addItem("wlan");
+    cbDeployDevice->setCurrentIndex(cbDeployDevice->findText(fromString(team->deployDevice)));
+    settingsGrid->addWidget(new QLabel("Device:", cbDeployDevice));
+    settingsGrid->addWidget(cbDeployDevice);
+    connect(cbDeployDevice, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(deployDeviceChanged(const QString&)));
+
     layout->addRow(settingsGrid);
     QFrame* hr = new QFrame(this);
     hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
@@ -104,7 +134,7 @@ void TeamView::generateRobotViews(QGridLayout* teamGrid)
   for(size_t j = 0; j < 2; ++j)
     for(size_t i = 0; i < max; ++i)
     {
-      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short) i, (unsigned short) j);
+      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short) (i + 1), (unsigned short) j);
       robotViews.push_back(rv);
       teamGrid->addWidget(rv, j > 0 ? 2 : 0, (int) i);
     }
@@ -132,20 +162,8 @@ void TeamView::numberChanged(int number)
   if(team)
   {
     team->number = (unsigned short) number;
-    team->port = (unsigned short) (10001 + 100 * number);
+    team->port = (unsigned short) (10000 + number);
   }
-}
-
-void TeamView::portChanged(const QString& port)
-{
-  if(team)
-    team->port = port.toUShort();
-}
-
-void TeamView::setPort(const int port)
-{
-   if(team)
-     team->port = (unsigned short) port;
 }
 
 void TeamView::locationChanged(const QString& location)
@@ -164,4 +182,19 @@ void TeamView::buildConfigChanged(const QString& build)
 {
   if(team)
     team->buildConfig = toString(build);
+}
+
+void TeamView::volumeChanged(const int volume)
+{
+  if(team)
+  {
+    team->volume = static_cast<unsigned short>(volume);
+    QToolTip::showText(QCursor::pos(), QString::number(volume) + QString("%"));
+  }
+}
+
+void TeamView::deployDeviceChanged(const QString& device)
+{
+  if(team)
+    team->deployDevice = toString(device);
 }

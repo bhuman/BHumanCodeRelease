@@ -1,9 +1,11 @@
 #include "BHToolBar.h"
 #include "ConsoleRoboCupCtrl.h"
 #include "Platform/SystemCall.h"
-#include <QTimer>
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/Infrastructure/KeyStates.h"
+#include "Representations/MotionControl/HeadAngleRequest.h"
+
+#include <QTimer>
 
 QMenu* BHToolBar::createUserMenu() const
 {
@@ -22,7 +24,6 @@ QMenu* BHToolBar::createUserMenu() const
   menu->addAction(sitDownAct);
   menu->addSeparator();
   menu->addAction(headAngleAct);
-  menu->addSeparator();
   menu->addAction(pressChestButtonAct);
   return menu;
 }
@@ -69,7 +70,13 @@ void BHToolBar::setStand()
 void BHToolBar::headAngle(bool active)
 {
   if(active)
-    console.executeConsoleCommand("set representation:HeadAngleRequest pan = 1000; tilt = 1000; speed = 2.61799;");
+  {
+    HeadAngleRequest hareq;
+    hareq.pan = JointAngles::off;
+    hareq.tilt = JointAngles::off;
+    hareq.speed = 150_deg;
+    console.setRepresentation("HeadAngleRequest", hareq);
+  }
   else
     console.executeConsoleCommand("set representation:HeadAngleRequest unchanged");
 }

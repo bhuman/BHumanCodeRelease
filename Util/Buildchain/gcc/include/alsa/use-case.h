@@ -49,8 +49,7 @@ extern "C" {
  *  \{
  */
 
-/*! \page Usecase ALSA Use Case Interface
- * 
+/**
  * ALSA Use Case Interface
  *
  * The use case manager works by configuring the sound card ALSA kcontrols to
@@ -97,15 +96,15 @@ extern "C" {
  * case verb will configure the audio hardware for HiFi Music playback
  * and capture.
  */
-#define SND_USE_CASE_VERB_INACTIVE		"Inactive"		/**< Inactive Verb */
-#define SND_USE_CASE_VERB_HIFI			"HiFi"			/**< HiFi Verb */
-#define SND_USE_CASE_VERB_HIFI_LOW_POWER	"HiFi Low Power"	/**< HiFi Low Power Verb */
-#define SND_USE_CASE_VERB_VOICE			"Voice"			/**< Voice Verb */
-#define SND_USE_CASE_VERB_VOICE_LOW_POWER	"Voice Low Power"	/**< Voice Low Power Verb */
-#define SND_USE_CASE_VERB_VOICECALL		"Voice Call"		/**< Voice Call Verb */
-#define SND_USE_CASE_VERB_IP_VOICECALL		"Voice Call IP"		/**< Voice Call IP Verb */
-#define SND_USE_CASE_VERB_ANALOG_RADIO		"FM Analog Radio"	/**< FM Analog Radio Verb */
-#define SND_USE_CASE_VERB_DIGITAL_RADIO		"FM Digital Radio"	/**< FM Digital Radio Verb */
+#define SND_USE_CASE_VERB_INACTIVE		"Inactive"
+#define SND_USE_CASE_VERB_HIFI			"HiFi"
+#define SND_USE_CASE_VERB_HIFI_LOW_POWER	"HiFi Low Power"
+#define SND_USE_CASE_VERB_VOICE			"Voice"
+#define SND_USE_CASE_VERB_VOICE_LOW_POWER	"Voice Low Power"
+#define SND_USE_CASE_VERB_VOICECALL		"Voice Call"
+#define SND_USE_CASE_VERB_IP_VOICECALL		"Voice Call IP"
+#define SND_USE_CASE_VERB_ANALOG_RADIO		"FM Analog Radio"
+#define SND_USE_CASE_VERB_DIGITAL_RADIO		"FM Digital Radio"
 /* add new verbs to end of list */
 
 
@@ -115,16 +114,16 @@ extern "C" {
  * Physical system devices the render and capture audio. Devices can be OR'ed
  * together to support audio on simultaneous devices.
  */
-#define SND_USE_CASE_DEV_NONE		"None"		/**< None Device */
-#define SND_USE_CASE_DEV_SPEAKER	"Speaker"	/**< Speaker Device */
-#define SND_USE_CASE_DEV_LINE		"Line"		/**< Line Device */
-#define SND_USE_CASE_DEV_HEADPHONES	"Headphones"	/**< Headphones Device */
-#define SND_USE_CASE_DEV_HEADSET	"Headset"	/**< Headset Device */
-#define SND_USE_CASE_DEV_HANDSET	"Handset"	/**< Handset Device */
-#define SND_USE_CASE_DEV_BLUETOOTH	"Bluetooth"	/**< Bluetooth Device */
-#define SND_USE_CASE_DEV_EARPIECE	"Earpiece"	/**< Earpiece Device */
-#define SND_USE_CASE_DEV_SPDIF		"SPDIF"		/**< SPDIF Device */
-#define SND_USE_CASE_DEV_HDMI		"HDMI"		/**< HDMI Device */
+#define SND_USE_CASE_DEV_NONE		"None"
+#define SND_USE_CASE_DEV_SPEAKER	"Speaker"
+#define SND_USE_CASE_DEV_LINE		"Line"
+#define SND_USE_CASE_DEV_HEADPHONES	"Headphones"
+#define SND_USE_CASE_DEV_HEADSET	"Headset"
+#define SND_USE_CASE_DEV_HANDSET	"Handset"
+#define SND_USE_CASE_DEV_BLUETOOTH	"Bluetooth"
+#define SND_USE_CASE_DEV_EARPIECE	"Earpiece"
+#define SND_USE_CASE_DEV_SPDIF		"SPDIF"
+#define SND_USE_CASE_DEV_HDMI		"HDMI"
 /* add new devices to end of list */
 
 
@@ -146,12 +145,12 @@ extern "C" {
  *  3. Call snd_use_case_get("PlaybackPCM") to get ALSA PCM sink name for
  *     ringtone pcm data.
  */
-#define SND_USE_CASE_MOD_CAPTURE_VOICE		"Capture Voice"		/**< Capture Voice Modifier */
-#define SND_USE_CASE_MOD_CAPTURE_MUSIC		"Capture Music"		/**< Capture Music Modifier */
-#define SND_USE_CASE_MOD_PLAY_MUSIC		"Play Music"		/**< Play Music Modifier */
-#define SND_USE_CASE_MOD_PLAY_VOICE		"Play Voice"		/**< Play Voice Modifier */
-#define SND_USE_CASE_MOD_PLAY_TONE		"Play Tone"		/**< Play Tone Modifier */
-#define SND_USE_CASE_MOD_ECHO_REF		"Echo Reference"	/**< Echo Reference Modifier */
+#define SND_USE_CASE_MOD_CAPTURE_VOICE		"Capture Voice"
+#define SND_USE_CASE_MOD_CAPTURE_MUSIC		"Capture Music"
+#define SND_USE_CASE_MOD_PLAY_MUSIC		"Play Music"
+#define SND_USE_CASE_MOD_PLAY_VOICE		"Play Voice"
+#define SND_USE_CASE_MOD_PLAY_TONE		"Play Tone"
+#define SND_USE_CASE_MOD_ECHO_REF		"Echo Reference"
 /* add new modifiers to end of list */
 
 
@@ -163,9 +162,9 @@ extern "C" {
  * audio driver in order to lower power consumption.
  *
  */
-#define SND_USE_CASE_TQ_MUSIC		"Music"		/**< Music Tone Quality */
-#define SND_USE_CASE_TQ_VOICE		"Voice"		/**< Voice Tone Quality */
-#define SND_USE_CASE_TQ_TONES		"Tones"		/**< Tones Tone Quality */
+#define SND_USE_CASE_TQ_MUSIC		"Music"
+#define SND_USE_CASE_TQ_VOICE		"Voice"
+#define SND_USE_CASE_TQ_TONES		"Tones"
 
 /** use case container */
 typedef struct snd_use_case_mgr snd_use_case_mgr_t;
@@ -198,16 +197,16 @@ int snd_use_case_free_list(const char *list[], int items);
  *			  (in pair cardname+comment)
  *   _verbs		- get verb list
  *			  (in pair verb+comment)
- *   _devices[/{verb}]	- get list of supported devices
+ *   _devices[/<verb>]	- get list of supported devices
  *			  (in pair device+comment)
- *   _modifiers[/{verb}]- get list of supported modifiers
+ *   _modifiers[/<verb>]- get list of supported modifiers
  *			  (in pair modifier+comment)
- *   TQ[/{verb}]	- get list of TQ identifiers
+ *   TQ[/<verb>]	- get list of TQ identifiers
  *   _enadevs		- get list of enabled devices
  *   _enamods		- get list of enabled modifiers
  *
- *   _supporteddevs/{modifier}|{device}[/{verb}]   - list of supported devices
- *   _conflictingdevs/{modifier}|{device}[/{verb}] - list of conflicting devices
+ *   _supporteddevs/<modifier>|<device>[/<verb>]   - list of supported devices
+ *   _conflictingdevs/<modifier>|<device>[/<verb>] - list of conflicting devices
  *   Note that at most one of the supported/conflicting devs lists has
  *   any entries, and when neither is present, all devices are supported.
  *
@@ -231,8 +230,8 @@ int snd_use_case_get_list(snd_use_case_mgr_t *uc_mgr,
  *   NULL 		- return current card
  *   _verb		- return current verb
  *
- *   [=]{NAME}[/[{modifier}|{/device}][/{verb}]]
- *                      - value identifier {NAME}
+ *   [=]<NAME>[/[<modifier>|</device>][/<verb>]]
+ *                      - value identifier <NAME>
  *                      - Search starts at given modifier or device if any,
  *                          else at a verb
  *                      - Search starts at given verb if any,
@@ -282,8 +281,8 @@ int snd_use_case_get(snd_use_case_mgr_t *uc_mgr,
  * \return Zero if success, otherwise a negative error code
  *
  * Known identifiers:
- *   _devstatus/{device}	- return status for given device
- *   _modstatus/{modifier}	- return status for given modifier
+ *   _devstatus/<device>	- return status for given device
+ *   _modstatus/<modifier>	- return status for given modifier
  */
 int snd_use_case_geti(snd_use_case_mgr_t *uc_mgr,
 		      const char *identifier,
@@ -300,13 +299,13 @@ int snd_use_case_geti(snd_use_case_mgr_t *uc_mgr,
  *   _verb 		- set current verb = value
  *   _enadev		- enable given device = value
  *   _disdev		- disable given device = value
- *   _swdev/{old_device} - new_device = value
+ *   _swdev/<old_device> - new_device = value
  *			- disable old_device and then enable new_device
  *			- if old_device is not enabled just return
  *			- check transmit sequence firstly
  *   _enamod		- enable given modifier = value
  *   _dismod		- disable given modifier = value
- *   _swmod/{old_modifier} - new_modifier = value
+ *   _swmod/<old_modifier> - new_modifier = value
  *			- disable old_modifier and then enable new_modifier
  *			- if old_modifier is not enabled just return
  *			- check transmit sequence firstly
@@ -354,7 +353,7 @@ int snd_use_case_mgr_reset(snd_use_case_mgr_t *uc_mgr);
  * \param list Returned allocated list
  * \return Number of list entries if success, otherwise a negative error code
  */
-static __inline__ int snd_use_case_card_list(const char **list[])
+static inline int snd_use_case_card_list(const char **list[])
 {
 	return snd_use_case_get_list(NULL, NULL, list);
 }
@@ -365,7 +364,7 @@ static __inline__ int snd_use_case_card_list(const char **list[])
  * \param list Returned list of verbs
  * \return Number of list entries if success, otherwise a negative error code
  */
-static __inline__ int snd_use_case_verb_list(snd_use_case_mgr_t *uc_mgr,
+static inline int snd_use_case_verb_list(snd_use_case_mgr_t *uc_mgr,
 					 const char **list[])
 {
 	return snd_use_case_get_list(uc_mgr, "_verbs", list);

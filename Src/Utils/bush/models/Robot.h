@@ -1,34 +1,21 @@
 #pragma once
 
-#include "Utils/bush/tools/ConfigMap.h"
-#include <string>
-#include <vector>
 #include <climits>
+#include <map>
+#include "Tools/Streams/AutoStreamable.h"
 
+class Context;
 class Session;
 class Team;
 
-class Robot
+STREAMABLE(Robot,
 {
-  static std::map<std::string, Robot*> getRobotsByName();
-public:
-  std::string lan;
-  std::string wlan;
-  std::string name;
-
-  static const unsigned short INVALID_PLAYER_NUMBER = USHRT_MAX;
-
-  std::string getSettingsString(const Team& team) const;
-  std::string getBestIP() const;
+  std::string getBestIP(const Context& context) const;
 
   static std::vector<Robot> getRobots();
-  static void initRobotsByName(std::map<std::string, Robot*> &robotsByName);
+  static void initRobotsByName(std::map<std::string, Robot*> &robotsByName),
 
-  friend class Session;
-};
-
-CONFIGMAP_STREAM_IN_DELCARE(Robot);
-CONFIGMAP_STREAM_OUT_DELCARE(Robot);
-
-ConfigMap& operator << (ConfigMap& cv, const Robot& robot);
-const ConfigMap& operator >> (const ConfigMap& cv, Robot& robot);
+  (std::string) lan,
+  (std::string) wlan,
+  (std::string) name,
+});

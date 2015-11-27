@@ -110,12 +110,12 @@ bool Texture::loadTGA(const std::string& name)
   FILE *file = fopen(name.c_str(), "rb");               // Open the TGA file
 
   // Load the file and perform checks
-  if(file == NULL ||                                                      // Does file exist?
+  if(file == nullptr ||                                                      // Does file exist?
     fread(TGAcompare,1,sizeof(TGAcompare),file) != sizeof(TGAcompare) ||  // Are there 12 bytes to read?
     memcmp(TGAheader,TGAcompare,sizeof(TGAheader)) != 0 ||                // Is it the right format?
     fread(header,1,sizeof(header),file) != sizeof(header))                // If so then read the next 6 header bytes
   {
-    if(file == NULL) // If the file didn't exist then return
+    if(file == nullptr) // If the file didn't exist then return
       return false;
     else
     {

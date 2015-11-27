@@ -1,8 +1,8 @@
 /**
-* @file WalkingEngineTools.h
-* Implementation of tools utilized by the WalkingEngine
-* @author Colin Graf
-*/
+ * @file WalkingEngineTools.h
+ * Implementation of tools utilized by the WalkingEngine
+ * @author Colin Graf
+ */
 
 #include <cmath>
 
@@ -56,7 +56,7 @@ float FunctionMinimizer::minimize(float minPos, float maxPos, float startPos, fl
   if(point[1].val < minVal)
     return point[1].pos;
 
-  Point* smallest, * largest, * free = &point[2];
+  Point* smallest, *largest, *free = &point[2];
   if(point[0].val < point[1].val)
   {
     smallest = &point[0];

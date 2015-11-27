@@ -1,4 +1,4 @@
-/*
+/**
  * @file Tools/Debugging/Modify.h
  * Macros make data visible/editable from the RobotConsole.
  *
@@ -8,11 +8,6 @@
  */
 
 #include "DebugDataTable.h"
-
-#ifdef RELEASE
-#define _MODIFY(name, object, once) ((void) 0)
-#define _MODIFY_ENUM(name, once, ...) ((void) 0)
-#else
 
 /**
  * Allows for the continuous modification of an object implementing a complete streaming
@@ -37,10 +32,8 @@
   do \
   { \
     Global::getDebugDataTable().updateObject(id, object, once); \
-    DEBUG_RESPONSE_ONCE("debug data:" id, \
-    { \
+    DEBUG_RESPONSE_ONCE("debug data:" id) \
       OUTPUT(idDebugDataResponse, bin, id << Streaming::demangle(typeid(object).name()) << object); \
-    }); \
   } \
   while(false)
 
@@ -75,11 +68,7 @@
   { \
     Streaming::registerEnum(typeid(object), Streaming::castFunction(object, class getName)); \
     Global::getDebugDataTable().updateObject(id, object, once); \
-    DEBUG_RESPONSE_ONCE("debug data:" id, \
-    { \
+    DEBUG_RESPONSE_ONCE("debug data:" id) \
       OUTPUT(idDebugDataResponse, bin, id << Streaming::demangle(typeid(object).name()) << (unsigned char) object); \
-    }); \
   } \
   while(false)
-
-#endif

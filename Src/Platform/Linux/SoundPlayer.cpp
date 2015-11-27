@@ -5,19 +5,16 @@
 * @author Colin Graf
 */
 
-#include <csignal>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <cstdlib>
-#include <cstdio>
 
 #include "SoundPlayer.h"
 #include "Platform/File.h"
 
 SoundPlayer SoundPlayer::soundPlayer;
 
-SoundPlayer::SoundPlayer(): Thread<SoundPlayer>(),
-  started(false), closing(false) {}
+SoundPlayer::SoundPlayer() :
+  Thread<SoundPlayer>(), started(false), closing(false)
+{}
 
 SoundPlayer::~SoundPlayer()
 {

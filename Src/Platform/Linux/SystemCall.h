@@ -1,5 +1,5 @@
 /**
-* @file Platform/linux/SystemCall.h
+* @file Platform/Linux/SystemCall.h
 *
 * Implementation of system calls and access to thread local storage.
 * Only for use on Linux.
@@ -17,7 +17,7 @@
 * by this macro. Only variables of simple types can be defined, i.e.
 * no class instantiations are allowed.
 */
-#define PROCESS_WIDE_STORAGE(type) __thread type*
+#define PROCESS_LOCAL __thread
 
 /**
 * static class for system calls
@@ -88,7 +88,7 @@ public:
   static unsigned long long getFreeDiskSpace(const char* path);
 
   /** Allocate memory of given size with given alignment. */
-  static void* alignedMalloc(size_t size, size_t alignment);
+  static void* alignedMalloc(size_t size, size_t alignment = 16);
 
   /** Free aligned memory.*/
   static void alignedFree(void* ptr);

@@ -5,6 +5,7 @@
 * @author Colin Graf
 */
 
+#define NOMINMAX
 #include <windows.h>
 #include <mmsystem.h>
 

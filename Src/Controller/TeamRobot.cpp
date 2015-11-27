@@ -17,10 +17,11 @@ bool TeamRobot::main()
     DECLARE_DEBUG_DRAWING("representation:RobotPose:deviation", "drawingOnField"); // The robot pose
     DECLARE_DEBUG_DRAWING("origin:RobotPose", "drawingOnField"); // Set the origin to the robot's current position
     DECLARE_DEBUG_DRAWING("representation:BallModel", "drawingOnField"); // drawing of the ball model
-    DECLARE_DEBUG_DRAWING("representation:CombinedWorldModel", "drawingOnField"); // drawing of the combined world model
+    DECLARE_DEBUG_DRAWING("representation:TeamBallModel", "drawingOnField"); // drawing of the team ball model
+    DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel", "drawingOnField"); // drawing of the team players model
     DECLARE_DEBUG_DRAWING("representation:GoalPercept:Field", "drawingOnField"); // drawing of the goal percept
     DECLARE_DEBUG_DRAWING("representation:MotionRequest", "drawingOnField"); // drawing of a request walk vector
-    DECLARE_DEBUG_DRAWING("representation:ObstacleModel:Center", "drawingOnField"); //drawing center of obstacle model
+    DECLARE_DEBUG_DRAWING("representation:ObstacleModelCompressed:CenterCross", "drawingOnField"); //drawing center of obstacles from obstacle model
     DECLARE_DEBUG_DRAWING("representation:LinePercept:Field", "drawingOnField");
 
     uint8_t teamColor = 0,
@@ -32,14 +33,16 @@ bool TeamRobot::main()
       robotPose.draw();
     if(SystemCall::getTimeSince(ballModelReceived) < 1000)
       ballModel.draw();
-    if(SystemCall::getTimeSince(combinedWorldModelReceived) < 1000)
-      combinedWorldModel.draw();
+    if(SystemCall::getTimeSince(teamBallModelReceived) < 1000)
+      teamBallModel.draw();
+    if(SystemCall::getTimeSince(teamPlayersModelReceived) < 1000)
+      teamPlayersModel.draw();
     if(SystemCall::getTimeSince(goalPerceptReceived) < 1000)
       goalPercept.draw();
     if(SystemCall::getTimeSince(motionRequestReceived) < 1000)
       motionRequest.draw();
-    if(SystemCall::getTimeSince(obstacleModelReceived) < 1000)
-      obstacleModel.draw();
+    if(SystemCall::getTimeSince(obstacleModelCompressedReceived) < 1000)
+      obstacleModelCompressed.draw();
     if(SystemCall::getTimeSince(linePerceptReceived) < 1000)
       linePercept.draw();
 
@@ -55,7 +58,7 @@ bool TeamRobot::main()
     DRAWTEXT("robotState", -5100, lineY, 150, ColorRGBA::white, "batteryLevel: " << robotHealth.batteryLevel << " %");
     DRAWTEXT("robotState", 3700, lineY, 150, ColorRGBA::white, "role: " << Role::getName(behaviorStatus.role));
     lineY -= 180;
-    DRAWTEXT("robotState", -5100, lineY, 150, ColorRGBA::white, "temperatures: joint " << JointData::getName(robotHealth.jointWithMaxTemperature)<< ":" << robotHealth.maxJointTemperature << " C, cpu: " << robotHealth.cpuTemperature << " C");
+    DRAWTEXT("robotState", -5100, lineY, 150, ColorRGBA::white, "temperatures: joint " << Joints::getName(robotHealth.jointWithMaxTemperature)<< ":" << robotHealth.maxJointTemperature << " C, cpu: " << robotHealth.cpuTemperature << " C");
     lineY -= 180;
     DRAWTEXT("robotState", -5100, lineY, 150, ColorRGBA::white, "rates: cognition: " << (int) std::floor(robotHealth.cognitionFrameRate + 0.5f) << " fps, motion: " << (int) std::floor(robotHealth.motionFrameRate + 0.5f) << " fps");
     if(ballModel.timeWhenLastSeen)
@@ -89,8 +92,8 @@ bool TeamRobot::main()
        || (SystemCall::getTimeSince(hasGroundContactReceived) < 1000 && !hasGroundContact)
        || (SystemCall::getTimeSince(isUprightReceived) < 1000 && !isUpright))
     {
-      LINE("robotOffline", -5100, 3600, 5100, -3600, 50, Drawings::ps_solid, ColorRGBA(0xff, 0, 0));
-      LINE("robotOffline", 5100, 3600, -5100, -3600, 50, Drawings::ps_solid, ColorRGBA(0xff, 0, 0));
+      LINE("robotOffline", -5100, 3600, 5100, -3600, 50, Drawings::solidPen, ColorRGBA(0xff, 0, 0));
+      LINE("robotOffline", 5100, 3600, -5100, -3600, 50, Drawings::solidPen, ColorRGBA(0xff, 0, 0));
     }
     if(SystemCall::getTimeSince(isPenalizedReceived) < 1000 && isPenalized)
     {
@@ -108,9 +111,9 @@ bool TeamRobot::main()
       DRAWTEXT("robotState", 300, 0, 200, ColorRGBA::red, "NOT UPRIGHT");
     }
 
-    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager", OUTPUT(idDrawingManager, bin, Global::getDrawingManager()););
-    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D", OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D()););
-    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification", OUTPUT(idStreamSpecification, bin, Global::getStreamHandler()););
+    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager") OUTPUT(idDrawingManager, bin, Global::getDrawingManager());
+    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D") OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D());
+    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification") OUTPUT(idStreamSpecification, bin, Global::getStreamHandler());
 
     OUTPUT(idProcessFinished, bin, 't');
     teamOut.moveAllMessages(teamIn);
@@ -136,4 +139,3 @@ TeamRobot::~TeamRobot()
   Blackboard::getInstance().free("FieldDimensions");
   Blackboard::getInstance().free("OwnTeamInfo");
 }
-

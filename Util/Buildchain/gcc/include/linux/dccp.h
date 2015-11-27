@@ -165,10 +165,8 @@ enum {
 	DCCPO_TIMESTAMP_ECHO = 42,
 	DCCPO_ELAPSED_TIME = 43,
 	DCCPO_MAX = 45,
-	DCCPO_MIN_RX_CCID_SPECIFIC = 128,	/* from sender to receiver */
-	DCCPO_MAX_RX_CCID_SPECIFIC = 191,
-	DCCPO_MIN_TX_CCID_SPECIFIC = 192,	/* from receiver to sender */
-	DCCPO_MAX_TX_CCID_SPECIFIC = 255,
+	DCCPO_MIN_CCID_SPECIFIC = 128,
+	DCCPO_MAX_CCID_SPECIFIC = 255,
 };
 /* maximum size of a single TLV-encoded DCCP option (sans type/len bytes) */
 #define DCCP_SINGLE_OPT_MAXLEN	253
@@ -197,21 +195,6 @@ enum dccp_feature_numbers {
 	DCCPF_MAX_CCID_SPECIFIC = 255,
 };
 
-/* DCCP socket control message types for cmsg */
-enum dccp_cmsg_type {
-	DCCP_SCM_PRIORITY = 1,
-	DCCP_SCM_QPOLICY_MAX = 0xFFFF,
-	/* ^-- Up to here reserved exclusively for qpolicy parameters */
-	DCCP_SCM_MAX
-};
-
-/* DCCP priorities for outgoing/queued packets */
-enum dccp_packet_dequeueing_policy {
-	DCCPQ_POLICY_SIMPLE,
-	DCCPQ_POLICY_PRIO,
-	DCCPQ_POLICY_MAX
-};
-
 /* DCCP socket options */
 #define DCCP_SOCKOPT_PACKET_SIZE	1 /* XXX deprecated, without effect */
 #define DCCP_SOCKOPT_SERVICE		2
@@ -225,8 +208,6 @@ enum dccp_packet_dequeueing_policy {
 #define DCCP_SOCKOPT_CCID		13
 #define DCCP_SOCKOPT_TX_CCID		14
 #define DCCP_SOCKOPT_RX_CCID		15
-#define DCCP_SOCKOPT_QPOLICY_ID		16
-#define DCCP_SOCKOPT_QPOLICY_TXQLEN	17
 #define DCCP_SOCKOPT_CCID_RX_INFO	128
 #define DCCP_SOCKOPT_CCID_TX_INFO	192
 

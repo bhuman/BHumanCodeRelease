@@ -1,0 +1,22 @@
+vi image lower
+vi image upper upper
+vi image segmented segmentedLower
+vi image segmented upper segmentedUpper
+
+vid lower representation:LinePercept:Image
+vid lower representation:PenaltyMarkPercept:Image
+vid lower representation:BallPercept:Image
+vid lower representation:GoalPercept:Image
+vid lower representation:PlayersPercept:Image
+vid lower representation:BodyContour
+
+vid upper representation:LinePercept:Image
+vid upper representation:PenaltyMarkPercept:Image
+vid upper representation:BallPercept:Image
+vid upper representation:GoalPercept:Image
+vid upper representation:PlayersPercept:Image
+vid upper representation:BodyContour
+
+# 3-D image views
+v3 image lower
+v3 image upper upper

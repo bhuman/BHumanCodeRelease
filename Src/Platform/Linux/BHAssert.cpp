@@ -106,7 +106,7 @@ public:
       return false;
 
     if(ftruncate(fd, sizeof(Data)) == -1 ||
-       (data = (Data*)mmap(NULL, sizeof(Data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
+       (data = (Data*)mmap(nullptr, sizeof(Data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
     {
       close(fd);
       fd = -1;
@@ -167,7 +167,11 @@ void Assert::logDump(bool toStderr, int termSignal)
 {
   assertFramework.init(false);
   std::stringstream ssfilename;
+#ifdef TARGET_ROBOT
+  ssfilename << "/home/nao/logs/bhuman.assert_"
+#else
   ssfilename << "/tmp/bhuman.assert_"
+#endif
              << currentTimeStamp()
              << ".log";
 

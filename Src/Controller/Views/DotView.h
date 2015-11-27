@@ -153,6 +153,7 @@ private:
   */
   QString builtDotCommand(const QString& fmt, const QString& src, const QString& dest) const;
 
+  virtual bool viewportEvent(QEvent* event);
   virtual void wheelEvent(QWheelEvent* event);
   virtual void mouseDoubleClickEvent(QMouseEvent* event);
   virtual void keyPressEvent(QKeyEvent* event);

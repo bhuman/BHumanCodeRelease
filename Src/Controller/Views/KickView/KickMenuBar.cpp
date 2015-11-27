@@ -41,4 +41,3 @@ void KickMenuBar::createMenus()
   dragPlaneMenu->addAction(xz_plane);
   dragPlaneMenu->addAction(yz_plane);
 }
-

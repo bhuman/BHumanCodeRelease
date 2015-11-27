@@ -6,6 +6,7 @@
 
 #include <QGraphicsSvgItem>
 #include <QGraphicsRectItem>
+#include <QPinchGesture>
 #include <QWheelEvent>
 #include <QDir>
 #include <QTextStream>
@@ -30,6 +31,8 @@ DotViewWidget::DotViewWidget(DotViewObject& dotViewObject) : dotViewObject(dotVi
   setScene(new QGraphicsScene(this));
   setTransformationAnchor(AnchorUnderMouse);
   setDragMode(ScrollHandDrag);
+  viewport()->grabGesture(Qt::PinchGesture);
+  viewport()->setAttribute(Qt::WA_AcceptTouchEvents);
   setViewportUpdateMode(FullViewportUpdate);
   setFrameStyle(QFrame::NoFrame);
 
@@ -80,12 +83,31 @@ bool DotViewWidget::openSvgFile(const QString& fileName)
   return true;
 }
 
+bool DotViewWidget::viewportEvent(QEvent* event)
+{
+  if(event->type() == QEvent::Gesture)
+  {
+    QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
+    if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
+    {
+      qreal factor = pinch->scaleFactor() / pinch->lastScaleFactor();
+      scale(factor, factor);
+      return true;
+    }
+  }
+  return QGraphicsView::viewportEvent(event);
+}
+
 void DotViewWidget::wheelEvent(QWheelEvent* event)
 {
+#ifndef OSX
   // scroll with mouse wheel
   qreal factor = qPow(1.2, event->delta() / 240.0);
   scale(factor, factor);
   event->accept();
+#else
+  QGraphicsView::wheelEvent(event);
+#endif
 }
 
 void DotViewWidget::mouseDoubleClickEvent(QMouseEvent* event)
@@ -99,25 +121,25 @@ void DotViewWidget::keyPressEvent(QKeyEvent* event)
 {
   switch(event->key())
   {
-  case Qt::Key_PageUp:
-  case Qt::Key_Plus:
-    event->accept();
-    {
-      qreal factor = qPow(1.2, 60.0 / 240.0);
-      scale(factor, factor);
-    }
-    break;
-  case Qt::Key_PageDown:
-  case Qt::Key_Minus:
-    event->accept();
-    {
-      qreal factor = qPow(1.2, -60.0 / 240.0);
-      scale(factor, factor);
-    }
-    break;
-  default:
-    QWidget::keyPressEvent(event);
-    break;
+    case Qt::Key_PageUp:
+    case Qt::Key_Plus:
+      event->accept();
+      {
+        qreal factor = qPow(1.2, 60.0 / 240.0);
+        scale(factor, factor);
+      }
+      break;
+    case Qt::Key_PageDown:
+    case Qt::Key_Minus:
+      event->accept();
+      {
+        qreal factor = qPow(1.2, -60.0 / 240.0);
+        scale(factor, factor);
+      }
+      break;
+    default:
+      QWidget::keyPressEvent(event);
+      break;
   }
 }
 

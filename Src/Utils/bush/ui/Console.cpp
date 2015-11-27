@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QtCore>
 #include <QApplication>
+#include <QMessageBox>
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/ui/CommandLineEdit.h"
@@ -25,7 +26,7 @@ void Icons::init()
   ICON_RED = QIcon(":icons/red.png");
 }
 
-VisualContextDecoration::VisualContextDecoration(const QString &commandLine, VisualContext *parent, VisualContext *context)
+VisualContextDecoration::VisualContextDecoration(const QString& commandLine, VisualContext* parent, VisualContext* context)
   : QFrame(parent),
     button(new QPushButton(Icons::getInstance().ICON_GRAY, "", this)),
     header(new QLabel(commandLine)),
@@ -36,7 +37,7 @@ VisualContextDecoration::VisualContextDecoration(const QString &commandLine, Vis
   QPalette p = palette();
   p.setColor(QPalette::Background, p.color(QPalette::AlternateBase));
   setPalette(p);
-  QFormLayout *layout = new QFormLayout();
+  QFormLayout* layout = new QFormLayout();
   layout->setSpacing(3);
   header->setFrameStyle(QFrame::Box);
   layout->addRow(button, header);
@@ -67,14 +68,14 @@ void VisualContextDecoration::canceled()
   button->setIcon(Icons::getInstance().ICON_ORANGE);
 }
 
-ScrollArea::ScrollArea(QWidget *parent)
+ScrollArea::ScrollArea(QWidget* parent)
   : QScrollArea(parent),
     scrollEnabled(true)
 {
   connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updateScrollEnabled()));
 }
 
-bool ScrollArea::viewportEvent(QEvent *event)
+bool ScrollArea::viewportEvent(QEvent* event)
 {
   bool ret = QScrollArea::viewportEvent(event);
   if(event->type() == QEvent::LayoutRequest && widget() && scrollEnabled)
@@ -87,7 +88,7 @@ void ScrollArea::updateScrollEnabled()
   scrollEnabled = verticalScrollBar()->value() == verticalScrollBar()->maximum();
 }
 
-Console::Console(TeamSelector *teamSelector)
+Console::Console(TeamSelector* teamSelector)
   : visualContext(new VisualContext(this)),
     teamSelector(teamSelector),
     scrollArea(new ScrollArea(this)),
@@ -102,14 +103,14 @@ Console::Console(TeamSelector *teamSelector)
   p.setColor(QPalette::Background, p.color(QPalette::AlternateBase));
   prompt->setPalette(p);
 
-  QGridLayout *layout = new QGridLayout();
+  QGridLayout* layout = new QGridLayout();
   layout->setHorizontalSpacing(0);
   scrollArea->setWidget(visualContext);
   scrollArea->setWidgetResizable(true);
   scrollArea->setBackgroundRole(QPalette::AlternateBase);
   layout->addWidget(scrollArea, 0, 0);
   layout->setRowStretch(0, 1);
-  QFormLayout *fl = new QFormLayout();
+  QFormLayout* fl = new QFormLayout();
   fl->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
   fl->addRow(prompt, cmdLine);
   layout->addLayout(fl, 1, 0);
@@ -124,16 +125,42 @@ void Console::returnPressed()
   cmdLine->setText("");
 }
 
-void Console::showEvent(QShowEvent *event)
+void Console::showEvent(QShowEvent* event)
 {
   cmdLine->setFocus();
   QFrame::showEvent(event);
 }
 
-void Console::fireCommand(const QString &command)
+void Console::fireCommand(const QString& command)
 {
   if(command.size() > 0)
   {
+    // FixMe: This has to be done in the gui thread so it can't be inside of the DeleteLogsCmd, maybe there is another solution.
+    if(command == "deleteLogs")
+    {
+      QMessageBox msgBox;
+      msgBox.setWindowTitle("Delete Log Files");
+      msgBox.setText("All log files on the selected robots will be lost.\nThis action cannot be undone!\n\nAre you sure?");
+      msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+      msgBox.setDefaultButton(QMessageBox::Cancel);
+      msgBox.setIcon(QMessageBox::Warning);
+
+      if(msgBox.exec() != QMessageBox::Yes)
+        return;
+    }
+    else if(command == "shutdown -s")
+    {
+      QMessageBox msgBox;
+      msgBox.setWindowTitle("Shutdown");
+      msgBox.setText("The selected robots will be shut down.\n\nAre you sure?");
+      msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+      msgBox.setDefaultButton(QMessageBox::Cancel);
+      msgBox.setIcon(QMessageBox::Warning);
+
+      if(msgBox.exec() != QMessageBox::Yes)
+        return;
+    }
+
     QtConcurrent::run(visualContext, &VisualContext::executeInContext, this, teamSelector, command);
     cmdLine->setFocus();
   }

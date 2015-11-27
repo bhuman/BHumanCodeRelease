@@ -1,51 +1,52 @@
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
 #include "Representations/Configuration/ColorTable.h"
-#include <vector>
 #include "Tools/Debugging/DebugImages.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(ScanlineRegions,
 {
-public:
-  using Color = ColorTable::Colors;
   STREAMABLE(Region,
   {
-  public:
     Region() = default;
-    Region(const unsigned lower, const unsigned upper, const Color& c);
-    Region(const Region& other),
+    Region(const unsigned lower, const unsigned upper, const ColorTable::Colors c),
 
     (int) upper, // inclusive
     (int) lower, // exclusive
-    (Color) color,
+    (ColorTable::Colors) color,
   });
-  using RegionIterator = std::vector<Region>::const_iterator;
-
 
   STREAMABLE(Scanline,
   {
-  public:
     Scanline() = default;
     Scanline(const unsigned x),
 
     (unsigned)(0) x,
     (std::vector<Region>) regions,
   });
+
+private:
   DECLARE_DEBUG_IMAGE(RegionsReconstructed);
+
   bool overlap(const Region& r1, const Region& r2) const;
   void drawParallelogram(const Region& left, const Region& right,
                          const int leftX, const int rightX) const;
-  void draw(),
+public:
+  void draw() const,
 
   (std::vector<Scanline>) scanlines,
+  (unsigned)(0) lowResStart,
+  (unsigned)(1) lowResStep,
 });
+
+inline ScanlineRegions::Region::Region(const unsigned lower, const unsigned upper, const ColorTable::Colors c) :
+  upper(upper), lower(lower), color(c)
+{}
 
 /**
  * A version of the ScanlineRegions that has been clipped at the FieldBoundary
  */
-class ScanlineRegionsClipped : public ScanlineRegions
+struct ScanlineRegionsClipped : public ScanlineRegions
 {
-public:
-  void draw();
+  void draw() const;
 };

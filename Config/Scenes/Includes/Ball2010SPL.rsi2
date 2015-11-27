@@ -1,0 +1,20 @@
+<Simulation>
+
+  <Surface name="ballOrange" diffuseColor="rgb(100%, 0%, 0%)" specularColor="rgb(60%, 60%, 60%)" shininess="30"/>
+
+  <Material name="ballPlastic">
+    <Friction material="fieldCarpet" value="0.0"/>
+    <RollingFriction material="fieldCarpet" value="0.3"/>
+  </Material>
+
+  <Body name="ball">
+    <SphereAppearance radius="0.0325">
+      <Surface ref="ballOrange"/>
+    </SphereAppearance>
+    <SphereGeometry radius="0.0325">
+      <Material ref="ballPlastic"/>
+    </SphereGeometry>
+    <SphereMass value="0.055" radius="0.0325"/>
+  </Body>
+
+</Simulation>

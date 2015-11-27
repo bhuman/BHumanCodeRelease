@@ -27,15 +27,15 @@ private:
   {
   public:
     ModuleBase* module; /**< A pointer to the module base that is able to create an instance of the module. */
-    Streamable* instance; /**< A pointer to the instance of the module if it was created. Otherwise the pointer is 0. */
-    bool required; /**< A flag that is required when determining whether a module is currently required or not. */
+    Streamable* instance = nullptr; /**< A pointer to the instance of the module if it was created. Otherwise the pointer is 0. */
+    bool required = false; /**< A flag that is required when determining whether a module is currently required or not. */
     bool requiredBackup; /**< Temporary backup of "required" */
 
     /**
      * Constructor.
      * @param module A pointer to the module base that is able to create an instance of the module.
      */
-    ModuleState(ModuleBase* module) : module(module), instance(0), required(false) {}
+    ModuleState(ModuleBase* module) : module(module) {}
 
     /**
      * Comparison operator. Only uses the name for comparison.
@@ -63,11 +63,9 @@ private:
      * @param create The create handler for the representation.
      * @param free The free handler for the representation.
      */
-    Provider(const char* representation, ModuleState* moduleState,
-             void (*update)(Streamable&))
-    : representation(representation),
-      moduleState(moduleState),
-      update(update) {}
+    Provider(const char* representation, ModuleState* moduleState, void (*update)(Streamable&)) :
+      representation(representation), moduleState(moduleState), update(update)
+    {}
   };
 
 public:
@@ -78,10 +76,8 @@ public:
    */
   STREAMABLE(Configuration,
   {
-  public:
     STREAMABLE(RepresentationProvider,
     {
-    public:
       RepresentationProvider() = default;
       RepresentationProvider(const std::string& representation, const std::string& provider);
 
@@ -111,9 +107,61 @@ private:
   std::list<const char*> received; /**< The list of all names of representations received from the other process */
   std::vector<Streamable*> toSend; /**< The list of all representations sent to the other process */
   std::vector<Streamable*> toReceive; /**< The list of all representations received from the other process */
-  unsigned timeStamp; /**< The timestamp of the last module request. Communication is only possible if both sides use the same timestamp. */
-  unsigned nextTimeStamp; /**< The next timestamp used to verify communication. */
+  unsigned timeStamp = 0; /**< The timestamp of the last module request. Communication is only possible if both sides use the same timestamp. */
+  unsigned nextTimeStamp = 0; /**< The next timestamp used to verify communication. */
 
+public:
+  /**
+   * Constructor used when framework processes are mapped to threads.
+   * In that case, each process sees all modules, because they are all declared in the
+   * same address space. Therefore, this constructor filters them based on their categories.
+   * @param categories The categories of modules executed by this process.
+   */
+  ModuleManager(const std::set<ModuleBase::Category>& categories);
+
+  /**
+   * Destructor.
+   * Destructs all modules currently constructed.
+   */
+  ~ModuleManager();
+
+  /**
+   * The method loads the selection of solutions from a configuration file.
+   */
+  void load();
+
+  /**
+   * The method destroys all modules. It can be called to destroy the modules
+   * before the constructor is called.
+   */
+  void destroy();
+
+  /**
+   * The method updates the list of the currently created modules.
+   * @param stream The stream the new configuration is read from.
+   * @param timeStamp The timeStamp of the last module request.
+   */
+  void update(In& stream, unsigned timeStamp);
+
+  /**
+   * The method executes all selected modules.
+   */
+  void execute();
+
+  /**
+   * The method reads a package from a stream.
+   * @param stream A stream containing representations received from another process.
+   */
+  void readPackage(In& stream);
+
+  /**
+   * The method writes a package to a stream.
+   * @param stream A stream that will be filled with representations that are sent
+   *               to another process.
+   */
+  void writePackage(Out& stream) const;
+
+private:
   /**
    * Find information about a representation provided or required by a certain module.
    * @param module The module that is searched for the representation.
@@ -162,55 +210,4 @@ private:
    */
   void rollBack(const std::list<Provider>& providers, const std::list<const char*>& sent,
                 const std::list<const char*>& received);
-
-public:
-  /**
-   * Constructor used when framework processes are mapped to threads.
-   * In that case, each process sees all modules, because they are all declared in the
-   * same address space. Therefore, this constructor filters them based on their categories.
-   * @param categories The categories of modules executed by this process.
-   */
-  ModuleManager(const std::set<std::string>& categories);
-
-  /**
-   * Destructor.
-   * Destructs all modules currently constructed.
-   */
-  ~ModuleManager();
-
-  /**
-   * The method loads the selection of solutions from a configuration file.
-   */
-  void load();
-
-  /**
-   * The method destroys all modules. It can be called to destroy the modules
-   * before the constructor is called.
-   */
-  void destroy();
-
-  /**
-   * The method updates the list of the currently created modules.
-   * @param stream The stream the new configuration is read from.
-   * @param timeStamp The timeStamp of the last module request.
-   */
-  void update(In& stream, unsigned timeStamp);
-
-  /**
-   * The method executes all selected modules.
-   */
-  void execute();
-
-  /**
-   * The method reads a package from a stream.
-   * @param stream A stream containing representations received from another process.
-   */
-  void readPackage(In& stream);
-
-  /**
-   * The method writes a package to a stream.
-   * @param stream A stream that will be filled with representations that are sent
-   *               to another process.
-   */
-  void writePackage(Out& stream) const;
 };

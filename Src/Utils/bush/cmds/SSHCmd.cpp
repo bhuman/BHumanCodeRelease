@@ -47,7 +47,7 @@ SSHCmd::SSHTask::SSHTask(Context &context,
 
 bool SSHCmd::SSHTask::execute()
 {
-  ProcessRunner r(context(), remoteCommandForQProcess(command, robot->getBestIP()));
+  ProcessRunner r(context(), remoteCommandForQProcess(command, robot->getBestIP(context())));
   r.run();
 
   if(r.error())

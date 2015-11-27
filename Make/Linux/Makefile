@@ -1,4 +1,4 @@
-MARE := ../../Util/mare/Linux/bin/mare
+MARE := ../../Util/SimRobot/Util/mare/Linux/bin/mare
 CONFIG ?= Develop
 
 .PHONY: all clean

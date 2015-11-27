@@ -154,6 +154,16 @@ enum v4l2_buf_type {
 	V4L2_BUF_TYPE_PRIVATE              = 0x80,
 };
 
+enum v4l2_ctrl_type {
+	V4L2_CTRL_TYPE_INTEGER	     = 1,
+	V4L2_CTRL_TYPE_BOOLEAN	     = 2,
+	V4L2_CTRL_TYPE_MENU	     = 3,
+	V4L2_CTRL_TYPE_BUTTON	     = 4,
+	V4L2_CTRL_TYPE_INTEGER64     = 5,
+	V4L2_CTRL_TYPE_CTRL_CLASS    = 6,
+	V4L2_CTRL_TYPE_STRING        = 7,
+};
+
 enum v4l2_tuner_type {
 	V4L2_TUNER_RADIO	     = 1,
 	V4L2_TUNER_ANALOG_TV	     = 2,
@@ -271,7 +281,6 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_RGB565  v4l2_fourcc('R', 'G', 'B', 'P') /* 16  RGB-5-6-5     */
 #define V4L2_PIX_FMT_RGB555X v4l2_fourcc('R', 'G', 'B', 'Q') /* 16  RGB-5-5-5 BE  */
 #define V4L2_PIX_FMT_RGB565X v4l2_fourcc('R', 'G', 'B', 'R') /* 16  RGB-5-6-5 BE  */
-#define V4L2_PIX_FMT_BGR666  v4l2_fourcc('B', 'G', 'R', 'H') /* 18  BGR-6-6-6	  */
 #define V4L2_PIX_FMT_BGR24   v4l2_fourcc('B', 'G', 'R', '3') /* 24  BGR-8-8-8     */
 #define V4L2_PIX_FMT_RGB24   v4l2_fourcc('R', 'G', 'B', '3') /* 24  RGB-8-8-8     */
 #define V4L2_PIX_FMT_BGR32   v4l2_fourcc('B', 'G', 'R', '4') /* 32  BGR-8-8-8-8   */
@@ -279,8 +288,6 @@ struct v4l2_pix_format {
 
 /* Grey formats */
 #define V4L2_PIX_FMT_GREY    v4l2_fourcc('G', 'R', 'E', 'Y') /*  8  Greyscale     */
-#define V4L2_PIX_FMT_Y4      v4l2_fourcc('Y', '0', '4', ' ') /*  4  Greyscale     */
-#define V4L2_PIX_FMT_Y6      v4l2_fourcc('Y', '0', '6', ' ') /*  6  Greyscale     */
 #define V4L2_PIX_FMT_Y10     v4l2_fourcc('Y', '1', '0', ' ') /* 10  Greyscale     */
 #define V4L2_PIX_FMT_Y16     v4l2_fourcc('Y', '1', '6', ' ') /* 16  Greyscale     */
 
@@ -337,7 +344,6 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_MPEG     v4l2_fourcc('M', 'P', 'E', 'G') /* MPEG-1/2/4    */
 
 /*  Vendor-specific formats   */
-#define V4L2_PIX_FMT_CPIA1    v4l2_fourcc('C', 'P', 'I', 'A') /* cpia1 YUV */
 #define V4L2_PIX_FMT_WNVA     v4l2_fourcc('W', 'N', 'V', 'A') /* Winnov hw compress */
 #define V4L2_PIX_FMT_SN9C10X  v4l2_fourcc('S', '9', '1', '0') /* SN9C10x compression */
 #define V4L2_PIX_FMT_SN9C20X_I420 v4l2_fourcc('S', '9', '2', '0') /* SN9C20x YUV 4:2:0 */
@@ -350,15 +356,11 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_SPCA561  v4l2_fourcc('S', '5', '6', '1') /* compressed GBRG bayer */
 #define V4L2_PIX_FMT_PAC207   v4l2_fourcc('P', '2', '0', '7') /* compressed BGGR bayer */
 #define V4L2_PIX_FMT_MR97310A v4l2_fourcc('M', '3', '1', '0') /* compressed BGGR bayer */
-#define V4L2_PIX_FMT_SN9C2028 v4l2_fourcc('S', 'O', 'N', 'X') /* compressed GBRG bayer */
 #define V4L2_PIX_FMT_SQ905C   v4l2_fourcc('9', '0', '5', 'C') /* compressed RGGB bayer */
 #define V4L2_PIX_FMT_PJPG     v4l2_fourcc('P', 'J', 'P', 'G') /* Pixart 73xx JPEG */
 #define V4L2_PIX_FMT_OV511    v4l2_fourcc('O', '5', '1', '1') /* ov511 JPEG */
 #define V4L2_PIX_FMT_OV518    v4l2_fourcc('O', '5', '1', '8') /* ov518 JPEG */
 #define V4L2_PIX_FMT_STV0680  v4l2_fourcc('S', '6', '8', '0') /* stv0680 bayer */
-#define V4L2_PIX_FMT_TM6000   v4l2_fourcc('T', 'M', '6', '0') /* tm5600/tm60x0 */
-#define V4L2_PIX_FMT_CIT_YYVYUY v4l2_fourcc('C', 'I', 'T', 'V') /* one line of Y then 1 line of VYUY */
-#define V4L2_PIX_FMT_KONICA420  v4l2_fourcc('K', 'O', 'N', 'I') /* YUV420 planar in blocks of 256 pixels */
 
 /*
  *	F O R M A T   E N U M E R A T I O N
@@ -539,8 +541,6 @@ struct v4l2_buffer {
 #define V4L2_BUF_FLAG_KEYFRAME	0x0008	/* Image is a keyframe (I-frame) */
 #define V4L2_BUF_FLAG_PFRAME	0x0010	/* Image is a P-frame */
 #define V4L2_BUF_FLAG_BFRAME	0x0020	/* Image is a B-frame */
-/* Buffer is ready, but the data contained within is corrupted. */
-#define V4L2_BUF_FLAG_ERROR	0x0040
 #define V4L2_BUF_FLAG_TIMECODE	0x0100	/* timecode field is valid */
 #define V4L2_BUF_FLAG_INPUT     0x0200  /* input field is valid */
 
@@ -931,16 +931,6 @@ struct v4l2_ext_controls {
 #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
 #define V4L2_CTRL_DRIVER_PRIV(id) (((id) & 0xffff) >= 0x1000)
 
-enum v4l2_ctrl_type {
-	V4L2_CTRL_TYPE_INTEGER	     = 1,
-	V4L2_CTRL_TYPE_BOOLEAN	     = 2,
-	V4L2_CTRL_TYPE_MENU	     = 3,
-	V4L2_CTRL_TYPE_BUTTON	     = 4,
-	V4L2_CTRL_TYPE_INTEGER64     = 5,
-	V4L2_CTRL_TYPE_CTRL_CLASS    = 6,
-	V4L2_CTRL_TYPE_STRING        = 7,
-};
-
 /*  Used in the VIDIOC_QUERYCTRL ioctl for querying controls */
 struct v4l2_queryctrl {
 	__u32		     id;
@@ -1004,6 +994,30 @@ struct v4l2_querymenu {
 #define V4L2_CID_HFLIP			(V4L2_CID_BASE+20)
 #define V4L2_CID_VFLIP			(V4L2_CID_BASE+21)
 
+/* For Aldebaran usage */
+/* Deprecated use V4L2_CID_EXPOSURE_AUTO instead */
+#define V4L2_CID_AUTOEXPOSURE		(V4L2_CID_BASE+32)
+/* Deprecated use V4L2_CID_EXPOSURE_ALGORITHM instead */
+#define V4L2_CID_AEC_ALGORITHM          (V4L2_CID_BASE+35)
+
+#define V4L2_CID_CAM_INIT		(V4L2_CID_BASE+33)
+#define V4L2_CID_EXPOSURE_CORRECTION    (V4L2_CID_BASE+34)
+#define V4L2_CID_SAT_AUTO		(V4L2_CID_BASE+36)
+#define V4L2_CID_YGB_AVERAGE_LEVEL      (V4L2_CID_BASE+37)
+#define V4L2_CID_AWB_G_CHANNEL_GAIN     (V4L2_CID_BASE+38)
+#define V4L2_CID_UVSAT_RESULT		(V4L2_CID_BASE+39)
+#define V4L2_CID_EDGE_ENH_FACTOR	(V4L2_CID_BASE+40)
+#define V4L2_CID_DENOISE_STRENGTH	(V4L2_CID_BASE+41)
+#define V4L2_CID_AUTO_CONTRAST_CENTER	(V4L2_CID_BASE+42)
+#define V4L2_CID_CONTRAST_CENTER	(V4L2_CID_BASE+43)
+#define V4L2_CID_AUTO_BLACK_LEVEL	(V4L2_CID_BASE+28) /* compatibility for B-Humans */
+#define V4L2_CID_ABLC_TARGET		(V4L2_CID_BASE+44)
+#define V4L2_CID_ABLC_RANGE		(V4L2_CID_BASE+45)
+#define V4L2_CID_BLACK_LEVEL_BLUE	(V4L2_CID_BASE+46)
+#define V4L2_CID_BLACK_LEVEL_RED	(V4L2_CID_BASE+47)
+#define V4L2_CID_BLACK_LEVEL_GB		(V4L2_CID_BASE+48)
+#define V4L2_CID_BLACK_LEVEL_GR		(V4L2_CID_BASE+49)
+
 /* Deprecated; use V4L2_CID_PAN_RESET and V4L2_CID_TILT_RESET */
 #define V4L2_CID_HCENTER		(V4L2_CID_BASE+22)
 #define V4L2_CID_VCENTER		(V4L2_CID_BASE+23)
@@ -1025,27 +1039,14 @@ enum v4l2_colorfx {
 	V4L2_COLORFX_NONE	= 0,
 	V4L2_COLORFX_BW		= 1,
 	V4L2_COLORFX_SEPIA	= 2,
-	V4L2_COLORFX_NEGATIVE = 3,
-	V4L2_COLORFX_EMBOSS = 4,
-	V4L2_COLORFX_SKETCH = 5,
-	V4L2_COLORFX_SKY_BLUE = 6,
-	V4L2_COLORFX_GRASS_GREEN = 7,
-	V4L2_COLORFX_SKIN_WHITEN = 8,
-	V4L2_COLORFX_VIVID = 9,
 };
 #define V4L2_CID_AUTOBRIGHTNESS			(V4L2_CID_BASE+32)
 #define V4L2_CID_BAND_STOP_FILTER		(V4L2_CID_BASE+33)
 
 #define V4L2_CID_ROTATE				(V4L2_CID_BASE+34)
 #define V4L2_CID_BG_COLOR			(V4L2_CID_BASE+35)
-
-#define V4L2_CID_CHROMA_GAIN                    (V4L2_CID_BASE+36)
-
-#define V4L2_CID_ILLUMINATORS_1			(V4L2_CID_BASE+37)
-#define V4L2_CID_ILLUMINATORS_2			(V4L2_CID_BASE+38)
-
 /* last CID + 1 */
-#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+39)
+#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+36)
 
 /*  MPEG-class control IDs defined by V4L2 */
 #define V4L2_CID_MPEG_BASE 			(V4L2_CTRL_CLASS_MPEG | 0x900)
@@ -1270,6 +1271,7 @@ enum  v4l2_exposure_auto_type {
 	V4L2_EXPOSURE_SHUTTER_PRIORITY = 2,
 	V4L2_EXPOSURE_APERTURE_PRIORITY = 3
 };
+#define V4L2_CID_EXPOSURE_ALGORITHM		(V4L2_CID_CAMERA_CLASS_BASE+17)
 #define V4L2_CID_EXPOSURE_ABSOLUTE		(V4L2_CID_CAMERA_CLASS_BASE+2)
 #define V4L2_CID_EXPOSURE_AUTO_PRIORITY		(V4L2_CID_CAMERA_CLASS_BASE+3)
 
@@ -1290,9 +1292,6 @@ enum  v4l2_exposure_auto_type {
 #define V4L2_CID_ZOOM_CONTINUOUS		(V4L2_CID_CAMERA_CLASS_BASE+15)
 
 #define V4L2_CID_PRIVACY			(V4L2_CID_CAMERA_CLASS_BASE+16)
-
-#define V4L2_CID_IRIS_ABSOLUTE			(V4L2_CID_CAMERA_CLASS_BASE+17)
-#define V4L2_CID_IRIS_RELATIVE			(V4L2_CID_CAMERA_CLASS_BASE+18)
 
 /* FM Modulator class control IDs */
 #define V4L2_CID_FM_TX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_TX | 0x900)
@@ -1362,8 +1361,6 @@ struct v4l2_modulator {
 #define V4L2_TUNER_CAP_SAP		0x0020
 #define V4L2_TUNER_CAP_LANG1		0x0040
 #define V4L2_TUNER_CAP_RDS		0x0080
-#define V4L2_TUNER_CAP_RDS_BLOCK_IO	0x0100
-#define V4L2_TUNER_CAP_RDS_CONTROLS	0x0200
 
 /*  Flags for the 'rxsubchans' field */
 #define V4L2_TUNER_SUB_MONO		0x0001
@@ -1393,8 +1390,7 @@ struct v4l2_hw_freq_seek {
 	enum v4l2_tuner_type  type;
 	__u32		      seek_upward;
 	__u32		      wrap_around;
-	__u32		      spacing;
-	__u32		      reserved[7];
+	__u32		      reserved[8];
 };
 
 /*
@@ -1642,38 +1638,6 @@ struct v4l2_streamparm {
 };
 
 /*
- *	E V E N T S
- */
-
-#define V4L2_EVENT_ALL				0
-#define V4L2_EVENT_VSYNC			1
-#define V4L2_EVENT_EOS				2
-#define V4L2_EVENT_PRIVATE_START		0x08000000
-
-/* Payload for V4L2_EVENT_VSYNC */
-struct v4l2_event_vsync {
-	/* Can be V4L2_FIELD_ANY, _NONE, _TOP or _BOTTOM */
-	__u8 field;
-} __attribute__ ((packed));
-
-struct v4l2_event {
-	__u32				type;
-	union {
-		struct v4l2_event_vsync vsync;
-		__u8			data[64];
-	} u;
-	__u32				pending;
-	__u32				sequence;
-	struct timespec			timestamp;
-	__u32				reserved[9];
-};
-
-struct v4l2_event_subscription {
-	__u32				type;
-	__u32				reserved[7];
-};
-
-/*
  *	A D V A N C E D   D E B U G G I N G
  *
  *	NOTE: EXPERIMENTAL API, NEVER RELY ON THIS IN APPLICATIONS!
@@ -1795,9 +1759,6 @@ struct v4l2_dbg_chip_ident {
 #define	VIDIOC_QUERY_DV_PRESET	_IOR('V',  86, struct v4l2_dv_preset)
 #define	VIDIOC_S_DV_TIMINGS	_IOWR('V', 87, struct v4l2_dv_timings)
 #define	VIDIOC_G_DV_TIMINGS	_IOWR('V', 88, struct v4l2_dv_timings)
-#define	VIDIOC_DQEVENT		 _IOR('V', 89, struct v4l2_event)
-#define	VIDIOC_SUBSCRIBE_EVENT	 _IOW('V', 90, struct v4l2_event_subscription)
-#define	VIDIOC_UNSUBSCRIBE_EVENT _IOW('V', 91, struct v4l2_event_subscription)
 
 /* Reminder: when adding new ioctls please add support for them to
    drivers/media/video/v4l2-compat-ioctl32.c as well! */

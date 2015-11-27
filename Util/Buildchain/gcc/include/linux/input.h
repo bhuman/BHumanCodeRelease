@@ -29,7 +29,7 @@ struct input_event {
  * Protocol version.
  */
 
-#define EV_VERSION		0x010001
+#define EV_VERSION		0x010000
 
 /*
  * IOCTLs (0x00 - 0x7f)
@@ -42,25 +42,6 @@ struct input_id {
 	__u16 version;
 };
 
-/**
- * struct input_absinfo - used by EVIOCGABS/EVIOCSABS ioctls
- * @value: latest reported value for the axis.
- * @minimum: specifies minimum value for the axis.
- * @maximum: specifies maximum value for the axis.
- * @fuzz: specifies fuzz value that is used to filter noise from
- *	the event stream.
- * @flat: values that are within this value will be discarded by
- *	joydev interface and reported as 0 instead.
- * @resolution: specifies resolution for the values reported for
- *	the axis.
- *
- * Note that input core does not clamp reported values to the
- * [minimum, maximum] limits, such task is left to userspace.
- *
- * Resolution for main axes (ABS_X, ABS_Y, ABS_Z) is reported in
- * units per millimeter (units/mm), resolution for rotational axes
- * (ABS_RX, ABS_RY, ABS_RZ) is reported in units per radian.
- */
 struct input_absinfo {
 	__s32 value;
 	__s32 minimum;
@@ -70,71 +51,31 @@ struct input_absinfo {
 	__s32 resolution;
 };
 
-/**
- * struct input_keymap_entry - used by EVIOCGKEYCODE/EVIOCSKEYCODE ioctls
- * @scancode: scancode represented in machine-endian form.
- * @len: length of the scancode that resides in @scancode buffer.
- * @index: index in the keymap, may be used instead of scancode
- * @flags: allows to specify how kernel should handle the request. For
- *	example, setting INPUT_KEYMAP_BY_INDEX flag indicates that kernel
- *	should perform lookup in keymap by @index instead of @scancode
- * @keycode: key code assigned to this scancode
- *
- * The structure is used to retrieve and modify keymap data. Users have
- * option of performing lookup either by @scancode itself or by @index
- * in keymap entry. EVIOCGKEYCODE will also return scancode or index
- * (depending on which element was used to perform lookup).
- */
-struct input_keymap_entry {
-#define INPUT_KEYMAP_BY_INDEX	(1 << 0)
-	__u8  flags;
-	__u8  len;
-	__u16 index;
-	__u32 keycode;
-	__u8  scancode[32];
-};
-
 #define EVIOCGVERSION		_IOR('E', 0x01, int)			/* get driver version */
 #define EVIOCGID		_IOR('E', 0x02, struct input_id)	/* get device ID */
-#define EVIOCGREP		_IOR('E', 0x03, unsigned int[2])	/* get repeat settings */
-#define EVIOCSREP		_IOW('E', 0x03, unsigned int[2])	/* set repeat settings */
-
-#define EVIOCGKEYCODE		_IOR('E', 0x04, unsigned int[2])        /* get keycode */
-#define EVIOCGKEYCODE_V2	_IOR('E', 0x04, struct input_keymap_entry)
-#define EVIOCSKEYCODE		_IOW('E', 0x04, unsigned int[2])        /* set keycode */
-#define EVIOCSKEYCODE_V2	_IOW('E', 0x04, struct input_keymap_entry)
+#define EVIOCGREP		_IOR('E', 0x03, int[2])			/* get repeat settings */
+#define EVIOCSREP		_IOW('E', 0x03, int[2])			/* set repeat settings */
+#define EVIOCGKEYCODE		_IOR('E', 0x04, int[2])			/* get keycode */
+#define EVIOCSKEYCODE		_IOW('E', 0x04, int[2])			/* set keycode */
 
 #define EVIOCGNAME(len)		_IOC(_IOC_READ, 'E', 0x06, len)		/* get device name */
 #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
 #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
-#define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
 
-#define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
+#define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global keystate */
 #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
 #define EVIOCGSND(len)		_IOC(_IOC_READ, 'E', 0x1a, len)		/* get all sounds status */
 #define EVIOCGSW(len)		_IOC(_IOC_READ, 'E', 0x1b, len)		/* get all switch states */
 
 #define EVIOCGBIT(ev,len)	_IOC(_IOC_READ, 'E', 0x20 + ev, len)	/* get event bits */
-#define EVIOCGABS(abs)		_IOR('E', 0x40 + abs, struct input_absinfo)	/* get abs value/limits */
-#define EVIOCSABS(abs)		_IOW('E', 0xc0 + abs, struct input_absinfo)	/* set abs value/limits */
+#define EVIOCGABS(abs)		_IOR('E', 0x40 + abs, struct input_absinfo)		/* get abs value/limits */
+#define EVIOCSABS(abs)		_IOW('E', 0xc0 + abs, struct input_absinfo)		/* set abs value/limits */
 
 #define EVIOCSFF		_IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))	/* send a force effect to a force feedback device */
 #define EVIOCRMFF		_IOW('E', 0x81, int)			/* Erase a force effect */
 #define EVIOCGEFFECTS		_IOR('E', 0x84, int)			/* Report number of effects playable at the same time */
 
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
-
-/*
- * Device properties and quirks
- */
-
-#define INPUT_PROP_POINTER		0x00	/* needs a pointer */
-#define INPUT_PROP_DIRECT		0x01	/* direct input devices */
-#define INPUT_PROP_BUTTONPAD		0x02	/* has button(s) under pad */
-#define INPUT_PROP_SEMI_MT		0x03	/* touch rectangle only */
-
-#define INPUT_PROP_MAX			0x1f
-#define INPUT_PROP_CNT			(INPUT_PROP_MAX + 1)
 
 /*
  * Event types
@@ -432,7 +373,7 @@ struct input_keymap_entry {
 #define KEY_WIMAX		246
 #define KEY_RFKILL		247	/* Key that controls all radios */
 
-/* Code 255 is reserved for special needs of AT keyboard driver */
+/* Range 248 - 255 is reserved for special needs of AT keyboard driver */
 
 #define BTN_MISC		0x100
 #define BTN_0			0x100
@@ -598,8 +539,6 @@ struct input_keymap_entry {
 #define KEY_FRAMEFORWARD	0x1b5
 #define KEY_CONTEXT_MENU	0x1b6	/* GenDesc - system context menu */
 #define KEY_MEDIA_REPEAT	0x1b7	/* Consumer - transport control */
-#define KEY_10CHANNELSUP        0x1b8   /* 10 channels up (10+) */
-#define KEY_10CHANNELSDOWN      0x1b9   /* 10 channels down (10-) */
 
 #define KEY_DEL_EOL		0x1c0
 #define KEY_DEL_EOS		0x1c1
@@ -653,53 +592,6 @@ struct input_keymap_entry {
 #define KEY_NUMERIC_POUND	0x20b
 
 #define KEY_CAMERA_FOCUS	0x210
-#define KEY_WPS_BUTTON		0x211	/* WiFi Protected Setup key */
-
-#define KEY_TOUCHPAD_TOGGLE	0x212	/* Request switch touchpad on or off */
-#define KEY_TOUCHPAD_ON		0x213
-#define KEY_TOUCHPAD_OFF	0x214
-
-#define BTN_TRIGGER_HAPPY		0x2c0
-#define BTN_TRIGGER_HAPPY1		0x2c0
-#define BTN_TRIGGER_HAPPY2		0x2c1
-#define BTN_TRIGGER_HAPPY3		0x2c2
-#define BTN_TRIGGER_HAPPY4		0x2c3
-#define BTN_TRIGGER_HAPPY5		0x2c4
-#define BTN_TRIGGER_HAPPY6		0x2c5
-#define BTN_TRIGGER_HAPPY7		0x2c6
-#define BTN_TRIGGER_HAPPY8		0x2c7
-#define BTN_TRIGGER_HAPPY9		0x2c8
-#define BTN_TRIGGER_HAPPY10		0x2c9
-#define BTN_TRIGGER_HAPPY11		0x2ca
-#define BTN_TRIGGER_HAPPY12		0x2cb
-#define BTN_TRIGGER_HAPPY13		0x2cc
-#define BTN_TRIGGER_HAPPY14		0x2cd
-#define BTN_TRIGGER_HAPPY15		0x2ce
-#define BTN_TRIGGER_HAPPY16		0x2cf
-#define BTN_TRIGGER_HAPPY17		0x2d0
-#define BTN_TRIGGER_HAPPY18		0x2d1
-#define BTN_TRIGGER_HAPPY19		0x2d2
-#define BTN_TRIGGER_HAPPY20		0x2d3
-#define BTN_TRIGGER_HAPPY21		0x2d4
-#define BTN_TRIGGER_HAPPY22		0x2d5
-#define BTN_TRIGGER_HAPPY23		0x2d6
-#define BTN_TRIGGER_HAPPY24		0x2d7
-#define BTN_TRIGGER_HAPPY25		0x2d8
-#define BTN_TRIGGER_HAPPY26		0x2d9
-#define BTN_TRIGGER_HAPPY27		0x2da
-#define BTN_TRIGGER_HAPPY28		0x2db
-#define BTN_TRIGGER_HAPPY29		0x2dc
-#define BTN_TRIGGER_HAPPY30		0x2dd
-#define BTN_TRIGGER_HAPPY31		0x2de
-#define BTN_TRIGGER_HAPPY32		0x2df
-#define BTN_TRIGGER_HAPPY33		0x2e0
-#define BTN_TRIGGER_HAPPY34		0x2e1
-#define BTN_TRIGGER_HAPPY35		0x2e2
-#define BTN_TRIGGER_HAPPY36		0x2e3
-#define BTN_TRIGGER_HAPPY37		0x2e4
-#define BTN_TRIGGER_HAPPY38		0x2e5
-#define BTN_TRIGGER_HAPPY39		0x2e6
-#define BTN_TRIGGER_HAPPY40		0x2e7
 
 /* We avoid low common keys in module aliases so they don't get huge. */
 #define KEY_MIN_INTERESTING	KEY_MUTE
@@ -751,12 +643,9 @@ struct input_keymap_entry {
 #define ABS_TILT_X		0x1a
 #define ABS_TILT_Y		0x1b
 #define ABS_TOOL_WIDTH		0x1c
-
 #define ABS_VOLUME		0x20
-
 #define ABS_MISC		0x28
 
-#define ABS_MT_SLOT		0x2f	/* MT slot being modified */
 #define ABS_MT_TOUCH_MAJOR	0x30	/* Major axis of touching ellipse */
 #define ABS_MT_TOUCH_MINOR	0x31	/* Minor axis (omit if circular) */
 #define ABS_MT_WIDTH_MAJOR	0x32	/* Major axis of approaching ellipse */
@@ -768,8 +657,6 @@ struct input_keymap_entry {
 #define ABS_MT_BLOB_ID		0x38	/* Group a set of packets as a blob */
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
 #define ABS_MT_PRESSURE		0x3a	/* Pressure on contact area */
-#define ABS_MT_DISTANCE		0x3b	/* Contact hover distance */
-
 
 #define ABS_MAX			0x3f
 #define ABS_CNT			(ABS_MAX+1)
@@ -792,7 +679,6 @@ struct input_keymap_entry {
 #define SW_CAMERA_LENS_COVER	0x09  /* set = lens covered */
 #define SW_KEYPAD_SLIDE		0x0a  /* set = keypad slide out */
 #define SW_FRONT_PROXIMITY	0x0b  /* set = front proximity sensor active */
-#define SW_ROTATE_LOCK		0x0c  /* set = rotate locked/disabled */
 #define SW_MAX			0x0f
 #define SW_CNT			(SW_MAX+1)
 
@@ -833,7 +719,6 @@ struct input_keymap_entry {
 #define REP_DELAY		0x00
 #define REP_PERIOD		0x01
 #define REP_MAX			0x01
-#define REP_CNT			(REP_MAX+1)
 
 /*
  * Sounds
@@ -873,14 +758,12 @@ struct input_keymap_entry {
 #define BUS_HOST		0x19
 #define BUS_GSC			0x1A
 #define BUS_ATARI		0x1B
-#define BUS_SPI			0x1C
 
 /*
  * MT_TOOL types
  */
 #define MT_TOOL_FINGER		0
 #define MT_TOOL_PEN		1
-#define MT_TOOL_MAX		1
 
 /*
  * Values describing the status of a force-feedback effect

@@ -2,6 +2,7 @@ SimRobotHelp = cppDynamicLibrary + {
 
   folder = "Libs"
   root = "$(utilDirRoot)/SimRobot/Src/SimRobotHelp"
+
   helpFiles = {
     "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/**.html",
     "$(utilDirRoot)/SimRobot/Src/SimRobotHelp/Help/**.css",
@@ -56,7 +57,8 @@ SimRobotHelp = cppDynamicLibrary + {
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
-  },
+  }
+
   includePaths = {
     "$(utilDirRoot)/SimRobot/Src/SimRobotHelp",
     if (platform == "Linux") {
@@ -74,17 +76,23 @@ SimRobotHelp = cppDynamicLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtHelp",
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
     }
-  },
+  }
+
   libs = {
     if (host == "Win32") {
       "QtCore4", "QtGui4", "QtHelp4"
     } else if (platform == "Linux") {
       "QtCore", "QtGui", "QtHelp"
     }
-  },
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
+  }
 }

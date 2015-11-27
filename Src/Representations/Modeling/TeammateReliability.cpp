@@ -1,14 +1,15 @@
 /**
-* @file TeammateReliability.cpp
-*/
+ * @file TeammateReliability.cpp
+ */
 
 #include "TeammateReliability.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
-void TeammateReliability::draw()
+void TeammateReliability::draw() const
 {
   DECLARE_DEBUG_DRAWING("representation:TeammateReliability", "drawingOnField");
   int x = -5000;
-  for(int i = TeammateData::firstPlayer; i < TeammateData::numOfPlayers; ++i, x += 1700)
+  for(int i = Global::getSettings().lowestValidPlayerNumber; i < Global::getSettings().highestValidPlayerNumber; ++i, x += 1700)
   {
     ColorRGBA color;
     switch(states[i])
@@ -24,7 +25,7 @@ void TeammateReliability::draw()
         color = ColorRGBA::yellow;
         break;
       case GOOD:
-          color = ColorRGBA::green;
+        color = ColorRGBA::green;
         break;
     }
     DRAWTEXT("representation:TeammateReliability", x, 4000, 230, ColorRGBA::black, "Player " << i << ":");

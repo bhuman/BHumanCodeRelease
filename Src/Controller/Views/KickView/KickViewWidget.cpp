@@ -11,7 +11,7 @@
 #include "KickViewWidget.h"
 #include "Tools/Streams/InStreams.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Math/Vector2.h"
+#include "Tools/Math/Eigen.h"
 
 #include "KickViewMath.h"
 
@@ -412,7 +412,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   softenMapper.setMapping(rhtra, 5);
   softenMapper.setMapping(lhrot, 6);
   softenMapper.setMapping(rhrot, 7);
-  connect(&softenMapper, SIGNAL(mapped(int)), SLOT(setHardness(int)));
+  connect(&softenMapper, SIGNAL(mapped(int)), SLOT(setStiffness(int)));
   connect(lftra, SIGNAL(toggled(bool)), &softenMapper, SLOT(map()));
   connect(rftra, SIGNAL(toggled(bool)), &softenMapper, SLOT(map()));
   connect(lfrot, SIGNAL(toggled(bool)), &softenMapper, SLOT(map()));
@@ -423,8 +423,8 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   connect(rhrot, SIGNAL(toggled(bool)), &softenMapper, SLOT(map()));
 
   //initialize actual Parameters
-  parameters.footOrigin = Vector3 <>(0.f, 60.f, -210.f);
-  parameters.armOrigin = Vector3 <>(0.f, 100.f, 30.f);
+  parameters.footOrigin = Vector3f(0.f, 60.f, -210.f);
+  parameters.armOrigin = Vector3f(0.f, 100.f, 30.f);
   parameters.numberOfPhases = 0;
   parameters.loop = false;
   parameters.kpx = 0.f;
@@ -434,8 +434,8 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   parameters.kdy = 0.f;
   parameters.kiy = 0.f;
   parameters.preview = 150;
-  parameters.comOrigin = Vector2<>(10.f, 0.f);
-  parameters.headOrigin = Vector2<>(0.f, 0.f);
+  parameters.comOrigin = Vector2f(10.f, 0.f);
+  parameters.headOrigin = Vector2f::Zero();
   parameters.autoComTra = false;
   parameters.ignoreHead = true;
   strcpy(parameters.name, "newKick");
@@ -457,103 +457,103 @@ void KickViewWidget::setDragPlane(const int& plane)
 {
   switch(plane)
   {
-  case SimRobotCore2::Renderer::xyPlane:
-    dragPlane = Vector3<>(0, 0, 1);
-    break;
-  case SimRobotCore2::Renderer::xzPlane:
-    dragPlane = Vector3<>(0, 1, 0);
-    break;
-  case SimRobotCore2::Renderer::yzPlane:
-    dragPlane = Vector3<>(1, 0, 0);
-    break;
+    case SimRobotCore2::Renderer::xyPlane:
+      dragPlane = Vector3f(0, 0, 1);
+      break;
+    case SimRobotCore2::Renderer::xzPlane:
+      dragPlane = Vector3f(0, 1, 0);
+      break;
+    case SimRobotCore2::Renderer::yzPlane:
+      dragPlane = Vector3f(1, 0, 0);
+      break;
   }
   qobject_cast<QAction*>(dragPlaneMapper.mapping(plane))->setChecked(true);
 }
 
-void KickViewWidget::setHardness(int limb)
+void KickViewWidget::setStiffness(int limb)
 {
   switch(limb)
   {
-  case 0: //lftra
-    if(lftra->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:lFootTraOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:lFootTraOff false"));
-    }
-    break;
-  case 1: //rftra
-    if(rftra->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:rFootTraOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:rFootTraOff false"));
-    }
-    break;
-  case 2: //lfrot
-    if(lfrot->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:lFootRotOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:lFootRotOff false"));
-    }
-    break;
-  case 3: //rfrot
-    if(rfrot->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:rFootRotOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:rFootRotOff false"));
-    }
-    break;
-  case 4: //lhtra
-    if(lhtra->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:lHandTraOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:lHandTraOff false"));
-    }
-    break;
-  case 5: //rhtra
-    if(rhtra->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:rHandTraOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:rHandTraOff false"));
-    }
-    break;
-  case 6: //lhrot
-    if(lhrot->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:lHandRotOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:lHandRotOff false"));
-    }
-    break;
-  case 7: //rhrot
-    if(rhrot->isChecked())
-    {
-      commands.push_back(std::string("set module:KickEngine:rHandRotOff true"));
-    }
-    else
-    {
-      commands.push_back(std::string("set module:KickEngine:rHandRotOff false"));
-    }
-    break;
+    case 0: //lftra
+      if(lftra->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:lFootTraOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:lFootTraOff false"));
+      }
+      break;
+    case 1: //rftra
+      if(rftra->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:rFootTraOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:rFootTraOff false"));
+      }
+      break;
+    case 2: //lfrot
+      if(lfrot->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:lFootRotOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:lFootRotOff false"));
+      }
+      break;
+    case 3: //rfrot
+      if(rfrot->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:rFootRotOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:rFootRotOff false"));
+      }
+      break;
+    case 4: //lhtra
+      if(lhtra->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:lHandTraOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:lHandTraOff false"));
+      }
+      break;
+    case 5: //rhtra
+      if(rhtra->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:rHandTraOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:rHandTraOff false"));
+      }
+      break;
+    case 6: //lhrot
+      if(lhrot->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:lHandRotOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:lHandRotOff false"));
+      }
+      break;
+    case 7: //rhrot
+      if(rhrot->isChecked())
+      {
+        commands.push_back(std::string("set module:KickEngine:rHandRotOff true"));
+      }
+      else
+      {
+        commands.push_back(std::string("set module:KickEngine:rHandRotOff false"));
+      }
+      break;
   }
 }
 
@@ -641,19 +641,19 @@ void KickViewWidget::makeNewPhaseWithModelAndTree(const int& phaseNumber)
   {
     for(int limb = 0; limb < Phase::numOfLimbs; ++limb)
       for(int point = 0; point < NUM_OF_POINTS; ++point)
-        newPhase.controlPoints[limb][point] = Vector3 <> (0.f, 0.f, 0.f);
+        newPhase.controlPoints[limb][point] = Vector3f::Zero();
   }
   else
   {
     for(int point = 0; point < NUM_OF_POINTS; ++point)
     {
-      newPhase.controlPoints[Phase::rightFootTra][point] = Vector3<>(parameters.footOrigin.x, -parameters.footOrigin.y, parameters.footOrigin.z);
+      newPhase.controlPoints[Phase::rightFootTra][point] = Vector3f(parameters.footOrigin.x(), -parameters.footOrigin.y(), parameters.footOrigin.z());
       newPhase.controlPoints[Phase::leftFootTra][point] = parameters.footOrigin;
-      newPhase.controlPoints[Phase::rightFootRot][point] = Vector3<>(-parameters.footRotOrigin.x, parameters.footRotOrigin.y, -parameters.footRotOrigin.z);
+      newPhase.controlPoints[Phase::rightFootRot][point] = Vector3f(-parameters.footRotOrigin.x(), parameters.footRotOrigin.y(), -parameters.footRotOrigin.z());
       newPhase.controlPoints[Phase::leftFootRot][point] = parameters.footRotOrigin;
-      newPhase.controlPoints[Phase::rightArmTra][point] = Vector3<>(parameters.armOrigin.x, -parameters.armOrigin.y, parameters.armOrigin.z);
+      newPhase.controlPoints[Phase::rightArmTra][point] = Vector3f(parameters.armOrigin.x(), -parameters.armOrigin.y(), parameters.armOrigin.z());
       newPhase.controlPoints[Phase::leftArmTra][point] = parameters.armOrigin;
-      newPhase.controlPoints[Phase::rightHandRot][point] = Vector3<>(-parameters.handRotOrigin.x, parameters.handRotOrigin.y, -parameters.handRotOrigin.z);
+      newPhase.controlPoints[Phase::rightHandRot][point] = Vector3f(-parameters.handRotOrigin.x(), parameters.handRotOrigin.y(), -parameters.handRotOrigin.z());
       newPhase.controlPoints[Phase::leftHandRot][point] = parameters.handRotOrigin;
       newPhase.comTra[point] = parameters.comOrigin;
       newPhase.headTra[point] = parameters.headOrigin;
@@ -846,119 +846,119 @@ void KickViewWidget::playMotionTilActive()
 void KickViewWidget::playMotion(int phase)
 {
   std::string setNewKickMotion = "set module:KickEngine:newKickMotion footOrigin = { x = "
-                              + floatToStr(parameters.footOrigin.x) + "; y = "
-                              + floatToStr(parameters.footOrigin.y) + "; z = "
-                              + floatToStr(parameters.footOrigin.z) + "; }; footRotOrigin = { x = "
-                              + floatToStr(parameters.footRotOrigin.x) + "; y = "
-                              + floatToStr(parameters.footRotOrigin.y) + "; z = "
-                              + floatToStr(parameters.footRotOrigin.z) + "; }; armOrigin = { x = "
-                              + floatToStr(parameters.armOrigin.x)  + "; y = "
-                              + floatToStr(parameters.armOrigin.y)  + "; z = "
-                              + floatToStr(parameters.armOrigin.z)  + "; }; handRotOrigin = { x = "
-                              + floatToStr(parameters.handRotOrigin.x)  + "; y = "
-                              + floatToStr(parameters.handRotOrigin.y)  + "; z = "
-                              + floatToStr(parameters.handRotOrigin.z)  + "; }; comOrigin = { x = "
-                              + floatToStr(parameters.comOrigin.x)  + "; y = "
-                              + floatToStr(parameters.comOrigin.y)  + "; }; headOrigin = { x = "
-                              + floatToStr(parameters.headOrigin.x)  + "; y = "
-                              + floatToStr(parameters.headOrigin.y)  + "; }; kpx = "
-                              + floatToStr(parameters.kpx)         + "; kix = "
-                              + floatToStr(parameters.kix)         + "; kdx = "
-                              + floatToStr(parameters.kdx)         + "; kpy = "
-                              + floatToStr(parameters.kpy)         + "; kiy = "
-                              + floatToStr(parameters.kiy)         + "; kdy = "
-                              + floatToStr(parameters.kdy)         + "; preview = "
-                              + floatToStr(parameters.preview)     + "; loop = "
-                              + boolToStr(parameters.loop)          + "; autoComTra = "
-                              + boolToStr(parameters.autoComTra)    + "; ignoreHead = "
-                              + boolToStr(parameters.ignoreHead)        + "; phaseParameters = [";
+                                 + floatToStr(parameters.footOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.footOrigin.y()) + "; z = "
+                                 + floatToStr(parameters.footOrigin.z()) + "; }; footRotOrigin = { x = "
+                                 + floatToStr(parameters.footRotOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.footRotOrigin.y()) + "; z = "
+                                 + floatToStr(parameters.footRotOrigin.z()) + "; }; armOrigin = { x = "
+                                 + floatToStr(parameters.armOrigin.x())  + "; y = "
+                                 + floatToStr(parameters.armOrigin.y())  + "; z = "
+                                 + floatToStr(parameters.armOrigin.z())  + "; }; handRotOrigin = { x = "
+                                 + floatToStr(parameters.handRotOrigin.x())  + "; y = "
+                                 + floatToStr(parameters.handRotOrigin.y())  + "; z = "
+                                 + floatToStr(parameters.handRotOrigin.z())  + "; }; comOrigin = { x = "
+                                 + floatToStr(parameters.comOrigin.x())  + "; y = "
+                                 + floatToStr(parameters.comOrigin.y())  + "; }; headOrigin = { x = "
+                                 + floatToStr(parameters.headOrigin.x())  + "; y = "
+                                 + floatToStr(parameters.headOrigin.y())  + "; }; kpx = "
+                                 + floatToStr(parameters.kpx)         + "; kix = "
+                                 + floatToStr(parameters.kix)         + "; kdx = "
+                                 + floatToStr(parameters.kdx)         + "; kpy = "
+                                 + floatToStr(parameters.kpy)         + "; kiy = "
+                                 + floatToStr(parameters.kiy)         + "; kdy = "
+                                 + floatToStr(parameters.kdy)         + "; preview = "
+                                 + floatToStr(parameters.preview)     + "; loop = "
+                                 + boolToStr(parameters.loop)          + "; autoComTra = "
+                                 + boolToStr(parameters.autoComTra)    + "; ignoreHead = "
+                                 + boolToStr(parameters.ignoreHead)        + "; phaseParameters = [";
 
   for(int i = 0; i < phase; i++)
   {
     if(i)
       setNewKickMotion += ", ";
     setNewKickMotion += " { duration = "
-                     + intToStr(parameters.phaseParameters[i].duration) + "; "
-                     + "leftFootTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].z) + "; }; "
-                     + "leftFootTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].z) + "; }; "
-                     + "leftFootRot1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].z) + "; }; "
-                     + "leftFootRot2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].z) + "; }; "
-                     + "rightFootTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].z) + "; }; "
-                     + "rightFootTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].z) + "; }; "
-                     + "rightFootRot1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].z) + "; }; "
-                     + "rightFootRot2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].z) + "; }; "
-                     + "leftArmTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].z) + "; }; "
-                     + "leftArmTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].z) + "; }; "
-                     + "leftHandRot1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].z) + "; }; "
-                     + "leftHandRot2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].z) + "; }; "
-                     + "rightArmTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].z) + "; }; "
-                     + "rightArmTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].z) + "; }; "
-                     + "rightHandRot1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].z) + "; }; "
-                     + "rightHandRot2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].z) + "; }; "
-                     + "comTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].comTra[1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].comTra[1].y) + "; }; "
-                     + "comTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].comTra[2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].comTra[2].y) + "; }; "
-                     + "headTra1 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].headTra[1].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].headTra[1].y) + "; }; "
-                     + "headTra2 = { x = "
-                     + floatToStr(parameters.phaseParameters[i].headTra[2].x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].headTra[2].y) + "; }; "
-                     + "odometryOffset = { x = "
-                     + floatToStr(parameters.phaseParameters[i].odometryOffset.x) + "; y = "
-                     + floatToStr(parameters.phaseParameters[i].odometryOffset.y) + "; z = "
-                     + floatToStr(parameters.phaseParameters[i].odometryOffset.z) + "; }; }" ;
+                        + intToStr(parameters.phaseParameters[i].duration) + "; "
+                        + "leftFootTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].z()) + "; }; "
+                        + "leftFootTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][2].z()) + "; }; "
+                        + "leftFootRot1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][1].z()) + "; }; "
+                        + "leftFootRot2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootRot][2].z()) + "; }; "
+                        + "rightFootTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][1].z()) + "; }; "
+                        + "rightFootTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootTra][2].z()) + "; }; "
+                        + "rightFootRot1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][1].z()) + "; }; "
+                        + "rightFootRot2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightFootRot][2].z()) + "; }; "
+                        + "leftArmTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][1].z()) + "; }; "
+                        + "leftArmTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftArmTra][2].z()) + "; }; "
+                        + "leftHandRot1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][1].z()) + "; }; "
+                        + "leftHandRot2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftHandRot][2].z()) + "; }; "
+                        + "rightArmTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][1].z()) + "; }; "
+                        + "rightArmTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightArmTra][2].z()) + "; }; "
+                        + "rightHandRot1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][1].z()) + "; }; "
+                        + "rightHandRot2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::rightHandRot][2].z()) + "; }; "
+                        + "comTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].comTra[1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].comTra[1].y()) + "; }; "
+                        + "comTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].comTra[2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].comTra[2].y()) + "; }; "
+                        + "headTra1 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].headTra[1].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].headTra[1].y()) + "; }; "
+                        + "headTra2 = { x = "
+                        + floatToStr(parameters.phaseParameters[i].headTra[2].x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].headTra[2].y()) + "; }; "
+                        + "odometryOffset = { x = "
+                        + floatToStr(parameters.phaseParameters[i].odometryOffset.x()) + "; y = "
+                        + floatToStr(parameters.phaseParameters[i].odometryOffset.y()) + "; z = "
+                        + floatToStr(parameters.phaseParameters[i].odometryOffset.z()) + "; }; }" ;
   }
 
   setNewKickMotion += " ];";
@@ -1108,27 +1108,27 @@ void KickViewWidget::updateCommon()
   rootItem->child(0, 1)->setData(QString(parameters.name), Qt::DisplayRole);
   rootItem->child(1, 1)->setData(QString::number(parameters.numberOfPhases), Qt::DisplayRole);
 
-  rootItem->child(2, 0)->child(0, 2)->setData(QVariant(parameters.footOrigin.x), Qt::DisplayRole);
-  rootItem->child(2, 0)->child(0, 3)->setData(QVariant(parameters.footOrigin.y), Qt::DisplayRole);
-  rootItem->child(2, 0)->child(0, 4)->setData(QVariant(parameters.footOrigin.z), Qt::DisplayRole);
+  rootItem->child(2, 0)->child(0, 2)->setData(QVariant(parameters.footOrigin.x()), Qt::DisplayRole);
+  rootItem->child(2, 0)->child(0, 3)->setData(QVariant(parameters.footOrigin.y()), Qt::DisplayRole);
+  rootItem->child(2, 0)->child(0, 4)->setData(QVariant(parameters.footOrigin.z()), Qt::DisplayRole);
 
-  rootItem->child(3, 0)->child(0, 2)->setData(QVariant(parameters.footRotOrigin.x), Qt::DisplayRole);
-  rootItem->child(3, 0)->child(0, 3)->setData(QVariant(parameters.footRotOrigin.y), Qt::DisplayRole);
-  rootItem->child(3, 0)->child(0, 4)->setData(QVariant(parameters.footRotOrigin.z), Qt::DisplayRole);
+  rootItem->child(3, 0)->child(0, 2)->setData(QVariant(parameters.footRotOrigin.x()), Qt::DisplayRole);
+  rootItem->child(3, 0)->child(0, 3)->setData(QVariant(parameters.footRotOrigin.y()), Qt::DisplayRole);
+  rootItem->child(3, 0)->child(0, 4)->setData(QVariant(parameters.footRotOrigin.z()), Qt::DisplayRole);
 
-  rootItem->child(4, 0)->child(0, 2)->setData(QVariant(parameters.armOrigin.x), Qt::DisplayRole);
-  rootItem->child(4, 0)->child(0, 3)->setData(QVariant(parameters.armOrigin.y), Qt::DisplayRole);
-  rootItem->child(4, 0)->child(0, 4)->setData(QVariant(parameters.armOrigin.z), Qt::DisplayRole);
+  rootItem->child(4, 0)->child(0, 2)->setData(QVariant(parameters.armOrigin.x()), Qt::DisplayRole);
+  rootItem->child(4, 0)->child(0, 3)->setData(QVariant(parameters.armOrigin.y()), Qt::DisplayRole);
+  rootItem->child(4, 0)->child(0, 4)->setData(QVariant(parameters.armOrigin.z()), Qt::DisplayRole);
 
-  rootItem->child(5, 0)->child(0, 2)->setData(QVariant(parameters.handRotOrigin.x), Qt::DisplayRole);
-  rootItem->child(5, 0)->child(0, 3)->setData(QVariant(parameters.handRotOrigin.y), Qt::DisplayRole);
-  rootItem->child(5, 0)->child(0, 4)->setData(QVariant(parameters.handRotOrigin.z), Qt::DisplayRole);
+  rootItem->child(5, 0)->child(0, 2)->setData(QVariant(parameters.handRotOrigin.x()), Qt::DisplayRole);
+  rootItem->child(5, 0)->child(0, 3)->setData(QVariant(parameters.handRotOrigin.y()), Qt::DisplayRole);
+  rootItem->child(5, 0)->child(0, 4)->setData(QVariant(parameters.handRotOrigin.z()), Qt::DisplayRole);
 
-  rootItem->child(6, 0)->child(0, 2)->setData(QVariant(parameters.comOrigin.x), Qt::DisplayRole);
-  rootItem->child(6, 0)->child(0, 3)->setData(QVariant(parameters.comOrigin.y), Qt::DisplayRole);
+  rootItem->child(6, 0)->child(0, 2)->setData(QVariant(parameters.comOrigin.x()), Qt::DisplayRole);
+  rootItem->child(6, 0)->child(0, 3)->setData(QVariant(parameters.comOrigin.y()), Qt::DisplayRole);
 
-  rootItem->child(7, 0)->child(0, 2)->setData(QVariant(parameters.headOrigin.x), Qt::DisplayRole);
-  rootItem->child(7, 0)->child(0, 3)->setData(QVariant(parameters.headOrigin.y), Qt::DisplayRole);
+  rootItem->child(7, 0)->child(0, 2)->setData(QVariant(parameters.headOrigin.x()), Qt::DisplayRole);
+  rootItem->child(7, 0)->child(0, 3)->setData(QVariant(parameters.headOrigin.y()), Qt::DisplayRole);
 
   rootItem->child(8, 0)->child(0, 2)->setData(QVariant(parameters.kpx), Qt::DisplayRole);
   rootItem->child(8, 0)->child(0, 3)->setData(QVariant(parameters.kix), Qt::DisplayRole);
@@ -1434,15 +1434,15 @@ void KickViewWidget::fillModelWithPhaseData(int i)
 
     for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
     {
-      rootItem->child(5, 0)->child(0, 0)->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].comTra[k].x), Qt::DisplayRole);
-      rootItem->child(5, 0)->child(0, 0)->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].comTra[k].y), Qt::DisplayRole);
-      rootItem->child(6, 0)->child(0, 0)->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].headTra[k].x), Qt::DisplayRole);
-      rootItem->child(6, 0)->child(0, 0)->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].headTra[k].y), Qt::DisplayRole);
+      rootItem->child(5, 0)->child(0, 0)->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].comTra[k].x()), Qt::DisplayRole);
+      rootItem->child(5, 0)->child(0, 0)->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].comTra[k].y()), Qt::DisplayRole);
+      rootItem->child(6, 0)->child(0, 0)->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].headTra[k].x()), Qt::DisplayRole);
+      rootItem->child(6, 0)->child(0, 0)->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].headTra[k].y()), Qt::DisplayRole);
     }
 
-    rootItem->child(7, 0)->child(0, 2)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.x), Qt::DisplayRole);
-    rootItem->child(7, 0)->child(0, 3)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.y), Qt::DisplayRole);
-    rootItem->child(7, 0)->child(0, 4)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.z), Qt::DisplayRole);
+    rootItem->child(7, 0)->child(0, 2)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.x()), Qt::DisplayRole);
+    rootItem->child(7, 0)->child(0, 3)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.y()), Qt::DisplayRole);
+    rootItem->child(7, 0)->child(0, 4)->setData(QVariant(parameters.phaseParameters[i].odometryOffset.z()), Qt::DisplayRole);
 
     int limb = 0, child1 = 1, child2 = 0;
     QStandardItem* item;
@@ -1450,49 +1450,49 @@ void KickViewWidget::fillModelWithPhaseData(int i)
     {
       switch(limb)
       {
-      case 0:
-        child1 = 1;
-        child2 = 0;
-        break;
-      case 1:
-        child1 = 1;
-        child2 = 1;
-        break;
-      case 2:
-        child1 = 2;
-        child2 = 0;
-        break;
-      case 3:
-        child1 = 2;
-        child2 = 1;
-        break;
-      case 4:
-        child1 = 3;
-        child2 = 0;
-        break;
-      case 5:
-        child1 = 3;
-        child2 = 1;
-        break;
-      case 6:
-        child1 = 4;
-        child2 = 0;
-        break;
-      case 7:
-        child1 = 4;
-        child2 = 1;
-        break;
-      default:
-        limb = 100;
-        break;
+        case 0:
+          child1 = 1;
+          child2 = 0;
+          break;
+        case 1:
+          child1 = 1;
+          child2 = 1;
+          break;
+        case 2:
+          child1 = 2;
+          child2 = 0;
+          break;
+        case 3:
+          child1 = 2;
+          child2 = 1;
+          break;
+        case 4:
+          child1 = 3;
+          child2 = 0;
+          break;
+        case 5:
+          child1 = 3;
+          child2 = 1;
+          break;
+        case 6:
+          child1 = 4;
+          child2 = 0;
+          break;
+        case 7:
+          child1 = 4;
+          child2 = 1;
+          break;
+        default:
+          limb = 100;
+          break;
       }
 
       for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
       {
         item = rootItem->child(child1, 0)->child(child2, 0);
-        item->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].x), Qt::DisplayRole);
-        item->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].y), Qt::DisplayRole);
-        item->child(k, 4)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].z), Qt::DisplayRole);
+        item->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].x()), Qt::DisplayRole);
+        item->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].y()), Qt::DisplayRole);
+        item->child(k, 4)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].z()), Qt::DisplayRole);
       }
       limb++;
     }
@@ -1521,37 +1521,37 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footOrigin.x;
-        parameters.footOrigin.x += diff;
+        diff -= parameters.footOrigin.x();
+        parameters.footOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].x += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].x += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].x() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].x() += diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footOrigin.y;
-        parameters.footOrigin.y += diff;
+        diff -= parameters.footOrigin.y();
+        parameters.footOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].y += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].y -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].y() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].y() -= diff;
           }
       }
       if(col == 4)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footOrigin.z;
-        parameters.footOrigin.z += diff;
+        diff -= parameters.footOrigin.z();
+        parameters.footOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].z += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].z += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootTra][k].z() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootTra][k].z() += diff;
           }
       }
     }
@@ -1560,37 +1560,37 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footRotOrigin.x;
-        parameters.footRotOrigin.x += diff;
+        diff -= parameters.footRotOrigin.x();
+        parameters.footRotOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].x += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].x -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].x() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].x() -= diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footRotOrigin.y;
-        parameters.footRotOrigin.y += diff;
+        diff -= parameters.footRotOrigin.y();
+        parameters.footRotOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].y += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].y += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].y() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].y() += diff;
           }
       }
       if(col == 4)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.footRotOrigin.z;
-        parameters.footRotOrigin.z += diff;
+        diff -= parameters.footRotOrigin.z();
+        parameters.footRotOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].z += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].z -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftFootRot][k].z() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightFootRot][k].z() -= diff;
           }
       }
     }
@@ -1599,37 +1599,37 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.armOrigin.x;
-        parameters.armOrigin.x += diff;
+        diff -= parameters.armOrigin.x();
+        parameters.armOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].x += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].x += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].x() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].x() += diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.armOrigin.y;
-        parameters.armOrigin.y += diff;
+        diff -= parameters.armOrigin.y();
+        parameters.armOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].y += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].y -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].y() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].y() -= diff;
           }
       }
       if(col == 4)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.armOrigin.z;
-        parameters.armOrigin.z += diff;
+        diff -= parameters.armOrigin.z();
+        parameters.armOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].z += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].z += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftArmTra][k].z() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightArmTra][k].z() += diff;
           }
       }
     }
@@ -1638,37 +1638,37 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.handRotOrigin.x;
-        parameters.handRotOrigin.x += diff;
+        diff -= parameters.handRotOrigin.x();
+        parameters.handRotOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].x += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].x -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].x() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].x() -= diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.handRotOrigin.y;
-        parameters.handRotOrigin.y += diff;
+        diff -= parameters.handRotOrigin.y();
+        parameters.handRotOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].y += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].y += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].y() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].y() += diff;
           }
       }
       if(col == 4)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.handRotOrigin.z;
-        parameters.handRotOrigin.z += diff;
+        diff -= parameters.handRotOrigin.z();
+        parameters.handRotOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].z += diff;
-            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].z -= diff;
+            parameters.phaseParameters[p].controlPoints[Phase::leftHandRot][k].z() += diff;
+            parameters.phaseParameters[p].controlPoints[Phase::rightHandRot][k].z() -= diff;
           }
       }
     }
@@ -1677,23 +1677,23 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.comOrigin.x;
-        parameters.comOrigin.x += diff;
+        diff -= parameters.comOrigin.x();
+        parameters.comOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].comTra[k].x += diff;
+            parameters.phaseParameters[p].comTra[k].x() += diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.comOrigin.y;
-        parameters.comOrigin.y += diff;
+        diff -= parameters.comOrigin.y();
+        parameters.comOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].comTra[k].y += diff;
+            parameters.phaseParameters[p].comTra[k].y() += diff;
           }
       }
     }
@@ -1702,23 +1702,23 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       if(col == 2)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.headOrigin.x;
-        parameters.headOrigin.x += diff;
+        diff -= parameters.headOrigin.x();
+        parameters.headOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].headTra[k].x += diff;
+            parameters.phaseParameters[p].headTra[k].x() += diff;
           }
       }
       if(col == 3)
       {
         float diff = (float)item->data(Qt::DisplayRole).toDouble();
-        diff -= parameters.headOrigin.y;
-        parameters.headOrigin.y += diff;
+        diff -= parameters.headOrigin.y();
+        parameters.headOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
           for(int k = 0; k < 3; ++k)
           {
-            parameters.phaseParameters[p].headTra[k].y += diff;
+            parameters.phaseParameters[p].headTra[k].y() += diff;
           }
       }
     }
@@ -1806,12 +1806,12 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
     {
       switch(col)
       {
-      case 2:
-        parameters.phaseParameters[phaseNumber].comTra[row].x = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 3:
-        parameters.phaseParameters[phaseNumber].comTra[row].y = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
+        case 2:
+          parameters.phaseParameters[phaseNumber].comTra[row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 3:
+          parameters.phaseParameters[phaseNumber].comTra[row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
       }
     }
 
@@ -1819,12 +1819,12 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
     {
       switch(col)
       {
-      case 2:
-        parameters.phaseParameters[phaseNumber].headTra[row].x = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 3:
-        parameters.phaseParameters[phaseNumber].headTra[row].y = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
+        case 2:
+          parameters.phaseParameters[phaseNumber].headTra[row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 3:
+          parameters.phaseParameters[phaseNumber].headTra[row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
       }
     }
 
@@ -1832,15 +1832,15 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
     {
       switch(col)
       {
-      case 2:
-        parameters.phaseParameters[phaseNumber].odometryOffset.x = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 3:
-        parameters.phaseParameters[phaseNumber].odometryOffset.y = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 4:
-        parameters.phaseParameters[phaseNumber].odometryOffset.z = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
+        case 2:
+          parameters.phaseParameters[phaseNumber].odometryOffset.x() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 3:
+          parameters.phaseParameters[phaseNumber].odometryOffset.y() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 4:
+          parameters.phaseParameters[phaseNumber].odometryOffset.z() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
       }
     }
   }
@@ -1853,15 +1853,15 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
       selectedPoint.pointNumber = row;
       switch(col)
       {
-      case 2:
-        parameters.phaseParameters[phaseNumber].controlPoints[limb][row].x = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 3:
-        parameters.phaseParameters[phaseNumber].controlPoints[limb][row].y = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
-      case 4:
-        parameters.phaseParameters[phaseNumber].controlPoints[limb][row].z = (float)item->data(Qt::DisplayRole).toDouble();
-        break;
+        case 2:
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 3:
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
+        case 4:
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].z() = (float)item->data(Qt::DisplayRole).toDouble();
+          break;
       }
     }
   }
@@ -1871,15 +1871,15 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
 void KickViewWidget::recordPose()
 {
   int phaseNumber = tabber->currentIndex() - 1;
-  const JointData& jointData = kickView.jointData;
+  const JointAngles& jointAngles = kickView.jointAngles;
 
   if(phaseNumber > -1)
   {
-    Pose3D p;
+    Pose3f p;
 
     if(lhtra->isChecked())
     {
-      p =  KickViewMath::calculateHandPos(kickView.jointData, JointData::LShoulderPitch, kickView.robotDimensions);
+      p = KickViewMath::calculateHandPos(jointAngles, Joints::lShoulderPitch, kickView.robotDimensions);
 
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftArmTra][2] = p.translation;
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftArmTra][1] = p.translation;
@@ -1887,7 +1887,7 @@ void KickViewWidget::recordPose()
 
     if(rhtra->isChecked())
     {
-      p =  KickViewMath::calculateHandPos(kickView.jointData, JointData::RShoulderPitch, kickView.robotDimensions);
+      p = KickViewMath::calculateHandPos(jointAngles, Joints::rShoulderPitch, kickView.robotDimensions);
 
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightArmTra][2] = p.translation;
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightArmTra][1] = p.translation;
@@ -1895,80 +1895,80 @@ void KickViewWidget::recordPose()
 
     if(lhrot->isChecked())
     {
-      p =  KickViewMath::calculateHandPos(kickView.jointData, JointData::LShoulderPitch, kickView.robotDimensions);
+      p = KickViewMath::calculateHandPos(jointAngles, Joints::lShoulderPitch, kickView.robotDimensions);
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftHandRot][2] = p.rotation.getAngleAxis();
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftHandRot][1] = p.rotation.getAngleAxis();
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftHandRot][2] = p.rotation.getPackedAngleAxisFaulty();
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftHandRot][1] = p.rotation.getPackedAngleAxisFaulty();
     }
 
     if(rhrot->isChecked())
     {
-      p =  KickViewMath::calculateHandPos(kickView.jointData, JointData::RShoulderPitch, kickView.robotDimensions);
+      p = KickViewMath::calculateHandPos(jointAngles, Joints::rShoulderPitch, kickView.robotDimensions);
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightHandRot][2] = p.rotation.getAngleAxis();
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightHandRot][1] = p.rotation.getAngleAxis();
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightHandRot][2] = p.rotation.getPackedAngleAxisFaulty();
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightHandRot][1] = p.rotation.getPackedAngleAxisFaulty();
     }
 
     if(lfrot->isChecked())
     {
       float sign = 1.f;
-      JointData::Joint joint = JointData::LHipYawPitch;
+      Joints::Joint joint = Joints::lHipYawPitch;
 
-      RotationMatrix rotateBecauseOfHip = RotationMatrix().rotateZ(jointData.angles[joint]).rotateX(-sign * pi_4);
-      RotationMatrix footRot = RotationMatrix().rotateX((jointData.angles[joint + 1] + pi_4) * -sign).rotateY(jointData.angles[joint + 2] + jointData.angles[joint + 3]);
-      footRot = footRot.invert() * rotateBecauseOfHip;
+      RotationMatrix rotateBecauseOfHip = RotationMatrix::aroundZ(jointAngles.angles[joint]).rotateX(-sign * pi_4);
+      RotationMatrix footRot = RotationMatrix::aroundX((jointAngles.angles[joint + 1] + pi_4) * -sign).rotateY(jointAngles.angles[joint + 2] + jointAngles.angles[joint + 3]);
+      footRot = footRot.inverse() * rotateBecauseOfHip;
 
-      float leg5 = jointData.angles[joint + 5] - (std::asin(-footRot[2].y) * sign * -1);
-      float leg4 = jointData.angles[joint + 4] - (-std::atan2(footRot[2].x, footRot[2].z) * -1);
+      float leg5 = jointAngles.angles[joint + 5] - (std::asin(-footRot.col(2).y()) * sign * -1);
+      float leg4 = jointAngles.angles[joint + 4] - (-std::atan2(footRot.col(2).x(), footRot.col(2).z()) * -1);
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].x = leg5;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].y = leg4;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].x() = leg5;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].y() = leg4;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].x = leg5;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].y = leg4;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].x() = leg5;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].y() = leg4;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].z = jointData.angles[joint] * sign;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].z = jointData.angles[joint] * sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].z() = jointAngles.angles[joint] * sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].z() = jointAngles.angles[joint] * sign;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].z = jointData.angles[joint] * -sign;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].z = jointData.angles[joint] * -sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].z() = jointAngles.angles[joint] * -sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].z() = jointAngles.angles[joint] * -sign;
     }
 
     if(rfrot->isChecked())
     {
       float sign = -1.f;
-      JointData::Joint joint = JointData::RHipYawPitch;
+      Joints::Joint joint = Joints::rHipYawPitch;
 
-      RotationMatrix rotateBecauseOfHip = RotationMatrix().rotateZ(jointData.angles[joint] * sign).rotateX(-sign * pi_4);
-      RotationMatrix footRot = RotationMatrix().rotateX((jointData.angles[joint + 1] + pi_4) * -sign).rotateY(jointData.angles[joint + 2] + jointData.angles[joint + 3]);
-      footRot = footRot.invert() * rotateBecauseOfHip;
+      RotationMatrix rotateBecauseOfHip = RotationMatrix::aroundZ(jointAngles.angles[joint] * sign).rotateX(-sign * pi_4);
+      RotationMatrix footRot = RotationMatrix::aroundX((jointAngles.angles[joint + 1] + pi_4) * -sign).rotateY(jointAngles.angles[joint + 2] + jointAngles.angles[joint + 3]);
+      footRot = (footRot.inverse() * rotateBecauseOfHip).eval();
 
-      float leg5 = jointData.angles[joint + 5] - (std::asin(-footRot[2].y) * sign * -1);
-      float leg4 = jointData.angles[joint + 4] - (-std::atan2(footRot[2].x, footRot[2].z) * -1);
+      float leg5 = jointAngles.angles[joint + 5] - (std::asin(-footRot.col(2).y()) * sign * -1);
+      float leg4 = jointAngles.angles[joint + 4] - (-std::atan2(footRot.col(2).x(), footRot.col(2).z()) * -1);
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].x = leg5;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].y = leg4;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].x() = leg5;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].y() = leg4;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].x = leg5;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].y = leg4;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].x() = leg5;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].y() = leg4;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].z = jointData.angles[joint] * -sign;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].z = jointData.angles[joint] * -sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][2].z() = jointAngles.angles[joint] * -sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootRot][1].z() = jointAngles.angles[joint] * -sign;
 
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].z = jointData.angles[joint] * sign;
-      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].z = jointData.angles[joint] * sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][2].z() = jointAngles.angles[joint] * sign;
+      parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootRot][1].z() = jointAngles.angles[joint] * sign;
     }
 
     if(lftra->isChecked())
     {
-      p =  KickViewMath::calculateFootPos(kickView.sensorData, kickView.jointData, JointData::LHipYawPitch, kickView.robotDimensions).translation;
+      p = KickViewMath::calculateFootPos(jointAngles, Joints::lHipYawPitch, kickView.robotDimensions).translation;
 
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootTra][2] = p.translation;
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::leftFootTra][1] = p.translation;
     }
     if(rftra->isChecked())
     {
-      p =  KickViewMath::calculateFootPos(kickView.sensorData, kickView.jointData, JointData::RHipYawPitch, kickView.robotDimensions).translation;
+      p = KickViewMath::calculateFootPos(jointAngles, Joints::rHipYawPitch, kickView.robotDimensions).translation;
 
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootTra][2] = p.translation;
       parameters.phaseParameters[phaseNumber].controlPoints[Phase::rightFootTra][1] = p.translation;

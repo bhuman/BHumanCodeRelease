@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Tools/ProcessFramework/ProcessFramework.h"
-#include <SimRobot.h>
 
 class RobotConsole;
 
@@ -39,12 +38,6 @@ public:
   * @return The name of the robot.
   */
   const char* getName() const {return name.c_str();}
-
-  /**
-  * The function returns the name of the robot.
-  * @return The name of the robot.
-  */
-  std::string getModel() const;
 
   /**
   * The function returns a pointer to the process that simulates the physical robots.

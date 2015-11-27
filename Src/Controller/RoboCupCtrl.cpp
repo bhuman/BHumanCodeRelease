@@ -14,11 +14,16 @@
 
 #include <QIcon>
 
+#ifdef OSX
+#define TOLERANCE 30.f
+#else
+#define TOLERANCE 10.f
+#endif
 
 RoboCupCtrl* RoboCupCtrl::controller = 0;
 SimRobot::Application* RoboCupCtrl::application = 0;
 
-RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application) : robotName(0), simTime(false), dragTime(true), lastTime(0)
+RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application) : robotName(0), simTime(false), delayTime(0), lastTime(0)
 {
   NAME_THREAD("Main");
 
@@ -36,9 +41,10 @@ bool RoboCupCtrl::compile()
 
   // initialize simulated time and step length
   time = 10000 - SystemCall::getRealSystemTime();
-  simStepLength =  int(scene->getStepLength() * 1000. + 0.5);
+  simStepLength =  int(scene->getStepLength() * 1000.f + 0.5f);
   if(simStepLength > 20)
     simStepLength = 20;
+  delayTime = (float) simStepLength;
 
   // get interfaces to simulated objects
   SimRobot::Object* group = application->resolveObject("RoboCup.robots", SimRobotCore2::compound);
@@ -131,12 +137,14 @@ void RoboCupCtrl::start()
 #ifdef WINDOWS
   VERIFY(timeBeginPeriod(1) == TIMERR_NOERROR);
 #endif
+  MultiDebugSenderBase::terminating = false;
   for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
     (*i)->start();
 }
 
 void RoboCupCtrl::stop()
 {
+  MultiDebugSenderBase::terminating = true;
   for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
     (*i)->announceStop();
   for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
@@ -152,20 +160,17 @@ void RoboCupCtrl::stop()
 
 void RoboCupCtrl::update()
 {
-  if(dragTime)
+  if(delayTime != 0.f)
   {
-    unsigned int t = SystemCall::getRealSystemTime();
-    lastTime += simStepLength;
+    float t = (float) SystemCall::getRealSystemTime();
+    lastTime += delayTime;
     if(lastTime > t) // simulation is running faster then rt
     {
-      if(lastTime - t > (unsigned int)simStepLength)
-        SystemCall::sleep(lastTime - t - simStepLength);
+      if(lastTime > t + TOLERANCE)
+        SystemCall::sleep(int(lastTime - t - TOLERANCE));
     }
-    else // slower then rt
-    {
-      if(t - lastTime > (unsigned int)simStepLength)
-        lastTime += simStepLength * ((t - lastTime) / simStepLength);
-    }
+    else if(t > lastTime + TOLERANCE) // slower then rt
+      lastTime = t - TOLERANCE;
   }
 
   gameController.referee();
@@ -197,11 +202,6 @@ std::string RoboCupCtrl::getRobotName() const
     return "Robot1";
   std::string robotName(this->robotName);
   return robotName.substr(robotName.rfind('.') + 1);
-}
-
-std::string RoboCupCtrl::getModelName() const
-{
-  return "Nao";
 }
 
 unsigned RoboCupCtrl::getTime() const

@@ -1,7 +1,7 @@
 /*
  * Generic DES driver interface
  * Keep this file hardware independent!
- * Copyright (c) 1986 by Sun Microsystems, Inc.
+ * Copyright (c) 2010, Oracle America, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -13,7 +13,7 @@
  *       copyright notice, this list of conditions and the following
  *       disclaimer in the documentation and/or other materials
  *       provided with the distribution.
- *     * Neither the name of Sun Microsystems, Inc. nor the names of its
+ *     * Neither the name of the "Oracle America, Inc." nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
  *
@@ -36,7 +36,7 @@
 
 #include <sys/types.h>
 
-#define DES_MAXLEN 	65536	/* maximum # of bytes to encrypt  */
+#define DES_MAXLEN	65536	/* maximum # of bytes to encrypt  */
 #define DES_QUICKLEN	16	/* maximum # of bytes to encrypt quickly */
 
 enum desdir

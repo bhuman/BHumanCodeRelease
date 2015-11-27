@@ -17,6 +17,15 @@
 
 #include <QMetaType>
 #include <string>
+#include "Tools/Math/Angle.h"
+
+struct AngleWithUnity : public Angle
+{
+  bool deg = true;
+
+  AngleWithUnity() = default;
+  AngleWithUnity(const Angle& angle) : Angle(angle) {}
+};
 
 Q_DECLARE_METATYPE(unsigned int);
 Q_DECLARE_METATYPE(short);
@@ -24,3 +33,4 @@ Q_DECLARE_METATYPE(unsigned short);
 Q_DECLARE_METATYPE(unsigned char);
 Q_DECLARE_METATYPE(float);
 Q_DECLARE_METATYPE(std::string);
+Q_DECLARE_METATYPE(AngleWithUnity);

@@ -1,29 +1,29 @@
 /**
-* @file Processes/Cognition.cpp
-* Implementation of a class that represents a process that receives data from the robot at about 60 Hz.
-*/
+ * @file Processes/Cognition.cpp
+ * Implementation of a class that represents a process that receives data from the robot at about 60 Hz.
+ */
 
-#include "Cognition.h"
-#include "Modules/Infrastructure/CameraProvider.h"
+#include "Tools/Math/Eigen.h" // include first to avoid conflicts between Cabsl defines and some clang headers
+#include "Cognition.h" // include second header conflicts on Windows
 #include "Modules/Configuration/CognitionConfigurationDataProvider.h"
-#include "Modules/Infrastructure/TeamDataProvider.h"
-#include "Representations/Infrastructure/JointData.h"
-#include "Representations/Infrastructure/SensorData.h"
+#include "Modules/Infrastructure/CameraProvider.h"
+#include "Modules/Infrastructure/CognitionLogDataProvider.h"
+#include "Modules/Infrastructure/TeammateDataProvider.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Team.h"
-#include "Modules/Infrastructure/CognitionLogDataProvider.h" // include last because of header conflicts on Windows
+#include "Representations/Infrastructure/TeammateData.h"
 
 Cognition::Cognition() :
   INIT_DEBUGGING,
   INIT_RECEIVER(MotionToCognition),
   INIT_SENDER(CognitionToMotion),
   INIT_TEAM_COMM,
-  moduleManager({"Cognition Infrastructure", "Perception", "Modeling", "Behavior Control"})
+  moduleManager({ModuleBase::cognitionInfrastructure, ModuleBase::perception, ModuleBase::modeling, ModuleBase::behaviorControl})
 {
   theDebugSender.setSize(5200000, 100000);
   theDebugReceiver.setSize(2800000);
-  theTeamSender.setSize(sizeof(RoboCup::SPLStandardMessage));
-  theTeamReceiver.setSize(5 * sizeof(RoboCup::SPLStandardMessage)); // more than 4 because of additional data
+  const unsigned size = SPL_STANDARD_MESSAGE_DATA_SIZE - SPLStandardMessage::bhumanHeaderSize - 2 * sizeof(unsigned);
+  theTeamSender.setSize(size);
+  theTeamReceiver.setSize(5 * size); // more than 4 because of additional data
   theCognitionToMotionSender.moduleManager = theMotionToCognitionReceiver.moduleManager = &moduleManager;
 }
 
@@ -33,6 +33,10 @@ void Cognition::init()
   START_TEAM_COMM;
   moduleManager.load();
   BH_TRACE_INIT("Cognition");
+
+  // Prepare first frame
+  numberOfMessages = theDebugSender.getNumberOfMessages();
+  OUTPUT(idProcessBegin, bin, 'c');
 }
 
 void Cognition::terminate()
@@ -46,38 +50,23 @@ bool Cognition::main()
   // read from team comm udp socket
   RECEIVE_TEAM_COMM;
 
-  // required to detect whether any messages are sent in this frame
-  int numberOfMessages = theDebugSender.getNumberOfMessages();
-
-  OUTPUT(idProcessBegin, bin, 'c');
-
   if(CognitionLogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete())
   {
     timingManager.signalProcessStart();
+    annotationManager.signalProcessStart();
 
-    // There must not be any TEAM_OUTPUT before this in each frame.
-    BH_TRACE_MSG("before TeamDataProvider");
-    TeamDataProvider::handleMessages(theTeamReceiver);
+    BH_TRACE_MSG("before TeammateDataProvider");
+    TeammateDataProvider::handleMessages(theTeamReceiver);
 
     // Reset coordinate system for debug field drawing
     DECLARE_DEBUG_DRAWING("origin:Reset", "drawingOnField"); // Set the origin to the (0,0,0)
     ORIGIN("origin:Reset", 0.0f, 0.0f, 0.0f);
 
-    STOP_TIME_ON_REQUEST_WITH_PLOT("Cognition", moduleManager.execute(););
+    STOPWATCH_WITH_PLOT("Cognition") moduleManager.execute();
 
-    DEBUG_RESPONSE("process:Cognition:jointDelay",
-    {
-      if(Blackboard::getInstance().exists("FrameInfo") &&
-         Blackboard::getInstance().exists("FilteredJointData"))
-      {
-        OUTPUT(idText, text, ((const FrameInfo&) Blackboard::getInstance()["FrameInfo"])
-               .getTimeSince(((const FilteredJointData&) Blackboard::getInstance()["FilteredJointData"]).timeStamp));
-      }
-    });
-
-    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager", OUTPUT(idDrawingManager, bin, Global::getDrawingManager()););
-    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D", OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D()););
-    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification", OUTPUT(idStreamSpecification, bin, Global::getStreamHandler()););
+    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager") OUTPUT(idDrawingManager, bin, Global::getDrawingManager());
+    DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D") OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D());
+    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification") OUTPUT(idStreamSpecification, bin, Global::getStreamHandler());
 
     theCognitionToMotionSender.timeStamp = SystemCall::getCurrentSystemTime();
     BH_TRACE_MSG("before cognition2Motion.send");
@@ -87,7 +76,7 @@ bool Cognition::main()
     if(!theTeamSender.isEmpty())
     {
       if(Blackboard::getInstance().exists("TeammateData") &&
-         ((const TeammateData&) Blackboard::getInstance()["TeammateData"]).sendThisFrame)
+         static_cast<const TeammateData&>(Blackboard::getInstance()["TeammateData"]).sendThisFrame)
       {
         SEND_TEAM_COMM;
       }
@@ -95,18 +84,18 @@ bool Cognition::main()
     }
 
     timingManager.signalProcessStop();
-
-    DEBUG_RESPONSE("timing",
-      timingManager.getData().copyAllMessages(theDebugSender);
-    );
-
     logger.execute();
+
+    DEBUG_RESPONSE("timing") timingManager.getData().copyAllMessages(theDebugSender);
+
+    DEBUG_RESPONSE("annotation") annotationManager.getOut().copyAllMessages(theDebugSender);
+    annotationManager.clear();
 
     if(theDebugSender.getNumberOfMessages() > numberOfMessages + 1)
     {
       // messages were sent in this frame -> send process finished
       if(Blackboard::getInstance().exists("CameraInfo") &&
-         ((const CameraInfo&) Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::lower)
+         static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::lower)
       { // lower camera -> process called 'd'
         theDebugSender.patchMessage(numberOfMessages, 0, 'd');
         OUTPUT(idProcessFinished, bin, 'd');
@@ -114,22 +103,18 @@ bool Cognition::main()
       else
         OUTPUT(idProcessFinished, bin, 'c');
     }
-    else if(theDebugSender.getNumberOfMessages() == numberOfMessages + 1)
+    else
       theDebugSender.removeLastMessage();
 
     BH_TRACE_MSG("theDebugSender.send()");
     theDebugSender.send();
-  }
-  else
-  {
-    if(theDebugSender.getNumberOfMessages() == numberOfMessages + 1)
-      theDebugSender.removeLastMessage();
 
-#ifndef RELEASE
+    // Prepare next frame
+    numberOfMessages = theDebugSender.getNumberOfMessages();
+    OUTPUT(idProcessBegin, bin, 'c');
+  }
   else if(Global::getDebugRequestTable().poll)
     --Global::getDebugRequestTable().pollCounter;
-#endif
-  }
 
   if(Blackboard::getInstance().exists("Image"))
   {
@@ -152,18 +137,17 @@ bool Cognition::handleMessage(InMessage& message)
   BH_TRACE_MSG("before Cognition:handleMessage");
   switch(message.getMessageID())
   {
-  case idModuleRequest:
-  {
-    unsigned timeStamp;
-    message.bin >> timeStamp;
-    moduleManager.update(message.bin, timeStamp);
-    return true;
-  }
-
-  default:
-    return CognitionLogDataProvider::handleMessage(message) ||
-           CognitionConfigurationDataProvider::handleMessage(message) ||
-           Process::handleMessage(message);
+    case idModuleRequest:
+    {
+      unsigned timeStamp;
+      message.bin >> timeStamp;
+      moduleManager.update(message.bin, timeStamp);
+      return true;
+    }
+    default:
+      return CognitionLogDataProvider::handleMessage(message) ||
+             CognitionConfigurationDataProvider::handleMessage(message) ||
+             Process::handleMessage(message);
   }
   BH_TRACE_MSG("after Cognition:handleMessage");
 }

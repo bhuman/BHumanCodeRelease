@@ -11,7 +11,7 @@
 #include "Tools/Streams/AutoStreamable.h"
 
 /**
- * @class OwnSideModel
+ * @struct OwnSideModel
  * A model that states that the robot cannot have left its own
  * side since the last kick-off and how far it can have gotten along
  * the field.

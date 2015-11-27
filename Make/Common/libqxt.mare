@@ -4,7 +4,7 @@ libqxt = cppStaticLibrary + {
   root = "$(utilDirRoot)/libqxt"
   files = {"$(utilDirRoot)/libqxt/**.cpp" = cppSource}
   qtMocFiles = {
-    "$(utilDirRoot)/libqxt/qxtspanslider.h", 
+    "$(utilDirRoot)/libqxt/qxtspanslider.h",
     "$(utilDirRoot)/libqxt/qxtspanslider_p.h"
   }
   files += qtFilesNew
@@ -14,7 +14,8 @@ libqxt = cppStaticLibrary + {
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
-  },
+  }
+
   includePaths = {
     "$(buildDir)",
     "$(utilDirRoot)/libqxt",
@@ -31,19 +32,22 @@ libqxt = cppStaticLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib",
     }
-  },
+  }
+
   libs = {
     if (host == "Win32") {
       "QtCore4", "QtGui4"
     } else if (platform == "Linux") {
       "QtCore", "QtGui"
     }
-  },
+  }
+
   cppFlags += {
     if (platform == "Linux") {
       "-fPIC",  -"-Wconversion"

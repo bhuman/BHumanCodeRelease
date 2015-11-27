@@ -39,6 +39,11 @@ void PaintMethods::paintDebugDrawing(QPainter& painter, const DebugDrawing& debu
         paintEllipse(*static_cast<const DebugDrawing::Ellipse*>(e), painter);
         break;
       }
+      case DebugDrawing::Element::ARC:
+      {
+        paintArc(*static_cast<const DebugDrawing::Arc*>(e), painter);
+        break;
+      }
       case DebugDrawing::Element::RECTANGLE:
       {
         paintRectangle(*static_cast<const DebugDrawing::Rectangle*>(e), painter);
@@ -66,7 +71,7 @@ void PaintMethods::paintDebugDrawing(QPainter& painter, const DebugDrawing& debu
 
 void PaintMethods::paintLine(const DebugDrawing::Line& element, QPainter& painter)
 {
-  if(element.penStyle != Drawings::ps_null)
+  if(element.penStyle != Drawings::noPen)
   {
     setPen(element, painter);
     if(element.xStart == element.xEnd && element.yStart == element.yEnd)
@@ -82,7 +87,7 @@ void PaintMethods::paintLine(const DebugDrawing::Line& element, QPainter& painte
 
 void PaintMethods::paintPolygon(const DebugDrawing::Polygon& element, QPainter& painter)
 {
-  setBrush(element.fillStyle, element.fillColor, painter);
+  setBrush(element.brushStyle, element.brushColor, painter);
   setPen(element, painter);
 
   // copy vector2 to QPoints
@@ -96,7 +101,7 @@ void PaintMethods::paintPolygon(const DebugDrawing::Polygon& element, QPainter& 
 
 void PaintMethods::paintEllipse(const DebugDrawing::Ellipse& element, QPainter& painter)
 {
-  setBrush(element.fillStyle, element.fillColor, painter);
+  setBrush(element.brushStyle, element.brushColor, painter);
   setPen(element, painter);
 
   if(element.rotation != 0.0f)
@@ -113,6 +118,13 @@ void PaintMethods::paintEllipse(const DebugDrawing::Ellipse& element, QPainter& 
   {
     painter.drawEllipse(element.x - element.radiusX, element.y - element.radiusY, 2 * element.radiusX, 2 * element.radiusY);
   }
+}
+
+void PaintMethods::paintArc(const DebugDrawing::Arc& element, QPainter& painter)
+{
+  setBrush(element.brushStyle, element.brushColor, painter);
+  setPen(element, painter);
+  painter.drawArc(element.x - element.radius, element.y - element.radius, 2 * element.radius, 2 * element.radius, -element.startAngle, -element.spanAngle);
 }
 
 void PaintMethods::paintOrigin(const DebugDrawing::Origin& element, QPainter& painter, const QTransform& baseTrans)
@@ -181,7 +193,7 @@ void PaintMethods::paintGridMono(const DebugDrawing::GridMono& element, QPainter
 
 void PaintMethods::paintRectangle(const DebugDrawing::Rectangle& element, QPainter& painter)
 {
-  setBrush(element.fillStyle, element.fillColor, painter);
+  setBrush(element.brushStyle, element.brushColor, painter);
   setPen(element, painter);
 
   const QRect dRect(element.topLX, element.topLY, element.w, element.h);
@@ -205,19 +217,19 @@ void PaintMethods::paintRectangle(const DebugDrawing::Rectangle& element, QPaint
 
 void PaintMethods::setPen(const DebugDrawing::Element& element, QPainter& painter)
 {
-  if(element.penStyle != Drawings::ps_null)
+  if(element.penStyle != Drawings::noPen)
   {
     pen.setColor(QColor(element.penColor.r, element.penColor.g, element.penColor.b, element.penColor.a));
     pen.setWidth(element.width);
     switch(element.penStyle)
     {
-      case Drawings::ps_dash:
+      case Drawings::dashedPen:
         pen.setStyle(Qt::DashLine);
         break;
-      case Drawings::ps_dot:
+      case Drawings::dottedPen:
         pen.setStyle(Qt::DotLine);
         break;
-      case Drawings::ps_solid:
+      case Drawings::solidPen:
       default:
         pen.setStyle(Qt::SolidLine);
     }
@@ -229,11 +241,11 @@ void PaintMethods::setPen(const DebugDrawing::Element& element, QPainter& painte
   }
 }
 
-void PaintMethods::setBrush(const Drawings::FillStyle fillStyle, const ColorRGBA& fillColor, QPainter& painter)
+void PaintMethods::setBrush(const Drawings::BrushStyle brushStyle, const ColorRGBA& brushColor, QPainter& painter)
 {
-  if(fillStyle == Drawings::bs_solid)
+  if(brushStyle == Drawings::solidBrush)
   {
-    brush.setColor(QColor(fillColor.r, fillColor.g, fillColor.b, fillColor.a));
+    brush.setColor(QColor(brushColor.r, brushColor.g, brushColor.b, brushColor.a));
     painter.setBrush(brush);
   }
   else

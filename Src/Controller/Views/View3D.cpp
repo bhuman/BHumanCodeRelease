@@ -7,7 +7,7 @@
 * @author Colin Graf
 */
 
-#include "Platform/OpenGL.h"
+#include <Platform/OpenGL.h>
 #include "View3D.h"
 #include "Controller/RoboCupCtrl.h"
 
@@ -37,7 +37,6 @@ public:
   }
 
 private:
-
   void resizeGL(int newWidth, int newHeight)
   {
     width = newWidth;
@@ -64,7 +63,7 @@ private:
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glClearColor(view3D.background.x, view3D.background.y, view3D.background.z, 1.0f);
+    glClearColor(view3D.background.x(), view3D.background.y(), view3D.background.z(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glViewport(0, 0, width, height);
@@ -122,6 +121,20 @@ private:
     updateGL();
   }
 
+  void wheelEvent(QWheelEvent* event)
+  {
+    if(event->delta())
+    {
+      if(event->orientation() == Qt::Horizontal)
+        rotation.ry() += static_cast<float>(event->delta()) * 0.2f;
+      else
+        rotation.rx() += static_cast<float>(event->delta()) * 0.2f;
+      updateGL();
+    }
+    else
+      QGLWidget::wheelEvent(event);
+  }
+
   virtual QSize sizeHint() const { return QSize(320, 240); }
 
   virtual QWidget* getWidget() {return this;}
@@ -140,7 +153,7 @@ private:
   QPoint dragStart;
 };
 
-View3D::View3D(const QString& fullName, const Vector3<>& background) :
+View3D::View3D(const QString& fullName, const Vector3f& background) :
   background(background), fullName(fullName), icon(":/Icons/tag_green.png") {}
 
 SimRobot::Widget* View3D::createWidget()

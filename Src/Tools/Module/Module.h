@@ -7,18 +7,16 @@
  *
  * MODULE(MyImageProcessor,
  * {,
- *   REQUIRES(Image),                               // Has to be updated before
- *   REQUIRES(CameraMatrix),                        // Has to be updated before
- *   USES(RobotPose),                               // Is used, but has not to be updated before
- *   PROVIDES_WITH_MODIFY(BallPercept),             // Class provides a method to update BallPercept. Representation can be MODIFYed.
- *   PROVIDES_WITH_OUTPUT(BeaconsPercept),          // Class provides a method to update BeaconsPercept. Representation can be requested.
- *   PROVIDES_WITH_MODIFY_AND_OUTPUT(LinesPercept), // Class provides a method to update LinesPercept. Representation can be MODIFYed and requested to be sent with given message.
- *   PROVIDES(GoalPercept),                         // Class provides a method to update GoalsPercept.
- *   DEFINES_PARAMETERS(                            // Has parameters that must have an initial value. If LOADS_PARAMETERS is used instead,
- *   {,                                             // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
- *     (float)(42.0f) focalLen,                     // Has a parameter named focalLen of type float. By default it has the value 42.0f.
- *     (int)(21) resWidth,                          // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
- *     (CameraInfo, Camera)(camera) lower,          // Use an enum as parameter that was defined in another class.
+ *   REQUIRES(Image),                      // Has to be updated before
+ *   REQUIRES(CameraMatrix),               // Has to be updated before
+ *   USES(RobotPose),                      // Is used, but has not to be updated before
+ *   PROVIDES(BallPercept),                // Class provides a method to update BallPercept.
+ *   PROVIDES_WITHOUT_MODFY(GoalPercept),  // Class provides a method to update GoalsPercept. Representation cannot be MODIFYed.
+ *   DEFINES_PARAMETERS(                   // Has parameters that must have an initial value. If LOADS_PARAMETERS is used instead,
+ *   {,                                    // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
+ *     (float)(42.0f) focalLen,            // Has a parameter named focalLen of type float. By default it has the value 42.0f.
+ *     (int)(21) resWidth,                 // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
+ *     (CameraInfo, Camera)(camera) lower, // Use an enum as parameter that was defined in another class.
  *   }),
  * });
  *
@@ -28,13 +26,12 @@
  * class MyImageProcessor : public MyImageProcessorBase
  * {
  *   void update(BallPercept& ballPercept);
- *   void update(BeaconsPercept& beaconsPercept);
- *   void update(GoalsPercept& goalsPercept);
+ *   void update(GoalPercept& goalPercept);
  * };
  *
  * In the implementation file, the existence of the module has to be announced:
  *
- * MAKE_MODULE(MyImageProcessor, Perception)
+ * MAKE_MODULE(MyImageProcessor, perception)
  *
  * The second parameter defines a category that is used to group modules.
  *
@@ -54,22 +51,94 @@
  */
 class ModuleBase
 {
+private:
+  /**
+   * Helper class to check whether a class defines a draw method itself.
+   */
+  template<typename T> struct HasDrawMethod
+  {
+    template<typename U, void (U::*)()> struct Draw {};
+    template<typename U, void (U::*)() const> struct ConstDraw {};
+    template<typename U> static char Test(Draw<U, &U::draw>*);
+    template<typename U> static char Test(ConstDraw<U, &U::draw>*);
+    template<typename U> static int Test(...);
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);
+  };
+
+  /**
+   * This class defines a method that is called when a class has a
+   * draw() method. The latter is called.
+   * @param T The type of the representation.
+   * @param hasDraw States, whether T has a draw() method.
+   */
+  template<typename T, bool hasDraw = true> struct Draw
+  {
+    static void draw(T& t) {t.draw();}
+  };
+
+  /**
+   * This class defines a method that is called when a class does not
+   * have a draw() method.
+   * @param T The type of the representation.
+   */
+  template<typename T> struct Draw<T, false>
+  {
+    static void draw(T& t) {}
+  };
+
 public:
+  ENUM(Category,
+  {,
+    cognitionInfrastructure,
+    perception,
+    modeling,
+    behaviorControl,
+    motionInfrastructure,
+    sensing,
+    motionControl,
+  });
+
+  static const unsigned char numOfCategories = numOfCategorys;
+
   class Info
   {
   public:
     const char* representation;
     void (*update)(Streamable&);
 
-    Info(const char* representation, void (*update)(Streamable&))
-    : representation(representation), update(update) {}
+    Info(const char* representation, void (*update)(Streamable&)) :
+      representation(representation), update(update)
+    {}
   };
+
+  /**
+   * Find message id for representation name.
+   * @param name The name of the representation.
+   * @return The corresponding id of undefined if it does not exist.
+   */
+  static MessageID getMessageID(const std::string& name)
+  {
+    for(int i = 0; i < numOfMessageIDs; ++i)
+      if(name == ::getName(static_cast<MessageID>(i)) + 2)
+        return static_cast<MessageID>(i);
+    return ::undefined;
+  }
+
+  /**
+   * Calls a draw method if a representation has one.
+   * @param T The type of the representation.
+   * @param t The representation.
+   */
+  template<typename T> static void draw(T& t)
+  {
+    Draw<T, HasDrawMethod<T>::value>::draw(t);
+  }
 
 private:
   static ModuleBase* first; /**< The head of the list of all modules available. */
   ModuleBase* next; /**< The next entry in the list of all modules. */
   const char* name; /**< The name of the module that can be created by this instance. */
-  const char* category; /**< The name of the category of this module. */
+  Category category; /**< The category of this module. */
   const Info* info; /**< Information about the requirements and provisions of the module. */
 
 protected:
@@ -83,13 +152,10 @@ public:
   /**
    * Constructor.
    * @param name The name of the module that can be created by this instance.
-   * @param category The name of the category of this module.
+   * @param category The category of this module.
    */
-  ModuleBase(const char* name, const char* category, const Info* info)
-  : next(first),
-    name(name),
-    category(category),
-    info(info)
+  ModuleBase(const char* name, Category category, const Info* info) :
+    next(first), name(name), category(category), info(info)
   {
     first = this;
   }
@@ -128,10 +194,11 @@ public:
    * cannot be constructed. To overcome this limitation, an assignment is faked,
    * and it is used to do the registration of the information required.
    * @param name The name of the module that can be created by this instance.
-   * @param category The name of the category of this module.
+   * @param category The category of this module.
    */
-  Module(const char* name, const char* category)
-  : ModuleBase(name, category, B::getModuleInfo()) {}
+  Module(const char* name, Category category) :
+    ModuleBase(name, category, B::getModuleInfo())
+  {}
 };
 
 /**
@@ -270,13 +337,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  */
 #define _MODULE_PARAMETERS(x) _MODULE_JOIN(_MODULE_PARAMETERS_, x)
 #define _MODULE_PARAMETERS_PROVIDES(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_MODIFY(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_OUTPUT(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_MODIFY_AND_OUTPUT(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_DRAW(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_MODIFY_AND_DRAW(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_OUTPUT_AND_DRAW(type)
-#define _MODULE_PARAMETERS_PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(type)
+#define _MODULE_PARAMETERS_PROVIDES_WITHOUT_MODIFY(type)
 #define _MODULE_PARAMETERS_REQUIRES(type)
 #define _MODULE_PARAMETERS_USES(type)
 #ifdef WINDOWS
@@ -284,7 +345,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); typedef Params NoParameters;
 #define _MODULE_UNWRAP(...) __VA_ARGS__
 #define _MODULE_STREAMABLE(name, base, streamBase, header, ...) \
-  class name : public base \
+  struct name : public base \
     _MODULE_UNWRAP header; \
     _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, streamBase, __VA_ARGS__)
 #else
@@ -298,14 +359,8 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * @param x The type name of a representation or the set of all parameters.
  */
 #define _MODULE_LOAD(x) _MODULE_JOIN(_MODULE_LOAD_, x)
-#define _MODULE_LOAD_PROVIDES(type)
-#define _MODULE_LOAD_PROVIDES_WITH_MODIFY(type)
-#define _MODULE_LOAD_PROVIDES_WITH_OUTPUT(type)
-#define _MODULE_LOAD_PROVIDES_WITH_MODIFY_AND_OUTPUT(type)
-#define _MODULE_LOAD_PROVIDES_WITH_DRAW(type)
-#define _MODULE_LOAD_PROVIDES_WITH_MODIFY_AND_DRAW(type)
-#define _MODULE_LOAD_PROVIDES_WITH_OUTPUT_AND_DRAW(type)
-#define _MODULE_LOAD_PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(type)
+#define _MODULE_LOAD_PROVIDES(type) _MODULE_INIT_ID(type)
+#define _MODULE_LOAD_PROVIDES_WITHOUT_MODIFY(type) _MODULE_INIT_ID(type)
 #define _MODULE_LOAD_REQUIRES(type)
 #define _MODULE_LOAD_USES(type)
 #define _MODULE_LOAD__MODULE_DEFINES_PARAMETERS(...)
@@ -318,26 +373,11 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * @param x The type name of a representation or the set of all parameters.
  */
 #define _MODULE_DECLARE(x) _MODULE_JOIN(_MODULE_DECLARE_, x)
-#define _MODULE_DECLARE_PROVIDES(type) _MODULE_PROVIDES(type, )
-#define _MODULE_DECLARE_PROVIDES_WITH_MODIFY(type) _MODULE_PROVIDES(type, \
-  MODIFY("representation:" #type, r); )
-#define _MODULE_DECLARE_PROVIDES_WITH_OUTPUT(type) _MODULE_PROVIDES(type, \
-  DEBUG_RESPONSE("representation:" #type, OUTPUT(id##type, bin, r); );)
-#define _MODULE_DECLARE_PROVIDES_WITH_MODIFY_AND_OUTPUT(type) _MODULE_PROVIDES(type, \
+#define _MODULE_DECLARE_PROVIDES(type) _MODULE_PROVIDES(type, \
   MODIFY("representation:" #type, r); \
-  DEBUG_RESPONSE("representation:" #type, OUTPUT(id##type, bin, r); ); )
-#define _MODULE_DECLARE_PROVIDES_WITH_DRAW(type) _MODULE_PROVIDES(type, \
-  EXECUTE_ONLY_IN_DEBUG(r.draw(); ); )
-#define _MODULE_DECLARE_PROVIDES_WITH_MODIFY_AND_DRAW(type) _MODULE_PROVIDES(type, \
-  MODIFY("representation:" #type, r); \
-  EXECUTE_ONLY_IN_DEBUG(r.draw(); ); )
-#define _MODULE_DECLARE_PROVIDES_WITH_OUTPUT_AND_DRAW(type)  _MODULE_PROVIDES(type, \
-  DEBUG_RESPONSE("representation:" #type, OUTPUT(id##type, bin, r); ); \
-  EXECUTE_ONLY_IN_DEBUG(r.draw(); ); )
-#define _MODULE_DECLARE_PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(type) _MODULE_PROVIDES(type, \
-  MODIFY("representation:" #type, r); \
-  DEBUG_RESPONSE("representation:" #type, OUTPUT(id##type, bin, r); ); \
-  EXECUTE_ONLY_IN_DEBUG(r.draw(); ); )
+  ModuleBase::draw(r); )
+#define _MODULE_DECLARE_PROVIDES_WITHOUT_MODIFY(type) _MODULE_PROVIDES(type, \
+  ModuleBase::draw(r); )
 #define _MODULE_DECLARE_REQUIRES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE_USES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE__MODULE_DEFINES_PARAMETERS(...)
@@ -350,13 +390,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  */
 #define _MODULE_FREE(x) _MODULE_JOIN(_MODULE_FREE_, x)
 #define _MODULE_FREE_PROVIDES(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_MODIFY(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_OUTPUT(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_MODIFY_AND_OUTPUT(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_DRAW(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_MODIFY_AND_DRAW(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_OUTPUT_AND_DRAW(type) if(_the##type) Blackboard::getInstance().free(#type);
-#define _MODULE_FREE_PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(type) if(_the##type) Blackboard::getInstance().free(#type);
+#define _MODULE_FREE_PROVIDES_WITHOUT_MODIFY(type) if(_the##type) Blackboard::getInstance().free(#type);
 #define _MODULE_FREE_REQUIRES(type) Blackboard::getInstance().free(#type);
 #define _MODULE_FREE_USES(type) Blackboard::getInstance().free(#type);
 #define _MODULE_FREE__MODULE_DEFINES_PARAMETERS(...)
@@ -369,17 +403,18 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  */
 #define _MODULE_INFO(x) _MODULE_JOIN(_MODULE_INFO_, x)
 #define _MODULE_INFO_PROVIDES(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_MODIFY(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_OUTPUT(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_MODIFY_AND_OUTPUT(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_DRAW(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_MODIFY_AND_DRAW(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_OUTPUT_AND_DRAW(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITH_MODIFY_AND_OUTPUT_AND_DRAW(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_REQUIRES(type) ModuleBase::Info(#type, 0),
+#define _MODULE_INFO_PROVIDES_WITHOUT_MODIFY(type) ModuleBase::Info(#type, &BaseType::update##type),
+#define _MODULE_INFO_REQUIRES(type) ModuleBase::Info(#type, nullptr),
 #define _MODULE_INFO_USES(type)
 #define _MODULE_INFO__MODULE_DEFINES_PARAMETERS(...)
 #define _MODULE_INFO__MODULE_LOADS_PARAMETERS(...)
+
+/**
+ * Assign message id for a representation.
+ * @param type The type of the representation the id of which is assigned.
+ */
+#define _MODULE_INIT_ID(type) \
+  _id##type = ModuleBase::getMessageID(#type);
 
 /**
  * The macro defines the code added for each PROVIDES.
@@ -392,6 +427,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
   protected: virtual void update(type&) = 0; \
   \
   private: type* _the##type = 0; \
+  MessageID _id##type = ::undefined; \
   static void update##type(Streamable& module) \
   { \
     ((BaseType&) module).modifyParameters(); \
@@ -399,8 +435,10 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
       ((BaseType&) module)._the##type = &Blackboard::getInstance().alloc<type>(#type); \
     type& r(*((BaseType&) module)._the##type); \
     BH_TRACE; \
-    STOP_TIME_ON_REQUEST_WITH_PLOT(#type, ((BaseType&) module).update(r); ); \
+    STOPWATCH_WITH_PLOT(#type) ((BaseType&) module).update(r); \
     mod \
+    if(((BaseType&) module)._id##type != ::undefined) \
+      DEBUG_RESPONSE("representation:" #type) OUTPUT(((BaseType&) module)._id##type, bin, r); \
   }
 
 /**
@@ -438,7 +476,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
       static const ModuleBase::Info infos[] = \
       { \
         _MODULE_ATTR_##n info \
-        ModuleBase::Info(0, 0) \
+        ModuleBase::Info(nullptr, nullptr) \
       }; \
       return infos; \
     } \
@@ -483,7 +521,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 * See beginning of this file.
 * It has to be part of the implementation file.
 * @param module The name of the module that can be created.
-* @param category The name of the category of this module.
+* @param category The category of this module.
 */
 #define MAKE_MODULE(module, category) \
-  Module<module, module##Base> the##module##Module(#module, #category);
+  Module<module, module##Base> the##module##Module(#module, ModuleBase::category);

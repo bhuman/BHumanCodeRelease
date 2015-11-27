@@ -13,7 +13,7 @@ depend() {
 
 start() {
   ifconfig wlan0 up
-  wpa_supplicant -iwlan0 -Dwext -c/home/nao/Profiles/default -B
+  wpa_supplicant -iwlan0 -Dnl80211 -c/home/nao/Profiles/default -B
   sleep 1
   ifconfig wlan0 "${BASE_WLAN0_IP}${ROBOT_ID}" netmask 255.255.0.0
 #  route add -net default gw "${GATEWAY}"

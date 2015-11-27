@@ -19,7 +19,8 @@ SimRobotEditor = cppDynamicLibrary + {
     "QT_NO_DEBUG", "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
     if (host == "Win32") { "_CRT_SECURE_NO_DEPRECATE" }
     if (configuration != "Debug") { "QT_NO_DEBUG" }
-  },
+  }
+
   includePaths = {
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor",
     if (platform == "Linux") {
@@ -34,17 +35,23 @@ SimRobotEditor = cppDynamicLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
     }
-  },
+  }
+
   libPaths = {
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
     }
-  },
+  }
+
   libs = {
     if (host == "Win32") {
       "QtCore4", "QtGui4"
     } else if (platform == "Linux") {
       "QtCore", "QtGui"
     }
-  },
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
+  }
 }

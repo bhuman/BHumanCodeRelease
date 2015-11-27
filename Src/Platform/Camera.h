@@ -10,6 +10,5 @@
 
 #ifdef TARGET_ROBOT
 #include "Linux/NaoCamera.h"
-#include "Linux/NaoCameraDummy.h"
 #define CAMERA_INCLUDED
 #endif

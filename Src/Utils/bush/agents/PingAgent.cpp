@@ -55,24 +55,24 @@ void PingAgent::initializeProcesses(std::map<std::string, Robot*>& robotsByName)
 
       switch(n)
       {
-      case WLAN:
-      {
-        QObject::connect(pingProcesses[n][i], SIGNAL(readyReadStandardOutput()), this, SLOT(pingReadableWLAN()));
-        QString command = fromString("ping " + pingParameters + it->second->wlan);
-        pingProcesses[n][i]->start(command);
-        Session::getInstance().log(TRACE, "PingAgent: Started ping process for " + it->second->wlan);
-      }
-      break;
-      case LAN:
-      {
-        QObject::connect(pingProcesses[n][i], SIGNAL(readyReadStandardOutput()), this, SLOT(pingReadableLAN()));
-        QString command = fromString("ping " + pingParameters + it->second->lan);
-        pingProcesses[n][i]->start(command);
-        Session::getInstance().log(TRACE, "PingAgent: Started ping process for " + it->second->lan);
-      }
-      break;
-      default:
-        Session::getInstance().log(TRACE, "PingAgent: Unknown network type.");
+        case WLAN:
+        {
+          QObject::connect(pingProcesses[n][i], SIGNAL(readyReadStandardOutput()), this, SLOT(pingReadableWLAN()));
+          QString command = fromString("ping " + pingParameters + it->second->wlan);
+          pingProcesses[n][i]->start(command);
+          Session::getInstance().log(TRACE, "PingAgent: Started ping process for " + it->second->wlan);
+        }
+        break;
+        case LAN:
+        {
+          QObject::connect(pingProcesses[n][i], SIGNAL(readyReadStandardOutput()), this, SLOT(pingReadableLAN()));
+          QString command = fromString("ping " + pingParameters + it->second->lan);
+          pingProcesses[n][i]->start(command);
+          Session::getInstance().log(TRACE, "PingAgent: Started ping process for " + it->second->lan);
+        }
+        break;
+        default:
+          Session::getInstance().log(TRACE, "PingAgent: Unknown network type.");
       }
     }
   }
@@ -88,6 +88,16 @@ ENetwork PingAgent::getBestNetwork(const Robot* robot)
     return WLAN;
   else
     return LAN;
+}
+
+double PingAgent::getWLanPing(const Robot* robot)
+{
+  return pings[WLAN][robot->name];
+}
+
+double PingAgent::getLanPing(const Robot* robot)
+{
+  return pings[LAN][robot->name];
 }
 
 void PingAgent::robotsChanged()
@@ -116,7 +126,7 @@ void PingAgent::updatePing(ENetwork network, QProcess* process)
   QString pingOutput(data);
 
   QStringList splittedOutput = pingOutput.split(" ", QString::SkipEmptyParts);
-  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time)[<=]\\d+ms|time=\\d+(\\.\\d+)?)"));
+  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|time=\\d+(\\.\\d+)?)"));
 
   if(filteredSplittedOutput.empty())
   {

@@ -5,6 +5,7 @@
  */
 
 #include "PropertyTreeCreator.h"
+#include "Tools/SensorData.h"
 
 void PropertyTreeCreator::outUChar(unsigned char value)
 {
@@ -38,7 +39,20 @@ void PropertyTreeCreator::outUInt(unsigned int value)
   }
 }
 
-void PropertyTreeCreator::select(const char* name, int type, const char * (*enumToString)(int))
+void PropertyTreeCreator::outAngle(const Angle& value)
+{
+  Entry& e = stack.back();
+  ASSERT(!e.property);
+  e.property = view.getProperty(e.path, TypeDescriptor::getTypeId<AngleWithUnity>(), e.name.c_str(), e.parent);
+  AngleWithUnity angle = value;
+  if(angle == SensorData::off)
+    angle.deg = false;
+  else
+    angle.deg = e.property->value().value<AngleWithUnity>().deg;
+  e.property->setValue(QVariant::fromValue(angle));
+}
+
+void PropertyTreeCreator::select(const char* name, int type, const char* (*enumToString)(int))
 {
   QtVariantProperty* parent = 0;
   std::string path;

@@ -1,0 +1,2528 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000026077456032005604 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000051113796830062 /* Main.cpp */; };
+		000000209362112307956844 /* StatusBar.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000000407456197321358 /* StatusBar.h */; };
+		000000417239296446174322 /* MainWindow.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000000817820749454294 /* MainWindow.h */; };
+		000000417239296488887054 /* SimRobot.qrc in Sources */ = {isa = PBXBuildFile; fileRef = 000000000817820749367131 /* SimRobot.qrc */; };
+		000000837455616636172436 /* StatusBar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000001629840999296266 /* StatusBar.cpp */; };
+		000001668940584988737952 /* MainWindow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000003271311002272732 /* MainWindow.cpp */; };
+		000106813259953414385358 /* HelpWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000013085131846197048 /* HelpWidget.h */; };
+		000113805807804739878922 /* Mass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000427248775120177902854 /* Mass.cpp */; };
+		000214388641838786506694 /* help.qhp in Sources */ = {isa = PBXBuildFile; fileRef = 000000026077456046196080 /* help.qhp */; };
+		000427248775143777892804 /* HelpModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000052340977000278710 /* HelpModule.cpp */; };
+		000427248775145061444784 /* HelpWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000052340977000436796 /* HelpWidget.cpp */; };
+		000427248789692927904424 /* SceneGraphDockWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455616531184356 /* SceneGraphDockWidget.h */; };
+		000427248789759213283584 /* RegisteredDockWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455616585857952 /* RegisteredDockWidget.h */; };
+		001709012158381760463422 /* SceneGraphDockWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793789470576092 /* SceneGraphDockWidget.cpp */; };
+		001709012158507643302640 /* RegisteredDockWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793789044399868 /* RegisteredDockWidget.cpp */; };
+		001709012159335937912944 /* SensorWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000104308782997333934 /* SensorWidget.h */; };
+		001709012159339151319946 /* CoreModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000104308782997660932 /* CoreModule.cpp */; };
+		001709012159416109470608 /* SimRobotHelp.qrc in Sources */ = {isa = PBXBuildFile; fileRef = 000000209362109569851379 /* SimRobotHelp.qrc */; };
+		001820873255401131192360 /* OffscreenRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 006835980402573441863472 /* OffscreenRenderer.cpp */; };
+		001820873683015851116256 /* GraphicalObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 006835980402548006476232 /* GraphicalObject.cpp */; };
+		001820873683263758885944 /* Hinge.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 006835980402547998685290 /* Hinge.cpp */; };
+		001820873683264210991104 /* Joint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 006835980402547998658330 /* Joint.cpp */; };
+		002811661383151940666284 /* SphereMass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 027344194553936738195064 /* SphereMass.cpp */; };
+		002811661384081231455426 /* Gyroscope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 027344194553936722631894 /* Gyroscope.cpp */; };
+		002811661385770537457910 /* ServoMotor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 027344194553936359999546 /* ServoMotor.cpp */; };
+		006835980402513220605916 /* SensorWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000417239296784582640 /* SensorWidget.cpp */; };
+		006835980403756342514218 /* EditorWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000209362109655085016 /* EditorWidget.h */; };
+		013720755211442969720332 /* Parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631965170904 /* Parser.cpp */; };
+		013720755211443141523630 /* Reader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631965166650 /* Reader.cpp */; };
+		013720755211471002754448 /* ActuatorsWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631965555954 /* ActuatorsWidget.h */; };
+		013720755211521073314782 /* Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631960271716 /* Texture.cpp */; };
+		013720755211522024043538 /* Vector3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631960345432 /* Vector3.cpp */; };
+		013720755211532089452436 /* SimRobotCore2.qrc in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631961172869 /* SimRobotCore2.qrc */; };
+		013720755211542353209448 /* SimObjectWidget.h in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631958456646 /* SimObjectWidget.h */; };
+		027344194554087101938714 /* Element.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000001668940527811881222 /* Element.cpp */; };
+		027344194559008781660418 /* EditorModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631844776476 /* EditorModule.cpp */; };
+		027344194559010425232974 /* EditorWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000837455631844721716 /* EditorWidget.cpp */; };
+		029134286770220794096214 /* Geometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 109375686430764110526306 /* Geometry.cpp */; };
+		044985926655504035855440 /* Accelerometer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 437507112787822523776366 /* Accelerometer.cpp */; };
+		054883492296029436148828 /* SimObjectWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753529688696 /* SimObjectWidget.cpp */; };
+		054883492296083391283578 /* Body.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753522134436 /* Body.cpp */; };
+		054883492296083751394832 /* Axis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753522124698 /* Axis.cpp */; };
+		054883492296190091531206 /* Matrix3x3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753520916110 /* Matrix3x3.cpp */; };
+		054883492296494726068712 /* ActuatorsWidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753497040380 /* ActuatorsWidget.cpp */; };
+		054883492296838812876472 /* System.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753543211202 /* System.cpp */; };
+		054883492296842282643764 /* Assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753542993706 /* Assert.cpp */; };
+		073867700897697342152836 /* CapsuleGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 050174027797418703480838 /* CapsuleGeometry.cpp */; };
+		109375686430765369258920 /* Scene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000006675828747372762998 /* Scene.cpp */; };
+		109375686480868965221102 /* SimRobotEditor.qrc in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753978856217 /* SimRobotEditor.qrc */; };
+		182648985348693483333552 /* CylinderAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 802784478342817346257890 /* CylinderAppearance.cpp */; };
+		200213358292236118362054 /* Sensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017665925370 /* Sensor.cpp */; };
+		200213358292237342725398 /* Camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017665737578 /* Camera.cpp */; };
+		200213358292245247028036 /* PhysicalObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017664385162 /* PhysicalObject.cpp */; };
+		200213358292268425781108 /* BoxMass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017663969804 /* BoxMass.cpp */; };
+		200377B717C11749008F7CAC /* help.qch in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200377B317C11658008F7CAC /* help.qch */; };
+		200377B817C1174C008F7CAC /* helpcollection.qhc in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200377B517C11717008F7CAC /* helpcollection.qhc */; };
+		2007C22817861C26002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C22917861C26002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C22C17861C43002033FC /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22B17861C43002033FC /* QtOpenGL.framework */; };
+		2007C22D17861CDD002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C22E17861CDD002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C23017861D13002033FC /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C23117861D13002033FC /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C23417861D22002033FC /* QtHelp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C23317861D21002033FC /* QtHelp.framework */; };
+		2007C2481786242D002033FC /* QtCore.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		2007C2491786242D002033FC /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22217861A7D002033FC /* QtGui.framework */; };
+		2007C24A1786242D002033FC /* QtSvg.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2007C22417861AD1002033FC /* QtSvg.framework */; };
+		202B6E6717FB5F9600555411 /* libQtCLucene.4.dylib in Copy libQtCLucene */ = {isa = PBXBuildFile; fileRef = 202B6E6617FB5F8300555411 /* libQtCLucene.4.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		202B6E6A17FB601400555411 /* qt_menu.nib in Copy QtGui Resources */ = {isa = PBXBuildFile; fileRef = 202B6E6917FB5FF900555411 /* qt_menu.nib */; };
+		203413545705460679776020 /* Actuator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 054883492296083704723806 /* Actuator.cpp */; };
+		205085731159048831426864 /* SphereAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358291402458630570 /* SphereAppearance.cpp */; };
+		205085735802439372562738 /* SingleDistanceSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358292236069112250 /* SingleDistanceSensor.cpp */; };
+		205085735837361739595564 /* ApproxDistanceSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358292238167607398 /* ApproxDistanceSensor.cpp */; };
+		205E606617D4F75F00DF340E /* QtNetwork in Copy QtNetwork Framework */ = {isa = PBXBuildFile; fileRef = 205E606517D4F75F00DF340E /* QtNetwork */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
+		2084439811FA33FF0037FA87 /* SimRobot.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000104308786552787657 /* SimRobot.icns */; };
+		2084439911FA33FF0037FA87 /* SimRobotDoc.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000837455616402576855 /* SimRobotDoc.icns */; };
+		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
+		20844BCE11FCC5390037FA87 /* SimRobotHelp.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */; };
+		208463C211FF77B60037FA87 /* Factory.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844F1811FE33150037FA87 /* Factory.dylib */; };
+		208B2E4C14B898AC003A08A0 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 208B2E4B14B898AC003A08A0 /* libxml2.dylib */; };
+		208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */; };
+		20BDE36117FDB0360062745A /* MacFullscreen.mm in Sources */ = {isa = PBXBuildFile; fileRef = 20BDE36017FDAFFE0062745A /* MacFullscreen.mm */; };
+		20BE6B241795D1460096D6E4 /* FactoryController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20BE6B231795D1460096D6E4 /* FactoryController.cpp */; };
+		20BE6B251795D1660096D6E4 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		20BE6B2A1795D83A0096D6E4 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2007C22017861A13002033FC /* QtCore.framework */; };
+		20BE6B311795D8F70096D6E4 /* SimpleVehicleController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20BE6B301795D8F70096D6E4 /* SimpleVehicleController.cpp */; };
+		20BE6B381795DBB10096D6E4 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20BE6B371795DBB10096D6E4 /* OpenGL.framework */; };
+		20BE6B391795DBCC0096D6E4 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20BE6B371795DBB10096D6E4 /* OpenGL.framework */; };
+		20BE6B3A1795DD050096D6E4 /* SimpleVehicle.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20BE6B2F1795D83A0096D6E4 /* SimpleVehicle.dylib */; };
+		20C115231793477000961A38 /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 20C115221793477000961A38 /* QtCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C11526179347B900961A38 /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 20C11525179347B900961A38 /* QtGui */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C11529179347F200961A38 /* QtHelp in Copy QtHelp Framework */ = {isa = PBXBuildFile; fileRef = 20C11528179347F200961A38 /* QtHelp */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C11532179348E300961A38 /* QtOpenGL in Copy QtOpenGL Framework */ = {isa = PBXBuildFile; fileRef = 20C11531179348E300961A38 /* QtOpenGL */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C115381793499500961A38 /* QtSql in Copy QtSql Framework */ = {isa = PBXBuildFile; fileRef = 20C115371793499500961A38 /* QtSql */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C1153B179349D700961A38 /* QtSvg in Copy QtSvg Framework */ = {isa = PBXBuildFile; fileRef = 20C1153A179349D700961A38 /* QtSvg */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C1154317934AB200961A38 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */ = {isa = PBXBuildFile; fileRef = 20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C1154B17934B9400961A38 /* libqsqlite.dylib in Copy SqlDrivers Plugin */ = {isa = PBXBuildFile; fileRef = 20C1154A17934B9400961A38 /* libqsqlite.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
+		20CF29F61A8F678C008D50DF /* UserInput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20CF29F41A8F678C008D50DF /* UserInput.cpp */; };
+		20DD73EF134E4E33003FF249 /* libode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20844A6111FB5F1C0037FA87 /* libode.a */; };
+		20DD73F1134E4E33003FF249 /* libiconv.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C112C0F80200B772CD /* libiconv.dylib */; };
+		20DD73F2134E4E33003FF249 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C212C0F80200B772CD /* libz.dylib */; };
+		219532083430762798599408 /* OpenGLTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000013399290113396113208 /* OpenGLTools.cpp */; };
+		219532083431319984644328 /* SimObjectRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000013399290113364197922 /* SimObjectRenderer.cpp */; };
+		219532083460804837335420 /* SyntaxHighlighter.h in Sources */ = {isa = PBXBuildFile; fileRef = 000006675828750489084678 /* SyntaxHighlighter.h */; };
+		254619722588427244060066 /* BoxGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 878135876868527528463124 /* BoxGeometry.cpp */; };
+		254619722599017832546108 /* Appearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 878135876868526630251676 /* Appearance.cpp */; };
+		458377413177872981437474 /* CylinderGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000175726275612444086788 /* CylinderGeometry.cpp */; };
+		466143662736938625782144 /* CollisionSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 750010983052281585177242 /* CollisionSensor.cpp */; };
+		512513334162866591774542 /* Simulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000214388641781577905488 /* Simulation.cpp */; };
+		512826455446931707531884 /* InertiaMatrixMass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 512513334162862622028904 /* InertiaMatrixMass.cpp */; };
+		512826455486781009507606 /* DepthImageSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 512513334162863980514236 /* DepthImageSensor.cpp */; };
+		516397196530315272130962 /* CapsuleAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 001820873683133707632882 /* CapsuleAppearance.cpp */; };
+		516397196530760822949248 /* ComplexAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 001820873683133797757908 /* ComplexAppearance.cpp */; };
+		719785314855679939002510 /* SphereGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000113805807696180043488 /* SphereGeometry.cpp */; };
+		719785314870605739396472 /* BoxAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000113805807696879698780 /* BoxAppearance.cpp */; };
+		750010983052282056258314 /* SimObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000106813259976315368706 /* SimObject.cpp */; };
+		802784478342550288778794 /* Slider.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 013720755211573874774430 /* Slider.cpp */; };
+		844551116140419587311810 /* VelocityMotor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 219532083430825971987808 /* VelocityMotor.cpp */; };
+		878135876434294622367902 /* SyntaxHighlighter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000026703048452166914948 /* SyntaxHighlighter.cpp */; };
+		878135876868527575315788 /* Compound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000053596700045210521616 /* Compound.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		208443B911FA398B0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B1111FC70CA0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B1211FC70CA0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B3E11FCC3E20037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20844B3F11FCC3E20037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844C1A11FD56640037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+		20844C5F11FD7D4E0037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qhp";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/../../Help/$(INPUT_FILE_BASE).qch",
+				"$(CONFIGURATION_TEMP_DIR)/../../Help/helpcollection.qhc",
+			);
+			script = "echo \"[Paths]\" >$QT_DIR/bin/qt.conf\necho \"Prefix = $SRCROOT/$QT_DIR\" >>$QT_DIR/bin/qt.conf\ncd $QT_DIR/bin\n./qhelpgenerator $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/../../Help/$INPUT_FILE_BASE.qch\ncp $INPUT_FILE_DIR/helpcollection.qhcp $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhcp\n./qcollectiongenerator $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhcp -o $CONFIGURATION_TEMP_DIR/../../Help/helpcollection.qhc";
+		};
+		208462B711FF64520037FA87 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20BE6B2B1795D83A0096D6E4 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20DD73F4134E4E33003FF249 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.h";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/moc $INPUT_FILE_PATH -o $CONFIGURATION_TEMP_DIR/moc_$INPUT_FILE_BASE.cpp";
+		};
+		20DD73F5134E4E33003FF249 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.qrc";
+			fileType = pattern.proxy;
+			isEditable = 1;
+			outputFiles = (
+				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
+			);
+			script = "$QT_DIR/bin/rcc -name $INPUT_FILE_BASE $INPUT_FILE_PATH -no-compress -o $CONFIGURATION_TEMP_DIR/qrc_$INPUT_FILE_BASE.cpp";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXContainerItemProxy section */
+		2061F288152DC68E0089659C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844F1711FE33150037FA87;
+			remoteInfo = SimulatedNao;
+		};
+		20844B2311FC73AD0037FA87 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844AF411FC6F410037FA87;
+			remoteInfo = SimRobotEditor;
+		};
+		20844BCC11FCC5120037FA87 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20844B3611FCB34C0037FA87;
+			remoteInfo = SimRobotHelp;
+		};
+		20BE6B321795D9360096D6E4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20BE6B261795D83A0096D6E4;
+			remoteInfo = SimpleVehicle;
+		};
+		20DD7420134E5458003FF249 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20DD73A1134E4E33003FF249;
+			remoteInfo = SimRobotCore2;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		202B6E6817FB5FB800555411 /* Copy QtGui Resources */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Resources;
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E6A17FB601400555411 /* qt_menu.nib in Copy QtGui Resources */,
+			);
+			name = "Copy QtGui Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		205E606417D4F70800DF340E /* Copy QtNetwork Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtNetwork.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				205E606617D4F75F00DF340E /* QtNetwork in Copy QtNetwork Framework */,
+			);
+			name = "Copy QtNetwork Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115181793403D00961A38 /* Copy libQtCLucene */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				202B6E6717FB5F9600555411 /* libQtCLucene.4.dylib in Copy libQtCLucene */,
+			);
+			name = "Copy libQtCLucene";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115211793473400961A38 /* Copy QtCore Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtCore.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C115231793477000961A38 /* QtCore in Copy QtCore Framework */,
+			);
+			name = "Copy QtCore Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115241793478A00961A38 /* Copy QtGui Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtGui.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11526179347B900961A38 /* QtGui in Copy QtGui Framework */,
+			);
+			name = "Copy QtGui Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11527179347C800961A38 /* Copy QtHelp Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtHelp.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11529179347F200961A38 /* QtHelp in Copy QtHelp Framework */,
+			);
+			name = "Copy QtHelp Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11530179348A000961A38 /* Copy QtOpenGL Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtOpenGL.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C11532179348E300961A38 /* QtOpenGL in Copy QtOpenGL Framework */,
+			);
+			name = "Copy QtOpenGL Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C115361793494F00961A38 /* Copy QtSql Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtSql.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C115381793499500961A38 /* QtSql in Copy QtSql Framework */,
+			);
+			name = "Copy QtSql Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C11539179349A500961A38 /* Copy QtSvg Framework */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = QtSvg.framework/Versions/4;
+			dstSubfolderSpec = 10;
+			files = (
+				20C1153B179349D700961A38 /* QtSvg in Copy QtSvg Framework */,
+			);
+			name = "Copy QtSvg Framework";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C1153F17934A2700961A38 /* Copy Accessible Plugin */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = accessible;
+			dstSubfolderSpec = 13;
+			files = (
+				20C1154317934AB200961A38 /* libqtaccessiblewidgets.dylib in Copy Accessible Plugin */,
+			);
+			name = "Copy Accessible Plugin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20C1154917934B5C00961A38 /* Copy SqlDrivers Plugin */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = sqldrivers;
+			dstSubfolderSpec = 13;
+			files = (
+				20C1154B17934B9400961A38 /* libqsqlite.dylib in Copy SqlDrivers Plugin */,
+			);
+			name = "Copy SqlDrivers Plugin";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		000000000051113796830062 /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../Src/SimRobot/Main.cpp; sourceTree = SOURCE_ROOT; };
+		000000000204456937633596 /* SimRobot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimRobot.h; path = ../../Src/SimRobot/SimRobot.h; sourceTree = SOURCE_ROOT; };
+		000000000407456197321358 /* StatusBar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = StatusBar.h; path = ../../Src/SimRobot/StatusBar.h; sourceTree = SOURCE_ROOT; };
+		000000000817820749367131 /* SimRobot.qrc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = SimRobot.qrc; path = ../../Src/SimRobot/SimRobot.qrc; sourceTree = SOURCE_ROOT; };
+		000000000817820749454294 /* MainWindow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = MainWindow.h; path = ../../Src/SimRobot/MainWindow.h; sourceTree = SOURCE_ROOT; };
+		000000001629840999296266 /* StatusBar.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = StatusBar.cpp; path = ../../Src/SimRobot/StatusBar.cpp; sourceTree = SOURCE_ROOT; };
+		000000001629841001854345 /* cut.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = cut.png; path = ../../Src/SimRobot/Icons/cut.png; sourceTree = SOURCE_ROOT; };
+		000000003271311001552897 /* disk.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = disk.png; path = ../../Src/SimRobot/Icons/disk.png; sourceTree = SOURCE_ROOT; };
+		000000003271311002272732 /* MainWindow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MainWindow.cpp; path = ../../Src/SimRobot/MainWindow.cpp; sourceTree = SOURCE_ROOT; };
+		000000013085131846197048 /* HelpWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = HelpWidget.h; path = ../../Src/SimRobotHelp/HelpWidget.h; sourceTree = SOURCE_ROOT; };
+		000000013085131846234566 /* HelpModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = HelpModule.h; path = ../../Src/SimRobotHelp/HelpModule.h; sourceTree = SOURCE_ROOT; };
+		000000013085131992449751 /* folder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = folder.png; path = ../../Src/SimRobot/Icons/folder.png; sourceTree = SOURCE_ROOT; };
+		000000026077456044604102 /* CoreModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CoreModule.h; path = ../../Src/SimRobotCore2/CoreModule.h; sourceTree = SOURCE_ROOT; };
+		000000026077456046196080 /* help.qhp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = help.qhp; path = ../../Src/SimRobotHelp/Help/help.qhp; sourceTree = SOURCE_ROOT; };
+		000000052340976031939989 /* SimRobot.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SimRobot.png; path = ../../Src/SimRobot/Icons/SimRobot.png; sourceTree = SOURCE_ROOT; };
+		000000052340977000278710 /* HelpModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HelpModule.cpp; path = ../../Src/SimRobotHelp/HelpModule.cpp; sourceTree = SOURCE_ROOT; };
+		000000052340977000357295 /* back.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = back.png; path = ../../Src/SimRobotHelp/Icons/back.png; sourceTree = SOURCE_ROOT; };
+		000000052340977000378651 /* home.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = home.png; path = ../../Src/SimRobotHelp/Icons/home.png; sourceTree = SOURCE_ROOT; };
+		000000052340977000382589 /* help.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = help.png; path = ../../Src/SimRobotHelp/Icons/help.png; sourceTree = SOURCE_ROOT; };
+		000000052340977000436796 /* HelpWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HelpWidget.cpp; path = ../../Src/SimRobotHelp/HelpWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000000052340977005452332 /* Pose3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Pose3.h; path = ../../Src/SimRobotCore2/Tools/Pose3.h; sourceTree = SOURCE_ROOT; };
+		000000104308782997333934 /* SensorWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SensorWidget.h; path = ../../Src/SimRobotCore2/SensorWidget.h; sourceTree = SOURCE_ROOT; };
+		000000104308782997660932 /* CoreModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CoreModule.cpp; path = ../../Src/SimRobotCore2/CoreModule.cpp; sourceTree = SOURCE_ROOT; };
+		000000104308782997844139 /* link.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = link.png; path = ../../Src/SimRobotCore2/Icons/link.png; sourceTree = SOURCE_ROOT; };
+		000000104308782997845781 /* note.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = note.png; path = ../../Src/SimRobotCore2/Icons/note.png; sourceTree = SOURCE_ROOT; };
+		000000104308786552133817 /* tag_green.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = tag_green.png; path = ../../Src/SimRobot/Icons/tag_green.png; sourceTree = SOURCE_ROOT; };
+		000000104308786552151425 /* textfield.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = textfield.png; path = ../../Src/SimRobot/Icons/textfield.png; sourceTree = SOURCE_ROOT; };
+		000000104308786552334017 /* page_copy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = page_copy.png; path = ../../Src/SimRobot/Icons/page_copy.png; sourceTree = SOURCE_ROOT; };
+		000000104308786552787657 /* SimRobot.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = SimRobot.icns; path = ../../Src/SimRobot/Icons/SimRobot.icns; sourceTree = SOURCE_ROOT; };
+		000000209362109549605480 /* Parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Parser.h; path = ../../Src/SimRobotCore2/Parser/Parser.h; sourceTree = SOURCE_ROOT; };
+		000000209362109549608720 /* Reader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Reader.h; path = ../../Src/SimRobotCore2/Parser/Reader.h; sourceTree = SOURCE_ROOT; };
+		000000209362109550804046 /* Texture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Texture.h; path = ../../Src/SimRobotCore2/Tools/Texture.h; sourceTree = SOURCE_ROOT; };
+		000000209362109550812102 /* Vector3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Vector3.h; path = ../../Src/SimRobotCore2/Tools/Vector3.h; sourceTree = SOURCE_ROOT; };
+		000000209362109550965662 /* SimRobotCore2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimRobotCore2.h; path = ../../Src/SimRobotCore2/SimRobotCore2.h; sourceTree = SOURCE_ROOT; };
+		000000209362109551571419 /* brick.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = brick.png; path = ../../Src/SimRobotCore2/Icons/brick.png; sourceTree = SOURCE_ROOT; };
+		000000209362109569851379 /* SimRobotHelp.qrc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = SimRobotHelp.qrc; path = ../../Src/SimRobotHelp/SimRobotHelp.qrc; sourceTree = SOURCE_ROOT; };
+		000000209362109570837747 /* locate.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = locate.png; path = ../../Src/SimRobotHelp/Icons/locate.png; sourceTree = SOURCE_ROOT; };
+		000000209362109655038270 /* EditorModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EditorModule.h; path = ../../Src/SimRobotEditor/EditorModule.h; sourceTree = SOURCE_ROOT; };
+		000000209362109655085016 /* EditorWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EditorWidget.h; path = ../../Src/SimRobotEditor/EditorWidget.h; sourceTree = SOURCE_ROOT; };
+		000000209362111830952517 /* page_paste.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = page_paste.png; path = ../../Src/SimRobot/Icons/page_paste.png; sourceTree = SOURCE_ROOT; };
+		000000209362111830966717 /* arrow_undo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = arrow_undo.png; path = ../../Src/SimRobot/Icons/arrow_undo.png; sourceTree = SOURCE_ROOT; };
+		000000209362111830968055 /* arrow_redo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = arrow_redo.png; path = ../../Src/SimRobot/Icons/arrow_redo.png; sourceTree = SOURCE_ROOT; };
+		000000417239296475034991 /* folder_page.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = folder_page.png; path = ../../Src/SimRobot/Icons/folder_page.png; sourceTree = SOURCE_ROOT; };
+		000000417239296679742320 /* ODETools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ODETools.h; path = ../../Src/SimRobotCore2/Tools/ODETools.h; sourceTree = SOURCE_ROOT; };
+		000000417239296691782269 /* forward.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = forward.png; path = ../../Src/SimRobotHelp/Icons/forward.png; sourceTree = SOURCE_ROOT; };
+		000000417239296782394749 /* layers.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = layers.png; path = ../../Src/SimRobotCore2/Icons/layers.png; sourceTree = SOURCE_ROOT; };
+		000000417239296782402941 /* bricks.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = bricks.png; path = ../../Src/SimRobotCore2/Icons/bricks.png; sourceTree = SOURCE_ROOT; };
+		000000417239296782404845 /* camera.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = camera.png; path = ../../Src/SimRobotCore2/Icons/camera.png; sourceTree = SOURCE_ROOT; };
+		000000417239296782417021 /* slider.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = slider.png; path = ../../Src/SimRobotCore2/Icons/slider.png; sourceTree = SOURCE_ROOT; };
+		000000417239296784582640 /* SensorWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SensorWidget.cpp; path = ../../Src/SimRobotCore2/SensorWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000000417239296784776658 /* Element.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Element.h; path = ../../Src/SimRobotCore2/Parser/Element.h; sourceTree = SOURCE_ROOT; };
+		000000837455616402576855 /* SimRobotDoc.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = SimRobotDoc.icns; path = ../../Src/SimRobot/Icons/SimRobotDoc.icns; sourceTree = SOURCE_ROOT; };
+		000000837455616531184356 /* SceneGraphDockWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SceneGraphDockWidget.h; path = ../../Src/SimRobot/SceneGraphDockWidget.h; sourceTree = SOURCE_ROOT; };
+		000000837455616585857952 /* RegisteredDockWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = RegisteredDockWidget.h; path = ../../Src/SimRobot/RegisteredDockWidget.h; sourceTree = SOURCE_ROOT; };
+		000000837455631844721716 /* EditorWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EditorWidget.cpp; path = ../../Src/SimRobotEditor/EditorWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631844776476 /* EditorModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EditorModule.cpp; path = ../../Src/SimRobotEditor/EditorModule.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631846413238 /* SimRobotEditor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimRobotEditor.h; path = ../../Src/SimRobotEditor/SimRobotEditor.h; sourceTree = SOURCE_ROOT; };
+		000000837455631958456646 /* SimObjectWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimObjectWidget.h; path = ../../Src/SimRobotCore2/SimObjectWidget.h; sourceTree = SOURCE_ROOT; };
+		000000837455631959284420 /* Body.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Body.h; path = ../../Src/SimRobotCore2/Simulation/Body.h; sourceTree = SOURCE_ROOT; };
+		000000837455631959285532 /* Axis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Axis.h; path = ../../Src/SimRobotCore2/Simulation/Axis.h; sourceTree = SOURCE_ROOT; };
+		000000837455631960271716 /* Texture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Texture.cpp; path = ../../Src/SimRobotCore2/Tools/Texture.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631960345432 /* Vector3.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Vector3.cpp; path = ../../Src/SimRobotCore2/Tools/Vector3.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631960908662 /* Matrix3x3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Matrix3x3.h; path = ../../Src/SimRobotCore2/Tools/Matrix3x3.h; sourceTree = SOURCE_ROOT; };
+		000000837455631961172869 /* SimRobotCore2.qrc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = SimRobotCore2.qrc; path = ../../Src/SimRobotCore2/SimRobotCore2.qrc; sourceTree = SOURCE_ROOT; };
+		000000837455631965166650 /* Reader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Reader.cpp; path = ../../Src/SimRobotCore2/Parser/Reader.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631965170904 /* Parser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Parser.cpp; path = ../../Src/SimRobotCore2/Parser/Parser.cpp; sourceTree = SOURCE_ROOT; };
+		000000837455631965555954 /* ActuatorsWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ActuatorsWidget.h; path = ../../Src/SimRobotCore2/ActuatorsWidget.h; sourceTree = SOURCE_ROOT; };
+		000000837455631970807022 /* System.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = System.h; path = ../../Src/SimRobotCore2/Platform/System.h; sourceTree = SOURCE_ROOT; };
+		000000837455631970807640 /* OpenGL.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = OpenGL.h; path = ../../Src/SimRobotCore2/Platform/OpenGL.h; sourceTree = SOURCE_ROOT; };
+		000000837455631970859944 /* Assert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Assert.h; path = ../../Src/SimRobotCore2/Platform/Assert.h; sourceTree = SOURCE_ROOT; };
+		000001668940527811881222 /* Element.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Element.cpp; path = ../../Src/SimRobotCore2/Parser/Element.cpp; sourceTree = SOURCE_ROOT; };
+		000001668940527813192332 /* Scene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Scene.h; path = ../../Src/SimRobotCore2/Simulation/Scene.h; sourceTree = SOURCE_ROOT; };
+		000003349793753497040380 /* ActuatorsWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ActuatorsWidget.cpp; path = ../../Src/SimRobotCore2/ActuatorsWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753520916110 /* Matrix3x3.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Matrix3x3.cpp; path = ../../Src/SimRobotCore2/Tools/Matrix3x3.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753521160846 /* OpenGLTools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = OpenGLTools.h; path = ../../Src/SimRobotCore2/Tools/OpenGLTools.h; sourceTree = SOURCE_ROOT; };
+		000003349793753522124698 /* Axis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Axis.cpp; path = ../../Src/SimRobotCore2/Simulation/Axis.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753522134436 /* Body.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Body.cpp; path = ../../Src/SimRobotCore2/Simulation/Body.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753525167055 /* DragPlane.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = DragPlane.png; path = ../../Src/SimRobotCore2/Icons/DragPlane.png; sourceTree = SOURCE_ROOT; };
+		000003349793753529662806 /* SimObjectRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimObjectRenderer.h; path = ../../Src/SimRobotCore2/SimObjectRenderer.h; sourceTree = SOURCE_ROOT; };
+		000003349793753529688696 /* SimObjectWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SimObjectWidget.cpp; path = ../../Src/SimRobotCore2/SimObjectWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753542993706 /* Assert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Assert.cpp; path = ../../Src/SimRobotCore2/Platform/Assert.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753543211202 /* System.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = System.cpp; path = ../../Src/SimRobotCore2/Platform/System.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793753978856217 /* SimRobotEditor.qrc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = SimRobotEditor.qrc; path = ../../Src/SimRobotEditor/SimRobotEditor.qrc; sourceTree = SOURCE_ROOT; };
+		000003349793789044399868 /* RegisteredDockWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RegisteredDockWidget.cpp; path = ../../Src/SimRobot/RegisteredDockWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000003349793789470576092 /* SceneGraphDockWidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SceneGraphDockWidget.cpp; path = ../../Src/SimRobot/SceneGraphDockWidget.cpp; sourceTree = SOURCE_ROOT; };
+		000006675828747371980449 /* chart_line.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = chart_line.png; path = ../../Src/SimRobotCore2/Icons/chart_line.png; sourceTree = SOURCE_ROOT; };
+		000006675828747372762998 /* Scene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Scene.cpp; path = ../../Src/SimRobotCore2/Simulation/Scene.cpp; sourceTree = SOURCE_ROOT; };
+		000006675828747830517733 /* simrobothelp.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = simrobothelp.css; path = ../../Src/SimRobotHelp/Help/simrobothelp.css; sourceTree = SOURCE_ROOT; };
+		000006675828750489084678 /* SyntaxHighlighter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SyntaxHighlighter.h; path = ../../Src/SimRobotEditor/SyntaxHighlighter.h; sourceTree = SOURCE_ROOT; };
+		000013399290113349748027 /* transmit_go.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = transmit_go.png; path = ../../Src/SimRobotCore2/Icons/transmit_go.png; sourceTree = SOURCE_ROOT; };
+		000013399290113350335116 /* Compound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Compound.h; path = ../../Src/SimRobotCore2/Simulation/Compound.h; sourceTree = SOURCE_ROOT; };
+		000013399290113364197922 /* SimObjectRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SimObjectRenderer.cpp; path = ../../Src/SimRobotCore2/SimObjectRenderer.cpp; sourceTree = SOURCE_ROOT; };
+		000013399290113396113208 /* OpenGLTools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OpenGLTools.cpp; path = ../../Src/SimRobotCore2/Tools/OpenGLTools.cpp; sourceTree = SOURCE_ROOT; };
+		000026703048441444682206 /* app_exit.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = app_exit.bmp; path = ../../Src/SimRobotHelp/Help/Icons/app_exit.bmp; sourceTree = SOURCE_ROOT; };
+		000026703048441444737935 /* SimRobot.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = SimRobot.png; path = ../../Src/SimRobotHelp/Help/Icons/SimRobot.png; sourceTree = SOURCE_ROOT; };
+		000026703048447453034380 /* SimObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SimObject.h; path = ../../Src/SimRobotCore2/Simulation/SimObject.h; sourceTree = SOURCE_ROOT; };
+		000026703048452166914948 /* SyntaxHighlighter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SyntaxHighlighter.cpp; path = ../../Src/SimRobotEditor/SyntaxHighlighter.cpp; sourceTree = SOURCE_ROOT; };
+		000026703049357361526281 /* control_play_blue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = control_play_blue.png; path = ../../Src/SimRobot/Icons/control_play_blue.png; sourceTree = SOURCE_ROOT; };
+		000026703049357361528851 /* control_step_blue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = control_step_blue.png; path = ../../Src/SimRobot/Icons/control_step_blue.png; sourceTree = SOURCE_ROOT; };
+		000053596700045195136163 /* opening_angle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = opening_angle.png; path = ../../Src/SimRobotCore2/Icons/opening_angle.png; sourceTree = SOURCE_ROOT; };
+		000053596700045209756392 /* Simulation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Simulation.h; path = ../../Src/SimRobotCore2/Simulation/Simulation.h; sourceTree = SOURCE_ROOT; };
+		000053596700045210521616 /* Compound.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Compound.cpp; path = ../../Src/SimRobotCore2/Simulation/Compound.cpp; sourceTree = SOURCE_ROOT; };
+		000053596700050101422412 /* helpcollection.qhcp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = helpcollection.qhcp; path = ../../Src/SimRobotHelp/Help/helpcollection.qhcp; sourceTree = SOURCE_ROOT; };
+		000053596700628661019183 /* control_start_blue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = control_start_blue.png; path = ../../Src/SimRobot/Icons/control_start_blue.png; sourceTree = SOURCE_ROOT; };
+		000106813259953381480010 /* status_bar.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = status_bar.bmp; path = ../../Src/SimRobotHelp/Help/Icons/status_bar.bmp; sourceTree = SOURCE_ROOT; };
+		000106813259976315368706 /* SimObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SimObject.cpp; path = ../../Src/SimRobotCore2/Simulation/SimObject.cpp; sourceTree = SOURCE_ROOT; };
+		000106813259976315379884 /* Mass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Mass.h; path = ../../Src/SimRobotCore2/Simulation/Masses/Mass.h; sourceTree = SOURCE_ROOT; };
+		000113805807696180043488 /* SphereGeometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SphereGeometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/SphereGeometry.cpp; sourceTree = SOURCE_ROOT; };
+		000113805807696195567770 /* CylinderGeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CylinderGeometry.h; path = ../../Src/SimRobotCore2/Simulation/Geometries/CylinderGeometry.h; sourceTree = SOURCE_ROOT; };
+		000113805807696879698780 /* BoxAppearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BoxAppearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/BoxAppearance.cpp; sourceTree = SOURCE_ROOT; };
+		000175726275581822437514 /* CapsuleAppearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CapsuleAppearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/CapsuleAppearance.h; sourceTree = SOURCE_ROOT; };
+		000175726275581829236186 /* ComplexAppearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ComplexAppearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/ComplexAppearance.h; sourceTree = SOURCE_ROOT; };
+		000175726275612444086788 /* CylinderGeometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CylinderGeometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/CylinderGeometry.cpp; sourceTree = SOURCE_ROOT; };
+		000214388641781576913908 /* Motor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Motor.h; path = ../../Src/SimRobotCore2/Simulation/Motors/Motor.h; sourceTree = SOURCE_ROOT; };
+		000214388641781577905488 /* Simulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Simulation.cpp; path = ../../Src/SimRobotCore2/Simulation/Simulation.cpp; sourceTree = SOURCE_ROOT; };
+		000214388641838816141524 /* app_exit_xp.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = app_exit_xp.bmp; path = ../../Src/SimRobotHelp/Help/Icons/app_exit_xp.bmp; sourceTree = SOURCE_ROOT; };
+		000214388641838816441906 /* toolbar_cut.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_cut.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_cut.bmp; sourceTree = SOURCE_ROOT; };
+		000214388641838816443440 /* toolbar_new.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_new.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_new.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775120177902854 /* Mass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Mass.cpp; path = ../../Src/SimRobotCore2/Simulation/Masses/Mass.cpp; sourceTree = SOURCE_ROOT; };
+		000427248775145211135563 /* architecture.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = architecture.png; path = ../../Src/SimRobotHelp/Help/Icons/architecture.png; sourceTree = SOURCE_ROOT; };
+		000427248775145376337214 /* toolbar_copy.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_copy.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_copy.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775145376337262 /* toolbar_help.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_help.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_help.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775145376337298 /* toolbar_grid.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_grid.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_grid.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775145376340318 /* toolbar_open.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_open.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_open.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775145376361208 /* toolbar_step.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_step.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_step.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775145376370568 /* toolbar_save.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_save.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_save.bmp; sourceTree = SOURCE_ROOT; };
+		000427248775316210839533 /* page_white_text.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = page_white_text.png; path = ../../Src/SimRobotEditor/Icons/page_white_text.png; sourceTree = SOURCE_ROOT; };
+		000427248789628007783061 /* application_side_tree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = application_side_tree.png; path = ../../Src/SimRobot/Icons/application_side_tree.png; sourceTree = SOURCE_ROOT; };
+		000857547200673776118948 /* toolbar_paste.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_paste.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_paste.bmp; sourceTree = SOURCE_ROOT; };
+		000857547200673776682856 /* toolbar_reset.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_reset.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_reset.bmp; sourceTree = SOURCE_ROOT; };
+		000857547200673776708982 /* toolbar_start.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_start.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_start.bmp; sourceTree = SOURCE_ROOT; };
+		000857547200673776747464 /* toolbar_light.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_light.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_light.bmp; sourceTree = SOURCE_ROOT; };
+		000857547200673776750154 /* toolbar_clock.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_clock.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_clock.bmp; sourceTree = SOURCE_ROOT; };
+		000857547200901675965962 /* Sensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Sensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/Sensor.h; sourceTree = SOURCE_ROOT; };
+		000857547200901675984414 /* Camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Camera.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/Camera.h; sourceTree = SOURCE_ROOT; };
+		000857547200901676105268 /* PhysicalObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PhysicalObject.h; path = ../../Src/SimRobotCore2/Simulation/PhysicalObject.h; sourceTree = SOURCE_ROOT; };
+		000857547200901676459230 /* BoxMass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BoxMass.h; path = ../../Src/SimRobotCore2/Simulation/Masses/BoxMass.h; sourceTree = SOURCE_ROOT; };
+		000857547201018073002421 /* page_white_stack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = page_white_stack.png; path = ../../Src/SimRobotEditor/Icons/page_white_stack.png; sourceTree = SOURCE_ROOT; };
+		001709012159320913713574 /* OffscreenRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = OffscreenRenderer.h; path = ../../Src/SimRobotCore2/Platform/OffscreenRenderer.h; sourceTree = SOURCE_ROOT; };
+		001709012159327438596402 /* GraphicalObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = GraphicalObject.h; path = ../../Src/SimRobotCore2/Simulation/GraphicalObject.h; sourceTree = SOURCE_ROOT; };
+		001709012159327442379344 /* Hinge.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Hinge.h; path = ../../Src/SimRobotCore2/Simulation/Actuators/Hinge.h; sourceTree = SOURCE_ROOT; };
+		001709012159327442386068 /* Joint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Joint.h; path = ../../Src/SimRobotCore2/Simulation/Actuators/Joint.h; sourceTree = SOURCE_ROOT; };
+		001709012159445408358224 /* toolbar_camera.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_camera.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_camera.bmp; sourceTree = SOURCE_ROOT; };
+		001709012159445410558292 /* toolbar_search.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_search.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_search.bmp; sourceTree = SOURCE_ROOT; };
+		001820873683133707632882 /* CapsuleAppearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CapsuleAppearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/CapsuleAppearance.cpp; sourceTree = SOURCE_ROOT; };
+		001820873683133797757908 /* ComplexAppearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ComplexAppearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/ComplexAppearance.cpp; sourceTree = SOURCE_ROOT; };
+		003430218268701858986976 /* crystal_toolbar.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = crystal_toolbar.bmp; path = ../../Src/SimRobotHelp/Help/Icons/crystal_toolbar.bmp; sourceTree = SOURCE_ROOT; };
+		003430218269017663969804 /* BoxMass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BoxMass.cpp; path = ../../Src/SimRobotCore2/Simulation/Masses/BoxMass.cpp; sourceTree = SOURCE_ROOT; };
+		003430218269017664385162 /* PhysicalObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PhysicalObject.cpp; path = ../../Src/SimRobotCore2/Simulation/PhysicalObject.cpp; sourceTree = SOURCE_ROOT; };
+		003430218269017665737578 /* Camera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Camera.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/Camera.cpp; sourceTree = SOURCE_ROOT; };
+		003430218269017665925370 /* Sensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Sensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/Sensor.cpp; sourceTree = SOURCE_ROOT; };
+		003430218269017678074556 /* Slider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Slider.h; path = ../../Src/SimRobotCore2/Simulation/Actuators/Slider.h; sourceTree = SOURCE_ROOT; };
+		006835980402547960692416 /* SphereMass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SphereMass.h; path = ../../Src/SimRobotCore2/Simulation/Masses/SphereMass.h; sourceTree = SOURCE_ROOT; };
+		006835980402547974872256 /* Gyroscope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Gyroscope.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/Gyroscope.h; sourceTree = SOURCE_ROOT; };
+		006835980402547998658330 /* Joint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Joint.cpp; path = ../../Src/SimRobotCore2/Simulation/Actuators/Joint.cpp; sourceTree = SOURCE_ROOT; };
+		006835980402547998685290 /* Hinge.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Hinge.cpp; path = ../../Src/SimRobotCore2/Simulation/Actuators/Hinge.cpp; sourceTree = SOURCE_ROOT; };
+		006835980402548000648366 /* ServoMotor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ServoMotor.h; path = ../../Src/SimRobotCore2/Simulation/Motors/ServoMotor.h; sourceTree = SOURCE_ROOT; };
+		006835980402548006476232 /* GraphicalObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GraphicalObject.cpp; path = ../../Src/SimRobotCore2/Simulation/GraphicalObject.cpp; sourceTree = SOURCE_ROOT; };
+		006835980402573441863472 /* OffscreenRenderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OffscreenRenderer.cpp; path = ../../Src/SimRobotCore2/Platform/OffscreenRenderer.cpp; sourceTree = SOURCE_ROOT; };
+		013720755211573874774430 /* Slider.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Slider.cpp; path = ../../Src/SimRobotCore2/Simulation/Actuators/Slider.cpp; sourceTree = SOURCE_ROOT; };
+		013720755211573874827286 /* Actuator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Actuator.h; path = ../../Src/SimRobotCore2/Simulation/Actuators/Actuator.h; sourceTree = SOURCE_ROOT; };
+		013720755212815364051588 /* toolbar_view_item.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_view_item.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_view_item.bmp; sourceTree = SOURCE_ROOT; };
+		013720755212815364481022 /* toolbar_tree_view.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_tree_view.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_tree_view.bmp; sourceTree = SOURCE_ROOT; };
+		027344194548059040871996 /* toolbar_stereogram.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_stereogram.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_stereogram.bmp; sourceTree = SOURCE_ROOT; };
+		027344194548059041468618 /* toolbar_line_graph.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_line_graph.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_line_graph.bmp; sourceTree = SOURCE_ROOT; };
+		027344194553931980241815 /* arrow_rotate_clockwise.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = arrow_rotate_clockwise.png; path = ../../Src/SimRobotCore2/Icons/arrow_rotate_clockwise.png; sourceTree = SOURCE_ROOT; };
+		027344194553936313183682 /* Geometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Geometry.h; path = ../../Src/SimRobotCore2/Simulation/Geometries/Geometry.h; sourceTree = SOURCE_ROOT; };
+		027344194553936359999546 /* ServoMotor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ServoMotor.cpp; path = ../../Src/SimRobotCore2/Simulation/Motors/ServoMotor.cpp; sourceTree = SOURCE_ROOT; };
+		027344194553936722631894 /* Gyroscope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Gyroscope.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/Gyroscope.cpp; sourceTree = SOURCE_ROOT; };
+		027344194553936738195064 /* SphereMass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SphereMass.cpp; path = ../../Src/SimRobotCore2/Simulation/Masses/SphereMass.cpp; sourceTree = SOURCE_ROOT; };
+		050174027797411484509936 /* SphereAppearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SphereAppearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/SphereAppearance.h; sourceTree = SOURCE_ROOT; };
+		050174027797418703480838 /* CapsuleGeometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CapsuleGeometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/CapsuleGeometry.cpp; sourceTree = SOURCE_ROOT; };
+		050174027797482337026320 /* SingleDistanceSensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SingleDistanceSensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/SingleDistanceSensor.h; sourceTree = SOURCE_ROOT; };
+		050174027797482869900022 /* ApproxDistanceSensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ApproxDistanceSensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/ApproxDistanceSensor.h; sourceTree = SOURCE_ROOT; };
+		050174031548674496986140 /* toolbar_drag_and_drop_plane.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_drag_and_drop_plane.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_drag_and_drop_plane.bmp; sourceTree = SOURCE_ROOT; };
+		054883492296083685601626 /* VelocityMotor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = VelocityMotor.h; path = ../../Src/SimRobotCore2/Simulation/Motors/VelocityMotor.h; sourceTree = SOURCE_ROOT; };
+		054883492296083704723806 /* Actuator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Actuator.cpp; path = ../../Src/SimRobotCore2/Simulation/Actuators/Actuator.cpp; sourceTree = SOURCE_ROOT; };
+		054883492310737009128596 /* toolbar_motion_blur.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_motion_blur.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_motion_blur.bmp; sourceTree = SOURCE_ROOT; };
+		054883492310737009369864 /* toolbar_color_image.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_color_image.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_color_image.bmp; sourceTree = SOURCE_ROOT; };
+		054883492310737013844148 /* toolbar_update_view.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_update_view.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_update_view.bmp; sourceTree = SOURCE_ROOT; };
+		109375686430764110526306 /* Geometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Geometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/Geometry.cpp; sourceTree = SOURCE_ROOT; };
+		109375686430765617432170 /* Accelerometer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Accelerometer.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/Accelerometer.h; sourceTree = SOURCE_ROOT; };
+		109375686437216341556618 /* toolbar_column_graph.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_column_graph.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_column_graph.bmp; sourceTree = SOURCE_ROOT; };
+		109375686437216391889958 /* toolbar_show_sensors.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_show_sensors.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_show_sensors.bmp; sourceTree = SOURCE_ROOT; };
+		200213358291402415366704 /* CylinderAppearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CylinderAppearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/CylinderAppearance.h; sourceTree = SOURCE_ROOT; };
+		200213358291402458630570 /* SphereAppearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SphereAppearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/SphereAppearance.cpp; sourceTree = SOURCE_ROOT; };
+		200213358292236069112250 /* SingleDistanceSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SingleDistanceSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/SingleDistanceSensor.cpp; sourceTree = SOURCE_ROOT; };
+		200213358292238167607398 /* ApproxDistanceSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ApproxDistanceSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/ApproxDistanceSensor.cpp; sourceTree = SOURCE_ROOT; };
+		200377B317C11658008F7CAC /* help.qch */ = {isa = PBXFileReference; lastKnownFileType = file; path = help.qch; sourceTree = BUILT_PRODUCTS_DIR; };
+		200377B517C11717008F7CAC /* helpcollection.qhc */ = {isa = PBXFileReference; lastKnownFileType = file; path = helpcollection.qhc; sourceTree = BUILT_PRODUCTS_DIR; };
+		2007C22017861A13002033FC /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../Util/qt/OSX/Frameworks/QtCore.framework; sourceTree = SOURCE_ROOT; };
+		2007C22217861A7D002033FC /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../Util/qt/OSX/Frameworks/QtGui.framework; sourceTree = SOURCE_ROOT; };
+		2007C22417861AD1002033FC /* QtSvg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtSvg.framework; path = ../../Util/qt/OSX/Frameworks/QtSvg.framework; sourceTree = SOURCE_ROOT; };
+		2007C22B17861C43002033FC /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../Util/qt/OSX/Frameworks/QtOpenGL.framework; sourceTree = SOURCE_ROOT; };
+		2007C23317861D21002033FC /* QtHelp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtHelp.framework; path = ../../Util/qt/OSX/Frameworks/QtHelp.framework; sourceTree = SOURCE_ROOT; };
+		202B6E6617FB5F8300555411 /* libQtCLucene.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libQtCLucene.4.dylib; path = ../../Util/qt/OSX/Frameworks/libQtCLucene.4.dylib; sourceTree = SOURCE_ROOT; };
+		202B6E6917FB5FF900555411 /* qt_menu.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = qt_menu.nib; path = ../../Util/qt/OSX/Frameworks/QtGui.framework/Versions/4/Resources/qt_menu.nib; sourceTree = SOURCE_ROOT; };
+		2044A8C112C0F80200B772CD /* libiconv.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.dylib; path = /usr/lib/libiconv.dylib; sourceTree = "<absolute>"; };
+		2044A8C212C0F80200B772CD /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
+		205E606517D4F75F00DF340E /* QtNetwork */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtNetwork; path = ../../Util/qt/OSX/Frameworks/QtNetwork.framework/Versions/4/QtNetwork; sourceTree = SOURCE_ROOT; };
+		2061F22D152CA4430089659C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		20844A6111FB5F1C0037FA87 /* libode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libode.a; path = ../../Util/ode/OSX/lib/libode.a; sourceTree = SOURCE_ROOT; };
+		20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotHelp.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20844F1811FE33150037FA87 /* Factory.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = Factory.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		208B2E4B14B898AC003A08A0 /* libxml2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libxml2.dylib; path = /usr/lib/libxml2.dylib; sourceTree = "<absolute>"; };
+		209C6D111200A9C2007E5C2E /* SimRobot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRobot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		20BDE35F17FDAFFE0062745A /* MacFullscreen.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MacFullscreen.h; path = ../../Src/SimRobot/MacFullscreen.h; sourceTree = SOURCE_ROOT; };
+		20BDE36017FDAFFE0062745A /* MacFullscreen.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = MacFullscreen.mm; path = ../../Src/SimRobot/MacFullscreen.mm; sourceTree = SOURCE_ROOT; };
+		20BE6B231795D1460096D6E4 /* FactoryController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FactoryController.cpp; path = ../../Src/Controllers/FactoryController.cpp; sourceTree = SOURCE_ROOT; };
+		20BE6B2F1795D83A0096D6E4 /* SimpleVehicle.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimpleVehicle.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		20BE6B301795D8F70096D6E4 /* SimpleVehicleController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SimpleVehicleController.cpp; path = ../../Src/Controllers/SimpleVehicleController.cpp; sourceTree = SOURCE_ROOT; };
+		20BE6B371795DBB10096D6E4 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		20C115221793477000961A38 /* QtCore */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtCore; path = ../../Util/qt/OSX/Frameworks/QtCore.framework/Versions/4/QtCore; sourceTree = SOURCE_ROOT; };
+		20C11525179347B900961A38 /* QtGui */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtGui; path = ../../Util/qt/OSX/Frameworks/QtGui.framework/Versions/4/QtGui; sourceTree = SOURCE_ROOT; };
+		20C11528179347F200961A38 /* QtHelp */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtHelp; path = ../../Util/qt/OSX/Frameworks/QtHelp.framework/Versions/4/QtHelp; sourceTree = SOURCE_ROOT; };
+		20C11531179348E300961A38 /* QtOpenGL */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtOpenGL; path = ../../Util/qt/OSX/Frameworks/QtOpenGL.framework/Versions/4/QtOpenGL; sourceTree = SOURCE_ROOT; };
+		20C115371793499500961A38 /* QtSql */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtSql; path = ../../Util/qt/OSX/Frameworks/QtSql.framework/Versions/4/QtSql; sourceTree = SOURCE_ROOT; };
+		20C1153A179349D700961A38 /* QtSvg */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtSvg; path = ../../Util/qt/OSX/Frameworks/QtSvg.framework/Versions/4/QtSvg; sourceTree = SOURCE_ROOT; };
+		20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqtaccessiblewidgets.dylib; path = ../../Util/qt/OSX/plugins/accessible/libqtaccessiblewidgets.dylib; sourceTree = SOURCE_ROOT; };
+		20C1154A17934B9400961A38 /* libqsqlite.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqsqlite.dylib; path = ../../Util/qt/OSX/plugins/sqldrivers/libqsqlite.dylib; sourceTree = SOURCE_ROOT; };
+		20C1154C17934BDC00961A38 /* qt.conf */ = {isa = PBXFileReference; lastKnownFileType = text; path = qt.conf; sourceTree = SOURCE_ROOT; };
+		20CF29F41A8F678C008D50DF /* UserInput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UserInput.cpp; path = ../../Src/SimRobotCore2/Simulation/UserInput.cpp; sourceTree = SOURCE_ROOT; };
+		20CF29F51A8F678C008D50DF /* UserInput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UserInput.h; path = ../../Src/SimRobotCore2/Simulation/UserInput.h; sourceTree = SOURCE_ROOT; };
+		20DD7409134E5056003FF249 /* SimRobotCore2.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotCore2.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		219532083430825629077878 /* BoxGeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BoxGeometry.h; path = ../../Src/SimRobotCore2/Simulation/Geometries/BoxGeometry.h; sourceTree = SOURCE_ROOT; };
+		219532083430825790678550 /* Appearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Appearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/Appearance.h; sourceTree = SOURCE_ROOT; };
+		219532083430825971987808 /* VelocityMotor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VelocityMotor.cpp; path = ../../Src/SimRobotCore2/Simulation/Motors/VelocityMotor.cpp; sourceTree = SOURCE_ROOT; };
+		437507112787822523776366 /* Accelerometer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Accelerometer.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/Accelerometer.cpp; sourceTree = SOURCE_ROOT; };
+		437507112787822524088060 /* CollisionSensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CollisionSensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/CollisionSensor.h; sourceTree = SOURCE_ROOT; };
+		512513334162862622028904 /* InertiaMatrixMass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = InertiaMatrixMass.cpp; path = ../../Src/SimRobotCore2/Simulation/Masses/InertiaMatrixMass.cpp; sourceTree = SOURCE_ROOT; };
+		512513334162863980514236 /* DepthImageSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DepthImageSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/DepthImageSensor.cpp; sourceTree = SOURCE_ROOT; };
+		512513334162916529805988 /* CapsuleGeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CapsuleGeometry.h; path = ../../Src/SimRobotCore2/Simulation/Geometries/CapsuleGeometry.h; sourceTree = SOURCE_ROOT; };
+		512513334480733016430180 /* toolbar_surface_rendering.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_surface_rendering.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_surface_rendering.bmp; sourceTree = SOURCE_ROOT; };
+		750010982658511645355894 /* toolbar_shader_interface.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_shader_interface.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_shader_interface.bmp; sourceTree = SOURCE_ROOT; };
+		750010982658511766204660 /* toolbar_monochrome_image.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; name = toolbar_monochrome_image.bmp; path = ../../Src/SimRobotHelp/Help/Icons/toolbar_monochrome_image.bmp; sourceTree = SOURCE_ROOT; };
+		750010983052281585177242 /* CollisionSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CollisionSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/CollisionSensor.cpp; sourceTree = SOURCE_ROOT; };
+		750010983052289667967788 /* SphereGeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = SphereGeometry.h; path = ../../Src/SimRobotCore2/Simulation/Geometries/SphereGeometry.h; sourceTree = SOURCE_ROOT; };
+		750010983052289895717498 /* BoxAppearance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = BoxAppearance.h; path = ../../Src/SimRobotCore2/Simulation/Appearances/BoxAppearance.h; sourceTree = SOURCE_ROOT; };
+		802784478342817346257890 /* CylinderAppearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CylinderAppearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/CylinderAppearance.cpp; sourceTree = SOURCE_ROOT; };
+		878135876868521834285466 /* InertiaMatrixMass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = InertiaMatrixMass.h; path = ../../Src/SimRobotCore2/Simulation/Masses/InertiaMatrixMass.h; sourceTree = SOURCE_ROOT; };
+		878135876868522442336334 /* DepthImageSensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = DepthImageSensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/DepthImageSensor.h; sourceTree = SOURCE_ROOT; };
+		878135876868526630251676 /* Appearance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Appearance.cpp; path = ../../Src/SimRobotCore2/Simulation/Appearances/Appearance.cpp; sourceTree = SOURCE_ROOT; };
+		878135876868527528463124 /* BoxGeometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BoxGeometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/BoxGeometry.cpp; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		20844AF311FC6F410037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2007C22D17861CDD002033FC /* QtCore.framework in Frameworks */,
+				2007C22E17861CDD002033FC /* QtGui.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844B3511FCB34C0037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2007C23417861D22002033FC /* QtHelp.framework in Frameworks */,
+				2007C23017861D13002033FC /* QtCore.framework in Frameworks */,
+				2007C23117861D13002033FC /* QtGui.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844F1611FE33150037FA87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BE6B251795D1660096D6E4 /* QtCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20BE6B291795D83A0096D6E4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BE6B391795DBCC0096D6E4 /* OpenGL.framework in Frameworks */,
+				20BE6B2A1795D83A0096D6E4 /* QtCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20DD73E6134E4E33003FF249 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BE6B381795DBB10096D6E4 /* OpenGL.framework in Frameworks */,
+				2007C22C17861C43002033FC /* QtOpenGL.framework in Frameworks */,
+				2007C22817861C26002033FC /* QtCore.framework in Frameworks */,
+				2007C22917861C26002033FC /* QtGui.framework in Frameworks */,
+				20DD73EF134E4E33003FF249 /* libode.a in Frameworks */,
+				20DD73F1134E4E33003FF249 /* libiconv.dylib in Frameworks */,
+				208B2E4C14B898AC003A08A0 /* libxml2.dylib in Frameworks */,
+				20DD73F2134E4E33003FF249 /* libz.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A1043669E6E5A7426EA502A /* Frameworks & Libraries */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */,
+				2007C2481786242D002033FC /* QtCore.framework in Frameworks & Libraries */,
+				2007C2491786242D002033FC /* QtGui.framework in Frameworks & Libraries */,
+				2007C24A1786242D002033FC /* QtSvg.framework in Frameworks & Libraries */,
+			);
+			name = "Frameworks & Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000023799 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				20BE6B301795D8F70096D6E4 /* SimpleVehicleController.cpp */,
+				20BE6B231795D1460096D6E4 /* FactoryController.cpp */,
+			);
+			name = Controllers;
+			path = ../../Src;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000000099476610718 /* SimRobot */ = {
+			isa = PBXGroup;
+			children = (
+				000000000006366566413545 /* Icons */,
+				20BDE35F17FDAFFE0062745A /* MacFullscreen.h */,
+				20BDE36017FDAFFE0062745A /* MacFullscreen.mm */,
+				000000000051113796830062 /* Main.cpp */,
+				000000003271311002272732 /* MainWindow.cpp */,
+				000000000817820749454294 /* MainWindow.h */,
+				000003349793789044399868 /* RegisteredDockWidget.cpp */,
+				000000837455616585857952 /* RegisteredDockWidget.h */,
+				000003349793789470576092 /* SceneGraphDockWidget.cpp */,
+				000000837455616531184356 /* SceneGraphDockWidget.h */,
+				000000000204456937633596 /* SimRobot.h */,
+				000000000817820749367131 /* SimRobot.qrc */,
+				000000001629840999296266 /* StatusBar.cpp */,
+				000000000407456197321358 /* StatusBar.h */,
+			);
+			name = SimRobot;
+			path = ../../Src/SimRobot;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000001591625717222 /* SimRobotHelp */ = {
+			isa = PBXGroup;
+			children = (
+				000000000051113796274322 /* Help */,
+				000000052340977000278710 /* HelpModule.cpp */,
+				000000013085131846234566 /* HelpModule.h */,
+				000000052340977000436796 /* HelpWidget.cpp */,
+				000000013085131846197048 /* HelpWidget.h */,
+				000000000101865062680263 /* Icons */,
+				000000209362109569851379 /* SimRobotHelp.qrc */,
+			);
+			name = SimRobotHelp;
+			path = ../../Src/SimRobotHelp;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000003194612267478 /* SimRobotCore2 */ = {
+			isa = PBXGroup;
+			children = (
+				000003349793753497040380 /* ActuatorsWidget.cpp */,
+				000000837455631965555954 /* ActuatorsWidget.h */,
+				000000104308782997660932 /* CoreModule.cpp */,
+				000000026077456044604102 /* CoreModule.h */,
+				000000000204456941426777 /* Icons */,
+				000000000407456183583440 /* Parser */,
+				000000001629841003079043 /* Platform */,
+				000000417239296784582640 /* SensorWidget.cpp */,
+				000000104308782997333934 /* SensorWidget.h */,
+				000013399290113364197922 /* SimObjectRenderer.cpp */,
+				000003349793753529662806 /* SimObjectRenderer.h */,
+				000003349793753529688696 /* SimObjectWidget.cpp */,
+				000000837455631958456646 /* SimObjectWidget.h */,
+				000000209362109550965662 /* SimRobotCore2.h */,
+				000000837455631961172869 /* SimRobotCore2.qrc */,
+				000000006519298936770250 /* Simulation */,
+				000000000204456941427469 /* Tools */,
+			);
+			name = SimRobotCore2;
+			path = ../../Src/SimRobotCore2;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000006366566413545 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				000000104308786552787657 /* SimRobot.icns */,
+				000000052340976031939989 /* SimRobot.png */,
+				000000837455616402576855 /* SimRobotDoc.icns */,
+				000427248789628007783061 /* application_side_tree.png */,
+				000000209362111830968055 /* arrow_redo.png */,
+				000000209362111830966717 /* arrow_undo.png */,
+				000026703049357361526281 /* control_play_blue.png */,
+				000053596700628661019183 /* control_start_blue.png */,
+				000026703049357361528851 /* control_step_blue.png */,
+				000000001629841001854345 /* cut.png */,
+				000000003271311001552897 /* disk.png */,
+				000000013085131992449751 /* folder.png */,
+				000000417239296475034991 /* folder_page.png */,
+				000000104308786552334017 /* page_copy.png */,
+				000000209362111830952517 /* page_paste.png */,
+				000000104308786552133817 /* tag_green.png */,
+				000000104308786552151425 /* textfield.png */,
+			);
+			name = Icons;
+			path = ../../Src/SimRobot/Icons;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000006366566419402 /* SimRobotEditor */ = {
+			isa = PBXGroup;
+			children = (
+				000000837455631844776476 /* EditorModule.cpp */,
+				000000209362109655038270 /* EditorModule.h */,
+				000000837455631844721716 /* EditorWidget.cpp */,
+				000000209362109655085016 /* EditorWidget.h */,
+				000000000407456183656803 /* Icons */,
+				000000837455631846413238 /* SimRobotEditor.h */,
+				000003349793753978856217 /* SimRobotEditor.qrc */,
+				000026703048452166914948 /* SyntaxHighlighter.cpp */,
+				000006675828750489084678 /* SyntaxHighlighter.h */,
+			);
+			name = SimRobotEditor;
+			path = ../../Src/SimRobotEditor;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000051113796274322 /* Help */ = {
+			isa = PBXGroup;
+			children = (
+				000000003271311063214747 /* Icons */,
+				000000026077456046196080 /* help.qhp */,
+				000053596700050101422412 /* helpcollection.qhcp */,
+				000006675828747830517733 /* simrobothelp.css */,
+			);
+			name = Help;
+			path = ../../Src/SimRobotHelp/Help;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000101865062680263 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				000000052340977000357295 /* back.png */,
+				000000417239296691782269 /* forward.png */,
+				000000052340977000382589 /* help.png */,
+				000000052340977000378651 /* home.png */,
+				000000209362109570837747 /* locate.png */,
+			);
+			name = Icons;
+			path = ../../Src/SimRobotHelp/Icons;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000204456941426777 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				000003349793753525167055 /* DragPlane.png */,
+				027344194553931980241815 /* arrow_rotate_clockwise.png */,
+				000000209362109551571419 /* brick.png */,
+				000000417239296782402941 /* bricks.png */,
+				000000417239296782404845 /* camera.png */,
+				000006675828747371980449 /* chart_line.png */,
+				000000417239296782394749 /* layers.png */,
+				000000104308782997844139 /* link.png */,
+				000000104308782997845781 /* note.png */,
+				000053596700045195136163 /* opening_angle.png */,
+				000000417239296782417021 /* slider.png */,
+				000013399290113349748027 /* transmit_go.png */,
+			);
+			name = Icons;
+			path = ../../Src/SimRobotCore2/Icons;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000204456941427469 /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				000003349793753520916110 /* Matrix3x3.cpp */,
+				000000837455631960908662 /* Matrix3x3.h */,
+				000000417239296679742320 /* ODETools.h */,
+				000013399290113396113208 /* OpenGLTools.cpp */,
+				000003349793753521160846 /* OpenGLTools.h */,
+				000000052340977005452332 /* Pose3.h */,
+				000000837455631960271716 /* Texture.cpp */,
+				000000209362109550804046 /* Texture.h */,
+				000000837455631960345432 /* Vector3.cpp */,
+				000000209362109550812102 /* Vector3.h */,
+			);
+			name = Tools;
+			path = ../../Src/SimRobotCore2/Tools;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000407456183583440 /* Parser */ = {
+			isa = PBXGroup;
+			children = (
+				000001668940527811881222 /* Element.cpp */,
+				000000417239296784776658 /* Element.h */,
+				000000837455631965170904 /* Parser.cpp */,
+				000000209362109549605480 /* Parser.h */,
+				000000837455631965166650 /* Reader.cpp */,
+				000000209362109549608720 /* Reader.h */,
+			);
+			name = Parser;
+			path = ../../Src/SimRobotCore2/Parser;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000000407456183656803 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				000857547201018073002421 /* page_white_stack.png */,
+				000427248775316210839533 /* page_white_text.png */,
+			);
+			name = Icons;
+			path = ../../Src/SimRobotEditor/Icons;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000001629841003079043 /* Platform */ = {
+			isa = PBXGroup;
+			children = (
+				000003349793753542993706 /* Assert.cpp */,
+				000000837455631970859944 /* Assert.h */,
+				006835980402573441863472 /* OffscreenRenderer.cpp */,
+				001709012159320913713574 /* OffscreenRenderer.h */,
+				000000837455631970807640 /* OpenGL.h */,
+				000003349793753543211202 /* System.cpp */,
+				000000837455631970807022 /* System.h */,
+			);
+			name = Platform;
+			path = ../../Src/SimRobotCore2/Platform;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000003271311063214747 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				000026703048441444737935 /* SimRobot.png */,
+				000026703048441444682206 /* app_exit.bmp */,
+				000214388641838816141524 /* app_exit_xp.bmp */,
+				000427248775145211135563 /* architecture.png */,
+				003430218268701858986976 /* crystal_toolbar.bmp */,
+				000106813259953381480010 /* status_bar.bmp */,
+				001709012159445408358224 /* toolbar_camera.bmp */,
+				000857547200673776750154 /* toolbar_clock.bmp */,
+				054883492310737009369864 /* toolbar_color_image.bmp */,
+				109375686437216341556618 /* toolbar_column_graph.bmp */,
+				000427248775145376337214 /* toolbar_copy.bmp */,
+				000214388641838816441906 /* toolbar_cut.bmp */,
+				050174031548674496986140 /* toolbar_drag_and_drop_plane.bmp */,
+				000427248775145376337298 /* toolbar_grid.bmp */,
+				000427248775145376337262 /* toolbar_help.bmp */,
+				000857547200673776747464 /* toolbar_light.bmp */,
+				027344194548059041468618 /* toolbar_line_graph.bmp */,
+				750010982658511766204660 /* toolbar_monochrome_image.bmp */,
+				054883492310737009128596 /* toolbar_motion_blur.bmp */,
+				000214388641838816443440 /* toolbar_new.bmp */,
+				000427248775145376340318 /* toolbar_open.bmp */,
+				000857547200673776118948 /* toolbar_paste.bmp */,
+				000857547200673776682856 /* toolbar_reset.bmp */,
+				000427248775145376370568 /* toolbar_save.bmp */,
+				001709012159445410558292 /* toolbar_search.bmp */,
+				750010982658511645355894 /* toolbar_shader_interface.bmp */,
+				109375686437216391889958 /* toolbar_show_sensors.bmp */,
+				000857547200673776708982 /* toolbar_start.bmp */,
+				000427248775145376361208 /* toolbar_step.bmp */,
+				027344194548059040871996 /* toolbar_stereogram.bmp */,
+				512513334480733016430180 /* toolbar_surface_rendering.bmp */,
+				013720755212815364481022 /* toolbar_tree_view.bmp */,
+				054883492310737013844148 /* toolbar_update_view.bmp */,
+				013720755212815364051588 /* toolbar_view_item.bmp */,
+			);
+			name = Icons;
+			path = ../../Src/SimRobotHelp/Help/Icons;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000006519298936770250 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				000006675828747372821839 /* Actuators */,
+				000026703048447453153963 /* Appearances */,
+				000003349793753522124698 /* Axis.cpp */,
+				000000837455631959285532 /* Axis.h */,
+				000003349793753522134436 /* Body.cpp */,
+				000000837455631959284420 /* Body.h */,
+				000053596700045210521616 /* Compound.cpp */,
+				000013399290113350335116 /* Compound.h */,
+				000013399290113350334591 /* Geometries */,
+				006835980402548006476232 /* GraphicalObject.cpp */,
+				001709012159327438596402 /* GraphicalObject.h */,
+				000000837455631959289809 /* Masses */,
+				000000837455631959284767 /* Motors */,
+				003430218269017664385162 /* PhysicalObject.cpp */,
+				000857547200901676105268 /* PhysicalObject.h */,
+				000006675828747372762998 /* Scene.cpp */,
+				000001668940527813192332 /* Scene.h */,
+				000001668940527813196081 /* Sensors */,
+				000106813259976315368706 /* SimObject.cpp */,
+				000026703048447453034380 /* SimObject.h */,
+				000214388641781577905488 /* Simulation.cpp */,
+				000053596700045209756392 /* Simulation.h */,
+				20CF29F41A8F678C008D50DF /* UserInput.cpp */,
+				20CF29F51A8F678C008D50DF /* UserInput.h */,
+			);
+			name = Simulation;
+			path = ../../Src/SimRobotCore2/Simulation;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000837455631959284767 /* Motors */ = {
+			isa = PBXGroup;
+			children = (
+				000214388641781576913908 /* Motor.h */,
+				027344194553936359999546 /* ServoMotor.cpp */,
+				006835980402548000648366 /* ServoMotor.h */,
+				219532083430825971987808 /* VelocityMotor.cpp */,
+				054883492296083685601626 /* VelocityMotor.h */,
+			);
+			name = Motors;
+			path = ../../Src/SimRobotCore2/Simulation/Motors;
+			sourceTree = SOURCE_ROOT;
+		};
+		000000837455631959289809 /* Masses */ = {
+			isa = PBXGroup;
+			children = (
+				003430218269017663969804 /* BoxMass.cpp */,
+				000857547200901676459230 /* BoxMass.h */,
+				512513334162862622028904 /* InertiaMatrixMass.cpp */,
+				878135876868521834285466 /* InertiaMatrixMass.h */,
+				000427248775120177902854 /* Mass.cpp */,
+				000106813259976315379884 /* Mass.h */,
+				027344194553936738195064 /* SphereMass.cpp */,
+				006835980402547960692416 /* SphereMass.h */,
+			);
+			name = Masses;
+			path = ../../Src/SimRobotCore2/Simulation/Masses;
+			sourceTree = SOURCE_ROOT;
+		};
+		000001668940527813196081 /* Sensors */ = {
+			isa = PBXGroup;
+			children = (
+				437507112787822523776366 /* Accelerometer.cpp */,
+				109375686430765617432170 /* Accelerometer.h */,
+				200213358292238167607398 /* ApproxDistanceSensor.cpp */,
+				050174027797482869900022 /* ApproxDistanceSensor.h */,
+				003430218269017665737578 /* Camera.cpp */,
+				000857547200901675984414 /* Camera.h */,
+				750010983052281585177242 /* CollisionSensor.cpp */,
+				437507112787822524088060 /* CollisionSensor.h */,
+				512513334162863980514236 /* DepthImageSensor.cpp */,
+				878135876868522442336334 /* DepthImageSensor.h */,
+				027344194553936722631894 /* Gyroscope.cpp */,
+				006835980402547974872256 /* Gyroscope.h */,
+				003430218269017665925370 /* Sensor.cpp */,
+				000857547200901675965962 /* Sensor.h */,
+				200213358292236069112250 /* SingleDistanceSensor.cpp */,
+				050174027797482337026320 /* SingleDistanceSensor.h */,
+			);
+			name = Sensors;
+			path = ../../Src/SimRobotCore2/Simulation/Sensors;
+			sourceTree = SOURCE_ROOT;
+		};
+		000006675828747372821839 /* Actuators */ = {
+			isa = PBXGroup;
+			children = (
+				054883492296083704723806 /* Actuator.cpp */,
+				013720755211573874827286 /* Actuator.h */,
+				006835980402547998685290 /* Hinge.cpp */,
+				001709012159327442379344 /* Hinge.h */,
+				006835980402547998658330 /* Joint.cpp */,
+				001709012159327442386068 /* Joint.h */,
+				013720755211573874774430 /* Slider.cpp */,
+				003430218269017678074556 /* Slider.h */,
+			);
+			name = Actuators;
+			path = ../../Src/SimRobotCore2/Simulation/Actuators;
+			sourceTree = SOURCE_ROOT;
+		};
+		000013399290113350334591 /* Geometries */ = {
+			isa = PBXGroup;
+			children = (
+				878135876868527528463124 /* BoxGeometry.cpp */,
+				219532083430825629077878 /* BoxGeometry.h */,
+				050174027797418703480838 /* CapsuleGeometry.cpp */,
+				512513334162916529805988 /* CapsuleGeometry.h */,
+				000175726275612444086788 /* CylinderGeometry.cpp */,
+				000113805807696195567770 /* CylinderGeometry.h */,
+				109375686430764110526306 /* Geometry.cpp */,
+				027344194553936313183682 /* Geometry.h */,
+				000113805807696180043488 /* SphereGeometry.cpp */,
+				750010983052289667967788 /* SphereGeometry.h */,
+			);
+			name = Geometries;
+			path = ../../Src/SimRobotCore2/Simulation/Geometries;
+			sourceTree = SOURCE_ROOT;
+		};
+		000026703048447453153963 /* Appearances */ = {
+			isa = PBXGroup;
+			children = (
+				878135876868526630251676 /* Appearance.cpp */,
+				219532083430825790678550 /* Appearance.h */,
+				000113805807696879698780 /* BoxAppearance.cpp */,
+				750010983052289895717498 /* BoxAppearance.h */,
+				001820873683133707632882 /* CapsuleAppearance.cpp */,
+				000175726275581822437514 /* CapsuleAppearance.h */,
+				001820873683133797757908 /* ComplexAppearance.cpp */,
+				000175726275581829236186 /* ComplexAppearance.h */,
+				802784478342817346257890 /* CylinderAppearance.cpp */,
+				200213358291402415366704 /* CylinderAppearance.h */,
+				200213358291402458630570 /* SphereAppearance.cpp */,
+				050174027797411484509936 /* SphereAppearance.h */,
+			);
+			name = Appearances;
+			path = ../../Src/SimRobotCore2/Simulation/Appearances;
+			sourceTree = SOURCE_ROOT;
+		};
+		05596AB53D8D521C69802C27 /* B-Human */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000023799 /* Controllers */,
+				2024566F1205D86500C3BCD9 /* Libs */,
+				000000000000099476610718 /* SimRobot */,
+				ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */,
+				20D139C911F0B445007DFC5D /* Target Files */,
+			);
+			name = "B-Human";
+			sourceTree = "<group>";
+		};
+		2024566F1205D86500C3BCD9 /* Libs */ = {
+			isa = PBXGroup;
+			children = (
+				000000000003194612267478 /* SimRobotCore2 */,
+				000000000006366566419402 /* SimRobotEditor */,
+				000000000001591625717222 /* SimRobotHelp */,
+			);
+			name = Libs;
+			sourceTree = "<group>";
+		};
+		20D139C911F0B445007DFC5D /* Target Files */ = {
+			isa = PBXGroup;
+			children = (
+				200377B317C11658008F7CAC /* help.qch */,
+				200377B517C11717008F7CAC /* helpcollection.qhc */,
+				209C6D111200A9C2007E5C2E /* SimRobot.app */,
+				20DD7409134E5056003FF249 /* SimRobotCore2.dylib */,
+				20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */,
+				20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */,
+				20844F1811FE33150037FA87 /* Factory.dylib */,
+				20BE6B2F1795D83A0096D6E4 /* SimpleVehicle.dylib */,
+			);
+			name = "Target Files";
+			sourceTree = "<group>";
+		};
+		ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				202B6E6917FB5FF900555411 /* qt_menu.nib */,
+				20C1154A17934B9400961A38 /* libqsqlite.dylib */,
+				20C1154217934AB100961A38 /* libqtaccessiblewidgets.dylib */,
+				2044A8C112C0F80200B772CD /* libiconv.dylib */,
+				208B2E4B14B898AC003A08A0 /* libxml2.dylib */,
+				2044A8C212C0F80200B772CD /* libz.dylib */,
+				20844A6111FB5F1C0037FA87 /* libode.a */,
+				202B6E6617FB5F8300555411 /* libQtCLucene.4.dylib */,
+				20C1154C17934BDC00961A38 /* qt.conf */,
+				20C115221793477000961A38 /* QtCore */,
+				20C11525179347B900961A38 /* QtGui */,
+				20C11528179347F200961A38 /* QtHelp */,
+				205E606517D4F75F00DF340E /* QtNetwork */,
+				20C11531179348E300961A38 /* QtOpenGL */,
+				20C1153A179349D700961A38 /* QtSvg */,
+				20C115371793499500961A38 /* QtSql */,
+				2061F22D152CA4430089659C /* Foundation.framework */,
+				20BE6B371795DBB10096D6E4 /* OpenGL.framework */,
+				2007C22017861A13002033FC /* QtCore.framework */,
+				2007C22217861A7D002033FC /* QtGui.framework */,
+				2007C23317861D21002033FC /* QtHelp.framework */,
+				2007C22B17861C43002033FC /* QtOpenGL.framework */,
+				2007C22417861AD1002033FC /* QtSvg.framework */,
+			);
+			name = "Frameworks and Libraries";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		20844AF411FC6F410037FA87 /* SimRobotEditor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */;
+			buildPhases = (
+				20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */,
+				20844AF211FC6F410037FA87 /* Sources */,
+				20844AF311FC6F410037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				20844B1111FC70CA0037FA87 /* PBXBuildRule */,
+				20844B1211FC70CA0037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotEditor;
+			productName = SimRobotEditor;
+			productReference = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20844B3611FCB34C0037FA87 /* SimRobotHelp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844B3A11FCB3910037FA87 /* Build configuration list for PBXNativeTarget "SimRobotHelp" */;
+			buildPhases = (
+				20844E6211FE0FA20037FA87 /* Check Resource Dependencies */,
+				20844E7311FE13870037FA87 /* Check Help Dependencies */,
+				20844B3411FCB34C0037FA87 /* Sources */,
+				20844B3511FCB34C0037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				20844C5F11FD7D4E0037FA87 /* PBXBuildRule */,
+				20844B3E11FCC3E20037FA87 /* PBXBuildRule */,
+				20844B3F11FCC3E20037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotHelp;
+			productName = SimRobotHelp;
+			productReference = 20844B3711FCB34C0037FA87 /* SimRobotHelp.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20844F1711FE33150037FA87 /* Factory */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20844F1B11FE336F0037FA87 /* Build configuration list for PBXNativeTarget "Factory" */;
+			buildPhases = (
+				20844F1511FE33150037FA87 /* Sources */,
+				20844F1611FE33150037FA87 /* Frameworks */,
+			);
+			buildRules = (
+				208462B711FF64520037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = Factory;
+			productName = Controller;
+			productReference = 20844F1811FE33150037FA87 /* Factory.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20BE6B261795D83A0096D6E4 /* SimpleVehicle */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20BE6B2C1795D83A0096D6E4 /* Build configuration list for PBXNativeTarget "SimpleVehicle" */;
+			buildPhases = (
+				20BE6B271795D83A0096D6E4 /* Sources */,
+				20BE6B291795D83A0096D6E4 /* Frameworks */,
+			);
+			buildRules = (
+				20BE6B2B1795D83A0096D6E4 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimpleVehicle;
+			productName = Controller;
+			productReference = 20BE6B2F1795D83A0096D6E4 /* SimpleVehicle.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		20DD73A1134E4E33003FF249 /* SimRobotCore2 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */;
+			buildPhases = (
+				20DD73A2134E4E33003FF249 /* Check Resource Dependencies */,
+				20DD73A3134E4E33003FF249 /* Sources */,
+				20DD73E6134E4E33003FF249 /* Frameworks */,
+			);
+			buildRules = (
+				20DD73F4134E4E33003FF249 /* PBXBuildRule */,
+				20DD73F5134E4E33003FF249 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = SimRobotCore2;
+			productName = SimRobotCore;
+			productReference = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		299502394E013F9C280A5D16 /* SimRobot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */;
+			buildPhases = (
+				20844D9211FDF51B0037FA87 /* Check Resource Dependencies */,
+				C29B8785722055ED95EF7B57 /* Sources */,
+				2A1043669E6E5A7426EA502A /* Frameworks & Libraries */,
+				2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */,
+				207DB54D1A829BDD0012AD4E /* Get SimRobotEditor Library */,
+				207DB54E1A829BDF0012AD4E /* Get SimRobotHelp Library */,
+				207DB54F1A829BE00012AD4E /* Get SimRobot Help File */,
+				207DB5501A829BE20012AD4E /* Get SimRobot Help Collection */,
+				207DB5511A829BE30012AD4E /* Get Factory Controller */,
+				207DB5521A829BE50012AD4E /* Get SimpleVehicle Controller */,
+				3787F99312C85FF0073FD7BA /* Bundle Resources */,
+				20C115211793473400961A38 /* Copy QtCore Framework */,
+				20C115241793478A00961A38 /* Copy QtGui Framework */,
+				202B6E6817FB5FB800555411 /* Copy QtGui Resources */,
+				20C11527179347C800961A38 /* Copy QtHelp Framework */,
+				205E606417D4F70800DF340E /* Copy QtNetwork Framework */,
+				20C11530179348A000961A38 /* Copy QtOpenGL Framework */,
+				20C115361793494F00961A38 /* Copy QtSql Framework */,
+				20C11539179349A500961A38 /* Copy QtSvg Framework */,
+				20C115181793403D00961A38 /* Copy libQtCLucene */,
+				20C1153F17934A2700961A38 /* Copy Accessible Plugin */,
+				20C1154917934B5C00961A38 /* Copy SqlDrivers Plugin */,
+			);
+			buildRules = (
+				208443B911FA398B0037FA87 /* PBXBuildRule */,
+				20844C1A11FD56640037FA87 /* PBXBuildRule */,
+			);
+			dependencies = (
+				20DD7421134E5458003FF249 /* PBXTargetDependency */,
+				20844B2411FC73AD0037FA87 /* PBXTargetDependency */,
+				20844BCD11FCC5120037FA87 /* PBXTargetDependency */,
+				2061F289152DC68E0089659C /* PBXTargetDependency */,
+				20BE6B331795D9360096D6E4 /* PBXTargetDependency */,
+			);
+			name = SimRobot;
+			productName = SimRobotDemo;
+			productReference = 209C6D111200A9C2007E5C2E /* SimRobot.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		91B15E841AA80083484172DE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0700;
+			};
+			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "SimRobot" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 05596AB53D8D521C69802C27 /* B-Human */;
+			productRefGroup = 05596AB53D8D521C69802C27 /* B-Human */;
+			projectDirPath = "";
+			projectRoot = ../../Src;
+			targets = (
+				299502394E013F9C280A5D16 /* SimRobot */,
+				20DD73A1134E4E33003FF249 /* SimRobotCore2 */,
+				20844AF411FC6F410037FA87 /* SimRobotEditor */,
+				20844B3611FCB34C0037FA87 /* SimRobotHelp */,
+				20844F1711FE33150037FA87 /* Factory */,
+				20BE6B261795D83A0096D6E4 /* SimpleVehicle */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3787F99312C85FF0073FD7BA /* Bundle Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */,
+				20844BCE11FCC5390037FA87 /* SimRobotHelp.dylib in Bundle Resources */,
+				20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */,
+				208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */,
+				208463C211FF77B60037FA87 /* Factory.dylib in Bundle Resources */,
+				20BE6B3A1795DD050096D6E4 /* SimpleVehicle.dylib in Bundle Resources */,
+				2084439811FA33FF0037FA87 /* SimRobot.icns in Bundle Resources */,
+				2084439911FA33FF0037FA87 /* SimRobotDoc.icns in Bundle Resources */,
+				200377B717C11749008F7CAC /* help.qch in Bundle Resources */,
+				200377B817C1174C008F7CAC /* helpcollection.qhc in Bundle Resources */,
+			);
+			name = "Bundle Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/SimRobotCore2/$(CONFIGURATION)/SimRobotCore2.dylib",
+			);
+			name = "Get SimRobotCore2 Library";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotCore2.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/SimRobotCore2/$CONFIGURATION/SimRobotCore2.dylib $CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB54D1A829BDD0012AD4E /* Get SimRobotEditor Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/SimRobotEditor/$(CONFIGURATION)/SimRobotEditor.dylib",
+			);
+			name = "Get SimRobotEditor Library";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotEditor.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/SimRobotEditor/$CONFIGURATION/SimRobotEditor.dylib $CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB54E1A829BDF0012AD4E /* Get SimRobotHelp Library */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/SimRobotHelp/$(CONFIGURATION)/SimRobotHelp.dylib",
+			);
+			name = "Get SimRobotHelp Library";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimRobotHelp.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/SimRobotHelp/$CONFIGURATION/SimRobotHelp.dylib $CONFIGURATION_TEMP_DIR/SimRobotHelp.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB54F1A829BE00012AD4E /* Get SimRobot Help File */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/Help/help.qch",
+			);
+			name = "Get SimRobot Help File";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/help.qch",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/Help/help.qch $CONFIGURATION_TEMP_DIR/help.qch\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB5501A829BE20012AD4E /* Get SimRobot Help Collection */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/Help/helpcollection.qhc",
+			);
+			name = "Get SimRobot Help Collection";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/helpcollection.qhc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/Help/helpcollection.qhc $CONFIGURATION_TEMP_DIR/helpcollection.qhc\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB5511A829BE30012AD4E /* Get Factory Controller */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/Factory/$(CONFIGURATION)/Factory.dylib",
+			);
+			name = "Get Factory Controller";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/Factory.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/Factory/$CONFIGURATION/Factory.dylib $CONFIGURATION_TEMP_DIR/Factory.dylib\n";
+			showEnvVarsInLog = 0;
+		};
+		207DB5521A829BE50012AD4E /* Get SimpleVehicle Controller */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(BUILD_DIR)/OSX/SimpleVehicle/$(CONFIGURATION)/SimpleVehicle.dylib",
+			);
+			name = "Get SimpleVehicle Controller";
+			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimpleVehicle.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp $BUILD_DIR/OSX/SimpleVehicle/$CONFIGURATION/SimpleVehicle.dylib $CONFIGURATION_TEMP_DIR/SimpleVehicle.dylib";
+			showEnvVarsInLog = 0;
+		};
+		20844D9211FDF51B0037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				../../Src/SimRobot/Icons/SimRobot.png,
+				../../Src/SimRobot/Icons/application_side_tree.png,
+				../../Src/SimRobot/Icons/arrow_redo.png,
+				../../Src/SimRobot/Icons/arrow_undo.png,
+				../../Src/SimRobot/Icons/control_play_blue.png,
+				../../Src/SimRobot/Icons/control_start_blue.png,
+				../../Src/SimRobot/Icons/control_step_blue.png,
+				../../Src/SimRobot/Icons/cut.png,
+				../../Src/SimRobot/Icons/disk.png,
+				../../Src/SimRobot/Icons/folder.png,
+				../../Src/SimRobot/Icons/folder_page.png,
+				../../Src/SimRobot/Icons/page_copy.png,
+				../../Src/SimRobot/Icons/page_paste.png,
+				../../Src/SimRobot/Icons/tag_green.png,
+				../../Src/SimRobot/Icons/textfield.png,
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				../../Src/SimRobotEditor/Icons/page_white_stack.png,
+				../../Src/SimRobotEditor/Icons/page_white_text.png,
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E6211FE0FA20037FA87 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				../../Src/SimRobotHelp/Icons/back.png,
+				../../Src/SimRobotHelp/Icons/forward.png,
+				../../Src/SimRobotHelp/Icons/help.png,
+				../../Src/SimRobotHelp/Icons/home.png,
+				../../Src/SimRobotHelp/Icons/locate.png,
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+		20844E7311FE13870037FA87 /* Check Help Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				../../Src/SimRobotHelp/Help/Icons/app_exit.bmp,
+				../../Src/SimRobotHelp/Help/Icons/app_exit_xp.bmp,
+				../../Src/SimRobotHelp/Help/Icons/crystal_toolbar.bmp,
+				../../Src/SimRobotHelp/Help/Icons/status_bar.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_camera.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_clock.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_color_image.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_column_graph.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_copy.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_cut.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_drag_and_drop_plane.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_grid.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_help.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_light.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_line_graph.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_monochrome_image.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_motion_blur.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_new.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_open.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_paste.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_reset.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_save.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_search.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_shader_interface.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_show_sensors.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_start.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_step.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_stereogram.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_surface_rendering.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_tree_view.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_update_view.bmp,
+				../../Src/SimRobotHelp/Help/Icons/toolbar_view_item.bmp,
+				../../Src/SimRobotHelp/Help/api/api.html,
+				../../Src/SimRobotHelp/Help/basics/architecture.html,
+				../../Src/SimRobotHelp/Help/basics/basics.html,
+				../../Src/SimRobotHelp/Help/basics/physics.html,
+				../../Src/SimRobotHelp/Help/basics/quickstart.html,
+				../../Src/SimRobotHelp/Help/basics/sensing.html,
+				../../Src/SimRobotHelp/Help/basics/specification.html,
+				../../Src/SimRobotHelp/Help/console/commands.html,
+				../../Src/SimRobotHelp/Help/examples/examples.html,
+				../../Src/SimRobotHelp/Help/faq/faq.html,
+				../../Src/SimRobotHelp/Help/helpcollection.qhcp,
+				../../Src/SimRobotHelp/Help/index.html,
+				../../Src/SimRobotHelp/Help/interface/console.html,
+				../../Src/SimRobotHelp/Help/interface/editmenu.html,
+				../../Src/SimRobotHelp/Help/interface/editorwindow.html,
+				../../Src/SimRobotHelp/Help/interface/filemenu.html,
+				../../Src/SimRobotHelp/Help/interface/helpmenu.html,
+				../../Src/SimRobotHelp/Help/interface/interface.html,
+				../../Src/SimRobotHelp/Help/interface/menus.html,
+				../../Src/SimRobotHelp/Help/interface/objectwindow.html,
+				../../Src/SimRobotHelp/Help/interface/sensorwindow.html,
+				../../Src/SimRobotHelp/Help/interface/simulationmenu.html,
+				../../Src/SimRobotHelp/Help/interface/statusbar.html,
+				../../Src/SimRobotHelp/Help/interface/toolbar.html,
+				../../Src/SimRobotHelp/Help/interface/treewindow.html,
+				../../Src/SimRobotHelp/Help/interface/viewmenu.html,
+				../../Src/SimRobotHelp/Help/interface/windowmenu.html,
+				../../Src/SimRobotHelp/Help/rosiml/rosi.html,
+				../../Src/SimRobotHelp/Help/rosiml/rosi_controller.html,
+				../../Src/SimRobotHelp/Help/simrobothelp.css,
+			);
+			name = "Check Help Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/Help/help.qhp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/Help/help.qhp";
+			showEnvVarsInLog = 0;
+		};
+		20DD73A2134E4E33003FF249 /* Check Resource Dependencies */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				../../Src/SimRobotCore2/Icons/DragPlane.png,
+				../../Src/SimRobotCore2/Icons/arrow_rotate_clockwise.png,
+				../../Src/SimRobotCore2/Icons/brick.png,
+				../../Src/SimRobotCore2/Icons/bricks.png,
+				../../Src/SimRobotCore2/Icons/camera.png,
+				../../Src/SimRobotCore2/Icons/chart_line.png,
+				../../Src/SimRobotCore2/Icons/layers.png,
+				../../Src/SimRobotCore2/Icons/link.png,
+				../../Src/SimRobotCore2/Icons/note.png,
+				../../Src/SimRobotCore2/Icons/opening_angle.png,
+				../../Src/SimRobotCore2/Icons/slider.png,
+				../../Src/SimRobotCore2/Icons/transmit_go.png,
+			);
+			name = "Check Resource Dependencies";
+			outputPaths = (
+				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		20844AF211FC6F410037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				006835980403756342514218 /* EditorWidget.h in Sources */,
+				027344194559008781660418 /* EditorModule.cpp in Sources */,
+				027344194559010425232974 /* EditorWidget.cpp in Sources */,
+				109375686480868965221102 /* SimRobotEditor.qrc in Sources */,
+				219532083460804837335420 /* SyntaxHighlighter.h in Sources */,
+				878135876434294622367902 /* SyntaxHighlighter.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844B3411FCB34C0037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000106813259953414385358 /* HelpWidget.h in Sources */,
+				000214388641838786506694 /* help.qhp in Sources */,
+				000427248775143777892804 /* HelpModule.cpp in Sources */,
+				000427248775145061444784 /* HelpWidget.cpp in Sources */,
+				001709012159416109470608 /* SimRobotHelp.qrc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20844F1511FE33150037FA87 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BE6B241795D1460096D6E4 /* FactoryController.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20BE6B271795D83A0096D6E4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BE6B311795D8F70096D6E4 /* SimpleVehicleController.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		20DD73A3134E4E33003FF249 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000113805807804739878922 /* Mass.cpp in Sources */,
+				001709012159335937912944 /* SensorWidget.h in Sources */,
+				001709012159339151319946 /* CoreModule.cpp in Sources */,
+				001820873255401131192360 /* OffscreenRenderer.cpp in Sources */,
+				001820873683015851116256 /* GraphicalObject.cpp in Sources */,
+				001820873683263758885944 /* Hinge.cpp in Sources */,
+				001820873683264210991104 /* Joint.cpp in Sources */,
+				002811661383151940666284 /* SphereMass.cpp in Sources */,
+				002811661384081231455426 /* Gyroscope.cpp in Sources */,
+				002811661385770537457910 /* ServoMotor.cpp in Sources */,
+				006835980402513220605916 /* SensorWidget.cpp in Sources */,
+				013720755211442969720332 /* Parser.cpp in Sources */,
+				013720755211443141523630 /* Reader.cpp in Sources */,
+				013720755211471002754448 /* ActuatorsWidget.h in Sources */,
+				013720755211521073314782 /* Texture.cpp in Sources */,
+				013720755211522024043538 /* Vector3.cpp in Sources */,
+				013720755211532089452436 /* SimRobotCore2.qrc in Sources */,
+				013720755211542353209448 /* SimObjectWidget.h in Sources */,
+				027344194554087101938714 /* Element.cpp in Sources */,
+				029134286770220794096214 /* Geometry.cpp in Sources */,
+				044985926655504035855440 /* Accelerometer.cpp in Sources */,
+				054883492296029436148828 /* SimObjectWidget.cpp in Sources */,
+				054883492296083391283578 /* Body.cpp in Sources */,
+				054883492296083751394832 /* Axis.cpp in Sources */,
+				054883492296190091531206 /* Matrix3x3.cpp in Sources */,
+				054883492296494726068712 /* ActuatorsWidget.cpp in Sources */,
+				054883492296838812876472 /* System.cpp in Sources */,
+				054883492296842282643764 /* Assert.cpp in Sources */,
+				073867700897697342152836 /* CapsuleGeometry.cpp in Sources */,
+				109375686430765369258920 /* Scene.cpp in Sources */,
+				182648985348693483333552 /* CylinderAppearance.cpp in Sources */,
+				200213358292236118362054 /* Sensor.cpp in Sources */,
+				20CF29F61A8F678C008D50DF /* UserInput.cpp in Sources */,
+				200213358292237342725398 /* Camera.cpp in Sources */,
+				200213358292245247028036 /* PhysicalObject.cpp in Sources */,
+				200213358292268425781108 /* BoxMass.cpp in Sources */,
+				203413545705460679776020 /* Actuator.cpp in Sources */,
+				205085731159048831426864 /* SphereAppearance.cpp in Sources */,
+				205085735802439372562738 /* SingleDistanceSensor.cpp in Sources */,
+				205085735837361739595564 /* ApproxDistanceSensor.cpp in Sources */,
+				219532083430762798599408 /* OpenGLTools.cpp in Sources */,
+				219532083431319984644328 /* SimObjectRenderer.cpp in Sources */,
+				254619722588427244060066 /* BoxGeometry.cpp in Sources */,
+				254619722599017832546108 /* Appearance.cpp in Sources */,
+				458377413177872981437474 /* CylinderGeometry.cpp in Sources */,
+				466143662736938625782144 /* CollisionSensor.cpp in Sources */,
+				512513334162866591774542 /* Simulation.cpp in Sources */,
+				512826455446931707531884 /* InertiaMatrixMass.cpp in Sources */,
+				512826455486781009507606 /* DepthImageSensor.cpp in Sources */,
+				516397196530315272130962 /* CapsuleAppearance.cpp in Sources */,
+				516397196530760822949248 /* ComplexAppearance.cpp in Sources */,
+				719785314855679939002510 /* SphereGeometry.cpp in Sources */,
+				719785314870605739396472 /* BoxAppearance.cpp in Sources */,
+				750010983052282056258314 /* SimObject.cpp in Sources */,
+				802784478342550288778794 /* Slider.cpp in Sources */,
+				844551116140419587311810 /* VelocityMotor.cpp in Sources */,
+				878135876868527575315788 /* Compound.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C29B8785722055ED95EF7B57 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20BDE36117FDB0360062745A /* MacFullscreen.mm in Sources */,
+				000000026077456032005604 /* Main.cpp in Sources */,
+				000000209362112307956844 /* StatusBar.h in Sources */,
+				000000417239296446174322 /* MainWindow.h in Sources */,
+				000000417239296488887054 /* SimRobot.qrc in Sources */,
+				000000837455616636172436 /* StatusBar.cpp in Sources */,
+				000001668940584988737952 /* MainWindow.cpp in Sources */,
+				000427248789692927904424 /* SceneGraphDockWidget.h in Sources */,
+				000427248789759213283584 /* RegisteredDockWidget.h in Sources */,
+				001709012158381760463422 /* SceneGraphDockWidget.cpp in Sources */,
+				001709012158507643302640 /* RegisteredDockWidget.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2061F289152DC68E0089659C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844F1711FE33150037FA87 /* Factory */;
+			targetProxy = 2061F288152DC68E0089659C /* PBXContainerItemProxy */;
+		};
+		20844B2411FC73AD0037FA87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844AF411FC6F410037FA87 /* SimRobotEditor */;
+			targetProxy = 20844B2311FC73AD0037FA87 /* PBXContainerItemProxy */;
+		};
+		20844BCD11FCC5120037FA87 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20844B3611FCB34C0037FA87 /* SimRobotHelp */;
+			targetProxy = 20844BCC11FCC5120037FA87 /* PBXContainerItemProxy */;
+		};
+		20BE6B331795D9360096D6E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20BE6B261795D83A0096D6E4 /* SimpleVehicle */;
+			targetProxy = 20BE6B321795D9360096D6E4 /* PBXContainerItemProxy */;
+		};
+		20DD7421134E5458003FF249 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20DD73A1134E4E33003FF249 /* SimRobotCore2 */;
+			targetProxy = 20DD7420134E5458003FF249 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		20844AF611FC6F420037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotEditor;
+			};
+			name = Debug;
+		};
+		20844AF711FC6F420037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotEditor;
+			};
+			name = Release;
+		};
+		20844B3811FCB34C0037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotHelp;
+			};
+			name = Debug;
+		};
+		20844B3911FCB34C0037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotHelp;
+			};
+			name = Release;
+		};
+		20844F1911FE33150037FA87 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = Factory;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Debug;
+		};
+		20844F1A11FE33150037FA87 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = Factory;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Release;
+		};
+		20A362F21A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/OSX/$(PRODUCT_NAME)/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = YES;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					OSX,
+					NDEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-mtune=native",
+					"-fomit-frame-pointer",
+				);
+				QT_DIR = ../../Util/qt/OSX;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+				);
+			};
+			name = Develop;
+		};
+		20A362F31A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
+				PRODUCT_NAME = SimRobot;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Develop;
+		};
+		20A362F41A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					MULTI_THREADING,
+					dNODEBUG,
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/ode/OSX/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/ode/OSX/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
+			};
+			name = Develop;
+		};
+		20A362F51A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INSTALL_PATH = /usr/local/lib;
+				PRODUCT_NAME = SimRobotEditor;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotEditor;
+			};
+			name = Develop;
+		};
+		20A362F61A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_HELP_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtHelp.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				PRODUCT_NAME = SimRobotHelp;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotHelp;
+			};
+			name = Develop;
+		};
+		20A362F71A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = Factory;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Develop;
+		};
+		20A362F81A6BD27400C666CA /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = SimpleVehicle;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Develop;
+		};
+		20BE6B2D1795D83A0096D6E4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = SimpleVehicle;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Debug;
+		};
+		20BE6B2E1795D83A0096D6E4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Src/SimRobotCore2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+				);
+				PRODUCT_NAME = SimpleVehicle;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Release;
+		};
+		20DD73F7134E4E33003FF249 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					MULTI_THREADING,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/ode/OSX/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/ode/OSX/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
+			};
+			name = Debug;
+		};
+		20DD73FA134E4E33003FF249 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					MULTI_THREADING,
+					dNODEBUG,
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_OPENGL_LIB,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+					QT_NO_STL,
+				);
+				HEADER_SEARCH_PATHS = (
+					../../Util/ode/OSX/include,
+					/usr/include/libxml2,
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtOpenGL.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					../../Util/ode/OSX/lib,
+				);
+				PRODUCT_NAME = SimRobotCore2;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
+			};
+			name = Release;
+		};
+		7C33BA060E74328D00ACB790 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
+				PRODUCT_NAME = SimRobot;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Debug;
+		};
+		7C33BA070E74328D00ACB790 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = $QT_DIR/Frameworks;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					QT_NO_DEBUG,
+					QT_SHARED,
+					QT_GUI_LIB,
+					QT_CORE_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (
+					$QT_DIR/Frameworks/QtCore.framework/Headers,
+					$QT_DIR/Frameworks/QtGui.framework/Headers,
+					$QT_DIR/Frameworks/QtSvg.framework/Headers,
+					$QT_DIR/Frameworks/QtWidgets.framework/Headers,
+				);
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.B-Human.SimRobot";
+				PRODUCT_NAME = SimRobot;
+				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
+			};
+			name = Release;
+		};
+		8DB1DD96F65B1BF1FFC506E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/OSX/$(PRODUCT_NAME)/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					OSX,
+					_DEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = "-mtune=native";
+				OTHER_LDFLAGS = "-w";
+				QT_DIR = ../../Util/qt/OSX;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+				);
+			};
+			name = Debug;
+		};
+		95E1EB2E5DDD587BE5B3E548 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/OSX/$(PRODUCT_NAME)/$(CONFIGURATION)";
+				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = YES;
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					OSX,
+					NDEBUG,
+				);
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = NO;
+				INSTALL_OWNER = "$(USER)";
+				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
+				MACOSX_DEPLOYMENT_TARGET = "";
+				OTHER_CFLAGS = (
+					"-mtune=native",
+					"-fomit-frame-pointer",
+				);
+				QT_DIR = ../../Util/qt/OSX;
+				SKIP_INSTALL = YES;
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wconversion",
+					"-Wliteral-conversion",
+					"-Wsign-compare",
+					"-Wno-deprecated",
+					"-Wno-sign-conversion",
+				);
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844AF611FC6F420037FA87 /* Debug */,
+				20844AF711FC6F420037FA87 /* Release */,
+				20A362F51A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20844B3A11FCB3910037FA87 /* Build configuration list for PBXNativeTarget "SimRobotHelp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844B3811FCB34C0037FA87 /* Debug */,
+				20844B3911FCB34C0037FA87 /* Release */,
+				20A362F61A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20844F1B11FE336F0037FA87 /* Build configuration list for PBXNativeTarget "Factory" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20844F1911FE33150037FA87 /* Debug */,
+				20844F1A11FE33150037FA87 /* Release */,
+				20A362F71A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20BE6B2C1795D83A0096D6E4 /* Build configuration list for PBXNativeTarget "SimpleVehicle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20BE6B2D1795D83A0096D6E4 /* Debug */,
+				20BE6B2E1795D83A0096D6E4 /* Release */,
+				20A362F81A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20DD73F7134E4E33003FF249 /* Debug */,
+				20DD73FA134E4E33003FF249 /* Release */,
+				20A362F41A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "SimRobot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8DB1DD96F65B1BF1FFC506E0 /* Debug */,
+				95E1EB2E5DDD587BE5B3E548 /* Release */,
+				20A362F21A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C33BA060E74328D00ACB790 /* Debug */,
+				7C33BA070E74328D00ACB790 /* Release */,
+				20A362F31A6BD27400C666CA /* Develop */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 91B15E841AA80083484172DE /* Project object */;
+}

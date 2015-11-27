@@ -29,7 +29,9 @@ bool ModuleInfo::handleMessage(InMessage& message, char processIdentifier)
       Module module;
       module.processIdentifier = processIdentifier;
       int numOfRequirements;
-      message.bin >> module.name >> module.category >> numOfRequirements;
+      unsigned char category;
+      message.bin >> module.name >> category >> numOfRequirements;
+      module.category = static_cast<ModuleBase::Category>(category);
       module.requirements.resize(numOfRequirements);
       for(unsigned j = 0; j < module.requirements.size(); ++j)
       {

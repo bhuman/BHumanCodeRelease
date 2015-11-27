@@ -1,9 +1,0 @@
-call FieldViews1
-
-# ground truth view layers
-vfd worldState representation:GroundTruthRobotPose
-# from now, relative to ground truth robot pose
-vfd worldState origin:GroundTruthRobotPose
-vfd worldState representation:GroundTruthBallModel
-
-call FieldViews2

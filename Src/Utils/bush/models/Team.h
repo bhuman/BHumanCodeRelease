@@ -3,14 +3,16 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "Utils/bush/tools/ConfigMap.h"
+#include "Tools/Streams/Streamable.h"
 
-class Robot;
+struct Robot;
 
-class Team
+class Team : public Streamable
 {
   std::vector<std::vector<Robot*> > players;
   std::map<Robot*, bool> selectedPlayers;
+
+  void serialize(In*, Out*);
 
   void init();
 public:
@@ -21,6 +23,8 @@ public:
   std::string location;
   std::string wlanConfig;
   std::string buildConfig;
+  unsigned short volume;
+  std::string deployDevice;
 
   Team();
   Team(const std::string& name, unsigned short number);
@@ -38,9 +42,6 @@ public:
   bool isPlayerSelected(size_t index);
   std::vector<Robot*> getSelectedPlayers() const;
 
-  static void writeTeams(ConfigMap& cv, const std::vector<Team>& teams);
-  static void readTeams(const ConfigMap& cv, std::vector<Team>& teams);
+  static void writeTeams(Out& stream, const std::vector<Team>& teams);
+  static void readTeams(In& stream, std::vector<Team>& teams);
 };
-
-CONFIGMAP_STREAM_IN_DELCARE(Team);
-CONFIGMAP_STREAM_OUT_DELCARE(Team);

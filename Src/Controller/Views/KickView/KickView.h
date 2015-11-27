@@ -8,20 +8,19 @@
 
 #pragma once
 
-#include "SimRobotCore2.h"
+#include <SimRobotCore2.h>
 #include "Controller/Visualization/HeaderedWidget.h"
 #include "Modules/MotionControl/KickEngine/KickEngineParameters.h"
 
 #include <QString>
 #include <QIcon>
 
+struct MotionRequest;
+struct JointCalibration;
+struct JointAngles;
+struct RobotDimensions;
 class RobotConsole;
-class MotionRequest;
-class JointData;
-class JointCalibration;
-class RobotDimensions;
 class KickViewWidget;
-class SensorData;
 
 class KickView : public SimRobot::Object
 {
@@ -29,15 +28,15 @@ public:
   /**
   * Constructor.
   */
-  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointData& jointData, const JointCalibration& jointCalibration, const SensorData& sensorData, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
+  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, 
+           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
 
   QString fullName;
   QIcon icon;
   RobotConsole& console;
   const MotionRequest& motionRequest;
-  const JointData& jointData;
+  const JointAngles& jointAngles;
   const JointCalibration& jointCalibration;
-  const SensorData& sensorData;
   const RobotDimensions& robotDimensions;
   const std::string& motionRequestCommand;
   SimRobotCore2::Body* robot;

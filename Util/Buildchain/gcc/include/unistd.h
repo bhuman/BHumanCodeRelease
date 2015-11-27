@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2006, 2007, 2008, 2009 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2009, 2010 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -203,7 +203,7 @@ __BEGIN_DECLS
 #include <bits/posix_opt.h>
 
 /* Get the environment definitions from Unix98.  */
-#ifdef __USE_UNIX98
+#if defined __USE_UNIX98 || defined __USE_XOPEN2K
 # include <bits/environments.h>
 #endif
 
@@ -263,7 +263,7 @@ typedef __pid_t pid_t;
 # endif
 #endif	/* X/Open */
 
-#if defined __USE_MISC || defined __USE_XOPEN_EXTENDED
+#if defined __USE_MISC || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K
 # ifndef __intptr_t_defined
 typedef __intptr_t intptr_t;
 #  define __intptr_t_defined
@@ -362,7 +362,7 @@ extern ssize_t read (int __fd, void *__buf, size_t __nbytes) __wur;
    __THROW.  */
 extern ssize_t write (int __fd, __const void *__buf, size_t __n) __wur;
 
-#ifdef __USE_UNIX98
+#if defined __USE_UNIX98 || defined __USE_XOPEN2K8
 # ifndef __USE_FILE_OFFSET64
 /* Read NBYTES into BUF from FD at the given position OFFSET without
    changing the file pointer.  Return the number read, -1 for errors
@@ -440,7 +440,8 @@ extern unsigned int alarm (unsigned int __seconds) __THROW;
    __THROW.  */
 extern unsigned int sleep (unsigned int __seconds);
 
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
+    || defined __USE_BSD
 /* Set an alarm to go off (generating a SIGALRM signal) in VALUE
    microseconds.  If INTERVAL is nonzero, when the alarm goes off, the
    timer is reset to go off every INTERVAL microseconds thereafter.
@@ -469,7 +470,7 @@ extern int pause (void);
 extern int chown (__const char *__file, __uid_t __owner, __gid_t __group)
      __THROW __nonnull ((1)) __wur;
 
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 /* Change the owner and group of the file that FD is open on.  */
 extern int fchown (int __fd, __uid_t __owner, __gid_t __group) __THROW __wur;
 
@@ -492,7 +493,7 @@ extern int fchownat (int __fd, __const char *__file, __uid_t __owner,
 /* Change the process's working directory to PATH.  */
 extern int chdir (__const char *__path) __THROW __nonnull ((1)) __wur;
 
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 /* Change the process's working directory to the one FD is open on.  */
 extern int fchdir (int __fd) __THROW __wur;
 #endif
@@ -513,7 +514,8 @@ extern char *getcwd (char *__buf, size_t __size) __THROW __wur;
 extern char *get_current_dir_name (void) __THROW;
 #endif
 
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
+    || defined __USE_BSD
 /* Put the absolute pathname of the current working directory in BUF.
    If successful, return BUF.  If not, put an error message in
    BUF and return NULL.  BUF should be at least PATH_MAX bytes long.  */
@@ -544,47 +546,47 @@ extern char **environ;
 /* Replace the current process, executing PATH with arguments ARGV and
    environment ENVP.  ARGV and ENVP are terminated by NULL pointers.  */
 extern int execve (__const char *__path, char *__const __argv[],
-		   char *__const __envp[]) __THROW __nonnull ((1));
+		   char *__const __envp[]) __THROW __nonnull ((1, 2));
 
 #ifdef __USE_XOPEN2K8
 /* Execute the file FD refers to, overlaying the running program image.
    ARGV and ENVP are passed to the new program, as for `execve'.  */
 extern int fexecve (int __fd, char *__const __argv[], char *__const __envp[])
-     __THROW;
+     __THROW __nonnull ((2));
 #endif
 
 
 /* Execute PATH with arguments ARGV and environment from `environ'.  */
 extern int execv (__const char *__path, char *__const __argv[])
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 
 /* Execute PATH with all arguments after PATH until a NULL pointer,
    and the argument after that for environment.  */
 extern int execle (__const char *__path, __const char *__arg, ...)
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 
 /* Execute PATH with all arguments after PATH until
    a NULL pointer and environment from `environ'.  */
 extern int execl (__const char *__path, __const char *__arg, ...)
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 
 /* Execute FILE, searching in the `PATH' environment variable if it contains
    no slashes, with arguments ARGV and environment from `environ'.  */
 extern int execvp (__const char *__file, char *__const __argv[])
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 
 /* Execute FILE, searching in the `PATH' environment variable if
    it contains no slashes, with all arguments after FILE until a
    NULL pointer and environment from `environ'.  */
 extern int execlp (__const char *__file, __const char *__arg, ...)
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 
 #ifdef __USE_GNU
 /* Execute FILE, searching in the `PATH' environment variable if it contains
    no slashes, with arguments ARGV and environment from `environ'.  */
 extern int execvpe (__const char *__file, char *__const __argv[],
 		    char *__const __envp[])
-     __THROW __nonnull ((1));
+     __THROW __nonnull ((1, 2));
 #endif
 
 
@@ -639,7 +641,7 @@ extern __pid_t __REDIRECT_NTH (getpgrp, (__pid_t __pid), __getpgid);
 
 /* Get the process group ID of process PID.  */
 extern __pid_t __getpgid (__pid_t __pid) __THROW;
-#ifdef __USE_XOPEN_EXTENDED
+#if defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 extern __pid_t getpgid (__pid_t __pid) __THROW;
 #endif
 
@@ -683,7 +685,7 @@ extern int __REDIRECT_NTH (setpgrp, (__pid_t __pid, __pid_t __pgrp), setpgid);
    are set to the process ID of the calling process, which is returned.  */
 extern __pid_t setsid (void) __THROW;
 
-#ifdef __USE_XOPEN_EXTENDED
+#if defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 /* Return the session ID of the given process.  */
 extern __pid_t getsid (__pid_t __pid) __THROW;
 #endif
@@ -772,13 +774,14 @@ extern int setresgid (__gid_t __rgid, __gid_t __egid, __gid_t __sgid)
    and the process ID of the new process to the old process.  */
 extern __pid_t fork (void) __THROW;
 
-#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED
+#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K8) \
+    || defined __USE_BSD
 /* Clone the calling process, but without copying the whole address space.
    The calling process is suspended until the new process exits or is
    replaced by a call to `execve'.  Return -1 for errors, 0 to the new process,
    and the process ID of the new process to the old process.  */
 extern __pid_t vfork (void) __THROW;
-#endif /* Use BSD. */
+#endif /* Use BSD or XPG < 7. */
 
 
 /* Return the pathname of the terminal FD is open on, or NULL on errors.
@@ -888,7 +891,7 @@ extern int setlogin (__const char *__name) __THROW __nonnull ((1));
 #endif
 
 
-#if defined __USE_BSD || defined __USE_UNIX98
+#if defined __USE_BSD || defined __USE_UNIX98 || defined __USE_XOPEN2K
 /* Put the name of the current host in no more than LEN bytes of NAME.
    The result is null-terminated if LEN is large enough for the full
    name and the terminator.  */
@@ -983,6 +986,7 @@ extern long int gethostid (void);
 extern void sync (void) __THROW;
 
 
+# if defined __USE_BSD || !defined __USE_XOPEN2K
 /* Return the number of bytes in a page.  This is the system's page size,
    which is not necessarily the same as the hardware page size.  */
 extern int getpagesize (void)  __THROW __attribute__ ((__const__));
@@ -991,7 +995,12 @@ extern int getpagesize (void)  __THROW __attribute__ ((__const__));
 /* Return the maximum number of file descriptors
    the current process could possibly have.  */
 extern int getdtablesize (void) __THROW;
+# endif
 
+#endif /* Use BSD || X/Open Unix.  */
+
+
+#if defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K8
 
 /* Truncate FILE to LENGTH bytes.  */
 # ifndef __USE_FILE_OFFSET64
@@ -1011,7 +1020,7 @@ extern int truncate64 (__const char *__file, __off64_t __length)
      __THROW __nonnull ((1)) __wur;
 # endif
 
-#endif /* Use BSD || X/Open Unix.  */
+#endif /* Use BSD || X/Open Unix || POSIX 2008.  */
 
 #if defined __USE_BSD || defined __USE_XOPEN_EXTENDED || defined __USE_XOPEN2K
 
@@ -1033,7 +1042,8 @@ extern int ftruncate64 (int __fd, __off64_t __length) __THROW __wur;
 #endif /* Use BSD || X/Open Unix || POSIX 2003.  */
 
 
-#if defined __USE_MISC || defined __USE_XOPEN_EXTENDED
+#if (defined __USE_XOPEN_EXTENDED && !defined __USE_XOPEN2K) \
+    || defined __USE_MISC
 
 /* Set the end of accessible data space (aka "the break") to ADDR.
    Returns zero on success and -1 for errors (with errno set).  */
@@ -1139,7 +1149,7 @@ extern void swab (__const void *__restrict __from, void *__restrict __to,
 
 /* The Single Unix specification demands this prototype to be here.
    It is also found in <stdio.h>.  */
-#ifdef __USE_XOPEN
+#if defined __USE_XOPEN || defined __USE_XOPEN2K8
 /* Return the name of the controlling terminal.  */
 extern char *ctermid (char *__s) __THROW;
 #endif

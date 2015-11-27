@@ -9,10 +9,6 @@
 #include "RegisteredDockWidget.h"
 #include "MainWindow.h"
 
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
-extern MainWindow* mainWindow;
-#endif
-
 RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* parent) :
   QDockWidget(parent), fullName(fullName), module(0), object(0), widget(0), flags(0), reallyVisible(false)
 {
@@ -63,14 +59,8 @@ QMenu* RegisteredDockWidget::createEditMenu()
     return 0;
 
   QMenu* menu = widget->createEditMenu();
-  QAction* firstAction = 0;
-  if(menu)
-  {
-    const QList<QAction*> actions = menu->actions();
-    if(!actions.isEmpty())
-      firstAction = actions.at(0);
-  }
-  else
+
+  if(!menu)
   {
     menu = new QMenu(tr("&Edit"));
     flags |= SimRobot::Flag::copy;
@@ -78,14 +68,10 @@ QMenu* RegisteredDockWidget::createEditMenu()
 
   if(flags & SimRobot::Flag::copy)
   {
-    QAction* action = new QAction(QIcon(":/Icons/page_copy.png"), tr("&Copy"), 0);
-    action->setShortcut(QKeySequence(QKeySequence::Copy));
-    action->setStatusTip(tr("Copy the window drawing to the clipboard"));
-    connect(action, SIGNAL(triggered()), this, SLOT(copy()));
-    if(firstAction)
-      menu->insertAction(firstAction, action);
-    else
-      menu->addAction(action);
+    QAction* copyAction = menu->addAction(QIcon(":/Icons/page_copy.png"), tr("&Copy"));
+    copyAction->setShortcut(QKeySequence(QKeySequence::Copy));
+    copyAction->setStatusTip(tr("Copy the window drawing to the clipboard"));
+    connect(copyAction, SIGNAL(triggered()), this, SLOT(copy()));
   }
 
   return menu;
@@ -139,16 +125,6 @@ void RegisteredDockWidget::closeEvent(QCloseEvent* event)
     return;
   }
 
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
-  QList<QDockWidget*> widgets = mainWindow->tabifiedDockWidgets(this);
-  mainWindow->setUpdatesEnabled(false);
-  foreach(QDockWidget* w, widgets)
-    w->setFloating(true);
-  setFloating(false);
-  foreach(QDockWidget* w, widgets)
-    w->setFloating(false);
-  mainWindow->setUpdatesEnabled(true);
-#endif
   QDockWidget::closeEvent(event);
 
   emit closedObject(fullName);
@@ -211,9 +187,6 @@ void RegisteredDockWidget::contextMenuEvent(QContextMenuEvent* event)
 
 void RegisteredDockWidget::visibilityChanged(bool visible)
 {
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
-  setWindowOpacity(!isFloating() || mainWindow->updatesEnabled() ? 1.f : 0.f);
-#endif
   reallyVisible = visible;
 }
 
@@ -235,7 +208,7 @@ void RegisteredDockWidget::exportAsSvg()
     return;
   settings.setValue("ExportDirectory", QFileInfo(fileName).dir().path());
 
-  QSize size = widget->getWidget()->sizeHint();
+  QSize size = widget->getWidget()->size();
   QSvgGenerator generator;
   generator.setFileName(fileName);
   generator.setSize(size);

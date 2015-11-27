@@ -78,7 +78,7 @@ bool Reader::readSubNodes(bool callHandler)
 
     switch(xmlTextReaderNodeType((xmlTextReaderPtr)reader))
     {
-    case XML_READER_TYPE_ELEMENT:
+      case XML_READER_TYPE_ELEMENT:
       {
         bool isEmptyElement = xmlTextReaderIsEmptyElement((xmlTextReaderPtr)reader) != 0;
 
@@ -119,21 +119,21 @@ bool Reader::readSubNodes(bool callHandler)
         }
       }
       break;
-    case XML_READER_TYPE_END_ELEMENT:
-      line = xmlTextReaderGetParserLineNumber((xmlTextReaderPtr)reader);
-      column = xmlTextReaderGetParserColumnNumber((xmlTextReaderPtr)reader);
-      return true;
-    case XML_READER_TYPE_TEXT:
-      if(callHandler)
-      {
+      case XML_READER_TYPE_END_ELEMENT:
         line = xmlTextReaderGetParserLineNumber((xmlTextReaderPtr)reader);
         column = xmlTextReaderGetParserColumnNumber((xmlTextReaderPtr)reader);
-        xmlChar* xmlString = xmlTextReaderReadString((xmlTextReaderPtr)reader);
-        std::string text = (const char*)xmlString;
-        handleText(text);
-        xmlFree(xmlString);
-      }
-      break;
+        return true;
+      case XML_READER_TYPE_TEXT:
+        if(callHandler)
+        {
+          line = xmlTextReaderGetParserLineNumber((xmlTextReaderPtr)reader);
+          column = xmlTextReaderGetParserColumnNumber((xmlTextReaderPtr)reader);
+          xmlChar* xmlString = xmlTextReaderReadString((xmlTextReaderPtr)reader);
+          std::string text = (const char*)xmlString;
+          handleText(text);
+          xmlFree(xmlString);
+        }
+        break;
     }
   }
   ASSERT(false);

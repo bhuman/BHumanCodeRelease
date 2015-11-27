@@ -1,8 +1,8 @@
 /**
-* @file WalkingEngineKicks.h
-* Implementation of walking engine kicks and tools to use them
-* @author Colin Graf
-*/
+ * @file WalkingEngineKicks.h
+ * Implementation of walking engine kicks and tools to use them
+ * @author Colin Graf
+ */
 
 #include <cstring>
 #include <cstdio>
@@ -10,7 +10,9 @@
 #include "WalkingEngineKicks.h"
 #include "Platform/File.h"
 #include "Platform/BHAssert.h"
+#include "Representations/Infrastructure/JointAngles.h"
 #include "Tools/Debugging/Debugging.h"
+#include "Tools/Math/Rotation.h"
 
 bool WalkingEngineKick::String::operator==(const WalkingEngineKick::String& other) const
 {
@@ -135,16 +137,16 @@ WalkingEngineKick::Value* WalkingEngineKick::readMultFormula(char*& buf)
     Value* value;
     switch(c)
     {
-    case '*':
-      value = new TimesExpression(*value1, *value2, *this);
-      break;
-    case '/':
-      value = new DivExpression(*value1, *value2, *this);
-      break;
-    default:
-      value = 0;
-      ASSERT(false);
-      break;
+      case '*':
+        value = new TimesExpression(*value1, *value2, *this);
+        break;
+      case '/':
+        value = new DivExpression(*value1, *value2, *this);
+        break;
+      default:
+        value = 0;
+        ASSERT(false);
+        break;
     }
     value1 = value;
   }
@@ -261,7 +263,7 @@ bool WalkingEngineKick::load(const char* filePath, char* buf)
     }
     catch(ParseException e)
     {
-      OUTPUT(idText, text, "WalkingEngine: " << filePath << ":" << lineNumber << ": " << e.message);
+      OUTPUT_TEXT("WalkingEngine: " << filePath << ":" << lineNumber << ": " << e.message);
       (void)e;
       error = true;
     }
@@ -278,7 +280,7 @@ bool WalkingEngineKick::load(const char* filePath, char* buf)
   {
     for(int i = 0; i < numOfTracks; ++i)
       tracks[i].clear();
-    OUTPUT(idText, text, "WalkingEngine: " << filePath << ": failed to load file");
+    OUTPUT_TEXT("WalkingEngine: " << filePath << ": failed to load file");
     return false;
   }
 
@@ -304,9 +306,10 @@ bool WalkingEngineKick::load(const char* filePath)
   return success;
 }
 
-WalkingEngineKick::WalkingEngineKick() : firstValue(0),
-  preStepSizeRValue(0), preStepSizeXValue(0), preStepSizeYValue(0), preStepSizeZValue(0),
-  stepSizeRValue(0), stepSizeXValue(0), stepSizeYValue(0), stepSizeZValue(0), durationValue(0), refXValue(0) {}
+WalkingEngineKick::WalkingEngineKick() :
+  firstValue(0), preStepSizeRValue(0), preStepSizeXValue(0), preStepSizeYValue(0), preStepSizeZValue(0),
+  stepSizeRValue(0), stepSizeXValue(0), stepSizeYValue(0), stepSizeZValue(0), durationValue(0), refXValue(0)
+{}
 
 WalkingEngineKick::~WalkingEngineKick()
 {
@@ -322,20 +325,20 @@ void WalkingEngineKick::addPhase(Track track, Value* value)
   tracks[track].push_back(PhaseInfo(value));
 }
 
-void WalkingEngineKick::getPreStepSize(float& rotation, Vector3<>& translation) const
+void WalkingEngineKick::getPreStepSize(float& rotation, Vector3f& translation) const
 {
   rotation = preStepSizeRValue ? preStepSizeRValue->evaluate() : 0.f;
-  translation.x = preStepSizeXValue ? preStepSizeXValue->evaluate() : 0.f;
-  translation.y = preStepSizeYValue ? preStepSizeYValue->evaluate() : 0.f;
-  translation.z = preStepSizeZValue ? preStepSizeZValue->evaluate() : 0.f;
+  translation.x() = preStepSizeXValue ? preStepSizeXValue->evaluate() : 0.f;
+  translation.y() = preStepSizeYValue ? preStepSizeYValue->evaluate() : 0.f;
+  translation.z() = preStepSizeZValue ? preStepSizeZValue->evaluate() : 0.f;
 }
 
-void WalkingEngineKick::getStepSize(float& rotation, Vector3<>& translation) const
+void WalkingEngineKick::getStepSize(float& rotation, Vector3f& translation) const
 {
   rotation = stepSizeRValue ? stepSizeRValue->evaluate() : 0.f;
-  translation.x = stepSizeXValue ? stepSizeXValue->evaluate() : 0.f;
-  translation.y = stepSizeYValue ? stepSizeYValue->evaluate() : 0.f;
-  translation.z = stepSizeZValue ? stepSizeZValue->evaluate() : 0.f;
+  translation.x() = stepSizeXValue ? stepSizeXValue->evaluate() : 0.f;
+  translation.y() = stepSizeYValue ? stepSizeYValue->evaluate() : 0.f;
+  translation.z() = stepSizeZValue ? stepSizeZValue->evaluate() : 0.f;
 }
 
 float WalkingEngineKick::getStepDuration() const
@@ -365,29 +368,29 @@ void WalkingEngineKicks::load(WalkRequest::KickType type, char* data)
   sprintf(filePath, "Kicks/%s.cfg", WalkRequest::getName(WalkRequest::KickType(type)));
   if(!kicks[(type - 1) / 2].load(filePath, data))
     return;
-  OUTPUT(idText, text, filePath << ": ok");
+  OUTPUT_TEXT(filePath << ": ok");
 }
 
-void WalkingEngineKicks::getKickStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const
+void WalkingEngineKicks::getKickStepSize(WalkRequest::KickType type, float& rotation, Vector3f& translation) const
 {
   bool mirrored = (type - 1) % 2 != 0;
   const WalkingEngineKick& kick = kicks[(type - 1) / 2];
   kick.getStepSize(rotation, translation);
   if(mirrored)
   {
-    translation.y = -translation.y;
+    translation.y() = -translation.y();
     rotation = -rotation;
   }
 }
 
-void WalkingEngineKicks::getKickPreStepSize(WalkRequest::KickType type, float& rotation, Vector3<>& translation) const
+void WalkingEngineKicks::getKickPreStepSize(WalkRequest::KickType type, float& rotation, Vector3f& translation) const
 {
   bool mirrored = (type - 1) % 2 != 0;
   const WalkingEngineKick& kick = kicks[(type - 1) / 2];
   kick.getPreStepSize(rotation, translation);
   if(mirrored)
   {
-    translation.y = -translation.y;
+    translation.y() = -translation.y();
     rotation = -rotation;
   }
 }
@@ -519,13 +522,13 @@ float WalkingEngineKickPlayer::getValue(WalkingEngineKick::Track track, float ex
   return a * xx * x + b * xx + c * x + d;
 }
 
-void WalkingEngineKickPlayer::applyFoot(Pose3D& leftOriginToFoot, Pose3D& rightOriginToFoot)
+void WalkingEngineKickPlayer::applyFoot(Pose3f& leftOriginToFoot, Pose3f& rightOriginToFoot)
 {
   ASSERT(kick);
 
   float sign = mirrored ? -1.f : 1.f;
-  Vector3<> additionalFootRotation;
-  Vector3<> additionFootTranslation;
+  Vector3f additionalFootRotation;
+  Vector3f additionFootTranslation;
 
   for(int i = 0; i < 3; ++i)
   {
@@ -533,11 +536,11 @@ void WalkingEngineKickPlayer::applyFoot(Pose3D& leftOriginToFoot, Pose3D& rightO
     additionalFootRotation[i] = getValue(WalkingEngineKick::Track(WalkingEngineKick::footRotationX + i), 0.f);
   }
 
-  additionalFootRotation.x = additionalFootRotation.x * sign;
-  additionalFootRotation.z = additionalFootRotation.z * sign;
-  additionFootTranslation.y = additionFootTranslation.y * sign;
+  additionalFootRotation.x() *= sign;
+  additionalFootRotation.z() *= sign;
+  additionFootTranslation.y() *= sign;
 
-  (mirrored ? rightOriginToFoot : leftOriginToFoot).conc(Pose3D(RotationMatrix(additionalFootRotation), additionFootTranslation));
+  (mirrored ? rightOriginToFoot : leftOriginToFoot).conc(Pose3f(Rotation::AngleAxis::unpack(additionalFootRotation), additionFootTranslation));
 }
 
 void WalkingEngineKickPlayer::applyHeadAndArms(float headJointAngles[2], float leftArmJointAngles[4], float rightArmJointAngles[4])
@@ -552,7 +555,7 @@ void WalkingEngineKickPlayer::applyHeadAndArms(float headJointAngles[2], float l
     additionHeadAngles[i] = getValue(WalkingEngineKick::Track(WalkingEngineKick::headYaw + i), 0.f);
   additionHeadAngles[0] = additionHeadAngles[0] * sign;
   for(int i = 0; i < 2; ++i)
-    if(headJointAngles[i] != JointData::off)
+    if(headJointAngles[i] != JointAngles::off)
       headJointAngles[i] += additionHeadAngles[i];
 
   // arms

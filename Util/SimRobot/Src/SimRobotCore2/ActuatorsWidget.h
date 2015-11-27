@@ -15,10 +15,11 @@
 class QSlider;
 class QSpinBox;
 class QPushButton;
-class QHBoxLayout;
+class QVBoxLayout;
 class QCheckBox;
 class ObjectDescription;
 class ActuatorWidget;
+class FlowLayout;
 
 /**
 * @class ActuatorsObject
@@ -66,9 +67,11 @@ public:
 private:
   QHash<QString, ActuatorWidget*> actuators;
   QStringList actuatorNames;
-  QHBoxLayout *layout;
+  FlowLayout* layout;
+  QWidget* clientArea;
 
   virtual QWidget* getWidget() {return this;}
+  void resizeEvent(QResizeEvent* event);
 
 private slots:
   void closeActuator();

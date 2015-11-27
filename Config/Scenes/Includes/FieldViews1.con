@@ -1,0 +1,8 @@
+# field views
+vf worldState
+vfd worldState fieldLines
+vfd worldState goalFrame 
+vfd worldState fieldPolygons
+#vfd worldState module:SelfLocator:samples
+vfd worldState representation:RobotPose
+vfd worldState module:SelfLocator:fieldOfView

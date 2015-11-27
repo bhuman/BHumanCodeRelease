@@ -1,21 +1,21 @@
 /**
  * @file TeamInfo.cpp
- * The file implements a class that encapsulates the structure TeamInfo defined in
+ * The file implements a struct that encapsulates the structure TeamInfo defined in
  * the file RoboCupGameControlData.h that is provided with the GameController.
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 
 #include "TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Vector3.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/Settings.h"
 #include <cstring>
 
 /**
- * The class is a helper to be able to stream the players.
+ * The struct is a helper to be able to stream the players.
  * The global RobotInfo cannot be used, because it has an additional attribute.
  */
-class PlayerInfo : public RoboCup::RobotInfo {};
+struct PlayerInfo : public RoboCup::RobotInfo {};
 
 /**
  * Write a player info to a stream.
@@ -49,12 +49,12 @@ In& operator>>(In& stream, PlayerInfo& playerInfo)
 
 TeamInfo::TeamInfo()
 {
-  memset((RoboCup::TeamInfo*) this, 0, sizeof(RoboCup::TeamInfo));
+  memset(static_cast<RoboCup::TeamInfo*>(this), 0, sizeof(RoboCup::TeamInfo));
 }
 
 void TeamInfo::serialize(In* in, Out* out)
 {
-  PlayerInfo (&players)[4] = reinterpret_cast<PlayerInfo(&)[4]>(this->players);
+  PlayerInfo(&players)[4] = reinterpret_cast<PlayerInfo(&)[4]>(this->players);
   PlayerInfo& coach = reinterpret_cast<PlayerInfo&>(this->coach);
   char buf[sizeof(this->coachMessage) + 1];
   strncpy(buf, (const char*) this->coachMessage, sizeof(this->coachMessage));
@@ -63,7 +63,7 @@ void TeamInfo::serialize(In* in, Out* out)
 
   STREAM_REGISTER_BEGIN;
   STREAM(teamNumber); // unique team number
-  STREAM(teamColor); // TEAM_BLUE, TEAM_RED
+  STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK
   STREAM(score); // team's score
   STREAM(coachMessage); // last coach message received
   STREAM(coach); // team's coach
@@ -79,18 +79,18 @@ void TeamInfo::serialize(In* in, Out* out)
   }
 }
 
-static void drawDigit(int digit, const Vector3<>& pos, float size, int teamColor)
+static void drawDigit(int digit, const Vector3f& pos, float size, int teamColor)
 {
-  static const Vector3<> points[8] =
+  static const Vector3f points[8] =
   {
-    Vector3<>(1, 0, 1),
-    Vector3<>(1, 0, 0),
-    Vector3<>(0, 0, 0),
-    Vector3<>(0, 0, 1),
-    Vector3<>(0, 0, 2),
-    Vector3<>(1, 0, 2),
-    Vector3<>(1, 0, 1),
-    Vector3<>(0, 0, 1)
+    Vector3f(1, 0, 1),
+    Vector3f(1, 0, 0),
+    Vector3f(0, 0, 0),
+    Vector3f(0, 0, 1),
+    Vector3f(0, 0, 2),
+    Vector3f(1, 0, 2),
+    Vector3f(1, 0, 1),
+    Vector3f(0, 0, 1)
   };
   static const unsigned char digits[10] =
   {
@@ -105,14 +105,21 @@ static void drawDigit(int digit, const Vector3<>& pos, float size, int teamColor
     0x7f,
     0x5f
   };
-  ColorRGBA color = teamColor == TEAM_BLUE ? ColorRGBA(0, 0, 255) : ColorRGBA(255, 0, 0);
+  const static ColorRGBA colors[] =
+  {
+    ColorRGBA::blue,
+    ColorRGBA::red,
+    ColorRGBA::yellow,
+    ColorRGBA::black
+  };
+
   digit = digits[std::abs(digit)];
   for(int i = 0; i < 7; ++i)
     if(digit & (1 << i))
     {
-      Vector3<> from = pos - points[i] * size;
-      Vector3<> to = pos - points[i + 1] * size;
-      LINE3D("representation:TeamInfo", from.x, from.y, from.z, to.x, to.y, to.z, 2, color);
+      Vector3f from = pos - points[i] * size;
+      Vector3f to = pos - points[i + 1] * size;
+      LINE3D("representation:TeamInfo", from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), 2, colors[teamColor]);
     }
 }
 
@@ -121,29 +128,28 @@ void TeamInfo::draw() const
   DECLARE_DEBUG_DRAWING3D("representation:TeamInfo", "field");
   {
     float x = teamColor == TEAM_BLUE ? -1535.f : 1465.f;
-    drawDigit(score / 10, Vector3<>(x, 3500, 1000), 200, teamColor);
-    drawDigit(score % 10, Vector3<>(x + 270, 3500, 1000), 200, teamColor);
+    drawDigit(score / 10, Vector3f(x, 3500, 1000), 200, teamColor);
+    drawDigit(score % 10, Vector3f(x + 270, 3500, 1000), 200, teamColor);
   };
 }
 
 OwnTeamInfo::OwnTeamInfo()
 {
-  teamColor = &Global::getSettings() ? Global::getSettings().teamColor : TEAM_BLUE;
+  teamColor = Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLUE;
 }
 
 void OwnTeamInfo::draw() const
 {
-  //do base class drawing first.
+  //do base struct drawing first.
   TeamInfo::draw();
 
-  DECLARE_DEBUG_DRAWING("representation:OwnTeamInfo", "drawingOnField",
+  DEBUG_DRAWING("representation:OwnTeamInfo", "drawingOnField")
   {
-    DRAWTEXT("representation:OwnTeamInfo", -5000, -3800, 140, ColorRGBA::red, (teamColor == TEAM_BLUE ? "Blue" : "Red"));
-  });
+    DRAWTEXT("representation:OwnTeamInfo", -5000, -3800, 140, ColorRGBA::red, Settings::getName((Settings::TeamColor) teamColor));
+  }
 }
 
 OpponentTeamInfo::OpponentTeamInfo()
 {
-  teamColor = 1 - (&Global::getSettings() ? Global::getSettings().teamColor : TEAM_BLUE);
+  teamColor = 1 ^ (Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLUE);
 }
-

@@ -15,13 +15,13 @@
 #include <QString>
 #include <QGroupBox>
 #include <QIntValidator>
+#include <QMouseEvent>
 
 class ColorCalibrationWidget;
 
 class RangeSelector : public QGroupBox
 {
   Q_OBJECT
-
 public:
   RangeSelector(const QString& name, ColorCalibrationWidget* parent,
                 int min, int max);
@@ -31,10 +31,9 @@ public:
 
 protected:
   QxtSpanSlider* slider;
-
-private:
   const ColorCalibrationWidget* parent;
 
+private:
   QLineEdit* lower;
   QLineEdit* upper;
 
@@ -54,6 +53,7 @@ private slots:
   void labelLowerChanged(QString value);
   void labelUpperChanged(QString value);
 };
+
 
 class HueSelector : public RangeSelector
 {
@@ -82,6 +82,7 @@ public:
 class SaturationSelector : public RangeSelector
 {
 private:
+
   void updateColorCalibration(int value, bool isMin,
                               ColorCalibration::HSIRanges& color)
   {

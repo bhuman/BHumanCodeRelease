@@ -22,8 +22,8 @@ void RobotView::init()
 {
   QFormLayout* layout = new QFormLayout();
 
-  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
-    cPlayerNumber = new QLabel(QString("<font size=5><u><b>") + QString::number(playerNumber) + QString("</b></u></font>"));
+  if(playerNumber)
+    cPlayerNumber = new QLabel(QString("<font size=5><b>") + QString::number(playerNumber) + QString("</b></font>"));
 
   statusWidget = new QWidget(this);
   statusWidget->setMaximumSize(200, 75);
@@ -32,30 +32,29 @@ void RobotView::init()
   QGridLayout* statusLayout = new QGridLayout(statusWidget);
 
   QLabel* pingLabelWLAN = new QLabel("<font size=2><b>Wlan</b></font>", statusWidget);
-  pingBarWLAN = new QProgressBar(this);
-  pingBarWLAN->setMaximumSize(50, 10);
-  pingBarWLAN->setRange(0, 2000);
+  pingBarWLAN = new QLabel(this);
+  pingBarWLAN->setMaximumSize(50, 13);
+  pingBarWLAN->setAlignment(Qt::AlignCenter);
   setPings(WLAN, 0);
-  pingBarWLAN->setTextVisible(false);
   statusLayout->addWidget(pingLabelWLAN, 0, 0, Qt::AlignLeft);
   statusLayout->addWidget(pingBarWLAN, 0, 1);
 
-  QLabel* powerLabel = new QLabel("<font size=2><b>Power</b></font>", statusWidget);
-  powerBar = new QProgressBar(this);
-  powerBar->setMaximumSize(50, 10);
-  powerBar->setRange(0, 100);
-  powerBar->setValue(0);
-  statusLayout->addWidget(powerLabel, 2, 0, Qt::AlignLeft);
-  statusLayout->addWidget(powerBar, 2, 1);
-
   QLabel* pingLabelLAN = new QLabel("<font size=2><b>Lan</b></font>", statusWidget);
-  pingBarLAN = new QProgressBar(this);
-  pingBarLAN->setMaximumSize(50, 10);
-  pingBarLAN->setRange(0, 2000);
+  pingBarLAN = new QLabel(this);
+  pingBarLAN->setMaximumSize(50, 13);
+  pingBarLAN->setAlignment(Qt::AlignCenter);
   setPings(LAN, 0);
-  pingBarLAN->setTextVisible(false);
   statusLayout->addWidget(pingLabelLAN, 1, 0, Qt::AlignLeft);
   statusLayout->addWidget(pingBarLAN, 1, 1);
+
+  QLabel* powerLabel = new QLabel("<font size=2><b>Power</b></font>", statusWidget);
+  powerBar = new QProgressBar(this);
+  powerBar->setMaximumSize(50, 13);
+  powerBar->setRange(0, 100);
+  powerBar->setValue(0);
+  powerBar->setAlignment(Qt::AlignCenter);
+  statusLayout->addWidget(powerLabel, 2, 0, Qt::AlignLeft);
+  statusLayout->addWidget(powerBar, 2, 1);
 
   layout->addRow(cPlayerNumber, statusWidget);
 
@@ -65,7 +64,7 @@ void RobotView::init()
   if(robot)
   {
     Session::getInstance().registerPingListener(this);
-    Session::getInstance().registerPowerListener(this);
+    Session::getInstance().registerPowerListener(this, robot);
   }
 
   update();
@@ -74,7 +73,7 @@ void RobotView::init()
 
 void RobotView::update()
 {
-  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
+  if(playerNumber)
     cPlayerNumber->setVisible(false);
   statusWidget->setVisible(false);
   setCheckable(false);
@@ -82,18 +81,25 @@ void RobotView::update()
   {
     Robot* r = robot;
     robot = 0;
-    setCheckable(playerNumber != Robot::INVALID_PLAYER_NUMBER);
+    setCheckable(playerNumber);
     robot = r;
-    if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
-      setChecked(teamSelector->getSelectedTeam()->isPlayerSelected(robot));
+    if(playerNumber)
+      setChecked(isSelected());
     std::string ipPostfix = robot->wlan.substr(robot->wlan.length() - 2);
     setTitle(fromString(robot->name + " (." + ipPostfix + ")"));
-    if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
+    if(playerNumber)
+    {
+      cPlayerNumber->setEnabled(isSelected());
       cPlayerNumber->setVisible(true);
+    }
     statusWidget->setVisible(true);
   }
   else
+  {
     setTitle(fromString("Empty"));
+    cPlayerNumber->setVisible(true);
+    cPlayerNumber->setEnabled(false);
+  }
 }
 
 RobotView::RobotView(TeamSelector* teamSelector,
@@ -115,8 +121,8 @@ RobotView::RobotView(TeamSelector* teamSelector,
   : QGroupBox(teamSelector),
     teamSelector(teamSelector),
     robot(robot),
-    playerNumber(Robot::INVALID_PLAYER_NUMBER),
-    pos(Robot::INVALID_PLAYER_NUMBER),
+    playerNumber(0),
+    pos(0),
     cPlayerNumber(0)
 {
   init();
@@ -141,10 +147,10 @@ void RobotView::setRobot(Robot* robot)
   if(this->robot)
   {
     Session::getInstance().removePingListener(this);
-    Session::getInstance().removePowerListener(this);
+    Session::getInstance().removePowerListener(this, this->robot);
   }
   this->robot = robot;
-  if(playerNumber != Robot::INVALID_PLAYER_NUMBER)
+  if(playerNumber)
   {
     Team* team = teamSelector->getSelectedTeam();
     team->changePlayer(playerNumber, pos, robot);
@@ -152,27 +158,39 @@ void RobotView::setRobot(Robot* robot)
   if(robot)
   {
     Session::getInstance().registerPingListener(this);
-    Session::getInstance().registerPowerListener(this);
+    Session::getInstance().registerPowerListener(this, robot);
   }
   emit robotChanged();
 }
 
 void RobotView::setPings(ENetwork network, std::map<std::string, double>* pings)
 {
+  QLabel* bar = network == LAN ? pingBarLAN : pingBarWLAN;
   int value = 2000;
   if(pings)
     value = static_cast<int>((*pings)[robot->name]);
-  if(network == LAN)
-    pingBarLAN->setValue(value);
-  else if(network == WLAN)
-    pingBarWLAN->setValue(value);
+
+  if(value >= 2000)
+    bar->setStyleSheet("QLabel { background-color : #e6e6e6; border: 1px solid silver; }");
+  else if(value >= 500)
+    bar->setStyleSheet("QLabel { background-color : red; border: 1px solid silver; }");
+  else if(value >= 250)
+    bar->setStyleSheet("QLabel { background-color : yellow; border: 1px solid silver; }");
+  else
+    bar->setStyleSheet("QLabel { background-color : lime; border: 1px solid silver; }");
+
+  if(value < 2000)
+    bar->setText(QString::number(value) + " ms");
+  else
+    bar->setText("n/a");
+
 }
 
 void RobotView::setPower(std::map<std::string, Power>* power)
 {
   int value = 0;
   if(power && (*power)[robot->name].isValid())
-    value = static_cast<int>((*power)[robot->name]);
+    value = ((*power)[robot->name]).value;
   powerBar->setValue(value);
 }
 
@@ -203,7 +221,7 @@ void RobotView::dropEvent(QDropEvent* e)
   QString robotName = e->mimeData()->text();
   Robot* r = Session::getInstance().robotsByName[toString(robotName)];
   RobotView* source = dynamic_cast<RobotView*>(e->source());
-  if(source->playerNumber != Robot::INVALID_PLAYER_NUMBER)
+  if(source->playerNumber)
   {
     bool selected = source->isSelected();
     if(source->robot)
@@ -231,5 +249,8 @@ void RobotView::dropEvent(QDropEvent* e)
 void RobotView::setSelected(bool selected)
 {
   if(robot)
+  {
     teamSelector->getSelectedTeam()->setSelectPlayer(robot, selected);
+    cPlayerNumber->setEnabled(selected);
+  }
 }

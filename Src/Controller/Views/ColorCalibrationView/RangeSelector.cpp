@@ -36,6 +36,10 @@ RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent
   connect(lower, SIGNAL(textEdited(QString)), this, SLOT(labelLowerChanged(QString)));
   connect(upper, SIGNAL(textEdited(QString)), this, SLOT(labelUpperChanged(QString)));
 
+  connect(slider, SIGNAL(sliderReleased()), parent, SLOT(currentCalibrationChanged()));
+  connect(upper, SIGNAL(editingFinished()), parent, SLOT(currentCalibrationChanged()));
+  connect(lower, SIGNAL(editingFinished()), parent, SLOT(currentCalibrationChanged()));
+
   layout->addWidget(lower);
   layout->addWidget(slider);
   layout->addWidget(upper);

@@ -36,7 +36,7 @@ extern int posix_memalign(void **__memptr, size_t __alignment, size_t __size);
 // exception specifier. Via an "egregious workaround" in
 // Sema::CheckEquivalentExceptionSpec, Clang accepts the following as a valid
 // redeclaration of glibc's declaration.
-extern "C" int posix_memalign(void **__memptr, size_t __alignment, size_t __size);
+extern "C" int posix_memalign(void **__memptr, size_t __alignment, size_t __size) throw();
 #endif
 #endif
 

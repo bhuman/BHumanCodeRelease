@@ -1,20 +1,17 @@
 /**
-* @author Alexis Tsogias
-*/
+ * @author Alexis Tsogias
+ */
 
 #pragma once
 
 #include <vector>
-#include "Tools/Math/Vector2.h"
+#include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(FieldBoundary,
 {
-public:
-  using InImage = std::vector<Vector2<int>>;   ///< Type for the boundary in image coordinates.
-  using InField = std::vector<Vector2<float>>; ///< Type for the boundary in field coordinates.
-
-  std::vector<InImage> convexBoundaryCandidates; ///< Possible bondary candidates.
+  using InImage = std::vector<Vector2i>; ///< Type for the boundary in image coordinates.
+  using InField = std::vector<Vector2f>; ///< Type for the boundary in field coordinates.
 
   /**
    * Draws some DebugDrawings
@@ -25,10 +22,8 @@ public:
    * DebugDrawings:
    *   representation:FieldBoundary:BoundarySpots
    *   representation:FieldBoundary:ConvexBoundary
-   *   representation:FieldBoundary:BoundaryCandidates
    *   representation:FieldBoundary:Image - The field final boundary in the image.
    *   representation:FieldBoundary:Field - The field final boundary on the field.
-   *   representation:FieldBoundary:HighestPoint
    */
   void draw() const;
 
@@ -41,6 +36,5 @@ public:
   (InImage) convexBoundary,    ///< A convex upper hull arround the spots that schould fit best the actual boundary.
   (InField) boundaryOnField,   ///< The boundary projectet to the Field in relative coordinates.
   (InImage) boundaryInImage,   ///< The boundary in image coordinates.
-  (Vector2<int>) highestPoint, ///< The highest pont of the boundary.
   (bool)(false) isValid,       ///< True if a boundary could be detected.
 });

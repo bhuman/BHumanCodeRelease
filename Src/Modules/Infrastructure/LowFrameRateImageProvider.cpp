@@ -9,6 +9,24 @@
 
 void LowFrameRateImageProvider::update(LowFrameRateImage& lowFrameRateImage)
 {
+  lowFrameRateImage.imageUpdated = false;
+
+  if(perceptsOnly)
+  {
+    if(logGoalPercept && theGoalPercept.goalPosts.size() > 0)
+    {
+      logCurrentImage(lowFrameRateImage);
+      storeNextImage = false;
+    }
+  }
+  else //let logCurrentImage decided whether it wants to log or not
+  {
+    logCurrentImage(lowFrameRateImage);
+  }
+}
+
+void LowFrameRateImageProvider::logCurrentImage(LowFrameRateImage& lowFrameRateImage)
+{
   if(theFrameInfo.getTimeSince(lastUpdateTime) >= 1000 / frameRate)
   { // Generate new image
     lastUpdateTime = theFrameInfo.time;
@@ -20,10 +38,7 @@ void LowFrameRateImageProvider::update(LowFrameRateImage& lowFrameRateImage)
     updateImage(lowFrameRateImage);
     storeNextImage = false;
   }
-  else
-    lowFrameRateImage.imageUpdated = false;
 }
-
 void LowFrameRateImageProvider::updateImage(LowFrameRateImage& lfrImage) const
 {
   lfrImage.image.setImage(const_cast<Image::Pixel*>(theImage[0]));
@@ -32,4 +47,4 @@ void LowFrameRateImageProvider::updateImage(LowFrameRateImage& lfrImage) const
   lfrImage.imageUpdated = true;
 }
 
-MAKE_MODULE(LowFrameRateImageProvider, Cognition Infrastructure)
+MAKE_MODULE(LowFrameRateImageProvider, cognitionInfrastructure)

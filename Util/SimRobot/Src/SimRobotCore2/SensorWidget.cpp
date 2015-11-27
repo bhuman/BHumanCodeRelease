@@ -42,7 +42,7 @@ void SensorWidget::paintEvent(QPaintEvent *event)
   painter.begin(this);
   switch(sensorType)
   {
-  case SimRobotCore2::SensorPort::floatSensor:
+    case SimRobotCore2::SensorPort::floatSensor:
     {
       float sensorValue = sensor->getValue().floatValue;
       char str_val[32];
@@ -64,7 +64,7 @@ void SensorWidget::paintEvent(QPaintEvent *event)
       painter.drawText(this->width()/2, this->height()/2, tr(str_val));
       break;
     }
-  case SimRobotCore2::SensorPort::floatArraySensor:
+    case SimRobotCore2::SensorPort::floatArraySensor:
     {
       const QStringList& descriptions = sensor->getDescriptions();
       // Accelerometer, Gyroscope, PositionSensor, ...
@@ -80,12 +80,12 @@ void SensorWidget::paintEvent(QPaintEvent *event)
         painter.drawText(0, 0, this->width(), this->height(), Qt::AlignCenter, "Not implemented yet!");
       break;
     }
-  case SimRobotCore2::SensorPort::boolSensor:
+    case SimRobotCore2::SensorPort::boolSensor:
     {
       paintBoolSensor();
       break;
     }
-  case SimRobotCore2::SensorPort::cameraSensor:
+    case SimRobotCore2::SensorPort::cameraSensor:
     {
       int xsize = dimensions[0], ysize = dimensions[1];
       const unsigned char *vals = sensor->getValue().byteArray;
@@ -105,8 +105,8 @@ void SensorWidget::paintEvent(QPaintEvent *event)
       delete [] buffer;
       break;
     }
-  case SimRobotCore2::SensorPort::noSensor:
-    break; // do nothing
+    case SimRobotCore2::SensorPort::noSensor:
+      break; // do nothing
   }
   painter.end();
 }
@@ -149,10 +149,7 @@ void SensorWidget::paintFloatArrayWithLimitsAndWithoutDescriptions()
 {
   float minValue, maxValue;
   if(!sensor->getMinAndMax(minValue, maxValue))
-  {
-    minValue = 0;
     maxValue = 1;
-  }
   QBrush brush(QColor::fromRgb(255,255,255));
   QBrush brush2(QColor::fromRgb(0,255,0));
   painter.fillRect(0, 0, this->width(), this->height(), brush);
@@ -190,41 +187,41 @@ void SensorWidget::paint2DFloatArrayWithLimitsAndWithoutDescriptions()
       unsigned char c = (unsigned char) value;
       switch(value >> 8)
       {
-      case 0:
-        *pDest++ = 255;
-        *pDest++ = 255 - c;
-        *pDest++ = 255 - c;
-        break;
-      case 1:
-        *pDest++ = 255;
-        *pDest++ = c;
-        *pDest++ = 0;
-        break;
-      case 2:
-        *pDest++ = 255 - c;
-        *pDest++ = 255;
-        *pDest++ = 0;
-        break;
-      case 3:
-        *pDest++ = 0;
-        *pDest++ = 255;
-        *pDest++ = c;
-        break;
-      case 4:
-        *pDest++ = 0;
-        *pDest++ = 255 - c;
-        *pDest++ = 255;
-        break;
-      case 5:
-        *pDest++ = 0;
-        *pDest++ = 0;
-        *pDest++ = 255 - c;
-        break;
-      default:
-        *pDest++ = 0;
-        *pDest++ = 0;
-        *pDest++ = 0;
-        break;
+        case 0:
+          *pDest++ = 255;
+          *pDest++ = 255 - c;
+          *pDest++ = 255 - c;
+          break;
+        case 1:
+          *pDest++ = 255;
+          *pDest++ = c;
+          *pDest++ = 0;
+          break;
+        case 2:
+          *pDest++ = 255 - c;
+          *pDest++ = 255;
+          *pDest++ = 0;
+          break;
+        case 3:
+          *pDest++ = 0;
+          *pDest++ = 255;
+          *pDest++ = c;
+          break;
+        case 4:
+          *pDest++ = 0;
+          *pDest++ = 255 - c;
+          *pDest++ = 255;
+          break;
+        case 5:
+          *pDest++ = 0;
+          *pDest++ = 0;
+          *pDest++ = 255 - c;
+          break;
+        default:
+          *pDest++ = 0;
+          *pDest++ = 0;
+          *pDest++ = 0;
+          break;
       }
       *pDest++ = 0xff;
     }
@@ -288,17 +285,17 @@ void SensorWidget::setClipboardText(QMimeData& mimeData)
   }
   switch(sensorType)
   {
-  case SimRobotCore2::SensorPort::boolSensor:
+    case SimRobotCore2::SensorPort::boolSensor:
     {
       floatValue = sensor->getValue().boolValue ? 1 : 0;
       pDouble = &floatValue;
       break;
     }
-  case SimRobotCore2::SensorPort::floatSensor:
-    floatValue = sensor->getValue().floatValue;
-    pDouble = &floatValue;
-    break;
-  case SimRobotCore2::SensorPort::cameraSensor:
+    case SimRobotCore2::SensorPort::floatSensor:
+      floatValue = sensor->getValue().floatValue;
+      pDouble = &floatValue;
+      break;
+    case SimRobotCore2::SensorPort::cameraSensor:
     {
       pDouble = new float[dimSize[0] * dimSize[1] * dimSize[2]];
       deletePDouble = true;
@@ -307,15 +304,13 @@ void SensorWidget::setClipboardText(QMimeData& mimeData)
         pDouble[i] = vals[i];
       break;
     }
-  case SimRobotCore2::SensorPort::floatArraySensor:
+    case SimRobotCore2::SensorPort::floatArraySensor:
     {
       pDouble = (float*)sensor->getValue().floatArray;
       break;
     }
-  case SimRobotCore2::SensorPort::noSensor:
-    {
+    case SimRobotCore2::SensorPort::noSensor:
       break;
-    }
   }
 
   if(!pDouble)

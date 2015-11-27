@@ -1,0 +1,44 @@
+mr StandOutput CalibrationStand
+mr CameraCalibration CameraCalibrator
+set module:CameraCalibrator:robotPose rotation = 0; translation = {x = -750; y = 0;};
+vd representation:HeadAngleRequest
+
+cameraCalibrator lower on
+cameraCalibrator upper on
+
+vid lower representation:LinePercept:Image off
+vid lower representation:GoalPercept:Image off
+vid lower representation:PlayersPercept:Image off
+vid lower representation:BodyContour off
+vid lower module:CameraCalibrator:points
+vid lower module:CameraCalibrator:drawSamples
+vid lower module:CameraCalibrator:drawFieldLines
+
+vid upper representation:LinePercept:Image off
+vid upper representation:GoalPercept:Image off
+vid upper representation:PlayersPercept:Image off
+vid upper representation:BodyContour off
+vid upper module:CameraCalibrator:points
+vid upper module:CameraCalibrator:drawSamples
+vid upper module:CameraCalibrator:drawFieldLines
+
+dr module:CameraCalibrator:collectPoints
+
+jc press 1 dr module:CameraCalibrator:stop
+jc press 3 dr module:CameraCalibrator:collectPoints
+jc press 15 dr module:CameraCalibrator:optimize
+jc press 18 dr module:CameraCalibrator:clear
+jc press 19 save representation:CameraCalibration
+jc press 26 dr module:CameraCalibrator:undo
+
+echo Click points on field lines in both images and also turn head. Then optimize and save if satisfied.
+echo Shift-click in images to point camera to that direction.
+echo - Shift+Ctrl+C: Collect points (initially active)
+echo - Shift+Ctrl+Z: Undo last point
+echo - Shift+Ctrl+R: Remove all points
+echo - Shift+Ctrl+O: Optimize
+echo - Shift+Ctrl+A: Abort optimization
+echo - Shift+Ctrl+S: Save calibration
+echo
+
+get module:CameraCalibrator:robotPose

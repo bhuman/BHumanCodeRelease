@@ -1,8 +1,9 @@
 #include "ManualHeadMotionProvider.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Debugging/Debugging.h"
+#include "Tools/Math/Eigen.h"
 
-MAKE_MODULE(ManualHeadMotionProvider, Behavior Control)
+MAKE_MODULE(ManualHeadMotionProvider, behaviorControl)
 
 ManualHeadMotionProvider::ManualHeadMotionProvider() : currentX(0), currentY(0)
 {}
@@ -15,12 +16,12 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
     currentX = xImg;
     currentY = yImg;
 
-    Vector2<float> targetOnField;
+    Vector2f targetOnField;
     if(Transformation::imageToRobot(currentX, currentY, theCameraMatrix, theCameraInfo, targetOnField))
     {
-      headMotionRequest.target.x = targetOnField.x;
-      headMotionRequest.target.y = targetOnField.y;
-      headMotionRequest.target.z = 0;
+      headMotionRequest.target.x() = targetOnField.x();
+      headMotionRequest.target.y() = targetOnField.y();
+      headMotionRequest.target.z() = 0;
       headMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
       headMotionRequest.watchField = false;
 
@@ -37,7 +38,7 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
           ASSERT(false);
       }
 
-      headMotionRequest.speed = fromDegrees(150);
+      headMotionRequest.speed = 150_deg;
     }
   }
 }

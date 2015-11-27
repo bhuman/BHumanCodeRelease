@@ -1,0 +1,849 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Xcode custom data formatters for some Eigen-based data types.
+     Copy to ~/Library/Developer/Xcode/UserData/Debugger. -->
+
+<CustomDataFormatters
+   version = "1.0">
+   <SummaryFormatters>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Vector2f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Vector2d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}]"
+         type = "Vector2a">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}]"
+         type = "Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Vector2s">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Vector2i">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Vector2ui">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt; &gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Vector3f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Vector3d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}, {$VAR.m_storage.m_data.array[2].value}]"
+         type = "Vector3a">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}, {$VAR.m_storage.m_data.array[2].value}]"
+         type = "Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt; &gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Vector4f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Vector4d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt; &gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Vector5f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Vector5d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt; &gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Vector6f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Vector6d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Eigen::Matrix&lt;double, 6, 1, 0, 6, 1&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}]"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "RowVector2f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}]"
+         type = "Eigen::Matrix&lt;float, 1, 2, 0, 1, 2&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "RowVector3f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}]"
+         type = "Eigen::Matrix&lt;float, 1, 3, 0, 1, 3&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "RowVector4f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::Matrix&lt;float, 1, 4, 0, 1, 4&gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Matrix2f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::Matrix&lt;float, 2, 2, 0, 2, 2&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Matrix2d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}]"
+         type = "Eigen::Matrix&lt;double, 2, 2, 0, 2, 2&gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}]"
+         type = "Matrix3f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}]"
+         type = "Eigen::Matrix&lt;float, 3, 3, 0, 3, 3&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}]"
+         type = "Matrix3d">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}]"
+         type = "Eigen::Matrix&lt;double, 3, 3, 0, 3, 3&gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}]"
+         type = "Quaternionf">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}]"
+         type = "Eigen::Quaternion&lt;float&gt;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}]"
+         type = "Quaterniond">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}]"
+         type = "Eigen::Quaternion&lt;double&gt;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR.rotation.value} [{$VAR.translation.m_storage.m_data.array[0]}, {$VAR.translation.m_storage.m_data.array[1]}]"
+         type = "Pose2f">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.rotation.m_coeffs.m_storage.m_data.array[0]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[1]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[2]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[3]}][{$VAR.translation.m_storage.m_data.array[0]}, {$VAR.translation.m_storage.m_data.array[1]}, {$VAR.translation.m_storage.m_data.array[2]}]"
+         type = "Pose3f">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{::_fromQString($VAR)}:s"
+         type = "QString">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR.value * 180 / 3.14159265f}&#xb0; / {$VAR.value}"
+         type = "Angle">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Vector2f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Vector2d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}] ({&amp;$VAR})"
+         type = "Vector2a &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Vector2s &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Vector2i &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Vector2ui &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Vector3f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Vector3d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}, {$VAR.m_storage.m_data.array[2].value}] ({&amp;$VAR})"
+         type = "Vector3a &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0].value}, {$VAR.m_storage.m_data.array[1].value}, {$VAR.m_storage.m_data.array[2].value}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Vector4f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Vector4d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Vector5f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Vector5d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Vector6f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Vector6d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 6, 1, 0, 6, 1&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}] ({&amp;$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "RowVector2f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 2, 0, 1, 2&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "RowVector3f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 3, 0, 1, 3&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "RowVector4f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 4, 0, 1, 4&gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Matrix2f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 2, 2, 0, 2, 2&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Matrix2d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}][{$VAR.m_storage.m_data.array[2]}, {$VAR.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 2, 2, 0, 2, 2&gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}] ({&amp;$VAR})"
+         type = "Matrix3f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;float, 3, 3, 0, 3, 3&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}] ({&amp;$VAR})"
+         type = "Matrix3d &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_storage.m_data.array[0]}, {$VAR.m_storage.m_data.array[1]}, {$VAR.m_storage.m_data.array[2]}][{$VAR.m_storage.m_data.array[3]}, {$VAR.m_storage.m_data.array[4]}, {$VAR.m_storage.m_data.array[5]}][{$VAR.m_storage.m_data.array[6]}, {$VAR.m_storage.m_data.array[7]}, {$VAR.m_storage.m_data.array[8]}] ({&amp;$VAR})"
+         type = "Eigen::Matrix&lt;double, 3, 3, 0, 3, 3&gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Quaternionf &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Quaternion&lt;float&gt; &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Quaterniond &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.m_coeffs.m_storage.m_data.array[0]}, {$VAR.m_coeffs.m_storage.m_data.array[1]}, {$VAR.m_coeffs.m_storage.m_data.array[2]}, {$VAR.m_coeffs.m_storage.m_data.array[3]}] ({&amp;$VAR})"
+         type = "Eigen::Quaternion&lt;double&gt; &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR.rotation.value} [{$VAR.translation.m_storage.m_data.array[0]}, {$VAR.translation.m_storage.m_data.array[1]}] ({&amp;$VAR})"
+         type = "Pose2f &amp;">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR.rotation.m_coeffs.m_storage.m_data.array[0]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[1]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[2]}, {$VAR.rotation.m_coeffs.m_storage.m_data.array[3]}][{$VAR.translation.m_storage.m_data.array[0]}, {$VAR.translation.m_storage.m_data.array[1]}, {$VAR.translation.m_storage.m_data.array[2]}] ({&amp;$VAR})"
+         type = "Pose3f &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{::_fromQString($VAR)}:s ({&amp;$VAR})"
+         type = "QString &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR.value * 180 / 3.14159265f}&#xb0; / {$VAR.value} ({&amp;$VAR})"
+         type = "Angle &amp;">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Vector2f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Vector2d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0].value}, {$VAR->m_storage.m_data.array[1].value}] ({$VAR})"
+         type = "Vector2a *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0].value}, {$VAR->m_storage.m_data.array[1].value}] ({$VAR})"
+         type = "Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Vector2s *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;short, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Vector2i *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;int, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Vector2ui *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;unsigned int, 2, 1, 0, 2, 1&gt; &gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Vector3f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 3, 1, 0, 3, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Vector3d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 3, 1, 0, 3, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0].value}, {$VAR->m_storage.m_data.array[1].value}, {$VAR->m_storage.m_data.array[2].value}] ({$VAR})"
+         type = "Vector3a *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0].value}, {$VAR->m_storage.m_data.array[1].value}, {$VAR->m_storage.m_data.array[2].value}] ({$VAR})"
+         type = "Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;Angle, 3, 1, 0, 3, 1&gt; &gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Vector4f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 4, 1, 0, 4, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Vector4d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 4, 1, 0, 4, 1&gt; &gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Vector5f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 5, 1, 0, 5, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Vector5d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double, 5, 1, 0, 5, 1&gt; &gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Vector6f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Vector6d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 6, 1, 0, 6, 1&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}] ({$VAR})"
+         type = "Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;float, 6, 1, 0, 6, 1&gt; &gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "RowVector2f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 2, 0, 1, 2&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "RowVector3f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 3, 0, 1, 3&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "RowVector4f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 1, 4, 0, 1, 4&gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}][{$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Matrix2f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}][{$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 2, 2, 0, 2, 2&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}][{$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Matrix2d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}][{$VAR->m_storage.m_data.array[2]}, {$VAR->m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 2, 2, 0, 2, 2&gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}][{$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}][{$VAR->m_storage.m_data.array[6]}, {$VAR->m_storage.m_data.array[7]}, {$VAR->m_storage.m_data.array[8]}] ({$VAR})"
+         type = "Matrix3f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}][{$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}][{$VAR->m_storage.m_data.array[6]}, {$VAR->m_storage.m_data.array[7]}, {$VAR->m_storage.m_data.array[8]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;float, 3, 3, 0, 3, 3&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}][{$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}][{$VAR->m_storage.m_data.array[6]}, {$VAR->m_storage.m_data.array[7]}, {$VAR->m_storage.m_data.array[8]}] ({$VAR})"
+         type = "Matrix3d *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_storage.m_data.array[0]}, {$VAR->m_storage.m_data.array[1]}, {$VAR->m_storage.m_data.array[2]}][{$VAR->m_storage.m_data.array[3]}, {$VAR->m_storage.m_data.array[4]}, {$VAR->m_storage.m_data.array[5]}][{$VAR->m_storage.m_data.array[6]}, {$VAR->m_storage.m_data.array[7]}, {$VAR->m_storage.m_data.array[8]}] ({$VAR})"
+         type = "Eigen::Matrix&lt;double, 3, 3, 0, 3, 3&gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "[{$VAR->m_coeffs.m_storage.m_data.array[0]}, {$VAR->m_coeffs.m_storage.m_data.array[1]}, {$VAR->m_coeffs.m_storage.m_data.array[2]}, {$VAR->m_coeffs.m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Quaternionf *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_coeffs.m_storage.m_data.array[0]}, {$VAR->m_coeffs.m_storage.m_data.array[1]}, {$VAR->m_coeffs.m_storage.m_data.array[2]}, {$VAR->m_coeffs.m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Quaternion&lt;float&gt; *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_coeffs.m_storage.m_data.array[0]}, {$VAR->m_coeffs.m_storage.m_data.array[1]}, {$VAR->m_coeffs.m_storage.m_data.array[2]}, {$VAR->m_coeffs.m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Quaterniond *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->m_coeffs.m_storage.m_data.array[0]}, {$VAR->m_coeffs.m_storage.m_data.array[1]}, {$VAR->m_coeffs.m_storage.m_data.array[2]}, {$VAR->m_coeffs.m_storage.m_data.array[3]}] ({$VAR})"
+         type = "Eigen::Quaternion&lt;double&gt; *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR->rotation.value} [{$VAR->translation.m_storage.m_data.array[0]}, {$VAR->translation.m_storage.m_data.array[1]}] ({$VAR})"
+         type = "Pose2f *">
+      </SummaryFormatter>
+      <SummaryFormatter
+         formatString = "[{$VAR->rotation.m_coeffs.m_storage.m_data.array[0]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[1]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[2]}, {$VAR->rotation.m_coeffs.m_storage.m_data.array[3]}][{$VAR->translation.m_storage.m_data.array[0]}, {$VAR->translation.m_storage.m_data.array[1]}, {$VAR->translation.m_storage.m_data.array[2]}] ({$VAR})"
+         type = "Pose3f *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{::_fromQString(*$VAR)}:s ({$VAR})"
+         type = "QString *">
+      </SummaryFormatter>
+
+      <SummaryFormatter
+         formatString = "{$VAR->value * 180 / 3.14159265f}&#xb0; / {$VAR->value} ({$VAR})"
+         type = "Angle *">
+      </SummaryFormatter>
+   </SummaryFormatters>
+</CustomDataFormatters>

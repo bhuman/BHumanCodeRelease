@@ -77,12 +77,6 @@ public:
   std::string getRobotName() const;
 
   /**
-  * The function returns the model of the robot associated to the current thread.
-  * @return The model of the robot.
-  */
-  std::string getModelName() const;
-
-  /**
   * The function returns the simulation time.
   * @return The pseudo-time in milliseconds.
   */
@@ -93,9 +87,9 @@ protected:
   std::list<Robot*> robots; /**< The list of all robots. */
   int simStepLength; /**< The length of one simulation step (in ms) */
   bool simTime; /**< Switches between simulation time mode and real time mode. */
-  bool dragTime; /**< Drag simulation to avoid running faster then realtime. */
+  float delayTime; /**< Delay simulation to reach this duration of a step. */
   int time; /**< The simulation time. */
-  unsigned lastTime; /**< The last time execute was called. */
+  float lastTime; /**< The last time execute was called. */
   std::string statusText; /**< The text to be printed in the status bar. */
 
   /**

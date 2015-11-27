@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Representations/Infrastructure/RoboCupGameControlData.h"
+#include <cstdio>
 
 /**
 * @class NaoBody
@@ -14,12 +15,13 @@
 */
 class NaoBody
 {
+private:
+  int writingActuators; /**< The index of the opened exclusive actuator writing buffer. */
+
+  FILE* fdCpuTemp;
+
 public:
-
-  /** Default constructor */
   NaoBody();
-
-  /** Destructor */
   ~NaoBody();
 
   /** Initializes access to libbhuman
@@ -62,9 +64,4 @@ public:
 
   /** Sets the current team info that will be used by libgamectrl. */
   void setTeamInfo(int teamNumber, int teamColor, int playerNumber);
-
-private:
-  int writingActuators; /**< The index of the opened exclusive actuator writing buffer. */
-
-  FILE* fdCpuTemp;
 };

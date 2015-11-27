@@ -11,18 +11,13 @@
 
 #include "Controller/LocalRobot.h"
 #include "Robot.h"
-#include "Tools/Streams/InStreams.h"
 #include "Controller/ConsoleRoboCupCtrl.h"
-#include "Controller/TeamComm3DCtrl.h"
 
 extern "C" DLL_EXPORT SimRobot::Module* createModule(SimRobot::Application& simRobot)
 {
   QFileInfo info(simRobot.getFilePath());
   QString baseName = info.baseName();
-  if(baseName.startsWith("TeamComm3D"))
-    return new TeamComm3DCtrl(simRobot);
-  else
-    return new ConsoleRoboCupCtrl(simRobot);
+  return new ConsoleRoboCupCtrl(simRobot);
 }
 
 MAKE_PROCESS(LocalRobot);
@@ -54,11 +49,6 @@ Robot::Robot(const char* name)
 void Robot::update()
 {
   robotProcess->update();
-}
-
-std::string Robot::getModel() const
-{
-  return "Nao";
 }
 
 void Robot::connect(SenderList* sender, ReceiverList* receiver)

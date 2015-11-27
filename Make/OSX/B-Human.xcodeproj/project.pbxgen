@@ -69,13 +69,6 @@
       );
     };
 
-    "SpecialAction Build" = {
-      anchor = 209C6C1112008D6B007E5C2E;
-      includes = (
-        ../../Src/Modules/MotionControl/mof/*.mof,
-      );
-    };
-
     "bush Resource" = {
       anchor = 20EF878213B37D7500508E6A;
       includes = (
@@ -88,7 +81,7 @@
     Nao = {
       root = ../../Src;
       includes = (
-        ../../Src/Modules/**.(cpp|h|mof),
+        ../../Src/Modules/**.(cpp|h),
         ../../Src/Platform/**.(cpp|mm|h),
         ../../Src/Processes/**.(cpp|h),
         ../../Src/Representations/**.(cpp|h),
@@ -169,13 +162,6 @@
          ../../Src/Utils/bush/**.(cpp|h|qrc|png|icns),
       );
     };
-
-    URC = {
-      root = ../../Src/Utils;
-      includes = (
-         ../../Src/Utils/URC/**.(cpp|h),
-      );
-    };
   };
     
   buildFiles = {
@@ -198,6 +184,7 @@
         ../../Src/Platform/Linux/SoundPlayer.cpp,
         ../../Src/Platform/Linux/SystemCall.cpp,
         ../../Src/Platform/Windows/**,
+        ../../Src/Tools/Precompiled/*.cpp,
       );
     };
 
@@ -210,6 +197,9 @@
         ../../Src/Processes/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
+      );
+      excludes = (
+        ../../Src/Tools/Precompiled/*.cpp,
       );
     };
 
@@ -268,13 +258,12 @@
         ../../Src/Controller/Views/DataView/PropertyEditorFactory.h,
         ../../Src/Controller/Views/MultiColorCalibrationView/*.h,
         ../../Src/Controller/Views/KickView/KickView.h,
-        ../../Src/Utils/URC/*.cpp,
         ../../Util/libqxt/qxtspanslider*.*,
       );
       excludes = (
         ../../Src/Controller/Platform/Windows/*.(cpp|h),
-        ../../Src/Controller/Platform/Linux/Joystick.(cpp|h),
-        ../../Src/Utils/URC/UniversalResourceCompiler.cpp,
+        ../../Src/Controller/Platform/Linux/*.(cpp|h),
+        ../../Src/Controller/Views/ColorCalibrationView/History.h,
       );
     };
 
@@ -286,24 +275,13 @@
       );
     };
 
-    URC = {
-      anchor = 209C6BDB120078F3007E5C2E;
-      includes = (
-        ../../Src/Platform/Common/File.cpp,
-        ../../Src/Tools/Enum.cpp,
-        ../../Src/Utils/URC/*.cpp,
-        ../../Src/Representations/MotionControl/SpecialActionRequest.cpp,
-      );
-    };
-
     bush = {
       anchor = 20EF878313B37D7500508E6A;
       includes = (
-        ../../Src/Controller/Platform/Linux/Directory.cpp,
         ../../Src/Utils/bush/**.(cpp|qrc),
         ../../Src/Utils/bush/Session.h,
         ../../Src/Utils/bush/agents/PingAgent.h,
-        ../../Src/Utils/bush/agents/TeamCommAgent.h,
+        ../../Src/Utils/bush/agents/PowerAgent.h,
         ../../Src/Utils/bush/cmdlib/AbstractConsole.h,
         ../../Src/Utils/bush/cmdlib/Context.h,
         ../../Src/Utils/bush/cmdlib/ProcessRunner.h,
@@ -311,21 +289,13 @@
         ../../Src/Platform/Linux/BHAssert.cpp,
         ../../Src/Platform/OSX/Semaphore.cpp,
         ../../Src/Platform/SimRobotQt/SystemCall.cpp,
-        ../../Src/Platform/Common/*.cpp,
-        ../../Src/Representations/Infrastructure/GameInfo.cpp,
-        ../../Src/Representations/Infrastructure/SPLStandardMessage.cpp,
+        ../../Src/Platform/Common/File.cpp,
         ../../Src/Tools/Enum.cpp,
         ../../Src/Tools/Global.cpp,
-        ../../Src/Tools/NTP.cpp,
         ../../Src/Tools/Streams/**.cpp,
-        ../../Src/Tools/MessageQueue/**.cpp,
-        ../../Src/Tools/Settings.cpp,
-        ../../Src/Tools/Debugging/**.cpp,
-        ../../Src/Tools/ProcessFramework/TeamHandler.cpp,
       );
       excludes = (
         ../../Src/Utils/bush/ui/CommandLineEdit.h,
-        ../../Src/Tools/Debugging/CognitionLogger.cpp,
       );
     };
   };

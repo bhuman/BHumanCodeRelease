@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <vector>
@@ -16,11 +15,11 @@ class ConsoleRoboCupCtrl;
 class RobotConsole;
 class DebugDataStreamer;
 class Framework;
-class Settings;
+struct Settings;
 
 /**
-* singleton stream handler class
-*/
+ * singleton stream handler class
+ */
 class StreamHandler
 {
 private:
@@ -34,12 +33,13 @@ private:
   /**
    * Copy constructor.
    * Copying instances of this class is not allowed
-   * therefore the copy constructor is private. */
+   * therefore the copy constructor is private.
+   */
   StreamHandler(const StreamHandler&) {}
 
-  /*
-  * only a process is allowed to create the instance.
-  */
+  /**
+   * Only a process is allowed to create the instance.
+   */
   friend class Process;
 
   struct RegisteringAttributes
@@ -52,7 +52,7 @@ private:
   typedef std::unordered_map<const char*, const char*> BasicTypeSpecification;
   BasicTypeSpecification basicTypeSpecification;
 
-  typedef std::pair< std::string, const char*> TypeNamePair;
+  typedef std::pair<std::string, const char*> TypeNamePair;
   typedef std::unordered_map<const char*, std::vector<TypeNamePair> > Specification;
   Specification specification;
 
@@ -78,6 +78,22 @@ public:
   void finishRegistration();
   void registerWithSpecification(const char* name, const std::type_info& ti);
   void registerEnum(const std::type_info& ti, const char* (*fp)(int));
+
+  /**
+   * Check whether the specifications of two types are structurally identical,
+   * so that the first type could read the data written by the second type.
+   * The only deviation allowed is that the first type can define more enumeration
+   * constants, because it would still be able to read all constants the second type
+   * defined.
+   * This only works if both specifications involved have been created from a stream,
+   * i.e. all type names were demangled.
+   * @param other The specification data used for the second type.
+   * @param type The type the specification which will be searched in this object.
+   * @param otherType The type the specification which will be searched in the other object.
+   * @return Is the other type compatible with this type?
+   */
+  bool areSpecificationsForTypesCompatible(StreamHandler& other, std::string rawType, std::string otherType);
+
   OutBinarySize dummyStream;
 
 private:
@@ -85,8 +101,9 @@ private:
   friend Out& operator<<(Out&, const StreamHandler&);
   friend class ConsoleRoboCupCtrl; // constructs a StreamHandler used when outside process contexts.
   friend class RobotConsole; // constructs a StreamHandler storing the information received.
-  friend class TeamComm3DCtrl; // constructs a StreamHandler used by all serialize methods.
   friend class Framework;
-  friend class Settings; // construct a default StreamHandler when they are first loaded.
+  friend struct Settings; // construct a default StreamHandler when they are first loaded.
   friend class DebugDataStreamer; // needs access to internal data types.
+  friend class LogPlayer; // constructs a StreamHandler to represent specification of logged data.
+  friend class LogDataProvider; // constructs a StreamHandler to represent specification of logged data.
 };

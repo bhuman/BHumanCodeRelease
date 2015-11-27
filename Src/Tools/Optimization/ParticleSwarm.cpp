@@ -1,8 +1,8 @@
 /**
-* @file Tools/Optimization/ParticleSwarm.cpp
-* Implementation of a simple particle swarm optimization algorithm
-* @author Colin Graf
-*/
+ * @file Tools/Optimization/ParticleSwarm.cpp
+ * Implementation of a simple particle swarm optimization algorithm
+ * @author Colin Graf
+ */
 
 #include <limits>
 
@@ -10,11 +10,11 @@
 #include "Tools/Math/Random.h"
 #include "Platform/BHAssert.h"
 
-ParticleSwarm::ParticleSwarm(unsigned int particleCount,
-                             float velocityFactor, float bestPositionFactor,
+ParticleSwarm::ParticleSwarm(unsigned int particleCount, float velocityFactor, float bestPositionFactor,
                              float globalBestPositionFactor, float randomPositionFactor) :
   particleCount(particleCount), velocityFactor(velocityFactor), bestPositionFactor(bestPositionFactor),
-  globalBestPositionFactor(globalBestPositionFactor), randomPositionFactor(randomPositionFactor) {}
+  globalBestPositionFactor(globalBestPositionFactor), randomPositionFactor(randomPositionFactor)
+{}
 
 bool ParticleSwarm::isRunning() const
 {
@@ -60,7 +60,7 @@ void ParticleSwarm::next()
   Particle& particle = particles[currentParticleIndex];
   updateParticle(particle);
   for(size_t i = 0, count = dimensions.size(); i < count; ++i)
-      *dimensions[i].variable = particle.position[i];
+    *dimensions[i].variable = particle.position[i];
 }
 
 void ParticleSwarm::setRating(float rating)
@@ -91,9 +91,9 @@ void ParticleSwarm::updateParticle(Particle& particle)
   for(unsigned int i = 0; i < particle.position.size(); ++i)
   {
     particle.velocity[i] = velocityFactor * particle.velocity[i]
-                           + bestPositionFactor * randomFloat() * (particle.bestPosition[i] - particle.position[i])
-                           + globalBestPositionFactor * randomFloat() * (bestParticle.bestPosition[i] - particle.position[i])
-                           + randomPositionFactor * randomFloat() * ((dimensions[i].min + randomFloat() * (dimensions[i].max - dimensions[i].min)) - particle.position[i]);
+      + bestPositionFactor * randomFloat() * (particle.bestPosition[i] - particle.position[i])
+      + globalBestPositionFactor * randomFloat() * (bestParticle.bestPosition[i] - particle.position[i])
+      + randomPositionFactor * randomFloat() * ((dimensions[i].min + randomFloat() * (dimensions[i].max - dimensions[i].min)) - particle.position[i]);
     if(dimensions[i].isInside(particle.position[i] + particle.velocity[i]))
       particle.position[i] += particle.velocity[i];
     else

@@ -56,6 +56,7 @@ private:
   virtual void mouseDoubleClickEvent(QMouseEvent* event);
   virtual void keyPressEvent(QKeyEvent* event);
   virtual void keyReleaseEvent(QKeyEvent* event);
+  virtual bool event(QEvent* event);
   virtual void wheelEvent(QWheelEvent* event);
   virtual QSize sizeHint() const {return QSize(320, 240);}
 

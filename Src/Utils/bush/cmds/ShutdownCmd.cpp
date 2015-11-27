@@ -23,9 +23,9 @@ std::string ShutdownCmd::getDescription() const
   return "bhumand stop && naoqid stop && halt";
 }
 
-bool ShutdownCmd::preExecution(Context &context, const std::vector<std::string> &params)
+bool ShutdownCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
-  if(!params.empty())
+  if(!params.empty() && params[0] != "-s")
   {
     context.errorLine("Unrecognized parameters.");
     return false;
@@ -33,18 +33,18 @@ bool ShutdownCmd::preExecution(Context &context, const std::vector<std::string> 
   return true;
 }
 
-Task* ShutdownCmd::perRobotExecution(Context &context, Robot& robot)
+Task* ShutdownCmd::perRobotExecution(Context& context, Robot& robot)
 {
   return new ShutdownTask(context, &robot);
 }
 
-ShutdownCmd::ShutdownTask::ShutdownTask(Context &context, Robot *robot)
+ShutdownCmd::ShutdownTask::ShutdownTask(Context& context, Robot* robot)
   : RobotTask(context, robot)
 {}
 
 bool ShutdownCmd::ShutdownTask::execute()
 {
-  std::string ip = robot->getBestIP();
+  std::string ip = robot->getBestIP(context());
 
   context().printLine(robot->name + ": Shutting down...");
   std::string command = remoteCommand("halt", ip);

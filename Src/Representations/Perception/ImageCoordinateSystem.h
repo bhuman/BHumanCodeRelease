@@ -1,219 +1,218 @@
 /**
-* @file ImageCoordinateSystem.h
-* Declaration of a class that provides transformations on image coordinates.
-* Parts of this class were copied from class ImageInfo.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-* @author <a href="mailto:oberlies@sim.tu-darmstadt.de">Tobias Oberlies</a>
-*/
+ * @file ImageCoordinateSystem.h
+ * Declaration of a struct that provides transformations on image coordinates.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author <a href="mailto:oberlies@sim.tu-darmstadt.de">Tobias Oberlies</a>
+ */
 
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Tools/Math/BHMath.h"
-#include "Tools/Math/Matrix2x2.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Math/Eigen.h"
 
 /**
-* @class ImageCoordinateSystem
-* A class that provides transformations on image coordinates.
-*/
+ * @struct ImageCoordinateSystem
+ * A struct that provides transformations on image coordinates.
+ */
 STREAMABLE(ImageCoordinateSystem,
 {
+private:
   CameraInfo cameraInfo;
-  int* xTable;
-  int* yTable;
+  int* xTable = nullptr;
+  int* yTable = nullptr;
   int table[6144];
 
 public:
-  ImageCoordinateSystem();
   ~ImageCoordinateSystem();
 
   void setCameraInfo(const CameraInfo& cameraInfo);
 
   /**
-  * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
-  * @param imageCoords The point in image coordinates.
-  * @return The point in horizon-aligned coordinates.
-  */
-  Vector2<> toHorizonAligned(const Vector2<int>& imageCoords) const
-  {
-    return invRotation * Vector2<>(imageCoords);
-  }
+   * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
+   * @param imageCoords The point in image coordinates.
+   * @return The point in horizon-aligned coordinates.
+   */
+  //Vector2f toHorizonAligned(const Vector2i& imageCoords) const
+  //{
+  //  return invRotation * imageCoords.cast<float>();
+  //}
 
   /**
-  * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
-  * @param imageCoords The point in image coordinates.
-  * @return The point in horizon-aligned coordinates.
-  */
-  Vector2<> toHorizonAligned(const Vector2<>& imageCoords) const
+   * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
+   * @param imageCoords The point in image coordinates.
+   * @return The point in horizon-aligned coordinates.
+   */
+  Vector2f toHorizonAligned(const Vector2f& imageCoords) const
   {
     return invRotation * imageCoords;
   }
 
   /**
-  * Converts coordinates in the horizon-aligned coordinate system into image coordinates.
-  * No clipping is done.
-  * @param horizonAlignedCoords The point in horizon-aligned coordinates.
-  * @return The point in image coordinates.
-  */
-  Vector2<int> fromHorizonAligned(const Vector2<>& horizonAlignedCoords) const
+   * Converts coordinates in the horizon-aligned coordinate system into image coordinates.
+   * No clipping is done.
+   * @param horizonAlignedCoords The point in horizon-aligned coordinates.
+   * @return The point in image coordinates.
+   */
+  Vector2i fromHorizonAligned(const Vector2f& horizonAlignedCoords) const
   {
-    Vector2<> result = rotation * horizonAlignedCoords;
-    return Vector2<int>(result);
+    const Vector2f result = rotation * horizonAlignedCoords;
+    return result.cast<int>();
   }
 
   /**
-  * Converts image coordintates into coordinates in the horizon-based coordinate system,
-  * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
-  * @param imageCoords The point in image coordinates.
-  * @return The point in horizon-based coordinates.
-  */
-  Vector2<> toHorizonBased(const Vector2<int>& imageCoords) const
-  {
-    return invRotation * (Vector2<>(imageCoords) - origin);
-  }
+   * Converts image coordintates into coordinates in the horizon-based coordinate system,
+   * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
+   * @param imageCoords The point in image coordinates.
+   * @return The point in horizon-based coordinates.
+   */
+  //Vector2f toHorizonBased(const Vector2i& imageCoords) const
+  //{
+  //  return invRotation * (imageCoords.cast<float>() -origin);
+  //}
 
   /**
-  * Converts image coordintates into coordinates in the horizon-based coordinate system,
-  * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
-  * @param imageCoords The point in image coordinates.
-  * @return The point in horizon-based coordinates.
-  */
-  Vector2<> toHorizonBased(const Vector2<>& imageCoords) const
+   * Converts image coordintates into coordinates in the horizon-based coordinate system,
+   * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
+   * @param imageCoords The point in image coordinates.
+   * @return The point in horizon-based coordinates.
+   */
+  Vector2f toHorizonBased(const Vector2f& imageCoords) const
   {
     return invRotation * (imageCoords - origin);
   }
 
   /**
-  * Converts coordinates in the horizon-based coordinate system into image coordinates.
-  * No clipping is done.
-  * @param horizonBasedCoords The point in horizon-based coordinates.
-  * @return The point in image coordinates.
-  */
-  Vector2<int> fromHorizonBased(const Vector2<>& horizonBasedCoords) const
+   * Converts coordinates in the horizon-based coordinate system into image coordinates.
+   * No clipping is done.
+   * @param horizonBasedCoords The point in horizon-based coordinates.
+   * @return The point in image coordinates.
+   */
+  Vector2i fromHorizonBased(const Vector2f& horizonBasedCoords) const
   {
-    Vector2<> result = rotation * horizonBasedCoords;
-    return Vector2<int>(int(result.x + origin.x), int(result.y + origin.y));
+    const Vector2f result = rotation * horizonBasedCoords;
+    return (result + origin).cast<int>();
   }
 
   /**
-  * Corrects image coordinates so that the distortion resulting from the rolling
-  * shutter is compensated.
-  * No clipping is done.
-  * @param imageCoords The point in image coordinates.
-  * @return The corrected point.
-  */
-  Vector2<> toCorrected(const Vector2<>& imageCoords) const
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated.
+   * No clipping is done.
+   * @param imageCoords The point in image coordinates.
+   * @return The corrected point.
+   */
+  Vector2f toCorrected(const Vector2f& imageCoords) const
   {
-    float factor = a + imageCoords.y * b;
-    return Vector2<>(float(cameraInfo.opticalCenter.x - tan(atan((cameraInfo.opticalCenter.x - imageCoords.x) / cameraInfo.focalLength) - factor * offset.x) * cameraInfo.focalLength),
-                     float(cameraInfo.opticalCenter.y + tan(atan((imageCoords.y - cameraInfo.opticalCenter.y) / cameraInfo.focalLength) - factor * offset.y) * cameraInfo.focalLength));
+    const float factor = a + imageCoords.y() * b;
+    return Vector2f(float(cameraInfo.opticalCenter.x() - tan(atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength),
+                    float(cameraInfo.opticalCenter.y() + tan(atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) - factor * offset.y()) * cameraInfo.focalLength));
   }
 
   /**
-  * Corrects image coordinates so that the distortion resulting from the rolling
-  * shutter is compensated.
-  * No clipping is done.
-  * @param imageCoords The point in image coordinates.
-  * @return The corrected point.
-  */
-  Vector2<> toCorrected(const Vector2<int>& imageCoords) const
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated.
+   * No clipping is done.
+   * @param imageCoords The point in image coordinates.
+   * @return The corrected point.
+   */
+  Vector2f toCorrected(const Vector2i& imageCoords) const
   {
-    return toCorrected(Vector2<float>(float(imageCoords.x), float(imageCoords.y)));
+    return toCorrected(Vector2f(imageCoords.cast<float>()));
   }
 
   /**
-  * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> fromCorrectedApprox(const Vector2<>& coords) const
+   * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  Vector2f fromCorrectedApprox(const Vector2f& coords) const
   {
     float factor = a + cameraInfo.height / 2 * b;
-    Vector2<> v(factor * offset.x - std::atan((coords.x - cameraInfo.opticalCenter.x) / cameraInfo.focalLength),
-                factor * offset.y + std::atan((coords.y - cameraInfo.opticalCenter.y) / cameraInfo.focalLength));
-    const static float EPSILON = 0.1f;
-    if(v.x < (float) -pi_2 + EPSILON)
-      v.x = (float) -pi_2 + EPSILON;
-    else if(v.x > pi_2 - EPSILON)
-      v.x = pi_2 - EPSILON;
+    Vector2f v(factor * offset.x() - std::atan((coords.x() - cameraInfo.opticalCenter.x()) / cameraInfo.focalLength),
+               factor * offset.y() + std::atan((coords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength));
+    const float EPSILON = 0.1f;
+    if(v.x() < -pi_2 + EPSILON)
+      v.x() = -pi_2 + EPSILON;
+    else if(v.x() > pi_2 - EPSILON)
+      v.x() = pi_2 - EPSILON;
 
-    if(v.y < (float) -pi_2 + EPSILON)
-      v.y = (float) -pi_2 + EPSILON;
-    else if(v.y > pi_2 - EPSILON)
-      v.y = pi_2 - EPSILON;
+    if(v.y() < -pi_2 + EPSILON)
+      v.y() = -pi_2 + EPSILON;
+    else if(v.y() > pi_2 - EPSILON)
+      v.y() = pi_2 - EPSILON;
 
-    return Vector2<>(cameraInfo.opticalCenter.x - std::tan(v.x) * cameraInfo.focalLength,
-                     cameraInfo.opticalCenter.y + std::tan(v.y) * cameraInfo.focalLength);
+    return Vector2f(cameraInfo.opticalCenter.x() - std::tan(v.x()) * cameraInfo.focalLength,
+                    cameraInfo.opticalCenter.y() + std::tan(v.y()) * cameraInfo.focalLength);
   }
 
   /**
-  * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> fromCorrectedApprox(const Vector2<int>& coords) const
+   * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  Vector2f fromCorrectedApprox(const Vector2i& coords) const
   {
-    return fromCorrectedApprox(Vector2<float>(float(coords.x), float(coords.y)));
+    return fromCorrectedApprox(Vector2f(coords.cast<float>()));
   }
 
   /**
-  * "Incorrects" image coordinates using a linearized version of the motion distortion model.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> fromCorrectedLinearized(const Vector2<>& coords) const
+   * "Incorrects" image coordinates using a linearized version of the motion distortion model.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  Vector2f fromCorrectedLinearized(const Vector2f& coords) const
   {
-    const float temp1 = cameraInfo.focalLength * offset.y;
+    const float temp1 = cameraInfo.focalLength * offset.y();
     const float temp2 = 1.0f / (1.0f - temp1 * b);
-    return Vector2<>(coords.x - cameraInfo.focalLength * offset.x * (a + coords.y * b) * temp2, (coords.y + temp1 * a) * temp2);
+    return Vector2f(coords.x() - cameraInfo.focalLength * offset.x() * (a + coords.y() * b) * temp2, (coords.y() + temp1 * a) * temp2);
   }
 
   /**
-  * "Incorrects" image coordinates using a linearized version of the motion distortion model.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> fromCorrectedLinearized(const Vector2<int>& coords) const
+   * "Incorrects" image coordinates using a linearized version of the motion distortion model.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  Vector2f fromCorrectedLinearized(const Vector2i& coords) const
   {
-    return fromCorrectedLinearized(Vector2<>(coords));
+    return fromCorrectedLinearized(Vector2f(coords.cast<float>()));
   }
 
   /**
-  * Corrects image coordinates using a linearized version of the motion distortion model.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> toCorrectedLinearized(const Vector2<>& coords) const
+   * Corrects image coordinates using a linearized version of the motion distortion model.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  Vector2f toCorrectedLinearized(const Vector2f& coords) const
   {
-    const float temp = cameraInfo.focalLength * (a + coords.y * b);
-    return Vector2<>(coords.x + temp * offset.x, coords.y - temp * offset.y);
+    const float temp = cameraInfo.focalLength * (a + coords.y() * b);
+    return Vector2f(coords.x() + temp * offset.x(), coords.y() - temp * offset.y());
   }
 
   /**
-  * Corrects image coordinates using a linearized version of the motion distortion model.
-  * @param coords The point in corrected image coordinates.
-  * @return The incorrected point.
-  */
-  Vector2<> toCorrectedLinearized(const Vector2<int>& coords) const
-  {
-    return toCorrectedLinearized(Vector2<>(coords));
-  }
+   * Corrects image coordinates using a linearized version of the motion distortion model.
+   * @param coords The point in corrected image coordinates.
+   * @return The incorrected point.
+   */
+  //Vector2f toCorrectedLinearized(const Vector2i& coords) const
+  //{
+  //  return toCorrectedLinearized(Vector2f(coords.cast<float>()));
+  //}
 
   /**
-  * Corrects image coordinates so that the distortion resulting from the rolling
-  * shutter is compensated.
-  * No clipping is done.
-  * @param x The x coordinate of the point in image coordinates.
-  * @param y The y coordinate of the point in image coordinates.
-  * @return The corrected point relative to the image center with negated signs.
-  */
-  Vector2<int> toCorrectedCenteredNeg(int x, int y) const
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated.
+   * No clipping is done.
+   * @param x The x coordinate of the point in image coordinates.
+   * @param y The y coordinate of the point in image coordinates.
+   * @return The corrected point relative to the image center with negated signs.
+   */
+  Vector2i toCorrectedCenteredNeg(int x, int y) const
   {
-    float factor = a + y * b;
-    x = xTable[x * maxResolutionWidth / cameraInfo.width] - int(factor * offset.x);
-    y = yTable[y * maxResolutionHeight / cameraInfo.height] - int(factor * offset.y);
+    const float factor = a + y * b;
+    x = xTable[x * Image::maxResolutionWidth / cameraInfo.width] - int(factor * offset.x());
+    y = yTable[y * Image::maxResolutionHeight / cameraInfo.height] - int(factor * offset.y());
     if(x < -3072)
       x = -3072;
     else if(x > 3071)
@@ -222,12 +221,12 @@ public:
       y = -3072;
     else if(y > 3071)
       y = 3071;
-    return Vector2<int>(table[x + 3072], -table[y + 3072]) * cameraInfo.width / maxResolutionWidth;
+    return Vector2i(table[x + 3072], -table[y + 3072]) * cameraInfo.width / Image::maxResolutionWidth;
   }
 
   /**
-  * Some coordinate system debug drawings.
-  */
+   * Some coordinate system debug drawings.
+   */
   void draw() const,
 
   /**
@@ -240,10 +239,10 @@ public:
    *    image coordinates only requires the rotation matrix.
    * The direction of the horizon is c[0], the direction downwards is c[1].
    */
-  (Matrix2x2<>) rotation,
-  (Matrix2x2<>) invRotation, /**< The rotation from the image coordinates to the horizon-aligned coordinates. */
-  (Vector2<>) origin, /**< The origin of the horizon in image coordinates. */
-  (Vector2<>) offset, /**< The offset of the previous image to the current one. */
+  (Matrix2f) rotation,
+  (Matrix2f) invRotation, /**< The rotation from the image coordinates to the horizon-aligned coordinates. */
+  (Vector2f) origin, /**< The origin of the horizon in image coordinates. */
+  (Vector2f) offset, /**< The offset of the previous image to the current one. */
   (float)(0) a, /**< Constant part of equation to motion distortion. */
   (float)(0) b, /**< Linear part of equation to motion distortion. */
 });

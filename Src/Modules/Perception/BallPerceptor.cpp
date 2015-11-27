@@ -11,12 +11,11 @@
 
 #include "BallPerceptor.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Matrix.h"
-#include "Tools/Streams/InStreams.h"
-#include "Tools/Math/Geometry.h"
+#include "Tools/Math/Eigen.h"
+
 #include <algorithm>
 
-MAKE_MODULE(BallPerceptor, Perception)
+MAKE_MODULE(BallPerceptor, perception)
 
 void BallPerceptorScaler::scaleInput()
 {
@@ -47,7 +46,7 @@ void BallPerceptorScaler::scaleInput()
     for(BallSpot& b : theBallSpots.ballSpots)
     {
       b.position *= 2;
-      ++b.position.x; // original y channel was the second one
+      ++b.position.x(); // original y channel was the second one
     }
   }
   theImageCoordinateSystem.setCameraInfo(theCameraInfo);
@@ -71,16 +70,16 @@ void BallPerceptorScaler::scaleOutput(BallPercept& ballPercept) const
 
 static bool ballSpotComparator(const BallSpot& b1, const BallSpot& b2)
 {
-  if(b1.position.y != b2.position.y)
-    return b1.position.y > b2.position.y;
+  if(b1.position.y() != b2.position.y())
+    return b1.position.y() > b2.position.y();
   else
-    return b1.position.x < b2.position.x;
+    return b1.position.x() < b2.position.x();
 }
 
 BallPerceptor::BallPerceptor() : right(0), horizon(0), height(0)
 {
-  sqrMaxBallDistance = Vector2<>(theFieldDimensions.xPosOpponentFieldBorder - theFieldDimensions.xPosOwnFieldBorder,
-                                 theFieldDimensions.yPosLeftFieldBorder - theFieldDimensions.yPosRightFieldBorder).squareAbs();
+  sqrMaxBallDistance = Vector2f(theFieldDimensions.xPosOpponentFieldBorder - theFieldDimensions.xPosOwnFieldBorder,
+                                theFieldDimensions.yPosLeftFieldBorder - theFieldDimensions.yPosRightFieldBorder).squaredNorm();
   if(SystemCall::getMode() == SystemCall::simulatedRobot)
   {
     scanMaxColorDistance = 60;
@@ -106,12 +105,15 @@ void BallPerceptor::update(BallPercept& ballPercept)
   }
   // calculate the image limits
   height = theCameraInfo.height - 3;
-  horizon = std::max(2, (int) theImageCoordinateSystem.origin.y);
+  horizon = std::max(2, (int) theImageCoordinateSystem.origin.y());
   horizon = std::min(horizon, height);
   right = theCameraInfo.width - 3;
 
   fromBallSpots(ballPercept);
   scaleOutput(ballPercept);
+
+  // set ball radius
+  ballPercept.radiusOnField = theFieldDimensions.ballRadius;
 
   PLOT("module:BallPerceptor:angle", toDegrees(ballPercept.relativePositionOnField.angle()));
 }
@@ -126,11 +128,11 @@ void BallPerceptor::fromBallSpots(BallPercept& ballPercept)
   for(const BallSpot& ballSpot : ballSpots)
   {
     CROSS2("module:BallPerceptor:ballSpot",
-           ballSpot.position.x, ballSpot.position.y,
-           1, 1, Drawings::ps_solid, ColorRGBA::blue);
+           ballSpot.position.x(), ballSpot.position.y(),
+           1, 1, Drawings::solidPen, ColorRGBA::blue);
 
-    Vector2<> prevPositionInImage = ballPercept.positionInImage;
-    ballPercept.positionInImage = Vector2<>((float) ballSpot.position.x, (float) ballSpot.position.y);
+    Vector2f prevPositionInImage = ballPercept.positionInImage;
+    ballPercept.positionInImage = ballSpot.position.cast<float>();
     BallPercept::Status status = analyzeBallSpot(ballSpot, ballPercept);
     if(status == BallPercept::seen || status > ballPercept.status)
       ballPercept.status = status;
@@ -139,8 +141,8 @@ void BallPerceptor::fromBallSpots(BallPercept& ballPercept)
     if(status == BallPercept::seen)
     {
       CROSS2("module:BallPerceptor:ballSpot",
-             ballSpot.position.x, ballSpot.position.y,
-             1, 1, Drawings::ps_solid, ColorRGBA::green);
+             ballSpot.position.x(), ballSpot.position.y(),
+             1, 1, Drawings::solidPen, ColorRGBA::green);
       return;
     }
   }
@@ -167,11 +169,11 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
   int left, right;
 
   // find upper/lower => middle vertical
-  lower = upper = ballSpot.position.y;
+  lower = upper = ballSpot.position.y();
   skipped = 0;
   while(lower <= height && skipped < orangeSkipping)
   {
-    if(theColorTable[getPixel(lower, ballSpot.position.x)].is(ColorClasses::orange))
+    if(theColorTable[getPixel(lower, ballSpot.position.x())].is(ColorClasses::orange))
       skipped = 0;
     else
       skipped++;
@@ -182,7 +184,7 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
   skipped = 0;
   while(upper >= horizon && skipped < orangeSkipping)
   {
-    if(theColorTable[getPixel(upper, ballSpot.position.x)].is(ColorClasses::orange))
+    if(theColorTable[getPixel(upper, ballSpot.position.x())].is(ColorClasses::orange))
       skipped = 0;
     else
       skipped++;
@@ -192,17 +194,17 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
 
   // find left/right => middle horizontal
   int redCounter = 0;
-  left = right = ballSpot.position.x;
+  left = right = ballSpot.position.x();
   skipped = 0;
   while(left >= this->left && skipped < orangeSkipping)
   {
-    if(theColorTable[getPixel(ballSpot.position.y, left)].is(ColorClasses::orange))
+    if(theColorTable[getPixel(ballSpot.position.y(), left)].is(ColorClasses::orange))
       skipped = 0;
     else
     {
       skipped++;
 
-      if(theColorTable[getPixel(ballSpot.position.y, left)].is(ColorClasses::red))
+      if(theColorTable[getPixel(ballSpot.position.y(), left)].is(ColorClasses::red))
         redCounter++;
     }
     left--;
@@ -211,13 +213,13 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
   skipped = 0;
   while(right <= this->right && skipped < orangeSkipping)
   {
-    if(theColorTable[getPixel(ballSpot.position.y, right)].is(ColorClasses::orange))
+    if(theColorTable[getPixel(ballSpot.position.y(), right)].is(ColorClasses::orange))
       skipped = 0;
     else
     {
       skipped++;
 
-      if(theColorTable[getPixel(ballSpot.position.y, right)].is(ColorClasses::red))
+      if(theColorTable[getPixel(ballSpot.position.y(), right)].is(ColorClasses::red))
         redCounter++;
     }
     right++;
@@ -226,13 +228,13 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
 
   // draw the scan lines
   LINE2("module:BallPerceptor:ballSpotScanLines",
-        ballSpot.position.x, lower,
-        ballSpot.position.x, upper,
-        1, Drawings::ps_solid, ColorRGBA::blue);
+        ballSpot.position.x(), lower,
+        ballSpot.position.x(), upper,
+        1, Drawings::solidPen, ColorRGBA::blue);
   LINE2("module:BallPerceptor:ballSpotScanLines",
-        left, ballSpot.position.y,
-        right, ballSpot.position.y,
-        1, Drawings::ps_solid, ColorRGBA::blue);
+        left, ballSpot.position.y(),
+        right, ballSpot.position.y(),
+        1, Drawings::solidPen, ColorRGBA::blue);
 
   const unsigned int width  = right - left;
   const unsigned int height = lower - upper;
@@ -244,51 +246,51 @@ bool BallPerceptor::checkNoNoise(const BallSpot& ballSpot) const
 bool BallPerceptor::checkBallSpot(const BallSpot& ballSpot)
 {
   // calculate an approximation of the radius based on bearing distance of the ball spot
-  const Vector2<int>& spot = ballSpot.position;
-  Vector2<> correctedStart = theImageCoordinateSystem.toCorrected(spot);
-  Vector3<> cameraToStart(theCameraInfo.focalLength, theCameraInfo.opticalCenter.x - correctedStart.x, theCameraInfo.opticalCenter.y - correctedStart.y);
-  Vector3<> unscaledField = theCameraMatrix.rotation * cameraToStart;
-  if(unscaledField.z >= 0.f)
+  const Vector2i& spot = ballSpot.position;
+  Vector2f correctedStart = theImageCoordinateSystem.toCorrected(spot);
+  Vector3f cameraToStart(theCameraInfo.focalLength, theCameraInfo.opticalCenter.x() - correctedStart.x(), theCameraInfo.opticalCenter.y() - correctedStart.y());
+  Vector3f unscaledField = theCameraMatrix.rotation * cameraToStart;
+  if(unscaledField.z() >= 0.f)
   {
     return false; // above horizon
   }
-  const float scaleFactor = (theCameraMatrix.translation.z - theFieldDimensions.ballRadius) / unscaledField.z;
+  const float scaleFactor = (theCameraMatrix.translation.z() - theFieldDimensions.ballRadius) / unscaledField.z();
   cameraToStart *= scaleFactor;
   unscaledField *= scaleFactor;
-  if(Vector2<>(unscaledField.x, unscaledField.y).squareAbs() > sqrMaxBallDistance)
+  if(unscaledField.topRows(2).squaredNorm() > sqrMaxBallDistance)
   {
     return false; // too far away
   }
-  cameraToStart.y += cameraToStart.y > 0 ? -theFieldDimensions.ballRadius : theFieldDimensions.ballRadius;
+  cameraToStart.y() += cameraToStart.y() > 0 ? -theFieldDimensions.ballRadius : theFieldDimensions.ballRadius;
   cameraToStart /= scaleFactor;
-  approxRadius1 = std::abs(theImageCoordinateSystem.fromCorrectedApprox(Vector2<int>(int(theCameraInfo.opticalCenter.x - cameraToStart.y), int(theCameraInfo.opticalCenter.y - cameraToStart.z))).x - spot.x);
+  approxRadius1 = std::abs(theCameraInfo.opticalCenter.x() - cameraToStart.y() - correctedStart.x());
 
   return true;
 }
 
 bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
 {
-  Vector2<int> start = ballSpot.position;
+  Vector2i start = ballSpot.position;
   const float approxDiameter = approxRadius1 * clippingApproxRadiusScale + clippingApproxRadiusPixelBonus;
   int halfApproxRadius = int(approxRadius1 * 0.5f);
-  COMPLEX_DRAWING("module:BallPerceptor:image", drawBall(start, approxDiameter, 0x6a););
+  COMPLEX_DRAWING("module:BallPerceptor:image") drawBall(start, approxDiameter, 0x6a);
   // try to improve the start point
   int maxColorDistance = scanMaxColorDistance;
   int resolutionWidth = theCameraInfo.width;
   int resolutionHeight = theCameraInfo.height;
-  startPixel = getPixel(start.y, start.x);
-  Vector2<int> preScanPoints[4] =
+  startPixel = getPixel(start.y(), start.x());
+  Vector2i preScanPoints[4] =
   {
-    Vector2<int>(start.x + halfApproxRadius, start.y + halfApproxRadius),
-    Vector2<int>(start.x - halfApproxRadius, start.y - halfApproxRadius),
-    Vector2<int>(start.x + halfApproxRadius, start.y - halfApproxRadius),
-    Vector2<int>(start.x - halfApproxRadius, start.y + halfApproxRadius)
+    start + Vector2i(halfApproxRadius, halfApproxRadius),
+    start + Vector2i(-halfApproxRadius, -halfApproxRadius),
+    start + Vector2i(halfApproxRadius, -halfApproxRadius),
+    start + Vector2i(-halfApproxRadius, halfApproxRadius)
   };
   bool preScanResults[4];
   for(int i = 0; i < 4; ++i)
   {
-    if(preScanPoints[i].x < 0 || preScanPoints[i].x >= resolutionWidth ||
-       preScanPoints[i].y < 0 || preScanPoints[i].y >= resolutionHeight)
+    if(preScanPoints[i].x() < 0 || preScanPoints[i].x() >= resolutionWidth ||
+       preScanPoints[i].y() < 0 || preScanPoints[i].y() >= resolutionHeight)
     {
       i -= i % 2;
       preScanResults[i++] = false;
@@ -297,13 +299,13 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
     }
     else
     {
-      const Image::Pixel pixel = getPixel(preScanPoints[i].y, preScanPoints[i].x);
+      const Image::Pixel pixel = getPixel(preScanPoints[i].y(), preScanPoints[i].x());
       preScanResults[i] = std::abs((int) startPixel.cb - pixel.cb) + std::abs((int) startPixel.cr - pixel.cr) < maxColorDistance;
     }
   }
   if(preScanResults[0] != preScanResults[1] && preScanResults[2] != preScanResults[3])
   {
-    start = Vector2<int>();
+    start = Vector2i::Zero();
     if(preScanResults[0])
     {
       start += preScanPoints[0];
@@ -330,14 +332,14 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
   {
     start = preScanResults[2] ? preScanPoints[2] : preScanPoints[3];
   }
-  COMPLEX_DRAWING("module:BallPerceptor:image", drawBall(start, approxDiameter, 0xff););
+  COMPLEX_DRAWING("module:BallPerceptor:image") drawBall(start, approxDiameter, 0xff);
   // prepare scans
   totalPixelCount = 0;
   totalCbSum = 0;
   totalCrSum = 0;
   // vertical scan
-  if(!searchBallPoint(start, startPixel, Vector2<int>(0, 1), approxDiameter, ballPoints[0]) ||
-     !searchBallPoint(start, startPixel, Vector2<int>(0, -1), approxDiameter, ballPoints[4]))
+  if(!searchBallPoint(start, startPixel, Vector2i(0, 1), approxDiameter, ballPoints[0]) ||
+     !searchBallPoint(start, startPixel, Vector2i(0, -1), approxDiameter, ballPoints[4]))
   {
     return false;
   }
@@ -347,27 +349,27 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
   }
   else if(ballPoints[0].atBorder)
   {
-    start.y = ballPoints[4].point.y + int(approxRadius1);
-    if(start.y > ballPoints[0].point.y - 1)
+    start.y() = ballPoints[4].point.y() + int(approxRadius1);
+    if(start.y() > ballPoints[0].point.y() - 1)
     {
-      start.y = ballPoints[0].point.y - 1;
+      start.y() = ballPoints[0].point.y() - 1;
     }
   }
   else if(ballPoints[4].atBorder)
   {
-    start.y = ballPoints[0].point.y - int(approxRadius1);
-    if(start.y < ballPoints[4].point.y + 1)
+    start.y() = ballPoints[0].point.y() - int(approxRadius1);
+    if(start.y() < ballPoints[4].point.y() + 1)
     {
-      start.y = ballPoints[4].point.y + 1;
+      start.y() = ballPoints[4].point.y() + 1;
     }
   }
   else
   {
-    start.y = (ballPoints[0].point.y + ballPoints[4].point.y) / 2;
+    start.y() = (ballPoints[0].point.y() + ballPoints[4].point.y()) / 2;
   }
   // horizontal scan
-  if(!searchBallPoint(start, startPixel, Vector2<int>(1, 0), approxDiameter, ballPoints[2]) ||
-     !searchBallPoint(start, startPixel, Vector2<int>(-1, 0), approxDiameter, ballPoints[6]))
+  if(!searchBallPoint(start, startPixel, Vector2i(1, 0), approxDiameter, ballPoints[2]) ||
+     !searchBallPoint(start, startPixel, Vector2i(-1, 0), approxDiameter, ballPoints[6]))
   {
     return false;
   }
@@ -377,51 +379,51 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
   }
   else if(ballPoints[2].atBorder)
   {
-    start.x = ballPoints[6].point.x + int(approxRadius1);
-    if(start.x > ballPoints[2].point.x - 1)
+    start.x() = ballPoints[6].point.x() + int(approxRadius1);
+    if(start.x() > ballPoints[2].point.x() - 1)
     {
-      start.x = ballPoints[2].point.x - 1;
+      start.x() = ballPoints[2].point.x() - 1;
     }
   }
   else if(ballPoints[6].atBorder)
   {
-    start.x = ballPoints[2].point.x - int(approxRadius1);
-    if(start.x < ballPoints[6].point.x + 1)
+    start.x() = ballPoints[2].point.x() - int(approxRadius1);
+    if(start.x() < ballPoints[6].point.x() + 1)
     {
-      start.x = ballPoints[6].point.x + 1;
+      start.x() = ballPoints[6].point.x() + 1;
     }
   }
   else
   {
-    start.x = (ballPoints[2].point.x + ballPoints[6].point.x) / 2;
+    start.x() = (ballPoints[2].point.x() + ballPoints[6].point.x()) / 2;
   }
   approxCenter2 = start;
   // maybe repeat vertical and horizontal scans
-  int skipArea = std::min(ballPoints[0].point.y - ballPoints[4].point.y, ballPoints[2].point.x - ballPoints[6].point.x) / 4;
+  int skipArea = std::min(ballPoints[0].point.y() - ballPoints[4].point.y(), ballPoints[2].point.x() - ballPoints[6].point.x()) / 4;
   float maxLength = approxDiameter - skipArea;
-  if(abs(start.x - ballPoints[0].start.x) > halfApproxRadius)
+  if(abs(start.x() - ballPoints[0].start.x()) > halfApproxRadius)
   {
-    if(!searchBallPoint(start + Vector2<int>(0, skipArea), startPixel, Vector2<int>(0, 1), maxLength, ballPoints[0]) ||
-       !searchBallPoint(start + Vector2<int>(0, -skipArea), startPixel, Vector2<int>(0, -1), maxLength, ballPoints[4]))
+    if(!searchBallPoint(start + Vector2i(0, skipArea), startPixel, Vector2i(0, 1), maxLength, ballPoints[0]) ||
+       !searchBallPoint(start + Vector2i(0, -skipArea), startPixel, Vector2i(0, -1), maxLength, ballPoints[4]))
     {
       return false;
     }
   }
-  if(abs(start.y - ballPoints[2].start.y) > halfApproxRadius)
+  if(abs(start.y() - ballPoints[2].start.y()) > halfApproxRadius)
   {
-    if(!searchBallPoint(start + Vector2<int>(skipArea, 0), startPixel, Vector2<int>(1, 0), maxLength, ballPoints[2]) ||
-       !searchBallPoint(start + Vector2<int>(-skipArea, 0), startPixel, Vector2<int>(-1, 0), maxLength, ballPoints[6]))
+    if(!searchBallPoint(start + Vector2i(skipArea, 0), startPixel, Vector2i(1, 0), maxLength, ballPoints[2]) ||
+       !searchBallPoint(start + Vector2i(-skipArea, 0), startPixel, Vector2i(-1, 0), maxLength, ballPoints[6]))
     {
       return false;
     }
   }
   // diagonal scans
-  skipArea = std::min(ballPoints[0].point.y - ballPoints[4].point.y, ballPoints[2].point.x - ballPoints[6].point.x) / 4;
+  skipArea = std::min(ballPoints[0].point.y() - ballPoints[4].point.y(), ballPoints[2].point.x() - ballPoints[6].point.x()) / 4;
   maxLength = approxDiameter - 1.41421356f * skipArea;
-  if(!searchBallPoint(start + Vector2<int>(skipArea, skipArea), startPixel, Vector2<int>(1, 1), maxLength, ballPoints[1]) ||
-     !searchBallPoint(start + Vector2<int>(-skipArea, -skipArea), startPixel, Vector2<int>(-1, -1), maxLength, ballPoints[5]) ||
-     !searchBallPoint(start + Vector2<int>(skipArea, -skipArea), startPixel, Vector2<int>(1, -1), maxLength, ballPoints[3]) ||
-     !searchBallPoint(start + Vector2<int>(-skipArea, skipArea), startPixel, Vector2<int>(-1, 1), maxLength, ballPoints[7]))
+  if(!searchBallPoint(start + Vector2i(skipArea, skipArea), startPixel, Vector2i(1, 1), maxLength, ballPoints[1]) ||
+     !searchBallPoint(start + Vector2i(-skipArea, -skipArea), startPixel, Vector2i(-1, -1), maxLength, ballPoints[5]) ||
+     !searchBallPoint(start + Vector2i(skipArea, -skipArea), startPixel, Vector2i(1, -1), maxLength, ballPoints[3]) ||
+     !searchBallPoint(start + Vector2i(-skipArea, skipArea), startPixel, Vector2i(-1, 1), maxLength, ballPoints[7]))
   {
     return false;
   }
@@ -435,18 +437,18 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
   for(unsigned j = 0; j < sizeof(ballPoints) / sizeof(*ballPoints); ++j)
   {
     BallPoint& ballPoint = ballPoints[j];
-    const Vector2<int>& step = ballPoint.step;
-    Vector2<int> pos = ballPoint.point;
+    const Vector2i& step = ballPoint.step;
+    Vector2i pos = ballPoint.point;
     int i = 0;
     for(; i < (int) refineMaxPixelCount; ++i)
     {
       pos += step;
-      if(pos.x < 0 || pos.x >= resolutionWidth ||
-         pos.y < 0 || pos.y >= resolutionHeight)
+      if(pos.x() < 0 || pos.x() >= resolutionWidth ||
+         pos.y() < 0 || pos.y() >= resolutionHeight)
       {
         break;
       }
-      if(abs(getPixel(pos.y, pos.x).cb - cbAvg) + abs(getPixel(pos.y, pos.x).cr - crAvg) > (int) refineMaxColorDistance)
+      if(abs(getPixel(pos.y(), pos.x()).cb - cbAvg) + abs(getPixel(pos.y(), pos.x()).cr - crAvg) > (int) refineMaxColorDistance)
       {
         break;
       }
@@ -455,23 +457,23 @@ bool BallPerceptor::searchBallPoints(const BallSpot& ballSpot)
     {
       ballPoint.point = pos - step;
     }
-    ballPoint.pointf = Vector2<float>(float(ballPoint.point.x), float(ballPoint.point.y));
+    ballPoint.pointf = ballPoint.point.cast<float>();
   }
   return true;
 }
 
-void BallPerceptor::drawBall(const Vector2<int>& pos, float approxDiameter, unsigned char opacity) const
+void BallPerceptor::drawBall(const Vector2i& pos, float approxDiameter, unsigned char opacity) const
 {
-  CROSS2("module:BallPerceptor:image", pos.x, pos.y, 2, 1, Drawings::ps_solid, ColorRGBA(0xff, 0, 0, opacity));
-  CIRCLE2("module:BallPerceptor:image", pos.x, pos.y, approxDiameter, 1, Drawings::ps_solid, ColorRGBA(0xff, 0, 0, opacity), Drawings::bs_null, ColorRGBA());
+  CROSS2("module:BallPerceptor:image", pos.x(), pos.y(), 2, 1, Drawings::solidPen, ColorRGBA(0xff, 0, 0, opacity));
+  CIRCLE2("module:BallPerceptor:image", pos.x(), pos.y(), approxDiameter, 1, Drawings::solidPen, ColorRGBA(0xff, 0, 0, opacity), Drawings::noBrush, ColorRGBA());
 }
 
-bool BallPerceptor::searchBallPoint(const Vector2<int>& start, Image::Pixel startPixel, const Vector2<int>& step, float maxLength, BallPoint& ballPoint)
+bool BallPerceptor::searchBallPoint(const Vector2i& start, Image::Pixel startPixel, const Vector2i& step, float maxLength, BallPoint& ballPoint)
 {
-  ASSERT(step.x == 0 || step.x == 1 || step.x == -1);
-  ASSERT(step.y == 0 || step.y == 1 || step.y == -1);
-  Vector2<int> pos = start;
-  Vector2<int> lastValidPos = pos;
+  ASSERT(step.x() == 0 || step.x() == 1 || step.x() == -1);
+  ASSERT(step.y() == 0 || step.y() == 1 || step.y() == -1);
+  Vector2i pos = start;
+  Vector2i lastValidPos = pos;
   unsigned int overtime = 0;
   int cbSum = startPixel.cb;
   int crSum = startPixel.cr;
@@ -484,7 +486,7 @@ bool BallPerceptor::searchBallPoint(const Vector2<int>& start, Image::Pixel star
   unsigned int maxOvertime = scanPixelTolerance;
   int resolutionWidth = theCameraInfo.width;
   int resolutionHeight = theCameraInfo.height;
-  int stepAbs1024 = (step.x == 0 || step.y == 0) ? 1024 : 1448; // 1448 = sqrt(2) * 1024
+  int stepAbs1024 = (step.x() == 0 || step.y() == 0) ? 1024 : 1448; // 1448 = sqrt(2) * 1024
   int maxAbs1024 = int(maxLength * 1024.f); // + 1024;
   int length1024 = 0;
   for(;;)
@@ -497,19 +499,19 @@ bool BallPerceptor::searchBallPoint(const Vector2<int>& start, Image::Pixel star
       {
         break;
       }
-      LINE2("module:BallPerceptor:image", start.x, start.y, pos.x, pos.y, 1, Drawings::ps_solid, ColorRGBA(0, 0, 0xff, 0x70));
+      LINE2("module:BallPerceptor:image", start.x(), start.y(), pos.x(), pos.y(), 1, Drawings::solidPen, ColorRGBA(0, 0, 0xff, 0x70));
       return false;
     }
 
-    if(pos.x < 0 || pos.x >= resolutionWidth ||
-       pos.y < 0 || pos.y >= resolutionHeight)
+    if(pos.x() < 0 || pos.x() >= resolutionWidth ||
+       pos.y() < 0 || pos.y() >= resolutionHeight)
     {
       ballPoint.atBorder = true;
       break;
     }
 
-    cb = getPixel(pos.y, pos.x).cb;
-    cr = getPixel(pos.y, pos.x).cr;
+    cb = getPixel(pos.y(), pos.x()).cb;
+    cr = getPixel(pos.y(), pos.x()).cr;
     if(abs(cb - cbSum / pixelCount) + abs(cr - crSum / pixelCount) > maxColorDistance)
     {
       if(overtime == 0)
@@ -540,7 +542,7 @@ bool BallPerceptor::searchBallPoint(const Vector2<int>& start, Image::Pixel star
     totalCbSum += cbSum;
     totalCrSum += crSum;
   }
-  LINE2("module:BallPerceptor:image", ballPoint.start.x, ballPoint.start.y, ballPoint.point.x, ballPoint.point.y, 1, Drawings::ps_solid, ColorRGBA(0, 0, 0xff));
+  LINE2("module:BallPerceptor:image", ballPoint.start.x(), ballPoint.start.y(), ballPoint.point.x(), ballPoint.point.y(), 1, Drawings::solidPen, ColorRGBA(0, 0, 0xff));
   return true;
 }
 
@@ -556,7 +558,7 @@ bool BallPerceptor::checkBallPoints()
     if(ballPoint.isValid)
     {
       ++validBallPoints;
-      DOT2("module:BallPerceptor:image", ballPoint.point.x, ballPoint.point.y, ColorRGBA(0, 0xff, 0, 0x70), ColorRGBA(0, 0xff, 0, 0x70));
+      DOT2("module:BallPerceptor:image", ballPoint.point.x(), ballPoint.point.y(), ColorRGBA(0, 0xff, 0, 0x70), ColorRGBA(0, 0xff, 0, 0x70));
     }
   }
   if(validBallPoints < 4)
@@ -584,7 +586,7 @@ bool BallPerceptor::checkBallPoints()
   // drop mismatching ball points
   while(validBallPoints > 4)
   {
-    Vector2<> preCenter;
+    Vector2f preCenter;
     float preRadius;
     if(!getBallFromBallPoints(preCenter, preRadius))
     {
@@ -598,7 +600,7 @@ bool BallPerceptor::checkBallPoints()
       BallPoint& ballPoint(ballPoints[i]);
       if(ballPoint.isValid)
       {
-        float dist = (ballPoint.pointf - preCenter).squareAbs();
+        float dist = (ballPoint.pointf - preCenter).squaredNorm();
         if(!minDistBallPoint || dist < minDist)
         {
           minDist = dist;
@@ -615,27 +617,27 @@ bool BallPerceptor::checkBallPoints()
     }
   }
 
-  COMPLEX_DRAWING("module:BallPerceptor:image",
+  COMPLEX_DRAWING("module:BallPerceptor:image")
   {
     for(BallPoint* ballPoint = ballPoints, * end = ballPoints + sizeof(ballPoints) / sizeof(*ballPoints); ballPoint < end; ++ballPoint)
       if(ballPoint->isValid)
       {
-        DOT2("module:BallPerceptor:image", ballPoint->point.x, ballPoint->point.y, ColorRGBA(0, 0xff, 0), ColorRGBA(0, 0, 0));
+        DOT2("module:BallPerceptor:image", ballPoint->point.x(), ballPoint->point.y(), ColorRGBA(0, 0xff, 0), ColorRGBA(0, 0, 0));
       }
-  });
+  }
 
   return true;
 }
 
-bool BallPerceptor::getBallFromBallPoints(Vector2<>& center, float& radius) const
+bool BallPerceptor::getBallFromBallPoints(Vector2f& center, float& radius) const
 {
   float Mx = 0, My = 0, Mxx = 0, Myy = 0, Mxy = 0, Mz = 0, Mxz = 0, Myz = 0;
 
   for(const BallPoint* ballPoint = ballPoints, * end = ballPoints + sizeof(ballPoints) / sizeof(*ballPoints); ballPoint < end; ++ballPoint)
     if(ballPoint->isValid)
     {
-      float x = static_cast<float>(ballPoint->point.x);
-      float y = static_cast<float>(ballPoint->point.y);
+      float x = static_cast<float>(ballPoint->point.x());
+      float y = static_cast<float>(ballPoint->point.y());
       float xx = x * x;
       float yy = y * y;
       float z = xx + yy;
@@ -651,21 +653,23 @@ bool BallPerceptor::getBallFromBallPoints(Vector2<>& center, float& radius) cons
 
   // Construct and solve matrix
   // Result will be center and radius of ball in theImage.
-  Matrix<3, 3> M(
-    Vector<3>(Mxx, Mxy, Mx),
-    Vector<3>(Mxy, Myy, My),
-    Vector<3>(Mx, My, static_cast<float>(validBallPoints)));
-  Vector<3> v(-Mxz, -Myz, -Mz);
+  Eigen::Matrix3d M;
+  M << Mxx, Mxy, Mx,
+  Mxy, Myy, My,
+  Mx,  My,  validBallPoints;
 
-  Vector<3> BCD;
-  if(!M.solve(v, BCD))
+  Eigen::Matrix3d Minv;
+  bool invertible;
+  M.computeInverseWithCheck(Minv, invertible);
+  if(!invertible)
   {
     return false;
   }
+  Eigen::Vector3d BCD = Minv * Eigen::Vector3d(-Mxz, -Myz, -Mz);
 
-  center.x = BCD[0] * -0.5f;
-  center.y = BCD[1] * -0.5f;
-  float radicand = BCD[0] * BCD[0] / 4.0f + BCD[1] * BCD[1] / 4.0f - BCD[2];
+  center.x() = static_cast<float>(BCD.x() * -0.5);
+  center.y() = static_cast<float>(BCD.y() * -0.5);
+  float radicand = static_cast<float>(BCD.x() * BCD.x() / 4.0 + BCD.y() * BCD.y() / 4.0 - BCD.z());
   if(radicand <= 0.0f)
   {
     return false;
@@ -681,11 +685,11 @@ bool BallPerceptor::calculateBallInImage(BallPercept& ballPercept) const
 
 bool BallPerceptor::checkBallInImage(BallPercept& ballPercept) const
 {
-  const Vector2<> center = ballPercept.positionInImage;
+  const Vector2f center = ballPercept.positionInImage;
   const float radius = ballPercept.radiusInImage;
 
   // check if the ball covers approxCenter2
-  if((Vector2<int>(int(center.x + 0.5), int(center.y + 0.5)) - approxCenter2).squareAbs() > sqr(radius))
+  if((Vector2i(int(center.x() + 0.5), int(center.y() + 0.5)) - approxCenter2).squaredNorm() > sqr(radius))
   {
     return false;
   }
@@ -697,78 +701,78 @@ bool BallPerceptor::checkBallInImage(BallPercept& ballPercept) const
   }
 
   float noBallRadius = radius * checkOutlineRadiusScale + checkOutlineRadiusPixelBonus;
-  CIRCLE2("module:BallPerceptor:image", center.x, center.y, noBallRadius, 1, Drawings::ps_solid, ColorRGBA(0xff, 0xff, 0xff), Drawings::bs_null, ColorRGBA());
-  Vector2<int> center32(int(center.x * 32.f), int(center.y * 32.f));
+  CIRCLE2("module:BallPerceptor:image", center.x(), center.y(), noBallRadius, 1, Drawings::solidPen, ColorRGBA(0xff, 0xff, 0xff), Drawings::noBrush, ColorRGBA());
+  Vector2i center32(int(center.x() * 32.f), int(center.y() * 32.f));
   int noBallRadius32 = int(noBallRadius * 32.f);
   int noBallDRadius32 = int(noBallRadius * 32.f / 1.41421356f);
-  Vector2<int> noBallPoints32[8 + 4 * 4] =
+  Vector2i noBallPoints32[8 + 4 * 4] =
   {
-    Vector2<int>(center32.x + noBallRadius32, center32.y),
-    Vector2<int>(center32.x - noBallRadius32, center32.y),
-    Vector2<int>(center32.x, center32.y + noBallRadius32),
-    Vector2<int>(center32.x, center32.y - noBallRadius32),
-    Vector2<int>(center32.x + noBallDRadius32, center32.y + noBallDRadius32),
-    Vector2<int>(center32.x - noBallDRadius32, center32.y - noBallDRadius32),
-    Vector2<int>(center32.x + noBallDRadius32, center32.y - noBallDRadius32),
-    Vector2<int>(center32.x - noBallDRadius32, center32.y + noBallDRadius32),
+    Vector2i(center32.x() + noBallRadius32, center32.y()),
+    Vector2i(center32.x() - noBallRadius32, center32.y()),
+    Vector2i(center32.x(), center32.y() + noBallRadius32),
+    Vector2i(center32.x(), center32.y() - noBallRadius32),
+    Vector2i(center32.x() + noBallDRadius32, center32.y() + noBallDRadius32),
+    Vector2i(center32.x() - noBallDRadius32, center32.y() - noBallDRadius32),
+    Vector2i(center32.x() + noBallDRadius32, center32.y() - noBallDRadius32),
+    Vector2i(center32.x() - noBallDRadius32, center32.y() + noBallDRadius32),
   };
   int noBallPointCount = 8;
   int resolutionWidth = theCameraInfo.width;
   int resolutionHeight = theCameraInfo.height;
   int borderDists[2] = {0, 3};
-  if(center32.x + noBallRadius32 >= resolutionWidth * 32)
+  if(center32.x() + noBallRadius32 >= resolutionWidth * 32)
   {
     for(int i = 0; i < 2; ++i)
     {
       int x = resolutionWidth - 1 - borderDists[i];
-      float d = std::sqrt(float(sqr(noBallRadius) - sqr(x - center.x)));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(x * 32, int((center.y + d) * 32.f));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(x * 32, int((center.y - d) * 32.f));
+      float d = std::sqrt(float(sqr(noBallRadius) - sqr(x - center.x())));
+      noBallPoints32[noBallPointCount++] = Vector2i(x * 32, int((center.y() + d) * 32.f));
+      noBallPoints32[noBallPointCount++] = Vector2i(x * 32, int((center.y() - d) * 32.f));
     }
   }
-  if(center32.y + noBallRadius32 >= resolutionHeight * 32)
+  if(center32.y() + noBallRadius32 >= resolutionHeight * 32)
   {
     for(int i = 0; i < 2; ++i)
     {
       int y = resolutionHeight - 1 - borderDists[i];
-      float d = std::sqrt(float(sqr(noBallRadius) - sqr(y - center.y)));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(int((center.x + d) * 32.f), y * 32);
-      noBallPoints32[noBallPointCount++] = Vector2<int>(int((center.x - d) * 32.f), y * 32);
+      float d = std::sqrt(float(sqr(noBallRadius) - sqr(y - center.y())));
+      noBallPoints32[noBallPointCount++] = Vector2i(int((center.x() + d) * 32.f), y * 32);
+      noBallPoints32[noBallPointCount++] = Vector2i(int((center.x() - d) * 32.f), y * 32);
     }
   }
-  if(center32.x - noBallRadius32 < 0)
+  if(center32.x() - noBallRadius32 < 0)
   {
     for(int i = 0; i < 2; ++i)
     {
       int x = borderDists[i];
-      float d = std::sqrt(float(sqr(noBallRadius) - sqr(x - center.x)));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(x * 32, int((center.y + d) * 32.f));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(x * 32, int((center.y - d) * 32.f));
+      float d = std::sqrt(float(sqr(noBallRadius) - sqr(x - center.x())));
+      noBallPoints32[noBallPointCount++] = Vector2i(x * 32, int((center.y() + d) * 32.f));
+      noBallPoints32[noBallPointCount++] = Vector2i(x * 32, int((center.y() - d) * 32.f));
     }
   }
-  if(center32.y - noBallRadius32 < 0)
+  if(center32.y() - noBallRadius32 < 0)
   {
     for(int i = 0; i < 2; ++i)
     {
       int y = borderDists[i];
-      float d = std::sqrt(float(sqr(noBallRadius) - sqr(y - center.y)));
-      noBallPoints32[noBallPointCount++] = Vector2<int>(int((center.x + d) * 32.f), y * 32);
-      noBallPoints32[noBallPointCount++] = Vector2<int>(int((center.x - d) * 32.f), y * 32);
+      float d = std::sqrt(float(sqr(noBallRadius) - sqr(y - center.y())));
+      noBallPoints32[noBallPointCount++] = Vector2i(int((center.x() + d) * 32.f), y * 32);
+      noBallPoints32[noBallPointCount++] = Vector2i(int((center.x() - d) * 32.f), y * 32);
     }
   }
   int maxColorDistance = scanMaxColorDistance;
   int cbStart = totalCbSum / totalPixelCount, crStart = totalCrSum / totalPixelCount;
   for(int i = 0; i < noBallPointCount; ++i)
   {
-    Vector2<int> pos(noBallPoints32[i] / 32);
-    if(pos.x < 0 || pos.x >= resolutionWidth ||
-       pos.y < 0 || pos.y >= resolutionHeight)
+    Vector2i pos(noBallPoints32[i] / 32);
+    if(pos.x() < 0 || pos.x() >= resolutionWidth ||
+       pos.y() < 0 || pos.y() >= resolutionHeight)
     {
       continue;
     }
-    DOT2("module:BallPerceptor:image", pos.x, pos.y, ColorRGBA(0xff, 0xff, 0xff), ColorRGBA(0, 0, 0));
+    DOT2("module:BallPerceptor:image", pos.x(), pos.y(), ColorRGBA(0xff, 0xff, 0xff), ColorRGBA(0, 0, 0));
 
-    if(std::abs((int) getPixel(pos.y, pos.x).cb - cbStart) + std::abs((int) getPixel(pos.y, pos.x).cr - crStart) <= maxColorDistance)
+    if(std::abs((int) getPixel(pos.y(), pos.x()).cb - cbStart) + std::abs((int) getPixel(pos.y(), pos.x()).cr - crStart) <= maxColorDistance)
     {
       return false;
     }
@@ -778,25 +782,25 @@ bool BallPerceptor::checkBallInImage(BallPercept& ballPercept) const
 
 bool BallPerceptor::calculateBallOnField(BallPercept& ballPercept) const
 {
-  const Vector2<> correctedCenter = theImageCoordinateSystem.toCorrected(ballPercept.positionInImage);
-  Vector3<> cameraToBall(theCameraInfo.focalLength, theCameraInfo.opticalCenter.x - correctedCenter.x, theCameraInfo.opticalCenter.y - correctedCenter.y);
+  const Vector2f correctedCenter = theImageCoordinateSystem.toCorrected(ballPercept.positionInImage);
+  Vector3f cameraToBall(theCameraInfo.focalLength, theCameraInfo.opticalCenter.x() - correctedCenter.x(), theCameraInfo.opticalCenter.y() - correctedCenter.y());
   cameraToBall.normalize(theFieldDimensions.ballRadius * theCameraInfo.focalLength / ballPercept.radiusInImage);
-  Vector3<> rotatedCameraToBall = theCameraMatrix.rotation * cameraToBall;
-  const Vector3<> sizeBasedCenterOnField = theCameraMatrix.translation + rotatedCameraToBall;
-  const Vector3<> bearingBasedCenterOnField =  theCameraMatrix.translation - rotatedCameraToBall * ((theCameraMatrix.translation.z - theFieldDimensions.ballRadius) / rotatedCameraToBall.z);
+  Vector3f rotatedCameraToBall = theCameraMatrix.rotation * cameraToBall;
+  const Vector3f sizeBasedCenterOnField = theCameraMatrix.translation + rotatedCameraToBall;
+  const Vector3f bearingBasedCenterOnField =  theCameraMatrix.translation - rotatedCameraToBall * ((theCameraMatrix.translation.z() - theFieldDimensions.ballRadius) / rotatedCameraToBall.z());
 
-  CIRCLE2("module:BallPerceptor:field", sizeBasedCenterOnField.x, sizeBasedCenterOnField.y, theFieldDimensions.ballRadius, 1, Drawings::ps_solid, ColorRGBA(0, 0, 0xff), Drawings::bs_null, ColorRGBA());
-  CIRCLE2("module:BallPerceptor:field", bearingBasedCenterOnField.x, bearingBasedCenterOnField.y, theFieldDimensions.ballRadius, 1, Drawings::ps_solid, ColorRGBA(0xff, 0, 0), Drawings::bs_null, ColorRGBA());
+  CIRCLE2("module:BallPerceptor:field", sizeBasedCenterOnField.x(), sizeBasedCenterOnField.y(), theFieldDimensions.ballRadius, 1, Drawings::solidPen, ColorRGBA(0, 0, 0xff), Drawings::noBrush, ColorRGBA());
+  CIRCLE2("module:BallPerceptor:field", bearingBasedCenterOnField.x(), bearingBasedCenterOnField.y(), theFieldDimensions.ballRadius, 1, Drawings::solidPen, ColorRGBA(0xff, 0, 0), Drawings::noBrush, ColorRGBA());
 
-  if(rotatedCameraToBall.z < 0)
+  if(rotatedCameraToBall.z() < 0)
   {
-    ballPercept.relativePositionOnField.x = bearingBasedCenterOnField.x;
-    ballPercept.relativePositionOnField.y = bearingBasedCenterOnField.y;
+    ballPercept.relativePositionOnField.x() = bearingBasedCenterOnField.x();
+    ballPercept.relativePositionOnField.y() = bearingBasedCenterOnField.y();
   }
   else
   {
-    ballPercept.relativePositionOnField.x = sizeBasedCenterOnField.x;
-    ballPercept.relativePositionOnField.y = sizeBasedCenterOnField.y;
+    ballPercept.relativePositionOnField.x() = sizeBasedCenterOnField.x();
+    ballPercept.relativePositionOnField.y() = sizeBasedCenterOnField.y();
   }
   return true;
 }
@@ -809,35 +813,35 @@ bool BallPerceptor::checkBallOnField(BallPercept& ballPercept) const
     return true;
   }
   // Check, if the computed ball position is still on the carpet
-  Pose2D currentRobotPose = theRobotPose + theOdometer.odometryOffset;
-  Vector2<> absoluteBallPosition = (currentRobotPose * ballPercept.relativePositionOnField);
-  return ((fabs(absoluteBallPosition.x) < theFieldDimensions.xPosOpponentFieldBorder + 300.f) &&
-          (fabs(absoluteBallPosition.y) < theFieldDimensions.yPosLeftFieldBorder + 300.f));
+  Pose2f currentRobotPose = theRobotPose + theOdometer.odometryOffset;
+  Vector2f absoluteBallPosition = (currentRobotPose * ballPercept.relativePositionOnField);
+  return ((fabs(absoluteBallPosition.x()) < theFieldDimensions.xPosOpponentFieldBorder + 300.f) &&
+          (fabs(absoluteBallPosition.y()) < theFieldDimensions.yPosLeftFieldBorder + 300.f));
 }
 
 bool BallPerceptor::checkJersey() const
 {
-  Vector2<int> topLeft(maxResolutionWidth, maxResolutionHeight);
-  Vector2<int> bottomRight(0, 0);
+  Vector2i topLeft(Image::maxResolutionWidth, Image::maxResolutionHeight);
+  Vector2i bottomRight(0, 0);
   for(const BallPoint& point : ballPoints)
   {
-    bottomRight.x = std::max(bottomRight.x, point.point.x);
-    topLeft.y = std::min(topLeft.y, point.point.y);
-    topLeft.x = std::min(topLeft.x, point.point.x);
-    bottomRight.y = std::max(bottomRight.y, point.point.y);
+    bottomRight.x() = std::max(bottomRight.x(), point.point.x());
+    topLeft.y() = std::min(topLeft.y(), point.point.y());
+    topLeft.x() = std::min(topLeft.x(), point.point.x());
+    bottomRight.y() = std::max(bottomRight.y(), point.point.y());
   }
 
   //clip at image border
-  bottomRight.x = std::min(bottomRight.x, theCameraInfo.width - 1);
-  bottomRight.y = std::min(bottomRight.y, theCameraInfo.height - 1);
-  topLeft.x = std::max(topLeft.x, 0);
-  topLeft.y = std::max(topLeft.y, 0);
-  RECTANGLE3("module:BallPerceptor:ballRectangle", topLeft.x, topLeft.y, bottomRight.x, bottomRight.y, 1, Drawings::ps_solid, ColorRGBA::white);
+  bottomRight.x() = std::min(bottomRight.x(), theCameraInfo.width - 1);
+  bottomRight.y() = std::min(bottomRight.y(), theCameraInfo.height - 1);
+  topLeft.x() = std::max(topLeft.x(), 0);
+  topLeft.y() = std::max(topLeft.y(), 0);
+  RECTANGLE3("module:BallPerceptor:ballRectangle", topLeft.x(), topLeft.y(), bottomRight.x(), bottomRight.y(), 1, Drawings::solidPen, ColorRGBA::white);
   unsigned int count = 0;
   //calculate red percentage inside rectangle
-  for(int y = topLeft.y; y <= bottomRight.y; ++y)
+  for(int y = topLeft.y(); y <= bottomRight.y(); ++y)
   {
-    for(int x = topLeft.x; x <= bottomRight.x; ++x)
+    for(int x = topLeft.x(); x <= bottomRight.x(); ++x)
     {
       if(theColorTable[getPixel(y, x)].is(ColorClasses::red))
       {
@@ -846,7 +850,7 @@ bool BallPerceptor::checkJersey() const
     }
   }
 
-  const int totalCount = (bottomRight.x - topLeft.x + 1) * (bottomRight.y - topLeft.y + 1);
-  const float percent = (float) count/ (float) totalCount;
+  const int totalCount = (bottomRight.x() - topLeft.x() + 1) * (bottomRight.y() - topLeft.y() + 1);
+  const float percent = (float) count / (float) totalCount;
   return percent <= percentRedNoise;
 }

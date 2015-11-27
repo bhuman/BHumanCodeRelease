@@ -1,7 +1,7 @@
 /**
  * @file JPEGImage.h
  *
- * Declaration of class JPEGImage
+ * Declaration of struct JPEGImage
  */
 
 #pragma once
@@ -34,15 +34,36 @@ extern "C"
 #endif
 
 /**
- * Definition of a class for JPEG-compressed images.
+ * Definition of a struct for JPEG-compressed images.
  */
-class JPEGImage : public Image
+struct JPEGImage : public Image
 {
 private:
-  void serialize(In* in, Out* out);
-
   unsigned size; /**< The size of the compressed image. */
 
+public:
+  JPEGImage() = default;
+
+  /**
+   * Constructs a JPEG image from an image.
+   * @param src The image used as template.
+   */
+  JPEGImage(const Image& src);
+
+  /**
+   * Assignment operator.
+   * @param src The image used as template.
+   * @return The resulting JPEG image.
+   */
+  JPEGImage& operator=(const Image& src);
+
+  /**
+   * Uncompress image.
+   * @param dest Will receive the uncompressed image.
+   */
+  void toImage(Image& dest) const;
+
+private:
   //!@name Handlers for JPEG-compression
   //!@{
   static int onDestEmpty(j_compress_ptr);
@@ -53,45 +74,21 @@ private:
   static void onSrcIgnore(j_decompress_ptr);
   //!@}
 
-public:
   /**
-  * Empty constructor.
-  */
-  JPEGImage() = default;
-
-  /**
-  * Constructs a JPEG image from an image.
-  * @param src The image used as template.
-  */
-  JPEGImage(const Image& src);
-
-  /**
-  * Assignment operator.
-  * @param src The image used as template.
-  * @return The resulting JPEG image.
-  */
-  JPEGImage& operator=(const Image& src);
-
-  /**
-  * Uncompress image.
-  * @param dest Will receive the uncompressed image.
-  */
-  void toImage(Image& dest) const;
-
-private:
-  /**
-  * Convert image from Nao's alignment (YUV422) to Aibo's alignment (one channel per line)
-  * destination is asserted to be allocated
-  * @param src Pointer to the source image in Nao's alignment
-  * @param dst Pointer to the destination image
-  */
+   * Convert image from Nao's alignment (YUV422) to Aibo's alignment (one channel per line)
+   * destination is asserted to be allocated
+   * @param src Pointer to the source image in Nao's alignment
+   * @param dst Pointer to the destination image
+   */
   void toAiboAlignment(const unsigned char* src, unsigned char* dst) const;
 
   /**
-  * Convert image from Aibo's alignment (one channel per line) to Nao's alignment (YUV422)
-  * destination is asserted to be allocated
-  * @param src Pointer to the source image in Aibo's alignment
-  * @param dst Pointer to the destination image
-  */
+   * Convert image from Aibo's alignment (one channel per line) to Nao's alignment (YUV422)
+   * destination is asserted to be allocated
+   * @param src Pointer to the source image in Aibo's alignment
+   * @param dst Pointer to the destination image
+   */
   void fromAiboAlignment(const unsigned char* src, unsigned char* dst) const;
+
+  void serialize(In* in, Out* out);
 };

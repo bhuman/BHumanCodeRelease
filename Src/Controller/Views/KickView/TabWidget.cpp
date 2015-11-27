@@ -77,4 +77,3 @@ TabWidget::TabWidget(QWidget* parent)
   tb = new TabBar();
   setTabBar(tb);
 }
-

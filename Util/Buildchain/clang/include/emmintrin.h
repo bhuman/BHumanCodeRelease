@@ -1051,11 +1051,13 @@ _mm_cvtsi128_si32(__m128i __a)
   return __b[0];
 }
 
+#ifdef __x86_64__
 static __inline__ long long __attribute__((__always_inline__, __nodebug__))
 _mm_cvtsi128_si64(__m128i __a)
 {
   return __a[0];
 }
+#endif
 
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
 _mm_load_si128(__m128i const *__p)

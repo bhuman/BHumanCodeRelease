@@ -28,6 +28,7 @@ LocalRobot::LocalRobot()
   {
     logFile = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getLogFile();
     logPlayer.open(logFile.c_str());
+    logPlayer.handleAllMessages(annotationInfos['c']);
     logPlayer.play();
     puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
     if(puppet)
@@ -38,7 +39,7 @@ LocalRobot::LocalRobot()
     SimRobotCore2::Body* robot = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject(RoboCupCtrl::getRobotFullName(), SimRobotCore2::body);
     ASSERT(robot);
     simulatedRobot.init(robot);
-    ctrl->gameController.registerSimulatedRobot(robotName.mid(5).toInt(), simulatedRobot);
+    ctrl->gameController.registerSimulatedRobot(robotName.mid(5).toInt() - 1, simulatedRobot);
   }
 }
 
@@ -52,21 +53,21 @@ bool LocalRobot::main()
 
       if(mode == SystemCall::simulatedRobot)
       {
-        if(jointLastTimeStampSent != jointData.timeStamp)
+        if(jointLastTimeStampSent != jointSensorData.timestamp)
         {
           debugOut.out.bin << 'm';
           debugOut.out.finishMessage(idProcessBegin);
-          debugOut.out.bin << jointData;
-          debugOut.out.finishMessage(idJointData);
-          debugOut.out.bin << sensorData;
-          debugOut.out.finishMessage(idSensorData);
+          debugOut.out.bin << jointSensorData;
+          debugOut.out.finishMessage(idJointSensorData);
+          debugOut.out.bin << inertialSensorData;
+          debugOut.out.finishMessage(idInertialSensorData);
+          debugOut.out.bin << usSensorData;
+          debugOut.out.finishMessage(idUsSensorData);
           debugOut.out.bin << odometryData;
           debugOut.out.finishMessage(idGroundTruthOdometryData);
-          debugOut.out.bin << orientationData;
-          debugOut.out.finishMessage(idGroundTruthOrientationData);
           ctrl->gameController.writeGameInfo(debugOut.out.bin);
           debugOut.out.finishMessage(idGameInfo);
-          int robot = robotName.mid(5).toInt();
+          int robot = robotName.mid(5).toInt() - 1;
           ctrl->gameController.writeOwnTeamInfo(robot, debugOut.out.bin);
           debugOut.out.finishMessage(idOwnTeamInfo);
           ctrl->gameController.writeOpponentTeamInfo(robot, debugOut.out.bin);
@@ -75,7 +76,7 @@ bool LocalRobot::main()
           debugOut.out.finishMessage(idRobotInfo);
           debugOut.out.bin << 'm';
           debugOut.out.finishMessage(idProcessFinished);
-          jointLastTimeStampSent = jointData.timeStamp;
+          jointLastTimeStampSent = jointSensorData.timestamp;
         }
 
         if(imageLastTimeStampSent != image.timeStamp)
@@ -91,7 +92,7 @@ bool LocalRobot::main()
           {
             FrameInfo frameInfo;
             frameInfo.time = image.timeStamp;
-            frameInfo.cycleTime = 1000.f / (float) ctrl->calculateImageFps;
+            frameInfo.cycleTime = 1.f / (float) ctrl->calculateImageFps;
             debugOut.out.bin << frameInfo;
             debugOut.out.finishMessage(idFrameInfo);
           }
@@ -127,16 +128,16 @@ void LocalRobot::update()
       if(logAcknowledged && logPlayer.replay())
         logAcknowledged = false;
       if(puppet)
-        simulatedRobot.getAndSetJointData((const JointRequest&) RobotConsole::jointData, jointData);
+        simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
     }
     if(mode == SystemCall::simulatedRobot || puppet)
     {
       if(moveOp != noMove)
       {
         if(moveOp == moveBoth)
-          simulatedRobot.moveRobot(movePos, moveRot * (pi / 180), true);
+          simulatedRobot.moveRobot(movePos, moveRot * 1_deg, true);
         else if(moveOp == movePosition)
-          simulatedRobot.moveRobot(movePos, Vector3<>(), false);
+          simulatedRobot.moveRobot(movePos, Vector3f::Zero(), false);
         else if(moveOp == moveBallPosition)
           simulatedRobot.moveBall(movePos);
         moveOp = noMove;
@@ -174,9 +175,8 @@ void LocalRobot::update()
         simulatedRobot.getRobotPose(robotPose);
 
       simulatedRobot.getOdometryData(robotPose, odometryData);
-      simulatedRobot.getSensorData(sensorData, usRequest);
-      simulatedRobot.getOrientationData(sensorData, orientationData);
-      simulatedRobot.getAndSetJointData(jointRequest, jointData);
+      simulatedRobot.getSensorData(inertialSensorData, usSensorData, usRequest);
+      simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
     }
 
     std::string statusText;

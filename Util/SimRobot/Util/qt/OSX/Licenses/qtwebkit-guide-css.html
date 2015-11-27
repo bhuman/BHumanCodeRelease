@@ -1,0 +1,841 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!-- chapter_css.qdoc -->
+  <title>Qt 4.8: QtWebKit Guide - Level 3 CSS</title>
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <script src="scripts/jquery.js" type="text/javascript"></script>
+  <script src="scripts/functions.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="style/superfish.css" />
+  <link rel="stylesheet" type="text/css" href="style/narrow.css" />
+  <!--[if IE]>
+<meta name="MSSmartTagsPreventParsing" content="true">
+<meta http-equiv="imagetoolbar" content="no">
+<![endif]-->
+<!--[if lt IE 7]>
+<link rel="stylesheet" type="text/css" href="style/style_ie6.css">
+<![endif]-->
+<!--[if IE 7]>
+<link rel="stylesheet" type="text/css" href="style/style_ie7.css">
+<![endif]-->
+<!--[if IE 8]>
+<link rel="stylesheet" type="text/css" href="style/style_ie8.css">
+<![endif]-->
+
+<script src="scripts/superfish.js" type="text/javascript"></script>
+<script src="scripts/narrow.js" type="text/javascript"></script>
+
+</head>
+<body class="" onload="CheckEmptyAndLoadList();">
+ <div class="header" id="qtdocheader">
+    <div class="content"> 
+    <div id="nav-logo">
+      <a href="index.html">Home</a></div>
+    <a href="index.html" class="qtref"><span>Qt Reference Documentation</span></a>
+    <div id="narrowsearch"></div>
+    <div id="nav-topright">
+      <ul>
+        <li class="nav-topright-home"><a href="http://qt.digia.com/">Qt HOME</a></li>
+        <li class="nav-topright-dev"><a href="http://qt-project.org/">DEV</a></li>
+        <li class="nav-topright-doc nav-topright-doc-active"><a href="http://qt-project.org/doc/">
+          DOC</a></li>
+        <li class="nav-topright-blog"><a href="http://blog.qt.digia.com/">BLOG</a></li>
+      </ul>
+    </div>
+    <div id="shortCut">
+      <ul>
+        <li class="shortCut-topleft-inactive"><span><a href="index.html">Qt 4.8</a></span></li>
+        <li class="shortCut-topleft-active"><a href="http://qt-project.org/doc/">ALL VERSIONS        </a></li>
+      </ul>
+     </div>
+ <ul class="sf-menu" id="narrowmenu"> 
+             <li><a href="#">API Lookup</a> 
+                 <ul> 
+                     <li><a href="classes.html">Class index</a></li> 
+           <li><a href="functions.html">Function index</a></li> 
+           <li><a href="modules.html">Modules</a></li> 
+           <li><a href="namespaces.html">Namespaces</a></li> 
+           <li><a href="qtglobal.html">Global Declarations</a></li> 
+           <li><a href="qdeclarativeelements.html">QML elements</a></li> 
+             </ul> 
+             </li> 
+             <li><a href="#">Qt Topics</a> 
+                 <ul> 
+                        <li><a href="qt-basic-concepts.html">Programming with Qt</a></li>  
+                        <li><a href="qtquick.html">Device UIs &amp; Qt Quick</a></li>  
+                        <li><a href="qt-gui-concepts.html">UI Design with Qt</a></li>  
+                        <li><a href="supported-platforms.html">Supported Platforms</a></li>  
+                        <li><a href="technology-apis.html">Qt and Key Technologies</a></li>  
+                        <li><a href="best-practices.html">How-To's and Best Practices</a></li>  
+              </ul> 
+                 </li> 
+                 <li><a href="#">Examples</a> 
+                     <ul> 
+                       <li><a href="all-examples.html">Examples</a></li> 
+                       <li><a href="tutorials.html">Tutorials</a></li> 
+                       <li><a href="demos.html">Demos</a></li> 
+                       <li><a href="qdeclarativeexamples.html">QML Examples</a></li> 
+                </ul> 
+                     </li> 
+                 </ul> 
+    </div>
+  </div>
+  <div class="wrapper">
+    <div class="hd">
+      <span></span>
+    </div>
+    <div class="bd group">
+      <div class="sidebar">
+        <div class="searchlabel">
+          Search index:</div>
+        <div class="search" id="sidebarsearch">
+          <form id="qtdocsearch" action="" onsubmit="return false;">
+            <fieldset>
+              <input type="text" name="searchstring" id="pageType" value="" />
+ <div id="resultdialog"> 
+ <a href="#" id="resultclose">Close</a> 
+ <p id="resultlinks" class="all"><a href="#" id="showallresults">All</a> | <a href="#" id="showapiresults">API</a> | <a href="#" id="showarticleresults">Articles</a> | <a href="#" id="showexampleresults">Examples</a></p> 
+ <p id="searchcount" class="all"><span id="resultcount"></span><span id="apicount"></span><span id="articlecount"></span><span id="examplecount"></span>&nbsp;results:</p> 
+ <ul id="resultlist" class="all"> 
+ </ul> 
+ </div> 
+            </fieldset>
+          </form>
+        </div>
+        <div class="box first bottombar" id="lookup">
+          <h2 title="API Lookup"><span></span>
+            API Lookup</h2>
+          <div  id="list001" class="list">
+          <ul id="ul001" >
+              <li class="defaultLink"><a href="classes.html">Class index</a></li>
+              <li class="defaultLink"><a href="functions.html">Function index</a></li>
+              <li class="defaultLink"><a href="modules.html">Modules</a></li>
+              <li class="defaultLink"><a href="namespaces.html">Namespaces</a></li>
+              <li class="defaultLink"><a href="qtglobal.html">Global Declarations</a></li>
+              <li class="defaultLink"><a href="qdeclarativeelements.html">QML elements</a></li>
+            </ul> 
+          </div>
+        </div>
+        <div class="box bottombar" id="topics">
+          <h2 title="Qt Topics"><span></span>
+            Qt Topics</h2>
+          <div id="list002" class="list">
+            <ul id="ul002" >
+               <li class="defaultLink"><a href="qt-basic-concepts.html">Programming with Qt</a></li> 
+               <li class="defaultLink"><a href="qtquick.html">Device UIs &amp; Qt Quick</a></li> 
+               <li class="defaultLink"><a href="qt-gui-concepts.html">UI Design with Qt</a></li> 
+               <li class="defaultLink"><a href="supported-platforms.html">Supported Platforms</a></li>  
+               <li class="defaultLink"><a href="technology-apis.html">Qt and Key Technologies</a></li> 
+               <li class="defaultLink"><a href="best-practices.html">How-To's and Best Practices</a></li> 
+            </ul>  
+          </div>
+        </div>
+        <div class="box" id="examples">
+          <h2 title="Examples"><span></span>
+            Examples</h2>
+          <div id="list003" class="list">
+        <ul id="ul003">
+              <li class="defaultLink"><a href="all-examples.html">Examples</a></li>
+              <li class="defaultLink"><a href="tutorials.html">Tutorials</a></li>
+              <li class="defaultLink"><a href="demos.html">Demos</a></li>
+              <li class="defaultLink"><a href="qdeclarativeexamples.html">QML Examples</a></li>
+            </ul> 
+          </div>
+        </div>
+      </div>
+      <div class="wrap">
+        <div class="toolbar">
+          <div class="breadcrumb toolblock">
+            <ul>
+              <li class="first"><a href="index.html">Home</a></li>
+              <!--  Breadcrumbs go here -->
+<li>QtWebKit Guide - Level 3 CSS</li>
+            </ul>
+          </div>
+          <div class="toolbuttons toolblock">
+            <ul>
+              <li id="smallA" class="t_button">A</li>
+              <li id="medA" class="t_button active">A</li>
+              <li id="bigA" class="t_button">A</li>
+              <li id="print" class="t_button"><a href="javascript:this.print();">
+                <span>Print</span></a></li>
+            </ul>
+        </div>
+        </div>
+        <div class="content mainContent">
+<div class="toc">
+<h3><a name="toc">Contents</a></h3>
+<ul>
+<li class="level1"><a href="#level-3-css">Level 3 CSS</a></li>
+<li class="level1"><a href="#media-queries">Media Queries</a></li>
+<li class="level2"><a href="#media-types-and-media-queries">Media Types and Media Queries</a></li>
+<li class="level2"><a href="#in-line-media-queries">In-line Media Queries</a></li>
+<li class="level2"><a href="#media-queries-via-javascript">Media Queries via JavaScript</a></li>
+<li class="level1"><a href="#selectors">Selectors</a></li>
+<li class="level2"><a href="#attribute-matching">Attribute Matching</a></li>
+<li class="level2"><a href="#form-input-state">Form Input State</a></li>
+<li class="level2"><a href="#navigational-selectors">Navigational Selectors</a></li>
+<li class="level2"><a href="#indirect-sibling-selector">Indirect Sibling Selector</a></li>
+<li class="level2"><a href="#positional-selectors">Positional Selectors</a></li>
+<li class="level2"><a href="#other-selectors">Other Selectors</a></li>
+<li class="level1"><a href="#visual-effects">Visual Effects</a></li>
+<li class="level2"><a href="#specifying-color-and-opacity">Specifying Color and Opacity</a></li>
+<li class="level2"><a href="#rounded-corners">Rounded Corners</a></li>
+<li class="level2"><a href="#border-images">Border Images</a></li>
+<li class="level2"><a href="#backgrounds">Backgrounds</a></li>
+<li class="level2"><a href="#text-shadow-and-stroke">Text Shadow and Stroke</a></li>
+<li class="level2"><a href="#text-overflow">Text Overflow</a></li>
+<li class="level2"><a href="#custom-scrollbars">Custom Scrollbars</a></li>
+<li class="level2"><a href="#gradients">Gradients</a></li>
+<li class="level2"><a href="#reflections">Reflections</a></li>
+<li class="level2"><a href="#masks">Masks</a></li>
+<li class="level1"><a href="#dynamic-css">Dynamic CSS</a></li>
+<li class="level2"><a href="#css-animation-concepts">CSS Animation Concepts</a></li>
+<li class="level2"><a href="#2d-transforms">2D Transforms</a></li>
+<li class="level2"><a href="#transitions">Transitions</a></li>
+<li class="level2"><a href="#transitional-sequences">Transitional Sequences</a></li>
+<li class="level2"><a href="#keyframe-animations">Keyframe Animations</a></li>
+</ul>
+</div>
+<h1 class="title">QtWebKit Guide - Level 3 CSS</h1>
+<span class="subtitle"></span>
+<!-- $$$qtwebkit-guide-css.html-description -->
+<div class="descr"> <a name="details"></a>
+<a name="level-3-css"></a>
+<h2>Level 3 CSS</h2>
+<p>This section of the <a href="qtwebkit-guide.html">QtWebKit Guide</a> serves as an introduction to various Level 3 CSS features supported by <a href="qtwebkit.html">QtWebKit</a>:</p>
+<ul>
+<li>The <a href="#media-queries">Media Queries</a> section discusses a simple client-based technique to present different interfaces and functionality from a single source of content to different classes of mobile device.</li>
+<li>The <a href="#selectors">Selectors</a> section concentrates on recently introduced syntax elements that make applying formatting and gathering DOM elements more flexible.</li>
+<li>The <a href="#visual-effects">Visual Effects</a> section surveys numerous formatting properties, including new color models and advanced WebKit effects.</li>
+<li>Finally, the <a href="#dynamic-css">Dynamic CSS</a> section discusses 2D transforms, transitions, and keyframe animations.</li>
+</ul>
+<p>This section features links to numerous sample pages that demonstrate how various CSS3 features may be applied within a mobile interface. For best results, view these samples with a modern Webkit-based browser such as Apple Safari or Google Chrome. Resize the window in which the sample appears to roughly match the dimensions of a touch-screen mobile device.</p>
+<a name="media-queries"></a>
+<h2>Media Queries</h2>
+<p>CSS <i>media queries</i> extend <i>media types</i> with more detailed capabilities. Media queries offer a simple client-side mechanism to customize interfaces comprehensively via CSS.</p>
+<p>Media queries are especially useful when extending a body of content for presentation on mobile browsers. Prior to support for this feature, there were two basic approaches to provisioning mobile web content, both server-based:</p>
+<ul>
+<li><i>Mobile-specific domains</i>. Content providers might provide a separate access points for default content at <tt>www.website.com</tt>, with mobile content available at <tt>m.website.com</tt> or <tt>website.mobi</tt>. There might also be an additional <tt>touch.website.com</tt> access point targeted for higher-end touch-screen browsers.</li>
+<li><i>Dynamic Server-based Adaptation</i>. In this case, there is a single access point, but the server sends different content, typically depending on the <i>User-Agent</i> header included in all browsers' HTTP requests. This approach may leverage databases of device characteristics such as <a href="http://wurfl.sourceforge.net/">WURFL</a> or <a href="http://deviceatlas.com/">DeviceAtlas</a>.</li>
+</ul>
+<p>This section describes how to provision CSS entirely on the mobile client.</p>
+<a name="media-types-and-media-queries"></a>
+<h3>Media Types and Media Queries</h3>
+<p>If you only want to serve interfaces for desktop browsers and low-end mobile browsers, specify external CSS files within your HTML's <tt>head</tt> region using media types:</p>
+<pre class="cpp"> <span class="operator">&lt;</span>link media<span class="operator">=</span><span class="string">&quot;screen&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/desktop.css&quot;</span> type<span class="operator">=</span><span class="string">&quot;text/css&quot;</span> rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span><span class="operator">/</span><span class="operator">&gt;</span>
+ <span class="operator">&lt;</span>link media<span class="operator">=</span><span class="string">&quot;handheld&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/mobile.css&quot;</span> type<span class="operator">=</span><span class="string">&quot;text/css&quot;</span> rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span><span class="operator">/</span><span class="operator">&gt;</span></pre>
+<p>The <tt>media</tt> attribute specifies different <i>types</i> of browser: <tt>screen</tt> for large-screen desktop browsers, and <tt>handheld</tt> for mobile browsers. Browsers identifying themselves as <tt>handheld</tt> are served the <tt>mobile.css</tt> file, which should specify a dramatically simplified mobile interface.</p>
+<p>A problem arises, however, when the majority of higher-end touch browsers identify themselves as the <tt>screen</tt> media type, to avoid being served overly simplified content that is beneath their capabilities. The example above serves a desktop-oriented design to later-generation mobile browsers. To target a higher-end mobile design to these browsers, you need to specify additional media <tt>queries</tt>:</p>
+<pre class="cpp"> <span class="operator">&lt;</span>link media<span class="operator">=</span><span class="string">&quot;only screen and (min-device-width: 481px)&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/desktop.css&quot;</span> type<span class="operator">=</span><span class="string">&quot;text/css&quot;</span> rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span><span class="operator">/</span><span class="operator">&gt;</span>
+ <span class="operator">&lt;</span>link media<span class="operator">=</span><span class="string">&quot;only screen and (max-device-width: 480px)&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/touch.css&quot;</span> type<span class="operator">=</span><span class="string">&quot;text/css&quot;</span> rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span><span class="operator">/</span><span class="operator">&gt;</span>
+ <span class="operator">&lt;</span>link media<span class="operator">=</span><span class="string">&quot;handheld&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/mobile.css&quot;</span> type<span class="operator">=</span><span class="string">&quot;text/css&quot;</span> rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span><span class="operator">/</span><span class="operator">&gt;</span></pre>
+<p>The first two lines specify any <tt>screen</tt>-typed browser whose window is wider or narrower than 480 pixels.</p>
+<p>Regions of content that are inappropriate for presentation within either the touch-based or lower-end mobile design can then be easily removed within the corresponding CSS files:</p>
+<pre class="cpp"> <span class="operator">.</span>widget<span class="operator">,</span> <span class="operator">.</span>nested_nav<span class="operator">,</span> <span class="operator">.</span>sidebar<span class="operator">,</span> <span class="operator">.</span>video_ad<span class="operator">,</span> <span class="operator">.</span>related_items {
+     display: none;
+ }</pre>
+<p>The following example demonstrates a simple message identifying your class of browser, which appears dynamically based on CSS that is linked using media types and media query syntax:</p>
+<p><a href="webkit-guide/mob_mediaquery.htm"><img src="images/scr_mob_mediaquery.png" alt="" /> </a></p>
+<p><i>Click on the image to view the example live in a browser or click on the following links to view the CSS files.</i></p>
+<p><a href="webkit-webkit-guide-css-mq-desktop-css.html">(Desktop CSS)</a> <a href="webkit-webkit-guide-css-mq-touch-css.html">(Touch-Screen CSS)</a> <a href="webkit-webkit-guide-css-mq-mobile-css.html">(Low-end Mobile CSS)</a></p>
+<p>The following example shows a skeletal interface that appears differently based on the type of browser viewing it. The image below shows how it appears when viewed on a touch-based browser, but a desktop browser renders a more elaborate three-column layout:</p>
+<p><a href="webkit-guide/mob_layout.htm"><img src="images/scr_mob_layout.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-mqlayout-desktop-css.html">(Desktop CSS)</a> <a href="webkit-webkit-guide-css-mqlayout-touch-css.html">(Touch-Screen CSS)</a> <a href="webkit-webkit-guide-css-mqlayout-mobile-css.html">(Low-end Mobile CSS)</a></p>
+<p>When viewed with a desktop browser, the page displays a typical desktop-style layout: a main content column surrounded by navigation and sidebar columns, with banner headers and footers that straddle the top and bottom of the screen. When viewed with a touch-based browser, the sidebar element does not appear. The main content extends to the full width of the screen, while header and navigation elements share the top of the screen. When viewed with other mobile browsers, even the top of the screen is simplified to replace header information with a simple icon.</p>
+<p>Note that you can also use media queries to customize interfaces for tablet devices such as the Apple iPad:</p>
+<pre class="cpp"> <span class="operator">&lt;</span>link rel<span class="operator">=</span><span class="string">&quot;stylesheet&quot;</span> media<span class="operator">=</span><span class="string">&quot;all and (min-device-width: 481px)
+     and (max-device-width: 1024px)&quot;</span> href<span class="operator">=</span><span class="string">&quot;/path/to/ipad.css&quot;</span><span class="operator">/</span><span class="operator">&gt;</span></pre>
+<a name="in-line-media-queries"></a>
+<h3>In-line Media Queries</h3>
+<p>While it's generally good practice to keep CSS for different designs within separate files, you can also consolidate them. The following example provides a default san-serif font styling for <tt>h1</tt> elements, then different sets of style sheets for three browser categories:</p>
+<pre class="cpp"> h1 { font<span class="operator">-</span>family : Arial<span class="operator">,</span> sans<span class="operator">-</span>serif }
+ @media screen {
+     h1 { color: <span class="preprocessor">#00008B; }</span>
+ }
+ @media only screen <span class="keyword">and</span> (max<span class="operator">-</span>device<span class="operator">-</span>width: <span class="number">480px</span>) {
+     h1 { color: <span class="preprocessor">#00008B; font-size: medium; }</span>
+ }
+ @media handheld {
+     h1 { font<span class="operator">-</span>size: medium; font<span class="operator">-</span>weight: bold }
+ }</pre>
+<p>Consolidating style sheets in this manner may reduce the number of separate HTTP requests, help web designers to keep track of variations among designs, and reduce style sheet properties defined redundantly in more than one file.</p>
+<a name="media-queries-via-javascript"></a>
+<h3>Media Queries via JavaScript</h3>
+<p>Browsers that support media queries also support APIs to test them from within JavaScript. Browsers based on <a href="qtwebkit.html">QtWebKit</a> use the <tt>matchMedia</tt> API. Some other browsers use a slightly different (and older) <tt>styleMedia</tt> API, which itself used to be called the <tt>media</tt> API. Each can be called from the <tt>window</tt> object. The following function accounts for all three cases:</p>
+<pre class="cpp"> function matchesMediaQuery(query) {
+     <span class="keyword">if</span> (<span class="operator">!</span><span class="operator">!</span>window<span class="operator">.</span>matchMedia)
+         <span class="keyword">return</span> window<span class="operator">.</span>matchMedia(query)<span class="operator">.</span>matches;
+     <span class="keyword">if</span> (<span class="operator">!</span><span class="operator">!</span>window<span class="operator">.</span>styleMedia <span class="operator">&amp;</span><span class="operator">&amp;</span> <span class="operator">!</span><span class="operator">!</span>window<span class="operator">.</span>styleMedia<span class="operator">.</span>matchMedium)
+         <span class="keyword">return</span> window<span class="operator">.</span>styleMedia<span class="operator">.</span>matchMedium(query);
+     <span class="keyword">if</span> (<span class="operator">!</span><span class="operator">!</span>window<span class="operator">.</span>media <span class="operator">&amp;</span><span class="operator">&amp;</span> window<span class="operator">.</span>media<span class="operator">.</span>matchMedium)
+         <span class="keyword">return</span> window<span class="operator">.</span>media<span class="operator">.</span>matchMedium(query);
+     <span class="keyword">return</span> <span class="keyword">false</span>;
+ }</pre>
+<p>The <tt>query</tt> argument corresponds to the media query string used to activate the CSS. For example, the following higher-level function tests whether the browser matches design categories provided simple labels such as <tt>desktop</tt>, <tt>touch</tt>, or <tt>mobile</tt>:</p>
+<pre class="cpp"> function isDesign(str) {
+     var design;
+     <span class="keyword">if</span> (matchesMediaQuery(<span class="char">'only screen and (min-device-width: 481px)'</span>)) {
+         design <span class="operator">=</span> <span class="char">'desktop'</span>;
+     }
+     <span class="keyword">else</span> <span class="keyword">if</span> (matchesMediaQuery(<span class="char">'only screen and (max-device-width: 480px)'</span>)) {
+         design <span class="operator">=</span> <span class="char">'touch'</span>;
+     }
+     <span class="keyword">else</span> <span class="keyword">if</span> (matchesMediaQuery(<span class="char">'handheld'</span>)) {
+         design <span class="operator">=</span> <span class="char">'mobile'</span>;
+     }
+     <span class="keyword">return</span> str <span class="operator">=</span><span class="operator">=</span> design;
+ }</pre>
+<p>You can then use the test whenever there is a need to assign functionality for a specific design. The following gathers a series of images and assigns different panel-viewing functions for <tt>desktop</tt> and <tt>touch</tt> designs, with no functionality assigned to the lower-end <tt>mobile</tt> design:</p>
+<pre class="cpp"> var imgs <span class="operator">=</span> document<span class="operator">.</span>querySelectorAll(<span class="string">&quot;img.panel&quot;</span>);
+ <span class="keyword">for</span> ( var i <span class="operator">=</span> <span class="number">0</span><span class="operator">,</span> len <span class="operator">=</span> imgs<span class="operator">.</span>length ; i <span class="operator">&lt;</span> len ; i<span class="operator">+</span><span class="operator">+</span> ) {
+     el <span class="operator">=</span> imgs<span class="operator">[</span>i<span class="operator">]</span>;
+     <span class="keyword">if</span> ( isDesign(<span class="string">&quot;desktop&quot;</span>) ) {
+         imgs<span class="operator">[</span>i<span class="operator">]</span><span class="operator">.</span>addEventListener(<span class="string">&quot;mouseover&quot;</span><span class="operator">,</span> showHoverPanel);
+         imgs<span class="operator">[</span>i<span class="operator">]</span><span class="operator">.</span>addEventListener(<span class="string">&quot;mouseout&quot;</span><span class="operator">,</span> hideHoverPanel);
+     }
+     <span class="keyword">else</span> <span class="keyword">if</span> ( isDesign(<span class="string">&quot;touch&quot;</span>) ) {
+         imgs<span class="operator">[</span>i<span class="operator">]</span><span class="operator">.</span>addEventListener(<span class="string">&quot;click&quot;</span><span class="operator">,</span> showTouchPanel);
+     }
+ }</pre>
+<p>The following example uses this technique to produce a simple message, dynamically generated by JavaScript, that corresponds to the message generated by CSS:</p>
+<p><a href="webkit-guide/mob_condjs.htm"><img src="images/scr_mob_condjs.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-mob-condjs-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-mob-condjs-js.html">(JavaScript)</a></p>
+<a name="selectors"></a>
+<h2>Selectors</h2>
+<p>Level 3 CSS provides many useful new <i>selectors</i> that make it easier to apply formatting to page elements. In addition, the <a href="http://www.w3.org/TR/selectors-api/">Selectors API</a> makes DOM elements accessible using the same CSS expressions you use to apply formatting to them. The following show alternate ways to access elements:</p>
+<pre class="cpp"> var element <span class="operator">=</span> document<span class="operator">.</span>getElementById(<span class="char">'map'</span>);
+ var element <span class="operator">=</span> document<span class="operator">.</span>querySelector(<span class="char">'#map'</span>);
+
+ var elements <span class="operator">=</span> document<span class="operator">.</span>getElementByClassName(<span class="char">'active'</span>);
+ var elements <span class="operator">=</span> document<span class="operator">.</span>querySelectorAll(<span class="char">'ul &gt; li.active'</span>);</pre>
+<p>This section provides examples of how different kinds of Level 3 selectors might be applied when formatting mobile interfaces.</p>
+<a name="attribute-matching"></a>
+<h3>Attribute Matching</h3>
+<p>It is often useful to offer visual hints marking different kinds of link. Users might want to know the difference between a link to a page on the same website and one on an external site. Links to non-HTML file types might pose special challenges to mobile users. Alternately, mobile users might get special benefit from telephone links.</p>
+<p>You can automate this by using the CSS attribute prefix and suffix matching selectors. The following uses <tt>^=</tt> to mark external HTTP links, email, SMS, and telephone links, by inserting an icon after the text of the link:</p>
+<pre class="cpp">     a<span class="operator">[</span>href<span class="operator">^</span><span class="operator">=</span><span class="string">&quot;http://&quot;</span><span class="operator">]</span>:after<span class="operator">,</span> a<span class="operator">[</span>href<span class="operator">^</span><span class="operator">=</span><span class="string">&quot;https://&quot;</span><span class="operator">]</span>:after
+                              { content : url(icon<span class="operator">/</span>external<span class="operator">.</span>png); }
+     a<span class="operator">[</span>href<span class="operator">^</span><span class="operator">=</span><span class="string">&quot;mailto:&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>email<span class="operator">.</span>png); }
+     a<span class="operator">[</span>href<span class="operator">^</span><span class="operator">=</span><span class="string">&quot;sms:&quot;</span><span class="operator">]</span>:after    { content : url(icon<span class="operator">/</span>sms<span class="operator">.</span>png); }
+     a<span class="operator">[</span>href<span class="operator">^</span><span class="operator">=</span><span class="string">&quot;tel:&quot;</span><span class="operator">]</span>:after    { content : url(icon<span class="operator">/</span>tel<span class="operator">.</span>gif); }</pre>
+<p>The following uses <tt>$=</tt> to identify various file types by common suffixes:</p>
+<pre class="cpp">     a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.doc&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>ms_word<span class="operator">.</span>gif) }
+     a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.ppt&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>powerpoint<span class="operator">.</span>gif) }
+     a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.rss&quot;</span><span class="operator">]</span>:after<span class="operator">,</span> a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.xml&quot;</span><span class="operator">]</span>:after
+                           { content : url(icon<span class="operator">/</span>feed<span class="operator">.</span>gif) }
+     a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.pdf&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>pdf<span class="operator">.</span>jpg) }
+     a<span class="operator">[</span>href$<span class="operator">=</span><span class="string">&quot;.xls&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>excel<span class="operator">.</span>jpg) }</pre>
+<p>You can also use <tt>*=</tt> to freely match substrings within any attribute value. The following might distinguish links to a site's blog area based on how the URL is organized:</p>
+<pre class="cpp">     a<span class="operator">[</span>href<span class="operator">*</span><span class="operator">=</span><span class="string">&quot;/blog/&quot;</span><span class="operator">]</span>:after { content : url(icon<span class="operator">/</span>blog<span class="operator">.</span>jpg )}</pre>
+<p>The following example demonstrates links identified by dynamically generated icons:</p>
+<p><a href="webkit-guide/layout_link-fmt.htm"><img src="images/scr_layout_link-fmt.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-layout-link-fmt-css.html">(CSS)</a></p>
+<a name="form-input-state"></a>
+<h3>Form Input State</h3>
+<p>The <tt>:checked</tt> dynamic class allows you to style radio and checkbox inputs based on their selection state:</p>
+<pre class="cpp">     input<span class="operator">[</span>type<span class="operator">=</span>radio<span class="operator">]</span><span class="operator">,</span>
+     input<span class="operator">[</span>type<span class="operator">=</span>checkbox<span class="operator">]</span>
+     { text<span class="operator">-</span>align : right }
+
+     input<span class="operator">[</span>type<span class="operator">=</span>radio<span class="operator">]</span>:checked<span class="operator">,</span>
+     input<span class="operator">[</span>type<span class="operator">=</span>checkbox<span class="operator">]</span>:checked
+     { text<span class="operator">-</span>align : left }</pre>
+<p>This enables the following mobile-friendly interface, which converts small radio and check boxes to much more accessible toggle buttons:</p>
+<p><a href="webkit-guide/form_toggler.htm"><img src="images/scr_form_toggler.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-form-toggler-css.html">(CSS)</a></p>
+<p>Using the dynamic <tt>:checked</tt> CSS class, the <tt>text-align</tt> property toggles from <tt>left</tt> to <tt>right</tt> depending on whether the <tt>input</tt> is checked or not. Note that to display button text, dynamic classes can be chained together to form complex expressions: <tt>input[type=radio]:checked:before</tt>.</p>
+<p>The example also relies on the <tt>-webkit-appearance</tt> property, which allows you to override the default visual presentation of specialized interface elements such as radio and checkbox inputs.</p>
+<p>The following example provides alternate styling for radio and checkbox inputs, presenting them as tappable buttons:</p>
+<p><a href="webkit-guide/form_tapper.htm"><img src="images/scr_form_tapper.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-form-tapper-css.html">(CSS)</a></p>
+<p>Form elements may also be re-styled based on whether they are <tt>:enabled</tt> or <tt>:disabled</tt>. In addition, the <tt>:focus</tt> dynamic class allows you to style text form inputs or other editable content regions that users have currently selected for editing.</p>
+<a name="navigational-selectors"></a>
+<h3>Navigational Selectors</h3>
+<p>Elements within a page that are the target of navigation can receive distinct styling using the <tt>:target</tt> dynamic class. The act of navigating to an element can alter its appearance, or even determine if it is to appear at all.</p>
+<p>The following example relies on anchor navigation to display successive rows of a table within a mobile interface:</p>
+<p><a href="webkit-guide/layout_tbl-keyhole.htm"><img src="images/scr_layout_tbl-keyhole.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-layout-tbl-keyhole-css.html">(CSS)</a></p>
+<p>While the example relies on table-related tags, they are re-styled with block formatting to confine each row of information within the screen. Each row features links to other rows, triggering their display. Other links navigate away from the table, which suppresses its display altogether. This is the main CSS driving the interface:</p>
+<pre class="cpp">     <span class="operator">.</span>mobile <span class="operator">&gt;</span> tbody <span class="operator">&gt;</span> tr        { display : none  }
+     <span class="operator">.</span>mobile <span class="operator">&gt;</span> tbody <span class="operator">&gt;</span> tr:target { display : block }</pre>
+<p>The same technique may be used to display or dismiss optional interface elements such as panels, simply by providing navigation links to them within the page.</p>
+<a name="indirect-sibling-selector"></a>
+<h3>Indirect Sibling Selector</h3>
+<p>The Level 2 <tt>+</tt> selector allows you to style elements that immediately follow other specified elements. For example, the following refers to a paragraph that immediately follows a heading at the same level of markup:</p>
+<pre class="cpp">     h1 <span class="operator">+</span> p { font<span class="operator">-</span>weight: bold }</pre>
+<p>In contrast, the Level 3 <tt>~</tt> indirect sibling selector allows you to style any subsequent element at the same level within the markup. The following example styles any element that follows an <tt>h2</tt> that is classed <tt>pullquote</tt>:</p>
+<pre class="cpp">     h2 <span class="operator">~</span> <span class="operator">.</span>pullquote { font<span class="operator">-</span>size: <span class="number">90</span><span class="operator">%</span> }</pre>
+<p><b>Note:</b> Webkit-based browsers do not yet allow you to style elements dynamically via indirect sibling selectors.</p>
+<a name="positional-selectors"></a>
+<h3>Positional Selectors</h3>
+<p>Various dynamic classes allow you to style elements depending on their position with a series of elements: either elements of the same type, or other child elements of the same parent. The following example aligns a series of icons to a grid:</p>
+<p><a href="webkit-guide/css3_sel-nth.htm"><img src="images/scr_css3_sel-nth.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-sel-nth-css.html">(CSS)</a></p>
+<p>Columns are specified with the <tt>:nth-of-type()</tt> selector, which accepts numeric expressions as arguments. The following selectors refer to every fourth <tt>img</tt> element, but offset by a specified number:</p>
+<pre class="cpp">     img            { position: absolute }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(<span class="number">4n</span><span class="operator">-</span><span class="number">3</span>)    { left: <span class="number">2</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(<span class="number">4n</span><span class="operator">-</span><span class="number">2</span>)    { left: <span class="number">27</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(<span class="number">4n</span><span class="operator">-</span><span class="number">1</span>)    { left: <span class="number">52</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(<span class="number">4n</span><span class="operator">-</span><span class="number">0</span>)    { left: <span class="number">77</span><span class="operator">%</span> }</pre>
+<p>Alternately, keywords <tt>odd</tt> and <tt>even</tt> correspond to <tt>2n-1</tt> and <tt>2n</tt> expressions. These are useful, for example, when styling table rows with alternating background colors.</p>
+<p>Rows are represented as the number of the element within the series, plus a fixed number. Each selector redefines the previous selector's upper range of values:</p>
+<pre class="cpp">     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n)    { top: <span class="number">5</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n<span class="operator">+</span><span class="number">5</span>)    { top: <span class="number">20</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n<span class="operator">+</span><span class="number">9</span>)    { top: <span class="number">35</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n<span class="operator">+</span><span class="number">13</span>)    { top: <span class="number">50</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n<span class="operator">+</span><span class="number">17</span>)    { top: <span class="number">65</span><span class="operator">%</span> }
+     img:nth<span class="operator">-</span>of<span class="operator">-</span>type(n<span class="operator">+</span><span class="number">21</span>)    { top: <span class="number">80</span><span class="operator">%</span> }</pre>
+<p>Level 3 CSS defines the following positional selectors:</p>
+<ul>
+<li><tt>:first-child</tt>, <tt>:last-child</tt>, and <tt>:only-child</tt> refer to the first or last child element within a series, or when it is the only one.</li>
+<li><tt>:first-of-type</tt>, <tt>:last-of-type</tt>, and <tt>:only-of-type</tt> refer to the first or last specified element within a series, or when it is the only one.</li>
+<li><tt>:nth-first-child()</tt> and <tt>:nth-last-child()</tt> refer to the specified child element positioned from the start or end of the series.</li>
+<li><tt>:nth-first-of-type()</tt> and <tt>:nth-last-of-type()</tt> refer to the specified element positioned from the start or end of the series.</li>
+<li><tt>:nth-of-type()</tt> refers to any series of specified elements.</li>
+<li><tt>:nth-child()</tt> refers to any series of child elements.</li>
+</ul>
+<a name="other-selectors"></a>
+<h3>Other Selectors</h3>
+<p>Level 3 CSS specifies several other potentially useful dynamic classes that can be added to selectors:</p>
+<ul>
+<li><tt>:empty</tt> refers to an element that contains no child elements, including text nodes.</li>
+<li><tt>:root</tt> is a markup-independent way to refer to elements that are postioned at the root of the document, in most cases the <tt>html</tt> tag.</li>
+<li>The <tt>:not()</tt> dynamic class allows you to narrow a range of selectors. This may be more useful when gathering elements via the Selectors API. For example, the following JavaScript gathers form inputs, but not including submit buttons:<pre class="cpp">     var inputs <span class="operator">=</span> document<span class="operator">.</span>querySelectorAll(<span class="string">&quot;input:not([type=submit])&quot;</span>);</pre>
+</li>
+</ul>
+<a name="visual-effects"></a>
+<h2>Visual Effects</h2>
+<p><a href="qtwebkit.html">QtWebKit</a> supports numerous Level 3 CSS visual features. This section briefly demonstrates how many of these recently available visual features may be used to refine mobile web designs.</p>
+<p>These more advanced CSS3 effects tend to be available only on the latest generation of mobile browsers. Still, it is safe to use them, even if the design degrades somewhat for devices that don't support them. When a browser encounters CSS properties or values it can't interpret, it simply ignores them. Designers can respond by providing fallback options to allow for <i>graceful degradation</i>. For example, the following CSS specifies a plain gray background in case the browser does not support gradients:</p>
+<pre class="cpp"> background: <span class="preprocessor">#aaaaaa;</span>
+ background: <span class="operator">-</span>webkit<span class="operator">-</span>gradient(linear<span class="operator">,</span> center top<span class="operator">,</span> center bottom<span class="operator">,</span>
+         from(<span class="preprocessor">#777777), color-stop(50%,#dddddd), to(#777777) );</span></pre>
+<p>Note that many of the CSS properties discussed in this section were implemented relatively recently, and vendors of browser rendering engines (such as WebKit) may still be in the process of testing and standardizing their behavior. These property names feature <i>vendor prefixes</i> such as <tt>-webkit-</tt> for WebKit, <tt>-moz-</tt> for Mozilla, and <tt>-o-</tt> for Opera.</p>
+<p>It may be possible to extend CSS properties to these various browsers by providing vendor-specific syntax. The following example shows how to extend the <tt>border-image</tt> property to the Opera browser or Mozilla-based Fennec or the Maemo Browser for Nokia N900. It also shows the property's final name following the process of standardization:</p>
+<pre class="cpp"> <span class="operator">-</span>webkit<span class="operator">-</span>border<span class="operator">-</span>image     : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> stretch stretch;
+ <span class="operator">-</span>moz<span class="operator">-</span>border<span class="operator">-</span>image     : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> stretch stretch;
+ <span class="operator">-</span>o<span class="operator">-</span>border<span class="operator">-</span>image         : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> stretch stretch;
+ border<span class="operator">-</span>image         : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> stretch stretch;</pre>
+<p>In some cases, there are slight variations in the syntax each vendor expects as property values.</p>
+<a name="specifying-color-and-opacity"></a>
+<h3>Specifying Color and Opacity</h3>
+<p>Prior to CSS3, there were three options when specifying color values: named colors, hexadecimal color values, or RGB values. CSS3 provides additional ways to specify colors:</p>
+<ul>
+<li><i>HSL</i>. Colors defined with the HSL model specify the <i>hue</i> as a radial or degree coordinate, then its <i>saturation</i> and <i>luminence</i> as percentages. The following example specifies red and green values:<pre class="cpp">     background: hsl(<span class="number">0</span>  <span class="operator">,</span> <span class="number">100</span><span class="operator">%</span><span class="operator">,</span> <span class="number">60</span><span class="operator">%</span>);
+     background: hsl(<span class="number">128</span><span class="operator">,</span> <span class="number">75</span><span class="operator">%</span> <span class="operator">,</span> <span class="number">33</span><span class="operator">%</span>);</pre>
+</li>
+<li><i>HSLA</i>. Same as HSL, but specifying an additional decimal <i>alpha</i> value that corresponds to opacity. The following specifies a fully opaque red, followed by a partial transparency:<pre class="cpp">     background: hsla(<span class="number">0</span><span class="operator">,</span> <span class="number">100</span><span class="operator">%</span><span class="operator">,</span> <span class="number">60</span><span class="operator">%</span><span class="operator">,</span> <span class="number">1.0</span>);
+     background: hsla(<span class="number">0</span><span class="operator">,</span> <span class="number">100</span><span class="operator">%</span><span class="operator">,</span> <span class="number">60</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0.5</span>);</pre>
+</li>
+<li><i>RGBA</i>. Same as RGB, but specifying an additional decimal <i>alpha</i> value that corresponds to opacity. The following the same transition from opaque to transparent as shown above:<pre class="cpp">     background: rgba(<span class="number">100</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0</span><span class="operator">%</span><span class="operator">,</span> <span class="number">1.0</span>);
+     background: rgba(<span class="number">100</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0.5</span>);</pre>
+</li>
+</ul>
+<p>With the addition of opacity to color definitions, you can now also specify <tt>transparent</tt> as a color name. Note that while RGBA and HSLA options are now available, you can still use the familiar <tt>opacity</tt> property independently of color definitions.</p>
+<a name="rounded-corners"></a>
+<h3>Rounded Corners</h3>
+<p>In addition to removing harsh edges, rounded corners often help distinguish active items from static background elements. Rounded corners are implemented using the <tt>border-radius</tt> property. The following rounds off an edge to the same extent that interior elements are offset:</p>
+<pre class="cpp">     <span class="operator">.</span>rounded {
+         border<span class="operator">-</span>radius    : <span class="number">1em</span>;
+         padding        : <span class="number">1em</span>;
+     }</pre>
+<p>The following example demonstrates how rounded corners can enhance a mobile design, by marking the start and end of large regions of content, such as a list of links:</p>
+<p><a href="webkit-guide/layout_link-fmt.htm"><img src="images/scr_layout_link-fmt.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-layout-link-fmt-css.html">(CSS)</a></p>
+<p>The greater the measurement applied to an element's <tt>border-radius</tt>, the more dramatically rounded are its corners. For example, applying a <tt>border-radius</tt> that is half an element's overall dimensions results in a circle:</p>
+<pre class="cpp">     <span class="operator">.</span>circle {
+         width              : <span class="number">4em</span>;
+         height             : <span class="number">4em</span>;
+         border<span class="operator">-</span>radius      : <span class="number">2em</span>;
+     }</pre>
+<p>You can also set each corner individually, and specify a pair of values to achieve oval-shaped borders:</p>
+<pre class="cpp">     border<span class="operator">-</span>top<span class="operator">-</span>left<span class="operator">-</span>radius : <span class="number">2em</span><span class="operator">/</span><span class="number">1em</span>;</pre>
+<a name="border-images"></a>
+<h3>Border Images</h3>
+<p>Border images allow you to apply customized marquee effects, as in the following example:</p>
+<p><a href="webkit-guide/css3_border-img.htm"><img src="images/scr_css3_border-img.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-border-img-css.html">(CSS)</a></p>
+<p>In this case, the image stretches to fit an element's dimensions:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>border<span class="operator">-</span>image : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> stretch stretch;</pre>
+<p>As is true of the <tt>border</tt> property, a single numeric argument specifies the width of the border as a whole, or up to four values to modify the width of each side.</p>
+<p>Any border image you specify substitutes some or all of an element's normal border. The <tt>border-image</tt> and <tt>border-corner-image</tt> each collectively represent four more specific properties.</p>
+<p>For <tt>border-image</tt>, these properties are:</p>
+<ul>
+<li><tt>border-top-image</tt></li>
+<li><tt>border-right-image</tt></li>
+<li><tt>border-bottom-image</tt></li>
+<li><tt>border-left-image</tt></li>
+</ul>
+<p>For <tt>border-corner-image</tt>, these properties are:</p>
+<ul>
+<li><tt>border-top-left-image</tt></li>
+<li><tt>border-top-right-image</tt></li>
+<li><tt>border-bottom-right-image</tt></li>
+<li><tt>border-bottom-left-image</tt></li>
+</ul>
+<p>The <tt>border-image</tt> property specifies a single image for all four edge borders. The <tt>border-corner-image</tt> property specifies an image for all four corner borders. To specify images individually for any of the edge or corner borders, use any of the eight individual properties.</p>
+<p>When specifying any border edge or corner image values:</p>
+<ul>
+<li>A <tt>stretch</tt> value stretches one image to fill the element border area, as shown in the example above.</li>
+<li>A <tt>repeat</tt> value repeats one image until it fills the element border area and clips any overflow, for example:<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>border<span class="operator">-</span>image : url(img<span class="operator">/</span>border<span class="operator">-</span>frame<span class="operator">.</span>gif) <span class="number">10</span> repeat repeat;</pre>
+<p>In this case the first <tt>repeat</tt> applies to top and bottom edge borders, and the second applies to left and right edge borders.</p>
+</li>
+</ul>
+<a name="backgrounds"></a>
+<h3>Backgrounds</h3>
+<p>CSS3 allows you to specify more than one background image at a time. The following example shows an accordion-style tabbed interface:</p>
+<p><a href="webkit-guide/css3_backgrounds.htm"><img src="images/scr_css3_backgrounds.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-backgrounds-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-css3-backgrounds-js.html">(JavaScript)</a></p>
+<p>By default, tabs display a single icon image, but when selected feature an additional gradient background image. The following CSS shows how both icon and background can receive their own series of specifications, affecting their offset or whether each image repeats:</p>
+<pre class="cpp">     background<span class="operator">-</span>image    : url(img<span class="operator">/</span>select<span class="operator">.</span>png)    <span class="operator">,</span> url(img<span class="operator">/</span>gradient<span class="operator">.</span>jpg);
+     background<span class="operator">-</span>repeat    : no<span class="operator">-</span>repeat        <span class="operator">,</span> repeat<span class="operator">-</span>x;
+     background<span class="operator">-</span>position    : <span class="number">12px</span> <span class="number">12px</span>        <span class="operator">,</span> <span class="number">0</span> <span class="number">0</span>;</pre>
+<p>In addition, you may set the <tt>background-size</tt> property to <tt>contain</tt> to scale images to the size of the containing element. (Level 2 CSS allowed only specific measurements or percentages of the image's size.)</p>
+<a name="text-shadow-and-stroke"></a>
+<h3>Text Shadow and Stroke</h3>
+<p>Shadows can be applied to text. As the following example shows, text shadows may interfere with the legibility of text, and are seldom appropriate unless they're used for large, sans-serif display headings:</p>
+<p><a href="webkit-guide/css3_text-shadow.htm"><img src="images/scr_css3_text-shadow.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-text-shadow-css.html">(CSS)</a></p>
+<p>In addition to the shadow's color, the property accepts two measurements to represent its offset from the text, while the third specifies the extent to which the shadow is blurred:</p>
+<pre class="cpp">     h1<span class="operator">,</span>h2<span class="operator">,</span>h3<span class="operator">,</span>h4 { text<span class="operator">-</span>shadow : <span class="number">0.25em</span> <span class="number">0.25em</span> <span class="number">0.25em</span> <span class="preprocessor">#aaaaaa; }</span></pre>
+<p>CSS3 also allows you to apply a different colored fill to characters, suitable mainly for larger display type or subtle animations:</p>
+<p><a href="webkit-guide/css3_text-stroke.htm"><img src="images/scr_css3_text-stroke.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-text-stroke-css.html">(CSS)</a></p>
+<p>In the following CSS, <tt>-webkit-text-fill-color</tt> is synonymous with the standard <tt>color</tt> property:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>text<span class="operator">-</span>stroke<span class="operator">-</span>color    : <span class="preprocessor">#000000;</span>
+     <span class="operator">-</span>webkit<span class="operator">-</span>text<span class="operator">-</span>stroke<span class="operator">-</span>width    : <span class="number">1px</span>;
+     <span class="operator">-</span>webkit<span class="operator">-</span>text<span class="operator">-</span>fill<span class="operator">-</span>color        : purple;</pre>
+<a name="text-overflow"></a>
+<h3>Text Overflow</h3>
+<p>Web developers are familiar with the <tt>overflow</tt> property, which can be used to hide content that exceeds an element's dimensions, or else to make it accessible via scrolling. CSS3 specifies an additional <tt>text-overflow</tt> property that allows you to add ellipses as a suffix to any text that overflows the element, to indicate the presence of additional text.</p>
+<p>The following example shows how the <tt>text-overflow</tt> property allows you to present user-selectable links to expanded regions of text within a page:</p>
+<p><a href="webkit-guide/css3_text-overflow.htm"><img src="images/scr_css3_text-overflow.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-text-overflow-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-css3-text-overflow-js.html">(JavaScript)</a></p>
+<p>Use the <tt>text-overflow</tt> property in conjunction with <tt>overflow</tt> and <tt>white-space</tt>:</p>
+<pre class="cpp">     text<span class="operator">-</span>overflow    : ellipsis;
+     overflow    : hidden;
+     white<span class="operator">-</span>space    : nowrap;</pre>
+<p>For <tt>text-overflow</tt> to work, the element's <tt>white-space</tt> must be set to <tt>nowrap</tt>, overriding the default <tt>normal</tt> value. This prevents words from wrapping onto another line as is standard behavior outside the <tt>pre</tt> tag, and forces text past the right edge of the element.</p>
+<p>(The element's <tt>text-overflow</tt> may specify both <tt>ellipsis</tt> and <tt>ellipsis-word</tt>, the latter of which is not as widely implemented.)</p>
+<a name="custom-scrollbars"></a>
+<h3>Custom Scrollbars</h3>
+<p>In general, scrollable elements should be avoided wherever possible within mobile interfaces. Drag gestures already allow users to scroll windows vertically, and narrow mobile screens are not suitable for overly wide content.</p>
+<p>In cases where content can only be viewed within a scrolling window, scrollbars can be reformatted to make them more accessible to mobile users. The following example presents a block of code within a touch-enabled mobile interface:</p>
+<p><a href="webkit-guide/css3_scroll.htm"><img src="images/scr_css3_scroll.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-scroll-css.html">(CSS)</a></p>
+<p>This interface uses standard scrollbars, but their appearance is enhanced using low-level <i>pseudo-element</i> CSS classes that refer to individual components within the scrollbar.</p>
+<p>Simply by invoking the following CSS selector, you disable scrollbars' default appearance:</p>
+<pre class="cpp">     pre<span class="operator">::</span><span class="operator">-</span>webkit<span class="operator">-</span>scrollbar { height : <span class="number">3em</span> }</pre>
+<p>In this case, the specified property increases the scrollbar's default <tt>height</tt> to make it easier for mobile users to tap it with their fingers.</p>
+<p>Each additional scrollbar component must then be explicitly defined, otherwise it does not render. The following CSS provides custom styling for the horizontal panning buttons:</p>
+<pre class="cpp">     <span class="operator">::</span><span class="operator">-</span>webkit<span class="operator">-</span>scrollbar<span class="operator">-</span>button:increment {
+         background<span class="operator">-</span>image    : url(img<span class="operator">/</span>arrow_right<span class="operator">.</span>png);
+         background<span class="operator">-</span>size    : contain;
+         background<span class="operator">-</span>repeat    : no<span class="operator">-</span>repeat;
+         width        : <span class="number">3em</span>;
+         height        : <span class="number">3em</span>;
+     }
+     <span class="operator">::</span><span class="operator">-</span>webkit<span class="operator">-</span>scrollbar<span class="operator">-</span>button:decrement {
+         background<span class="operator">-</span>image    : url(img<span class="operator">/</span>arrow_left<span class="operator">.</span>png);
+         background<span class="operator">-</span>size    : contain;
+         background<span class="operator">-</span>repeat    : no<span class="operator">-</span>repeat;
+         width        : <span class="number">3em</span>;
+         height        : <span class="number">3em</span>;
+     }</pre>
+<p>In this case, the scrollbar region between the two navigation icons is still active, but not obviously so since its visual formatting has been overridden. The simpler set of controls is far more suitable for a mobile interface.</p>
+<p>Webkit provides pseudo-elements for the following components:</p>
+<ul>
+<li><tt>scrollbar</tt> refers to scrollbar as a whole. Additional dynamic classes can be appended to specify <tt>:vertical</tt> and <tt>:horizontal</tt> scrollbars. The <tt>:corner-present</tt> dynamic class activates when both scrollbars are present.</li>
+<li><tt>scrollbar-button</tt> refers to incremental navigation buttons. Each button can be styled separately with <tt>:increment</tt> and <tt>:decrement</tt> dynamic classes.</li>
+<li><tt>scrollbar-thumb</tt> refers to the scrollbar's slider control.</li>
+<li><tt>scrollbar-track</tt> refers to the active navigation region between buttons.</li>
+<li><tt>scrollbar-track-piece</tt> refers to each portion of the track on either side of the thumb control. These can be styled separately using <tt>:start</tt> and <tt>:end</tt> dynamic classes.</li>
+<li><tt>scrollbar-corner</tt> refers to the corner where scrollbar tracks meet. The <tt>resizer</tt> pseudo-element also refers to this corner, but for resizable elements such as <tt>textarea</tt>.</li>
+<li>The <tt>:double-button</tt> and <tt>:single-button</tt> dynamic classes refer to whether incrementor and decrementors are paired together redundantly at each end of the track, while <tt>:no-button</tt> refers to whether they display at all.</li>
+</ul>
+<p><b>See Also:</b> <a href="http://webkit.org/blog/363/styling-scrollbars/">Surfin' Safari: Styling Scrollbars</a></p>
+<a name="gradients"></a>
+<h3>Gradients</h3>
+<p>Gradients provide a graduated shading effect that can add subtle texture to background elements, and can provide buttons a three-dimensional, beveled appearance. Explicit support for gradients means there's no longer a need to implement them as repeating background images.</p>
+<p>Specify gradients using CSS properties such as the following:</p>
+<pre class="cpp">     background: <span class="preprocessor">#aaaaaa;</span>
+     background: <span class="operator">-</span>webkit<span class="operator">-</span>gradient(linear<span class="operator">,</span> center top<span class="operator">,</span> center bottom<span class="operator">,</span>
+                     from(<span class="preprocessor">#dddddd), to(#777777) );</span></pre>
+<p>Note the pair of <tt>background</tt> statements. The first specifies a monochrome fallback color for browsers that do not support gradients.</p>
+<p>The function specifies a simple <tt>linear</tt> gradient from the top to the bottom of the element, shifting from a light to a darker gray.</p>
+<p>The following example shows how this gradient can be applied to a background element:</p>
+<p><a href="webkit-guide/css3_gradientBack.htm"><img src="images/scr_css3_gradientBack.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-gradientback-css.html">(CSS)</a></p>
+<p>Gradients cannot be applied to the <tt>body</tt> element. Instead, they are here applied to an element that covers the background.</p>
+<p>You can specify more than one gradient for the same element. The following shifts from a dark to a light gray halfway down the element, then back to dark:</p>
+<pre class="cpp">     background: <span class="operator">-</span>webkit<span class="operator">-</span>gradient(linear<span class="operator">,</span> center top<span class="operator">,</span> center bottom<span class="operator">,</span>
+             from(<span class="preprocessor">#777777), color-stop(50%, #dddddd), to(#777777) );</span></pre>
+<p>Here is how the additional <tt>color-stop</tt> appears when applied to the same background element:</p>
+<p><a href="webkit-guide/css3_gradientBackStop.htm"><img src="images/scr_css3_gradientBackStop.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-gradientbackstop-css.html">(CSS)</a></p>
+<p>Gradients can also provide a textured, three-dimensional appearance for buttons. In the following example, the gradient is inverted and darkened when each button is pressed:</p>
+<p><a href="webkit-guide/css3_gradientButton.htm"><img src="images/scr_css3_gradientButton.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-gradientbutton-css.html">(CSS)</a></p>
+<p>In addition to linear gradients, CSS3 also specifies <b>radial</b> gradients that emanate from a single point. The following example demonstrates a colorful radial gradient used to mark where users touch the screen:</p>
+<p><a href="webkit-guide/css3_grad-radial.htm"><img src="images/scr_css3_grad-radial.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-grad-radial-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-css3-grad-radial-js.html">(JavaScript)</a></p>
+<p>The syntax is slightly different than for linear gradients. The first two comma-separated arguments after the <tt>radial</tt> statement specify the coordinates of the inner circle, and its radius. The next two arguments specify the coordinates and radius of the outer circle:</p>
+<pre class="cpp">     background: <span class="operator">-</span>webkit<span class="operator">-</span>gradient(radial<span class="operator">,</span> <span class="number">90</span> <span class="number">120</span><span class="operator">,</span> <span class="number">5</span><span class="operator">,</span> <span class="number">100</span> <span class="number">130</span><span class="operator">,</span> <span class="number">48</span><span class="operator">,</span>
+             from(<span class="preprocessor">#777777), color-stop(50%, #dddddd), to(#777777) );</span></pre>
+<p>The use of <tt>from</tt>, <tt>to</tt> values and <tt>color-stop</tt> in radial gradients are the same as for linear gradients.</p>
+<a name="reflections"></a>
+<h3>Reflections</h3>
+<p>Reflections offer a mirror-like effect which, in the following example, adds a sense of weight to headings and images:</p>
+<p><a href="webkit-guide/css3_reflect.htm"><img src="images/scr_css3_reflect.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-reflect-css.html">(CSS)</a></p>
+<p>The property's syntax specifies the edge of the element at which to reflect, the offset, and an overlay color. In this case, the color is a gradient, which causes the reflection to gradually fade:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>box<span class="operator">-</span>reflect : below <span class="operator">-</span><span class="number">0.25em</span> <span class="operator">-</span>webkit<span class="operator">-</span>gradient(linear<span class="operator">,</span> center
+                 top<span class="operator">,</span> center bottom<span class="operator">,</span> from(transparent)<span class="operator">,</span> color<span class="operator">-</span>stop(<span class="number">0.25</span><span class="operator">,</span>
+                 transparent)<span class="operator">,</span> to(black));</pre>
+<a name="masks"></a>
+<h3>Masks</h3>
+<p>Masks offer a way to modify an image by overlaying either another image, or a gradient. The following example shows a series of thumbnail images that appear faded at their bottom edge until selected:</p>
+<p><a href="webkit-guide/css3_mask-grad.htm"><img src="images/scr_css3_mask-grad.png" alt="" /> </a></p>
+<p><a href="webkit-guide/css/webkit-webkit-guide-css-css3-mask-grad-css.html">(CSS)</a> <a href="webkit-guide/js/webkit-webkit-guide-js-css3-mask-grad-js.html">(JavaScript)</a></p>
+<p>The gradient's opacity shifts from <tt>1</tt> to <tt>0</tt>, an effect that translates to the image:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>mask<span class="operator">-</span>box<span class="operator">-</span>image : <span class="operator">-</span>webkit<span class="operator">-</span>gradient(linear<span class="operator">,</span> left top<span class="operator">,</span> left
+        bottom<span class="operator">,</span> from(rgba(<span class="number">0</span><span class="operator">,</span> <span class="number">0</span><span class="operator">,</span> <span class="number">0</span><span class="operator">,</span> <span class="number">1</span>))<span class="operator">,</span> to(rgba(<span class="number">0</span><span class="operator">,</span> <span class="number">0</span><span class="operator">,</span> <span class="number">0</span><span class="operator">,</span> <span class="number">0</span>)));</pre>
+<p>The following example demonstrates an image used as a mask to frame another image:</p>
+<p><a href="webkit-guide/css3_mask-img.htm"><img src="images/scr_css3_mask-img.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-mask-img-css.html">(CSS)</a></p>
+<p>Separately, the component images look like these:</p>
+<p><img src="images/mask0.png" alt="" /> <img src="images/mask1.png" alt="" /></p>
+<p>The syntax is the same for border images, and allows you to stretch one image over the other:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>mask<span class="operator">-</span>box<span class="operator">-</span>image : url(img<span class="operator">/</span>mask<span class="operator">.</span>png) <span class="number">5</span><span class="operator">%</span> stretch;</pre>
+<a name="dynamic-css"></a>
+<h2>Dynamic CSS</h2>
+<p>Animations help enhance touch-based mobile interfaces in many ways. They help ease transitions from one display state to another that might otherwise appear jarring. They help provide a sense of navigational orientation. They also often simulate tactile feedback as users' touches result in a tangible visual effect. Overall, they add a sense of vibrancy that increases users' engagement with the content on display.</p>
+<p>Support by <a href="qtwebkit.html">QtWebKit</a> for HTML5 allows you to choose from among several flavors of web-based animation: Canvas, SVG, and Level 3 CSS. Web developers may also be familiar with lower-level JavaScript-based animation techniques, which form the basis of many popular JavaScript libraries such as jQuery and Prototype. This section focuses on CSS-based animations, since they are more appropriate to integrate throughout a web design, without the additional overhead JavaScript libraries require. Like Adobe Flash, SVG and Canvas offer more specialized, low-level graphics frameworks whose animation features are more appropriate for generating standalone effects.</p>
+<p>This section demonstrates animation techniques by offering a series of examples that apply to common mobile design tasks. While some of these tasks are addressed by existing JavaScript frameworks such as jQuery and Prototype, the examples provided here illustrate some CSS-only alternatives.</p>
+<a name="css-animation-concepts"></a>
+<h3>CSS Animation Concepts</h3>
+<p>Level 3 CSS introduces three distinct concepts that are relevant when crafting dynamic effects, which are discussed in the following sections:</p>
+<ul>
+<li><i>Transforms</i> offer a series of manipulations to screen elements. By themselves, transforms present only static visual effects, but they become especially useful as part of dynamic transitions and animations. Simple transforms are two-dimensional, with three-dimensional transforms gaining gradual support.</li>
+<li><i>Transitions</i> entail a graduated shift from one explicit display state to another. Transitional shifts apply to any CSS property that specifies numeric or color values.</li>
+<li><i>Animations</i> offer more complex sequences of transitions that can specify many intermediate display states. Unlike simple transitions, animations can also be initiated more freely.</li>
+</ul>
+<a name="2d-transforms"></a>
+<h3>2D Transforms</h3>
+<p>Transforms allow you to freely displace box elements from where they would ordinarily appear. Several transform functions are available, allowing you to <i>scale</i>, <i>rotate</i>, <i>skew</i>, or <i>translate</i> (move) objects.</p>
+<p>The <tt>translate</tt> function moves an element from its default location, and accepts <tt>x</tt> and <tt>y</tt> measurements as arguments. The following moves an element off the right edge of the screen:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>transform: translate(<span class="number">120</span><span class="operator">%</span><span class="operator">,</span> <span class="number">0</span>);</pre>
+<p>Alternately, <tt>translateX</tt> and <tt>translateY</tt> functions allow you to specify each axis independently. This moves the element off the top of the screen:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>transform: translateX(<span class="number">0.0</span>) translateY(<span class="operator">-</span><span class="number">120</span><span class="operator">%</span>);</pre>
+<p>Scale transforms allow you enlarge or shrink an element, with the scale expressed as a decimal. By itself, <tt>scale</tt> modifies height and width proportionately, but the alternative <tt>scaleX</tt> and <tt>scaleY</tt> functions allow you to constrain scaling to a single axis.</p>
+<p>The following animation demonstrates a <tt>translate</tt> function, which moves the element from off the screen, followed by series of <tt>scale</tt>, <tt>scaleX</tt>, and <tt>scaleY</tt> functions:</p>
+<p><a href="webkit-guide/anim_demo-scale.htm"><img src="images/scr_anim_demo-scale.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-demo-scale-css.html">(CSS)</a></p>
+<p>By default, transforms originate from the center of the element, but you can specify any edge using the <tt>-webkit-transform-origin</tt> property. The following reduces an element to 75% of its original size, while keeping it at its original bottom edge:</p>
+<pre class="cpp">     <span class="operator">-</span>webkit<span class="operator">-</span>transform        : scale(<span class="number">0.75</span>);
+     <span class="operator">-</span>webkit<span class="operator">-</span>transform<span class="operator">-</span>origin    : bottom;</pre>
+<p>The following example uses this scale transform to shrink icons that are assigned to in-line links, with icons aligning to the text's baseline:</p>
+<p><a href="webkit-guide/layout_link-fmt.htm"><img src="images/scr_layout_link-fmt.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-layout-link-fmt-css.html">(CSS)</a></p>
+<p>The <tt>rotate</tt> function accepts degree or radian arguments, with negative arguments specifying counter-clockwise motion. The following animation demonstrates two rotations: the first clockwise around the element's center point, and the second counter-clockwise around the top left corner:</p>
+<p><a href="webkit-guide/anim_demo-rotate.htm"><img src="images/scr_anim_demo-rotate.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-demo-rotate-css.html">(CSS)</a></p>
+<p>The <tt>skew</tt> function also accepts positive or negative degree arguments, specifying the extent to which to modify the bottom left corner's 90-degree angle. The <tt>skew</tt> and <tt>skewX</tt> functions shift the element horizontally, but the alternative <tt>skewY</tt> function shifts the element vertically. The following animation demonstrates a <tt>skewX</tt> followed by a <tt>skewY</tt>:</p>
+<p><a href="webkit-guide/anim_demo-skew.htm"><img src="images/scr_anim_demo-skew.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-demo-skew-css.html">(CSS)</a></p>
+<p>In the following example, a variety of transforms make a set of three navigational tab icons appear to be part of a cube:</p>
+<p><a href="webkit-guide/anim_tabbedSkew.htm"><img src="images/scr_anim_tabbedSkew.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-tabbedskew-css.html">(CSS)</a></p>
+<p>The example also implements the tab icons as internal links that activate display of content using the <tt>:target</tt> dynamic class. See the <a href="#navigational-selectors">Navigational Selectors</a> section for more information.</p>
+<p>Note that transforms can include any combination of the functions described above:</p>
+<pre class="cpp">     nav <span class="operator">&gt;</span> a:nth<span class="operator">-</span>of<span class="operator">-</span>type(<span class="number">3</span>) {
+         background<span class="operator">-</span>image    : url(img<span class="operator">/</span>S_google<span class="operator">.</span>jpg);
+         <span class="operator">-</span>webkit<span class="operator">-</span>transform    : rotate(<span class="operator">-</span><span class="number">60deg</span>) skew(<span class="operator">-</span><span class="number">30deg</span>) translate(<span class="number">1.7em</span><span class="operator">,</span> <span class="number">0em</span>);
+     }</pre>
+<a name="transitions"></a>
+<h3>Transitions</h3>
+<p>Transitions allow you to gradually shift from one defined CSS state to another. Any CSS property expressed as a numeric or color value (including a color name or hex value) can be transitioned between two style sheets. Properties such as <tt>display</tt> that have discrete sets of named values, such as the <tt>display</tt> property's <tt>block</tt> or <tt>none</tt> values, cannot be transitioned. In cases where named values translate internally to numeric values, such as the <tt>border-width</tt> property's <tt>thin</tt> and <tt>thick</tt> values, they can be transitioned.</p>
+<p>The following example shows a series of transitions from a collapsed icon state to an expanded panel:</p>
+<p><a href="webkit-guide/anim_panel.htm"><img src="images/scr_anim_panel.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-panel-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-anim-panel-js.html">(JavaScript)</a></p>
+<p>Each style sheet specifies a different <tt>max-width</tt> value, and each accompanying transition, defined separately for each state, allows the value to shift over the course of half of a second:</p>
+<pre class="cpp">     nav<span class="operator">.</span>expanded {
+         max<span class="operator">-</span>width        : <span class="number">95</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition    : max<span class="operator">-</span>width <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out;
+     }
+     nav<span class="operator">.</span>collapsed {
+         max<span class="operator">-</span>width        : <span class="number">10</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition    : max<span class="operator">-</span>width <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out;
+     }</pre>
+<p>That shorthand syntax can be expanded to several different properties:</p>
+<pre class="cpp">     nav<span class="operator">.</span>expanded {
+         max<span class="operator">-</span>width                : <span class="number">95</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>property        : max<span class="operator">-</span>width;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>duration        : <span class="number">0.5s</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>timing<span class="operator">-</span>function    : ease<span class="operator">-</span>in<span class="operator">-</span>out;
+     }
+     nav<span class="operator">.</span>collapsed {
+         max<span class="operator">-</span>width                : <span class="number">10</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>property        : max<span class="operator">-</span>width;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>duration        : <span class="number">0.5s</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>timing<span class="operator">-</span>function    : ease<span class="operator">-</span>in<span class="operator">-</span>out;
+     }</pre>
+<p>Available transition functions include <tt>linear</tt>, <tt>ease-in</tt>, <tt>ease-out</tt>, <tt>ease-in-out</tt> and <tt>cubic-bezier</tt>.</p>
+<p>Note that the <tt>max-width</tt> properties in both style sheets both use percentages to specify measurements. Transitions may not work properly if you shift from one unit to another.</p>
+<p>The example above specifies an additional set of transitions affecting the icons nested within the navigation panel:</p>
+<pre class="cpp">     nav<span class="operator">.</span>expanded <span class="operator">&gt;</span> <span class="operator">.</span>option {
+         opacity        : <span class="number">1</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transform    : scale(<span class="number">1.0</span>);
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition    : all <span class="number">0.5s</span> linear;
+     }
+     nav<span class="operator">.</span>collapsed <span class="operator">&gt;</span> <span class="operator">.</span>option {
+         opacity        : <span class="number">0</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transform    : scale(<span class="number">0.0</span>);
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition    : all <span class="number">0.5s</span> linear;
+     }</pre>
+<p>The shifting <tt>scale</tt> transform makes icons appear to zoom in to fill the space, while <tt>opacity</tt> makes them fade in. Specifying <tt>all</tt> as the transition property applies to any valid property that differs between the two states.</p>
+<p>These nested transitions execute at the same time as those assigned to the parent <tt>nav</tt> element. The combined effect appears to be a single transition.</p>
+<a name="transitional-sequences"></a>
+<h3>Transitional Sequences</h3>
+<p>The prior example showed a single transition, but transitions can also be run in sequence to form more complex animations. The following example demonstrates an embedded navigation panel that, when pressed, expands horizontally, then vertically to reveal numerous navigation options:</p>
+<p><a href="webkit-guide/anim_accord.htm"><img src="images/scr_anim_accord.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-accord-css.html">(CSS)</a> <a href="wwebkit-webkit-guide-js-anim-accord-js.html">(JavaScript)</a></p>
+<p>The style sheets specify separate, comma-separated transitions for <tt>width</tt> and <tt>height</tt> properties:</p>
+<pre class="cpp">     <span class="preprocessor">#accordion.expanded {</span>
+         width: <span class="number">80</span><span class="operator">%</span>;
+         height: <span class="number">90</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition:
+             width <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out <span class="number">0.0s</span><span class="operator">,</span>
+             height <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out <span class="number">0.5s</span>
+         ;
+     }
+     <span class="preprocessor">#accordion.collapsed {</span>
+         width: <span class="number">10</span><span class="operator">%</span>;
+         height: <span class="number">7</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition:
+             height <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out <span class="number">0.0s</span><span class="operator">,</span>
+             width <span class="number">0.5s</span> ease<span class="operator">-</span>in<span class="operator">-</span>out <span class="number">0.5s</span>
+         ;
+     }</pre>
+<p>Each transition's additional time measurement specifies a delay. The long-form syntax may make this clearer:</p>
+<pre class="cpp">     <span class="preprocessor">#accordion.expanded {</span>
+         width: <span class="number">80</span><span class="operator">%</span>;
+         height: <span class="number">90</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>property        : width        <span class="operator">,</span> height;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>duration        : <span class="number">0.5s</span>        <span class="operator">,</span> <span class="number">0.5s</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>timing<span class="operator">-</span>function    : ease<span class="operator">-</span>in<span class="operator">-</span>out    <span class="operator">,</span> ease<span class="operator">-</span>in<span class="operator">-</span>out;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>delay        : <span class="number">0.0s</span>        <span class="operator">,</span> <span class="number">0.5s</span>;
+     }
+     <span class="preprocessor">#accordion.collapsed {</span>
+         width                : <span class="number">10</span><span class="operator">%</span>;
+         height                : <span class="number">7</span><span class="operator">%</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>property        : height    <span class="operator">,</span> width;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>duration        : <span class="number">0.5s</span>        <span class="operator">,</span> <span class="number">0.5s</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>timing<span class="operator">-</span>function    : ease<span class="operator">-</span>in<span class="operator">-</span>out    <span class="operator">,</span> ease<span class="operator">-</span>in<span class="operator">-</span>out;
+         <span class="operator">-</span>webkit<span class="operator">-</span>transition<span class="operator">-</span>delay        : <span class="number">0.0s</span>        <span class="operator">,</span> <span class="number">0.5s</span>;
+     }</pre>
+<p>The shift to the <tt>expanded</tt> state involves two transitions, each of which lasts half a second and relies on the same <tt>ease-in-out</tt> function. The first takes place immediately and affects the <tt>width</tt> property. The second, affecting the <tt>height</tt> property, takes place after a delay that matches the first transition's duration. The reverse transition is much the same, only the <tt>height</tt> property transitions before the <tt>width</tt> to reverse the effect.</p>
+<p>In addition to the navigation element's sequence of transitions, nested accordion-style animations activate when users expand top-level headings. Subheadings are revealed using a <tt>scaleY</tt> transform, which makes them appear as if they are flipping upwards.</p>
+<p>The following example shows a photo gallery interface that uses the same techniques. (Size the window to emulate a smaller mobile screen.)</p>
+<p><a href="webkit-guide/anim_gallery.htm"><img src="images/scr_anim_gallery.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-gallery-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-anim-gallery-js.html">(JavaScript)</a></p>
+<p>The main interface uses simple transitions affecting <tt>opacity</tt>, along with <tt>scale</tt> and <tt>translate</tt> transforms, which combined make queued images appear dimmer, smaller, and horizontally offset from the main image.</p>
+<p>A separate sequence of transitions activates when users tap selected images. The first transition uses a <tt>scaleX</tt> transform to flip the image towards the center. The second then flips out a panel featuring details on the photo. When users navigate away to adjacent photos, the panel automatically flips back to its original state as it is moved to the side.</p>
+<p>Another example shows an interface featuring a simple list of items:</p>
+<p><a href="webkit-guide/anim_skew.htm"><img src="images/scr_anim_skew.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-skew-css.html">(CSS)</a> <a href="webkit-webkit-guide-js-anim-skew-js.html">(JavaScript)</a></p>
+<p>When dismissed, items are wiped off the screen using a <tt>skew</tt> transform that provides the illusion of speed. Remaining items move upwards to fill the space vacated by items that have been removed.</p>
+<p>This example uses the same technique of sequential transitions. The first transition applies to the combined <tt>translate</tt>/<tt>skew</tt> transform. The second, delayed transition modifies the <tt>top</tt> property to align remaining items to a grid.</p>
+<p>Note that for items to reposition themselves in this example, a vertical grid must be explicitly specified. You can only apply transitions between properties you explicitly define and activate, not between values the browser assigns internally to automatically position elements relative to each other.</p>
+<a name="keyframe-animations"></a>
+<h3>Keyframe Animations</h3>
+<p>The previous section showed how you can chain sequences of transitions to produce complex effects. Animations also allow you to define many intermediary interface states, but using a far simpler syntax, and not assigned to transitions between CSS states.</p>
+<p>The following example shows a simple animation of icons that pulse when selected:</p>
+<p><a href="webkit-guide/anim_pulse.htm"><img src="images/scr_anim_pulse.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-pulse-css.html">(CSS)</a></p>
+<p>It uses the following CSS, shown here in both abbreviated and long form:</p>
+<pre class="cpp">     nav <span class="operator">&gt;</span> a:target { <span class="operator">-</span>webkit<span class="operator">-</span>animation : pulse <span class="number">1s</span> infinite; }
+
+     nav <span class="operator">&gt;</span> a:target {
+         <span class="operator">-</span>webkit<span class="operator">-</span>animation<span class="operator">-</span>name        : pulse;
+         <span class="operator">-</span>webkit<span class="operator">-</span>animation<span class="operator">-</span>duration        : <span class="number">1s</span>;
+         <span class="operator">-</span>webkit<span class="operator">-</span>animation<span class="operator">-</span>iteration<span class="operator">-</span>count    : infinite;
+     }</pre>
+<p>You supply a <tt>name</tt> for the animation that corresponds to a <tt>keyframes</tt> rule defined separately within your CSS:</p>
+<pre class="cpp">     @<span class="operator">-</span>webkit<span class="operator">-</span>keyframes pulse {
+         <span class="number">0</span><span class="operator">%</span> { opacity : <span class="number">1.0</span> }
+         <span class="number">50</span><span class="operator">%</span> { opacity : <span class="number">0.7</span> }
+     }</pre>
+<p>Percentages mark new animation states within the course of the animation, and behave much like CSS selectors. In this case, the animation shifts between two separate states over the course of a second: opaque and slightly dimmed. With its <tt>iteration-count</tt> set to <tt>infinite</tt> rather than a set number, the animation only stops when the link is no longer selected.</p>
+<p>The following example demonstrates a popular mobile design pattern implemented with CSS. Navigation to nested subheads appears to wipe to the right, while navigating upwards in the hierarchy appears to wipe to the left:</p>
+<p><a href="webkit-guide/anim_slide1.htm"><img src="images/scr_anim_slide1.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-anim-slide-css.html">(CSS)</a></p>
+<p>It relies on keyframes rules such as the following, which define a simple start and end state:</p>
+<pre class="cpp">     @<span class="operator">-</span>webkit<span class="operator">-</span>keyframes slide_in {
+       from {
+         left            : <span class="number">80</span><span class="operator">%</span>;
+         right           : <span class="operator">-</span><span class="number">80</span><span class="operator">%</span>;
+       }
+       to {
+         left            : <span class="number">0em</span>;
+         right           : <span class="number">0em</span>;
+       }
+     }</pre>
+<p>Unlike a transition, the animation is triggered immediately when the page loads, but only if the target of navigation is an anchor whose ID is <tt>in</tt> or <tt>out</tt>. If you navigate to the page itself, no animation occurs.</p>
+<p>The following example uses a keyframe animation to scroll through banner options at the top of the screen:</p>
+<p><a href="webkit-guide/css3_multicol.htm"><img src="images/scr_css3_multicol.png" alt="" /> </a></p>
+<p><a href="webkit-webkit-guide-css-css3-multicol-css.html">(CSS)</a></p>
+<p>The animation defines a set of rapid shifts alternating with long static phases. It modifies the left offset of an element that is five times the width of the window.</p>
+<pre class="cpp">     @<span class="operator">-</span>webkit<span class="operator">-</span>keyframes banner_scroll {
+         <span class="number">0</span><span class="operator">%</span> { left    : <span class="number">0</span><span class="operator">%</span>; }
+         <span class="number">18</span><span class="operator">%</span> { left    : <span class="number">0</span><span class="operator">%</span>; }
+         <span class="number">20</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">100</span><span class="operator">%</span>; }
+         <span class="number">38</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">100</span><span class="operator">%</span>; }
+         <span class="number">40</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">200</span><span class="operator">%</span>; }
+         <span class="number">58</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">200</span><span class="operator">%</span>; }
+         <span class="number">60</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">300</span><span class="operator">%</span>; }
+         <span class="number">78</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">300</span><span class="operator">%</span>; }
+         <span class="number">80</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">400</span><span class="operator">%</span>; }
+         <span class="number">95</span><span class="operator">%</span> { left    : <span class="operator">-</span><span class="number">400</span><span class="operator">%</span>; }
+         <span class="number">100</span><span class="operator">%</span> { left : <span class="number">0</span><span class="operator">%</span>; }
+     }</pre>
+<p>Finally, the demonstrations of <a href="webkit-guide/anim_demo-rotate.htm">rotate</a>, <a href="webkit-guide/anim_demo-scale.htm">scale</a>, and <a href="webkit-guide/anim_demo-skew.htm">skew</a> 2D transforms that opened this section all rely on separate keyframe animations to slide in and manipulate a series of panels. Separate <tt>-webkit-animation-delay</tt> settings for each panel control the sequence of each presentation.</p>
+<ul>
+<li><a href="qtwebkit-guide.html">QtWebKit Guide</a> -back to the main page</li>
+</ul>
+</div>
+<!-- @@@qtwebkit-guide-css.html -->
+      </div>
+    </div>
+    </div> 
+    <div class="ft">
+      <span></span>
+    </div>
+  </div> 
+  <div class="footer">
+    <p>
+      <acronym title="Copyright">&copy;</acronym> 2015 The Qt Company Ltd.
+      Documentation contributions included herein are the copyrights of
+      their respective owners.</p>
+    <br />
+    <p>
+      The documentation provided herein is licensed under the terms of the
+      <a href="http://www.gnu.org/licenses/fdl.html">GNU Free Documentation
+      License version 1.3</a> as published by the Free Software Foundation.</p>
+    <p>
+      Documentation sources may be obtained from <a href="http://www.qt-project.org">
+      www.qt-project.org</a>.</p>
+    <br />
+    <p>
+      Qt and respective logos are trademarks of The Qt Company Ltd 
+      in Finland and/or other countries worldwide. All other trademarks are property
+      of their respective owners. <a title="Privacy Policy"
+      href="http://en.gitorious.org/privacy_policy/">Privacy Policy</a></p>
+  </div>
+
+  <script src="scripts/functions.js" type="text/javascript"></script>
+</body>
+</html>

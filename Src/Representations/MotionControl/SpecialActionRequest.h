@@ -1,8 +1,8 @@
 /**
-* @file Representations/MotionControl/SpecialActionRequest.h
-* This file declares a class to represent special action requests.
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-*/
+ * @file Representations/MotionControl/SpecialActionRequest.h
+ * This file declares a struct to represent special action requests.
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ */
 
 #pragma once
 
@@ -10,17 +10,19 @@
 #include "Tools/Enum.h"
 
 /**
-* @class SpecialActionRequest
-* The class represents special action requests.
-*/
+ * @struct SpecialActionRequest
+ * The struct represents special action requests.
+ */
 STREAMABLE(SpecialActionRequest,
 {
-public:
   /** ids for all special actions */
   ENUM(SpecialActionID,
+  {,
     playDead,
-    sitDown
-  );
+    sitDown,
+    stand,
+    standHigh,
+  });
 
   /**
    * The function searches the id for a special action name.

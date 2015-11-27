@@ -1,4 +1,4 @@
-/*
+/**
  * @author: marcel
  */
 
@@ -10,14 +10,12 @@
 
 STREAMABLE(ColorCalibration,
 {
-public:
   /**
-   * This class describes the thresholds for white.
+   * This struct describes the thresholds for white.
    * Thresholds are inclusive.
    */
   STREAMABLE(WhiteThresholds,
   {
-  public:
     bool operator==(const WhiteThresholds& other) const
     {
       return minR == other.minR &&
@@ -40,7 +38,6 @@ public:
    */
   STREAMABLE(HSIRanges,
   {
-  public:
     bool operator==(const HSIRanges& other) const
     {
       return hue == other.hue &&
@@ -53,9 +50,9 @@ public:
       return !(*this == other);
     },
 
-    (Range<int>)(0) hue,
-    (Range<int>)(0) saturation,
-    (Range<int>)(0) intensity,
+    (Rangei)(0) hue,
+    (Rangei)(0) saturation,
+    (Rangei)(0) intensity,
   }),
 
   // thresholds for color

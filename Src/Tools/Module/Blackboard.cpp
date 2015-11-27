@@ -11,14 +11,13 @@
 #include <unordered_map>
 
 /** The instance of the blackboard of the current process. */
-static PROCESS_WIDE_STORAGE(Blackboard) theInstance = 0;
+static PROCESS_LOCAL Blackboard* theInstance = nullptr;
 
 /** The actual type of the map for all entries. */
 class Blackboard::Entries : public std::unordered_map<std::string, Blackboard::Entry> {};
 
-Blackboard::Blackboard()
-: entries(*new Entries),
-  version(0)
+Blackboard::Blackboard() :
+  entries(*new Entries)
 {
   theInstance = this;
 }

@@ -4,12 +4,14 @@
 * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
 */
 
-#include <algorithm>
-#include <numeric>
 
 #include "RobotHealthProvider.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
+
+#include <algorithm>
+#include <iterator>
+#include <numeric>
 
 RobotHealthProvider::RobotHealthProvider() :
   lastExecutionTime(0),
@@ -19,8 +21,7 @@ RobotHealthProvider::RobotHealthProvider() :
   batteryVoltageFalling(false),
   highTemperatureSince(0)
 #ifdef TARGET_ROBOT
-  , lastBodyTemperatureReadTime(0),
-  lastWlanCheckedTime(0)
+  , lastWlanCheckedTime(0)
 #endif
 {
   InMapFile stream("build.cfg");
@@ -43,17 +44,24 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   // Compute frame rate of cognition process:
   unsigned now = SystemCall::getCurrentSystemTime();
   if(lastExecutionTime != 0)
-    timeBuffer.add(now - lastExecutionTime);
-  robotHealth.cognitionFrameRate = timeBuffer.getSum() ? 1000.0f / (static_cast<float>(timeBuffer.getSum()) / timeBuffer.getNumberOfEntries()) : 0.0f;
+    timeBuffer.push_front(now - lastExecutionTime);
+  robotHealth.cognitionFrameRate = timeBuffer.sum() ? 1000.0f / timeBuffer.averagef() : 0.f;
   lastExecutionTime = now;
 
+  std::string wavName = Global::getSettings().robotName.c_str();
+  wavName.append(".wav");
+
+
   // read cpu and mainboard temperature
-#ifdef TARGET_ROBOT
-  if(theFrameInfo.getTimeSince(lastBodyTemperatureReadTime) > 10 * 1000)
+  robotHealth.cpuTemperature = (unsigned char) theSystemSensorData.cpuTemperature;
+  if(robotHealth.cpuTemperature > cpuHeat && theFrameInfo.getTimeSince(highCPUTemperatureSince) / 1000 > 20)
   {
-    lastBodyTemperatureReadTime = theFrameInfo.time;
-    robotHealth.cpuTemperature = (unsigned char) naoBody.getCPUTemperature();
+    highCPUTemperatureSince = theFrameInfo.time;
+    if(enableName)
+      SystemCall::playSound(wavName.c_str());
+    SystemCall::playSound("cpuTemperatureAtExclamationMark.wav");
   }
+#ifdef TARGET_ROBOT
   if(theFrameInfo.getTimeSince(lastWlanCheckedTime) > 10 * 1000)
   {
     lastWlanCheckedTime = theFrameInfo.time;
@@ -66,12 +74,12 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     lastRelaxedHealthComputation = theFrameInfo.time;
 
     // transfer maximal temperature, battery level and total current from SensorData:
-    robotHealth.batteryLevel = (unsigned char)((theFilteredSensorData.data[SensorData::batteryLevel] == SensorData::off ? 1.f : theFilteredSensorData.data[SensorData::batteryLevel]) * 100.f);
-    const unsigned char* maxTemperature = std::max_element(theFilteredSensorData.temperatures,theFilteredSensorData.temperatures+JointData::numOfJoints);
+    robotHealth.batteryLevel = (unsigned char)((theSystemSensorData.batteryLevel == SensorData::off ? 1.f : theSystemSensorData.batteryLevel) * 100.f);
+    const auto maxTemperature = std::max_element(theJointSensorData.temperatures.begin(), theJointSensorData.temperatures.end());
     robotHealth.maxJointTemperature = *maxTemperature;
-    robotHealth.jointWithMaxTemperature = (JointData::Joint) (maxTemperature - theFilteredSensorData.temperatures);
-    robotHealth.totalCurrent=std::accumulate(theFilteredSensorData.currents,theFilteredSensorData.currents+JointData::numOfJoints, 0.0f);
-    
+    robotHealth.jointWithMaxTemperature = static_cast<Joints::Joint>(std::distance(theJointSensorData.temperatures.begin(), maxTemperature));
+    robotHealth.totalCurrent = std::accumulate(theJointSensorData.currents.begin(), theJointSensorData.currents.end(), 0.0f);
+
     // Add cpu load, memory load and robot name:
     float memoryUsage, load[3];
     SystemCall::getLoad(memoryUsage, load);
@@ -79,10 +87,7 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     robotHealth.load[1] = (unsigned char)(load[1] * 10.f);
     robotHealth.load[2] = (unsigned char)(load[2] * 10.f);
     robotHealth.memoryUsage = (unsigned char)(memoryUsage * 100.f);
-    robotHealth.robotName = Global::getSettings().robot;
-
-    std::string wavName = Global::getSettings().robot.c_str();
-    wavName.append(".wav");
+    robotHealth.robotName = Global::getSettings().robotName;
 
     //battery warning
     if(lastBatteryLevel < robotHealth.batteryLevel)
@@ -106,13 +111,18 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     lastBatteryLevel = robotHealth.batteryLevel;
 
     //temperature warning
-    if(robotHealth.maxJointTemperature > temperatureHigh)
+    if(robotHealth.maxJointTemperature > temperatureHeat)
     {
       if(theFrameInfo.getTimeSince(highTemperatureSince) > 1000)
       {
         if(enableName)
           SystemCall::playSound(wavName.c_str());
-        SystemCall::playSound("heat.wav");
+        if(robotHealth.maxJointTemperature > temperatureFireExclamationMark)
+          SystemCall::playSound("fireExclamationMark.wav");
+        else if(robotHealth.maxJointTemperature > temperatureFire)
+          SystemCall::playSound("fire.wav");
+        else
+          SystemCall::playSound("heat.wav");
         highTemperatureSince = theFrameInfo.time + 20000;
       }
     }
@@ -126,4 +136,4 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   }
 }
 
-MAKE_MODULE(RobotHealthProvider, Cognition Infrastructure)
+MAKE_MODULE(RobotHealthProvider, cognitionInfrastructure)

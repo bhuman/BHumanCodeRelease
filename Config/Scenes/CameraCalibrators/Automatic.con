@@ -1,0 +1,42 @@
+mr StandOutput CalibrationStand
+set representation:HeadAngleRequest unchanged
+mr CameraCalibration CognitionConfigurationDataProvider
+mr CameraCalibrationNext AutomaticCameraCalibrator
+mr CameraResolutionRequest AutomaticCameraCalibrator
+mr HeadAngleRequest AutomaticCameraCalibrator
+#mr GoalPercept default
+
+automaticCameraCalibratorInsertion lower on
+automaticCameraCalibratorInsertion upper on
+automaticCameraCalibratorDeletion lower on
+automaticCameraCalibratorDeletion upper on
+
+set module:AutomaticCameraCalibrator:robotPose rotation = 0; translation = {x = -750; y = 0;};
+
+vid lower representation:LinePercept:Image off
+vid lower representation:PlayersPercept:Image off
+vid lower representation:BodyContour off
+vid lower module:AutomaticCameraCalibrator:points
+vid lower module:AutomaticCameraCalibrator:drawSamples
+vid lower module:AutomaticCameraCalibrator:drawFieldLines
+
+vid upper representation:LinePercept:Image off
+vid upper representation:PlayersPercept:Image off
+vid upper representation:BodyContour off
+vid upper module:AutomaticCameraCalibrator:points
+vid upper module:AutomaticCameraCalibrator:drawSamples
+vid upper module:AutomaticCameraCalibrator:drawFieldLines
+
+jc press 26 dr module:AutomaticCameraCalibrator:undo
+
+get module:AutomaticCameraCalibrator:robotPose
+
+echo
+echo - Shift+Ctrl+Z: Undo last deletion
+echo set module:AutomaticCameraCalibrator:setJointOffsets true
+echo dr module:AutomaticCameraCalibrator:start
+echo dr module:AutomaticCameraCalibrator:accumulate
+echo dr module:AutomaticCameraCalibrator:stop
+echo dr module:AutomaticCameraCalibrator:optimize
+echo save representation:CameraCalibration
+echo

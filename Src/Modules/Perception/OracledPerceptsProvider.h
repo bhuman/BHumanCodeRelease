@@ -18,7 +18,8 @@
 #include "Representations/Perception/FieldBoundary.h"
 #include "Representations/Perception/GoalPercept.h"
 #include "Representations/Perception/LinePercept.h"
-#include "Representations/Perception/RobotPercept.h"
+#include "Representations/Perception/PenaltyMarkPercept.h"
+#include "Representations/Perception/PlayersPercept.h"
 
 MODULE(OracledPerceptsProvider,
 {,
@@ -27,12 +28,12 @@ MODULE(OracledPerceptsProvider,
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
   REQUIRES(FieldDimensions),
-  REQUIRES(ImageCoordinateSystem),
-  PROVIDES_WITH_MODIFY_AND_DRAW(BallPercept),
-  PROVIDES_WITH_MODIFY_AND_DRAW(GoalPercept),
-  PROVIDES_WITH_MODIFY_AND_DRAW(LinePercept),
-  PROVIDES_WITH_MODIFY_AND_DRAW(RobotPercept),
-  PROVIDES_WITH_MODIFY_AND_DRAW(FieldBoundary),
+  PROVIDES(BallPercept),
+  PROVIDES(GoalPercept),
+  PROVIDES(LinePercept),
+  PROVIDES(PlayersPercept),
+  PROVIDES(PenaltyMarkPercept),
+  PROVIDES(FieldBoundary),
   LOADS_PARAMETERS(
   {,
     (bool)  applyBallNoise,                    /**< Activate / Deactivate noise for ball percepts */
@@ -51,14 +52,18 @@ MODULE(OracledPerceptsProvider,
     (float) linePosInImageStdDev,              /**< Standard deviation of error in pixels (x as well as y) */
     (float) lineMaxVisibleDistance,            /**< Maximum distance until which this object can be seen */
     (float) lineRecognitionRate,               /**< Likelihood of actually perceiving this object, when it is in the field of view */
-    (bool)  applyRobotNoise,                   /**< Activate / Deactivate noise for robot percepts */
-    (float) robotPosInImageStdDev,             /**< Standard deviation of error in pixels (x as well as y) */
-    (float) robotMaxVisibleDistance,           /**< Maximum distance until which this object can be seen */
-    (float) robotRecognitionRate,              /**< Likelihood of actually perceiving this object, when it is in the field of view */
-    (bool)  applyGoalPostNoise,                /**< Activate / Deactivate noise for robot percepts */
+    (bool)  applyPlayerNoise,                  /**< Activate / Deactivate noise for player percepts */
+    (float) playerPosInImageStdDev,            /**< Standard deviation of error in pixels (x as well as y) */
+    (float) playerMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
+    (float) playerRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
+    (bool)  applyGoalPostNoise,                /**< Activate / Deactivate noise for goal percepts */
     (float) goalPostPosInImageStdDev,          /**< Standard deviation of error in pixels (x as well as y) */
     (float) goalPostMaxVisibleDistance,        /**< Maximum distance until which this object can be seen */
     (float) goalPostRecognitionRate,           /**< Likelihood of actually perceiving this object, when it is in the field of view */
+    (bool)  applyPenaltyMarkNoise,             /**< Activate / Deactivate noise for penalty marks */
+    (float) penaltyMarkPosInImageStdDev,       /**< Standard deviation of error in pixels (x as well as y) */
+    (float) penaltyMarkMaxVisibleDistance,     /**< Maximum distance until which this object can be seen */
+    (float) penaltyMarkRecognitionRate,        /**< Likelihood of actually perceiving this object, when it is in the field of view */
   }),
 });
 
@@ -73,12 +78,13 @@ public:
   OracledPerceptsProvider();
 
 private:
-  std::vector<Vector2<>> goalPosts;                                /*< The positions of the four goal posts (needed for computing goal percepts)*/
-  std::vector<Vector2<>> ccPoints;                                 /*< The positions of five center circle points (needed for computing center circle percept)*/
-  std::vector<LinePercept::Intersection> intersections;            /*< The positions of the intersections on the field (needed for computing intersection percepts) */
-  std::vector<std::pair<Vector2<>, Vector2<>>> lines;              /*< The lines on the field */
-  std::vector<std::pair<Vector2<>, Vector2<>>> fieldBoundaryLines; /*< The boundary of the field */
-  Vector2<> viewPolygon[4];                                        /*< A polygon that describes the currently visible area */
+  std::vector<Vector2f> goalPosts;                               /*< The positions of the four goal posts (needed for computing goal percepts)*/
+  std::vector<Vector2f> penaltyMarks;                            /*< The positions of the two penalty marks (needed for computing penalty mark percepts)*/
+  std::vector<Vector2f> ccPoints;                                /*< The positions of five center circle points (needed for computing center circle percept)*/
+  std::vector<LinePercept::Intersection> intersections;          /*< The positions of the intersections on the field (needed for computing intersection percepts) */
+  std::vector<std::pair<Vector2f, Vector2f>> lines;              /*< The lines on the field */
+  std::vector<std::pair<Vector2f, Vector2f>> fieldBoundaryLines; /*< The boundary of the field */
+  Vector2f viewPolygon[4];                                       /*< A polygon that describes the currently visible area */
 
   /** One main function, might be called every cycle
   * @param ballPercept The data struct to be filled
@@ -96,40 +102,45 @@ private:
   void update(LinePercept& linePercept);
 
   /** One main function, might be called every cycle
-  * @param robotPercept The data struct to be filled
-  */
-  void update(RobotPercept& robotPercept);
+   * @param penaltyMarkPercept The data struct to be filled
+   */
+  void update(PenaltyMarkPercept& penaltyMarkPercept);
   
+  /** One main function, might be called every cycle
+  * @param playersPercept The data struct to be filled
+  */
+  void update(PlayersPercept& playersPercept);
+
   /** One main function, might be called every cycle
    * @param fieldBoundary The data struct to be filled
    */
   void update(FieldBoundary& fieldBoundary);
 
-  /** Converts a ground truth robot to a perceived robot and adds it to the percept
-  * @param robot The ground truth robot
-  * @param isBlue true, if the perceived robot belongs to the blue team
-  * @param robotPercept The robot percept (What else?)
+  /** Converts a ground truth player to a perceived player and adds it to the percept
+  * @param player The ground truth player
+  * @param isBlue true, if the perceived player belongs to the blue team
+  * @param playersPercept The players percept (What else?)
   */
-  void createRobotBox(const GroundTruthWorldState::GroundTruthRobot& robot, bool isBlue, RobotPercept& robotPercept);
+  void createPlayerBox(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, PlayersPercept& playersPercept);
 
   /** Checks, if a point on the field (relative to the robot) is inside the current image
   * @param  p    The point
   * @param  pImg The point projected to the current image
   * @return      true, if the point can be seen by the robot
   */
-  bool pointIsInImage(const Vector2<>& p, Vector2<>& pImg) const;
+  bool pointIsInImage(const Vector2f& p, Vector2f& pImg) const;
 
   /** Computes some noise and adds it to the given position
   * @param standardDeviation The standard deviation of the pixel error
   * @param p The point in an image that is subject to noise
   */
-  void applyNoise(float standardDeviation, Vector2<>& p) const;
+  void applyNoise(float standardDeviation, Vector2f& p) const;
 
   /** Computes some noise and adds it to the given position (integer version)
   * @param standardDeviation The standard deviation of the pixel error
   * @param p The point in an image that is subject to noise
   */
-  void applyNoise(float standardDeviation, Vector2<int>& p) const;
+  void applyNoise(float standardDeviation, Vector2i& p) const;
 
   /** Updates viewPolygon member */
   void updateViewPolygon();
@@ -140,5 +151,5 @@ private:
   * @param end The end of the part that is inside the view polygon (set by this method)
   * @return true, if at aleast a part of the line is visible
   */
-  bool partOfLineIsVisible(const std::pair<Vector2<>,Vector2<>>& line, Vector2<>& start, Vector2<>& end) const;
+  bool partOfLineIsVisible(const std::pair<Vector2f,Vector2f>& line, Vector2f& start, Vector2f& end) const;
 };

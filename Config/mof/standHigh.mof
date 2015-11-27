@@ -1,0 +1,33 @@
+motion_id = standHigh
+
+label start
+
+" set stiffness higher for arms for standing up from sitting
+stiffness * * 40 40  40 40 40 40 40 40 40 40 40 40 40 40 40 40 60 60 40 40 40 40 60 60 0
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+     *      *   90.0   11.5  -90.0    0.0  -90.0   0.0    90.0  -11.5   90.0    0.0   90.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0   1 1000
+
+" a chance to leave after one second
+transition allMotions extern start
+
+" still set stiffness higher for arms for standing up from sitting
+stiffness * * 40 40  40 40 40 40 40 40 40 40 40 40 40 40 40 40 60 60 40 40 40 40 60 60 0
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+     *      *   90.0   11.5  -90.0    0.0    -90.0   0.0    90.0  -11.5   90.0    0.0  90.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0   1 1000
+
+" a chance to leave after two seconds
+transition allMotions extern start
+
+" from now on, use default stiffness for arms
+label loop
+
+stiffness * * 40 40  40 40 40 40 40 40 40 40 40 40 40 40 40 40 60 60 40 40 40 40 60 60 0
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+     *      *   90.0   11.5  -90.0    0.0    -90.0   0.0    90.0  -11.5   90.0    0.0  90.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0    0.0    0.0   -3.0    0.0    0.0    0.0   1 1000
+     
+transition standHigh standHigh loop
+transition allMotions extern start
+

@@ -1,0 +1,54 @@
+# Configuration for simulation scenes with oracled percepts
+
+# activate simulation time
+st on
+
+# only a single robot displays game state
+dr debugDrawing3d:representation:GameInfo
+dr debugDrawing3d:representation:TeamInfo
+
+# in case we have more than a single robot
+robot all
+
+# Select modules for simulator
+mr CameraInfo CognitionLogDataProvider
+mr FrameInfo CognitionLogDataProvider
+mr JointSensorData MotionLogDataProvider
+mr InertialSensorData MotionLogDataProvider
+mr KeyStates MotionLogDataProvider
+mr UsSensorData MotionLogDataProvider
+mr FrameInfo MotionLogDataProvider
+mr GroundTruthWorldState CognitionLogDataProvider
+mr GroundTruthRobotPose OracledWorldModelProvider
+mr GroundTruthBallModel OracledWorldModelProvider
+
+# Fast, because we do not compute images
+ci off
+mr Image default
+
+# Deactivate unused modules
+mr RobotHealth default
+mr Thumbnail off
+
+call Includes/FieldViews
+
+mr PlayersPercept OracledPerceptsProvider
+mr GoalPercept OracledPerceptsProvider
+mr LinePercept OracledPerceptsProvider
+mr BallPercept OracledPerceptsProvider
+mr FieldBoundary OracledPerceptsProvider
+mr PenaltyMarkPercept OracledPerceptsProvider
+mr LineSpots off
+mr PotentialLineSpots off
+mr BallSpots off
+mr ScanlineRegionsClipped off
+mr ScanlineRegions off
+mr ScanGrid off
+mr ColorTable default
+mr BodyContour default
+
+call Includes/DebugResponses
+call Includes/GameStates
+
+dr debugDrawing3d:representation:RobotPose
+dr debugDrawing3d:representation:SideConfidence

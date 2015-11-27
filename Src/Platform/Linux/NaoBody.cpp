@@ -9,12 +9,8 @@
 #include <fcntl.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <cerrno>
-#include <cstring>
 #include <cstdio>
-#include <cstdlib>
-#include <cstdarg>
 
 #include "NaoBody.h"
 #include "BHAssert.h"
@@ -53,7 +49,7 @@ public:
       return false;
     }
 
-    VERIFY((lbhData = (LBHData*)mmap(NULL, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) != MAP_FAILED);
+    VERIFY((lbhData = (LBHData*)mmap(nullptr, sizeof(LBHData), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) != MAP_FAILED);
     lbhData->state = okState;
     return true;
   }
@@ -78,7 +74,7 @@ public:
   }
 } naoBodyAccess;
 
-NaoBody::NaoBody() :  writingActuators(-1), fdCpuTemp(0) {}
+NaoBody::NaoBody() : writingActuators(-1), fdCpuTemp(0) {}
 
 NaoBody::~NaoBody()
 {

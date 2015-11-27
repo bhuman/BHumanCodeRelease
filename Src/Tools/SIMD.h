@@ -14,14 +14,14 @@
 inline __m128i my_mm_shuffle_epi8(const __m128i& a, const __m128i& m)
 {
   __m128i r;
-  char* ac = (char*)&a;
-  char* mc = (char*)&m;
-  char* rc = (char*)&r;
+  const char* ac = reinterpret_cast<const char*>(&a);
+  const char* mc = reinterpret_cast<const char*>(&m);
+  char* rc = reinterpret_cast<char*>(&r);
 
-  for(int i = 0; i < 16; i++)
+  for(size_t i = 0; i < 16; ++i)
   {
     if(*(mc + i) & 0x80)
-      *(rc + i) =  0;
+      *(rc + i) = 0;
     else
       *(rc + i) = *(ac + ((*(mc + i)) & 0x0F)); //a[b[i] & 0x0F];
   }

@@ -1,16 +1,14 @@
 /**
-* @file MessageQueue.cpp
-*
-* Implementation of class MessageQueue and helper classes
-*
-* @author Martin Lötzsch
-*/
+ * @file MessageQueue.cpp
+ *
+ * Implementation of class MessageQueue and helper classes
+ *
+ * @author Martin Lötzsch
+ */
 
 #include <cstring>
 
 #include "MessageQueue.h"
-#include "InMessage.h"
-#include "OutMessage.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Debugging/Debugging.h"
 
@@ -30,7 +28,7 @@ void MessageQueue::copyAllMessages(MessageQueue& other)
   if(queue.usedSize >= MessageQueueBase::headerSize)
   {
     char* dest = other.queue.reserve(queue.usedSize - MessageQueueBase::headerSize);
-    if(dest)
+    if(dest && !other.queue.mappedIDs)
     {
       memcpy(dest - MessageQueueBase::headerSize, queue.buf, queue.usedSize);
       other.queue.numberOfMessages += queue.numberOfMessages;
@@ -85,7 +83,7 @@ void MessageQueue::append(In& stream)
            numberOfMessages;
   stream >> usedSize >> numberOfMessages;
   // Trying a direct copy. This is hacked, but fast.
-  char* dest = numberOfMessages == (unsigned) -1 ? 0 : queue.reserve(usedSize - MessageQueueBase::headerSize);
+  char* dest = numberOfMessages == static_cast<unsigned>(-1) ? nullptr : queue.reserve(usedSize - MessageQueueBase::headerSize);
   if(dest)
   {
     stream.read(dest - MessageQueueBase::headerSize, usedSize);
@@ -94,7 +92,7 @@ void MessageQueue::append(In& stream)
     queue.writePosition = 0;
   }
   else // Not all messages fit in there, so try step by step (some will be missing).
-    for(unsigned i = 0; numberOfMessages == (unsigned) -1 ? !stream.eof() : i < numberOfMessages ; ++i)
+    for(unsigned i = 0; numberOfMessages == static_cast<unsigned>(-1) ? !stream.eof() : i < numberOfMessages; ++i)
     {
       unsigned char id = 0;
       unsigned int size = 0;
@@ -102,13 +100,13 @@ void MessageQueue::append(In& stream)
 
       stream.read(&size, 3);
 
-      if((id >= numOfDataMessageIDs || size == 0) &&  numberOfMessages == (unsigned) -1)
+      if((id >= numOfDataMessageIDs || size == 0) && numberOfMessages == static_cast<unsigned>(-1))
       {
-        OUTPUT(idText, text, "MessageQueue: Logfile appears to be broken. Skipping rest of file. Read messages: " << queue.numberOfMessages << " read size:" << queue.usedSize);
+        OUTPUT_WARNING("MessageQueue: Logfile appears to be broken. Skipping rest of file. Read messages: " << queue.numberOfMessages << " read size:" << queue.usedSize);
         break;
       }
 
-      char* dest = numberOfMessages != (unsigned) -1 || id < numOfDataMessageIDs ? queue.reserve(size) : 0;
+      char* dest = numberOfMessages != static_cast<unsigned>(-1) || id < numOfDataMessageIDs ? queue.reserve(size) : nullptr;
       if(dest)
       {
         stream.read(dest, size);
@@ -139,7 +137,7 @@ void operator>>(InMessage& message, MessageQueue& queue)
 
 char* MessageQueue::getStreamedData()
 {
-  ((unsigned*) queue.buf)[-2] = queue.usedSize;
-  ((unsigned*) queue.buf)[-1] = queue.numberOfMessages;
+  ((unsigned*)queue.buf)[-2] = queue.usedSize;
+  ((unsigned*)queue.buf)[-1] = queue.numberOfMessages;
   return queue.buf - MessageQueueBase::queueHeaderSize;
 }

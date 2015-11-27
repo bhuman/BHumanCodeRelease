@@ -3,16 +3,20 @@ SimulatedNao = cppDynamicLibrary + {
 
   root = "$(srcDirRoot)"
 
+  precompiledHeader = {
+    "$(srcDirRoot)/Tools/Precompiled/BHumanPch.h"
+  }
+
   files = {
-    "$(srcDirRoot)/Modules/**.cpp" = cppSource,
+    "$(srcDirRoot)/Modules/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Modules/**.h",
-    "$(srcDirRoot)/Platform/**.cpp" = cppSource,
+    "$(srcDirRoot)/Platform/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Platform/**.h",
-    "$(srcDirRoot)/Processes/**.cpp" = cppSource,
+    "$(srcDirRoot)/Processes/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Processes/**.h",
-    "$(srcDirRoot)/Representations/**.cpp" = cppSource,
+    "$(srcDirRoot)/Representations/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Representations/**.h",
-    "$(srcDirRoot)/Tools/**.cpp" = cppSource,
+    "$(srcDirRoot)/Tools/**.cpp" = bhCppSource,
     "$(srcDirRoot)/Tools/**.h",
     if (platform != "Linux") {
       -"$(srcDirRoot)/Platform/Linux/**.cpp",
@@ -38,12 +42,14 @@ SimulatedNao = cppDynamicLibrary + {
       -"$(srcDirRoot)/Platform/Linux/NaoCamera.cpp",
       -"$(srcDirRoot)/Platform/Linux/NaoCamera.h",
     }
+    -"$(srcDirRoot)/Tools/Precompiled/ControllerPch.*"
   }
+  files += pchFiles
 
   defines += {
     "TARGET_SIM", "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
     if (host == "Win32") {
-      "NOMINMAX", "_CRT_SECURE_NO_DEPRECATE"
+      "_CRT_SECURE_NO_DEPRECATE"
     }
     if (configuration == "Develop") {
       -"NDEBUG"
@@ -51,7 +57,7 @@ SimulatedNao = cppDynamicLibrary + {
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
-  },
+  }
 
   includePaths = {
     "$(srcDirRoot)",
@@ -71,6 +77,7 @@ SimulatedNao = cppDynamicLibrary + {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtOpenGL",
       "$(utilDirRoot)/SimRobot/Util/glew/Windows/include",
+      "$(utilDirRoot)/Buildchain/Windows/include",
     } else if (platform == "Linux") {
       "$(buildDir)",
       "/usr/include/qt4/QtCore",
@@ -83,7 +90,8 @@ SimulatedNao = cppDynamicLibrary + {
       "/usr/include/Qt",
       "$(utilDirRoot)/SimRobot/Util/ode/Linux/include",
     }
-  },
+  }
+
   libPaths = {
     "$(buildPlatformDir)/Controller/$(configuration)",
     "$(buildPlatformDir)/qtpropertybrowser/$(configuration)",
@@ -93,33 +101,32 @@ SimulatedNao = cppDynamicLibrary + {
       "$(utilDirRoot)/libjpeg/lib/Linux",
       "$(utilDirRoot)/snappy/lib/Linux/x64",
     } else if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/$(archDir)",
-      "$(utilDirRoot)/libjpeg/lib/Windows/$(archDir)",
-      if (configuration == "Debug") {
-        "$(utilDirRoot)/snappy/lib/Windows/$(archDir)/Debug"
-      } else {
-        "$(utilDirRoot)/snappy/lib/Windows/$(archDir)/Release"
-      }
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib",
+      "$(utilDirRoot)/libjpeg/lib/Windows",
+      "$(utilDirRoot)/snappy/lib/Windows",
     }
-  },
+  }
+
   libs = {
-    "Controller", "qtpropertybrowser", "snappy", "qxt"
+    "Controller", "qtpropertybrowser", "qxt"
     if (host == "Win32") {
       "QtCore4", "QtGui4", "QtOpenGl4", "QtSvg4", "winmm", "opengl32", "glu32", "ws2_32", "libjpeg"
+      if (configuration == "Debug") {
+        "snappyd"
+      } else {
+        "snappy"
+      }
     } else if (platform == "Linux") {
-      "rt", "pthread", "GLEW", "QtGui", "QtCore", "QtOpenGL", "QtSvg", "GLU", "GL", "fftw3", "jpeg"
+      "rt", "pthread", "GLEW", "QtGui", "QtCore", "QtOpenGL", "QtSvg", "GLU", "GL", "fftw3", "jpeg", "snappy"
     }
-  },
+  }
+
   cppFlags += {
     if (tool == "vcxproj") {
+      "/Zm200"
       if (configuration == "Develop") {
         -"/Ox /Ob2 /Oi /Ot /Oy /GT",
-        "/Od" 
-        if(archName == "Windows32") {
-          "/ZI"
-        } else if(archName == "Windows64") {
-          "/Zi"
-        }
+        "/Od /ZI"
       } else if (configuration == "Release") {
         "/wd4101 /GS-"
       }
@@ -131,11 +138,12 @@ SimulatedNao = cppDynamicLibrary + {
       }
     }
   }
+
   linkFlags += {
     //the rpath specifies a searchpath for dynamic libraries.
     if (platform == "Linux") {
       " -Wl,-rpath -Wl,${ORIGIN}"
-    } else if (platform == "MacOSX"){ 
+    } else if (platform == "MacOSX"){
       " -Wl,-rpath -Wl,${ORIGIN}/../Resources/"
     }
     if (tool == "vcxproj") {
@@ -146,9 +154,14 @@ SimulatedNao = cppDynamicLibrary + {
         -"/OPT:REF /OPT:ICF"
       }
     } else {
-      if (configuration == "Develop") { 
+      if (configuration == "Develop") {
         -"-s"
       }
     }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
+    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
   }
 }

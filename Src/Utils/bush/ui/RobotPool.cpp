@@ -140,7 +140,7 @@ void RobotPool::dropEvent(QDropEvent* e)
   {
     //TODO: this is a very simple implementation which drops the order of the list
     RobotView* source = dynamic_cast<RobotView*>(e->source());
-    if(source->getPlayerNumber() == Robot::INVALID_PLAYER_NUMBER)
+    if(!source->getPlayerNumber())
       return;
     source->setRobot(0);
     source->update();

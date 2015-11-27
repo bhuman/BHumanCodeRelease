@@ -14,6 +14,55 @@
 
 DeployCmd DeployCmd::theDeployCmd;
 
+DeployCmd::DeployTask::DeployTask(Context &context, const QString& buildConfig, Team* team, Robot *robot)
+: RobotTask(context, robot),
+  buildConfig(buildConfig),
+  team(team)
+{}
+
+bool DeployCmd::DeployTask::execute()
+{
+  /* Since the PingAgent knows the roundtrip time for all robots, maybe we can
+   * adjust the timeout of rsync to determine faster if the connection is
+   * lost.
+   */
+  QString command = DeployCmd::getCommand();
+
+  QStringList args = QStringList();
+  args.push_back(QString("-nc"));
+  args.push_back(QString("-nr"));
+  args.push_back(buildConfig);
+  args.push_back(fromString(robot->getBestIP(context())));
+  args.push_back(QString("-r"));
+  args.push_back(QString("-n"));
+  args.push_back(QString::number(team->number));
+  args.push_back(QString("-o"));
+  args.push_back(QString::number(team->port));
+  args.push_back(QString("-t"));
+  args.push_back(team->color.c_str());
+  args.push_back(QString("-p"));
+  args.push_back(QString::number(team->getPlayerNumber(*robot)));
+  args.push_back(QString("-l"));
+  args.push_back(team->location.c_str());
+  args.push_back(QString("-w"));
+  args.push_back(team->wlanConfig.c_str());
+  args.push_back(QString("-v"));
+  args.push_back(QString::number(team->volume));
+
+  ProcessRunner r(context(), command, args);
+  r.run();
+  if(r.error())
+  {
+    context().errorLine("Deploy of \"" + robot->name + "\" failed!");
+    return false;
+  }
+  else
+  {
+    context().printLine("Success! (" + robot->name + ")");
+    return true;
+  }
+}
+
 DeployCmd::DeployCmd()
 {
   Commands::getInstance().addCommand(this);
@@ -58,33 +107,7 @@ bool DeployCmd::preExecution(Context &context, const std::vector<std::string> &p
 
 Task* DeployCmd::perRobotExecution(Context &context, Robot &robot)
 {
-  /* Since the PingAgent knows the roundtrip time for all robots, maybe we can
-   * adjust the timeout of rsync to determine faster if the connection is
-   * lost.
-   */
-  QString command = getCommand();
-
-  QStringList args = QStringList();
-  args.push_back(QString("-nc"));
-  args.push_back(QString("-nr"));
-  args.push_back(buildConfig);
-  args.push_back(fromString(robot.getBestIP()));
-  args.push_back(QString("-r"));
-
-  ProcessRunner r(context, command, args);
-  r.run();
-  if(r.error())
-    context.errorLine("Deploy of \"" + robot.name + "\" failed!");
-  else
-    context.printLine("Success! (" + robot.name + ")");
-  return NULL;
-}
-
-bool DeployCmd::postExecution(Context &context, const std::vector<std::string> &params)
-{
-  // deploy finished, change the settings now
-  // TODO: pass the location
-  return context.execute("updateSettings");
+  return new DeployTask(context, buildConfig, team, &robot);
 }
 
 #ifdef WINDOWS

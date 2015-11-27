@@ -1,16 +1,13 @@
 # connect to a robot
-call connect
+call Includes/connect
 
-# request joint data and sensor data
-dr representation:SensorData
-dr representation:JointData
+# motion request is required by simulation
 dr representation:MotionRequest
 
-# request behavior messages
-dr representation:ActivationGraph
+call Includes/DebugResponses
 
-dr representation:RobotDimensions
-dr representation:JointCalibration
+dr representation:RobotDimensions:once
+dr representation:JointCalibration:once
 kick
 
 vp plot1 1000 -50 50

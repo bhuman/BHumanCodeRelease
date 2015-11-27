@@ -5,59 +5,103 @@
 */
 
 #include "JointCalibrator.h"
-#include "Tools/InverseKinematic.h"
+#include "Tools/Motion/InverseKinematic.h"
 #include "Representations/Sensing/RobotModel.h"
 
-MAKE_MODULE(JointCalibrator, Motion Infrastructure)
+MAKE_MODULE(JointCalibrator, motionInfrastructure)
 
 void JointCalibrator::update(JointCalibration& jointCalibration)
 {
   bool allActive = true;
-  for(int i = JointData::LHipYawPitch; i <= JointData::RAnkleRoll; ++i)
-    allActive &= theJointRequest.angles[i] != JointData::off;
+  for(int i = Joints::lHipYawPitch; i <= Joints::rAnkleRoll; ++i)
+    allActive &= theJointRequest.angles[i] != JointAngles::off;
 
-  DEBUG_RESPONSE_ONCE("module:JointCalibrator:reset",
+  DEBUG_RESPONSE_ONCE("module:JointCalibrator:reset")
   {
-    Global::getDebugRequestTable().disable("module:JointCalibrator:reset");
-    for(int i = JointData::LHipYawPitch; i <= JointData::RAnkleRoll; ++i)
-      jointCalibration.joints[i].offset = 0;
+    for(int i = Joints::lHipYawPitch; i <= Joints::rAnkleRoll; ++i)
+      jointCalibration.joints[i].offset = 0.f;
 
+    original = jointCalibration;
     offsets.clear();
     lastOffsets.clear();
-  });
+  }
 
-  DEBUG_RESPONSE_ONCE("module:JointCalibrator:capture",
+  DEBUG_RESPONSE_ONCE("module:JointCalibrator:init")
   {
-    Global::getDebugRequestTable().disable("module:JointCalibrator:capture");
+    original = jointCalibration;
+    offsets.clear();
+    lastOffsets.clear();
+  }
 
-    if(!allActive)
-      OUTPUT(idText, text, "Error: capturing not possible because at least one joint is off");
+  DEBUG_RESPONSE_ONCE("module:JointCalibrator:reload")
+  {
+    InMapFile stream("jointCalibration.cfg");
+    if(stream.exists())
+      stream >> jointCalibration;
     else
-      for(int i = JointData::LHipYawPitch; i <= JointData::RAnkleRoll; ++i)
-        jointCalibration.joints[i].offset += theJointData.angles[i] - theJointRequest.angles[i];
-  });
+      OUTPUT_WARNING("jointCalibration.cfg not found.");
 
-  MODIFY("module:JointCalibrator:offsets", offsets);
+    original = jointCalibration;
+    offsets.clear();
+    lastOffsets.clear();
+  }
+
+  DEBUG_RESPONSE_ONCE("module:JointCalibrator:capture")
+  {
+    if(!allActive)
+      OUTPUT_TEXT("Error: capturing not possible because at least one joint is off");
+    else
+      for(int i = Joints::lHipYawPitch; i <= Joints::rAnkleRoll; ++i)
+        jointCalibration.joints[i].offset += theJointAngles.angles[i] - theJointRequest.angles[i];
+  }
+
+  MODIFY_ONCE("module:JointCalibrator:offsets", offsets);
   if(offsets != lastOffsets)
   {
     if(!allActive)
-      OUTPUT(idText, text, "Error: setting offsets not possible because at least one joint is off");
+      OUTPUT_TEXT("Error: setting offsets not possible because at least one joint is off");
     else
     {
-      Offsets additionalOffsets = offsets;
-      additionalOffsets -= lastOffsets;
-      Pose3D rotationOffset(RotationMatrix(additionalOffsets.bodyRotation));
-      Pose3D leftOffset(RotationMatrix(additionalOffsets.leftFoot.rotation), additionalOffsets.leftFoot.translation);
-      Pose3D rightOffset(RotationMatrix(additionalOffsets.rightFoot.rotation), additionalOffsets.rightFoot.translation);
-      RobotModel robotModel(theJointRequest, theRobotDimensions, theMassCalibration);
-      JointData jointData;
-      InverseKinematic::calcLegJoints(Pose3D(rotationOffset).conc(robotModel.limbs[MassCalibration::footLeft]).conc(leftOffset),
-                                      Pose3D(rotationOffset).conc(robotModel.limbs[MassCalibration::footRight]).conc(rightOffset), jointData, theRobotDimensions);
+      const RobotModel robotModel(theJointRequest, theRobotDimensions, theMassCalibration);
+      const Pose3f leftAnkleRotation = Pose3f(robotModel.limbs[Limbs::footLeft]).rotate(RotationMatrix::fromEulerAngles(offsets.leftFoot.rotation.cast<float>()));
+      const Pose3f leftOffset = Pose3f(leftAnkleRotation).translate(0, 0, -theRobotDimensions.footHeight).translate(offsets.leftFoot.translation);
+      const Pose3f rightAnkleRotation = Pose3f(robotModel.limbs[Limbs::footRight]).rotate(RotationMatrix::fromEulerAngles(offsets.rightFoot.rotation.cast<float>()));
+      const Pose3f rightOffset = Pose3f(rightAnkleRotation).translate(0, 0, -theRobotDimensions.footHeight).translate(offsets.rightFoot.translation);
+      JointAngles jointAngles;
+      if(!InverseKinematic::calcLegJoints(leftOffset, rightOffset, offsets.bodyRotation.cast<float>(), jointAngles, theRobotDimensions))
+        OUTPUT_TEXT("Warning: at least one foot position unreachable");
 
-      for(int i = JointData::LHipYawPitch; i <= JointData::RAnkleRoll; ++i)
-        jointCalibration.joints[i].offset += jointData.angles[i] - theJointRequest.angles[i];
+      for(int i = Joints::lHipYawPitch; i <= Joints::rAnkleRoll; ++i)
+        jointCalibration.joints[i].offset = original.joints[i].offset + jointAngles.angles[i] - theJointRequest.angles[i];
     }
 
     lastOffsets = offsets;
   }
+}
+
+void JointCalibrator::setOffsets(Angle x, Angle y)
+{
+  Offsets buff;
+  buff.bodyRotation.x() = x;
+  buff.bodyRotation.y() = y;
+  OUTPUT_TEXT("");
+  OUTPUT_TEXT("mr JointCalibration JointCalibrator");
+  OUTPUT_TEXT("dr module:JointCalibrator:init");
+  streamOffsets("offsets", buff);
+  OUTPUT_TEXT("");
+  OUTPUT_TEXT("save representation:JointCalibration");
+  OUTPUT_TEXT("save representation:CameraCalibration");
+}
+
+void JointCalibrator::streamOffsets(const std::string representationName, const Streamable& representation)
+{
+  OutMapSize size(true);
+  size << representation;
+  char* buf = new char[size.getSize()];
+  OutMapMemory memory(buf, true);
+  memory << representation;
+  buf[size.getSize() - 1] = 0;
+  std::string command = "set module:JointCalibrator:" + representationName + " " + buf;
+  OUTPUT_TEXT(command);
+  delete[] buf;
 }

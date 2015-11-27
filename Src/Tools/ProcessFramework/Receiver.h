@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include "PlatformProcess.h"
 #include "Tools/Streams/InStreams.h"
+
+class PlatformProcess;
 
 /**
  * The class is the base class for receivers.
@@ -19,14 +20,14 @@
 class ReceiverList
 {
 private:
-  ReceiverList* next;         /**< The successor of the current receiver. */
-  std::string name;           /**< The name of a receiver without the module's name. */
+  ReceiverList* next = nullptr; /**< The successor of the current receiver. */
+  std::string name;             /**< The name of a receiver without the module's name. */
 
 protected:
   PlatformProcess* process;   /**< The process this receiver is associated with. */
   void* package[3];           /**< A triple buffer for received packages. */
-  volatile int reading;       /**< Index of package reserved for reading. */
-  volatile int actual;        /**< Index of package that is the most actual. */
+  volatile int reading = 0;   /**< Index of package reserved for reading. */
+  volatile int actual = 0;    /**< Index of package that is the most actual. */
 
   /**
    * The function checks whether a new package has arrived.
@@ -41,9 +42,6 @@ public:
    */
   ReceiverList(PlatformProcess* process, const std::string& receiverName);
 
-  /**
-   * Destructor.
-   */
   virtual ~ReceiverList();
 
   /**
@@ -109,19 +107,17 @@ private:
       T& data = *static_cast<T*>(this);
       InBinaryMemory memory(package[reading]);
       memory >> data;
-      delete [](char*) package[reading];
+      delete[] (char*)package[reading];
       package[reading] = 0;
     }
   }
 
 public:
   /**
-   * The constructor.
    * @param process The process this receiver is associated with.
    * @param receiverName The connection name of the receiver without the process name.
    */
-  Receiver(PlatformProcess* process, const std::string& receiverName)
-    : ReceiverList(process, receiverName)
-  {
-  }
+  Receiver(PlatformProcess* process, const std::string& receiverName) :
+    ReceiverList(process, receiverName)
+  {}
 };

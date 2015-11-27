@@ -1,21 +1,24 @@
 /**
-* @file Process.h
-*
-* Contains the definition of class Process and macros for receivers and senders.
-*/
+ * @file Process.h
+ *
+ * Contains the definition of class Process and macros for receivers and senders.
+ */
 
 #pragma once
 
 #include "ProcessFramework.h"
-#include "Tools/MessageQueue/MessageQueue.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/StreamHandler.h"
+#include "Tools/Debugging/AnnotationManager.h"
 #include "Tools/Debugging/DebugRequest.h"
 #include "Tools/Debugging/DebugDataTable.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Debugging/TimingManager.h"
+#if defined(TARGET_ROBOT)
+#include "Tools/AlignedMemory.h"
+#endif
 
 /**
  * @class Process
@@ -25,10 +28,28 @@
  * derivates of the Process class.
  */
 class Process : public PlatformProcess, public MessageHandler
+#if defined(TARGET_ROBOT)
+  , public AlignedMemory
+#endif
 {
+protected:
+  AnnotationManager annotationManager; /**< keeps track of the annotations in this process */
+  TimingManager timingManager; /**< keeps track of the module timing in this process */
+
+private:
+  MessageQueue& debugIn; /**< A queue for incoming debug messages. */
+  MessageQueue& debugOut; /**< A queue for outgoing debug messages. */
+  bool initialized; /**< A helper to determine whether the process is already initialized. */
+  Blackboard blackboard; /**< The blackboard of this process. */
+  Settings settings;
+  DebugRequestTable debugRequestTable;
+  DebugDataTable debugDataTable;
+  StreamHandler streamHandler;
+  DrawingManager drawingManager;
+  DrawingManager3D drawingManager3D;
+
 public:
   /**
-   * Constructor.
    * @param debugIn A reference to an incoming debug queue
    * @param debugOut A reference to an outgoing debug queue
    */
@@ -42,8 +63,8 @@ public:
   bool processMain();
 
   /**
-  * The method initializes the pointers in class Global.
-  */
+   * The method initializes the pointers in class Global.
+   */
   void setGlobals();
 
 protected:
@@ -67,27 +88,30 @@ protected:
    */
   virtual bool handleMessage(InMessage& message);
 
-private:
-  MessageQueue& debugIn; /**< A queue for incoming debug messages. */
-  MessageQueue& debugOut; /**< A queue for outgoing debug messages. */
-  bool initialized; /**< A helper to determine whether the process is already initialized. */
-  Blackboard blackboard; /**< The blackboard of this process. */
-  Settings settings;
-  DebugRequestTable debugRequestTable;
-  DebugDataTable debugDataTable;
-  StreamHandler streamHandler;
-  DrawingManager drawingManager;
-  DrawingManager3D drawingManager3D;
+  /**
+   * Is called from within processMain() with the debugIn message queue.
+   */
+  virtual void handleAllMessages(MessageQueue& messageQueue);
+};
 
+/**
+ * The base class for the debug package sender.
+ * It only contains a flag that signals to all debug package senders that the current process
+ * is terminating and they should abort blocking actions.
+ */
+class MultiDebugSenderBase
+{
 protected:
-  TimingManager timingManager; /**< keeps track of the module timing in this process */
+  static bool terminating; /**< Is the current process terminating? */
+
+  friend class RoboCupCtrl; /**< RoboCupCtrl will set this flag. */
 };
 
 /**
  * This template class implements a sender for debug packages.
  * It ensures that only a package is sent if it is not empty.
  */
-template<class T> class MultiDebugSender : public Sender<T>
+template<class T> class MultiDebugSender : public Sender<T>, private MultiDebugSenderBase
 {
 public:
   /**
@@ -95,8 +119,9 @@ public:
    * @param process The process this sender is associated with.
    * @param name The connection name of the sender without the process name.
    */
-  MultiDebugSender(PlatformProcess* process, const char* name)
-    : Sender<T>(process, name) {}
+  MultiDebugSender(PlatformProcess* process, const char* name) :
+    Sender<T>(process, name)
+  {}
 
   /**
    * Marks the package for sending and transmits it to all receivers that already requested for it.
@@ -110,7 +135,7 @@ public:
     {
       bool requestedNew = Sender<T>::requestedNew();
       if(block)
-        while(!requestedNew)
+        while(!requestedNew && !terminating)
         {
           Thread<ProcessBase>::yield();
           requestedNew = Sender<T>::requestedNew();
@@ -122,6 +147,8 @@ public:
       }
     }
   }
+
+  friend class RoboCupCtrl; // Access terminate
 };
 
 /**
@@ -132,12 +159,12 @@ class DebugSender : public MultiDebugSender<MessageQueue>
 {
 public:
   /**
-   * The constructor.
    * @param process The process this sender is associated with.
    * @param name The connection name of the sender without the process name.
    */
-  DebugSender(PlatformProcess* process, const char* name)
-    : MultiDebugSender<MessageQueue>(process, name) {}
+  DebugSender(PlatformProcess* process, const char* name) :
+    MultiDebugSender<MessageQueue>(process, name)
+  {}
 };
 
 /**

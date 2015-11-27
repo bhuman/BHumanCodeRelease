@@ -15,9 +15,9 @@
  * no class instantiations are allowed.
  */
 #ifdef WINDOWS
-#define PROCESS_WIDE_STORAGE(type) __declspec(thread) type*
+#define PROCESS_LOCAL __declspec(thread)
 #else
-#define PROCESS_WIDE_STORAGE(type) __thread type*
+#define PROCESS_LOCAL __thread
 #endif
 
 /**
@@ -85,7 +85,7 @@ public:
   static unsigned long long getFreeDiskSpace(const char* path);
 
   /** Allocate memory of given size with given alignment. */
-  static void* alignedMalloc(size_t size, size_t alignment);
+  static void* alignedMalloc(size_t size, size_t alignment = 16);
 
   /** Free aligned memory.*/
   static void alignedFree(void* ptr);

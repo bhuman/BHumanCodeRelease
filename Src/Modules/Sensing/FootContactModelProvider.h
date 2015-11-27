@@ -8,15 +8,15 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
 #include "Representations/Configuration/DamageConfiguration.h"
-#include "Representations/Sensing/FootContactModel.h"
-#include "Representations/Sensing/FallDownState.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/KeyStates.h"
-#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/Sensing/FallDownState.h"
+#include "Representations/Sensing/FootContactModel.h"
+#include "Tools/RingBufferWithSum.h"
+#include "Tools/Module/Module.h"
 
 /** Number of contacts to buffer. 100 complies to 1 second */
 #define BUFFER_SIZE 100
@@ -28,8 +28,8 @@ MODULE(FootContactModelProvider,
   REQUIRES(FrameInfo),
   REQUIRES(KeyStates),
   REQUIRES(GameInfo),
-  REQUIRES(DamageConfiguration),
-  PROVIDES_WITH_MODIFY(FootContactModel),
+  REQUIRES(DamageConfigurationBody),
+  PROVIDES(FootContactModel),
   DEFINES_PARAMETERS(
   {,
     (bool)(false) debug,             /**< enables debug mode (debug sound) */
