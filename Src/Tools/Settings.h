@@ -15,25 +15,43 @@
  */
 STREAMABLE(Settings,
 {
+public:
+  ENUM(TeamColor,
+  {,
+    blue,
+    red,
+    yellow,
+    black,
+  });
+
+  std::string robotName; /**< The name of this robot. */
+  std::string bodyName; /**< The name of this robot's body. */
+
+  static bool recover; /**< Start directly without the pre-initial state. */
+
+  static constexpr int highestValidPlayerNumber = 6; /**< No player can have a number greater than this */
+  static constexpr int lowestValidPlayerNumber = 1;  /**< No player can have a number smaller than this */
+  bool isGoalkeeper;            /**< Is this robot the goaliekeeper? */
+  bool isDropInGame = false;    /**< Is this a normal game or a dropin game? */
+  bool isCornerChallenge = false;
+  bool isCarpetChallenge = false;
+  bool isRealBallChallenge = false;
+
+  friend class Framework; /**< To access loaded. */
+
+
+  Settings();
+
+  static bool loadingSucceeded() { return loaded; }
+
 private:
   static Settings settings; /**< The master settings instance. */
-  static bool loaded; /**< The load() of the master settings instance was called or not. */
+  static bool loaded; /**< True if the load() of the master settings instance succeeded. */
 
   /**
    * Constructor for the master settings instance.
    */
   Settings(bool master);
-
-  /**
-   * Initializes the instance.
-   */
-  void init();
-
-  /**
-   * The function loads the settings from disk.
-   * @return Whether the settings were loaded successfully.
-   */
-  bool load();
 
   /**
    * Assignment operator
@@ -49,8 +67,6 @@ private:
     teamPort = other.teamPort;
     robotName = other.robotName.c_str(); // avoid copy-on-write
     bodyName = other.bodyName.c_str(); // avoid copy-on-write
-    highestValidPlayerNumber = other.highestValidPlayerNumber;
-    lowestValidPlayerNumber = other.lowestValidPlayerNumber;
     isGoalkeeper = other.isGoalkeeper;
     isDropInGame = other.isDropInGame;
     isCornerChallenge = other.isCornerChallenge;
@@ -59,35 +75,13 @@ private:
     return *this;
   }
 
+  /**
+   * The function loads the settings from disk.
+   * @return Whether the settings were loaded successfully.
+   */
+  bool load();
+
 public:
-  ENUM(TeamColor,
-  {,
-    blue,
-    red,
-    yellow,
-    black,
-  });
-
-  Settings()
-  {
-    init();
-  }
-
-  std::string robotName; /**< The name of this robot. */
-  std::string bodyName;
-
-  static bool recover; /**< Start directly without the pre-initial state. */
-
-  friend class Framework; /**< To access loaded. */
-
-  int highestValidPlayerNumber; /**< No player can have a number greater than this */
-  int lowestValidPlayerNumber;  /**< No player can have a number smaller than this */
-  bool isGoalkeeper;            /**< Is this robot the goaliekeeper? */
-  bool isDropInGame;            /**< Is this a normal game or a dropin game? */
-  bool isCornerChallenge;
-  bool isCarpetChallenge;
-  bool isRealBallChallenge;
-
   ,
   (int)(0) teamNumber, /**< The number of our team in the game controller. Use theOwnTeamInfo.teamNumber instead. */
   (TeamColor)(blue) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColor instead. */

@@ -6,22 +6,16 @@ scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
 baseDir="$(dirname "${scriptPath}")"
 bhDir="$(dirname "${baseDir}")"
 includeDir="${baseDir}/Include/"
-privateKey="${baseDir}/../Config/Keys/id_rsa_nao"
-SSHOPTIONS="-c arcfour -o PreferredAuthentications=publickey,keyboard-interactive -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 source "${includeDir}/bhumanBase"
 
-robotName=""
-bodyName=""
-naoPw="nao"
+headName=""
 robotVersion=""
 
 usage() {
   echo "usage:"
-  echo "${0} <name> [<body>] <ipaddress>"
+  echo "${0} <ipaddress>"
   echo ""
-  echo " <name>    : name of the robot (head)"
-  echo " <body>    : name of the body"
   echo " <address> : the current dns name or ip address of the robot to install"
   echo " -h|--help : displays this help"
   exit 1
@@ -29,97 +23,91 @@ usage() {
 
 parseOptions() {
   # -h or --help => print help
-  if [ $# -ge 1 ] ; then
-    if [ ${1} = "-h" -o ${1} = "--help" ] ; then
-      usage
+  if [ $# -ne 1 ] ; then
+    if [ $# -gt 1 ] ; then
+      error "Too many arguments!"
     fi
+	usage
   fi
-
-  # setting up variables
-  if [ $# = 2 ]; then
-    robotName=${1}
-    bodyName=${1}
-    robotIp=${2}
-  elif [ $# = 3 ]; then
-    robotName=${1}
-    bodyName=${2}
-    robotIp=${3}
-  else
-    # not enough parameter => print help
-    echo "[ERROR] missing parameters"
-    echo ""
-    usage
-  fi
-
-  robotDir="${baseDir}/Robots/${robotName}"
+  robotIp=${1}
 
   # try to ping robot
   if [ `ping ${pingoptions} ${robotIp} > /dev/null && echo 1 || echo 0` == "0" ]; then
-    echo "[ERROR] robot not reachable at ${robotIp}"
-    echo ""
+    error "robot not reachable at ${robotIp}"
     usage
   fi
+}
+
+getNames() {
+  # Test if robots.cfg exists
+  if [ ! -f "${robotsFile}" ]; then
+    fatal "The file ${robotsFile} (containing the robot names and ids) does not exist!"
+  fi
+  
+  # copy python scripts
+  tmpPath="/tmp/NaoInstall"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "rm -Rf ${tmpPath}"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${tmpPath}"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getHeadId.py" nao@${robotIp}:${tmpPath}/getHeadId.py
+  
+  # get headId
+  local headId
+  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "python /tmp/NaoInstall/getHeadId.py | grep -v '[I]'")
+  if [ ${headId} == "Fail" ]; then
+    fatal "Failed reading the headId!"
+  fi
+  
+  #find robotName
+  grepForHeadId=$(grep ${headId} "${robotsFile}")
+  numOfMatchingHeadIds=$(echo "${grepForHeadId}" | wc -l)
+  if [ ${numOfMatchingHeadIds} -eq 0 ]; then
+    fatal "The headId \"${headId}\" is missing (in ${robotsFile})!"
+  elif [ ${numOfMatchingHeadIds} -gt 1 ]; then
+    fatal "${robotsFile} contains the headId \"${headId}\" more than once!"
+  else
+    robotName=$(echo "${grepForHeadId}" | grep -Po 'name\s*=\s*"\K[^"]*')
+	if [ ${robotName} == "" ]; then
+	  fatal "RobotName is empty"
+	fi
+  fi
+  
+  robotDir="${baseDir}/Robots/${robotName}"
 
   # does the robot exist?
   if [ ! -d "${robotDir}" ]; then
-    echo "[ERROR] robot \"${robotName}\" does not exist"
-    echo ""
-    usage
-  elif [ ! -d "${baseDir}/Robots/${bodyName}" ]; then
-    echo "[ERROR] body \"${bodyName}\" does not exist"
-    echo ""
-    usage
+    fatal "Robot \"${robotName}\" does not exist"
   fi
 
   echo ""
   echo "using parameters"
-  echo "  name:    ${robotName}"
-  echo "  body:    ${bodyName}"
-  echo "  address: ${robotIp}"
+  echo "  robotName: ${robotName}"
+  echo "  address:   ${robotIp}"
   echo ""
 }
 
 copyFiles() {
-  copyTo="/tmp/NaoInstall/${robotName}"
-  sshCommand="ssh -i \"${privateKey}\" ${SSHOPTIONS}"
-  if [ `uname` = Darwin ]; then
-    rsyncOptions="-qzPha --delete"
-  else
-    rsyncOptions="-qzPEha --delete"
-  fi
-
-  echo "[INFO] copying authorized keys. If prompted please enter password twice (usually nao)."
-  chmod 600 "${fileDir}/authorized_keys"
-  if [[ $(uname) == "*CYGWIN*" ]] ; then
-    which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${fileDir}/authorized_keys" #due to windows 8
-  fi
-  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "mkdir -p .ssh && chmod -R 700 .ssh"
-  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/authorized_keys" nao@${robotIp}:.ssh/authorized_keys
-  
-  networkDriver=$(ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} lspci -k -s 02:00.0 | grep "Kernel driver in use:" | awk 'NF>1{print $NF}')
+  networkDriver=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} lspci -k -s 02:00.0 | grep "Kernel driver in use:" | awk 'NF>1{print $NF}')
   if [[ ${networkDriver} == "r8169" ]] ; then
-    echo "[INFO] Buggy Ethernet driver detected! Limiting bandwidth to 100 kb/s"
+    message "Buggy Ethernet driver detected! Limiting bandwidth to 100 kb/s"
     rsyncOptions="${rsyncOptions} --bwlimit=100"
   fi
-
-  echo "[INFO] Copying files to ${copyTo}"
+  
+  copyTo="/tmp/NaoInstall/${robotName}"
+  message "Copying files to ${copyTo}"
   if [[ $(uname) == "*CYGWIN*" ]] ; then
     chmod -R 755 "${fileDir}"
     setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${fileDir}" #due to windows 8
   fi
   
-  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "rm -Rf ${copyTo}"
-
-  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "mkdir -p ${copyTo}"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${copyTo}"
   rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}"/* nao@${robotIp}:${copyTo}
   rsync ${rsyncOptions} -e "${sshCommand}" "${robotDir}"/* nao@${robotIp}:${copyTo}/Robot/
-  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "echo ${bodyName} >${copyTo}/Robot/bodyname"
   rsync ${rsyncOptions} -e "${sshCommand}" "${baseDir}/Network/Profiles" nao@${robotIp}:${copyTo}/Robot/
 }
 
 runInstallation() {
-  echo "[INFO] launching install process"
-  ssh -i "${privateKey}" ${SSHOPTIONS} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install"
+  message "launching install process"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install"
 }
 
 ###############################################################################
@@ -130,10 +118,7 @@ runInstallation() {
 
 checkApp "rsync"
 parseOptions "$@"
-
-chmod 600 "${privateKey}"
-if [[ $(uname) == "*CYGWIN*" ]] ; then
-  which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${privateKey}" #due to windows 8
-fi
+copyKey ${robotIp}
+getNames
 copyFiles
 runInstallation

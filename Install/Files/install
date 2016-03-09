@@ -32,6 +32,10 @@ else
   # if install is executed on a installed robot, / is read-only, therefore remount it,
   # otherwise this line will have no effect
   mount -n -o remount,rw /
+  
+  # Change name
+  cp ${baseDir}/Robot/hostname /etc/hostname
+  python bin/setRobotName.py $(cat /etc/hostname) | grep -v '[I]'
 
   # Make sudo work
   cp -f ${baseDir}/sudoers /etc
@@ -47,9 +51,6 @@ else
   chmod 777 /usr/lib/libstdc++.so.6.0.21
   ln -sf /usr/lib/libstdc++.so.6.0.21 /usr/lib/libstdc++.so.6
   ln -sf /usr/lib/libstdc++.so.6.0.21 /usr/lib/libstdc++.so
-
-  # Change name
-  cp ${baseDir}/Robot/hostname /etc/hostname
 
   # Speed up boot process
   if [ -f /usr/libexec/hal-prestarter ] ; then
@@ -110,14 +111,7 @@ else
   cp -r ${baseDir}/kernel/2.6.33.9-rt31-aldebaran-rt /lib/modules
   
   sync
-  
-  # Restart NAOqi before setting body name. Replacing the runtime library can have strange effects.
-  /etc/init.d/naoqi restart
-  sleep 1
-  /home/nao/bin/setbodyname `cat ${baseDir}/Robot/bodyname` || true
-  
-  sync
-  
+
   echo "[INFO] rebooting"
   reboot
 fi

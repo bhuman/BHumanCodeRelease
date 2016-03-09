@@ -1,8 +1,8 @@
 /**
-* @file Platform/linux/Main.cpp
-* Implementation of the main() function for starting and stopping the module framework.
-* @author Colin Graf
-*/
+ * @file Platform/linux/Main.cpp
+ * Implementation of the main() function for starting and stopping the module framework.
+ * @author Colin Graf
+ */
 
 #include <csignal>
 #include <cstdio>
@@ -10,6 +10,7 @@
 #include <sys/file.h> // flock
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "Robot.h"
 #include "NaoBody.h"
@@ -17,7 +18,7 @@
 #include "libbhuman/bhuman.h"
 
 static pid_t bhumanPid = 0;
-static Robot* robot = 0;
+static Robot* robot = nullptr;
 static bool run = true;
 
 static void bhumanStart()
@@ -85,7 +86,7 @@ int main(int argc, char* argv[])
       exit(EXIT_FAILURE);
     }
 
-    // start as deamon
+    // start as daemon
     if(background)
     {
       fprintf(stderr, "Starting as daemon...\n");
@@ -169,9 +170,9 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
 
           // restart in release mode only
-          #ifndef NDEBUG
-            exit(EXIT_FAILURE);
-          #endif
+#ifndef NDEBUG
+          exit(EXIT_FAILURE);
+#endif
 
           // deactivate the pre-initial state
           recover = true;
@@ -205,18 +206,13 @@ int main(int argc, char* argv[])
       }
       while(!naoBody.init());
     }
-    {
-      const std::string headName = SystemCall::getHostName();
-      const std::string bodyName = naoBody.getName();
-      if(headName == bodyName)
-        printf("Hi, I am %s.\n", headName.c_str());
-      else
-        printf("Hi, I am %s (using %ss Body).\n", headName.c_str(), bodyName.c_str());
-    }
 
     // load first settings instance
     Settings settings;
     settings.recover = recover;
+
+    if(!settings.loadingSucceeded())
+      return EXIT_FAILURE;
 
     // register signal handler for strg+c and termination signal
     signal(SIGTERM, sighandlerShutdown);

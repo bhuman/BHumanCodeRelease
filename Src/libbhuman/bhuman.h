@@ -1,7 +1,7 @@
 /**
-* @file bhuman.h
-* Declaration of shared data provided by libbhuman.
-*/
+ * @file bhuman.h
+ * Declaration of shared data provided by libbhuman.
+ */
 
 #pragma once
 
@@ -116,7 +116,7 @@ enum LBHSensorIds
   accZSensor,
   angleXSensor,
   angleYSensor,
-  
+
   // sonar sensors
   lUsSensor,
   lUs1Sensor,
@@ -346,8 +346,9 @@ struct LBHData
   volatile int newestSensors; /**< Index of the newest sensor data. */
   volatile int readingActuators; /**< Index of actuator commands reserved for reading. */
   volatile int newestActuators; /**< Index of the newest actuator command. */
-
-  char robotName[24]; /* Device/DeviceList/ChestBoard/BodyNickName */
+  
+  char bodyId[16]; /* Device/DeviceList/ChestBoard/BodyId */
+  char headId[16]; /* RobotConfig/Head/FullHeadId */
   float sensors[3][lbhNumOfSensorIds];
   float actuators[3][lbhNumOfActuatorIds];
   RoboCup::RoboCupGameControlData gameControlData[3];

@@ -110,7 +110,7 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/RAnkleRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/Temperature/Sensor/Value",
-  
+
   // touch sensors
   "Device/SubDeviceList/Head/Touch/Front/Sensor/Value",
   "Device/SubDeviceList/Head/Touch/Middle/Sensor/Value",
@@ -165,7 +165,7 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/Battery/Current/Sensor/Value",
   "Device/SubDeviceList/Battery/Charge/Sensor/Value",
   "Device/SubDeviceList/Battery/Temperature/Sensor/Value",
-  
+
   // fsr sensors
   "Device/SubDeviceList/LFoot/FSR/FrontLeft/Sensor/Value",
   "Device/SubDeviceList/LFoot/FSR/FrontRight/Sensor/Value",
@@ -303,7 +303,7 @@ static const char* actuatorNames[] =
   "Ears/Led/Right/324Deg/Actuator/Value",
   "ChestBoard/Led/Red/Actuator/Value",
   "ChestBoard/Led/Green/Actuator/Value",
-  "ChestBoard/Led/Blue/Actuator/Value", 
+  "ChestBoard/Led/Blue/Actuator/Value",
   "Head/Led/Rear/Left/0/Actuator/Value",
   "Head/Led/Rear/Left/1/Actuator/Value",
   "Head/Led/Rear/Left/2/Actuator/Value",
@@ -688,7 +688,7 @@ private:
     }
     catch(AL::ALError& e)
     {
-      fprintf(stderr, "libbhuman: %s\n", e.toString().c_str());
+      fprintf(stderr, "libbhuman: %s\n", e.what());
     }
   }
 
@@ -732,7 +732,7 @@ private:
     }
     catch(AL::ALError& e)
     {
-      fprintf(stderr, "libbhuman: %s\n", e.toString().c_str());
+      fprintf(stderr, "libbhuman: %s\n", e.what());
     }
 
     // raise the semaphore
@@ -831,8 +831,13 @@ public:
             // get the robot name
             memory = new AL::ALMemoryProxy(pBroker);
 
-            std::string robotName = (std::string) memory->getData("Device/DeviceList/ChestBoard/BodyNickName", 0);
-            strncpy(data->robotName, robotName.c_str(), sizeof(data->robotName));
+            std::string bodyId = (std::string) memory->getData("Device/DeviceList/ChestBoard/BodyId", 0);
+            strncpy(data->bodyId, bodyId.c_str(), sizeof(data->bodyId));
+            data->bodyId[15] = 0;
+
+            std::string headId = (std::string) memory->getData("RobotConfig/Head/FullHeadId", 0);
+            strncpy(data->headId, headId.c_str(), sizeof(data->headId));
+            data->headId[15] = 0;
 
             // create "positionRequest" and "stiffnessRequest" alias
             proxy = new AL::DCMProxy(pBroker);
@@ -918,7 +923,7 @@ public:
           }
           catch(AL::ALError& e)
           {
-            fprintf(stderr, "libbhuman: %s\n", e.toString().c_str());
+            fprintf(stderr, "libbhuman: %s\n", e.what());
           }
       }
     }

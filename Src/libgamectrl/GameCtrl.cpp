@@ -515,7 +515,7 @@ public:
     }
     catch(AL::ALError& e)
     {
-      fprintf(stderr, "libgamectrl: %s\n", e.toString().c_str());
+      fprintf(stderr, "libgamectrl: %s\n", e.what());
       close();
     }
   }

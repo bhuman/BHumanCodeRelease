@@ -1,0 +1,119 @@
+#!/bin/bash
+
+set -eu
+
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+baseDir=$(dirname "${scriptPath}")
+bhDir=$(dirname "${baseDir}")
+includeDir="${baseDir}/Include/"
+
+source "${includeDir}/bhumanBase"
+
+remoteIp=""
+headId=""
+bodyId=""
+name=""
+
+usage() {
+  echo "usage:"
+  echo "${0} [-h]"
+  echo "${0} -ids <headId> <BodyId> <name>"
+  echo "${0} -ip <remoteIp> <name>"
+  echo ""
+  echo " <name>     : Name of the robot."
+  echo " <headId>   : The id of the robots head."
+  echo " <bodyId>   : The id of the robots body."
+  echo " <remoteIp> : The id of the robots body."
+  echo ""
+  echo " -ids       : Uses the the provided ids."
+  echo " -ip        : Loads the ids from the robot with the provided ip."
+  echo " -h         : Display this help."
+  exit 1
+}
+
+parseOptions() {
+  if [ $# -eq 4 ]; then
+    if [ ${1} == "-ids" ]; then
+	  headId=${2}
+	  bodyId=${3}
+	  name=${4}
+	  return 0
+	else
+	  usage
+	fi
+  elif [ $# -eq 3 ]; then
+    if [ ${1} == "-ip" ]; then
+	  remoteIp=${2}
+	  name=${3}
+	  return 1
+	else
+	  usage
+	fi
+  else
+    usage
+  fi
+}
+
+getIdsFromRobot() {
+  message "Loading ids from Robot"
+  
+  # copy python scripts
+  tmpPath="/tmp/NaoInstall"
+  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "rm -Rf ${tmpPath}"
+  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "mkdir -p ${tmpPath}"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getHeadId.py" nao@${remoteIp}:${tmpPath}/getHeadId.py
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getBodyId.py" nao@${remoteIp}:${tmpPath}/getBodyId.py
+  
+  # get headId
+  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "python /tmp/NaoInstall/getHeadId.py | grep -v '[I]'")
+  if [ ${headId} == "Fail" ]; then
+    fatal "Failed reading the headId!"
+  fi
+  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "python /tmp/NaoInstall/getBodyId.py | grep -v '[I]'")
+  if [ ${bodyId} == "Fail" ]; then
+    fatal "Failed reading the bodyId!"
+  fi
+}
+
+addIds() {
+  if [[ $(grep "name = \"${name}\"" "${robotsFile}") ]]; then
+    fatal "The robot ${name} has already ids associated with him!"
+  elif [[ $(grep "headId = \"${headId}\"" "${robotsFile}") ]]; then
+    fatal "The headId ${headId} is already in use!"
+  elif [[ $(grep "bodyId = \"${bodyId}\"" "${robotsFile}") ]]; then
+    fatal "The bodyId ${bodyId} is already in use!"
+  else
+    line="\ \ { name = \"${name}\"; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
+    if [[ $(grep -Pz '\[\n\]' "${robotsFile}") ]]; then
+	  sed -i "/\[/ a ${line}" "${robotsFile}"
+	elif [[ $(grep -Pz '}\n\];' "${robotsFile}") ]]; then
+	  sed -i "/}$/,/\];/ s/}/},\n${line}/" "${robotsFile}"
+	else
+	  fatal "Could not parse ${robotsFile}"
+	fi
+  fi
+}
+
+###############################################################################
+##                                                                           ##
+##  MAIN                                                                     ##
+##                                                                           ##
+###############################################################################
+
+if ! parseOptions "$@"; then
+  copyKey ${remoteIp}
+  getIdsFromRobot
+fi
+
+echo ""
+echo "using:"
+echo "  name:     ${name}"
+echo "  headId:   ${headId}"
+echo "  bodyId:   ${bodyId}"
+echo ""
+
+createRobotsFile
+addIds
+
+message "Added ${name}'s ids to ${robotsFile}."
+message "Don't forget to run installRobot!"

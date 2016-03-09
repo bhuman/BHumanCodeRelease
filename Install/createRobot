@@ -2,13 +2,13 @@
 
 set -eu
 
-export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-export baseDir=$(dirname "${scriptPath}")
-export bhDir=$(dirname "${baseDir}")
-export includeDir="${baseDir}/Include/"
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+baseDir=$(dirname "${scriptPath}")
+bhDir=$(dirname "${baseDir}")
+includeDir="${baseDir}/Include/"
 
-export networkDir="${baseDir}/Network"
-export profileDir="${networkDir}/Profiles"
+networkDir="${baseDir}/Network"
+profileDir="${networkDir}/Profiles"
 
 source "${includeDir}/bhumanBase"
 
@@ -37,7 +37,6 @@ usage() {
   echo " -h         : Display this help"
   exit 1
 }
-
 
 parseOptions() {
   while getopts :hpt:r:Dd opt ; do
@@ -178,7 +177,6 @@ EOF
 ##                                                                           ##
 ###############################################################################
 
-
 checkApp "sed" "stream editor"
 
 parseOptions "$@"
@@ -219,7 +217,8 @@ else
       error "Failed to create configuration for the bush"
       fatal "Rerun ${0} with -d"
     fi
+    createRobotsFile
     message "Created needed files for robot ${robotName}"
-    message "Don't forget to calibrate ${robotName}"
+    message "Don't forget to run addRobotIds!"
   fi
 fi

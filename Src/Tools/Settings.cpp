@@ -15,29 +15,37 @@
 #include <cstdio>
 #endif
 #include "Platform/BHAssert.h"
+#include "Platform/File.h"
 #include "Platform/SystemCall.h"
 #include "Tools/Global.h"
 #include "Tools/Streams/StreamHandler.h"
+#include "Tools/Streams/AutoStreamable.h"
+
+STREAMABLE(Robots,
+{
+  STREAMABLE(RobotId,
+  {,
+    (std::string) name,
+    (std::string) headId,
+    (std::string) bodyId,
+  });
+  ,
+  (std::vector<RobotId>) robotsIds,
+});
 
 bool Settings::recover = false;
 
 Settings Settings::settings(true);
 bool Settings::loaded = false;
 
-Settings::Settings(bool master) :
-  isDropInGame(false),
-  teamNumber(0),
-  teamColor(blue),
-  playerNumber(0),
-  location("Default"),
-  teamPort(0)
+Settings::Settings(bool master)
 {
   ASSERT(master);
 }
 
-void Settings::init()
+Settings::Settings()
 {
-  ASSERT(TEAM_BLUE == blue && TEAM_RED == red && TEAM_YELLOW == yellow && TEAM_BLACK == black);
+  static_assert(TEAM_BLUE == blue && TEAM_RED == red && TEAM_YELLOW == yellow && TEAM_BLACK == black, "These macros and enums have to match!");
   if(!loaded)
   {
     VERIFY(settings.load());
@@ -79,8 +87,6 @@ void Settings::init()
 
 #endif
 
-  highestValidPlayerNumber = 6;
-  lowestValidPlayerNumber = 1;
   isDropInGame = location.find("DropIn") != std::string::npos;
   isCornerChallenge = location.find("CornerChallenge") != std::string::npos;
   isCarpetChallenge = location.find("CarpetChallenge") != std::string::npos;
@@ -90,19 +96,45 @@ void Settings::init()
 
 bool Settings::load()
 {
-#ifdef TARGET_ROBOT
-  robotName = SystemCall::getHostName();
-  bodyName = NaoBody().getName();
-#else
-  robotName = "Nao";
-  bodyName = "Nao";
-#endif
-
   if(!Global::theStreamHandler)
   {
     static StreamHandler streamHandler;
     Global::theStreamHandler = &streamHandler;
   }
+
+#ifdef TARGET_ROBOT
+  robotName = SystemCall::getHostName();
+  
+  std::string bhdir = File::getBHDir();
+  InMapFile robotsStream(bhdir + "/Config/Robots/robots.cfg");
+  if(!robotsStream.exists())
+  {
+    TRACE("Could not load robots.cfg");
+    return false;
+  }
+  else
+  {
+    Robots robots;
+    robotsStream >> robots;
+    std::string bodyId = NaoBody().getBodyId();
+    for(const Robots::RobotId& robot : robots.robotsIds)
+    {
+      if(robot.bodyId == bodyId)
+      {
+        bodyName = robot.name;
+        break;
+      }
+    }
+    if(bodyId.empty())
+    {
+      TRACE("Could not find bodyId in robots.cfg");
+      return false;
+    }
+  }
+#else
+  robotName = "Nao";
+  bodyName = "Nao";
+#endif
 
   InMapFile stream("settings.cfg");
   if(stream.exists())
@@ -114,6 +146,10 @@ bool Settings::load()
   }
 
 #ifdef TARGET_ROBOT
+  if(robotName == bodyName)
+    printf("Hi, I am %s.\n", robotName.c_str());
+  else
+    printf("Hi, I am %s (using %ss Body).\n", robotName.c_str(), bodyName.c_str());
   printf("teamNumber %d\n", teamNumber);
   printf("teamPort %d\n", teamPort);
   printf("teamColor %s\n", getName(teamColor));

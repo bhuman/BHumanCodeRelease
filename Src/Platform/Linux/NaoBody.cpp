@@ -1,9 +1,9 @@
 /**
-* @file Platform/linux/NaoBody.cpp
-* Declaration of a class for accessing the body of the nao via NaoQi/libbhuman.
-* @author Colin Graf
-* @author jeff
-*/
+ * @file Platform/linux/NaoBody.cpp
+ * Declaration of a class for accessing the body of the nao via NaoQi/libbhuman.
+ * @author Colin Graf
+ * @author jeff
+ */
 
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -21,11 +21,9 @@
 class NaoBodyAccess
 {
 public:
-  int fd; /**< The file descriptor for the shared memory block. */
-  sem_t* sem; /**< The semaphore used for synchronizing to the NaoQi DCM. */
-  LBHData* lbhData; /**< The pointer to the mapped shared memory block. */
-
-  NaoBodyAccess() : fd(-1), sem(SEM_FAILED), lbhData((LBHData*)MAP_FAILED) {}
+  int fd = -1; /**< The file descriptor for the shared memory block. */
+  sem_t* sem = SEM_FAILED; /**< The semaphore used for synchronizing to the NaoQi DCM. */
+  LBHData* lbhData = (LBHData*)MAP_FAILED; /**< The pointer to the mapped shared memory block. */
 
   ~NaoBodyAccess()
   {
@@ -73,8 +71,6 @@ public:
     }
   }
 } naoBodyAccess;
-
-NaoBody::NaoBody() : writingActuators(-1), fdCpuTemp(0) {}
 
 NaoBody::~NaoBody()
 {
@@ -140,10 +136,16 @@ bool NaoBody::wait()
   return true;
 }
 
-const char* NaoBody::getName() const
+const char* NaoBody::getHeadId() const
 {
   ASSERT(naoBodyAccess.lbhData != (LBHData*)MAP_FAILED);
-  return naoBodyAccess.lbhData->robotName;
+  return naoBodyAccess.lbhData->headId;
+}
+
+const char* NaoBody::getBodyId() const
+{
+  ASSERT(naoBodyAccess.lbhData != (LBHData*)MAP_FAILED);
+  return naoBodyAccess.lbhData->bodyId;
 }
 
 float* NaoBody::getSensors()
