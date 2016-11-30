@@ -11,8 +11,7 @@ option(GetUp)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
-      Stand();
+      LookForward();
     }
   }
 
@@ -26,7 +25,7 @@ option(GetUp)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       GetUpEngine();
     }
   }
@@ -37,12 +36,13 @@ option(GetUp)
   state(stand)
   {
     transition
-    {if(theFallDownState.state == FallDownState::onGround)
+    {
+      if(theFallDownState.state == FallDownState::onGround)
         goto standUp;
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       Stand();
     }
   }

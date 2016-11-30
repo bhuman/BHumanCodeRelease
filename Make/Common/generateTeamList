@@ -1,0 +1,13 @@
+#!/bin/bash
+
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+
+cd ${basePath}
+teamList=../../Config/teamList.cfg
+gameController=../../Util/GameController/config
+
+echo "teams = [" >${teamList}
+sed -e "s% %-%g" -e "s%\(.*\)=\([^,]*\).*%  {number = \1; name = \"\2\";},%" <${gameController}/spl/teams.cfg >>${teamList}
+tail -n +2 ${gameController}/spl_dropin/teams.cfg | sed -e "s% %-%g" -e "s%\(.*\)=\([^,]*\).*%  {number = \1; name = \"\2\";},%" >>${teamList}
+echo "];" >>${teamList}

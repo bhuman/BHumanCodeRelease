@@ -1,5 +1,5 @@
 # connect to a robot
-call Includes/connect
+call Includes/connectDialog Includes/connect
 
 # motion request is required by simulation
 dr representation:MotionRequest

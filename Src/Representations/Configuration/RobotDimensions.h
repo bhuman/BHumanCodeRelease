@@ -9,7 +9,8 @@
 
 #include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/RobotParts/FsrSensors.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 /**
  * This representation contains all necessary dimensions of the robot.
@@ -59,4 +60,7 @@ STREAMABLE(RobotDimensions,
   (float) armRadius,                //!< The radius of a arm.
 
   (Vector3f) imuOffset,             //!< The offset of the imu relative to the torso coordinate frame.
+
+  (ENUM_INDEXED_ARRAY(Vector2f, (FsrSensors) FsrSensor)) leftFsrPositions, //!< The positions of the fsr on the left foot.
+  (ENUM_INDEXED_ARRAY(Vector2f, (FsrSensors) FsrSensor)) rightFsrPositions, //!< The positions of the fsr on the right foot.
 });

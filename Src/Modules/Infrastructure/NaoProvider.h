@@ -6,7 +6,9 @@
 
 #pragma once
 
-#include "Platform/Linux/NaoBody.h"
+#ifdef TARGET_ROBOT
+#include "Platform/Nao/NaoBody.h"
+#endif
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
@@ -14,21 +16,18 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Infrastructure/USRequest.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
-#include "Representations/Infrastructure/SensorData/UsSensorData.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Module/Module.h"
 
 MODULE(NaoProvider,
 {,
   REQUIRES(JointCalibration),
   REQUIRES(LEDRequest),
-  REQUIRES(USRequest),
 
   PROVIDES(FrameInfo),
   REQUIRES(FrameInfo),
@@ -41,15 +40,9 @@ MODULE(NaoProvider,
   PROVIDES(OwnTeamInfo),
   PROVIDES(RawGameInfo),
   PROVIDES(RobotInfo),
+  USES(RobotInfo),
   PROVIDES(SystemSensorData),
-  PROVIDES(UsSensorData),
   USES(JointRequest), // Will be accessed in send()
-  LOADS_PARAMETERS(
-  {,
-    ((RobotInfo) NaoVersion) naoVersion, ///< V33, V4, V5 ...
-    ((RobotInfo) NaoType) naoBodyType, ///< H21, H25 ...
-    ((RobotInfo) NaoType) naoHeadType,
-  }),
 });
 
 #ifdef TARGET_ROBOT
@@ -61,11 +54,11 @@ MODULE(NaoProvider,
 class NaoProvider : public NaoProviderBase
 {
 private:
-  static PROCESS_LOCAL NaoProvider* theInstance; /**< The only instance of this module. */
+  static thread_local NaoProvider* theInstance; /**< The only instance of this module. */
 
   NaoBody naoBody;
   RoboCup::RoboCupGameControlData gameControlData; /**< The last game control data received. */
-  unsigned gameControlTimeStamp; /**< The time when the last gameControlData was received (kind of). */
+  unsigned gameControlTimeStamp = 0; /**< The time when the last gameControlData was received (kind of). */
   float clippedLastFrame[Joints::numOfJoints]; /**< Array that indicates whether a certain joint value was clipped in the last frame (and what was the value)*/
   unsigned lastBodyTemperatureReadTime = 0;
 
@@ -88,7 +81,6 @@ private:
   void update(RawGameInfo& rawGameInfo);
   void update(RobotInfo& robotInfo);
   void update(SystemSensorData& systemSensorData);
-  void update(UsSensorData& usSensorData);
 
   /** The function sends a command to the Nao. */
   void send();
@@ -110,7 +102,6 @@ private:
   void update(RawGameInfo& rawGameInfo) {}
   void update(RobotInfo& robotInfo) {}
   void update(SystemSensorData& systemSensorData) {}
-  void update(UsSensorData& usSensorData) {}
   void send();
 
 public:

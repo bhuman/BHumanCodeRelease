@@ -18,7 +18,7 @@
 #pragma once
 
 #include "InOut.h"
-#include "Tools/Enum.h"
+#include "Enum.h"
 
 #include <string>
 #include <unordered_map>
@@ -47,7 +47,7 @@ public:
 
   public:
     Literal(const std::string& literal) : literal(literal) {}
-    
+
     ~Literal()
     {
       if(stream != nullptr)

@@ -30,6 +30,12 @@
 #include <QStylePainter>
 #include <QStyleOptionSlider>
 
+#ifdef MACOS
+#define OFFSET 3
+#else
+#define OFFSET 0
+#endif
+
 QxtSpanSliderPrivate::QxtSpanSliderPrivate() :
         lower(0),
         upper(0),
@@ -676,7 +682,9 @@ void QxtSpanSlider::paintEvent(QPaintEvent* event)
     opt.sliderValue = 0;
     opt.sliderPosition = 0;
     opt.subControls = QStyle::SC_SliderGroove | QStyle::SC_SliderTickmarks;
+#ifndef MACOS
     painter.drawComplexControl(QStyle::CC_Slider, opt);
+#endif
 
     // handle rects
     opt.sliderPosition = qxt_d().lowerPos;
@@ -692,9 +700,9 @@ void QxtSpanSlider::paintEvent(QPaintEvent* event)
     {
         QRect spanRect;
         if (orientation() == Qt::Horizontal)
-            spanRect = QRect(QPoint(lrv, c.y() - 2), QPoint(urv, c.y() + 1));
+            spanRect = QRect(QPoint(lrv, c.y() - 2 - OFFSET), QPoint(urv, c.y() + 1 + OFFSET));
         else
-            spanRect = QRect(QPoint(c.x() - 2, lrv), QPoint(c.x() + 1, urv));
+            spanRect = QRect(QPoint(c.x() - 2 - OFFSET, lrv), QPoint(c.x() + 1 + OFFSET, urv));
         qxt_d().drawSpan(&painter, spanRect);
     }
     else
@@ -703,13 +711,13 @@ void QxtSpanSlider::paintEvent(QPaintEvent* event)
         QRect spanRect1, spanRect2;
         if (orientation() == Qt::Horizontal)
         {
-            spanRect1 = QRect(QPoint(groove.left() + 2, c.y() - 2), QPoint(urv, c.y() + 1));
-            spanRect2 = QRect(QPoint(lrv, c.y() - 2), QPoint(groove.right() - 3, c.y() + 1));
+            spanRect1 = QRect(QPoint(groove.left() + 2, c.y() - 2 - OFFSET), QPoint(urv, c.y() + 1 + OFFSET));
+            spanRect2 = QRect(QPoint(lrv, c.y() - 2 - OFFSET), QPoint(groove.right() - 3, c.y() + 1 + OFFSET));
         }
         else
         {
-            spanRect1 = QRect(QPoint(c.x() - 2, groove.top() + 2), QPoint(c.x() + 1, urv));
-            spanRect2 = QRect(QPoint(c.x() - 2, lrv), QPoint(c.x() + 1, groove.bottom() - 3));
+            spanRect1 = QRect(QPoint(c.x() - 2 - OFFSET, groove.top() + 2), QPoint(c.x() + 1 + OFFSET, urv));
+            spanRect2 = QRect(QPoint(c.x() - 2 - OFFSET, lrv), QPoint(c.x() + 1 + OFFSET, groove.bottom() - 3));
         }
         qxt_d().drawSpan(&painter, spanRect1);
         qxt_d().drawSpan(&painter, spanRect2);
@@ -719,13 +727,33 @@ void QxtSpanSlider::paintEvent(QPaintEvent* event)
     switch (qxt_d().lastPressed)
     {
     case QxtSpanSliderPrivate::LowerHandle:
+#ifdef MACOS
+        opt.sliderValue = upperValue();
+        opt.sliderPosition = upperPosition();
+        opt.subControls = QStyle::SC_SliderTickmarks;
+        painter.drawComplexControl(QStyle::CC_Slider, opt);
+        opt.sliderValue = lowerValue();
+        opt.sliderPosition = lowerPosition();
+        painter.drawComplexControl(QStyle::CC_Slider, opt);
+#else
         qxt_d().drawHandle(&painter, QxtSpanSliderPrivate::UpperHandle);
         qxt_d().drawHandle(&painter, QxtSpanSliderPrivate::LowerHandle);
+#endif
         break;
     case QxtSpanSliderPrivate::UpperHandle:
     default:
+#ifdef MACOS
+        opt.sliderValue = lowerValue();
+        opt.sliderPosition = lowerPosition();
+        opt.subControls = QStyle::SC_SliderTickmarks;
+        painter.drawComplexControl(QStyle::CC_Slider, opt);
+        opt.sliderValue = upperValue();
+        opt.sliderPosition = upperPosition();
+        painter.drawComplexControl(QStyle::CC_Slider, opt);
+#else
         qxt_d().drawHandle(&painter, QxtSpanSliderPrivate::LowerHandle);
         qxt_d().drawHandle(&painter, QxtSpanSliderPrivate::UpperHandle);
+#endif
         break;
     }
 }

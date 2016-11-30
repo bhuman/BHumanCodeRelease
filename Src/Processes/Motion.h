@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "Tools/Logging/Logger.h"
 #include "Tools/Module/ModulePackage.h"
 #include "Tools/ProcessFramework/Process.h"
 
@@ -15,11 +16,13 @@
 class Motion : public Process
 {
 private:
-  DEBUGGING;
-  RECEIVER(CognitionToMotion);
-  SENDER(MotionToCognition);
+  Receiver<DebugToMotion> theDebugReceiver;
+  DebugSender<MotionToDebug> theDebugSender;
+  Receiver<CognitionToMotion> theCognitionReceiver;
+  Sender<MotionToCognition> theCognitionSender;
   int numberOfMessages;
   ModuleManager moduleManager; /**< The solution manager handles the execution of modules. */
+  Logger logger;
 
 public:
   Motion();

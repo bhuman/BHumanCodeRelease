@@ -38,7 +38,7 @@ std::string DownloadLogsCmd::getDescription() const
   return "Downloads all *.log files from the robot. Afterwards the logs are deleted from the robot.";
 }
 
-bool DownloadLogsCmd::preExecution(Context & context, const std::vector<std::string> & params)
+bool DownloadLogsCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   if(params.size() > 0)
   {
@@ -48,12 +48,12 @@ bool DownloadLogsCmd::preExecution(Context & context, const std::vector<std::str
   return true;
 }
 
-Task *DownloadLogsCmd::perRobotExecution(Context & context, Robot & robot)
+Task* DownloadLogsCmd::perRobotExecution(Context& context, Robot& robot)
 {
   return new DownloadLogsCmd::DownloadLogsTask(context, &robot);
 }
 
-bool DownloadLogsCmd::postExecution(Context & context, const std::vector<std::string> & params)
+bool DownloadLogsCmd::postExecution(Context& context, const std::vector<std::string>& params)
 {
   return true;
 }
@@ -62,7 +62,7 @@ bool DownloadLogsCmd::DownloadLogsTask::execute()
 {
   QString command = getCommand();
   QStringList args = QStringList();
-  args.push_back("-d"); //delete files after download.
+  // args.push_back("-d"); //delete files after download.
 
   args.push_back(fromString(robot->name));
   args.push_back(fromString(robot->getBestIP(context())));
@@ -82,9 +82,9 @@ bool DownloadLogsCmd::DownloadLogsTask::execute()
   return true;
 }
 
-DownloadLogsCmd::DownloadLogsTask::DownloadLogsTask(Context &context,
-    Robot *robot)
-: RobotTask(context, robot)
+DownloadLogsCmd::DownloadLogsTask::DownloadLogsTask(Context& context,
+    Robot* robot)
+  : RobotTask(context, robot)
 {}
 
 QString DownloadLogsCmd::DownloadLogsTask::getCommand()

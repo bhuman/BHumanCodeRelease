@@ -5,19 +5,16 @@
 */
 
 #include <QApplication>
-#include <QTextCodec>
 
 #ifdef WINDOWS
-#include "qtdotnetstyle.h"
 #include <crtdbg.h>
 #endif
 #include "MainWindow.h"
 
-#ifdef OSX
+#ifdef MACOS
 #include <QFileOpenEvent>
-#include "MacFullscreen.h"
 
-MainWindow* mainWindow;
+static MainWindow* mainWindow;
 
 class SimRobotApp : public QApplication
 {
@@ -48,23 +45,31 @@ const char* _fromQString(const QString& string)
   return buffer;
 }
 
+#ifdef NDEBUG
+static void ignoreMessageOutput(QtMsgType, const QMessageLogContext&, const QString&) {}
+#endif
+
 #endif
 
 int main(int argc, char *argv[])
 {
-  QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
-  QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
 #ifdef WINDOWS
-  QApplication::setStyle(new QtDotNetStyle(QtDotNetStyle::Standard));
   _CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
-  //_CrtSetBreakAlloc(91417); // Use to track down memory leaks
+  //_CrtSetBreakAlloc(18969); // Use to track down memory leaks
 #endif
+
   QApplication app(argc, argv);
   MainWindow mainWindow(argc, argv);
-#ifdef OSX
+
+#ifdef WINDOWS
+  app.setStyle("fusion");
+#endif
+#ifdef MACOS
+#ifdef NDEBUG
+  qInstallMessageHandler(ignoreMessageOutput);
+#endif
   ::mainWindow = &mainWindow;
   app.setStyle("macintosh");
-  MacFullscreen::enable(&mainWindow);
 #endif
   app.setApplicationName("SimRobot");
 
@@ -72,7 +77,7 @@ int main(int argc, char *argv[])
   for(int i = 1; i < argc; i++)
     if(*argv[i] != '-')
     {
-#ifdef OSX
+#ifdef MACOS
       if(strcmp(argv[i], "YES"))
       {
         mainWindow.setWindowOpacity(0);
@@ -87,20 +92,7 @@ int main(int argc, char *argv[])
     }
 
   mainWindow.show();
-
-  int result = 0;
-#ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
-  if(QSysInfo::windowsVersion() <= QSysInfo::WV_WINDOWS7)
-    while(mainWindow.isVisible())
-    {
-      app.sendPostedEvents();
-      app.processEvents(mainWindow.timerId ? QEventLoop::AllEvents : QEventLoop::WaitForMoreEvents);
-      if(mainWindow.timerId)
-        mainWindow.timerEvent(0);
-    }
-  else
-#endif
-    result = app.exec();
+  int result = app.exec();
 #ifdef LINUX
   exit(result); // fixes a mysterious segfault
 #endif

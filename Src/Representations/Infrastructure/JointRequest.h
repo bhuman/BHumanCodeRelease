@@ -10,7 +10,7 @@ STREAMABLE_WITH_BASE(JointRequest, JointAngles,
   JointRequest();
 
   /** Initializes this instance with the mirrored data of other. */
-  void mirror(const JointRequest & other);
+  void mirror(const JointRequest& other);
 
   /** Returns the mirrored angle of joint. */
   Angle mirror(const Joints::Joint joint) const;
@@ -21,7 +21,22 @@ STREAMABLE_WITH_BASE(JointRequest, JointAngles,
   (StiffnessData) stiffnessData, /**< the stiffness for all joints */
 });
 
-struct StandOutput : public JointRequest {};
+struct ArmJointRequest : public JointRequest {};
+struct LegJointRequest : public JointRequest
+{
+  LegJointRequest() : JointRequest()
+  {
+    angles[0] = JointAngles::ignore;
+    angles[1] = JointAngles::ignore;
+  };
+};
+
+struct StandArmRequest : public ArmJointRequest {};
+struct StandLegRequest : public LegJointRequest {};
+
+struct WalkArmRequest : public ArmJointRequest {};
+struct WalkLegRequest : public LegJointRequest {};
+
 struct NonArmeMotionEngineOutput : public JointRequest {};
 
 inline JointRequest::JointRequest() :
@@ -44,7 +59,7 @@ inline Angle JointRequest::mirror(const Joints::Joint joint) const
 inline bool JointRequest::isValid() const
 {
   for(const Angle& angle : angles)
-    if(std::isnan(static_cast<float>(angle)))
+    if(!std::isfinite(angle))
       return false;
-  return stiffnessData.isValide();
+  return stiffnessData.isValid();
 }

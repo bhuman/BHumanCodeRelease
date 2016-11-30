@@ -1,12 +1,11 @@
 /**
-* @file Controller/Platform/Windows/Joystick.cpp
-* Implementation of the joystick interface class.
-* This is the Windows implementation.
-* @author Colin Graf
-*/
+ * @file Controller/Platform/Windows/Joystick.cpp
+ * Implementation of the joystick interface class.
+ * This is the Windows implementation.
+ * @author Colin Graf
+ */
 
-#define NOMINMAX
-#include <windows.h>
+#include <Windows.h>
 #include <mmsystem.h>
 
 #include "Joystick.h"
@@ -14,12 +13,11 @@
 
 unsigned int Joystick::usedJoysticks = 0;
 
-Joystick::Joystick() : joystickId(-1) {}
-
 bool Joystick::init()
 {
   ASSERT(joystickId == -1);
   for(int i = 0; i < 32; ++i)
+  {
     if(!(usedJoysticks & (1 << i)))
     {
       usedJoysticks |= 1 << i;
@@ -29,6 +27,7 @@ bool Joystick::init()
         axisState[i] = 32767;
       return true;
     }
+  }
   return false;
 }
 
@@ -107,8 +106,11 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
     return false;
 
   for(int j = 0; j < 2; ++j)
+  {
     if(buttonEvents[j])
+    {
       for(unsigned int i = 0, events = buttonEvents[j]; i < 32; ++i)
+      {
         if(events & (1 << i))
         {
           unsigned int bit = 1 << i;
@@ -118,6 +120,9 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
           if(buttonId < numOfButtons)
             return true;
         }
+      }
+    }
+  }
 
   ASSERT(false);
   return false;

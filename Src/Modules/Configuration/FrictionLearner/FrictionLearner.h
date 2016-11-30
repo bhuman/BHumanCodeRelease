@@ -1,32 +1,31 @@
 /**
-* @file FrictionLearner.h
-*
-* This file declares another module that estimates the ball friction coefficient.
-*
-* @author Tim Laue
-* @author Felix Wenk
-*
-* This module is intended to learn the ball friction coefficient. It assumes a linear model
-* for ball deceleration:
-*
-*   s = v * t + 0.5 * a * t^2  with v = ball velocity, a = ballFriction, s = rolled distance
-*
-* You can use this module as follows.
-* 1. Start it: mr DummyRepresentation FrictionLearner
-* 2. Roll the ball once through the robot's field of view
-*    - start and end point do not matter, but starting and ending outside the field of view *might* be better
-*    - avoid collisions as well as places on the field that are not completely even
-* 3. Read the messages that are printed on the console ;-)
-* 4. Repeat 2. + 3. multiple times and filter out the outliers by yourself ;-)
-*/
-
+ * @file FrictionLearner.h
+ *
+ * This file declares another module that estimates the ball friction coefficient.
+ *
+ * @author Tim Laue
+ * @author Felix Wenk
+ *
+ * This module is intended to learn the ball friction coefficient. It assumes a linear model
+ * for ball deceleration:
+ *
+ *   s = v * t + 0.5 * a * t^2  with v = ball velocity, a = ballFriction, s = rolled distance
+ *
+ * You can use this module as follows.
+ * 1. Start it: mr DummyRepresentation FrictionLearner
+ * 2. Roll the ball once through the robot's field of view
+ *    - start and end point do not matter, but starting and ending outside the field of view *might* be better
+ *    - avoid collisions as well as places on the field that are not completely even
+ * 3. Read the messages that are printed on the console ;-)
+ * 4. Repeat 2. + 3. multiple times and filter out the outliers by yourself ;-)
+ */
 
 #pragma once
 
 #include <vector>
 #include "Tools/Module/Module.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Perception/BallPercept.h"
+#include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Infrastructure/DummyRepresentation.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Tools/Math/Eigen.h"
@@ -58,7 +57,7 @@ private:
   struct BallObservation
   {
     /** Constructor */
-    BallObservation(Vector2f p, unsigned int t):pos(p), time(t)
+    BallObservation(Vector2f p, unsigned int t): pos(p), time(t)
     {}
 
     Vector2f pos;      /**< The position on the field (relative to the robot)*/

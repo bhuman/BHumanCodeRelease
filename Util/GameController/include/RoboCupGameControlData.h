@@ -3,7 +3,8 @@
 
 #include "SPLCoachMessage.h"
 
-#define GAMECONTROLLER_PORT            3838
+#define GAMECONTROLLER_DATA_PORT       3838
+#define GAMECONTROLLER_RETURN_PORT     3939
 
 #define GAMECONTROLLER_STRUCT_HEADER   "RGme"
 #define GAMECONTROLLER_STRUCT_VERSION  9
@@ -15,6 +16,12 @@
 #define TEAM_RED                    1 // magenta, pink (not red/orange)
 #define TEAM_YELLOW                 2 // yellow
 #define TEAM_BLACK                  3 // black, dark gray
+#define TEAM_WHITE                  4 // white
+#define TEAM_GREEN                  5 // green
+#define TEAM_ORANGE                 6 // orange
+#define TEAM_PURPLE                 7 // purple, violet
+#define TEAM_BROWN                  8 // brown
+#define TEAM_GRAY                   9 // lighter grey
 
 // HL
 #define TEAM_CYAN                   0

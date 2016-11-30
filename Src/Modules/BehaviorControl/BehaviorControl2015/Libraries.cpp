@@ -8,16 +8,16 @@
 
 namespace Behavior2015
 {
-  PROCESS_LOCAL Libraries* Libraries::theInstance = 0;
+  thread_local Libraries* Libraries::theInstance = nullptr;
 
-  Libraries::Libraries(const BehaviorControl2015Base& base,
-                       BehaviorData& behaviorData) :
+  Libraries::Libraries(const BehaviorControl2015Base& base, BehaviorData& behaviorData) :
     BehaviorBase((theInstance = this, base), behaviorData)
   {}
 
   void Libraries::operator=(const Libraries& other)
   {
-    memcpy((void*) this, (void*) &other, sizeof(*this));
+    if(this != &other)
+      memcpy((void*) this, (void*) &other, sizeof(*this));
   }
 
   void Libraries::preProcessLibraries()

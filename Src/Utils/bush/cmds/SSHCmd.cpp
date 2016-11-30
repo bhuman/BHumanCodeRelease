@@ -24,7 +24,7 @@ std::string SSHCmd::getDescription() const
   return "executes an command via ssh or opens a ssh session";
 }
 
-bool SSHCmd::preExecution(Context &context, const std::vector<std::string> &params)
+bool SSHCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   command = "";
   for(std::vector<std::string>::const_iterator param = params.begin(); param != params.end(); ++param)
@@ -33,14 +33,14 @@ bool SSHCmd::preExecution(Context &context, const std::vector<std::string> &para
   return true;
 }
 
-Task* SSHCmd::perRobotExecution(Context& context, Robot &robot)
+Task* SSHCmd::perRobotExecution(Context& context, Robot& robot)
 {
   return new SSHTask(context, &robot, command);
 }
 
-SSHCmd::SSHTask::SSHTask(Context &context,
-                         Robot *robot,
-                         const std::string &command)
+SSHCmd::SSHTask::SSHTask(Context& context,
+                         Robot* robot,
+                         const std::string& command)
   : RobotTask(context, robot),
     command(command)
 {}

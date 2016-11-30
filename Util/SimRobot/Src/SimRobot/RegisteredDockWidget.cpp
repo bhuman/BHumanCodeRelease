@@ -15,6 +15,9 @@ RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* par
   setObjectName(fullName);
   setAllowedAreas(Qt::TopDockWidgetArea);
   setFocusPolicy(Qt::ClickFocus);
+#ifdef FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG
+  setFeatures(features() & ~DockWidgetMovable);
+#endif
   connect(this, SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityChanged(bool)));
 }
 
@@ -22,7 +25,7 @@ void RegisteredDockWidget::setWidget(SimRobot::Widget* widget, const SimRobot::M
 {
   if(widget)
   {
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
     if(isFloating() && widget->getWidget()->inherits("QGLWidget"))
     {
       setFloating(false);

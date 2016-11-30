@@ -3,143 +3,199 @@
  * This file implements a module that is responsible for controlling the motion.
  * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
  * @author <A href="mailto:allli@tzi.de">Alexander Härtl</A>
- * @author Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #include <algorithm>
 #include "MotionSelector.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
 MAKE_MODULE(MotionSelector, motionControl)
 
-PROCESS_LOCAL MotionSelector* MotionSelector::theInstance = 0;
+thread_local MotionSelector* MotionSelector::theInstance = nullptr;
 
-void MotionSelector::stand()
-{
-  if(theInstance && SystemCall::getMode() == SystemCall::physicalRobot)
-    theInstance->forceStand = true;
-}
+static constexpr int playDeadDelay = 2000;
+static int interpolationTimes[MotionRequest::numOfMotions];
+static int armInterPolationTimes[ArmMotionSelection::numOfArmMotions];
 
-void MotionSelector::update(MotionSelection& motionSelection)
+MotionSelector::MotionSelector()
 {
-  static int interpolationTimes[MotionRequest::numOfMotions];
+  lastArmMotion.fill(ArmMotionSelection::specialActionArms);
+  prevArmMotion.fill(ArmMotionSelection::specialActionArms);
+  lastActiveArmKeyFrame.fill(ArmKeyFrameRequest::useDefault);
+  theInstance = this;
+
   interpolationTimes[MotionRequest::walk] = 790;
   interpolationTimes[MotionRequest::kick] = 200;
-  interpolationTimes[MotionRequest::dmpKick] = 200;
   interpolationTimes[MotionRequest::specialAction] = 200;
   interpolationTimes[MotionRequest::stand] = 600;
-  interpolationTimes[MotionRequest::getUp] = 600;
+  interpolationTimes[MotionRequest::getUp] = 1;
 
-  static int armInterPolationTimes[ArmMotionRequest::numOfArmMotions];
-  armInterPolationTimes[ArmMotionRequest::keyFrame] = 300; // TODO think about times
-  armInterPolationTimes[ArmMotionRequest::none] = 200; // TODO think about times
+  armInterPolationTimes[ArmMotionSelection::walkArms] = 300; // TODO think about times
+  armInterPolationTimes[ArmMotionSelection::kickArms] = 300; // TODO think about times
+  armInterPolationTimes[ArmMotionSelection::specialActionArms] = 200;
+  armInterPolationTimes[ArmMotionSelection::standArms] = 300; // TODO think about times
+  armInterPolationTimes[ArmMotionSelection::getUpArms] = 1; // TODO think about times
 
-  static const int playDeadDelay(2000);
+  armInterPolationTimes[ArmMotionSelection::keyFrameS] = 300; // TODO think about times
+  armInterPolationTimes[ArmMotionSelection::pointAtS] = 300;
+}
+void MotionSelector::sitDown()
+{
+  if(theInstance && SystemCall::getMode() == SystemCall::physicalRobot)
+    theInstance->forceSitDown = true;
+}
 
+void MotionSelector::update(LegMotionSelection& legMotionSelection)
+{
   if(lastExecution)
   {
-    MotionRequest::Motion requestedMotion = theMotionRequest.motion;
+    MotionRequest::Motion requestedLegMotion = theMotionRequest.motion;
     if(theMotionRequest.motion == MotionRequest::walk && !theGroundContactState.contact)
-      requestedMotion = MotionRequest::stand;
+      requestedLegMotion = MotionRequest::stand;
 
-    if(forceStand && (lastMotion == MotionRequest::walk || lastMotion == MotionRequest::stand))
+    if(forceSitDown && (lastLegMotion == MotionRequest::walk || lastLegMotion == MotionRequest::stand))
     {
-      requestedMotion = MotionRequest::stand;
-      forceStand = false;
+      requestedLegMotion = MotionRequest::specialAction;
     }
 
     // check if the target motion can be the requested motion (mainly if leaving is possible)
-    if((lastMotion == MotionRequest::walk && (theWalkingEngineOutput.isLeavingPossible || !theGroundContactState.contact)) ||
-       (lastMotion == MotionRequest::stand && motionSelection.ratios[MotionRequest::stand] == 1.f) || // stand can always be left if fully active
-       (lastMotion == MotionRequest::specialAction && theSpecialActionsOutput.isLeavingPossible) ||
-       (lastMotion == MotionRequest::kick && theKickEngineOutput.isLeavingPossible) ||
-       (lastMotion == MotionRequest::dmpKick && theDmpKickEngineOutput.isLeavingPossible) ||
-       (lastMotion == MotionRequest::getUp && theGetUpEngineOutput.isLeavingPossible)) //never immediatly leave kick or get up
+    if((lastLegMotion == MotionRequest::walk && (theWalkingEngineOutput.isLeavingPossible || !theGroundContactState.contact)) ||
+       (lastLegMotion == MotionRequest::stand && legMotionSelection.ratios[MotionRequest::stand] == 1.f) || // stand can always be left if fully active
+       (lastLegMotion == MotionRequest::specialAction && theSpecialActionsOutput.isLeavingPossible) ||
+       (lastLegMotion == MotionRequest::kick && theKickEngineOutput.isLeavingPossible) ||//never immediatly leave kick or get up
+       (lastLegMotion == MotionRequest::getUp && theGetUpEngineOutput.isLeavingPossible)) 
     {
-      motionSelection.targetMotion = requestedMotion;
+      legMotionSelection.targetMotion = requestedLegMotion;
     }
 
-    if(requestedMotion == MotionRequest::specialAction)
+    if(requestedLegMotion == MotionRequest::specialAction)
     {
-      motionSelection.specialActionRequest = theMotionRequest.specialActionRequest;
+      legMotionSelection.specialActionRequest = theMotionRequest.specialActionRequest;
+      if(forceSitDown && (lastLegMotion == MotionRequest::walk || lastLegMotion == MotionRequest::stand))
+      {
+        legMotionSelection.specialActionRequest.specialAction = SpecialActionRequest::sitDown;
+        forceSitDown = false;
+      }
     }
     else
     {
-      motionSelection.specialActionRequest = SpecialActionRequest();
-      if(motionSelection.targetMotion == MotionRequest::specialAction)
-        motionSelection.specialActionRequest.specialAction = SpecialActionRequest::numOfSpecialActionIDs;
+      legMotionSelection.specialActionRequest = SpecialActionRequest();
+      if(legMotionSelection.targetMotion == MotionRequest::specialAction)
+        legMotionSelection.specialActionRequest.specialAction = SpecialActionRequest::numOfSpecialActionIDs;
     }
+    int interpolationTime = interpolationTimes[legMotionSelection.targetMotion];
+    // When standing, walking may start instantly
+    if(legMotionSelection.targetMotion == MotionRequest::walk && lastLegMotion == MotionRequest::stand && legMotionSelection.ratios[MotionRequest::stand] == 1.f)
+      interpolationTime = 1;
 
-    const bool afterPlayDead(prevMotion == MotionRequest::specialAction && lastActiveSpecialAction == SpecialActionRequest::playDead);
+    const bool afterPlayDead = prevLegMotion == MotionRequest::specialAction && lastActiveSpecialAction == SpecialActionRequest::playDead;
+    const int bodyInterpolationTime = afterPlayDead ? playDeadDelay : interpolationTime;
+    interpolate(legMotionSelection.ratios.data(), MotionRequest::numOfMotions, bodyInterpolationTime, legMotionSelection.targetMotion);
 
-    const int bodyInterpolationTime(afterPlayDead ? playDeadDelay : interpolationTimes[motionSelection.targetMotion]);
-    interpolate(motionSelection.ratios, MotionRequest::numOfMotions, bodyInterpolationTime, motionSelection.targetMotion);
-
-    if(motionSelection.ratios[MotionRequest::specialAction] < 1.f)
+    if(legMotionSelection.ratios[MotionRequest::specialAction] < 1.f)
     {
-      if(motionSelection.targetMotion == MotionRequest::specialAction)
-        motionSelection.specialActionMode = MotionSelection::first;
+      if(legMotionSelection.targetMotion == MotionRequest::specialAction)
+        legMotionSelection.specialActionMode = LegMotionSelection::first;
       else
-        motionSelection.specialActionMode = MotionSelection::deactive;
+        legMotionSelection.specialActionMode = LegMotionSelection::deactive;
     }
     else
-      motionSelection.specialActionMode = MotionSelection::active;
+      legMotionSelection.specialActionMode = LegMotionSelection::active;
 
-    if(motionSelection.specialActionMode == MotionSelection::active && motionSelection.specialActionRequest.specialAction != SpecialActionRequest::numOfSpecialActionIDs)
-      lastActiveSpecialAction = motionSelection.specialActionRequest.specialAction;
-
-    auto selectArmMotions = [&](Arms::Arm const arm)
-    {
-      ArmMotionRequest::ArmMotion requestedArmMotion = theArmMotionRequest.armMotion[arm];
-
-      bool forceNone(false);
-      switch(motionSelection.targetMotion)
-      {
-        case MotionRequest::kick:
-        case MotionRequest::dmpKick:
-        case MotionRequest::getUp:
-          forceNone = true;
-        case MotionRequest::specialAction:
-          forceNone = !theSpecialActionsOutput.isArmLeavingAllowed;
-        default:
-          break;
-      }
-
-      if(forceNone)
-        requestedArmMotion = ArmMotionRequest::none;
-
-      // check if the target armmotion can be the requested armmotion (mainly if leaving is possible)
-      /*if(lastArmMotion[arm] == ArmMotionRequest::keyFrame ||
-         lastArmMotion[arm] == ArmMotionRequest::none ||
-         forceNone)*/ //TODO - If u have a real condition ur free to use this
-      {
-        if(requestedArmMotion != ArmMotionRequest::keyFrame && !theArmKeyFrameEngineOutput.arms[arm].isFree && requestedMotion != MotionRequest::getUp &&
-           !(requestedMotion == MotionRequest::specialAction && theArmMotionRequest.armKeyFrameRequest.arms[arm].motion == ArmKeyFrameRequest::keeperStand))
-        {
-          armMotionSelection.targetArmMotion[arm] = ArmMotionRequest::keyFrame;
-          armMotionSelection.armKeyFrameRequest.arms[arm].fast = forceNone;
-          armMotionSelection.armKeyFrameRequest.arms[arm].motion = ArmKeyFrameRequest::reverse;
-        }
-        else
-        {
-          armMotionSelection.targetArmMotion[arm] = requestedArmMotion;
-          if(armMotionSelection.targetArmMotion[arm] == ArmMotionRequest::keyFrame)
-            armMotionSelection.armKeyFrameRequest.arms[arm] = theArmMotionRequest.armKeyFrameRequest.arms[arm];
-        }
-      }
-
-      const bool afterPlayDead(prevMotion == MotionRequest::specialAction && lastActiveSpecialAction == SpecialActionRequest::playDead &&
-                               prevArmMotion[arm] == ArmMotionRequest::none);
-
-      const int armInterpolationTime(afterPlayDead ? playDeadDelay : armInterPolationTimes[armMotionSelection.targetArmMotion[arm]]);
-      interpolate(&(armMotionSelection.armRatios[arm * armMotionSelection.rightArmRatiosOffset]), ArmMotionRequest::numOfArmMotions, armInterpolationTime, armMotionSelection.targetArmMotion[arm]);
-    };
-    selectArmMotions(Arms::left);
-    selectArmMotions(Arms::right);
+    if(legMotionSelection.specialActionMode == LegMotionSelection::active && legMotionSelection.specialActionRequest.specialAction != SpecialActionRequest::numOfSpecialActionIDs)
+      lastActiveSpecialAction = legMotionSelection.specialActionRequest.specialAction;
   }
 
-  if(lastMotion != motionSelection.targetMotion)
-    prevMotion = lastMotion;
+  if(lastLegMotion != legMotionSelection.targetMotion)
+    prevLegMotion = lastLegMotion;
+
+  lastLegMotion = legMotionSelection.targetMotion;
+
+  PLOT("module:MotionSelector:lastLegMotion", lastLegMotion);
+  PLOT("module:MotionSelector:prevLegMotion", prevLegMotion);
+  PLOT("module:MotionSelector:targetLegMotion", legMotionSelection.targetMotion);
+
+#ifndef NDEBUG
+  const Rangef& ratioLimits = Rangef::ZeroOneRange();
+  for(int i = 0; i < MotionRequest::numOfMotions; ++i)
+    ASSERT(ratioLimits.isInside(legMotionSelection.ratios[i]));
+#endif
+}
+
+void MotionSelector::update(ArmMotionSelection& armMotionSelection)
+{
+  if(lastExecution)
+  {
+    for(unsigned i = 0; i < Arms::numOfArms; ++i)
+    {
+      Arms::Arm arm = static_cast<Arms::Arm>(i);
+
+      const bool isNone = theArmMotionRequest.armMotion[arm] == ArmMotionRequest::none;
+
+      ArmMotionSelection::ArmMotion requestedArmMotion;
+      switch(theLegMotionSelection.targetMotion)
+      {
+        case MotionRequest::kick:
+          requestedArmMotion = ArmMotionSelection::kickArms;
+          break;
+        case MotionRequest::getUp:
+          requestedArmMotion = ArmMotionSelection::getUpArms;
+          break;
+        case MotionRequest::specialAction:
+        {
+          //forceNone = !theSpecialActionsOutput.isArmLeavingAllowed;
+          if(isNone ||
+             (theLegMotionSelection.specialActionRequest.specialAction != SpecialActionRequest::standHigh &&
+               theLegMotionSelection.specialActionRequest.specialAction != SpecialActionRequest::standHighLookUp))
+            requestedArmMotion = ArmMotionSelection::specialActionArms;
+          else
+            requestedArmMotion = ArmMotionSelection::ArmMotion(ArmMotionSelection::firstNonBodyMotion + theArmMotionRequest.armMotion[arm] - 1);
+        }
+        break;
+        case MotionRequest::walk:
+        {
+          if(isNone)
+            requestedArmMotion = ArmMotionSelection::walkArms;
+          else
+            requestedArmMotion = ArmMotionSelection::ArmMotion(ArmMotionSelection::firstNonBodyMotion + theArmMotionRequest.armMotion[arm] - 1);
+          break;
+        }
+        case MotionRequest::stand:
+        {
+          if(isNone)
+            requestedArmMotion = ArmMotionSelection::standArms;
+          else
+            requestedArmMotion = ArmMotionSelection::ArmMotion(ArmMotionSelection::firstNonBodyMotion + theArmMotionRequest.armMotion[arm] - 1);
+          break;
+        }
+        default:
+          ASSERT(false);
+          return;
+      }
+
+      // check if the target armmotion can be the requested armmotion (mainly if leaving is possible)
+      if(requestedArmMotion != ArmMotionSelection::keyFrameS && !theArmKeyFrameEngineOutput.arms[arm].isFree && theLegMotionSelection.targetMotion != MotionRequest::getUp
+        && theLegMotionSelection.targetMotion != MotionRequest::kick)
+      {
+        armMotionSelection.targetArmMotion[arm] = ArmMotionSelection::keyFrameS;
+        armMotionSelection.armKeyFrameRequest.arms[arm].fast = false;
+        armMotionSelection.armKeyFrameRequest.arms[arm].motion = ArmKeyFrameRequest::reverse;
+      }
+      else
+      {
+        armMotionSelection.targetArmMotion[arm] = requestedArmMotion;
+        if(armMotionSelection.targetArmMotion[arm] == ArmMotionSelection::keyFrameS)
+          armMotionSelection.armKeyFrameRequest.arms[arm] = theArmMotionRequest.armKeyFrameRequest.arms[arm];
+      }
+
+      const bool afterPlayDead = prevLegMotion == MotionRequest::specialAction && lastActiveSpecialAction == SpecialActionRequest::playDead &&
+                                 prevArmMotion[arm] == ArmMotionSelection::specialActionArms;
+      const int armInterpolationTime = afterPlayDead ? playDeadDelay : armInterPolationTimes[armMotionSelection.targetArmMotion[arm]];
+      interpolate(armMotionSelection.armRatios[arm].data(), ArmMotionSelection::numOfArmMotions, armInterpolationTime, armMotionSelection.targetArmMotion[arm]);
+    }
+  }
 
   if(lastArmMotion[Arms::left] != armMotionSelection.targetArmMotion[Arms::left])
     prevArmMotion[Arms::left] = lastArmMotion[Arms::left];
@@ -147,33 +203,19 @@ void MotionSelector::update(MotionSelection& motionSelection)
   if(lastArmMotion[Arms::right] != armMotionSelection.targetArmMotion[Arms::right])
     prevArmMotion[Arms::right] = lastArmMotion[Arms::right];
 
-  lastMotion = motionSelection.targetMotion;
   lastArmMotion[Arms::left] = armMotionSelection.targetArmMotion[Arms::left];
   lastArmMotion[Arms::right] = armMotionSelection.targetArmMotion[Arms::right];
 
-  PLOT("module:MotionSelector:ratios:walk", motionSelection.ratios[MotionRequest::walk]);
-  PLOT("module:MotionSelector:ratios:stand", motionSelection.ratios[MotionRequest::stand]);
-  PLOT("module:MotionSelector:ratios:specialAction", motionSelection.ratios[MotionRequest::specialAction]);
-  PLOT("module:MotionSelector:lastMotion", lastMotion);
-  PLOT("module:MotionSelector:prevMotion", prevMotion);
-  PLOT("module:MotionSelector:targetMotion", motionSelection.targetMotion);
-
   lastExecution = theFrameInfo.time;
-
-#ifndef NDEBUG
-  const Rangef& ratioLimits = Rangef::ZeroOneRange();
-  for(int i = 0; i < MotionRequest::numOfMotions; ++i)
-    ASSERT(ratioLimits.isInside(motionSelection.ratios[i]));
-#endif
 }
 
 void MotionSelector::interpolate(float* ratios, const int amount, const int interpolationTime, const int targetMotion)
 {
   // increase / decrease all ratios according to target motion
-  const unsigned deltaTime(theFrameInfo.getTimeSince(lastExecution));
-  float delta(static_cast<float>(deltaTime) / interpolationTime);
+  const unsigned deltaTime = theFrameInfo.getTimeSince(lastExecution);
+  float delta = static_cast<float>(deltaTime) / interpolationTime;
   ASSERT(SystemCall::getMode() == SystemCall::logfileReplay || delta > 0.00001f);
-  float sum(0);
+  float sum = 0;
   for(int i = 0; i < amount; i++)
   {
     if(i == targetMotion)

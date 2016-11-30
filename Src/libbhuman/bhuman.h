@@ -10,6 +10,20 @@
 #define LBH_SEM_NAME "/bhuman_sem"
 #define LBH_MEM_NAME "/bhuman_mem"
 
+enum NAOVersion
+{
+  V32,
+  V33,
+  V4,
+  V5,
+};
+
+enum NAOType
+{
+  H21,
+  H25,
+};
+
 enum LBHSensorIds
 {
   // joint sensors
@@ -117,31 +131,10 @@ enum LBHSensorIds
   angleXSensor,
   angleYSensor,
 
-  // sonar sensors
-  lUsSensor,
-  lUs1Sensor,
-  lUs2Sensor,
-  lUs3Sensor,
-  lUs4Sensor,
-  lUs5Sensor,
-  lUs6Sensor,
-  lUs7Sensor,
-  lUs8Sensor,
-  lUs9Sensor,
-  rUsSensor,
-  rUs1Sensor,
-  rUs2Sensor,
-  rUs3Sensor,
-  rUs4Sensor,
-  rUs5Sensor,
-  rUs6Sensor,
-  rUs7Sensor,
-  rUs8Sensor,
-  rUs9Sensor,
-
   // battery sensors
   batteryCurrentSensor,
   batteryChargeSensor,
+  batteryStatusSensor,
   batteryTemperatureSensor,
 
   // fsr sensors
@@ -306,9 +299,6 @@ enum LBHActuatorIds
   rFootLedRedActuator,
   rFootLedGreenActuator,
   rFootLedBlueActuator,
-  lbhNumOfNormalActuatorIds,
-
-  usActuator = lbhNumOfNormalActuatorIds,
 
   lbhNumOfActuatorIds
 };
@@ -323,6 +313,7 @@ enum LBHTeamInfoIds
 
 const int lbhNumOfStiffnessActuatorIds = lbhNumOfPositionActuatorIds;
 const int lbhNumOfLedActuatorIds = rFootLedBlueActuator + 1 - faceLedRedLeft0DegActuator;
+const int lbhNumOfDifSensors = 3;
 
 enum BHState
 {
@@ -346,9 +337,13 @@ struct LBHData
   volatile int newestSensors; /**< Index of the newest sensor data. */
   volatile int readingActuators; /**< Index of actuator commands reserved for reading. */
   volatile int newestActuators; /**< Index of the newest actuator command. */
-  
+
   char bodyId[16]; /* Device/DeviceList/ChestBoard/BodyId */
   char headId[16]; /* RobotConfig/Head/FullHeadId */
+  NAOVersion headVersion;
+  NAOVersion bodyVersion;
+  NAOType headType;
+  NAOType bodyType;
   float sensors[3][lbhNumOfSensorIds];
   float actuators[3][lbhNumOfActuatorIds];
   RoboCup::RoboCupGameControlData gameControlData[3];

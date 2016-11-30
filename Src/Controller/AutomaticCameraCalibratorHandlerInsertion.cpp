@@ -28,7 +28,7 @@ void AutomaticCameraCalibratorHandlerInsertion::deliverPoint(const Vector2i& poi
 void AutomaticCameraCalibratorHandlerInsertion::setActive(std::string view)
 {
   if(!ImageViewAdapter::addListener(this, view))
-    OUTPUT(idText, text, "AutomaticCameraCalibratorInsertion is already active for \"" + view + "\"");
+    OUTPUT_TEXT("AutomaticCameraCalibratorInsertion is already active for \"" + view + "\"");
 }
 
 void AutomaticCameraCalibratorHandlerInsertion::setInactive(std::string view)

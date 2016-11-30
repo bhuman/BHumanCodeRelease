@@ -6,11 +6,10 @@
 #include <QString>
 
 #ifdef WINDOWS
-#define NOMINMAX
 #include <Windows.h>
 #endif
 
-#if defined(OSX)
+#ifdef MACOS
 #include <iostream>
 #include <cstdlib>
 #endif
@@ -21,8 +20,8 @@ std::string makeDirectory()
 {
 #ifdef WINDOWS
   return "VS2015";
-#elif defined(OSX)
-  return "OSX";
+#elif defined MACOS
+  return "macOS";
 #else
   return "Linux";
 #endif
@@ -32,8 +31,8 @@ std::string platformDirectory()
 {
 #ifdef WINDOWS
   return "Windows";
-#elif defined(OSX)
-  return "OSX";
+#elif defined MACOS
+  return "macOS";
 #else
   return "Linux";
 #endif
@@ -48,7 +47,7 @@ void goToConfigDirectory(const char* argv0)
   GetLongPathNameA(fileName, longFileName, _MAX_PATH);
   QString applicationPath = QString(longFileName);
   applicationPath = applicationPath.replace(QRegExp("Build\\\\\\w+\\\\bush\\\\\\w+\\\\bush.exe"), "");
-#elif defined(OSX)
+#elif defined MACOS
   QString applicationPath = QDir::cleanPath(*argv0 == '/' ? QString(argv0) : QDir::root().current().path() + "/" + argv0);
   applicationPath = applicationPath.replace(QRegExp("Build/\\w+/bush/\\w+/bush.app/Contents/MacOS/bush"), "");
 #else

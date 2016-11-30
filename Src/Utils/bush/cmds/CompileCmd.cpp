@@ -37,10 +37,10 @@ std::vector<std::string> CompileCmd::complete(const std::string& cmdLine) const
     return Filesystem::getProjects(commandWithArgs[2]);
 }
 
-CompileCmd::CompileTask::CompileTask(Context &context,
-                                     const std::string &label,
-                                     const QString &command,
-                                     const QStringList &args)
+CompileCmd::CompileTask::CompileTask(Context& context,
+                                     const std::string& label,
+                                     const QString& command,
+                                     const QStringList& args)
   : Task(context),
     r(context, command, args),
     label(label)
@@ -68,7 +68,7 @@ void CompileCmd::CompileTask::cancel()
   r.stop();
 }
 
-void CompileCmd::CompileTask::setContext(Context *context)
+void CompileCmd::CompileTask::setContext(Context* context)
 {
   r.setContext(*context);
   Task::setContext(context);
@@ -80,18 +80,14 @@ std::string CompileCmd::CompileTask::getLabel()
 }
 
 #ifdef LINUX
-  #define LABEL "make"
-#else
-  #ifdef OSX
-    #define LABEL "xcodebuild"
-  #else
-    #ifdef WINDOWS
-      #define LABEL "vcxproj"
-    #endif
-  #endif
+#define LABEL "make"
+#elif defined MACOS
+#define LABEL "xcodebuild"
+#elif defined WINDOWS
+#define LABEL "vcxproj"
 #endif
 
-bool CompileCmd::execute(Context &context, const std::vector<std::string> &params)
+bool CompileCmd::execute(Context& context, const std::vector<std::string>& params)
 {
   QString command = getCommand();
   QStringList args;
@@ -135,10 +131,10 @@ QStringList CompileCmd::getParams(const QString& config, const QString& project)
   args << QString("/Build") << config + "|x64" << QString("/Project") << project;
   return args;
 }
-#elif defined(OSX)
+#elif defined MACOS
 QString CompileCmd::getCommand()
 {
-  return fromString(std::string(File::getBHDir())) + "/Make/OSX/compileFromBush";
+  return fromString(std::string(File::getBHDir())) + "/Make/macOS/compile";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)

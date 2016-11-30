@@ -5,9 +5,18 @@
 
 #pragma once
 
+#include "Platform/SystemCall.h"
 #include "Tools/MessageQueue/MessageIDs.h"
 #include "Tools/MessageQueue/InMessage.h"
-#include "Tools/Module/Blackboard.h"
+#include "Tools/Module/Module.h"
+
+// No verify when replaying logfiles
+#ifndef NDEBUG
+#undef _MODULE_VERIFY
+#define _MODULE_VERIFY(r) \
+  if(SystemCall::getMode() != SystemCall::logfileReplay) \
+    ModuleBase::verify(r);
+#endif
 
 class StreamHandler;
 

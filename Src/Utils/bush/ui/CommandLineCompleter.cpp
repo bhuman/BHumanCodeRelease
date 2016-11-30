@@ -22,15 +22,15 @@ static size_t countWords(const std::string& str)
   return c;
 }
 
-TabFilter::TabFilter(QObject *parent)
+TabFilter::TabFilter(QObject* parent)
   : QObject(parent)
 {}
 
-bool TabFilter::eventFilter(QObject *o, QEvent *e)
+bool TabFilter::eventFilter(QObject* o, QEvent* e)
 {
   if(e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease)
   {
-    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(e);
     if(keyEvent->key() == Qt::Key_Tab && e->type() == QEvent::KeyPress)
     {
       return false;
@@ -39,7 +39,7 @@ bool TabFilter::eventFilter(QObject *o, QEvent *e)
   return QObject::eventFilter(o, e);
 }
 
-CommandLineCompleter::CommandLineCompleter(QObject *parent)
+CommandLineCompleter::CommandLineCompleter(QObject* parent)
   : QCompleter(parent),
     wordCount(QLINEEDIT_MAX_LENGTH),
     model(new QStringListModel(this))
@@ -48,13 +48,13 @@ CommandLineCompleter::CommandLineCompleter(QObject *parent)
   setModel(model);
 }
 
-void CommandLineCompleter::setCompletionPrefix(const QString &text)
+void CommandLineCompleter::setCompletionPrefix(const QString& text)
 {
   size_t wc = countWords(toString(text));
   if(wc != wordCount)
   {
     QStringList strings;
-    foreach (std::string s, Commands::getInstance().complete(toString(text)))
+    foreach(std::string s, Commands::getInstance().complete(toString(text)))
     {
       strings << fromString(s);
     }

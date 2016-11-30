@@ -3,11 +3,11 @@
 class Power
 {
 public:
-  int value;
+  bool batteryCharging = false;
+  int value = 101;
 
-  Power();
-
-  Power(int value);
+  Power() = default;
+  Power(int value, bool batteryCharging);
 
   bool isValid();
 };

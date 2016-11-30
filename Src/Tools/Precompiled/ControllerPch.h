@@ -2,6 +2,6 @@
 
 #include "BHumanPch.h"
 
-#if !defined(LINUX) || defined(USEPCH)
+#if !defined LINUX || defined USEPCH
 #include "Controller/RobotConsole.h"
 #endif

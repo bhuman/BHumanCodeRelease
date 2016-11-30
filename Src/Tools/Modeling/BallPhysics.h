@@ -13,6 +13,8 @@
 #pragma once
 
 #include "Platform/BHAssert.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Math/Geometry.h"
 #include <limits>
 
 /**
@@ -33,8 +35,7 @@ public:
   static Vector2f getEndPosition(const Vector2f& p, const Vector2f& v, float ballFriction)
   {
     ASSERT(ballFriction < 0.f);
-    const Vector2f velInMetersPerSecond = v / 1000.f;                       // unit: meter / second
-    const float tStop = (velInMetersPerSecond.norm() * -1.f) / ballFriction;  // unit: seconds
+    const float tStop = computeTimeUntilBallStops(v, ballFriction);  // unit: seconds
     return propagateBallPosition(p, v, tStop, ballFriction);
   }
 
@@ -51,8 +52,11 @@ public:
     ASSERT(ballFriction < 0.f);
     if(v.norm() == 0.f)
       return p;
+    const float tStop = computeTimeUntilBallStops(v, ballFriction);        // unit: seconds
+    if(tStop < t)
+      t = tStop;
     const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
-    return p + v * t + a * 0.5f * t * t;                                    // unit: millimeter
+    return p + v * t + a * 0.5f * t * t;                                   // unit: millimeter
   }
 
   /**
@@ -67,9 +71,15 @@ public:
     ASSERT(ballFriction < 0.f);
     if(v.norm() == 0.f)
       return;
+    const float tStop = computeTimeUntilBallStops(v, ballFriction);        // unit: seconds
+    if(tStop < t)
+      t = tStop;
     const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
-    p += v * t + a * 0.5f * t * t;                                          // unit: millimeter
-    v += a * t;                                                             // unit: millimeter / s
+    p += v * t + a * 0.5f * t * t;                                         // unit: millimeter
+    if(t == tStop)
+      v = Vector2f::Zero();                                                // unit: millimeter / s
+    else
+      v += a * t;                                                          // unit: millimeter / s
   }
 
   /**
@@ -89,9 +99,15 @@ public:
     ASSERT(ballFriction < 0.f);
     if(v.norm() == 0.f)
       return;
+    const float tStop = computeTimeUntilBallStops(v, ballFriction);        // unit: seconds
+    if(tStop < t)
+      t = tStop;
     const Vector2f a = computeNegativeAccelerationVector(v, ballFriction); // unit: millimeter / second^2
-    v += a * t;                                                             // unit: millimeter / s
-    p += a * t * t * 0.5f;                                                  // unit: millimeter
+    if(t == tStop)
+      v = Vector2f::Zero();                                                // unit: millimeter / s
+    else
+      v += a * t;                                                          // unit: millimeter / s
+    p += a * t * t * 0.5f;                                                 // unit: millimeter
   }
 
   /**
@@ -113,8 +129,8 @@ public:
       // Compute time by solving the standard equation:
       // s = v * t + 0.5 * a * t^2  with v = velocity, a = ballFriction, s = distance
       const float s = distance / 1000.f;                       // unit: meter
-      const Vector2f velmps = v / 1000.f;                     // unit: meter / second
-      const float vb = velmps.norm() / ballFriction;            // unit: seconds
+      const Vector2f velmps = v / 1000.f;                      // unit: meter / second
+      const float vb = velmps.norm() / ballFriction;           // unit: seconds
       const float radicand = vb * vb + 2.f * s / ballFriction; // unit: seconds^2
       if(radicand < 0.f)
         return std::numeric_limits<float>::max();
@@ -133,9 +149,9 @@ public:
   {
     ASSERT(ballFriction < 0.0f);
     ASSERT(distance > 0.0f);
-    const float sqrt2 = 1.4142135623f; //sqrt(2)
-    const float b = ballFriction * 1000.0f; //unit: millimeter/second^2
-    return sqrt2 * std::sqrt(-b * distance);
+    const float sqrt2 = 1.4142135623f;       // sqrt(2)
+    const float b = ballFriction * 1000.0f;  // unit: millimeter / second^2
+    return sqrt2 * std::sqrt(-b * distance); // unit: millimeter / s
   }
 
 private:
@@ -148,8 +164,20 @@ private:
   static Vector2f computeNegativeAccelerationVector(const Vector2f& v, float ballFriction)
   {
     Vector2f negVel(v * -1.f);                   // unit: millimeter / second
-    negVel.normalize(std::abs(ballFriction));     // unit: meter / second^2
-    negVel *= 1000.f;                             // unit: millimeter / second^2
+    negVel.normalize(std::abs(ballFriction));    // unit: meter / second^2
+    negVel *= 1000.f;                            // unit: millimeter / second^2
     return negVel;
+  }
+
+  /**
+   * Computes the remaining time until the ball comes to a stop
+   * @param v The ball velocity (in mm/s)
+   * @ballFriction The ball friction (negative force)  (in m/s^2)
+   * @return The remaining rolling time (seconds)
+   */
+  static float computeTimeUntilBallStops(const Vector2f& v, float ballFriction)
+  {
+    const Vector2f velInMetersPerSecond = v / 1000.f;            // unit: meter / second
+    return (velInMetersPerSecond.norm() * -1.f) / ballFriction;  // unit: seconds
   }
 };

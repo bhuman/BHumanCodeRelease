@@ -26,16 +26,16 @@ public:
 
     union
     {
-      QString *text;
-      VisualContext *context;
+      QString* text;
+      VisualContext* context;
     };
 
-    Entry(Type type, const QString &text)
+    Entry(Type type, const QString& text)
       : type(type),
         text(new QString(text))
     {}
 
-    Entry(VisualContext *context)
+    Entry(VisualContext* context)
       : type(CONTEXT),
         context(context)
     {}
@@ -51,23 +51,23 @@ private:
   /** The widges which visualize the entries. */
   QList<QWidget*> widgets;
 
-  QFormLayout *formLayout;
+  QFormLayout* formLayout;
 
   /** Indicates if the last printed line had a newline at their end. */
   bool nl;
 
   QFormLayout* getLayout() { return formLayout; }
-  void updateWidget(size_t index, Entry *entry);
-  void addWidget(Entry *entry, const QString &commandLine = "");
+  void updateWidget(size_t index, Entry* entry);
+  void addWidget(Entry* entry, const QString& commandLine = "");
 
 public:
-  VisualContext(QWidget *parent);
+  VisualContext(QWidget* parent);
 
-  virtual void executeInContext(Console *console, TeamSelector *teamSelector, const QString &cmdLine);
+  virtual void executeInContext(Console* console, TeamSelector* teamSelector, const QString& cmdLine);
 
 public slots:
-  virtual void doPrint(ConsolePrintTarget target, const QString &msg);
-  void commandExecuted(Context *context, const QString &cmdLine);
+  virtual void doPrint(ConsolePrintTarget target, const QString& msg);
+  void commandExecuted(Context* context, const QString& cmdLine);
   void commandFinished(bool status);
   void commandCanceled();
   void cancel();
@@ -83,19 +83,19 @@ class VisualContextDecoration : public QFrame
 {
   Q_OBJECT
 
-  QPushButton *button; //TODO: button still inactive
+  QPushButton* button; //TODO: button still inactive
 
   /** Shows which commandLine is executed. */
-  QLabel *header;
+  QLabel* header;
 
   /** The visual context representation which should be decorated. */
-  VisualContext *visualContext;
+  VisualContext* visualContext;
 
   /** The parent in the tree. */
-  VisualContext *parentContext;
+  VisualContext* parentContext;
 
 public:
-  VisualContextDecoration(const QString &commandLine, VisualContext *parent, VisualContext *context);
+  VisualContextDecoration(const QString& commandLine, VisualContext* parent, VisualContext* context);
 
 public slots:
   void updateStatus(bool status);

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Tools/Joints.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/RobotParts/Joints.h"
 #include <cstring>
 
 /**
@@ -64,7 +64,7 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
     PLOT("representation:RobotHealth:maxJointTemperature", maxJointTemperature);
     PLOT("representation:RobotHealth:totalCurrent", totalCurrent);
   }
-  
+
   std::string csv() const
   {
     static bool first = true;
@@ -72,10 +72,10 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
     {
       first = false;
       return "motionFrameRate,avgMotionTime,maxMotionTime,minMotionTime,cognitionFrameRate,batteryLevel,totalCurrent,maxJointTemperature,jointWithMaxTeperature,cpuTemperature,load,memoryUsage,ballPercepts,linePercepts,goalPercepots,robotName\n" +
-        std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + std::to_string(goalPercepts) + "," + robotName + "\n";
+             std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + robotName + "\n";
     }
     else
-      return std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + std::to_string(goalPercepts) + "," + robotName + "\n";
+      return std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + robotName + "\n";
   },
 
   (float)(0.f) cognitionFrameRate, /**< Frames per second within process "Cognition" */
@@ -89,7 +89,6 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
   (std::string) robotName, /**< For fancier drawing :-) */
   (unsigned)(0) ballPercepts, /**< A ball percept counter used to determine ball percepts per hour */
   (unsigned)(0) linePercepts, /**< A line percept counter used to determine line percepts per hour */
-  (unsigned)(0) goalPercepts, /**< A goal percept counter used to determine goal percepts per hour */
   (bool)(true) wlan, /**< Status of the wlan hardware. true: wlan hardware is ok. false: wlan hardware is (probably physically) broken. */
   (Configuration)(Develop) configuration, /**< The configuration that was deployed. */
   (char[5]) hash, /**< The first 5 digits of the hash of the git HEAD that was deployed. */

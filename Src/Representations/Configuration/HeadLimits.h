@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Range.h"
 
 struct RobotCameraMatrix;
 
@@ -16,10 +18,10 @@ STREAMABLE(HeadLimits,
 private:
   bool intersectionWithShoulderPlane(const RobotCameraMatrix& robotCameraMatrix,
                                      const Vector3f& shoulderInOrigin,
-                                     const float imageTilt, Vector3f& intersection) const;
+                                     Angle imageTilt, Vector3f& intersection) const;
 
 public:
-  Vector2f getTiltBound(float pan) const;
+  Rangea getTiltBound(Angle pan) const;
 
   /**
    * Method to determine whether the image would show mostly parts of the shoulder.
@@ -29,8 +31,8 @@ public:
    * @return true if the target point specified by imageTilt is hidden by the shoulder.
    */
   bool imageCenterHiddenByShoulder(const RobotCameraMatrix& robotCameraMatrix,
-                                   const Vector3f& shoulderInOrigin, const float imageTilt,
-                                   const float hysteresis = 0.0f) const;
+                                   const Vector3f& shoulderInOrigin, Angle imageTilt,
+                                   float hysteresis = 0.f) const;
 
   /**
    * Calculates the upper intersection point of the vertical line through the center of the image
@@ -43,14 +45,14 @@ public:
   bool intersectionWithShoulderEdge(const RobotCameraMatrix& robotCameraMatrix,
                                     const Vector3f& shoulderInOrigin, Vector3f& intersection) const;
 
-  float maxPan() const { return intervals.back(); }
-  float minPan() const { return intervals.front(); }
+  Angle maxPan() const { return intervals.back(); }
+  Angle minPan() const { return intervals.front(); }
 
   /**< Draws this representation. */
   void draw() const,
 
   (float) shoulderRadius,
-  (std::vector<float>) intervals,
-  (std::vector<float>) lowerBounds,
-  (std::vector<float>) upperBounds,
+  (std::vector<Angle>) intervals,
+  (std::vector<Angle>) lowerBounds,
+  (std::vector<Angle>) upperBounds,
 });

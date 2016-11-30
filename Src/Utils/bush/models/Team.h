@@ -9,7 +9,7 @@ struct Robot;
 
 class Team : public Streamable
 {
-  std::vector<std::vector<Robot*> > players;
+  std::vector<std::vector<Robot*>> players;
   std::map<Robot*, bool> selectedPlayers;
 
   void serialize(In*, Out*);
@@ -25,11 +25,12 @@ public:
   std::string buildConfig;
   unsigned short volume;
   std::string deployDevice;
+  int magicNumber;
 
   Team();
   Team(const std::string& name, unsigned short number);
   void addPlayer(unsigned int playerNumber, bool  substitutePlayer, Robot& robot);
-  std::vector<std::vector<Robot*> > getPlayersPerNumber() const;
+  std::vector<std::vector<Robot*>> getPlayersPerNumber() const;
   std::vector<Robot*> getPlayers() const;
   std::vector<Robot*> getPlayersWrapped() const;
   unsigned short getPlayerNumber(const Robot& robot) const;

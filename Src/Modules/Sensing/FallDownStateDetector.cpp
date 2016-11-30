@@ -15,9 +15,6 @@ MAKE_MODULE(FallDownStateDetector, sensing)
 
 void FallDownStateDetector::update(FallDownState& fallDownState)
 {
-  DECLARE_PLOT("module:FallDownStateDetector:accelerationAngleXZ");
-  DECLARE_PLOT("module:FallDownStateDetector:accelerationAngleYZ");
-
   // Buffer data:
   accXbuffer.push_front(theInertialData.acc.x());
   accYbuffer.push_front(theInertialData.acc.y());
@@ -38,6 +35,12 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
   PLOT("module:FallDownStateDetector:accelerationAngleYZ", accelerationAngleYZ);
 
   fallDownState.odometryRotationOffset = 0;
+
+  //use different measurement if it kicks
+  staggeringAngleX = (theMotionInfo.motion == MotionRequest::kick) ? staggeringKickThresX : staggeringThresX;
+  staggeringAngleY = (theMotionInfo.motion == MotionRequest::kick) ? staggeringKickThresY : staggeringThresY;
+  fallDownAngleX = (theMotionInfo.motion == MotionRequest::kick) ? fallingKickThresX: fallingThresX;
+  fallDownAngleY = (theMotionInfo.motion == MotionRequest::kick) ? fallingKickThresY : fallingThresY;
 
   if(!specialSpecialAction())
   {
@@ -86,7 +89,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
         fallDownState.direction = FallDownState::front;
         fallDownState.state = FallDownState::onGround;
         if(theMotionInfo.motion != MotionRequest::getUp)
-         {
+        {
           if(fallDownState.sidewards == FallDownState::leftwards)
           {
             fallDownState.odometryRotationOffset = pi_2;
@@ -104,7 +107,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
         fallDownState.direction = FallDownState::back;
         fallDownState.state = FallDownState::onGround;
         if(theMotionInfo.motion != MotionRequest::getUp)
-         {
+        {
           if(fallDownState.sidewards == FallDownState::leftwards)
           {
             fallDownState.odometryRotationOffset = -pi_2;
@@ -124,7 +127,7 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
 
         if(theMotionInfo.motion != MotionRequest::getUp)
           if(fallDownState.sidewards != FallDownState::fallen)
-             fallDownState.sidewards = FallDownState::leftwards;
+            fallDownState.sidewards = FallDownState::leftwards;
       }
       else if(abs(accelerationAngleYZ) < 0.5f)
       {
@@ -140,7 +143,19 @@ void FallDownStateDetector::update(FallDownState& fallDownState)
   else
     fallDownState.state = FallDownState::undefined;
 
-
+  /*
+  if(theMotionInfo.motion == MotionRequest::specialAction
+     && theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::keeperJumpLeftBack)
+  {
+    if(theMotionInfo.specialActionRequest.mirror)
+    {
+      keeperJumped = KeeperJumpedRight;
+    }
+    else
+    {
+      keeperJumped = KeeperJumpedLeft;
+    }
+  }*/
   //these odometry changes really need to be proven if they are still correct
   if(keeperJumped != None)
   {
@@ -183,7 +198,8 @@ bool FallDownStateDetector::isUprightOrStaggering(FallDownState& fallDownState)
 bool FallDownStateDetector::specialSpecialAction()
 {
   return (theMotionInfo.motion == MotionRequest::specialAction
-          && (theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead));
+          && (theMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::playDead
+              ));
 }
 
 bool FallDownStateDetector::isStaggering()

@@ -1,8 +1,8 @@
 /**
-* @file Modules/Infrastructure/MotionRobotHealthProvider.h
-* This file declares a module that provides information about the robot's health.
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
-*/
+ * @file Modules/Infrastructure/MotionRobotHealthProvider.h
+ * This file declares a module that provides information about the robot's health.
+ * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ */
 
 #pragma once
 
@@ -16,15 +16,15 @@ MODULE(MotionRobotHealthProvider,
 });
 
 /**
-* @class MotionRobotHealthProvider
-* A module that provides information about the robot's health
-*/
+ * @class MotionRobotHealthProvider
+ * A module that provides information about the robot's health
+ */
 class MotionRobotHealthProvider : public MotionRobotHealthProviderBase
 {
 private:
   /** The main function, called every cycle
-  * @param motionRobotHealth The data struct to be filled
-  */
+   * @param motionRobotHealth The data struct to be filled
+   */
   void update(MotionRobotHealth& motionRobotHealth);
 
   RingBufferWithSum<unsigned, 30> timeBuffer;        /** Buffered timestamps of previous executions */

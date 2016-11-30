@@ -9,15 +9,17 @@ option(HandleGameState)
   {
     if(theGameInfo.state == STATE_INITIAL)
       goto initial;
-    else if(theGameInfo.state == STATE_FINISHED)
+    if(theGameInfo.state == STATE_FINISHED)
       goto finished;
-    else if(theFallDownState.state != FallDownState::upright && theFallDownState.state != FallDownState::undefined)
+
+    if(theFallDownState.state == FallDownState::onGround)
       goto getUp;
-    else if(theGameInfo.state == STATE_READY)
+
+    if(theGameInfo.state == STATE_READY)
       goto ready;
-    else if(theGameInfo.state == STATE_SET)
+    if(theGameInfo.state == STATE_SET)
       goto set;
-    else if(theGameInfo.state == STATE_PLAYING)
+    if(theGameInfo.state == STATE_PLAYING)
       goto playing;
   }
 
@@ -26,16 +28,8 @@ option(HandleGameState)
   {
     action
     {
-      theHeadControlMode = HeadControl::none;
       SetHeadPanTilt(0.f, 0.f, 150_deg);
-      if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
-        PlaySound(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber
-                  ? "penaltyStriker.wav" : "penaltyKeeper.wav");
-
-      if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
-        Stand();
-      else
-        SpecialAction(SpecialActionRequest::standHigh);
+      SpecialAction(SpecialActionRequest::standHigh);
     }
   }
 
@@ -43,8 +37,8 @@ option(HandleGameState)
   state(finished)
   {
     action
-    {
-      theHeadControlMode = HeadControl::lookForward;
+    { 
+      LookForward();
       Stand();
     }
   }
@@ -54,7 +48,6 @@ option(HandleGameState)
   {
     action
     {
-      Annotation("Getting up.");
       GetUp();
     }
   }
@@ -64,7 +57,6 @@ option(HandleGameState)
   {
     action
     {
-      ArmContact();
       ReadyState();
     }
   }
@@ -74,7 +66,6 @@ option(HandleGameState)
   {
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
       Stand();
     }
   }
@@ -84,8 +75,7 @@ option(HandleGameState)
   {
     action
     {
-      ArmContact();
-      PlayingState();
+      Demo();
     }
   }
 }

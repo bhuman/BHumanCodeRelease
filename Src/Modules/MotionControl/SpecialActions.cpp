@@ -12,7 +12,7 @@
 
 MAKE_MODULE(SpecialActions, motionControl)
 
-PROCESS_LOCAL SpecialActions* SpecialActions::theInstance = 0;
+thread_local SpecialActions* SpecialActions::theInstance = nullptr;
 
 void SpecialActions::MotionNetData::load(std::vector<float>& motionData)
 {
@@ -256,7 +256,7 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
 
   float speedFactor = 1.0f;
   MODIFY("parameters:SpecialActions:speedFactor", speedFactor);
-  if(theMotionSelection.specialActionMode != MotionSelection::deactive)
+  if(theLegMotionSelection.specialActionMode != LegMotionSelection::deactive)
   {
     specialActionsOutput.isLeavingPossible = true;
     if(dataRepetitionCounter <= 0)
@@ -283,7 +283,7 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
       }
       wasEndOfSpecialAction = false;
       // search next data, leave on transition to external motion
-      if(!getNextData(theMotionSelection.specialActionRequest, specialActionsOutput))
+      if(!getNextData(theLegMotionSelection.specialActionRequest, specialActionsOutput))
       {
         wasActive = true;
         wasEndOfSpecialAction = true;
@@ -322,10 +322,10 @@ void SpecialActions::update(SpecialActionsOutput& specialActionsOutput)
     specialActionsOutput.isLeavingPossible = false;
     if(deShakeMode)
       for(int i = Joints::lShoulderPitch; i <= Joints::rElbowRoll; ++i)
-        if(randomFloat() < 0.25)
+        if(Random::bernoulli(0.25))
           specialActionsOutput.angles[i] = JointAngles::off;
   }
-  wasActive = theMotionSelection.specialActionMode != MotionSelection::deactive;
+  wasActive = theLegMotionSelection.specialActionMode != LegMotionSelection::deactive;
 }
 
 bool SpecialActions::handleMessage(InMessage& message)

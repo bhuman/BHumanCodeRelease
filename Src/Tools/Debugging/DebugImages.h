@@ -1,207 +1,166 @@
 /**
  * @file Tools/Debugging/DebugImages.h
  *
- * Macros to manipulate and send debug images
- *
- * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
+ * @author Felix Thielke
  */
 
 #pragma once
+
 #include "Tools/Debugging/Debugging.h"
-#include "Tools/Math/Geometry.h"
+#include "Tools/Streams/Streamable.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Representations/Infrastructure/Image.h"
+#include "Tools/ImageProcessing/TImage.h"
 
-/**
- * Declares a debug image
- * @param id An image id
- */
-#define DECLARE_DEBUG_IMAGE(id) mutable Image id##Image
+struct DebugImage : public Streamable
+{
+private:
+  void* data;
+  size_t maxSize = 0;
 
-/**Gets the y, u and v values of the specified pixel in the specified debug image */
-#define DEBUG_IMAGE_GET_PIXEL_Y(id, xx, yy) id##Image[yy][xx].y
-#define DEBUG_IMAGE_GET_PIXEL_U(id, xx, yy) id##Image[yy][xx].cb
-#define DEBUG_IMAGE_GET_PIXEL_V(id, xx, yy) id##Image[yy][xx].cr
+public:
+  unsigned int timeStamp;
+  unsigned short width;
+  unsigned short height;
+  bool isReference;
+  PixelTypes::PixelType type;
 
-/**Sets the Y, U, and V values of the specified pixel in the specified debug image */
-#define DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, Y, U, V) \
-  do \
-    if(((int)(xx))+1 > 0 && ((int)(xx)) < id##Image.width && \
-       ((int)(yy))+1 > 0 && ((int)(yy)) < id##Image.height) \
-    { \
-      id##Image[yy][xx].y = Y; \
-      id##Image[yy][xx].cb = U; \
-      id##Image[yy][xx].cr = V; \
-    } \
-  while(false)
+  DebugImage() : data(nullptr), isReference(false) {}
+  DebugImage(const Image& image, const bool copy = false)
+    : data(copy ? Memory::alignedMalloc(image.width * image.height * 2 * sizeof(PixelTypes::YUYVPixel), 32) : const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(image.timeStamp), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height * 2)), isReference(!copy), type(PixelTypes::PixelType::YUYV)
+  {
+    if(copy)
+    {
+      maxSize = width * height * sizeof(PixelTypes::YUYVPixel);
+      memcpy(data, image[0], maxSize);
+    }
+  }
+  DebugImage(const TImage<PixelTypes::RGBPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::RGB) {}
+  DebugImage(const TImage<PixelTypes::BGRAPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::BGRA) {}
+  DebugImage(const TImage<PixelTypes::YUYVPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::YUYV) {}
+  DebugImage(const TImage<PixelTypes::YUVPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::YUV) {}
+  DebugImage(const TImage<PixelTypes::GrayscaledPixel>& image, const bool copy = false)
+    : data(copy ? Memory::alignedMalloc(image.width * image.height * sizeof(PixelTypes::GrayscaledPixel), 32) : const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(!copy), type(PixelTypes::PixelType::Grayscale)
+  {
+    if(copy)
+    {
+      maxSize = width * height * sizeof(PixelTypes::GrayscaledPixel);
+      memcpy(data, image[0], maxSize);
+    }
+  }
+  DebugImage(const TImage<PixelTypes::ColoredPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::Colored) {}
 
-/** Converts a RGB color and sets the Y, U, and V values of the specified pixel in the specified debug image */
-#define DEBUG_IMAGE_SET_PIXEL_RGB(id, xx, yy, r, g, b) \
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, \
-                            (unsigned char)((306 * int(b) + 601 * int(g) + 117 * int(r)) >> 10), \
-                            (unsigned char)((130560 + 512 * int(b) - 429 * int(g) - 83 * int(r)) >> 10), \
-                            (unsigned char)((130560 - 173 * int(b) - 339 * int(g) + 512 * int(r)) >> 10))
+  ~DebugImage()
+  {
+    if(!isReference && data)
+    {
+      Memory::alignedFree(data);
+      data = nullptr;
+    }
+  }
 
-/**
- * Initializes a debug image with an image
- * @param id An image id
- * @param image The Image.
- */
-#define INIT_DEBUG_IMAGE(id, image) \
-  DECLARED_DEBUG_RESPONSE("debug images:" #id) id##Image = image
+  template<typename T> class DebugImageView
+  {
+  private:
+    const DebugImage& image;
+  public:
+    DebugImageView(const DebugImage& image) : image(image) {}
+    const T* operator[](const size_t y) const { return reinterpret_cast<T*>(image.data) + y * image.width; }
+  };
 
-/**
- * Sets the width and height of a debug image
- * @param id An image id.
- * @param width width of the image.
- * @param height height of the image.
- */
-#define SET_DEBUG_IMAGE_SIZE(id, rwidth, rheight) \
-  id##Image.setResolution(rwidth, rheight); \
+  template<typename T> DebugImageView<T> getView() const
+  {
+    return DebugImageView<T>(*this);
+  }
 
-/**
- * Initializes a debug image with an image, setting all pixels black afterwards
- * @param id An image id
- */
-#define INIT_DEBUG_IMAGE_BLACK(id, rwidth, rheight) \
-  do \
-    DECLARED_DEBUG_RESPONSE("debug images:" #id) \
-    { \
-      id##Image.setResolution(rwidth, rheight); \
-      for(int y = 0; y < id##Image.height; y++) \
-        for(int x = 0; x < id##Image.width; x++) \
-          DEBUG_IMAGE_SET_PIXEL_BLACK(id, x, y); \
-    } \
-  while(false)
+  void from(const Image& image)
+  {
+    size_t size = image.width * image.height * 2 * sizeof(PixelTypes::YUYVPixel);
+    if(isReference || !data || size > maxSize)
+    {
+      if(!isReference && data)
+        Memory::alignedFree(data);
+      isReference = false;
+      data = Memory::alignedMalloc(size, 32);
+      maxSize = size;
+    }
+    timeStamp = image.timeStamp;
+    width = static_cast<unsigned short>(image.width);
+    height = static_cast<unsigned short>(image.height * 2);
+    type = PixelTypes::PixelType::YUYV;
+    memcpy(data, image[0], size);
+  }
+
+  void from(const TImage<PixelTypes::GrayscaledPixel>& image)
+  {
+    size_t size = image.width * image.height * sizeof(PixelTypes::GrayscaledPixel);
+    if(isReference || !data || size > maxSize)
+    {
+      if(!isReference && data)
+        Memory::alignedFree(data);
+      isReference = false;
+      data = Memory::alignedMalloc(size, 32);
+      maxSize = size;
+    }
+    width = static_cast<unsigned short>(image.width);
+    height = static_cast<unsigned short>(image.height);
+    type = PixelTypes::PixelType::Grayscale;
+    memcpy(data, image[0], size);
+  }
+
+  void toImage(Image& image) const
+  {
+    image.setResolution(width, height / 2, true);
+    memcpy(image[0], data, width * height * PixelTypes::pixelSize(type));
+  }
+
+  unsigned short getImageWidth() const
+  {
+    return type == PixelTypes::YUYV ? width * 2 : width;
+  }
+
+  void convertToBGRA(void* dest) const;
+
+protected:
+  void serialize(In* in, Out* out)
+  {
+    STREAM_REGISTER_BEGIN;
+    STREAM(type, PixelTypes);
+    STREAM(width);
+    STREAM(height);
+
+    const size_t size = width * height * PixelTypes::pixelSize(type);
+    if(out)
+      out->write(data, size);
+    else
+    {
+      if(isReference || !data || size > maxSize)
+      {
+        if(!isReference && data)
+          Memory::alignedFree(data);
+        isReference = false;
+        data = Memory::alignedMalloc(size, 32);
+        maxSize = size;
+      }
+      in->read(data, size);
+    }
+
+    STREAM_REGISTER_FINISH;
+  }
+};
 
 /**Sends the debug image with the specified id */
-#define SEND_DEBUG_IMAGE(id) \
+#define SEND_DEBUG_IMAGE(id, image) \
   do \
-    DEBUG_RESPONSE("debug images:" #id) OUTPUT(idDebugImage, bin, #id << id##Image); \
+    DEBUG_RESPONSE("debug images:" id) OUTPUT(idDebugImage, bin, id << DebugImage(image)); \
   while(false)
-
-/**Sends the debug image with the specified id as jpeg encoded image */
-#define SEND_DEBUG_IMAGE_AS_JPEG(id) \
-  do \
-    DEBUG_RESPONSE("debug images:" #id) \
-    { \
-      JPEGImage* temp = new JPEGImage(id##Image); \
-      OUTPUT(idDebugJPEGImage, bin, #id << *temp); \
-      delete temp; \
-    } \
-  while(false)
-
-/**Sets the Y, U, and V values of the specified pixel in the specified debug image */
-#define DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, Y, U, V) \
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xy.x, xy.y, Y, U, V)
-
-#define DEBUG_IMAGE_SET_PIXEL_BLACK(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 0, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_WHITE(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 255, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_GREEN(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 180, 0, 0)
-#define DEBUG_IMAGE_SET_PIXEL_LIGHT_GRAY(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 192, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_GRAY(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 127, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_GRAY(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 64, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_GREEN(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 0, 0, 0)
-#define DEBUG_IMAGE_SET_PIXEL_ORANGE(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 164, 0, 255)
-#define DEBUG_IMAGE_SET_PIXEL_YELLOW(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 255, 0, 170)
-#define DEBUG_IMAGE_SET_PIXEL_RED(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 0, 0, 255)
-#define DEBUG_IMAGE_SET_PIXEL_BLUE(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 60, 255, 80)
-#define DEBUG_IMAGE_SET_PIXEL_PINK(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 255, 255, 255)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_BLUE(id, xx, yy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV(id, xx, yy, 30, 255, 80)
-
-/** and the same with an vector as input */
-#define DEBUG_IMAGE_SET_PIXEL_BLACK_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 0, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_WHITE_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 255, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_GREEN_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 180, 0, 0)
-#define DEBUG_IMAGE_SET_PIXEL_LIGHT_GRAY_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 192, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_GRAY_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 127, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_GRAY_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 64, 127, 127)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_GREEN_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 0, 0, 0)
-#define DEBUG_IMAGE_SET_PIXEL_ORANGE_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 100, 255, 0)
-#define DEBUG_IMAGE_SET_PIXEL_YELLOW_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 180, 255, 0)
-#define DEBUG_IMAGE_SET_PIXEL_RED_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 0, 255, 0)
-#define DEBUG_IMAGE_SET_PIXEL_MAUVE_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 0, 180, 255)
-#define DEBUG_IMAGE_SET_PIXEL_BLUE_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 180, 0, 255)
-#define DEBUG_IMAGE_SET_PIXEL_PINK_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 255, 255, 255)
-#define DEBUG_IMAGE_SET_PIXEL_DARK_BLUE_AS_VECTOR(id, xy)\
-  DEBUG_IMAGE_SET_PIXEL_YUV_AS_VECTOR(id, xy, 100, 0, 255)
 
 // all
 /** Generate debug image debug request, can be used for encapsulating the creation of debug images on request */
 #define COMPLEX_IMAGE(id) \
-  DEBUG_RESPONSE("debug images:" #id)
-
-/**
- * Fill a triangle inside the specified debug image with the specified color
- * @param x1, y1, x2, y2, x3, y3 the three points of the triangle
- */
-//FIXME think about inclusive vs. exclusive indices
-#define DEBUG_IMAGE_FILL_TRIANGLE_RGB(id, x1, y1, x2, y2, x3, y3, r, g, b) \
-  do \
-    COMPLEX_IMAGE(id) \
-    { \
-      const int lowX = std::min(x1, std::min(x2, x3)); \
-      const int highX = std::max(x1, std::max(x2, x3)); \
-      const int lowY = std::min(y1, std::min(y2, y3)); \
-      const int highY = std::max(y1, std::max(y2, y3)); \
-      for(int x = lowX; x < highX; ++x) \
-      { \
-        for(int y = lowY; y < highY; ++y) \
-        { \
-          if(Geometry::isPointInsideTriangle(static_cast<float>(x1), static_cast<float>(y1), \
-                                             static_cast<float>(x2), static_cast<float>(y2), \
-                                             static_cast<float>(x3), static_cast<float>(y3), \
-                                             static_cast<float>(x), static_cast<float>(y))) \
-          { \
-            DEBUG_IMAGE_SET_PIXEL_RGB(id, x, y, r, g, b); \
-          } \
-        } \
-      } \
-    } \
-  while(false)
-
-#define DEBUG_IMAGE_DRAW_LINE_RGB(id, x1, y1, x2, y2, r, g, b) \
-  do \
-    COMPLEX_IMAGE(id) \
-    { \
-      const Geometry::PixeledLine line(x1, y1, x2, y2); \
-      for(const Vector2i& p : line) \
-      { \
-        DEBUG_IMAGE_SET_PIXEL_RGB(id, p.x(), p.y(), r, g, b); \
-      } \
-    } \
-  while(false)
-
-#define DEBUG_IMAGE_TRIANGLE_RGB(id, x1, y1, x2, y2, x3, y3, r, g, b) \
-  do \
-    COMPLEX_IMAGE(id) \
-    { \
-      DEBUG_IMAGE_DRAW_LINE_RGB(id, x1, y1, x2, y2, r, g, b); \
-      DEBUG_IMAGE_DRAW_LINE_RGB(id, x2, y2, x3, y3, r, g, b); \
-      DEBUG_IMAGE_DRAW_LINE_RGB(id, x3, y3, x1, y1, r, g, b); \
-    } \
-  while(false)
+  DEBUG_RESPONSE("debug images:" id)

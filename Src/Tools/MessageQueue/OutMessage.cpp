@@ -12,12 +12,14 @@
 
 void OutMessageQueue::open(MessageQueueBase* q)
 {
-  if(queue == 0) queue = q;
+  if(queue == nullptr)
+    queue = q;
 }
 
 void OutMessageQueue::writeToStream(const void* p, size_t size)
 {
-  if(queue != 0) queue->write(p, size);
+  if(queue != nullptr)
+    queue->write(p, size);
 }
 
 OutBinaryMessage::OutBinaryMessage(MessageQueueBase* q)

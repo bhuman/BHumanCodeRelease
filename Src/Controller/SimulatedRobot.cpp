@@ -14,20 +14,21 @@
 
 #include "Controller/RoboCupCtrl.h"
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/USRequest.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
-#include "Representations/Infrastructure/SensorData/UsSensorData.h"
+#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Rotation.h"
 #include "Tools/Streams/InStreams.h"
+#include "Tools/ImageProcessing/ColorModelConversions.h"
+#include "Tools/ImageProcessing/AVX.h"
 
 SimRobotCore2::SensorPort* SimulatedRobot::activeCameras[12];
 unsigned SimulatedRobot::activeCameraCount = 0;
@@ -35,7 +36,7 @@ unsigned SimulatedRobot::activeCameraCount = 0;
 SimRobot::Object* SimulatedRobot::ball = nullptr;
 
 SimulatedRobot::SimulatedRobot() :
-  blue(false), robot(0), leftFoot(0), rightFoot(0), activeCameraIndex(activeCameraCount++)
+  activeCameraIndex(activeCameraCount++)
 {
   ASSERT(activeCameraCount <= sizeof(activeCameras) / sizeof(activeCameras[0]));
 }
@@ -47,8 +48,8 @@ SimulatedRobot::~SimulatedRobot()
 
 void SimulatedRobot::init(SimRobot::Object* robot)
 {
-  ASSERT(this->robot == 0);
-  this->robot = dynamic_cast<SimRobotCore2::Object*>(robot);
+  ASSERT(this->robot == nullptr);
+  this->robot = reinterpret_cast<SimRobotCore2::Object*>(robot);
   application = RoboCupCtrl::application;
 
   // get the robot's team color and number
@@ -64,31 +65,37 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   resStream >> cameraResolution;
 
   // build cameraInfo
-  switch(cameraResolution.resolution)
+  switch(cameraResolution.resolutionUpper)
   {
-    case CameraResolution::Resolutions::upper640:
+    case CameraResolution::Resolutions::w320h240:
+      upperCameraInfo.width = 320;
+      upperCameraInfo.height = 240;
+      break;
+    case CameraResolution::Resolutions::w640h480:
       upperCameraInfo.width = 640;
       upperCameraInfo.height = 480;
+      break;
+    case CameraResolution::Resolutions::w1280h960:
+      upperCameraInfo.width = 1280;
+      upperCameraInfo.height = 960;
+      break;
+    default:
+      ASSERT(false);
+      break;
+  }
+  switch(cameraResolution.resolutionLower)
+  {
+    case CameraResolution::Resolutions::w320h240:
       lowerCameraInfo.width = 320;
       lowerCameraInfo.height = 240;
       break;
-    case CameraResolution::Resolutions::lower640:
-      upperCameraInfo.width = 320;
-      upperCameraInfo.height = 240;
+    case CameraResolution::Resolutions::w640h480:
       lowerCameraInfo.width = 640;
       lowerCameraInfo.height = 480;
       break;
-    case CameraResolution::Resolutions::both320:
-      upperCameraInfo.width = 320;
-      upperCameraInfo.height = 240;
-      lowerCameraInfo.width = 320;
-      lowerCameraInfo.height = 240;
-      break;
-    case CameraResolution::Resolutions::both640:
-      upperCameraInfo.width = 640;
-      upperCameraInfo.height = 480;
-      lowerCameraInfo.width = 640;
-      lowerCameraInfo.height = 480;
+    case CameraResolution::Resolutions::w1280h960:
+      lowerCameraInfo.width = 1280;
+      lowerCameraInfo.height = 960;
       break;
     default:
       ASSERT(false);
@@ -115,9 +122,9 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   QVector<QString> parts;
   parts.resize(1);
   parts[0] = "RFoot";
-  VERIFY(rightFoot = dynamic_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
+  VERIFY(rightFoot = reinterpret_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
   parts[0] = "LFoot";
-  VERIFY(leftFoot = dynamic_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
+  VERIFY(leftFoot = reinterpret_cast<SimRobotCore2::Body*>(application->resolveObject(parts, robot, SimRobotCore2::body)));
 
   // get joints
   parts.resize(1);
@@ -126,8 +133,8 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   {
     parts[0] = QString(Joints::getName(static_cast<Joints::Joint>(i))) + position;
     parts[0] = QString(parts[0].left(1)).toUpper() + parts[0].mid(1);
-    jointSensors[i] = dynamic_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
-    jointActuators[i] = dynamic_cast<SimRobotCore2::ActuatorPort*>(application->resolveObject(parts, robot, SimRobotCore2::actuatorPort));
+    jointSensors[i] = reinterpret_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
+    jointActuators[i] = reinterpret_cast<SimRobotCore2::ActuatorPort*>(application->resolveObject(parts, robot, SimRobotCore2::actuatorPort));
   }
 
   // imu sensors
@@ -144,17 +151,7 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   parts[0] = "CameraBottom.image";
   lowerCameraSensor = application->resolveObject(parts, robot, SimRobotCore2::sensorPort);
   cameraSensor = lowerCameraSensor;
-  activeCameras[activeCameraIndex] = dynamic_cast<SimRobotCore2::SensorPort*>(cameraSensor);
-
-  // sonars
-  parts[0] = "SonarLeft.distance";
-  leftUsSensor = dynamic_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
-  parts[0] = "SonarRight.distance";
-  rightUsSensor = dynamic_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
-  parts[0] = "SonarCenterLeft.distance";
-  centerLeftUsSensor = dynamic_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
-  parts[0] = "SonarCenterRight.distance";
-  centerRightUsSensor = dynamic_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
+  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor);
 
   // load calibration
   InMapFile stream("jointCalibration.cfg");
@@ -193,10 +190,10 @@ void SimulatedRobot::init(SimRobot::Object* robot)
     }
   }
 
-  // read UsConfiguration
-  InMapFile usStream("usConfiguration.cfg");
-  ASSERT(usStream.exists());
-  usStream >> usConfig;
+  // read RobotDimensions
+  InMapFile rdStream("robotDimensions.cfg");
+  ASSERT(rdStream.exists());
+  rdStream >> robotDimensions;
 }
 
 void SimulatedRobot::setBall(SimRobot::Object* ball)
@@ -225,7 +222,7 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
   // Get the standard ball position from the scene
   if(ball)
   {
-    Vector2f ballPosition = getPosition(ball);
+    Vector3f ballPosition = getPosition3D(ball);
     if(blue)
       ballPosition = -ballPosition;
     worldState.balls.push_back(ballPosition);
@@ -271,8 +268,82 @@ void SimulatedRobot::getOdometryData(const Pose2f& robotPose, OdometryData& odom
 void SimulatedRobot::getAbsoluteBallPosition(Vector2f& ballPosition)
 {
   if(ball)
-  {
     ballPosition = getPosition(ball);
+}
+
+template<bool avx> inline __m_auto_i toYUYV(const __m_auto_i rgb0, const __m_auto_i rgb1)
+{
+  static const __m_auto_i bMask = _mmauto_setr128_epi8(2, char(0xFF), char(0xFF), char(0xFF), 5, char(0xFF), char(0xFF), char(0xFF), 8, char(0xFF), char(0xFF), char(0xFF), 11, char(0xFF), char(0xFF), char(0xFF));
+  static const __m_auto_i grMask = _mmauto_setr128_epi8(1, char(0xFF), 0, char(0xFF), 4, char(0xFF), 3, char(0xFF), 7, char(0xFF), 6, char(0xFF), 10, char(0xFF), 9, char(0xFF));
+  static constexpr int scaleExponent = 14;
+  static const __m_auto_i scaledYCoeffB = _mmauto_set1_epi32(static_cast<short>(ColorModelConversions::yCoeffB * static_cast<float>(1 << scaleExponent)));
+  static const __m_auto_i scaledYCoeffGR = _mmauto_set1_epi32(static_cast<short>(ColorModelConversions::yCoeffG * static_cast<float>(1 << scaleExponent)) | (static_cast<short>(ColorModelConversions::yCoeffR * static_cast<float>(1 << scaleExponent)) << 16));
+  static const __m_auto_i scaledUCoeff = _mmauto_set1_epi16(static_cast<short>(ColorModelConversions::uCoeff * static_cast<float>(1 << scaleExponent)));
+  static const __m_auto_i scaledVCoeff = _mmauto_set1_epi16(static_cast<short>(ColorModelConversions::vCoeff * static_cast<float>(1 << scaleExponent)));
+  static const __m_auto_i c_128 = _mmauto_set1_epi16(128);
+  static const __m_auto_i c_0 = _mmauto_setzero_si_all();
+
+  const __m_auto_i gr0 = _mmauto_shuffle_epi8(rgb0, grMask);
+  const __m_auto_i gr1 = _mmauto_shuffle_epi8(rgb1, grMask);
+  const __m_auto_i b0 = _mmauto_shuffle_epi8(rgb0, bMask);
+  const __m_auto_i b1 = _mmauto_shuffle_epi8(rgb1, bMask);
+
+  const __m_auto_i y = _mmauto_packs_epi32(
+                         _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr0, scaledYCoeffGR), _mmauto_madd_epi16(b0, scaledYCoeffB)), scaleExponent),
+                         _mmauto_srai_epi32(_mmauto_add_epi32(_mmauto_madd_epi16(gr1, scaledYCoeffGR), _mmauto_madd_epi16(b1, scaledYCoeffB)), scaleExponent)
+                       );
+
+  const __m_auto_i uv = _mmauto_add_epi16(
+                          _mmauto_unpacklo_epi16(
+                            _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(b0, b1), y), scaledUCoeff), scaleExponent + 1), c_0),
+                            _mmauto_packs_epi32(_mmauto_srai_epi32(_mmauto_madd_epi16(_mmauto_sub_epi16(_mmauto_packs_epi32(_mmauto_srli_epi32(gr0, 16), _mmauto_srli_epi32(gr1, 16)), y), scaledVCoeff), scaleExponent + 1), c_0)
+                          ),
+                          c_128
+                        );
+
+  return _mmauto_unpacklo_epi8(
+           _mmauto_packus_epi16(y, c_0),
+           _mmauto_packus_epi16(uv, c_0)
+         );
+}
+
+template<bool srcAligned, bool destAligned, bool avx> void convertImage(const unsigned char* const src, Image& dest)
+{
+  ASSERT((dest.width * dest.height * 12) % 96 == 0); // source data alignment
+  ASSERT((dest.width * 4) % 64 == 0); // dest data alignment
+  const __m_auto_i* const pSrcEnd = reinterpret_cast<const __m_auto_i*>(src + dest.width * dest.height * 12);
+
+  __m_auto_i* pDestEnd = reinterpret_cast<__m_auto_i*>(dest[dest.height]);
+  const ptrdiff_t lineLength = reinterpret_cast<__m_auto_i*>(&dest[0][dest.width]) - reinterpret_cast<__m_auto_i*>(dest[0]);
+  __m_auto_i* pDest = pDestEnd - lineLength;
+
+  for(const __m_auto_i* pSrc = reinterpret_cast<const __m_auto_i*>(src); pSrc < pSrcEnd;)
+  {
+    const __m_auto_i p0 = _mmauto_loadt_si_all<srcAligned>(pSrc++);
+    const __m_auto_i p1 = _mmauto_loadt_si_all<srcAligned>(pSrc++);
+    const __m_auto_i p2 = _mmauto_loadt_si_all<srcAligned>(pSrc++);
+
+    if(avx)
+    {
+      const __m_auto_i tmp0 = _mmauto_permute2x128_si256(p0, p1, 3 << 4);
+      const __m_auto_i tmp1 = _mmauto_permute2x128_si256(p0, p2, 1 | (2 << 4));
+      const __m_auto_i tmp2 = _mmauto_permute2x128_si256(p1, p2, 3 << 4);
+      const __m_auto_i yuyv0 = toYUYV<avx>(tmp0, _mmauto_alignr_epi8(tmp1, tmp0, 12));
+      const __m_auto_i yuyv1 = toYUYV<avx>(_mmauto_alignr_epi8(tmp2, tmp1, 8), _mmauto_srli_si_all(tmp2, 4));
+      _mmauto_storet_si_all<destAligned>(pDest++, _mmauto_permute2x128_si256(yuyv0, yuyv1, 2 << 4));
+      _mmauto_storet_si_all<destAligned>(pDest++, _mmauto_permute2x128_si256(yuyv0, yuyv1, 1 | (3 << 4)));
+    }
+    else
+    {
+      _mmauto_storet_si_all<destAligned>(pDest++, toYUYV<avx>(p0, _mmauto_alignr_epi8(p1, p0, 12)));
+      _mmauto_storet_si_all<destAligned>(pDest++, toYUYV<avx>(_mmauto_alignr_epi8(p2, p1, 8), _mmauto_srli_si_all(p2, 4)));
+    }
+
+    if(pDest == pDestEnd)
+    {
+      pDestEnd -= lineLength;
+      pDest -= lineLength * 2;
+    }
   }
 }
 
@@ -282,44 +353,58 @@ void SimulatedRobot::getImage(Image& image, CameraInfo& cameraInfo)
 
   if(cameraSensor)
   {
-    dynamic_cast<SimRobotCore2::SensorPort*>(cameraSensor)->renderCameraImages(activeCameras, activeCameraCount);
+    reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->renderCameraImages(activeCameras, activeCameraCount);
 
     ASSERT(!image.isReference);
     if(cameraSensor == upperCameraSensor)
-      cameraInfo = upperCameraInfo;
-    else
-      cameraInfo = lowerCameraInfo;
-
-    image.setResolution(cameraInfo.width, cameraInfo.height);
-    const int w = image.width;
-    const int h = image.height;
-
-    const int w3 = w * 3, w2 = int(image[1] - image[0]);
-    const unsigned char* src = dynamic_cast<SimRobotCore2::SensorPort*>(cameraSensor)->getValue().byteArray;
-    const unsigned char* srcLineEnd = src;
-    Image::Pixel* destBegin = image[0];
-    Image::Pixel* dest;
-    int b1, g1, r1, yy, cr;
-
-    for(int y = h - 1; y >= 0; --y)
     {
-      for(srcLineEnd += w3, dest = destBegin + y * w2; src < srcLineEnd;)
+      cameraInfo = upperCameraInfo;
+    }
+    else
+    {
+      cameraInfo = lowerCameraInfo;
+    }
+
+    image.setResolution(cameraInfo.width / 2, cameraInfo.height / 2, true);
+
+    const unsigned char* const src = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->getValue().byteArray;
+    if(_supportsAVX2)
+    {
+      if(simdAligned<true>(src))
       {
-        for(int i = 0; i < 4; ++i)
-        {
-          yy = 306 * (b1 = *src++);
-          cr = 130560 - 429 * (g1 = *src++) + 512 * b1;
-          dest->cb = static_cast<unsigned char>((130560 - 173 * b1 - 339 * g1 + 512 * (r1 = *src++)) >> 10);
-          yy += 117 * r1 + 601 * g1;
-          cr -= 83 * r1;
-          dest->y = dest->yCbCrPadding = static_cast<unsigned char>(yy >> 10);
-          (dest++)->cr = static_cast<unsigned char>(cr >> 10);
-        }
+        if(simdAligned<true>(image[0]))
+          convertImage<true, true, true>(src, image);
+        else
+          convertImage<true, false, true>(src, image);
+      }
+      else
+      {
+        if(simdAligned<true>(image[0]))
+          convertImage<false, true, true>(src, image);
+        else
+          convertImage<false, false, true>(src, image);
+      }
+    }
+    else
+    {
+      if(simdAligned<false>(src))
+      {
+        if(simdAligned<false>(image[0]))
+          convertImage<true, true, false>(src, image);
+        else
+          convertImage<true, false, false>(src, image);
+      }
+      else
+      {
+        if(simdAligned<false>(image[0]))
+          convertImage<false, true, false>(src, image);
+        else
+          convertImage<false, false, false>(src, image);
       }
     }
   }
 
-  image.timeStamp = SystemCall::getCurrentSystemTime();
+  image.timeStamp = Time::getCurrentSystemTime();
 }
 
 void SimulatedRobot::getCameraInfo(CameraInfo& cameraInfo)
@@ -346,11 +431,11 @@ void SimulatedRobot::getAndSetJointData(const JointRequest& jointRequest, JointS
     jointSensorData.temperatures.fill(0);
 
     // Set angles
-    const float& targetAngle = jointRequest.angles[i];
+    const float targetAngle = jointRequest.angles[i];
     if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore && jointActuators[i]) // if joint does exist
-      dynamic_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
+      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
   }
-  jointSensorData.timestamp = SystemCall::getCurrentSystemTime();
+  jointSensorData.timestamp = Time::getCurrentSystemTime();
 }
 
 void SimulatedRobot::setJointRequest(const JointRequest& jointRequest) const
@@ -359,30 +444,54 @@ void SimulatedRobot::setJointRequest(const JointRequest& jointRequest) const
   for(int i = 0; i < Joints::numOfJoints; ++i)
   {
     // Set angles
-    const float& targetAngle(jointRequest.angles[i]);
+    const float targetAngle = jointRequest.angles[i];
     if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore && jointActuators[i]) // if joint does exist
-      dynamic_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
+      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
   }
 }
 
 void SimulatedRobot::toggleCamera()
 {
   cameraSensor = cameraSensor == lowerCameraSensor ? upperCameraSensor : lowerCameraSensor;
-  activeCameras[activeCameraIndex] = dynamic_cast<SimRobotCore2::SensorPort*>(cameraSensor);
+  activeCameras[activeCameraIndex] = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor);
 }
 
-void SimulatedRobot::getSensorData(InertialSensorData& inertialSensorData, UsSensorData& usSensorData, const USRequest& usRequest)
+void SimulatedRobot::getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData)
 {
   ASSERT(robot);
 
+  // FSR
+  if(leftFoot && rightFoot)
+  {
+    const SimRobot::Object* feet[2] = {leftFoot, rightFoot};
+    std::array<float, FsrSensors::numOfFsrSensors>* fsrs[2] = {&fsrSensorData.left, &fsrSensorData.right};
+    std::array<Vector2f, FsrSensors::numOfFsrSensors>* fsrPositions[2] = {&robotDimensions.leftFsrPositions, &robotDimensions.rightFsrPositions};
+    float* totals[2] = {&fsrSensorData.leftTotal, &fsrSensorData.rightTotal};
+    static constexpr float weight = 0.415f;
+    for(int i = 0; i < 2; ++i)
+    {
+      Pose3f pose;
+      getPose3f(feet[i], pose);
+
+      *totals[i] = 0.f;
+      for(int j = 0; j < 4; ++j)
+      {
+        const Vector2f& frsPos = (*fsrPositions[i])[j];
+        Vector3f pos = (pose + Vector3f(frsPos.x(), frsPos.y(), -robotDimensions.footHeight)).translation;
+        (*fsrs[i])[j] = std::max(0.f, -pos.z() * weight);
+        *totals[i] += (*fsrs[i])[j];
+      }
+    }
+  }
+
   // Gyro
-  const float* floatArray = dynamic_cast<SimRobotCore2::SensorPort*>(gyroSensor)->getValue().floatArray;
+  const float* floatArray = reinterpret_cast<SimRobotCore2::SensorPort*>(gyroSensor)->getValue().floatArray;
   inertialSensorData.gyro.x() = floatArray[0];
   inertialSensorData.gyro.y() = floatArray[1];
   inertialSensorData.gyro.z() = floatArray[2];
 
   // Acc
-  floatArray = dynamic_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
+  floatArray = reinterpret_cast<SimRobotCore2::SensorPort*>(accSensor)->getValue().floatArray;
   inertialSensorData.acc.x() = floatArray[0];
   inertialSensorData.acc.y() = floatArray[1];
   inertialSensorData.acc.z() = floatArray[2];
@@ -390,7 +499,7 @@ void SimulatedRobot::getSensorData(InertialSensorData& inertialSensorData, UsSen
   // angle
   float position[3];
   float world2robot[3][3];
-  dynamic_cast<SimRobotCore2::Body*>(robot)->getPose(position, world2robot);
+  reinterpret_cast<SimRobotCore2::Body*>(robot)->getPose(position, world2robot);
   /*
   RotationMatrix rotMat;
   rotMat << world2robot[0][0], world2robot[1][0], world2robot[2][0],
@@ -399,8 +508,8 @@ void SimulatedRobot::getSensorData(InertialSensorData& inertialSensorData, UsSen
   inertialSensorData.angle.x() = Rotation::Aldebaran::getXAngle(rotMat);
   inertialSensorData.angle.y() = Rotation::Aldebaran::getYAngle(rotMat);
   */
-  const float axis[2] = {world2robot[1][2], -world2robot[0][2]}; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
-  const float axisLength = sqrtf(axis[0]*axis[0] + axis[1]*axis[1]); // Also the sine of the angle.
+  const float axis[2] = { world2robot[1][2], -world2robot[0][2] }; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
+  const float axisLength = sqrtf(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
   if(axisLength == 0.0f)
   {
     inertialSensorData.angle.x() = 0.0f;
@@ -411,64 +520,6 @@ void SimulatedRobot::getSensorData(InertialSensorData& inertialSensorData, UsSen
     const float w = std::atan2(axisLength, world2robot[2][2]) / axisLength;
     inertialSensorData.angle.x() = axis[0] * w;
     inertialSensorData.angle.y() = axis[1] * w;
-  }
-
-  // ultrasonic (model approximation. not absolutely correct in reality)
-  static const float scale = 1000; //meter to millimeter
-  if(usRequest.receiveMode != -1)
-  {
-    usSensorData.actuatorMode = static_cast<UsSensorData::UsActuatorMode>(usRequest.receiveMode);
-
-    //FIXME simulate additional sensor values
-    usSensorData.left.fill(usConfig.max);
-    usSensorData.right.fill(usConfig.max);
-
-    switch(usSensorData.actuatorMode)
-    {
-      case UsSensorData::leftToLeft:
-      {
-        const float leftUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(leftUsSensor)->getValue().floatValue * scale;
-        usSensorData.left[0] = addUsJitter(leftUsValue);
-        break;
-      }
-      case UsSensorData::leftToRight:
-      {
-        const float centerRightUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(centerRightUsSensor)->getValue().floatValue * scale;
-        usSensorData.right[0] = addUsJitter(centerRightUsValue);
-        break;
-      }
-      case UsSensorData::rightToLeft:
-      {
-        const float centerLeftUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(centerLeftUsSensor)->getValue().floatValue * scale;
-        usSensorData.left[0] = addUsJitter(centerLeftUsValue);
-        break;
-      }
-      case UsSensorData::rightToRight:
-      {
-        const float rightUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(rightUsSensor)->getValue().floatValue * scale;
-        usSensorData.right[0] = addUsJitter(rightUsValue);
-        break;
-      }
-      case UsSensorData::bothToSame:
-      {
-        const float leftUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(leftUsSensor)->getValue().floatValue * scale;
-        const float rightUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(rightUsSensor)->getValue().floatValue * scale;
-        usSensorData.left[0] = addUsJitter(leftUsValue);
-        usSensorData.right[0] = addUsJitter(rightUsValue);
-        break;
-      }
-      case UsSensorData::bothToOther:
-      {
-        const float centerLeftUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(centerLeftUsSensor)->getValue().floatValue * scale;
-        const float centerRightUsValue = dynamic_cast<SimRobotCore2::SensorPort*>(centerRightUsSensor)->getValue().floatValue * scale;
-        usSensorData.left[0] = addUsJitter(centerLeftUsValue);
-        usSensorData.right[0] = addUsJitter(centerRightUsValue);
-        break;
-      }
-      default:
-        ASSERT(false);
-    }
-    usSensorData.timeStamp = SystemCall::getCurrentSystemTime();
   }
 }
 
@@ -484,36 +535,44 @@ void SimulatedRobot::moveRobot(const Vector3f& pos, const Vector3f& rot, bool ch
     for(int i = 0; i < 3; ++i)
       for(int j = 0; j < 3; ++j)
         rotation2[i][j] = rotation(j, i);
-    dynamic_cast<SimRobotCore2::Body*>(robot)->move(&position.x(), rotation2);
+    reinterpret_cast<SimRobotCore2::Body*>(robot)->move(&position.x(), rotation2);
   }
   else
-    dynamic_cast<SimRobotCore2::Body*>(robot)->move(&position.x());
+    reinterpret_cast<SimRobotCore2::Body*>(robot)->move(&position.x());
 }
 
 void SimulatedRobot::enablePhysics(bool enable)
 {
-  dynamic_cast<SimRobotCore2::Body*>(robot)->enablePhysics(enable);
+  reinterpret_cast<SimRobotCore2::Body*>(robot)->enablePhysics(enable);
 }
 
 void SimulatedRobot::moveBall(const Vector3f& pos, bool resetDynamics)
 {
+  if(!ball)
+    return;
   Vector3f position = pos * 0.001f;
-  dynamic_cast<SimRobotCore2::Body*>(ball)->move(&position.x());
+  reinterpret_cast<SimRobotCore2::Body*>(ball)->move(&position.x());
   if(resetDynamics)
-    dynamic_cast<SimRobotCore2::Body*>(ball)->resetDynamics();
+    reinterpret_cast<SimRobotCore2::Body*>(ball)->resetDynamics();
 }
 
-Vector2f SimulatedRobot::getPosition(SimRobot::Object* obj)
+Vector2f SimulatedRobot::getPosition(const SimRobot::Object* obj)
 {
-  const float* position = dynamic_cast<SimRobotCore2::Body*>(obj)->getPosition();
+  const float* position = reinterpret_cast<const SimRobotCore2::Body*>(obj)->getPosition();
   return Vector2f(position[0], position[1]) * 1000.f;
 }
 
-bool SimulatedRobot::getPose2f(SimRobot::Object* obj, Pose2f& Pose2f) const
+Vector3f SimulatedRobot::getPosition3D(const SimRobot::Object* obj)
+{
+  const float* position = reinterpret_cast<const SimRobotCore2::Body*>(obj)->getPosition();
+  return Vector3f(position[0], position[1], position[2]) * 1000.f;
+}
+
+bool SimulatedRobot::getPose2f(const SimRobot::Object* obj, Pose2f& Pose2f) const
 {
   float position[3];
   float rot3d[3][3];
-  dynamic_cast<SimRobotCore2::Body*>(obj)->getPose(position, rot3d);
+  reinterpret_cast<const SimRobotCore2::Body*>(obj)->getPose(position, rot3d);
 
   Pose2f.translation = Vector2f(position[0], position[1]) * 1000.f;
 
@@ -550,10 +609,10 @@ bool SimulatedRobot::getPose2f(SimRobot::Object* obj, Pose2f& Pose2f) const
   return rot3d[2][2] >= 0.3;
 }
 
-void SimulatedRobot::getPose3f(SimRobot::Object* obj, Pose3f& pose3f) const
+void SimulatedRobot::getPose3f(const SimRobot::Object* obj, Pose3f& pose3f) const
 {
   float rotation[3][3];
-  dynamic_cast<SimRobotCore2::Body*>(obj)->getPose(&pose3f.translation.x(), rotation);
+  reinterpret_cast<const SimRobotCore2::Body*>(obj)->getPose(&pose3f.translation.x(), rotation);
 
   pose3f.translation *= 1000.f;
   Matrix3f rot;
@@ -563,27 +622,14 @@ void SimulatedRobot::getPose3f(SimRobot::Object* obj, Pose3f& pose3f) const
   pose3f.rotation = rot;
 }
 
-float SimulatedRobot::addUsJitter(float value)
-{
-  if(value >= usConfig.max) // Nothing was measured
-    return value;
-  else
-  {
-    if(randomFloat() <= 0.1f)
-      return usConfig.max; // In 10% of all cases nothing is measured.
-    else
-      return std::max(usConfig.min, value) + randomFloat(-10.f, 10.f);
-  }
-}
-
-bool SimulatedRobot::isBlue(SimRobot::Object* obj)
+bool SimulatedRobot::isBlue(const SimRobot::Object* obj)
 {
   return getNumber(obj) <= 6;
 }
 
-int SimulatedRobot::getNumber(SimRobot::Object* obj)
+int SimulatedRobot::getNumber(const SimRobot::Object* obj)
 {
-  QString robotNumberString(obj->getFullName());
+  QString robotNumberString = obj->getFullName();
   int pos = robotNumberString.lastIndexOf('.');
   robotNumberString.remove(0, pos + 6);
   return robotNumberString.toInt();

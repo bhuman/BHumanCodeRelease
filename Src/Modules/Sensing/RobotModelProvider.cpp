@@ -34,7 +34,7 @@ void RobotModelProvider::update(RobotModel& robotModel)
       for(int i = 0; i < (Limbs::footLeft + 1) - Limbs::pelvisLeft; ++i)
       {
         Pose3f& next = robotModel.limbs[firstJoint + i];
-        SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA(0, 0, 0));
+        SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA::black);
 
         Vector3f axis  = i == 0 ? Vector3f(0.f, firstJoint == Limbs::pelvisLeft ? -50.f : 50.f, 50.f).normalize(50.f) : i == 1 || i == 5 ? Vector3f(50.f, 0.f, 0.f) : Vector3f(0.f, 50.f, 0.f);
         ColorRGBA color = i == 0 ? ColorRGBA(0, 0, 255)      : i == 1 || i == 5 ? ColorRGBA(255, 0, 0)      : ColorRGBA(0, 255, 0);
@@ -48,7 +48,7 @@ void RobotModelProvider::update(RobotModel& robotModel)
       for(int i = 0; i < (Limbs::foreArmLeft + 1) - Limbs::shoulderLeft; ++i)
       {
         Pose3f& next = robotModel.limbs[firstJoint + i];
-        SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA(0, 0, 0));
+        SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA::black);
 
         Vector3f axis  = i == 1 || i == 3 ? Vector3f(0.f, 0.f, 50.f) : i == 2 ? Vector3f(50.f, 0.f, 0.f) : Vector3f(0.f, 50.f, 0.f);
         ColorRGBA color = i == 1 || i == 3 ? ColorRGBA(0, 0, 255)      : i == 2 ? ColorRGBA(255, 0, 0)      : ColorRGBA(0, 255, 0);
@@ -59,7 +59,7 @@ void RobotModelProvider::update(RobotModel& robotModel)
     for(int i = 0; i < (Limbs::head + 1) - Limbs::neck; ++i)
     {
       Pose3f& next = robotModel.limbs[Limbs::neck + i];
-      SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA(0, 0, 0));
+      SPHERE3D("module:RobotModelProvider:joints", next.translation.x(), next.translation.y(), next.translation.z(), 3, ColorRGBA::black);
 
       Vector3f axis  = i == 0 ? Vector3f(0.f, 0.f, 50.f) : Vector3f(0.f, 50.f, 0.f);
       ColorRGBA color = i == 0 ? ColorRGBA(0, 0, 255)      : ColorRGBA(0, 255, 0);

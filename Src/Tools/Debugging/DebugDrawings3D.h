@@ -6,8 +6,9 @@
 #ifndef TARGET_TOOL
 
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Streams/Eigen.h"
 #include "Tools/Math/Eigen.h"
+#include "Tools/RobotParts/FootShape.h"
+#include "Tools/Streams/Eigen.h"
 #include <vector>
 
 namespace Drawings3D
@@ -21,7 +22,6 @@ namespace Drawings3D
     dot,
     line,
     cube,
-    polygon,
     quad,
     coordinates,
     scale,
@@ -33,8 +33,6 @@ namespace Drawings3D
     partDisc,
     image
   };
-
-  extern const std::vector<Vector3f> footPoints;
 };
 
 /**
@@ -107,7 +105,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define CROSS3D(id, x, y, z, length, size, penColor) \
   do \
-  COMPLEX_DRAWING3D(id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       LINE3D(id, x+length, y+length, z, x-length, y-length, z, size, penColor); \
       LINE3D(id, x+length, y-length, z, x-length, y+length, z, size, penColor); \
@@ -169,7 +167,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define QUAD3D(id, corner1, corner2, corner3, corner4, color) \
   do \
-    DECLARED_DEBUG_RESPONSE( "debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::quad << \
@@ -189,7 +187,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define CUBE3D(id, a, b, c, d, e, f, g, h, size, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::cube << \
@@ -210,7 +208,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define COORDINATES3D(id, length, width) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::coordinates << \
@@ -222,14 +220,16 @@ class DrawingManager3D : public DrawingManager {};
 
 #define SUBCOORDINATES3D(id, pose, length, width) \
   do \
-  { \
-    const Vector3f xAxis = pose * Vector3f(length, 0, 0); \
-    const Vector3f yAxis = pose * Vector3f(0, length, 0); \
-    const Vector3f zAxis = pose * Vector3f(0, 0, length); \
-    LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), xAxis.x(), xAxis.y(), xAxis.z(), 2, ColorRGBA::red); \
-    LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), yAxis.x(), yAxis.y(), yAxis.z(), 2, ColorRGBA::green); \
-    LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), zAxis.x(), zAxis.y(), zAxis.z(), 2, ColorRGBA::blue); \
-  } while(false)
+    COMPLEX_DRAWING3D(id) \
+    { \
+      const Vector3f xAxis = pose * Vector3f(length, 0, 0); \
+      const Vector3f yAxis = pose * Vector3f(0, length, 0); \
+      const Vector3f zAxis = pose * Vector3f(0, 0, length); \
+      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), xAxis.x(), xAxis.y(), xAxis.z(), width, ColorRGBA::red); \
+      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), yAxis.x(), yAxis.y(), yAxis.z(), width, ColorRGBA::green); \
+      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), zAxis.x(), zAxis.y(), zAxis.z(), width, ColorRGBA::blue); \
+    } \
+  while(false)
 
 /**
  * A macro that scales all drawing elements.
@@ -242,7 +242,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define SCALE3D(id, x, y, z) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::scale << \
@@ -262,7 +262,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define ROTATE3D(id, x, y, z) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::rotate << \
@@ -282,7 +282,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define TRANSLATE3D(id, x, y, z) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::translate << \
@@ -303,7 +303,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define POINT3D(id, x, y, z, size, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::dot << \
@@ -326,7 +326,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define SPHERE3D(id, x, y, z, radius, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::sphere << \
@@ -347,7 +347,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define ELLIPSOID3D(id, p, r, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::ellipsoid << \
@@ -371,7 +371,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define CYLINDER3D(id, x, y, z, a, b, c, radius, height, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::cylinder << \
@@ -400,7 +400,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define CYLINDER3D2(id, x, y, z, a, b, c, baseRadius, topRadius, height, color) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::cylinder << \
@@ -522,20 +522,19 @@ class DrawingManager3D : public DrawingManager {};
               ); \
       } \
     } \
-  while (false)
-
+  while(false)
 
 /**
-* A macro that adds a partial disc to a drawing
-*
-* @param id The drawing to which the circle will be added.
-* @param origin The pose of the disc center point
-* @param innerRadius The inner radius of the disc
-* @param outerRadius The outer radius of the disc
-* @param startAngle The starting angle of the part
-* @param endAngle The ending angle of the part
-* @param color The color of the partial disc
-*/
+ * A macro that adds a partial disc to a drawing
+ *
+ * @param id The drawing to which the circle will be added.
+ * @param origin The pose of the disc center point
+ * @param innerRadius The inner radius of the disc
+ * @param outerRadius The outer radius of the disc
+ * @param startAngle The starting angle of the part
+ * @param endAngle The ending angle of the part
+ * @param color The color of the partial disc
+ */
 #define PARTDISC3D2(id, origin, innerRadius, outerRadius, startAngle, endAngle, color) \
   do \
     COMPLEX_DRAWING3D(id) \
@@ -550,7 +549,7 @@ class DrawingManager3D : public DrawingManager {};
         PARTDISC3D(id, origin, innerRadius, outerRadius, startAngle, endAngle, color); \
       } \
     } \
-  while (false)
+  while(false)
 
 /**
  * A macro that adds an image to a drawing.
@@ -567,7 +566,7 @@ class DrawingManager3D : public DrawingManager {};
  */
 #define IMAGE3D(id, x, y, z, a, b, c, width, height, i) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
+    COMPLEX_DRAWING3D(id) \
     { \
       OUTPUT(idDebugDrawing3D, bin, \
              (char)Drawings3D::image << \
@@ -591,11 +590,11 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      for(unsigned int i = 0; i < Drawings3D::footPoints.size(); ++i) \
+      for(size_t i = 0; i < FootShape::polygon.size(); ++i) \
       { \
-        Vector3f p1 = Drawings3D::footPoints[i] * 1000.f; \
-        Vector3f p2 = Drawings3D::footPoints[(i + 1) % Drawings3D::footPoints.size()] * 1000.f; \
-        if(left) \
+        Vector3f p1 = (Vector3f() << FootShape::polygon[i], 0.f).finished(); \
+        Vector3f p2 = (Vector3f() << FootShape::polygon[(i + 1) % FootShape::polygon.size()], 0.f).finished(); \
+        if(!(left)) \
         { \
           p1.y() = -p1.y(); \
           p2.y() = -p2.y(); \
@@ -606,8 +605,10 @@ class DrawingManager3D : public DrawingManager {};
       } \
     } \
   while(false)
+
 #else
 //Ignore everything
+#define DEBUG_DRAWING3D(id, type) if(false)
 #define DECLARE_DEBUG_DRAWING3D(id, type) ((void) 0)
 #define COMPLEX_DRAWING3D(id) if(false)
 #define SPHERE3D(id, x, y, z, radius, color) ((void) 0)

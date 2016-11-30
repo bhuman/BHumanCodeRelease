@@ -4,8 +4,11 @@ ap_scan=1
 
 network={
   ssid="NAME OF THE NETWORK"
+  scan_ssid=1
+  proto=WPA
   key_mgmt=WPA-PSK
-  pairwise=CCMP
-  group=CCMP
+  pairwise=TKIP
+  group=TKIP
   psk="PASSWORD"
 }
+

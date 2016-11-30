@@ -146,14 +146,14 @@ const char* UdpComm::getWifiBroadcastAddress()
   getifaddrs(&ifAddrStruct);
   for(ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
   {
-       // manpage getifaddrs    // check it is IP4
+    // manpage getifaddrs    // check it is IP4
     if(ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET)
     {
       std::string interfaceName(ifa->ifa_name);
       if(interfaceName.find("wlan") != std::string::npos)
       {
-        in_addr_t mask = ((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr.s_addr;
-        in_addr_t addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
+        in_addr_t mask = ((struct sockaddr_in*) ifa->ifa_netmask)->sin_addr.s_addr;
+        in_addr_t addr = ((struct sockaddr_in*) ifa->ifa_addr)->sin_addr.s_addr;
         in_addr_t bcastAddr = ~mask | addr;
 
         struct in_addr bcast_addr;

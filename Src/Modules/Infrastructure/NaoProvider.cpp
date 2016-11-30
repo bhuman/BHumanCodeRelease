@@ -5,12 +5,15 @@
  */
 
 #include "NaoProvider.h"
+#include "Platform/SystemCall.h"
 
 MAKE_MODULE(NaoProvider, motionInfrastructure)
 
 #ifdef TARGET_ROBOT
 
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Platform/Time.h"
+#include "Platform/File.h"
+#include "Tools/Debugging/Debugging.h"
 #include "Tools/Settings.h"
 
 #include "libbhuman/bhuman.h"
@@ -19,10 +22,9 @@ MAKE_MODULE(NaoProvider, motionInfrastructure)
 #include <cstring>
 #include <algorithm>
 
-PROCESS_LOCAL NaoProvider* NaoProvider::theInstance = nullptr;
+thread_local NaoProvider* NaoProvider::theInstance = nullptr;
 
-NaoProvider::NaoProvider() :
-  gameControlTimeStamp(0)
+NaoProvider::NaoProvider()
 {
   NaoProvider::theInstance = this;
   memset(&gameControlData, 0, sizeof(gameControlData));
@@ -46,11 +48,12 @@ void NaoProvider::waitForFrameData()
 {
   DEBUG_RESPONSE_ONCE("module:NaoProvider:robotName")
   {
-    if(Global::getSettings().robotName == Global::getSettings().bodyName)
-      OUTPUT_TEXT("Hi, I am " << Global::getSettings().robotName << ".");
+    if(Global::getSettings().headName == Global::getSettings().bodyName)
+      OUTPUT_TEXT("Hi, I am " << Global::getSettings().headName << ".");
     else
-      OUTPUT_TEXT("Hi, I am " << Global::getSettings().robotName << " (using " << Global::getSettings().bodyName << "s Body).");
-    OUTPUT(idRobotname, bin, Global::getSettings().robotName << Global::getSettings().bodyName << Global::getSettings().location);
+      OUTPUT_TEXT("Hi, I am " << Global::getSettings().headName << " (using " << Global::getSettings().bodyName << "'s body).");
+
+    OUTPUT(idRobotname, bin, Global::getSettings().headName << Global::getSettings().bodyName << Global::getSettings().location);
   }
 
   if(theInstance)
@@ -59,15 +62,15 @@ void NaoProvider::waitForFrameData()
 
 void NaoProvider::send()
 {
-  DEBUG_RESPONSE("module:NaoProvider:lag100") SystemCall::sleep(100);
-  DEBUG_RESPONSE("module:NaoProvider:lag200") SystemCall::sleep(200);
-  DEBUG_RESPONSE("module:NaoProvider:lag300") SystemCall::sleep(300);
-  DEBUG_RESPONSE("module:NaoProvider:lag1000") SystemCall::sleep(1000);
-  DEBUG_RESPONSE("module:NaoProvider:lag3000") SystemCall::sleep(3000);
-  DEBUG_RESPONSE("module:NaoProvider:lag6000") SystemCall::sleep(6000);
+  DEBUG_RESPONSE("module:NaoProvider:lag100") Thread::sleep(100);
+  DEBUG_RESPONSE("module:NaoProvider:lag200") Thread::sleep(200);
+  DEBUG_RESPONSE("module:NaoProvider:lag300") Thread::sleep(300);
+  DEBUG_RESPONSE("module:NaoProvider:lag1000") Thread::sleep(1000);
+  DEBUG_RESPONSE("module:NaoProvider:lag3000") Thread::sleep(3000);
+  DEBUG_RESPONSE("module:NaoProvider:lag6000") Thread::sleep(6000);
   DEBUG_RESPONSE("module:NaoProvider:segfault") *(volatile char*)0 = 0;
 
-  DEBUG_RESPONSE("module:NaoProvider:ClippingInfo")
+  DEBUG_RESPONSE("module:NaoProvider:clippingInfo")
   {
     for(int i = 0; i < Joints::numOfJoints; ++i)
     {
@@ -136,15 +139,13 @@ void NaoProvider::send()
                       (ledRequest.ledStates[i] == LEDRequest::fastBlinking && fastOn))
                      ? 1.0f : (ledRequest.ledStates[i] == LEDRequest::half ? 0.5f : 0.0f);
 
-  actuators[usActuator] = static_cast<float>(theUSRequest.sendMode);
-
   naoBody.closeActuators();
   naoBody.setTeamInfo(Global::getSettings().teamNumber, Global::getSettings().teamColor, Global::getSettings().playerNumber);
 }
 
 void NaoProvider::update(FrameInfo& frameInfo)
 {
-  frameInfo.time = std::max(frameInfo.time + 1, SystemCall::getCurrentSystemTime());
+  frameInfo.time = std::max(frameInfo.time + 1, Time::getCurrentSystemTime());
   frameInfo.cycleTime = 0.01f;
 
   if(gameControlData.packetNumber != naoBody.getGameControlData().packetNumber)
@@ -167,7 +168,7 @@ void NaoProvider::update(FsrSensorData& fsrSensorData)
 void NaoProvider::update(InertialSensorData& inertialSensorData)
 {
   float* sensors = naoBody.getSensors();
-   
+
   // TODO: verify signs
   inertialSensorData.gyro.x() = sensors[gyroXSensor];
   inertialSensorData.gyro.y() = sensors[gyroYSensor];
@@ -179,15 +180,6 @@ void NaoProvider::update(InertialSensorData& inertialSensorData)
 
   inertialSensorData.angle.x() = sensors[angleXSensor];
   inertialSensorData.angle.y() = sensors[angleYSensor];
-  
-  PLOT("module:NaoProvider:gyroX", inertialSensorData.gyro.x().toDegrees());
-  PLOT("module:NaoProvider:gyroY", inertialSensorData.gyro.y().toDegrees());
-  PLOT("module:NaoProvider:gyroZ", inertialSensorData.gyro.z().toDegrees());
-  PLOT("module:NaoProvider:accX", inertialSensorData.acc.x());
-  PLOT("module:NaoProvider:accY", inertialSensorData.acc.y());
-  PLOT("module:NaoProvider:accZ", inertialSensorData.acc.z());
-  PLOT("module:NaoProvider:angleX", inertialSensorData.angle.x().toDegrees());
-  PLOT("module:NaoProvider:angleY", inertialSensorData.angle.y().toDegrees());
 }
 
 void NaoProvider::update(JointSensorData& jointSensorData)
@@ -242,9 +234,11 @@ void NaoProvider::update(RobotInfo& robotInfo)
   RoboCup::TeamInfo& team = gameControlData.teams[gameControlData.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1];
   (RoboCup::RobotInfo&) robotInfo = team.players[Global::getSettings().playerNumber - 1];
   robotInfo.number = Global::getSettings().playerNumber;
-  robotInfo.naoVersion = naoVersion;
-  robotInfo.naoBodyType = naoBodyType;
-  robotInfo.naoHeadType = naoHeadType;
+
+  DEBUG_RESPONSE_ONCE("module:NaoProvider:robotInfo")
+  {
+    OUTPUT(idRobotInfo, bin, robotInfo);
+  }
 }
 
 void NaoProvider::update(SystemSensorData& systemSensorData)
@@ -258,33 +252,8 @@ void NaoProvider::update(SystemSensorData& systemSensorData)
   systemSensorData.batteryCurrent = sensors[batteryCurrentSensor];
   systemSensorData.batteryLevel = sensors[batteryChargeSensor];
   systemSensorData.batteryTemperature = sensors[batteryTemperatureSensor];
-}
-
-void NaoProvider::update(UsSensorData& usSensorData)
-{
-  float* sensors = naoBody.getSensors();
-  if(theUSRequest.receiveMode != -1)
-  {
-    ASSERT(usSensorData.left.size() == lUs9Sensor - lUsSensor + 1);
-    for(size_t i = 0; i < usSensorData.left.size(); ++i)
-    {
-      float data = sensors[lUsSensor + i];
-      usSensorData.left[i] = data != 0.f ? data * 1000.f : SensorData::off;
-    }
-
-    ASSERT(usSensorData.right.size() == rUs9Sensor - rUsSensor + 1);
-    for(size_t i = 0; i < usSensorData.right.size(); ++i)
-    {
-      float data = sensors[rUsSensor + i];
-      usSensorData.right[i] = data != 0.f ? data * 1000.f : SensorData::off;
-    }
-
-    usSensorData.actuatorMode = static_cast<UsSensorData::UsActuatorMode>(theUSRequest.receiveMode);
-    usSensorData.timeStamp = theFrameInfo.time;
-  }
-
-  PLOT("module:NaoProvider:usLeft", usSensorData.left[0]);
-  PLOT("module:NaoProvider:usRight", usSensorData.right[0]);
+  const short statusValue = static_cast<short>(sensors[batteryStatusSensor]);
+  systemSensorData.batteryCharging = statusValue & 0b10000000;
 }
 
 #endif // TARGET_ROBOT

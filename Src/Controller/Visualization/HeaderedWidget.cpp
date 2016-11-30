@@ -1,9 +1,9 @@
 /**
-* @file Controller/Visualization/HeaderedWidget.cpp
-* Implementation of class HeaderedWidget.
-*
-* @author Colin Graf
-*/
+ * @file Controller/Visualization/HeaderedWidget.cpp
+ * Implementation of class HeaderedWidget.
+ *
+ * @author Colin Graf
+ */
 
 #include <QHeaderView>
 #include <QVBoxLayout>
@@ -49,7 +49,7 @@ void HeaderedWidget::setHeaderLabels(const QStringList& headerLabels, const char
 
 void HeaderedWidget::resizeEvent(QResizeEvent* event)
 {
-  QSize headerSize(event->size());
+  QSize headerSize = event->size();
   headerSize.setHeight(headerView->sizeHint().height());
   headerView->resize(headerSize);
 

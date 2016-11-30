@@ -31,7 +31,7 @@ class ProcessRunner : public QObject
   Q_OBJECT
 
   /** The process started by the runner. */
-  QProcess *process;
+  QProcess* process;
 
   /** The program which should be executed. It represents the entire command
    * line if arguments is <em>0</em>.
@@ -39,7 +39,7 @@ class ProcessRunner : public QObject
   QString program;
 
   /** The argument list of the program. Can be 0. */
-  QStringList *arguments;
+  QStringList* arguments;
 
   /** Contains the output of the process after a call of run. */
   QStringList output;
@@ -53,7 +53,7 @@ public:
    * Constructs a new ProcessRunner which executes the delivered command.
    * @param command The command line which should be executed in a new process.
    */
-  explicit ProcessRunner(const QString &command);
+  explicit ProcessRunner(const QString& command);
 
   /**
    * Constructs a new ProcessRunner which excecutes the delivered program with
@@ -61,7 +61,7 @@ public:
    * @param program The program which should be executed.
    * @param arguments The arguments which should be passed to the program.
    */
-  ProcessRunner(const std::string &program, const QStringList &arguments);
+  ProcessRunner(const std::string& program, const QStringList& arguments);
 
   /**
    * Constructs a new ProcessRunner which excecutes the delivered program with
@@ -69,7 +69,7 @@ public:
    * @param program The program which should be executed.
    * @param arguments The arguments which should be passed to the program.
    */
-  ProcessRunner(const QString &program, const QStringList &arguments);
+  ProcessRunner(const QString& program, const QStringList& arguments);
 
   /**
    * Constructs a new ProcessRunner which executes the delivered program in the
@@ -79,7 +79,7 @@ public:
    * @param program The program which should be executed.
    * @param arguments The arguments which should be passed to the program.
    */
-  ProcessRunner(Context &context, const std::string &program, const QStringList &arguments);
+  ProcessRunner(Context& context, const std::string& program, const QStringList& arguments);
 
   /**
    * Constructs a new ProcessRunner which executes the delivered program in the
@@ -89,7 +89,7 @@ public:
    * @param program The program which should be executed.
    * @param arguments The arguments which should be passed to the program.
    */
-  ProcessRunner(Context &context, const QString &program, const QStringList &arguments);
+  ProcessRunner(Context& context, const QString& program, const QStringList& arguments);
 
   /**
    * Constructs a new ProcessRunner which executes the delivered command line
@@ -100,7 +100,7 @@ public:
    *                process.
    * @param command The command line which should be executed in a new process.
    */
-  ProcessRunner(Context &context, const std::string &command);
+  ProcessRunner(Context& context, const std::string& command);
 
   /**
    * Constructs a new ProcessRunner which executes the delivered command line
@@ -111,7 +111,7 @@ public:
    *                process.
    * @param command The command line which should be executed in a new process.
    */
-  ProcessRunner(Context &context, const QString &command);
+  ProcessRunner(Context& context, const QString& command);
 
   /**
    * The destructor which deletes the argument list and the process, if they are
@@ -120,7 +120,7 @@ public:
    */
   virtual ~ProcessRunner();
 
-  ProcessRunner& operator=(const ProcessRunner &other);
+  ProcessRunner& operator=(const ProcessRunner& other);
 
   /**
    * Constructs a new QProcess, connects the output signals to the context, if
@@ -144,7 +144,7 @@ public:
   bool error() const
   {
     return process->exitStatus() == QProcess::CrashExit
-        || process->exitCode() != 0;
+           || process->exitCode() != 0;
   }
 
   /**
@@ -164,14 +164,14 @@ public:
    */
   QString getOutput();
 
-  void setContext(Context &context) { this->context = &context; }
+  void setContext(Context& context) { this->context = &context; }
 
 protected:
   /**
    * The context which is used to print the output of the process.
    * The context can be 0, which causes the runner to be quiet.
    */
-  Context *context;
+  Context* context;
 
   /**
    * Overwrite this method to write something to stdin of the started process.
@@ -225,8 +225,8 @@ public:
    * @param arguments The arguments which should be passed to the program.
    * @param data The data which should be passed to the process.
    */
-  RemoteWriteProcessRunner(Context &context,
-                           const QString &program,
-                           const QStringList &arguments,
+  RemoteWriteProcessRunner(Context& context,
+                           const QString& program,
+                           const QStringList& arguments,
                            const QByteArray& data);
 };

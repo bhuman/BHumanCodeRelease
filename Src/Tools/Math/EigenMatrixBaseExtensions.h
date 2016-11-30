@@ -56,6 +56,11 @@ inline PlainObject& rotate(const float alpha)
   return derived();
 }
 
+inline PlainObject rotated(const float alpha) const
+{
+  return PlainObject(derived()).rotate(alpha);
+}
+
 inline RealScalar angle() const
 {
   //angle() is only defined for vectors with length 2

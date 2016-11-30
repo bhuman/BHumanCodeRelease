@@ -1,10 +1,10 @@
 /**
-* @file Controller/Views/TimeView.h
-*
-* Declaration of class TimeView
-*
-* @author Colin Graf
-*/
+ * @file Controller/Views/TimeView.h
+ *
+ * Declaration of class TimeView
+ *
+ * @author Colin Graf
+ */
 
 #pragma once
 
@@ -19,22 +19,22 @@ class QWidget;
 class NumberTableWidgetItem;
 class QTableWidgetItem;
 class QTableWidget;
+
 /**
-* @class TimeView
-*
-* A class to represent a view with information about the timing of modules.
-*
-* @author Colin Graf
-*/
+ * @class TimeView
+ *
+ * A class to represent a view with information about the timing of modules.
+ *
+ * @author Colin Graf
+ */
 class TimeView : public SimRobot::Object
 {
 public:
   /**
-  * Constructor.
-  * @param fullName The path to this view in the scene graph
-  * @param console The console object.
-  * @param info The timing info object to be visualized.
-  */
+   * @param fullName The path to this view in the scene graph
+   * @param console The console object.
+   * @param info The timing info object to be visualized.
+   */
   TimeView(const QString& fullName, RobotConsole& console, const TimeInfo& info);
 
 private:
@@ -44,14 +44,14 @@ private:
   const TimeInfo& info; /**< The Time info structure. */
 
   /**
-  * The method returns a new instance of a widget for this direct view.
-  * The caller has to delete this instance. (Qt handles this)
-  * @return The widget.
-  */
+   * The method returns a new instance of a widget for this direct view.
+   * The caller has to delete this instance. (Qt handles this)
+   * @return The widget.
+   */
   virtual SimRobot::Widget* createWidget();
 
-  virtual const QString& getFullName() const {return fullName;}
-  virtual const QIcon* getIcon() const {return &icon;}
+  virtual const QString& getFullName() const { return fullName; }
+  virtual const QIcon* getIcon() const { return &icon; }
 
   friend class TimeWidget;//TimeWidget needs access to console
 };

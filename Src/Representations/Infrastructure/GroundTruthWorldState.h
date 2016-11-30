@@ -27,6 +27,6 @@ STREAMABLE(GroundTruthWorldState,
 
   (std::vector<GroundTruthPlayer>) bluePlayers,
   (std::vector<GroundTruthPlayer>) redPlayers,
-  (std::vector<Vector2f>) balls,
+  (std::vector<Vector3f>) balls,
   (Pose2f) ownPose,
 });

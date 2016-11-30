@@ -2,12 +2,14 @@
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/tools/StringTools.h"
+#include "Platform/Time.h"
 #include <QProcess>
 #include <QByteArray>
 #include <QString>
 #include <QStringList>
 #include <QRegExp>
 #include <iostream>
+
 
 PingAgent::~PingAgent()
 {
@@ -46,6 +48,7 @@ void PingAgent::initializeProcesses(std::map<std::string, Robot*>& robotsByName)
 
       robots[pingProcesses[n][i]] = it->second;
       pings[n][it->second->name] = 2000.0;
+      lastConnectionTime[it->second] = -DISCONNECTED_TIME;
 
 #ifdef WINDOWS
       std::string pingParameters = "-t ";
@@ -100,6 +103,11 @@ double PingAgent::getLanPing(const Robot* robot)
   return pings[LAN][robot->name];
 }
 
+int PingAgent::getLastConnectionTime(Robot* robot)
+{
+  return lastConnectionTime[robot];
+}
+
 void PingAgent::robotsChanged()
 {
   cleanUp();
@@ -128,6 +136,8 @@ void PingAgent::updatePing(ENetwork network, QProcess* process)
   QStringList splittedOutput = pingOutput.split(" ", QString::SkipEmptyParts);
   QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|time=\\d+(\\.\\d+)?)"));
 
+  const unsigned currentTime = Time::getRealSystemTime();
+
   if(filteredSplittedOutput.empty())
   {
     networkMap[robots[process]->name] = 2000.0;
@@ -139,10 +149,12 @@ void PingAgent::updatePing(ENetwork network, QProcess* process)
     if(keyAndValue.size() < 2)
     {
       networkMap[robots[process]->name] = 2000.0;
+      lastConnectionTime[robots[process]] = currentTime;
     }
     else
     {
       QString value = keyAndValue[1].replace("ms", "");
+      lastConnectionTime[robots[process]] = currentTime;
       networkMap[robots[process]->name] = value.toDouble();
       otherNetworkMap[robots[process]->name] += 200.0; // hack!
       if(otherNetworkMap[robots[process]->name] > 2000.0)

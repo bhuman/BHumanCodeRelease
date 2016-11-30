@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>switch</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>CodeBlock</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>switch(&lt;#expression#&gt;)
+{
+  case &lt;#constant#&gt;:
+    &lt;#statements#&gt;
+    break;
+
+  default:
+    break;
+}</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>DA95C97A-3F49-4A24-AFF7-8ACE73B0C6FA</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Execute different sections of code when an expression has one of several constant values.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>Switch Statement</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>2</integer>
+</dict>
+</plist>

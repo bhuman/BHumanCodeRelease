@@ -1,9 +1,9 @@
 /**
-* @file Controller/Visualization/HeaderedWidget.h
-* Declaration of class HeaderedWidget.
-*
-* @author Colin Graf
-*/
+ * @file Controller/Visualization/HeaderedWidget.h
+ * Declaration of class HeaderedWidget.
+ *
+ * @author Colin Graf
+ */
 
 #pragma once
 
@@ -19,12 +19,10 @@ class QStandardItemModel;
  *
  * Defines a QWidget that contains a QHeaderView and another QWidget
  */
-
 class HeaderedWidget : public QScrollArea
 {
 public:
   /**
-   * Constructor.
    * @param parent The parent widget.
    */
   HeaderedWidget(QWidget* parent = 0);

@@ -90,7 +90,7 @@
               <Translation z="55mm"/>
             </SphereGeometry>
 
-            <Camera name="CameraTop" imageWidth="320" imageHeight="240" angleX="1.0641" angleY="0.83147">
+            <Camera name="CameraTop" imageWidth="640" imageHeight="480" angleX="1.0641" angleY="0.83147">
               <Translation x="0.05871" z="0.06364"/>
               <Rotation y="1.2degree"/>
             </Camera>
@@ -175,7 +175,7 @@
                       ixx="78104.23g*mm^2" ixy="12333.83g*mm^2" ixz="7441.69g*mm^2"
                       iyy="1120843.78g*mm^2" iyz="545.51g*mm^2" izz="1122143.06g*mm^2"/>
 
-                    <BoxGeometry depth="100mm" width="50mm" height="50mm">
+                    <BoxGeometry depth="145mm" width="50mm" height="50mm">
                       <Translation x="70mm"/>
                       <Rotation x="45degree"/>
                     </BoxGeometry>
@@ -255,7 +255,7 @@
                       ixx="78104.23g*mm^2" ixy="-12333.83g*mm^2" ixz="7441.69g*mm^2"
                       iyy="1120843.78g*mm^2" iyz="-545.51g*mm^2" izz="1122143.06g*mm^2"/>
 
-                    <BoxGeometry depth="100mm" width="50mm" height="50mm">
+                    <BoxGeometry depth="145mm" width="50mm" height="50mm">
                       <Translation x="70mm"/>
                       <Rotation x="45degree"/>
                     </BoxGeometry>

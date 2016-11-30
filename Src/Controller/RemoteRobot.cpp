@@ -1,41 +1,38 @@
 /**
-* @file Controller/RemoteRobot.cpp
-* Implementation of the base class of processes that communicate with a remote robot.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Controller/RemoteRobot.cpp
+ * Implementation of the base class of processes that communicate with a remote robot.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "RemoteRobot.h"
 #include "ConsoleRoboCupCtrl.h"
+#include "Platform/Time.h"
 
-RemoteRobot::RemoteRobot(const char* name, const char* ip) :
+RemoteRobot::RemoteRobot(const std::string& name, const std::string& ip) :
   RobotConsole((setGlobals(), theDebugReceiver), theDebugSender),
-  theDebugReceiver(this, "Receiver.MessageQueue.O"),
-  theDebugSender(this, "Sender.MessageQueue.S"),
-  bytesTransfered(0),
-  transferSpeed(0),
-  timeStamp(0)
+  theDebugReceiver(this),
+  theDebugSender(this),
+  name(name), ip(ip)
 {
-  strcpy(this->name, name);
-  strcpy(this->ip, ip);
   mode = SystemCall::remoteRobot;
   puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
   if(puppet)
     simulatedRobot.init(puppet);
 
   // try to connect for one second
-  Thread<RemoteRobot>::start(this, &RemoteRobot::connect);
-  Thread<RemoteRobot>::stop();
+  Thread::start(this, &RemoteRobot::connect);
+  Thread::stop();
 }
 
 void RemoteRobot::connect()
 {
-  NAME_THREAD((std::string(name) + ".RemoteRobot.connect").c_str());
-  TcpConnection::connect(*ip ? ip : 0, 0xA1BD, TcpConnection::sender);
+  Thread::nameThread(name + ".RemoteRobot.connect");
+  TcpConnection::connect(ip.c_str(), 0xA1BD, TcpConnection::sender);
 }
 
 void RemoteRobot::run()
 {
-  NAME_THREAD((std::string(name) + ".RemoteRobot").c_str());
+  Thread::nameThread(name + ".RemoteRobot");
   setGlobals();
   while(isRunning())
     processMain();
@@ -43,10 +40,10 @@ void RemoteRobot::run()
 
 bool RemoteRobot::main()
 {
-  unsigned char* sendData = 0,
-               * receivedData;
-  int sendSize = 0,
-      receivedSize = 0;
+  unsigned char* sendData = nullptr;
+  unsigned char* receivedData;
+  int sendSize = 0;
+  int receivedSize = 0;
   MessageQueue temp;
 
   // If there is something to send, prepare a package
@@ -55,7 +52,7 @@ bool RemoteRobot::main()
     SYNC;
     OutBinarySize size;
     size << theDebugSender;
-    sendSize = (int) size.getSize();
+    sendSize = (int)size.getSize();
     sendData = new unsigned char[sendSize];
     OutBinaryMemory stream(sendData);
     stream << theDebugSender;
@@ -76,7 +73,7 @@ bool RemoteRobot::main()
 
   // If a package was prepared, remove it
   if(sendSize)
-    delete [] sendData;
+    delete[] sendData;
 
   // If a package was received from the router program, add it to receiver queue
   if(receivedSize > 0)
@@ -84,10 +81,10 @@ bool RemoteRobot::main()
     SYNC;
     InBinaryMemory stream(receivedData, receivedSize);
     stream >> theDebugReceiver;
-    delete [] receivedData;
+    delete[] receivedData;
   }
 
-  SystemCall::sleep(receivedSize > 0 ? 1 : 20);
+  Thread::sleep(receivedSize > 0 ? 1 : 20);
   return false;
 }
 
@@ -98,8 +95,8 @@ void RemoteRobot::announceStop()
     debugOut.out.bin << DebugRequest("disableAll");
     debugOut.out.finishMessage(idDebugRequest);
   }
-  SystemCall::sleep(1000);
-  Thread<RemoteRobot>::announceStop();
+  Thread::sleep(1000);
+  Thread::announceStop();
 }
 
 void RemoteRobot::update()
@@ -112,32 +109,32 @@ void RemoteRobot::update()
     if(moveOp != noMove)
     {
       if(moveOp == moveBoth)
-        simulatedRobot.moveRobot(movePos, moveRot * 1_deg,true);
+        simulatedRobot.moveRobot(movePos, moveRot * 1_deg, true);
       else if(moveOp == movePosition)
-        simulatedRobot.moveRobot(movePos, Vector3f::Zero(),false);
+        simulatedRobot.moveRobot(movePos, Vector3f::Zero(), false);
       else if(moveOp == moveBallPosition)
         simulatedRobot.moveBall(movePos);
       moveOp = noMove;
     }
   }
-  if(SystemCall::getTimeSince(timeStamp) >= 2000)
+  if(Time::getTimeSince(timeStamp) >= 2000)
   {
     int bytes = this->getOverallBytesSent() + this->getOverallBytesReceived() - bytesTransfered;
     bytesTransfered += bytes;
-    timeStamp = SystemCall::getCurrentSystemTime();
+    timeStamp = Time::getCurrentSystemTime();
     transferSpeed = bytes / 2000.0f;
   }
 
   char buf[33];
   sprintf(buf, "%.1lf kb/s", transferSpeed);
-  std::string statusText = robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData() +
-                           (isConnected() ? std::string(": connected to ") + ip + ", " + buf
-                                          : std::string(": connection lost from ") + ip);
+  QString statusText = robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData() +
+    (isConnected() ? QString(": connected to ") + QString::fromStdString(ip) + ", " + buf
+                   : QString(": connection lost from ") + QString::fromStdString(ip));
 
   if(logPlayer.getNumberOfMessages() != 0)
   {
     sprintf(buf, "%u", logPlayer.numberOfFrames);
-    statusText += std::string(", recorded ") + buf;
+    statusText += QString(", recorded ") + buf;
   }
 
   if(pollingFor)

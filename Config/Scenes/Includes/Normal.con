@@ -17,12 +17,12 @@ mr FrameInfo CognitionLogDataProvider
 mr JointSensorData MotionLogDataProvider
 mr InertialSensorData MotionLogDataProvider
 mr KeyStates MotionLogDataProvider
-mr UsSensorData MotionLogDataProvider
 mr FrameInfo MotionLogDataProvider
 mr GroundTruthWorldState CognitionLogDataProvider
 mr GroundTruthRobotPose OracledWorldModelProvider
 mr GroundTruthBallModel OracledWorldModelProvider
 mr Thumbnail off
+mr NetworkThumbnail default
 
 call Includes/DebugResponses
 call Includes/GameStates

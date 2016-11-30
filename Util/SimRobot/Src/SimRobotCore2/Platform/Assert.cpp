@@ -9,8 +9,7 @@
 #include <cstdarg>
 #include <cstdio>
 #ifdef WINDOWS
-#define NOMINMAX
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 #include "Assert.h"

@@ -20,7 +20,7 @@ option(WalkAtSpeedPercentage, (const Pose2f&) speed)
       theMotionRequest.motion = MotionRequest::walk;
       theMotionRequest.walkRequest.mode = WalkRequest::percentageSpeedMode;
       theMotionRequest.walkRequest.speed = speed;
-      theMotionRequest.walkRequest.kickType = WalkRequest::none;
+      theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
     }
   }
 
@@ -37,7 +37,7 @@ option(WalkAtSpeedPercentage, (const Pose2f&) speed)
       theMotionRequest.motion = MotionRequest::walk;
       theMotionRequest.walkRequest.mode = WalkRequest::percentageSpeedMode;
       theMotionRequest.walkRequest.speed = speed;
-      theMotionRequest.walkRequest.kickType = WalkRequest::none;
+      theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
     }
   }
 }

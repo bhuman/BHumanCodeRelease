@@ -80,11 +80,7 @@ private:
 
   State mean; /**< The estimate */
   Matrix2f cov = Matrix2f::Zero(); /**< The covariance of the estimate. */
-  Matrix2f l = Matrix2f::Zero(); /**< The last caculated cholesky decomposition of \c cov. */
-  State sigmaPoints[5]; /**< The last calculated sigma points. */
-
-  Vector3f sigmaReadings[5]; /**< The expected sensor values at the sigma points. */
-  Vector3f readingMean = Vector3f::Zero(); /**< The mean of the expected sensor values which was determined by using the sigma velocities. */
+  std::array<State, 5> sigmaPoints; /**< The last calculated sigma points. */
 
   void update(InertialData& inertialData);
 
@@ -93,31 +89,13 @@ private:
    */
   void reset();
 
-  void predict(const RotationMatrix& rotationOffset);
-  void readingUpdate(const Vector3f& reading);
+  void dynamicModel(State& state, const Vector3f& rotationOffset);
+  void predict(const Vector3f& rotationOffset);
 
-  void cholOfCov();
-  void generateSigmaPoints();
+  Vector3f readingModel(const State& sigmaPoint);
+  void update(const Vector3f& reading);
+
+  Matrix2f cholOfCov();
+  void updateSigmaPoints();
   void meanOfSigmaPoints();
-  void covOfSigmaPoints();
-
-  void readingModel(const State& sigmaPoint, Vector3f& reading);
-  void meanOfSigmaReadings();
-  Matrix3x2f covOfSigmaReadingsAndSigmaPoints();
-  Matrix3f covOfSigmaReadings();
-
-  Matrix2f tensor(const Vector2f& a) const
-  {
-    return (Matrix2f() << a * a.x(), a * a.y()).finished();
-  }
-
-  Matrix3x2f tensor(const Vector3f& a, const Vector2f& b)
-  {
-    return (Matrix3x2f() << a * b.x(), a * b.y()).finished();
-  }
-
-  Matrix3f tensor(const Vector3f& a) const
-  {
-    return (Matrix3f() << a * a.x(), a * a.y(), a * a.z()).finished();
-  }
 };

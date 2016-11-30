@@ -23,7 +23,6 @@ template<class T> class ProcessFrame;
 class PlatformProcess
 {
 private:
-  DECLARE_SYNC;
   SenderList* firstSender = nullptr; /**< The begin of the list of all senders of this process. */
   ReceiverList* firstReceiver = nullptr; /**< The begin of the list of all receivers of this process. */
   int priority = 0; /**< The priority of the process. */
@@ -32,7 +31,7 @@ private:
 
 protected:
   /**
-   * The function will be call from the process framework in each frame.
+   * The function will be called from the process framework in each frame.
    * It shall provide the main functionality of the process.
    * @return Should wait for external trigger?
    */
@@ -42,7 +41,7 @@ public:
   virtual ~PlatformProcess() = default;
 
   /**
-   * The function returns the begin of list of all senders.
+   * The function returns the begin of a list of all senders.
    * Note that the function returns a reference that can be changed.
    * @return A reference to the address of the first element.
    */
@@ -57,8 +56,6 @@ public:
 
   /**
    * The function sets the priority of the process.
-   * @attention The priority can only be set in the constructor of the process.
-   *            Any further changes will be ignored.
    * @param priority The new priority. Reasonable values are -2 .. 2 and 15.
    */
   void setPriority(int priority);
@@ -81,12 +78,12 @@ public:
   {
     if(SystemCall::getMode() == SystemCall::physicalRobot)
       sem.wait(100);
-    else 
+    else
       sem.wait();
   }
 
   /**
-   * The method has to be called to announce the receiption of a package.
+   * The method has to be called to announce the reception of a package.
    */
   void trigger() {sem.post();}
 

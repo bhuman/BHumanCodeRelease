@@ -1,10 +1,9 @@
 /**
  * @file TeamPlayersModel.h
  *
- * Declaration of a representation that represents a combined world model
+ * Declaration of a representation that represents the combined obstacle models from the team.
  *
  * @author Katharina Gillmann
- * @pfusche Florian
  */
 
 #pragma once
@@ -20,7 +19,8 @@
  */
 STREAMABLE(TeamPlayersModel,
 {
+  void verify() const;
   void draw() const,
 
-  (std::vector<Obstacle>) obstacles, /**< poses and covariance of own robots */
+  (std::vector<Obstacle>) obstacles, /**< 'field pose' (field coordinates) and covariance of combined obstacles */
 });

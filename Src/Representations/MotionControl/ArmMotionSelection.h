@@ -1,13 +1,17 @@
 /**
  * @file Representations/MotionControl/ArmMotionSelection.h
  * This file declares a struct that represents the arm motions actually selected based on the constraints given.
- * @author Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
-#include "ArmMotionRequest.h"
-#include <cstring>
+#include "Tools/Streams/Streamable.h"
+#include "ArmKeyFrameRequest.h"
+#include "Tools/Streams/Enum.h"
+#include "Tools/Streams/EnumIndexedArray.h"
+
+#include <array>
 
 /**
  * @struct ArmMotionSelection
@@ -15,17 +19,29 @@
  */
 STREAMABLE(ArmMotionSelection,
 {
-  int rightArmRatiosOffset;
+  ENUM(ArmMotion,
+  {,
+    walkArms,
+    kickArms,
+    specialActionArms,
+    standArms,
+    getUpArms,
+
+    firstNonBodyMotion,
+    keyFrameS = firstNonBodyMotion, //assert same order as ArmMotionRequest,
+    pointAtS,
+  });
+
   ArmMotionSelection()
   {
-    memset(armRatios, 0, sizeof(armRatios));
-    memset(targetArmMotion, ArmMotionRequest::none, sizeof(targetArmMotion));
-    armRatios[ArmMotionRequest::none] = 1;
-    armRatios[ArmMotionRequest::numOfArmMotions + ArmMotionRequest::none] = 1;
-    rightArmRatiosOffset = ArmMotionRequest::numOfArmMotions;
+    targetArmMotion.fill(specialActionArms);
+    armRatios[Arms::left].fill(0.f);
+    armRatios[Arms::right].fill(0.f);
+    armRatios[Arms::left][specialActionArms] = 1;
+    armRatios[Arms::right][specialActionArms] = 1;
   },
 
-  ((ArmMotionRequest) ArmMotion[Arms::numOfArms]) targetArmMotion, /**< The armmotion that is the destination of the current arminterpolation per arm */
-  (float[Arms::numOfArms * ArmMotionRequest::numOfArmMotions]) armRatios, /**< The current ratio of each armmotion in the final joint request, for each arm. */
+  (ENUM_INDEXED_ARRAY((ArmMotionSelection) ArmMotion, (Arms) Arm)) targetArmMotion, /**< The armmotion that is the destination of the current arminterpolation per arm */
+  (ENUM_INDEXED_ARRAY(ENUM_INDEXED_ARRAY(float, ArmMotion), (Arms) Arm)) armRatios, /**< The current ratio of each armmotion in the final joint request, for each arm. */
   (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request per arm, if it is an active armmotion. */
 });

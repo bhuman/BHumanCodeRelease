@@ -1,4 +1,4 @@
-/*
+/**
  * PropertyEditorFactory.h
  *
  *  Created on: Apr 27, 2012
@@ -22,9 +22,9 @@ class AngleEditor;
  */
 class PropertyEditorFactory : public QtVariantEditorFactory
 {
-private:
   Q_OBJECT
 
+private:
   DataView* pTheView;
   //FIXME comments
   QMap<QtProperty*, QSpinBox*> propertyToSpinBox;
@@ -33,15 +33,13 @@ private:
   QMap<QDoubleSpinBox*, QtProperty*> doubleSpinBoxToProperty;
   QMap<QtProperty*, AngleEditor*> propertyToAngleEditor;
   QMap<AngleEditor*, QtProperty*> angleEditorToProperty;
-  QtVariantPropertyManager* pTheManager;
+  QtVariantPropertyManager* pTheManager = nullptr;
 
 public:
   /**
    * @param pView All editor events will be send to this view.
    */
-  PropertyEditorFactory(DataView* pView) :
-    pTheView(pView), pTheManager(nullptr)
-  {}
+  PropertyEditorFactory(DataView* pView) : pTheView(pView) {}
 
   QWidget* createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent);
 

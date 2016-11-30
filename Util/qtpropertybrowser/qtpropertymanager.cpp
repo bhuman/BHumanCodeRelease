@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing/
+** Copyright (C) 2016 The Qt Company Ltd.
+** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
 **
@@ -11,29 +11,27 @@
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see http://www.qt.io/terms-conditions. For further
-** information use the contact form at http://www.qt.io/contact-us.
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 or version 3 as published by the Free
-** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file. Please review the
-** following information to ensure the GNU Lesser General Public License
-** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
-**
-** As a special exception, The Qt Company gives you certain additional
-** rights. These rights are described in The Qt Company LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** General Public License version 3 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL3 included in the
+** packaging of this file. Please review the following information to
+** ensure the GNU Lesser General Public License version 3 requirements
+** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
 **
 ** GNU General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3.0 as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU General Public License version 3.0 requirements will be
-** met: http://www.gnu.org/copyleft/gpl.html.
+** General Public License version 2.0 or (at your option) the GNU General
+** Public license version 3 or any later version approved by the KDE Free
+** Qt Foundation. The licenses are as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-2.0.html and
+** https://www.gnu.org/licenses/gpl-3.0.html.
 **
 ** $QT_END_LICENSE$
 **
@@ -48,11 +46,11 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMetaEnum>
 #include <QtGui/QFontDatabase>
-#include <QtGui/QStyleOption>
-#include <QtGui/QStyle>
-#include <QtGui/QApplication>
+#include <QtWidgets/QStyleOption>
+#include <QtWidgets/QStyle>
+#include <QtWidgets/QApplication>
 #include <QtGui/QPainter>
-#include <QtGui/QLabel>
+#include <QtWidgets/QLabel>
 
 #include <limits.h>
 #include <float.h>
@@ -189,9 +187,7 @@ static Value getData(const QMap<const QtProperty *, PrivateData> &propertyMap,
             Value PrivateData::*data,
             const QtProperty *property, const Value &defaultValue = Value())
 {
-    typedef QMap<const QtProperty *, PrivateData> PropertyToData;
-    typedef Q_TYPENAME PropertyToData::const_iterator PropertyToDataConstIterator;
-    const PropertyToDataConstIterator it = propertyMap.constFind(property);
+    const auto it = propertyMap.constFind(property);
     if (it == propertyMap.constEnd())
         return defaultValue;
     return it.value().*data;
@@ -225,9 +221,7 @@ static void setSimpleValue(QMap<const QtProperty *, Value> &propertyMap,
             void (PropertyManager::*valueChangedSignal)(QtProperty *, ValueChangeParameter),
             QtProperty *property, const Value &val)
 {
-    typedef QMap<const QtProperty *, Value> PropertyToData;
-    typedef Q_TYPENAME PropertyToData::iterator PropertyToDataIterator;
-    const PropertyToDataIterator it = propertyMap.find(property);
+    const auto it = propertyMap.find(property);
     if (it == propertyMap.end())
         return;
 
@@ -247,14 +241,11 @@ static void setValueInRange(PropertyManager *manager, PropertyManagerPrivate *ma
             QtProperty *property, const Value &val,
             void (PropertyManagerPrivate::*setSubPropertyValue)(QtProperty *, ValueChangeParameter))
 {
-    typedef Q_TYPENAME PropertyManagerPrivate::Data PrivateData;
-    typedef QMap<const QtProperty *, PrivateData> PropertyToData;
-    typedef Q_TYPENAME PropertyToData::iterator PropertyToDataIterator;
-    const PropertyToDataIterator it = managerPrivate->m_values.find(property);
+    const auto it = managerPrivate->m_values.find(property);
     if (it == managerPrivate->m_values.end())
         return;
 
-    PrivateData &data = it.value();
+    auto &data = it.value();
 
     if (data.val == val)
         return;
@@ -282,10 +273,7 @@ static void setBorderValues(PropertyManager *manager, PropertyManagerPrivate *ma
             void (PropertyManagerPrivate::*setSubPropertyRange)(QtProperty *,
                     ValueChangeParameter, ValueChangeParameter, ValueChangeParameter))
 {
-    typedef Q_TYPENAME PropertyManagerPrivate::Data PrivateData;
-    typedef QMap<const QtProperty *, PrivateData> PropertyToData;
-    typedef Q_TYPENAME PropertyToData::iterator PropertyToDataIterator;
-    const PropertyToDataIterator it = managerPrivate->m_values.find(property);
+    const auto it = managerPrivate->m_values.find(property);
     if (it == managerPrivate->m_values.end())
         return;
 
@@ -293,7 +281,7 @@ static void setBorderValues(PropertyManager *manager, PropertyManagerPrivate *ma
     Value toVal = maxVal;
     orderBorders(fromVal, toVal);
 
-    PrivateData &data = it.value();
+    auto &data = it.value();
 
     if (data.minVal == fromVal && data.maxVal == toVal)
         return;
@@ -326,9 +314,7 @@ static void setBorderValue(PropertyManager *manager, PropertyManagerPrivate *man
             void (PropertyManagerPrivate::*setSubPropertyRange)(QtProperty *,
                     ValueChangeParameter, ValueChangeParameter, ValueChangeParameter))
 {
-    typedef QMap<const QtProperty *, PrivateData> PropertyToData;
-    typedef Q_TYPENAME PropertyToData::iterator PropertyToDataIterator;
-    const PropertyToDataIterator it = managerPrivate->m_values.find(property);
+    const auto it = managerPrivate->m_values.find(property);
     if (it == managerPrivate->m_values.end())
         return;
 
@@ -880,7 +866,7 @@ public:
 
     struct Data
     {
-        Data() : val(0), minVal(-INT_MAX), maxVal(INT_MAX), singleStep(1), decimals(2) {}
+        Data() : val(0), minVal(-DBL_MAX), maxVal(DBL_MAX), singleStep(1), decimals(2) {}
         double val;
         double minVal;
         double maxVal;
@@ -3281,7 +3267,7 @@ void QtSizePropertyManager::setMaximum(QtProperty *property, const QSize &maxVal
     When setting a new range, the current value is adjusted if
     necessary (ensuring that the value remains within the range).
 
-    \sa  setMinimum(), setMaximum(), rangeChanged()
+    \sa setMinimum(), setMaximum(), rangeChanged()
 */
 void QtSizePropertyManager::setRange(QtProperty *property, const QSize &minVal, const QSize &maxVal)
 {
@@ -3680,7 +3666,7 @@ void QtSizeFPropertyManager::setMaximum(QtProperty *property, const QSizeF &maxV
     When setting a new range, the current value is adjusted if
     necessary (ensuring that the value remains within the range).
 
-    \sa  setMinimum(), setMaximum(), rangeChanged()
+    \sa setMinimum(), setMaximum(), rangeChanged()
 */
 void QtSizeFPropertyManager::setRange(QtProperty *property, const QSizeF &minVal, const QSizeF &maxVal)
 {
@@ -5256,11 +5242,11 @@ void QtSizePolicyPropertyManagerPrivate::slotIntChanged(QtProperty *property, in
 {
     if (QtProperty *prop = m_hStretchToProperty.value(property, 0)) {
         QSizePolicy sp = m_values[prop];
-        sp.setHorizontalStretch(static_cast<uchar>(value));
+        sp.setHorizontalStretch(value);
         q_ptr->setValue(prop, sp);
     } else if (QtProperty *prop = m_vStretchToProperty.value(property, 0)) {
         QSizePolicy sp = m_values[prop];
-        sp.setVerticalStretch(static_cast<uchar>(value));
+        sp.setVerticalStretch(value);
         q_ptr->setValue(prop, sp);
     }
 }
@@ -6304,7 +6290,16 @@ void QtColorPropertyManager::uninitializeProperty(QtProperty *property)
 // Make sure icons are removed as soon as QApplication is destroyed, otherwise,
 // handles are leaked on X11.
 static void clearCursorDatabase();
-Q_GLOBAL_STATIC_WITH_INITIALIZER(QtCursorDatabase, cursorDatabase, qAddPostRoutine(clearCursorDatabase))
+namespace {
+struct CursorDatabase : public QtCursorDatabase
+{
+    CursorDatabase()
+    {
+        qAddPostRoutine(clearCursorDatabase);
+    }
+};
+}
+Q_GLOBAL_STATIC(QtCursorDatabase, cursorDatabase)
 
 static void clearCursorDatabase()
 {

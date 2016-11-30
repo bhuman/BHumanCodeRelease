@@ -1,20 +1,22 @@
 # views relative to robot
 # from now, relative to estimated robot pose
 vfd worldState origin:RobotPose
-vfd worldState representation:BallModel
+# vfd worldState module:MultiMultiBallLocator:hypotheses
+# vfd worldState module:MultiMultiBallLocator:drawStateOfBestHypothesis
 vfd worldState representation:BallModel:endPosition
-vfd worldState representation:BallPercept:Field
-vfd worldState representation:LinePercept:Field
-vfd worldState representation:PenaltyMarkPercept:Field
-vfd worldState representation:GoalPercept:Field
-vfd worldState representation:ObstacleModel:CenterCross
+vfd worldState representation:BallModel
+vfd worldState representation:BallPercept:field
+vfd worldState representation:FieldLines:field
+vfd worldState representation:PenaltyMarkPercept:field
+vfd worldState representation:PenaltyArea:field
+vfd worldState representation:OuterCorner:field
+vfd worldState representation:MidCircle:field
+vfd worldState representation:MidCorner:field
+vfd worldState representation:GoalFrame:field
+vfd worldState representation:ObstacleModel:rectangle
 vfd worldState representation:MotionRequest
-vfd worldState representation:FieldBoundary:Field
-vfd worldState representation:PlayersPercept:Field
-
-# local obstacle grid view
-# usually commented out as it is quite bandwidth/time consuming
-# vfd worldState origin:Odometry
+vfd worldState representation:FieldBoundary:field
+vfd worldState representation:PlayersPercept:field
 
 # back to global coordinates
 vfd worldState origin:Reset

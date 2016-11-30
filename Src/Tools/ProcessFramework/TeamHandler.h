@@ -6,32 +6,9 @@
 
 #pragma once
 
-#include "Tools/MessageQueue/MessageQueue.h"
-#include "Tools/Network/UdpComm.h"
 #include <string>
-
-#define TEAM_COMM \
-  MessageQueue theTeamReceiver; \
-  MessageQueue theTeamSender; \
-  TeamHandler theTeamHandler;
-
-#define INIT_TEAM_COMM \
-  theTeamHandler(theTeamReceiver, theTeamSender)
-
-#ifdef TARGET_SIM
-#define START_TEAM_COMM \
-  theTeamHandler.startLocal(Global::getSettings().teamPort, (unsigned) Global::getSettings().playerNumber);
-#else
-#define START_TEAM_COMM \
-  std::string bcastAddr = UdpComm::getWifiBroadcastAddress(); \
-  theTeamHandler.start(Global::getSettings().teamPort, bcastAddr.c_str());
-#endif
-
-#define RECEIVE_TEAM_COMM \
-  (void) theTeamHandler.receive()
-
-#define SEND_TEAM_COMM \
-  theTeamHandler.send()
+#include "Tools/Communication/UdpComm.h"
+#include "Tools/MessageQueue/MessageQueue.h"
 
 /**
  * @class TeamHandler

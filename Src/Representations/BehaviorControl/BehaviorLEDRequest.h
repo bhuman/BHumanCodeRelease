@@ -32,13 +32,13 @@ STREAMABLE(BehaviorLEDRequest,
 
   BehaviorLEDRequest()
   {
-    for(int i = 0; i < numOfBehaviorLEDs; ++i)
+    FOREACH_ENUM(BehaviorLED, i)
       modifiers[i] = LEDRequest::on;
   }
 
   bool operator==(const BehaviorLEDRequest& other) const
   {
-    for(int i = 0; i < numOfBehaviorLEDs; i++)
+    FOREACH_ENUM(BehaviorLED, i)
       if(modifiers[i] != other.modifiers[i])
         return false;
     return true;

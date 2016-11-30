@@ -1,6 +1,7 @@
 # replay a log file.
 # you have to adjust the name of the log file.
-sl LOG ${Logfile:,../Logs/*.log}
+call Includes/replayDialog Includes/replay
+qfr queue
 
 # simulation time on, otherwise log data may be skipped
 st on
@@ -10,10 +11,10 @@ call Includes/ImageViews
 call Includes/FieldViews1
 call Includes/FieldViews2
 
-vid upper representation:FieldBoundary:Image
-vid lower representation:FieldBoundary:Image
-vid upper representation:PenaltyMarkPercept:Image
-vid lower representation:PenaltyMarkPercept:Image
+vid upper representation:FieldBoundary:image
+vid lower representation:FieldBoundary:image
+vid upper representation:PenaltyMarkPercept:image
+vid lower representation:PenaltyMarkPercept:image
 
 vfd worldState representation:GameInfo
 vfd worldState representation:SideConfidence
@@ -28,8 +29,8 @@ jc press 25 log backward # Shift+Crtl+Y
 jc press 24 log forward # Shift+Crtl+X
 jc press 3 log backward image # Shift+Crtl+C
 jc press 22 log forward image # Shift+Crtl+V
-jc press 2 log fast_rewind # Shift+Ctrl+B
-jc press 14 log fast_forward # Shift+Ctrl+N
+jc press 2 log fastBackward # Shift+Ctrl+B
+jc press 14 log fastForward # Shift+Ctrl+N
 
 set representation:GroundContactState contact = true;
 ac both

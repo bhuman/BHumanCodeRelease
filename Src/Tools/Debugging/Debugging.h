@@ -46,7 +46,7 @@
 #define DECLARE_DEBUG_RESPONSE(id) ((void) 0)
 #define OUTPUT(type, format, expression) ((void) 0)
 #else
- /**
+/**
  * A macro for sending debug messages.
  *
  * @param type The type of the message from the MessageID enum in MessageIDs.h
@@ -68,7 +68,7 @@
   } \
   while(false)
 
- /**
+/**
  * Shortcut for outputting text messages.
  * @param expression A streaming expression to output.
  */
@@ -85,10 +85,10 @@
   do \
   { \
     OUTPUT_TEXT("Warning: " << message); \
-    OutTextSize _size; \
+    OutTextRawSize _size; \
     _size << "Warning: " << message; \
     char* _buf = new char[_size.getSize() + 1]; \
-    OutTextMemory _stream(_buf); \
+    OutTextRawMemory _stream(_buf); \
     _stream << "Warning: " << message; \
     _buf[_size.getSize()] = 0; \
     DebugRequestTable::print(_buf); \
@@ -107,10 +107,10 @@
   do \
   { \
     OUTPUT_TEXT("Error: " << message); \
-    OutTextSize _size; \
+    OutTextRawSize _size; \
     _size << "Error: " << message; \
     char* _buf = new char[_size.getSize() + 1]; \
-    OutTextMemory _stream(_buf); \
+    OutTextRawMemory _stream(_buf); \
     _stream << "Error: " << message; \
     _buf[_size.getSize()] = 0; \
     DebugRequestTable::print(_buf); \
@@ -125,7 +125,7 @@
  */
 inline bool _debugRequestActive(const char* id)
 {
-  if(Global::getDebugRequestTable().poll && Global::getDebugRequestTable().notYetPolled(id))
+  if(Global::getDebugRequestTable().pollCounter && Global::getDebugRequestTable().notYetPolled(id))
     OUTPUT(idDebugResponse, text, id << Global::getDebugRequestTable().isActive(id));
   return Global::getDebugRequestTable().isActive(id);
 }
@@ -137,7 +137,7 @@ inline bool _debugRequestActive(const char* id)
  */
 #define DECLARE_DEBUG_RESPONSE(id) \
   do \
-    if(Global::getDebugRequestTable().poll && Global::getDebugRequestTable().notYetPolled(id)) \
+    if(Global::getDebugRequestTable().pollCounter && Global::getDebugRequestTable().notYetPolled(id)) \
       OUTPUT(idDebugResponse, text, id << Global::getDebugRequestTable().isActive(id)); \
   while(false)
 

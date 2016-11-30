@@ -1,4 +1,4 @@
-/*
+/**
  * TypeDescriptor.cpp
  *
  *  Created on: Apr 28, 2012
@@ -18,31 +18,31 @@ using namespace Type;
  * and the native QVariant::int or QVariant::double for other types.
  */
 
-template <>
+template<>
 int TypeDescriptor::getTypeId<int>()
 {
   return QVariant::Int;
 }
 
-template <>
+template<>
 int TypeDescriptor::getTypeId<double>()
 {
   return QVariant::Double;
 }
 
-template <>
+template<>
 int TypeDescriptor::getTypeId<char>()
 {
   return QVariant::Char;
 }
 
-template <>
+template<>
 int TypeDescriptor::getTypeId<bool>()
 {
   return QVariant::Bool;
 }
 
-template <>
+template<>
 int TypeDescriptor::getTypeId<std::string>()
 {
   return QVariant::String;

@@ -3,27 +3,28 @@
 
 usage()
 {
-  echo "usage: copyfiles [Release|Develop|Debug] [<ipaddress>|(-m n <ipaddress>)*] {options}"
+  echo "usage: copyfiles [Release|Develop|Debug] [<ipaddress>|(-m <playernumber> <ipaddress>)*] {options}"
   echo "  options:"
   echo "    -l <location>          set location"
-  echo "    -t <color>             set team color to blue, red, yellow, or black"
+  echo "    -t <color>             set team color to blue, red, yellow, black, white, orange, purple, brown, or gray"
   echo "    -p <number>            set player number"
   echo "    -n <number>            set team number"
   echo "    -o <port>              overwrite team port"
   echo "    -r                     restart bhuman"
-  echo "    -rr                    force restart bhuman and naoqi"
-  echo "    -m n <ip>              copy to <ip>, and set playernumber to n (one -m per robot)"
+  echo "    -s                     stop NAOqi"
+  echo "    -m <n> <ip>            copy to <ip>, and set playernumber to <n> (one -m per robot)"
   echo "    -wc                    compile also under Windows"
   echo "    -nc                    never compile"
   echo "    -nr                    do not check whether target is reachable"
-  echo "    -d                     remove all log files before copying"
+  echo "    -d                     delete all log files before copying"
   echo "    -v <percent>           set NAO's volume"
   echo "    -w <profile>           set wireless profile"
+  echo "    -mn <number>           set magic number for teamcomm (0-255). Set -1 for random."
   echo "    -h | --help | /h | /?  print this text"
   echo "  examples:"
   echo "    ./copyfiles Develop 192.168.5.14 -p 1"
   echo "    ./copyfiles Release -m 1 10.0.5.14 -m 3 10.0.0.2"
-  echo "  NAOqi will be restarted if libbhuman or libgamectrl were changed."
+  echo "  Without -s, NAOqi will be restarted if libbhuman or libgamectrl were changed."
   exit 1
 }
 
@@ -47,23 +48,33 @@ copy()
   echo "stopping bhuman"
   ssh $sshoptions nao@$REMOTE "/home/nao/bin/bhumand stop > /dev/null"
 
-  if [ ! -z $REMOVE_LOGS ]; then
+  if [ ! -z $STOPNAOQI ]; then
+    echo "stopping naoqi"
+    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi stop &> /dev/null"
+  fi
+
+  if [ ! -z $DELETELOGS ]; then
     echo "removing log files"
-    ssh $sshoptions nao@$REMOTE "rm -rf /home/nao/logs/* > /dev/null"
+    ssh $sshoptions nao@$REMOTE "rm -f /home/nao/logs/* /tmp/bhumand.log > /dev/null"
   fi
 
   echo "updating wireless profiles"
   rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $sshoptions" ../../Install/Network/Profiles/. nao@$REMOTE:/home/nao/Profiles
-  if [ ! -z $PROFILE ]; then
-    RESULT=`ssh $sshoptions nao@$REMOTE "setprofile $PROFILE"`
-    if [ -n "$RESULT" ]; then
-      if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
-        RESULT=""
+  #check if PROFILE is existent
+  if [ -n "$PROFILE" ]; then
+    if [ ! -r "../../Install/Network/Profiles/$PROFILE" ]; then
+      echo "wireless profile \"$PROFILE\" is not existent, that profile is not activated" >&2
+    else
+      RESULT=`ssh $sshoptions nao@$REMOTE "setprofile $PROFILE"`
+      if [ -n "$RESULT" ]; then
+        if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
+          RESULT=""
+        fi
       fi
-    fi
-    if [ ! -z "$RESULT" ]; then
-      echo "$RESULT" | grep -v usage >&2
-      exit 1
+      if [ ! -z "$RESULT" ]; then
+        echo "$RESULT" | grep -v usage >&2
+        exit 1
+      fi
     fi
   fi
 
@@ -72,14 +83,11 @@ copy()
 
   echo "updating libs"
   RESULT=`rsync --chmod=u+rw,go+r,Dugo+x --stats -zce "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config`
-  if [ `echo "$RESULT" | grep -c 'transferred: 0'` != 1 ]; then
+  if [ `echo "$RESULT" | grep -c 'transferred: 0'` != 1 -a -z "$STOPNAOQI" ]; then
     RESTARTNAOQI=1
   fi
 
-  if [ ! -z $STOPPEDNAOQI ]; then
-    echo "starting naoqi"
-    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi start &> /dev/null"
-  elif [ ! -z $RESTARTNAOQI ]; then
+  if [ ! -z $RESTARTNAOQI ]; then
     echo "restarting naoqi"
     ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi restart &> /dev/null"
   fi
@@ -90,8 +98,21 @@ copy()
   #New naoqi versions use "Master", old use "PCM" as amixer SCONTROL
   ssh $sshoptions nao@$REMOTE "amixer set Master $VOLUME% unmute &> /dev/null"
 
+  #check if magic number is too big
+  if [ ! -z $MAGICNUMBER ]; then
+    if [ $MAGICNUMBER -gt 255 ]; then
+      MAGICNUMBER=255
+    fi
+    #calculate random magic number
+    if [ $MAGICNUMBER -le -1 ]; then
+      MAGICNUMBER=$(awk 'BEGIN{srand();print int(rand()*255) }')
+    fi
+
+    echo "setting magic number to $MAGICNUMBER"
+  fi
+
   # set settings on robot
-  if [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ]; then
+  if [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ] || [ ! -z $MAGICNUMBER ]; then
     echo "updating settings"
     SEDFLAGS=""
     [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location.*/location = $LOCATION;/'"
@@ -99,10 +120,18 @@ copy()
     [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber.*/playerNumber = $PLAYER;/'"
     [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber.*/teamNumber = $NUMBER;/'"
     [ ! -z $PORT ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort.*/teamPort = $PORT;/'"
+    [ ! -z $MAGICNUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber.*/magicNumber = $MAGICNUMBER;/'"
     ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS < /home/nao/Config/settings.cfg > /home/nao/Config/settingsTEMP.cfg && mv /home/nao/Config/settingsTEMP.cfg /home/nao/Config/settings.cfg"
   fi
 
   if [ ! -z $RESTART ]; then
+    if [ -z $RESTARTNAOQI ]; then
+      RESULT=`ssh $sshoptions nao@$REMOTE "/etc/init.d/naoqi status | grep started"` || true
+      if [ -z "$RESULT" ]; then
+        echo "starting naoqi"
+        ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi start &> /dev/null"
+      fi
+    fi
     echo "starting bhuman"
     ssh $sshoptions nao@$REMOTE "/home/nao/bin/bhumand start > /dev/null"
   fi
@@ -141,11 +170,13 @@ CHECK=1
 NUMMULTIPLE=0
 WINDOWSCOMPILE=
 RESTARTNAOQI=
+STOPNAOQI=
 MULTIPLEDATA=
-REMOVE_LOGS=
+DELETELOGS=
 VOLUME=100
 PROFILE=
 PORT=
+MAGICNUMBER=
 
 # parse options
 [ "x" = "x$*" ] && usage
@@ -186,15 +217,14 @@ while true; do
     "-r" | "/r")
       RESTART=1
       ;;
-    "-rr" | "/rr")
-      RESTARTNAOQI=1
-      RESTART=1
+    "-s" | "/s")
+      STOPNAOQI=1
       ;;
     "-nr" | "/nr")
       CHECK=
       ;;
     "-d" | "/d")
-      REMOVE_LOGS=1
+      DELETELOGS=1
       RESTART=1
       ;;
     "-h" | "/h" | "/?" | "--help")
@@ -214,6 +244,10 @@ while true; do
     "-w" | "/w")
       shift
       PROFILE=$1
+      ;;
+    "-mn" | "/mn")
+      shift
+      MAGICNUMBER=$1
       ;;
     "Nao")
       COMPONENT="Nao"
@@ -238,23 +272,40 @@ while true; do
   shift
 done
 
+if [ ! -z $LOCATION ]; then
+  if [ "$(ls ../../Config/Locations/ | grep ${LOCATION})" == "" ]; then
+    if [ "$(ls ../../Config/Locations/ | grep -i ${LOCATION})" != "" ]; then
+      echo "Location $LOCATION is not present"
+      LOCATION="$(ls ../../Config/Locations/ | grep -i ${LOCATION})"
+      echo "Did you mean $LOCATION?"
+      echo "Now using $LOCATION"
+    else
+      echo "Location \"$LOCATION\" is not present"
+      exit 1
+    fi
+  fi
+fi
+
 #key may only be accessed by the owner. Otherwise ssh will complain
 chmod 400 $keyFile
 
 if [ ! -z $COMPILE ]; then
-  if [ -z "${ComSpec}${COMSPEC}" ]; then
-    # on linux
+  if [ "`uname`" = "Darwin" ]; then
+    # macOS
+    ./compile $COMPONENT $CONFIG
+    [ $? -ne 0 ] && exit 1
+  elif [ -z "${ComSpec}${COMSPEC}" ]; then
+    # Linux
     make $COMPONENT CONFIG=$CONFIG
     [ $? -ne 0 ] && exit 1
-  else
-    if [ ! -z $WINDOWSCOMPILE ]; then
-      echo "------ Compiling $COMPONENT ($CONFIG) ------"
-      DEVENV="$(cygpath -u "$(cygpath -m -s "${VS120COMNTOOLS}")../IDE/devenv.com")"
-      CMD="${DEVENV} ../VS2015/${SOLUTION} /Build ${CONFIG} /Project ${COMPONENT}"
-      $CMD
-      [ $? -ne 0 ] && exit 1
-      echo "------ Successfully compiled ------"
-    fi
+  elif [ ! -z $WINDOWSCOMPILE ]; then
+    # Windows
+    echo "------ Compiling $COMPONENT ($CONFIG) ------"
+    DEVENV="$(cygpath -u "$(cygpath -m -s "${VS120COMNTOOLS}")../IDE/devenv.com")"
+    CMD="${DEVENV} ../VS2015/${SOLUTION} /Build ${CONFIG} /Project ${COMPONENT}"
+    $CMD
+    [ $? -ne 0 ] && exit 1
+    echo "------ Successfully compiled ------"
   fi
 fi
 

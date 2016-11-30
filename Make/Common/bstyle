@@ -1,0 +1,58 @@
+#!/bin/sh
+# Format source code according to B-Human's style guide.
+# The script parameterizes AStyle to create the correct format.
+# It also works around some problems AStyle has with B-Human's
+# macros. It reads the source code from stdin and writes the
+# formatted version to stdout.
+# The script is used by the "AStyle for B-Human" system text
+# service on macOS.
+
+cd `dirname $0`
+
+if [ "`uname`" = "Darwin" ]; then
+  ASTYLE=../../Util/Buildchain/macOS/bin/astyle
+else
+  ASTYLE=astyle
+fi
+
+sed <&0 \
+-e "s%\(^ *\)MODULE(%\1struct MODULE %" \
+-e "s%\(^ *\)DEFINES_PARAMETERS(%\1struct DEFINES_PARAMETERS%" \
+-e "s%\(^ *\)LOADS_PARAMETERS(%\1struct LOADS_PARAMETERS%" \
+-e "s%\(^ *\)STREAMABLE(%\1struct STREAMABLE %" \
+-e "s%\(^ *\)STREAMABLE_WITH_BASE(%\1struct STREAMABLE_WITH_BASE %" \
+-e "s%\(^ *ENUM([^)]*,\)%\1)%" \
+-e "s%	%    %g" \
+-e "s%^\(\(  \)*\)\*%\1 *%" \
+| tr '\n' '\t' \
+| sed \
+-e "s%	$%%" \
+-e "s%\(, *\(/[/*][^	]*\)\{0,1\}	 *}\))%\1 //_PAREN%g" \
+-e "s%,\( *\(/[/*][^	]*\)\{0,1\}	 *	 *(\)%,; //_REMOVE\1%g" \
+| tr '\t' '\n' \
+| $ASTYLE \
+--style=allman \
+--indent=spaces=2 \
+--min-conditional-indent=0 \
+--align-pointer=type \
+--indent-switches \
+--indent-namespaces \
+--indent-labels \
+--indent-preprocessor \
+--indent-col1-comments \
+--pad-oper \
+--unpad-paren \
+--keep-one-line-blocks \
+--mode=c \
+| sed \
+-e "s%\(^ *\)struct MODULE %\1MODULE(%" \
+-e "s%\(^ *\)struct DEFINES_PARAMETERS%\1DEFINES_PARAMETERS(%" \
+-e "s%\(^ *\)struct LOADS_PARAMETERS%\1LOADS_PARAMETERS(%" \
+-e "s%\(^ *\)struct STREAMABLE %\1STREAMABLE(%" \
+-e "s%\(^ *\)struct STREAMABLE_WITH_BASE %\1STREAMABLE_WITH_BASE(%" \
+-e "s%\(^ *ENUM([^)]*,\))%\1%" \
+-e "s%\(^ *}\) //_PAREN%\1)%" \
+-e "s%; *//_REMOVE%%" \
+| tr '\n' '\t' \
+| sed -e "s%	$%%" -e "s%{ *	 *,%{,%g" \
+| tr '\t' '\n'

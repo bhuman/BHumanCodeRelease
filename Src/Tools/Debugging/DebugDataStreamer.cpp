@@ -13,8 +13,9 @@
 #include "Tools/Streams/StreamHandler.h"
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
-PROCESS_LOCAL const std::vector<const char*>* DebugDataStreamer::enumNames = nullptr;
+thread_local const std::vector<const char*>* DebugDataStreamer::enumNames = nullptr;
 
 DebugDataStreamer::DebugDataStreamer(StreamHandler& streamHandler, In& stream, const std::string& type, const char* name) :
   streamHandler(streamHandler), inData(&stream), type(type), name(name)
@@ -177,7 +178,10 @@ void DebugDataStreamer::serialize(In* in, Out* out)
       streamIt<unsigned char>(in, out, &DebugDataStreamer::getName);
     }
     else
+    {
+      std::cerr << "Specification for " << t << " not found" << std::endl;
       ASSERT(false); // specification missing
+    }
   }
 }
 

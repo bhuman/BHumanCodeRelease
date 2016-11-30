@@ -987,7 +987,7 @@ void Parser::parseMacroElement()
       referencedMacros.push_back(macro);
 
       // combine current node attributes and attributes from macro
-      for(std::unordered_map<std::string, std::pair<std::string, int> >::const_iterator iter = macro->attributes.begin(), end = macro->attributes.end(); iter != end; ++iter)
+      for(std::unordered_map<std::string, std::pair<std::string, int>>::const_iterator iter = macro->attributes.begin(), end = macro->attributes.end(); iter != end; ++iter)
         if(attributes->find(iter->first) == attributes->end())
         {
           if(!copiedAttributes)
@@ -996,7 +996,7 @@ void Parser::parseMacroElement()
         }
 
       // find another reference
-      std::unordered_map<std::string, std::pair<std::string, int> >::const_iterator refIter = macro->attributes.find("ref");
+      std::unordered_map<std::string, std::pair<std::string, int>>::const_iterator refIter = macro->attributes.find("ref");
       if(refIter == macro->attributes.end())
         break;
       ref = &replacePlaceholders(refIter->second.first);
@@ -1265,7 +1265,7 @@ error:
 void Parser::checkAttributes()
 {
   // make name attribute optional
-  std::unordered_map<std::string, std::pair<std::string, int> >::const_iterator iter = attributes->find("name");
+  std::unordered_map<std::string, std::pair<std::string, int>>::const_iterator iter = attributes->find("name");
   if(iter != attributes->end())
   {
     const std::pair<std::string, int>& ai = iter->second;
@@ -1276,7 +1276,7 @@ void Parser::checkAttributes()
   const unsigned int unexpectedAttributes = allAttributes & ~elementData->parsedAttributes;
   if(unexpectedAttributes)
   { // apparently there are unused attributs, find them and produce error messages
-    for(std::unordered_map<std::string, std::pair<std::string, int> >::const_iterator iter = attributes->begin(), end = attributes->end(); iter != end; ++iter)
+    for(std::unordered_map<std::string, std::pair<std::string, int>>::const_iterator iter = attributes->begin(), end = attributes->end(); iter != end; ++iter)
       if(unexpectedAttributes & (1 << iter->second.second))
         handleError("Unexpected attribute \"" + iter->first + "\"");
   }
@@ -1386,7 +1386,7 @@ const std::string& Parser::replacePlaceholders(const std::string& str)
 
 bool Parser::getStringRaw(const char* key, bool required, const std::string*& value)
 {
-  std::unordered_map<std::string, std::pair<std::string, int> >::const_iterator iter = attributes->find(key);
+  std::unordered_map<std::string, std::pair<std::string, int>>::const_iterator iter = attributes->find(key);
   if(iter == attributes->end())
   {
     if(required)

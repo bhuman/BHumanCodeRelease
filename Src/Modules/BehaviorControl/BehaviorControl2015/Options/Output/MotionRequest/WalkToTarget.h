@@ -19,7 +19,7 @@ option(WalkToTarget, (const Pose2f&) speed, (const Pose2f&) target)
       theMotionRequest.walkRequest.mode = WalkRequest::targetMode;
       theMotionRequest.walkRequest.target = target;
       theMotionRequest.walkRequest.speed = speed;
-      theMotionRequest.walkRequest.kickType = WalkRequest::none;
+      theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
     }
   }
 
@@ -37,7 +37,7 @@ option(WalkToTarget, (const Pose2f&) speed, (const Pose2f&) target)
       theMotionRequest.walkRequest.mode = WalkRequest::targetMode;
       theMotionRequest.walkRequest.target = target;
       theMotionRequest.walkRequest.speed = speed;
-      theMotionRequest.walkRequest.kickType = WalkRequest::none;
+      theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
     }
   }
 }

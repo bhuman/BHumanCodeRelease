@@ -13,6 +13,7 @@ robot all
 # Select modules for simulator
 mr GroundTruthWorldState CognitionLogDataProvider
 mr BallModel OracledWorldModelProvider
+mr BallModel3D OracledWorldModelProvider
 mr RobotPose OracledWorldModelProvider
 mr ObstacleModel OracledWorldModelProvider
 mr GroundTruthRobotPose OracledWorldModelProvider
@@ -21,7 +22,6 @@ mr FrameInfo CognitionLogDataProvider
 mr JointSensorData MotionLogDataProvider
 mr InertialSensorData MotionLogDataProvider
 mr KeyStates MotionLogDataProvider
-mr UsSensorData MotionLogDataProvider
 mr FrameInfo MotionLogDataProvider
 
 # Fast, because we do not compute images
@@ -31,23 +31,36 @@ mr Image default
 # Deactivate unused modules
 mr RobotHealth default
 mr Thumbnail off
+mr NetworkThumbnail default
 
 # Deactivate modules depending on images
 mr FieldBoundary default
 
 mr PlayersPercept default
-mr GoalPercept default
-mr LinePercept default
+mr FieldLines default
+mr GoalFrame default
+mr CirclePercept default
+mr FieldBoundary2 off
+mr FieldBoundarySpots off
+mr FieldLineIntersections default
 mr PenaltyMarkPercept default
 mr BallPercept off
-mr LineSpots off
-mr PotentialLineSpots off
+mr OuterCorner default
+mr PenaltyArea default
+mr MidCorner default
+mr IntersectionsPercept off
+mr LinesPercept off
+mr CNSImage off
+mr CNSRegions off
+mr BallRegions off
 mr BallSpots off
-mr ScanlineRegionsClipped off
-mr ScanlineRegions off
+mr ColorScanlineRegionsHorizontal off
+mr ColorScanlineRegionsVerticalClipped off
+mr ColorScanlineRegionsVertical off
 mr ScanGrid off
-mr ColorTable off
 mr BodyContour off
+
+mr ECImage off
 
 call Includes/DebugResponses
 call Includes/GameStates

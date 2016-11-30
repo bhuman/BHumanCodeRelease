@@ -1,13 +1,13 @@
 /**
-* @file AnnotationWidget.cpp
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file AnnotationWidget.cpp
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #include "AnnotationWidget.h"
 #include "AnnotationView.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/Representations/AnnotationInfo.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 
 #include <algorithm>
 
@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QRegExp>
 
 class NumberTableWidgetItem : public QTableWidgetItem
 {
@@ -62,9 +63,9 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view) : view(view), timeOfLas
   headerNames << "Frame" << "Name" << "Annotation";
   table->setHorizontalHeaderLabels(headerNames);
   table->verticalHeader()->setVisible(false);
-  table->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+  table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
   table->verticalHeader()->setDefaultSectionSize(15);
-  table->horizontalHeader()->setResizeMode(3, QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
   table->horizontalHeader()->resizeSection(0, 60);
   table->horizontalHeader()->resizeSection(1, 120);
   table->horizontalHeader()->resizeSection(2, 200);
@@ -89,12 +90,26 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view) : view(view), timeOfLas
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(view.fullName);
 
+  QHBoxLayout* checkBoxLayout = new QHBoxLayout();
+  checkBoxLayout->setAlignment(Qt::AlignLeft);
+
   stopCheckBox = new QCheckBox(this);
   stopCheckBox->setText("Stop on Annotation");
   stopCheckBox->setToolTip("Stops the Simulation if a new Annotation arrives which meets the Filter.");
   stopCheckBox->setChecked(settings.value("StopCheckBoxState").toBool());
+  QObject::connect(stopCheckBox, SIGNAL(stateChanged(int)), this, SLOT(stopCheckBoxStateChanged(int)));
+  checkBoxLayout->addWidget(stopCheckBox);
+
+  useRegExCheckBox = new QCheckBox(this);
+  useRegExCheckBox->setText("Allow Regular Expression");
+  useRegExCheckBox->setToolTip("Allows the use of regular expressions in the filter box.");
+  useRegExCheckBox->setChecked(settings.value("UseRegExCheckBoxState").toBool());
+  QObject::connect(useRegExCheckBox, SIGNAL(stateChanged(int)), this, SLOT(useRegExCheckBoxStateChanged(int)));
+  checkBoxLayout->addWidget(useRegExCheckBox);
+
   layout->addSpacing(2);
-  layout->addWidget(stopCheckBox);
+  layout->addLayout(checkBoxLayout);
+
   layout->addWidget(table);
   layout->setContentsMargins(QMargins());
   this->setLayout(layout);
@@ -115,6 +130,7 @@ AnnotationWidget::~AnnotationWidget()
   settings.setValue("SortOrder", table->horizontalHeader()->sortIndicatorOrder());
   settings.setValue("Filter", filter);
   settings.setValue("StopCheckBoxState", stopCheckBox->isChecked());
+  settings.setValue("UseRegExCheckBoxState", useRegExCheckBox->isChecked());
   settings.endGroup();
 
   for(auto& i : rows)
@@ -131,7 +147,7 @@ void AnnotationWidget::update()
 {
   if(timeOfLastUpdate >= view.info.timeOfLastMessage)
     return;
-  timeOfLastUpdate = SystemCall::getCurrentSystemTime();
+  timeOfLastUpdate = Time::getCurrentSystemTime();
 
   table->setUpdatesEnabled(false);
   table->setSortingEnabled(false); //disable sorting while updating to avoid race conditions
@@ -142,10 +158,6 @@ void AnnotationWidget::update()
     {
       const QString name = data.name.c_str();
       const QString annotation = data.annotation.c_str();
-
-      if(stopCheckBox->isChecked() &&
-         (name.toLower().contains(filter) || annotation.toLower().contains(filter)))
-        view.application->simStop();
 
       if(rows.find(data.annotationNumber) == rows.end())
       {
@@ -176,20 +188,50 @@ void AnnotationWidget::applyFilter()
 {
   for(int i = 0; i < table->rowCount(); ++i)
   {
-    QTableWidgetItem* moduleName = table->item(i, 1);
-    QTableWidgetItem* annotation = table->item(i, 2);
-    if((moduleName && moduleName->text().toLower().contains(filter)) ||
-       (annotation && annotation->text().toLower().contains(filter)))
-      table->setRowHidden(i, false);
-    else
-      table->setRowHidden(i, true);
+    QTableWidgetItem* nameItem = table->item(i, 1);
+    QTableWidgetItem* annotationItem = table->item(i, 2);
+
+    bool hidden = true;
+
+    if(nameItem && annotationItem)
+    {
+      const QString name = nameItem->text().toLower();
+      const QString annotation = annotationItem->text().toLower();
+
+      if(useRegExCheckBox->isChecked())
+      {
+        QRegExp regex(filter);
+        if(regex.exactMatch(name) || regex.exactMatch(annotation))
+          hidden = false;
+      }
+      else
+      {
+        if(name.contains(filter) || annotation.contains(filter))
+          hidden = false;
+      }
+    }
+
+    table->setRowHidden(i, hidden);
   }
+}
+
+void AnnotationWidget::stopCheckBoxStateChanged(int state)
+{
+  view.stopOnFilter = state == Qt::CheckState::Checked;
+}
+
+void AnnotationWidget::useRegExCheckBoxStateChanged(int state)
+{
+  view.filterIsRegEx = state == Qt::CheckState::Checked;
+  SYNC_WITH(view.info);
+  applyFilter();
 }
 
 void AnnotationWidget::filterChanged(const QString& newFilter)
 {
   filter = newFilter.trimmed().toLower();
   SYNC_WITH(view.info);
+  view.filter = filter;
   applyFilter();
 }
 
@@ -197,7 +239,7 @@ void AnnotationWidget::jumpFrame(int row, int column)
 {
   if(SystemCall::getMode() == SystemCall::Mode::logfileReplay)
   {
-    NumberTableWidgetItem* item = (NumberTableWidgetItem*) table->item(row, 0);
+    NumberTableWidgetItem* item = (NumberTableWidgetItem*)table->item(row, 0);
     int frame = item->number;
     view.logPlayer.gotoFrame(std::max(std::min(frame - 1, view.logPlayer.numberOfFrames - 1), 0));
   }

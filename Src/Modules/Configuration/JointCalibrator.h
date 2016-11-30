@@ -28,23 +28,23 @@ class JointCalibrator : public JointCalibratorBase
 {
 public:
   /**
-  * Sets the angles of the bodyRotationCorrection of the CameraCalibration into the offsets.
-  * @param x angle correction, y angle correction
-  */
+   * Sets the angles of the bodyRotationCorrection of the CameraCalibration into the offsets.
+   * @param x angle correction, y angle correction
+   */
   static void setOffsets(Angle x, Angle y);
 
 private:
   /**
-  * An offset which is added to the target of the inverse kinematics to detemermine the calibration offset for each joint angle.
-  */
+   * An offset which is added to the target of the inverse kinematics to detemermine the calibration offset for each joint angle.
+   */
   STREAMABLE(Offset,
   {
-    bool operator!=(const Offset & other) const
+    bool operator!=(const Offset& other) const
     {
       return translation != other.translation || rotation != other.rotation;
     }
 
-    Offset & operator-=(const Offset & other)
+    Offset& operator-=(const Offset& other)
     {
       translation -= other.translation;
       rotation -= other.rotation;
@@ -62,16 +62,16 @@ private:
   });
 
   /**
-  * Calibration offsets for each foot.
-  */
+   * Calibration offsets for each foot.
+   */
   STREAMABLE(Offsets,
   {
-    bool operator!=(const Offsets & other) const
+    bool operator!=(const Offsets& other) const
     {
       return bodyRotation != other.bodyRotation || leftFoot != other.leftFoot || rightFoot != other.rightFoot;
     }
 
-    Offsets & operator-=(const Offsets & other)
+    Offsets& operator-=(const Offsets& other)
     {
       bodyRotation -= other.bodyRotation;
       leftFoot -= other.leftFoot;

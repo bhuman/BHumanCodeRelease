@@ -50,11 +50,11 @@ fi
 
 if $download
 then
-  localLogpath="${basePath}/../../Config/Logs/$name/"
+  localLogpath=${BHUMAN_LOG_DIR:="${basePath}/../../Config/Logs"}/$(date +%F-%H-%M)/$name
 
   #check if log file dir exists
-  if [ ! -d "${basePath}/../../Config/Logs/$name" ]; then
-      mkdir -p ${basePath}/../../Config/Logs/$name
+  if [ ! -d "$localLogpath" ]; then
+      mkdir -p "$localLogpath"
   fi
 
   #check if log dir exist on the remote robot
@@ -85,16 +85,35 @@ if $download
 then
   #download all log files
   echo "Downloading log files..."
+
   #-p = preserve original date and time
-  scp $sshoptions -p nao@$ip:$logpath*.log $localLogpath
-  scpResult=$?
-  if [ $scpResult -ne 0 ]
+  remoteSize=$(ssh $sshoptions nao@$ip "du -h $logpath" | awk '{print $1}')
+  scp $sshoptions -p nao@$ip:$logpath*.log "$localLogpath" &
+  SCPPID=$!
+
+  ps -p$SCPPID 2>&1 > /dev/null
+  finished=$?
+  cnt=0
+  while [ "$finished" == "0" ]; do
+    ps -p$SCPPID 2>&1 > /dev/null
+    finished=$?
+    if (( $cnt % 30 == 0 )) # show download status every 30s
+    then
+      echo "downloaded: $(ls -l "$localLogpath" | awk '{ total += $5 }; END { CONVFMT = "%.0f"; print total/1024/1024 " MB" }') / $remoteSize"
+    fi
+    let cnt+=1
+    sleep 1
+  done
+
+  wait $SCPPID
+  FAIL=$?
+  if [ $FAIL -ne 0 ]
   then
      echo "scp failed!"
      exit 1
   fi
   echo "Downloading bhumand.log"
-  scp $sshoptions -p nao@$ip:/tmp/bhumand.log $localLogpath
+  scp $sshoptions -p nao@$ip:/tmp/bhumand.log "$localLogpath"
   scpResult=$?
   if [ $scpResult -ne 0 ]
   then
@@ -107,7 +126,7 @@ if $delete
 then
     #remove log files from robot
     echo "Deleting log files from robot"
-    ssh $sshoptions nao@$ip "rm -f $logpath*"
+    ssh $sshoptions nao@$ip "rm -f $logpath* /tmp/bhumand.log"
 fi
 
 if [ ! -z $RESTART ]; then

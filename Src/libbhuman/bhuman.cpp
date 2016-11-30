@@ -139,31 +139,10 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",
 
-  // sonar sensors
-  "Device/SubDeviceList/US/Left/Sensor/Value",
-  "Device/SubDeviceList/US/Left/Sensor/Value1",
-  "Device/SubDeviceList/US/Left/Sensor/Value2",
-  "Device/SubDeviceList/US/Left/Sensor/Value3",
-  "Device/SubDeviceList/US/Left/Sensor/Value4",
-  "Device/SubDeviceList/US/Left/Sensor/Value5",
-  "Device/SubDeviceList/US/Left/Sensor/Value6",
-  "Device/SubDeviceList/US/Left/Sensor/Value7",
-  "Device/SubDeviceList/US/Left/Sensor/Value8",
-  "Device/SubDeviceList/US/Left/Sensor/Value9",
-  "Device/SubDeviceList/US/Right/Sensor/Value",
-  "Device/SubDeviceList/US/Right/Sensor/Value1",
-  "Device/SubDeviceList/US/Right/Sensor/Value2",
-  "Device/SubDeviceList/US/Right/Sensor/Value3",
-  "Device/SubDeviceList/US/Right/Sensor/Value4",
-  "Device/SubDeviceList/US/Right/Sensor/Value5",
-  "Device/SubDeviceList/US/Right/Sensor/Value6",
-  "Device/SubDeviceList/US/Right/Sensor/Value7",
-  "Device/SubDeviceList/US/Right/Sensor/Value8",
-  "Device/SubDeviceList/US/Right/Sensor/Value9",
-
   // battery sensors
   "Device/SubDeviceList/Battery/Current/Sensor/Value",
   "Device/SubDeviceList/Battery/Charge/Sensor/Value",
+  "Device/SubDeviceList/Battery/Charge/Sensor/Status",
   "Device/SubDeviceList/Battery/Temperature/Sensor/Value",
 
   // fsr sensors
@@ -322,8 +301,6 @@ static const char* actuatorNames[] =
   "RFoot/Led/Red/Actuator/Value",
   "RFoot/Led/Green/Actuator/Value",
   "RFoot/Led/Blue/Actuator/Value",
-
-  "US/Actuator/Value"
 };
 
 static const char* teamInfoNames[] =
@@ -380,33 +357,32 @@ private:
   int memoryHandle; /**< The file handle of the shared memory. */
   LBHData* data; /**< The shared memory. */
   sem_t* sem; /**< The semaphore used to notify bhuman about new data. */
-  AL::DCMProxy* proxy;
-  AL::ALMemoryProxy* memory;
+  AL::DCMProxy* proxy = nullptr;
+  AL::ALMemoryProxy* memory = nullptr;
   AL::ALValue positionRequest;
   AL::ALValue stiffnessRequest;
-  AL::ALValue usRequest;
   AL::ALValue ledRequest;
   float* sensorPtrs[lbhNumOfSensorIds]; /** Pointers to where NaoQi stores the current sensor values. */
 
-  int dcmTime; /**< Current dcm time, updated at each onPreProcess call. */
+  int dcmTime = 0; /**< Current dcm time, updated at each onPreProcess call. */
 
   float requestedActuators[lbhNumOfActuatorIds]; /**< The previous actuator values requested. */
 
-  int lastReadingActuators; /**< The previous actuators read. For detecting frames without seemingly new data from bhuman. */
-  int actuatorDrops; /**< The number of frames without seemingly new data from bhuman. */
-  int frameDrops; /**< The number frames without a reaction from bhuman. */
+  int lastReadingActuators = -1; /**< The previous actuators read. For detecting frames without seemingly new data from bhuman. */
+  int actuatorDrops = 0; /**< The number of frames without seemingly new data from bhuman. */
+  int frameDrops = allowedFrameDrops + 1; /**< The number frames without a reaction from bhuman. */
 
   enum State {sitting, standingUp, standing, sittingDown, preShuttingDown, preShuttingDownWhileSitting, shuttingDown} state;
-  float phase; /**< How far is the Nao in its current standing up or sitting down motion [0 ... 1]? */
-  int ledIndex; /**< The index of the last LED set. */
+  float phase = 0.f; /**< How far is the Nao in its current standing up or sitting down motion [0 ... 1]? */
+  int ledIndex = 0; /**< The index of the last LED set. */
 
-  int rightEarLEDsChangedTime; // Last time when the right ear LEDs were changed by the B-Human code
+  int rightEarLEDsChangedTime = 0; // Last time when the right ear LEDs were changed by the B-Human code
 
   float startAngles[lbhNumOfPositionActuatorIds]; /**< Start angles for standing up or sitting down. */
   float startStiffness[lbhNumOfPositionActuatorIds]; /**< Start stiffness for sitting down. */
 
-  int startPressedTime; /**< The last time the chest button was not pressed. */
-  unsigned lastBHumanStartTime; /**< The last time bhuman was started. */
+  int startPressedTime = 0; /**< The last time the chest button was not pressed. */
+  unsigned lastBHumanStartTime = 0; /**< The last time bhuman was started. */
 
   /** Close all resources acquired. Called when initialization failed or during destruction. */
   void close()
@@ -493,14 +469,7 @@ private:
     for(int i = faceLedRedLeft0DegActuator; i < lbhNumOfActuatorIds; ++i)
       destActuators[i] = srcActuators[i];
   }
-
-  /** Resets ultrasound measurements so new ones can be detected. */
-  void resetUsMeasurements()
-  {
-    for(int i = lUsSensor; i <= rUs9Sensor; ++i)
-      *sensorPtrs[i] = 0.f;
-  }
-
+  
   /**
    * Handles the different states libbhuman can be in.
    * @param actuators The actuator values requested. They will not be changed, but might
@@ -525,7 +494,7 @@ private:
           return controlledActuators;
 
         for(int i = 0; i < lbhNumOfPositionActuatorIds; ++i)
-          startAngles[i] = *sensorPtrs[i * 3];
+          startAngles[i] = *sensorPtrs[i * lbhNumOfDifSensors];
 
       standingUp:
         state = standingUp;
@@ -645,23 +614,8 @@ private:
           break;
         }
 
-      // set us actuator
-      bool requestedUs = false;
-      if(requestedActuators[usActuator] != actuators[usActuator])
-      {
-        requestedActuators[usActuator] = actuators[usActuator];
-        if(actuators[usActuator] >= 0.f)
-        {
-          resetUsMeasurements();
-          usRequest[4][0] = dcmTime;
-          usRequest[5][0][0] = actuators[usActuator];
-          proxy->setAlias(usRequest);
-          requestedUs = true;
-        }
-      }
-
       // set led
-      if(!requestedStiffness && !requestedUs)
+      if(!requestedStiffness)
         for(int i = 0; i < lbhNumOfLedActuatorIds; ++i)
         {
           int index = faceLedRedLeft0DegActuator + ledIndex;
@@ -785,18 +739,7 @@ public:
     ALModule(pBroker, "BHuman"),
     data((LBHData*) MAP_FAILED),
     sem(SEM_FAILED),
-    proxy(0),
-    memory(0),
-    dcmTime(0),
-    lastReadingActuators(-1),
-    actuatorDrops(0),
-    frameDrops(allowedFrameDrops + 1),
-    state(sitting),
-    phase(0.f),
-    ledIndex(0),
-    rightEarLEDsChangedTime(0),
-    startPressedTime(0),
-    lastBHumanStartTime(0)
+    state(sitting)
   {
     setModuleDescription("A module that provides basic ipc NaoQi DCM access using shared memory.");
     fprintf(stderr, "libbhuman: Starting.\n");
@@ -839,6 +782,28 @@ public:
             strncpy(data->headId, headId.c_str(), sizeof(data->headId));
             data->headId[15] = 0;
 
+            std::string headVersion = (std::string) memory->getData("RobotConfig/Head/BaseVersion", 0);
+            std::string bodyVersion = (std::string) memory->getData("RobotConfig/Body/BaseVersion", 0);
+
+            if(!parseNAOVersion(headVersion, data->headVersion))
+            {
+              fprintf(stderr, "libbhuman: unknown headVerion: %s!\n", headVersion.c_str());
+              goto error;
+            }
+            if(!parseNAOVersion(bodyVersion, data->bodyVersion))
+            {
+              fprintf(stderr, "libbhuman: unknown bodyVersion: %s!\n", bodyVersion.c_str());
+              goto error;
+            }
+
+            bool headIsH25 = (bool) memory->getData("Device/DeviceList/TouchBoard/Available", 0);
+            bool bodyIsH25 = (bool) memory->getData("Device/DeviceList/LeftHandBoard/Available", 0);
+            data->headType = headIsH25 ? NAOType::H25 : NAOType::H21;
+            data->bodyType = bodyIsH25 ? NAOType::H25 : NAOType::H21;
+
+            fprintf(stderr, "libbhuman: headIsH25: %d\n", headIsH25);
+            fprintf(stderr, "libbhuman: bodyIsH25: %d\n", bodyIsH25);
+
             // create "positionRequest" and "stiffnessRequest" alias
             proxy = new AL::DCMProxy(pBroker);
 
@@ -857,11 +822,6 @@ public:
             params[1].arraySetSize(lbhNumOfStiffnessActuatorIds);
             for(int i = 0; i < lbhNumOfStiffnessActuatorIds; ++i)
               params[1][i] = std::string(actuatorNames[headYawStiffnessActuator + i]);
-            result = proxy->createAlias(params);
-
-            params[0] = std::string("usRequest");
-            params[1].arraySetSize(1);
-            params[1][0] = std::string(actuatorNames[usActuator]);
             result = proxy->createAlias(params);
 
             // prepare positionRequest
@@ -886,16 +846,6 @@ public:
             for(int i = 0; i < lbhNumOfStiffnessActuatorIds; ++i)
               stiffnessRequest[5][i].arraySetSize(1);
 
-            // prepare usRequest
-            usRequest.arraySetSize(6);
-            usRequest[0] = std::string("usRequest");
-            usRequest[1] = std::string("Merge"); // doesn't work with "ClearAll"
-            usRequest[2] = std::string("time-separate");
-            usRequest[3] = 0;
-            usRequest[4].arraySetSize(1);
-            usRequest[5].arraySetSize(1);
-            usRequest[5][0].arraySetSize(1);
-
             // prepare ledRequest
             ledRequest.arraySetSize(3);
             ledRequest[1] = std::string("ClearAll");
@@ -906,7 +856,6 @@ public:
             // prepare sensor pointers
             for(int i = 0; i < lbhNumOfSensorIds; ++i)
               sensorPtrs[i] = (float*) memory->getDataPtr(sensorNames[i]);
-            resetUsMeasurements();
 
             // initialize requested actuators
             memset(requestedActuators, 0, sizeof(requestedActuators));
@@ -927,6 +876,7 @@ public:
           }
       }
     }
+  error:
     close(); // error
   }
 
@@ -935,9 +885,29 @@ public:
   {
     close();
   }
+
+  bool parseNAOVersion(const std::string& versionString, NAOVersion& version)
+  {
+    if(versionString.size() == 4)
+    {
+      if(versionString[1] == '5')
+        version = NAOVersion::V5;
+      else if(versionString[1] == '4')
+        version = NAOVersion::V4;
+      else if(versionString[1] == '3' && versionString[3] == '3')
+        version = NAOVersion::V33;
+      else if(versionString[1] == '3' && versionString[3] == '2')
+        version = NAOVersion::V32;
+      else
+        return false;
+      return true;
+    }
+    else
+      return false;
+  }
 };
 
-BHuman* BHuman::theInstance = 0;
+BHuman* BHuman::theInstance = nullptr;
 
 /**
  * This method is called by NaoQi when loading this library.

@@ -4,12 +4,15 @@
  * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
+ * @author <a href="mailto:fthielke@tzi.de">Felix Thielke</a>
  */
 
 #pragma once
 
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "TimingManager.h"
 #include "Debugging.h"
+#include "Tools/Module/Blackboard.h"
 
 /**
  * Helper function to declare a plot as a single statement.

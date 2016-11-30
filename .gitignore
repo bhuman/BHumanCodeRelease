@@ -13,10 +13,10 @@ Make/VS2015/*.vcxproj
 Make/VS2015/*.vcxproj.user
 Make/VS2015/*.VC.opendb
 Make/VS2015/ipch
-Make/OSX/B-Human.xcodeproj/project.pbxproj
-Make/OSX/B-Human.xcodeproj/project.xcworkspace
-Make/OSX/B-Human.xcodeproj/xcuserdata
-Make/OSX/copyfiles-options.txt
+Make/macOS/B-Human.xcodeproj/project.pbxproj
+Make/macOS/B-Human.xcodeproj/project.xcworkspace
+Make/macOS/B-Human.xcodeproj/xcuserdata
+Make/macOS/copyfiles-options.txt
 Make/NetBeans/*/
 Util/GameController/error.txt
 Util/GameController/logs/

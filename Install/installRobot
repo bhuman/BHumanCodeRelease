@@ -65,7 +65,7 @@ getNames() {
   elif [ ${numOfMatchingHeadIds} -gt 1 ]; then
     fatal "${robotsFile} contains the headId \"${headId}\" more than once!"
   else
-    robotName=$(echo "${grepForHeadId}" | grep -Po 'name\s*=\s*"\K[^"]*')
+    robotName=$(echo "${grepForHeadId}" | sed "s%.*name[	 ]*=[	 ]*\"\([^\"]*\).*%\1%")
 	if [ ${robotName} == "" ]; then
 	  fatal "RobotName is empty"
 	fi

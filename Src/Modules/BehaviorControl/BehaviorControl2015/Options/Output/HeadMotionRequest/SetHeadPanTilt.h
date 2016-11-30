@@ -1,5 +1,5 @@
 /** Sets all members of the HeadMotionRequest representation for positioning the robot's head. */
-option(SetHeadPanTilt, (float) pan, (float) tilt, (float)(pi) speed, ((HeadMotionRequest) CameraControlMode)(autoCamera) camera)
+option(SetHeadPanTilt, (float) pan, (float) tilt, (float)(pi) speed, ((HeadMotionRequest) CameraControlMode)(autoCamera) camera, (bool)(false) stopAndGoMode)
 {
   /** Set the head motion request. */
   initial_state(setRequest)
@@ -16,6 +16,7 @@ option(SetHeadPanTilt, (float) pan, (float) tilt, (float)(pi) speed, ((HeadMotio
       theHeadMotionRequest.pan = pan;
       theHeadMotionRequest.tilt = tilt;
       theHeadMotionRequest.speed = speed;
+      theHeadMotionRequest.stopAndGoMode = stopAndGoMode;
     }
   }
 

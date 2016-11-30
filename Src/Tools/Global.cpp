@@ -1,18 +1,18 @@
 /**
-* @file Global.cpp
-* Implementation of a class that contains pointers to global data.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Global.cpp
+ * Implementation of a class that contains pointers to global data.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "Global.h"
 
-PROCESS_LOCAL AnnotationManager* Global::theAnnotationManager = 0;
-PROCESS_LOCAL OutMessage* Global::theDebugOut = 0;
-PROCESS_LOCAL OutMessage* Global::theTeamOut = 0;
-PROCESS_LOCAL Settings* Global::theSettings = 0;
-PROCESS_LOCAL DebugRequestTable* Global::theDebugRequestTable = 0;
-PROCESS_LOCAL DebugDataTable* Global::theDebugDataTable = 0;
-PROCESS_LOCAL StreamHandler* Global::theStreamHandler = 0;
-PROCESS_LOCAL DrawingManager* Global::theDrawingManager = 0;
-PROCESS_LOCAL DrawingManager3D* Global::theDrawingManager3D = 0;
-PROCESS_LOCAL TimingManager* Global::theTimingManager = 0;
+thread_local AnnotationManager* Global::theAnnotationManager = nullptr;
+thread_local OutMessage* Global::theDebugOut = nullptr;
+thread_local OutMessage* Global::theTeamOut = nullptr;
+thread_local Settings* Global::theSettings = nullptr;
+thread_local DebugRequestTable* Global::theDebugRequestTable = nullptr;
+thread_local DebugDataTable* Global::theDebugDataTable = nullptr;
+thread_local StreamHandler* Global::theStreamHandler = nullptr;
+thread_local DrawingManager* Global::theDrawingManager = nullptr;
+thread_local DrawingManager3D* Global::theDrawingManager3D = nullptr;
+thread_local TimingManager* Global::theTimingManager = nullptr;

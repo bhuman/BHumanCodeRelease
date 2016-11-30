@@ -1,17 +1,18 @@
 /**
-* @file Modules/Infrastructure/MotionRobotHealthProvider.h
-* This file implements a module that provides information about the robot's health.
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
-*/
+ * @file Modules/Infrastructure/MotionRobotHealthProvider.h
+ * This file implements a module that provides information about the robot's health.
+ * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ */
 
 #include "MotionRobotHealthProvider.h"
+#include "Platform/Time.h"
 
 MAKE_MODULE(MotionRobotHealthProvider, motionInfrastructure)
 
 void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
 {
   // Compute frame rate of motion process:
-  unsigned now = SystemCall::getCurrentSystemTime();
+  unsigned now = Time::getCurrentSystemTime();
   if(lastExecutionTime != 0)
     timeBuffer.push_front(now - lastExecutionTime);
   motionRobotHealth.motionFrameRate = timeBuffer.sum() ? 1000.0f / timeBuffer.averagef() : 0.f;

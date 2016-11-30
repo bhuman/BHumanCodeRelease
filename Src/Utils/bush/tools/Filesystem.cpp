@@ -10,7 +10,7 @@
 #include <fstream>
 #include <QFile>
 
-#if defined(LINUX) || defined(OSX)
+#if defined LINUX || defined MACOS
 #include <cstdlib>
 #include <sys/types.h>
 #include <cerrno>

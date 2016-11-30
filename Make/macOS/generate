@@ -1,0 +1,97 @@
+#!/bin/sh
+# Generate the Xcode project from a template.
+# The script uses "B-Human.xcodeproj/template.pbxproj" as a template and the file
+# search patterns from "B-Human.xcodeproj/project.pbxgen" to generate
+# "B-Human.xcodeproj/project.pbxproj". Afterwards, "B-Human.xcodeproj" can then be
+# opened using Xcode. The script also installs some data formatters for the
+# Xcode debugger and a system text service for formatting B-Human's source code
+# that also handles the macros used.
+# This script can be launched from the Finder. If the git hook
+# is installed, it is also automatically called whenever git changes
+# the working copy except for cherry-picking.
+
+cd `dirname $0`
+
+# Force Xcode to use Build directory
+SETTINGSFILE=WorkspaceSettings.xcsettings
+SETTINGSDIR=B-Human.xcodeproj/project.xcworkspace/xcuserdata/$USER.xcuserdatad
+SETTINGSPATH=$SETTINGSDIR/$SETTINGSFILE
+PLIST="/usr/libexec/PlistBuddy -c"
+if [ ! -e $SETTINGSPATH ]; then
+  mkdir -p $SETTINGSDIR
+  cp ../../Util/Buildchain/macOS/$SETTINGSFILE $SETTINGSPATH
+else
+  $PLIST "Set :BuildLocationStyle CustomLocation" $SETTINGSPATH 2>/dev/null || $PLIST "Add :BuildLocationStyle string CustomLocation" $SETTINGSPATH 
+  $PLIST "Set :CustomBuildIntermediatesPath ../../Build/macOS" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildIntermediatesPath string ../../Build/macOS" $SETTINGSPATH 
+  $PLIST "Set :CustomBuildLocationType RelativeToWorkspace" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildLocationType string RelativeToWorkspace" $SETTINGSPATH
+  $PLIST "Set :CustomBuildProductsPath ../../Build/macOS" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildProductsPath string ../../Build/macOS" $SETTINGSPATH
+  $PLIST "Set :DerivedDataLocationStyle Default" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string Default" $SETTINGSPATH
+fi
+
+# Disable App Nap for SimRobot
+defaults write org.B-Human.SimRobot NSAppSleepDisabled -bool YES
+
+# Install data formatters for Xcode debugger
+if [ ! -e ~/Library/Developer/Xcode/UserData/Debugger/CustomDataFormatters ]; then
+  mkdir -p ~/Library/Developer/Xcode/UserData/Debugger/
+  ln -s "`pwd`/../../Util/Buildchain/macOS/CustomDataFormatters" ~/Library/Developer/Xcode/UserData/Debugger/
+fi
+
+# Install AStyle for B-Human service
+mkdir -p ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
+cp ../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/Info.plist ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
+sed <../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/document.wflow >~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/document.wflow "s%PWD%`pwd`%"
+
+# Set link for address sanitizer
+rm -f ../../Util/Buildchain/macOS/lib
+ln -s "$(dirname $(dirname $(xcrun -find clang++)))/lib" ../../Util/Buildchain/macOS/lib
+
+# Link file templates
+mkdir -p ~/Library/Developer/Xcode/Templates/
+rm -f ~/Library/Developer/Xcode/Templates/B-Human
+ln -s "`pwd`/../../Util/BuildChain/macOS/templates" ~/Library/Developer/Xcode/Templates/B-Human
+
+# Copy code snippets
+mkdir -p ~/Library/Developer/Xcode/UserData/CodeSnippets
+rsync -u ../../Util/BuildChain/macOS/snippets/*.codesnippet ~/Library/Developer/Xcode/UserData/CodeSnippets/
+
+# Generate project file
+if [ "$1" == "-b" ]; then
+  export EXE=../../../Util/Buildchain/macOS/bin/pbxgen
+  export CFG=project.pbxgen
+  export SRC=project.pbxproj
+  export DST=template.pbxproj
+  export MSG=template
+  cd B-Human.xcodeproj
+  shift
+else
+  export EXE=../../Util/Buildchain/macOS/bin/pbxgen
+  export CFG=B-Human.xcodeproj/project.pbxgen
+  export SRC=B-Human.xcodeproj/template.pbxproj
+  export DST=B-Human.xcodeproj/project.pbxproj
+  export MSG=project
+fi
+
+if [ "$1" == "-p" ]; then
+  export ECHO="read -p"
+else
+  export ECHO=echo
+fi
+
+$EXE $CFG $SRC
+
+# Activate AVX2 in project if available on this machine or filter it out of the template
+if [ "$MSG" == "template" ]; then
+  sed <$SRC.tmp >$SRC.tmp2 "s%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%CLANG_X86_VECTOR_INSTRUCTIONS = default%" \
+  && mv $SRC.tmp2 $SRC.tmp
+else
+  ( sysctl -a | grep AVX2 >/dev/null ) \
+  && sed <$SRC.tmp >$SRC.tmp2 "s%CLANG_X86_VECTOR_INSTRUCTIONS = default%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%" \
+  && mv $SRC.tmp2 $SRC.tmp
+fi
+
+# Overwrite current file with the newly generated one if they differ (Xcode will reload the project).
+if [ -e $SRC.tmp ]; then
+  cmp -s $SRC.tmp $DST || ( mv $SRC.tmp $DST && $ECHO "Xcode $MSG changed." )
+  rm -f $SRC.tmp
+fi

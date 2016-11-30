@@ -9,7 +9,7 @@
 
     <Compound name="puppets">
       <Body ref="Nao" name="Remote">
-        <Translation z="300mm"/>
+        <Translation z="320mm"/>
        </Body>
     </Compound>
 

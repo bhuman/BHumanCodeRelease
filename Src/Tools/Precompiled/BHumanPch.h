@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(LINUX) || defined(USEPCH)
+#if !defined LINUX || defined USEPCH
 #include "Tools/Math/Eigen.h"
 
 #include "Tools/Boundary.h"

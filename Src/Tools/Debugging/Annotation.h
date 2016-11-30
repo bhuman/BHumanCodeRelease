@@ -26,4 +26,5 @@
     Global::getAnnotationManager().addAnnotation(); \
     Global::getAnnotationManager().getOut().out.text << name << message; \
     Global::getAnnotationManager().getOut().out.finishMessage(idAnnotation); \
-  } while(false)
+  } \
+  while(false)

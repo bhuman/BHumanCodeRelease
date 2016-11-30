@@ -9,6 +9,7 @@
 #include <QMouseEvent>
 #include <QPalette>
 #include <QProgressBar>
+#include <QDesktopWidget>
 
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/models/Team.h"
@@ -17,23 +18,30 @@
 #include "Utils/bush/ui/RobotPool.h"
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/Session.h"
+#include "Utils/bush/ui/SizeManager.h"
 
 void RobotView::init()
 {
   QFormLayout* layout = new QFormLayout();
+  QFont font;
+  font.setBold(true);
+  this->setFont(font);
 
   if(playerNumber)
     cPlayerNumber = new QLabel(QString("<font size=5><b>") + QString::number(playerNumber) + QString("</b></font>"));
+  SizeManager sizeManager;
 
   statusWidget = new QWidget(this);
-  statusWidget->setMaximumSize(200, 75);
-  this->setMaximumWidth(170);
-  this->setMaximumHeight(125);
+  statusWidget->setMaximumSize(sizeManager.statusWidgetWidth, sizeManager.statusWidgetHeight);
+  this->setMaximumWidth(sizeManager.robotViewWidth);
+  this->setMaximumHeight(sizeManager.robotViewHeight);
   QGridLayout* statusLayout = new QGridLayout(statusWidget);
+  statusLayout->setMargin(0);
+  statusLayout->setVerticalSpacing(2);
 
   QLabel* pingLabelWLAN = new QLabel("<font size=2><b>Wlan</b></font>", statusWidget);
   pingBarWLAN = new QLabel(this);
-  pingBarWLAN->setMaximumSize(50, 13);
+  pingBarWLAN->setMaximumSize(sizeManager.statusBarWidth, sizeManager.statusBarHeight);
   pingBarWLAN->setAlignment(Qt::AlignCenter);
   setPings(WLAN, 0);
   statusLayout->addWidget(pingLabelWLAN, 0, 0, Qt::AlignLeft);
@@ -41,7 +49,7 @@ void RobotView::init()
 
   QLabel* pingLabelLAN = new QLabel("<font size=2><b>Lan</b></font>", statusWidget);
   pingBarLAN = new QLabel(this);
-  pingBarLAN->setMaximumSize(50, 13);
+  pingBarLAN->setMaximumSize(sizeManager.statusBarWidth, sizeManager.statusBarHeight);
   pingBarLAN->setAlignment(Qt::AlignCenter);
   setPings(LAN, 0);
   statusLayout->addWidget(pingLabelLAN, 1, 0, Qt::AlignLeft);
@@ -49,7 +57,7 @@ void RobotView::init()
 
   QLabel* powerLabel = new QLabel("<font size=2><b>Power</b></font>", statusWidget);
   powerBar = new QProgressBar(this);
-  powerBar->setMaximumSize(50, 13);
+  powerBar->setMaximumSize(sizeManager.statusBarWidth, (int)(sizeManager.statusBarHeight * 0.8));
   powerBar->setRange(0, 100);
   powerBar->setValue(0);
   powerBar->setAlignment(Qt::AlignCenter);
@@ -67,6 +75,17 @@ void RobotView::init()
     Session::getInstance().registerPowerListener(this, robot);
   }
 
+  setStyleSheet("QGroupBox::title { \
+                subcontrol-origin: margin;\
+                left: 10px; \
+                margin-top: 0px; \
+                } \
+                QGroupBox { \
+                border: 1px solid gray; \
+                border-radius: 2px; \
+                margin-top: 0.5em; \
+                } \
+                ");
   update();
   setAcceptDrops(true);
 }
@@ -189,9 +208,19 @@ void RobotView::setPings(ENetwork network, std::map<std::string, double>* pings)
 void RobotView::setPower(std::map<std::string, Power>* power)
 {
   int value = 0;
+  bool charging = false;
   if(power && (*power)[robot->name].isValid())
+  {
     value = ((*power)[robot->name]).value;
+    charging = ((*power)[robot->name]).batteryCharging;
+  }
+
   powerBar->setValue(value);
+
+  if(charging)
+    powerBar->setStyleSheet("QProgressBar::chunk { background-color: lime; }");
+  else
+    powerBar->setStyleSheet("QProgressBar::chunk { background-color: red; }");
 }
 
 void RobotView::mouseMoveEvent(QMouseEvent* me)
@@ -199,7 +228,7 @@ void RobotView::mouseMoveEvent(QMouseEvent* me)
   if(!robot)
     return;
   QDrag* d = new QDrag(this);
-  QPixmap pm = QPixmap::grabWidget(this, rect());
+  QPixmap pm = QWidget::grab(rect());
   d->setPixmap(pm);
   d->setHotSpot(me->pos());
   QMimeData* data = new QMimeData();

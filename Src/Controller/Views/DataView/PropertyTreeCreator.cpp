@@ -5,7 +5,7 @@
  */
 
 #include "PropertyTreeCreator.h"
-#include "Tools/SensorData.h"
+#include "Tools/Motion/SensorData.h"
 
 void PropertyTreeCreator::outUChar(unsigned char value)
 {
@@ -34,7 +34,7 @@ void PropertyTreeCreator::outUInt(unsigned int value)
   else
   {
     e.property = view.getProperty(e.path, TypeDescriptor::getGroupType(), e.name.c_str(), e.parent);
-    while(value < (unsigned) e.property->subProperties().size())
+    while(value < (unsigned)e.property->subProperties().size())
       e.property->removeSubProperty(e.property->subProperties().last());
   }
 }

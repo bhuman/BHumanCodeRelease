@@ -1,8 +1,8 @@
 /**
-* @file LEDHandler.cpp
-* This file implements a module that generates the LEDRequest from certain representations.
-* @author jeff
-*/
+ * @file LEDHandler.cpp
+ * This file implements a module that generates the LEDRequest from certain representations.
+ * @author jeff
+ */
 
 #include "LEDHandler.h"
 #include "Representations/BehaviorControl/Role.h"
@@ -15,12 +15,30 @@ void LEDHandler::update(LEDRequest& ledRequest)
   for(int i = 0; i < ledRequest.numOfLEDs; ++i)
     ledRequest.ledStates[i] = LEDRequest::off;
 
+  if(theBehaviorStatus.activity == BehaviorStatus::noWifi
+     || theBehaviorStatus.activity == BehaviorStatus::noWifiData
+     || theBehaviorStatus.activity == BehaviorStatus::noWifiLocation)
+  {
+    setEyeColor(ledRequest, false, BehaviorLEDRequest::red,
+                theNoWirelessDataSenderStatus.connected || theNoWirelessReceivedData.connected ? LEDRequest::on : LEDRequest::off);
+    setEyeColor(ledRequest, true, theBehaviorStatus.activity == BehaviorStatus::noWifiData ? BehaviorLEDRequest::blue : BehaviorLEDRequest::green,
+                                  theBehaviorStatus.activity != BehaviorStatus::noWifi ? LEDRequest::on : LEDRequest::off);
+
+    ledRequest.ledStates[LEDRequest::chestRed] = theBehaviorStatus.activity == BehaviorStatus::noWifi ? LEDRequest::on : LEDRequest::off;
+    ledRequest.ledStates[LEDRequest::chestGreen] = theBehaviorStatus.activity != BehaviorStatus::noWifi ? LEDRequest::on : LEDRequest::off;
+    ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::off;
+  }
+  else
+  {
+    setRightEye(ledRequest);
+    setLeftEye(ledRequest);
+    setChestButton(ledRequest);
+  }
+
   //update
   setRightEar(ledRequest);
   setLeftEar(ledRequest);
-  setRightEye(ledRequest);
-  setLeftEye(ledRequest);
-  setChestButton(ledRequest);
+  setHead(ledRequest);
 }
 
 void LEDHandler::setRightEar(LEDRequest& ledRequest)
@@ -137,7 +155,7 @@ void LEDHandler::setLeftEye(LEDRequest& ledRequest)
 
   //no groundContact
   if(!theGroundContactState.contact/* && (theFrameInfo.time & 512)*/)
-    setEyeColor(ledRequest, true, BehaviorLEDRequest::blue, state);
+    setEyeColor(ledRequest, true, BehaviorLEDRequest::yellow, state);
   //overwrite
   else if(theBehaviorLEDRequest.leftEyeColor != BehaviorLEDRequest::defaultColor)
     //blue
@@ -146,48 +164,33 @@ void LEDHandler::setLeftEye(LEDRequest& ledRequest)
   else
   {
     bool ballSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 250;
-    bool goalSeen = theFrameInfo.getTimeSince(theGoalPercept.timeWhenCompleteGoalLastSeen) < 250;
+    bool featureSeen = theFrameInfo.getTimeSince(theFieldFeatureOverview.combinedStatus.lastSeen) < 250;
 
-    if(ballSeen && goalSeen)
-      //red
+    if(ballSeen && featureSeen)
       setEyeColor(ledRequest, true, BehaviorLEDRequest::red, state);
     else if(ballSeen)
-      //white
       setEyeColor(ledRequest, true, BehaviorLEDRequest::white, state);
-    else if(goalSeen)
-      //green
-      setEyeColor(ledRequest, true, BehaviorLEDRequest::green, state);
+    else if(featureSeen)
+      setEyeColor(ledRequest, true, BehaviorLEDRequest::blue, state);
   }
 }
 
 void LEDHandler::setRightEye(LEDRequest& ledRequest)
 {
+  if(theSystemSensorData.batteryCharging && !theRobotInfo.hasFeature(RobotInfo::headLEDs))
+    return setEyeColor(ledRequest, false, BehaviorLEDRequest::magenta, LEDRequest::on);
+
   //right eye -> groundContact ? role : role -> blinking
   //           + penalty shootout: native_{striker,keeper} ? {striker,keeper} : off
   LEDRequest::LEDState state = theBehaviorLEDRequest.modifiers[BehaviorLEDRequest::rightEye];
 
-  //no groundContact
-  if(!theGroundContactState.contact/* && (theFrameInfo.time & 512)*/)
-    setEyeColor(ledRequest, false, BehaviorLEDRequest::blue, state);
   //overwrite
-  else if(theBehaviorLEDRequest.rightEyeColor != BehaviorLEDRequest::defaultColor)
+  if(theBehaviorLEDRequest.rightEyeColor != BehaviorLEDRequest::defaultColor)
     setEyeColor(ledRequest, false, theBehaviorLEDRequest.rightEyeColor, state);
   else
   {
     switch(theBehaviorStatus.role)
     {
-      case Role::keeper:
-        setEyeColor(ledRequest, false, BehaviorLEDRequest::blue, state);
-        break;
-      case Role::defender:
-        setEyeColor(ledRequest, false, BehaviorLEDRequest::white, state);
-        break;
-      case Role::striker:
-        setEyeColor(ledRequest, false, BehaviorLEDRequest::red, state);
-        break;
-      case Role::supporter:
-        setEyeColor(ledRequest, false, BehaviorLEDRequest::green, state);
-        break;
       case Role::undefined:
       case Role::none:
         //off
@@ -200,9 +203,17 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
 
 void LEDHandler::setHead(LEDRequest& ledRequest)
 {
-  //not used yet
-  for(unsigned i = LEDRequest::headLedRearLeft0; i <= LEDRequest::headLedMiddleLeft0; i++)
-    ledRequest.ledStates[i] = LEDRequest::on;
+  if(theSystemSensorData.batteryCharging)
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::off;
+
+    ++chargingLED %= (LEDRequest::numOfHeadLEDs * chargingLightSlowness);
+    const LEDRequest::LED currentLED = headLEDCircle[chargingLED / chargingLightSlowness];
+    const LEDRequest::LED nextLED = headLEDCircle[(chargingLED / chargingLightSlowness + 1u) % LEDRequest::numOfHeadLEDs];
+    ledRequest.ledStates[currentLED] = LEDRequest::on;
+    ledRequest.ledStates[nextLED] = LEDRequest::on;
+  }
 }
 
 void LEDHandler::setChestButton(LEDRequest& ledRequest)

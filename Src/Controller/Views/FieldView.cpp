@@ -1,11 +1,11 @@
 /**
-* @file Controller/Views/FieldView.cpp
-*
-* Implementation of class FieldView
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-* @author Colin Graf
-*/
+ * @file Controller/Views/FieldView.cpp
+ *
+ * Implementation of class FieldView
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Colin Graf
+ */
 
 #include <QWidget>
 #include <QPainter>
@@ -25,11 +25,12 @@
 
 #define MAXZOOM 20.f
 #define MINZOOM 0.1f
+
 class FieldWidget : public QWidget, public SimRobot::Widget
 {
 public:
   FieldWidget(FieldView& fieldView) :
-    fieldView(fieldView), lastDrawingsTimeStamp(0), zoom(1.f)
+    fieldView(fieldView)
   {
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -55,11 +56,11 @@ public:
 
 private:
   FieldView& fieldView;
-  unsigned int lastDrawingsTimeStamp;
+  unsigned lastDrawingsTimeStamp = 0;
   QPainter painter;
   FieldDimensions fieldDimensions; /**< The field dimensions. */
   float scale;
-  float zoom;
+  float zoom = 1.f;
   QPoint offset;
   QPoint dragStart;
   QPoint dragStartOffset;
@@ -80,7 +81,7 @@ private:
     float yScale = float(size.height()) / viewHeight;
     scale = xScale < yScale ? xScale : yScale;
     scale *= zoom;
-    painter.setTransform(QTransform(scale, 0, 0, -scale, size.width() / 2. - offset.x()*scale, size.height() / 2. - offset.y()*scale));
+    painter.setTransform(QTransform(scale, 0, 0, -scale, size.width() / 2. - offset.x() * scale, size.height() / 2. - offset.y() * scale));
 
     {
       SYNC_WITH(fieldView.console);
@@ -91,20 +92,20 @@ private:
   void paintDrawings(QPainter& painter)
   {
     const QTransform baseTrans(painter.transform());
-    const std::list<std::string>& drawings(fieldView.console.fieldViews[fieldView.name]);
-    for(std::list<std::string>::const_iterator i = drawings.begin(), end = drawings.end(); i != end; ++i)
+    const std::list<std::string>& drawings = fieldView.console.fieldViews[fieldView.name];
+    for(const std::string& drawing : drawings)
     {
-      const DebugDrawing& debugDrawingLowerCam(fieldView.console.lowerCamFieldDrawings[*i]);
+      const DebugDrawing& debugDrawingLowerCam = fieldView.console.lowerCamFieldDrawings[drawing];
       PaintMethods::paintDebugDrawing(painter, debugDrawingLowerCam, baseTrans);
       if(debugDrawingLowerCam.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingLowerCam.timeStamp;
 
-      const DebugDrawing& debugDrawingUpperCam(fieldView.console.upperCamFieldDrawings[*i]);
+      const DebugDrawing& debugDrawingUpperCam = fieldView.console.upperCamFieldDrawings[drawing];
       PaintMethods::paintDebugDrawing(painter, debugDrawingUpperCam, baseTrans);
       if(debugDrawingUpperCam.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingUpperCam.timeStamp;
 
-      const DebugDrawing& debugDrawingMotion(fieldView.console.motionFieldDrawings[*i]);
+      const DebugDrawing& debugDrawingMotion = fieldView.console.motionFieldDrawings[drawing];
       PaintMethods::paintDebugDrawing(painter, debugDrawingMotion, baseTrans);
       if(debugDrawingMotion.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingMotion.timeStamp;
@@ -116,12 +117,12 @@ private:
   bool needsRepaint() const
   {
     SYNC_WITH(fieldView.console);
-    const std::list<std::string>& drawings(fieldView.console.fieldViews[fieldView.name]);
-    for(std::list<std::string>::const_iterator i = drawings.begin(), end = drawings.end(); i != end; ++i)
+    const std::list<std::string>& drawings = fieldView.console.fieldViews[fieldView.name];
+    for(const std::string& drawing : drawings)
     {
-      const DebugDrawing& debugDrawingLowerCam(fieldView.console.lowerCamFieldDrawings[*i]);
-      const DebugDrawing& debugDrawingUpperCam(fieldView.console.upperCamFieldDrawings[*i]);
-      const DebugDrawing& debugDrawingMotion(fieldView.console.motionFieldDrawings[*i]);
+      const DebugDrawing& debugDrawingLowerCam(fieldView.console.lowerCamFieldDrawings[drawing]);
+      const DebugDrawing& debugDrawingUpperCam(fieldView.console.upperCamFieldDrawings[drawing]);
+      const DebugDrawing& debugDrawingMotion(fieldView.console.motionFieldDrawings[drawing]);
 
       if(debugDrawingLowerCam.timeStamp > lastDrawingsTimeStamp
          || debugDrawingUpperCam.timeStamp > lastDrawingsTimeStamp
@@ -134,43 +135,50 @@ private:
   void window2viewport(QPoint& point)
   {
     const QSize& size(this->size());
-    point = QPoint((int) ((point.x() - size.width() / 2) / scale), (int) ((point.y() - size.height() / 2) / scale));
+    point = QPoint((int)((point.x() - size.width() / 2) / scale), (int)((point.y() - size.height() / 2) / scale));
     point += offset;
     point.ry() = -point.ry();
   }
 
   void mouseMoveEvent(QMouseEvent* event)
   {
+    QPoint pos(event->pos());
     if(dragStart.x() > 0)
     {
-      const QPoint& dragPos(event->pos());
-      offset = dragStartOffset + (dragStart - dragPos) / scale;
+      offset = dragStartOffset + (dragStart - pos) / scale;
       QWidget::update();
+      return;
     }
 
+    window2viewport(pos);
+
+    // Update tool tip
+    SYNC_WITH(fieldView.console);
+    const char* text = 0;
+    RobotConsole::Drawings* debugDrawings[] =
     {
-      SYNC_WITH(fieldView.console);
-      QPoint pos(event->pos());
-      window2viewport(pos);
-      const char* text = 0;
+      &fieldView.console.lowerCamFieldDrawings,
+      &fieldView.console.upperCamFieldDrawings,
+      &fieldView.console.motionFieldDrawings
+    };
+    for(int i = 0; i < 3 && !text; ++i)
+    {
+      RobotConsole::Drawings& debugDrawing = *debugDrawings[i];
+      Pose2f origin;
       const std::list<std::string>& drawings(fieldView.console.fieldViews[fieldView.name]);
-      for(std::list<std::string>::const_iterator i = drawings.begin(), end = drawings.end(); i != end; ++i)
+      for(const std::string& drawing : drawings)
       {
-        text = fieldView.console.lowerCamFieldDrawings[*i].getTip(pos.rx(), pos.ry());
-        if(text)
-          break;
-        text = fieldView.console.upperCamFieldDrawings[*i].getTip(pos.rx(), pos.ry());
-        if(text)
-          break;
-        text = fieldView.console.motionFieldDrawings[*i].getTip(pos.rx(), pos.ry());
+        debugDrawing[drawing].updateOrigin(origin);
+        text = debugDrawing[drawing].getTip(pos.rx(), pos.ry(), origin);
         if(text)
           break;
       }
-      if(text)
-        setToolTip(QString(text));
-      else
-        setToolTip(QString());
     }
+
+    if(text)
+      setToolTip(QString(text));
+    else
+      setToolTip(QString());
   }
 
   void keyPressEvent(QKeyEvent* event)
@@ -232,18 +240,25 @@ private:
       QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
       if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
       {
-        QPoint before(static_cast<int>(pinch->centerPoint().x()),
+#ifdef FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG
+        QPoint center = mapFromGlobal(QCursor::pos());
+#else
+        QPoint center(static_cast<int>(pinch->centerPoint().x()),
                       static_cast<int>(pinch->centerPoint().y()));
+#endif
+        QPoint before(center);
         window2viewport(before);
         scale /= zoom;
+#ifdef FIX_MACOS_PINCH_SCALE_RELATIVE_BUG
+        pinch->setLastScaleFactor(1.f);
+#endif
         zoom *= pinch->scaleFactor() / pinch->lastScaleFactor();
         if(zoom >= MAXZOOM)
           zoom = MAXZOOM;
         else if(zoom <= MINZOOM)
           zoom = MINZOOM;
         scale *= zoom;
-        QPoint after(static_cast<int>(pinch->centerPoint().x()),
-                     static_cast<int>(pinch->centerPoint().y()));
+        QPoint after(center);
         window2viewport(after);
         QPoint diff = before - after;
         diff.ry() *= -1;
@@ -259,7 +274,7 @@ private:
   {
     QWidget::wheelEvent(event);
 
-#ifndef OSX
+#ifndef MACOS
     zoom += 0.1 * event->delta() / 120;
     if(zoom >= MAXZOOM)
       zoom = MAXZOOM;
@@ -302,20 +317,21 @@ private:
 
   QSize sizeHint() const { return QSize(int(fieldDimensions.xPosOpponentFieldBorder * 0.2f), int(fieldDimensions.yPosLeftFieldBorder * 0.2f)); }
 
-  virtual QWidget* getWidget() {return this;}
+  virtual QWidget* getWidget() { return this; }
 
   void update()
   {
     if(needsRepaint())
       QWidget::update();
   }
-  virtual QMenu* createUserMenu() const {return new QMenu(tr("&Field"));}
+  virtual QMenu* createUserMenu() const { return new QMenu(tr("&Field")); }
 
   friend class FieldView;
 };
 
 FieldView::FieldView(const QString& fullName, RobotConsole& console, const std::string& name) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), name(name) {}
+  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), name(name)
+{}
 
 SimRobot::Widget* FieldView::createWidget()
 {

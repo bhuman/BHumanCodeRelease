@@ -19,7 +19,7 @@ class CommandLineCompleter;
 class CommandLineEdit : public QLineEdit
 {
   /** The console which uses the instance of the CommandLineEdit. */
-  Console *console;
+  Console* console;
 
   /** The history of the command line. */
   QStringList history;
@@ -32,7 +32,7 @@ class CommandLineEdit : public QLineEdit
   /** The completer which is in charge to show a popup with completions
    * suggestions.
    */
-  CommandLineCompleter *completer;
+  CommandLineCompleter* completer;
 
 protected:
   /** Disables Focus switch on tab key and triggers completion instead.
@@ -40,7 +40,7 @@ protected:
    * @link QLineEdit
    * @copydoc QLineEdit::eventFilter(QObject*,QEvent*)
    */
-  bool eventFilter(QObject *o, QEvent *e);
+  bool eventFilter(QObject* o, QEvent* e);
 
   /** Triggers the completer.
    * This means a completer popup is shown which suggests some possible
@@ -49,11 +49,11 @@ protected:
   void complete();
 
 public:
-  explicit CommandLineEdit(Console *parent);
+  explicit CommandLineEdit(Console* parent);
 
   /**
-   * Overwrites the keyPressEvent mehtod of the the QLineEdit to handle special
+   * Overwrites the keyPressEvent method of the QLineEdit to handle special
    * keys in a special way.
    */
-  void keyPressEvent(QKeyEvent *e);
+  void keyPressEvent(QKeyEvent* e);
 };

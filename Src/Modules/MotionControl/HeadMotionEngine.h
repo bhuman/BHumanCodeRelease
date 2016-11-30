@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Representations/Configuration/JointCalibration.h"
+#include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
@@ -22,24 +22,27 @@ MODULE(HeadMotionEngine,
   REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
   REQUIRES(HeadAngleRequest),
+  REQUIRES(HeadLimits),
   REQUIRES(JointAngles),
-  REQUIRES(JointCalibration),
   PROVIDES(HeadJointRequest),
+  DEFINES_PARAMETERS(
+  {,
+    (int)(800) stopAndGoModeFrequenzy, /* Milliseconds between 2 stops in stopAndGoMode */
+  }),
 });
 
 class HeadMotionEngine : public HeadMotionEngineBase
 {
 private:
-  float requestedPan;
-  float requestedTilt;
+  Angle requestedPan;
+  Angle requestedTilt;
   Vector2f lastSpeed;
-  Geometry::Circle deathPoints[4];
-
-  /**
-  * The update method to generate the head joint angles from desired head motion.
-  */
-  void update(HeadJointRequest& headJointRequest);
 
 public:
   HeadMotionEngine();
+
+  /**
+   * The update method to generate the head joint angles from desired head motion.
+   */
+  void update(HeadJointRequest& headJointRequest);
 };

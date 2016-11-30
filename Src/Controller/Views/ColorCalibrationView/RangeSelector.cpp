@@ -1,4 +1,4 @@
-/*
+/**
  * File:   RangeSelector.cpp
  * Author: marcel
  *
@@ -12,9 +12,8 @@
 #include <QHBoxLayout>
 #include <cmath>
 
-RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent,
-                             int min, int max)
-: QGroupBox(name, parent), parent(parent)
+RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+  QGroupBox(name, parent), parent(parent)
 {
   QHBoxLayout* layout = new QHBoxLayout(this);
   setLayout(layout);
@@ -48,10 +47,10 @@ RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent
 
 void RangeSelector::updateWidgets()
 {
-  if(parent->currentColor > ColorClasses::white)
+  if(parent->currentColor >= FieldColors::numOfNonColors)
   {
     setEnabled(true);
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.ranges[parent->currentColor - 2]);
+    updateSlider(parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
   }
   else
     setEnabled(false);
@@ -66,9 +65,9 @@ void RangeSelector::setEnabled(bool value)
 
 void RangeSelector::updateColorCalibration(int value, bool isMin)
 {
-  if(parent->currentColor > ColorClasses::white)
+  if(parent->currentColor >= FieldColors::numOfNonColors)
   {
-    updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration.ranges[parent->currentColor - 2]);
+    updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
     parent->colorCalibrationView.console.colorCalibrationChanged = true;
   }
 }

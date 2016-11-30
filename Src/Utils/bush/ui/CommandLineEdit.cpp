@@ -10,13 +10,15 @@
 #include "Utils/bush/ui/CommandLineCompleter.h"
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/cmdlib/Commands.h"
+
 #include <QKeyEvent>
 
-bool CommandLineEdit::eventFilter(QObject *o, QEvent *e)
+
+bool CommandLineEdit::eventFilter(QObject* o, QEvent* e)
 {
   if(e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease)
   {
-    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(e);
     if(keyEvent->key() == Qt::Key_Tab && e->type() == QEvent::KeyPress)
     {
       if(completer->popup()->isVisible())
@@ -36,7 +38,7 @@ void CommandLineEdit::complete()
   setFocus();
 }
 
-CommandLineEdit::CommandLineEdit(Console *parent)
+CommandLineEdit::CommandLineEdit(Console* parent)
   : QLineEdit(parent),
     console(parent),
     history(),
@@ -53,12 +55,12 @@ CommandLineEdit::CommandLineEdit(Console *parent)
   connect(completer, SIGNAL(highlighted(const QString&)), this, SLOT(setText(const QString&)));
 }
 
-void CommandLineEdit::keyPressEvent(QKeyEvent *e)
+void CommandLineEdit::keyPressEvent(QKeyEvent* e)
 {
   // ignore some special keys so that the completer can handle them
   if(completer->popup()->isVisible())
   {
-    switch (e->key())
+    switch(e->key())
     {
       case Qt::Key_Enter:
       case Qt::Key_Return:
@@ -80,7 +82,7 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
     return;
   }
 
-  switch (e->key())
+  switch(e->key())
   {
     case Qt::Key_Up:        // history up
       if(!history.isEmpty() && historyIter != history.begin())
@@ -103,32 +105,32 @@ void CommandLineEdit::keyPressEvent(QKeyEvent *e)
     case Qt::Key_Enter:     // return: update history (rest is done by the console)
     case Qt::Key_Space:
     case Qt::Key_Return:
+    {
+      QString line = text();
+      if(line.size() > 0)
       {
-        QString line = text();
-        if(line.size() > 0)
-        {
-          history.removeAll(line);
-          history.append(line);
-          historyIter = history.end();
-        }
-        completer->setCompletionPrefix("");
-        QLineEdit::keyPressEvent(e);
-        break;
-      }
-    default:
-      {
+        history.removeAll(line);
+        history.append(line);
         historyIter = history.end();
-        QLineEdit::keyPressEvent(e);
-
-        /* This updates the completion prefix and assures that the completer
-         * stays visible if we type more keys. Furthermore complete is called
-         * which corrects the focus.
-         */
-        bool completerVisible = completer->popup()->isVisible();
-        completer->setCompletionPrefix(text());
-        if(completerVisible)
-          complete();
       }
+      completer->setCompletionPrefix("");
+      QLineEdit::keyPressEvent(e);
+      break;
+    }
+    default:
+    {
+      historyIter = history.end();
+      QLineEdit::keyPressEvent(e);
+
+      /* This updates the completion prefix and assures that the completer
+       * stays visible if we type more keys. Furthermore complete is called
+       * which corrects the focus.
+       */
+      bool completerVisible = completer->popup()->isVisible();
+      completer->setCompletionPrefix(text());
+      if(completerVisible)
+        complete();
+    }
   }
   e->accept();
 }

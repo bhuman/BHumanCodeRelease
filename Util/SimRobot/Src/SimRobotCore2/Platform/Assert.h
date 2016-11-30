@@ -27,7 +27,7 @@ public:
   static void trace(const char* format, ...);
 };
 
-#ifdef OSX
+#ifdef MACOS
 // Prevent strange recursive include: <assert.h> is resolved by this file!
 #include <../include/assert.h>
 #else

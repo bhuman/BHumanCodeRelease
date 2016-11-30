@@ -45,6 +45,15 @@ namespace SimRobot
 
     virtual const QIcon* getIcon() const {return 0;}
     virtual int getKind() const {return 0;}
+
+    /**
+     * For objects which do not have a widget (i.e. do not override createWidget() and are
+     * registered with the SimRobot::Flag::windowless flag), this function provides a callback
+     * that is called when the item is clicked in the Scene Graph.
+     * This is done in SceneGraphDockWidget::itemActivated(), just before MainWindow::openObject()
+     * would have been called if we were dealing with a non-windowless widget item.
+     */
+    virtual void widgetlessActivationCallback() {}
   };
 
   /**
@@ -147,6 +156,7 @@ namespace SimRobot
     virtual const QString& getAppPath() const = 0;
     virtual QSettings& getSettings() = 0;
     virtual QSettings& getLayoutSettings() = 0;
+    virtual bool isSimRunning() = 0;
     virtual void simReset() = 0;
     virtual void simStart() = 0;
     virtual void simStep() = 0;

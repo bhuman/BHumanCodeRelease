@@ -7,26 +7,23 @@
  */
 
 #include <cstring>
+#include <limits>
 
 #include "DebugDrawing.h"
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 
 DebugDrawing::DebugDrawing()
 {
-  timeStamp = SystemCall::getCurrentSystemTime();
-  processIdentifier = 0;
+  timeStamp = Time::getCurrentSystemTime();
   usedSize = reservedSize = 0;
-  firstTip = -1;
   elements = 0;
 }
 
 const DebugDrawing& DebugDrawing::operator=(const DebugDrawing& other)
 {
   reset();
-  typeOfDrawing = other.typeOfDrawing;
   timeStamp = other.timeStamp;
-  processIdentifier = other.processIdentifier;
   *this += other;
   return *this;
 }
@@ -44,6 +41,8 @@ const DebugDrawing& DebugDrawing::operator+=(const DebugDrawing& other)
     t.next = firstTip;
     firstTip = address;
   }
+  if(other.lastOrigin != -1)
+    lastOrigin = offset + other.lastOrigin;
   return *this;
 }
 
@@ -69,29 +68,43 @@ DebugDrawing::~DebugDrawing()
 
 void DebugDrawing::reset()
 {
-  timeStamp = SystemCall::getCurrentSystemTime();
-  processIdentifier = 0;
-  firstTip = -1;
+  timeStamp = Time::getCurrentSystemTime();
   usedSize = 0;
+  firstTip = -1;
+  lastOrigin = -1;
 }
 
-const char* DebugDrawing::getTip(int& x, int& y) const
+const char* DebugDrawing::getTip(int& x, int& y, const Pose2f& origin) const
 {
   int i = firstTip;
+  float minDiff2 = std::numeric_limits<float>::max();
+  const char* text = nullptr;
   while(i != -1)
   {
     const Tip& t = (const Tip&) elements[i];
-    long long xDiff(t.x - x);
-    long long yDiff(t.y - y);
-    if(xDiff* xDiff + yDiff* yDiff <= t.radius * t.radius)
+    Vector2f point = origin * Vector2f((float)t.x, (float)t.y);
+    float diff2 = (Vector2f((float)x, (float) y) - point).squaredNorm();
+    if(diff2 <= t.radius * t.radius && diff2 < minDiff2)
     {
+      minDiff2 = diff2;
       x = t.x;
       y = t.y;
-      return (const char*)(&t + 1);
+      text = (const char*) (&t + 1);
     }
     i = t.next;
   }
-  return 0;
+  return text;
+}
+
+void DebugDrawing::updateOrigin(Pose2f& origin) const
+{
+  if(lastOrigin != -1)
+  {
+    const Origin& o = (const Origin&) elements[lastOrigin];
+    origin.translation.x() = (float)o.translation.x();
+    origin.translation.y() = (float)o.translation.y();
+    origin.rotation = o.angle;
+  }
 }
 
 void DebugDrawing::arrow(Vector2f start, Vector2f end,
@@ -106,87 +119,49 @@ void DebugDrawing::arrow(Vector2f start, Vector2f end,
   line((int)(end.x()), (int)(end.y()), (int)(end.x() - startToEnd.x() - perpendicular.x()), (int)(end.y() - startToEnd.y() - perpendicular.y()), penStyle, width, color);
 }
 
-void DebugDrawing::text
-(
-  const char* text,
-  int x,
-  int y,
-  int fontSize,
-  ColorRGBA color
-)
+void DebugDrawing::text(const char* text, int x, int y, int fontSize, ColorRGBA color)
 {
   Text element;
   element.x = x;
   element.y = y;
   element.fontSize = fontSize;
   element.penColor = color;
-  element.size = (int) strlen(text) + 1;
+  element.size = (int)strlen(text) + 1;
   write(&element, sizeof(element));
   write(text, element.size);
 }
 
-void DebugDrawing::tip
-(
-  const char* text,
-  int x,
-  int y,
-  int radius
-)
+void DebugDrawing::tip(const char* text, int x, int y, int radius)
 {
   Tip element;
   element.x = x;
   element.y = y;
   element.radius = radius;
-  element.size = (int) strlen(text) + 1;
+  element.size = (int)strlen(text) + 1;
   element.next = firstTip;
   firstTip = usedSize;
   write(&element, sizeof(element));
   write(text, element.size);
 }
 
-void DebugDrawing::line
-(
-  int xStart,
-  int yStart,
-  int xEnd,
-  int yEnd,
-  Drawings::PenStyle penStyle,
-  int width,
-  ColorRGBA penColor
-)
+void DebugDrawing::line(int xStart, int yStart, int xEnd, int yEnd, Drawings::PenStyle penStyle, int width, ColorRGBA penColor)
 {
   Line element;
-  element.xStart = xStart;
-  element.yStart = yStart;
-  element.xEnd = xEnd;
-  element.yEnd = yEnd;
+  element.start = Vector2i(xStart, yStart);
+  element.end = Vector2i(xEnd, yEnd);
   element.penStyle = penStyle;
   element.width = width;
   element.penColor = penColor;
   write(&element, sizeof(element));
 }
 
-void DebugDrawing::line
-(
-  int xStart,
-  int yStart,
-  int xEnd,
-  int yEnd
-)
+void DebugDrawing::line(int xStart, int yStart, int xEnd, int yEnd)
 {
   line(xStart, yStart, xEnd, yEnd, Drawings::solidPen, 1, ColorRGBA(0, 0, 0));
 }
 
-void DebugDrawing::polygon
-(
-  const Vector2i* points,
-  int nCount,
-  int width,
-  Drawings::PenStyle penStyle,
-  ColorRGBA penColor,
-  Drawings::BrushStyle brushStyle,
-  ColorRGBA brushColor
-)
+void DebugDrawing::polygon(const Vector2i* points, int nCount, int width, Drawings::PenStyle penStyle,
+                           ColorRGBA penColor, Drawings::BrushStyle brushStyle, ColorRGBA brushColor)
 {
   Polygon element;
   element.nCount = nCount;
@@ -203,32 +178,6 @@ void DebugDrawing::polygon
   }
 }
 
-void DebugDrawing::gridRGBA(int x, int y, int cellSize, int cellsX, int cellsY, ColorRGBA* cells)
-{
-  GridRGBA element;
-  element.x = x;
-  element.y = y;
-  element.cellSize = cellSize;
-  element.cellsX = cellsX;
-  element.cellsY = cellsY;
-  write(&element, sizeof(element));
-  write(cells, sizeof(ColorRGBA) * cellsX * cellsY);
-}
-
-void DebugDrawing::gridMono(int x, int y, int cellSize, int cellsX, int cellsY,
-                            const ColorRGBA& baseColor, unsigned char* cells)
-{
-  GridMono element;
-  element.x = x;
-  element.y = y;
-  element.cellSize = cellSize;
-  element.cellsX = cellsX;
-  element.cellsY = cellsY;
-  element.baseColor = baseColor;
-  write(&element, sizeof(element));
-  write(cells, sizeof(unsigned char) * cellsX * cellsY);
-}
-
 void DebugDrawing::dot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor)
 {
   Vector2i points[4];
@@ -240,14 +189,7 @@ void DebugDrawing::dot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor)
   points[2].y() = y + 1;
   points[3].x() = x - 1;
   points[3].y() = y + 1;
-  polygon(
-    points,
-    4,
-    0,
-    Drawings::solidPen,
-    penColor,
-    Drawings::solidBrush,
-    brushColor);
+  polygon(points, 4, 0, Drawings::solidPen, penColor, Drawings::solidBrush, brushColor);
 }
 
 void DebugDrawing::largeDot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor)
@@ -261,14 +203,7 @@ void DebugDrawing::largeDot(int x, int y, ColorRGBA penColor, ColorRGBA brushCol
   points[2].y() = y + 25;
   points[3].x() = x - 25;
   points[3].y() = y + 25;
-  polygon(
-    points,
-    4,
-    3,
-    Drawings::solidPen,
-    penColor,
-    Drawings::solidBrush,
-    brushColor);
+  polygon(points, 4, 3, Drawings::solidPen, penColor, Drawings::solidBrush, brushColor);
 }
 
 void DebugDrawing::midDot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor)
@@ -282,22 +217,15 @@ void DebugDrawing::midDot(int x, int y, ColorRGBA penColor, ColorRGBA brushColor
   points[2].y() = y + 2;
   points[3].x() = x - 2;
   points[3].y() = y + 2;
-  polygon(
-    points,
-    4,
-    1,
-    Drawings::solidPen,
-    penColor,
-    Drawings::solidBrush,
-    brushColor);
+  polygon(points, 4, 1, Drawings::solidPen, penColor, Drawings::solidBrush, brushColor);
 }
 
 void DebugDrawing::origin(int x, int y, float angle)
 {
   Origin element;
-  element.x = x;
-  element.y = y;
+  element.translation = Vector2i(x, y);
   element.angle = angle;
+  lastOrigin = usedSize;
   write(&element, sizeof(element));
 }
 
@@ -309,9 +237,9 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Ellipse newCircle;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newCircle.x;
-      message.bin >> newCircle.y;
-      message.bin >> newCircle.radiusX;
+      message.bin >> newCircle.center.x();
+      message.bin >> newCircle.center.y();
+      message.bin >> newCircle.radii.x();
       message.bin >> penWidth;
       message.bin >> penStyle;
       message.bin >> newCircle.penColor;
@@ -320,7 +248,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       newCircle.width = penWidth;
       newCircle.penStyle = (Drawings::PenStyle)penStyle;
       newCircle.brushStyle = (Drawings::BrushStyle)brushStyle;
-      newCircle.radiusY = newCircle.radiusX;
+      newCircle.radii.y() = newCircle.radii.x();
       newCircle.rotation = 0.0f;
       write(&newCircle, sizeof(newCircle));
       break;
@@ -329,8 +257,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Arc newArc;
       char penWidth, penStyle, brushStyle;
-      message.bin >> newArc.x;
-      message.bin >> newArc.y;
+      message.bin >> newArc.center.x();
+      message.bin >> newArc.center.y();
       message.bin >> newArc.radius;
       message.bin >> newArc.startAngle;
       message.bin >> newArc.spanAngle;
@@ -350,10 +278,10 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       Ellipse newEllipse;
       char penWidth, penStyle, brushStyle;
       ColorRGBA penColor, brushColor;
-      message.bin >> newEllipse.x;
-      message.bin >> newEllipse.y;
-      message.bin >> newEllipse.radiusX;
-      message.bin >> newEllipse.radiusY;
+      message.bin >> newEllipse.center.x();
+      message.bin >> newEllipse.center.y();
+      message.bin >> newEllipse.radii.x();
+      message.bin >> newEllipse.radii.y();
       message.bin >> newEllipse.rotation;
       message.bin >> penWidth;
       message.bin >> penStyle;
@@ -406,36 +334,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       this->polygon(points, numberOfPoints, penWidth,
                     (Drawings::PenStyle) penStyle, penColor,
                     (Drawings::BrushStyle) brushStyle, brushColor);
-      delete [] points;
-      break;
-    }
-    case Drawings::gridRGBA:
-    {
-      int x, y, cellSize, cellsX, cellsY;
-      std::string buffer;
-      message.bin >> x >> y >> cellSize >> cellsX >> cellsY >> buffer;
-      const int numberOfCells(cellsX * cellsY);
-      InTextMemory stream(buffer.c_str(), buffer.size());
-      ColorRGBA* cells = new ColorRGBA[numberOfCells];
-      for(int i = 0; i < numberOfCells; ++i)
-        stream >> cells[i];
-      this->gridRGBA(x, y, cellSize, cellsX, cellsY, cells);
-      delete [] cells;
-      break;
-    }
-    case Drawings::gridMono:
-    {
-      int x, y, cellSize, cellsX, cellsY;
-      ColorRGBA baseColor;
-      std::string buffer;
-      message.bin >> x >> y >> cellSize >> cellsX >> cellsY >> baseColor >> buffer;
-      const int numberOfCells(cellsX * cellsY);
-      InTextMemory stream(buffer.c_str(), buffer.size());
-      unsigned char* cells = new unsigned char[numberOfCells];
-      for(int i = 0; i < numberOfCells; ++i)
-        stream >> cells[i];
-      this->gridMono(x, y, cellSize, cellsX, cellsY, baseColor, cells);
-      delete [] cells;
+      delete[] points;
       break;
     }
     case Drawings::line:
@@ -475,7 +374,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> penWidth;
       message.bin >> penStyle;
       message.bin >> penColor;
-      this->arrow(Vector2f((float) x1, (float) y1), Vector2f((float) x2, (float) y2), (Drawings::PenStyle)penStyle, penWidth, penColor);
+      this->arrow(Vector2f((float)x1, (float)y1), Vector2f((float)x2, (float)y2), (Drawings::PenStyle)penStyle, penWidth, penColor);
       break;
     }
     case Drawings::dot:
@@ -489,7 +388,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       this->dot(x, y, penColor, brushColor);
       break;
     }
-    case Drawings::midDot:
+    case Drawings::dotMedium:
     {
       int x, y;
       ColorRGBA penColor, brushColor;
@@ -500,7 +399,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       this->midDot(x, y, penColor, brushColor);
       break;
     }
-    case Drawings::largeDot:
+    case Drawings::dotLarge:
     {
       int x, y;
       ColorRGBA penColor, brushColor;
@@ -548,7 +447,7 @@ void DebugDrawing::reserve(int size)
       reservedSize = 1024;
     while(usedSize + size > reservedSize)
       reservedSize *= 2;
-    elements = (char*) realloc(elements, reservedSize);
+    elements = (char*)realloc(elements, reservedSize);
   }
 }
 
@@ -563,62 +462,32 @@ const DebugDrawing::Element* DebugDrawing::getNext(const Element* element) const
 {
   switch(element->type)
   {
-    case Element::ELLIPSE:
-      element = (const Element*)((const Ellipse*) element + 1);
+    case ElementType::arc:
+      element = (const Element*)((const Arc*)element + 1);
       break;
-    case Element::ARC:
-      element = (const Element*)((const Arc*) element + 1);
+    case ElementType::ellipse:
+      element = (const Element*)((const Ellipse*)element + 1);
       break;
-    case Element::RECTANGLE:
-      element = (const Element*)((const Rectangle*) element + 1);
+    case ElementType::line:
+      element = (const Element*)((const Line*)element + 1);
       break;
-    case Element::LINE:
-      element = (const Element*)((const Line*) element + 1);
+    case ElementType::origin:
+      element = (const Element*)((const Origin*)element + 1);
       break;
-    case Element::POLYGON:
-      element = (const Element*)((const int*)((const Polygon*) element + 1) + ((const Polygon*) element)->nCount * 2);
+    case ElementType::polygon:
+      element = (const Element*)((const int*)((const Polygon*)element + 1) + ((const Polygon*)element)->nCount * 2);
       break;
-    case Element::GRID_RGBA:
-      element = (const Element*)((const char*) element + sizeof(GridRGBA) + sizeof(ColorRGBA) * ((const GridRGBA*) element)->cellsX * ((const GridRGBA*) element)->cellsY);
+    case ElementType::rectangle:
+      element = (const Element*)((const Rectangle*)element + 1);
       break;
-    case Element::GRID_MONO:
-      element = (const Element*)((const char*) element + sizeof(GridMono) + ((const GridMono*) element)->cellsX * ((const GridMono*) element)->cellsY);
+    case ElementType::text:
+      element = (const Element*)((const char*)element + sizeof(Text) + ((const Text*)element)->size);
       break;
-    case Element::TEXT:
-      element = (const Element*)((const char*) element + sizeof(Text) + ((const Text*) element)->size);
-      break;
-    case Element::TIP:
-      element = (const Element*)((const char*) element + sizeof(Tip) + ((const Tip*) element)->size);
-      break;
-    case Element::ORIGIN:
-      element = (const Element*)((const Origin*) element + 1);
+    case ElementType::tip:
+      element = (const Element*)((const char*) element + sizeof(Tip) + ((const Tip*)element)->size);
       break;
     default:
       ASSERT(false);
   }
-  return (const char*) element - elements < usedSize ? element : 0;
-}
-
-In& operator>>(In& stream, DebugDrawing& debugDrawing)
-{
-  debugDrawing.reset();
-  int size;
-  stream >> debugDrawing.typeOfDrawing
-         >> debugDrawing.timeStamp
-         >> debugDrawing.firstTip
-         >> size;
-  debugDrawing.reserve(size);
-  stream.read(debugDrawing.elements, size);
-  debugDrawing.usedSize = size;
-  return stream;
-}
-
-Out& operator<<(Out& stream, const DebugDrawing& debugDrawing)
-{
-  stream << debugDrawing.typeOfDrawing
-         << debugDrawing.timeStamp
-         << debugDrawing.firstTip
-         << debugDrawing.usedSize;
-  stream.write(debugDrawing.elements, debugDrawing.usedSize);
-  return stream;
+  return (const char*)element - elements < usedSize ? element : 0;
 }

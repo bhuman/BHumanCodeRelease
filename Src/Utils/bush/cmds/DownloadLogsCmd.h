@@ -17,22 +17,22 @@ class DownloadLogsCmd : public RobotCommand
   class DownloadLogsTask : public RobotTask
   {
   public:
-    DownloadLogsTask(Context &context, Robot *robot);
+    DownloadLogsTask(Context& context, Robot* robot);
     bool execute();
     QString getCommand();
   };
 
-  public:
-    DownloadLogsCmd();
-    virtual std::string getName() const;
-    virtual std::string getDescription() const;
-    virtual bool preExecution(Context &context, const std::vector<std::string> &params);
-    virtual Task* perRobotExecution(Context &context, Robot &robot);
-    virtual bool postExecution(Context &context, const std::vector<std::string> &params);
+public:
+  DownloadLogsCmd();
+  virtual std::string getName() const;
+  virtual std::string getDescription() const;
+  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
+  virtual Task* perRobotExecution(Context& context, Robot& robot);
+  virtual bool postExecution(Context& context, const std::vector<std::string>& params);
 
-    QString getCommand();
-  public:
-    static DownloadLogsCmd theDownloadLogsCmd;
+  QString getCommand();
+public:
+  static DownloadLogsCmd theDownloadLogsCmd;
 };
 
 #endif /* DOWNLOADLOGSCMD_H_ */

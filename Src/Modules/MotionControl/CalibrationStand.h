@@ -2,26 +2,26 @@
 
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/MotionControl/HeadJointRequest.h"
 #include "Tools/Module/Module.h"
 
 MODULE(CalibrationStand,
 {,
   REQUIRES(RobotDimensions),
-  REQUIRES(HeadJointRequest),
-  PROVIDES(StandOutput),
+  PROVIDES(StandArmRequest),
+  PROVIDES(StandLegRequest),
   DEFINES_PARAMETERS(
   {,
-    (float)(220) standHeight,
+    (float)(230) standHeight,
     (float)(50) footOffsetY,
-    (bool)(true) useRequestedHeadAngle,
+    (int)(70) legStiffness,
   }),
 });
 
 class CalibrationStand : public CalibrationStandBase
 {
 private:
-  void update(StandOutput& standOutput);
+  void update(StandArmRequest& standArmRequest);
+  void update(StandLegRequest& standLegRequest);
 
   void drawHelplines();
 };

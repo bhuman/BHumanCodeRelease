@@ -16,10 +16,7 @@
 
 MAKE_MODULE(KickEngine, motionControl)
 
-KickEngine::KickEngine() :
-  compensate(false),
-  compensated(false),
-  timeSinceLastPhase(0)
+KickEngine::KickEngine()
 {
   params.reserve(10);
 
@@ -32,7 +29,7 @@ KickEngine::KickEngine() :
 
   while(file != nullptr)
   {
-    char name[260];
+    char name[260] = "";
     sprintf(name, "KickEngine/%s", file->d_name);
 
     if(strstr(name, ".kmc"))
@@ -46,14 +43,13 @@ KickEngine::KickEngine() :
       sprintf(name, "%s", file->d_name);
       for(int i = 0; i < 260; i++)
       {
-        if(name[i] == '.') name[i] = 0;
+        if(name[i] == '.')
+          name[i] = 0;
       }
       strcpy(parameters.name, name);
 
       if(KickRequest::getKickMotionFromName(parameters.name) < KickRequest::none)
-      {
         params.push_back(parameters);
-      }
       else
       {
         OUTPUT_TEXT("Warning: KickRequest is missing the id for " << parameters.name);
@@ -90,19 +86,20 @@ KickEngine::KickEngine() :
 
 void KickEngine::update(KickEngineOutput& kickEngineOutput)
 {
-  if(theMotionSelection.ratios[MotionRequest::kick] > 0.f)
+  if(theLegMotionSelection.ratios[MotionRequest::kick] > 0.f)
   {
     data.setCycleTime(theFrameInfo.cycleTime);
 
-    if(theMotionSelection.ratios[MotionRequest::kick] < 1.f && !compensated) compensate = true;
+    if(theLegMotionSelection.ratios[MotionRequest::kick] < 1.f && !compensated)
+      compensate = true;
 
     data.setRobotModel(theRobotModel);
 
-    if(data.sitOutTransitionDisturbance(compensate, compensated, theInertialData, kickEngineOutput, theStandOutput, theFrameInfo))
+    if(data.sitOutTransitionDisturbance(compensate, compensated, theInertialData, kickEngineOutput, theJointRequest, theFrameInfo))
     {
       if(data.activateNewMotion(theMotionRequest.kickRequest, kickEngineOutput.isLeavingPossible) && theMotionRequest.motion == MotionRequest::kick)
       {
-        data.initData(theFrameInfo, theMotionRequest, theRobotDimensions, params, theJointAngles, theTorsoMatrix);
+        data.initData(theFrameInfo, theMotionRequest, params, theJointAngles, theTorsoMatrix);
         data.setCurrentKickRequest(theMotionRequest);
         data.setExecutedKickRequest(kickEngineOutput.executedKickRequest);
 
@@ -117,7 +114,7 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
         kickEngineOutput.isStable = true;
       }//this gotta go to config file and be more common
 
-      if(data.checkPhaseTime(theFrameInfo, theRobotDimensions, theJointAngles, theTorsoMatrix))
+      if(data.checkPhaseTime(theFrameInfo, theJointAngles, theTorsoMatrix))
       {
         data.calcPhaseState();
         data.calcPositions();
@@ -139,14 +136,12 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
         data.calcJoints(kickEngineOutput, theRobotDimensions, theHeadJointRequest);
         data.mirrorIfNecessary(kickEngineOutput);
       }
-      data.addGyroBalance(kickEngineOutput, theJointCalibration, theInertialData, theMotionSelection.ratios[MotionRequest::kick]);
+      data.addGyroBalance(kickEngineOutput, theJointCalibration, theInertialData, theLegMotionSelection.ratios[MotionRequest::kick]);
     }
   }
   else
-  {
     compensated = false;
-  }
 
-  data.setEngineActivation(theMotionSelection.ratios[MotionRequest::kick]);
+  data.setEngineActivation(theLegMotionSelection.ratios[MotionRequest::kick]);
   data.ModifyData(theMotionRequest.kickRequest, kickEngineOutput, params);
 }

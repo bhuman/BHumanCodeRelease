@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef OSX
+#ifdef MACOS
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/glu.h>
 #else

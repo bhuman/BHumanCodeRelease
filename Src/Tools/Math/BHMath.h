@@ -82,10 +82,10 @@ constexpr int sgn<Angle>(const Angle& x)
 }
 
 /**
-* Returns the sign of a value (-1 or 1). 0 is considered to be positive.
-* @param x The value.
-* @return The sign of x.
-*/
+ * Returns the sign of a value (-1 or 1). 0 is considered to be positive.
+ * @param x The value.
+ * @return The sign of x.
+ */
 template<typename T>
 constexpr int sgnPos(const T& x)
 {
@@ -99,10 +99,10 @@ constexpr int sgnPos<Angle>(const Angle& x)
 }
 
 /**
-* Returns the sign of a value (-1 or 1). 0 is considered to be negative.
-* @param x The value.
-* @return The sign of x.
-*/
+ * Returns the sign of a value (-1 or 1). 0 is considered to be negative.
+ * @param x The value.
+ * @return The sign of x.
+ */
 template<typename T>
 constexpr int sgnNeg(const T& x)
 {
@@ -113,6 +113,17 @@ constexpr int sgnNeg(const T& x)
  * Calculates the square of a value.
  * @param a The value.
  * @return The square of \c a.
-*/
+ */
 template<class V>
 constexpr V sqr(const V& a) { return a * a; }
+
+/**
+ * Defines a macro that returns a value, in which the specified bit is set.
+ * @param t The bit to set. Must be in the range of [0 .. 31].
+ * @return A 32 bit value in which the bit is set.
+ */
+template<typename T>
+constexpr unsigned bit(T t)
+{
+  return 1 << static_cast<unsigned>(t);
+}

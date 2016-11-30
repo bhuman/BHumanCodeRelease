@@ -52,7 +52,7 @@ void SimObjectRenderer::updateCameraTransformation()
 
 void SimObjectRenderer::init(bool hasSharedDisplayLists)
 {
-#ifdef OSX
+#ifdef MACOS
   CGLContextObj ctx = CGLGetCurrentContext();
   VERIFY(CGLEnable(ctx, kCGLCEMPEngine) == kCGLNoError);
 #endif
@@ -431,7 +431,8 @@ void SimObjectRenderer::getSize(unsigned int& width, unsigned int& height) const
 
 void SimObjectRenderer::zoom(float change)
 {
-  moveCamera(0.f, change * 0.001f);
+  Vector3<> v = cameraPos - cameraTarget;
+  moveCamera(0.f, v.abs() * change * 0.0005f);
 }
 
 void SimObjectRenderer::setCameraMode(SimRobotCore2::Renderer::CameraMode mode)

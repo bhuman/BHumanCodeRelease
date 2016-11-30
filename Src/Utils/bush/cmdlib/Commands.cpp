@@ -29,7 +29,7 @@ bool Commands::removeCommand(const std::string& name)
   return commands.erase(name) > 0;
 }
 
-bool Commands::execute(Context *context, const std::string &cmdLine)
+bool Commands::execute(Context* context, const std::string& cmdLine)
 {
   std::vector<std::string> splitted = split(cmdLine);
   if(splitted.size() < 1)

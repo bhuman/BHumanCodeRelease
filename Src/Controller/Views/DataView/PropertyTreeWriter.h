@@ -28,7 +28,6 @@ private:
     int index; /**< The index of the current entry. Is increased for each sub entry. */
 
     /**
-     * Constructor.
      * @param property The current property in the tree.
      * @param type The type of the entry. -2: value or record, -1: array , >= 0: array element index.
      */
@@ -50,23 +49,23 @@ private:
   }
 
 protected:
-  virtual void inBool(bool& value) {in(value);}
+  virtual void inBool(bool& value) { in(value); }
   virtual void inChar(char& value) { in(value); }
   virtual void inSChar(signed char& value) { in(value); }
-  virtual void inUChar(unsigned char& value) {in(value);}
-  virtual void inShort(short& value) {in(value);}
-  virtual void inUShort(unsigned short& value) {in(value);}
-  virtual void inInt(int& value) {in(value);}
+  virtual void inUChar(unsigned char& value) { in(value); }
+  virtual void inShort(short& value) { in(value); }
+  virtual void inUShort(unsigned short& value) { in(value); }
+  virtual void inInt(int& value) { in(value); }
   virtual void inUInt(unsigned int& value);
-  virtual void inFloat(float& value) {in(value);}
-  virtual void inDouble(double& value) {in(value);}
-  virtual void inString(std::string& value) {in(value);}
+  virtual void inFloat(float& value) { in(value); }
+  virtual void inDouble(double& value) { in(value); }
+  virtual void inString(std::string& value) { in(value); }
   virtual void inAngle(Angle& value);
   virtual void inEndL() {}
 
 public:
   PropertyTreeWriter(const PropertyManager& propertyManager, QtProperty* root) :
-  propertyManager(propertyManager)
+    propertyManager(propertyManager)
   {
     stack.push_back(Entry(root, -2));
   }
@@ -80,17 +79,17 @@ public:
    *             >= 0: array element index.
    * @param enumToString A function that translates an enum to a string.
    */
-  virtual void select(const char* name, int type, const char * (*enumToString)(int));
+  virtual void select(const char* name, int type, const char* (*enumToString)(int));
 
   /** Deselects a field for reading. */
-  virtual void deselect() {stack.pop_back();}
+  virtual void deselect() { stack.pop_back(); }
 
   /** Not allowed for this stream! */
-  virtual void read(void* p, size_t size) {ASSERT(false);}
+  virtual void read(void* p, size_t size) { ASSERT(false); }
 
   /** Not allowed for this stream! */
-  virtual void skip(size_t size) {ASSERT(false);}
+  virtual void skip(size_t size) { ASSERT(false); }
 
   /** Not allowed for this stream! */
-  virtual bool eof() const {ASSERT(false); return false;}
+  virtual bool eof() const { ASSERT(false); return false; }
 };

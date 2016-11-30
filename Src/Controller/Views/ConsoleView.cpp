@@ -1,8 +1,8 @@
 /**
-* @file Controller/Views/ConsoleView.cpp
-* Implementation of class ConsoleView
-* @author Colin Graf
-*/
+ * @file Controller/Views/ConsoleView.cpp
+ * Implementation of class ConsoleView
+ * @author Colin Graf
+ */
 
 #include <QScrollBar>
 #include <QKeyEvent>
@@ -43,8 +43,7 @@ void ConsoleView::print(const QString& text)
 }
 
 ConsoleWidget::ConsoleWidget(ConsoleView& consoleView, ConsoleRoboCupCtrl& console, QString& output, ConsoleWidget*& consoleWidget) :
-  consoleView(consoleView), console(console), output(output), consoleWidget(consoleWidget),
-  canCopy(false), canUndo(false), canRedo(false)
+  consoleView(consoleView), console(console), output(output), consoleWidget(consoleWidget)
 {
   setFrameStyle(QFrame::NoFrame);
   setAcceptRichText(false);
@@ -94,7 +93,7 @@ ConsoleWidget::ConsoleWidget(ConsoleView& consoleView, ConsoleRoboCupCtrl& conso
 ConsoleWidget::~ConsoleWidget()
 {
   output = toPlainText();
-  consoleWidget = 0;
+  consoleWidget = nullptr;
 
   if(consoleView.loadAndSaveOutput)
   {

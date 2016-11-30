@@ -1,0 +1,8 @@
+" IF YOU HAVE CHANGED THIS FILE DO NOT COMMIT IT!
+motion_id = getUpEngineDummy
+label start
+stiffness 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 0
+label repeat
+0.00 30.00 90.00 11.50 -90.00 -11.50 -90.00 0.00 90.00 -11.50 90.00 11.50 90.00 0.00 0.00 -0.00 -45.00 71.40 -35.10 -0.00 0.00 0.00 -45.00 71.40 -35.10 0.00 1 100
+transition getUpEngineDummy getUpEngineDummy repeat
+transition allMotions extern start

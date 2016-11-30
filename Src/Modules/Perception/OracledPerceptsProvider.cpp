@@ -1,10 +1,10 @@
 /**
-* @file Modules/Infrastructure/OracledPerceptsProvider.h
-*
-* This file implements a module that provides precepts based on simulated data.
-*
-* @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
-*/
+ * @file Modules/Infrastructure/OracledPerceptsProvider.h
+ *
+ * This file implements a module that provides precepts based on simulated data.
+ *
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ */
 
 #include "OracledPerceptsProvider.h"
 #include "Tools/Global.h"
@@ -14,6 +14,8 @@
 #include "Tools/Math/Probabilistics.h"
 #include "Tools/Math/RotationMatrix.h"
 #include "Tools/Modeling/Obstacle.h"
+
+MAKE_MODULE(OracledPerceptsProvider, cognitionInfrastructure)
 
 OracledPerceptsProvider::OracledPerceptsProvider()
 {
@@ -32,50 +34,50 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   ccPoints.push_back(Vector2f(theFieldDimensions.centerCircleRadius, 0.f));
   ccPoints.push_back(Vector2f(-theFieldDimensions.centerCircleRadius, 0.f));
   // Half of the intersections
-  LinePercept::Intersection oppLeftCorner;
-  oppLeftCorner.type = LinePercept::Intersection::L;
+  IntersectionsPercept::Intersection oppLeftCorner;
+  oppLeftCorner.type = IntersectionsPercept::Intersection::L;
   oppLeftCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
   oppLeftCorner.dir1 = Vector2f(-1.f, 0.f);
   oppLeftCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftCorner);
-  LinePercept::Intersection oppLeftPenaltyArea;
-  oppLeftPenaltyArea.type = LinePercept::Intersection::T;
+  IntersectionsPercept::Intersection oppLeftPenaltyArea;
+  oppLeftPenaltyArea.type = IntersectionsPercept::Intersection::T;
   oppLeftPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftPenaltyArea);
   oppLeftPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppLeftPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyArea);
-  LinePercept::Intersection oppRightPenaltyArea;
-  oppRightPenaltyArea.type = LinePercept::Intersection::T;
+  IntersectionsPercept::Intersection oppRightPenaltyArea;
+  oppRightPenaltyArea.type = IntersectionsPercept::Intersection::T;
   oppRightPenaltyArea.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightPenaltyArea);
   oppRightPenaltyArea.dir1 = Vector2f(-1.f, 0.f);
   oppRightPenaltyArea.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppRightPenaltyArea);
-  LinePercept::Intersection oppRightCorner;
-  oppRightCorner.type = LinePercept::Intersection::L;
+  IntersectionsPercept::Intersection oppRightCorner;
+  oppRightCorner.type = IntersectionsPercept::Intersection::L;
   oppRightCorner.pos = Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightSideline);
   oppRightCorner.dir1 = Vector2f(-1.f, 0.f);
   oppRightCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightCorner);
-  LinePercept::Intersection oppLeftPenaltyCorner;
-  oppLeftPenaltyCorner.type = LinePercept::Intersection::L;
+  IntersectionsPercept::Intersection oppLeftPenaltyCorner;
+  oppLeftPenaltyCorner.type = IntersectionsPercept::Intersection::L;
   oppLeftPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea);
   oppLeftPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
   oppLeftPenaltyCorner.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(oppLeftPenaltyCorner);
-  LinePercept::Intersection oppRightPenaltyCorner;
-  oppRightPenaltyCorner.type = LinePercept::Intersection::L;
+  IntersectionsPercept::Intersection oppRightPenaltyCorner;
+  oppRightPenaltyCorner.type = IntersectionsPercept::Intersection::L;
   oppRightPenaltyCorner.pos = Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea);
   oppRightPenaltyCorner.dir1 = Vector2f(1.f, 0.f);
   oppRightPenaltyCorner.dir2 = Vector2f(0.f, 1.f);
   intersections.push_back(oppRightPenaltyCorner);
-  LinePercept::Intersection leftCenterLineCrossing;
-  leftCenterLineCrossing.type = LinePercept::Intersection::T;
+  IntersectionsPercept::Intersection leftCenterLineCrossing;
+  leftCenterLineCrossing.type = IntersectionsPercept::Intersection::T;
   leftCenterLineCrossing.pos = Vector2f(0.f, theFieldDimensions.yPosLeftSideline);
   leftCenterLineCrossing.dir1 = Vector2f(1.f, 0.f);
   leftCenterLineCrossing.dir2 = Vector2f(0.f, -1.f);
   intersections.push_back(leftCenterLineCrossing);
-  LinePercept::Intersection leftCenterCircleCrossing;
-  leftCenterCircleCrossing.type = LinePercept::Intersection::X;
+  IntersectionsPercept::Intersection leftCenterCircleCrossing;
+  leftCenterCircleCrossing.type = IntersectionsPercept::Intersection::X;
   leftCenterCircleCrossing.pos = Vector2f(0.f, theFieldDimensions.centerCircleRadius);
   leftCenterCircleCrossing.dir1 = Vector2f(1.f, 0.f);
   leftCenterCircleCrossing.dir2 = Vector2f(0.f, -1.f);
@@ -84,7 +86,7 @@ OracledPerceptsProvider::OracledPerceptsProvider()
   const size_t numOfIntersections = intersections.size();
   for(unsigned int i = 0; i < numOfIntersections; i++)
   {
-    LinePercept::Intersection mirroredIntersection = intersections[i];
+    IntersectionsPercept::Intersection mirroredIntersection = intersections[i];
     mirroredIntersection.pos = Pose2f(pi) * mirroredIntersection.pos;
     mirroredIntersection.dir1 = Pose2f(pi) * mirroredIntersection.dir1;
     mirroredIntersection.dir2 = Pose2f(pi) * mirroredIntersection.dir2;
@@ -147,36 +149,140 @@ OracledPerceptsProvider::OracledPerceptsProvider()
 void OracledPerceptsProvider::update(BallPercept& ballPercept)
 {
   ballPercept.status = BallPercept::notSeen;
-  if(!theCameraMatrix.isValid)
+  if(!theCameraMatrix.isValid || theGroundTruthWorldState.balls.size() == 0)
     return;
-  if(theGroundTruthWorldState.balls.size() != 0)
+
+  if(Random::bernoulli(ballFalsePositiveRate))
+    falseBallPercept(ballPercept);
+  else
+    trueBallPercept(ballPercept);
+}
+
+void OracledPerceptsProvider::trueBallPercept(BallPercept& ballPercept)
+{
+  const Vector2f ballOnField = theGroundTruthWorldState.balls[0].topRows<2>();
+  Vector2f ballOffset = theGroundTruthWorldState.ownPose.inverse() * ballOnField;
+  if(ballOffset.norm() > ballMaxVisibleDistance || isPointBehindObstacle(ballOnField))
+    return;
+  if(Random::bernoulli(1. - ballRecognitionRate))
+    return;
+  Geometry::Circle circle;
+  if(Geometry::calculateBallInImage(ballOffset, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
   {
-    const Vector2f ballOnField = theGroundTruthWorldState.balls[0];
-    Vector2f ballOffset = theGroundTruthWorldState.ownPose.inverse() * ballOnField;
-    if(ballOffset.norm() > ballMaxVisibleDistance)
+    if((circle.center.x() >= -circle.radius / 1.5f) &&
+       (circle.center.x() < theCameraInfo.width + circle.radius / 1.5f) &&
+       (circle.center.y() >= -circle.radius / 1.5f) &&
+       (circle.center.y() < theCameraInfo.height + circle.radius / 1.5f))
+    {
+      ballPercept.status = BallPercept::seen;
+      ballPercept.positionInImage = circle.center;
+      ballPercept.radiusInImage = circle.radius;
+      ballPercept.positionOnField = ballOffset;
+      // Add some noise
+      if(applyBallNoise)
+      {
+        applyNoise(ballCenterInImageStdDev, ballPercept.positionInImage);
+        if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theFieldDimensions.ballRadius, theCameraMatrix, theCameraInfo, ballPercept.positionOnField))
+        {
+          ballPercept.status = BallPercept::notSeen;
+          return;
+        }
+      }
+    }
+  }
+}
+
+void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
+{
+  std::vector<BallPercept> possiblePercepts;
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+
+  auto addPercept = [&](const Vector2f & positionOnField)
+  {
+    if(isPointBehindObstacle(positionOnField))
       return;
-    if(randomFloat() > ballRecognitionRate)
-      return;
+    const Vector2f relativePosition = robotPoseInv * positionOnField;
     Geometry::Circle circle;
-    if(Geometry::calculateBallInImage(ballOffset, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
+    if(Geometry::calculateBallInImage(relativePosition, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
     {
       if((circle.center.x() >= -circle.radius / 1.5f) &&
          (circle.center.x() < theCameraInfo.width + circle.radius / 1.5f) &&
          (circle.center.y() >= -circle.radius / 1.5f) &&
          (circle.center.y() < theCameraInfo.height + circle.radius / 1.5f))
       {
-        ballPercept.status = BallPercept::seen;
-        ballPercept.positionInImage = circle.center;
-        ballPercept.radiusInImage = circle.radius;
-        ballPercept.relativePositionOnField = ballOffset;
-        // Add some noise
-        if(applyBallNoise)
+        BallPercept percept;
+        percept.positionInImage = circle.center;
+        percept.positionOnField = relativePosition;
+        percept.radiusInImage = circle.radius;
+        percept.status = BallPercept::seen;
+        possiblePercepts.emplace_back(percept);
+      }
+    }
+  };
+
+  for(size_t i = 0; i < goalPosts.size(); i++)
+    addPercept(goalPosts[i]);
+  for(size_t i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.bluePlayers[i].pose.translation);
+  for(size_t i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.redPlayers[i].pose.translation);
+  for(size_t i = 0; i < intersections.size(); ++i)
+    addPercept(intersections[i].pos);
+  for(size_t i = 0; i < penaltyMarks.size(); ++i)
+    addPercept(penaltyMarks[i]);
+
+  if(possiblePercepts.size())
+    ballPercept = possiblePercepts[Random::uniformInt(possiblePercepts.size() - 1)];
+}
+
+void OracledPerceptsProvider::update(LinesPercept& linesPercept)
+{
+  // Initialize percept and local data:
+  linesPercept.lines.clear();
+
+  if(!theCameraMatrix.isValid)
+    return;
+  updateViewPolygon();
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+
+  // Find lines:
+  for(unsigned int i = 0; i < lines.size(); i++)
+  {
+    if(Random::bernoulli(1. - lineRecognitionRate))
+      continue;
+    Vector2f start, end;
+    if(partOfLineIsVisible(lines[i], start, end))
+    {
+      LinesPercept::Line line;
+      line.firstField = robotPoseInv * start;
+      line.lastField = robotPoseInv * end;
+      if(line.firstField.norm() > lineMaxVisibleDistance || line.lastField.norm() > lineMaxVisibleDistance)
+        continue;
+      Vector2f pImg;
+      if(Transformation::robotToImage(line.firstField, theCameraMatrix, theCameraInfo, pImg))
+      {
+        Vector2f startInImage = pImg;
+        if(Transformation::robotToImage(line.lastField, theCameraMatrix, theCameraInfo, pImg))
         {
-          applyNoise(ballCenterInImageStdDev, ballPercept.positionInImage);
-          if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theFieldDimensions.ballRadius, theCameraMatrix,theCameraInfo,ballPercept.relativePositionOnField))
+          Vector2f endInImage = pImg;
+          bool success = true;
+          if(applyLineNoise)
           {
-            ballPercept.status = BallPercept::notSeen;
-            return;
+            applyNoise(linePosInImageStdDev, startInImage);
+            applyNoise(linePosInImageStdDev, endInImage);
+            success = Transformation::imageToRobot(startInImage.x(), startInImage.y(), theCameraMatrix, theCameraInfo, line.firstField) &&
+                      Transformation::imageToRobot(endInImage.x(), endInImage.y(), theCameraMatrix, theCameraInfo, line.lastField);
+          }
+          if(success)
+          {
+            line.firstImg = Vector2i(int(startInImage.x()), int(startInImage.y()));
+            line.lastImg = Vector2i(int(endInImage.x()), int(endInImage.y()));
+            line.spotsInImg.push_back(line.firstImg);
+            line.spotsInImg.push_back(line.lastImg);
+            line.spotsInField.push_back(line.firstField);
+            line.spotsInField.push_back(line.lastField);
+            line.line = Geometry::Line(line.firstField, line.lastField - line.firstField);
+            linesPercept.lines.push_back(line);
           }
         }
       }
@@ -184,87 +290,13 @@ void OracledPerceptsProvider::update(BallPercept& ballPercept)
   }
 }
 
-void OracledPerceptsProvider::update(GoalPercept& goalPercept)
+void OracledPerceptsProvider::update(CirclePercept& circlePercept)
 {
-  goalPercept.goalPosts.clear();
-  if(!theCameraMatrix.isValid)
-    return;
-  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
-  for(unsigned int i = 0; i < goalPosts.size(); i++)
-  {
-    const Vector2f relativePostPos = robotPoseInv * goalPosts[i];
-    if(relativePostPos.norm() > goalPostMaxVisibleDistance)
-      continue;
-    if(randomFloat() > goalPostRecognitionRate)
-      continue;
-    Vector2f postInImage;
-    if(pointIsInImage(relativePostPos, postInImage))
-    {
-      GoalPost newPost; // GoalPost::IS_UNKNOWN is the default side information
-      newPost.positionInImage.x() = static_cast<int>(std::floor(postInImage.x() + 0.5f));
-      newPost.positionInImage.y() = static_cast<int>(std::floor(postInImage.y() + 0.5f));
-      newPost.positionOnField = relativePostPos;
-      // Add some noise:
-      if(applyGoalPostNoise)
-      {
-        applyNoise(ballCenterInImageStdDev, newPost.positionInImage);
-        if(!Transformation::imageToRobot(newPost.positionInImage.x(), newPost.positionInImage.y(), theCameraMatrix, theCameraInfo, newPost.positionOnField))
-        {
-          continue;
-        }
-      }
-      // If a part of the goal bar might be in the image, there is also a side information:
-      const Vector3f relativeBarPos(relativePostPos.x(), relativePostPos.y(), theFieldDimensions.goalHeight);
-      Vector2f barInImage;
-      if(Transformation::robotToImage(relativeBarPos, theCameraMatrix, theCameraInfo, barInImage))
-      {
-        if((barInImage.x() >= 0.f) && (barInImage.x() < static_cast<float>(theCameraInfo.width)) &&
-           (barInImage.y() >= 0.f) && (barInImage.y() < static_cast<float>(theCameraInfo.height)))
-        {
-          if((goalPosts[i].x() > 0 && goalPosts[i].y() > 0) || (goalPosts[i].x() < 0 && goalPosts[i].y() < 0))
-            newPost.position = GoalPost::IS_LEFT;
-          else
-            newPost.position = GoalPost::IS_RIGHT;
-        }
-      }
-      goalPercept.goalPosts.push_back(newPost);
-    }
-  }
-  if(goalPercept.goalPosts.size())
-    goalPercept.timeWhenGoalPostLastSeen = theFrameInfo.time;
-  if(goalPercept.goalPosts.size() == 2)
-  {
-    goalPercept.timeWhenCompleteGoalLastSeen = theFrameInfo.time;
-    float angleToFirst = std::atan2(goalPercept.goalPosts[0].positionOnField.y(), goalPercept.goalPosts[0].positionOnField.x());
-    float angleToSecond = std::atan2(goalPercept.goalPosts[1].positionOnField.y(), goalPercept.goalPosts[1].positionOnField.x());
-    if(angleToFirst < angleToSecond)
-    {
-      goalPercept.goalPosts[0].position = GoalPost::IS_RIGHT;
-      goalPercept.goalPosts[1].position = GoalPost::IS_LEFT;
-    }
-    else
-    {
-      goalPercept.goalPosts[0].position = GoalPost::IS_LEFT;
-      goalPercept.goalPosts[1].position = GoalPost::IS_RIGHT;
-    }
-  }
-}
-
-void OracledPerceptsProvider::update(LinePercept& linePercept)
-{
-  // Initialize percept and local data:
-  linePercept.intersections.clear();
-  linePercept.lines.clear();
-  linePercept.circle.found = false;
-  if(!theCameraMatrix.isValid)
-    return;
-  updateViewPolygon();
-  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
-
   // Find center circle (at least one out of five center circle points must be inside the current image)
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   bool pointFound = false;
   if((theGroundTruthWorldState.ownPose.translation.norm() <= centerCircleMaxVisibleDistance) &&
-     (randomFloat() < centerCircleRecognitionRate))
+     Random::bernoulli(centerCircleRecognitionRate))
   {
     for(unsigned int i = 0; i < ccPoints.size(); ++i)
     {
@@ -279,96 +311,18 @@ void OracledPerceptsProvider::update(LinePercept& linePercept)
   }
   if(pointFound)
   {
-    linePercept.circle.pos = robotPoseInv * Vector2f::Zero();
+    Vector2f circlePos(robotPoseInv * Vector2f::Zero());
     // Add some noise:
-    linePercept.circle.found = true;
     if(applyCenterCircleNoise)
     {
       Vector2f nPImg;
-      if(Transformation::robotToImage(linePercept.circle.pos, theCameraMatrix, theCameraInfo, nPImg))
+      if(Transformation::robotToImage(circlePos, theCameraMatrix, theCameraInfo, nPImg))
       {
         applyNoise(centerCircleCenterInImageStdDev, nPImg);
-        if(!Transformation::imageToRobot(nPImg, theCameraMatrix, theCameraInfo, linePercept.circle.pos))
+        if(Transformation::imageToRobot(nPImg, theCameraMatrix, theCameraInfo, circlePos)) // TODO right?
         {
-          linePercept.circle.found = false;
-        }
-      }
-    }
-    if(linePercept.circle.found)
-      linePercept.circle.lastSeen = theFrameInfo.time;
-  }
-
-  // Find intersections:
-  for(unsigned int i = 0; i < intersections.size(); i++)
-  {
-    const Vector2f relativeIntersectionPos = robotPoseInv * intersections[i].pos;
-    if(relativeIntersectionPos.norm() > intersectionMaxVisibleDistance)
-      continue;
-    if(randomFloat() > intersectionRecognitionRate)
-      continue;
-    Vector2f intersectionInImage;
-    if(pointIsInImage(relativeIntersectionPos, intersectionInImage))
-    {
-      LinePercept::Intersection newIntersection;
-      newIntersection.pos = relativeIntersectionPos;
-      newIntersection.type = intersections[i].type;
-      newIntersection.dir1 = (Pose2f(robotPoseInv.rotation) * intersections[i].dir1);
-      newIntersection.dir2 = (Pose2f(robotPoseInv.rotation) * intersections[i].dir2);
-      bool success = true;
-      if(applyIntersectionNoise)
-      {
-        applyNoise(intersectionPosInImageStdDev, intersectionInImage);
-        success = Transformation::imageToRobot(intersectionInImage, theCameraMatrix, theCameraInfo, newIntersection.pos);
-        // noise on directions is not implemented, but if you need it, feel free to add it right here
-      }
-      if(success)
-      {
-        linePercept.intersections.push_back(newIntersection);
-      }
-    }
-  }
-
-  // Find lines:
-  for(unsigned int i = 0; i < lines.size(); i++)
-  {
-    if(randomFloat() > lineRecognitionRate)
-      continue;
-    Vector2f start, end;
-    if(partOfLineIsVisible(lines[i], start, end))
-    {
-      LinePercept::Line line;
-      line.first = robotPoseInv * start;
-      line.last = robotPoseInv * end;
-      if(line.first.norm() > lineMaxVisibleDistance || line.last.norm() > lineMaxVisibleDistance)
-        continue;
-      line.midLine = (i == 0);
-      Vector2f pImg;
-      if(Transformation::robotToImage(line.first, theCameraMatrix, theCameraInfo, pImg))
-      {
-        line.startInImage = pImg;
-        if(Transformation::robotToImage(line.last, theCameraMatrix, theCameraInfo, pImg))
-        {
-          line.endInImage = pImg;
-          bool success = true;
-          if(applyLineNoise)
-          {
-            applyNoise(linePosInImageStdDev, line.startInImage);
-            applyNoise(linePosInImageStdDev, line.endInImage);
-            success = Transformation::imageToRobot(line.startInImage.x(), line.startInImage.y(), theCameraMatrix, theCameraInfo, line.first) &&
-              Transformation::imageToRobot(line.endInImage.x(), line.endInImage.y(), theCameraMatrix, theCameraInfo, line.last);
-          }
-          if(success)
-          {
-            line.alpha = (line.first - line.last).angle() + pi_2;
-            while(line.alpha < 0)
-              line.alpha += pi;
-            while(line.alpha >= pi)
-              line.alpha -= pi;
-            const float c = std::cos(line.alpha),
-              s = std::sin(line.alpha);
-            line.d = line.first.x() * c + line.first.y() * s;
-            linePercept.lines.push_back(line);
-          }
+          circlePercept.pos = circlePos;
+          circlePercept.lastSeen = theFrameInfo.time;
         }
       }
     }
@@ -383,9 +337,9 @@ void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
   for(auto& pos : penaltyMarks)
   {
     Vector2f relativeMarkPos = robotPoseInv * pos;
-    if(relativeMarkPos.norm() > penaltyMarkMaxVisibleDistance)
+    if(relativeMarkPos.norm() > penaltyMarkMaxVisibleDistance || isPointBehindObstacle(pos))
       continue;
-    if(randomFloat() > penaltyMarkRecognitionRate)
+    if(Random::bernoulli(1. - penaltyMarkRecognitionRate))
       continue;
     Vector2f penaltyMarkInImage;
     if(pointIsInImage(relativeMarkPos, penaltyMarkInImage))
@@ -414,12 +368,14 @@ void OracledPerceptsProvider::update(PlayersPercept& playersPercept)
 
   // Simulation scene should only use blue and red for now
   ASSERT(Global::getSettings().teamColor == Settings::blue || Global::getSettings().teamColor == Settings::red);
-  
+
   const bool isBlue = Global::getSettings().teamColor == Settings::blue;
   for(unsigned int i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
-    createPlayerBox(theGroundTruthWorldState.bluePlayers[i], !isBlue, playersPercept);
+    if(!isPointBehindObstacle(theGroundTruthWorldState.bluePlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.bluePlayers[i], !isBlue, playersPercept);
   for(unsigned int i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
-    createPlayerBox(theGroundTruthWorldState.redPlayers[i], isBlue, playersPercept);
+    if(!isPointBehindObstacle(theGroundTruthWorldState.redPlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.redPlayers[i], isBlue, playersPercept);
 }
 
 void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
@@ -477,7 +433,7 @@ void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::Groun
   Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
   if(relativePlayerPos.norm() > playerMaxVisibleDistance)
     return;
-  if(randomFloat() > playerRecognitionRate)
+  if(Random::bernoulli(1. - playerRecognitionRate))
     return;
   Vector2f playerInImage;
   if(pointIsInImage(relativePlayerPos, playerInImage))
@@ -672,16 +628,46 @@ bool OracledPerceptsProvider::partOfLineIsVisible(const std::pair<Vector2f, Vect
 
 void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2f& p) const
 {
-  p.x() += sampleNormalDistribution(standardDeviation);
-  p.y() += sampleNormalDistribution(standardDeviation);
+  p.x() += Random::normal(standardDeviation);
+  p.y() += Random::normal(standardDeviation);
 }
 
 void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2i& p) const
 {
-  const float errorX = sampleNormalDistribution(standardDeviation);
-  const float errorY = sampleNormalDistribution(standardDeviation);
+  const float errorX = Random::normal(standardDeviation);
+  const float errorY = Random::normal(standardDeviation);
   p.x() += static_cast<int>(floor(errorX + 0.5f));
   p.y() += static_cast<int>(floor(errorY + 0.5f));
 }
 
-MAKE_MODULE(OracledPerceptsProvider, cognitionInfrastructure)
+bool OracledPerceptsProvider::isPointBehindObstacle(const Vector2f& pointGlo) const
+{
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  const float sqrDistTopoint = (pointGlo - theGroundTruthWorldState.ownPose.translation).squaredNorm();
+  const Angle pointAngle = (robotPoseInv * pointGlo).angle();
+
+  auto isBehind = [&](const Vector2f & obstacle)
+  {
+    const float sqrDistToObstacle = (obstacle - theGroundTruthWorldState.ownPose.translation).squaredNorm();
+    if(sqrDistToObstacle < 10 || sqrDistTopoint <= sqrDistToObstacle)
+      return false;
+
+    const Vector2f obstacleRel = robotPoseInv * obstacle;
+    const Vector2f obstacleThickness = obstacleRel.normalized(obstacleCoverageThickness).rotate(pi_2);
+
+    const Angle leftPointAngle = (obstacleRel + obstacleThickness).angle();
+    const Angle rightPointAngle = (obstacleRel - obstacleThickness).angle();
+
+    return pointAngle < leftPointAngle && pointAngle > rightPointAngle; //would not work on behind the robot, but we can not see anything there too
+  };
+
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.redPlayers)
+    if(player.upright && isBehind(player.pose.translation))
+      return true;
+
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.bluePlayers)
+    if(player.upright && isBehind(player.pose.translation))
+      return true;
+
+  return false;
+}

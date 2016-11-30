@@ -5,6 +5,7 @@
  */
 
 #include "AudioProvider.h"
+#include "Platform/SystemCall.h"
 
 MAKE_MODULE(AudioProvider, cognitionInfrastructure)
 
@@ -17,7 +18,7 @@ AudioProvider::AudioProvider()
   {
     if(snd_pcm_open(&handle, "hw:0", snd_pcm_stream_t(SND_PCM_STREAM_CAPTURE | SND_PCM_NONBLOCK), 0) >= 0)
       break;
-    SystemCall::sleep(retryDelay);
+    Thread::sleep(retryDelay);
   }
   ASSERT(i < retries);
 
@@ -45,7 +46,7 @@ AudioProvider::~AudioProvider()
 
 void AudioProvider::update(AudioData& audioData)
 {
-  if(theGameInfo.state != STATE_SET)
+  if(onlySoundInSet && theGameInfo.state != STATE_SET)
     return;
 
   audioData.channels = channels;
@@ -66,7 +67,7 @@ void AudioProvider::update(AudioData& audioData)
   }
 }
 
-#else // !defined(TARGET_ROBOT)
+#else // !defined TARGET_ROBOT
 
 AudioProvider::AudioProvider() {}
 AudioProvider::~AudioProvider() {}

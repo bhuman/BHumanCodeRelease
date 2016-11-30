@@ -1,8 +1,8 @@
 /**
-* @file TorsoMatrixProvider.h
-* Declaration of module TorsoMatrixProvider.
-* @author Colin Graf
-*/
+ * @file TorsoMatrixProvider.h
+ * Declaration of module TorsoMatrixProvider.
+ * @author Colin Graf
+ */
 
 #pragma once
 

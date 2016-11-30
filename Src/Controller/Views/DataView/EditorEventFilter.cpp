@@ -1,4 +1,4 @@
-/*
+/**
  * EditorEventFilter.cpp
  *
  *  Created on: May 3, 2012
@@ -13,7 +13,7 @@ EditorEventFilter::EditorEventFilter(QObject* pParent, DataView* pView, QWidget*
   QObject(pParent), pTheView(pView), pTheSource(pSource), pTheProperty(pProperty)
 {}
 
-bool EditorEventFilter::eventFilter(QObject *obj, QEvent *event)
+bool EditorEventFilter::eventFilter(QObject* obj, QEvent* event)
 {
   if(nullptr != pTheView &&
      (event->type() == QEvent::FocusIn || event->type() == QEvent::Paint ||
@@ -22,7 +22,5 @@ bool EditorEventFilter::eventFilter(QObject *obj, QEvent *event)
     return pTheView->handlePropertyEditorEvent(pTheSource, pTheProperty, event);
   }
   else
-  {
     return false;
-  }
 }

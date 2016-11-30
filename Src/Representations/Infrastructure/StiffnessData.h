@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Tools/Joints.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/RobotParts/Joints.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 STREAMABLE(StiffnessData,
 {
@@ -18,15 +18,15 @@ STREAMABLE(StiffnessData,
   int mirror(const Joints::Joint joint) const;
 
   /** Initializes this instance with the mirrored values of other  */
-  void mirror(const StiffnessData & other);
+  void mirror(const StiffnessData& other);
 
   /** This function resets the stiffness for all joints to the default value. */
   void resetToDefault();
 
   /** Checks wheather all stiffnesses are in the rangel [0, 100] or have the value useDefault. */
-  bool isValide() const;
-  ,
-  (std::array<int, Joints::numOfJoints>) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
+  bool isValid() const,
+
+  (ENUM_INDEXED_ARRAY(int, (Joints) Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
 });
 
 struct StiffnessSettings : public StiffnessData {};
@@ -76,7 +76,7 @@ inline int StiffnessData::mirror(const Joints::Joint joint) const
 inline void StiffnessData::mirror(const StiffnessData& other)
 {
   for(int i = 0; i < Joints::numOfJoints; ++i)
-    stiffnesses[i] = mirror(static_cast<Joints::Joint>(i));
+    stiffnesses[i] = other.mirror(static_cast<Joints::Joint>(i));
 }
 
 inline void StiffnessData::resetToDefault()
@@ -84,7 +84,7 @@ inline void StiffnessData::resetToDefault()
   stiffnesses.fill(useDefault);
 };
 
-inline bool StiffnessData::isValide() const
+inline bool StiffnessData::isValid() const
 {
   for(auto& stiffness : stiffnesses)
     if(stiffness > 100 || (stiffness < 0 && stiffness != useDefault))

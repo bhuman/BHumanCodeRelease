@@ -23,21 +23,14 @@
 #include <QCloseEvent>
 #include <QUrl>
 #include <QTimer>
-#ifdef FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
-#include <QGLWidget>
-#endif
 #ifdef WINDOWS
-#include <windows.h>
-#elif defined(OSX)
+#include <Windows.h>
+#elif defined MACOS
 #include <mach/mach_time.h>
-#include "MacFullscreen.h"
 #else
 #include <ctime>
 #endif
-
-#ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
-#define startTimer(ms) (QSysInfo::windowsVersion() <= QSysInfo::WV_WINDOWS7 ? 1 : startTimer(ms))
-#endif
+#include <iostream>
 
 #define QDOCKWIDGET_STYLE ""
 #define QDOCKWIDGET_STYLE_FOCUS "QDockWidget {font-weight: bold;}"
@@ -90,7 +83,7 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   fileExitAct = new QAction(/*QIcon(":/Icons/Exit.png"), */tr("E&xit"), this);
 #ifdef WINDOWS
   fileExitAct->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F4));
-#elif defined(OSX)
+#elif defined MACOS
   fileExitAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 #else
   fileExitAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q, Qt::ALT + Qt::Key_F4));
@@ -125,8 +118,11 @@ MainWindow::MainWindow(int argc, char *argv[]) :
   toolBar = addToolBar(tr("&Toolbar"));
   toolBar->setObjectName("Toolbar");
   toolBar->setIconSize(QSize(16, 16));
-#ifdef OSX
+#ifdef MACOS
   setUnifiedTitleAndToolBarOnMac(true);
+  toolBar->setFloatable(false);
+  toolBar->setMovable(false);
+  toolBar->setFixedHeight(toolBar->height() * 6 / 5);
 #endif
 
   menuBar = new QMenuBar(this);
@@ -157,10 +153,6 @@ MainWindow::MainWindow(int argc, char *argv[]) :
 
   helpMenu = new QMenu(tr("&Help"), this);
   QAction* action;
-  connect(action = helpMenu->addAction(tr("View &Help")), SIGNAL(triggered()), this, SLOT(help()));
-  action->setStatusTip(tr("Show the help dialog"));
-  action->setShortcut(QKeySequence( Qt::Key_F1));
-  helpMenu->addSeparator();
   connect(action = helpMenu->addAction(tr("&About...")), SIGNAL(triggered()), this, SLOT(about()));
   action->setMenuRole(QAction::AboutRole);
   action->setStatusTip(tr("Show the application's About box"));
@@ -187,10 +179,14 @@ QString MainWindow::getAppPath(const char* argv0)
 unsigned int MainWindow::getAppLocationSum(const QString& appPath)
 {
   unsigned int sum = 0;
-#ifdef OSX
+#ifdef MACOS
   QString path = appPath;
   for(int i = 0; i < 5; ++i)
     path = QFileInfo(path).dir().path();
+
+  // HACK: use old layout files
+  path.replace("macOS", "OSX");
+  path.replace("SimRobot-caaaeucszhgdzjbjfxcuvrrhfobi", "SimRobot-coxkvyjsooixypajomfxlpxuegqc");
 #else
   const QString& path(QFileInfo(QFileInfo(appPath).dir().path()).dir().path());
 #endif
@@ -209,7 +205,7 @@ unsigned int MainWindow::getSystemTime()
 {
 #ifdef WINDOWS
   return GetTickCount();
-#elif defined(OSX)
+#elif defined MACOS
   static mach_timebase_info_data_t info = {0, 0};
   if(info.denom == 0)
     mach_timebase_info(&info);
@@ -289,6 +285,7 @@ bool MainWindow::registerModule(const SimRobot::Module& module, const QString& d
   LoadedModule* loadedModule = loadedModulesByName.value(name);
   if(loadedModule)
     loadedModule->flags = flags;
+  updateAddonMenu();
   return true;
 }
 
@@ -341,6 +338,36 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::timerEvent(QTimerEvent* event)
 {
+#ifdef FIX_MACOS_TOOLBAR_RENDERING_BUG
+  if(event->timerId() == toolBarTimerId)
+  {
+    killTimer(toolBarTimerId);
+    toolBarTimerId = -1;
+    switch(toolBarState)
+    {
+      case toolBarToggleBack:
+        toolBar->toggleViewAction()->activate(QAction::Trigger);
+        setUpdatesEnabled(true);
+        toolBarState = toolBarNone;
+        return;
+      case toolBarHide:
+        if(!isFullScreen())
+        {
+          toolBarState = toolBarNone;
+          return;
+        }
+      case toolBarShow:
+        setUpdatesEnabled(false);
+        toolBar->toggleViewAction()->activate(QAction::Trigger);
+        toolBarState = toolBarToggleBack;
+        toolBarTimerId = startTimer(0);
+      case toolBarNone:
+      default:
+        return;
+    }
+  }
+#endif
+
   performStep = false;
 
   foreach(LoadedModule* loadedModule, loadedModules)
@@ -359,13 +386,8 @@ void MainWindow::timerEvent(QTimerEvent* event)
   }
   if(!running)
   {
-#ifdef FIX_WIN32_WINDOWS7_BLOCKING_BUG
-    if(event)
-#endif
-    {
-      Q_ASSERT(event->timerId() == timerId);
-      killTimer(timerId);
-    }
+    Q_ASSERT(event->timerId() == timerId);
+    killTimer(timerId);
     timerId = 0;
   }
 }
@@ -456,7 +478,7 @@ bool MainWindow::loadModule(const QString& name, bool manually)
 
 #ifdef WINDOWS
   const QString& moduleName = name;
-#elif defined(OSX)
+#elif defined MACOS
   QString moduleName = QFileInfo(application->getAppPath()).dir().path() + "/../Resources/" + name;
 #else
   QString moduleName = QFileInfo(appPath).path() + "/lib" + name + ".so";
@@ -570,7 +592,19 @@ bool MainWindow::compileModules()
 
 void MainWindow::updateViewMenu(QMenu* menu)
 {
+#ifndef FIX_MACOS_SUBMENU_MISSING_BUG
   menu->clear();
+#else
+  QList<QAction*> actions = menu->actions();
+  while(actions.size() > 1 && actions.back() != statusBar->toggleViewAction())
+  {
+    menu->removeAction(actions.back());
+    actions.pop_back();
+  }
+
+  if(actions.size() < 2)
+  {
+#endif
 
   if(viewUpdateRateMenu)
   {
@@ -580,7 +614,6 @@ void MainWindow::updateViewMenu(QMenu* menu)
 
   viewUpdateRateActionGroup = new QActionGroup(this);
   viewUpdateRateMenu = new QMenu(tr("Update Rate"), this);
-  viewUpdateRateMenu->setEnabled(opened);
 
   QAction* action = viewUpdateRateMenu->addAction(tr("10 fps"));
   action->setCheckable(true);
@@ -622,6 +655,12 @@ void MainWindow::updateViewMenu(QMenu* menu)
   //menu->addAction(menuBar->toggleViewAction());
   menu->addAction(toolBar->toggleViewAction());
   menu->addAction(statusBar->toggleViewAction());
+
+#ifdef FIX_MACOS_SUBMENU_MISSING_BUG
+  }
+#endif
+
+  viewUpdateRateMenu->setEnabled(opened);
   if((opened && sceneGraphDockWidget) || openedObjectsByName.count() > 0)
   {
     menu->addSeparator();
@@ -773,7 +812,7 @@ void MainWindow::updateFileMenu()
       recentFileMapper.setMapping(action, file);
     }
   }
-#ifndef OSX
+#ifndef MACOS
   fileMenu->addSeparator();
   fileMenu->addAction(fileExitAct);
 #endif
@@ -875,30 +914,9 @@ void MainWindow::openFile(const QString& fileName)
     foreach(QString object, openedObjects)
       openObject(object, 0, 0, 0);
   }
-#ifdef FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
-  layoutSettings.beginGroup("DockedWidgetSizes");
-  for(QMap<QString, RegisteredDockWidget*>::iterator it = openedObjectsByName.begin(), end = openedObjectsByName.end(); it != end; ++it)
-  {
-    RegisteredDockWidget* widget = it.value();
-    QVariant var = layoutSettings.value(it.key());
-    if(!var.isNull())
-      widget->setMinimumSize(var.toSize());
-  }
-  QVariant var = layoutSettings.value(".SceneGraph");
-  if(!var.isNull())
-    sceneGraphDockWidget->setMinimumSize(var.toSize());
-  layoutSettings.endGroup();
-  QTimer::singleShot(500, this, SLOT(unlockLayout()));
-#endif
-#ifdef OSX
-  MacFullscreen::setActive(this, layoutSettings.value("Fullscreen").toBool());
-#endif
   restoreGeometry(layoutSettings.value("Geometry").toByteArray());
   restoreState(layoutSettings.value("WindowState").toByteArray());
   statusBar->setVisible(layoutSettings.value("ShowStatus", true).toBool());
-#ifdef FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
-  toolBar->setVisible(layoutSettings.value("ShowToolbar", true).toBool());
-#endif
   manuallyLoadedModules = layoutSettings.value("LoadedModules").toStringList();
   guiUpdateRate = layoutSettings.value("GuiUpdateRate", -1).toInt();
   if(guiUpdateRate < 0)
@@ -910,8 +928,13 @@ void MainWindow::openFile(const QString& fileName)
   // load core module
   Q_ASSERT(!compiled);
   loadModule(fileInfo.suffix() == "ros2" ? "SimRobotCore2" : "SimRobotCore");
-  foreach(QString module, manuallyLoadedModules)
-    loadModule(module);
+
+  for(int i = 0; i < manuallyLoadedModules.size();)
+    if(loadModule(manuallyLoadedModules[i]))
+      ++i;
+    else
+      manuallyLoadedModules.removeAt(i);
+
   compileModules();
 
   // restore focus
@@ -939,6 +962,16 @@ void MainWindow::openFile(const QString& fileName)
   // start simulation
   if(compiled && layoutSettings.value("Run", true).toBool())
     simStart();
+
+#ifdef FIX_MACOS_TOOLBAR_RENDERING_BUG
+  if(toolBarState != toolBarToggleBack && !toolBar->toggleViewAction()->isChecked())
+  {
+    if(toolBarState != toolBarNone)
+      killTimer(toolBarTimerId);
+    toolBarState = toolBarShow;
+    toolBarTimerId = startTimer(0);
+  }
+#endif
 }
 
 void MainWindow::unlockLayout()
@@ -969,29 +1002,7 @@ bool MainWindow::closeFile()
   {
     layoutSettings.setValue("Geometry", saveGeometry());
     layoutSettings.setValue("WindowState", saveState());
-#ifdef FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
-    layoutSettings.beginGroup("DockedWidgetSizes");
-    for(QMap<QString, RegisteredDockWidget*>::iterator it = openedObjectsByName.begin(), end = openedObjectsByName.end(); it != end; ++it)
-    {
-      RegisteredDockWidget* widget = it.value();
-      if(!it.value()->isFloating())
-        layoutSettings.setValue(it.key(), widget->size());
-      else
-        layoutSettings.remove(it.key());
-    }
-    if(!sceneGraphDockWidget->isFloating())
-      layoutSettings.setValue(".SceneGraph", sceneGraphDockWidget->size());
-    else
-      layoutSettings.remove(".SceneGraph");
-    layoutSettings.endGroup();
-#endif
     layoutSettings.setValue("ShowStatus", statusBar->isVisible());
-#ifdef FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
-    layoutSettings.setValue("ShowToolbar", toolBar->isVisible());
-#endif
-#ifdef OSX
-    layoutSettings.setValue("Fullscreen", MacFullscreen::isActive(this));
-#endif
     layoutSettings.setValue("OpenedObjects", openedObjects);
     layoutSettings.setValue("ActiveObject", activeDockWidget ? QVariant(activeDockWidget->objectName()) : QVariant());
     layoutSettings.setValue("LoadedModules", manuallyLoadedModules);
@@ -1013,9 +1024,7 @@ bool MainWindow::closeFile()
     sceneGraphDockWidget = 0;
   }
   foreach(RegisteredDockWidget* dockWidget, openedObjectsByName)
-  {
     delete dockWidget;
-  }
   openedObjects.clear();
   openedObjectsByName.clear();
 
@@ -1054,11 +1063,6 @@ bool MainWindow::closeFile()
     running = false;
     performStep = false;
   }
-#ifdef FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
-  else
-    // Prevents crash when no QGLWidget was created before the program terminates
-    QGLWidget helper(QGLFormat(QGL::NoStencilBuffer | QGL::SingleBuffer), 0, 0, Qt::WindowStaysOnTopHint);
-#endif
 
   return true;
 }
@@ -1166,7 +1170,7 @@ void MainWindow::simStart()
     running = true;
     simStartAct->setChecked(true);
     if(!timerId)
-#ifdef OSX
+#ifdef MACOS
       timerId = startTimer(1);
 #else
       timerId = startTimer(0);
@@ -1187,19 +1191,6 @@ void MainWindow::simStop()
 {
   simStartAct->setChecked(false);
   running = false;
-}
-
-void MainWindow::help()
-{
-  if(!sceneGraphDockWidget)
-  {
-    sceneGraphDockWidget = new SceneGraphDockWidget(createSimMenu(), this);
-    sceneGraphDockWidget->setVisible(false);
-    connect(sceneGraphDockWidget, SIGNAL(activatedObject(const QString&, const SimRobot::Module*, SimRobot::Object*, int)), this, SLOT(openObject(const QString&, const SimRobot::Module*, SimRobot::Object*, int)));
-  }
-  if(!loadModule("SimRobotHelp", true))
-    return;
-  sceneGraphDockWidget->activateObject(sceneGraphDockWidget->resolveObject("Help", 0));
 }
 
 void MainWindow::about()
@@ -1229,6 +1220,7 @@ void MainWindow::loadAddon(const QString& name)
 void MainWindow::openObject(const QString& fullName, const SimRobot::Module* module, SimRobot::Object* object, int flags)
 {
   RegisteredDockWidget* dockWidget = openedObjectsByName.value(fullName);
+
   if(dockWidget && object && (!dockWidget->getObject() || dockWidget->getObject()->getKind() != object->getKind()))
     dockWidget = 0;
   if(dockWidget)
@@ -1242,7 +1234,11 @@ void MainWindow::openObject(const QString& fullName, const SimRobot::Module* mod
 
   SimRobot::Widget* widget = object ? object->createWidget() : 0;
   if(object && !widget)
-    return; // the object does not have a widget
+  {
+    // the object does not have a widget
+    return;
+  }
+
   dockWidget = new RegisteredDockWidget(fullName, this);
   connect(dockWidget, SIGNAL(closedContextMenu()), this, SLOT(updateMenuAndToolBar()));
   if(flags & SimRobot::Flag::verticalTitleBar)
@@ -1256,7 +1252,7 @@ void MainWindow::openObject(const QString& fullName, const SimRobot::Module* mod
   dockWidget->setFloating(true);
   if(widget)
   {
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
     bool workaround = widget->getWidget()->inherits("QGLWidget");
     if(workaround)
     {
@@ -1268,7 +1264,7 @@ void MainWindow::openObject(const QString& fullName, const SimRobot::Module* mod
     QWidget* qwidget = widget->getWidget();
     Q_ASSERT(qwidget->parent() == dockWidget);
     dockWidget->setFocusProxy(qwidget);
-#ifdef FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
     if(workaround)
     {
       dockWidget->adjustSize();
@@ -1387,3 +1383,15 @@ void MainWindow::focusChanged(QWidget *old, QWidget* now)
   }
   updateMenuAndToolBar();
 }
+
+#ifdef FIX_MACOS_TOOLBAR_RENDERING_BUG
+void MainWindow::resizeEvent(QResizeEvent* e)
+{
+  QMainWindow::resizeEvent(e);
+  if(toolBarState == toolBarNone && toolBar->toggleViewAction()->isChecked())
+  {
+    toolBarState = toolBarHide;
+    toolBarTimerId = startTimer(1000);
+  }
+}
+#endif

@@ -70,7 +70,7 @@ public:
   /**
    * Constructor
    * @param q A pointer to the message queue base
-    */
+   */
   InBinaryMessage(MessageQueueBase* q);
 
   /**
@@ -91,7 +91,7 @@ public:
   /**
    * Constructor
    * @param q A pointer to the message queue base
-    */
+   */
   InTextMessage(MessageQueueBase* q);
 
   /**
@@ -130,7 +130,7 @@ private:
   /**
    * The message queue where the messages are read from. Note that the selection which message is
    * read is not done by InMessageQueue but by MessageQueue itself.
-    */
+   */
   MessageQueueBase& queue;
 
 public:

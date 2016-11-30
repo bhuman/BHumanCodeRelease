@@ -63,6 +63,7 @@ public:
    * @param other The buffer that is copied.
    */
   RingBufferWithSum(const RingBufferWithSum& other) :
+    RingBuffer<T, n>(other),
     zero(other.zero),
     currentSum(RingBuffer<T, n>::full() ? other.zero : other.prevSum + other.currentSum),
     prevSum(RingBuffer<T, n>::full() ? other.prevSum + other.currentSum : other.zero)
@@ -127,7 +128,10 @@ public:
   /** Removes the entry back() from the buffer. */
   void pop_back()
   {
-    prevSum -= RingBuffer<T, n>::back();
+    if(RingBuffer<T, n>::wrapped())
+      prevSum -= RingBuffer<T, n>::back();
+    else
+      currentSum -= RingBuffer<T, n>::back();
     RingBuffer<T, n>::pop_back();
   }
 
@@ -183,7 +187,7 @@ public:
   float averagef() const;
 };
 
-#ifdef WINDOWS // The division might force a type conversion that looses precision
+#ifdef _MSC_VER // The division might force a type conversion that looses precision
 #pragma warning(push)
 #pragma warning(disable: 4244 4267)
 #elif defined __clang__
@@ -208,7 +212,7 @@ template<typename T, std::size_t n> float RingBufferWithSum<T, n>::averagef() co
     return sum() / static_cast<float>(RingBuffer<T, n>::size());
 }
 
-#ifdef WINDOWS
+#ifdef _MSC_VER
 #pragma warning(pop)
 #elif defined __clang__
 #pragma clang diagnostic pop

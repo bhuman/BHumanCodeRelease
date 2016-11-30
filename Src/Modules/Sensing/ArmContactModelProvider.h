@@ -17,12 +17,13 @@
 
 #pragma once
 
+#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/MotionControl/ArmMotionInfo.h"
+#include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/ArmMotionSelection.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -43,12 +44,6 @@
 /** number of angle differences to buffer */
 #define ERROR_BUFFER_SIZE 100
 
-/** serves as input for the checkArms method if checking the left arm */
-#define LEFT true
-
-/** serves as input for the checkArms method if checking the right arm */
-#define RIGHT false
-
 MODULE(ArmContactModelProvider,
 {,
   REQUIRES(FallDownState),
@@ -58,6 +53,7 @@ MODULE(ArmContactModelProvider,
   REQUIRES(JointAngles),
   REQUIRES(RobotInfo),
   REQUIRES(RobotModel),
+  REQUIRES(DamageConfigurationBody),
   USES(ArmMotionInfo),
   USES(ArmMotionSelection),
   USES(JointRequest),
@@ -83,17 +79,15 @@ MODULE(ArmContactModelProvider,
  */
 class ArmContactModelProvider: public ArmContactModelProviderBase
 {
-public:
-  /** Constructor */
-  ArmContactModelProvider();
-
-private:
   struct ArmAngles
   {
     float leftX,  /**< X angle of left arm */
           leftY,  /**< Y angle of left arm */
           rightX, /**< X angle of right arm */
           rightY; /**< Y angle of right arm */
+
+    ArmAngles(float leftX, float leftY, float rightX, float rightY) : leftX(leftX), leftY(leftY), rightX(rightX), rightY(rightY) {};
+    ArmAngles() {};
   };
 
   RingBuffer<ArmAngles, FRAME_BUFFER_SIZE> angleBuffer; /**< Buffered arm angles to eliminate delay */
@@ -102,19 +96,14 @@ private:
    * y-Component: error of shoulder roll
    * x-Component: error of shoulder pitch
    */
-  RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE> leftErrorBuffer; /**< Buffered error over ERROR_BUFFER_SIZE frames */
-  RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE> rightErrorBuffer;
-
-  bool leftMovingLastFrame;                     /**< Whether left arm was moving last frame */
-  bool rightMovingLastFrame;                    /**< Whether right arm was moving last frame */
-  unsigned leftLastMovement;                    /**< time of last left arm movement */
-  unsigned rightLastMovement;                   /**< time of last right arm movement */
-  const int soundDelay;                         /**< Length of debug sound */
-  unsigned int lastSoundTime;                   /**< Time of last debug sound */
-  Vector2f lastLeftHandPos = Vector2f::Zero();  /**< Last 2-D position of the left hand */
-  Vector2f lastRightHandPos = Vector2f::Zero(); /**< Last 2-D position of the right hand */
-  Pose2f lastOdometry;                          /**< Odometry inthe previous frame. */
-  int lastGameState;                            /**< Game state in previous frame. */
+  RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE> errorBuffer[2];     /**< Buffered error over ERROR_BUFFER_SIZE frames */
+  bool movingLastFrame[2] = {false, false};                          /**< Whether left (0) and right (1) arm was moving last frame */
+  unsigned lastMovement[2] = {0,0};                                  /**< time of last left (0) and right (1) arm movement */
+  Vector2f lastHandPos [2] = { Vector2f::Zero(), Vector2f::Zero() }; /**< Last 2-D position of the left (0) and right (1) hand */
+  Pose2f lastOdometry;                                               /**< Odometry inthe previous frame. */
+  const int soundDelay = 1000;                                       /**< Length of debug sound */
+  unsigned int lastSoundTime = 0;                                    /**< Time of last debug sound */
+  int lastGameState = STATE_INITIAL;                                /**< Game state in previous frame. */
 
   /**
    * Resets the arm contact model to default values and clears the error buffers.
@@ -155,4 +144,10 @@ private:
    * @return The direction in which the specified arm is being pushed.
    */
   ArmContactModel::PushDirection getDirection(bool left, bool contactX, bool contactY, Vector2f error);
+
+  void prepare(ArmContactModel& model);
+
+public:
+  ArmContactModelProvider() : errorBuffer{ RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE>(Vector2f::Zero()), RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE>(Vector2f::Zero()) } {};
+
 };

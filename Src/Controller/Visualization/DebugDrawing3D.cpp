@@ -1,13 +1,13 @@
 /**
-* @file Controller/Visualization/DebugDrawing3D.cpp
-* Implementation of class DebugDrawing3D.
-*
-* @author Philippe Schober
-* @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
-*/
+ * @file Controller/Visualization/DebugDrawing3D.cpp
+ * Implementation of class DebugDrawing3D.
+ *
+ * @author Philippe Schober
+ * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ */
 
 #include "Controller/RobotConsole.h"
-#ifdef OSX
+#ifdef MACOS
 #include <gl.h>
 #include <glu.h>
 #else
@@ -16,18 +16,12 @@
 #endif
 #include "DebugDrawing3D.h"
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/RobotDimensions.h"
+#include "Tools/ImageProcessing/ColorModelConversions.h"
 
-DebugDrawing3D::DebugDrawing3D() : flip(false), robotConsole(0)
-{
-  timeStamp = SystemCall::getCurrentSystemTime();
-  drawn = false;
-  scaleX  = scaleY  = scaleZ  = 1.0f;
-  rotateX = rotateY = rotateZ = 0.0f;
-  transX  = transY  = transZ  = 0.0f;
-}
+DebugDrawing3D::DebugDrawing3D() : timeStamp(Time::getCurrentSystemTime()) {}
 
 const DebugDrawing3D& DebugDrawing3D::operator=(const DebugDrawing3D& other)
 {
@@ -35,17 +29,10 @@ const DebugDrawing3D& DebugDrawing3D::operator=(const DebugDrawing3D& other)
   timeStamp = other.timeStamp;
   drawn = other.drawn;
   flip = other.flip;
-  scaleX = other.scaleX;
-  scaleY = other.scaleY;
-  scaleZ = other.scaleZ;
-  rotateX = other.rotateX;
-  rotateY = other.rotateY;
-  rotateZ = other.rotateZ;
-  transX = other.transX;
-  transY = other.transY;
-  transZ = other.transZ;
-  processIdentifier = other.processIdentifier;
-  robotConsole  = other.robotConsole;
+  scale = other.scale;
+  rotate = other.rotate;
+  trans = other.trans;
+  robotConsole = other.robotConsole;
   return *this += other;
 }
 
@@ -53,7 +40,6 @@ const DebugDrawing3D& DebugDrawing3D::operator+=(const DebugDrawing3D& other)
 {
   lines.insert(lines.end(), other.lines.begin(), other.lines.end());
   dots.insert(dots.end(), other.dots.begin(), other.dots.end());
-  polygons.insert(polygons.end(), other.polygons.begin(), other.polygons.end());
   quads.insert(quads.end(), other.quads.begin(), other.quads.end());
   spheres.insert(spheres.end(), other.spheres.begin(), other.spheres.end());
   ellipsoids.insert(ellipsoids.end(), other.ellipsoids.begin(), other.ellipsoids.end());
@@ -71,10 +57,6 @@ DebugDrawing3D::DebugDrawing3D(const DebugDrawing3D& other)
 DebugDrawing3D::DebugDrawing3D(const DebugDrawing3D* pDebugDrawing3D)
 {
   *this = *pDebugDrawing3D;
-}
-
-DebugDrawing3D::~DebugDrawing3D()
-{
 }
 
 void DebugDrawing3D::draw()
@@ -100,32 +82,23 @@ void DebugDrawing3D::draw2()
   glScaled(0.001, 0.001, 0.001);
 
   // Custom scaling.
-  glScalef(scaleX, scaleY, scaleZ);
+  glScalef(scale.x(), scale.y(), scale.z());
 
   // Custom rotation.
-  if(rotateZ != 0) glRotatef(toDegrees(rotateZ), 0., 0., 1.);
-  if(rotateY != 0) glRotatef(toDegrees(rotateY), 0., 1., 0.);
-  if(rotateX != 0) glRotatef(toDegrees(rotateX), 1., 0., 0.);
+  if(rotate.z() != 0)
+    glRotatef(toDegrees(rotate.z()), 0., 0., 1.);
+  if(rotate.y() != 0)
+    glRotatef(toDegrees(rotate.y()), 0., 1., 0.);
+  if(rotate.x() != 0)
+    glRotatef(toDegrees(rotate.x()), 1., 0., 0.);
 
   // Custom translation.
-  glTranslated(transX, transY, transZ);
+  glTranslatef(trans.x(), trans.y(), trans.z());
 
-  //
   //glDisable(GL_LIGHTING);
   glEnable(GL_NORMALIZE);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  // Draw all polygons/triangles.
-  for(const Polygon& p : polygons)
-  {
-    glColor4ub(p.color.r, p.color.g, p.color.b, p.color.a);
-    glBegin(GL_TRIANGLES);
-    glVertex3f(p.points[0].x(), p.points[0].y(), p.points[0].z());
-    glVertex3f(p.points[1].x(), p.points[1].y(), p.points[1].z());
-    glVertex3f(p.points[2].x(), p.points[2].y(), p.points[2].z());
-    glEnd();
-  }
 
   // Draw all lines.
   if(!lines.empty())
@@ -136,8 +109,8 @@ void DebugDrawing3D::draw2()
       glLineWidth(l.width);
       glColor4ub(l.color.r, l.color.g, l.color.b, l.color.a);
       glBegin(GL_LINES);
-      glVertex3f(l.points[0].x(), l.points[0].y(), l.points[0].z());
-      glVertex3f(l.points[1].x(), l.points[1].y(), l.points[1].z());
+      glVertex3f(l.start.x(), l.start.y(), l.start.z());
+      glVertex3f(l.end.x(), l.end.y(), l.end.z());
       glEnd();
     }
     glPopAttrib();
@@ -152,7 +125,7 @@ void DebugDrawing3D::draw2()
       // Since each point may have a different size we can't handle all
       // points in a single glBegin(GL_POINTS).
       // ( glPointSize is not allowed in a glBegin(...). )
-      glPointSize(d.width);
+      glPointSize(d.size);
       glColor4ub(d.color.r, d.color.g, d.color.b, d.color.a);
       glBegin(GL_POINTS);
       glVertex3f(d.point.x(), d.point.y(), d.point.z());
@@ -198,9 +171,9 @@ void DebugDrawing3D::draw2()
     const Vector3f& p2 = q.points[1];
     const Vector3f& p3 = q.points[2];
     const Vector3f& p4 = q.points[3];
-    Vector3f u(p2.x() - p1.x(), p2.y() - p1.y(), p2.z() - p1.z());
-    Vector3f v(p3.x() - p1.x(), p3.y() - p1.y(), p3.z() - p1.z());
-    Vector3f n(u.y() * v.z() - u.z() * v.y(), u.z() * v.x() - u.x() * v.z(), u.x() * v.y() - u.y() * v.x());
+    Vector3f u = p2 - p1;
+    Vector3f v = p3 - p1;
+    Vector3f n = u.cross(v);
     n.normalize();
 
     glNormal3fv(&n.x());
@@ -273,13 +246,12 @@ void DebugDrawing3D::draw2()
 
       int width, height;
       char* imageData = copyImage(*i.image, width, height);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                   width, height,
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
                    0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      delete [] imageData;
+      delete[] imageData;
 
       glPushMatrix();
       glTranslated(i.point.x(), i.point.y(), i.point.z());
@@ -290,8 +262,8 @@ void DebugDrawing3D::draw2()
       if(i.rotation.z() != 0)
         glRotated(toDegrees(i.rotation.z()), 0, 0, 1);
       glBegin(GL_QUADS);
-      float right = (float) i.image->width / width;
-      float top = (float) i.image->height / height;
+      float right = (float)i.image->width / width;
+      float top = (float)i.image->height / height;
       glTexCoord2d(right, top);
       glVertex3d(0, -i.width / 2, i.height / 2);
       glTexCoord2d(0, top);
@@ -314,10 +286,9 @@ void DebugDrawing3D::draw2()
 
 void DebugDrawing3D::reset()
 {
-  timeStamp = SystemCall::getCurrentSystemTime();
+  timeStamp = Time::getCurrentSystemTime();
   lines.clear();
   dots.clear();
-  polygons.clear();
   quads.clear();
   spheres.clear();
   ellipsoids.clear();
@@ -326,66 +297,41 @@ void DebugDrawing3D::reset()
   images.clear();
 }
 
-void DebugDrawing3D::quad(const Vector3f* points, float width, ColorRGBA color)
+void DebugDrawing3D::quad(std::array<Vector3f, 4> points, ColorRGBA color)
 {
   Quad element;
-  element.points[0] = points[0];
-  element.points[1] = points[1];
-  element.points[2] = points[2];
-  element.points[3] = points[3];
+  element.points = points;
   element.color = color;
-  element.width = width;
   quads.push_back(element);
 }
 
 void DebugDrawing3D::line(float xStart, float yStart, float zStart,
-                          float xEnd,   float yEnd,   float zEnd,
-                          float width,   ColorRGBA color)
+                          float xEnd, float yEnd, float zEnd,
+                          float width, ColorRGBA color)
+{
+  line(Vector3f(xStart, yStart, zStart), Vector3f(xEnd, yEnd, zEnd), width, color);
+}
+
+void DebugDrawing3D::line(const Vector3f& start, const Vector3f& end, float width, ColorRGBA color)
 {
   Line element;
-  element.points[0] = Vector3f(xStart, yStart, zStart);
-  element.points[1] = Vector3f(xEnd,   yEnd,   zEnd);
+  element.start = start;
+  element.end = end;
   element.color = color;
   element.width = width;
   lines.push_back(element);
 }
 
-void DebugDrawing3D::line(Vector3f* points, float width, ColorRGBA color)
-{
-  Line element;
-  element.points[0] = points[0];
-  element.points[1] = points[1];
-  element.color = color;
-  element.width = width;
-  lines.push_back(element);
-}
-
-void DebugDrawing3D::line(float xStart, float yStart, float zStart,
-                          float xEnd, float yEnd, float zEnd)
-{
-  line(xStart, yStart, zStart, xEnd, yEnd, zEnd, 1, ColorRGBA(0, 0, 0));
-}
-
-void DebugDrawing3D::polygon(const Vector3f* points, float width, ColorRGBA color)
-{
-  Polygon element;
-  for(int i = 0; i < 3; i++)
-    element.points[i] = points[i];
-  element.width = width;
-  element.color = color;
-  polygons.push_back(element);
-}
-
-void DebugDrawing3D::dot(Vector3f v, float w, ColorRGBA color)
+void DebugDrawing3D::dot(const Vector3f& v, float w, ColorRGBA color)
 {
   Dot element;
   element.point = v;
   element.color = color;
-  element.width = w;
+  element.size = w;
   dots.push_back(element);
 }
 
-void DebugDrawing3D::sphere(Vector3f v, float r, ColorRGBA color)
+void DebugDrawing3D::sphere(const Vector3f& v, float r, ColorRGBA color)
 {
   Sphere element;
   element.point = v;
@@ -394,7 +340,7 @@ void DebugDrawing3D::sphere(Vector3f v, float r, ColorRGBA color)
   spheres.push_back(element);
 }
 
-void DebugDrawing3D::ellypsoid(const Pose3f& pose, Vector3f radii, ColorRGBA color)
+void DebugDrawing3D::ellypsoid(const Pose3f& pose, const Vector3f& radii, ColorRGBA color)
 {
   Ellipsoid element;
   element.pose = pose;
@@ -403,9 +349,8 @@ void DebugDrawing3D::ellypsoid(const Pose3f& pose, Vector3f radii, ColorRGBA col
   ellipsoids.push_back(element);
 }
 
-void DebugDrawing3D::cylinder(Vector3f v, Vector3f rot,
-                              float baseRadius, float topRadius,
-                              float h, ColorRGBA color)
+void DebugDrawing3D::cylinder(const Vector3f& v, const Vector3f& rot, float baseRadius,
+                              float topRadius, float h, ColorRGBA color)
 {
   Cylinder element;
   element.point = v;
@@ -417,10 +362,8 @@ void DebugDrawing3D::cylinder(Vector3f v, Vector3f rot,
   cylinders.push_back(element);
 }
 
-void DebugDrawing3D::partDisc(Vector3f v, Vector3f rot, 
-                              float innerRadius, float outerRadius, 
-                              float startAngle, float sweepAngle, 
-                              ColorRGBA color)
+void DebugDrawing3D::partDisc(const Vector3f& v, const Vector3f& rot, float innerRadius, float outerRadius,
+                              float startAngle, float sweepAngle, ColorRGBA color)
 {
   PartDisc element;
   element.point = v;
@@ -433,7 +376,7 @@ void DebugDrawing3D::partDisc(Vector3f v, Vector3f rot,
   partDiscs.push_back(element);
 }
 
-void DebugDrawing3D::image(Vector3f v, Vector3f rot, float w, float h, Image* i)
+void DebugDrawing3D::image(const Vector3f& v, const Vector3f& rot, float w, float h, Image* i)
 {
   Image3D element;
   element.point = v;
@@ -446,29 +389,27 @@ void DebugDrawing3D::image(Vector3f v, Vector3f rot, float w, float h, Image* i)
 
 bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType, char identifier)
 {
-  processIdentifier = identifier;
-
   switch((Drawings3D::ShapeType)shapeType)
   {
     case Drawings3D::translate:
     {
-      message.bin >> transX;
-      message.bin >> transY;
-      message.bin >> transZ;
+      message.bin >> trans.x();
+      message.bin >> trans.y();
+      message.bin >> trans.z();
       break;
     }
     case Drawings3D::scale:
     {
-      message.bin >> scaleX;
-      message.bin >> scaleY;
-      message.bin >> scaleZ;
+      message.bin >> scale.x();
+      message.bin >> scale.y();
+      message.bin >> scale.z();
       break;
     }
     case Drawings3D::rotate:
     {
-      message.bin >> rotateX;
-      message.bin >> rotateY;
-      message.bin >> rotateZ;
+      message.bin >> rotate.x();
+      message.bin >> rotate.y();
+      message.bin >> rotate.z();
       break;
     }
     case Drawings3D::coordinates:
@@ -477,44 +418,33 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       float length;
       message.bin >> length;
       message.bin >> width;
-      this->line(0, 0, 0, length, 0, 0, width, ColorRGBA(255, 0, 0));
-      this->line(0, 0, 0, 0, length, 0, width, ColorRGBA(0, 255, 0));
-      this->line(0, 0, 0, 0, 0, length, width, ColorRGBA(0, 0, 255));
+      this->line(0, 0, 0, length, 0, 0, width, ColorRGBA::red);
+      this->line(0, 0, 0, 0, length, 0, width, ColorRGBA::green);
+      this->line(0, 0, 0, 0, 0, length, width, ColorRGBA::blue);
       break;
     }
     case Drawings3D::quad:
     {
-      Vector3f points[4];
+      std::array<Vector3f, 4> points;
       ColorRGBA c;
       message.bin >> points[0];
       message.bin >> points[1];
       message.bin >> points[2];
       message.bin >> points[3];
       message.bin >> c;
-      this->quad(points, 1.0f, c);
-      break;
-    }
-    case Drawings3D::polygon:
-    {
-      Vector3f points[3];
-      ColorRGBA c;
-      message.bin >> points[0];
-      message.bin >> points[1];
-      message.bin >> points[2];
-      message.bin >> c;
-      this->polygon(points, 1.0f, c);
+      this->quad(points, c);
       break;
     }
     case Drawings3D::line:
     {
-      Vector3f points[2];
+      Vector3f start, end;
       float width;
       ColorRGBA c;
-      message.bin >> points[0];
-      message.bin >> points[1];
+      message.bin >> start;
+      message.bin >> end;
       message.bin >> width;
       message.bin >> c;
-      this->line(points, width, c);
+      this->line(start, end, width, c);
       break;
     }
     case Drawings3D::cube:
@@ -523,23 +453,22 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       float width;
       ColorRGBA c;
       for(int i = 0; i < 8; i++)
-      {
         message.bin >> points[i];
-      }
+
       message.bin >> width;
       message.bin >> c;
-      this->line(points[0].x(), points[0].y(), points[0].z(), points[1].x(), points[1].y(), points[1].z(), width, c); //AB
-      this->line(points[0].x(), points[0].y(), points[0].z(), points[2].x(), points[2].y(), points[2].z(), width, c); //AC
-      this->line(points[0].x(), points[0].y(), points[0].z(), points[4].x(), points[4].y(), points[4].z(), width, c); //AE
-      this->line(points[1].x(), points[1].y(), points[1].z(), points[3].x(), points[3].y(), points[3].z(), width, c); //BD
-      this->line(points[1].x(), points[1].y(), points[1].z(), points[5].x(), points[5].y(), points[5].z(), width, c); //BF
-      this->line(points[2].x(), points[2].y(), points[2].z(), points[3].x(), points[3].y(), points[3].z(), width, c); //CD
-      this->line(points[2].x(), points[2].y(), points[2].z(), points[6].x(), points[6].y(), points[6].z(), width, c); //CG
-      this->line(points[3].x(), points[3].y(), points[3].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //DH
-      this->line(points[4].x(), points[4].y(), points[4].z(), points[6].x(), points[6].y(), points[6].z(), width, c); //EG
-      this->line(points[4].x(), points[4].y(), points[4].z(), points[5].x(), points[5].y(), points[5].z(), width, c); //EF
-      this->line(points[5].x(), points[5].y(), points[5].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //FH
-      this->line(points[6].x(), points[6].y(), points[6].z(), points[7].x(), points[7].y(), points[7].z(), width, c); //GH
+      this->line(points[0], points[1], width, c); //AB
+      this->line(points[0], points[2], width, c); //AC
+      this->line(points[0], points[4], width, c); //AE
+      this->line(points[1], points[3], width, c); //BD
+      this->line(points[1], points[5], width, c); //BF
+      this->line(points[2], points[3], width, c); //CD
+      this->line(points[2], points[6], width, c); //CG
+      this->line(points[3], points[7], width, c); //DH
+      this->line(points[4], points[6], width, c); //EG
+      this->line(points[4], points[5], width, c); //EF
+      this->line(points[5], points[7], width, c); //FH
+      this->line(points[6], points[7], width, c); //GH
       break;
     }
     case Drawings3D::dot:
@@ -556,18 +485,18 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
 
       if(withLines)
       {
-        this->line(0,  0,  0,   v.x(),  0,  0, 1.0f, c);
-        this->line(0,  0,  0,     0, v.y(),  0, 1.0f, c);
-        this->line(0,  0,  0,     0,  0, v.z(), 1.0f, c);
-        this->line(v.x(),  0,  0,   v.x(), v.y(),  0, 1.0f, c);
-        this->line(v.x(),  0,  0,   v.x(),  0, v.z(), 1.0f, c);
-        this->line(0, v.y(),  0,     0, v.y(), v.z(), 1.0f, c);
-        this->line(v.x(), v.y(),  0,     0, v.y(),  0, 1.0f, c);
-        this->line(v.x(), v.y(),  0,   v.x(), v.y(), v.z(), 1.0f, c);
-        this->line(v.x(),  0, v.z(),   v.x(), v.y(), v.z(), 1.0f, c);
-        this->line(v.x(),  0, v.z(),     0,  0, v.z(), 1.0f, c);
-        this->line(0, v.y(), v.z(),     0,  0, v.z(), 1.0f, c);
-        this->line(0, v.y(), v.z(),   v.x(), v.y(), v.z(), 1.0f, c);
+        this->line(0, 0, 0, v.x(), 0, 0, 1.0f, c);
+        this->line(0, 0, 0, 0, v.y(), 0, 1.0f, c);
+        this->line(0, 0, 0, 0, 0, v.z(), 1.0f, c);
+        this->line(v.x(), 0, 0, v.x(), v.y(), 0, 1.0f, c);
+        this->line(v.x(), 0, 0, v.x(), 0, v.z(), 1.0f, c);
+        this->line(0, v.y(), 0, 0, v.y(), v.z(), 1.0f, c);
+        this->line(v.x(), v.y(), 0, 0, v.y(), 0, 1.0f, c);
+        this->line(v.x(), v.y(), 0, v.x(), v.y(), v.z(), 1.0f, c);
+        this->line(v.x(), 0, v.z(), v.x(), v.y(), v.z(), 1.0f, c);
+        this->line(v.x(), 0, v.z(), 0, 0, v.z(), 1.0f, c);
+        this->line(0, v.y(), v.z(), 0, 0, v.z(), 1.0f, c);
+        this->line(0, v.y(), v.z(), v.x(), v.y(), v.z(), 1.0f, c);
       }
       break;
     }
@@ -595,8 +524,7 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
     }
     case Drawings3D::cylinder:
     {
-      Vector3f v,
-              rot;
+      Vector3f v, rot;
       float r, r2, h;
       ColorRGBA c;
       message.bin >> v;
@@ -611,7 +539,7 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
     case Drawings3D::partDisc:
     {
       Vector3f v,
-        rot;
+               rot;
       float r, r2, a, a2;
       ColorRGBA c;
       message.bin >> v;
@@ -626,10 +554,8 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
     }
     case Drawings3D::image:
     {
-      Vector3f v,
-              rot;
-      float w,
-            h;
+      Vector3f v, rot;
+      float w, h;
       Image* i = new Image;
       message.bin >> v;
       message.bin >> rot;
@@ -652,48 +578,39 @@ char* DebugDrawing3D::copyImage(const Image& srcImage, int& width, int& height) 
   while(height < srcImage.height)
     height <<= 1;
 
-  static const int factor1 = 29016;
-  static const int factor2 = 5662;
-  static const int factor3 = 22972;
-  static const int factor4 = 11706;
   char* imageData = new char[width * height * 3];
-  int r, g, b;
-  int yImage, uImage, vImage;
   for(int y = srcImage.height - 1; y >= 0; y--)
   {
-    char* p = imageData + width * 3 * (srcImage.height - 1 - y);
+    unsigned char* p = reinterpret_cast<unsigned char*>(imageData + width * 3 * (srcImage.height - 1 - y));
     const Image::Pixel* cur = &srcImage[y][0];
     const Image::Pixel* end = cur + srcImage.width;
-    for(; cur < end; cur++)
+    for(; cur < end; cur++, p += 3)
     {
-      yImage = int(cur->y) << 14;
-      uImage = int(cur->cr) - 128;
-      vImage = int(cur->cb) - 128;
-
-      r = (yImage + factor3 * uImage) >> 14;
-      g = (yImage - factor2 * vImage - factor4 * uImage) >> 14;
-      b = (yImage + factor1 * vImage) >> 14;
-
-      *p++ = (char)(r < 0 ? 0 : (r > 255 ? 255 : r));
-      *p++ = (char)(g < 0 ? 0 : (g > 255 ? 255 : g));
-      *p++ = (char)(b < 0 ? 0 : (b > 255 ? 255 : b));
+      ColorModelConversions::fromYUVToRGB(cur->y, cur->cb, cur->cr, p[0], p[1], p[2]);
     }
   }
   return imageData;
 }
 
-DebugDrawing3D::Image3D::~Image3D() {if(image) delete image;}
+DebugDrawing3D::Image3D::~Image3D()
+{
+  if(image)
+    delete image;
+}
 
 const DebugDrawing3D::Image3D& DebugDrawing3D::Image3D::operator=(const DebugDrawing3D::Image3D& other)
 {
-  if(image) delete image;
-  (Element&) *this = other;
+  if(image)
+    delete image;
+
+  (Element&)*this = other;
   point = other.point;
   rotation = other.rotation;
   width = other.width;
   height = other.height;
   image = other.image;
+
   // dirty hack: works only for the current use of this class
-  const_cast<Image3D&>(other).image = 0;
+  const_cast<Image3D&>(other).image = nullptr;
   return *this;
 }

@@ -1,37 +1,30 @@
 /**
-* @file Controller/Views/ColorSpaceView.cpp
-*
-* Implementation of class ColorSpaceView
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Controller/Views/ColorSpaceView.cpp
+ *
+ * Implementation of class ColorSpaceView
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "Controller/RobotConsole.h"
 #include "ColorSpaceView.h"
 #include "Platform/Thread.h"
 #include "Controller/Visualization/OpenGLMethods.h"
-#ifdef OSX
+#ifdef MACOS
 #include <gl.h>
 #else
 #include <GL/gl.h>
 #endif
 
-ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, bool upperCam)
-  : View3D(fullName, b),
-    console(c),
-    name(n),
-    colorModel(cm),
-    channel(ch),
-    lastTimeStamp(0),
-    upperCam(upperCam)
-{
-}
+ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, bool upperCam) :
+  View3D(fullName, b), console(c), name(n), colorModel(cm), channel(ch), upperCam(upperCam)
+{}
 
 void ColorSpaceView::updateDisplayLists()
 {
   SYNC_WITH(console);
-  Image* image = 0,
-       * raw = 0;
+  DebugImage* image = nullptr;
+  DebugImage* raw = nullptr;
 
   RobotConsole::Images& currentImages = upperCam ? console.upperCamImages : console.lowerCamImages;
   RobotConsole::Images::const_iterator i = currentImages.find(name);
@@ -52,14 +45,13 @@ void ColorSpaceView::updateDisplayLists()
                                            int(background.y() * 255) ^ 0xc0,
                                            int(background.z() * 255) ^ 0xc0);
     else
-      OpenGLMethods::paintCubeToOpenGLList(
-        image->width, image->height, 128,
-        cubeId, true,
-        127, //scale
-        -image->width / 2, -image->height / 2, -65, // offsets
-        int(background.x() * 255) ^ 0xc0,
-        int(background.y() * 255) ^ 0xc0,
-        int(background.z() * 255) ^ 0xc0);
+      OpenGLMethods::paintCubeToOpenGLList(image->getImageWidth(), image->height, 128,
+                                           cubeId, true,
+                                           127, //scale
+                                           -image->getImageWidth() / 2, -image->height / 2, -65, // offsets
+                                           int(background.x() * 255) ^ 0xc0,
+                                           int(background.y() * 255) ^ 0xc0,
+                                           int(background.z() * 255) ^ 0xc0);
 
     OpenGLMethods::paintImagePixelsToOpenGLList(*image, colorModel, channel - 1, false, colorsId);
     lastTimeStamp = image->timeStamp;
@@ -77,7 +69,7 @@ void ColorSpaceView::updateDisplayLists()
 bool ColorSpaceView::needsUpdate() const
 {
   SYNC_WITH(console);
-  Image* image = 0;
+  DebugImage* image = nullptr;
   RobotConsole::Images& currentImages = upperCam ? console.upperCamImages : console.lowerCamImages;
   RobotConsole::Images::const_iterator i = currentImages.find(name);
   if(i != currentImages.end())

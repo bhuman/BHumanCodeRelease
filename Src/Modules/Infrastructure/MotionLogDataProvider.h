@@ -6,18 +6,16 @@
 
 #pragma once
 
+#include "LogDataProvider.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Representations/Infrastructure/SensorData/UsSensorData.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Tools/MessageQueue/InMessage.h"
-#include "Tools/Module/Module.h"
-#include "LogDataProvider.h"
 
 MODULE(MotionLogDataProvider,
 {,
@@ -32,13 +30,12 @@ MODULE(MotionLogDataProvider,
   PROVIDES(OwnTeamInfo),
   PROVIDES(RawGameInfo),
   PROVIDES(RobotInfo),
-  PROVIDES(UsSensorData),
 });
 
 class MotionLogDataProvider : public MotionLogDataProviderBase, public LogDataProvider
 {
 private:
-  static PROCESS_LOCAL MotionLogDataProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static thread_local MotionLogDataProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
   bool frameDataComplete; /**< Were all messages of the current frame received? */
   OdometryData lastOdometryData;
 
@@ -64,7 +61,6 @@ public:
   void update(OwnTeamInfo&) {}
   void update(RawGameInfo&) {}
   void update(RobotInfo&) {}
-  void update(UsSensorData&) {}
 
   /**
    * The method is called for every incoming debug message.

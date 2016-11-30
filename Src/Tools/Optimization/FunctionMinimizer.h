@@ -1,14 +1,17 @@
+/**
+ * @file Tools/Optimization/FunctionMinimizer.h
+ * A one-dimensional downhill simplex optimizer
+ * @author Colin Graf
+ * @author Alexis Tsogias
+ */
+
 #pragma once
 
-/**
- * An one-dimensional downhill simplex optimizer
- */
 class FunctionMinimizer
 {
 public:
-  class Function
+  struct Function
   {
-  private:
     unsigned counter = 0;
 
   public:
@@ -21,5 +24,5 @@ public:
     virtual float function(float val) const = 0;
   };
 
-  static float minimize(Function& function, float minVal, float maxVal, float start, float startDelta, float terminationCriterion, bool& clipped);
+  static float minimize(Function& function, float minVal, float maxVal, float startVal, float startDelta, float terminationCriterion, bool& clipped);
 };

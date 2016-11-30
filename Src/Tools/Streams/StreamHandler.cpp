@@ -1,7 +1,7 @@
 #include "Platform/BHAssert.h"
 #include "Tools/Math/Angle.h"
-#include "Tools/Streams/StreamHandler.h"
-#include "Tools/Streams/Streamable.h"
+#include "StreamHandler.h"
+#include "Streamable.h"
 #include <string>
 #include <cstring>
 
@@ -264,7 +264,7 @@ bool StreamHandler::areSpecificationsForTypesCompatible(StreamHandler& other, st
       index2 -= type[index2 - 4] == ' ' ? 4 : 3;
     }
     std::string baseType = type.substr(0, index2);
-    std::string size = type.substr(index + 1, type.size() - index - 2);
+    std::string size = type.substr(index, type.size() - index - 1);
 
     index = otherType.size();
     while(otherType[index - 1] != '[')
@@ -276,7 +276,7 @@ bool StreamHandler::areSpecificationsForTypesCompatible(StreamHandler& other, st
       index2 -= otherType[index2 - 4] == ' ' ? 4 : 3;
     }
     std::string otherBaseType = otherType.substr(0, index2);
-    std::string otherSize = otherType.substr(index + 1, otherType.size() - index - 2);
+    std::string otherSize = otherType.substr(index, otherType.size() - index - 1);
 
     return size == otherSize && areSpecificationsForTypesCompatible(other, baseType, otherBaseType);
   }

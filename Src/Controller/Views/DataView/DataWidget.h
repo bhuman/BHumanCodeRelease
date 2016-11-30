@@ -1,4 +1,4 @@
-/*
+/**
  * DataWidget.h
  *
  *  Created on: Apr 17, 2012
@@ -24,28 +24,40 @@ public:
 
   ~DataWidget();
 
-  virtual QWidget* getWidget() {return this;}
+  virtual QWidget* getWidget() { return this; }
 
   virtual void update();
 
-  virtual bool canClose() {return true;}
+  virtual bool canClose() { return true; }
 
-  virtual QMenu* createFileMenu() const {return 0;}
+  virtual QMenu* createFileMenu() const { return 0; }
   virtual QMenu* createUserMenu() const;
-  virtual QMenu* createEditMenu() const {return 0;}
+  virtual QMenu* createEditMenu() const { return 0; }
 
   /**
-  * Sets the root property which is displayed by this widget.
-  * @note The property must have been created using the manager specified in the constructor.
-  */
+   * Sets the root property which is displayed by this widget.
+   * @note The property must have been created using the manager specified in the constructor.
+   */
   void setRootProperty(QtProperty* pRootProperty);
 
   void setUnchangedButtonEnabled(bool value);
 
   void setSetButtonEnabled(bool value);
 
+  bool isSetButtonEnabled() const;
+
 protected:
   virtual void itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* preceedingItem);
+
+private:
+  DataView& theView;
+  QtProperty* pTheCurrentProperty = nullptr; /**< Pointer to the property that should be displayed */
+  PropertyEditorFactory theEditorFactory; /**< provides qt widgets for properties */
+  QtVariantPropertyManager& theManager; /**< reference to the manager that has been used to create the properties */
+  bool theRootPropertyHasChanged = false; /**< True when the root property has changed*/
+  QAction* pSetAction;
+  QAction* pUnchangedAction;
+  QAction* pAutoSetAction;
 
 private slots:
   /** Is called when the set menu entry was selected. */
@@ -55,13 +67,5 @@ private slots:
 
   void unchangedPressed();
 
-private:
-  DataView& theView;
-  QtProperty* pTheCurrentProperty; /**< Pointer to the property that should be displayed */
-  PropertyEditorFactory theEditorFactory; /**< provides qt widgets for properties */
-  QtVariantPropertyManager& theManager; /**< reference to the manager that has been used to create the properties */
-  bool theRootPropertyHasChanged; /**< True when the root property has changed*/
-  QAction* pSetAction;
-  QAction* pUnchangedAction;
-  QAction* pAutoSetAction;
+  void valueChanged(QtProperty*, const QVariant&);
 };

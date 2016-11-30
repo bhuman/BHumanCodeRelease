@@ -5,10 +5,16 @@
 #include <QPalette>
 #include <QPushButton>
 #include <QResizeEvent>
-#include <QScrollBar>
 #include <QtCore>
+#include <QScrollBar>
 #include <QApplication>
+
+#if QT_VERSION >= 0x050000
+#include <QtConcurrent>
+#endif
+
 #include <QMessageBox>
+
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/ui/CommandLineEdit.h"

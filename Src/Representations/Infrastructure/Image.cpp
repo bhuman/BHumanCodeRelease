@@ -7,17 +7,18 @@
 #include <cstring>
 
 #include "Image.h"
-#include "Tools/ColorModelConversions.h"
+#include "Tools/ImageProcessing/ColorModelConversions.h"
 #include "Platform/BHAssert.h"
 
-const int Image::maxResolutionWidth;
-const int Image::maxResolutionHeight;
+constexpr int Image::maxResolutionWidth;
+constexpr int Image::maxResolutionHeight;
 
 Image::Image(bool initialize, int width, int height) :
-  width(width),
-  height(height),
-  widthStep(width * 2)
+  width(width), height(height), widthStep(width * 2)
 {
+  ASSERT(width <= maxResolutionWidth);
+  ASSERT(height <= maxResolutionHeight);
+
   // allocate full size image and keep it that way indepentent of resolution
   image = new Pixel[maxResolutionWidth * maxResolutionHeight * 2];
   if(initialize)
@@ -53,7 +54,7 @@ Image& Image::operator=(const Image& other)
     isReference = false;
   }
 
-  const int size = width * sizeof(Pixel)* (isFullSize ? 2 : 1);
+  const int size = width * sizeof(Pixel) * (isFullSize ? 2 : 1);
   for(int y = 0; y < height; ++y)
     memcpy((*this)[y], other[y], size);
 
@@ -75,18 +76,41 @@ void Image::setImage(Pixel* buffer)
   image = buffer;
 }
 
+void Image::getSubImage(int x1, int y1, int x2, int y2, Image& subImage) const
+{
+  ASSERT(x1 <= x2);
+  ASSERT(y1 <= y2);
+
+  int width = x2 - x1;
+  int height = y2 - y1;
+
+  subImage.setResolution(width, height);
+
+  for(int y = 0; y < height; ++y)
+    if(y + y1 < 0 || y + y1 >= this->height)
+      std::memset(subImage[y], 0x80, sizeof(Pixel) * width);
+    else
+      for(int x = 0; x < width; ++x)
+      {
+        if(x + x1 < 0 || x + x1 >= this->width)
+          subImage[y][x].color = 0x80808080;
+        else
+          subImage[y][x] = (*this)[y1 + y][x1 + x];
+      }
+}
+
 void Image::convertFromYCbCrToRGB(const Image& ycbcrImage)
 {
   height = ycbcrImage.height;
   width = ycbcrImage.width;
   for(int y = 0; y < height; ++y)
     for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromYCbCrToRGB(ycbcrImage[y][x].y,
-                                            ycbcrImage[y][x].cb,
-                                            ycbcrImage[y][x].cr,
-                                            (*this)[y][x].r,
-                                            (*this)[y][x].g,
-                                            (*this)[y][x].b);
+      ColorModelConversions::fromYUVToRGB(ycbcrImage[y][x].y,
+                                          ycbcrImage[y][x].cb,
+                                          ycbcrImage[y][x].cr,
+                                          (*this)[y][x].r,
+                                          (*this)[y][x].g,
+                                          (*this)[y][x].b);
 }
 
 void Image::convertFromRGBToYCbCr(const Image& rgbImage)
@@ -95,12 +119,12 @@ void Image::convertFromRGBToYCbCr(const Image& rgbImage)
   width = rgbImage.width;
   for(int y = 0; y < height; ++y)
     for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromRGBToYCbCr(rgbImage[y][x].r,
-                                            rgbImage[y][x].g,
-                                            rgbImage[y][x].b,
-                                            (*this)[y][x].y,
-                                            (*this)[y][x].cb,
-                                            (*this)[y][x].cr);
+      ColorModelConversions::fromRGBToYUV(rgbImage[y][x].r,
+                                          rgbImage[y][x].g,
+                                          rgbImage[y][x].b,
+                                          (*this)[y][x].y,
+                                          (*this)[y][x].cb,
+                                          (*this)[y][x].cr);
 }
 
 void Image::convertFromYCbCrToHSI(const Image& ycbcrImage)
@@ -109,12 +133,12 @@ void Image::convertFromYCbCrToHSI(const Image& ycbcrImage)
   width = ycbcrImage.width;
   for(int y = 0; y < height; ++y)
     for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromYCbCrToHSI(ycbcrImage[y][x].y,
-                                            ycbcrImage[y][x].cb,
-                                            ycbcrImage[y][x].cr,
-                                            (*this)[y][x].h,
-                                            (*this)[y][x].s,
-                                            (*this)[y][x].i);
+      ColorModelConversions::fromYUVToHSI(ycbcrImage[y][x].y,
+                                          ycbcrImage[y][x].cb,
+                                          ycbcrImage[y][x].cr,
+                                          (*this)[y][x].h,
+                                          (*this)[y][x].s,
+                                          (*this)[y][x].i);
 }
 
 void Image::convertFromHSIToYCbCr(const Image& hsiImage)
@@ -123,16 +147,19 @@ void Image::convertFromHSIToYCbCr(const Image& hsiImage)
   width = hsiImage.width;
   for(int y = 0; y < height; ++y)
     for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromHSIToYCbCr(hsiImage[y][x].h,
-                                            hsiImage[y][x].s,
-                                            hsiImage[y][x].i,
-                                            (*this)[y][x].y,
-                                            (*this)[y][x].cb,
-                                            (*this)[y][x].cr);
+      ColorModelConversions::fromHSIToYUV(hsiImage[y][x].h,
+                                          hsiImage[y][x].s,
+                                          hsiImage[y][x].i,
+                                          (*this)[y][x].y,
+                                          (*this)[y][x].cb,
+                                          (*this)[y][x].cr);
 }
 
 void Image::setResolution(int newWidth, int newHeight, bool fullSize)
 {
+  ASSERT(width <= maxResolutionWidth);
+  ASSERT(height <= maxResolutionHeight);
+
   width = newWidth;
   height = newHeight;
   widthStep = width * 2;

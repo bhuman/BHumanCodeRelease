@@ -4,7 +4,7 @@ libqxt = cppStaticLibrary + {
   root = "$(utilDirRoot)/libqxt"
   files = {"$(utilDirRoot)/libqxt/**.cpp" = cppSource}
   qtMocFiles = {
-    "$(utilDirRoot)/libqxt/qxtspanslider.h",
+    "$(utilDirRoot)/libqxt/qxtspanslider.h"
     "$(utilDirRoot)/libqxt/qxtspanslider_p.h"
   }
   files += qtFilesNew
@@ -17,40 +17,27 @@ libqxt = cppStaticLibrary + {
   }
 
   includePaths = {
-    "$(buildDir)",
-    "$(utilDirRoot)/libqxt",
+    "$(buildDir)"
+    "$(utilDirRoot)/libqxt"
     if (host == "Linux") {
-      "/usr/include/qt4/QtCore",
-      "/usr/include/qt4/QtGui",
-      "/usr/include/qt4",
-      "/usr/include/QtCore",
-      "/usr/include/QtGui",
-      "/usr/include/Qt",
+      "/usr/include/qt5"
+      "/usr/include/qt5/QtCore"
+      "/usr/include/qt5/QtGui"
+      "/usr/include/qt5/QtWidgets"
+      "/usr/include/qt"
+      "/usr/include/qt/QtCore"
+      "/usr/include/qt/QtGui"
+      "/usr/include/qt/QtWidgets"
+      "/usr/include/x86_64-linux-gnu/qt5"
+      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
+      "/usr/include/x86_64-linux-gnu/qt5/QtGui"
+      "/usr/include/x86_64-linux-gnu/qt5/QtWidgets"
     }
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include",
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
-    }
-  }
-
-  libPaths = {
-    if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib",
-    }
-  }
-
-  libs = {
-    if (host == "Win32") {
-      "QtCore4", "QtGui4"
-    } else if (platform == "Linux") {
-      "QtCore", "QtGui"
-    }
-  }
-
-  cppFlags += {
-    if (platform == "Linux") {
-      "-fPIC",  -"-Wconversion"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGui"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtWidgets"
     }
   }
 }

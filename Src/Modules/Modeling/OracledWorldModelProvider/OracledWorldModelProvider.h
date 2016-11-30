@@ -1,10 +1,10 @@
 /**
-* @file Modules/Infrastructure/OracledWorldModelProvider.h
-*
-* This file implements a module that provides models based on simulated data.
-*
-* @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
-*/
+ * @file Modules/Infrastructure/OracledWorldModelProvider.h
+ *
+ * This file implements a module that provides models based on simulated data.
+ *
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
+ */
 
 #pragma once
 
@@ -22,6 +22,7 @@ MODULE(OracledWorldModelProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   PROVIDES(BallModel),
+  PROVIDES(BallModel3D),
   PROVIDES(GroundTruthBallModel),
   PROVIDES(ObstacleModel),
   PROVIDES(RobotPose),
@@ -34,9 +35,9 @@ MODULE(OracledWorldModelProvider,
 });
 
 /**
-* @class OracledWorldModelProvider
-* A module that provides several models
-*/
+ * @class OracledWorldModelProvider
+ * A module that provides several models
+ */
 class OracledWorldModelProvider: public OracledWorldModelProviderBase
 {
 public:
@@ -51,40 +52,46 @@ private:
   void computeRobotPose();
 
   /** One main function, might be called every cycle
-  * @param ballModel The data struct to be filled
-  */
+   * @param ballModel The data struct to be filled
+   */
   void update(BallModel& ballModel);
 
   /** One main function, might be called every cycle
-  * @param groundTruthBallModel The data struct to be filled
-  */
+   * @param ballModel3D The data struct to be filled
+   */
+  void update(BallModel3D& ballModel);
+
+  /** One main function, might be called every cycle
+   * @param groundTruthBallModel The data struct to be filled
+   */
   void update(GroundTruthBallModel& groundTruthBallModel);
 
   /** One main function, might be called every cycle
-  * @param obstacleModel The data struct to be filled
-  */
+   * @param obstacleModel The data struct to be filled
+   */
   void update(ObstacleModel& obstacleModel);
 
   /** One main function, might be called every cycle
-  * @param robotPose The data struct to be filled
-  */
+   * @param robotPose The data struct to be filled
+   */
   void update(RobotPose& robotPose);
 
   /** One main function, might be called every cycle
-  * @param groundTruthRobotPose The data struct to be filled
-  */
+   * @param groundTruthRobotPose The data struct to be filled
+   */
   void update(GroundTruthRobotPose& groundTruthRobotPose);
 
   /** Converts ground truth player data to an obstacle
-  * @param player A player
-  * @param obstacleModel The model to which the player will be added
-  * @param isRed Whether a player is in team red or not
-  */
+   * @param player A player
+   * @param obstacleModel The model to which the player will be added
+   * @param isRed Whether a player is in team red or not
+   */
   void playerToObstacle(const GroundTruthWorldState::GroundTruthPlayer& player, ObstacleModel& obstacleModel, const bool isTeammate) const;
 
   unsigned int lastBallModelComputation;  /*< Time of last ball model computation*/
   unsigned int lastRobotPoseComputation;  /*< Time of last robot pose computation*/
   Vector2f     lastBallPosition = Vector2f::Zero(); /*< The ball position after the last computation*/
+  Vector3f     lastBallPosition3D = Vector3f::Zero(); /*< The ball position after the last computation*/
   BallModel    theBallModel;              /*< The current ball model*/
   RobotPose    theRobotPose;              /*< The current robot pose*/
 };

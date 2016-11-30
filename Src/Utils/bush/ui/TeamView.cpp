@@ -15,13 +15,14 @@
 #include <QSlider>
 #include <QToolTip>
 #include <QCursor>
+#include <QAction>
 
 void TeamView::init()
 {
   if(team)
   {
     QFormLayout* layout = new QFormLayout();
-    QHBoxLayout * settingsGrid = new QHBoxLayout();
+    QHBoxLayout* settingsGrid = new QHBoxLayout();
     settingsGrid->setSpacing(6);
     settingsGrid->setAlignment(Qt::AlignmentFlag::AlignLeft);
 
@@ -36,8 +37,14 @@ void TeamView::init()
     cbColor->addItem("blue");
     cbColor->addItem("yellow");
     cbColor->addItem("black");
+    cbColor->addItem("white");
+    cbColor->addItem("green");
+    cbColor->addItem("orange");
+    cbColor->addItem("purple");
+    cbColor->addItem("brown");
+    cbColor->addItem("gray");
     cbColor->setCurrentIndex(cbColor->findText(fromString(team->color)));
-    settingsGrid->addWidget(new QLabel("Color:", cbColor));
+    settingsGrid->addWidget(new QLabel("<b>Color:</b>", cbColor));
     settingsGrid->addWidget(cbColor);
     connect(cbColor, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(colorChanged(const QString&)));
 
@@ -46,7 +53,7 @@ void TeamView::init()
     sbNumber->setButtonSymbols(QAbstractSpinBox::NoButtons);
     sbNumber->setMaximumWidth(18);
     sbNumber->setValue(team->number);
-    settingsGrid->addWidget(new QLabel("Number:", sbNumber));
+    settingsGrid->addWidget(new QLabel("<b>Number:</b>", sbNumber));
     settingsGrid->addWidget(sbNumber);
     connect(sbNumber, SIGNAL(valueChanged(int)), this, SLOT(numberChanged(int)));
 
@@ -55,7 +62,7 @@ void TeamView::init()
     for(size_t i = 0; i < locations.size(); ++i)
       cbLocation->addItem(fromString(locations[i]));
     cbLocation->setCurrentIndex(cbLocation->findText(fromString(team->location)));
-    settingsGrid->addWidget(new QLabel("Location:", lePort));
+    settingsGrid->addWidget(new QLabel("<b>Location:</b>", lePort));
     settingsGrid->addWidget(cbLocation);
     connect(cbLocation, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(locationChanged(const QString&)));
 
@@ -64,7 +71,7 @@ void TeamView::init()
     for(size_t i = 0; i < configs.size(); ++i)
       cbWlanConfig->addItem(fromString(configs[i]));
     cbWlanConfig->setCurrentIndex(cbWlanConfig->findText(fromString(team->wlanConfig)));
-    settingsGrid->addWidget(new QLabel("Wlan:", cbWlanConfig));
+    settingsGrid->addWidget(new QLabel("<b>Wlan:<b/>", cbWlanConfig));
     settingsGrid->addWidget(cbWlanConfig);
     connect(cbWlanConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(wlanConfigChanged(const QString&)));
 
@@ -73,7 +80,7 @@ void TeamView::init()
     cbBuildConfig->addItem("Release");
     cbBuildConfig->addItem("Debug");
     cbBuildConfig->setCurrentIndex(cbBuildConfig->findText(fromString(team->buildConfig)));
-    settingsGrid->addWidget(new QLabel("Conf:", cbBuildConfig));
+    settingsGrid->addWidget(new QLabel("<b>Conf:</b>", cbBuildConfig));
     settingsGrid->addWidget(cbBuildConfig);
     connect(cbBuildConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(buildConfigChanged(const QString&)));
 
@@ -82,7 +89,7 @@ void TeamView::init()
     sVolume->setMaximum(100);
     sVolume->setTickInterval(1);
     sVolume->setValue(team->volume);
-    settingsGrid->addWidget(new QLabel("Vol:", sVolume));
+    settingsGrid->addWidget(new QLabel("<b>Vol:</b>", sVolume));
     settingsGrid->addWidget(sVolume);
     connect(sVolume, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(const int)));
 
@@ -93,14 +100,26 @@ void TeamView::init()
     cbDeployDevice->addItem("lan");
     cbDeployDevice->addItem("wlan");
     cbDeployDevice->setCurrentIndex(cbDeployDevice->findText(fromString(team->deployDevice)));
-    settingsGrid->addWidget(new QLabel("Device:", cbDeployDevice));
+    settingsGrid->addWidget(new QLabel("<b>Device:</b>", cbDeployDevice));
     settingsGrid->addWidget(cbDeployDevice);
     connect(cbDeployDevice, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(deployDeviceChanged(const QString&)));
 
+    sbMagic = new QSpinBox(this);
+    sbMagic->setRange(-1, 255);
+    sbMagic->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    sbMagic->setMaximumWidth(23);
+    sbMagic->setValue(team->magicNumber);
+    settingsGrid->addWidget(new QLabel("<b>Magic Number:</b>", sbMagic));
+    settingsGrid->addWidget(sbMagic);
+    connect(sbMagic, SIGNAL(valueChanged(int)), this, SLOT(magicNumberChanged(int)));
+
     layout->addRow(settingsGrid);
+
     QFrame* hr = new QFrame(this);
     hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
-    layout->addRow(hr);
+    QLabel* players = new QLabel("<b>Players</b>");
+    layout->addRow(players, hr);
+    layout->setAlignment(hr, Qt::AlignVCenter);
 
     QGridLayout* teamGrid = new QGridLayout();
     generateRobotViews(teamGrid);
@@ -128,22 +147,23 @@ TeamView::TeamView(TeamSelector* parent, Team* team)
 
 void TeamView::generateRobotViews(QGridLayout* teamGrid)
 {
-  std::vector<std::vector<Robot*> > robots = team->getPlayersPerNumber();
+  std::vector<std::vector<Robot*>> robots = team->getPlayersPerNumber();
   size_t max = robots.size();
-  bool backup = true;
   for(size_t j = 0; j < 2; ++j)
     for(size_t i = 0; i < max; ++i)
     {
-      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short) (i + 1), (unsigned short) j);
+      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short)(i + 1), (unsigned short) j);
       robotViews.push_back(rv);
       teamGrid->addWidget(rv, j > 0 ? 2 : 0, (int) i);
     }
-  if(backup)
-  {
-    QFrame* hr = new QFrame(this);
-    hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
-    teamGrid->addWidget(hr, 1, 0, 1, (int) max);
-  }
+  QFrame* hr = new QFrame(this);
+  hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
+  QFormLayout* subTitle = new QFormLayout();
+  teamGrid->addLayout(subTitle, 1, 0, 1, (int) max, Qt::AlignVCenter);
+
+  QLabel* substitutes = new QLabel("<b>Substitutes</b> (NAOqi will not start)");
+  subTitle->addRow(substitutes, hr);
+  subTitle->setAlignment(hr, Qt::AlignVCenter);
 }
 
 void TeamView::update(size_t index)
@@ -162,7 +182,7 @@ void TeamView::numberChanged(int number)
   if(team)
   {
     team->number = (unsigned short) number;
-    team->port = (unsigned short) (10000 + number);
+    team->port = (unsigned short)(10000 + number);
   }
 }
 
@@ -197,4 +217,10 @@ void TeamView::deployDeviceChanged(const QString& device)
 {
   if(team)
     team->deployDevice = toString(device);
+}
+
+void TeamView::magicNumberChanged(const int magicnumber)
+{
+  if (team)
+    team->magicNumber = magicnumber;
 }

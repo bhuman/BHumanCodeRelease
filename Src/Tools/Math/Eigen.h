@@ -20,7 +20,7 @@ class Angle;
 using Array2a = Eigen::Array<Angle, 2, 1>;
 using Array2d = Eigen::Array2d;
 using Array2f = Eigen::Array2f;
-using Array3f = Eigen::Array2f;
+using Array3f = Eigen::Array3f;
 
 using Vector2a = Eigen::Matrix<Angle, 2, 1>;
 using Vector2d = Eigen::Vector2d;

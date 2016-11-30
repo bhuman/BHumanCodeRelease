@@ -1,10 +1,11 @@
 /**
-* @file GroundContactDetector.cpp
-* Implementation of module GroundContactDetector.
-* @author Colin Graf
-*/
+ * @file GroundContactDetector.cpp
+ * Implementation of module GroundContactDetector.
+ * @author Colin Graf
+ */
 
 #include "GroundContactDetector.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
 MAKE_MODULE(GroundContactDetector, sensing)
@@ -33,8 +34,8 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
                         theMotionInfo.motion != MotionRequest::specialAction && theMotionInfo.motion != MotionRequest::getUp) ||
                        (theMotionRequest.motion != MotionRequest::walk && theMotionRequest.motion != MotionRequest::stand &&
                         theMotionRequest.motion != MotionRequest::specialAction && theMotionRequest.motion != MotionRequest::getUp) ||
-                       (theMotionInfo.motion == MotionRequest::walk && theMotionInfo.walkRequest.kickType != WalkRequest::none) ||
-                       (theMotionRequest.motion == MotionRequest::walk && theMotionRequest.walkRequest.kickType != WalkRequest::none) ||
+                       (theMotionInfo.motion == MotionRequest::walk && theMotionInfo.walkRequest.walkKickRequest.kickType != WalkKicks::none) ||
+                       (theMotionRequest.motion == MotionRequest::walk && theMotionRequest.walkRequest.walkKickRequest.kickType != WalkKicks::none) ||
                        (theMotionInfo.motion == MotionRequest::specialAction && theMotionInfo.specialActionRequest.specialAction != SpecialActionRequest::standHigh) ||
                        (theMotionRequest.motion == MotionRequest::specialAction && theMotionRequest.specialActionRequest.specialAction != SpecialActionRequest::standHigh);
   if(!ignoreSensors)
@@ -60,7 +61,7 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
           OUTPUT_ERROR("lost ground contact via angle");
         if((calibratedAccZValues.isFull() && calibratedAccZValues.getAverage() > p.contactMaxAccZ))
           OUTPUT_ERROR("lost ground contact via acc");
-        */
+         */
 
         contact = false;
         accNoises.clear();

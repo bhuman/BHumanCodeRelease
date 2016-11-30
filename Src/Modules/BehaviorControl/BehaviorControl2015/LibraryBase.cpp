@@ -9,8 +9,7 @@
 namespace Behavior2015
 {
   LibraryBase::LibraryBase() :
-    BehaviorBase(*Libraries::theInstance),
-    libCodeRelease(Libraries::theInstance->libCodeRelease)
+    BehaviorBase(*Libraries::theInstance)
   {
     Libraries::theInstance->libraries.push_back(this);
   }

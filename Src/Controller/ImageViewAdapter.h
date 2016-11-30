@@ -24,6 +24,7 @@ class ImageViewAdapter
 {
 private:
   static std::multimap<const std::string, PointListener*> listeners;
+
 public:
   static void fireClick(const std::string view, const Vector2i& point, bool upper, bool deletionRequired);
   static bool addListener(PointListener* listener, const std::string view);

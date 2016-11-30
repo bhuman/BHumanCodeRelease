@@ -13,13 +13,15 @@ void SphereAppearance::assembleAppearances() const
   glPushMatrix();
   glMultMatrixf(transformation);
 
-  surface->set();
+  surface->set(false);
 
   GLUquadricObj* q = gluNewQuadric();
+  gluQuadricNormals(q, GLU_SMOOTH);
+  gluQuadricTexture(q, GL_TRUE);
   gluSphere(q, radius, 16, 16);
   gluDeleteQuadric(q);
 
-  surface->unset();
+  surface->unset(false);
 
   GraphicalObject::assembleAppearances();
   glPopMatrix();

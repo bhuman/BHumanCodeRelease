@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Network/TcpComm.h"
+#include "Tools/Communication/TcpComm.h"
 
 #define MAX_PACKAGE_SIZE 67108864 // max package size that can be received. prevent from allocating too much buffer (max ~64 MB)
 
@@ -36,19 +36,19 @@ public:
   TcpConnection() = default;
 
   /**
-  * Constructor.
-  * The constructor will first try to connect another process as
-  * a client. If this does not work, it will open the port as a
-  * server.
-  * @param ip The ip address of the communication partner. If 0, the port
-  *           will be opened as server.
-  * @param port The port under which will be communicated.
-  * @param handshake The handshake mode.
-  * @param maxPackageSendSize The maximum size of an outgoing package.
-  *                           If 0, this setting is ignored.
-  * @param maxPackageReceiveSize The maximum size of an incouming package.
-  *                              If 0, this setting is ignored.
-  */
+   * Constructor.
+   * The constructor will first try to connect another process as
+   * a client. If this does not work, it will open the port as a
+   * server.
+   * @param ip The ip address of the communication partner. If 0, the port
+   *           will be opened as server.
+   * @param port The port under which will be communicated.
+   * @param handshake The handshake mode.
+   * @param maxPackageSendSize The maximum size of an outgoing package.
+   *                           If 0, this setting is ignored.
+   * @param maxPackageReceiveSize The maximum size of an incouming package.
+   *                              If 0, this setting is ignored.
+   */
   TcpConnection(const char* ip, int port, Handshake handshake = noHandshake,
                 int maxPackageSendSize = 0, int maxPackageReceiveSize = 0)
   {
@@ -58,60 +58,60 @@ public:
   ~TcpConnection() { if(tcpComm) delete tcpComm; }
 
   /**
-  * The function will first try to connect another process as
-  * a client. If this does not work, it will open the port as a
-  * server.
-  * @param ip The ip address of the communication partner.
-  * @param port The port under which will be communicated.
-  * @param handshake The handshake mode.
-  * @param maxPackageSendSize The maximum size of packages to send.
-  * @param maxPackageReceiveSize The maximum size of packages to receive.
-  */
+   * The function will first try to connect another process as
+   * a client. If this does not work, it will open the port as a
+   * server.
+   * @param ip The ip address of the communication partner.
+   * @param port The port under which will be communicated.
+   * @param handshake The handshake mode.
+   * @param maxPackageSendSize The maximum size of packages to send.
+   * @param maxPackageReceiveSize The maximum size of packages to receive.
+   */
   void connect(const char* ip, int port, Handshake handshake = noHandshake,
                int maxPackageSendSize = 0, int maxPackageReceiveSize = 0);
 
   /**
-  * The function sends and receives data.
-  * @param dataToSend The data to be send. The function will not free the buffer.
-  * @param sendSize The size of data to send. If 0, no data is sent.
-  * @param dataRead If data has been read, the parameter is initialzed with
-  *                 the address of a buffer pointing to that data. The
-  *                 buffer has to be freed manually.
-  * @param readSize The size of the block read. "dataRead" is only valid
-  *                 (and has to be freed) if this parameter contains a
-  *                 positive number after the call to the function.
-  * @return Returns true if the data has been sent.
-  */
+   * The function sends and receives data.
+   * @param dataToSend The data to be send. The function will not free the buffer.
+   * @param sendSize The size of data to send. If 0, no data is sent.
+   * @param dataRead If data has been read, the parameter is initialzed with
+   *                 the address of a buffer pointing to that data. The
+   *                 buffer has to be freed manually.
+   * @param readSize The size of the block read. "dataRead" is only valid
+   *                 (and has to be freed) if this parameter contains a
+   *                 positive number after the call to the function.
+   * @return Returns true if the data has been sent.
+   */
   bool sendAndReceive(const unsigned char* dataToSend, int sendSize, unsigned char*& dataRead, int& readSize);
 
   /**
-  * The function states whether the connection is still established.
-  * @return Does the connection still exist?
-  */
+   * The function states whether the connection is still established.
+   * @return Does the connection still exist?
+   */
   bool isConnected() const { return tcpComm && tcpComm->connected(); }
 
   /**
-  * The function states whether this system is the client in the connection.
-  * @return Is it the client?
-  */
+   * The function states whether this system is the client in the connection.
+   * @return Is it the client?
+   */
   bool isClient() const { return client; }
 
   /**
-  * The function returns the overall number of bytes sent so far by this object.
-  * @return The number of bytes sent since this object was created.
-  */
+   * The function returns the overall number of bytes sent so far by this object.
+   * @return The number of bytes sent since this object was created.
+   */
   int getOverallBytesSent() const { return tcpComm ? tcpComm->getOverallBytesSent() : 0; }
 
   /**
-  * The function returns the overall number of bytes received so far by this object.
-  * @return The number of bytes received since this object was created.
-  */
+   * The function returns the overall number of bytes received so far by this object.
+   * @return The number of bytes received since this object was created.
+   */
   int getOverallBytesReceived() const { return tcpComm ? tcpComm->getOverallBytesReceived() : 0; }
 
   /**
-  * The functions sends a heartbeart.
-  * @return Was the heartbeat successfully sent?
-  */
+   * The functions sends a heartbeart.
+   * @return Was the heartbeat successfully sent?
+   */
   bool sendHeartbeat();
 
 private:

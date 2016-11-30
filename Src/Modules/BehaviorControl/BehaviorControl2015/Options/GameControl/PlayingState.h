@@ -1,10 +1,15 @@
 option(PlayingState)
 {
-  initial_state(play)
+  initial_state(demo)
   {
+    transition
+    {
+      //if(!libDemo.parameters.isDemoActive)
+      //  goto selectAction;
+    }
     action
     {
-      Striker();
+      Demo();
     }
   }
 }

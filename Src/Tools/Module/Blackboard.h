@@ -35,7 +35,7 @@ private:
   /**
    * Retrieve the blackboard entry for the name of a representation.
    * @param representation The name of the representation.
-   * @return The blackboard entry. If it does not exist, the it will
+   * @return The blackboard entry. If it does not exist, it will
    * be created, but not the representation.
    */
   Entry& get(const char* representation);

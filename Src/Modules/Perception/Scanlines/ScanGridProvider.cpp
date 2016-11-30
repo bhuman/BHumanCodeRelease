@@ -14,6 +14,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
 {
   scanGrid.y.clear();
   scanGrid.lines.clear();
+  scanGrid.yStarts.clear();
 
   if(!theCameraMatrix.isValid)
     return; // Cannot compute grid without camera matrix
@@ -73,22 +74,22 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   // Determine a max step size that fulfills maxXStep2 = minXStep * 2^n, maxXStep2 <= maxXStep.
   // Also compute lower y coordinates for the different lengths of scanlines.
   int maxXStep2 = minXStep;
-  std::vector<int> yStarts;
+
   while(maxXStep2 * 2 <= maxXStep)
   {
     float distance = Geometry::getDistanceBySize(theCameraInfo, theFieldDimensions.ballRadius * ballWidthRatio, static_cast<float>(maxXStep2));
     VERIFY(Transformation::robotWithCameraRotationToImage(Vector2f(distance, 0), theCameraMatrix, theCameraInfo, pointInImage));
-    yStarts.push_back(static_cast<int>(pointInImage.y() + 0.5f));
+    scanGrid.yStarts.push_back(static_cast<int>(pointInImage.y() + 0.5f));
     maxXStep2 *= 2;
   }
-  yStarts.push_back(theCameraInfo.height);
+  scanGrid.yStarts.push_back(theCameraInfo.height);
 
   // Determine a pattern with the different lengths of scan lines, in which the longest appears once,
   // the second longest twice, etc. The pattern starts with the longest.
   std::vector<int> yStarts2(maxXStep2 / minXStep);
-  for(size_t i = 0, step = 1; i < yStarts.size(); ++i, step *= 2)
+  for(size_t i = 0, step = 1; i < scanGrid.yStarts.size(); ++i, step *= 2)
     for(size_t j = 0; j < yStarts2.size(); j += step)
-      yStarts2[j] = yStarts[i];
+      yStarts2[j] = scanGrid.yStarts[i];
 
   // Initialize the scan states and the regions.
   const int xStart = theCameraInfo.width % (theCameraInfo.width / minXStep - 1) / 2;
@@ -99,6 +100,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
     int yMax = std::min(yStarts2[i++], theCameraInfo.height);
     i %= yStarts2.size();
     theBodyContour.clipBottom(x, yMax);
+    yMax = std::max(0, yMax);
     const size_t yMaxIndex = std::upper_bound(scanGrid.y.begin(), scanGrid.y.end(), yMax + 1, std::greater<int>()) - scanGrid.y.begin();
     scanGrid.lines.emplace_back(x, yMax, static_cast<unsigned>(yMaxIndex));
   }

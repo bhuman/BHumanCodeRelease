@@ -1,7 +1,7 @@
 /**
  * @file Representations/MotionControl/StandBodyRotation.h
  * This file declares a struct that represents a body rotation for a stand, with the aim of minimize a difference between the current use of the feet.
- * @author jesse
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once

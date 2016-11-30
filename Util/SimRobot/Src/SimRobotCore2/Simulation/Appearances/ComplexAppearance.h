@@ -127,7 +127,7 @@ public:
      */
     virtual void addParent(Element& element);
   };
-  
+
   /**
   * @class TexCoords
   * A texture point library

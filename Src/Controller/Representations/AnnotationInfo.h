@@ -1,7 +1,7 @@
 /**
-* @file AnnotationInfo.cpp
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file AnnotationInfo.cpp
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #pragma once
 
@@ -9,6 +9,8 @@
 #include "Tools/MessageQueue/InMessage.h"
 
 #include <vector>
+
+class AnnotationView;
 
 class AnnotationInfo : public MessageHandler
 {
@@ -21,11 +23,11 @@ public:
     std::string annotation;
   };
 
-  std::vector<AnnotationData> newAnnotations;
-  unsigned timeOfLastMessage;
-
-  AnnotationInfo();
-  bool handleMessage(InMessage& message);
-
   DECLARE_SYNC;
+  std::vector<AnnotationData> newAnnotations;
+  unsigned timeOfLastMessage = 0;
+
+  const AnnotationView* view = nullptr;
+
+  bool handleMessage(InMessage& message);
 };

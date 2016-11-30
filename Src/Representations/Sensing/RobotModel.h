@@ -11,9 +11,10 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointAngles.h"
-#include "Tools/Limbs.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Pose3f.h"
+#include "Tools/RobotParts/Limbs.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 /**
  * @struct RobotModel
@@ -41,9 +42,10 @@ STREAMABLE(RobotModel,
   void setJointData(const JointAngles& jointAngles, const RobotDimensions& robotDimensions, const MassCalibration& massCalibration);
 
   /** Creates a 3-D drawing of the robot model. */
-  void draw() const;
-  ,
-  (Pose3f[Limbs::numOfLimbs]) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
+  void draw() const,
+
+  (ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
+  (Pose3f) soleLeft,
+  (Pose3f) soleRight,
   (Vector3f)(Vector3f::Zero()) centerOfMass, /**< Position of the center of mass (center of gravity) relative to the robot's origin. */
-  (float)(0) totalMass, /**< The mass of the robot. */
 });

@@ -28,17 +28,29 @@ TEST(Rotation, removeZ)
   test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(pi * 3.f / 4.f, 0, pi / 4.f))));
   for(int i = 0; i < 1000; ++i)
   {
-    test_splitZRotation(Quaternionf(AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized())));
+    test_splitZRotation(Quaternionf(AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized())));
   }
-  //Rotation::splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(pi / 3.f, pi / 2.f, pi / 4.f))), xyRot, zRot);
-  //EXPECT_TRUE(Vector3f::UnitZ().isApprox(zRot * Vector3f::UnitZ()));
+
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, 0, 0.5))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, 0.0001f, 0.5))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(pi, 0, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, pi, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, 0, pi))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(pi / 2, 0, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, pi / 2, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, 0, pi / 2))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(pi * 2, 0, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, pi * 2, 0))));
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, 0, pi * 2))));
+
+  test_splitZRotation(Quaternionf(Rotation::AngleAxis::unpack(Vector3f(0, pi, 0.2f))));
 }
 
 TEST(Rotation, AngleAxisPackaging)
 {
   for(int i = 0; i < 1000; ++i)
   {
-    const AngleAxisf aaOrig = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    const AngleAxisf aaOrig = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const AngleAxisf aa = Rotation::AngleAxis::unpack(Rotation::AngleAxis::pack(aaOrig));
     const Vector3f randomVec = Vector3f::Random();
     EXPECT_TRUE((aaOrig * randomVec).isApprox(aa * randomVec));

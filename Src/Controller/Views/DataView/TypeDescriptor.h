@@ -3,7 +3,7 @@
 #include <QString>
 #include <QVariant>
 #include "TypeDeclarations.h"
-#include "Tools/SensorData.h"
+#include "Tools/Motion/SensorData.h"
 
 namespace Type //The namespace is here to fix a VC-compiler bug
 {
@@ -15,10 +15,12 @@ namespace Type //The namespace is here to fix a VC-compiler bug
   {
   public:
     virtual ~TypeDescriptor() = default;
+
     /**
      * Returns the type id which is supported by this descriptor.
      */
     virtual int getSupportedTypeId() = 0;
+
     /**
      * Converts a variant to a readable string.
      * This method should only be called for variants that match this descriptor's type id.
@@ -34,7 +36,7 @@ namespace Type //The namespace is here to fix a VC-compiler bug
     /**
      * Provides a mapping from c++ types to type ids.
      */
-    template <class T>
+    template<class T>
     static int getTypeId();
 
     /**

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Tools/Streams/InStreams.h"
+#include "Tools/Streams/Streamable.h"
 
 class PlatformProcess;
 
@@ -115,9 +116,8 @@ private:
 public:
   /**
    * @param process The process this receiver is associated with.
-   * @param receiverName The connection name of the receiver without the process name.
    */
-  Receiver(PlatformProcess* process, const std::string& receiverName) :
-    ReceiverList(process, receiverName)
+  Receiver(PlatformProcess* process) :
+    ReceiverList(process, Streaming::demangle(typeid(T).name()))
   {}
 };

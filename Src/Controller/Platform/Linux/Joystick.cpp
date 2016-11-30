@@ -1,9 +1,9 @@
 /**
-* @file Controller/Platform/Linux/Joystick.cpp
-* Implementation of the joystick interface class.
-* This is the Linux implementation.
-* @author Colin Graf
-*/
+ * @file Controller/Platform/Linux/Joystick.cpp
+ * Implementation of the joystick interface class.
+ * This is the Linux implementation.
+ * @author Colin Graf
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -27,7 +27,7 @@ bool Joystick::init()
     if(!(usedJoysticks & (1 << i)))
     {
       char devname[16];
-      snprintf(devname, 16, "/dev/input/js%i", i);
+      std::snprintf(devname, 16, "/dev/input/js%i", i);
 
       // try to open device
       jd = open(devname, O_RDONLY | O_NONBLOCK);

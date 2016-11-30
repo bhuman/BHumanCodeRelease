@@ -16,7 +16,7 @@
 #ifdef TARGET_SIM
 #include "Controller/RoboCupCtrl.h"
 #endif
-#if defined(TARGET_ROBOT)
+#ifdef TARGET_ROBOT
 #include "Tools/AlignedMemory.h"
 #endif
 
@@ -25,8 +25,8 @@
  * ProcessBase contains the parts that need not to be implemented as a template.
  * It will only be used by the macro MAKE_PROCESS and should never be used directly.
  */
-class ProcessBase : public Thread<ProcessBase>
-#if defined(TARGET_ROBOT)
+class ProcessBase : public Thread
+#ifdef TARGET_ROBOT
   , public AlignedMemory
 #endif
 {
@@ -42,7 +42,7 @@ public:
   /**
    * The function starts the process by starting the Windows thread.
    */
-  void start() {Thread<ProcessBase>::start(this, &ProcessBase::main);}
+  void start() {Thread::start(this, &ProcessBase::main);}
 
   /**
    * The functions searches for a sender with a given name.
@@ -93,13 +93,13 @@ protected:
   virtual void main()
   {
 #ifdef TARGET_SIM
-    NAME_THREAD((RoboCupCtrl::controller->getRobotName() + "." + name).c_str());
+    Thread::nameThread(RoboCupCtrl::controller->getRobotName() + "." + name);  // TODO: Conditional jump or move depends on uninitialized value(s)
 #endif
 
     // Call process.nextFrame if no blocking receivers are waiting
     setPriority(process.getPriority());
     process.processBase = this;
-    Thread<ProcessBase>::yield(); // always leave processing time to other threads
+    Thread::yield(); // always leave processing time to other threads
     process.setGlobals();
     while(isRunning())
     {
@@ -184,7 +184,7 @@ public:
    */
   void announceStop()
   {
-    Thread<ProcessBase>::announceStop();
+    Thread::announceStop();
     process.trigger();
   }
 };
@@ -215,7 +215,7 @@ public:
 };
 
 /**
- * The template class instatiates creators for processes of a certain type.
+ * The template class instantiates creators for processes of a certain type.
  */
 template <class T> class ProcessCreator : public ProcessCreatorBase
 {
@@ -298,7 +298,7 @@ STREAMABLE(ConnectionParameter,
 });
 
 /**
- * The macro MAKE_PROCESS instatiates a process creator.
+ * The macro MAKE_PROCESS instantiates a process creator.
  * As a convention, it should be used in the last line of the
  * source file. For each process, MAKE_PROCESS must exactly be used
  * once.
@@ -306,4 +306,4 @@ STREAMABLE(ConnectionParameter,
  *                 as a process.
  */
 #define MAKE_PROCESS(className) \
-  ProcessCreator<ProcessFrame<className> > _create##className(#className)
+  ProcessCreator<ProcessFrame<className>> _create##className(#className)

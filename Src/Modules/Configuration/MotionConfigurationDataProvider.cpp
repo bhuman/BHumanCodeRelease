@@ -13,12 +13,12 @@ MotionConfigurationDataProvider::MotionConfigurationDataProvider()
   readDamageConfigurationBody();
   readDamageConfigurationHead();
   readFieldDimensions();
+  readHeadLimits();
+  readIMUCalibration();
   readJointCalibration();
   readMassCalibration();
-  readMotionSettings();
   readRobotDimensions();
   readStiffnessSettings();
-  readUsConfiguration();
 }
 
 MotionConfigurationDataProvider::~MotionConfigurationDataProvider()
@@ -29,18 +29,16 @@ MotionConfigurationDataProvider::~MotionConfigurationDataProvider()
     delete theDamageConfigurationHead;
   if(theFieldDimensions)
     delete theFieldDimensions;
+  if(theHeadLimits)
+    delete theHeadLimits;
   if(theJointCalibration)
     delete theJointCalibration;
   if(theMassCalibration)
     delete theMassCalibration;
-  if(theMotionSettings)
-    delete theMotionSettings;
   if(theRobotDimensions)
     delete theRobotDimensions;
   if(theStiffnessSettings)
     delete theStiffnessSettings;
-  if(theUsConfiguration)
-    delete theUsConfiguration;
 }
 
 void MotionConfigurationDataProvider::update(DamageConfigurationBody& damageConfigurationBody)
@@ -73,6 +71,26 @@ void MotionConfigurationDataProvider::update(FieldDimensions& fieldDimensions)
   }
 }
 
+void MotionConfigurationDataProvider::update(HeadLimits& headLimits)
+{
+  if(theHeadLimits)
+  {
+    headLimits = *theHeadLimits;
+    delete theHeadLimits;
+    theHeadLimits = 0;
+  }
+}
+
+void MotionConfigurationDataProvider::update(IMUCalibration& imuCalibration)
+{
+  if(theIMUCalibration)
+  {
+    imuCalibration = *theIMUCalibration;
+    delete theIMUCalibration;
+    theIMUCalibration = nullptr;
+  }
+}
+
 void MotionConfigurationDataProvider::update(JointCalibration& jointCalibration)
 {
   if(theJointCalibration)
@@ -94,16 +112,6 @@ void MotionConfigurationDataProvider::update(MassCalibration& massCalibration)
   }
 }
 
-void MotionConfigurationDataProvider::update(MotionSettings& motionSettings)
-{
-  if(theMotionSettings)
-  {
-    motionSettings = *theMotionSettings;
-    delete theMotionSettings;
-    theMotionSettings = nullptr;
-  }
-}
-
 void MotionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
 {
   if(theRobotDimensions)
@@ -122,16 +130,6 @@ void MotionConfigurationDataProvider::update(StiffnessSettings& stiffnessSetting
     stiffnessSettings = *theStiffnessSettings;
     delete theStiffnessSettings;
     theStiffnessSettings = nullptr;
-  }
-}
-
-void MotionConfigurationDataProvider::update(UsConfiguration& usConfiguration)
-{
-  if(theUsConfiguration)
-  {
-    usConfiguration = *theUsConfiguration;
-    delete theUsConfiguration;
-    theUsConfiguration = nullptr;
   }
 }
 
@@ -169,6 +167,31 @@ void MotionConfigurationDataProvider::readFieldDimensions()
   theFieldDimensions->load();
 }
 
+void MotionConfigurationDataProvider::readHeadLimits()
+{
+  ASSERT(!theHeadLimits);
+
+  InMapFile stream("headLimits.cfg");
+  if(stream.exists())
+  {
+    theHeadLimits = new HeadLimits;
+    stream >> *theHeadLimits;
+  }
+}
+
+void MotionConfigurationDataProvider::readIMUCalibration()
+{
+  ASSERT(!theIMUCalibration);
+
+  InMapFile stream("imuCalibration.cfg");
+
+  if(stream.exists())
+  {
+    theIMUCalibration = new IMUCalibration;
+    stream >> *theIMUCalibration;
+  }
+}
+
 void MotionConfigurationDataProvider::readJointCalibration()
 {
   ASSERT(!theJointCalibration);
@@ -193,18 +216,6 @@ void MotionConfigurationDataProvider::readMassCalibration()
   }
 }
 
-void MotionConfigurationDataProvider::readMotionSettings()
-{
-  ASSERT(!theMotionSettings);
-
-  InMapFile stream("motionSettings.cfg");
-  if(stream.exists())
-  {
-    theMotionSettings = new MotionSettings;
-    stream >> *theMotionSettings;
-  }
-}
-
 void MotionConfigurationDataProvider::readRobotDimensions()
 {
   ASSERT(!theRobotDimensions);
@@ -226,17 +237,5 @@ void MotionConfigurationDataProvider::readStiffnessSettings()
   {
     theStiffnessSettings = new StiffnessSettings;
     stream >> *theStiffnessSettings;
-  }
-}
-
-void MotionConfigurationDataProvider::readUsConfiguration()
-{
-  ASSERT(!theUsConfiguration);
-
-  InMapFile stream("usConfiguration.cfg");
-  if(stream.exists())
-  {
-    theUsConfiguration = new UsConfiguration;
-    stream >> *theUsConfiguration;
   }
 }

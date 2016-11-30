@@ -6,6 +6,8 @@
  */
 
 #include "GameInfo.h"
+#include "Tools/Debugging/ColorRGBA.h"
+#include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Eigen.h"
 

@@ -12,21 +12,27 @@
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/Role.h"
 #include "Representations/BehaviorControl/SPLStandardBehaviorStatus.h"
+#include "Representations/Communication/NoWirelessReturnData.h"
+#include "Representations/Communication/TeammateData.h"
+#include "Representations/Configuration/Behavior2015Parameters.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/CameraStatus.h"
+#include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Infrastructure/TeammateData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/FieldCoverage.h"
+#include "Representations/Modeling/GlobalFieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -34,22 +40,23 @@
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/TeammateReliability.h"
 #include "Representations/Modeling/TeamPlayersModel.h"
-#include "Representations/Modeling/Whistle.h"
 #include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
+#include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/ArmMotionSelection.h"
 #include "Representations/MotionControl/HeadJointRequest.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionSelection.h"
+#include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/FieldBoundary.h"
-#include "Representations/Perception/GoalPercept.h"
-#include "Representations/Perception/LinePercept.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
+#include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Representations/Sensing/FootContactModel.h"
+#include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -59,6 +66,7 @@
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/BallPhysics.h"
 #include "Tools/Module/Module.h"
+#include "Tools/RingBufferWithSum.h"
 
 #include <algorithm>
 #include <limits>
@@ -66,20 +74,28 @@
 
 MODULE(BehaviorControl2015,
 {,
+  REQUIRES(ActivationGraph),
   REQUIRES(ArmContactModel),
   REQUIRES(ArmKeyFrameEngineOutput),
+  REQUIRES(ArmMotionInfo),
+  REQUIRES(ArmMotionSelection),
   REQUIRES(BallModel),
+  REQUIRES(Behavior2015Parameters),
   REQUIRES(CameraCalibration),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(CameraStatus),
+  REQUIRES(CognitionStateChanges),
   REQUIRES(DamageConfigurationBody),
   REQUIRES(FallDownState),
+  REQUIRES(FieldCoverage),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
-  REQUIRES(FootContactModel),
+  REQUIRES(FieldFeatureOverview),
+  REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
-  REQUIRES(GoalPercept),
+  REQUIRES(GlobalFieldCoverage),
   REQUIRES(GroundContactState),
   REQUIRES(HeadJointRequest),
   REQUIRES(HeadLimits),
@@ -88,14 +104,14 @@ MODULE(BehaviorControl2015,
   REQUIRES(JointRequest),
   REQUIRES(KeyStates),
   REQUIRES(KickEngineOutput),
-  REQUIRES(LinePercept),
+  REQUIRES(FieldLines),
   REQUIRES(MotionInfo),
-  REQUIRES(MotionSelection),
-  REQUIRES(ArmMotionSelection),
+  REQUIRES(LegMotionSelection),
   REQUIRES(ObstacleModel),
   REQUIRES(Odometer),
   REQUIRES(OpponentTeamInfo),
   REQUIRES(OwnTeamInfo),
+  REQUIRES(NoWirelessReturnData),
   REQUIRES(RawGameInfo),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotInfo),
@@ -104,17 +120,15 @@ MODULE(BehaviorControl2015,
   REQUIRES(Role),
   REQUIRES(SideConfidence),
   REQUIRES(TeamBallModel),
+  REQUIRES(TeamPlayersModel),
   REQUIRES(TeammateData),
   REQUIRES(TeammateReliability),
-  REQUIRES(TeamPlayersModel),
   REQUIRES(TorsoMatrix), // Required for kicks
   REQUIRES(WalkingEngineOutput),
-  REQUIRES(Whistle),
-  REQUIRES(ActivationGraph),
   PROVIDES(ActivationGraph),
   PROVIDES(ArmMotionRequest),
   PROVIDES(BehaviorLEDRequest),
-  PROVIDES(MotionRequest),
+  PROVIDES(BehaviorMotionRequest),
   PROVIDES(BehaviorStatus),
   PROVIDES(HeadMotionRequest),
   PROVIDES(SPLStandardBehaviorStatus),
@@ -142,14 +156,15 @@ namespace Behavior2015
                  HeadMotionRequest& theHeadMotionRequest,
                  ArmMotionRequest& theArmMotionRequest,
                  MotionRequest& theMotionRequest,
-                 SPLStandardBehaviorStatus& theSPLStandardBehaviorStatus)
-    : theActivationGraph(theActivationGraph),
+                 SPLStandardBehaviorStatus& theSPLStandardBehaviorStatus) :
+      theActivationGraph(theActivationGraph),
       theBehaviorLEDRequest(theBehaviorLEDRequest),
       theBehaviorStatus(theBehaviorStatus),
       theHeadMotionRequest(theHeadMotionRequest),
       theArmMotionRequest(theArmMotionRequest),
       theMotionRequest(theMotionRequest),
-      theSPLStandardBehaviorStatus(theSPLStandardBehaviorStatus){}
+      theSPLStandardBehaviorStatus(theSPLStandardBehaviorStatus)
+    {}
   };
 
   /**
@@ -160,13 +175,16 @@ namespace Behavior2015
   private:
     void update(ActivationGraph&) {}
     void update(BehaviorLEDRequest&) {}
-    void update(MotionRequest&) {}
+    void update(BehaviorMotionRequest&) {}
     void update(BehaviorStatus&) {}
     void update(HeadMotionRequest&) {}
     void update(ArmMotionRequest&) {}
     void update(SPLStandardBehaviorStatus&) {}
 
+    using BehaviorControl2015Base::theBehavior2015Parameters; /**< Hide this symbol from derived class. */
+
   public:
+    const Behavior2015Parameters& theBehaviorParameters;
     using BehaviorData::theActivationGraph; /**< Use the non-const version. */
 
     /**
@@ -175,9 +193,9 @@ namespace Behavior2015
      * @param base The behavior base class some attributes are copied from.
      * @param behaviorData The data modified by the behavior.
      */
-    BehaviorBase(const BehaviorControl2015Base& base,
-                 BehaviorData& behaviorData)
-    : BehaviorData(behaviorData) {}
+    BehaviorBase(const BehaviorControl2015Base& base, BehaviorData& behaviorData) :
+      BehaviorData(behaviorData), theBehaviorParameters(theBehavior2015Parameters)
+    {}
 
     /**
      * Copy constructor.
@@ -185,7 +203,8 @@ namespace Behavior2015
      * the attributes of the base class should not be copied.
      * @param other The object that is copied.
      */
-    BehaviorBase(const BehaviorBase& other)
-    : BehaviorData(other) {}
+    BehaviorBase(const BehaviorBase& other) :
+      BehaviorData(other), theBehaviorParameters(other.theBehaviorParameters)
+    {}
   };
 }

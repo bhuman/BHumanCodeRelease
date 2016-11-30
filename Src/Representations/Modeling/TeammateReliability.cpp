@@ -9,7 +9,7 @@ void TeammateReliability::draw() const
 {
   DECLARE_DEBUG_DRAWING("representation:TeammateReliability", "drawingOnField");
   int x = -5000;
-  for(int i = Global::getSettings().lowestValidPlayerNumber; i < Global::getSettings().highestValidPlayerNumber; ++i, x += 1700)
+  for(int i = Settings::lowestValidPlayerNumber; i < Settings::highestValidPlayerNumber; ++i, x += 1700)
   {
     ColorRGBA color;
     switch(states[i])

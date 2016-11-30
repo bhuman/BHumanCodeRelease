@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Global.h"
 #include "Tools/Settings.h"
 
@@ -26,7 +26,7 @@ STREAMABLE(TeammateReliability,
 
   TeammateReliability()
   {
-    states.resize(Global::getSettings().highestValidPlayerNumber + 1);
+    states.resize(Settings::highestValidPlayerNumber + 1);
     for(unsigned int i = 0; i < states.size(); i++)
       states[i] = UNKNOWN;
   }

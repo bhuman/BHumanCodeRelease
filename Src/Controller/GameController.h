@@ -13,7 +13,7 @@
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Math/Pose2f.h"
 #include "Tools/Streams/InOut.h"
 
@@ -24,17 +24,17 @@ class SimulatedRobot;
  */
 class GameController
 {
-private:
-  class Robot
-  {
-  public:
-    SimulatedRobot* simulatedRobot;
-    RobotInfo info;
-    unsigned timeWhenPenalized;
-    Pose2f lastPose;
-    bool manuallyPlaced;
+public:
+  bool automatic = true; /**< Are the automatic features active? */
 
-    Robot() : simulatedRobot(0), timeWhenPenalized(0), manuallyPlaced(false) {}
+private:
+  struct Robot
+  {
+    SimulatedRobot* simulatedRobot = nullptr;
+    RobotInfo info;
+    unsigned timeWhenPenalized = 0;
+    Pose2f lastPose;
+    bool manuallyPlaced = false;
   };
 
   ENUM(Penalty,
@@ -63,15 +63,87 @@ private:
   static FieldDimensions fieldDimensions;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
-  unsigned timeWhenHalfStarted;
-  unsigned timeOfLastDropIn;
-  unsigned timeWhenLastRobotMoved;
-  unsigned timeWhenStateBegan;
+  unsigned timeWhenHalfStarted = 0;
+  unsigned timeOfLastDropIn = 0;
+  unsigned timeWhenLastRobotMoved = 0;
+  unsigned timeWhenStateBegan = 0;
   Robot robots[numOfRobots];
 
-   /** enum which declares the different types of balls leaving the field */
-  enum BallOut { NONE, GOAL_BY_RED, GOAL_BY_BLUE, OUT_BY_RED, OUT_BY_BLUE };
+  /** enum which declares the different types of balls leaving the field */
+  enum BallOut {notOut, goalByRed, goalByBlue, outByRed, outByBlue};
 
+public:
+  GameController();
+
+  /**
+   * Each simulated robot must be registered.
+   * @param robot The number of the robot [0 ... numOfRobots-1].
+   * @param simulatedRobot The simulation interface of that robot.
+   */
+  void registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot);
+
+  /**
+   * Handles the parameters of the console command "gc".
+   * @param stream The stream that provides the parameters.
+   * @return Were the parameters correct?
+   */
+  bool handleGlobalConsole(In& stream);
+
+  /**
+   * Handles the parameters of the console command "pr".
+   * @param robot The number of the robot that received the command.
+   * @param stream The stream that provides the parameters.
+   * @return Were the parameters correct?
+   */
+  bool handleRobotConsole(int robot, In& stream);
+
+  /** Executes the automatic referee. */
+  void referee();
+
+  /**
+   * Proclaims which robot touched the ball at last
+   * @param robot The robot
+   */
+  static void setLastBallContactRobot(SimRobot::Object* robot);
+
+  /**
+   * Write the current game information to the stream provided.
+   * @param stream The stream the game information is written to.
+   */
+  void writeGameInfo(Out& stream);
+
+  /**
+   * Write the current information of the team to the stream
+   * provided.
+   * @param robot A robot from the team.
+   * @param stream The stream the team information is written to.
+   */
+  void writeOwnTeamInfo(int robot, Out& stream);
+
+  /**
+   * Write the current information of the opponent team to the
+   * stream provided.
+   * @param robot A robot from the team.
+   * @param stream The stream the team information is written to.
+   */
+  void writeOpponentTeamInfo(int robot, Out& stream);
+
+  /**
+   * Write the current information of a certain robot to the
+   * stream provided.
+   * @param robot The robot the information is about.
+   * @param stream The stream the robot information is written to.
+   */
+  void writeRobotInfo(int robot, Out& stream);
+
+  /**
+   * Adds all commands of this module to the set of tab completion
+   * strings.
+   * @param completion The set of tab completion strings.
+   */
+  void addCompletion(std::set<std::string>& completion) const;
+
+private:
   /**
    * Handles the command "gc".
    * @param command The second part of the command (without "gc").
@@ -140,78 +212,4 @@ private:
 
   /** Update the ball position based on the rules. */
   static BallOut updateBall();
-
-public:
-  bool automatic; /**< Are the automatic features active? */
-
-  /** Constructor */
-  GameController();
-
-  /**
-   * Each simulated robot must be registered.
-   * @param robot The number of the robot [0 ... numOfRobots-1].
-   * @param simulatedRobot The simulation interface of that robot.
-   */
-  void registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot);
-
-  /**
-   * Handles the parameters of the console command "gc".
-   * @param stream The stream that provides the parameters.
-   * @return Were the parameters correct?
-   */
-  bool handleGlobalConsole(In& stream);
-
-  /**
-   * Handles the parameters of the console command "pr".
-   * @param robot The number of the robot that received the command.
-   * @param stream The stream that provides the parameters.
-   * @return Were the parameters correct?
-   */
-  bool handleRobotConsole(int robot, In& stream);
-
-  /** Executes the automatic referee. */
-  void referee();
-
-  /**
-  * Proclaims which robot touched the ball at last
-  * @param robot The robot
-  */
-  static void setLastBallContactRobot(SimRobot::Object* robot);
-
-  /**
-   * Write the current game information to the stream provided.
-   * @param stream The stream the game information is written to.
-   */
-  void writeGameInfo(Out& stream);
-
-  /**
-   * Write the current information of the team to the stream
-   * provided.
-   * @param robot A robot from the team.
-   * @param stream The stream the team information is written to.
-   */
-  void writeOwnTeamInfo(int robot, Out& stream);
-
-  /**
-   * Write the current information of the opponent team to the
-   * stream provided.
-   * @param robot A robot from the team.
-   * @param stream The stream the team information is written to.
-   */
-  void writeOpponentTeamInfo(int robot, Out& stream);
-
-  /**
-   * Write the current information of a certain robot to the
-   * stream provided.
-   * @param robot The robot the information is about.
-   * @param stream The stream the robot information is written to.
-   */
-  void writeRobotInfo(int robot, Out& stream);
-
-  /**
-   * Adds all commands of this module to the set of tab completion
-   * strings.
-   * @param completion The set of tab completion strings.
-   */
-  void addCompletion(std::set<std::string>& completion) const;
 };

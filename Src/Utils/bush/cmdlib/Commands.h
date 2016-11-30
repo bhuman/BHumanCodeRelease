@@ -40,7 +40,7 @@ public:
    * @return true if the command was executed sucessfully and false if an error
    *         occured or the command which sould be executed was not found.
    */
-  bool execute(Context *context, const std::string &cmdLine);
+  bool execute(Context* context, const std::string& cmdLine);
 
   Command* operator[](const std::string& cmd);
   std::vector<Command*> getAllCommands();

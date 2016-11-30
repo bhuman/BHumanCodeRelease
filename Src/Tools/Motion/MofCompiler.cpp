@@ -1,11 +1,11 @@
 /**
-* @file MofCompiler.cpp
-*
-* This file implements a all functions required to compile the motion net for special actions.
-*
-* @author Uwe Düffert
-* @author Martin Lötzsch
-*/
+ * @file MofCompiler.cpp
+ *
+ * This file implements a all functions required to compile the motion net for special actions.
+ *
+ * @author Uwe Düffert
+ * @author Martin Lötzsch
+ */
 
 #include "MofCompiler.h"
 
@@ -19,7 +19,7 @@
 #include <dirent.h>
 #include <string>
 
-#if defined(LINUX) || defined(_CYGWIN_) || defined(OSX)
+#if defined LINUX || defined _CYGWIN_ || defined MACOS
 #define _strdup strdup
 #define _vsnprintf vsnprintf
 #endif
@@ -27,15 +27,15 @@
 MofCompiler::~MofCompiler()
 {
   for(int i = 0; i < numOfLines; ++i)
-    delete line_data[i];
+    free(line_data[i]);
 
   for(int i = 0; i < numOfFiles; ++i)
-    delete file_name[i];
+    free(file_name[i]);
 
   for(int i = 0; i < numOfLabels; ++i)
   {
-    delete label_name[i];
-    delete label_motion[i];
+    free(label_name[i]);
+    free(label_motion[i]);
   }
 }
 
@@ -143,7 +143,6 @@ bool MofCompiler::generateMotionNet(std::vector<float>& motionData)
 
   return true;
 }
-
 
 bool MofCompiler::parseMofs()
 {

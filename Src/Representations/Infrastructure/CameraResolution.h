@@ -3,12 +3,12 @@
  *
  * This file implements a representation for the camera resolutions and an interface to request a resolution change.
  *
- * @author Dana Jenett, Alexis Tsogias
+ * @author Dana Jenett, Alexis Tsogias, Felix Thielke
  */
 
 #pragma once
 
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 STREAMABLE(CameraResolution,
@@ -16,15 +16,15 @@ STREAMABLE(CameraResolution,
   ENUM(Resolutions,
   {,
     defaultRes, /**< Use resolutions as specified in the config file. */
-    upper640,   /**< Upper resolution is 640 and lower is 320. */
-    lower640,   /**< Upper resolution is 320 and lower is 640. */
-    both320,    /**< Both resolutions are set to 320. This is the default case when running on SimRobot. */
-    both640,    /**< Both resolutions are set to 640. This option is only valide in the simulator. */
+    w320h240,   /**< 160x120 in YCbCr222 */
+    w640h480,   /**< 320x240 in YCbCr222 */
+    w1280h960,  /**< 640x480 in YCbCr222 */
     noRequest,  /**< Default Value for CameraResolutionRequest. This should never be used otherwise! */
   }),
 
-  (Resolutions)(defaultRes) resolution, /**< the currently used resolutions */
-  (unsigned)(0) timestamp, /** A timestamp for the last procesed CameraResolutionRequest */
+  (Resolutions)(defaultRes) resolutionUpper, /**< the currently used resolution for the upper camera */
+  (Resolutions)(defaultRes) resolutionLower, /**< the currently used resolution for the lower camera */
+  (unsigned)(0) timestamp,                   /**< timestamp of the last processed CameraResolutionRequest */
 });
 
 struct CameraResolutionRequest : public CameraResolution
@@ -35,5 +35,5 @@ struct CameraResolutionRequest : public CameraResolution
    *
    * @return true if the request is viable.
    */
-  bool setRequest(CameraResolution::Resolutions requestedResolution);
+  bool setRequest(CameraResolution::Resolutions requestedResolutionUpper, CameraResolution::Resolutions requestedResolutionLower);
 };

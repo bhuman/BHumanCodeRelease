@@ -2,62 +2,37 @@
  * @file Modules/MotionControl/MotionCombinator.cpp
  * This file implements a module that combines the motions created by the different modules.
  * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
- * @author Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #include "MotionCombinator.h"
-#include "Tools/SensorData.h"
+#include "Tools/Motion/SensorData.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/RotationMatrix.h"
 
-using std::abs;
-
 MAKE_MODULE(MotionCombinator, motionControl)
-
-MotionCombinator::MotionCombinator() : theNonArmeMotionEngineOutput()
-{
-  currentRecoveryTime = recoveryTime + 1;
-  headJawInSavePosition = false;
-  headPitchInSavePosition = false;
-  isFallingStarted = false;
-  fallingFrame = 0;
-}
 
 void MotionCombinator::update(JointRequest& jointRequest)
 {
   specialActionOdometry += theSpecialActionsOutput.odometryOffset;
 
-  const JointRequest* jointRequests[MotionRequest::numOfMotions];
-  jointRequests[MotionRequest::walk] = &theWalkingEngineOutput;
-  jointRequests[MotionRequest::kick] = &theKickEngineOutput;
-  jointRequests[MotionRequest::specialAction] = &theSpecialActionsOutput;
-  jointRequests[MotionRequest::stand] = &theStandOutput;
-  jointRequests[MotionRequest::getUp] = &theGetUpEngineOutput;
-  jointRequests[MotionRequest::dmpKick] = &theDmpKickEngineOutput;
+  copy(theLegJointRequest, jointRequest, theStiffnessSettings, Joints::headYaw, Joints::headPitch);
 
-  const JointRequest* armJointRequests[ArmMotionRequest::numOfArmMotions];
-  armJointRequests[ArmMotionRequest::none] = &theNonArmeMotionEngineOutput;
-  armJointRequests[ArmMotionRequest::keyFrame] = &theArmKeyFrameEngineOutput;
-
-  jointRequest.angles[Joints::headYaw] = theHeadJointRequest.pan;
-  jointRequest.angles[Joints::headPitch] = theHeadJointRequest.tilt;
-
-  copy(*jointRequests[theMotionSelection.targetMotion], jointRequest);
+  copy(theArmJointRequest, jointRequest, theStiffnessSettings, Joints::firstArmJoint, Joints::rHand);
+  copy(theLegJointRequest, jointRequest, theStiffnessSettings, Joints::firstLegJoint, Joints::rAnkleRoll);
 
   ASSERT(jointRequest.isValid());
 
   // Find fully active motion and set MotionInfo
-  if(theMotionSelection.ratios[theMotionSelection.targetMotion] == 1.f)
+  if(theLegMotionSelection.ratios[theLegMotionSelection.targetMotion] == 1.f)
   {
-    Pose2f odometryOffset;
     // default values
-    motionInfo.motion = theMotionSelection.targetMotion;
+    motionInfo.motion = theLegMotionSelection.targetMotion;
     motionInfo.isMotionStable = true;
     motionInfo.upcomingOdometryOffset = Pose2f();
 
-    lastJointAngles = theJointAngles;
-
-    switch(theMotionSelection.targetMotion)
+    Pose2f odometryOffset;
+    switch(theLegMotionSelection.targetMotion)
     {
       case MotionRequest::walk:
         odometryOffset = theWalkingEngineOutput.odometryOffset;
@@ -80,117 +55,40 @@ void MotionCombinator::update(JointRequest& jointRequest)
         odometryOffset = theGetUpEngineOutput.odometryOffset;
         break;
       case MotionRequest::stand:
-      case MotionRequest::dmpKick:
       default:
         break;
     }
 
-    if(theRobotInfo.hasFeature(RobotInfo::zGyro) && (theFallDownState.state == FallDownState::upright || theMotionSelection.targetMotion == MotionRequest::getUp))
+    if(theRobotInfo.hasFeature(RobotInfo::zGyro) && (theFallDownState.state == FallDownState::upright || theLegMotionSelection.targetMotion == MotionRequest::getUp))
     {
       Vector3f rotatedGyros = theInertialData.orientation * theInertialData.gyro.cast<float>();
       odometryOffset.rotation = rotatedGyros.z() * theFrameInfo.cycleTime;
     }
 
     odometryData += odometryOffset;
-    ASSERT(jointRequest.isValid());
-  }
-  else // interpolate motions
-  {
-    const bool interpolateStiffness = !(theMotionSelection.targetMotion != MotionRequest::specialAction && theMotionSelection.specialActionRequest.specialAction == SpecialActionRequest::playDead &&
-                                       theMotionSelection.ratios[MotionRequest::specialAction] > 0.f); // do not interpolate from play_dead
-    for(int i = 0; i < MotionRequest::numOfMotions; ++i)
-      if(i != theMotionSelection.targetMotion && theMotionSelection.ratios[i] > 0.)
-      {
-        interpolate(*jointRequests[i], *jointRequests[theMotionSelection.targetMotion], theMotionSelection.ratios[i], jointRequest, interpolateStiffness, Joints::headYaw, Joints::headPitch);
-        if(theArmMotionSelection.armRatios[ArmMotionRequest::none] == 1)
-          interpolate(*jointRequests[i], *jointRequests[theMotionSelection.targetMotion], theMotionSelection.ratios[i], jointRequest, interpolateStiffness, Joints::lShoulderPitch, Joints::lHand);
-        if(theArmMotionSelection.armRatios[theArmMotionSelection.rightArmRatiosOffset + ArmMotionRequest::none] == 1)
-          interpolate(*jointRequests[i], *jointRequests[theMotionSelection.targetMotion], theMotionSelection.ratios[i], jointRequest, interpolateStiffness, Joints::rShoulderPitch, Joints::rHand);
-        interpolate(*jointRequests[i], *jointRequests[theMotionSelection.targetMotion], theMotionSelection.ratios[i], jointRequest, interpolateStiffness, Joints::lHipYawPitch, Joints::rAnkleRoll);
-      }
   }
 
-  ASSERT(jointRequest.isValid());
-
-  auto combinateArmMotions = [&](Arms::Arm const arm)
-  {
-    const int ratioIndexOffset = arm * theArmMotionSelection.rightArmRatiosOffset;
-    const Joints::Joint startJoint = arm == Arms::left ? Joints::lShoulderPitch : Joints::rShoulderPitch;
-    const Joints::Joint endJoint = arm == Arms::left ? Joints::lHand : Joints::rHand;
-
-    if(theArmMotionSelection.armRatios[ratioIndexOffset + ArmMotionRequest::none] != 1.f)
-    {
-      if(theArmMotionSelection.armRatios[ratioIndexOffset + ArmMotionRequest::none] > 0 &&
-         ArmMotionRequest::none != theArmMotionSelection.targetArmMotion[arm])
-        copy(jointRequest, theNonArmeMotionEngineOutput, startJoint, endJoint);
-
-      if(ArmMotionRequest::none != theArmMotionSelection.targetArmMotion[arm])
-        copy(*armJointRequests[theArmMotionSelection.targetArmMotion[arm]], jointRequest, startJoint, endJoint);
-    }
-
-    if(theArmMotionSelection.armRatios[ratioIndexOffset + theArmMotionSelection.targetArmMotion[arm]] == 1.f)
-    {
-      armMotionInfo.armMotion[arm] = theArmMotionSelection.targetArmMotion[arm];
-
-      switch(theArmMotionSelection.targetArmMotion[arm])
-      {
-        case ArmMotionRequest::keyFrame:
-          armMotionInfo.armKeyFrameRequest = theArmMotionSelection.armKeyFrameRequest;
-          break;
-        case ArmMotionRequest::none:
-        default:
-          break;
-      }
-    }
-    else
-    {
-      const bool interpolateStiffness = !(theMotionSelection.targetMotion != MotionRequest::specialAction &&
-                                         theMotionSelection.specialActionRequest.specialAction == SpecialActionRequest::playDead &&
-                                         theMotionSelection.ratios[MotionRequest::specialAction] > 0.f &&
-                                         theArmMotionSelection.armRatios[ratioIndexOffset + ArmMotionRequest::none] > 0);
-
-      const JointRequest toJointRequest = theArmMotionSelection.targetArmMotion[arm] == ArmMotionRequest::none ?
-                                          *jointRequests[theMotionSelection.targetMotion] : *armJointRequests[theArmMotionSelection.targetArmMotion[arm]];
-
-      for(int i = 0; i < ArmMotionRequest::numOfArmMotions; ++i)
-      {
-        if(i != theArmMotionSelection.targetArmMotion[arm] && theArmMotionSelection.armRatios[ratioIndexOffset + i] > 0)
-        {
-          interpolate(*armJointRequests[i], toJointRequest, theArmMotionSelection.armRatios[ratioIndexOffset + i], jointRequest, interpolateStiffness, startJoint, endJoint);
-        }
-      }
-    }
-
-    ASSERT(jointRequest.isValid());
-  };
-
-  combinateArmMotions(Arms::left);
-  combinateArmMotions(Arms::right);
-
-  if(emergencyOffEnabled)
+  if(emergencyOffEnabled && motionInfo.motion != MotionRequest::getUp)
   {
     if(theFallDownState.state == FallDownState::falling && motionInfo.motion != MotionRequest::specialAction)
+
     {
-      saveFall(jointRequest);
+      safeFall(jointRequest);
       centerHead(jointRequest);
-      centerArms(jointRequest);
       currentRecoveryTime = 0;
 
       ASSERT(jointRequest.isValid());
     }
-    else if((theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::onGround) && (motionInfo.motion != MotionRequest::specialAction))
+    else if(theFallDownState.state == FallDownState::onGround && motionInfo.motion != MotionRequest::specialAction)
     {
       centerHead(jointRequest);
-
-      ASSERT(jointRequest.isValid());
     }
     else
     {
       if(theFallDownState.state == FallDownState::upright)
       {
-        headJawInSavePosition = false;
-        headPitchInSavePosition = false;
-        isFallingStarted = false;
+        headYawInSafePosition = false;
+        headPitchInSafePosition = false;
       }
 
       if(currentRecoveryTime < recoveryTime)
@@ -205,22 +103,28 @@ void MotionCombinator::update(JointRequest& jointRequest)
     }
   }
 
-  float sum(0);
-  int count(0);
+  if(debugArms)
+    debugReleaseArms(jointRequest);
+  eraseStiffness(jointRequest);
+
+  float sum = 0;
+  int count = 0;
   for(int i = Joints::lHipYawPitch; i < Joints::numOfJoints; i++)
   {
-    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore && lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
+    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore &&
+       lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
     {
-      sum += abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
+      sum += std::abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
       count++;
     }
   }
   PLOT("module:MotionCombinator:deviations:JointRequest:legsOnly", sum / count);
   for(int i = 0; i < Joints::lHipYawPitch; i++)
   {
-    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore && lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
+    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore &&
+       lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
     {
-      sum += abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
+      sum += std::abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
       count++;
     }
   }
@@ -232,7 +136,7 @@ void MotionCombinator::update(JointRequest& jointRequest)
   {
     if(lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
     {
-      sum += abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
+      sum += std::abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
       count++;
     }
   }
@@ -242,7 +146,7 @@ void MotionCombinator::update(JointRequest& jointRequest)
   {
     if(lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
     {
-      sum += abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
+      sum += std::abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
       count++;
     }
   }
@@ -260,7 +164,7 @@ void MotionCombinator::update(JointRequest& jointRequest)
       OutMapFile stream(logDir + "jointRequest.log");
       stream << jointRequest;
       OutMapFile stream2(logDir + "motionSelection.log");
-      stream2 << theMotionSelection;
+      stream2 << theLegMotionSelection;
     }
     ASSERT(false);
   }
@@ -269,13 +173,13 @@ void MotionCombinator::update(JointRequest& jointRequest)
 
 void MotionCombinator::update(OdometryData& odometryData)
 {
-  if(!theRobotInfo.hasFeature(RobotInfo::zGyro) || (theFallDownState.state != FallDownState::upright && theMotionSelection.targetMotion != MotionRequest::getUp))
+  if(!theRobotInfo.hasFeature(RobotInfo::zGyro) || (theFallDownState.state != FallDownState::upright && theLegMotionSelection.targetMotion != MotionRequest::getUp))
     this->odometryData.rotation += theFallDownState.odometryRotationOffset;
   this->odometryData.rotation.normalize();
 
   odometryData = this->odometryData;
 
-  Pose2f odometryOffset(odometryData);
+  Pose2f odometryOffset = odometryData;
   odometryOffset -= lastOdometryData;
   PLOT("module:MotionCombinator:odometryOffsetX", odometryOffset.translation.x());
   PLOT("module:MotionCombinator:odometryOffsetY", odometryOffset.translation.y());
@@ -283,57 +187,10 @@ void MotionCombinator::update(OdometryData& odometryData)
   lastOdometryData = odometryData;
 }
 
-void MotionCombinator::saveFall(JointRequest& jointRequest)
+void MotionCombinator::safeFall(JointRequest& jointRequest)
 {
   for(int i = 0; i < Joints::numOfJoints; i++)
     jointRequest.stiffnessData.stiffnesses[i] = 30;
-}
-
-void MotionCombinator::centerArms(JointRequest& jointRequest)
-{
-  if(!isFallingStarted)
-  {
-    isFallingStarted = true;
-    fallingFrame = 0;
-  }
-
-  if(theArmMotionSelection.armRatios[ArmMotionRequest::keyFrame] > 0)
-    centerArm(jointRequest, true);
-
-  if(theArmMotionSelection.armRatios[ArmMotionRequest::keyFrame + theArmMotionSelection.rightArmRatiosOffset] > 0)
-    centerArm(jointRequest, false);
-}
-
-void MotionCombinator::centerArm(JointRequest& jointRequest, bool left)
-{
-  const int sign(-1 + 2 * left); // sign = 1 for left arm, for right its -1
-  int i(left ? Joints::lShoulderPitch : Joints::rShoulderPitch);
-  int j(i);
-
-  if(fallingFrame < 20)
-  {
-    jointRequest.angles[i++] = 119.5_deg;
-    jointRequest.angles[i++] = sign * 25_deg;
-    jointRequest.angles[i++] = sign * 45_deg;
-    jointRequest.angles[i++] = sign * -11.5_deg;
-
-    while(i < j)
-      jointRequest.stiffnessData.stiffnesses[j++] = 100;
-  }
-  else if(fallingFrame < 80)
-  {
-    jointRequest.angles[i++] = 90_deg;
-    jointRequest.angles[i++] = sign * 11.5_deg;
-    jointRequest.angles[i++] = sign * -90_deg;
-    jointRequest.angles[i++] = sign * -11.5_deg;
-
-    if(fallingFrame < 40)
-      while(i < j)
-        jointRequest.stiffnessData.stiffnesses[j++] = 100;
-    else
-      while(j < i)
-        jointRequest.stiffnessData.stiffnesses[j++] = 0;
-  }
 }
 
 void MotionCombinator::centerHead(JointRequest& jointRequest)
@@ -344,24 +201,25 @@ void MotionCombinator::centerHead(JointRequest& jointRequest)
     jointRequest.angles[Joints::headPitch] = -0.4f;
   else if(theFallDownState.direction == FallDownState::back)
     jointRequest.angles[Joints::headPitch] = 0.3f;
-  if(abs(theJointAngles.angles[Joints::headYaw]) > 0.1f && !headJawInSavePosition)
+  if(std::abs(theJointAngles.angles[Joints::headYaw]) > 0.1f && !headYawInSafePosition)
     jointRequest.stiffnessData.stiffnesses[Joints::headYaw] = 100;
   else
   {
-    headJawInSavePosition = true;
+    headYawInSafePosition = true;
     jointRequest.stiffnessData.stiffnesses[Joints::headYaw] = 25;
   }
-  if(abs(theJointAngles.angles[Joints::headPitch] - jointRequest.angles[Joints::headPitch]) > 0.1f && !headPitchInSavePosition)
+  if(std::abs(theJointAngles.angles[Joints::headPitch] - jointRequest.angles[Joints::headPitch]) > 0.1f && !headPitchInSafePosition)
     jointRequest.stiffnessData.stiffnesses[Joints::headPitch] = 100;
   else
   {
-    headPitchInSavePosition = true;
+    headPitchInSafePosition = true;
     jointRequest.stiffnessData.stiffnesses[Joints::headPitch] = 25;
   }
 }
 
 void MotionCombinator::copy(const JointRequest& source, JointRequest& target,
-                            const Joints::Joint startJoint, const Joints::Joint endJoint) const
+                            const StiffnessSettings& theStiffnessSettings,
+                            const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i <= endJoint; ++i)
   {
@@ -375,7 +233,8 @@ void MotionCombinator::copy(const JointRequest& source, JointRequest& target,
 
 void MotionCombinator::interpolate(const JointRequest& from, const JointRequest& to,
                                    float fromRatio, JointRequest& target, bool interpolateStiffness,
-                                   const Joints::Joint startJoint, const Joints::Joint endJoint) const
+                                   const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
+                                   const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i <= endJoint; ++i)
   {
@@ -414,4 +273,31 @@ void MotionCombinator::interpolate(const JointRequest& from, const JointRequest&
     else
       target.stiffnessData.stiffnesses[i] = tStiffness;
   }
+}
+
+void MotionCombinator::debugReleaseArms(JointRequest& jointRequest)
+{
+  /*if(theKeyStates.pressed[theKeyStates.lHandBack] ||
+    theKeyStates.pressed[theKeyStates.lHandLeft] ||
+    theKeyStates.pressed[theKeyStates.lHandRight])
+    for(unsigned i = Joints::firstLeftArmJoint; i <= Joints::lHand; i++)
+      jointRequest.stiffnessData.stiffnesses[i] = 0;
+
+  if(theKeyStates.pressed[theKeyStates.rHandBack] ||
+    theKeyStates.pressed[theKeyStates.rHandLeft] ||
+    theKeyStates.pressed[theKeyStates.rHandRight])
+    for(unsigned i = Joints::firstRightArmJoint; i <= Joints::rHand; i++)
+      jointRequest.stiffnessData.stiffnesses[i] = 0;*/
+
+  if(theKeyStates.pressed[theKeyStates.headFront]
+     || theKeyStates.pressed[theKeyStates.headMiddle]
+     || theKeyStates.pressed[theKeyStates.headRear])
+    for(unsigned i = Joints::firstLeftArmJoint; i <= Joints::rHand; i++)
+      jointRequest.stiffnessData.stiffnesses[i] = 0;
+}
+
+void MotionCombinator::eraseStiffness(JointRequest& jointRequest)
+{
+  for(Joints::Joint j : theDamageConfigurationBody.jointsToEraseStiffness)
+    jointRequest.stiffnessData.stiffnesses[j] = 0;
 }

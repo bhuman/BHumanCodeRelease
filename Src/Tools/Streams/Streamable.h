@@ -11,9 +11,10 @@
 
 #include <typeinfo>
 #include <vector>
+#include <list>
 #include <array>
 #include "InOut.h"
-#if defined(TARGET_ROBOT)
+#ifdef TARGET_ROBOT
 #include "Tools/AlignedMemory.h"
 #endif
 
@@ -75,7 +76,7 @@
  * Base class for all classes using the STREAM macros for streaming instances.
  */
 class Streamable
-#if defined(TARGET_ROBOT)
+#ifdef TARGET_ROBOT
   : public AlignedMemory
 #endif
 {
@@ -100,6 +101,13 @@ namespace Streaming
 
   template<typename T, typename A>
   static void registerDefaultElement(const std::vector<T, A>&)
+  {
+    static T dummy;
+    dummyStream() << dummy;
+  }
+
+  template<typename T, typename A>
+  static void registerDefaultElement(const std::list<T, A>&)
   {
     static T dummy;
     dummyStream() << dummy;
@@ -259,28 +267,28 @@ namespace Streaming
   {
     typedef E(*S)[N];
     static void stream(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int))
+  {
+    registerWithSpecification(name, typeid(s));
+    if(enumToString)
+      Streaming::registerEnum(typeid(s[0]), (const char* (*)(int)) enumToString);
+    if(in)
     {
-      registerWithSpecification(name, typeid(s));
-      if(enumToString)
-        Streaming::registerEnum(typeid(s[0]), (const char* (*)(int)) enumToString);
-      if(in)
-      {
-        in->select(name, -1);
-        streamStaticArray(*in, (E*)s, N * sizeof(E), enumToString);
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -1);
-        streamStaticArray(*out, (E*)s, N * sizeof(E), enumToString);
-        out->deselect();
-      }
+      in->select(name, -1);
+      streamStaticArray(*in, (E*)s, N * sizeof(E), enumToString);
+      in->deselect();
     }
+    else
+    {
+      out->select(name, -1);
+      streamStaticArray(*out, (E*)s, N * sizeof(E), enumToString);
+      out->deselect();
+    }
+  }
   };
 
   template<typename E, typename A> struct Streamer<std::vector<E, A>>
   {
-    typedef std::vector<E, A> S;
+    using S = std::vector<E, A>;
     static void stream(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int))
     {
       registerDefaultElement(s);
@@ -308,6 +316,47 @@ namespace Streaming
     }
   };
 
+  template<typename E, typename A> struct Streamer<std::list<E, A>>
+  {
+    using S = std::list<E, A>;
+    static void stream(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int))
+    {
+      registerDefaultElement(s);
+      registerWithSpecification(name, typeid(s));
+      if(enumToString)
+        Streaming::registerEnum(typeid(s.front()), (const char* (*)(int)) enumToString);
+      if(in)
+      {
+        in->select(name, -1);
+        unsigned size;
+        *in >> size;
+        s.resize(size);
+        int i = 0;
+        for(E& elem : s)
+        {
+          in->select(0, i, enumToString);
+          *in >> elem;
+          in->deselect();
+          i++;
+        }
+        in->deselect();
+      }
+      else
+      {
+        out->select(name, -1);
+        *out << static_cast<unsigned>(s.size());
+        int i = 0;
+        for(const E& elem : s)
+        {
+          out->select(0, i, enumToString);
+          *out << elem;
+          out->deselect();
+        }
+        out->deselect();
+      }
+    }
+  };
+
   template<typename E, size_t n> struct Streamer<std::array<E, n>>
   {
     using S = std::array<E, n>;
@@ -315,7 +364,7 @@ namespace Streaming
     {
       registerWithSpecification(name, typeid(s.data()));
       if(enumToString)
-        Streaming::registerEnum(typeid(s.data()), (const char* (*)(int)) enumToString);
+        Streaming::registerEnum(typeid(s[0]), (const char* (*)(int)) enumToString);
       if(in)
       {
         in->select(name, -1);
@@ -378,7 +427,7 @@ namespace Streaming
 
   /**
    * The function for returning a string representation for each enum value is internally handled as
-   * a function with an int parameter. However, the the following template functions ensure that the
+   * a function with an int parameter. However, the following template functions ensure that the
    * correct overloaded version is picked, i.e. the one that accepts the enum T. These functions are
    * used in the case it is known that a type is an enum.
    * This is the implementation for plain enums.
@@ -396,6 +445,18 @@ namespace Streaming
 
   /** Implementation for vectors of enums. */
   template<typename T, typename A> inline const char* (*castFunction(const std::vector<T, A>&, const char* (*enumToString)(T)))(int)
+  {
+    return (const char* (*)(int)) enumToString;
+  }
+
+  /** Implementation for lists of enums. */
+  template<typename T, typename A> inline const char* (*castFunction(const std::list<T, A>&, const char* (*enumToString)(T)))(int)
+  {
+    return (const char* (*)(int)) enumToString;
+  }
+
+  /** Implementation for arrays of enums. */
+  template<typename T, size_t N> inline const char* (*castFunction(const std::array<T, N>&, const char* (*enumToString)(T)))(int)
   {
     return (const char* (*)(int)) enumToString;
   }
@@ -427,6 +488,18 @@ namespace Streaming
       return Function<E>::cast(T::getName);
     }
 
+    /** Implementation for lists of enums. */
+    template<typename T, typename E, typename A> static const char* (*getNameFunction(const T&, const std::list<E, A>&))(int)
+    {
+      return Function<E>::cast(T::getName);
+    }
+
+    /** Implementation for arrays of enums. */
+    template<typename T, typename E, size_t N> static const char* (*getNameFunction(const T&, const std::array<E, N>&))(int)
+    {
+      return Function<E>::cast(T::getName);
+    }
+
     /** Plain ints are misclassified as enums. Do not return a function in this case. */
     template<typename T> static const char* (*getNameFunction(const T&, const int&))(int)
     {
@@ -441,6 +514,12 @@ namespace Streaming
 
     /** int vectors are misclassified as enum vectors. Do not return a function in this case. */
     template<typename T, typename A> static const char* (*getNameFunction(const T&, const std::vector<int, A>&))(int)
+    {
+      return 0;
+    }
+
+    /** int lists are misclassified as enum lists. Do not return a function in this case. */
+    template<typename T, typename A> static const char* (*getNameFunction(const T&, const std::list<int, A>&))(int)
     {
       return 0;
     }
@@ -468,6 +547,7 @@ namespace Streaming
   template<typename T> const T unwrap(const T&);
   template<typename T, size_t N> const T unwrap(const T(&)[N]);
   template<typename T, typename A> const T unwrap(const std::vector<T, A>&);
+  template<typename T, typename A> const T unwrap(const std::list<T, A>&);
   template<typename T, size_t n> const T unwrap(const std::array<T, n>&);
 
   /**

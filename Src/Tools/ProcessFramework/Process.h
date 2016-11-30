@@ -1,7 +1,7 @@
 /**
  * @file Process.h
  *
- * Contains the definition of class Process and macros for receivers and senders.
+ * Contains the definition of class Process.
  */
 
 #pragma once
@@ -16,7 +16,7 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Debugging/TimingManager.h"
-#if defined(TARGET_ROBOT)
+#ifdef TARGET_ROBOT
 #include "Tools/AlignedMemory.h"
 #endif
 
@@ -28,7 +28,7 @@
  * derivates of the Process class.
  */
 class Process : public PlatformProcess, public MessageHandler
-#if defined(TARGET_ROBOT)
+#ifdef TARGET_ROBOT
   , public AlignedMemory
 #endif
 {
@@ -69,7 +69,7 @@ public:
 
 protected:
   /**
-   * The main funtion is called once in each frame.
+   * The main function is called once in each frame.
    * It must be implemented.
    * @return Should wait for external trigger?
    */
@@ -99,7 +99,7 @@ protected:
  * It only contains a flag that signals to all debug package senders that the current process
  * is terminating and they should abort blocking actions.
  */
-class MultiDebugSenderBase
+class DebugSenderBase
 {
 protected:
   static bool terminating; /**< Is the current process terminating? */
@@ -111,16 +111,14 @@ protected:
  * This template class implements a sender for debug packages.
  * It ensures that only a package is sent if it is not empty.
  */
-template<class T> class MultiDebugSender : public Sender<T>, private MultiDebugSenderBase
+template<class T> class DebugSender : public Sender<T>, private DebugSenderBase
 {
 public:
   /**
    * The constructor.
    * @param process The process this sender is associated with.
-   * @param name The connection name of the sender without the process name.
    */
-  MultiDebugSender(PlatformProcess* process, const char* name) :
-    Sender<T>(process, name)
+  DebugSender(PlatformProcess* process) : Sender<T>(process)
   {}
 
   /**
@@ -137,7 +135,7 @@ public:
       if(block)
         while(!requestedNew && !terminating)
         {
-          Thread<ProcessBase>::yield();
+          Thread::yield();
           requestedNew = Sender<T>::requestedNew();
         }
       if(requestedNew)
@@ -150,113 +148,3 @@ public:
 
   friend class RoboCupCtrl; // Access terminate
 };
-
-/**
- * This class implements a sender for MessageQueues.
- * It ensures that only a package is sent if it is not empty.
- */
-class DebugSender : public MultiDebugSender<MessageQueue>
-{
-public:
-  /**
-   * @param process The process this sender is associated with.
-   * @param name The connection name of the sender without the process name.
-   */
-  DebugSender(PlatformProcess* process, const char* name) :
-    MultiDebugSender<MessageQueue>(process, name)
-  {}
-};
-
-/**
- * The macro declares two debugging queues.
- * The macro shall be the first entry in the declaration of a process.
- */
-#define DEBUGGING \
-  Receiver<MessageQueue> theDebugReceiver; \
-  DebugSender theDebugSender
-
-/**
- * The macro initializes the two debugging queues and the base class.
- * The macro shall be the first entry after the colon in constructor
- * of the process.
- */
-#define INIT_DEBUGGING \
-  Process(theDebugReceiver,theDebugSender), \
-  theDebugReceiver(this,"Receiver.MessageQueue.O"), \
-  theDebugSender(this,"Sender.MessageQueue.S")
-
-/**
- * The macro declares a receiver.
- * It must be used inside a declaration of a process, after the macro DEBUGGING.
- * @param type The type of the package. The variable actually declared has
- *             a type compatible to "type" and is called "thetypeReceiver".
- */
-#define RECEIVER(type) \
-  Receiver<type> the##type##Receiver
-
-/**
- * The macro initializes a receiver for a certain type. It must be part of the
- * initializer list of the constructor of the process.
- * @param type The type of the package. The variable actually declared has
- *             a type compatible to "type" and is called "thetypeReceiver".
- */
-#define INIT_RECEIVER(type) \
-  the##type##Receiver(this,"Receiver." #type ".O")
-
-/**
- * The macro declares a sender.
- * It must be used inside a declaration of a process, after the macro DEBUGGING.
- * @param type The type of the package. The variable actually declared has
- *             a type compatible to "type" and is called "thetypeSender".
- */
-#define SENDER(type) \
-  Sender<type> the##type##Sender
-
-/**
- * The macro initializes a sender for a certain type. It must be part of the
- * initializer list of the constructor of the process.
- * @param type The type of the package. The variable actually declared has
- *             a type compatible to "type" and is called "thetypeSender".
- */
-#define INIT_SENDER(type) \
-  the##type##Sender(this,"Sender." #type ".S")
-
-/**
- * The macro declares a receiver for a MessageQueue.
- * It must be used inside a declaration of a process, after the macro DEBUGGING.
- * It shall only be used in the Debug process.
- * @param source The source process of the package. The variable actually declared is
- *               of type MessageQueue and is called "thesourceReceiver".
- */
-#define DEBUG_RECEIVER(source) \
-  class Receive##source##MessageQueue : public MessageQueue {}; \
-  Receiver<Receive##source##MessageQueue> the##source##Receiver
-
-/**
- * The macro initializes a receiver for a MessageQueue. It must be part of the
- * initializer list of the constructor of the process.
- * @param source The source process of the package. The variable actually declared is
- *               of type MessageQueue and is called "thesourceReceiver".
- */
-#define INIT_DEBUG_RECEIVER(source) \
-  the##source##Receiver(this,#source "Receiver.MessageQueue.O") \
-
-/**
- * The macro declares a sender for a MessageQueue.
- * It must be used inside a declaration of a process, after the macro DEBUGGING.
- * It shall only be used in the Debug process.
- * @param target The target process of the package. The variable actually declared is
- *               of type MessageQueue and is called "thetargetReceiver".
- */
-#define DEBUG_SENDER(target) \
-  class Send##target##MessageQueue : public MessageQueue {}; \
-  MultiDebugSender<Send##target##MessageQueue> the##target##Sender
-
-/**
- * The macro initializes a sender for a MessageQueue. It must be part of the
- * initializer list of the constructor of the process.
- * @param target The target process of the package. The variable actually declared is
- *               of type MessageQueue and is called "thetargetSender".
- */
-#define INIT_DEBUG_SENDER(target) \
-  the##target##Sender(this,#target "Sender.MessageQueue.S")

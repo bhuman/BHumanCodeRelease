@@ -1,4 +1,4 @@
-/*
+/**
  * PropertyEditorFactory.cpp
  *
  *  Created on: Apr 27, 2012
@@ -29,7 +29,7 @@ class IntSpinBox : public QSpinBox
 protected:
   QValidator::State validate(QString& input, int& pos) const
   {
-    for(;;)
+    while(true)
     {
       int index = input.indexOf('.');
       if(index == -1)
@@ -175,9 +175,7 @@ QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager,
     pReturnWidget = aEdit;
   }
   else
-  {
     pReturnWidget = QtVariantEditorFactory::createEditor(pManager, pProperty, pParent);
-  }
 
   if(nullptr != pReturnWidget)
   {
@@ -328,7 +326,7 @@ AngleEditor::AngleEditor(QWidget* parent) :
   unityBox = new QComboBox();
   layout->addWidget(fBox, 0, 0);
 
-#ifdef OSX
+#ifdef MACOS
   setAttribute(Qt::WA_MacShowFocusRect);
   QWidget* w = new QWidget();
   w->setLayout(new QHBoxLayout);

@@ -1,10 +1,10 @@
 /**
-* @file Controller/Views/KickView/KickMenuBar.h
-*
-* Declaration of class KickMenuBar
-*
-* @author <a href="mailto:judy@tzi.de">Judith Müller</a>
-*/
+ * @file Controller/Views/KickView/KickMenuBar.h
+ *
+ * Declaration of class KickMenuBar
+ *
+ * @author <a href="mailto:judy@tzi.de">Judith Müller</a>
+ */
 
 #pragma once
 
@@ -14,8 +14,6 @@
 class KickMenuBar : public QMenuBar
 {
 public:
-  KickMenuBar();
-
   QAction* xy_plane;
   QAction* xz_plane;
   QAction* yz_plane;
@@ -24,8 +22,10 @@ public:
   QMenu* dragPlaneMenu;
 
   QActionGroup* dragPlaneActionGroup;
-private:
 
+  KickMenuBar();
+
+private:
   void createActions();
   void createMenus();
 };

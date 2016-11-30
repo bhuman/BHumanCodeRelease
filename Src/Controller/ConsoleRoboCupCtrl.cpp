@@ -8,69 +8,65 @@
 
 #include "ConsoleRoboCupCtrl.h"
 
-#include <QDir>
 #include <QDirIterator>
 #include <QInputDialog>
 #include <QSettings>
 
 #include <algorithm>
+#include <iostream>
 
 #include "LocalRobot.h"
 #include "Controller/Views/ConsoleView.h"
 #include "Controller/Views/CABSLGraphView.h"
-#include "Platform/SimRobotQt/Robot.h"
+#include "Platform/Time.h"
+#include "Platform/SimulatedNao/Robot.h"
 #include "RemoteRobot.h"
-#include "TeamRobot.h"
 #include <SimRobotEditor.h>
 #include "Platform/File.h"
 #include "BHToolBar.h"
 
 #define FRAMES_PER_SECOND 60
 
-ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application)
-  : RoboCupCtrl(application),
-    calculateImage(true),
-    calculateImageFps(FRAMES_PER_SECOND),
-    globalNextImageTimeStamp(0),
-    mode(SystemCall::simulatedRobot),
-    currentCompletionIndex(completion.end()),
-    INIT_TEAM_COMM,
-    timeStamp(0),
-    robotNumber(-1),
-    toolBar(*this)
+ConsoleRoboCupCtrl::ConsoleRoboCupCtrl(SimRobot::Application& application) :
+  RoboCupCtrl(application), calculateImageFps(FRAMES_PER_SECOND),
+  mode(SystemCall::simulatedRobot), currentCompletionIndex(completion.end()),
+  toolBar(*this)
 {
   application.getLayoutSettings().setValue("Run", true);
 
-  debugRequestTable = 0;
-  moduleInfo = 0;
-  drawingManager = 0;
-  imageViews = 0;
-  fieldViews = 0;
-  plotViews = 0;
-  newLine = true;
-  nesting = 0;
-
   consoleView = new ConsoleView("Console", *this);
-  addView(consoleView, 0, SimRobot::Flag::verticalTitleBar);
+  addView(consoleView, nullptr, SimRobot::Flag::verticalTitleBar);
   addView(new ConsoleView("Console.Pad", *this, true), consoleView, SimRobot::Flag::verticalTitleBar);
 
-  SimRobot::Object* documentationCategory = addCategory("Docs", 0, ":/Icons/page_white_h.png");
+  SimRobot::Object* documentationCategory = addCategory("Docs", nullptr, ":/Icons/page_white_h.png");
   addView(new CABSLGraphViewObject("Docs.BehaviorControl2015", "BehaviorControl2015", "Options.h"), documentationCategory);
 
-  representationToFile["parameters:BodyContourProvider"] = "bodyContourProvider.cfg";
   representationToFile["representation:CameraCalibration"] = "cameraCalibration.cfg";
-  representationToFile["representation:UpperCameraSettings"] = "upperCameraSettings.cfg";
-  representationToFile["representation:LowerCameraSettings"] = "lowerCameraSettings.cfg";
+  representationToFile["representation:CameraIntrinsics"] = "cameraIntrinsics.cfg";
+  representationToFile["representation:IMUCalibration"] = "imuCalibration.cfg";
   representationToFile["representation:JointCalibration"] = "jointCalibration.cfg";
   representationToFile["representation:MassCalibration"] = "massCalibration.cfg";
   representationToFile["representation:RobotDimensions"] = "robotDimensions.cfg";
-  representationToFile["representation:CameraIntrinsics"] = "cameraIntrinsics.cfg";
+  representationToFile["parameters:BodyContourProvider"] = "bodyContourProvider.cfg";
   representationToFile["parameters:WalkingEngine"] = "walkingEngine.cfg";
-  representationToFile["parameters:DmpKickEngine"] = "dmpKickEngine.cfg";
+  representationToFile["parameters:ZmpWalkingEngine"] = "zmpWalkingEngine.cfg";
 }
 
 bool ConsoleRoboCupCtrl::compile()
 {
+  std::string fileName = application->getFilePath().
+#ifdef WINDOWS
+                         toLatin1
+#else
+                         toUtf8
+#endif
+                         ().constData();
+  std::string::size_type p = fileName.find_last_of("\\/");
+  std::string::size_type p2 = fileName.find_last_of(".");
+  if(p2 > p)
+    fileName = fileName.substr(0, p2);
+  executeFile("", fileName, false, nullptr, true);
+
   if(!RoboCupCtrl::compile())
     return false;
 
@@ -80,25 +76,12 @@ bool ConsoleRoboCupCtrl::compile()
   start();
   Global::theStreamHandler = &streamHandler;
 
-  std::string fileName = application->getFilePath().
-#ifdef WINDOWS
-                         toLatin1
-#else
-                         toUtf8
-#endif
-                         ().constData();
-  std::string::size_type p = fileName.find_last_of("\\/"),
-                         p2 = fileName.find_last_of(".");
-  if(p2 > p)
-    fileName = fileName.substr(0, p2);
-  executeFile(fileName.c_str(), false, 0);
+  executeFile("", fileName, false, nullptr, false);
 
-  for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-    (*i)->getRobotProcess()->handleConsole("endOfStartScript");
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    (*i)->handleConsole("endOfStartScript");
-  for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-    (*i)->handleConsole("endOfStartScript");
+  for(Robot* robot : robots)
+    robot->getRobotProcess()->handleConsole("endOfStartScript");
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    remoteRobot->handleConsole("endOfStartScript");
   Global::theStreamHandler = &streamHandler;
   return true;
 }
@@ -111,12 +94,12 @@ void ConsoleRoboCupCtrl::link()
     QFileInfo fileInfo(application->getFilePath());
     editor->addFile(fileInfo.path() + "/" + fileInfo.baseName() + ".con", "call[ ]+([\\\\/a-z0-9\\.\\-_]+)");
 
-    SimRobotEditor::Editor* kicksFolder = editor->addFolder("Kicks");
+    SimRobotEditor::Editor* kicksFolder = editor->addFolder("WalkKicks");
     QString configDir = QFileInfo(fileInfo.dir().path()).dir().path();
-    for(int i = 1; i < WalkRequest::numOfKickTypes; i += 2)
+    for(int i = 1; i < WalkKicks::numOfTypes; ++i)
     {
       char filePath[256];
-      sprintf(filePath, "/Kicks/%s.cfg", WalkRequest::getName(WalkRequest::KickType(i)));
+      sprintf(filePath, "/WalkKicks/%s.cfg", WalkKicks::getName(WalkKicks::Type(i)));
       kicksFolder->addFile(configDir + filePath, "");
     }
   }
@@ -124,89 +107,95 @@ void ConsoleRoboCupCtrl::link()
 
 ConsoleRoboCupCtrl::~ConsoleRoboCupCtrl()
 {
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    (*i)->announceStop();
-  for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-    (*i)->announceStop();
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    remoteRobot->announceStop();
 
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    delete *i;
-  for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-    delete *i;
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    delete remoteRobot;
 
   stop();
   mode = SystemCall::simulatedRobot;
-  Global::theSettings = 0;
+  Global::theSettings = nullptr;
 }
 
 void ConsoleRoboCupCtrl::update()
 {
   {
     SYNC;
-    for(std::list<std::string>::const_iterator i = textMessages.begin(); i != textMessages.end(); ++i)
-      if(*i == "_cls")
+    for(const std::string& textMessage : textMessages)
+    {
+      if(textMessage == "_cls")
         consoleView->clear();
-      else if(newLine || &*i != &*textMessages.rend())
-        consoleView->printLn(i->c_str());
+      else if(newLine || &textMessage != &*textMessages.rend())
+        consoleView->printLn(textMessage.c_str());
       else
-        consoleView->print(i->c_str());
+        consoleView->print(textMessage.c_str());
+    }
     textMessages.clear();
   }
   RoboCupCtrl::update();
 
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    (*i)->update();
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    remoteRobot->update();
 
   Global::theStreamHandler = &streamHandler;
-  ntp.doSynchronization(SystemCall::getRealSystemTime(), theTeamSender.out);
-  theTeamHandler.send();
-  (void) theTeamHandler.receive();
-  theTeamReceiver.handleAllMessages(*this);
-  theTeamReceiver.clear();
-  for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-    (*i)->update();
-  Global::theStreamHandler = &streamHandler;
 
-  application->setStatusMessage(statusText.c_str());
+  {
+    SYNC;
+    application->setStatusMessage(statusText);
+  }
 
   if(completion.empty())
     createCompletion();
 }
 
-void ConsoleRoboCupCtrl::executeFile(std::string name, bool printError, RobotConsole* console)
+void ConsoleRoboCupCtrl::executeFile(const std::string& name1, const std::string& name2,
+                                     bool printError, RobotConsole* console, bool locationOnly)
 {
   if(nesting == 10)
     printLn("Nesting Error");
   else
   {
     ++nesting;
-    if((int) name.rfind('.') <= (int) name.find_last_of("\\/"))
-      name = name + ".con";
-    if(name[0] != '/' && name[0] != '\\' && (name.size() < 2 || name[1] != ':'))
-      name = std::string("Scenes\\") + name;
-    InBinaryFile stream(name.c_str());
-    if(!stream.exists())
+    bool print = false;
+    for(std::string name : std::vector<std::string>({name1, name2}))
     {
-      if(printError)
-        printLn(name + " not found");
-    }
-    else
-    {
-      std::string line;
-      while(!stream.eof())
+      if(name == "")
       {
-        line.resize(0);
+        print = printError;
+        continue;
+      }
+
+      if((int)name.rfind('.') <= (int)name.find_last_of("\\/"))
+        name = name + ".con";
+      if(name[0] != '/' && name[0] != '\\' && (name.size() < 2 || name[1] != ':'))
+        name = std::string("Scenes\\") + name;
+      InBinaryFile stream(name);
+      if(!stream.exists())
+      {
+        if(print)
+          printLn(name + " not found");
+        print = printError;
+      }
+      else
+      {
+        std::string line;
         while(!stream.eof())
         {
-          char c[2] = " ";
-          stream >> c[0];
-          if(c[0] == '\n')
-            break;
-          else if(c[0] != '\r')
-            line = line + c;
+          line.resize(0);
+          while(!stream.eof())
+          {
+            char c[2] = " ";
+            stream >> c[0];
+            if(c[0] == '\n')
+              break;
+            else if(c[0] != '\r')
+              line = line + c;
+          }
+          if(line.find_first_not_of(" ") != std::string::npos)
+            executeConsoleCommand(line, console, locationOnly);
         }
-        if(line.find_first_not_of(" ") != std::string::npos)
-          executeConsoleCommand(line, console);
+        break;
       }
     }
     --nesting;
@@ -217,12 +206,12 @@ void ConsoleRoboCupCtrl::selectedObject(const SimRobot::Object& obj)
 {
   const QString& fullName = obj.getFullName();
   std::string robotName = fullName.mid(fullName.lastIndexOf('.') + 1).toUtf8().constData();
-  for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-    if(robotName == (*i)->getName())
+  for(Robot* robot : robots)
+    if(robotName == robot->getName())
     {
       selected.clear();
-      selected.push_back((*i)->getRobotProcess());
-      printLn(std::string("robot ") + (*i)->getName());
+      selected.push_back(robot->getRobotProcess());
+      printLn("robot " + robot->getName());
       return;
     }
 }
@@ -230,22 +219,23 @@ void ConsoleRoboCupCtrl::selectedObject(const SimRobot::Object& obj)
 void ConsoleRoboCupCtrl::pressedKey(int key, bool pressed)
 {
   if(key > 10)
-    for(std::list<RobotConsole*>::iterator i = selected.begin(); i != selected.end(); ++i)
-      (*i)->handleKeyEvent(key - 11, pressed);
+    for(RobotConsole* selectedConsole : selected)
+      selectedConsole->handleKeyEvent(key - 11, pressed);
 }
 
 SystemCall::Mode ConsoleRoboCupCtrl::getMode() const
 {
-  size_t threadId = Thread<ProcessBase>::getCurrentId();
-  for(std::list<Robot*>::const_iterator i = robots.begin(); i != robots.end(); ++i)
-    if((*i)->getRobotProcess())
-      for(ProcessList::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j)
-        if((*j)->getId() == threadId)
-          return (*i)->getRobotProcess()->mode;
+  std::thread::id threadId = Thread::getCurrentId();
+  for(const Robot* robot : robots)
+    if(robot->getRobotProcess())
+      for(const ProcessBase* robotProcess : *robot)
+        if(robotProcess->getId() == threadId)
+          return robot->getRobotProcess()->mode;
+
   return mode;
 }
 
-void ConsoleRoboCupCtrl::setRepresentation(const std::string representationName, const Streamable& representation)
+void ConsoleRoboCupCtrl::setRepresentation(const std::string& representationName, const Streamable& representation)
 {
   OutMapSize size(true);
   size << representation;
@@ -260,13 +250,29 @@ void ConsoleRoboCupCtrl::setRepresentation(const std::string representationName,
   delete[] buf;
 }
 
-void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole* console)
+void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole* console, bool locationOnly)
 {
-  showInputDialog(command);
+  if(!locationOnly)
+    showInputDialog(command);
   std::string buffer;
   InConfigMemory stream(command.c_str(), command.size());
   stream >> buffer;
-  if(buffer == "") // comment
+  if(buffer == "call")
+  {
+    std::string optionalFile;
+    stream >> buffer >> optionalFile;
+    executeFile(optionalFile, buffer, true, console, locationOnly);
+  }
+  else if(buffer == "loc" && nesting > 0)
+  {
+    stream >> buffer;
+    bool exists = QDir(QString(File::getBHDir()) + "/Config/Locations/" + buffer.c_str()).exists();
+    if(locationOnly && exists)
+      Settings::settings.location = buffer;
+    else if(!locationOnly && !exists)
+      printLn("Syntax Error: loc " + buffer);
+  }
+  else if(buffer == "" || locationOnly) // drop comments or everything if searching for location
     return;
   else if(buffer == "help" || buffer == "?")
     help(stream);
@@ -275,30 +281,26 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     stream >> buffer;
     if(buffer == "?")
     {
-      for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-        print(std::string((*i)->getName()) + " ");
-      for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-        print(std::string((*i)->getName()) + " ");
-      for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-        print(std::string((*i)->getName()) + " ");
+      for(const Robot* robot : robots)
+        print(robot->getName() + " ");
+      for(const RemoteRobot* remoteRobot : remoteRobots)
+        print(remoteRobot->getName() + " ");
       printLn("");
       return;
     }
     else if(buffer == "all")
     {
       selected.clear();
-      for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-        selected.push_back((*i)->getRobotProcess());
-      for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-        selected.push_back(*i);
-      for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-        selected.push_back(*i);
+      for(const Robot* robot : robots)
+        selected.push_back(robot->getRobotProcess());
+      for(RemoteRobot* remoteRobot : remoteRobots)
+        selected.push_back(remoteRobot);
       return;
     }
     else
     {
       selected.clear();
-      for(;;)
+      while(true)
       {
         if(!selectRobot(buffer))
           break;
@@ -318,11 +320,6 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
       gameController.automatic = false;
     else
       printLn("Syntax Error");
-  }
-  else if(buffer == "call")
-  {
-    stream >> buffer;
-    executeFile(buffer, true, console);
   }
   else if(buffer == "ci")
   {
@@ -346,7 +343,7 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
       if(simTime)
       {
         // real time contiues at simulation time
-        time = getTime() - SystemCall::getRealSystemTime();
+        time = getTime() - Time::getRealSystemTime();
         simTime = false;
       }
     }
@@ -359,16 +356,16 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     if(buffer == "on" || buffer == "")
       delayTime = simStepLength;
     else if(buffer == "off")
-      delayTime = 0;
+      delayTime = 0.f;
     else
     {
-      for(size_t i = 0; i < buffer.size(); ++i)
-        if(!isdigit(buffer[i]))
+      for(char& c : buffer)
+        if(!isdigit(c))
         {
           printLn("Syntax Error");
           return;
         }
-      delayTime = 1000.f / (float) std::max(1, atoi(buffer.c_str()));
+      delayTime = 1000.f / std::max(1, atoi(buffer.c_str()));
     }
   }
   else if(buffer == "gc")
@@ -382,29 +379,13 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     {
       selected.clear();
       if(!robots.empty())
-        selected.push_back((*robots.begin())->getRobotProcess());
+        selected.push_back(robots.front()->getRobotProcess());
     }
   }
   else if(buffer == "sl")
   {
     if(!startLogFile(stream))
       printLn("Logfile not found!");
-  }
-  else if(buffer == "su")
-    startTeamRobot(stream);
-  else if(buffer == "tc")
-  {
-    int port;
-    std::string subnet;
-    stream >> port >> subnet;
-    if(subnet == "")
-      subnet = "255.255.255.255";
-    if(port)
-      theTeamHandler.start(port, subnet.c_str());
-  }
-  else if(buffer == "tc2")
-  {
-    // ignore this command (it is used in the TeamComm3D scene)
   }
   else if(selected.empty())
     if(buffer == "cls")
@@ -420,26 +401,35 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
   }
   else
   {
-    for(std::list<RobotConsole*>::iterator i = selected.begin(); i != selected.end(); ++i)
-      (*i)->handleConsole(command);
+    for(RobotConsole* selectedConsole : selected)
+      selectedConsole->handleConsole(command);
     Global::theStreamHandler = &streamHandler;
   }
-  if(completion.empty())
+  if(completion.empty() && !locationOnly)
     createCompletion();
+}
+
+void ConsoleRoboCupCtrl::executeConsoleCommandOnSelectedRobots(const std::string& command)
+{
+  for(auto console : selected)
+  {
+    console->handleConsole(command);
+  }
 }
 
 bool ConsoleRoboCupCtrl::selectRobot(const std::string& name)
 {
-  for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-    if(name == (*i)->getName())
+  for(Robot* robot : robots)
+    if(name == robot->getName())
     {
-      selected.push_back((*i)->getRobotProcess());
+      selected.push_back(robot->getRobotProcess());
       return true;
     }
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    if(name == (*i)->getName())
+
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    if(name == remoteRobot->getName())
     {
-      selected.push_back(*i);
+      selected.push_back(remoteRobot);
       return true;
     }
 
@@ -453,11 +443,10 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("Initialization commands:", pattern, true);
   list("  sc <name> [<a.b.c.d>] : Starts a TCP connection to a remote robot.", pattern, true);
   list("  sl <name> <file> : Starts a robot reading its inputs from a log file.", pattern, true);
-  list("  su <name> <number> : Starts a UDP team connection to a remote robot with a certain player number. Requires command tc.", pattern, true);
-  list("  tc <port> <subnet>: Listen to team communication on given port and broadcast to a subnet.", pattern, true);
+  list("  loc <location> : Set location (only during initial script execution).", pattern, true);
   list("Global commands:", pattern, true);
   list("  ar off | on : Switches automatic referee on or off.", pattern, true);
-  list("  call <file> : Execute a script file.", pattern, true);
+  list("  call <file> [<file>] : Execute a script file. If the optional script file is present, execute it instead.", pattern, true);
   list("  ci off | on | <fps> : Switch the calculation of images on or off or activate it and set the frame rate.", pattern, true);
   list("  cls : Clear console window.", pattern, true);
   list("  dt off | on | <fps> : Delay time of a simulation step to real time or a certain number of frames per second.", pattern, true);
@@ -478,30 +467,30 @@ void ConsoleRoboCupCtrl::help(In& stream)
   list("  js <axis> <speed> <threshold> [<center>] : Set axis maximum speed and ignore threshold for \"jc motion <num>\" commands.", pattern, true);
   list("  log start | stop | clear | save <file> | full | jpeg : Record log file and (de)activate image compression.", pattern, true);
   list("  log saveAudio <file> : Save audio data from log.", pattern, true);
+  list("  log saveBallSpotImages <file> : Save images around ballspots from log.", pattern, true);
   list("  log saveImages [raw] <file> : Save images from log.", pattern, true);
   list("  log saveTiming <file> : Save timing data from log to csv.", pattern, true);
   list("  log ? [<pattern>] | load <file> | ( keep | remove ) <message> {<message>} : Load, filter, and display information about log file.", pattern, true);
-  list("  log start | pause | stop | forward [image] | backward [image] | repeat | goto <number> | cycle | once | fast_forward | fast_rewind : Replay log file.", pattern, true);
+  list("  log start | pause | stop | forward [image] | backward [image] | repeat | goto <number> | time <minutes> <seconds> | cycle | once | fastForward | fastBackward : Replay log file.", pattern, true);
   list("  mof : Recompile motion net and send it to the robot. ", pattern, true);
   list("  msg off | on | log <file> | enable | disable : Switch output of text messages on or off. Log text messages to a file. Switch message handling on or off.", pattern, true);
   list("  mr ? [<pattern>] | modules [<pattern>] | save | <representation> ( ? [<pattern>] | <module> | off ) : Send module request.", pattern, true);
   list("  mv <x> <y> <z> [<rotx> <roty> <rotz>] : Move the selected simulated robot to the given position.", pattern, true);
   list("  mvb <x> <y> <z> : Move the ball to the given position.", pattern, true);
   list("  poll : Poll for all available debug requests and drawings. ", pattern, true);
-  list("  pr none | ballHolding | playerPushing | inactivePlayer | illegalDefender | leavingTheField | playingWithHands | requestForPickup : Penalize robot.", pattern, true);
+  list("  pr none | illegalBallContact | playerPushing | illegalMotionInSet | inactivePlayer | illegalDefender | leavingTheField | kickOffGoal | requestForPickup | manual : Penalize robot.", pattern, true);
   list("  qfr queue | replace | reject | collect <seconds> | save [<seconds>] : Send queue fill request.", pattern, true);
   list("  set ? [<pattern>] | <key> ( ? | unchanged | <data> ) : Change debug data or show its specification.", pattern, true);
   list("  save ? [<pattern>] | <key> [<path>] : Save debug data to a configuration file.", pattern, true);
-  list("  si reset | (upper | lower) [number] <file> : Save the upper/lower cams image.", pattern, true);
-  list("  v3 ? [<pattern>] | <image> [jpeg] [upper] [<name>] : Add a set of 3-D views for a certain image.", pattern, true);
+  list("  si reset | (lower | upper) [number] <file> : Save the lower/upper camera's image.", pattern, true);
+  list("  v3 ? [<pattern>] | <image> [jpeg] [lower | upper] [<name>] : Add a set of 3-D views for a certain image.", pattern, true);
   list("  vd <debug data> on | off : Show debug data in a window or switch sending it off.", pattern, true);
   list("  vf <name> : Add field view.", pattern, true);
-  list("  vfd ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in field view.", pattern, true);
-  list("  vi ? [<pattern>] | <image> [jpeg] [segmented] [upper] [<name>] [gain <value>] : Add image view.", pattern, true);
-  list("  vid ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in image view.", pattern, true);
+  list("  vfd ? [<pattern>] | ( all | <name> ) ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in field view.", pattern, true);
+  list("  vi ? [<pattern>] | <image> [jpeg] [segmented] [lower | upper] [<name>] [gain <value>] : Add image view.", pattern, true);
+  list("  vid ? [<pattern>] | ( all | <name> ) ( ? [<pattern>] | <drawing> ( on | off ) ) : (De)activate debug drawing in image view.", pattern, true);
   list("  vp <name> <numOfValues> <minValue> <maxValue> [<yUnit> <xUnit> <xScale>]: Add plot view.", pattern, true);
   list("  vpd ? [<pattern>] | <name> ( ? [<pattern>] | <drawing> ( ? [<pattern>] | <color> [<description>] | off ) ) : Plot data in a certain color in plot view.", pattern, true);
-  list("  wek : Send walking engine kicks to the robot. ", pattern, true);
 }
 
 void ConsoleRoboCupCtrl::echo(In& stream)
@@ -522,22 +511,21 @@ void ConsoleRoboCupCtrl::echo(In& stream)
 
 bool ConsoleRoboCupCtrl::startRemote(In& stream)
 {
-  std::string name,
-      ip;
+  std::string name, ip;
   stream >> name >> ip;
   std::string robotName = std::string(".") + name;
   this->robotName = robotName.c_str();
 
   mode = SystemCall::remoteRobot;
-  RemoteRobot* rr = new RemoteRobot(name.c_str(), ip.c_str());
-  this->robotName = 0;
+  RemoteRobot* rr = new RemoteRobot(name, ip);
+  this->robotName = nullptr;
   if(!rr->isClient())
   {
     if(ip != "")
     {
       delete rr;
       Global::theStreamHandler = &streamHandler;
-      Global::theSettings = 0;
+      Global::theSettings = nullptr;
       printLn(std::string("No connection to ") + ip + " established!");
       return false;
     }
@@ -554,50 +542,30 @@ bool ConsoleRoboCupCtrl::startRemote(In& stream)
 
 bool ConsoleRoboCupCtrl::startLogFile(In& stream)
 {
-  std::string name,
-      fileName;
-  int offset;
-  stream >> name >> fileName >> offset;
+  std::string name, fileName;
+  stream >> name >> fileName;
   if(int(fileName.rfind('.')) <= int(fileName.find_last_of("\\/")))
     fileName = fileName + ".log";
   if(fileName[0] != '\\' && fileName[0] != '/' && (fileName.size() < 2 || fileName[1] != ':'))
     fileName = std::string("Logs/") + fileName;
+
   {
     InBinaryFile test(fileName);
     if(!test.exists())
       return false;
   }
+
   std::string robotName = std::string(".") + name;
   mode = SystemCall::logfileReplay;
   logFile = fileName;
   this->robotName = robotName.c_str();
-  robots.push_back(new Robot(name.c_str()));
-  this->robotName = 0;
+  robots.push_back(new Robot(name));
+  this->robotName = nullptr;
   logFile = "";
   selected.clear();
   RobotConsole* rc = robots.back()->getRobotProcess();
   selected.push_back(rc);
   robots.back()->start();
-  return true;
-}
-
-bool ConsoleRoboCupCtrl::startTeamRobot(In& stream)
-{
-  std::string name;
-  int number;
-  stream >> name >> number;
-  if(!number)
-    return false;
-
-  std::string robotName = std::string(".") + name;
-  this->robotName = robotName.c_str();
-  TeamRobot* tr = new TeamRobot(name.c_str(), number);
-  this->robotName = 0;
-  teamRobots.push_back(tr);
-  selected.clear();
-  selected.push_back(teamRobots.back());
-  tr->addViews();
-  tr->start();
   return true;
 }
 
@@ -618,8 +586,8 @@ bool ConsoleRoboCupCtrl::calcImage(In& stream)
   }
   else
   {
-    for(unsigned i = 0; i < state.size(); ++i)
-      if(!isdigit(state[i]))
+    for(char c : state)
+      if(!isdigit(c))
         return false;
     calculateImageFps = std::max(1, atoi(state.c_str()));
     calculateImage = true;
@@ -647,7 +615,7 @@ void ConsoleRoboCupCtrl::printLn(const std::string& text)
   newLine = true;
 }
 
-void ConsoleRoboCupCtrl::printStatusText(const std::string& text)
+void ConsoleRoboCupCtrl::printStatusText(const QString& text)
 {
   SYNC;
   if(statusText != "")
@@ -685,7 +653,7 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log stop",
     "log save",
     "log saveAudio",
-    "log saveImages",
+    "log saveBallSpotImages",
     "log saveImages raw",
     "log saveTiming",
     "log clear",
@@ -702,8 +670,13 @@ void ConsoleRoboCupCtrl::createCompletion()
     "log backward",
     "log repeat",
     "log goto",
-    "log fast_forward",
-    "log fast_rewind",
+    "log time",
+    "log fastForward",
+    "log fastBackward",
+    "log keep ballPercept seen",
+    "log keep ballPercept guessed",
+    "log keep ballSpots",
+    "log keep image",
     "mof",
     "mr modules",
     "mr save",
@@ -726,19 +699,20 @@ void ConsoleRoboCupCtrl::createCompletion()
     "si upper number",
     "si reset",
     "sl",
-    "su",
     "st off",
     "st on",
-    "tc",
     "v3 image upper",
     "v3 image jpeg upper",
+    "v3 image lower",
+    "v3 image jpeg lower",
     "vf",
     "vi none",
     "vi image jpeg segmented",
     "vi image segmented",
     "vi image upper jpeg segmented",
-    "vi image upper segmented",
-    "wek"
+    "vi image upper segmented"
+    "vi image lower jpeg segmented",
+    "vi image lower segmented"
   };
 
   SYNC;
@@ -747,17 +721,15 @@ void ConsoleRoboCupCtrl::createCompletion()
   for(int i = 0; i < num; ++i)
     completion.insert(commands[i]);
 
-  for(std::list<Robot*>::iterator i = robots.begin(); i != robots.end(); ++i)
-    completion.insert(std::string("robot ") + (*i)->getName());
-  for(std::list<RemoteRobot*>::iterator i = remoteRobots.begin(); i != remoteRobots.end(); ++i)
-    completion.insert(std::string("robot ") + (*i)->getName());
-  for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-    completion.insert(std::string("robot ") + (*i)->getName());
+  for(Robot* robot : robots)
+    completion.insert("robot " + robot->getName());
+  for(RemoteRobot* remoteRobot : remoteRobots)
+    completion.insert("robot " + remoteRobot->getName());
 
-  for(int i = 1; i < numOfMessageIDs; ++i)
+  FOREACH_ENUM(MessageID, i)
   {
-    completion.insert(std::string("log keep ") + getName(MessageID(i)));
-    completion.insert(std::string("log remove ") + getName(MessageID(i)));
+    completion.insert(std::string("log keep ") + getName(i));
+    completion.insert(std::string("log remove ") + getName(i));
   }
 
   addCompletionFiles("log load ", std::string(File::getBHDir()) + "/Config/Logs/*.log");
@@ -778,27 +750,33 @@ void ConsoleRoboCupCtrl::createCompletion()
 
   if(debugRequestTable)
   {
-    for(int i = 0; i < debugRequestTable->currentNumberOfDebugRequests; ++i)
+    for(const auto& i : debugRequestTable->slowIndex)
     {
-      completion.insert(std::string("dr ") + translate(debugRequestTable->debugRequests[i].description) + " on");
-      completion.insert(std::string("dr ") + translate(debugRequestTable->debugRequests[i].description) + " off");
-      if(debugRequestTable->debugRequests[i].description.substr(0, 13) == "debug images:")
+      completion.insert(std::string("dr ") + translate(i.first) + " on");
+      completion.insert(std::string("dr ") + translate(i.first) + " off");
+      if(i.first.substr(0, 13) == "debug images:")
       {
-        completion.insert(std::string("v3 ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " upper");
-        completion.insert(std::string("v3 ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg upper");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " upper");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " segmented upper");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg upper");
-        completion.insert(std::string("vi ") + translate(debugRequestTable->debugRequests[i].description.substr(13)) + " jpeg segmented upper");
+        completion.insert(std::string("v3 ") + translate(i.first.substr(13)) + " upper");
+        completion.insert(std::string("v3 ") + translate(i.first.substr(13)) + " jpeg upper");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " upper");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " segmented upper");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " jpeg upper");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " jpeg segmented upper");
+        completion.insert(std::string("v3 ") + translate(i.first.substr(13)) + " lower");
+        completion.insert(std::string("v3 ") + translate(i.first.substr(13)) + " jpeg lower");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " lower");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " segmented lower");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " jpeg lower");
+        completion.insert(std::string("vi ") + translate(i.first.substr(13)) + " jpeg segmented lower");
       }
-      else if(debugRequestTable->debugRequests[i].description.substr(0, 11) == "debug data:")
+      else if(i.first.substr(0, 11) == "debug data:")
       {
-        completion.insert(std::string("vd ") + translate(debugRequestTable->debugRequests[i].description.substr(11)) + " off");
-        completion.insert(std::string("vd ") + translate(debugRequestTable->debugRequests[i].description.substr(11)) + " on");
+        completion.insert(std::string("vd ") + translate(i.first.substr(11)) + " off");
+        completion.insert(std::string("vd ") + translate(i.first.substr(11)) + " on");
 
-        completion.insert(std::string("get ") + translate(debugRequestTable->debugRequests[i].description.substr(11)) + " ?");
-        completion.insert(std::string("set ") + translate(debugRequestTable->debugRequests[i].description.substr(11)) + " ?");
-        completion.insert(std::string("set ") + translate(debugRequestTable->debugRequests[i].description.substr(11)) + " unchanged");
+        completion.insert(std::string("get ") + translate(i.first.substr(11)) + " ?");
+        completion.insert(std::string("set ") + translate(i.first.substr(11)) + " ?");
+        completion.insert(std::string("set ") + translate(i.first.substr(11)) + " unchanged");
       }
     }
   }
@@ -806,50 +784,58 @@ void ConsoleRoboCupCtrl::createCompletion()
   if(drawingManager)
   {
     if(imageViews)
-      for(RobotConsole::Views::const_iterator v = imageViews->begin(); v != imageViews->end(); ++v)
+      for(const auto& imageViewPair : *imageViews)
       {
-        completion.insert(std::string("cameraCalibrator ") + translate(v->first) + " on");
-        completion.insert(std::string("cameraCalibrator ") + translate(v->first) + " off");
+        completion.insert(std::string("cameraCalibrator ") + translate(imageViewPair.first) + " on");
+        completion.insert(std::string("cameraCalibrator ") + translate(imageViewPair.first) + " off");
       }
-    for(std::unordered_map< const char*, DrawingManager::Drawing>::const_iterator i = drawingManager->drawings.begin(); i != drawingManager->drawings.end(); ++i)
+    for(const auto& drawingsPair : drawingManager->drawings)
     {
-      if(!strcmp(drawingManager->getDrawingType(i->first), "drawingOnImage") && imageViews)
-        for(RobotConsole::Views::const_iterator j = imageViews->begin(); j != imageViews->end(); ++j)
+      if(!strcmp(drawingManager->getDrawingType(drawingsPair.first), "drawingOnImage") && imageViews)
+      {
+        completion.insert(std::string("vid all ") + translate(drawingsPair.first) + " on");
+        completion.insert(std::string("vid all ") + translate(drawingsPair.first) + " off");
+        for(const auto& imageViewPair : *imageViews)
         {
-          completion.insert(std::string("vid ") + j->first + " " + translate(i->first) + " on");
-          completion.insert(std::string("vid ") + j->first + " " + translate(i->first) + " off");
+          completion.insert(std::string("vid ") + imageViewPair.first + " " + translate(drawingsPair.first) + " on");
+          completion.insert(std::string("vid ") + imageViewPair.first + " " + translate(drawingsPair.first) + " off");
         }
-      else if(!strcmp(drawingManager->getDrawingType(i->first), "drawingOnField") && fieldViews)
-        for(RobotConsole::Views::const_iterator j = fieldViews->begin(); j != fieldViews->end(); ++j)
+      }
+      else if(!strcmp(drawingManager->getDrawingType(drawingsPair.first), "drawingOnField") && fieldViews)
+      {
+        completion.insert(std::string("vfd all ") + translate(drawingsPair.first) + " on");
+        completion.insert(std::string("vfd all ") + translate(drawingsPair.first) + " off");
+        for(const auto& fieldViewPair : *fieldViews)
         {
-          completion.insert(std::string("vfd ") + j->first + " " + translate(i->first) + " on");
-          completion.insert(std::string("vfd ") + j->first + " " + translate(i->first) + " off");
+          completion.insert(std::string("vfd ") + fieldViewPair.first + " " + translate(drawingsPair.first) + " on");
+          completion.insert(std::string("vfd ") + fieldViewPair.first + " " + translate(drawingsPair.first) + " off");
         }
+      }
     }
   }
 
-  if(plotViews)
-    for(RobotConsole::PlotViews::const_iterator i = plotViews->begin(); i != plotViews->end(); ++i)
-      for(int j = 0; j < debugRequestTable->currentNumberOfDebugRequests; ++j)
-        if(translate(debugRequestTable->debugRequests[j].description).substr(0, 5) == "plot:")
+  if(plotViews && debugRequestTable)
+    for(const auto& plotPair : *plotViews)
+      for(const auto& i : debugRequestTable->slowIndex)
+        if(translate(i.first).substr(0, 5) == "plot:")
         {
           for(int color = 0; color < RobotConsole::numOfColors; ++color)
-            completion.insert(std::string("vpd ") + i->first + " " +
-                              translate(debugRequestTable->debugRequests[j].description).substr(5) + " " +
+            completion.insert(std::string("vpd ") + plotPair.first + " " +
+                              translate(i.first).substr(5) + " " +
                               RobotConsole::getName((RobotConsole::Color) color));
-          completion.insert(std::string("vpd ") + i->first + " " +
-                            translate(debugRequestTable->debugRequests[j].description).substr(5) + " off");
+          completion.insert(std::string("vpd ") + plotPair.first + " " +
+                            translate(i.first).substr(5) + " off");
         }
 
-  for(std::unordered_map<std::string, std::string>::const_iterator i = representationToFile.begin();
-      i != representationToFile.end(); ++i)
-    completion.insert(std::string("save ") + i->first);
+  for(auto& pair : representationToFile)
+    completion.insert(std::string("save ") + pair.first);
+  completion.insert(std::string("save representation:CameraSettings"));
 
   if(imageViews)
-    for(RobotConsole::Views::const_iterator v = imageViews->begin(); v != imageViews->end(); ++v)
+    for(const auto& pair : *imageViews)
     {
-      completion.insert(std::string("ac lower ") + translate(v->first));
-      completion.insert(std::string("ac upper ") + translate(v->first));
+      completion.insert(std::string("ac lower ") + translate(pair.first));
+      completion.insert(std::string("ac upper ") + translate(pair.first));
     }
 
   gameController.addCompletion(completion);
@@ -955,27 +941,24 @@ void ConsoleRoboCupCtrl::completeConsoleCommandOnLetterEntry(std::string& comman
 
 void ConsoleRoboCupCtrl::list(const std::string& text, const std::string& required, bool newLine)
 {
-  std::string s1(text), s2(required);
-  for(std::string::iterator i = s1.begin(); i != s1.end(); ++i)
-    *i = (char) toupper(*i);
-  for(std::string::iterator i = s2.begin(); i != s2.end(); ++i)
-    *i = (char) toupper(*i);
+  std::string s1 = text;
+  std::string s2 = required;
+  for(char& c : s1)
+    c = (char)toupper(c);
+  for(char& c : s2)
+    c = (char)toupper(c);
   if(s1.find(s2) != std::string::npos)
   {
     if(newLine)
-    {
       printLn(text);
-    }
     else
-    {
       print(text + " ");
-    }
   }
 }
 
 std::string ConsoleRoboCupCtrl::translate(const std::string& text) const
 {
-  std::string s(text);
+  std::string s = text;
   for(unsigned i = 0; i < s.size(); ++i)
     if(s[i] == ' ' || s[i] == '-')
     {
@@ -990,28 +973,6 @@ std::string ConsoleRoboCupCtrl::translate(const std::string& text) const
     else if(i < s.size() - 1 && s[i] == ':' && s[i + 1] == ':')
       s = s.substr(0, i) + s.substr(i + 1);
   return s;
-}
-
-bool ConsoleRoboCupCtrl::handleMessage(InMessage& message)
-{
-  switch(message.getMessageID())
-  {
-    case idRobot:
-      message.bin >> robotNumber;
-      return true;
-
-    default:
-      if(!ntp.handleMessage(message))
-        for(std::list<TeamRobot*>::iterator i = teamRobots.begin(); i != teamRobots.end(); ++i)
-          if((*i)->getNumber() == robotNumber)
-          {
-            (*i)->setGlobals();
-            (*i)->handleMessage(message);
-            message.resetReadPosition();
-          }
-
-      return true;
-  }
 }
 
 void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
@@ -1049,17 +1010,27 @@ void ConsoleRoboCupCtrl::showInputDialog(std::string& command)
       }
 
       // ${Select Logfile:,../Logs/*.log}
-      input = QInputDialog::getItem(0, "Input", label, list, 0, true, &ok);
+      input = QInputDialog::getItem(nullptr, "Input", label, list, 0, true, &ok);
     }
     else
     {
       // ${Select Robot:,Leonard,Rajesh,Lenny}
-      input = QInputDialog::getItem(0, "Input", label, list, 0, true, &ok);
+      input = QInputDialog::getItem(nullptr, "Input", label, list, 0, true, &ok);
     }
     qstrCommand.replace(re.cap(0), input);
   }
   if(ok)
-    command = std::string(qstrCommand.toUtf8().constData());
+  {
+    command = std::string(qstrCommand.
+#ifdef WINDOWS
+                          toLatin1()
+#else
+                          toUtf8()
+#endif
+                          .constData());
+  }
   else
+  {
     command = "";
+  }
 }

@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include "Debugging.h"
 #include "Tools/MessageQueue/MessageQueue.h"
 
@@ -51,9 +51,10 @@ TimingManager::~TimingManager()
 
 void TimingManager::startTiming(const char* identifier)
 {
-  unsigned long long startTime = SystemCall::getCurrentThreadTime();
+  unsigned long long startTime = Time::getCurrentThreadTime();
   if(prvt->timing.find(identifier) == prvt->timing.end())
-  { //create new entry
+  {
+    //create new entry
     prvt->watchNames.push_back(identifier);
     prvt->idTable[identifier] = (unsigned short)prvt->idTable.size(); //NOTE: this assumes that an unsigned short will always be big big enough to count the timers...
   }
@@ -63,7 +64,7 @@ void TimingManager::startTiming(const char* identifier)
 
 unsigned TimingManager::stopTiming(const char* identifier)
 {
-  const unsigned long long stopTime = SystemCall::getCurrentThreadTime();
+  const unsigned long long stopTime = Time::getCurrentThreadTime();
   const unsigned diff = unsigned(stopTime - prvt->timing[identifier]);
   prvt->timing[identifier] = diff;
   return diff;
@@ -71,7 +72,7 @@ unsigned TimingManager::stopTiming(const char* identifier)
 
 void TimingManager::signalProcessStart()
 {
-  prvt->currentProcessStartTime = SystemCall::getCurrentSystemTime();
+  prvt->currentProcessStartTime = Time::getCurrentSystemTime();
   prvt->frameNo++;
   prvt->processRunning = true;
   prvt->data.clear();

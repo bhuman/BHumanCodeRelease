@@ -25,10 +25,14 @@ MODULE(FallDownStateDetector,
   LOADS_PARAMETERS(
   {,
     (int) fallTime, /**< The time (in ms) to remain in state 'falling' after a detected fall */
-    (Angle) staggeringAngleX, /**< The threshold angle which is used to detect the robot is staggering sidewards */
-    (Angle) staggeringAngleY, /**< The threshold angle which is used to detect the robot is staggering to the back or front */
-    (Angle) fallDownAngleX, /**< The threshold angle which is used to detect a sidewards fall */
-    (Angle) fallDownAngleY, /**< The threshold angle which is used to detect a fall to the back or front */
+    (Angle) staggeringThresX, /**< The threshold angle which is used to detect the robot is staggering sidewards */
+    (Angle) staggeringThresY, /**< The threshold angle which is used to detect the robot is staggering to the back or front */
+    (Angle) fallingThresX, /**< The threshold angle which is used to detect a sidewards fall */
+    (Angle) fallingThresY, /**< The threshold angle which is used to detect a fall to the back or front */
+    (Angle) staggeringKickThresX, /**< The threshold angle which is used to detect the robot is staggering sidewards if it kick */
+    (Angle) staggeringKickThresY, /**< The threshold angle which is used to detect the robot is staggering to the back or front if it kicks */
+    (Angle) fallingKickThresX, /**< The threshold angle which is used to detect a sidewards fall if it kicks */
+    (Angle) fallingKickThresY, /**< The threshold angle which is used to detect a fall to the back or front if it kicks*/
     (Angle) onGroundAngle, /**< The threshold angle which is used to detect the robot lying on the ground */
   }),
 });
@@ -52,7 +56,11 @@ private:
   KeeperJumped keeperJumped = None; /**< Whether the keeper has recently executed a jump motion that has to be integrated in odometry offset. */
   RingBufferWithSum<float, 15> accXbuffer, accYbuffer, accZbuffer; /**< Buffers for averaging sensor data */
 
-  void update(FallDownState& fallDownState);
+
+  Angle staggeringAngleX, /**< The threshold angle which is used to detect the robot is staggering sidewards */
+        staggeringAngleY, /**< The threshold angle which is used to detect the robot is staggering to the back or front */
+        fallDownAngleX, /**< The threshold angle which is used to detect a sidewards fall */
+        fallDownAngleY; /**< The threshold angle which is used to detect a fall to the back or front */
 
   bool isFalling();
   bool isStaggering();
@@ -60,4 +68,7 @@ private:
   bool isUprightOrStaggering(FallDownState& fallDownState);
   FallDownState::Direction directionOf(Vector2a angle);
   FallDownState::Sidestate sidewardsOf(FallDownState::Direction dir);
+
+public:
+  void update(FallDownState& fallDownState);
 };

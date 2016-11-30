@@ -1,10 +1,11 @@
 /**
-* @file JointCalibrator.cpp
-* This file implements a module with tools for calibrating leg joints.
-* @author Colin Graf
-*/
+ * @file JointCalibrator.cpp
+ * This file implements a module with tools for calibrating leg joints.
+ * @author Colin Graf
+ */
 
 #include "JointCalibrator.h"
+#include "Tools/Math/Rotation.h"
 #include "Tools/Motion/InverseKinematic.h"
 #include "Representations/Sensing/RobotModel.h"
 
@@ -63,10 +64,10 @@ void JointCalibrator::update(JointCalibration& jointCalibration)
     else
     {
       const RobotModel robotModel(theJointRequest, theRobotDimensions, theMassCalibration);
-      const Pose3f leftAnkleRotation = Pose3f(robotModel.limbs[Limbs::footLeft]).rotate(RotationMatrix::fromEulerAngles(offsets.leftFoot.rotation.cast<float>()));
-      const Pose3f leftOffset = Pose3f(leftAnkleRotation).translate(0, 0, -theRobotDimensions.footHeight).translate(offsets.leftFoot.translation);
-      const Pose3f rightAnkleRotation = Pose3f(robotModel.limbs[Limbs::footRight]).rotate(RotationMatrix::fromEulerAngles(offsets.rightFoot.rotation.cast<float>()));
-      const Pose3f rightOffset = Pose3f(rightAnkleRotation).translate(0, 0, -theRobotDimensions.footHeight).translate(offsets.rightFoot.translation);
+      const Pose3f leftFootRotated = robotModel.soleLeft * Rotation::Euler::fromAngles(offsets.leftFoot.rotation);
+      const Pose3f rightFootRotated = robotModel.soleRight * Rotation::Euler::fromAngles(offsets.rightFoot.rotation);
+      const Pose3f leftOffset = leftFootRotated + offsets.leftFoot.translation;
+      const Pose3f rightOffset = rightFootRotated + offsets.rightFoot.translation;
       JointAngles jointAngles;
       if(!InverseKinematic::calcLegJoints(leftOffset, rightOffset, offsets.bodyRotation.cast<float>(), jointAngles, theRobotDimensions))
         OUTPUT_TEXT("Warning: at least one foot position unreachable");

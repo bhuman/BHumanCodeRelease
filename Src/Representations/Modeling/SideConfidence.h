@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Settings.h"
 
@@ -26,13 +26,21 @@ STREAMABLE(SideConfidence,
     CONFUSED,
   }); /**< Discrete states of confidence, mapped by provider */
 
+  void verify() const;
   /** Draw representation. */
   void draw() const,
 
   (float)(1) sideConfidence, /**< Am I mirrored because of two yellow goals (0 = no idea, 1 = absolute sure I am right). */
   (bool)(false) mirror, /**< Indicates whether ball model of others is mirrored to own ball model. */
   (ConfidenceState)(CONFIDENT) confidenceState, /**< The state of confidence */
+  (std::vector<int>) agreeMates, /** The robot numbers of the robots the agree with me regarding the side */
 });
+
+inline void SideConfidence::verify() const
+{
+  ASSERT(sideConfidence >= 0.f);
+  ASSERT(sideConfidence <= 1.f);
+}
 
 inline void SideConfidence::draw() const
 {

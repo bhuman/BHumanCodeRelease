@@ -1,5 +1,5 @@
 # connect to a robot
-call Includes/connect
+call Includes/connectDialog Includes/connect
 
 # all views are defined in other scripts
 call Includes/JPEGImageViews

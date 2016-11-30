@@ -1,20 +1,17 @@
 /**
  * @file Tools/Math/Transformation.cpp
  *
- * Implements methods for
- * coordinate system transformations.
+ * Implements methods for coordinate system transformations.
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #include "Transformation.h"
-#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Math/RotationMatrix.h"
 
-using namespace std;
-
-const float MAX_DIST_ON_FIELD = 142127.f; // Human soccer field diagonal
+static constexpr float MAX_DIST_ON_FIELD = 142127.f; // Human soccer field diagonal
 
 Vector2f Transformation::robotToField(const Pose2f& rp, const Vector2f& relPos)
 {
@@ -26,8 +23,8 @@ Vector2f Transformation::robotToField(const Pose2f& rp, const Vector2f& relPos)
 Vector2f Transformation::fieldToRobot(const Pose2f& rp, const Vector2f& fieldCoord)
 {
   const float invRotation = -rp.rotation;
-  const float s = sin(invRotation);
-  const float c = cos(invRotation);
+  const float s = std::sin(invRotation);
+  const float c = std::cos(invRotation);
   const float x = rp.translation.x();
   const float y = rp.translation.y();
   return Vector2f(c * (fieldCoord.x() - x) - s * (fieldCoord.y() - y), s * (fieldCoord.x() - x) + c * (fieldCoord.y() - y));
@@ -87,7 +84,7 @@ bool Transformation::imageToRobot(const Vector2i& pointInImage, const CameraMatr
 }
 
 bool Transformation::imageToRobotHorizontalPlane(const Vector2f& pointInImage, float z,
-    const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Vector2f& pointOnPlane)
+                                                 const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Vector2f& pointOnPlane)
 {
   const float xFactor = cameraInfo.focalLengthInv;
   const float yFactor = cameraInfo.focalLengthInv;
@@ -100,7 +97,7 @@ bool Transformation::imageToRobotHorizontalPlane(const Vector2f& pointInImage, f
   const float b1 = vectorToCenterWorld.x();
   const float b2 = vectorToCenterWorld.y();
   const float b3 = vectorToCenterWorld.z();
-  if(abs(b3) > 0.00001)
+  if(std::abs(b3) > 0.00001)
   {
     pointOnPlane.x() = (a1 * b3 - a3 * b1) / b3;
     pointOnPlane.y() = (a2 * b3 - a3 * b2) / b3;
@@ -132,7 +129,7 @@ bool Transformation::robotToImage(const Vector2f& point, const CameraMatrix& cam
 }
 
 bool Transformation::robotWithCameraRotationToImage(const Vector2f& point, const CameraMatrix& cameraMatrix,
-    const CameraInfo& cameraInfo, Vector2f& pointInImage)
+                                                    const CameraInfo& cameraInfo, Vector2f& pointInImage)
 {
   Pose3f cameraRotatedMatrix;
   cameraRotatedMatrix.rotateZ(cameraMatrix.rotation.getZAngle());
@@ -141,7 +138,7 @@ bool Transformation::robotWithCameraRotationToImage(const Vector2f& point, const
 }
 
 bool Transformation::imageToRobotWithCameraRotation(const Vector2i& pointInImage, const CameraMatrix& cameraMatrix,
-    const CameraInfo& cameraInfo, Vector2f& relativePosition)
+                                                    const CameraInfo& cameraInfo, Vector2f& relativePosition)
 {
   const bool ret = imageToRobot(pointInImage, cameraMatrix, cameraInfo, relativePosition);
   if(ret)
@@ -149,8 +146,7 @@ bool Transformation::imageToRobotWithCameraRotation(const Vector2i& pointInImage
     Pose3f cameraRotatedMatrix;
     cameraRotatedMatrix.rotateZ(cameraMatrix.rotation.getZAngle());
     const Vector3f point3D = cameraRotatedMatrix.inverse() * Vector3f(relativePosition.x(), relativePosition.y(), 0.f);
-    relativePosition.x() = point3D.x();
-    relativePosition.y() = point3D.y();
+    relativePosition = point3D.head<2>();
   }
   return ret;
 }

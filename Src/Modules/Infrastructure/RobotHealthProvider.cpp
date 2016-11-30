@@ -1,11 +1,12 @@
 /**
-* @file Modules/Infrastructure/RobotHealthProvider.h
-* This file implements a module that provides information about the robot's health.
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
-*/
-
+ * @file Modules/Infrastructure/RobotHealthProvider.h
+ * This file implements a module that provides information about the robot's health.
+ * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ */
 
 #include "RobotHealthProvider.h"
+#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
 
@@ -36,21 +37,19 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   // count percepts
   if(theBallPercept.status == BallPercept::seen)
     ++robotHealth.ballPercepts;
-  robotHealth.linePercepts += static_cast<unsigned>(theLinePercept.lines.size());
-  robotHealth.goalPercepts += static_cast<unsigned>(theGoalPercept.goalPosts.size());
+  robotHealth.linePercepts += static_cast<unsigned>(theFieldLines.lines.size());
 
   // Transfer information from other process:
   robotHealth = theMotionRobotHealth;
   // Compute frame rate of cognition process:
-  unsigned now = SystemCall::getCurrentSystemTime();
+  unsigned now = Time::getCurrentSystemTime();
   if(lastExecutionTime != 0)
     timeBuffer.push_front(now - lastExecutionTime);
   robotHealth.cognitionFrameRate = timeBuffer.sum() ? 1000.0f / timeBuffer.averagef() : 0.f;
   lastExecutionTime = now;
 
-  std::string wavName = Global::getSettings().robotName.c_str();
+  std::string wavName = Global::getSettings().headName.c_str();
   wavName.append(".wav");
-
 
   // read cpu and mainboard temperature
   robotHealth.cpuTemperature = (unsigned char) theSystemSensorData.cpuTemperature;
@@ -87,7 +86,7 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     robotHealth.load[1] = (unsigned char)(load[1] * 10.f);
     robotHealth.load[2] = (unsigned char)(load[2] * 10.f);
     robotHealth.memoryUsage = (unsigned char)(memoryUsage * 100.f);
-    robotHealth.robotName = Global::getSettings().robotName;
+    robotHealth.robotName = Global::getSettings().headName;
 
     //battery warning
     if(lastBatteryLevel < robotHealth.batteryLevel)

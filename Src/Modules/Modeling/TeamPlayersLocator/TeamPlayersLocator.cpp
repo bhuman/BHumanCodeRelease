@@ -1,12 +1,12 @@
 /**
-* @file TeamPlayersLocator.cpp
-*
-* Implements a class that provides information about player positions on the field.
-* The model is a fusion of own observations as well as of observations by teammates.
-*
-* @author Katharina Gillmann
-* @author Florian Maaß
-*/
+ * @file TeamPlayersLocator.cpp
+ *
+ * Implements a class that provides information about player positions on the field.
+ * The model is a fusion of own observations as well as of observations by teammates.
+ *
+ * @author Katharina Gillmann
+ * @pfuscher Florian
+ */
 
 #include "TeamPlayersLocator.h"
 #include "Tools/Math/Covariance.h"
@@ -18,132 +18,214 @@
 
 MAKE_MODULE(TeamPlayersLocator, modeling)
 
+TeamPlayersLocator::TeamPlayersLocator()
+{
+  goalPosts.reserve(4);
+  goalPosts.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal), 0, GOALPOST);
+  goalPosts.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal), 0, GOALPOST);
+  goalPosts.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal), 0, GOALPOST);
+  goalPosts.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal), 0, GOALPOST);
+}
+
 void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
 {
-  teamPlayersModel.obstacles.clear();
+  auto& obstacles = teamPlayersModel.obstacles;
+  DECLARE_DEBUG_DRAWING("module:TeamPlayersLocator:others", "drawingOnField");
+  obstacles.clear();
+  ownTeam.clear();
 
-  std::vector<Obstacle> ownTeam;
+  if(theRobotInfo.penalty != PENALTY_NONE || !theGroundContactState.contact || theFallDownState.state != theFallDownState.upright)
+    return;
 
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal), GOALPOST);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal), GOALPOST);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal), GOALPOST);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal), GOALPOST);
+  std::vector<std::pair<Obstacle, unsigned char>> others;
 
-  if(theRobotInfo.penalty == PENALTY_NONE && theGroundContactState.contact)
+  for(auto& goalPost : goalPosts)
   {
-    ownTeam.emplace_back(theRobotPose.covariance.topLeftCorner(2, 2), theRobotPose.translation); // pose and covariance of the robot itself
-
-    if(theFallDownState.state == theFallDownState.upright) //why is this?
-      for(const auto& obstacle : theObstacleModel.obstacles)
-      {
-        if(obstacle.type == GOALPOST)
-          continue;
-        // if seen robots are of the opponent team and are not detected outside the field
-        const Vector2f p = theRobotPose * obstacle.center;
-        if(std::abs(p.x()) <= theFieldDimensions.xPosOpponentFieldBorder && std::abs(p.y()) <= theFieldDimensions.yPosLeftFieldBorder)
-          teamPlayersModel.obstacles.emplace_back(obstacle.covariance, p, obstacle.type);
-      }
+    obstacles.push_back(goalPost);
   }
 
+  ownTeam[theRobotInfo.number] = theRobotPose;
   for(auto const& teammate : theTeammateData.teammates)
   {
-    if(teammate.status == Teammate::FULLY_ACTIVE)
+    if(teammate.status == Teammate::PLAYING)
     {
-      if(teammate.pose.deviation < 50.f) //todo, magic number will be replaced by parameter. 50.f might be too low
-        ownTeam.emplace_back(teammate.pose.covariance.topLeftCorner(2, 2), teammate.pose.translation); //position of teammates
-
-      for(const auto& obstacle : teammate.obstacleModel.obstacles)
+      if(teammate.pose.deviation < teammatePoseDeviation)
       {
-        if(obstacle.type == GOALPOST)
-          continue;
-        // if seen robots are of the opponent team and are not detected outside the field
-        const Vector2f p = teammate.pose * obstacle.center;
-        if(std::abs(p.x()) <= theFieldDimensions.xPosOpponentFieldBorder && std::abs(p.y()) <= theFieldDimensions.yPosLeftFieldBorder)
+        ownTeam[teammate.number] = teammate.pose; //position of teammates
+      }
+    }
+  }
+
+  for(const auto& obstacle : theObstacleModel.obstacles)
+  {
+    if(obstacle.type == GOALPOST)
+      continue;
+    //if seen robots are detected inside the field
+    const Vector2f p = theRobotPose * obstacle.center;
+    if(std::abs(p.x()) < theFieldDimensions.xPosOpponentFieldBorder && std::abs(p.y()) < theFieldDimensions.xPosOpponentFieldBorder)
+    {
+      if(isGoalPost(p) || isTeammate(p, squaredDistanceThreshold, theRobotInfo.number))
+        continue;
+      if(isInsideOwnDetectionArea(p, theRobotInfo.number, obstacle.lastSeen))
+        obstacles.emplace_back(Obstacle(obstacle.covariance, p, obstacle.lastSeen, obstacle.type));
+      else
+        others.emplace_back(Obstacle(obstacle.covariance, p, obstacle.lastSeen, obstacle.type), 0);
+    }
+  }
+
+  STOPWATCH("TeamPlayersLocator:obstaclesByTeammates")
+  {
+    for(auto const& teammate : theTeammateData.teammates)
+    {
+      if(teammate.status == Teammate::PLAYING && teammate.pose.deviation < teammatePoseDeviation)
+      {
+        for(const auto& obstacle : teammate.obstacleModel.obstacles)
         {
-          Matrix2f covariance = (Matrix2f() << obstacle.covXX, obstacle.covXY, obstacle.covXY, obstacle.covYY).finished();
-          Obstacle converted = Obstacle(rotateCovariance(covariance, teammate.pose.rotation), p, obstacle.type);
-          merge(converted, teamPlayersModel.obstacles);
+          if(obstacle.type == GOALPOST)
+            continue;
+          //if seen robots are detected inside the field
+          const Vector2f p = teammate.pose * obstacle.center.cast<float>();
+          if(std::abs(p.x()) < theFieldDimensions.xPosOpponentFieldBorder && std::abs(p.y()) < theFieldDimensions.xPosOpponentFieldBorder)
+          {
+            if(isGoalPost(p) || isTeammate(p, squaredDistanceThreshold, teammate.number))
+              continue;
+            Matrix2f covariance = (Matrix2f() << obstacle.covXX, obstacle.covXY, obstacle.covXY, obstacle.covYY).finished();
+            Obstacle converted = Obstacle(Covariance::rotateCovarianceMatrix(covariance, teammate.pose.rotation), p, obstacle.type);
+            if(isInsideOwnDetectionArea(p, teammate.number, obstacle.lastSeen)
+               && !collideOtherDetectionArea(p, teammate.number, ownTeam, obstacle.center.cast<float>().squaredNorm()))
+              obstacles.emplace_back(Obstacle(covariance, p, obstacle.lastSeen, obstacle.type));
+            else
+              others.emplace_back(Obstacle(covariance, p, obstacle.lastSeen, obstacle.type), 0);
+          }
         }
       }
     }
   }
-  for(auto& teammate : ownTeam)
-  {
-    removeAround(teammate, teamPlayersModel.obstacles);
-  }
-}
 
-Matrix2f TeamPlayersLocator::rotateCovariance(const Matrix2f& matrix, const float angle)
-{
-  const float cosine = std::cos(angle);
-  const float sine = std::sin(angle);
-  const Matrix2f rotationMatrix = (Matrix2f() << cosine, -sine, sine, cosine).finished();
-  return (rotationMatrix * matrix) * rotationMatrix.transpose();
-}
-
-void TeamPlayersLocator::merge(Obstacle& obstacle, std::vector<Obstacle>& obstacles) const
-{
-  Obstacle* merge = nullptr;
-  float bestDistance = std::numeric_limits<float>::max();
-  for(auto& other : obstacles)
+  //do the cluster thing
+  STOPWATCH("TeamPlayersLocator:clusterThing")
   {
-    float squaredMahalanobisDistance = Covariance::squaredMahalanobisDistance(obstacle.center, obstacle.covariance + other.covariance, other.center);
-    if((obstacle.center - other.center).squaredNorm() <= squaredDistanceThreshold || (squaredMahalanobisDistance < squaredMahalanobisDistanceParameter && squaredMahalanobisDistance < bestDistance))
+    //cluster the others
+    for(size_t obstacle = 0; obstacle < others.size(); ++obstacle)
     {
-      bestDistance = squaredMahalanobisDistance;
-      merge = &other;
+      for(size_t otherObstacle = others.size() - 1; otherObstacle > obstacle; --otherObstacle)
+      {
+        if((others[obstacle].first.center - others[otherObstacle].first.center).squaredNorm() < squaredDistanceThreshold)
+        {
+          Obstacle::fusion2D(others[obstacle].first, others[otherObstacle].first);
+          ++others[obstacle].second;
+          setType(others[obstacle].first, others[otherObstacle].first);
+          others[obstacle].first.lastSeen = std::max(others[obstacle].first.lastSeen, others[otherObstacle].first.lastSeen);
+          others.erase(others.begin() + otherObstacle);
+        }
+      }
+    }
+    for(const auto& other : others)
+    {
+      if(other.second > 0 && !isTeammate(other.first.center, squaredDistanceThreshold))
+        obstacles.push_back(other.first);
+      else
+        CIRCLE("module:TeamPlayersLocator:others", other.first.center.x(), other.first.center.y(), 100, 40, Drawings::dottedPen, ColorRGBA::red, Drawings::noBrush, ColorRGBA::black);
+    }
+    for(size_t obstacle = 0; obstacle < obstacles.size(); ++obstacle)
+    {
+      for(size_t otherObstacle = obstacles.size() - 1; otherObstacle > obstacle; --otherObstacle)
+      {
+        float obstaclesDistance = (obstacles[obstacle].center - obstacles[otherObstacle].center).squaredNorm();
+        if(obstacles[obstacle].type == GOALPOST && obstacles[otherObstacle].type != GOALPOST && obstaclesDistance < squaredDistanceGoalPostThreshold)
+        {
+          obstacles[obstacle].lastSeen = std::max(obstacles[obstacle].lastSeen, obstacles[otherObstacle].lastSeen);
+          obstacles.erase(obstacles.begin() + otherObstacle);
+        }
+        else if(obstaclesDistance < squaredDistanceThreshold && obstacles[obstacle].type != GOALPOST && obstacles[otherObstacle].type != GOALPOST)
+        {
+          Obstacle::fusion2D(obstacles[obstacle], obstacles[otherObstacle]);
+          setType(obstacles[obstacle], obstacles[otherObstacle]);
+          obstacles[obstacle].lastSeen = std::max(obstacles[obstacle].lastSeen, obstacles[otherObstacle].lastSeen);
+          obstacles.erase(obstacles.begin() + otherObstacle);
+        }
+      }
     }
   }
 
-  if(merge != nullptr && merge->type != Obstacle::goalpost)
+  for(const auto& tm : ownTeam)
   {
-    Obstacle::fusion2D(*merge, obstacle);
-    merge->type = setType(merge->type, obstacle.type);
-  }
-  else
-  {
-    if(!isInsideOwnDetectionArea(obstacle.center))
-      obstacles.push_back(obstacle);
-  }
-}
-
-void TeamPlayersLocator::removeAround(Obstacle& teammate, std::vector<Obstacle>& obstacles) const
-{
-  for(auto other = obstacles.begin(); other != obstacles.end();)
-  {
-    if(other->type == GOALPOST)
-    {
-      ++other;
+    if(tm.first == theRobotInfo.number)
       continue;
-    }
-    float squaredMahalanobisDistance = Covariance::squaredMahalanobisDistance(teammate.center, teammate.covariance + other->covariance, other->center);
-    float squaredDistance = (other->center - teammate.center).squaredNorm();
-    if(squaredDistance <= squaredDistanceThreshold || squaredMahalanobisDistance < squaredMahalanobisDistanceParameter)
-    {
-      other = obstacles.erase(other);
-      continue;
-    }
-    ++other;
+    obstacles.emplace_back(tm.second.covariance.topLeftCorner(2, 2), tm.second.translation, theFrameInfo.time);
   }
-  if(teammate.center != theRobotPose.translation)
-    obstacles.push_back(teammate);
 }
 
-Obstacle::Type TeamPlayersLocator::setType(const Obstacle::Type one, const Obstacle::Type other) const
+bool TeamPlayersLocator::isInsideOwnDetectionArea(const Vector2f& position, int robotNumber, int lastSeen) const
 {
-  ASSERT(one != Obstacle::goalpost);
-  ASSERT(other != Obstacle::goalpost);
-  if(one == other || other == Obstacle::unknown || one >= Obstacle::fallenSomeRobot)
-    return one;
-  if(one == Obstacle::unknown || other >= Obstacle::fallenSomeRobot)
-    return other;
-
-   return one;
+  float tmp;
+  return isInsideOwnDetectionArea(position, robotNumber, tmp, lastSeen);
 }
 
-bool TeamPlayersLocator::isInsideOwnDetectionArea(const Vector2f& position) const
+bool TeamPlayersLocator::isInsideOwnDetectionArea(const Vector2f& position, int robotNumber, float& distance, int lastSeen) const
 {
   //obstacles behind the robot are okay
-  Vector2f point = theRobotPose.inverse() * position;
-  return point.x() > -Obstacle::getRobotDepth() && (point).squaredNorm() <= sqr(selfDetectionOnlyRadius);
+  Vector2f point = ownTeam.at(robotNumber).inversePose * position;
+  distance = (point).squaredNorm();
+  return (theFrameInfo.getTimeSince(lastSeen) < obstacleAgeThreshold || point.x() > -2.f * Obstacle::getRobotDepth())
+         && distance <= sqr(selfDetectionOnlyRadius);
+}
+
+bool TeamPlayersLocator::collideOtherDetectionArea(const Vector2f& position, int robotNumber, std::map<int, RobotPose>& ownTeam,
+                                                      const float distance) const
+{
+  float tempDistance;
+  for(const auto& otherPlayer : ownTeam)
+  {
+    if(otherPlayer.first == robotNumber)
+      continue;
+    if(isInsideOwnDetectionArea(position, otherPlayer.first, tempDistance, obstacleAgeThreshold) && tempDistance < distance)
+      return true;
+  }
+  return false;
+}
+
+bool TeamPlayersLocator::isGoalPost(const Vector2f& position) const
+{
+  for(const auto& gP : goalPosts)
+  {
+    if((position - gP.center).squaredNorm() < sqr(2.f * theFieldDimensions.goalPostRadius))
+      return true;
+  }
+  return false;
+}
+
+bool TeamPlayersLocator::isTeammate(const Vector2f& position, const float radius, int ignoreRobotNumber) const
+{
+  for(const auto& tm : ownTeam)
+  {
+    if(ignoreRobotNumber == tm.first)
+      continue;
+    if((position - tm.second.translation).squaredNorm() < radius)
+      return true;
+  }
+  return false;
+}
+
+bool TeamPlayersLocator::isTeammate(const Vector2f& position, const float radius) const
+{
+  for(const auto& tm : ownTeam)
+  {
+    if((position - tm.second.translation).squaredNorm() < radius)
+      return true;
+  }
+  return false;
+}
+
+void TeamPlayersLocator::setType(Obstacle& one, const Obstacle& other) const
+{
+  if(one.type != other.type)
+  {
+    if(one.type >= Obstacle::fallenSomeRobot && other.type >= Obstacle::fallenSomeRobot)
+      one.type = Obstacle::fallenSomeRobot;
+    else if(one.type >= Obstacle::someRobot && other.type >= Obstacle::someRobot)
+      one.type = Obstacle::someRobot;
+    else
+      one.type = Obstacle::unknown;
+  }
 }

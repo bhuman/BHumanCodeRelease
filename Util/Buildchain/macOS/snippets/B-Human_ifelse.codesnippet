@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>ifelse</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>CodeBlock</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>if(&lt;#condition#&gt;)
+{
+  &lt;#statements-if-true#&gt;
+}
+else
+{
+  &lt;#statements-if-false#&gt;
+}</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>324A989C-B8B7-4974-8F12-D4B42F2059BA</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Used for executing code only when a certain condition is true, or different code if the certain condition is true.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>If-Else Statement</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>2</integer>
+</dict>
+</plist>

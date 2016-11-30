@@ -1,80 +1,86 @@
 /**
- * @file DebugRequest.cpp
- * Implementation of class DebugRequest
+ * @file DebugRequest.h
+ *
+ * Implementation of a class that manages debug requests.
+ * Debug requests are switches that (de)activate blocks of code at runtime.
+ *
+ * @author Matthias Jüngel
+ * @author Thomas Röfer
  */
 
-#include <cstring>
 #include <cstdio>
 
 #include "DebugRequest.h"
 #include "Platform/BHAssert.h"
 
-DebugRequest::DebugRequest(const std::string& description, bool enable) :
-  description(description), enable(enable)
-{}
-
-void DebugRequestTable::addRequest(const DebugRequest& debugRequest, bool force)
+DebugRequestTable::DebugRequestTable()
 {
-  lastName = 0;
-  nameToIndex.clear();
-  if(debugRequest.description == "poll")
+  enabled.reserve(10000);
+  fastIndex.reserve(10000);
+  slowIndex.reserve(10000);
+  polled.reserve(10000);
+}
+
+void DebugRequestTable::addRequest(const DebugRequest& debugRequest)
+{
+  if(debugRequest.name == "poll")
   {
-    poll = true;
-    pollCounter = 0;
-    alreadyPolledDebugRequestCounter = 0;
+    pollCounter = 10;
+    polled.clear();
   }
-  else if(debugRequest.description == "disableAll")
-    removeAllRequests();
+  else if(debugRequest.name == "disableAll")
+    clear();
   else
   {
-    for(int i = 0; i < currentNumberOfDebugRequests; i++)
+    std::unordered_map<std::string, size_t>::const_iterator i = slowIndex.find(debugRequest.name);
+    if(i != slowIndex.end())
+      enabled[i->second] = debugRequest.enable ? 1 : 0;
+    else
     {
-      if(debugRequest.description == debugRequests[i].description)
-      {
-        if(!debugRequest.enable && !force)
-          debugRequests[i] = debugRequests[--currentNumberOfDebugRequests];
-        else
-          debugRequests[i] = debugRequest;
-        return;
-      }
-    }
-    if(debugRequest.enable || force)
-    {
-      ASSERT(currentNumberOfDebugRequests < maxNumberOfDebugRequests);
-      debugRequests[currentNumberOfDebugRequests++] = debugRequest;
+      slowIndex[debugRequest.name] = enabled.size();
+      enabled.push_back(debugRequest.enable ? 1 : 0);
     }
   }
+}
+
+bool DebugRequestTable::isActiveSlow(const char* name)
+{
+  std::unordered_map<std::string, size_t>::const_iterator j = slowIndex.find(name);
+  size_t k;
+  if(j != slowIndex.end())
+    k = j->second;
+  else
+  {
+    k = enabled.size();
+    slowIndex[name] = k;
+    enabled.push_back(0);
+  }
+  fastIndex[name] = k;
+  return enabled[k] != 0;
 }
 
 void DebugRequestTable::disable(const char* name)
 {
-  lastName = 0;
-  nameToIndex.clear();
-  for(int i = 0; i < currentNumberOfDebugRequests; i++)
-    if(debugRequests[i].description == name)
-    {
-      debugRequests[i] = debugRequests[--currentNumberOfDebugRequests];
-      return;
-    }
+  ASSERT(fastIndex.find(name) != fastIndex.end());
+  enabled[fastIndex[name]] = 0;
 }
 
 bool DebugRequestTable::notYetPolled(const char* name)
 {
-  for(int i = 0; i < alreadyPolledDebugRequestCounter; ++i)
-    if(strcmp(name, alreadyPolledDebugRequests[i]) == 0)
-      return false;
-  alreadyPolledDebugRequests[alreadyPolledDebugRequestCounter++] = name;
-  return true;
+  if(polled.find(name) == polled.end())
+  {
+    polled.insert(name);
+    return true;
+  }
+  else
+    return false;
 }
 
-In& operator>>(In& stream, DebugRequest& debugRequest)
+void DebugRequestTable::clear()
 {
-  return stream >> debugRequest.enable >> debugRequest.description;
-}
-
-Out& operator<<(Out& stream, const DebugRequest& debugRequest)
-{
-  return stream << debugRequest.enable << debugRequest.description;
+  fastIndex.clear();
+  slowIndex.clear();
+  enabled.clear();
 }
 
 void DebugRequestTable::print(const char* message)

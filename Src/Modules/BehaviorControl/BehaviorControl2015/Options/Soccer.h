@@ -5,7 +5,9 @@ option(Soccer)
   {
     theArmMotionRequest.armMotion[Arms::left] = ArmMotionRequest::none;
     theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::none;
-    theHeadControlMode = HeadControl::none;
+
+    if(!theCameraStatus.ok)
+      goto sitDown;
   }
 
   /** Initially, all robot joints are off until the chest button is pressed. */
@@ -14,7 +16,7 @@ option(Soccer)
     transition
     {
       if(SystemCall::getMode() == SystemCall::simulatedRobot)
-        goto standUp; // Don't wait for the button in SimRobot
+        goto simRobotStandHigh; // Don't wait for the button in SimRobot
 
       if(action_done) // chest button pressed and released
         goto standUp;
@@ -27,6 +29,20 @@ option(Soccer)
     {
       SpecialAction(SpecialActionRequest::playDead);
       ButtonPressedAndReleased(KeyStates::chest, 1000, 0);
+    }
+  }
+
+  state(simRobotStandHigh)
+  {
+    transition
+    {
+      if(action_done)
+        goto playSoccer;
+    }
+    action
+    {
+      LookForward();
+      SpecialAction(SpecialActionRequest::standHigh);
     }
   }
 
@@ -59,22 +75,7 @@ option(Soccer)
     action
     {
       HandlePenaltyState();
-      HeadControl();
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
-    }
-  }
-
-  state(chestButtonPressedOnce)
-  {
-    transition
-    {
-      if(state_time > 0)
-        goto playSoccer;
-    }
-    action
-    {
-      HandlePenaltyState();
-      HeadControl();
     }
   }
 
@@ -86,12 +87,11 @@ option(Soccer)
       if(action_done) // chest button pressed and released for the second time
         goto waitForThirdButtonPress;
       else if(action_aborted) // too slow -> abort
-        goto chestButtonPressedOnce;
+        goto playSoccer;
     }
     action
     {
       HandlePenaltyState();
-      HeadControl();
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
     }
   }
@@ -108,7 +108,6 @@ option(Soccer)
     action
     {
       HandlePenaltyState();
-      HeadControl();
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
     }
   }
@@ -133,7 +132,7 @@ option(Soccer)
   {
     transition
     {
-      if(action_done) // chest button pressed and released
+      if(action_done)// chest button pressed and released
         goto standUp;
     }
     action

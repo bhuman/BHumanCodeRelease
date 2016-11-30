@@ -7,16 +7,16 @@
  *
  * MODULE(MyImageProcessor,
  * {,
- *   REQUIRES(Image),                      // Has to be updated before
- *   REQUIRES(CameraMatrix),               // Has to be updated before
- *   USES(RobotPose),                      // Is used, but has not to be updated before
- *   PROVIDES(BallPercept),                // Class provides a method to update BallPercept.
- *   PROVIDES_WITHOUT_MODFY(GoalPercept),  // Class provides a method to update GoalsPercept. Representation cannot be MODIFYed.
- *   DEFINES_PARAMETERS(                   // Has parameters that must have an initial value. If LOADS_PARAMETERS is used instead,
- *   {,                                    // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
- *     (float)(42.0f) focalLen,            // Has a parameter named focalLen of type float. By default it has the value 42.0f.
- *     (int)(21) resWidth,                 // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
- *     (CameraInfo, Camera)(camera) lower, // Use an enum as parameter that was defined in another class.
+ *   REQUIRES(Image),                         // Has to be updated before
+ *   REQUIRES(CameraMatrix),                  // Has to be updated before
+ *   USES(RobotPose),                         // Is used, but has not to be updated before
+ *   PROVIDES(BallPercept),                   // Class provides a method to update BallPercept.
+ *   PROVIDES_WITHOUT_MODIFY(PlayersPercept), // Class provides a method to update PlayersPercept. Representation cannot be MODIFYed.
+ *   DEFINES_PARAMETERS(                      // Has parameters that must have an initial value. If LOADS_PARAMETERS is used instead,
+ *   {,                                       // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
+ *     (float)(42.0f) focalLen,               // Has a parameter named focalLen of type float. By default it has the value 42.0f.
+ *     (int)(21) resWidth,                    // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
+ *     ((CameraInfo) Camera)(camera) lower,   // Use an enum as parameter that was defined in another class.
  *   }),
  * });
  *
@@ -26,7 +26,7 @@
  * class MyImageProcessor : public MyImageProcessorBase
  * {
  *   void update(BallPercept& ballPercept);
- *   void update(GoalPercept& goalPercept);
+ *   void update(PlayersPercept& playersPercept);
  * };
  *
  * In the implementation file, the existence of the module has to be announced:
@@ -62,7 +62,7 @@ private:
     template<typename U> static char Test(Draw<U, &U::draw>*);
     template<typename U> static char Test(ConstDraw<U, &U::draw>*);
     template<typename U> static int Test(...);
-    static const bool value = sizeof(Test<T>(0)) == sizeof(char);
+    static const bool value = sizeof(Test<T>(nullptr)) == sizeof(char);
   };
 
   /**
@@ -86,10 +86,45 @@ private:
     static void draw(T& t) {}
   };
 
+  /**
+   * Helper class to check whether a class defines a verify method itself.
+   */
+  template<typename T> struct HasVerifyMethod
+  {
+    template<typename U, void (U::*)()> struct Verify {};
+    template<typename U, void (U::*)() const> struct ConstVerify {};
+    template<typename U> static char Test(Verify<U, &U::verify>*);
+    template<typename U> static char Test(ConstVerify<U, &U::verify>*);
+    template<typename U> static int Test(...);
+    static const bool value = sizeof(Test<T>(nullptr)) == sizeof(char);
+  };
+
+  /**
+   * This class defines a method that is called when a class has a
+   * verify() method. The latter is called.
+   * @param T The type of the representation.
+   * @param hasVerify States, whether T has a verify() method.
+   */
+  template<typename T, bool hasVerify = true> struct Verify
+  {
+    static void verify(T& t) { t.verify(); }
+  };
+
+  /**
+   * This class defines a method that is called when a class does not
+   * have a verify() method.
+   * @param T The type of the representation.
+   */
+  template<typename T> struct Verify<T, false>
+  {
+    static void verify(T& t) {}
+  };
+
 public:
   ENUM(Category,
   {,
     cognitionInfrastructure,
+    communication,
     perception,
     modeling,
     behaviorControl,
@@ -118,9 +153,9 @@ public:
    */
   static MessageID getMessageID(const std::string& name)
   {
-    for(int i = 0; i < numOfMessageIDs; ++i)
-      if(name == ::getName(static_cast<MessageID>(i)) + 2)
-        return static_cast<MessageID>(i);
+    FOREACH_ENUM(MessageID, i)
+      if(name == ::getName(i) + 2)
+        return i;
     return ::undefined;
   }
 
@@ -132,6 +167,16 @@ public:
   template<typename T> static void draw(T& t)
   {
     Draw<T, HasDrawMethod<T>::value>::draw(t);
+  }
+
+  /**
+   * Calls a verify method if a representation has one.
+   * @param T The type of the representation.
+   * @param t The representation.
+   */
+  template<typename T> static void verify(T& t)
+  {
+    Verify<T, HasVerifyMethod<T>::value>::verify(t);
   }
 
 private:
@@ -213,7 +258,7 @@ STREAMABLE(NoParameters,
  * @param parameters The parameters.
  * @param moduleName The filename is determined from the name of the module if it
  *                   is not explicitly specified.
- * @param fileName The filename used of 0 if it should be created from the module's name.
+ * @param fileName The filename used or nullptr if it should be created from the module's name.
  */
 void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName);
 
@@ -224,7 +269,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 /**
  * Determine the number of entries in a tuple.
  */
-#ifdef WINDOWS
+#ifdef _MSC_VER
 #define _MODULE_TUPLE_SIZE(...) _MODULE_JOIN(_MODULE_TUPLE_SIZE_II, (__VA_ARGS__, \
   100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
   79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
@@ -324,6 +369,18 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_ATTR_68(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67)
 #define _MODULE_ATTR_69(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68)
 #define _MODULE_ATTR_70(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69)
+#define _MODULE_ATTR_71(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70)
+#define _MODULE_ATTR_72(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71)
+#define _MODULE_ATTR_73(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72)
+#define _MODULE_ATTR_74(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73)
+#define _MODULE_ATTR_75(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74)
+#define _MODULE_ATTR_76(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75)
+#define _MODULE_ATTR_77(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76)
+#define _MODULE_ATTR_78(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77)
+#define _MODULE_ATTR_78(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77)
+#define _MODULE_ATTR_79(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78)
+#define _MODULE_ATTR_80(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79)
+#define _MODULE_ATTR_81(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80)
 
 /** Concatenate the two parameters. */
 #define _MODULE_JOIN(a, b) _MODULE_JOIN_I(a, b)
@@ -340,17 +397,17 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_PARAMETERS_PROVIDES_WITHOUT_MODIFY(type)
 #define _MODULE_PARAMETERS_REQUIRES(type)
 #define _MODULE_PARAMETERS_USES(type)
-#ifdef WINDOWS
-#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); typedef Params NoParameters;
-#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); typedef Params NoParameters;
+#ifdef _MSC_VER
+#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
+#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
 #define _MODULE_UNWRAP(...) __VA_ARGS__
 #define _MODULE_STREAMABLE(name, base, streamBase, header, ...) \
   struct name : public base \
     _MODULE_UNWRAP header; \
     _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, streamBase, __VA_ARGS__)
 #else
-#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); typedef Params NoParameters;
-#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); typedef Params NoParameters;
+#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
+#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
 #endif
 
 /**
@@ -366,6 +423,12 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_LOAD__MODULE_DEFINES_PARAMETERS(...)
 #define _MODULE_LOAD__MODULE_LOADS_PARAMETERS(...) loadModuleParameters(*this, moduleName, fileName);
 
+#ifdef NDEBUG
+#define _MODULE_VERIFY(...)
+#else
+#define _MODULE_VERIFY(r) ModuleBase::verify(r);
+#endif
+
 /**
  * The following macros generate the declarations for all requirements as well as
  * the update handler for the providers.code for loading the configuration file
@@ -375,9 +438,11 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_DECLARE(x) _MODULE_JOIN(_MODULE_DECLARE_, x)
 #define _MODULE_DECLARE_PROVIDES(type) _MODULE_PROVIDES(type, \
   MODIFY("representation:" #type, r); \
-  ModuleBase::draw(r); )
+  _MODULE_VERIFY(r) \
+  ModuleBase::draw(r);)
 #define _MODULE_DECLARE_PROVIDES_WITHOUT_MODIFY(type) _MODULE_PROVIDES(type, \
-  ModuleBase::draw(r); )
+  _MODULE_VERIFY(r) \
+  ModuleBase::draw(r);)
 #define _MODULE_DECLARE_REQUIRES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE_USES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE__MODULE_DEFINES_PARAMETERS(...)
@@ -445,7 +510,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * Helper for defining the module's base class.
  * @param name The name of the module.
  * @param n The number of entries in the third parameter.
- * @param ... The requirementes, provided representations and parameter definitions.
+ * @param ... The requirements, provided representations and parameter definitions.
  */
 #define _MODULE_I(name, n, ...) _MODULE_II(name, n, (_MODULE_PARAMETERS, __VA_ARGS__), (_MODULE_LOAD, __VA_ARGS__), (_MODULE_DECLARE, __VA_ARGS__), (_MODULE_FREE, __VA_ARGS__), (_MODULE_INFO, __VA_ARGS__))
 
@@ -458,13 +523,13 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
   namespace name##Module \
   { \
     _MODULE_ATTR_##n params \
-    typedef NoParameters Parameters; \
+    using Parameters = NoParameters; \
   } \
   class name; \
   class name##Base : public name##Module::Parameters \
   { \
   private: \
-    typedef name##Base BaseType; \
+    using BaseType = name##Base; \
     void modifyParameters() \
     { \
       if(sizeof(NoParameters) < sizeof(name##Module::Parameters)) \
@@ -483,8 +548,8 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
     friend class Module<name, name##Base>; \
     _MODULE_ATTR_##n declare \
   public: \
-    typedef name##Module::Parameters Parameters; \
-    name##Base(const char* fileName = 0) \
+    using Parameters = name##Module::Parameters; \
+    name##Base(const char* fileName = nullptr) \
     { \
       static const char* moduleName = #name; \
       (void) moduleName; \
@@ -511,17 +576,17 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * See beginning of this file.
  * @param name The name of the module.
  * @param header Normally, only an opening brace.
- * @param ... The requirementes, provided representations and parameter definitions.
+ * @param ... The requirements, provided representations and parameter definitions.
  */
 #define MODULE(name, header, ...) \
   _MODULE_I(name, _MODULE_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
 
 /**
-* The macro creates a creator for the module.
-* See beginning of this file.
-* It has to be part of the implementation file.
-* @param module The name of the module that can be created.
-* @param category The category of this module.
-*/
+ * The macro creates a creator for the module.
+ * See beginning of this file.
+ * It has to be part of the implementation file.
+ * @param module The name of the module that can be created.
+ * @param category The category of this module.
+ */
 #define MAKE_MODULE(module, category) \
   Module<module, module##Base> the##module##Module(#module, ModuleBase::category);

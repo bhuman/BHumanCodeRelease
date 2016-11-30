@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 /**
  * The struct represents the states of the keys.
@@ -35,9 +34,9 @@ STREAMABLE(KeyStates,
     chest,
   })
 
-  KeyStates();
-  ,
-  (std::array<bool, numOfKeys>) pressed,
+  KeyStates(),
+
+  (ENUM_INDEXED_ARRAY(bool, Key)) pressed,
 });
 
 inline KeyStates::KeyStates()

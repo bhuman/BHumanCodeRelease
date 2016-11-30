@@ -1,9 +1,9 @@
 /**
-* @file Controller/Views/CABSLGraphView.cpp
-* Simple script for creating a drawing of the option call graph of a CABSL behavior
-* @author Tim Laue
-* @author Colin Graf
-*/
+ * @file Controller/Views/CABSLGraphView.cpp
+ * Simple script for creating a drawing of the option call graph of a CABSL behavior
+ * @author Tim Laue
+ * @author Colin Graf
+ */
 
 #include <QFile>
 #include <QTextStream>
@@ -47,10 +47,10 @@ void CABSLGraphViewObject::Option::findCalls(const QString& behaviorName, QList<
   while(!in.atEnd())
   {
     QString line = in.readLine();
-    foreach(Option* option, options)
-    if(line.contains(option->pattern()))
-      if(!calls.contains(option->optionName))
-        calls << option->optionName;
+    for(Option* option : options)
+      if(line.contains(option->pattern()))
+        if(!calls.contains(option->optionName))
+          calls << option->optionName;
   }
 }
 
@@ -62,8 +62,8 @@ QString CABSLGraphViewObject::Option::declareNode()
 QString CABSLGraphViewObject::Option::drawCalls()
 {
   QString dotLine;
-  foreach(QString call, calls)
-  dotLine += optionName + " -> " + call + ";\n";
+  for(const QString& call : calls)
+    dotLine += optionName + " -> " + call + ";\n";
   return dotLine;
 }
 
@@ -73,7 +73,8 @@ QString CABSLGraphViewObject::Option::pattern()
 }
 
 CABSLGraphViewObject::CABSLGraphViewObject(const QString& fullName, const QString& behaviorName, const QString& optionsFile) :
-  DotViewObject(fullName), behaviorName(behaviorName), optionsFile(optionsFile) {}
+  DotViewObject(fullName), behaviorName(behaviorName), optionsFile(optionsFile)
+{}
 
 QString CABSLGraphViewObject::generateDotFileContent()
 {
@@ -93,20 +94,20 @@ QString CABSLGraphViewObject::generateDotFileContent()
       options << new Option(line);
   }
   // Find calls of other options
-  foreach(Option* option, options)
+  for(Option* option : options)
     option->findCalls(behaviorName, options);
 
   // Create dot file
   QString dotSource = "digraph G {\n";
   dotSource += "node [style=filled,fontname=Arial"
-#ifdef OSX
-  "MT"
+#ifdef MACOS
+    "MT"
 #endif
-  ",fontsize=9,height=0.2];\n";
+    ",fontsize=9,height=0.2];\n";
   dotSource += "concentrate = true;\n";
-  foreach(Option* option, options)
+  for(Option* option : options)
     dotSource += option->declareNode();
-  foreach(Option* option, options)
+  for(Option* option : options)
     dotSource += option->drawCalls();
   dotSource += "}\n";
 

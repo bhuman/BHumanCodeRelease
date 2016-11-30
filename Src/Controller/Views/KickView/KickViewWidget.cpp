@@ -1,10 +1,10 @@
 /**
-* @file Controller/Views/KickView/KickViewWidget.cpp
-*
-* Implementation of class KickViewWidget.
-*
-* @author <a href="mailto:judy@tzi.de">Judith Müller</a>
-*/
+ * @file Controller/Views/KickView/KickViewWidget.cpp
+ *
+ * Implementation of class KickViewWidget.
+ *
+ * @author <a href="mailto:judy@tzi.de">Judith Müller</a>
+ */
 
 #include "Controller/RobotConsole.h"
 
@@ -28,23 +28,8 @@
 #include <QToolButton>
 
 KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& parameters, KickViewHeaderedWidget* parent) :
-  QWidget(parent),
-  parent(parent),
-  glWidget(new KickViewGLWidget(kickView, parameters, this)),
-  kickView(kickView),
-  parameters(parameters),
-  phaseDrawings(true),
-  singleDraw(false),
-  reachedDraw(false),
-  tra2dWindows(false),
-  tra1dWindows(false),
-  velocityWindows(false),
-  accelWindows(false),
-  followMode(false),
-  dragPlane(0, 1, 0),
-  getString(4),
-  ghost(0),
-  mirror(false)
+  QWidget(parent), parent(parent), glWidget(new KickViewGLWidget(kickView, parameters, this)),
+  kickView(kickView), parameters(parameters), dragPlane(0, 1, 0)
 {
   //Vertical Layouts
   QVBoxLayout* vbox = new QVBoxLayout(this);
@@ -133,6 +118,15 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   pal.setColor(QPalette::Foreground, Qt::white);
   mirrorCB->setPalette(pal);
 
+  QCheckBox* armsBackFixCB = new QCheckBox(tr("ArmsBackFix"), this);
+  armsBackFixCB->setCheckState(Qt::Unchecked);
+  armsBackFixCB->setBackgroundRole(QPalette::NoRole);
+  armsBackFixCB->setAutoFillBackground(true);
+  pal = armsBackFixCB->palette();
+  pal.setColor(QPalette::Background, Qt::darkGray);
+  pal.setColor(QPalette::Foreground, Qt::white);
+  armsBackFixCB->setPalette(pal);
+
   QToolButton* softLimb = new QToolButton(this);
   softLimb->setText("Soften Limb...");
 
@@ -179,6 +173,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
 
   label1->setAutoFillBackground(true);
   mirrorCB->setAutoFillBackground(true);
+  armsBackFixCB->setAutoFillBackground(true);
   clay->setAutoFillBackground(true);
   play->setAutoFillBackground(true);
   play2->setAutoFillBackground(true);
@@ -189,6 +184,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   deletePhase->setAutoFillBackground(true);
 
   vbox3->addWidget(mirrorCB, 0, Qt::AlignTop);
+  vbox3->addWidget(armsBackFixCB, 0, Qt::AlignTop);
   vbox3->addWidget(play, 0, Qt::AlignTop);
   vbox3->addWidget(play2, 0, Qt::AlignTop);
   vbox3->addWidget(reset, 0, Qt::AlignTop);
@@ -336,27 +332,27 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   list5.append(makeValue((float) 0.f));
   pidy->appendRow(list5);
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Preview (in Frames)"), (int) 0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Preview (in Frames)"), (int)0));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Loop"), (bool) 0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Loop"), (bool)0));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Auto COM"), (bool) 0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Auto COM"), (bool)0));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("ignore head"), (bool) 1));
+  parentItem->appendRow(makeStringAndValueRow(QString("ignore head"), (bool)1));
 
   treeViewCommon->setModel(modelCommon);
   modelCommon->setColumnCount(5);
-  modelCommon->setHeaderData(0, Qt::Horizontal,  QVariant(""));
-  modelCommon->setHeaderData(1, Qt::Horizontal,  QVariant(""));
-  modelCommon->setHeaderData(2, Qt::Horizontal,  QVariant(""));
-  modelCommon->setHeaderData(3, Qt::Horizontal,  QVariant(""));
-  modelCommon->setHeaderData(4, Qt::Horizontal,  QVariant(""));
+  modelCommon->setHeaderData(0, Qt::Horizontal, QVariant(""));
+  modelCommon->setHeaderData(1, Qt::Horizontal, QVariant(""));
+  modelCommon->setHeaderData(2, Qt::Horizontal, QVariant(""));
+  modelCommon->setHeaderData(3, Qt::Horizontal, QVariant(""));
+  modelCommon->setHeaderData(4, Qt::Horizontal, QVariant(""));
 
-  treeViewCommon->header()->setResizeMode(0, QHeaderView::ResizeToContents);
-  treeViewCommon->header()->setResizeMode(1, QHeaderView::Stretch);
-  treeViewCommon->header()->setResizeMode(2, QHeaderView::Stretch);
-  treeViewCommon->header()->setResizeMode(3, QHeaderView::Stretch);
-  treeViewCommon->header()->setResizeMode(4, QHeaderView::Stretch);
+  treeViewCommon->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  treeViewCommon->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+  treeViewCommon->header()->setSectionResizeMode(2, QHeaderView::Stretch);
+  treeViewCommon->header()->setSectionResizeMode(3, QHeaderView::Stretch);
+  treeViewCommon->header()->setSectionResizeMode(4, QHeaderView::Stretch);
 
   tabber->addTab(treeViewCommon, "Common");
 
@@ -369,7 +365,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   vbox->addLayout(hbox);
 
   treeViewCommon->expandAll();
-  treeViewCommon->header()->setResizeMode(0, QHeaderView::ResizeToContents);
+  treeViewCommon->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
   kickMenuBar = new KickMenuBar;
   kickMenuBar->hide();
@@ -383,6 +379,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   connect(deletePhase, SIGNAL(clicked()), this, SLOT(removePhase()));
   connect(addPhase, SIGNAL(clicked()), this, SLOT(addPhaseAfterActual()));
   connect(mirrorCB, SIGNAL(stateChanged(int)), this, SLOT(setMirrored(int)));
+  connect(armsBackFixCB, SIGNAL(stateChanged(int)), this, SLOT(setArmsBackFix(int)));
   connect(play, SIGNAL(clicked()), this, SLOT(playWholeMotion()));
   connect(reset, SIGNAL(clicked()), this, SLOT(resetRobot()));
   connect(stop, SIGNAL(clicked()), this, SLOT(standRobot()));
@@ -444,7 +441,8 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   selectedPoint.phaseNumber = -1;
   selectedPoint.xzRot = false;
 
-  if(!commands.empty()) commands.clear();
+  if(!commands.empty())
+    commands.clear();
 }
 
 KickViewWidget::~KickViewWidget()
@@ -453,7 +451,7 @@ KickViewWidget::~KickViewWidget()
   delete glWidget;
 }
 
-void KickViewWidget::setDragPlane(const int& plane)
+void KickViewWidget::setDragPlane(int plane)
 {
   switch(plane)
   {
@@ -476,83 +474,51 @@ void KickViewWidget::setStiffness(int limb)
   {
     case 0: //lftra
       if(lftra->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:lFootTraOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:lFootTraOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:lFootTraOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:lFootTraOff false");
       break;
     case 1: //rftra
       if(rftra->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:rFootTraOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:rFootTraOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:rFootTraOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:rFootTraOff false");
       break;
     case 2: //lfrot
       if(lfrot->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:lFootRotOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:lFootRotOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:lFootRotOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:lFootRotOff false");
       break;
     case 3: //rfrot
       if(rfrot->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:rFootRotOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:rFootRotOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:rFootRotOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:rFootRotOff false");
       break;
     case 4: //lhtra
       if(lhtra->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:lHandTraOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:lHandTraOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:lHandTraOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:lHandTraOff false");
       break;
     case 5: //rhtra
       if(rhtra->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:rHandTraOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:rHandTraOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:rHandTraOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:rHandTraOff false");
       break;
     case 6: //lhrot
       if(lhrot->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:lHandRotOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:lHandRotOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:lHandRotOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:lHandRotOff false");
       break;
     case 7: //rhrot
       if(rhrot->isChecked())
-      {
-        commands.push_back(std::string("set module:KickEngine:rHandRotOff true"));
-      }
+        commands.emplace_back("set module:KickEngine:rHandRotOff true");
       else
-      {
-        commands.push_back(std::string("set module:KickEngine:rHandRotOff false"));
-      }
+        commands.emplace_back("set module:KickEngine:rHandRotOff false");
       break;
   }
 }
@@ -564,17 +530,15 @@ void KickViewWidget::removePhase()
   if(phaseNumber > -1)
   {
     parent->addStateToUndoList();
-    std::vector<Phase>::iterator it;
-    it = parameters.phaseParameters.begin() + phaseNumber;
+    std::vector<Phase>::iterator it = parameters.phaseParameters.begin() + phaseNumber;
     if(it != parameters.phaseParameters.end())
     {
       disconnect(*(phaseTab.begin() + phaseNumber), SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updatePhaseParameters(QStandardItem*)));
       tabber->setCurrentIndex(phaseNumber);
       tabber->removeTab(phaseNumber + 1);
       for(int i = phaseNumber + 1; i < tabber->count(); i++)
-      {
         tabber->setTabText(i, QString("Phase %1").arg(i - 1));
-      }
+
       deleteKids(phaseTab[phaseNumber]->invisibleRootItem());
       delete *(treeView.begin() + phaseNumber);
       delete *(phaseTab.begin() + phaseNumber);
@@ -585,7 +549,7 @@ void KickViewWidget::removePhase()
 
       for(int limb = 0; limb < Phase::numOfLimbs; limb++)
       {
-        if(phaseNumber <  parameters.numberOfPhases - 1)
+        if(phaseNumber < parameters.numberOfPhases - 1)
         {
           float factor = (float)parameters.phaseParameters[phaseNumber].duration /
                          (float)parameters.phaseParameters[phaseNumber + 1].duration;
@@ -627,7 +591,7 @@ void KickViewWidget::movePhase(const int fromIndex, int toIndex)
   }
 }
 
-void KickViewWidget::makeNewPhaseWithModelAndTree(const int& phaseNumber)
+void KickViewWidget::makeNewPhaseWithModelAndTree(int phaseNumber)
 {
   Phase newPhase;
 
@@ -640,12 +604,12 @@ void KickViewWidget::makeNewPhaseWithModelAndTree(const int& phaseNumber)
   if(phaseNumber > 0)
   {
     for(int limb = 0; limb < Phase::numOfLimbs; ++limb)
-      for(int point = 0; point < NUM_OF_POINTS; ++point)
+      for(int point = 0; point < Phase::numOfPoints; ++point)
         newPhase.controlPoints[limb][point] = Vector3f::Zero();
   }
   else
   {
-    for(int point = 0; point < NUM_OF_POINTS; ++point)
+    for(int point = 0; point < Phase::numOfPoints; ++point)
     {
       newPhase.controlPoints[Phase::rightFootTra][point] = Vector3f(parameters.footOrigin.x(), -parameters.footOrigin.y(), parameters.footOrigin.z());
       newPhase.controlPoints[Phase::leftFootTra][point] = parameters.footOrigin;
@@ -675,12 +639,12 @@ void KickViewWidget::makeNewPhaseWithModelAndTree(const int& phaseNumber)
   newTree->setDragEnabled(false);
   newTree->setAcceptDrops(false);
   newTree->expandToDepth(3);
-  newTree->header()->setResizeMode(0, QHeaderView::ResizeToContents);
-  newTree->header()->setResizeMode(1, QHeaderView::Stretch);
-  newTree->header()->setResizeMode(2, QHeaderView::Stretch);
-  newTree->header()->setResizeMode(3, QHeaderView::Stretch);
-  newTree->header()->setResizeMode(4, QHeaderView::Stretch);
-  newTree->header()->setResizeMode(5, QHeaderView::Stretch);
+  newTree->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+  newTree->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+  newTree->header()->setSectionResizeMode(2, QHeaderView::Stretch);
+  newTree->header()->setSectionResizeMode(3, QHeaderView::Stretch);
+  newTree->header()->setSectionResizeMode(4, QHeaderView::Stretch);
+  newTree->header()->setSectionResizeMode(5, QHeaderView::Stretch);
   treeView.insert(treeView.begin() + phaseNumber, newTree);
 }
 
@@ -699,10 +663,10 @@ void KickViewWidget::addPhaseAfterActual()
     for(int limb = 0; limb < Phase::numOfLimbs; ++limb)
     {
       //Set all Points from new Phase to the End of last Phase
-      for(int point = 0; point < (int)NUM_OF_POINTS; ++point)
+      for(int point = 0; point < Phase::numOfPoints; ++point)
       {
-        parameters.phaseParameters[phaseNumber].controlPoints[limb][point] = parameters.phaseParameters[phaseNumber - 1].controlPoints[limb][NUM_OF_POINTS - 1];
-        parameters.phaseParameters[phaseNumber].comTra[point] = parameters.phaseParameters[phaseNumber - 1].comTra[NUM_OF_POINTS - 1];
+        parameters.phaseParameters[phaseNumber].controlPoints[limb][point] = parameters.phaseParameters[phaseNumber - 1].controlPoints[limb][Phase::numOfPoints - 1];
+        parameters.phaseParameters[phaseNumber].comTra[point] = parameters.phaseParameters[phaseNumber - 1].comTra[Phase::numOfPoints - 1];
       }
 
       //correct controlPoints
@@ -710,7 +674,7 @@ void KickViewWidget::addPhaseAfterActual()
       //p3 = q0 => p3 - p2 = q1 - p3 => 2*p3 - p2 = q1;
 
       //q1
-      if(phaseNumber <  parameters.numberOfPhases - 1)
+      if(phaseNumber < parameters.numberOfPhases - 1)
       {
         float factor = (float)parameters.phaseParameters[phaseNumber].duration /
                        (float)parameters.phaseParameters[phaseNumber + 1].duration;
@@ -780,32 +744,28 @@ void KickViewWidget::addPhaseAfterActual()
   tabber->setCurrentIndex(phaseNumber + 1);
 }
 
-std::string KickViewWidget::floatToStr(const float& f)
+std::string KickViewWidget::floatToStr(float f)
 {
   char temp[100];
   sprintf(temp, "%.3f", f);
   return temp;
 }
 
-std::string KickViewWidget::intToStr(const int& i)
+std::string KickViewWidget::boolToStr(bool b)
 {
-  char temp[100];
-  sprintf(temp, "%i", i);
-  return temp;
-}
-
-std::string KickViewWidget::boolToStr(const bool& b)
-{
-  if(b)
-    return "true";
-  else
-    return "false";
+  return b ? "true" : "false";
 }
 
 void KickViewWidget::setMirrored(int state)
 {
   mirror = (state == Qt::Checked);
 }
+
+void KickViewWidget::setArmsBackFix(int state)
+{
+  armsBackFix = (state == Qt::Checked);
+}
+
 
 void KickViewWidget::playWholeMotion()
 {
@@ -816,10 +776,11 @@ void KickViewWidget::playWholeMotion()
     std::string::size_type idxMotion = kickView.motionRequestCommand.find("motion");
     std::string::size_type idxSpecialAction = kickView.motionRequestCommand.find("specialActionRequest", idxMotion);
     std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickMotionType", idxSpecialAction);
-    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynamical", idxKickMotion);
+    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynPoints", idxKickMotion);
     todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
-    todo << (mirror ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
+    todo << (armsBackFix ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }
@@ -835,10 +796,11 @@ void KickViewWidget::playMotionTilActive()
     std::string::size_type idxMotion = kickView.motionRequestCommand.find("motion");
     std::string::size_type idxSpecialAction = kickView.motionRequestCommand.find("specialActionRequest", idxMotion);
     std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickMotionType", idxSpecialAction);
-    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynamical", idxKickMotion);
+    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynPoints", idxKickMotion);
     todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
-    todo << (mirror ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
+    todo << (armsBackFix ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }
@@ -852,33 +814,33 @@ void KickViewWidget::playMotion(int phase)
                                  + floatToStr(parameters.footRotOrigin.x()) + "; y = "
                                  + floatToStr(parameters.footRotOrigin.y()) + "; z = "
                                  + floatToStr(parameters.footRotOrigin.z()) + "; }; armOrigin = { x = "
-                                 + floatToStr(parameters.armOrigin.x())  + "; y = "
-                                 + floatToStr(parameters.armOrigin.y())  + "; z = "
-                                 + floatToStr(parameters.armOrigin.z())  + "; }; handRotOrigin = { x = "
-                                 + floatToStr(parameters.handRotOrigin.x())  + "; y = "
-                                 + floatToStr(parameters.handRotOrigin.y())  + "; z = "
-                                 + floatToStr(parameters.handRotOrigin.z())  + "; }; comOrigin = { x = "
-                                 + floatToStr(parameters.comOrigin.x())  + "; y = "
-                                 + floatToStr(parameters.comOrigin.y())  + "; }; headOrigin = { x = "
-                                 + floatToStr(parameters.headOrigin.x())  + "; y = "
-                                 + floatToStr(parameters.headOrigin.y())  + "; }; kpx = "
-                                 + floatToStr(parameters.kpx)         + "; kix = "
-                                 + floatToStr(parameters.kix)         + "; kdx = "
-                                 + floatToStr(parameters.kdx)         + "; kpy = "
-                                 + floatToStr(parameters.kpy)         + "; kiy = "
-                                 + floatToStr(parameters.kiy)         + "; kdy = "
-                                 + floatToStr(parameters.kdy)         + "; preview = "
-                                 + floatToStr(parameters.preview)     + "; loop = "
-                                 + boolToStr(parameters.loop)          + "; autoComTra = "
-                                 + boolToStr(parameters.autoComTra)    + "; ignoreHead = "
-                                 + boolToStr(parameters.ignoreHead)        + "; phaseParameters = [";
+                                 + floatToStr(parameters.armOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.armOrigin.y()) + "; z = "
+                                 + floatToStr(parameters.armOrigin.z()) + "; }; handRotOrigin = { x = "
+                                 + floatToStr(parameters.handRotOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.handRotOrigin.y()) + "; z = "
+                                 + floatToStr(parameters.handRotOrigin.z()) + "; }; comOrigin = { x = "
+                                 + floatToStr(parameters.comOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.comOrigin.y()) + "; }; headOrigin = { x = "
+                                 + floatToStr(parameters.headOrigin.x()) + "; y = "
+                                 + floatToStr(parameters.headOrigin.y()) + "; }; kpx = "
+                                 + floatToStr(parameters.kpx) + "; kix = "
+                                 + floatToStr(parameters.kix) + "; kdx = "
+                                 + floatToStr(parameters.kdx) + "; kpy = "
+                                 + floatToStr(parameters.kpy) + "; kiy = "
+                                 + floatToStr(parameters.kiy) + "; kdy = "
+                                 + floatToStr(parameters.kdy) + "; preview = "
+                                 + floatToStr(parameters.preview) + "; loop = "
+                                 + boolToStr(parameters.loop) + "; autoComTra = "
+                                 + boolToStr(parameters.autoComTra) + "; ignoreHead = "
+                                 + boolToStr(parameters.ignoreHead) + "; phaseParameters = [";
 
   for(int i = 0; i < phase; i++)
   {
     if(i)
       setNewKickMotion += ", ";
     setNewKickMotion += " { duration = "
-                        + intToStr(parameters.phaseParameters[i].duration) + "; "
+                        + std::to_string(parameters.phaseParameters[i].duration) + "; "
                         + "leftFootTra1 = { x = "
                         + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].x()) + "; y = "
                         + floatToStr(parameters.phaseParameters[i].controlPoints[Phase::leftFootTra][1].y()) + "; z = "
@@ -958,7 +920,7 @@ void KickViewWidget::playMotion(int phase)
                         + "odometryOffset = { x = "
                         + floatToStr(parameters.phaseParameters[i].odometryOffset.x()) + "; y = "
                         + floatToStr(parameters.phaseParameters[i].odometryOffset.y()) + "; z = "
-                        + floatToStr(parameters.phaseParameters[i].odometryOffset.z()) + "; }; }" ;
+                        + floatToStr(parameters.phaseParameters[i].odometryOffset.z()) + "; }; }";
   }
 
   setNewKickMotion += " ];";
@@ -983,120 +945,60 @@ void KickViewWidget::standRobot()
   commands.push_back(" ");
 }
 
-void KickViewWidget::setSelectedFromEditor(const int& index)
+void KickViewWidget::setSelectedFromEditor(int index)
 {
   selectedPoint.phaseNumber = index - 1;
 }
 
 void KickViewWidget::setDrawings(bool value)
 {
-  if(value)
-  {
-    phaseDrawings = true;
-  }
-  else
-  {
-    phaseDrawings = false;
-  }
+  phaseDrawings = value;
 }
 
 void KickViewWidget::setSingleDrawing(bool value)
 {
-  if(value)
-  {
-    singleDraw = true;
-  }
-  else
-  {
-    singleDraw = false;
-  }
+  singleDraw = value;
 }
 
 void KickViewWidget::setReachedDrawing(bool value)
 {
-  if(value)
-  {
-    reachedDraw = true;
-  }
-  else
-  {
-    reachedDraw = false;
-  }
+  reachedDraw = value;
 }
 
 void KickViewWidget::setTra2d(bool value)
 {
-  if(value)
-  {
-    tra2dWindows = true;
-  }
-  else
-  {
-    tra2dWindows = false;
-  }
+  tra2dWindows = value;
 }
 
 void KickViewWidget::setTra1d(bool value)
 {
-  if(value)
-  {
-    tra1dWindows = true;
-  }
-  else
-  {
-    tra1dWindows = false;
-  }
+  tra1dWindows = value;
 }
 
 void KickViewWidget::setVelocity(bool value)
 {
-  if(value)
-  {
-    velocityWindows = true;
-  }
-  else
-  {
-    velocityWindows = false;
-  }
+  velocityWindows = value;
 }
 
 void KickViewWidget::setAccel(bool value)
 {
-  if(value)
-  {
-    accelWindows = true;
-  }
-  else
-  {
-    accelWindows = false;
-  }
+  accelWindows = value;
 }
 
 void KickViewWidget::setEditor(bool value)
 {
   if(value)
-  {
     tabber->setHidden(false);
-  }
   else
-  {
     tabber->hide();
-  }
 }
 
 void KickViewWidget::setFollowMode(bool value)
 {
-  if(value)
-  {
-    followMode = true;
-  }
-  else
-  {
-    followMode = false;
-  }
+  followMode = value;
 }
 
-void KickViewWidget::transparencyChanged(const int& i)
+void KickViewWidget::transparencyChanged(int i)
 {
   ghost = i;
 }
@@ -1104,7 +1006,7 @@ void KickViewWidget::transparencyChanged(const int& i)
 void KickViewWidget::updateCommon()
 {
   disconnect(modelCommon, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updateCommonParameters(QStandardItem*)));
-  QStandardItem* rootItem  = modelCommon->invisibleRootItem();
+  QStandardItem* rootItem = modelCommon->invisibleRootItem();
   rootItem->child(0, 1)->setData(QString(parameters.name), Qt::DisplayRole);
   rootItem->child(1, 1)->setData(QString::number(parameters.numberOfPhases), Qt::DisplayRole);
 
@@ -1154,31 +1056,27 @@ void KickViewWidget::updateEditorView()
 
   //Clear and Destroy and Resize
   for(int i = 0; i < tabber->count(); i++)
-  {
     tabber->removeTab(i);
-  }
+
   //this->repaint();
   tabber->addTab(treeViewCommon, "Common");
   treeViewCommon->expandAll();
-  std::vector<QTreeView*>::iterator itTree;
-  std::vector<QStandardItemModel*>::iterator itModel;
 
   if(!treeView.empty())
   {
-    for(itTree = treeView.begin(); itTree < treeView.end(); itTree++)
-    {
-      delete *itTree;
-    }
+    for(QTreeView* itTree : treeView)
+      delete itTree;
+
     treeView.clear();
   }
 
   if(!phaseTab.empty())
   {
-    for(itModel = phaseTab.begin(); itModel < phaseTab.end(); itModel++)
+    for(QStandardItemModel* itModel : phaseTab)
     {
-      deleteKids(((QStandardItemModel*)(*itModel))->invisibleRootItem());
-      disconnect(((QStandardItemModel*)(*itModel)), SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updatePhaseParameters(QStandardItem*)));
-      delete *itModel;
+      deleteKids(((QStandardItemModel*)itModel)->invisibleRootItem());
+      disconnect(((QStandardItemModel*)itModel), SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updatePhaseParameters(QStandardItem*)));
+      delete itModel;
     }
     phaseTab.clear();
   }
@@ -1200,11 +1098,11 @@ void KickViewWidget::updateEditorView()
     treeView[i]->setAcceptDrops(false);
     treeView[i]->setModel(phaseTab[i]);
     treeView[i]->expandToDepth(3);
-    treeView[i]->header()->setResizeMode(0, QHeaderView::Interactive);
-    treeView[i]->header()->setResizeMode(1, QHeaderView::ResizeToContents);
-    treeView[i]->header()->setResizeMode(2, QHeaderView::ResizeToContents);
-    treeView[i]->header()->setResizeMode(3, QHeaderView::ResizeToContents);
-    treeView[i]->header()->setResizeMode(4, QHeaderView::ResizeToContents);
+    treeView[i]->header()->setSectionResizeMode(0, QHeaderView::Interactive);
+    treeView[i]->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    treeView[i]->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    treeView[i]->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    treeView[i]->header()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
     tabber->addTab(treeView[i], QString("Phase %1").arg(i));
   }
 
@@ -1267,16 +1165,15 @@ void KickViewWidget::addControlPoints(QStandardItem* item)
 
   item->appendRow(list);
 
-  for(unsigned int k = 1; k < NUM_OF_POINTS; k++)
+  for(unsigned int k = 1; k < Phase::numOfPoints; k++)
   {
     QList <QStandardItem*> list;
     list.append(makeLabel(QString("Point%1").arg(k)));
     list.append(makeLabel(QString("")));
 
     for(int i = 0; i < 3; i++)
-    {
       list.append(makeValue((double) 0.0));
-    }
+
     item->appendRow(list);
   }
 }
@@ -1297,16 +1194,16 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
 {
   QStandardItemModel* model = new QStandardItemModel();
   model->setColumnCount(4);
-  model->setHeaderData(0, Qt::Horizontal,  QVariant(" "));
-  model->setHeaderData(1, Qt::Horizontal,  QVariant(" "));
-  model->setHeaderData(2, Qt::Horizontal,  QVariant(" "));
-  model->setHeaderData(3, Qt::Horizontal,  QVariant(" "));
-  model->setHeaderData(4, Qt::Horizontal,  QVariant(" "));
-  model->setHeaderData(5, Qt::Horizontal,  QVariant(" "));
+  model->setHeaderData(0, Qt::Horizontal, QVariant(" "));
+  model->setHeaderData(1, Qt::Horizontal, QVariant(" "));
+  model->setHeaderData(2, Qt::Horizontal, QVariant(" "));
+  model->setHeaderData(3, Qt::Horizontal, QVariant(" "));
+  model->setHeaderData(4, Qt::Horizontal, QVariant(" "));
+  model->setHeaderData(5, Qt::Horizontal, QVariant(" "));
 
   QStandardItem* parentItem = model->invisibleRootItem();
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Duration in ms"), (int) 0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Duration in ms"), (int)0));
 
   QStandardItem* lFoot = makeLabel(QString("Left Foot"));
   parentItem->appendRow(lFoot);
@@ -1337,9 +1234,15 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
   addControlPoints(lArmTra);
   lArm->appendRow(addXYZLabel(lArmTra));
 
-  QStandardItem* lArmRot = makeLabel(QString("Rotation"));
+  QStandardItem* lArmRot = makeLabel(QString("Rotation (Spherical Coord. with angle around Vec.)"));
   addControlPoints(lArmRot);
-  lArm->appendRow(addXYZLabel(lArmRot));
+  QList <QStandardItem*> lArmList;
+  lArmList.append(lArmRot);
+  lArmList.append(makeLabel(QString("")));
+  lArmList.append(makeLabel(QString("theta")));
+  lArmList.append(makeLabel(QString("phi")));
+  lArmList.append(makeLabel(QString("omega")));
+  lArm->appendRow(lArmList);
 
   QStandardItem* rArm = makeLabel(QString("Right Hand"));
   parentItem->appendRow(rArm);
@@ -1348,17 +1251,23 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
   addControlPoints(rArmTra);
   rArm->appendRow(addXYZLabel(rArmTra));
 
-  QStandardItem* rArmRot = makeLabel(QString("Rotation"));
+  QStandardItem* rArmRot = makeLabel(QString("Rotation (Spherical Coord. with angle around Vec.)"));
   addControlPoints(rArmRot);
-  rArm->appendRow(addXYZLabel(rArmRot));
+  QList <QStandardItem*> rArmList;
+  rArmList.append(rArmRot);
+  rArmList.append(makeLabel(QString("")));
+  rArmList.append(makeLabel(QString("theta")));
+  rArmList.append(makeLabel(QString("phi")));
+  rArmList.append(makeLabel(QString("omega")));
+  rArm->appendRow(rArmList);
 
-  QStandardItem* comTrajectory = makeLabel(QString("COM Trajectory (used only when no auto COM)"));
+  QStandardItem* comTrajectory = makeLabel(QString("COM Trajectory"));
   parentItem->appendRow(comTrajectory);
 
-  QStandardItem* COMTra = makeLabel(QString("Translation"));
+  QStandardItem* COMTra = makeLabel(QString("Translation (ground projection)"));
   comTrajectory->appendRow(addXYZLabel(COMTra));
 
-  for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
+  for(unsigned int k = 0; k < Phase::numOfPoints; k++)
   {
     QList <QStandardItem*> list;
     list.append(makeLabel(QString("Point%1").arg(k)));
@@ -1376,7 +1285,7 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
   QStandardItem* HEADTra = makeLabel(QString("Translation"));
   headTrajectory->appendRow(addXYZLabel(HEADTra));
 
-  for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
+  for(unsigned int k = 0; k < Phase::numOfPoints; k++)
   {
     QList <QStandardItem*> list;
     list.append(makeLabel(QString("Point%1").arg(k)));
@@ -1413,9 +1322,8 @@ bool KickViewWidget::deleteKids(QStandardItem* rootItem)
   if(rootItem->hasChildren())
   {
     for(int i = 0; i < rootItem->rowCount(); i++)
-    {
       deleteKids(rootItem->child(i, 0));
-    }
+
     rootItem->removeRows(0, rootItem->rowCount());
   }
   return true;
@@ -1432,7 +1340,7 @@ void KickViewWidget::fillModelWithPhaseData(int i)
     //Duration im ms
     rootItem->child(0, 1)->setData(QVariant(parameters.phaseParameters[i].duration), Qt::DisplayRole);
 
-    for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
+    for(unsigned int k = 0; k < Phase::numOfPoints; k++)
     {
       rootItem->child(5, 0)->child(0, 0)->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].comTra[k].x()), Qt::DisplayRole);
       rootItem->child(5, 0)->child(0, 0)->child(k, 3)->setData(QVariant(parameters.phaseParameters[i].comTra[k].y()), Qt::DisplayRole);
@@ -1487,7 +1395,7 @@ void KickViewWidget::fillModelWithPhaseData(int i)
           break;
       }
 
-      for(unsigned int k = 0; k < NUM_OF_POINTS; k++)
+      for(unsigned int k = 0; k < Phase::numOfPoints; k++)
       {
         item = rootItem->child(child1, 0)->child(child2, 0);
         item->child(k, 2)->setData(QVariant(parameters.phaseParameters[i].controlPoints[limb][k].x()), Qt::DisplayRole);
@@ -1759,50 +1667,34 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
     if(QString("Left Foot") == mamaItem->parent()->data(Qt::DisplayRole))
     {
       if(QString("Translation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::leftFootTra;
-      }
       if(QString("Rotation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::leftFootRot;
-      }
     }
 
     if(QString("Right Foot") == mamaItem->parent()->data(Qt::DisplayRole))
     {
       if(QString("Translation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::rightFootTra;
-      }
       if(QString("Rotation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::rightFootRot;
-      }
     }
     if(QString("Right Hand") == mamaItem->parent()->data(Qt::DisplayRole))
     {
       if(QString("Translation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::rightArmTra;
-      }
-      if(QString("Rotation") == mamaItem->data(Qt::DisplayRole))
-      {
+      if(QString("Rotation (Spherical Coord. with angle around Vec.)") == mamaItem->data(Qt::DisplayRole))
         limb = Phase::rightHandRot;
-      }
     }
     if(QString("Left Hand") == mamaItem->parent()->data(Qt::DisplayRole))
     {
       if(QString("Translation") == mamaItem->data(Qt::DisplayRole))
-      {
         limb = Phase::leftArmTra;
-      }
-      if(QString("Rotation") == mamaItem->data(Qt::DisplayRole))
-      {
+      if(QString("Rotation (Spherical Coord. with angle around Vec.)") == mamaItem->data(Qt::DisplayRole))
         limb = Phase::leftHandRot;
-      }
     }
 
-    if(QString("COM Trajectory (used only when no auto COM)") == mamaItem->parent()->data(Qt::DisplayRole))
+    if(QString("COM Trajectory") == mamaItem->parent()->data(Qt::DisplayRole))
     {
       switch(col)
       {
@@ -1848,7 +1740,7 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
   selectedPoint.limb = limb;
   if(limb > -1)
   {
-    if(row < NUM_OF_POINTS)
+    if(row < Phase::numOfPoints)
     {
       selectedPoint.pointNumber = row;
       switch(col)

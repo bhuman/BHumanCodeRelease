@@ -1,0 +1,16 @@
+#!/bin/bash
+# This script builds the code from the command line using xcodebuild.
+# It is executed by the bush and copyfiles. It filters out a lot of the
+# output of xcodebuild, which would otherwise slow down the bush 
+# significantly.
+
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+cd $basePath
+
+./generate >/dev/null
+
+( xcodebuild -jobs `sysctl -n hw.ncpu` -parallelizeTargets -target $1 -configuration $2 | grep --line-buffered "^[^ -]" | grep --line-buffered -v -e "Build settings from command line:" -e "User defaults from command line:" -e "^Build Preparation" -e "^Build task concurrency" -e "^=== BUILD TARGET" -e "^Check dependencies" -e "^Write auxiliary files" -e "write-file" -e "PhaseScriptExecution" -e "^/bin/mkdir" -e "^chmod" | sed -l -e "s%CompileC [^ ]* \(.*/\)*\([^ ]*\).*%Compiling \2 ...%" -e "s%Ld \(.*/\)*\([^ ]*\).*%Linking \2 ...%"; test ${PIPESTATUS[0]} -eq 0 ) 2> >( grep "BUILD FAILED" >&2 )
+RESULT=$?
+sleep 1
+exit $RESULT

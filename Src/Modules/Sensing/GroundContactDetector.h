@@ -24,7 +24,7 @@ MODULE(GroundContactDetector,
   REQUIRES(MotionRequest),
   REQUIRES(RobotModel),
   USES(MotionInfo),
-  USES(TorsoMatrix),
+  USES(TorsoMatrix), // TODO: This can be replaced with InertialData
   PROVIDES(GroundContactState),
   DEFINES_PARAMETERS(
   {,

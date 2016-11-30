@@ -31,11 +31,21 @@ namespace Rotation
     // Euler angles are expressed in z y x manner.
 
     Quaternionf fromAngles(float x, float y, float z);
+    Quaternionf fromAngles(const Vector3a& rotation);
     Quaternionf fromAngles(const Vector3f& rotation);
     Vector3f getAngles(const Quaternionf& rot);
     float getXAngle(const Quaternionf& rot);
     float getYAngle(const Quaternionf& rot);
     float getZAngle(const Quaternionf& rot);
+  }
+
+  namespace Aldebaran
+  {
+    // Aldebaran uses these angles when calculating the orientatino of the robot via the imu
+    float getXAngle(const Quaternionf& rot);
+    float getXAngle(const Matrix3f& rot);
+    float getYAngle(const Quaternionf& rot);
+    float getYAngle(const Matrix3f& rot);
   }
 
   namespace AngleAxis
@@ -69,14 +79,18 @@ inline Quaternionf Rotation::interpolate(float t, const Quaternionf& q1, const Q
 inline Quaternionf Rotation::removeZRotation(const Quaternionf& rotation)
 {
   const Vector3f& z = Vector3f::UnitZ();
-  const Vector3f zRotated = rotation.inverse() * z;
-  const Vector3f c = zRotated.cross(z);
-  const float cLen = c.norm();
-  if(Approx::isZero(cLen))
-    return rotation;
+  const Vector3f zR = rotation.inverse() * z;
+  const Vector3f c = zR.cross(z);
+  const float sin = c.norm();
+  const float cos = zR.dot(z);
+  if(Approx::isZero(sin))
+    if(cos < 0.f) // 180 degree rotation
+      return rotation; // There's no unique decomposition.
+    else
+      return Quaternionf::Identity();
   else
   {
-    const float angle = std::atan2(cLen, RowVector3f::UnitZ() * zRotated);
+    const float angle = std::atan2(sin, cos);
     return Quaternionf(AngleAxisf(angle, c.normalized()));
   }
 }
@@ -91,6 +105,11 @@ inline Quaternionf Rotation::splitOffZRotation(const Quaternionf& rotation, Quat
 inline Quaternionf Rotation::Euler::fromAngles(float x, float y, float z)
 {
   return AngleAxisf(z, Vector3f::UnitZ()) * AngleAxisf(y, Vector3f::UnitY()) * AngleAxisf(x, Vector3f::UnitX());
+}
+
+inline Quaternionf Rotation::Euler::fromAngles(const Vector3a& rotation)
+{
+  return fromAngles(rotation.x(), rotation.y(), rotation.z());
 }
 
 inline Quaternionf Rotation::Euler::fromAngles(const Vector3f& rotation)
@@ -146,6 +165,94 @@ inline float Rotation::Euler::getYAngle(const Quaternionf& rot)
 inline float Rotation::Euler::getZAngle(const Quaternionf& rot)
 {
   return getAngles(rot).z();
+}
+
+inline float Rotation::Aldebaran::getXAngle(const Quaternionf& rot)
+{
+  //     | a b c |        | a d g |        | 0 |   | g |
+  // A = | d e f |   At = | b e h |   At * | 0 | = | h | = v
+  //     | g h i |        | c f i |        | 1 |   | i |
+
+  // Project        | 0 |
+  // v into  : v -> | h | = v'
+  // yz plane       | i |
+
+  // calculate angle      | 0 |       angleX = acos((v' * z) / (|v'| * |z|))
+  // bewteen v' and : z = | 0 |,  <=> angleX = acos(i / |v'|)
+  // z-axis of A          | 1 |   <=> angleX = acos(i / sqrt(h * h + i * i))
+
+  const float tx = 2.f * rot.x();
+  const float h = 2.f * rot.z() * rot.y() + tx * rot.w();
+  const float i = 1.f - (tx * rot.x() + 2.f * rot.y() * rot.y());
+
+  const float len = std::sqrt(h * h + i * i);
+  return len > 1e-5f ? std::acos(i / len) * (h > 0.f ? 1.f : -1.f) : 0.f;
+}
+
+inline float Rotation::Aldebaran::getXAngle(const Matrix3f& rot)
+{
+  //     | a b c |        | a d g |        | 0 |   | g |
+  // A = | d e f |   At = | b e h |   At * | 0 | = | h | = v
+  //     | g h i |        | c f i |        | 1 |   | i |
+
+  // Project        | 0 |
+  // v into  : v -> | h | = v'
+  // yz plane       | i |
+
+  // calculate angle      | 0 |       angleX = acos((v' * z) / (|v'| * |z|))
+  // bewteen v' and : z = | 0 |,  <=> angleX = acos(i / |v'|)
+  // z-axis of A          | 1 |   <=> angleX = acos(i / sqrt(h * h + i * i))
+
+  const float h = rot(2, 1);
+  const float i = rot(2, 2);
+
+  const float len = std::sqrt(h * h + i * i);
+  return len > 1e-5f ? std::acos(i / len) * (h > 0.f ? 1.f : -1.f) : 0.f;
+}
+
+inline float Rotation::Aldebaran::getYAngle(const Quaternionf& rot)
+{
+  //     | a b c |        | a d g |        | 0 |   | g |
+  // A = | d e f |   At = | b e h |   At * | 0 | = | h | = v
+  //     | g h i |        | c f i |        | 1 |   | i |
+
+  // Project        | g |
+  // v into  : v -> | 0 | = v'
+  // xz plane       | i |
+
+  // calculate angle      | 0 |       angleX = acos((v' * z) / (|v'| * |z|))
+  // bewteen v' and : z = | 0 |,  <=> angleX = acos(i / |v'|)
+  // z-axis of A          | 1 |   <=> angleX = acos(i / sqrt(g * g + i * i))
+
+  // calculate g and i
+
+  const float ty = 2.f * rot.y();
+  const float g = 2.f * rot.z() * rot.x() - ty * rot.w();
+  const float i = 1.f - (2.f * rot.x() * rot.x() + ty * rot.y());
+
+  const float len = std::sqrt(g * g + i * i);
+  return len > 1e-5f ? std::acos(i / len) * (g > 0.f ? -1.f : 1.f) : 0.f;
+}
+
+inline float Rotation::Aldebaran::getYAngle(const Matrix3f& rot)
+{
+  //     | a b c |        | a d g |        | 0 |   | g |
+  // A = | d e f |   At = | b e h |   At * | 0 | = | h | = v
+  //     | g h i |        | c f i |        | 1 |   | i |
+
+  // Project        | g |
+  // v into  : v -> | 0 | = v'
+  // xz plane       | i |
+
+  // calculate angle      | 0 |       angleX = acos((v' * z) / (|v'| * |z|))
+  // bewteen v' and : z = | 0 |,  <=> angleX = acos(i / |v'|)
+  // z-axis of A          | 1 |   <=> angleX = acos(i / sqrt(g * g + i * i))
+
+  const float g = rot(2, 0);
+  const float i = rot(2, 2);
+
+  const float len = std::sqrt(g * g + i * i);
+  return len > 1e-5f ? std::acos(i / len) * (g > 0.f ? -1.f : 1.f) : 0.f;
 }
 
 inline Vector3f Rotation::AngleAxis::pack(const AngleAxisf& angleAxis)

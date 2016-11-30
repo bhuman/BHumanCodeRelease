@@ -142,7 +142,7 @@ ActuatorWidget::ActuatorWidget(SimRobotCore2::ActuatorPort* actuator, QWidget* p
   txbValue = new QSpinBox(this);
   cbxSet = new QCheckBox(tr(""), this);
   btnExit = new QPushButton(tr("x"), this);
-#ifdef OSX
+#ifdef MACOS
   btnExit->setMaximumWidth(btnExit->height() / 2 + 8);
   btnExit->setMaximumHeight(btnExit->height() / 2 + 8);
   btnExit->setStyleSheet("QPushButton {background-color: #FAFAFA; padding: 2px; margin: 1px 1px 9px 2px; border: none; border-radius: 2px;} QPushButton:pressed {background-color: #3683F9; color: white;}");
@@ -156,7 +156,7 @@ ActuatorWidget::ActuatorWidget(SimRobotCore2::ActuatorPort* actuator, QWidget* p
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(5);
   layout->addWidget(btnExit);
-#ifdef OSX
+#ifdef MACOS
   layout->addSpacing(5);
 #endif
   layout->addWidget(label);

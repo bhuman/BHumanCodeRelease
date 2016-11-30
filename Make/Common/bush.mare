@@ -3,46 +3,46 @@ bush = cppApplication + {
   root = { "$(srcDirRoot)/Utils/bush", "$(srcDirRoot)" }
 
   files = {
-    "$(srcDirRoot)/Utils/bush/**.cpp" = cppSource,
-    "$(srcDirRoot)/Utils/bush/**.h",
-    if (platform == "Linux") {
-      "$(srcDirRoot)/Platform/Linux/BHAssert.cpp" = cppSource,
-      "$(srcDirRoot)/Platform/Linux/BHAssert.h",
-      "$(srcDirRoot)/Platform/Linux/Semaphore.cpp" = cppSource,
-      "$(srcDirRoot)/Platform/Linux/Semaphore.h",
-      "$(srcDirRoot)/Platform/Linux/Thread.h",
-    }
-    if (host == "Win32") {
-      "$(srcDirRoot)/Platform/Windows/BHAssert.cpp" = cppSource,
-      "$(srcDirRoot)/Platform/Windows/BHAssert.h",
-      "$(srcDirRoot)/Platform/Windows/Semaphore.cpp" = cppSource,
-      "$(srcDirRoot)/Platform/Windows/Semaphore.h",
-      "$(srcDirRoot)/Platform/Windows/Thread.h",
-    }
-    "$(srcDirRoot)/Platform/SimRobotQt/SystemCall.cpp" = cppSource,
-    "$(srcDirRoot)/Platform/SimRobotQt/SystemCall.h",
-    "$(srcDirRoot)/Platform/*.h",
-    "$(srcDirRoot)/Platform/Common/File.cpp" = cppSource,
-    "$(srcDirRoot)/Platform/Common/File.h",
-    "$(srcDirRoot)/Controller/Platform/Directory.h",
-    "$(srcDirRoot)/Tools/AlignedMemory.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/AlignedMemory.h",
-    "$(srcDirRoot)/Tools/Enum.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Enum.h",
-    "$(srcDirRoot)/Tools/Global.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Global.h",
-    "$(srcDirRoot)/Tools/Streams/**.cpp" = cppSource,
-    "$(srcDirRoot)/Tools/Streams/**.h",
+    "$(srcDirRoot)/Utils/bush/**.cpp" = cppSource
+    "$(srcDirRoot)/Utils/bush/**.h"
+    "$(srcDirRoot)/Platform/$(OS)/*.cpp" = bhCppSource
+    "$(srcDirRoot)/Platform/$(OS)/*.h"
+    "$(srcDirRoot)/Platform/*.cpp" = bhCppSource
+    "$(srcDirRoot)/Platform/*.h"
+    "$(srcDirRoot)/Controller/Platform/Directory.h"
+    "$(srcDirRoot)/Tools/AlignedMemory.cpp" = cppSource
+    "$(srcDirRoot)/Tools/AlignedMemory.h"
+    "$(srcDirRoot)/Tools/Global.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Global.h"
+    "$(srcDirRoot)/Tools/Streams/**.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Streams/**.h"
 
     if (host == "Win32") {
       "$(srcDirRoot)/Utils/bush/bush.rc" = rcSource
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtCore4.dll" = copyFile
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/QtGui4.dll" = copyFile
+
+      // Qt libraries
+      if (configuration == "Debug") {
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Concurrentd.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Cored.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Guid.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Widgetsd.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/platforms/qwindowsd.dll" = copyFile + {
+          output = "$(buildDir)/platforms/qwindowsd.dll"
+        }
+      } else {
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Concurrent.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Core.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Gui.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Widgets.dll" = copyFile
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/platforms/qwindows.dll" = copyFile + {
+          output = "$(buildDir)/platforms/qwindows.dll"
+        }
+      }
     }
   }
 
   qtRessourceFiles = "$(srcDirRoot)/Utils/bush/icons/*.png"
-  qtRccFiles = "$(srcDirRoot)/Utils/bush/*.qrc",
+  qtRccFiles = "$(srcDirRoot)/Utils/bush/*.qrc"
   qtMocFiles = {
     "$(srcDirRoot)/Utils/bush/Session.h"
     "$(srcDirRoot)/Utils/bush/agents/PingAgent.h"
@@ -63,42 +63,57 @@ bush = cppApplication + {
   files += qtFiles
 
   includePaths = {
-    "$(srcDirRoot)",
-    "$(utilDirRoot)/GameController/include",
+    "$(srcDirRoot)"
+    "$(utilDirRoot)/GameController/include"
     if (platform == "Linux") {
-      "/usr/include/qt4/QtCore",
-      "/usr/include/qt4/QtGui",
-      "/usr/include/qt4",
-      "/usr/include/QtCore",
-      "/usr/include/QtGui",
-      "/usr/include/Qt",
+      "/usr/include/qt5"
+      "/usr/include/qt5/QtConcurrent"
+      "/usr/include/qt5/QtCore"
+      "/usr/include/qt5/QtGui"
+      "/usr/include/qt5/QtWidgets"
+      "/usr/include/qt"
+      "/usr/include/qt/QtConcurrent"
+      "/usr/include/qt/QtCore"
+      "/usr/include/qt/QtGui"
+      "/usr/include/qt/QtWidgets"
+      "/usr/include/x86_64-linux-gnu/qt5"
+      "/usr/include/x86_64-linux-gnu/qt5/QtConcurrent"
+      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
+      "/usr/include/x86_64-linux-gnu/qt5/QtGui"
+      "/usr/include/x86_64-linux-gnu/qt5/QtWidgets"
     }
     if (host == "Win32") {
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include",
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore",
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGUI",
-      "$(utilDirRoot)/Buildchain/Windows/include",
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtConcurrent"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGui"
+      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtWidgets"
+      "$(utilDirRoot)/Buildchain/Windows/include"
     }
   }
 
   defines += {
-    "TARGET_TOOL", "QT_NO_DEBUG", "QT_SHARED", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
+    "TARGET_TOOL"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
+    }
+    if (configuration != "Debug") {
+      "QT_NO_DEBUG"
     }
   }
 
   libs = {
     if (platform == "Linux") {
-      "rt", "pthread", "QtGui", "QtCore"
+      "Qt5Concurrent", "Qt5Gui", "Qt5Core", "Qt5Widgets"
+      "rt", "pthread"
     }
     if (host == "Win32") {
       if (configuration == "Debug") {
-        "qtmaind"
+        "Qt5Concurrentd", "Qt5Guid", "Qt5Cored", "Qt5Widgetsd", "qtmaind"
       } else {
-        "qtmain"
+        "Qt5Concurrent", "Qt5Gui", "Qt5Core", "Qt5Widgets", "qtmain"
       }
-      "QtGui4", "QtCore4", "ws2_32", "winmm"
+      "ws2_32", "winmm"
     }
   }
 
@@ -115,6 +130,6 @@ bush = cppApplication + {
   }
 
   visualizers = {
-    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt4.natvis"
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt5.natvis"
   }
 }

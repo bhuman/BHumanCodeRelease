@@ -8,34 +8,34 @@
  */
 
 #include "AlignedMemory.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Memory.h"
 
 void* AlignedMemory::operator new(std::size_t size)
 {
-  return SystemCall::alignedMalloc(size);
+  return Memory::alignedMalloc(size);
 }
 
 void* AlignedMemory::operator new[](std::size_t size)
 {
-  return SystemCall::alignedMalloc(size);
+  return Memory::alignedMalloc(size);
 }
 
 void AlignedMemory::operator delete(void* ptr) throw()
 {
-  SystemCall::alignedFree(ptr);
+  Memory::alignedFree(ptr);
 }
 
 void AlignedMemory::operator delete[](void* ptr) throw()
 {
-  SystemCall::alignedFree(ptr);
+  Memory::alignedFree(ptr);
 }
 
 void* AlignedMemory::operator new(std::size_t size, const std::nothrow_t&) throw()
 {
-  return SystemCall::alignedMalloc(size);
+  return Memory::alignedMalloc(size);
 }
 
 void AlignedMemory::operator delete(void* ptr, const std::nothrow_t&) throw()
 {
-  SystemCall::alignedFree(ptr);
+  Memory::alignedFree(ptr);
 }

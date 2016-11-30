@@ -6,32 +6,31 @@
 
 #pragma once
 
-#include "Tools/Enum.h"
-#include "Tools/Limbs.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/RobotParts/Limbs.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
-struct MassCalibration : public Streamable
+STREAMABLE(MassCalibration,
 {
   /**
    * Information on the mass distribution of a limb of the robot.
    */
   STREAMABLE(MassInfo,
   {,
-    (float)(0) mass, /**< The mass of this limb. */
-    (Vector3f) offset, /**< The offset of the center of mass of this limb relative to its hinge. */
+    (float)(0.f) mass, /**< The mass of this limb (in g). */
+    (Vector3f)(Vector3f::Zero()) offset, /**< The offset of the center of mass of this limb relative to its hinge. */
   });
 
-  std::array<MassInfo, Limbs::numOfLimbs> masses; /**< Information on the mass distribution of all joints. */
+  float totalMass = 0.f; /**< The total mass of the Robot (in g). */
 
-private:
-  virtual void serialize(In* in, Out* out);
-};
+  void onRead(),
 
-inline void MassCalibration::serialize(In* in, Out* out)
+  (ENUM_INDEXED_ARRAY(MassInfo, (Limbs) Limb)) masses, /**< Information on the mass distribution of all joints. */
+});
+
+inline void MassCalibration::onRead()
 {
-  STREAM_REGISTER_BEGIN
-  for(int i = 0; i < Limbs::numOfLimbs; ++i)
-    Streaming::streamIt(in, out, Limbs::getName(static_cast<Limbs::Limb>(i)), masses[i], nullptr);
-  STREAM_REGISTER_FINISH
+  totalMass = 0.f;
+  for(int i = 0; i < Limbs::numOfLimbs; i++)
+    totalMass += masses[i].mass;
 }

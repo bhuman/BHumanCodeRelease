@@ -63,11 +63,11 @@ TEST(RotationMatrix, getAngleAxis)
   for(int i = 0; i < RUNS; ++i)
   {
     vec = Vector3f::Random();
-    r = aa = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    r = aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     r1 = aa * vec;
     r2 = r.getAngleAxis() * vec;
     if(!r1.isApprox(r2, 1e-2f))
-      EXPECT_TRUE(r1.isApprox(r2, 1e-2f)); 
+      EXPECT_TRUE(r1.isApprox(r2, 1e-2f));
   }
 }
 
@@ -117,7 +117,7 @@ TEST(RotationMatrix, normalize)
   for(int i = 0; i < 1000; ++i)
   {
     const Vector3f rVec = Vector3f::Random();
-    const AngleAxisf aa = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const RotationMatrix r(aa);
     const RotationMatrix scaledR = RotationMatrix(Vector3f(Vector3f::Random()).asDiagonal()) * r;
 
@@ -132,8 +132,8 @@ TEST(RotationMatrix, rotateX)
   for(int i = 0; i < RUNS; ++i)
   {
     const Vector3f rVec = Vector3f::Random();
-    const float rot = randomFloat(-pi, pi);
-    const AngleAxisf aa = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    const float rot = Random::uniform(-pi, pi);
+    const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const RotationMatrix q = aa * Rotation::aroundX(rot);
     const RotationMatrix r = RotationMatrix(aa).rotateX(rot);
 
@@ -148,8 +148,8 @@ TEST(RotationMatrix, rotateY)
   for(int i = 0; i < RUNS; ++i)
   {
     const Vector3f rVec = Vector3f::Random();
-    const float rot = randomFloat(-pi, pi);
-    const AngleAxisf aa = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    const float rot = Random::uniform(-pi, pi);
+    const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const RotationMatrix q = aa * Rotation::aroundY(rot);
     const RotationMatrix r = RotationMatrix(aa).rotateY(rot);
 
@@ -164,8 +164,8 @@ TEST(RotationMatrix, rotateZ)
   for(int i = 0; i < RUNS; ++i)
   {
     const Vector3f rVec = Vector3f::Random();
-    const float rot = randomFloat(-pi, pi);
-    const AngleAxisf aa = AngleAxisf(randomFloat(-pi, pi), Vector3f::Random().normalized());
+    const float rot = Random::uniform(-pi, pi);
+    const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const RotationMatrix q = aa * Rotation::aroundZ(rot);
     const RotationMatrix r = RotationMatrix(aa).rotateZ(rot);
 
@@ -205,7 +205,7 @@ TEST(RotationMatrix, getXAngle)
 
   for(int i = 0; i < RUNS; ++i)
   {
-    angle = randomFloat() * pi;
+    angle = Random::uniform() * pi;
     r = RotationMatrix::aroundX(angle);
     xAngle = r.getXAngle();
     if(!Approx::isEqual(xAngle, angle, 1e-3f))
@@ -242,7 +242,7 @@ TEST(RotationMatrix, getYAngle)
 
   for(int i = 0; i < RUNS; ++i)
   {
-    const float angle = randomFloat() * pi;
+    const float angle = Random::uniform() * pi;
     const RotationMatrix r = RotationMatrix::aroundY(angle);
     float yAngle = r.getYAngle();
     if(!Approx::isEqual(yAngle, angle, 1e-3f))
@@ -279,7 +279,7 @@ TEST(RotationMatrix, getZAngle)
 
   for(int i = 0; i < RUNS; ++i)
   {
-    angle = randomFloat() * pi;
+    angle = Random::uniform() * pi;
     r = RotationMatrix::aroundZ(angle);
     zAngle = r.getZAngle();
     if(!Approx::isEqual(zAngle, angle, 1e-3f))

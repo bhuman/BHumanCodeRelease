@@ -2,7 +2,7 @@
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/Session.h"
 
-bool RobotCommand::execute(Context &context, const std::vector<std::string> &params)
+bool RobotCommand::execute(Context& context, const std::vector<std::string>& params)
 {
   std::vector<Robot*> selectedRobots = context.getSelectedRobots();
   if(selectedRobots.empty())

@@ -4,7 +4,7 @@
 #include <stack>
 #include <typeinfo>
 #include <unordered_map>
-#include "Tools/Streams/OutStreams.h"
+#include "OutStreams.h"
 
 class StreamHandler;
 
@@ -49,21 +49,21 @@ private:
     bool externalOperator;
   };
 
-  typedef std::unordered_map<const char*, const char*> BasicTypeSpecification;
+  using BasicTypeSpecification = std::unordered_map<const char*, const char*>;
   BasicTypeSpecification basicTypeSpecification;
 
-  typedef std::pair<std::string, const char*> TypeNamePair;
-  typedef std::unordered_map<const char*, std::vector<TypeNamePair> > Specification;
+  using TypeNamePair = std::pair<std::string, const char*>;
+  using Specification = std::unordered_map<const char*, std::vector<TypeNamePair>>;
   Specification specification;
 
-  typedef std::unordered_map<const char*, std::vector<const char*> > EnumSpecification;
+  using EnumSpecification = std::unordered_map<const char*, std::vector<const char*>>;
   EnumSpecification enumSpecification;
 
-  typedef std::unordered_map<std::string, int> StringTable;
+  using StringTable = std::unordered_map<std::string, int>;
   StringTable stringTable;
 
-  typedef std::pair<Specification::iterator, RegisteringAttributes> RegisteringEntry;
-  typedef std::stack<RegisteringEntry> RegisteringEntryStack;
+  using RegisteringEntry = std::pair<Specification::iterator, RegisteringAttributes>;
+  using RegisteringEntryStack = std::stack<RegisteringEntry>;
   RegisteringEntryStack registeringEntryStack;
 
   bool registering;

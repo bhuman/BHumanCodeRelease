@@ -1,12 +1,17 @@
 /**
-* @file Controller/Views/JointView.h
-* Declaration of class for displaying the requested and measured joint angles.
-* @author Colin Graf
-*/
+ * @file Controller/Views/JointView.h
+ * Declaration of class for displaying the requested and measured joint angles.
+ * @author Colin Graf
+ */
 
 #pragma once
 
 #include <SimRobot.h>
+#include <QHeaderView>
+#include <QApplication>
+#include <QPainter>
+#include <QFontMetrics>
+#include <QSettings>
 
 class RobotConsole;
 struct JointSensorData;
@@ -30,7 +35,6 @@ private:
 
 public:
   /**
-   * Constructor.
    * @param fullName The path to this view in the scene graph.
    * @param robotConsole The robot console which owns \c jointSensorData and \c jointRequest.
    * @param jointSensorData A reference to the jointSensorData representation of the robot console.
@@ -45,6 +49,51 @@ private:
    * @return The widget.
    */
   virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const {return fullName;}
-  virtual const QIcon* getIcon() const {return &icon;}
+  virtual const QString& getFullName() const { return fullName; }
+  virtual const QIcon* getIcon() const { return &icon; }
 };
+
+class JointWidget : public QWidget
+{
+  Q_OBJECT
+
+private:
+  JointView& jointView;
+  unsigned lastUpdateTimeStamp = 0; /**< Timestamp of the last painted joint angles. */
+
+  QHeaderView* headerView;
+
+  QPainter painter;
+  int lineSpacing;
+  int textOffset;
+
+  QFont font;
+  QBrush altBrush;
+  QPen fontPen;
+  QPen noPen;
+  bool fillBackground;
+
+  QRect paintRect;
+  QRect paintRectField0;
+  QRect paintRectField1;
+  QRect paintRectField2;
+  QRect paintRectField3;
+  QRect paintRectField4;
+  QRect paintRectField5;
+
+public:
+  JointWidget(JointView& jointView, QHeaderView* headerView, QWidget* parent);
+  virtual ~JointWidget();
+
+  void update();
+  void paintEvent(QPaintEvent* event);
+
+  public slots:
+  void forceUpdate();
+
+private:
+  void print(const char* name, const char* value1, const char* value2, const char* value3, const char* value4, const char* value5);
+  void newSection();
+  QSize sizeHint() const { return QSize(260, 400); }
+};
+

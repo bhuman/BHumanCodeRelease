@@ -28,7 +28,7 @@ void AutomaticCameraCalibratorHandlerDeletion::deliverPoint(const Vector2i& poin
 void AutomaticCameraCalibratorHandlerDeletion::setActive(std::string view)
 {
   if(!ImageViewAdapter::addListener(this, view))
-    OUTPUT(idText, text, "AutomaticCameraCalibratorDeletion is already active for \"" + view + "\"");
+    OUTPUT_TEXT("AutomaticCameraCalibratorDeletion is already active for \"" + view + "\"");
 }
 
 void AutomaticCameraCalibratorHandlerDeletion::setInactive(std::string view)

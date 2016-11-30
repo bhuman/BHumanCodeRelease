@@ -1,16 +1,17 @@
 /**
-* @file Controller/Views/ImageView.h
-*
-* Declaration of class ImageView
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-* @author Colin Graf
-*/
+ * @file Controller/Views/ImageView.h
+ *
+ * Declaration of class ImageView
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Colin Graf
+ */
 
 #pragma once
 
 #include <QString>
 #include <QIcon>
+#include <QImage>
 #include <QPainter>
 #include <QApplication>
 #include <QMouseEvent>
@@ -32,29 +33,28 @@ class RobotConsole;
 class ImageWidget;
 
 /**
-* @class ImageView
-*
-* A class to represent a view displaying camera images and overlaid debug drawings.
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @class ImageView
+ *
+ * A class to represent a view displaying camera images and overlaid debug drawings.
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 class ImageView : public SimRobot::Object
 {
 public:
-  /**
-  * Constructor.
-  * @param fullName The path to this view in the scene graph.
-  * @param console The console object.
-  * @param background The name of the background image.
-  * @param name The name of the view.
-  * @param segmented The image will be segmented.
-  * @param gain The intensity is multiplied with this factor.
-  */
-  ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain = 1.0f);
-
   bool upperCam; /**< Show upper cams image in this view. */
+  ImageWidget* widget = nullptr; /**< The widget of this view */
 
-  ImageWidget* widget; /**< The widget of this view */
+  /**
+   * @param fullName The path to this view in the scene graph.
+   * @param console The console object.
+   * @param background The name of the background image.
+   * @param name The name of the view.
+   * @param segmented The image will be segmented.
+   * @param gain The intensity is multiplied with this factor.
+   */
+  ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain = 1.0f);
+  void forwardLastImage();
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
@@ -67,14 +67,14 @@ private:
   bool isActImage; /**< Whether this is an auto color table image view */
 
   /**
-  * The method returns a new instance of a widget for this direct view.
-  * The caller has to delete this instance. (Qt handles this)
-  * @return The widget.
-  */
+   * The method returns a new instance of a widget for this direct view.
+   * The caller has to delete this instance. (Qt handles this)
+   * @return The widget.
+   */
   virtual SimRobot::Widget* createWidget();
 
-  virtual const QString& getFullName() const {return fullName;}
-  virtual const QIcon* getIcon() const {return &icon;}
+  virtual const QString& getFullName() const { return fullName; }
+  virtual const QIcon* getIcon() const { return &icon; }
 
   friend class ImageWidget;
 };
@@ -87,40 +87,41 @@ public:
   virtual ~ImageWidget();
 
   void setUndoRedo(const bool enableUndo, const bool enableRedo);
-  void setDrawnColor(ColorClasses::Color color) {drawnColor = color;}
-  void setDrawAllColors(bool drawAll) {drawAllColors = drawAll;}
-  ColorClasses::Color getDrawnColor() const {return drawnColor;}
+  void setDrawnColor(FieldColors::Color color) { drawnColor = color; }
+  void setDrawAllColors(bool drawAll) { drawAllColors = drawAll; }
+  FieldColors::Color getDrawnColor() const { return drawnColor; }
 
 private:
   ImageView& imageView;
-  QImage* imageData;
-  int imageWidth;
-  int imageHeight;
-  unsigned int lastImageTimeStamp;
-  unsigned int lastColorTableTimeStamp;
-  unsigned int lastDrawingsTimeStamp;
+  QImage* imageData = nullptr;
+  int imageWidth = Image::maxResolutionWidth;
+  int imageHeight = Image::maxResolutionHeight;
+  unsigned int lastImageTimeStamp = 0;
+  unsigned int lastColorTableTimeStamp = 0;
+  unsigned int lastDrawingsTimeStamp = 0;
   QPainter painter;
   QPoint dragStart;
   QPoint dragStartOffset;
   QPoint dragPos;
-  float zoom;
+  float zoom = 1.f;
   float scale = 1.f;
   QPoint offset;
-  bool headControlMode;
+  bool headControlMode = false;
 
   // which classified should be drawn?
-  ColorClasses::Color drawnColor;
-  bool drawAllColors;
+  FieldColors::Color drawnColor = FieldColors::none;
+  bool drawAllColors = true;
 
-  QAction* undoAction;
-  QAction* redoAction;
+  QAction* undoAction = nullptr;
+  QAction* redoAction = nullptr;
 
   void paintEvent(QPaintEvent* event);
   virtual void paint(QPainter& painter);
   void paintDrawings(QPainter& painter);
-  void copyImage(const Image& srcImage);
-  void copyImageSegmented(const Image& srcImage);
-  void paintImage(QPainter& painter, const Image& srcImage);
+  void copyImage(const DebugImage& srcImage);
+  void copyImageSegmented(const DebugImage& srcImage);
+  template<bool avx> void segmentImage(const DebugImage& srcImage);
+  void paintImage(QPainter& painter, const DebugImage& srcImage);
   bool needsRepaint() const;
   void window2viewport(QPoint& point);
   void mouseMoveEvent(QMouseEvent* event);
@@ -133,13 +134,15 @@ private:
 
   QSize sizeHint() const { return QSize(imageWidth, imageHeight); }
 
-  virtual QWidget* getWidget() {return this;}
+  virtual QWidget* getWidget() { return this; }
 
   virtual void update()
   {
     if(needsRepaint())
       QWidget::update();
   }
+
+  void forwardLastImage();
 
   virtual QMenu* createUserMenu() const;
 
@@ -162,8 +165,10 @@ private:
   private:
     QAction** toBeSetToNULL;
   public:
-    WorkAroundAction(QAction** toBeSetToNULL, const QIcon& icon, const QString& text, QObject* parent)
-      : QAction(icon, text, parent), toBeSetToNULL(toBeSetToNULL) {}
+    WorkAroundAction(QAction** toBeSetToNULL, const QIcon& icon, const QString& text, QObject* parent) :
+      QAction(icon, text, parent), toBeSetToNULL(toBeSetToNULL)
+    {}
+
     ~WorkAroundAction()
     {
       (*toBeSetToNULL) = nullptr;

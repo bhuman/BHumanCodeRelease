@@ -6,8 +6,8 @@
 
 #include "Platform/BHAssert.h"
 #include "JPEGImage.h"
-#include "Tools/SIMD.h"
-#include "Platform/SystemCall.h"
+#include "Tools/ImageProcessing/SIMD.h"
+#include "Platform/Memory.h"
 #include <cstddef>
 
 JPEGImage::JPEGImage(const Image& image)
@@ -23,7 +23,7 @@ JPEGImage& JPEGImage::operator=(const Image& src)
   unsigned char* aiboAlignedImage = nullptr;
   if(!isFullSize)
   {
-    aiboAlignedImage = (unsigned char*)SystemCall::alignedMalloc(width * height * 3, 16);
+    aiboAlignedImage = (unsigned char*)Memory::alignedMalloc(width * height * 3, 16);
     toAiboAlignment((const unsigned char*)src[0], aiboAlignedImage);
   }
 
@@ -39,13 +39,13 @@ JPEGImage& JPEGImage::operator=(const Image& src)
   cInfo.dest->empty_output_buffer = onDestEmpty;
   cInfo.dest->term_destination = onDestIgnore;
   cInfo.dest->next_output_byte = (JOCTET*)(*this)[0];
-  cInfo.dest->free_in_buffer = width * height;
+  cInfo.dest->free_in_buffer = widthStep * height * sizeof(Pixel);
 
-  cInfo.image_width = width * (isFullSize ? 2 : 3);
-  cInfo.image_height = height;
+  cInfo.image_width = width * (isFullSize ? 1 : 3);
+  cInfo.image_height = height * (isFullSize ? 2 : 1);
   cInfo.input_components = isFullSize ? 4 : 1;
-  cInfo.in_color_space = JCS_GRAYSCALE;
-  cInfo.jpeg_color_space = JCS_GRAYSCALE;
+  cInfo.in_color_space = isFullSize ? JCS_CMYK : JCS_GRAYSCALE;
+  cInfo.jpeg_color_space = isFullSize ? JCS_CMYK : JCS_GRAYSCALE;
   jpeg_set_defaults(&cInfo);
   cInfo.dct_method = JDCT_FASTEST;
   jpeg_set_quality(&cInfo, 75, true);
@@ -54,7 +54,8 @@ JPEGImage& JPEGImage::operator=(const Image& src)
 
   while(cInfo.next_scanline < cInfo.image_height)
   {
-    JSAMPROW rowPointer = const_cast<JSAMPROW>(isFullSize ? (unsigned char*)src[cInfo.next_scanline] : &aiboAlignedImage[cInfo.next_scanline * cInfo.image_width]);
+    JSAMPROW rowPointer = const_cast<JSAMPROW>(isFullSize ? (unsigned char*) (src[0] + width * cInfo.next_scanline)
+                                                          : &aiboAlignedImage[cInfo.next_scanline * cInfo.image_width]);
     jpeg_write_scanlines(&cInfo, &rowPointer, 1);
   }
 
@@ -62,7 +63,7 @@ JPEGImage& JPEGImage::operator=(const Image& src)
   size = unsigned((char unsigned*)cInfo.dest->next_output_byte - (unsigned char*)(*this)[0]);
   jpeg_destroy_compress(&cInfo);
   if(!isFullSize)
-    SystemCall::alignedFree(aiboAlignedImage);
+    Memory::alignedFree(aiboAlignedImage);
 
   return *this;
 }
@@ -91,16 +92,16 @@ void JPEGImage::toImage(Image& dest) const
 
   jpeg_read_header(&cInfo, true);
   jpeg_start_decompress(&cInfo);
-  if(cInfo.num_components == 4) // old JPEG-compression (for compatibility with old logfiles)
+  if(cInfo.num_components == 4) // full size images
   {
     // setup rows
     while(cInfo.output_scanline < cInfo.output_height)
     {
-      JSAMPROW rowPointer = (unsigned char*)(dest[cInfo.output_scanline]);
+      JSAMPROW rowPointer = (unsigned char*)(dest[0] + width * cInfo.output_scanline);
       (void)jpeg_read_scanlines(&cInfo, &rowPointer, 1);
     }
   }
-  else if(cInfo.num_components == 1) // new JPEG-compression
+  else if(cInfo.num_components == 1) // YUV422 images with every second row ignored
   {
     unsigned char* aiboAlignedImage = new unsigned char[width * height * 3];
 
@@ -183,10 +184,10 @@ void JPEGImage::toAiboAlignment(const unsigned char* src, unsigned char* dst) co
       p2 = _mm_loadu_si128(pSrc + 2); // yPadd9 cb9 y9 cr9 yPadd10 cb10 y10 cr10 yPadd11 cb11 y11 cr11 yPadd12 cb12 y12 cr12
       p3 = _mm_loadu_si128(pSrc + 3); // yPadd13 cb13 y13 cr13 yPadd14 cb14 y14 cr14 yPadd15 cb15 y15 cr15 yPadd16 cb16 y16 cr16
 
-      p0 = SHUFFLE(p0, mMask); // cb1 cb2 cb3 cb4 y1 y2 y3 y4 cr1 cr2 cr3 cr4 0 0 0 0
-      p1 = SHUFFLE(p1, mMask); // cb5 cb6 cb7 cb8 y5 y6 y7 y8 cr5 cr6 cr7 cr8 0 0 0 0
-      p2 = SHUFFLE(p2, mMask); // cb9 cb10 cb11 cb12 y9 y10 y11 y12 cr9 cr10 cr11 cr12 0 0 0 0
-      p3 = SHUFFLE(p3, mMask); // cb13 cb14 cb15 cb16 y13 y14 y15 y16 cr13 cr14 cr15 cr16 0 0 0 0
+      p0 = _mm_shuffle_epi8(p0, mMask); // cb1 cb2 cb3 cb4 y1 y2 y3 y4 cr1 cr2 cr3 cr4 0 0 0 0
+      p1 = _mm_shuffle_epi8(p1, mMask); // cb5 cb6 cb7 cb8 y5 y6 y7 y8 cr5 cr6 cr7 cr8 0 0 0 0
+      p2 = _mm_shuffle_epi8(p2, mMask); // cb9 cb10 cb11 cb12 y9 y10 y11 y12 cr9 cr10 cr11 cr12 0 0 0 0
+      p3 = _mm_shuffle_epi8(p3, mMask); // cb13 cb14 cb15 cb16 y13 y14 y15 y16 cr13 cr14 cr15 cr16 0 0 0 0
 
       mLowCbY = _mm_unpacklo_epi32(p0, p1);  // cb1 cb2 cb3 cb4 cb5 cb6 cb7 cb8 y1 y2 y3 y4 y5 y6 y7 y8
       mHighCbY = _mm_unpacklo_epi32(p2, p3); // cb9 cb10 cb11 cb12 cb13 cb14 cb15 cb16 y9 y10 y11 y12 y13 y14 y15 y16

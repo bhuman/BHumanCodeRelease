@@ -14,7 +14,7 @@ libgamectrl = cppDynamicLibrary + {
   folder = "Libs"
   root = "$(srcDirRoot)/libgamectrl"
   files = {
-    "$(srcDirRoot)/libgamectrl/*.cpp" = cppSource,
+    "$(srcDirRoot)/libgamectrl/*.cpp" = cppSource
     "$(srcDirRoot)/libgamectrl/*.h" = {
       message = "Determining build information...";
       command = "bash -c \"../Common/buildInfo $(configuration) $(buildDir)\"";
@@ -23,33 +23,35 @@ libgamectrl = cppDynamicLibrary + {
   }
 
   includePaths = {
-    "$(utilDirRoot)/GameController/include",
-    "$(utilDirRoot)/alcommon/include",
-    "$(utilDirRoot)/boost/linux",
-    "$(utilDirRoot)/Buildchain/gcc/include",
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0",
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-    "$(utilDirRoot)/Buildchain/clang/include",
+    "$(utilDirRoot)/GameController/include"
+    "$(utilDirRoot)/alcommon/include"
+    "$(utilDirRoot)/boost/linux"
+    "$(utilDirRoot)/Buildchain/gcc/include"
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0"
+    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu"
+    "$(utilDirRoot)/Buildchain/clang/include"
   }
 
   libPaths = {
-    "$(utilDirRoot)/alcommon/lib/linux",
-    "$(utilDirRoot)/Buildchain/gcc/lib",
+    "$(utilDirRoot)/alcommon/lib/linux"
+    "$(utilDirRoot)/Buildchain/gcc/lib"
   }
 
   libs = {
-    "alcommon",
+    "alcommon"
   }
 
   cppFlags += {
+    "-Wconversion"
+    "-Wno-sign-conversion"
     "-nostdinc -march=atom -target i686-pc-linux-gnu"
     if (host == "Win32") {
       "-x c++"
     }
   }
 
-  linkFlags += "-nostdlib -soname $(buildDir)/gamectrl.so",
-  output = "$(buildDir)/libgamectrl.so",
+  linkFlags += "-nostdlib -soname $(buildDir)/gamectrl.so"
+  output = "$(buildDir)/libgamectrl.so"
 
   if (tool == "vcxproj") {
     buildCommand = "bash -c \"$(winMarePath) --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""

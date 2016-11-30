@@ -3,7 +3,7 @@ Factory = cppDynamicLibrary + {
 
   folder = "Controllers"
   root = "$(simRobotDir)/Src/Controllers"
-  
+
   files = {
     "$(simRobotDir)/Src/Controllers/FactoryController.cpp" = cppSource
     "$(simRobotDir)/Src/Controllers/FactoryController.h"
@@ -11,45 +11,51 @@ Factory = cppDynamicLibrary + {
   files += qtFiles
 
   defines += {
-    "QT_SHARED", "QT_OPENGL_LIB", "QT_GUI_LIB", "QT_CORE_LIB", "QT_NO_STL"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
+      "D_SCL_SECURE_NO_WARNINGS"
     }
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
     }
   }
-  
+
   includePaths = {
     "$(simRobotDir)/Src/Controllers",
     "$(simRobotDir)/Src/SimRobotCore2",
     if (platform == "Linux") {
-      "/usr/include/qt4/QtCore",
-      "/usr/include/qt4/QtOpenGL",
-      "/usr/include/qt4",
-      "/usr/include/QtCore",
-      "/usr/include/QtOpenGL",
-      "/usr/include/Qt",
+      "/usr/include/qt5"
+      "/usr/include/qt5/QtCore"
+      "/usr/include/qt"
+      "/usr/include/qt/QtCore"
+      "/usr/include/x86_64-linux-gnu/qt5"
+      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
     } else if (host == "Win32") {
-      "$(simRobotDir)/Util/glew/Windows/include",
-      "$(simRobotDir)/Util/qt/Windows/include",
-      "$(simRobotDir)/Util/qt/Windows/include/QtCore",
-      "$(simRobotDir)/Util/qt/Windows/include/QtOpenGL",
+      "$(simRobotDir)/Util/glew/Windows/include"
+      "$(simRobotDir)/Util/qt/Windows/include"
+      "$(simRobotDir)/Util/qt/Windows/include/QtCore"
+      "$(simRobotDir)/Util/qt/Windows/include/QtOpenGL"
     }
   }
-  
+
   libPaths = {
     if (host == "Win32") {
       "$(simRobotDir)/Util/glew/Windows/lib",
       "$(simRobotDir)/Util/qt/Windows/lib",
     }
   }
-  
+
   libs = {
     if (platform == "Linux") {
-      "GLEW", "QtCore", "GLU", "GL"
+      "Qt5Core"
+      "GLEW", "GLU", "GL"
     } else if (host == "Win32") {
-      "glu32", "glew32", "QtCore4", "QtOpenGL4"
+      if (configuration == "Debug") {
+        "Qt5Cored"
+      } else {
+        "Qt5Core"
+      }
+      "glu32", "glew32"
     }
   }
 
@@ -61,7 +67,7 @@ Factory = cppDynamicLibrary + {
       }
     }
   }
-  
+
   linkFlags += {
     if (tool == "vcxproj") {
       if (configuration == "Debug") {

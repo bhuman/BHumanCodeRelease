@@ -13,6 +13,7 @@ STREAMABLE(KickRequest,
   ENUM(KickMotionID,
   {,
     kickForward,
+    newKick,
     none,
   });
 
@@ -20,6 +21,6 @@ STREAMABLE(KickRequest,
 
   (KickMotionID)(none) kickMotionType,
   (bool)(false) mirror,
-  (bool)(false) dynamical,
+  (bool)(false) armsBackFix,
   (std::vector<DynPoint>) dynPoints,
 });

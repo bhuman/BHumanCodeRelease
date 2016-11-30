@@ -1,25 +1,21 @@
 /**
-* @file Controller/LocalRobot.cpp
-*
-* Implementation of LocalRobot.
-*
-* @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
-* @author <A href="mailto:kspiess@tzi.de">Kai Spiess</A>
-*/
+ * @file Controller/LocalRobot.cpp
+ *
+ * Implementation of LocalRobot.
+ *
+ * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author <A href="mailto:kspiess@tzi.de">Kai Spiess</A>
+ */
 
 #include "LocalRobot.h"
 #include "Controller/ConsoleRoboCupCtrl.h"
+#include "Platform/Time.h"
 
-LocalRobot::LocalRobot()
-  : RobotConsole(theDebugReceiver, theDebugSender),
-    theDebugReceiver(this, "Receiver.MessageQueue.O"),
-    theDebugSender(this, "Sender.MessageQueue.S"),
-    image(false),
-    nextImageTimeStamp(0),
-    imageLastTimeStampSent(0),
-    jointLastTimeStampSent(0),
-    updatedSignal(1),
-    puppet(0)
+LocalRobot::LocalRobot() :
+  RobotConsole(theDebugReceiver, theDebugSender),
+  theDebugReceiver(this),
+  theDebugSender(this),
+  image(false), updatedSignal(1)
 {
   mode = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getMode();
   addViews();
@@ -27,12 +23,18 @@ LocalRobot::LocalRobot()
   if(mode == SystemCall::logfileReplay)
   {
     logFile = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getLogFile();
-    logPlayer.open(logFile.c_str());
-    logPlayer.handleAllMessages(annotationInfos['c']);
-    logPlayer.play();
-    puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
-    if(puppet)
-      simulatedRobot.init(puppet);
+    if(logPlayer.open(logFile))
+    {
+      logPlayer.handleAllMessages(annotationInfos['c']);
+      logPlayer.play();
+      puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
+      if(puppet)
+        simulatedRobot.init(puppet);
+    }
+    else
+    {
+      ctrl->printLn("Error: Cannot open log file " + logFile);
+    }
   }
   else if(mode == SystemCall::simulatedRobot)
   {
@@ -59,10 +61,10 @@ bool LocalRobot::main()
           debugOut.out.finishMessage(idProcessBegin);
           debugOut.out.bin << jointSensorData;
           debugOut.out.finishMessage(idJointSensorData);
+          debugOut.out.bin << fsrSensorData;
+          debugOut.out.finishMessage(idFsrSensorData);
           debugOut.out.bin << inertialSensorData;
           debugOut.out.finishMessage(idInertialSensorData);
-          debugOut.out.bin << usSensorData;
-          debugOut.out.finishMessage(idUsSensorData);
           debugOut.out.bin << odometryData;
           debugOut.out.finishMessage(idGroundTruthOdometryData);
           ctrl->gameController.writeGameInfo(debugOut.out.bin);
@@ -92,7 +94,7 @@ bool LocalRobot::main()
           {
             FrameInfo frameInfo;
             frameInfo.time = image.timeStamp;
-            frameInfo.cycleTime = 1.f / (float) ctrl->calculateImageFps;
+            frameInfo.cycleTime = 1.f / (float)ctrl->calculateImageFps;
             debugOut.out.bin << frameInfo;
             debugOut.out.finishMessage(idFrameInfo);
           }
@@ -128,7 +130,12 @@ void LocalRobot::update()
       if(logAcknowledged && logPlayer.replay())
         logAcknowledged = false;
       if(puppet)
-        simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
+      {
+        if(RobotConsole::jointSensorData.timestamp)
+          simulatedRobot.setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+        else
+          simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
+      }
     }
     if(mode == SystemCall::simulatedRobot || puppet)
     {
@@ -145,7 +152,7 @@ void LocalRobot::update()
     }
     if(mode == SystemCall::simulatedRobot)
     {
-      unsigned now = SystemCall::getCurrentSystemTime();
+      unsigned now = Time::getCurrentSystemTime();
       if(now >= nextImageTimeStamp)
       {
         unsigned newNextImageTimeStamp = ctrl->globalNextImageTimeStamp;
@@ -159,9 +166,7 @@ void LocalRobot::update()
         nextImageTimeStamp = newNextImageTimeStamp;
 
         if(ctrl->calculateImage)
-        {
           simulatedRobot.getImage(image, cameraInfo);
-        }
         else
         {
           simulatedRobot.getCameraInfo(cameraInfo);
@@ -175,18 +180,24 @@ void LocalRobot::update()
         simulatedRobot.getRobotPose(robotPose);
 
       simulatedRobot.getOdometryData(robotPose, odometryData);
-      simulatedRobot.getSensorData(inertialSensorData, usSensorData, usRequest);
+      simulatedRobot.getSensorData(fsrSensorData, inertialSensorData);
       simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
     }
 
-    std::string statusText;
+    QString statusText;
     if(mode == SystemCall::logfileReplay)
     {
-      statusText = std::string("replaying ") + logFile + " ";
+      statusText = QString("replaying ") +
+#ifdef WINDOWS
+        QString::fromLatin1(logFile.c_str())
+#else
+        logFile.c_str()
+#endif
+        + " ";
       if(logPlayer.currentFrameNumber != -1)
       {
         char buf[33];
-        sprintf(buf, "%u", logPlayer.currentFrameNumber + 1);
+        sprintf(buf, "%u", logPlayer.currentFrameNumber);
         statusText += buf;
       }
       else
@@ -197,7 +208,7 @@ void LocalRobot::update()
     {
       if(statusText != "")
         statusText += ", ";
-      statusText += std::string("recorded ");
+      statusText += QString("recorded ");
       char buf[33];
       sprintf(buf, "%u", logPlayer.numberOfFrames);
       statusText += buf;
@@ -209,8 +220,8 @@ void LocalRobot::update()
       statusText += pollingFor;
     }
 
-    if(!statusText.empty())
-      ((ConsoleRoboCupCtrl*)ConsoleRoboCupCtrl::controller)->printStatusText((robotName + ": " + statusText.c_str()).toUtf8().constData());
+    if(statusText.size() > 0)
+      ((ConsoleRoboCupCtrl*)ConsoleRoboCupCtrl::controller)->printStatusText((robotName + ": " + statusText).toUtf8());
   }
 
   updateSignal.post();

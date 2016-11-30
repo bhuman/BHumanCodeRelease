@@ -4,17 +4,13 @@
 * @author Colin Graf
 */
 
+#include "CoreModule.h"
 #include "Platform/OpenGL.h"
-#ifndef WINDOWS
-#include <alloca.h>
-#endif
-
+#include "Platform/Assert.h"
 #include "Simulation/Simulation.h"
 #include "Simulation/Scene.h"
 #include "Simulation/Body.h"
 #include "Simulation/Actuators/Actuator.h"
-#include "Platform/Assert.h"
-#include "CoreModule.h"
 
 void Scene::updateTransformations()
 {

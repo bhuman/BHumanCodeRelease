@@ -16,13 +16,12 @@
 class Reader
 {
 protected:
-  typedef std::unordered_map<std::string, std::pair<std::string, int> > Attributes;
+  using Attributes = std::unordered_map<std::string, std::pair<std::string, int>>;
 
   int line; /**< The current line number */
   int column; /**< The current column */
   std::string fileName; /**< The current file name */
 
-  /** Destructor */
   ~Reader();
 
   /**

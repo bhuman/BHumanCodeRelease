@@ -1,10 +1,10 @@
 /**
-* @file Controller/Views/KickView/KickMenuBar.cpp
-*
-* Implementation of class KickMenuBar
-*
-* @author <a href="mailto:judy@tzi.de">Judith Müller</a>
-*/
+ * @file Controller/Views/KickView/KickMenuBar.cpp
+ *
+ * Implementation of class KickMenuBar
+ *
+ * @author <a href="mailto:judy@tzi.de">Judith Müller</a>
+ */
 
 #include "KickMenuBar.h"
 

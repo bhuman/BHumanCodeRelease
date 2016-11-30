@@ -12,20 +12,16 @@
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Perception/GoalPercept.h"
 
 MODULE(LowFrameRateImageProvider,
 {,
   REQUIRES(Image),
   REQUIRES(CameraInfo),
   REQUIRES(FrameInfo),
-  REQUIRES(GoalPercept),
   PROVIDES_WITHOUT_MODIFY(LowFrameRateImage),
   LOADS_PARAMETERS(
   {,
-    (int) frameRate, /**< Frames per second. */
-    (bool) perceptsOnly, /**<If true only images containing percepts will be logged */
-    (bool) logGoalPercept, /**< If true images containing goal percepts will be logged. Only if perceptsOnly is true as well */
+    (int) frameRate, /**< Frames per minute. */
   }),
 });
 

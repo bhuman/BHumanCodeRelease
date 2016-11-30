@@ -1,8 +1,8 @@
 /**
-* @file Controller/Views/DotView.cpp
-* Implementation of a view that displays a dot graph
-* @author Colin Graf
-*/
+ * @file Controller/Views/DotView.cpp
+ * Implementation of a view that displays a dot graph
+ * @author Colin Graf
+ */
 
 #include <QGraphicsSvgItem>
 #include <QGraphicsRectItem>
@@ -35,8 +35,6 @@ DotViewWidget::DotViewWidget(DotViewObject& dotViewObject) : dotViewObject(dotVi
   viewport()->setAttribute(Qt::WA_AcceptTouchEvents);
   setViewportUpdateMode(FullViewportUpdate);
   setFrameStyle(QFrame::NoFrame);
-
-  //
   openDotFileContent(dotViewObject.generateDotFileContent());
 }
 
@@ -54,7 +52,7 @@ DotViewWidget::~DotViewWidget()
 
 bool DotViewWidget::openSvgFile(const QString& fileName)
 {
-  QGraphicsScene *s = scene();
+  QGraphicsScene* s = scene();
   s->clear();
 
   QGraphicsSvgItem* svgItem = new QGraphicsSvgItem(fileName);
@@ -90,6 +88,9 @@ bool DotViewWidget::viewportEvent(QEvent* event)
     QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
     if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
     {
+#ifdef FIX_MACOS_PINCH_SCALE_RELATIVE_BUG
+      pinch->setLastScaleFactor(1.f);
+#endif
       qreal factor = pinch->scaleFactor() / pinch->lastScaleFactor();
       scale(factor, factor);
       return true;
@@ -100,7 +101,7 @@ bool DotViewWidget::viewportEvent(QEvent* event)
 
 void DotViewWidget::wheelEvent(QWheelEvent* event)
 {
-#ifndef OSX
+#ifndef MACOS
   // scroll with mouse wheel
   qreal factor = qPow(1.2, event->delta() / 240.0);
   scale(factor, factor);

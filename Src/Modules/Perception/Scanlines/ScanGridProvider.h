@@ -9,9 +9,9 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Perception/BodyContour.h"
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/ScanGrid.h"
+#include "Representations/Perception/ImagePreprocessing/BodyContour.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ScanGrid.h"
 
 MODULE(ScanGridProvider,
 {,

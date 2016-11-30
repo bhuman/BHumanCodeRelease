@@ -1,6 +1,6 @@
 /**
  * @file Representations/BehaviorControl/SPLStandardBehaviorStatus.h
- * The file declares a struct that containts those parts of the current behavior state
+ * The file declares a struct that contains those parts of the current behavior state
  * that are officially part of the SPLStandardMessage
  *
  * @author Tim Laue
@@ -13,7 +13,7 @@
 
 /**
  * @struct SPLStandardBehaviorStatus
- * A struct that containts standard data about the current behavior state.
+ * A struct that contains standard data about the current behavior state.
  */
 STREAMABLE(SPLStandardBehaviorStatus,
 {,

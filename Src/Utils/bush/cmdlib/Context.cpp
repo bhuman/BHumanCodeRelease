@@ -4,7 +4,7 @@
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/tools/StringTools.h"
 
-ContextRunnable::ContextRunnable(QObject *parent)
+ContextRunnable::ContextRunnable(QObject* parent)
   : QThread(parent)
 {}
 
@@ -14,7 +14,7 @@ void ContextRunnable::run()
   emit sFinished(status);
 }
 
-CommandRunnable::CommandRunnable(Context *context, const std::string &cmdLine)
+CommandRunnable::CommandRunnable(Context* context, const std::string& cmdLine)
   : ContextRunnable(context),
     context(context),
     cmdLine(cmdLine)
@@ -25,7 +25,7 @@ bool CommandRunnable::execute()
   return Commands::getInstance().execute(context, cmdLine);
 }
 
-TaskRunnable::TaskRunnable(QObject *parent, Task *task)
+TaskRunnable::TaskRunnable(QObject* parent, Task* task)
   : ContextRunnable(parent),
     task(task)
 {}
@@ -35,7 +35,7 @@ bool TaskRunnable::execute()
   return task->execute();
 }
 
-Context::Context(Context *parent, const std::string &cmdLine)
+Context::Context(Context* parent, const std::string& cmdLine)
   : AbstractConsole(parent),
     parent(parent),
     cmdLine(new std::string(cmdLine)),
@@ -50,7 +50,7 @@ Context::Context(Context *parent, const std::string &cmdLine)
     requestApplicationShutdown(false)
 {}
 
-Context::Context(Context *parent, Task *task)
+Context::Context(Context* parent, Task* task)
   : AbstractConsole(parent),
     parent(parent),
     cmdLine(0),
@@ -65,7 +65,7 @@ Context::Context(Context *parent, Task *task)
     requestApplicationShutdown(false)
 {}
 
-Context::Context(Context *parent, const std::string &cmdLine, bool detach)
+Context::Context(Context* parent, const std::string& cmdLine, bool detach)
   : AbstractConsole(parent),
     parent(parent),
     cmdLine(new std::string(cmdLine)),
@@ -80,7 +80,7 @@ Context::Context(Context *parent, const std::string &cmdLine, bool detach)
     requestApplicationShutdown(false)
 {}
 
-Context::Context(const std::vector<Robot*> &selectedRobots,
+Context::Context(const std::vector<Robot*>& selectedRobots,
                  Team* selectedTeam)
   : AbstractConsole(0),
     parent(0),
@@ -103,7 +103,7 @@ Context::~Context()
   if(thread) thread->deleteLater();
   for(size_t i = 0; i < cmds.size(); ++i)
   {
-    Context *c = cmds[i];
+    Context* c = cmds[i];
     c->wait();
     delete c;
   }
@@ -136,9 +136,9 @@ bool Context::run()
   }
 }
 
-bool Context::execute(const std::string &cmdLine)
+bool Context::execute(const std::string& cmdLine)
 {
-  Context *context = new Context(this, cmdLine);
+  Context* context = new Context(this, cmdLine);
 
   // inform the visualization about what is going on
   emit sExecute(context, fromString(cmdLine));
@@ -151,9 +151,9 @@ bool Context::execute(const std::string &cmdLine)
   return status;
 }
 
-Context* Context::executeDetached(const std::string &cmdLine)
+Context* Context::executeDetached(const std::string& cmdLine)
 {
-  Context *context = new Context(this, cmdLine, true);
+  Context* context = new Context(this, cmdLine, true);
 
   emit sExecute(context, fromString(cmdLine));
 
@@ -162,9 +162,9 @@ Context* Context::executeDetached(const std::string &cmdLine)
   return context;
 }
 
-Context* Context::executeDetached(Task *task)
+Context* Context::executeDetached(Task* task)
 {
-  Context *context = new Context(this, task);
+  Context* context = new Context(this, task);
   task->setContext(context);
 
   emit sExecute(context, fromString(task->getLabel()));
@@ -185,7 +185,7 @@ bool Context::waitForChildren()
   bool status = true;
   for(size_t i = 0; i < cmds.size(); ++i)
   {
-    Context *c = cmds[i];
+    Context* c = cmds[i];
     c->wait();
     status &= c->getStatus();
   }

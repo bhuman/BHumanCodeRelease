@@ -10,9 +10,8 @@
 
 #include <QHBoxLayout>
 
-ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget* parent,
-                                     int min, int max)
-: QGroupBox(name, parent), parent(parent)
+ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+  QGroupBox(name, parent), parent(parent)
 {
   slider = new QSlider(Qt::Orientation::Horizontal, this);
   slider->setMinimum(min);
@@ -37,10 +36,23 @@ ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget
 
 void ThresholdSelector::updateWidgets()
 {
-  if(parent->currentColor == ColorClasses::white)
+  if(parent->currentColor == FieldColors::none)
   {
     setEnabled(true);
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.white);
+    setTitle("Max Black/White Saturation");
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  }
+  else if(parent->currentColor == FieldColors::white)
+  {
+    setEnabled(true);
+    setTitle("Y-Threshold White");
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.minYWhite);
+  }
+  else if(parent->currentColor == FieldColors::black)
+  {
+    setEnabled(true);
+    setTitle("Y-Threshold Black");
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxYBlack);
   }
   else
     setEnabled(false);
@@ -54,9 +66,19 @@ void ThresholdSelector::setEnabled(bool value)
 
 void ThresholdSelector::updateColorCalibration(int value)
 {
-  if(parent->currentColor == ColorClasses::white)
+  if(parent->currentColor == FieldColors::none)
   {
-    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.white);
+    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+    parent->colorCalibrationView.console.colorCalibrationChanged = true;
+  }
+  if(parent->currentColor == FieldColors::white)
+  {
+    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.minYWhite);
+    parent->colorCalibrationView.console.colorCalibrationChanged = true;
+  }
+  else if(parent->currentColor == FieldColors::black)
+  {
+    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxYBlack);
     parent->colorCalibrationView.console.colorCalibrationChanged = true;
   }
 }

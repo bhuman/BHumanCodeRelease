@@ -18,7 +18,7 @@ class ServoMotor : public Motor
 public:
   /**
   * @class Controller
-  * A PID controller that controlls the motor
+  * A PID controller that controls the motor
   */
   class Controller
   {
@@ -42,7 +42,7 @@ public:
     float lastError;
   };
 
-  Controller controller; /**< A PID controller that controlls the motor */
+  Controller controller; /**< A PID controller that controls the motor */
   float maxVelocity;
   float maxForce;
 

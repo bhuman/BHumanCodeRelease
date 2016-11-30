@@ -1,18 +1,13 @@
 /**
-* @file Platform/linux/Semaphore.cpp
-* POSIX implementation of class Semaphore for thread synchronization.
-* @author Colin Graf
-*/
+ * @file Platform/Linux/Semaphore.cpp
+ * POSIX implementation of class Semaphore for thread synchronization.
+ * @author Colin Graf
+ */
 
-#include "BHAssert.h"
-#include "Semaphore.h"
+#include "Platform/BHAssert.h"
+#include "Platform/Semaphore.h"
 
-#ifdef OSX
-// Prevent strange recursive include: <semaphore.h> is resolved by header of this file!
-#include </usr/include/semaphore.h>
-#else
 #include <semaphore.h>
-#endif
 #include <cerrno>
 #include <ctime>
 

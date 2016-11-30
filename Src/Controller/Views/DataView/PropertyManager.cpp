@@ -1,4 +1,4 @@
-/*
+/**
  * PropertyManager.cpp
  *
  *  Created on: Apr 27, 2012
@@ -19,23 +19,18 @@ PropertyManager::~PropertyManager()
 {
   QList<TypeDescriptor*> typeDescriptors(theDescriptors.values());
 
-  for(QList<TypeDescriptor*>::iterator i = typeDescriptors.begin(); i != typeDescriptors.end(); i++)
-  {
-    delete(*i);
-  }
+  for(TypeDescriptor* typeDescriptor : typeDescriptors)
+    delete typeDescriptor;
+
   theDescriptors.clear();
 }
 
 bool PropertyManager::isPropertyTypeSupported(int type) const
 {
   if(theDescriptors.contains(type))
-  {
     return true;
-  }
   else
-  {
     return QtVariantPropertyManager::isPropertyTypeSupported(type);
-  }
 }
 
 QVariant PropertyManager::value(const QtProperty* pProperty) const
@@ -55,13 +50,9 @@ QVariant PropertyManager::value(const QtProperty* pProperty) const
 int PropertyManager::valueType(int propertyType) const
 {
   if(theDescriptors.contains(propertyType))
-  {
     return propertyType;
-  }
   else
-  {
     return QtVariantPropertyManager::valueType(propertyType);
-  }
 }
 
 QString PropertyManager::valueText(const QtProperty* pProperty) const
@@ -73,9 +64,7 @@ QString PropertyManager::valueText(const QtProperty* pProperty) const
     return theDescriptors[propType]->toString(var);
   }
   else
-  {
     return QtVariantPropertyManager::valueText(pProperty);
-  }
 }
 
 void PropertyManager::initTypes()
@@ -100,9 +89,7 @@ void PropertyManager::setValue(QtProperty* pProperty, const QVariant& val)
     }
   }
   else
-  {
     QtVariantPropertyManager::setValue(pProperty, val);
-  }
 }
 
 void PropertyManager::initializeProperty(QtProperty* pProperty)
@@ -110,9 +97,7 @@ void PropertyManager::initializeProperty(QtProperty* pProperty)
   int typeId = propertyType(pProperty);
 
   if(theDescriptors.contains(typeId))
-  {
     theValues[pProperty] = theDescriptors[typeId]->createDefault();
-  }
 
   QtVariantPropertyManager::initializeProperty(pProperty);
 }
@@ -120,9 +105,7 @@ void PropertyManager::initializeProperty(QtProperty* pProperty)
 void PropertyManager::uninitializeProperty(QtProperty* pProperty)
 {
   if(theDescriptors.contains(propertyType(pProperty)))
-  {
     theValues.remove(pProperty);
-  }
   QtVariantPropertyManager::uninitializeProperty(pProperty);
 }
 
@@ -130,7 +113,5 @@ void PropertyManager::slotValueChanged(QtProperty* pProperty, const QVariant& va
 {
   //update values
   if(theValues.contains(pProperty))
-  {
     theValues[pProperty] = value;
-  }
 }

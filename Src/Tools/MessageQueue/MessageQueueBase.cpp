@@ -1,9 +1,9 @@
 /**
-* @file MessageQueueBase.cpp
-* Implementation of the class that performs the memory management for the class MessageQueue.
-* @author Martin Lötzsch
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file MessageQueueBase.cpp
+ * Implementation of the class that performs the memory management for the class MessageQueue.
+ * @author Martin Lötzsch
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include <cstring>
 #include <cstdlib>
@@ -127,7 +127,7 @@ char* MessageQueueBase::reserve(size_t size)
 {
   unsigned currentSize = usedSize + headerSize + writePosition;
   if((unsigned long long) currentSize + size > (unsigned long long) maximumSize)
-    return 0;
+    return nullptr;
   else
   {
 #ifndef TARGET_ROBOT
@@ -151,7 +151,7 @@ char* MessageQueueBase::reserve(size_t size)
       else
       {
         maximumSize = reservedSize;
-        return 0;
+        return nullptr;
       }
     }
 #endif
@@ -182,7 +182,8 @@ bool MessageQueueBase::finishMessage(MessageID id)
   {
     if(reserveForInfrastructure > maximumSize - usedSize - writePosition - headerSize)
       switch(id)
-      { // When these messages are lost, communication might get stuck
+      {
+        // When these messages are lost, communication might get stuck
         case idProcessBegin:
         case idProcessFinished:
         case idDebugRequest:
@@ -198,7 +199,7 @@ bool MessageQueueBase::finishMessage(MessageID id)
         case idDrawingManager3D:
         case idConsole:
         case idRobotname:
-        case idColorCalibration:
+        case idFieldColors:
         case idAudioData: // continuous data stream required
           break; // accept
         default:
@@ -302,7 +303,7 @@ void MessageQueueBase::removeRepetitions()
         break;
 
       default:
-        if(getMessageID() < numOfDataMessageIDs) // data only from latest frame
+        if(getMessageID() < numOfDataMessageIDs && getMessageID() != idFieldColors) // data only from latest frame
           copy = messagesPerType[currentProcess][idProcessFinished] == 1;
         else // only the latest other messages
           copy = --messagesPerType[currentProcess][getMessageID()] == 0;
@@ -390,8 +391,8 @@ void MessageQueueBase::writeMessageIDs(Out& stream, MessageID numOfMessageIDs) c
   else
   {
     stream << static_cast<unsigned char>(numOfMessageIDs);
-    for(int i = 0; i < numOfMessageIDs; ++i)
-      stream << ::getName(static_cast<MessageID>(i));
+    FOREACH_ENUM(MessageID, i)
+      stream << ::getName(i);
   }
 }
 
@@ -406,10 +407,10 @@ void MessageQueueBase::readMessageIDMapping(In& stream)
   for(int i = 0; i < numOfMappedIDs; ++i)
   {
     stream >> mappedIDNames[i];
-    for(int j = 0; j < numOfMessageIDs; ++j)
-      if(mappedIDNames[i] == ::getName(static_cast<MessageID>(j)))
+    FOREACH_ENUM(MessageID, j)
+      if(mappedIDNames[i] == ::getName(j))
       {
-        mappedIDs[i] = static_cast<MessageID>(j);
+        mappedIDs[i] = j;
         break;
       }
   }

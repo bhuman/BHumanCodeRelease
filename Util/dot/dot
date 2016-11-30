@@ -2,7 +2,7 @@
 if [ "`uname`" = "Darwin" ]; then
   export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
   export baseDir=$(dirname "${scriptPath}")
-  export GVBINDIR=$baseDir/OSX
+  export GVBINDIR=$baseDir/macOS
   "$GVBINDIR/dot" $@
 else 
   export PATH=$PATH:/usr/local/bin

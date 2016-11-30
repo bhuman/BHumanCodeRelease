@@ -5,7 +5,7 @@
 #endif
 
 #include "Streamable.h"
-#include "Tools/Streams/StreamHandler.h"
+#include "StreamHandler.h"
 #include "Tools/Global.h"
 
 #include <typeinfo>
@@ -54,7 +54,7 @@ namespace Streaming
     Global::getStreamHandler().registerWithSpecification(name, ti);
   }
 
-  void registerEnum(const std::type_info& ti, const char * (*fp)(int))
+  void registerEnum(const std::type_info& ti, const char* (*fp)(int))
   {
     Global::getStreamHandler().registerEnum(ti, fp);
   }

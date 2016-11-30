@@ -24,7 +24,7 @@ std::string SCPCmd::getDescription() const
   return "copies one file via SCP to robot or from robot (when first param @prefixed)";
 }
 
-bool SCPCmd::preExecution(Context &context, const std::vector<std::string> &params)
+bool SCPCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   if(params.size() < 2)
   {
@@ -75,7 +75,7 @@ bool SCPCmd::preExecution(Context &context, const std::vector<std::string> &para
   return true;
 }
 
-Task* SCPCmd::perRobotExecution(Context &context, Robot &robot)
+Task* SCPCmd::perRobotExecution(Context& context, Robot& robot)
 {
   if(fromRobot)
     return new SCPTask(context, &robot, scpCommandFromRobot(fromFile, robot.getBestIP(context), toFile));
@@ -83,7 +83,7 @@ Task* SCPCmd::perRobotExecution(Context &context, Robot &robot)
     return new SCPTask(context, &robot, scpCommandToRobot(fromFile, robot.getBestIP(context), toFile));
 }
 
-SCPCmd::SCPTask::SCPTask(Context &context, Robot *robot, const std::string &command)
+SCPCmd::SCPTask::SCPTask(Context& context, Robot* robot, const std::string& command)
   : RobotTask(context, robot),
     command(command)
 {}

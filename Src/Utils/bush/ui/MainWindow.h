@@ -8,4 +8,7 @@ class MainWindow : public QMainWindow
 
 public:
   MainWindow();
+private:
+  void closeEvent(QCloseEvent* event);
+  void readSettings();
 };

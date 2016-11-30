@@ -19,6 +19,10 @@
 #include "Simulation/Simulation.h"
 #include "Simulation/Scene.h"
 
+#if QT_VERSION < 0x050000
+#define devicePixelRatio() 1
+#endif
+
 SimObjectWidget::SimObjectWidget(SimObject& simObject) : QGLWidget(QGLFormat(QGL::SampleBuffers | QGL::AccumBuffer), 0, Simulation::simulation->renderer.getWidget()),
   object(dynamic_cast<SimRobot::Object&>(simObject)), objectRenderer(simObject),
   wkey(false), akey(false), skey(false), dkey(false)
@@ -73,12 +77,12 @@ SimObjectWidget::~SimObjectWidget()
   float target[3];
   objectRenderer.getCamera(pos, target);
 
-  settings->setValue("cameraPosX", pos[0]);
-  settings->setValue("cameraPosY", pos[1]);
-  settings->setValue("cameraPosZ", pos[2]);
-  settings->setValue("cameraTargetX", target[0]);
-  settings->setValue("cameraTargetY", target[1]);
-  settings->setValue("cameraTargetZ", target[2]);
+  settings->setValue("cameraPosX", (double)pos[0]);
+  settings->setValue("cameraPosY", (double)pos[1]);
+  settings->setValue("cameraPosZ", (double)pos[2]);
+  settings->setValue("cameraTargetX", (double)target[0]);
+  settings->setValue("cameraTargetY", (double)target[1]);
+  settings->setValue("cameraTargetZ", (double)target[2]);
 
   settings->endGroup();
 }
@@ -86,6 +90,12 @@ SimObjectWidget::~SimObjectWidget()
 void SimObjectWidget::initializeGL()
 {
   objectRenderer.init(isSharing());
+#ifdef FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG
+  Simulation::simulation->renderer.makeCurrent(8, 8);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glFlush();
+  makeCurrent();
+#endif
 }
 
 void SimObjectWidget::paintGL()
@@ -107,7 +117,7 @@ void SimObjectWidget::mouseMoveEvent(QMouseEvent* event)
 {
   QGLWidget::mouseMoveEvent(event);
 
-  if(objectRenderer.moveDrag(event->x(), event->y()))
+  if(objectRenderer.moveDrag(event->x() * devicePixelRatio(), event->y() * devicePixelRatio()))
   {
     event->accept();
     update();
@@ -121,7 +131,7 @@ void SimObjectWidget::mousePressEvent(QMouseEvent* event)
   if(event->button() == Qt::LeftButton || event->button() == Qt::MidButton)
   {
     const Qt::KeyboardModifiers m = QApplication::keyboardModifiers();
-    if(objectRenderer.startDrag(event->x(), event->y(), m & Qt::ShiftModifier ? (m & Qt::ControlModifier ? SimObjectRenderer::dragRotateWorld : SimObjectRenderer::dragRotate) : (m & Qt::ControlModifier ? SimObjectRenderer::dragNormalObject : SimObjectRenderer::dragNormal)))
+    if(objectRenderer.startDrag(event->x() * devicePixelRatio(), event->y() * devicePixelRatio(), m & Qt::ShiftModifier ? (m & Qt::ControlModifier ? SimObjectRenderer::dragRotateWorld : SimObjectRenderer::dragRotate) : (m & Qt::ControlModifier ? SimObjectRenderer::dragNormalObject : SimObjectRenderer::dragNormal)))
     {
       event->accept();
       update();
@@ -133,7 +143,7 @@ void SimObjectWidget::mouseReleaseEvent(QMouseEvent* event)
 {
   QGLWidget::mouseReleaseEvent(event);
 
-  if(objectRenderer.releaseDrag(event->x(), event->y()))
+  if(objectRenderer.releaseDrag(event->x() * devicePixelRatio(), event->y() * devicePixelRatio()))
   {
     event->accept();
     update();
@@ -240,6 +250,9 @@ bool SimObjectWidget::event(QEvent* event)
     QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
     if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
     {
+#ifdef FIX_MACOS_PINCH_SCALE_RELATIVE_BUG
+      pinch->setLastScaleFactor(1.f);
+#endif
       float change = static_cast<float>(pinch->scaleFactor() > pinch->lastScaleFactor()
                      ? -pinch->scaleFactor() / pinch->lastScaleFactor()
                      : pinch->lastScaleFactor() / pinch->scaleFactor());
@@ -253,7 +266,7 @@ bool SimObjectWidget::event(QEvent* event)
 
 void SimObjectWidget::wheelEvent(QWheelEvent* event)
 {
-#ifndef OSX
+#ifndef MACOS
   if(event->orientation() == Qt::Vertical)
   {
     objectRenderer.zoom(event->delta());
@@ -665,12 +678,12 @@ void SimObjectWidget::exportAsImage(int resolution)
     QGLFormat format = this->format();
     format.setDoubleBuffer(false);
     QGLWidget widget(format, 0, 0, Qt::CustomizeWindowHint);
-#ifdef OSX
+#ifdef MACOS
     widget.setWindowOpacity(0.f);
     widget.show();
 #endif
-    widget.setMaximumSize(width, height);
-    widget.resize(width, height);
+    widget.setMaximumSize(width / devicePixelRatio(), height / devicePixelRatio());
+    widget.resize(width / devicePixelRatio(), height / devicePixelRatio());
     widget.makeCurrent();
     objectRenderer.resize(fovy, width, height);
     objectRenderer.init(false);

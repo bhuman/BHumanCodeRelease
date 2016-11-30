@@ -26,12 +26,11 @@ class PropertyTreeCreator : public Out
     int type; /**< The type of the entry. -2: value or record, -1: array, >= 0: array element index. */
     const char* (*enumToString)(int); /**< A function that translates an enum to a string. */
     QtVariantProperty* parent; /**< The parent in the property tree. Can be 0 if there is none (yet). */
-    QtVariantProperty* property; /**< The current node in the property tree if already created. Otherwise 0. */
+    QtVariantProperty* property = nullptr; /**< The current node in the property tree if already created. Otherwise 0. */
     std::string path; /**< The path to this node including its name. */
     std::string name; /**< The name of this node. */
 
     /**
-     * Constructor.
      * @param type The type of the entry. -2: value or record, -1: array, >= 0: array element index.
      * @param enumToString A function that translates an enum to a string.
      * @param parent The parent in the property tree. Can be 0 if there is none (yet).
@@ -39,14 +38,10 @@ class PropertyTreeCreator : public Out
      * @param name The name of this node.
      */
     Entry(int type, const char* (*enumToString)(int), QtVariantProperty* parent, const std::string& path, const char* name) :
-      type(type), enumToString(enumToString), parent(parent), property(0)
+      type(type), enumToString(enumToString), parent(parent)
     {
       if(type >= 0)
-      {
-        char buf[20];
-        sprintf(buf, "%d", type);
-        this->name = buf;
-      }
+        this->name = std::to_string(type);
       else
         this->name = name;
       this->path = (path == "" ? "" : path + ".") + this->name;
@@ -66,28 +61,27 @@ protected:
     e.property->setValue(value);
   }
 
-  virtual void outChar(char value) {out((int) value);}
-  virtual void outSChar(signed char value) {out((int) value);}
+  virtual void outChar(char value) { out((int)value); }
+  virtual void outSChar(signed char value) { out((int)value); }
   virtual void outUChar(unsigned char value);
-  virtual void outShort(short value) {out(value);}
-  virtual void outUShort(unsigned short value) {out(value);}
-  virtual void outInt(int value) {out(value);}
+  virtual void outShort(short value) { out(value); }
+  virtual void outUShort(unsigned short value) { out(value); }
+  virtual void outInt(int value) { out(value); }
   virtual void outUInt(unsigned int value);
-  virtual void outFloat(float value) {out(value);}
-  virtual void outDouble(double value) {out(value);}
-  virtual void outBool(bool value) {out(value);}
-  virtual void outString(const char* value) {out(QString(value));}
+  virtual void outFloat(float value) { out(value); }
+  virtual void outDouble(double value) { out(value); }
+  virtual void outBool(bool value) { out(value); }
+  virtual void outString(const char* value) { out(QString(value)); }
   virtual void outAngle(const Angle& value);
   virtual void outEndL() {}
 
 public:
-  QtVariantProperty* root; /**< The root of the property tree. */
+  QtVariantProperty* root = nullptr; /**< The root of the property tree. */
 
   /**
-   * Constructor.
    * @param view The data view using this object.
    */
-  PropertyTreeCreator(DataView& view) : view(view), root(0) {}
+  PropertyTreeCreator(DataView& view) : view(view) {}
 
   /**
    * Select an entry for writing.
@@ -104,5 +98,5 @@ public:
   virtual void deselect();
 
   /** Writing raw data is not supported. Do not call. */
-  virtual void write(const void* p, size_t size) {ASSERT(false);}
+  virtual void write(const void* p, size_t size) { ASSERT(false); }
 };

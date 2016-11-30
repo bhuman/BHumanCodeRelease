@@ -6,6 +6,7 @@
  */
 
 #include "Libraries.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Streams/InStreams.h"
 #ifdef __INTELLISENSE__
 #define INTELLISENSE_PREFIX Behavior2015::Behavior::
@@ -26,8 +27,8 @@ namespace Behavior2015
      * @param base The blackboard configured for this module.
      */
     Behavior(const BehaviorControl2015Base& base, BehaviorData& behaviorData)
-    : Cabsl<Behavior>(&behaviorData.theActivationGraph),
-      Libraries(base, behaviorData) {}
+      : Cabsl<Behavior>(&behaviorData.theActivationGraph),
+        Libraries(base, behaviorData) {}
 
     /**
      * Executes one behavior cycle.
@@ -39,7 +40,7 @@ namespace Behavior2015
       preProcessLibraries();
 
       for(std::vector<Behavior::OptionInfos::Option>::const_iterator i = roots.begin(); i != roots.end(); ++i)
-      Cabsl<Behavior>::execute(*i);
+        Cabsl<Behavior>::execute(*i);
 
       postProcessLibraries();
       endFrame();
@@ -58,7 +59,7 @@ class BehaviorControl2015 : public BehaviorControl2015Base
   STREAMABLE(Parameters,
   {
     /** Helper for streaming a vector of enums that are defined in another class. */
-    struct OptionInfos : Behavior::OptionInfos {typedef std::vector<Option> Options;},
+    struct OptionInfos : Behavior::OptionInfos { using Options = std::vector<Option>;},
 
     ((OptionInfos) Options) roots, /**< All options that function as behavior roots. */
   });
@@ -77,17 +78,6 @@ class BehaviorControl2015 : public BehaviorControl2015Base
       theBehavior->execute(p.roots);
 
       theSPLStandardBehaviorStatus.intention = DROPIN_INTENTION_DEFAULT;
-      switch(theBehaviorStatus.role)
-      {
-        case Role::striker:
-          theSPLStandardBehaviorStatus.intention = DROPIN_INTENTION_KICK;
-          break;
-        case Role::keeper:
-          theSPLStandardBehaviorStatus.intention = DROPIN_INTENTION_KEEPER;
-          break;
-        case Role::defender:
-          theSPLStandardBehaviorStatus.intention = DROPIN_INTENTION_DEFENSIVE;
-      }
       if(theSideConfidence.confidenceState == SideConfidence::CONFUSED)
         theSPLStandardBehaviorStatus.intention = DROPIN_INTENTION_LOST;
     }
@@ -97,7 +87,7 @@ class BehaviorControl2015 : public BehaviorControl2015Base
   void update(BehaviorLEDRequest& behaviorLEDRequest) {behaviorLEDRequest = theBehaviorLEDRequest;}
 
   /** Updates the motion request by copying it from the behavior */
-  void update(MotionRequest& motionRequest) { motionRequest = theMotionRequest;}
+  void update(BehaviorMotionRequest& behaviorMotionRequest) {(MotionRequest&) behaviorMotionRequest = theMotionRequest;}
 
   /** Update the behavior status by copying it from the behavior */
   void update(BehaviorStatus& behaviorStatus) {behaviorStatus = theBehaviorStatus;}
@@ -123,14 +113,14 @@ class BehaviorControl2015 : public BehaviorControl2015Base
 
 public:
   BehaviorControl2015()
-  : behaviorData(const_cast<ActivationGraph&>(theActivationGraph),
-                 theBehaviorLEDRequest,
-                 theBehaviorStatus,
-                 theHeadMotionRequest,
-                 theArmMotionRequest,
-                 theMotionRequest,
-                 theSPLStandardBehaviorStatus),
-    theBehavior(new Behavior(*this, behaviorData))
+    : behaviorData(const_cast<ActivationGraph&>(theActivationGraph),
+                   theBehaviorLEDRequest,
+                   theBehaviorStatus,
+                   theHeadMotionRequest,
+                   theArmMotionRequest,
+                   theMotionRequest,
+                   theSPLStandardBehaviorStatus) ,
+      theBehavior(new Behavior(*this, behaviorData))
   {
     InMapFile stream("behaviorControl2015.cfg");
     ASSERT(stream.exists());

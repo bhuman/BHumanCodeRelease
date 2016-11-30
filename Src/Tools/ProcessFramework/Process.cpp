@@ -7,7 +7,7 @@
 #include "Process.h"
 #include "Tools/Global.h"
 
-bool MultiDebugSenderBase::terminating = false;
+bool DebugSenderBase::terminating = false;
 
 Process::Process(MessageQueue& debugIn, MessageQueue& debugOut) :
   debugIn(debugIn), debugOut(debugOut)
@@ -29,14 +29,9 @@ bool Process::processMain()
 
   bool wait = main();
 
-  if(Global::getDebugRequestTable().poll)
-  {
-    if(Global::getDebugRequestTable().pollCounter++ > 10)
-    {
-      Global::getDebugRequestTable().poll = false;
-      OUTPUT(idDebugResponse, text, "pollingFinished");
-    }
-  }
+  if(Global::getDebugRequestTable().pollCounter > 0 &&
+     --Global::getDebugRequestTable().pollCounter == 0)
+    OUTPUT(idDebugResponse, text, "pollingFinished");
   return wait;
 }
 

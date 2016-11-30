@@ -4,31 +4,23 @@
 #include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/ArmMotionSelection.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/StiffnessData.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/ArmContactModel.h"
-#include "Representations/Sensing/FallDownState.h"
 #include "ArmKeyFrameMotion.h"
 
 MODULE(ArmKeyFrameEngine,
 {,
   USES(MotionInfo),
   REQUIRES(ArmMotionSelection),
-  REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
   REQUIRES(RobotInfo),
   REQUIRES(JointAngles),
   REQUIRES(StiffnessSettings),
-  REQUIRES(FallDownState),
-  REQUIRES(GroundContactState),
   PROVIDES(ArmKeyFrameEngineOutput),
   LOADS_PARAMETERS(
   {,
-  (std::vector<ArmKeyFrameMotion>) allMotions,  /**< contains the existing arm motions */
+    (std::vector<ArmKeyFrameMotion>) allMotions,  /**< contains the existing arm motions */
   }),
 });
 
@@ -38,7 +30,7 @@ MODULE(ArmKeyFrameEngine,
  * module. Please see B-Human's 2013 Code release for details on how this
  * module works and how to use it.
  * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
- * @author Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 class ArmKeyFrameEngine : public ArmKeyFrameEngineBase
 {
@@ -88,7 +80,9 @@ private:
         interpolationStart.angles[i] = currentJoints.angles[firstJoint + i];
         if(id == Arms::right &&
            (i + Joints::rShoulderPitch == Joints::rShoulderRoll ||
-            i + Joints::rShoulderPitch == Joints::rElbowYaw))
+            i + Joints::rShoulderPitch == Joints::rElbowYaw ||
+            i + Joints::rShoulderPitch == Joints::rElbowRoll ||
+            i + Joints::rShoulderPitch == Joints::rWristYaw))
           interpolationStart.angles[i] *= -1.f;
       }
     }

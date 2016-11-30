@@ -8,7 +8,7 @@ class SCPCmd : public RobotCommand
   {
     std::string command;
   public:
-    SCPTask(Context &context, Robot *robot, const std::string &command);
+    SCPTask(Context& context, Robot* robot, const std::string& command);
     bool execute();
   };
 
@@ -19,8 +19,8 @@ class SCPCmd : public RobotCommand
   SCPCmd();
   virtual std::string getName() const;
   virtual std::string getDescription() const;
-  virtual bool preExecution(Context &context, const std::vector<std::string> &params);
-  virtual Task* perRobotExecution(Context &context, Robot &robot);
+  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
+  virtual Task* perRobotExecution(Context& context, Robot& robot);
 public:
   static SCPCmd theSCPCmd;
 };

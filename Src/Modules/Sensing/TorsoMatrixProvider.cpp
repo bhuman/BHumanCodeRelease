@@ -1,8 +1,8 @@
 /**
-* @file TorsoMatrixProvider.cpp
-* Implementation of module TorsoMatrixProvider.
-* @author Colin Graf
-*/
+ * @file TorsoMatrixProvider.cpp
+ * Implementation of module TorsoMatrixProvider.
+ * @author Colin Graf
+ */
 
 #include "TorsoMatrixProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -17,16 +17,12 @@ void TorsoMatrixProvider::update(TorsoMatrix& torsoMatrix)
   const RotationMatrix torsoRotation = Rotation::AngleAxis::unpack(axis);
 
   // calculate "center of hip" position from left foot
-  Pose3f fromLeftFoot(torsoRotation);
-  fromLeftFoot.conc(theRobotModel.limbs[Limbs::footLeft]);
-  fromLeftFoot.translate(0, 0, -theRobotDimensions.footHeight);
+  Pose3f fromLeftFoot = Pose3f(torsoRotation) *= theRobotModel.soleLeft;
   fromLeftFoot.translation *= -1.;
   fromLeftFoot.rotation = torsoRotation;
 
   // calculate "center of hip" position from right foot
-  Pose3f fromRightFoot(torsoRotation);
-  fromRightFoot.conc(theRobotModel.limbs[Limbs::footRight]);
-  fromRightFoot.translate(0, 0, -theRobotDimensions.footHeight);
+  Pose3f fromRightFoot = Pose3f(torsoRotation) *= theRobotModel.soleRight;
   fromRightFoot.translation *= -1.;
   fromRightFoot.rotation = torsoRotation;
 
@@ -72,39 +68,8 @@ void TorsoMatrixProvider::update(TorsoMatrix& torsoMatrix)
   PLOT("module:TorsoMatrixProvider:footSpanX", newFootSpan.x());
   PLOT("module:TorsoMatrixProvider:footSpanY", newFootSpan.y());
   PLOT("module:TorsoMatrixProvider:footSpanZ", newFootSpan.z());
-
-  PLOT("module:TorsoMatrixProvider:torsoMatrixX", torsoMatrix.translation.x());
-  PLOT("module:TorsoMatrixProvider:torsoMatrixY", torsoMatrix.translation.y());
-  PLOT("module:TorsoMatrixProvider:torsoMatrixZ", torsoMatrix.translation.z());
-
-  PLOT("module:TorsoMatrixProvider:rotation:x", toDegrees(torsoMatrix.rotation.getXAngle()));
-  PLOT("module:TorsoMatrixProvider:rotation:y", toDegrees(torsoMatrix.rotation.getYAngle()));
-  PLOT("module:TorsoMatrixProvider:rotation:z", toDegrees(torsoMatrix.rotation.getZAngle()));
 }
 
-/*
-void TorsoMatrixProvider::update(FilteredOdometryOffset& odometryOffset)
-{
-  Pose2f odometryOffset;
-
-  if(lastTorsoMatrix.translation.z != 0.)
-  {
-    Pose3f odometryOffset3D(lastTorsoMatrix);
-    odometryOffset3D.conc(theTorsoMatrix.offset);
-    odometryOffset3D.conc(theTorsoMatrix.inverse());
-
-    odometryOffset.translation.x = odometryOffset3D.translation.x;
-    odometryOffset.translation.y = odometryOffset3D.translation.y;
-    odometryOffset.rotation = odometryOffset3D.rotation.getZAngle();
-  }
-
-  PLOT("module:TorsoMatrixProvider:odometryOffsetX", odometryOffset.translation.x);
-  PLOT("module:TorsoMatrixProvider:odometryOffsetY", odometryOffset.translation.y);
-  PLOT("module:TorsoMatrixProvider:odometryOffsetRotation", odometryOffset.rotation.toDegrees());
-
-  (Pose3f&)lastTorsoMatrix = theTorsoMatrix;
-}
-*/
 void TorsoMatrixProvider::update(OdometryData& odometryData)
 {
   Pose2f odometryOffset;

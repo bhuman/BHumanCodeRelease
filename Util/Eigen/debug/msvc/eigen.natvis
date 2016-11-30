@@ -3,7 +3,7 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
   <!-- Fixed x Fixed Matrix -->
-  <Type Name="Eigen::Matrix&lt;*,*,*,*,*,*&gt;">      
+  <Type Name="Eigen::Matrix&lt;*,*,*,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,-1,-1,*,*,*&gt;"/>
       <DisplayString>[{$T2}, {$T3}] (fixed matrix)</DisplayString>
       <Expand>
@@ -20,9 +20,9 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- 2 x 2 Matrix -->
-  <Type Name="Eigen::Matrix&lt;*,2,2,*,*,*&gt;">      
+  <Type Name="Eigen::Matrix&lt;*,2,2,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,2,2,*,*,*&gt;"/>
       <DisplayString>[2, 2] (fixed matrix)</DisplayString>
       <Expand>
@@ -37,12 +37,12 @@
         </Synthetic>
         <Synthetic Name="[row 1]" Condition="!(Flags%2)">
           <DisplayString>({m_storage.m_data.array[1]}, {m_storage.m_data.array[3]})</DisplayString>
-        </Synthetic>        
+        </Synthetic>
       </Expand>
   </Type>
-  
+
   <!-- 3 x 3 Matrix -->
-  <Type Name="Eigen::Matrix&lt;*,3,3,*,*,*&gt;">      
+  <Type Name="Eigen::Matrix&lt;*,3,3,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,3,3,*,*,*&gt;"/>
       <DisplayString>[3, 3] (fixed matrix)</DisplayString>
       <Expand>
@@ -63,12 +63,12 @@
         </Synthetic>
         <Synthetic Name="[row 2]" Condition="!(Flags%2)">
           <DisplayString>({m_storage.m_data.array[2]}, {m_storage.m_data.array[5]}, {m_storage.m_data.array[8]})</DisplayString>
-        </Synthetic>        
+        </Synthetic>
       </Expand>
   </Type>
-  
+
   <!-- 4 x 4 Matrix -->
-  <Type Name="Eigen::Matrix&lt;*,4,4,*,*,*&gt;">      
+  <Type Name="Eigen::Matrix&lt;*,4,4,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,4,4,*,*,*&gt;"/>
       <DisplayString>[4, 4] (fixed matrix)</DisplayString>
       <Expand>
@@ -95,12 +95,12 @@
         </Synthetic>
         <Synthetic Name="[row 3]" Condition="!(Flags%2)">
           <DisplayString>({m_storage.m_data.array[3]}, {m_storage.m_data.array[7]}, {m_storage.m_data.array[11]}, {m_storage.m_data.array[15]})</DisplayString>
-        </Synthetic>        
+        </Synthetic>
       </Expand>
-  </Type>  
-  
+  </Type>
+
   <!-- Dynamic x Dynamic Matrix -->
-  <Type Name="Eigen::Matrix&lt;*,-1,-1,*,*,*&gt;">      
+  <Type Name="Eigen::Matrix&lt;*,-1,-1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,-1,-1,*,*,*&gt;"/>
       <DisplayString Condition="m_storage.m_data == 0">empty</DisplayString>
       <DisplayString Condition="m_storage.m_data != 0">[{m_storage.m_rows}, {m_storage.m_cols}] (dynamic matrix)</DisplayString>
@@ -118,7 +118,7 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- Fixed x Dynamic Matrix -->
   <Type Name="Eigen::Matrix&lt;*,*,-1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,*,-1,*,*,*&gt;"/>
@@ -138,7 +138,7 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- Dynamic x Fixed Matrix -->
   <Type Name="Eigen::Matrix&lt;*,-1,*,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,-1,*,*,*,*&gt;"/>
@@ -158,7 +158,7 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- Dynamic Column Vector -->
   <Type Name="Eigen::Matrix&lt;*,1,-1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,1,-1,*,*,*&gt;"/>
@@ -172,7 +172,7 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- Dynamic Row Vector -->
   <Type Name="Eigen::Matrix&lt;*,-1,1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,-1,1,*,*,*&gt;"/>
@@ -186,7 +186,7 @@
         </ArrayItems>
       </Expand>
   </Type>
-  
+
   <!-- Fixed Vector -->
   <Type Name="Eigen::Matrix&lt;*,1,1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Array&lt;*,1,1,*,*,*&gt;"/>
@@ -195,7 +195,7 @@
         <Item Name="[x]">m_storage.m_data.array[0]</Item>
       </Expand>
   </Type>
-  
+
   <Type Name="Eigen::Matrix&lt;*,2,1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Matrix&lt;*,1,2,*,*,*&gt;"/>
       <AlternativeType Name="Eigen::Array&lt;*,2,1,*,*,*&gt;"/>
@@ -206,7 +206,7 @@
         <Item Name="[y]">m_storage.m_data.array[1]</Item>
       </Expand>
   </Type>
-  
+
   <Type Name="Eigen::Matrix&lt;*,3,1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Matrix&lt;*,1,3,*,*,*&gt;"/>
       <AlternativeType Name="Eigen::Array&lt;*,3,1,*,*,*&gt;"/>
@@ -218,7 +218,7 @@
         <Item Name="[z]">m_storage.m_data.array[2]</Item>
       </Expand>
   </Type>
-  
+
     <Type Name="Eigen::Matrix&lt;*,4,1,*,*,*&gt;">
       <AlternativeType Name="Eigen::Matrix&lt;*,1,4,*,*,*&gt;"/>
       <AlternativeType Name="Eigen::Array&lt;*,4,1,*,*,*&gt;"/>

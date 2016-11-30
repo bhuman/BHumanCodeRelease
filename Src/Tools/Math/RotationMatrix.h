@@ -46,10 +46,10 @@ public:
   }
 
   /**
-  * Multiplication of this matrix by vector.
-  * @param  vector  The vector this one is multiplied by
-  * @return         A new vector containing the result
-  */
+   * Multiplication of this matrix by vector.
+   * @param  vector  The vector this one is multiplied by
+   * @return         A new vector containing the result
+   */
   Vector3f operator*(const Vector3f& vector) const
   {
     return Matrix3f::operator*(vector);

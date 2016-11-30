@@ -3,8 +3,8 @@
 # Installs autocomplete for ssh connections.
 # Call this without parameters to view the changes which would be written into
 # .ssh-hosts.
-# Call with "-i" to overwrite .ssh-hosts with those changes and to take
-# advantage of them.
+# Call with "-i" to extend ~/.ssh/config with those changes to take advantage
+# of them.
 #
 # "ssh priya" connects to Priya via wireless, "ssh Priya" connects to Priya via lan.
 
@@ -16,6 +16,9 @@ baseDir=$(dirname "${scriptPath}")
 robotsDir="../../Install/Robots"
 sshKeyPath="${baseDir}/../../Config/Keys/id_rsa_nao"
 install=false
+config=~/.ssh/config
+startm="### B-HUMAN ssh config start" # start marker
+endm="### B-HUMAN ssh config end" # end marker
 
 ########### FUNCTIONS ###########
 function status {
@@ -73,10 +76,28 @@ if ${install} ; then
 
   status "installing ssh config file"
   mkdir -p ~/.ssh
-  echo -e ${hosts} > ~/.ssh/config
+  # keep an existing ssh conf intact
+  echo -e ${hosts} > tempb-humanssh-conf-part
+  touch ${config}
+  if ! (grep -q "${startm}" ${config} && grep -q "${endm}" ${config}); then
+    echo -e "\n${startm}\n${endm}\n" >> ${config}
+  fi
+  touch tempb-humanssh-conf
+  sed -e "/^${startm}/,/^${endm}/{
+    /^${startm}/{
+        p
+        r tempb-humanssh-conf-part
+    }
+    /^${endm}/p
+    d
+  }" ${config} > tempb-humanssh-conf
+  rm ${config}
+  mv tempb-humanssh-conf ${config}
+  chmod 600 ${config}
+  rm tempb-humanssh-conf-part
 else
   echo -e ${hosts}
   echo "################################################################################"
-  echo "No changes were made. Call with \"-i\" to overwrite your .ssh-hosts file and enable autocompletion."
+  echo "No changes were made. Call with \"-i\" to extend ${config} and enable autocompletion."
   echo "################################################################################"
 fi

@@ -1,4 +1,4 @@
-/*
+/**
  * DataView.h
  *
  *  Created on: Mar 22, 2012
@@ -8,7 +8,16 @@
 #pragma once
 
 #include <SimRobot.h>
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#endif
 #include <QIcon>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 #include <QObject>
 #include <QString>
 #include <map>
@@ -47,10 +56,10 @@ public:
   DataView(const QString& fullName, const std::string& repName, RobotConsole& console, StreamHandler& streamHandler);
 
   virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const {return theFullName;}
-  virtual const QIcon* getIcon() const {return &theIcon;}
+  virtual const QString& getFullName() const { return theFullName; }
+  virtual const QIcon* getIcon() const { return &theIcon; }
 
-  const QString& getFullName() {return theFullName;}
+  const QString& getFullName() { return theFullName; }
 
   /**
    * Disconnects the current widget from the view.
@@ -58,12 +67,12 @@ public:
   void removeWidget();
 
   /**
-  * Parses the specified message and displays its contents.
-  * @param msg The message containing the data.
-  * @param type The type of the data contained within the msg.
-  * @param repName Name of the streamable data.
-  * @return true if the message has been handled. False otherwise.
-  */
+   * Parses the specified message and displays its contents.
+   * @param msg The message containing the data.
+   * @param type The type of the data contained within the msg.
+   * @param repName Name of the streamable data.
+   * @return true if the message has been handled. False otherwise.
+   */
   bool handleMessage(InMessage& msg, const std::string& type, const std::string& repName);
 
   /**
@@ -88,7 +97,52 @@ public:
    */
   void setAutoSet(bool value);
 
+  /**
+   * Is called if a value has changed in the tree.
+   */
+  void valueChanged();
+
 private:
+  DECLARE_SYNC;
+  const QString theFullName; /**< The path to this view in the scene graph */
+  const QIcon theIcon; /**< The icon used for listing this view in the scene graph */
+  RobotConsole& theConsole; /**< A reference to the console object. */
+  const std::string theName; /**< The name of the view and the data displayed. */
+  std::string type; /**< The type of the data shown. */
+  DataWidget* pTheWidget = nullptr; /**< The widget which displays the properties */
+  StreamHandler& theStreamHandler;
+  PropertyManager theVariantManager; /**< responsible for the creation and destruction of QtProperties */
+  bool theIgnoreUpdatesFlag; /**< If true handleMessage returns without doing anything */
+  QtProperty* pTheCurrentRootNode; /** Pointer to the current root property */
+  using PropertiesMapType = std::map<std::string, QtVariantProperty*>;
+
+  /**
+   * This map is used to store all properties that have been created so far.
+   * Recreating the properties on on every parser run causes memory leaks and gui bugs.
+   * key: the fully qualified name of a property ( e.g. "this.is.a.fully.qualified.name")
+   * value: pointer to the property.
+   */
+  PropertiesMapType theProperties;
+
+  unsigned lastUpdated = 0; /**< Time when this view was updated last (in ms). */
+
+  /**
+   * True if auto-set is enabled.
+   * In auto-set mode the view will send a set command directly after the user finished editing one value.
+   */
+  bool theAutoSetModeIsEnabled = true;
+
+  int theUpdateTime = 100; /**< time between updates in ms */
+
+  //The widget needs to access theConsole to synchronize while drawing.
+  friend class DataWidget;
+
+  //The EventFilter forwards the propertyEditor events to the view.
+  //To do that it needs access to handlePropertyEditorEvent;
+  friend class EditorEventFilter;
+
+  friend class PropertyTreeCreator; // Private helper class of this class
+
   /**
    * Handles all events coming from the property editors.
    * @param pEditor the editor that is the source of this event.
@@ -106,45 +160,4 @@ private:
    * @param fqn the fully qualified name of the property.
    */
   QtVariantProperty* getProperty(const std::string& fqn, int propertyType, const QString& name, QtProperty* pParent);
-
-private:
-  DECLARE_SYNC;
-  const QString theFullName; /**< The path to this view in the scene graph */
-  const QIcon theIcon; /**< The icon used for listing this view in the scene graph */
-  RobotConsole& theConsole; /**< A reference to the console object. */
-  const std::string theName; /**< The name of the view and the data displayed. */
-  std::string type; /**< The type of the data shown. */
-  DataWidget* pTheWidget; /**< The widget which displays the properties */
-  StreamHandler& theStreamHandler;
-  PropertyManager theVariantManager; /**< responsible for the creation and destruction of QtProperties */
-  bool theIgnoreUpdatesFlag; /**< If true handleMessage returns without doing anything */
-  QtProperty* pTheCurrentRootNode; /** Pointer to the current root property */
-  typedef std::map<std::string, QtVariantProperty*> PropertiesMapType;
-
-  /**
-   * This map is used to store all properties that have been created so far.
-   * Recreating the properties on on every parser run causes memory leaks and gui bugs.
-   * key: the fully qualified name of a property ( e.g. "this.is.a.fully.qualified.name")
-   * value: pointer to the property.
-   */
-  PropertiesMapType theProperties;
-
-  unsigned lastUpdated; /**< Time when this view was updated last (in ms). */
-
-  /**
-   * True if auto-set is enabled.
-   * In auto-set mode the view will send a set command directly after the user finished editing one value.
-   */
-  bool theAutoSetModeIsEnabled;
-
-  int theUpdateTime; /**< time between updates in ms */
-
-  //The widget needs to access theConsole to synchronize while drawing.
-  friend class DataWidget;
-
-  //The EventFilter forwards the propertyEditor events to the view.
-  //To do that it needs access to handlePropertyEditorEvent;
-  friend class EditorEventFilter;
-
-  friend class PropertyTreeCreator; // Private helper class of this class
 };

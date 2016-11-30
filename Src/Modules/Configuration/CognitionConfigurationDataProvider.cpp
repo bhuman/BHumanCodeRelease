@@ -1,24 +1,29 @@
 /**
-* @file CognitionConfigurationDataProvider.cpp
-* This file implements a module that provides data loaded from configuration files.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file CognitionConfigurationDataProvider.cpp
+ * This file implements a module that provides data loaded from configuration files.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include <cstdio>
 
 #include "CognitionConfigurationDataProvider.h"
+#include "Modules/Infrastructure/CognitionLogDataProvider.h"
 #include "Platform/File.h"
+#include "Platform/SystemCall.h"
+#include <iostream>
 
-PROCESS_LOCAL CognitionConfigurationDataProvider* CognitionConfigurationDataProvider::theInstance = 0;
+thread_local CognitionConfigurationDataProvider* CognitionConfigurationDataProvider::theInstance = nullptr;
 
 CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
 {
   theInstance = this;
 
+  readFieldColors();
   readFieldDimensions();
   readCameraCalibration();
-  readColorCalibration();
+  readCameraSettings();
   readRobotDimensions();
+  readBehavior2015Parameters();
   readDamageConfigurationBody();
   readDamageConfigurationHead();
   readHeadLimits();
@@ -26,21 +31,28 @@ CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
 
 CognitionConfigurationDataProvider::~CognitionConfigurationDataProvider()
 {
+  if(theFieldColors)
+    delete theFieldColors;
   if(theFieldDimensions)
     delete theFieldDimensions;
+  if(theIntersectionRelations)
+    delete theIntersectionRelations;
   if(theCameraCalibration)
     delete theCameraCalibration;
-  if(theColorCalibration)
-    delete theColorCalibration;
+  if(theCameraSettings)
+    delete theCameraSettings;
   if(theRobotDimensions)
     delete theRobotDimensions;
+  if(theBehavior2015Parameters)
+    delete theBehavior2015Parameters;
   if(theDamageConfigurationBody)
     delete theDamageConfigurationBody;
   if(theDamageConfigurationHead)
     delete theDamageConfigurationHead;
   if(theHeadLimits)
     delete theHeadLimits;
-  theInstance = 0;
+
+  theInstance = nullptr;
 }
 
 void CognitionConfigurationDataProvider::update(FieldDimensions& fieldDimensions)
@@ -52,6 +64,38 @@ void CognitionConfigurationDataProvider::update(FieldDimensions& fieldDimensions
     theFieldDimensions = 0;
   }
   fieldDimensions.drawPolygons(theOwnTeamInfo.teamColor);
+}
+
+void CognitionConfigurationDataProvider::update(FieldColors& fieldColors)
+{
+  if(theFieldColors)
+  {
+    fieldColors = *theFieldColors;
+    delete theFieldColors;
+    theFieldColors = 0;
+  }
+  DEBUG_RESPONSE_ONCE("representation:FieldColors:once")
+    OUTPUT(idFieldColors, bin, fieldColors);
+}
+
+void CognitionConfigurationDataProvider::update(IntersectionRelations& intersectionRelations)
+{
+  if(theIntersectionRelations)
+  {
+    intersectionRelations = *theIntersectionRelations;
+    delete theIntersectionRelations;
+    theIntersectionRelations = 0;
+  }
+}
+
+void CognitionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
+{
+  if(theRobotDimensions)
+  {
+    robotDimensions = *theRobotDimensions;
+    delete theRobotDimensions;
+    theRobotDimensions = 0;
+  }
 }
 
 void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
@@ -71,28 +115,23 @@ void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibra
   }
 }
 
-void CognitionConfigurationDataProvider::update(ColorTable& colorTable)
+void CognitionConfigurationDataProvider::update(CameraSettings& cameraSettings)
 {
-  if(theColorCalibration)
+  if(theCameraSettings)
   {
-    colorTable.fromColorCalibration(*theColorCalibration, colorCalibration);
-    delete theColorCalibration;
-    theColorCalibration = 0;
-  }
-
-  DEBUG_RESPONSE_ONCE("representation:ColorCalibration:once")
-  {
-    OUTPUT(idColorCalibration, bin, colorCalibration);
+    cameraSettings = *theCameraSettings;
+    delete theCameraSettings;
+    theCameraSettings = 0;
   }
 }
 
-void CognitionConfigurationDataProvider::update(RobotDimensions& robotDimensions)
+void CognitionConfigurationDataProvider::update(Behavior2015Parameters& behavior2015Parameters)
 {
-  if(theRobotDimensions)
+  if(theBehavior2015Parameters)
   {
-    robotDimensions = *theRobotDimensions;
-    delete theRobotDimensions;
-    theRobotDimensions = 0;
+    behavior2015Parameters = *theBehavior2015Parameters;
+    delete theBehavior2015Parameters;
+    theBehavior2015Parameters = 0;
   }
 }
 
@@ -129,9 +168,12 @@ void CognitionConfigurationDataProvider::update(HeadLimits& headLimits)
 void CognitionConfigurationDataProvider::readFieldDimensions()
 {
   ASSERT(!theFieldDimensions);
+  ASSERT(!theIntersectionRelations);
 
   theFieldDimensions = new FieldDimensions;
   theFieldDimensions->load();
+
+  theIntersectionRelations = new IntersectionRelations(*theFieldDimensions);
 }
 
 void CognitionConfigurationDataProvider::readCameraCalibration()
@@ -146,17 +188,31 @@ void CognitionConfigurationDataProvider::readCameraCalibration()
   }
 }
 
-void CognitionConfigurationDataProvider::readColorCalibration()
+void CognitionConfigurationDataProvider::readCameraSettings()
 {
-  ASSERT(!theColorCalibration);
+  ASSERT(!theCameraSettings);
 
-  InMapFile stream("colorCalibration.cfg");
+  InMapFile stream("cameraSettings" + std::string(RobotInfo::getName(theRobotInfo.headVersion)) + ".cfg");
   if(stream.exists())
   {
-    theColorCalibration = new ColorCalibration;
-    stream >> *theColorCalibration;
+    theCameraSettings = new CameraSettings;
+    stream >> *theCameraSettings;
+    theCameraSettings->upper.enforceBounds();
+    theCameraSettings->lower.enforceBounds();
   }
 }
+
+void CognitionConfigurationDataProvider::readFieldColors()
+{
+  ASSERT(!theFieldColors);
+
+  const std::string name = "fieldColorsCalibration" + std::string(RobotInfo::getName(theRobotInfo.headVersion)) + ".cfg";
+  InMapFile stream(name);
+  ASSERT(stream.exists());
+  theFieldColors = new FieldColors;
+  stream >> *theFieldColors;
+}
+
 
 void CognitionConfigurationDataProvider::readRobotDimensions()
 {
@@ -167,6 +223,18 @@ void CognitionConfigurationDataProvider::readRobotDimensions()
   {
     theRobotDimensions = new RobotDimensions;
     stream >> *theRobotDimensions;
+  }
+}
+
+void CognitionConfigurationDataProvider::readBehavior2015Parameters()
+{
+  ASSERT(!theBehavior2015Parameters);
+
+  InMapFile stream("BehaviorControl2015/behavior2015Parameters.cfg");
+  if(stream.exists())
+  {
+    theBehavior2015Parameters = new Behavior2015Parameters;
+    stream >> *theBehavior2015Parameters;
   }
 }
 
@@ -210,9 +278,9 @@ bool CognitionConfigurationDataProvider::handleMessage(InMessage& message)
 {
   if(theInstance && message.getMessageID() == idColorCalibration)
   {
-    if(!theInstance->theColorCalibration)
-      theInstance->theColorCalibration = new ColorCalibration;
-    message.bin >> *theInstance->theColorCalibration;
+    if(!theInstance->theFieldColors)
+      theInstance->theFieldColors = new FieldColors;
+    message.bin >> *theInstance->theFieldColors;
     return true;
   }
   else

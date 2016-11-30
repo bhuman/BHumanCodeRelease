@@ -27,17 +27,23 @@ void MessageQueue::copyAllMessages(MessageQueue& other)
 {
   if(queue.usedSize >= MessageQueueBase::headerSize)
   {
-    char* dest = other.queue.reserve(queue.usedSize - MessageQueueBase::headerSize);
-    if(dest && !other.queue.mappedIDs)
+    if(!queue.mappedIDs)
     {
-      memcpy(dest - MessageQueueBase::headerSize, queue.buf, queue.usedSize);
-      other.queue.numberOfMessages += queue.numberOfMessages;
-      other.queue.usedSize += queue.usedSize;
-      other.queue.writePosition = 0;
+      char* dest = other.queue.reserve(queue.usedSize - MessageQueueBase::headerSize);
+      if(dest)
+      {
+        memcpy(dest - MessageQueueBase::headerSize, queue.buf, queue.usedSize);
+        other.queue.numberOfMessages += queue.numberOfMessages;
+        other.queue.usedSize += queue.usedSize;
+        other.queue.writePosition = 0;
+        return;
+      }
     }
-    else // Not all messages fit in there, so try step by step (some will be missing).
-      for(int i = 0; i < queue.numberOfMessages; ++i)
-        copyMessage(i, other);
+
+    // Copy step by step by step, because not all messages will fit
+    // or the message ids should be translated.
+    for(int i = 0; i < queue.numberOfMessages; ++i)
+      copyMessage(i, other);
   }
 }
 

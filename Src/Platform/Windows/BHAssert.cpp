@@ -1,25 +1,20 @@
 /**
-* @file Platform/Windows/BHAssert.cpp
-* Some helper functions for low level debugging
-* @author Colin Graf
-*/
+ * @file Platform/Windows/BHAssert.cpp
+ * Some helper functions for low level debugging
+ * @author Colin Graf
+ */
 
 #ifndef NDEBUG
 
-#include "BHAssert.h"
+#include "Platform/BHAssert.h"
 
 #include <cstdio>
-#define NOMINMAX
-#include <windows.h>
-
-#define snprintf sprintf_s
-#define vsnprintf vsprintf_s
+#include <Windows.h>
 
 void Assert::print(const char* file, int line, const char* format, ...)
 {
   char data[320];
-  int length;
-  length = snprintf(data, sizeof(data) - 2, "%s:%d: ", file, line);
+  int length = std::snprintf(data, sizeof(data) - 2, "%s:%d: ", file, line);
   if(length < 0)
     length = sizeof(data) - 2;
   va_list ap;
@@ -34,5 +29,10 @@ void Assert::print(const char* file, int line, const char* format, ...)
   data[length] = '\0';
   OutputDebugString(data);
 }
+
+void Assert::abort()
+{
+  __debugbreak();
+};
 
 #endif // NDEBUG

@@ -1,10 +1,10 @@
 /**
-* @file Controller/Views/KickView/KickView.h
-*
-* Declaration of class KickView
-*
-* @author <a href="mailto:judy@tzi.de">Judith Müller</a>
-*/
+ * @file Controller/Views/KickView/KickView.h
+ *
+ * Declaration of class KickView
+ *
+ * @author <a href="mailto:judy@tzi.de">Judith Müller</a>
+ */
 
 #pragma once
 
@@ -25,12 +25,6 @@ class KickViewWidget;
 class KickView : public SimRobot::Object
 {
 public:
-  /**
-  * Constructor.
-  */
-  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, 
-           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
-
   QString fullName;
   QIcon icon;
   RobotConsole& console;
@@ -41,10 +35,13 @@ public:
   const std::string& motionRequestCommand;
   SimRobotCore2::Body* robot;
 
+  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
+           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
+
 private:
   virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const {return fullName;}
-  virtual const QIcon* getIcon() const {return &icon;}
+  virtual const QString& getFullName() const { return fullName; }
+  virtual const QIcon* getIcon() const { return &icon; }
 };
 
 class KickViewHeaderedWidget : public HeaderedWidget, public SimRobot::Widget
@@ -52,10 +49,11 @@ class KickViewHeaderedWidget : public HeaderedWidget, public SimRobot::Widget
   Q_OBJECT
 
 public:
-  KickViewHeaderedWidget(KickView& kickView);
   KickViewWidget* kickViewWidget;
 
-  virtual QWidget* getWidget() {return this;}
+  KickViewHeaderedWidget(KickView& kickView);
+
+  virtual QWidget* getWidget() { return this; }
   virtual void update();
   virtual QMenu* createFileMenu() const;
   virtual QMenu* createEditMenu() const;

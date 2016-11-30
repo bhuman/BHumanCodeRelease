@@ -143,7 +143,6 @@ bool CoreModule::compile()
 
   // suggest further modules
   application->registerModule(*this, "File Editor", "SimRobotEditor", SimRobot::Flag::ignoreReset);
-  application->registerModule(*this, "Help Browser", "SimRobotHelp", SimRobot::Flag::ignoreReset);
 
   // load controller
   if(simulation->scene->controller != "")

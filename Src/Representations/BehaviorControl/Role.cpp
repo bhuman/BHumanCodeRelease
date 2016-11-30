@@ -1,7 +1,7 @@
 /**
  * @file Representations/BehaviorControl/Role.h
  *
- * Implementation of the the representation of a robot's behavior role
+ * Implementation of the representation of a robot's behavior role
  *
  * @author Tim Laue, Andreas Stolpmann
  */
@@ -25,10 +25,6 @@ void Role::draw() const
     static const ColorRGBA colors[numOfRoleTypes] =
     {
       ColorRGBA::black,
-      ColorRGBA::blue,
-      ColorRGBA::red,
-      ColorRGBA::white,
-      ColorRGBA::green,
       ColorRGBA::black
     };
 

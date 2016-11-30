@@ -10,7 +10,9 @@
 ShortcutBar::ShortcutBar(Console* console)
   : QToolBar("Shortcuts"),
     console(console)
-{}
+{
+  setObjectName("Shortcuts");
+}
 
 QAction* ShortcutBar::addShortcut(const QString& name,
                                   const QString& command)

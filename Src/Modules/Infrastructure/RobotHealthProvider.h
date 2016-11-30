@@ -1,8 +1,8 @@
 /**
-* @file Modules/Infrastructure/RobotHealthProvider.h
-* This file declares a module that provides information about the robot's health.
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
-*/
+ * @file Modules/Infrastructure/RobotHealthProvider.h
+ * This file declares a module that provides information about the robot's health.
+ * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ */
 
 #pragma once
 
@@ -12,20 +12,18 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
-#include "Representations/Perception/BallPercept.h"
-#include "Representations/Perception/LinePercept.h"
-#include "Representations/Perception/GoalPercept.h"
+#include "Representations/Perception/BallPercepts/BallPercept.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #ifdef TARGET_ROBOT
-#include "Platform/Linux/NaoBody.h"
+#include "Platform/Nao/NaoBody.h"
 #endif
 
 MODULE(RobotHealthProvider,
 {,
   REQUIRES(BallPercept),
   REQUIRES(FrameInfo),
-  REQUIRES(GoalPercept),
   REQUIRES(JointSensorData),
-  REQUIRES(LinePercept),
+  REQUIRES(FieldLines),
   REQUIRES(MotionRobotHealth),
   REQUIRES(SystemSensorData),
   PROVIDES(RobotHealth),
@@ -41,9 +39,9 @@ MODULE(RobotHealthProvider,
 });
 
 /**
-* @class RobotHealthProvider
-* A module that provides information about the robot's health
-*/
+ * @class RobotHealthProvider
+ * A module that provides information about the robot's health
+ */
 class RobotHealthProvider : public RobotHealthProviderBase
 {
 public:
@@ -73,7 +71,7 @@ private:
 #endif
 
   /** The main function, called every cycle
-  * @param robotHealth The data struct to be filled
-  */
+   * @param robotHealth The data struct to be filled
+   */
   void update(RobotHealth& robotHealth);
 };

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Generate the template from the Xcode project.
+# The script uses "B-Human.xcodeproj/project.pbxproj" to generate 
+# "B-Human.xcodeproj/template.pbxproj". This allows to interactively
+# change the settings in Xcode and later update the template to
+# make the changes permanent, i.e. let them survive the next call
+# to "generate".
+# This script can be launched from the Finder.
+
+cd `dirname $0`
+./generate -b

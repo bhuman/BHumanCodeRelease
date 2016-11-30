@@ -1,8 +1,8 @@
 /**
-* @file Controller/Platform/Joystick.h
-* Inclusion of platform dependend joystick interface implementation.
-* @author Colin Graf
-*/
+ * @file Controller/Platform/Joystick.h
+ * Inclusion of platform dependend joystick interface implementation.
+ * @author Colin Graf
+ */
 
 #pragma once
 
@@ -16,8 +16,8 @@
 #define Joystick_H
 #endif
 
-#ifdef OSX
-#include "OSX/Joystick.h"
+#ifdef MACOS
+#include "macOS/Joystick.h"
 #define Joystick_H
 #endif
 

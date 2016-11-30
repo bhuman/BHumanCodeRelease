@@ -12,13 +12,15 @@
 
 #include "RoboCupGameControlData.h"
 #include "Tools/Streams/Streamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
+#include "Tools/Settings.h"
 
 struct RobotInfo : public RoboCup::RobotInfo, public Streamable
 {
 public:
   ENUM(NaoVersion,
   {,
+    V32,
     V33,
     V4,
     V5,
@@ -42,9 +44,11 @@ public:
   });
 
   int number; /**< The number of the robot. */
-  NaoVersion naoVersion = V5;
-  NaoType naoBodyType = H21;
-  NaoType naoHeadType = H21;
+
+  NaoVersion headVersion = V4;
+  NaoType headType = H21;
+  NaoVersion bodyVersion = V5;
+  NaoType bodyType = H21;
 
   RobotInfo();
 

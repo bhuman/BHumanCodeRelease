@@ -79,7 +79,7 @@ Pose2f FieldDimensions::randomPoseOnField() const
 {
   Pose2f pose;
   do
-    pose = Pose2f::random(boundary.x, boundary.y, Rangef(-pi, pi));
+    pose = Pose2f::random(Rangef(-pi, pi), boundary.x, boundary.y);
   while(!isInsideField(pose.translation));
   return pose;
 }
@@ -88,7 +88,7 @@ Pose2f FieldDimensions::randomPoseOnCarpet() const
 {
   Pose2f pose;
   do
-    pose = Pose2f::random(boundary.x, boundary.y, Rangef(-pi, pi));
+    pose = Pose2f::random(Rangef(-pi, pi), boundary.x, boundary.y);
   while(!isInsideCarpet(pose.translation));
   return pose;
 }
@@ -179,7 +179,7 @@ void FieldDimensions::drawCorners() const
   MODIFY_ENUM("fieldDimensions:cornerClass", c);
   COMPLEX_DRAWING("field corners")
   {
-    for(CornersTable::const_iterator i = corners[c].begin(); i != corners[c].end(); ++i)
+    for(auto i = corners[c].begin(); i != corners[c].end(); ++i)
       LARGE_DOT("field corners", i->x(), i->y(), ColorRGBA(255, 255, 255), ColorRGBA(255, 255, 255));
   }
 }
@@ -263,14 +263,16 @@ Vector2f FieldDimensions::LinesTable::getClosestPoint(const Vector2f& point) con
     //optimized expression
     if(((c.y() >= b.y() && c.y() <= a.y()) || (c.y() >= a.y() && c.y() <= b.y())) &&
        ((c.x() >= b.x() && c.x() <= a.x()) || (c.x() >= a.x() && c.x() <= b.x())))
-    {//If projection is on the line segment just calculate the distance between the point
-     //and it's projection.
+    {
+      //If projection is on the line segment just calculate the distance between the point
+      //and it's projection.
       distance = (projection - point).norm();
       tempClosestPoint = projection;
     }
     else
-    {//If the projection is not on the line segment it is either left or
-     //right of the line segment. Therefore use distance to edge
+    {
+      //If the projection is not on the line segment it is either left or
+      //right of the line segment. Therefore use distance to edge
       const float distBase = (line.base - point).norm();
       const float distEnd = (i->to - point).norm();
       if(distBase <= distEnd)
@@ -347,7 +349,7 @@ float FieldDimensions::LinesTable::clip(Vector2f& v) const
         v2 = i->from;
       else
       {
-        float a = (old - i->from).dot(i->to - i->from) / ((old - i->from).norm() * (i->to - i->from).norm());
+        float a = (old - i->from).dot(i->to - i->from) / (i->to - i->from).dot(i->to - i->from);
         if(a <= 0)
           v2 = i->from;
         else if(a >= 1.f)
@@ -434,24 +436,6 @@ float FieldDimensions::LinesTable::getDistance(const Pose2f& pose) const
   return minDist == 100000 ? -1 : minDist;
 }
 
-const Vector2f& FieldDimensions::CornersTable::getClosest(const Vector2f& p) const
-{
-  ASSERT(!empty());
-  float maxDistance2 = numeric_limits<float>().max();
-  const Vector2f* closest = 0;
-  for(const_iterator i = begin(); i != end(); ++i)
-  {
-    Vector2f diff = p - *i;
-    float distance2 = diff.dot(diff);
-    if(maxDistance2 > distance2)
-    {
-      maxDistance2 = distance2;
-      closest = &*i;
-    }
-  }
-  return *closest;
-}
-
 void FieldDimensions::serialize(In* in, Out* out)
 {
   ASSERT(in); // handling center circle only works when reading
@@ -461,15 +445,6 @@ void FieldDimensions::serialize(In* in, Out* out)
   std::vector<LinesTable::Line>& fieldLines(this->fieldLines.lines);
   std::vector<LinesTable::Line>& goalFrameLines(this->goalFrameLines.lines);
   LinesTable::Circle centerCircle;
-  std::vector<Vector2f>& xCorner(corners[FieldDimensions::xCorner]);
-  std::vector<Vector2f>& tCorner0(corners[FieldDimensions::tCorner0]);
-  std::vector<Vector2f>& tCorner90(corners[FieldDimensions::tCorner90]);
-  std::vector<Vector2f>& tCorner180(corners[FieldDimensions::tCorner180]);
-  std::vector<Vector2f>& tCorner270(corners[FieldDimensions::tCorner270]);
-  std::vector<Vector2f>& lCorner0(corners[FieldDimensions::lCorner0]);
-  std::vector<Vector2f>& lCorner90(corners[FieldDimensions::lCorner90]);
-  std::vector<Vector2f>& lCorner180(corners[FieldDimensions::lCorner180]);
-  std::vector<Vector2f>& lCorner270(corners[FieldDimensions::lCorner270]);
 
   STREAM_REGISTER_BEGIN;
   STREAM_BASE(SimpleFieldDimensions)
@@ -480,15 +455,7 @@ void FieldDimensions::serialize(In* in, Out* out)
   STREAM(centerCircle);
   this->fieldLines.pushCircle(centerCircle.center, centerCircle.radius, centerCircle.numOfSegments);
 
-  STREAM(xCorner);
-  STREAM(tCorner0);
-  STREAM(tCorner90);
-  STREAM(tCorner180);
-  STREAM(tCorner270);
-  STREAM(lCorner0);
-  STREAM(lCorner90);
-  STREAM(lCorner180);
-  STREAM(lCorner270);
+  STREAM(corners);
   STREAM_REGISTER_FINISH;
 
   //merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame

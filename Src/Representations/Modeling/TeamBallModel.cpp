@@ -10,6 +10,17 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 
+void TeamBallModel::verify() const
+{
+  if(isValid)
+  {
+    ASSERT(std::isfinite(position.x()));
+    ASSERT(std::isfinite(position.y()));
+    ASSERT(std::isfinite(velocity.x()));
+    ASSERT(std::isfinite(velocity.y()));
+  }
+}
+
 void TeamBallModel::draw() const
 {
   DECLARE_DEBUG_DRAWING("representation:TeamBallModel", "drawingOnField");

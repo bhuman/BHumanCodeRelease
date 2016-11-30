@@ -29,11 +29,18 @@
 class Debug : public Process
 {
 private:
-  EXTERNAL_DEBUGGING;
-  DEBUG_RECEIVER(Cognition);
-  DEBUG_RECEIVER(Motion);
-  DEBUG_SENDER(Cognition);
-  DEBUG_SENDER(Motion);
+#ifdef TARGET_ROBOT
+  MessageQueue theDebugReceiver;
+  MessageQueue theDebugSender;
+  DebugHandler debugHandler;
+#else
+  Receiver<MessageQueue> theDebugReceiver;
+  DebugSender<MessageQueue> theDebugSender;
+#endif
+  Receiver<CognitionToDebug> theCognitionReceiver;
+  Receiver<MotionToDebug> theMotionReceiver;
+  DebugSender<DebugToCognition> theCognitionSender;
+  DebugSender<DebugToMotion> theMotionSender;
 
 public:
   QueueFillRequest outQueueMode; /**< The mode (behavior, filter, target) for the outgoing queue. */
@@ -43,8 +50,8 @@ public:
 
   Debug();
   ~Debug()
-  { 
-    if(fout) 
+  {
+    if(fout)
       delete fout;
   }
 

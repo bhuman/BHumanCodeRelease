@@ -15,13 +15,13 @@
 #include <QApplication>
 #include "Utils/bush/ui/MainWindow.h"
 
-Initializer::Initializer(int &argc, char** argv) : logLevel(WARN), app(0)
+Initializer::Initializer(int& argc, char** argv) : logLevel(WARN), app(0)
 {
   log(TRACE, "Initializer: Initialization started.");
 
 #ifdef WINDOWS
   ProcessRunner r("taskkill /F /IM ping.exe");
-#else // Linux, OSX
+#else // Linux, MACOS
   ProcessRunner r("ps axco pid,command | grep \" ping$\" | awk '{ print $1; }' | xargs kill");
 #endif
   r.run();
@@ -35,7 +35,7 @@ Initializer::Initializer(int &argc, char** argv) : logLevel(WARN), app(0)
 
   Framework::getInstance("Initializer");
   app = new QApplication(argc, argv);
-#ifdef OSX
+#ifdef MACOS
   app->setStyle("macintosh");
 #endif
   app->setApplicationName("B-Human User Shell (bush)");

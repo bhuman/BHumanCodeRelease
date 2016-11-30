@@ -1,10 +1,13 @@
-mr StandOutput CalibrationStand
+vid upper horizon
+mr StandArmRequest CalibrationStand
+mr StandLegRequest CalibrationStand
+mr WalkingEngineOutput default
+mr WalkingEngineState default
 set representation:HeadAngleRequest unchanged
 mr CameraCalibration CognitionConfigurationDataProvider
 mr CameraCalibrationNext AutomaticCameraCalibrator
 mr CameraResolutionRequest AutomaticCameraCalibrator
 mr HeadAngleRequest AutomaticCameraCalibrator
-#mr GoalPercept default
 
 automaticCameraCalibratorInsertion lower on
 automaticCameraCalibratorInsertion upper on
@@ -13,15 +16,15 @@ automaticCameraCalibratorDeletion upper on
 
 set module:AutomaticCameraCalibrator:robotPose rotation = 0; translation = {x = -750; y = 0;};
 
-vid lower representation:LinePercept:Image off
-vid lower representation:PlayersPercept:Image off
+vid lower representation:FieldLines:image off
+vid lower representation:PlayersPercept:image off
 vid lower representation:BodyContour off
 vid lower module:AutomaticCameraCalibrator:points
 vid lower module:AutomaticCameraCalibrator:drawSamples
 vid lower module:AutomaticCameraCalibrator:drawFieldLines
 
-vid upper representation:LinePercept:Image off
-vid upper representation:PlayersPercept:Image off
+vid upper representation:FieldLines:image off
+vid upper representation:PlayersPercept:image off
 vid upper representation:BodyContour off
 vid upper module:AutomaticCameraCalibrator:points
 vid upper module:AutomaticCameraCalibrator:drawSamples
@@ -39,4 +42,7 @@ echo dr module:AutomaticCameraCalibrator:accumulate
 echo dr module:AutomaticCameraCalibrator:stop
 echo dr module:AutomaticCameraCalibrator:optimize
 echo save representation:CameraCalibration
+echo
+echo Please check whether the body contour aligns with the feet in the lower image at a head pitch angle of 0.38 rad.
+echo Otherwise, calibrate the head angles!
 echo

@@ -39,7 +39,7 @@ private:
 
   char* printBuffer;
   size_t printBufferSize;
-  
+
 public:
   ~MofCompiler();
 

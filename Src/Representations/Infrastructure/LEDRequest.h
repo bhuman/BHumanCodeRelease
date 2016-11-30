@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 /**
  * This describes a LEDRequest
@@ -90,7 +89,8 @@ STREAMABLE(LEDRequest,
     chestRed,
     chestGreen,
     chestBlue,
-    headLedRearLeft0,
+    firstHeadLED,
+    headLedRearLeft0 = firstHeadLED,
     headLedRearLeft1,
     headLedRearLeft2,
     headLedRearRight0,
@@ -102,6 +102,7 @@ STREAMABLE(LEDRequest,
     headLedFrontLeft0,
     headLedFrontLeft1,
     headLedMiddleLeft0,
+    lastHeadLED = headLedMiddleLeft0,
     footLeftRed,
     footLeftGreen,
     footLeftBlue,
@@ -109,6 +110,8 @@ STREAMABLE(LEDRequest,
     footRightGreen,
     footRightBlue,
   });
+
+  static constexpr size_t numOfHeadLEDs = LED::headLedMiddleLeft0 - LED::headLedRearLeft0 + 1;
 
   ENUM(LEDState,
   {,
@@ -121,13 +124,13 @@ STREAMABLE(LEDRequest,
 
   LEDRequest()
   {
-    for(int i = 0; i < numOfLEDs; ++i)
+    FOREACH_ENUM(LED, i)
       ledStates[i] = off;
   }
 
   bool operator==(const LEDRequest& other) const
   {
-    for(int i = 0; i < numOfLEDs; i++)
+    FOREACH_ENUM(LED, i)
       if(ledStates[i] != other.ledStates[i])
         return false;
     return true;
@@ -138,5 +141,5 @@ STREAMABLE(LEDRequest,
     return !(*this == other);
   }
   ,
-  (LEDState[numOfLEDs]) ledStates, /**< The intended states of the LEDs (use type State). */
+  (ENUM_INDEXED_ARRAY(LEDState, LED)) ledStates, /**< The intended states of the LEDs (use type State). */
 });

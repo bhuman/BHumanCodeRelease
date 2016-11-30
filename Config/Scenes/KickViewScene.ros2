@@ -1,7 +1,7 @@
 <Simulation>
 
   <Include href="Includes/NaoV4H21.rsi2"/>
-  <Include href="Includes/Ball2010SPL.rsi2"/>
+  <Include href="Includes/Ball2016SPL.rsi2"/>
   <Include href="Includes/Field2015SPL.rsi2"/>
 
   <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.01" color="rgb(50%, 50%, 50%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
@@ -10,7 +10,7 @@
 
     <Compound name="robots">
       <Body ref="Nao" name="robot3">
-        <Translation z="300mm"/>
+        <Translation z="320mm"/>
        </Body>
     </Compound>
 

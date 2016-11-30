@@ -31,7 +31,8 @@ Team::Team()
     wlanConfig(""),
     buildConfig(""),
     volume(100),
-    deployDevice("")
+    deployDevice(""),
+    magicNumber(-1)
 {
   init();
 }
@@ -47,7 +48,8 @@ Team::Team(const std::string& name, unsigned short number)
     wlanConfig(""),
     buildConfig(""),
     volume(100),
-    deployDevice("")
+    deployDevice(""),
+    magicNumber(-1)
 {
   init();
   this->port = number + 10000;
@@ -80,7 +82,7 @@ void Team::addPlayer(unsigned int playerNumber, bool  substitutePlayer, Robot& r
   selectedPlayers[&robot] = false;
 }
 
-std::vector<std::vector<Robot*> > Team::getPlayersPerNumber() const
+std::vector<std::vector<Robot*>> Team::getPlayersPerNumber() const
 {
   return players;
 }
@@ -144,6 +146,7 @@ void Team::serialize(In* in, Out* out)
   STREAM(wlanConfig);
   STREAM(volume);
   STREAM(deployDevice);
+  STREAM(magicNumber);
   std::vector<std::string> players;
   if(out)
   {

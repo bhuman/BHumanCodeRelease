@@ -6,7 +6,39 @@
 
 #pragma once
 
+#include "Tools/Math/Eigen.h"
 #include "Tools/Streams/Streamable.h"
+#include "Representations/Infrastructure/CameraInfo.h"
+
+/**
+ * The union defines a pixel in YCbCr space.
+ */
+union ColorPixel
+{
+  unsigned color; /**< Representation as single machine word. */
+  unsigned char channels[4]; /**< Representation as an array of channels. */
+  struct
+  {
+    unsigned char yCbCrPadding; /**< Ignore. */
+    unsigned char cb; /**< Cb channel. */
+    unsigned char y; /**< Y channel. */
+    unsigned char cr; /**< Cr channel. */
+  };
+  struct
+  {
+    unsigned char r; /**< R channel. */
+    unsigned char g; /**< G channel. */
+    unsigned char b; /**< B channel. */
+    unsigned char rgbPadding; /**< Ignore. */
+  };
+  struct
+  {
+    unsigned char h; /**< H channel. */
+    unsigned char s; /**< S channel. */
+    unsigned char i; /**< I channel. */
+    unsigned char hsiPadding; /**< Ignore. */
+  };
+};
 
 /**
  * Platform independent definition of an image struct
@@ -14,38 +46,12 @@
 struct Image : public Streamable
 {
 public:
-  /**
-   * The union defines a pixel in YCbCr space.
-   */
-  union Pixel
-  {
-    unsigned color; /**< Representation as single machine word. */
-    unsigned char channels[4]; /**< Representation as an array of channels. */
-    struct
-    {
-      unsigned char yCbCrPadding; /**< Ignore. */
-      unsigned char cb; /**< Cb channel. */
-      unsigned char y; /**< Y channel. */
-      unsigned char cr; /**< Cr channel. */
-    };
-    struct
-    {
-      unsigned char r; /**< R channel. */
-      unsigned char g; /**< G channel. */
-      unsigned char b; /**< B channel. */
-      unsigned char rgbPadding; /**< Ignore. */
-    };
-    struct
-    {
-      unsigned char h; /**< H channel. */
-      unsigned char s; /**< S channel. */
-      unsigned char i; /**< I channel. */
-      unsigned char hsiPadding; /**< Ignore. */
-    };
-  };
+  using Pixel = ColorPixel;
 
-  static const int maxResolutionWidth = 640;
-  static const int maxResolutionHeight = 480;
+  static constexpr int maxResolutionWidth = 640;
+  static constexpr int maxResolutionHeight = 480;
+
+  static const int neuralNetImageRadius = 8;
 
   int width; /**< The width of the image in pixel */
   int height; /**< The height of the image in pixel */
@@ -61,7 +67,7 @@ public:
   /**
    * @param initialize Whether to initialize the image in gray or not
    */
-  Image(bool initialize = true, int width = maxResolutionWidth, int height = maxResolutionHeight);
+  Image(bool initialize = true, int width = maxResolutionWidth / 2, int height = maxResolutionHeight / 2);
 
   /**
    * Copy constructor.
@@ -81,8 +87,12 @@ public:
 
   Pixel* operator[](const int y) { return image + y * widthStep; }
   const Pixel* operator[](const int y) const { return image + y * widthStep; }
+  Pixel& operator[](const Vector2s& p) { return image[p.y() * widthStep + p.x()]; }
+  const Pixel& operator[](const Vector2s& p) const { return image[p.y() * widthStep + p.x()]; }
+  Pixel& operator[](const Vector2i& p) { return image[p.y() * widthStep + p.x()]; }
+  const Pixel& operator[](const Vector2i& p) const { return image[p.y() * widthStep + p.x()]; }
 
-  Pixel getFullSizePixel(const int y, const int x) const
+  Pixel getFullSizePixel(int y, int x) const
   {
     Image::Pixel p = *(image + y * width + x / 2);
     if(!(x & 1))
@@ -91,13 +101,19 @@ public:
   }
 
   /**
+   * Gets a subimage.
+   * @return the subimage.
+   */
+  void getSubImage(int x1, int y1, int x2, int y2, Image& subImage) const;
+
+  /**
    * The method sets an external image.
    * @param buffer The image buffer.
    */
   void setImage(unsigned char* buffer);
   void setImage(Pixel* image);
 
-  /** 
+  /**
    * Converts an YCbCr image into an RGB image.
    * @param ycbcrImage The given YCbCr image
    */

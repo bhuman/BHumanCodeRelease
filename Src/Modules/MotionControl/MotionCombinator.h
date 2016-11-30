@@ -2,24 +2,22 @@
  * @file Modules/MotionControl/MotionCombinator.h
  * This file declares a module that combines the motions created by the different modules.
  * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
- * @author (arm upgrade) Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
+#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
-#include "Representations/MotionControl/ArmMotionInfo.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/MotionControl/ArmMotionSelection.h"
-#include "Representations/MotionControl/DmpKickEngineOutput.h"
 #include "Representations/MotionControl/GetUpEngineOutput.h"
-#include "Representations/MotionControl/HeadJointRequest.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
+#include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/MotionSelection.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
@@ -29,71 +27,51 @@
 
 MODULE(MotionCombinator,
 {,
-  REQUIRES(ArmKeyFrameEngineOutput),
+  REQUIRES(ArmJointRequest),
   REQUIRES(ArmMotionSelection),
-  REQUIRES(DmpKickEngineOutput),
+  REQUIRES(DamageConfigurationBody),
   REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
   REQUIRES(GetUpEngineOutput),
-  REQUIRES(HeadJointRequest),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
+  REQUIRES(KeyStates),
   REQUIRES(KickEngineOutput),
-  REQUIRES(MotionSelection),
-  REQUIRES(SpecialActionsOutput),
+  REQUIRES(LegJointRequest),
+  REQUIRES(LegMotionSelection),
   REQUIRES(RobotInfo),
-  REQUIRES(StandOutput),
+  REQUIRES(SpecialActionsOutput),
   REQUIRES(StiffnessSettings),
   REQUIRES(WalkingEngineOutput),
   PROVIDES(JointRequest),
   REQUIRES(JointRequest),
-  PROVIDES(ArmMotionInfo),
   PROVIDES(MotionInfo),
   PROVIDES(OdometryData),
   LOADS_PARAMETERS(
   {,
     (bool) emergencyOffEnabled,
     (unsigned) recoveryTime, /**< The number of frames to interpolate after emergency-stop. */
+    (bool) debugArms,
   }),
 });
 
 class MotionCombinator : public MotionCombinatorBase
 {
 private:
-  NonArmeMotionEngineOutput theNonArmeMotionEngineOutput;
-
-  JointAngles lastJointAngles; /**< The measured joint angles the last time when not interpolating. */
   OdometryData odometryData; /**< The odometry data. */
   MotionInfo motionInfo; /**< Information about the motion currently executed. */
-  ArmMotionInfo armMotionInfo; /**< Information about the arm motion currently executed. */
   Pose2f specialActionOdometry; /**< workaround for accumulating special action odometry. */
 
   unsigned currentRecoveryTime;
 
-  bool headJawInSavePosition;
-  bool headPitchInSavePosition;
-  bool isFallingStarted;
-  unsigned fallingFrame;
+  bool headYawInSafePosition = false;
+  bool headPitchInSafePosition = false;
 
   OdometryData lastOdometryData;
   JointRequest lastJointRequest;
 
 public:
-  /**
-  * Default constructor.
-  */
-  MotionCombinator();
-
-private:
-  void update(OdometryData& odometryData);
-  void update(JointRequest& jointRequest);
-  void update(MotionInfo& motionInfo) { motionInfo = this->motionInfo; }
-  void update(ArmMotionInfo& armMotionInfo) { armMotionInfo = this->armMotionInfo; }
-
-  void saveFall(JointRequest& JointRequest);
-  void centerHead(JointRequest& JointRequest);
-  void centerArms(JointRequest& jointRequest);
-  void centerArm(JointRequest& jointRequest, bool left);
+  MotionCombinator() : currentRecoveryTime(recoveryTime + 1) {}
 
   /**
    * The method copies all joint angles from one joint request to another,
@@ -101,9 +79,9 @@ private:
    * @param source The source joint request. All angles != JointAngles::ignore will be copied.
    * @param target The target joint request.
    */
-  void copy(const JointRequest& source, JointRequest& target,
-            const Joints::Joint startJoint = static_cast<Joints::Joint>(0),
-            const Joints::Joint endJoint = static_cast<Joints::Joint>(Joints::numOfJoints - 1)) const;
+  void static copy(const JointRequest& source, JointRequest& target,
+                   const StiffnessSettings& theStiffnessSettings,
+                   const Joints::Joint startJoint, const Joints::Joint endJoint);
 
   /**
    * The method interpolates between two joint requests.
@@ -113,7 +91,18 @@ private:
    * @param target The target joint request.
    * @param interpolateStiffness Whether to interpolate stiffness.
    */
-  void interpolate(const JointRequest& from, const JointRequest& to, float fromRatio, JointRequest& target, bool interpolateStiffness,
-                   const Joints::Joint startJoint = static_cast<Joints::Joint>(0),
-                   const Joints::Joint endJoint = static_cast<Joints::Joint>(Joints::numOfJoints - 1)) const;
+  void static interpolate(const JointRequest& from, const JointRequest& to, float fromRatio, JointRequest& target, bool interpolateStiffness,
+                          const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
+                          const Joints::Joint startJoint, const Joints::Joint endJoint);
+
+private:
+  void update(JointRequest& jointRequest);
+  void update(OdometryData& odometryData);
+  void update(MotionInfo& motionInfo) { motionInfo = this->motionInfo; }
+
+  void safeFall(JointRequest& JointRequest);
+  void centerHead(JointRequest& JointRequest);
+
+  void eraseStiffness(JointRequest& jointRequest);
+  void debugReleaseArms(JointRequest& jointRequest);
 };

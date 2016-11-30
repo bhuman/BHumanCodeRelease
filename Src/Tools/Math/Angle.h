@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Constants.h"
-#include "Tools/Enum.h"
+#include <cmath>
 
 /**
  * Converts angle from rad to degrees.
@@ -41,7 +41,7 @@ public:
   template <class V>
   static V normalize(V data);
 
-  static constexpr Angle fromDegrees(float degrees) { return Angle((degrees / 180.f) * pi ); }
+  static constexpr Angle fromDegrees(float degrees) { return Angle((degrees / 180.f) * pi); }
   static constexpr Angle fromDegrees(int degrees) { return fromDegrees(static_cast<float>(degrees)); }
 
   float constexpr toDegrees() const { return (value / pi) * 180.f; }
@@ -78,3 +78,13 @@ inline V Angle::normalize(V data)
     return data >= V(pi) ? V(data - V(pi2)) : data < -V(pi) ? V(data + V(pi2)) : data;
   }
 }
+
+#ifndef isfinite
+namespace std
+{
+  inline bool isfinite(Angle angle) noexcept
+  {
+    return isfinite(static_cast<float>(angle));
+  }
+}
+#endif

@@ -37,7 +37,7 @@ public:
    *         execution or the execution was not successful from another reason.
    *         Otherwise <em>true</em> should be returned.
    */
-  virtual bool execute(Context &context, const std::vector<std::string> &params) = 0;
+  virtual bool execute(Context& context, const std::vector<std::string>& params) = 0;
 
   /** This method should return a list of completion suggestions of the given
    * command line. The returned suggestions have to have the given command line

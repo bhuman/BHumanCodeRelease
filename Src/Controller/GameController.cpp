@@ -6,29 +6,23 @@
 
 #include "GameController.h"
 #include "SimulatedRobot.h"
-#include "Platform/SystemCall.h"
+#include "Platform/BHAssert.h"
+#include "Platform/Time.h"
 #include "Tools/Global.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Math/Eigen.h"
-#include "Platform/BHAssert.h"
 #include <limits>
 #include <algorithm>
 
 FieldDimensions GameController::fieldDimensions;
 Pose2f GameController::lastBallContactPose;
 
-// move to header when MSC supports constexpr
 const float GameController::footLength = 120.f;
 const float GameController::safeDistance = 150.f;
 const float GameController::dropHeight = 350.f;
 
-GameController::GameController() :
-timeWhenHalfStarted(0),
-timeOfLastDropIn(0),
-timeWhenLastRobotMoved(0),
-timeWhenStateBegan(0),
-automatic(true)
+GameController::GameController()
 {
   gameInfo.gameType = GAME_ROUNDROBIN;
   gameInfo.playersPerTeam = numOfRobots / 2;
@@ -66,7 +60,7 @@ bool GameController::handleGlobalCommand(const std::string& command)
     for(int i = 0; i < numOfRobots; ++i)
       if(robots[i].info.penalty)
         handleRobotCommand(i, "none");
-    timeWhenStateBegan = SystemCall::getCurrentSystemTime();
+    timeWhenStateBegan = Time::getCurrentSystemTime();
     return true;
   }
   else if(command == "set")
@@ -84,19 +78,15 @@ bool GameController::handleGlobalCommand(const std::string& command)
       executePlacement();
     }
 
-    timeWhenStateBegan = SystemCall::getCurrentSystemTime();
-    
-    if(Global::getSettings().isCornerChallenge)
-      SimulatedRobot::moveBall(Vector3f(-4500.f, -3000.f, 50.f), true);
-    else
-      SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
+    timeWhenStateBegan = Time::getCurrentSystemTime();
+    SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
     return true;
   }
   else if(command == "playing")
   {
     gameInfo.state = STATE_PLAYING;
     if(gameInfo.gameType == GAME_PLAYOFF || !timeWhenHalfStarted)
-      timeWhenHalfStarted = SystemCall::getCurrentSystemTime() - (durationOfHalf - gameInfo.secsRemaining) * 1000;
+      timeWhenHalfStarted = Time::getCurrentSystemTime() - (durationOfHalf - gameInfo.secsRemaining) * 1000;
     return true;
   }
   else if(command == "finished")
@@ -117,13 +107,13 @@ bool GameController::handleGlobalCommand(const std::string& command)
   else if(command == "outByBlue")
   {
     gameInfo.dropInTeam = 1;
-    timeOfLastDropIn = SystemCall::getCurrentSystemTime();
+    timeOfLastDropIn = Time::getCurrentSystemTime();
     return true;
   }
   else if(command == "outByRed")
   {
     gameInfo.dropInTeam = 2;
-    timeOfLastDropIn = SystemCall::getCurrentSystemTime();
+    timeOfLastDropIn = Time::getCurrentSystemTime();
     return true;
   }
   else if(command == "gamePlayoff")
@@ -156,15 +146,15 @@ bool GameController::handleRobotCommand(int robot, const std::string& command)
 {
   Robot& r = robots[robot];
   RoboCup::RobotInfo& tr = teamInfos[robot * 2 / numOfRobots].players[robot % (numOfRobots / 2)];
-  for(int i = 0; i < numOfPenalties; ++i)
-    if(command == getName((Penalty) i))
+  FOREACH_ENUM(Penalty, i)
+    if(command == getName(i))
     {
-      r.info.penalty = i == manual ? PENALTY_MANUAL : (uint8_t) i;
+      r.info.penalty = i == manual ? PENALTY_MANUAL : (uint8_t)i;
       tr.penalty = r.info.penalty;
       tr.secsTillUnpenalised = 45;
       if(i)
       {
-        r.timeWhenPenalized = SystemCall::getCurrentSystemTime();
+        r.timeWhenPenalized = Time::getCurrentSystemTime();
         if(automatic)
           placeForPenalty(robot, fieldDimensions.xPosOpponentPenaltyMark,
                           fieldDimensions.yPosRightFieldBorder + 100.f, -pi_2);
@@ -199,8 +189,7 @@ void GameController::placeForPenalty(int robot, float x, float y, float rotation
   for(;;)
   {
     int j = 0;
-    while(j < numOfRobots &&
-      (j == robot || !robots[j].simulatedRobot || (robots[j].lastPose.translation - newPos).norm() >= 300))
+    while(j < numOfRobots && (j == robot || !robots[j].simulatedRobot || (robots[j].lastPose.translation - newPos).norm() >= 300))
       ++j;
     if(j == numOfRobots)
     {
@@ -221,13 +210,13 @@ bool GameController::inOwnPenaltyArea(int robot) const
     return false;
   else if(robot < numOfRobots / 2)
     return r.lastPose.translation.x() >= fieldDimensions.xPosOpponentPenaltyArea &&
-            (r.lastPose.translation.x() <= fieldDimensions.xPosOpponentGroundline ||
+           (r.lastPose.translation.x() <= fieldDimensions.xPosOpponentGroundline ||
             (r.lastPose.translation.x() <= fieldDimensions.xPosOpponentGoal &&
              r.lastPose.translation.y() >= fieldDimensions.yPosRightGoal &&
              r.lastPose.translation.y() <= fieldDimensions.yPosLeftGoal));
   else
     return r.lastPose.translation.x() <= fieldDimensions.xPosOwnPenaltyArea &&
-            (r.lastPose.translation.x() >= fieldDimensions.xPosOwnGroundline ||
+           (r.lastPose.translation.x() >= fieldDimensions.xPosOwnGroundline ||
             (r.lastPose.translation.x() >= fieldDimensions.xPosOwnGoal &&
              r.lastPose.translation.y() >= fieldDimensions.yPosRightGoal &&
              r.lastPose.translation.y() <= fieldDimensions.yPosLeftGoal));
@@ -236,12 +225,13 @@ bool GameController::inOwnPenaltyArea(int robot) const
 void GameController::placeGoalie(int robot)
 {
   Robot& r = robots[robot];
-  r.manuallyPlaced = r.simulatedRobot && (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-                                          r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-                                          (robot < numOfRobots / 2 &&  (r.lastPose.translation.x() < footLength ||
-                                                                        r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-                                          (robot >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                                                        r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+  r.manuallyPlaced = r.simulatedRobot &&
+    (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+     r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+     (robot < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                                  r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+     (robot >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                                   r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
   if(r.manuallyPlaced)
     r.lastPose = robot < numOfRobots / 2 ? Pose2f(-pi, fieldDimensions.xPosOpponentGroundline - safeDistance, 0)
                                          : Pose2f(0, fieldDimensions.xPosOwnGroundline + safeDistance, 0);
@@ -302,12 +292,12 @@ void GameController::placeOffensivePlayers(int minRobot)
   {
     Robot& r = robots[i];
     r.manuallyPlaced = r.simulatedRobot &&
-                       (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-                        r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-                        (i < numOfRobots / 2 &&  (r.lastPose.translation.x() < footLength ||
-                                                  r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-                        (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                                  r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+      (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+       r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+       (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                                r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+       (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                                 r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
     if(r.manuallyPlaced)
       placeFromSet(i, minRobot, poses[i < numOfRobots / 2 ? 1 : 0]);
   }
@@ -338,13 +328,13 @@ void GameController::placeDefensivePlayers(int minRobot)
   {
     Robot& r = robots[i];
     r.manuallyPlaced = r.simulatedRobot &&
-                       (r.lastPose.translation.norm() < fieldDimensions.centerCircleRadius + footLength ||
-                        r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-                        r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-                        (i < numOfRobots / 2 &&  (r.lastPose.translation.x() < footLength ||
-                                                  r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-                        (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                                  r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+      (r.lastPose.translation.norm() < fieldDimensions.centerCircleRadius + footLength ||
+       r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+       r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+       (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                                r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+       (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                                 r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
     if(r.manuallyPlaced)
       placeFromSet(i, minRobot, poses[i < numOfRobots / 2 ? 1 : 0]);
   }
@@ -390,7 +380,7 @@ void GameController::executePlacement()
     const Robot& r = robots[i];
     if(r.manuallyPlaced)
       r.simulatedRobot->moveRobot(Vector3f(r.lastPose.translation.x(), r.lastPose.translation.y(), dropHeight),
-                                Vector3f(0, 0, r.lastPose.rotation), true);
+                                  Vector3f(0, 0, r.lastPose.rotation), true);
   }
 }
 
@@ -401,7 +391,7 @@ void GameController::referee()
     Robot& r = robots[i];
     if(r.info.penalty)
     {
-      r.info.secsTillUnpenalised = (uint8_t) (std::max(int(45 - SystemCall::getTimeSince(r.timeWhenPenalized) / 1000), 0));
+      r.info.secsTillUnpenalised = (uint8_t)(std::max(int(45 - Time::getTimeSince(r.timeWhenPenalized) / 1000), 0));
       RoboCup::RobotInfo& tr = teamInfos[i * 2 / numOfRobots].players[i % (numOfRobots / 2)];
       tr.secsTillUnpenalised = r.info.secsTillUnpenalised;
 
@@ -426,38 +416,38 @@ void GameController::referee()
     switch(gameInfo.state)
     {
       case STATE_READY:
-        if(SystemCall::getTimeSince(timeWhenStateBegan) < 2000)
+        if(Time::getTimeSince(timeWhenStateBegan) < 2000)
           timeWhenLastRobotMoved = 0;
-        if(SystemCall::getTimeSince(timeWhenStateBegan) >= 45000 ||
-           (timeWhenLastRobotMoved && SystemCall::getTimeSince(timeWhenLastRobotMoved) > 2000))
+        if(Time::getTimeSince(timeWhenStateBegan) >= 45000 ||
+           (timeWhenLastRobotMoved && Time::getTimeSince(timeWhenLastRobotMoved) > 2000))
           handleGlobalCommand("set");
         break;
 
       case STATE_SET:
-        if(SystemCall::getTimeSince(timeWhenStateBegan) >= 5000)
+        if(Time::getTimeSince(timeWhenStateBegan) >= 5000)
           handleGlobalCommand("playing");
         break;
 
       case STATE_PLAYING:
         switch(updateBall())
         {
-          case GOAL_BY_BLUE:
+          case goalByBlue:
             ++teamInfos[TEAM_BLUE].score;
             VERIFY(handleGlobalCommand("kickOffRed"));
             VERIFY(handleGlobalCommand("ready"));
             break;
-          case GOAL_BY_RED:
+          case goalByRed:
             ++teamInfos[TEAM_RED].score;
             VERIFY(handleGlobalCommand("kickOffBlue"));
             VERIFY(handleGlobalCommand("ready"));
             break;
-          case OUT_BY_BLUE:
+          case outByBlue:
             VERIFY(handleGlobalCommand("outByBlue"));
             break;
-          case OUT_BY_RED:
+          case outByRed:
             VERIFY(handleGlobalCommand("outByRed"));
             break;
-          case NONE:
+          case notOut:
             break;
         }
     }
@@ -466,15 +456,15 @@ void GameController::referee()
 
 GameController::BallOut GameController::updateBall()
 {
-  BallOut result = NONE;
+  BallOut result = notOut;
   Vector2f ballPos;
   SimulatedRobot::getAbsoluteBallPosition(ballPos);
-  if(!fieldDimensions.isInsideField(ballPos))
+  Vector2f ballInnerEdge(ballPos.x() - sgn(ballPos.x()) * (fieldDimensions.ballRadius + fieldDimensions.fieldLinesWidth / 2.f),
+                         ballPos.y() - sgn(ballPos.y()) * (fieldDimensions.ballRadius + fieldDimensions.fieldLinesWidth / 2.f));
+  if(!fieldDimensions.isInsideField(ballInnerEdge))
   {
-    if(fabs(ballPos.y()) < fieldDimensions.yPosLeftGoal) // goal
-    {
-      result = ballPos.x() > fieldDimensions.xPosOpponentGroundline ? GOAL_BY_RED : GOAL_BY_BLUE;
-    }
+    if(std::abs(ballPos.y()) < fieldDimensions.yPosLeftGoal) // goal
+      result = ballPos.x() > 0 ? goalByRed : goalByBlue;
     else
     {
       float x;
@@ -483,7 +473,7 @@ GameController::BallOut GameController::updateBall()
       else // 1m behind where ball went out
         x = (Pose2f(lastBallContactPose.rotation, ballPos) + Pose2f(-1000, 0)).translation.x();
 
-      if(fabs(ballPos.x()) > fieldDimensions.xPosOpponentGroundline && (Pose2f(x, 0) - Pose2f(lastBallContactPose.rotation)).translation.x() > 0)
+      if(std::abs(ballPos.x()) > fieldDimensions.xPosOpponentGroundline && (Pose2f(x, 0) - Pose2f(lastBallContactPose.rotation)).translation.x() > 0)
         x = 0; // center line
       else if(x < fieldDimensions.xPosOwnDropInLine)
         x = fieldDimensions.xPosOwnDropInLine; // clip
@@ -497,7 +487,7 @@ GameController::BallOut GameController::updateBall()
         ballPos.y() = fieldDimensions.yPosLeftDropInLine; // left throw-in line
 
       SimulatedRobot::moveBall(Vector3f(ballPos.x(), ballPos.y(), 100.f), true);
-      result = lastBallContactPose.rotation == 0 ? OUT_BY_RED : OUT_BY_BLUE;
+      result = lastBallContactPose.rotation == 0 ? outByRed : outByBlue;
     }
   }
   return result;
@@ -512,12 +502,12 @@ void GameController::writeGameInfo(Out& stream)
 {
   SYNC;
   if(timeOfLastDropIn)
-    gameInfo.dropInTime = (unsigned short) (SystemCall::getTimeSince(timeOfLastDropIn) / 1000);
+    gameInfo.dropInTime = (unsigned short)(Time::getTimeSince(timeOfLastDropIn) / 1000);
   else
     gameInfo.dropInTime = -1;
   if(gameInfo.state == STATE_PLAYING || (gameInfo.gameType != GAME_PLAYOFF && timeWhenHalfStarted))
-    gameInfo.secsRemaining = (uint16_t) (durationOfHalf - SystemCall::getTimeSince(timeWhenHalfStarted) / 1000);
-  gameInfo.timeLastPackageReceived = SystemCall::getCurrentSystemTime();
+    gameInfo.secsRemaining = (uint16_t)(durationOfHalf - Time::getTimeSince(timeWhenHalfStarted) / 1000);
+  gameInfo.timeLastPackageReceived = Time::getCurrentSystemTime();
   stream << gameInfo;
 }
 
@@ -545,7 +535,7 @@ void GameController::writeRobotInfo(int robot, Out& stream)
   if((pose.translation - r.lastPose.translation).norm() > 5 ||
      Angle::normalize(pose.rotation - r.lastPose.rotation) > 0.05)
   {
-    timeWhenLastRobotMoved = SystemCall::getCurrentSystemTime();
+    timeWhenLastRobotMoved = Time::getCurrentSystemTime();
     r.lastPose = pose;
   }
   stream << r.info;
@@ -571,6 +561,6 @@ void GameController::addCompletion(std::set<std::string>& completion) const
   const int num = sizeof(commands) / sizeof(commands[0]);
   for(int i = 0; i < num; ++i)
     completion.insert(std::string("gc ") + commands[i]);
-  for(int i = 0; i < numOfPenalties; ++i)
-    completion.insert(std::string("pr ") + getName((Penalty) i));
+  FOREACH_ENUM(Penalty, i)
+    completion.insert(std::string("pr ") + getName(i));
 }

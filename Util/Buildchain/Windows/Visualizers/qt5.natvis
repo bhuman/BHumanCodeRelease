@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+    <Type Name="QString">
+        <DisplayString>{((reinterpret_cast&lt;unsigned short*&gt;(d)) + d->offset / 2),sub}</DisplayString>
+        <StringView>((reinterpret_cast&lt;unsigned short*&gt;(d)) + d->offset / 2),sub</StringView>
+        <Expand>
+            <Item Name="[size]">d-&gt;size</Item>
+            <Item Name="[referenced]">d-&gt;ref.atomic._q_value</Item>
+            <ArrayItems>
+                <Size>d-&gt;size</Size>
+                <ValuePointer>((reinterpret_cast&lt;unsigned short*&gt;(d)) + d->offset / 2),c</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+ 
+    <Type Name="QByteArray">
+        <DisplayString>{((reinterpret_cast&lt;char*&gt;(d)) + d-&gt;offset),sb}</DisplayString>
+        <StringView>((reinterpret_cast&lt;char*&gt;(d)) + d-&gt;offset),sb</StringView>
+        <Expand>
+            <Item Name="[size]">d-&gt;size</Item>
+            <Item Name="[referenced]">d-&gt;ref.atomic._q_value</Item>
+            <ArrayItems>
+                <Size>d-&gt;size</Size>
+                <ValuePointer>((reinterpret_cast&lt;char*&gt;(d)) + d-&gt;offset),c</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+</AutoVisualizer>

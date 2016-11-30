@@ -34,7 +34,7 @@ bool LogDataProvider::handle(InMessage& message)
     message.bin >> *logStreamHandler;
     return true;
   }
-  else if(Blackboard::getInstance().exists(::getName(message.getMessageID()) + 2))
+  else if(Blackboard::getInstance().exists(::getName(message.getMessageID()) + 2)) // +2 to skip the id of the messageID enums.
   {
     if(logStreamHandler)
     {
@@ -57,6 +57,7 @@ bool LogDataProvider::handle(InMessage& message)
         out << Global::getStreamHandler();
         InBinaryMemory in(buffer);
         in >> *currentStreamHandler;
+        delete[] buffer;
 
         // Check whether the current and the logged specifications are the same.
         const char* type = ::getName(message.getMessageID()) + 2;

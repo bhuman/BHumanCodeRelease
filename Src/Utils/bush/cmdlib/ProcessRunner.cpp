@@ -10,6 +10,7 @@
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/tools/StringTools.h"
 #include <iostream>
+#include <QTextCodec>
 
 ProcessRunner::ProcessRunner(const QString& command)
   : process(0),
@@ -125,7 +126,11 @@ void ProcessRunner::updateError()
   QString errorOutput(data);
   output += errorOutput;
   if(context)
+#ifdef WINDOWS
+    context->print(toString(QTextCodec::codecForName("IBM 850")->toUnicode(data)));
+#else
     context->error(toString(errorOutput));
+#endif
 }
 
 void ProcessRunner::updateText()
@@ -134,7 +139,11 @@ void ProcessRunner::updateText()
   QString stdOutput(data);
   output += stdOutput;
   if(context)
+#ifdef WINDOWS
+    context->print(toString(QTextCodec::codecForName("IBM 850")->toUnicode(data)));
+#else
     context->print(toString(stdOutput));
+#endif
 }
 
 RemoteWriteProcessRunner::RemoteWriteProcessRunner(Context& context,

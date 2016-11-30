@@ -1,4 +1,4 @@
-/*
+/**
  * File:   ColorCalibrationView.cpp
  * @author marcel
  * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
@@ -8,14 +8,14 @@
 
 #include "ColorCalibrationView.h"
 #include "Controller/Views/ImageView.h"
-#include "Tools/ColorModelConversions.h"
+#include "Tools/ImageProcessing/ColorModelConversions.h"
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QSignalMapper>
 
 /* ------------------- View -------------------  */
-ColorCalibrationView::ColorCalibrationView(const QString& fullName, RobotConsole& console)
-  : console(console), widget(nullptr), fullName(fullName), icon(":/Icons/tag_green.png")
+ColorCalibrationView::ColorCalibrationView(const QString& fullName, RobotConsole& console) :
+  console(console), fullName(fullName), icon(":/Icons/tag_green.png")
 {}
 
 SimRobot::Widget* ColorCalibrationView::createWidget()
@@ -35,15 +35,14 @@ const QIcon* ColorCalibrationView::getIcon() const
 }
 
 /* ------------------- Widget -------------------  */
-ColorCalibrationWidget::ColorCalibrationWidget(ColorCalibrationView& colorCalibrationView)
-  : colorCalibrationView(colorCalibrationView), currentColor(ColorClasses::none), expandColorMode(false), timeStamp(0),
-    redoAction(nullptr), undoAction(nullptr)
+ColorCalibrationWidget::ColorCalibrationWidget(ColorCalibrationView& colorCalibrationView) :
+  colorCalibrationView(colorCalibrationView)
 {
   setFocusPolicy(Qt::StrongFocus);
 
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(colorCalibrationView.getFullName());
-  currentColor = (ColorClasses::Color) settings.value("CurrentColor", ColorClasses::green).toInt();
+  currentColor = (FieldColors::Color)settings.value("CurrentColor", FieldColors::green).toInt();
   settings.endGroup();
 
   // If other views are already open, use their color settings
@@ -51,21 +50,17 @@ ColorCalibrationWidget::ColorCalibrationWidget(ColorCalibrationView& colorCalibr
     if(view->widget)
       currentColor = view->widget->getDrawnColor();
 
-  hue = new HueSelector("Hue", this, 0, 255);
-  saturation = new SaturationSelector("Saturation", this, 0, 255);
-  intensity = new IntensitySelector("Intensity", this, 0, 255);
+  y = new YSelector("Y", this, 0, 255);
+  h = new HSelector("H", this, 0, 255);
+  s = new SSelector("S", this, 0, 255);
 
-  minR  = new MinRSelector("Minimum Red", this, 0, 254);
-  minB  = new MinBSelector("Minimum Blue", this, 0, 254);
-  minRB = new MinRBSelector("Minimum Red + Blue", this, 0, 508);
+  thresholdY = new ThresholdSelector("Threshold", this, 0, 255);
 
   QVBoxLayout* layout = new QVBoxLayout(this);
-  layout->addWidget(hue);
-  layout->addWidget(saturation);
-  layout->addWidget(intensity);
-  layout->addWidget(minR);
-  layout->addWidget(minB);
-  layout->addWidget(minRB);
+  layout->addWidget(y);
+  layout->addWidget(h);
+  layout->addWidget(s);
+  layout->addWidget(thresholdY);
   updateWidgets(currentColor);
   setLayout(layout);
 }
@@ -87,68 +82,39 @@ QWidget* ColorCalibrationWidget::getWidget()
 void ColorCalibrationWidget::update()
 {
   SYNC_WITH(colorCalibrationView.console);
-  if(colorCalibrationView.console.colorTableTimeStamp != timeStamp)
+  if(colorCalibrationView.console.colorCalibrationTimeStamp != timeStamp)
   {
     updateWidgets(currentColor);
-    timeStamp = colorCalibrationView.console.colorTableTimeStamp;
+    timeStamp = colorCalibrationView.console.colorCalibrationTimeStamp;
   }
 }
 
-void ColorCalibrationWidget::updateWidgets(ColorClasses::Color currentColor)
+void ColorCalibrationWidget::updateWidgets(FieldColors::Color currentColor)
 {
   this->currentColor = currentColor;
 
-  if(currentColor == ColorClasses::none)
+  if(currentColor == FieldColors::none || currentColor == FieldColors::white || currentColor == FieldColors::black)
   {
-    if(hue->isVisible())
-    {
-      minR->setVisible(false);
-      minB->setVisible(false);
-      minRB->setVisible(false);
-    }
-    else
-    {
-      hue->setVisible(false);
-      saturation->setVisible(false);
-      intensity->setVisible(false);
-    }
-
-    hue->setEnabled(false);
-    saturation->setEnabled(false);
-    intensity->setEnabled(false);
-    minR->setEnabled(false);
-    minB->setEnabled(false);
-    minRB->setEnabled(false);
-  }
-  else if(currentColor == ColorClasses::white)
-  {
-    hue->setVisible(false);
-    saturation->setVisible(false);
-    intensity->setVisible(false);
-    minR->setVisible(true);
-    minB->setVisible(true);
-    minRB->setVisible(true);
-    minR->setEnabled(true);
-    minB->setEnabled(true);
-    minRB->setEnabled(true);
-    minR->updateWidgets();
-    minB->updateWidgets();
-    minRB->updateWidgets();
+    y->setVisible(false);
+    h->setVisible(false);
+    s->setVisible(false);
+    thresholdY->setVisible(true);
+    thresholdY->setEnabled(true);
+    thresholdY->updateWidgets();
   }
   else
   {
-    minR->setVisible(false);
-    minB->setVisible(false);
-    minRB->setVisible(false);
-    hue->setVisible(true);
-    saturation->setVisible(true);
-    intensity->setVisible(true);
-    hue->setEnabled(true);
-    saturation->setEnabled(true);
-    intensity->setEnabled(true);
-    hue->updateWidgets();
-    saturation->updateWidgets();
-    intensity->updateWidgets();
+    thresholdY->setVisible(false);
+    thresholdY->setEnabled(false);
+    y->setVisible(true);
+    h->setVisible(true);
+    s->setVisible(true);
+    y->setEnabled(true);
+    h->setEnabled(true);
+    s->setEnabled(true);
+    y->updateWidgets();
+    h->updateWidgets();
+    s->updateWidgets();
   }
 }
 
@@ -178,26 +144,26 @@ QMenu* ColorCalibrationWidget::createUserMenu() const
   menu->addAction(expandColorAct);
   menu->addSeparator();
 
-  QAction* colorButtons[ColorClasses::numOfColors - 1] =
+  QAction* colorButtons[FieldColors::numOfColors] =
   {
+    new QAction(QIcon(":/Icons/orange.png"), tr("Calibrate &Saturation"), menu),
     new QAction(QIcon(":/Icons/white.png"), tr("Calibrate &White"), menu),
+    new QAction(QIcon(":/Icons/black.png"), tr("Calibrate &Black"), menu),
     new QAction(QIcon(":/Icons/green.png"), tr("Calibrate &Green"), menu),
-    new QAction(QIcon(":/Icons/blue.png"), tr("Calibrate &Blue"), menu),
-    new QAction(QIcon(":/Icons/red.png"), tr("Calibrate &Red"), menu),
-    new QAction(QIcon(":/Icons/orange.png"), tr("Calibrate &Orange"), menu),
-    new QAction(QIcon(":/Icons/black.png"), tr("Calibrate &Black"), menu)
+    new QAction(QIcon(":/Icons/ownColor.png"), tr("Calibrate &Own Color"), menu),
+    new QAction(QIcon(":/Icons/opponentColor.png"), tr("Calibrate &Opponent Color"), menu)
   };
 
   QActionGroup* colorGroup = new QActionGroup(menu);
   QSignalMapper* signalMapper = new QSignalMapper(const_cast<ColorCalibrationWidget*>(this));
   connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(colorAct(int)));
-  for(int i = 0; i < ColorClasses::numOfColors - 1; ++i)
+  for(int i = 0; i < FieldColors::numOfColors; ++i)
   {
-    signalMapper->setMapping(colorButtons[i], i + 1);
+    signalMapper->setMapping(colorButtons[i], i);
     connect(colorButtons[i], SIGNAL(triggered()), signalMapper, SLOT(map()));
     colorGroup->addAction(colorButtons[i]);
     colorButtons[i]->setCheckable(true);
-    colorButtons[i]->setChecked(currentColor == i + 1);
+    colorButtons[i]->setChecked(currentColor == i);
     colorButtons[i]->setEnabled(true);
     menu->addAction(colorButtons[i]);
   }
@@ -210,14 +176,13 @@ void ColorCalibrationWidget::saveColorCalibration()
   colorCalibrationView.console.saveColorCalibration();
   if(colorCalibrationView.console.mode == SystemCall::Mode::remoteRobot)
   {
-    colorCalibrationView.console.handleConsole("save representation:UpperCameraSettings");
-    colorCalibrationView.console.handleConsole("save representation:LowerCameraSettings");
+    colorCalibrationView.console.handleConsole("save representation:CameraSettings");
   }
 }
 
 void ColorCalibrationWidget::colorAct(int color)
 {
-  updateWidgets((ColorClasses::Color) color);
+  updateWidgets((FieldColors::Color) color);
   currentCalibrationChanged();
 
   for(auto& view : colorCalibrationView.console.actualImageViews)
@@ -230,15 +195,15 @@ void ColorCalibrationWidget::setUndoRedo()
   bool enableUndo;
   bool enableRedo;
 
-  if(currentColor == ColorClasses::white)
+  if(currentColor == FieldColors::none || currentColor == FieldColors::white || currentColor == FieldColors::black)
   {
-    enableUndo = historyWhite.undoable();
-    enableRedo = historyWhite.redoable();
+    enableUndo = historyNonColor[currentColor].undoable();
+    enableRedo = historyNonColor[currentColor].redoable();
   }
   else
   {
-    enableUndo = historyColors[currentColor].undoable();
-    enableRedo = historyColors[currentColor].redoable();
+    enableUndo = historyColors[currentColor - FieldColors::numOfNonColors].undoable();
+    enableRedo = historyColors[currentColor - FieldColors::numOfNonColors].redoable();
   }
 
   if(undoAction && redoAction)
@@ -254,10 +219,14 @@ void ColorCalibrationWidget::setUndoRedo()
 
 void ColorCalibrationWidget::currentCalibrationChanged()
 {
-  if(currentColor == ColorClasses::white)
-    historyWhite.add(colorCalibrationView.console.colorCalibration.white);
+  if(currentColor == FieldColors::none)
+    historyNonColor[FieldColors::none].add(colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  else if(currentColor == FieldColors::white)
+    historyNonColor[FieldColors::white].add(colorCalibrationView.console.colorCalibration.minYWhite);
+  else if(currentColor == FieldColors::black)
+    historyNonColor[FieldColors::black].add(colorCalibrationView.console.colorCalibration.maxYBlack);
   else
-    historyColors[currentColor].add(colorCalibrationView.console.colorCalibration.ranges[currentColor - 2]);
+    historyColors[currentColor - FieldColors::numOfNonColors].add(colorCalibrationView.console.colorCalibration[currentColor]);
 
   updateWidgets(currentColor);
   setUndoRedo();
@@ -265,10 +234,14 @@ void ColorCalibrationWidget::currentCalibrationChanged()
 
 void ColorCalibrationWidget::undoColorCalibration()
 {
-  if(currentColor == ColorClasses::white)
-    historyWhite.undo(colorCalibrationView.console.colorCalibration.white);
+  if(currentColor == FieldColors::none)
+    historyNonColor[FieldColors::none].undo(colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  else if(currentColor == FieldColors::white)
+    historyNonColor[FieldColors::white].undo(colorCalibrationView.console.colorCalibration.minYWhite);
+  else if(currentColor == FieldColors::black)
+    historyNonColor[FieldColors::black].undo(colorCalibrationView.console.colorCalibration.maxYBlack);
   else
-    historyColors[currentColor].undo(colorCalibrationView.console.colorCalibration.ranges[currentColor - 2]);
+    historyColors[currentColor - FieldColors::numOfNonColors].undo(colorCalibrationView.console.colorCalibration[currentColor]);
 
   updateWidgets(currentColor);
   setUndoRedo();
@@ -276,10 +249,14 @@ void ColorCalibrationWidget::undoColorCalibration()
 
 void ColorCalibrationWidget::redoColorCalibration()
 {
-  if(currentColor == ColorClasses::white)
-    historyWhite.redo(colorCalibrationView.console.colorCalibration.white);
+  if(currentColor == FieldColors::none)
+    historyNonColor[FieldColors::none].redo(colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  else if(currentColor == FieldColors::white)
+    historyNonColor[FieldColors::white].redo(colorCalibrationView.console.colorCalibration.minYWhite);
+  if(currentColor == FieldColors::black)
+    historyNonColor[FieldColors::black].redo(colorCalibrationView.console.colorCalibration.maxYBlack);
   else
-    historyColors[currentColor].redo(colorCalibrationView.console.colorCalibration.ranges[currentColor - 2]);
+    historyColors[currentColor - FieldColors::numOfNonColors].redo(colorCalibrationView.console.colorCalibration[currentColor]);
 
   updateWidgets(currentColor);
   setUndoRedo();
@@ -290,110 +267,14 @@ void ColorCalibrationWidget::expandColorAct()
   expandColorMode ^= true;
 }
 
-void ColorCalibrationWidget::expandCurrentColor(const Image::Pixel& pixel, const bool reduce)
+void ColorCalibrationWidget::expandCurrentColor(const PixelTypes::YUYVPixel& pixel, const bool reduce)
 {
   bool changed = false;
 
-  if(currentColor == ColorClasses::white)
-  {
-    unsigned char r, g, b;
-    ColorModelConversions::fromYCbCrToRGB(pixel.y, pixel.cb, pixel.cr, r, g, b);
-
-    int& minR = colorCalibrationView.console.colorCalibration.white.minR;
-    int& minB = colorCalibrationView.console.colorCalibration.white.minB;
-    int& minRB = colorCalibrationView.console.colorCalibration.white.minRB;
-
-    if(reduce)
-    {
-      int rDist = 1000, bDist = 1000, rbDist = 1000;
-      if(r >= minR)
-        rDist = r - minR;
-      if(b >= minB)
-        bDist = b - minB;
-      if(r + b >= minRB)
-        rbDist = (r + b) - minRB;
-
-      changed = rDist != 1000 || bDist != 1000 || rbDist != 1000;
-
-      if(changed)
-      {
-        if(rDist < bDist && rDist < rbDist)
-          minR = std::min(255, r + 1);
-        else if(bDist < rDist && bDist < rbDist)
-          minB = std::min(255, b + 1);
-        else if(rbDist < rDist && rbDist < bDist)
-          minRB = std::min(255, (r + b) + 1);
-      }
-    }
-    else
-    {
-      if(r < minR)
-      {
-        minR = r;
-        changed = true;
-      }
-      if(b < minB)
-      {
-        minB = b;
-        changed = true;
-      }
-      if(r + b < minRB)
-      {
-        minRB = r + b;
-        changed = true;
-      }
-    }
-  }
-  else
-  {
-    unsigned char h, s, i;
-    ColorModelConversions::fromYCbCrToHSI(pixel.y, pixel.cb, pixel.cr, h, s, i);
-    ColorCalibration::HSIRanges& ranges = colorCalibrationView.console.colorCalibration.ranges[currentColor - 2];
-
-    if(reduce)
-    {
-      int hMin = ranges.hue.min;
-      int hMax = ranges.hue.max;
-      int sMin = ranges.saturation.min;
-      int sMax = ranges.saturation.max;
-      int iMin = ranges.intensity.min;
-      int iMax = ranges.intensity.max;
-
-      const bool hChanged = reduceColor(h, hMin, hMax, false);
-      const bool sChanged = reduceColor(s, sMin, sMax, true);
-      const bool iChanged = reduceColor(i, iMin, iMax, true);
-
-      changed = hChanged || sChanged || iChanged;
-
-      if(changed)
-      {
-        const int hMinChange = hMin != ranges.hue.min ? calcColorValueDistance(hMin, ranges.hue.min) : 1000;
-        const int hMaxChange = hMax != ranges.hue.max ? calcColorValueDistance(hMax, ranges.hue.max) : 1000;
-        const int sMinChange = sChanged ? calcColorValueDistance(sMin, ranges.saturation.min) : 1000;
-        const int iMinChange = iChanged ? calcColorValueDistance(iMin, ranges.intensity.min) : 1000;
-
-        if(hMinChange <= hMaxChange || hMinChange <= sMinChange || hMinChange <= iMinChange)
-          ranges.hue.min = hMin;
-        else if(hMaxChange <= hMinChange || hMaxChange <= sMinChange || hMaxChange <= iMinChange)
-          ranges.hue.max = hMax;
-        else if(sMinChange <= hMinChange || sMinChange <= hMaxChange || sMinChange <= iMinChange)
-          ranges.saturation.min = sMin;
-        else if(iMinChange <= hMinChange || iMinChange <= hMaxChange || iMinChange <= sMinChange)
-          ranges.intensity.min = iMin;
-      }
-    }
-    else
-    {
-      changed |= expandColor(h, ranges.hue.min, ranges.hue.max, false);
-      changed |= expandColor(s, ranges.saturation.min, ranges.saturation.max, true);
-      changed |= expandColor(i, ranges.intensity.min, ranges.intensity.max, true);
-    }
-  }
 
   if(changed)
     currentCalibrationChanged();
 }
-
 
 bool ColorCalibrationWidget::reduceColor(const unsigned char value, int& min, int& max, const bool boolChangeOnlyMin)
 {

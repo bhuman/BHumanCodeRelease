@@ -11,7 +11,7 @@ class Initializer
   QApplication* app;
   MainWindow* mainWindow;
 public:
-  Initializer(int &argc, char** argv);
+  Initializer(int& argc, char** argv);
   ~Initializer();
   int start();
   void log(LogLevel logLevel, const std::string& message);

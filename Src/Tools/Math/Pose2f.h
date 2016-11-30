@@ -19,21 +19,19 @@ STREAMABLE(Pose2f,
   Pose2f& operator=(const Pose2f& other) = default;
 
   Vector2f operator*(const Vector2f& other) const;
-  Pose2f operator*(const Pose2f& other) const;
 
   /**
-   * Concatenation of this pose with another pose.
-   * @param other The other pose that will be concatenated to this one.
-   * @return A reference to this pose after concatenation.
+   * Concatenation of this pose with another. The resulting rotation ist not normalized!
+   * Use operator+ / operator+= for normalized rotations.
    */
-  Pose2f& operator+=(const Pose2f& other);
+  Pose2f operator*(const Pose2f& other) const;
+  Pose2f& operator*=(const Pose2f& other);
 
   /**
-   * A concatenation of this pose and another pose.
-   * @param other The other pose that will be concatenated to this one.
-   * @return The resulting pose.
+   * Concatenation of this pose with another pose. The resulting rotation ist not normalized!
    */
   Pose2f operator+(const Pose2f& other) const;
+  Pose2f& operator+=(const Pose2f& other);
 
   /**
    * Difference of this pose relative to another pose. So if A+B=C is the addition/concatenation, this calculates C-A=B.
@@ -66,17 +64,18 @@ STREAMABLE(Pose2f,
    */
   bool operator!=(const Pose2f& other) const;
 
-  Pose2f& conc(const Pose2f& other);
   Pose2f& translate(const Vector2f& trans);
   Pose2f& translate(const float x, const float y);
   Pose2f& rotate(const Angle& rot);
 
-  /** Invets this pose and returns reference to this. */
+  /** Inverts this pose and returns reference to this. */
   Pose2f& invert();
   /** Calulates the inverse transformation of this pose */
   Pose2f inverse() const;
 
   Pose2f dotMirror() const;
+
+  bool isFinite() const;
 
   /**
    * The function creates a random pose.
@@ -123,10 +122,10 @@ inline Vector2f Pose2f::operator*(const Vector2f& other) const
 
 inline Pose2f Pose2f::operator*(const Pose2f& other) const
 {
-  return Pose2f(Angle(rotation + other.rotation).normalize(), *this * other.translation);
+  return Pose2f(*this) *= other;
 }
 
-inline Pose2f& Pose2f::operator+=(const Pose2f& other)
+inline Pose2f& Pose2f::operator*=(const Pose2f& other)
 {
   translation = *this * other.translation;
   rotation += other.rotation;
@@ -137,6 +136,14 @@ inline Pose2f& Pose2f::operator+=(const Pose2f& other)
 inline Pose2f Pose2f::operator+(const Pose2f& other) const
 {
   return Pose2f(*this) += other;
+}
+
+inline Pose2f& Pose2f::operator+=(const Pose2f& other)
+{
+  translation = *this * other.translation;
+  rotation += other.rotation;
+  rotation.normalize();
+  return *this;
 }
 
 inline Pose2f& Pose2f::operator-=(const Pose2f& other)
@@ -164,14 +171,6 @@ inline bool Pose2f::operator==(const Pose2f& other) const
 inline bool Pose2f::operator!=(const Pose2f& other) const
 {
   return !(Pose2f(*this) == other);
-}
-
-inline Pose2f& Pose2f::conc(const Pose2f& other)
-{
-  translation = *this * other.translation;
-  rotation += other.rotation;
-  rotation.normalize();
-  return *this;
 }
 
 inline Pose2f& Pose2f::translate(const Vector2f& trans)
@@ -210,11 +209,12 @@ inline Pose2f Pose2f::dotMirror() const
   return Pose2f(Angle::normalize(rotation + pi), -translation);
 }
 
+inline bool Pose2f::isFinite() const
+{
+  return std::isfinite(translation.x()) && std::isfinite(translation.y()) && std::isfinite(rotation);
+}
+
 inline Pose2f Pose2f::random(const Rangef& angle, const Rangef& x, const Rangef& y)
 {
-  // angle should even work in wrap around case!
-  return Pose2f(float(::randomFloat() * (angle.max - angle.min) + angle.min),
-                Vector2f(float(::randomFloat() * (x.max - x.min) + x.min),
-                         float(::randomFloat() * (y.max - y.min) + y.min))
-               );
+  return Pose2f(Random::uniform(angle.min, angle.max), Vector2f(Random::uniform(x.min, x.max), Random::uniform(y.min, y.max)));
 }

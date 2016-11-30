@@ -1,8 +1,8 @@
 /**
-* \file Directory.cpp
-* Implements a class for accessing directories.
-* \author Colin Graf
-*/
+ * \file Directory.cpp
+ * Implements a class for accessing directories.
+ * \author Colin Graf
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>

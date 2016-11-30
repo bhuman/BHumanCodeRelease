@@ -1,7 +1,7 @@
 Build
-Make/OSX/SimRobot.xcodeproj/project.xcworkspace
-Make/OSX/SimRobot.xcodeproj/xcuserdata
-Util/qt/OSX/bin/qt.conf
+Make/macOS/SimRobot.xcodeproj/project.xcworkspace
+Make/macOS/SimRobot.xcodeproj/xcuserdata
+Util/qt/macOS/bin/qt.conf
 Make/VS2015/*.filters
 Make/VS2015/*.*sdf
 Make/VS2015/*.sln

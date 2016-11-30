@@ -1,14 +1,14 @@
 /**
-* @file Controller/Representations/ModuleInfo.cpp
-*
-* Implementation of class ModuleInfo
-*
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-*/
+ * @file Controller/Representations/ModuleInfo.cpp
+ *
+ * Implementation of class ModuleInfo
+ *
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ */
 
 #include "ModuleInfo.h"
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include <algorithm>
 
 void ModuleInfo::clear()
@@ -52,7 +52,7 @@ bool ModuleInfo::handleMessage(InMessage& message, char processIdentifier)
       modules.insert(k, module);
     }
     message.bin >> config;
-    timeStamp = SystemCall::getCurrentSystemTime();
+    timeStamp = Time::getCurrentSystemTime();
     return true;
   }
   else

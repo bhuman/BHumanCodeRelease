@@ -4,15 +4,14 @@
  * @author Colin Graf
  */
 
-#include "BHAssert.h"
-#include "Semaphore.h"
+#include "Platform/BHAssert.h"
+#include "Platform/Semaphore.h"
 
-#define NOMINMAX
-#include <windows.h>
+#include <Windows.h>
 
 #include <limits>
 
-Semaphore::Semaphore(unsigned int value)
+Semaphore::Semaphore(unsigned value)
 {
   VERIFY(handle = CreateSemaphore(nullptr, value, std::numeric_limits<long>::max(), nullptr));
 }
@@ -32,7 +31,7 @@ bool Semaphore::wait()
   return WaitForSingleObject((HANDLE)handle, INFINITE) == WAIT_OBJECT_0;
 }
 
-bool Semaphore::wait(unsigned int timeout)
+bool Semaphore::wait(unsigned timeout)
 {
   return WaitForSingleObject((HANDLE)handle, timeout) == WAIT_OBJECT_0;
 }

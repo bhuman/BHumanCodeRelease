@@ -6,8 +6,6 @@
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 
-#include "Receiver.h"
-#include "PlatformProcess.h"
 #include "ProcessFramework.h"
 
 ReceiverList::ReceiverList(PlatformProcess* p, const std::string& receiverName) :

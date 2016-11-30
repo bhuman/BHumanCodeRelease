@@ -5,9 +5,6 @@
 
 MAKE_MODULE(ManualHeadMotionProvider, behaviorControl)
 
-ManualHeadMotionProvider::ManualHeadMotionProvider() : currentX(0), currentY(0)
-{}
-
 void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
 {
   bool parametersChanged = xImg != currentX || yImg != currentY;
@@ -23,7 +20,6 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
       headMotionRequest.target.y() = targetOnField.y();
       headMotionRequest.target.z() = 0;
       headMotionRequest.mode = HeadMotionRequest::targetOnGroundMode;
-      headMotionRequest.watchField = false;
 
       //Use the camera that the user is seeing right now.
       switch(camera)

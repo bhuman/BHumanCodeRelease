@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>templateclass</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>TopLevel</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>template &lt;&lt;#template parameters#&gt;&gt; class &lt;#class name#&gt;
+{
+private:
+  &lt;#instance variables#&gt;
+
+public:
+  &lt;#member functions#&gt;
+};</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>8F270BF8-4707-48FC-B9D8-45E25E692DE1</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Used to define a new class template.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>C++ Class Template</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>2</integer>
+</dict>
+</plist>

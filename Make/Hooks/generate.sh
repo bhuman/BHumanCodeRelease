@@ -15,7 +15,7 @@ scriptPath="`dirname "$0"`"
 execute() {
   if [ -x "$1" ]
   then
-    $1
+    $1 >/dev/null
   fi
 }
 
@@ -28,7 +28,7 @@ then
                      fi
     ;;
 #    linux*)          execute "${scriptPath}/../../Make/Linux/generate";;
-    darwin*)         execute "${scriptPath}/../../Make/OSX/generate";;
+    darwin*)         execute "${scriptPath}/../../Make/macOS/generate";;
     *)               echo "WARNING: Unknown platform. Project files not generated.";;
   esac
 fi

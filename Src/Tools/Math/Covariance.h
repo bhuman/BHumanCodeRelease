@@ -94,4 +94,39 @@ namespace Covariance
     const Vector2f diff = a - b;
     return diff.dot(c.inverse() * diff);
   }
+
+  /**
+   * Rotate the covariance matrix with given angle.
+   * @param covariance The covariance matrix that will be rotated.
+   * @param angle The angle of rotation.
+   */
+  inline Matrix2f rotateCovarianceMatrix(const Matrix2f& covariance, float angle)
+  {
+    const float cosine = std::cos(angle);
+    const float sine = std::sin(angle);
+    const Matrix2f rotationMatrix = (Matrix2f() << cosine, -sine, sine, cosine).finished();
+    return (rotationMatrix * covariance) * rotationMatrix.transpose();
+  }
+  
+  /**
+   * In some covariance matrices, m(0, 1) is not equal to m(1, 0). This is probably a result
+   * of the low precision of "float". This method equals both values.
+   * @param m A reference to a matrix that will be changed by this method
+   */
+  inline void fixCovariance(Matrix2f& m)
+  {
+    m(0, 1) = m(1, 0) = (m(0, 1) + m(1, 0)) * .5f;
+  }
+  
+  /**
+   * In some covariance matrices, m(0, 1) is not equal to m(1, 0) and so on. This is probably a result
+   * of the low precision of "float". This method equals both values.
+   * @param m A reference to a matrix that will be changed by this method
+   */
+  inline void fixCovariance(Matrix3f& m)
+  {
+    m(0, 1) = m(1, 0) = (m(0, 1) + m(1, 0)) * .5f;
+    m(1, 2) = m(2, 1) = (m(1, 2) + m(2, 1)) * .5f;
+    m(0, 2) = m(2, 0) = (m(0, 2) + m(2, 0)) * .5f;
+  }
 };

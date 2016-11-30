@@ -1,20 +1,21 @@
-vi image jpeg lower gain 1.0
-vi image jpeg upper upper gain 1.0
-vi image jpeg segmented segmentedLower
-vi image jpeg segmented upper segmentedUpper
+# Normal views
+vi image jpeg lower
+vi image jpeg upper
 
-vid lower representation:LinePercept:Image
-vid lower representation:BallPercept:Image
-vid lower representation:GoalPercept:Image
-vid lower representation:PlayersPercept:Image
-vid lower representation:BodyContour
+vid all representation:FieldLines:image
+vid all representation:BallPercept:image
+vid all representation:PenaltyMarkPercept:image
+vid all representation:PlayersPercept:image
+vid all representation:BodyContour
+vid all representation:BallSpots:image
+vid all module:CNSBallPerceptor:candidates
+vid all module:CNSBallPerceptor:samplePoints
+vid all horizon
 
-vid upper representation:LinePercept:Image
-vid upper representation:BallPercept:Image
-vid upper representation:GoalPercept:Image
-vid upper representation:PlayersPercept:Image
-vid upper representation:BodyContour
+# Segmented views
+vi image jpeg segmented lower
+vi image jpeg segmented upper
 
 # 3-D image views
 v3 image jpeg lower
-v3 image jpeg upper upper
+v3 image jpeg upper

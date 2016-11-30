@@ -10,25 +10,14 @@
 void LowFrameRateImageProvider::update(LowFrameRateImage& lowFrameRateImage)
 {
   lowFrameRateImage.imageUpdated = false;
-
-  if(perceptsOnly)
-  {
-    if(logGoalPercept && theGoalPercept.goalPosts.size() > 0)
-    {
-      logCurrentImage(lowFrameRateImage);
-      storeNextImage = false;
-    }
-  }
-  else //let logCurrentImage decided whether it wants to log or not
-  {
-    logCurrentImage(lowFrameRateImage);
-  }
+  logCurrentImage(lowFrameRateImage);
 }
 
 void LowFrameRateImageProvider::logCurrentImage(LowFrameRateImage& lowFrameRateImage)
 {
-  if(theFrameInfo.getTimeSince(lastUpdateTime) >= 1000 / frameRate)
-  { // Generate new image
+  if(theFrameInfo.getTimeSince(lastUpdateTime) >= 60000 / frameRate)
+  {
+    // Generate new image
     lastUpdateTime = theFrameInfo.time;
     updateImage(lowFrameRateImage);
     storeNextImage = true; // Store next image as well to make sure to get both upper and lower cam images
@@ -39,6 +28,7 @@ void LowFrameRateImageProvider::logCurrentImage(LowFrameRateImage& lowFrameRateI
     storeNextImage = false;
   }
 }
+
 void LowFrameRateImageProvider::updateImage(LowFrameRateImage& lfrImage) const
 {
   lfrImage.image.setImage(const_cast<Image::Pixel*>(theImage[0]));

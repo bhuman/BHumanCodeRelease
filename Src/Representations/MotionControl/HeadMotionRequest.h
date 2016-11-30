@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
@@ -33,11 +33,11 @@ STREAMABLE(HeadMotionRequest,
 
   (Mode)(panTiltMode) mode, /**< The active head motion mode. */
   (CameraControlMode)(lowerCamera) cameraControlMode, /**< The active camera control mode. */
-  (bool)(false) watchField, /**< True, if as much as possible of the field should be watched instead of centering the target in the image. */
   (Angle)(0) pan,           /**< Head pan target angle in radians. */
   (Angle)(0) tilt,          /**< Head tilt target angle in radians. */
   (Angle)(1) speed,         /**< Maximum joint speed to reach target angles in radians/s. */
   (Vector3f) target,        /**< Look at target relative to the robot. */
+  (bool)(false) stopAndGoMode, /**< The Head will slow down and stop every HeadMotionEngine.stopAndGoModeFrequenzy milliseconds */
 });
 
 STREAMABLE(TeamHeadControlState,

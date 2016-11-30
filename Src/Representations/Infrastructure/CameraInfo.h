@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
@@ -29,7 +29,7 @@ STREAMABLE(CameraInfo,
     lower,
   });
 
-  /** 
+  /**
    * Intrinsic camera parameters: axis skew is modelled as 0 (90° perfectly orthogonal XY)
    * and the same has been modeled for focal axis aspect ratio; distortion is considering
    * only 2nd and 4th order coefficients of radial model, which account for about 95% of total.

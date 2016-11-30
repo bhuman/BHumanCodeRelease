@@ -6,6 +6,7 @@
 
 #include "ModuleManager.h"
 #include "Platform/BHAssert.h"
+#include "Platform/Time.h"
 #include <algorithm>
 
 ModuleManager::Configuration::RepresentationProvider::RepresentationProvider(const std::string& representation,
@@ -133,7 +134,7 @@ bool ModuleManager::calcShared(const Configuration& config, const std::string& r
       if(!provided)
       {
         if(!silent)
-          OUTPUT_ERROR("No provider for required representation " << requirement->representation << "!" << "Required by: " <<module.module->name);
+          OUTPUT_ERROR("No provider for required representation " << requirement->representation << " required by " << module.module->name);
         return false;
       }
       else if(!providedHere && std::find(received.begin(), received.end(), std::string(requirement->representation)) == received.end())
@@ -298,12 +299,12 @@ void ModuleManager::execute()
       if(!p.moduleState->instance)
         p.moduleState->instance = p.moduleState->module->createNew(); // returns 0 if provided by "default"
 #ifdef TARGET_ROBOT
-      unsigned timeStamp = SystemCall::getCurrentSystemTime();
+      unsigned timeStamp = Time::getCurrentSystemTime();
 #endif
       if(p.moduleState->instance)
         p.update(*p.moduleState->instance);
 #ifdef TARGET_ROBOT
-      int duration = SystemCall::getTimeSince(timeStamp);
+      int duration = Time::getTimeSince(timeStamp);
       if(timeStamp > 20000 &&
          ((duration > 100 &&
            !Global::getDebugRequestTable().isActive("representation:JPEGImage") &&
@@ -316,7 +317,8 @@ void ModuleManager::execute()
   BH_TRACE;
 
   if(!timeStamp) // Configuration changed recently?
-  { // all representations must be constructed now, so we can receive data
+  {
+    // all representations must be constructed now, so we can receive data
     timeStamp = nextTimeStamp;
     toSend.clear();
     for(const auto& s : sent)

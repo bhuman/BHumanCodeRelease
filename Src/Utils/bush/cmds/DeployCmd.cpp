@@ -14,10 +14,10 @@
 
 DeployCmd DeployCmd::theDeployCmd;
 
-DeployCmd::DeployTask::DeployTask(Context &context, const QString& buildConfig, Team* team, Robot *robot)
-: RobotTask(context, robot),
-  buildConfig(buildConfig),
-  team(team)
+DeployCmd::DeployTask::DeployTask(Context& context, const QString& buildConfig, Team* team, Robot* robot)
+  : RobotTask(context, robot),
+    buildConfig(buildConfig),
+    team(team)
 {}
 
 bool DeployCmd::DeployTask::execute()
@@ -33,7 +33,14 @@ bool DeployCmd::DeployTask::execute()
   args.push_back(QString("-nr"));
   args.push_back(buildConfig);
   args.push_back(fromString(robot->getBestIP(context())));
-  args.push_back(QString("-r"));
+  if(team->getPlayersPerNumber()[team->getPlayerNumber(*robot)-1][1] == robot)
+  {
+    args.push_back(QString("-s"));
+  }
+  else
+  {
+    args.push_back(QString("-r"));
+  }
   args.push_back(QString("-n"));
   args.push_back(QString::number(team->number));
   args.push_back(QString("-o"));
@@ -48,6 +55,8 @@ bool DeployCmd::DeployTask::execute()
   args.push_back(team->wlanConfig.c_str());
   args.push_back(QString("-v"));
   args.push_back(QString::number(team->volume));
+  args.push_back(QString("-mn"));
+  args.push_back(QString::number(team->magicNumber));
 
   ProcessRunner r(context(), command, args);
   r.run();
@@ -88,7 +97,7 @@ std::vector<std::string> DeployCmd::complete(const std::string& cmdLine) const
     return getBuildConfigs(commandWithArgs[1]);
 }
 
-bool DeployCmd::preExecution(Context &context, const std::vector<std::string> &params)
+bool DeployCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   team = context.getSelectedTeam();
   if(!team)
@@ -105,7 +114,7 @@ bool DeployCmd::preExecution(Context &context, const std::vector<std::string> &p
   return context.execute("compile " + toString(buildConfig));
 }
 
-Task* DeployCmd::perRobotExecution(Context &context, Robot &robot)
+Task* DeployCmd::perRobotExecution(Context& context, Robot& robot)
 {
   return new DeployTask(context, buildConfig, team, &robot);
 }

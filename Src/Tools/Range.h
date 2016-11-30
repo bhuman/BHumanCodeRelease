@@ -35,6 +35,12 @@ template<typename T> STREAMABLE(Range,
    */
   Range(T min, T max);
 
+  /** A range between 0 and 1. */
+  static const Range<T>& ZeroOneRange();
+
+  /** A range between -1 and 1. */
+  static const Range<T>& OneRange();
+
   /**
    * The function enlarges the range so that a certain value will be part of it.
    * @param t The value that will be part of the range.
@@ -61,12 +67,6 @@ template<typename T> STREAMABLE(Range,
     return *this;
   }
 
-  /** A range between 0 and 1. */
-  static const Range<T>& ZeroOneRange();
-
-  /** A range between -1 and 1. */
-  static const Range<T>& OneRange();
-
   /**
    * The function checks whether a certain value is in the range.
    * Note that the function is able to handle circular range, i.e. max < min.
@@ -90,6 +90,11 @@ template<typename T> STREAMABLE(Range,
    * @return The limited value.
    */
   Range<T> limit(const Range<T>& r) const {return Range<T>(limit(r.min), limit(r.max));} //sets the limit of a Range
+
+  /**
+   * Scales a value t with a range of tRange to whis range.
+   */
+  T scale(T t, const Range<T>& tRange) const;
 
   /**
    * The function returns the size of the range.
@@ -127,6 +132,13 @@ template<typename T> STREAMABLE(Range,
   (T) max, /**< The limits of the range. */
 });
 
+class Angle;
+
+using Rangea = Range<Angle>;
+using Rangei = Range<int>;
+using Rangef = Range<float>;
+using Rangeuc = Range<unsigned char>;
+
 template<typename T> Range<T>::Range() : min(T()), max(T()) {}
 template<typename T> Range<T>::Range(T minmax) : min(minmax), max(minmax) {}
 template<typename T> Range<T>::Range(T min, T max) : min(min), max(max) {}
@@ -145,5 +157,8 @@ const Range<T>& Range<T>::OneRange()
   return range;
 }
 
-using Rangei = Range<int>;
-using Rangef = Range<float>;
+template<typename T>
+T Range<T>::scale(T t, const Range<T>& tRange) const
+{
+  return limit(((t - tRange.min) / (tRange.max - tRange.min)) * (max - min) + min);
+}

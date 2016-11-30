@@ -1,3 +1,10 @@
+/**
+ * @file Tools/Optimization/FunctionMinimizer.cpp
+ * Implementaiton of a one-dimensional downhill simplex optimizer
+ * @author Colin Graf
+ * @author Alexis Tsogias
+ */
+
 #include "FunctionMinimizer.h"
 #include "Platform/BHAssert.h"
 #include <cmath>
@@ -8,14 +15,14 @@ float FunctionMinimizer::Function::evaluate(float val)
   return std::abs(function(val));
 }
 
-float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal, float start, float startDelta, float terminationCriterion, bool& clipped)
+float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal, float startVal, float startDelta, float terminationCriterion, bool& clipped)
 {
   struct Point
   {
     float val;
     float error;
 
-    void setPos(float val, float min, float max)
+    void setVal(float val, float min, float max)
     {
       if(val < min)
         this->val = min;
@@ -40,15 +47,15 @@ float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal
 
   Point point[3];
 
-  point[0].setPos(start, minVal, maxVal);
-  start = point[0].val;
+  point[0].setVal(startVal, minVal, maxVal);
+  startVal = point[0].val;
   point[0].error = function.evaluate(point[0].val);
   if(point[0].error < terminationCriterion)
     return point[0].val;
 
-  point[1].setPos(start + startDelta, minVal, maxVal);
+  point[1].setVal(startVal + startDelta, minVal, maxVal);
   if(point[0].val == point[1].val)
-    point[1].setPos(start - startDelta, minVal, maxVal);
+    point[1].setVal(startVal - startDelta, minVal, maxVal);
   point[1].error = function.evaluate(point[1].val);
   if(point[1].error < terminationCriterion)
     return point[1].val;
@@ -75,13 +82,13 @@ float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal
     }
 
     Point* reflection = free;
-    reflection->setPos(smallest->val + delta, minVal, maxVal);
+    reflection->setVal(smallest->val + delta, minVal, maxVal);
     reflection->error = reflection->val == smallest->val ? largest->error : function.evaluate(reflection->val);
 
     if(reflection->error < smallest->error)
     {
       Point* expansion = largest;
-      expansion->setPos(reflection->val + delta, minVal, maxVal);
+      expansion->setVal(reflection->val + delta, minVal, maxVal);
       expansion->error = expansion->val == reflection->val ? reflection->error : function.evaluate(expansion->val);
 
       if(expansion->error < reflection->error)
@@ -101,7 +108,7 @@ float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal
     {
       Point* contraction = free;
       delta *= 0.5f;
-      contraction->setPos(smallest->val + delta, minVal, maxVal);
+      contraction->setVal(smallest->val + delta, minVal, maxVal);
       contraction->error = contraction->val == smallest->val ? largest->error : function.evaluate(contraction->val);
 
       if(contraction->error < smallest->error)
@@ -118,7 +125,7 @@ float FunctionMinimizer::minimize(Function& function, float minVal, float maxVal
       else
       {
         Point* reduction = free;
-        reduction->setPos(smallest->val - delta, minVal, maxVal);
+        reduction->setVal(smallest->val - delta, minVal, maxVal);
         reduction->error = reduction->val == smallest->val ? largest->error : function.evaluate(reduction->val);
 
         if(reduction->error < smallest->error)

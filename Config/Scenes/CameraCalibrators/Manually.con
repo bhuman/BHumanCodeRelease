@@ -1,8 +1,46 @@
-set representation:RobotPose rotation = 0; translation = {x = -3200; y = 0;}; validity = 1; deviation = 100000; covariance = { cols = [ { elems = [ 1, 0, 0 ]; }, { elems = [ 0, 1, 0 ]; }, { elems = [ 0, 0, 1 ]; } ]; };
-set representation:HeadJointRequest pan = 10000; tilt = 10000; reachable = true; moving = false;
-vid lower module:CameraMatrixProvider:calibrationHelper
-vid lower representation:LinePercept:Image off
-vid lower representation:BallPercept:Image off
-vid lower representation:GoalPercept:Image off
+vid upper horizon
+mr StandArmRequest CalibrationStand
+mr StandLegRequest CalibrationStand
+mr WalkingEngineOutput default
+mr WalkingEngineState default
+mr CameraCalibration CameraCalibrator
+set module:CameraCalibrator:robotPose rotation = 0; translation = {x = -750; y = 0;};
+vd representation:HeadAngleRequest
+
+cameraCalibrator lower on
+cameraCalibrator upper on
+
+vid lower representation:FieldLines:image off
+vid lower representation:PlayersPercept:image off
 vid lower representation:BodyContour off
-get representation:CameraCalibration
+vid lower module:CameraCalibrator:points
+vid lower module:CameraCalibrator:drawSamples
+vid lower module:CameraCalibrator:drawFieldLines
+
+vid upper representation:FieldLines:image off
+vid upper representation:PlayersPercept:image off
+vid upper representation:BodyContour off
+vid upper module:CameraCalibrator:points
+vid upper module:CameraCalibrator:drawSamples
+vid upper module:CameraCalibrator:drawFieldLines
+
+dr module:CameraCalibrator:collectPoints
+
+jc press 1 dr module:CameraCalibrator:stop
+jc press 3 dr module:CameraCalibrator:collectPoints
+jc press 15 dr module:CameraCalibrator:optimize
+jc press 18 dr module:CameraCalibrator:clear
+jc press 19 save representation:CameraCalibration
+jc press 26 dr module:CameraCalibrator:undo
+
+echo Click points on field lines in both images and also turn head. Then optimize and save if satisfied.
+echo Shift-click in images to point camera to that direction.
+echo - Shift+Ctrl+C: Collect points (initially active)
+echo - Shift+Ctrl+Z: Undo last point
+echo - Shift+Ctrl+R: Remove all points
+echo - Shift+Ctrl+O: Optimize
+echo - Shift+Ctrl+A: Abort optimization
+echo - Shift+Ctrl+S: Save calibration
+echo
+
+get module:CameraCalibrator:robotPose

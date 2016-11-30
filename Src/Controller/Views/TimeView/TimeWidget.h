@@ -4,7 +4,9 @@
  *
  * Created on May 21, 2013, 8:15 PM
  */
+
 #pragma once
+
 #include <QObject>
 #include <string>
 #include <unordered_map>
@@ -29,18 +31,25 @@ public:
   virtual QWidget* getWidget();
   virtual void update();
 
-private slots:
-  void filterChanged(const QString& newFilter);
-
-private:
-  /**Hides all rows from the table that fit the filter*/
-  void applyFilter();
 private:
   QLabel* frequency;
   TimeView& timeView;
   QTableWidget* table; /**< The table that displays the timings */
-  unsigned lastTimeInfoTimeStamp;
+  unsigned lastTimeInfoTimeStamp = 0;
   std::unordered_map<unsigned short, Row*> items;
   unsigned lastUpdate; /**< time of the last update. Used to manage update rate */
   QString filter; /**< the current filter that has been entered */
+
+  /**
+   * Hides all rows from the table that fit the filter
+   */
+  void applyFilter();
+  
+  // Create Context Menu
+  virtual QMenu* createEditMenu() const;
+
+private slots:
+  void filterChanged(const QString& newFilter);
+  /** Copy contents of the timing data table to the clipboard in csv format */
+  void copy();
 };

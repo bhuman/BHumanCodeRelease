@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
+#include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
@@ -20,6 +21,7 @@
 
 MODULE(OwnSideModelProvider,
 {,
+  REQUIRES(CognitionStateChanges),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
@@ -46,8 +48,6 @@ MODULE(OwnSideModelProvider,
 class OwnSideModelProvider : public OwnSideModelProviderBase
 {
 private:
-  int lastPenalty; /**< Was the robot penalised in the last frame? */
-  int lastGameState; /**< The game state in the last frame. */
   float distanceWalkedAtKnownPosition; /**< The robot walked this far at its last known position. */
   float largestXPossibleAtKnownPosition; /**< The largest x coordinate possible at its last known position. */
   bool manuallyPlaced; /**< Was the robot manually placed in the set state? */

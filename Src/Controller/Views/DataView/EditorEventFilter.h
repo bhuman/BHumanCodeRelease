@@ -1,4 +1,4 @@
-/*
+/**
  * EditorEventFilter.h
  *
  *  Created on: May 3, 2012

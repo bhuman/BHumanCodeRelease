@@ -10,7 +10,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       Stand();
     }
   }
@@ -19,14 +19,14 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > 7000)
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(std::abs(theBallModel.estimate.position.angle()) < 5_deg)
         goto walkToBall;
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), Pose2f(theBallModel.estimate.position.angle(), 0.f, 0.f));
     }
   }
@@ -35,14 +35,14 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > 7000)
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(theBallModel.estimate.position.norm() < 500.f)
         goto alignToGoal;
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), theBallModel.estimate.position);
     }
   }
@@ -51,14 +51,14 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > 7000)
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(std::abs(libCodeRelease.angleToGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
         goto alignBehindBall;
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
@@ -67,7 +67,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > 7000)
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
           && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
@@ -76,7 +76,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      LookForward();
       WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
     }
   }
@@ -90,9 +90,8 @@ option(Striker)
     }
     action
     {
-      Annotation("Alive and Kickin'");
-      theHeadControlMode = HeadControl::lookForward;
-      InWalkKick(WalkRequest::left, Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      LookForward();
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
   
@@ -105,7 +104,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;    
+      LookForward();
       WalkAtSpeedPercentage(Pose2f(1.f, 0.f, 0.f));
     }
   }

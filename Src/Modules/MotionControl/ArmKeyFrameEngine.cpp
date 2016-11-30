@@ -20,7 +20,7 @@ void ArmKeyFrameEngine::update(ArmKeyFrameEngineOutput& armKeyFrameEngineOutput)
 
 void ArmKeyFrameEngine::updateArm(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrameEngineOutput)
 {
-  if(theArmMotionSelection.targetArmMotion[arm.id] != ArmMotionRequest::keyFrame)
+  if(theArmMotionSelection.targetArmMotion[arm.id] != ArmMotionSelection::keyFrameS)
   {
     arm.wasActive = false;
     return;
@@ -84,8 +84,8 @@ void ArmKeyFrameEngine::createOutput(Arm& arm, ArmKeyFrameMotion::ArmAngles targ
     const float speed = static_cast<float>(time) / static_cast<float>(target.steps);
     result.angles[i] = from.angles[i] + offset * speed;
     result.stiffness[i] = target.stiffness[i] == StiffnessData::useDefault
-      ? theStiffnessSettings.stiffnesses[arm.firstJoint + i]
-      : target.stiffness[i];
+                          ? theStiffnessSettings.stiffnesses[arm.firstJoint + i]
+                          : target.stiffness[i];
   }
   ++time;
 }
@@ -96,9 +96,10 @@ void ArmKeyFrameEngine::updateOutput(Arm& arm, ArmKeyFrameEngineOutput& armKeyFr
   for(unsigned i = 0; i < values.angles.size(); ++i)
   {
     if(arm.id == Arms::right &&
-       (i + Joints::rShoulderPitch == Joints::rShoulderRoll ||
-        i + Joints::rShoulderPitch == Joints::rElbowYaw ||
-        i + Joints::rShoulderPitch == Joints::rWristYaw))
+       (i == Joints::shoulderRoll ||
+        i == Joints::elbowYaw ||
+        i == Joints::elbowRoll ||
+        i == Joints::wristYaw))
       armKeyFrameEngineOutput.angles[startJoint + i] = -values.angles[i];
     else
       armKeyFrameEngineOutput.angles[startJoint + i] = values.angles[i];
@@ -106,5 +107,5 @@ void ArmKeyFrameEngine::updateOutput(Arm& arm, ArmKeyFrameEngineOutput& armKeyFr
   }
   armKeyFrameEngineOutput.arms[arm.id].motion = arm.currentMotion.id;
   armKeyFrameEngineOutput.arms[arm.id].isFree = arm.isLastMotionFinished &&
-    (arm.currentMotion.id == ArmKeyFrameRequest::useDefault || arm.currentMotion.id == ArmKeyFrameRequest::reverse);
+                                                (arm.currentMotion.id == ArmKeyFrameRequest::useDefault || arm.currentMotion.id == ArmKeyFrameRequest::reverse);
 }

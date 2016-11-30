@@ -1,14 +1,13 @@
-/*
+/**
  * File:   RangeSelector.h
  * Author: marcel
- *
- * Created on September 27, 2013, 3:32 PM
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
 #include "Tools/Math/BHMath.h"
-#include "Representations/Configuration/ColorCalibration.h"
+#include "Representations/Configuration/FieldColors.h"
 
 #include <qxtspanslider.h>
 #include <QLineEdit>
@@ -41,11 +40,10 @@ private:
   void updateColorCalibration(int value, bool isMin);
 
   /** must be implemented by subclasses to update the specific component of a color. */
-  virtual void updateColorCalibration(int value, bool isMin,
-                                    ColorCalibration::HSIRanges& color) = 0;
+  virtual void updateColorCalibration(int value, bool isMin, FieldColors::ColorRange& color) = 0;
 
   /** must be implemented by subclasses to update slider with specific component of color. */
-  virtual void updateSlider(ColorCalibration::HSIRanges& color) = 0;
+  virtual void updateSlider(const FieldColors::ColorRange& color) = 0;
 
 private slots:
   void sliderLowerChanged(int value);
@@ -54,76 +52,89 @@ private slots:
   void labelUpperChanged(QString value);
 };
 
-
-class HueSelector : public RangeSelector
+class SSelector : public RangeSelector
 {
+public:
+  SSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+    RangeSelector(name, parent, min, max)
+  {}
+
 private:
-  void updateColorCalibration(int value, bool isMin,
-                            ColorCalibration::HSIRanges& color)
+  void updateColorCalibration(int value, bool isMin, FieldColors::ColorRange& color)
   {
     if(isMin)
-      color.hue.min = value;
+    {
+      color.s.min = value < color.s.max ? static_cast<unsigned char>(value) : color.s.max;
+      updateSlider(color);
+    }
     else
-      color.hue.max = value;
+    {
+      color.s.max = value > color.s.min ? static_cast<unsigned char>(value) : color.s.min;
+      updateSlider(color);
+    }
   }
 
-  void updateSlider(ColorCalibration::HSIRanges& color)
+  void updateSlider(const FieldColors::ColorRange& color)
   {
-    slider->setUpperValue(color.hue.max);
-    slider->setLowerValue(color.hue.min);
+    slider->setUpperValue(color.s.max);
+    slider->setLowerValue(color.s.min);
   }
-
-public:
-  HueSelector(const QString& name, ColorCalibrationWidget* parent,
-              int min, int max)
-  : RangeSelector(name, parent, min, max) {}
 };
 
-class SaturationSelector : public RangeSelector
+class HSelector : public RangeSelector
 {
-private:
+public:
+  HSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+    RangeSelector(name, parent, min, max)
+  {}
 
-  void updateColorCalibration(int value, bool isMin,
-                              ColorCalibration::HSIRanges& color)
+private:
+  void updateColorCalibration(int value, bool isMin, FieldColors::ColorRange& color)
   {
     if(isMin)
-      color.saturation.min = value;
+    {
+      color.h.min = value < color.h.max ? static_cast<unsigned char>(value) : color.h.max;
+      updateSlider(color);
+    }
     else
-      color.saturation.max = value;
+    {
+      color.h.max = value > color.h.min ? static_cast<unsigned char>(value) : color.h.min;
+      updateSlider(color);
+    }
   }
 
-  void updateSlider(ColorCalibration::HSIRanges& color)
+  void updateSlider(const FieldColors::ColorRange& color)
   {
-    slider->setUpperValue(color.saturation.max);
-    slider->setLowerValue(color.saturation.min);
+    slider->setUpperValue(color.h.max);
+    slider->setLowerValue(color.h.min);
   }
-
-public:
-  SaturationSelector(const QString& name, ColorCalibrationWidget* parent,
-                     int min, int max)
-  : RangeSelector(name, parent, min, max) {}
 };
 
-class IntensitySelector : public RangeSelector
+class YSelector : public RangeSelector
 {
+public:
+  YSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+    RangeSelector(name, parent, min, max)
+  {}
+
 private:
-  void updateColorCalibration(int value, bool isMin,
-                              ColorCalibration::HSIRanges& color)
+  void updateColorCalibration(int value, bool isMin, FieldColors::ColorRange& color)
   {
     if(isMin)
-      color.intensity.min = value;
+    {
+      color.y.min = value < color.y.max ? static_cast<unsigned char>(value) : color.y.max;
+      updateSlider(color);
+    }
     else
-      color.intensity.max = value;
+    {
+      color.y.max = value > color.y.min ? static_cast<unsigned char>(value) : color.y.min;
+      updateSlider(color);
+    }
   }
 
-  void updateSlider(ColorCalibration::HSIRanges& color)
+  void updateSlider(const FieldColors::ColorRange& color)
   {
-    slider->setUpperValue(color.intensity.max);
-    slider->setLowerValue(color.intensity.min);
+    slider->setUpperValue(color.y.max);
+    slider->setLowerValue(color.y.min);
   }
-
-public:
-  IntensitySelector(const QString& name, ColorCalibrationWidget* parent,
-                int min, int max)
-  : RangeSelector(name, parent, min, max) {}
 };

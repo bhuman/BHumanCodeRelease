@@ -8,10 +8,11 @@
 #include "Tools/Streams/Streamable.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
+#include "Platform/Thread.h"
 #include <unordered_map>
 
 /** The instance of the blackboard of the current process. */
-static PROCESS_LOCAL Blackboard* theInstance = nullptr;
+static thread_local Blackboard* theInstance = nullptr;
 
 /** The actual type of the map for all entries. */
 class Blackboard::Entries : public std::unordered_map<std::string, Blackboard::Entry> {};
@@ -25,7 +26,7 @@ Blackboard::Blackboard() :
 Blackboard::~Blackboard()
 {
   ASSERT(theInstance == this);
-  theInstance = 0;
+  theInstance = nullptr;
   ASSERT(entries.size() == 0);
   delete &entries;
 }

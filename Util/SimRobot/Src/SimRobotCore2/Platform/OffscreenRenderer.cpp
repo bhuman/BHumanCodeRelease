@@ -46,8 +46,13 @@ bool OffscreenRenderer::makeCurrent(int width, int height, bool sampleBuffers)
   {
     Buffer& buffer = renderBuffers[width << 16 | height << 1 | (sampleBuffers ? 1 : 0)];
 
+#ifdef FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG
+    if(!initFrameBuffer(width, height, buffer))
+      if(!initPixelBuffer(width, height, sampleBuffers, buffer))
+#else
     if(!initPixelBuffer(width, height, sampleBuffers, buffer))
       if(!initFrameBuffer(width, height, buffer))
+#endif
         initHiddenWindow(width, height, buffer);
 
     return true;
@@ -75,7 +80,7 @@ bool OffscreenRenderer::initFrameBuffer(int width, int height, Buffer& buffer)
 {
   mainGlWidget->makeCurrent();
 
-#ifndef OSX
+#ifndef MACOS
   if(!GLEW_EXT_framebuffer_object)
     return false;
 #endif
@@ -138,7 +143,7 @@ void OffscreenRenderer::initHiddenWindow(int width, int height, Buffer& buffer)
 
 void OffscreenRenderer::initContext(bool hasSharedDisplayLists)
 {
-#ifndef OSX
+#ifndef MACOS
   glewInit();
 #endif
 

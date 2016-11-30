@@ -3,43 +3,8 @@
  * Implementation of a struct that represents the motions that can be requested from the robot.
  */
 
-#include <cstdio>
-#include <cstring>
-
 #include "MotionRequest.h"
 #include "Tools/Debugging/DebugDrawings.h"
-
-void MotionRequest::printOut(char* destination) const
-{
-  strcpy(destination, getName(motion));
-  destination += strlen(destination);
-  switch(motion)
-  {
-    case walk:
-      if(walkRequest.mode == WalkRequest::targetMode)
-        sprintf(destination, ": %.0lfmm %.0lfmm %.0lf°",
-                walkRequest.target.translation.x(), walkRequest.target.translation.y(),
-                walkRequest.target.rotation.toDegrees());
-      else if(walkRequest.mode == WalkRequest::percentageSpeedMode)
-        sprintf(destination, ": %.0lf%% %.0lf%% %.0lf%%",
-                walkRequest.speed.translation.x() * 100, walkRequest.speed.translation.y() * 100,
-                walkRequest.speed.rotation * 100);
-      else
-        sprintf(destination, ": %.0lfmm/s %.0lfmm/s %.0lf°/s",
-                walkRequest.speed.translation.x(), walkRequest.speed.translation.y(),
-                walkRequest.speed.rotation.toDegrees());
-      break;
-    case stand:
-      sprintf(destination, ": stand");
-      break;
-    case specialAction:
-      sprintf(destination, ": %s", SpecialActionRequest::getName(specialActionRequest.specialAction));
-      break;
-    case kick:
-      sprintf(destination, ": %s", KickRequest::getName(kickRequest.kickMotionType));
-      break;
-  }
-}
 
 void MotionRequest::draw() const
 {

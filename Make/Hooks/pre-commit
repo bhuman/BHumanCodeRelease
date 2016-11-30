@@ -53,7 +53,7 @@ then
 	filesWithTabs=""
 	for file in "$(git diff --cached --name-only)"
 	do
-		if [ ! "$(echo "$file" | grep -E '^Make/.*')" ]
+		if [ "$(echo "$file" | grep -E '^Src/.*')" -o "$(echo "$file" | grep -E '^Util/SimRobot/Src/.*')" ]
 		then
 			if [ "$(git diff --cached --inter-hunk-context=0 -- "$file" | grep -E '^\+' | LC_ALL=C tr -d -c '\t')" ]
 			then

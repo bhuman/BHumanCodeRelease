@@ -382,7 +382,7 @@ private:
         if(memcmp(&gameControllerAddress, &from.sin_addr, sizeof(in_addr)))
         {
           memcpy(&gameControllerAddress, &from.sin_addr, sizeof(in_addr));
-          udp->setTarget(inet_ntoa(gameControllerAddress), GAMECONTROLLER_PORT);
+          udp->setTarget(inet_ntoa(gameControllerAddress), GAMECONTROLLER_RETURN_PORT);
         }
 
         received = true;
@@ -502,7 +502,7 @@ public:
       udp = new UdpComm();
       if(!udp->setBlocking(false) ||
          !udp->setBroadcast(true) ||
-         !udp->bind("0.0.0.0", GAMECONTROLLER_PORT) ||
+         !udp->bind("0.0.0.0", GAMECONTROLLER_DATA_PORT) ||
          !udp->setLoopback(false))
       {
         fprintf(stderr, "libgamectrl: Could not open UDP port\n");

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Kind</key>
+	<string>Xcode.IDEFoundation.TextSubstitutionFileTemplateKind</string>
+	<key>Description</key>
+	<string>An empty option.</string>
+	<key>Summary</key>
+	<string>An empty option.</string>
+	<key>SortOrder</key>
+	<string>34</string>
+	<key>AllowedTypes</key>
+	<array>
+		<string>public.c-plus-plus-header</string>
+	</array>
+	<key>BuildableType</key>
+	<string>None</string>
+	<key>DefaultCompletionName</key>
+	<string>Header</string>
+	<key>MainTemplateFile</key>
+	<string>___FILEBASENAME___.h</string>
+	<key>Options</key>
+	<array>
+		<dict>
+			<key>Identifier</key>
+			<string>productName</string>
+			<key>Required</key>
+			<true/>
+			<key>Name</key>
+			<string>Option Name:</string>
+			<key>Description</key>
+			<string>The name of the option to create</string>
+			<key>Type</key>
+			<string>text</string>
+			<key>NotPersisted</key>
+			<true/>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -20,7 +20,7 @@ std::string HelpCmd::getDescription() const
   return "Print this help message.";
 }
 
-bool HelpCmd::execute(Context &context, const std::vector<std::string> &params)
+bool HelpCmd::execute(Context& context, const std::vector<std::string>& params)
 {
   if(params.empty())
   {

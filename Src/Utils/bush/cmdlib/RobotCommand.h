@@ -24,7 +24,7 @@ public:
    * @param params The parameters of the command.
    * @return false if one of the called methods returned false, true otherwise.
    */
-  bool execute(Context &context, const std::vector<std::string> &params);
+  bool execute(Context& context, const std::vector<std::string>& params);
 
   /**
    * This method is intended to do something which has to be done before the command is
@@ -33,7 +33,7 @@ public:
    * @param params The parameters of the command.
    * @return Should return false to indicate an error.
    */
-  virtual bool preExecution(Context &context, const std::vector<std::string> &params) { return true; }
+  virtual bool preExecution(Context& context, const std::vector<std::string>& params) { return true; }
 
   /**
    * This method can be either used to execute code for every robot separately
@@ -44,7 +44,7 @@ public:
    * @return  Should return a pointer to a RobotTask-Object but also can return 0
    *          to indicate that no task should be executed.
    */
-  virtual Task* perRobotExecution(Context &context, Robot& robot) = 0;
+  virtual Task* perRobotExecution(Context& context, Robot& robot) = 0;
 
   /**
    * This method is intended to do cleanup tasks after the command handled every
@@ -53,7 +53,7 @@ public:
    * @param params The parameters of the command.
    * @return Should return false to indicate an error.
    */
-  virtual bool postExecution(Context &context, const std::vector<std::string> &params) { return status; }
+  virtual bool postExecution(Context& context, const std::vector<std::string>& params) { return status; }
 };
 
 /**
@@ -67,7 +67,7 @@ protected:
    * The pointer to the robot for which the Task should be executed.
    * Should not be 0.
    */
-  Robot *robot;
+  Robot* robot;
 
 public:
 
@@ -76,9 +76,9 @@ public:
    * @param context The context of the task.
    * @param robot The robot for which the task should be executed.
    */
-  RobotTask(Context &context, Robot *robot)
-  : Task(context, true),
-    robot(robot)
+  RobotTask(Context& context, Robot* robot)
+    : Task(context, true),
+      robot(robot)
   {}
 
   virtual std::string getLabel() { return robot->name; }

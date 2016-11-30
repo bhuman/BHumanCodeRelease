@@ -22,4 +22,5 @@ STREAMABLE(OwnSideModel,
   (float)(100000.f) largestXPossible, /**< The largest x-coordinate that is currently possible. */
   (bool)(false) returnFromGameControllerPenalty, /**< The robot was unpenalized by the GameController and believes it. */
   (bool)(false) returnFromManualPenalty, /**< The robot was unpenalized by the GameController and believes it. */
+  (bool)(false) manuallyPlaced, /**< The robot has been set to its kickoff position during SET by the referee */
 });

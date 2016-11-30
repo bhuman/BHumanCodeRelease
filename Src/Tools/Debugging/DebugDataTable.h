@@ -14,7 +14,6 @@
 #include "Tools/Streams/InStreams.h"
 #include <string>
 
-class Framework;
 class InMessage;
 
 /**
@@ -28,7 +27,6 @@ private:
   std::unordered_map<std::string, char*> table;
 
   friend class Process; /**< A process is allowed to create the instance. */
-  friend class Framework; /**< A framework is allowed to create the instance. */
 
   /**
    * No other instance of this class is allowed except the one accessible via getDebugDataTable

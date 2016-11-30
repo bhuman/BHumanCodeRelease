@@ -1,7 +1,7 @@
 /**
-* @file AnnotationView.h
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file AnnotationView.h
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #pragma once
 
@@ -24,15 +24,20 @@ private:
   LogPlayer& logPlayer; /**< Used to jump to frames */
   SimRobot::Application* application;
 
+  bool stopOnFilter = false;
+  bool filterIsRegEx = false;
+  QString filter = "";
+
   /**
-  * The method returns a new instance of a widget for this direct view.
-  * The caller has to delete this instance. (Qt handles this)
-  * @return The widget.
-  */
+   * The method returns a new instance of a widget for this direct view.
+   * The caller has to delete this instance. (Qt handles this)
+   * @return The widget.
+   */
   virtual SimRobot::Widget* createWidget();
 
   virtual const QString& getFullName() const { return fullName; }
   virtual const QIcon* getIcon() const { return &icon; }
 
   friend class AnnotationWidget; //AnnotationWidget needs access to console
+  friend class AnnotationInfo;
 };

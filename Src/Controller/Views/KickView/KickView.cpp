@@ -89,42 +89,55 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
   show3D = new QAction(tr("Display Phase Drawings"), menu);
   show3D->setStatusTip(tr("Draws curves for every limb either for the current phase or all phases"));
   show3D->setCheckable(true);
+  show3D->setChecked(kickViewWidget->getDrawings());
 
   singleDraw = new QAction(tr("Display Only Current Phase"), menu);
   singleDraw->setStatusTip(tr("Draws only curves for the current Phase"));
   singleDraw->setCheckable(true);
+  singleDraw->setChecked(kickViewWidget->getSingleDrawing());
 
   reachedDraw = new QAction(tr("Display Reached Positions"), menu);
   reachedDraw->setStatusTip(tr("Draws the reached positions into the 3D view"));
   reachedDraw->setCheckable(true);
+  reachedDraw->setChecked(kickViewWidget->getReachedDrawing());
 
   showEditor = new QAction(tr("Display Editor View"), menu);
   showEditor->setStatusTip(tr("Shows the editor view"));
   showEditor->setCheckable(true);
+  showEditor->setChecked(kickViewWidget->getEditor());
 
   show1D = new QAction(tr("Display 1D Views"), menu);
   show1D->setStatusTip(tr("Shows 1D views of one curve for each axis"));
   show1D->setCheckable(true);
+  show1D->setChecked(kickViewWidget->getTra1d());
 
   show2D = new QAction(tr("Display 2D Views"), menu);
   show2D->setStatusTip(tr("Shows 2D views of one curve for plane"));
   show2D->setCheckable(true);
+  show2D->setChecked(kickViewWidget->getTra2d());
 
   showVelo = new QAction(tr("Display Velocity Views"), menu);
   showVelo->setStatusTip(tr("Shows the velocity of one curve"));
   showVelo->setCheckable(true);
+  showVelo->setChecked(kickViewWidget->getVelocity());
 
   showAccel = new QAction(tr("Display Acceleration Views"), menu);
   showAccel->setStatusTip(tr("Shows the acceleration of one curve"));
   showAccel->setCheckable(true);
+  showAccel->setChecked(kickViewWidget->getAccel());
 
   noExtraView = new QAction(tr("Display No Extra View"), menu);
   noExtraView->setStatusTip(tr("Hides all extra views"));
   noExtraView->setCheckable(true);
+  noExtraView->setChecked(!kickViewWidget->getTra1d()
+                          && !kickViewWidget->getTra2d()
+                          && !kickViewWidget->getVelocity()
+                          && !kickViewWidget->getAccel());
 
   followMode = new QAction(tr("Enable Follow Mode"), menu);
   followMode->setStatusTip(tr("The robot will react to changes directly"));
   followMode->setCheckable(true);
+  followMode->setChecked(kickViewWidget->getFollowMode());
 
   connect(undoAct, SIGNAL(triggered()), this, SLOT(undoChanges()));
   connect(redoAct, SIGNAL(triggered()), this, SLOT(redoChanges()));
@@ -161,10 +174,6 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
   menu->addAction(showAccel);
   menu->addSeparator();
   menu->addAction(followMode);
-
-  showEditor->setChecked(true);
-  show3D->setChecked(true);
-  noExtraView->setChecked(true);
 
   return menu;
 }
@@ -217,8 +226,7 @@ void KickViewHeaderedWidget::loadButtonClicked()
 {
   char dirname[260];
   sprintf(dirname, "%s/Config/KickEngine/", File::getBHDir());
-  fileName = QFileDialog::getOpenFileName(this,
-                                          tr("Open Kick Motion"), dirname, tr("Kick Motion Config Files (*.kmc)"));
+  fileName = QFileDialog::getOpenFileName(this, tr("Open Kick Motion"), dirname, tr("Kick Motion Config Files (*.kmc)"));
   QString name;
   name = fileName.remove(0, fileName.lastIndexOf("/", fileName.lastIndexOf("/") - 1) + 1);
 
@@ -243,8 +251,7 @@ void KickViewHeaderedWidget::saveAsButtonClicked()
 {
   char dirname[260];
   sprintf(dirname, "%s/Config/KickEngine/", File::getBHDir());
-  fileName = QFileDialog::getSaveFileName(this,
-                                          tr("Save Kick Motion as..."), dirname, tr("Kick Motion Config Files (*.kmc)"));
+  fileName = QFileDialog::getSaveFileName(this, tr("Save Kick Motion as..."), dirname, tr("Kick Motion Config Files (*.kmc)"));
 
   if(fileName.begin() != fileName.end())
   {
@@ -272,9 +279,7 @@ void KickViewHeaderedWidget::saveButtonClicked()
     emit saveAvailable(false);
   }
   else
-  {
     saveAsButtonClicked();
-  }
 }
 
 void KickViewHeaderedWidget::writeParametersToFile(const std::string& name)
@@ -397,9 +402,7 @@ void KickViewHeaderedWidget::addStateToUndoList()
     emit saveAvailable(true);
 
   if(undo.size() >= 20)
-  {
     undo.erase(undo.begin());
-  }
 }
 
 void KickViewHeaderedWidget::undoChanges()
@@ -418,9 +421,7 @@ void KickViewHeaderedWidget::undoChanges()
       parameters = last;
       kickViewWidget->updateCommon();
       for(int i = 0; i < parameters.numberOfPhases; i++)
-      {
         kickViewWidget->fillModelWithPhaseData(i);
-      }
     }
     else
     {
@@ -449,16 +450,15 @@ void KickViewHeaderedWidget::redoChanges()
     if(fileName.begin() != fileName.end() && fileName != QString("newKick.kmc"))
       emit saveAvailable(true);
 
-    if(undo.size() >= 20) undo.erase(undo.begin());
+    if(undo.size() >= 20)
+      undo.erase(undo.begin());
 
     if(parameters.numberOfPhases == last.numberOfPhases)
     {
       parameters = last;
       kickViewWidget->updateCommon();
       for(int i = 0; i < parameters.numberOfPhases; i++)
-      {
         kickViewWidget->fillModelWithPhaseData(i);
-      }
     }
     else
     {
@@ -472,8 +472,8 @@ void KickViewHeaderedWidget::redoChanges()
     emit redoAvailable(false);
 }
 
-KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, 
-           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
+KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
+                   const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
   fullName(fullName), console(console), motionRequest(motionRequest), jointAngles(jointAngles),
   jointCalibration(jointCalibration), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
 {}

@@ -23,8 +23,8 @@ class QStringListModel;
 class TabFilter : public QObject
 {
 public:
-  explicit TabFilter(QObject *parent);
-  bool eventFilter(QObject *o, QEvent *e);
+  explicit TabFilter(QObject* parent);
+  bool eventFilter(QObject* o, QEvent* e);
 };
 
 /** A completer which is in charge to connect the model of the normal QCompleter
@@ -44,10 +44,10 @@ class CommandLineCompleter : public QCompleter
   size_t wordCount;
 
   /** The completion model. */
-  QStringListModel *model;
+  QStringListModel* model;
 
 public:
-  explicit CommandLineCompleter(QObject *parent);
+  explicit CommandLineCompleter(QObject* parent);
 
 public slots:
   /**
@@ -56,5 +56,5 @@ public slots:
    *
    * @param text The new completion prefix.
    */
-  void setCompletionPrefix(const QString &text);
+  void setCompletionPrefix(const QString& text);
 };

@@ -44,7 +44,7 @@ std::vector<std::string> ShowCmd::complete(const std::string& cmdLine) const
   return files;
 }
 
-bool ShowCmd::preExecution(Context &context, const std::vector<std::string> &params)
+bool ShowCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   if(params.empty())
   {
@@ -56,7 +56,7 @@ bool ShowCmd::preExecution(Context &context, const std::vector<std::string> &par
   return true;
 }
 
-Task* ShowCmd::perRobotExecution(Context &context, Robot &robot)
+Task* ShowCmd::perRobotExecution(Context& context, Robot& robot)
 {
   context.printLine("--------------");
   context.printLine(robot.name + ":");

@@ -9,6 +9,8 @@
  * The inertialData contains filtered data from the IMU.
  */
 STREAMABLE_WITH_BASE(InertialData, InertialSensorData,
-{,
+{
+  void draw(),
+
   (Quaternionf)(Quaternionf::Identity()) orientation, /** The orientation of the torso represented as a quaternion. */
 });

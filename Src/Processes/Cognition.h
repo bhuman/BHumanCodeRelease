@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "Tools/ProcessFramework/TeamHandler.h" // include this first to prevent winsock2.h/windows.h conflicts
+#include "Tools/ProcessFramework/TeamHandler.h" // include this first to prevent WinSock2.h/Windows.h conflicts
 
-#include "Tools/ProcessFramework/Process.h"
-#include "Tools/Module/Logger.h"
+#include "Tools/Logging/Logger.h"
 #include "Tools/Module/ModulePackage.h"
+#include "Tools/ProcessFramework/Process.h"
 
 /**
  * @class Cognition
@@ -18,10 +18,13 @@
 class Cognition : public Process
 {
 private:
-  DEBUGGING;
-  RECEIVER(MotionToCognition);
-  SENDER(CognitionToMotion);
-  TEAM_COMM;
+  Receiver<DebugToCognition> theDebugReceiver;
+  DebugSender<CognitionToDebug> theDebugSender;
+  Receiver<MotionToCognition> theMotionReceiver;
+  Sender<CognitionToMotion> theMotionSender;
+  MessageQueue theTeamReceiver;
+  MessageQueue theTeamSender;
+  TeamHandler theTeamHandler;
   int numberOfMessages;
   ModuleManager moduleManager; /**< The solution manager handles the execution of modules. */
   Logger logger; /**< The logger logs representations in the background. */

@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 /**

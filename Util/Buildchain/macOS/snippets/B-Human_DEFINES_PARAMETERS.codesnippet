@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>DEFINES_PARAMETERS</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>All</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>DEFINES_PARAMETERS(
+{,
+  (&lt;#type#&gt;)(&lt;#init#&gt;) &lt;#var#&gt;,
+}),</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>55D9B8CF-6A2B-4F12-A425-8F7DDE0A7F57</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Definition of the parameters of a module.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>Parameter Definition</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>0</integer>
+</dict>
+</plist>

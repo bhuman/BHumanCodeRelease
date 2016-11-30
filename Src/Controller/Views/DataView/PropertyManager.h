@@ -1,4 +1,4 @@
-/*
+/**
  * PropertyManager.h
  *
  *  Created on: Apr 27, 2012
@@ -17,6 +17,7 @@
 #include "TypeDescriptor.h"
 
 using namespace Type;
+
 /**
  * Extends the VariantPropertyManager to add support for additional datatypes.
  *
@@ -92,10 +93,6 @@ private slots:
   void slotValueChanged(QtProperty* property, const QVariant& value);
 
 private:
-  /**
-   * Initialize information about the allowed types
-   */
-  void initTypes();
 
   /**
    * QtVariantProperties don't know anything about the type of the data they contain.
@@ -110,4 +107,9 @@ private:
    * value: descriptor of that type
    */
   QMap<int, TypeDescriptor*> theDescriptors;
+
+  /**
+   * Initialize information about the allowed types
+   */
+  void initTypes();
 };

@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing/
+** Copyright (C) 2016 The Qt Company Ltd.
+** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the tools applications of the Qt Toolkit.
 **
@@ -11,29 +11,27 @@
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see http://www.qt.io/terms-conditions. For further
-** information use the contact form at http://www.qt.io/contact-us.
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 or version 3 as published by the Free
-** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file. Please review the
-** following information to ensure the GNU Lesser General Public License
-** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
-**
-** As a special exception, The Qt Company gives you certain additional
-** rights. These rights are described in The Qt Company LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+** General Public License version 3 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL3 included in the
+** packaging of this file. Please review the following information to
+** ensure the GNU Lesser General Public License version 3 requirements
+** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
 **
 ** GNU General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3.0 as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU General Public License version 3.0 requirements will be
-** met: http://www.gnu.org/copyleft/gpl.html.
+** General Public License version 2.0 or (at your option) the GNU General
+** Public license version 3 or any later version approved by the KDE Free
+** Qt Foundation. The licenses are as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-2.0.html and
+** https://www.gnu.org/licenses/gpl-3.0.html.
 **
 ** $QT_END_LICENSE$
 **
@@ -59,7 +57,8 @@ public:
     QSet<QtProperty *> m_parentItems;
     QList<QtProperty *> m_subItems;
 
-    QString m_toolTip;
+    QString m_valueToolTip;
+    QString m_descriptionToolTip;
     QString m_statusTip;
     QString m_whatsThis;
     QString m_name;
@@ -102,23 +101,27 @@ public:
     provides functions for retrieving as well as setting their values:
 
     \table
-    \header \o Getter \o Setter
+    \header \li Getter \li Setter
     \row
-    \o propertyName() \o setPropertyName()
+    \li propertyName() \li setPropertyName()
     \row
-    \o statusTip() \o setStatusTip()
+    \li statusTip() \li setStatusTip()
     \row
-    \o toolTip() \o setToolTip()
+    \li descriptionToolTip() \li setDescriptionToolTip()
     \row
-    \o whatsThis() \o setWhatsThis()
+    \li valueToolTip() \li setValueToolTip()
     \row
-    \o isEnabled() \o setEnabled()
+    \li toolTip() \deprecated in 5.6 \li setToolTip() \deprecated in 5.6
     \row
-    \o isModified() \o setModified()
+    \li whatsThis() \li setWhatsThis()
     \row
-    \o valueText() \o Nop
+    \li isEnabled() \li setEnabled()
     \row
-    \o valueIcon() \o Nop
+    \li isModified() \li setModified()
+    \row
+    \li valueText() \li Nop
+    \row
+    \li valueIcon() \li Nop
     \endtable
 
     It is also possible to nest properties: QtProperty provides the
@@ -200,14 +203,35 @@ QtAbstractPropertyManager *QtProperty::propertyManager() const
     return d_ptr->m_manager;
 }
 
-/*!
-    Returns the property's  tool tip.
+/* Note: As of 17.7.2015 for Qt 5.6, the existing 'toolTip' of the Property
+ * Browser solution was split into valueToolTip() and descriptionToolTip()
+ * to be able to implement custom tool tip for QTBUG-45442. This could
+ * be back-ported to the solution. */
 
-    \sa setToolTip()
+/*!
+    Returns the property value's  tool tip.
+
+    This is suitable for tool tips over the value (item delegate).
+
+    \since 5.6
+    \sa setValueToolTip()
 */
-QString QtProperty::toolTip() const
+QString QtProperty::valueToolTip() const
 {
-    return d_ptr->m_toolTip;
+    return d_ptr->m_valueToolTip;
+}
+
+/*!
+    Returns the property description's  tool tip.
+
+    This is suitable for tool tips over the description (label).
+
+    \since 5.6
+    \sa setDescriptionToolTip()
+*/
+QString QtProperty::descriptionToolTip() const
+{
+    return d_ptr->m_descriptionToolTip;
 }
 
 /*!
@@ -297,16 +321,32 @@ QString QtProperty::valueText() const
 }
 
 /*!
-    Sets the property's tool tip to the given \a text.
+    Sets the property value's tool tip to the given \a text.
 
-    \sa toolTip()
+    \since 5.6
+    \sa valueToolTip()
 */
-void QtProperty::setToolTip(const QString &text)
+void QtProperty::setValueToolTip(const QString &text)
 {
-    if (d_ptr->m_toolTip == text)
+    if (d_ptr->m_valueToolTip == text)
         return;
 
-    d_ptr->m_toolTip = text;
+    d_ptr->m_valueToolTip = text;
+    propertyChanged();
+}
+
+/*!
+    Sets the property description's tool tip to the given \a text.
+
+    \since 5.6
+    \sa descriptionToolTip()
+*/
+void QtProperty::setDescriptionToolTip(const QString &text)
+{
+    if (d_ptr->m_descriptionToolTip == text)
+        return;
+
+    d_ptr->m_descriptionToolTip = text;
     propertyChanged();
 }
 
@@ -549,23 +589,23 @@ void QtAbstractPropertyManagerPrivate::propertyInserted(QtProperty *property,
     implementations are available:
 
     \list
-    \o QtBoolPropertyManager
-    \o QtColorPropertyManager
-    \o QtDatePropertyManager
-    \o QtDateTimePropertyManager
-    \o QtDoublePropertyManager
-    \o QtEnumPropertyManager
-    \o QtFlagPropertyManager
-    \o QtFontPropertyManager
-    \o QtGroupPropertyManager
-    \o QtIntPropertyManager
-    \o QtPointPropertyManager
-    \o QtRectPropertyManager
-    \o QtSizePropertyManager
-    \o QtSizePolicyPropertyManager
-    \o QtStringPropertyManager
-    \o QtTimePropertyManager
-    \o QtVariantPropertyManager
+    \li QtBoolPropertyManager
+    \li QtColorPropertyManager
+    \li QtDatePropertyManager
+    \li QtDateTimePropertyManager
+    \li QtDoublePropertyManager
+    \li QtEnumPropertyManager
+    \li QtFlagPropertyManager
+    \li QtFontPropertyManager
+    \li QtGroupPropertyManager
+    \li QtIntPropertyManager
+    \li QtPointPropertyManager
+    \li QtRectPropertyManager
+    \li QtSizePropertyManager
+    \li QtSizePolicyPropertyManager
+    \li QtStringPropertyManager
+    \li QtTimePropertyManager
+    \li QtVariantPropertyManager
     \endlist
 
     \sa QtAbstractEditorFactoryBase, QtAbstractPropertyBrowser, QtProperty
@@ -778,7 +818,7 @@ QtProperty *QtAbstractPropertyManager::createProperty()
     property is being destroyed so that it can remove the property's
     additional attributes.
 
-    \sa clear(),  propertyDestroyed()
+    \sa clear(), propertyDestroyed()
 */
 void QtAbstractPropertyManager::uninitializeProperty(QtProperty *property)
 {
@@ -815,17 +855,17 @@ void QtAbstractPropertyManager::uninitializeProperty(QtProperty *property)
     implementations are available:
 
     \list
-    \o QtCheckBoxFactory
-    \o QtDateEditFactory
-    \o QtDateTimeEditFactory
-    \o QtDoubleSpinBoxFactory
-    \o QtEnumEditorFactory
-    \o QtLineEditFactory
-    \o QtScrollBarFactory
-    \o QtSliderFactory
-    \o QtSpinBoxFactory
-    \o QtTimeEditFactory
-    \o QtVariantEditorFactory
+    \li QtCheckBoxFactory
+    \li QtDateEditFactory
+    \li QtDateTimeEditFactory
+    \li QtDoubleSpinBoxFactory
+    \li QtEnumEditorFactory
+    \li QtLineEditFactory
+    \li QtScrollBarFactory
+    \li QtSliderFactory
+    \li QtSpinBoxFactory
+    \li QtTimeEditFactory
+    \li QtVariantEditorFactory
     \endlist
 
     \sa QtAbstractPropertyManager, QtAbstractPropertyBrowser
@@ -842,7 +882,7 @@ void QtAbstractPropertyManager::uninitializeProperty(QtProperty *property)
     which also provides a pure virtual convenience overload of this
     function enabling access to the property's manager.
 
-    \sa  QtAbstractEditorFactory::createEditor()
+    \sa QtAbstractEditorFactory::createEditor()
 */
 
 /*!
@@ -916,17 +956,17 @@ void QtAbstractPropertyManager::uninitializeProperty(QtProperty *property)
     are available:
 
     \list
-    \o QtCheckBoxFactory
-    \o QtDateEditFactory
-    \o QtDateTimeEditFactory
-    \o QtDoubleSpinBoxFactory
-    \o QtEnumEditorFactory
-    \o QtLineEditFactory
-    \o QtScrollBarFactory
-    \o QtSliderFactory
-    \o QtSpinBoxFactory
-    \o QtTimeEditFactory
-    \o QtVariantEditorFactory
+    \li QtCheckBoxFactory
+    \li QtDateEditFactory
+    \li QtDateTimeEditFactory
+    \li QtDoubleSpinBoxFactory
+    \li QtEnumEditorFactory
+    \li QtLineEditFactory
+    \li QtScrollBarFactory
+    \li QtSliderFactory
+    \li QtSpinBoxFactory
+    \li QtTimeEditFactory
+    \li QtVariantEditorFactory
     \endlist
 
     When deriving from the QtAbstractEditorFactory class, several pure virtual
@@ -1054,7 +1094,6 @@ void QtAbstractPropertyManager::uninitializeProperty(QtProperty *property)
     \fn virtual void QtAbstractEditorFactory::managerDestroyed(QObject *manager)
 
     \internal
-    \reimp
 */
 
 ////////////////////////////////////
@@ -1530,9 +1569,9 @@ void QtAbstractPropertyBrowserPrivate::slotPropertyDataChanged(QtProperty *prope
 
     \table 100%
     \row
-    \o
+    \li
     \snippet doc/src/snippets/code/tools_shared_qtpropertybrowser_qtpropertybrowser.cpp 2
-    \o  \image qtpropertybrowser-duplicate.png
+    \li  \image qtpropertybrowser-duplicate.png
     \endtable
 
     The addProperty() function returns a QtBrowserItem that uniquely
@@ -1546,8 +1585,8 @@ void QtAbstractPropertyBrowserPrivate::slotPropertyDataChanged(QtProperty *prope
     implementations:
 
     \list
-        \o QtGroupBoxPropertyBrowser
-        \o QtTreePropertyBrowser
+        \li QtGroupBoxPropertyBrowser
+        \li QtTreePropertyBrowser
     \endlist
 
     \sa QtAbstractPropertyManager, QtAbstractEditorFactoryBase
@@ -1787,8 +1826,9 @@ QtBrowserItem *QtAbstractPropertyBrowser::insertProperty(QtProperty *property,
         QtProperty *prop = pendingList.at(pos);
         if (prop == property)
             return 0;
-        if (prop == afterProperty)
+        if (prop == afterProperty) {
             newPos = pos + 1;
+        }
         pos++;
     }
     d_ptr->createBrowserIndexes(property, 0, afterProperty);
@@ -1867,7 +1907,14 @@ QWidget *QtAbstractPropertyBrowser::createEditor(QtProperty *property,
 
     if (!factory)
         return 0;
-    return factory->createEditor(property, parent);
+    QWidget *w = factory->createEditor(property, parent);
+    // Since some editors can be QComboBoxes, and we changed their focus policy in Qt 5
+    // to make them feel more native on Mac, we need to relax the focus policy to something
+    // more permissive to keep the combo box from losing focus, allowing it to stay alive,
+    // when the user clicks on it to show the popup.
+    if (w)
+        w->setFocusPolicy(Qt::WheelFocus);
+    return w;
 }
 
 bool QtAbstractPropertyBrowser::addFactory(QtAbstractPropertyManager *abstractManager,

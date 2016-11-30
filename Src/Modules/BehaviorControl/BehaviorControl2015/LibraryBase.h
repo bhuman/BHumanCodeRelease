@@ -10,12 +10,9 @@
 
 namespace Behavior2015
 {
-  class LibCodeRelease;
-
   class LibraryBase : public BehaviorBase
   {
   public:
-    LibCodeRelease& libCodeRelease; /**< Contains miscellaneous helper methods */
 
     /**
      * The default constructor initializes all references with the actual libraries.

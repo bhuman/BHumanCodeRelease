@@ -10,13 +10,12 @@ MAKE_MODULE(WhistleHandler, motionInfrastructure)
 void WhistleHandler::update(GameInfo& gameInfo)
 {
   gameInfo = theRawGameInfo;
-  if(gameInfo.state != lastGameState && gameInfo.state == STATE_SET)
+  if(gameInfo.state != theCognitionStateChanges.lastGameState && gameInfo.state == STATE_SET)
     timeOfLastSetState = theFrameInfo.time;
-  lastGameState = gameInfo.state;
 
   if(gameInfo.state != STATE_SET)
     overrideGameState = false;
-  else if(!overrideGameState && gameInfo.gameType == GAME_PLAYOFF && gameInfo.secondaryState == STATE2_NORMAL)
+  else if(!overrideGameState && gameInfo.secondaryState == STATE2_NORMAL)
     overrideGameState = checkWhistle() && checkBall();
 
   if(overrideGameState)
@@ -84,22 +83,22 @@ bool WhistleHandler::checkBall() const
 
 bool WhistleHandler::checkForIllegalMotionPenalty()
 {
-  const int minPlayerNum = Global::getSettings().lowestValidPlayerNumber;
-  const int maxPlayerNum = Global::getSettings().highestValidPlayerNumber;
+  constexpr int minPlayerNum = Settings::lowestValidPlayerNumber;
+  constexpr int maxPlayerNum = Settings::highestValidPlayerNumber;
 
   if(penaltyTimes.size() != static_cast<unsigned int>(maxPlayerNum))
     penaltyTimes.resize(maxPlayerNum, 0);
 
   for(int i = minPlayerNum; i <= maxPlayerNum; ++i)
+  {
     if(theOwnTeamInfo.players[i - 1].penalty == PENALTY_SPL_ILLEGAL_MOTION_IN_SET)
     {
       if(penaltyTimes[i - 1] == 0u)
         penaltyTimes[i - 1] = theFrameInfo.time;
     }
     else
-    {
       penaltyTimes[i - 1] = 0u;
-    }
+  }
 
   for(int i = minPlayerNum; i <= maxPlayerNum; ++i)
     if(penaltyTimes[i - 1] > timeOfLastSetState)

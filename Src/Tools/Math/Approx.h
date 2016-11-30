@@ -53,4 +53,29 @@ namespace Approx
         return atan;
     }
   }
+
+  /**
+   * An integer-math only approximation of atan2.
+   * Modified version of the Q15-implementation from http://geekshavefeelings.com/posts/fixed-point-atan2.
+   *
+   * @param y y coordinate as a short in the range [-16384, 16384)
+   * @param x x coordinate as a short in the range [-16384, 16384)
+   * @return atan2 of y and x as an unsigned short in the range [0,65536)
+   */
+  inline unsigned short atan2(const short y, const short x)
+  {
+    short quotient;
+    unsigned short offset;
+    if(std::abs(x) > std::abs(y))
+    {
+      quotient = static_cast<short>((y << 14) / x);
+      offset = x > 0 ? 0 : 32768;
+    }
+    else
+    {
+      quotient = x == 0 ? 0 : static_cast<short>(-1 * (x << 14) / y);
+      offset = y > 0 ? 16384 : 49152;
+    }
+    return offset + static_cast<unsigned short>(((int)(11039 - ((5695 * (int)std::abs(quotient)) >> 15)) * (int)quotient) >> 15);
+  }
 }

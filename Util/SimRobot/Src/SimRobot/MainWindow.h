@@ -6,6 +6,12 @@
 
 #pragma once
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
+#endif
+
 #include <QMainWindow>
 #include <QSignalMapper>
 #include <QActionGroup>
@@ -14,23 +20,11 @@
 #include <QHash>
 #include <QLibrary>
 
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 #include "SimRobot.h"
-
-#ifdef LINUX
-#if QT_VERSION >= QT_VERSION_CHECK(4, 6, 0) && QT_VERSION < QT_VERSION_CHECK(4, 9, 0)
-#define FIX_LINUX_DOCK_WIDGET_SIZE_RESTORING_BUG
-#endif
-#endif
-
-#ifdef OSX
-#define FIX_MACOSX_TOOLBAR_VISIBILITY_RESTORING_BUG
-#define FIX_MACOSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
-#endif
-
-#ifdef WINDOWS
-#define FIX_WIN32_WINDOWS7_BLOCKING_BUG
-#define FIX_WIN32_CRASH_WITHOUT_QGLWIDGET_BUG
-#endif
 
 class SceneGraphDockWidget;
 class RegisteredDockWidget;
@@ -46,10 +40,6 @@ public:
   MainWindow(int argc, char *argv[]);
 
   QMenu* createSimMenu();
-
-  // public only for FIX_WIN32_WINDOWS7_BLOCKING_BUG
-  int timerId; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
-  virtual void timerEvent(QTimerEvent* event);
 
 private:
 
@@ -68,6 +58,8 @@ private:
 
     LoadedModule(const QString& name, int flags) : QLibrary(name), module(0), flags(flags), compiled(false) {}
   };
+
+  int timerId; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
 
   QAction* fileOpenAct;
   QAction* fileCloseAct;
@@ -150,6 +142,7 @@ private:
   virtual QSettings& getLayoutSettings() {return layoutSettings;}
 
   virtual void closeEvent(QCloseEvent* event);
+  virtual void timerEvent(QTimerEvent* event);
   virtual void dragEnterEvent(QDragEnterEvent* event);
   virtual void dropEvent(QDropEvent* event);
   virtual void keyPressEvent(QKeyEvent* event);
@@ -161,6 +154,12 @@ private:
   bool compileModules();
   void updateViewMenu(QMenu* menu);
   void addToolBarButtonsFromMenu(QMenu* menu, QToolBar* toolBar, bool addSeparator);
+
+#ifdef FIX_MACOS_TOOLBAR_RENDERING_BUG
+  enum {toolBarNone, toolBarToggleBack, toolBarHide, toolBarShow} toolBarState = toolBarNone;
+  int toolBarTimerId = -1;
+  void resizeEvent(QResizeEvent* e);
+#endif
 
 public slots:
   void openFile(const QString& fileName);
@@ -178,7 +177,6 @@ private slots:
 
   void open();
   bool closeFile();
-  void help();
   void about();
   void loadAddon(const QString& name);
 
@@ -189,9 +187,14 @@ private slots:
 
   void focusChanged(QWidget *old, QWidget* now);
 
+public:
+  // Provides information on whether the simulation is running or not
+  bool isSimRunning() { return running; }
+
 public slots:
   void simReset();
   void simStart();
   void simStep();
   void simStop();
+
 };

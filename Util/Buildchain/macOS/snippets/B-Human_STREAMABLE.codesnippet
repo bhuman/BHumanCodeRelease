@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>STREAMABLE</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>CodeBlock</string>
+		<string>TopLevel</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>STREAMABLE(&lt;#name#&gt;,
+{,
+  (&lt;#type#&gt;)(&lt;#init#&gt;) &lt;#var#&gt;,
+});</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>D5F2FE17-3B66-469C-ADC5-C939EDB5AA18</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Declaration of a streamable structure.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>STREAMABLE Declaration</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>0</integer>
+</dict>
+</plist>

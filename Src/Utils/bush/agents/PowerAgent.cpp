@@ -5,12 +5,12 @@
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/tools/ShellTools.h"
 #include "Utils/bush/models/Robot.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 
+#define UPDATE_TIME 5000
 
-#define UPDATE_TIME 60000
-
-PowerAgent::PowerAgent(PingAgent* pingAgent) : pingAgent(pingAgent)
+PowerAgent::PowerAgent(PingAgent* pingAgent) :
+  pingAgent(pingAgent)
 {}
 
 PowerAgent::~PowerAgent()
@@ -35,18 +35,22 @@ void PowerAgent::initialize(std::map<std::string, Robot*>& robotsByName)
 
 void PowerAgent::setPings(ENetwork, std::map<std::string, double>*)
 {
-  const unsigned currentTime = SystemCall::getRealSystemTime();
+  const unsigned currentTime = Time::getRealSystemTime();
 
   for(auto it = Session::getInstance().robotsByName.cbegin(), end = Session::getInstance().robotsByName.cend(); it != end; ++it)
   {
     if(currentTime - timeOfLastUpdate[it->first] > UPDATE_TIME && pingAgent->getBestNetwork(it->second) != ENetwork::NONE)
     {
       const std::string ip = pingAgent->getBestNetwork(it->second) == ENetwork::LAN ? it->second->lan : it->second->wlan;
-      const std::string cmd = "battery.py " + it->second->name + " | grep -v \"[INFO]\"";
+      const std::string cmd = "battery.py " + it->second->name + " | grep \"" + it->second->name + "\"";
 
       processes[it->first]->start(fromString(remoteCommandForQProcess(cmd, ip)));
 
       timeOfLastUpdate[it->first] = currentTime;
+    }
+    if(currentTime - pingAgent->getLastConnectionTime(it->second) > DISCONNECTED_TIME)
+    {
+      reset(it->second);
     }
   }
 }
@@ -55,14 +59,17 @@ void PowerAgent::batteryReadable()
 {
   QProcess* process = dynamic_cast<QProcess*>(sender());
 
-  QByteArray data = process->readAllStandardOutput();
-  QString output(data);
+  const QByteArray data = process->readAllStandardOutput();
+  const QString output(data);
 
-  QStringList s = output.split(' ');
-  std::string name = toString(s[0]);
-  float value = s[1].toFloat();
+  const QStringList s = output.split(' ');
+  const std::string name = toString(s[0]);
 
-  power[name] = static_cast<int>(value * 100.f);
+  power[name].value = static_cast<int>(s[1].toFloat() * 100.f);
+  power[name].batteryCharging = s.size() > 2
+    ? static_cast<short>(s[2].trimmed().toFloat()) & 0b10000000
+    : false;
+
   emit powerChanged(&this->power);
 }
 
@@ -70,7 +77,8 @@ void PowerAgent::reset(Robot* robot)
 {
   if(robot)
   {
-    power[robot->name] = 101; // Invalid Value
+    power[robot->name].value = 101; // Invalid Value
+    power[robot->name].batteryCharging = false;
     timeOfLastUpdate[robot->name] = -UPDATE_TIME;
     emit powerChanged(&this->power);
   }

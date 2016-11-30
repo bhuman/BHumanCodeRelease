@@ -168,3 +168,8 @@ inline Pose3f Pose3f::inverse() const
 {
   return Pose3f(*this).invert();
 }
+
+inline Pose3f operator*(const RotationMatrix& rotation, const Pose3f& pose)
+{
+  return Pose3f(rotation * pose.rotation, rotation * pose.translation);
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>enumdef</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>TopLevel</string>
+		<string>CodeBlock</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>enum &lt;#enumeration name#&gt;
+{
+  &lt;#enumerator1#&gt; = &lt;#value1#&gt;,
+  &lt;#enumerator2#&gt; = &lt;#value2#&gt;
+};</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>5D04838B-FD25-4CA1-BCF7-BA2F6569F1FE</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Used for describing a new enumeration type whose value can be one of several named constants.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>Enumeration Declaration</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>2</integer>
+</dict>
+</plist>

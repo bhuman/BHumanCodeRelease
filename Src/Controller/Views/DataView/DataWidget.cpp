@@ -1,4 +1,4 @@
-/*
+/**
  * DataWidget.cpp
  *
  *  Created on: Apr 17, 2012
@@ -8,8 +8,8 @@
 #include "DataWidget.h"
 #include <QSettings>
 
-DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager) : theView(view),
-  pTheCurrentProperty(nullptr), theEditorFactory(&view), theManager(manager), theRootPropertyHasChanged(false)
+DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager)
+  : theView(view), theEditorFactory(&view), theManager(manager)
 {
   setFocusPolicy(Qt::StrongFocus);
 
@@ -27,9 +27,10 @@ DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager) : theV
   pAutoSetAction->setText("Auto-set");
   pAutoSetAction->setToolTip("Continuously overwrite data on robot");
 
-  connect(pSetAction , SIGNAL(triggered()), this, SLOT(setPressed()));
-  connect(pUnchangedAction , SIGNAL(triggered()), this, SLOT(unchangedPressed()));
+  connect(pSetAction, SIGNAL(triggered()), this, SLOT(setPressed()));
+  connect(pUnchangedAction, SIGNAL(triggered()), this, SLOT(unchangedPressed()));
   connect(pAutoSetAction, SIGNAL(toggled(bool)), this, SLOT(autoSetToggled(bool)));
+  connect(&theManager, SIGNAL(valueChanged(QtProperty*, const QVariant&)), this, SLOT(valueChanged(QtProperty*, const QVariant&)));
 
   setFactoryForManager(&theManager, &theEditorFactory);
   setResizeMode(QtTreePropertyBrowser::Interactive);
@@ -66,14 +67,11 @@ void DataWidget::update()
     if(subProps.size() > 0)
     {
       for(int i = 0; i < subProps.size(); i++)
-      {
         addProperty(subProps[i]);
-      }
     }
     else
-    {
       addProperty(pTheCurrentProperty);
-    }
+
     theRootPropertyHasChanged = false;
   }
 };
@@ -106,6 +104,11 @@ void DataWidget::setSetButtonEnabled(bool value)
   pSetAction->setEnabled(value);
 }
 
+bool DataWidget::isSetButtonEnabled() const
+{
+  return pSetAction->isEnabled();
+}
+
 void DataWidget::setPressed()
 {
   theView.set();
@@ -126,4 +129,9 @@ void DataWidget::itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* precee
 {
   QtTreePropertyBrowser::itemInserted(insertedItem, preceedingItem);
   setExpanded(insertedItem, !insertedItem->parent());
+}
+
+void DataWidget::valueChanged(QtProperty*, const QVariant&)
+{
+  theView.valueChanged();
 }

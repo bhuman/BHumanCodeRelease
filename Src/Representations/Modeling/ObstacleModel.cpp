@@ -1,39 +1,86 @@
 #include "ObstacleModel.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/Math/Approx.h"
 #include "Tools/Math/Random.h"
 #include "Tools/Modeling/Obstacle.h"
+#include "Tools/Module/Blackboard.h"
+
+void ObstacleModel::verify() const
+{
+#ifndef NDEBUG
+  for(const auto& obstacle : obstacles)
+  {
+    ASSERT(std::isfinite(obstacle.center.x()));
+    ASSERT(std::isfinite(obstacle.center.y()));
+
+    ASSERT(std::isfinite(obstacle.left.x()));
+    ASSERT(std::isfinite(obstacle.left.y()));
+
+    ASSERT(std::isfinite(obstacle.right.x()));
+    ASSERT(std::isfinite(obstacle.right.y()));
+
+    ASSERT(std::isfinite(obstacle.velocity.x()));
+    ASSERT(std::isfinite(obstacle.velocity.y()));
+
+    //ASSERT((obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
+
+    ASSERT(std::isnormal(obstacle.covariance(0, 0)));
+    ASSERT(std::isnormal(obstacle.covariance(1, 1)));
+    ASSERT(std::isfinite(obstacle.covariance(0, 1)));
+    ASSERT(std::isfinite(obstacle.covariance(1, 0)));
+    ASSERT(Approx::isEqual(obstacle.covariance(0, 1), obstacle.covariance(1, 0), 1e-20f)); 
+  }
+#endif
+}
 
 void ObstacleModel::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:CenterCross", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:Circle", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:Covariance", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:Velocity", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:Fallen", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:rectangle", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:centerCross", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:leftRight", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:circle", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:covariance", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:velocity", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:fallen", "drawingOnField");
   DECLARE_DEBUG_DRAWING3D("representation:ObstacleModel", "robot");
 
-  ColorRGBA color;
+  static const ColorRGBA colors[] =
+  {
+    ColorRGBA::blue,
+    ColorRGBA::red,
+    ColorRGBA::yellow,
+    ColorRGBA::black
+  };
 
+  const ColorRGBA ownColor = colors[Blackboard::getInstance().exists("OwnTeamInfo") ?
+      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLUE];
+
+  const ColorRGBA opponentColor = colors[Blackboard::getInstance().exists("OpponentTeamInfo") ?
+      static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]).teamColor : TEAM_RED];
+
+  ColorRGBA color;
   for(const auto& obstacle : obstacles)
   {
     switch(obstacle.type)
     {
       case Obstacle::goalpost:
       {
-        color = ColorRGBA::yellow;
+        color = ColorRGBA::white;
         break;
       }
       case Obstacle::fallenTeammate:
       case Obstacle::teammate:
       {
-        color = ColorRGBA::cyan;
+        color = ownColor;
         break;
       }
       case Obstacle::fallenOpponent:
       case Obstacle::opponent:
       {
-        color = ColorRGBA::magenta;
+        color = opponentColor;
         break;
       }
       case Obstacle::fallenSomeRobot:
@@ -44,21 +91,35 @@ void ObstacleModel::draw() const
       }
       default:
       {
-        color = ColorRGBA::blue;
+        color = ColorRGBA::violet;
         break;
       }
     }
-    CYLINDER3D("representation:ObstacleModel", obstacle.center.x(), obstacle.center.y(), -210, 0, 0, 0, (obstacle.left - obstacle.right).norm(), 10, color);
-    CROSS("representation:ObstacleModel:CenterCross", obstacle.center.x(), obstacle.center.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, color);
-    CIRCLE("representation:ObstacleModel:Circle", obstacle.center.x(), obstacle.center.y(), (obstacle.left - obstacle.right).norm() / 2, 10, Drawings::dottedPen, color, Drawings::noBrush, color);
-    COVARIANCE2D("representation:ObstacleModel:Covariance", (Matrix2f() << obstacle.covariance.topLeftCorner(2, 2)).finished(), obstacle.center);
+    const Vector2f& center = obstacle.center;
+    const Vector2f& left = obstacle.left;
+    const Vector2f& right = obstacle.right;
+
+    CYLINDER3D("representation:ObstacleModel", center.x(), center.y(), -210, 0, 0, 0, (left - right).norm(), 10, color);
+    CROSS("representation:ObstacleModel:centerCross", center.x(), center.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, color);
+
+    float obstacleRadius = (left - right).norm() * .5f;
+    Angle robotRotation = Blackboard::getInstance().exists("RobotPose") ? static_cast<const RobotPose&>(Blackboard::getInstance()["RobotPose"]).rotation : Angle();
+    Vector2f frontRight(-Obstacle::getRobotDepth(), -obstacleRadius);
+    frontRight = center + frontRight;
+    RECTANGLE2("representation:ObstacleModel:rectangle", frontRight, obstacleRadius * 2, obstacleRadius * 2, -robotRotation, 16, Drawings::PenStyle::solidPen, ColorRGBA::black, Drawings::solidBrush, color);
+
+    LINE("representation:ObstacleModel:leftRight", center.x(), center.y(), left.x(), left.y(), 20, Drawings::dottedPen, color);
+    LINE("representation:ObstacleModel:leftRight", center.x(), center.y(), right.x(), right.y(), 20, Drawings::dottedPen, color);
+    CIRCLE("representation:ObstacleModel:circle", center.x(), center.y(), obstacleRadius, 10, Drawings::dottedPen, color, Drawings::noBrush, color);
+    COVARIANCE2D("representation:ObstacleModel:covariance", obstacle.covariance, center);
+
     if(obstacle.velocity.squaredNorm() > 0)
-      ARROW("representation:ObstacleModel:Velocity", obstacle.center.x(), obstacle.center.y(),
-      obstacle.center.x() + 2 * obstacle.velocity.x(), obstacle.center.y() + 2 * obstacle.velocity.y(), 10, Drawings::solidPen, ColorRGBA::black);
+      ARROW("representation:ObstacleModel:velocity", center.x(), center.y(),
+            center.x() + 2 * obstacle.velocity.x(), center.y() + 2 * obstacle.velocity.y(), 10, Drawings::solidPen, ColorRGBA::black);
 
     if(obstacle.type >= Obstacle::fallenSomeRobot)
     {
-      DRAWTEXT("representation:ObstacleModel:Fallen", obstacle.center.x(), obstacle.center.y(), 100, color, "FALLEN");
+      DRAWTEXT("representation:ObstacleModel:fallen", center.x(), center.y(), 100, color, "FALLEN");
     }
   }
 }
@@ -73,75 +134,17 @@ ObstacleModelCompressed::ObstacleModelCompressed(const ObstacleModel& other, siz
     {
       obstacles.emplace_back(obstacle);
     }
-    return;
   }
-
-  size_t offset = 0;
-  size_t numOfUsedObstacles = numOfInputObstacles;
-  if(numOfUsedObstacles > maxNumberOfObstacles)
+  else
   {
-    numOfUsedObstacles = maxNumberOfObstacles;
-    offset = static_cast<size_t>(random(static_cast<int>(numOfInputObstacles)));
+    size_t offset = Random::uniformInt(numOfInputObstacles - 1);
+    obstacles.reserve(maxNumberOfObstacles);
+    for(size_t i = 0; i < maxNumberOfObstacles; i++)
+      obstacles.emplace_back(other.obstacles[(offset + i) % numOfInputObstacles]);
   }
-  obstacles.reserve(numOfUsedObstacles);
-  for(size_t i = 0; i < numOfUsedObstacles; i++)
-    obstacles.emplace_back(other.obstacles[(offset + i) % numOfInputObstacles]);
 }
 
-ObstacleModelCompressed::ObstacleCompressed::ObstacleCompressed(const Obstacle& other) : 
+ObstacleModelCompressed::ObstacleCompressed::ObstacleCompressed(const Obstacle& other) :
   covXX(other.covariance(0, 0)), covYY(other.covariance(1, 1)), covXY(other.covariance(0, 1)),
-  center(other.center), left(other.left), right(other.right), type(other.type)
+  center(other.center.cast<short>()), left(other.left.cast<short>()), right(other.right.cast<short>()), lastSeen(other.lastSeen), type(other.type)
 {}
-
-void ObstacleModelCompressed::draw() const
-{
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModelCompressed:CenterCross", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModelCompressed:Circle", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModelCompressed:Fallen", "drawingOnField");
-  DECLARE_DEBUG_DRAWING3D("representation:ObstacleModelCompressed", "robot");
-
-  ColorRGBA color;
-
-  for(const auto& obstacle : obstacles)
-  {
-    switch(obstacle.type)
-    {
-      case Obstacle::goalpost:
-      {
-        color = ColorRGBA::yellow;
-        break;
-      }
-      case Obstacle::fallenTeammate:
-      case Obstacle::teammate:
-      {
-        color = ColorRGBA::cyan;
-        break;
-      }
-      case Obstacle::fallenOpponent:
-      case Obstacle::opponent:
-      {
-        color = ColorRGBA::magenta;
-        break;
-      }
-      case Obstacle::fallenSomeRobot:
-      case Obstacle::someRobot:
-      {
-        color = ColorRGBA::orange;
-        break;
-      }
-      default:
-      {
-        color = ColorRGBA::blue;
-        break;
-      }
-    }
-    CYLINDER3D("representation:ObstacleModelCompressed", obstacle.center.x(), obstacle.center.y(), -210, 0, 0, 0, (obstacle.left - obstacle.right).norm(), 10, color);
-    CROSS("representation:ObstacleModelCompressed:CenterCross", obstacle.center.x(), obstacle.center.y(), Obstacle::getRobotDepth(), 10, Drawings::solidPen, color);
-    CIRCLE("representation:ObstacleModelCompressed:Circle", obstacle.center.x(), obstacle.center.y(), Obstacle::getRobotDepth(), 10, Drawings::dottedPen, color, Drawings::noBrush, color);
-
-    if(obstacle.type >= Obstacle::fallenSomeRobot)
-    {
-      DRAWTEXT("representation:ObstacleModelCompressed:Fallen", obstacle.center.x(), obstacle.center.y(), 100, color, "FALLEN");
-    }
-  }
-}

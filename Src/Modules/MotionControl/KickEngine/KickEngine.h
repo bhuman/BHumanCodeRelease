@@ -11,7 +11,7 @@
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/MotionControl/HeadJointRequest.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
-#include "Representations/MotionControl/MotionSelection.h"
+#include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Representations/Sensing/InertialData.h"
@@ -20,6 +20,7 @@
 
 MODULE(KickEngine,
 {,
+  USES(JointRequest),
   REQUIRES(FrameInfo),
   REQUIRES(HeadJointRequest),
   REQUIRES(InertialData),
@@ -27,11 +28,11 @@ MODULE(KickEngine,
   REQUIRES(JointCalibration),
   REQUIRES(MassCalibration),
   REQUIRES(MotionRequest),
-  REQUIRES(MotionSelection),
+  REQUIRES(LegMotionSelection),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
-  REQUIRES(StandOutput),
+  //REQUIRES(StandOutput),
   PROVIDES(KickEngineOutput),
 });
 
@@ -39,8 +40,9 @@ class KickEngine : public KickEngineBase
 {
 private:
   KickEngineData data;
-  bool compensate, compensated;
-  unsigned timeSinceLastPhase;
+  bool compensate = false;
+  bool compensated = false;
+  unsigned timeSinceLastPhase = 0;
 
   std::vector<KickEngineParameters> params;
 

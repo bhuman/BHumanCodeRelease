@@ -14,7 +14,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Module/Module.h"
@@ -53,6 +53,28 @@ private:
   });
 
   /**
+   * This enum is used to translate between the indices of the parameter vector used in the
+   * optimizer and their actual meaning.
+   */
+  ENUM(ParameterTranslation,
+  {,
+    lowerCameraRollCorrection,
+    lowerCameraTiltCorrection,
+    //lowerCameraPanCorrection,
+
+    upperCameraRollCorrection,
+    upperCameraTiltCorrection,
+    //upperCameraPanCorrection,
+
+    bodyRollCorrection,
+    bodyTiltCorrection,
+
+    robotPoseXCorrection,
+    robotPoseYCorrection,
+    robotPoseRotationCorrection,
+  });
+
+  /**
    * A class representing a single reference point within the calibration procedure.
    * It contains all information necessary to construct a camera matrix for the point
    * in time the sample was taken using an arbitrary camera calibration.
@@ -67,24 +89,26 @@ private:
     CameraInfo cameraInfo;
   };
 
-  /**
-   * This enum is used to translate between the indices of the parameter vector used in the
-   * optimizer and their actual meaning.
-   */
-  ENUM(ParameterTranslation,
-  {,
-    lowerCameraRollCorrection,
-    lowerCameraTiltCorrection,
-    //lowerCameraPanCorrection,
-    upperCameraRollCorrection,
-    upperCameraTiltCorrection,
-    //upperCameraPanCorrection,
-    bodyRollCorrection,
-    bodyTiltCorrection,
-    robotPoseXCorrection,
-    robotPoseYCorrection,
-    robotPoseRotationCorrection,
-  });
+  using Parameters = GaussNewtonOptimizer<numOfParameterTranslations>::Vector;
+
+  struct Functor2 : public GaussNewtonOptimizer<numOfParameterTranslations>::Functor
+  {
+    CameraCalibrator& calibrator;
+
+    Functor2(CameraCalibrator& calibrator) : calibrator(calibrator) {};
+
+    /**
+     * This method computes the error value for a sample and a parameter vector.
+     * @param params The parameter vector for which the error should be evaluated.
+     * @param measurement The i-th measurement for which the error should be computed.
+     * @return The error.
+     */
+    float operator()(const Parameters& params, size_t measurement) const;
+
+    size_t getNumOfMeasurements() const { return calibrator.samples.size(); };
+  };
+  Functor2 functor;
+  friend struct Functor2;
 
   State state; /**< The state of the calibrator. */
   std::function<void()> states[numOfStates];
@@ -100,20 +124,17 @@ private:
   Vector2i currentPoint = Vector2i::Zero();
 
   // optimization variables
-  GaussNewtonOptimizer<Sample, CameraCalibrator>* optimizer = nullptr; /**< A pointer to the currently used optimizer, or nullptr if there is none. */
+  GaussNewtonOptimizer<numOfParameterTranslations>* optimizer = nullptr; /**< A pointer to the currently used optimizer, or nullptr if there is none. */
+  Parameters optimizationParameters;
   CameraCalibration nextCameraCalibration;
   unsigned successiveConvergations; /**< The number of consecutive iterations that fulfil the termination criterion. */
   int framesToWait; /**< The remaining number of frames to wait for the next iteration. */
 
 public:
-  /** Default constructor. */
   CameraCalibrator();
-
-  /** Destructor. */
   ~CameraCalibrator();
 
 private:
-
   void idle();
   void accumulate();
   void optimize();
@@ -157,32 +178,22 @@ private:
    * @return The distance.
    */
   float computeError(const Sample& sample, const CameraCalibration& cameraCalibration,
-                     const RobotPose& robotPose, bool inImage = true) const;
+                     const Pose2f& robotPose, bool inImage = true) const;
 
   /**
-   * This method computes the error value for a sample and a parameter vector.
-   * @param sample The sample point for which the distance / error should be computed.
-   * @param parameters The parameter vector for which the error should be evaluated.
-   * @return The error.
+   * This method packs a camera calibration and a robot pose into a parameter vector.
+   * @param cameraCalibration The camera calibration to be translated.
+   * @param robotPose The robot pose to be translated.
    */
-  float computeErrorParameterVector(const Sample& sample, const std::vector<float>& parameters) const;
+  Parameters pack(const CameraCalibration& cameraCalibration, const Pose2f& robotPose) const;
 
   /**
-   * This method converts a parameter vector to a camera calibration and a robot pose they stand for.
-   * @param parameters The parameter vector to be translated.
+   * This method unpacks a parameter vector into a camera calibration and a robot pose.
+   * @param params The parameter vector to be unpacked.
    * @param cameraCalibration The camera calibration the values of which are set to the corresponding values in the parameter vector.
    * @param robotPose The robot pose the values of which are set to the corresponding values in the parameter vector.
    */
-  void translateParameters(const std::vector<float>& parameters, CameraCalibration& cameraCalibration, RobotPose& robotPose) const;
-
-  /**
-   * This method converts a camera calibration and a robot pose to a parameter vector.
-   * @param cameraCalibration The camera calibration to be translated.
-   * @param robotPose The robot pose to be translated.
-   * @param parameters The resulting parameter vector containing the values from the given camera calibration and robot pose.
-   */
-  void translateParameters(const CameraCalibration& cameraCalibration, const RobotPose& robotPose,
-                           std::vector<float>& parameters) const;
+  void unpack(const Parameters& params, CameraCalibration& cameraCalibration, Pose2f& robotPose) const;
 
   /**
    * This method projects a line given in robot relative field coordinates into

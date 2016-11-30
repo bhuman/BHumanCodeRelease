@@ -13,3 +13,5 @@ STREAMABLE(DummyRepresentation,
 {,
   (int)(0) dummy, /**< Yeah! */
 });
+
+struct DummyRepresentation2 : public DummyRepresentation{};

@@ -58,42 +58,10 @@ void Phase::serialize(In* in, Out* out)
   STREAM_REGISTER_FINISH;
 }
 
-void KickEngineParameters::serialize(In* in, Out* out)
+void KickEngineParameters::onRead()
 {
-  STREAM_REGISTER_BEGIN;
-
-  STREAM(footOrigin)
-  STREAM(footRotOrigin)
-  STREAM(armOrigin)
-  STREAM(handRotOrigin)
-  STREAM(comOrigin)
-  STREAM(headOrigin)
-
-  STREAM(kpx)
-  STREAM(kix)
-  STREAM(kdx)
-
-  STREAM(kpy)
-  STREAM(kiy)
-  STREAM(kdy)
-
-  STREAM(preview)
-
-  STREAM(loop)
-
-  STREAM(autoComTra)
-
-  STREAM(ignoreHead)
-
-  if(in)
-    phaseParameters.clear();
-  STREAM(phaseParameters);
   numberOfPhases = static_cast<int>(phaseParameters.size());
-
-  if(in)
-    calcControlPoints();
-
-  STREAM_REGISTER_FINISH;
+  calcControlPoints();
 }
 
 void KickEngineParameters::calcControlPoints()
@@ -139,18 +107,15 @@ Vector3f KickEngineParameters::getPosition(const float& phase, const int& phaseN
 {
   Vector3f p0, p1;
   if(phaseNumber == 0)
-  {
-    p0 = phaseParameters[phaseNumber].originPos[limb];
-    p1 = p0;
-  }
+    p0 = p1 = phaseParameters[phaseNumber].originPos[limb];
   else
   {
     p0 = phaseParameters[phaseNumber - 1].controlPoints[limb][2];
     p1 = phaseParameters[phaseNumber].controlPoints[limb][0];
   }
 
-  Vector3f p2 = phaseParameters[phaseNumber].controlPoints[limb][1];
-  Vector3f p3 = phaseParameters[phaseNumber].controlPoints[limb][2];
+  const Vector3f p2 = phaseParameters[phaseNumber].controlPoints[limb][1];
+  const Vector3f p3 = phaseParameters[phaseNumber].controlPoints[limb][2];
 
   return (-p0 + p1 * 3 - p2 * 3 + p3) * phase * phase * phase + (p0 * 3 - p1 * 6 + p2 * 3) * phase * phase + (p0 * -3 + p1 * 3) * phase + p0;
 }
@@ -159,18 +124,15 @@ Vector2f KickEngineParameters::getComRefPosition(const float& phase, const int& 
 {
   Vector2f p0, p1;
   if(phaseNumber == 0)
-  {
-    p0 = phaseParameters[phaseNumber].comOriginPos;
-    p1 = p0;
-  }
+    p0 = p1 = phaseParameters[phaseNumber].comOriginPos;
   else
   {
     p0 = phaseParameters[phaseNumber - 1].comTra[2];
     p1 = phaseParameters[phaseNumber].comTra[0];
   }
 
-  Vector2f p2 = phaseParameters[phaseNumber].comTra[1];
-  Vector2f p3 = phaseParameters[phaseNumber].comTra[2];
+  const Vector2f p2 = phaseParameters[phaseNumber].comTra[1];
+  const Vector2f p3 = phaseParameters[phaseNumber].comTra[2];
 
   return (-p0 + p1 * 3 - p2 * 3 + p3) * phase * phase * phase + (p0 * 3 - p1 * 6 + p2 * 3) * phase * phase + (p0 * -3 + p1 * 3) * phase + p0;
 }
@@ -180,8 +142,7 @@ Vector2f KickEngineParameters::getHeadRefPosition(const float& phase, const int&
   Vector2f p0, p1;
   if(phaseNumber == 0)
   {
-    p0 = phaseParameters[phaseNumber].headOrigin;
-    p1 = p0;
+    p0 = p1 = phaseParameters[phaseNumber].headOrigin;
   }
   else
   {
@@ -189,8 +150,8 @@ Vector2f KickEngineParameters::getHeadRefPosition(const float& phase, const int&
     p1 = phaseParameters[phaseNumber].headTra[0];
   }
 
-  Vector2f p2 = phaseParameters[phaseNumber].headTra[1];
-  Vector2f p3 = phaseParameters[phaseNumber].headTra[2];
+  const Vector2f p2 = phaseParameters[phaseNumber].headTra[1];
+  const Vector2f p3 = phaseParameters[phaseNumber].headTra[2];
 
   return (-p0 + p1 * 3 - p2 * 3 + p3) * phase * phase * phase + (p0 * 3 - p1 * 6 + p2 * 3) * phase * phase + (p0 * -3 + p1 * 3) * phase + p0;
 }
@@ -235,7 +196,7 @@ void KickEngineParameters::initFirstPhase()
   }
 }
 
-void KickEngineParameters::initFirstPhase(Vector3f *origins, Vector2f head)
+void KickEngineParameters::initFirstPhase(const Vector3f* origins, const Vector2f& head)
 {
   for(int i = 0; i < Phase::numOfLimbs; ++i)
     phaseParameters[0].originPos[i] = origins[i];
@@ -244,7 +205,7 @@ void KickEngineParameters::initFirstPhase(Vector3f *origins, Vector2f head)
   phaseParameters[0].headOrigin = head;
 }
 
-void KickEngineParameters::initFirstPhaseLoop(Vector3f *origins, Vector2f lastCom, Vector2f head)
+void KickEngineParameters::initFirstPhaseLoop(const Vector3f* origins, const Vector2f& lastCom, const Vector2f& head)
 {
   for(int i = 0; i < Phase::numOfLimbs; ++i)
     phaseParameters[0].originPos[i] = origins[i];

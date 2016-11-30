@@ -15,6 +15,9 @@ SceneGraphDockWidget::SceneGraphDockWidget(QMenu* contextMenu, QWidget* parent) 
   setFocusPolicy(Qt::ClickFocus);
   setObjectName(".SceneGraph");
   setWindowTitle(tr("Scene Graph"));
+#ifdef FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG
+  setFeatures(features() & ~DockWidgetMovable);
+#endif
   treeWidget = new QTreeWidget(this);
   italicFont = treeWidget->font();
   italicFont.setItalic(true);
@@ -23,7 +26,7 @@ SceneGraphDockWidget::SceneGraphDockWidget(QMenu* contextMenu, QWidget* parent) 
   treeWidget->setFrameStyle(QFrame::NoFrame);
   setWidget(treeWidget);
   setFocusProxy(treeWidget);
-#if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
+#if QT_VERSION >= QT_VERSION_CHECK(4, 4, 0)
   treeWidget->setExpandsOnDoubleClick(false);
 #endif
   treeWidget->header()->hide();
@@ -176,7 +179,7 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const SimRobot::Object* pa
         }
         return object->object;
       }
-  continueSearch:
+    continueSearch:
       ;
     }
 
@@ -240,7 +243,7 @@ bool SceneGraphDockWidget::setActive(const SimRobot::Object* object, bool active
   return true;
 }
 
-QAction *SceneGraphDockWidget::toggleViewAction() const
+QAction* SceneGraphDockWidget::toggleViewAction() const
 {
   QAction* action = QDockWidget::toggleViewAction();
   action->setIcon(QIcon(":/Icons/application_side_tree.png"));
@@ -280,7 +283,8 @@ void SceneGraphDockWidget::contextMenuEvent(QContextMenuEvent* event)
 {
   QRect content(treeWidget->geometry());
   if(!content.contains(event->x(), event->y()))
-  { // click on window frame
+  {
+    // click on window frame
     QDockWidget::contextMenuEvent(event);
     return;
   };
@@ -299,7 +303,7 @@ void SceneGraphDockWidget::contextMenuEvent(QContextMenuEvent* event)
     }
     if(clickedItem->childCount() > 0)
     {
-      QAction* action = menu.addAction(tr(clickedItem->isExpanded() ? "Collabs&e" : "&Expand"));
+      QAction* action = menu.addAction(tr(clickedItem->isExpanded() ? "Collaps&e" : "&Expand"));
       connect(action, SIGNAL(triggered()), this, SLOT(expandOrCollabseObject()));
       menu.addSeparator();
     }
@@ -319,6 +323,10 @@ void SceneGraphDockWidget::itemActivated(const QModelIndex& index)
       treeWidget->collapseItem(item);
     else
       treeWidget->expandItem(item);
+    // the object does not have a widget, but it might have a simple
+    // widget-less callback - call it (by default an empty callback
+    // stub is provided)
+    item->object->widgetlessActivationCallback();
   }
   else
     emit activatedObject(item->fullName, item->module, item->object, item->flags);

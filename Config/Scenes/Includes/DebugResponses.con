@@ -1,11 +1,10 @@
-# Activate debug responses necessary for the BehaviourView, JointView and SensorView
+# Activate debug responses necessary for the BehaviorView, JointView and SensorView
 
 # request joint and sensor data
 dr representation:FsrSensorData
 dr representation:InertialSensorData
 dr representation:KeyStates
 dr representation:SystemSensorData
-dr representation:UsSensorData
 dr representation:JointSensorData
 
 # request behavior messages
@@ -13,4 +12,3 @@ dr representation:ActivationGraph
 
 # JointView and SensorView need
 dr representation:JointRequest
-dr representation:USRequest

@@ -12,7 +12,7 @@ class DeployCmd : public RobotCommand
     Team* team;
 
   public:
-    DeployTask(Context &context, const QString& buildConfig, Team* team, Robot* robot);
+    DeployTask(Context& context, const QString& buildConfig, Team* team, Robot* robot);
     virtual bool execute();
   };
 
@@ -23,8 +23,8 @@ class DeployCmd : public RobotCommand
   virtual std::string getName() const;
   virtual std::string getDescription() const;
   virtual std::vector<std::string> complete(const std::string& cmdLine) const;
-  virtual bool preExecution(Context &context, const std::vector<std::string> &params);
-  virtual Task* perRobotExecution(Context &context, Robot &robot);
+  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
+  virtual Task* perRobotExecution(Context& context, Robot& robot);
 
   static QString getCommand();
 public:

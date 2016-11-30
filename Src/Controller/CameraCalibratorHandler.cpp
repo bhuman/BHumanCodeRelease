@@ -22,7 +22,7 @@ void CameraCalibratorHandler::deliverPoint(const Vector2i& point, bool upper, bo
 void CameraCalibratorHandler::setActive(std::string view)
 {
   if(!ImageViewAdapter::addListener(this, view))
-    OUTPUT(idText, text, "cameraCalibrator is already active for \"" + view + "\"");
+    OUTPUT_TEXT("cameraCalibrator is already active for \"" + view + "\"");
 }
 
 void CameraCalibratorHandler::setInactive(std::string view)

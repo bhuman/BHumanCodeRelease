@@ -41,11 +41,11 @@
 
 #pragma once
 
+#include "Tools/Math/Eigen.h" // Not used, but avoids naming conflicts 
 #include "Representations/BehaviorControl/ActivationGraph.h"
-#include "Platform/SystemCall.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Debugging/Debugging.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Streams/OutStreams.h"
 #include <cstring>
 
@@ -59,7 +59,7 @@
 template<typename T> class Cabsl
 {
 protected:
-  typedef T CabslBehavior; /** This type allows to access the derived class by name. */
+  using CabslBehavior = T; /** This type allows to access the derived class by name. */
 
   /**
    * The context stores the current state of an option.
@@ -232,18 +232,20 @@ public:
       ASSERT(!optionsByIndex);
       ASSERT(!optionsByName);
       optionsByIndex = new std::vector<OptionDescriptor>;
+      optionsByIndex->reserve(500);
       optionsByName = new std::unordered_map<std::string, OptionDescriptor*>;
       OptionDescriptor o("none", false, 0, 0);
       optionsByIndex->push_back(o);
       (*optionsByName)[o.name] = &optionsByIndex->back();
-      char buf[sizeof(CabslBehavior)];
+      alignas(16) char buf[sizeof(CabslBehavior)];
       std::memset(buf, 0, sizeof(buf));
       // executes assignment operators -> recording information!
       (CabslBehavior&) *buf = (const CabslBehavior&) *buf;
+      ASSERT(optionsByIndex->size() <= 500);
     }
 
     /**
-     * The destructor free the global object.
+     * The destructor frees the global object.
      */
     ~OptionInfos()
     {
@@ -261,7 +263,7 @@ public:
      * cannot be called externally.
      * @param descriptor A function that can return the description of an option.
      */
-    static void add(OptionDescriptor (*descriptor)())
+    static void add(OptionDescriptor(*descriptor)())
     {
       OptionDescriptor o = descriptor();
       if(!o.hasParameters) // ignore options with parameters for now
@@ -323,7 +325,7 @@ protected:
    * A template class for collecting information about an option.
    * @param descriptor A function that can return the description of the option.
    */
-  template<OptionDescriptor (*descriptor)()> class OptionInfo : public OptionContext
+  template<OptionDescriptor(*descriptor)()> class OptionInfo : public OptionContext
   {
   public:
     /**
@@ -341,7 +343,7 @@ private:
   ActivationGraph* activationGraph; /**< The activation graph for debug output. Can be zero if not set. */
 
 protected:
-  static PROCESS_LOCAL Cabsl* _theInstance; /**< The instance of this behavior used. */
+  static thread_local Cabsl* _theInstance; /**< The instance of this behavior used. */
   unsigned _currentFrameTime; /**< The time stamp of the last time the behavior was executed. */
 
   /**
@@ -361,7 +363,7 @@ protected:
   }
 
   /** Destructor */
-  ~Cabsl() {_theInstance = 0;}
+  ~Cabsl() {_theInstance = nullptr;}
 
 public:
   /**
@@ -389,29 +391,29 @@ public:
   void endFrame() {lastFrameTime = _currentFrameTime;}
 };
 
-template<typename CabslBehavior> PROCESS_LOCAL Cabsl<CabslBehavior>* Cabsl<CabslBehavior>::_theInstance;
+template<typename CabslBehavior> thread_local Cabsl<CabslBehavior>* Cabsl<CabslBehavior>::_theInstance;
 template<typename CabslBehavior> std::vector<typename Cabsl<CabslBehavior>::OptionDescriptor>* Cabsl<CabslBehavior>::OptionInfos::optionsByIndex;
 template<typename CabslBehavior> std::unordered_map<std::string, typename Cabsl<CabslBehavior>::OptionDescriptor*>* Cabsl<CabslBehavior>::OptionInfos::optionsByName;
 template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabsl<CabslBehavior>::collectOptions;
 
 /**
-* The macro defines a state. It must be followed by a block of code that defines the state's body.
-* @param name The name of the state.
-*/
+ * The macro defines a state. It must be followed by a block of code that defines the state's body.
+ * @param name The name of the state.
+ */
 #define state(name) _state(name, __LINE__, OptionContext::normalState)
 
 /**
-* The macro defines a target state. It must be followed by a block of code that defines the state's body.
-* A parent option can check whether a target state has been reached through action_done.
-* @param name The name of the target state.
-*/
+ * The macro defines a target state. It must be followed by a block of code that defines the state's body.
+ * A parent option can check whether a target state has been reached through action_done.
+ * @param name The name of the target state.
+ */
 #define target_state(name) _state(name, __LINE__, OptionContext::targetState)
 
 /**
-* The macro defines an aborted state. It must be followed by a block of code that defines the state's body.
-* A parent option can check whether an aborted state has been reached through action_aborted.
-* @param name The name of the aborted state.
-*/
+ * The macro defines an aborted state. It must be followed by a block of code that defines the state's body.
+ * A parent option can check whether an aborted state has been reached through action_aborted.
+ * @param name The name of the aborted state.
+ */
 #define aborted_state(name) _state(name, __LINE__, OptionContext::abortedState)
 
 /**
@@ -511,7 +513,7 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
   if(false) \
   { \
     goto initial_state; \
-    name: _o.updateState(line, stateType); \
+  name: _o.updateState(line, stateType); \
   } \
   _o.context.hasCommonTransition = false; \
   if(_o.context.state == line && (_o.context.stateName = #name) && (BH_TRACE, true))
@@ -561,7 +563,7 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
   void INTELLISENSE_PREFIX name(_STREAM_ATTR_##n params bool _ignore = false)
 
 #define initial_state(name) \
-initial_state: \
+  initial_state: \
   if(false) \
     goto name; \
   _state(name, 0, )
@@ -569,8 +571,8 @@ initial_state: \
 #define _state(name, line, stateType) \
   if(false) \
   { \
-  goto initial_state; \
-name:; \
+    goto initial_state; \
+  name:; \
   } \
   if(true)
 
@@ -585,7 +587,7 @@ name:; \
 #endif
 
 /** Check whether an option has parameters. */
-#ifdef WINDOWS
+#ifdef _MSC_VER
 #define _CABSL_HAS_PARAMS(...) _STREAM_JOIN(_STREAM_TUPLE_SIZE_II, (__VA_ARGS__, \
   Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, \
   Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, Y, \

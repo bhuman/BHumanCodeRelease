@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Modeling/Obstacle.h"
 
@@ -22,9 +22,10 @@
 STREAMABLE(ObstacleModel,
 {
   ObstacleModel() = default;
-  void draw() const,
+  void draw() const;
+  void verify() const,
 
-  (std::vector<Obstacle>) obstacles, /**< List of obstacles (all entries are somewhat valid obstacles)*/
+  (std::vector<Obstacle>) obstacles, /**< List of obstacles (position relative to own pose) */
 });
 
 STREAMABLE(ObstacleModelCompressed,
@@ -38,14 +39,15 @@ STREAMABLE(ObstacleModelCompressed,
     (float) covXX,
     (float) covYY,
     (float) covXY,                        /**< Covariance matrix of an obstacle */
-    (Vector2f) center,                    /**< Center point of an Obstacle */
-    (Vector2f) left,                      /**< Left point of an Obstacle */
-    (Vector2f) right,                     /**< Right point of an Obstacle */
-    ((Obstacle) Type) type, /**< See enumeration 'Type' above */
+    (Vector2s) center,                    /**< Center point of an obstacle */
+    (Vector2s) left,                      /**< Left point of an obstacle */
+    (Vector2s) right,                     /**< Right point of an obstacle */
+    (unsigned int) lastSeen,              /**< Timestamp of last measurement */
+    ((Obstacle) Type) type,               /**< See enumeration 'Type' in Obstacle.h */
   });
   ObstacleModelCompressed() = default;
   ObstacleModelCompressed(const ObstacleModel& other, size_t maxNumberOfObstacles);
   void draw() const,
 
-  (std::vector<ObstacleCompressed>) obstacles, /**< List of obstacles (all entries are somewhat valid obstacles)*/
+  (std::vector<ObstacleCompressed>) obstacles, /**< List of obstacles */
 });

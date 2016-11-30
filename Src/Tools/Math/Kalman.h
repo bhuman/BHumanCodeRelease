@@ -10,7 +10,8 @@
  * @class Kalman
  * Implements a one-dimensional kalman filter.
  */
-template <class V = float> class Kalman
+template<class V>
+class Kalman
 {
 public:
   V value = V(); /**< The estimated state. */
@@ -55,8 +56,10 @@ public:
    */
   void update(const V& z, const V& zVariance)
   {
-    const V& k(variance / (variance + zVariance));
+    const V k = variance / (variance + zVariance);
     value += k * (z - value);
     variance -= k * variance;
   }
 };
+
+using Kalmanf = Kalman<float>;

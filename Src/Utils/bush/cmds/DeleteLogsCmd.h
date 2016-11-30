@@ -1,7 +1,7 @@
 /**
-* @file DeleteLogs.h
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file DeleteLogs.h
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #pragma once
 

@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "Platform/Thread.h"
 #include "Tools/Streams/Streamable.h"
-#include "Platform/SystemCall.h"
 
 class StreamHandler;
 
@@ -29,7 +29,7 @@ private:
   std::string type; /**< The string representation of the type of the next data streamed. */
   const char* name; /**< The name of the next entry streamed. 0 if it does not have a name, because it is an array element. */
   int index = -2; /**< The index of the next element streamed or -2 if we are currently not streaming an array. */
-  static PROCESS_LOCAL const std::vector<const char*>* enumNames; /**< Helper to provide element names for the enum currently streamed. */
+  static thread_local const std::vector<const char*>* enumNames; /**< Helper to provide element names for the enum currently streamed. */
 
   /**
    * The method streams the debug data according to its specification.

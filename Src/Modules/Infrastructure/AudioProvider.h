@@ -1,5 +1,5 @@
 /**
- * @file AudioProvider.cpp
+ * @file AudioProvider.h
  * This file declares a module that provides audio samples.
  * @author Thomas Röfer
  */
@@ -17,13 +17,14 @@ MODULE(AudioProvider,
 {,
   REQUIRES(GameInfo),
   PROVIDES_WITHOUT_MODIFY(AudioData),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (unsigned)(10) retries, /**< Number of tries to open device. */
-    (unsigned)(500) retryDelay, /**< Delay before a retry to open device. */
-    (unsigned)(2) channels, /**< Number of channels to capture. */
+    (unsigned)(10) retries,      /**< Number of tries to open device. */
+    (unsigned)(500) retryDelay,  /**< Delay before a retry to open device. */
+    (unsigned)(2) channels,      /**< Number of channels to capture. */
     (unsigned)(8000) sampleRate, /**< Sample rate to capture. This variable will contain the framerate the driver finally selected. */
-    (unsigned)(5000) maxFrames, /**< Maximum number of frames read in one cycle. */
+    (unsigned)(5000) maxFrames,  /**< Maximum number of frames read in one cycle. */
+    (bool)(true) onlySoundInSet, /**< If true, the module will not provide audio data in game states other than set */
   }),
 });
 
@@ -37,12 +38,12 @@ private:
 
 public:
   /**
-  * Default constructor.
-  */
+   * Default constructor.
+   */
   AudioProvider();
 
   /**
-  * Destructor.
-  */
+   * Destructor.
+   */
   ~AudioProvider();
 };

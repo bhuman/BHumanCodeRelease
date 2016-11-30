@@ -1,11 +1,11 @@
 /**
-* @file CameraControlEngine.h
-* To execute the current HeadMotionRequest the CameraControlEngine
-* chooses one of the two cameras of the Nao and computes the appropriate
-* angles for the head joints to execute the current HeadMotionRequest.
-* @author Andreas Stolpmann
-* (Based on an old version by Felix Wenk)
-*/
+ * @file CameraControlEngine.h
+ * To execute the current HeadMotionRequest the CameraControlEngine
+ * chooses one of the two cameras of the Nao and computes the appropriate
+ * angles for the head joints to execute the current HeadMotionRequest.
+ * @author Andreas Stolpmann
+ * (Based on an old version by Felix Wenk)
+ */
 
 #pragma once
 
@@ -14,7 +14,7 @@
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
-#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
@@ -31,8 +31,8 @@ MODULE(CameraControlEngine,
   PROVIDES(HeadAngleRequest),
   LOADS_PARAMETERS(
   {,
-    (float) moveHeadThreshold,
-    (float) defaultTilt,
+    (Angle) moveHeadThreshold,
+    (Angle) defaultTilt,
   }),
 });
 
@@ -42,10 +42,10 @@ public:
   CameraControlEngine();
 
 private:
-  float maxPan, minPan;
+  Rangea panBounds;
 
   void update(HeadAngleRequest& headAngleRequest);
 
-  void calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2f& panTilt) const;
-  void adjustTiltBoundToShoulder(const float pan, const bool lowerCamera, Vector2f& tiltBound) const;
+  void calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2a& panTilt) const;
+  void adjustTiltBoundToShoulder(Angle pan, bool lowerCamera, Rangea& tiltBound) const;
 };

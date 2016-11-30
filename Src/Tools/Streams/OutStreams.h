@@ -10,7 +10,7 @@
 #pragma once
 
 #include <vector>
-#include "Tools/Streams/InOut.h"
+#include "InOut.h"
 
 class File;
 
@@ -719,8 +719,8 @@ protected:
    */
   void open(void* mem)
   {
-    memory = reinterpret_cast<char*>(mem); 
-    start = mem; 
+    memory = reinterpret_cast<char*>(mem);
+    start = mem;
     length = 0;
   }
 

@@ -155,7 +155,7 @@ EditorWidget::EditorWidget(FileEditorObject* editorObject, const QString& fileCo
 
 #ifdef WINDOWS
   QFont font("Courier New", 10);
-#elif defined(OSX)
+#elif defined MACOS
   QFont font("Monaco", 11);
 #else
   QFont font("Bitstream Vera Sans Mono", 9);

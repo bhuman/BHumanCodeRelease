@@ -13,7 +13,7 @@
 #include "OutStreams.h"
 #include "Platform/File.h"
 #include "Platform/BHAssert.h"
-#include "Tools/SensorData.h"
+#include "Tools/Motion/SensorData.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Math/Angle.h"
 
@@ -316,7 +316,7 @@ void OutMap::outString(const char* value)
     stream << "\"";
 }
 
-void OutMap::select(const char* name, int type, const char * (*enumToString)(int))
+void OutMap::select(const char* name, int type, const char* (*enumToString)(int))
 {
   Streaming::trimName(name);
   if(!stack.empty())
@@ -385,7 +385,7 @@ void OutMap::deselect()
   stack.pop_back();
 }
 
-void OutMap::write(const void *p, size_t size)
+void OutMap::write(const void* p, size_t size)
 {
   ASSERT(false);
 }

@@ -29,8 +29,6 @@ MODULE(RobotModelProvider,
  */
 class RobotModelProvider: public RobotModelProviderBase
 {
-private:
-
   /** Executes this module
    * @param robotModel The data structure that is filled by this module
    */

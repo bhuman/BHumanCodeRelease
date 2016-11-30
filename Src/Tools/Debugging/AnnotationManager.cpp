@@ -11,7 +11,7 @@
 #include "Tools/Module/Blackboard.h"
 
 #include <cstring>
-#include <stdarg.h>
+#include <cstdarg>
 
 AnnotationManager::AnnotationManager() : lastGameState(STATE_INITIAL)
 {

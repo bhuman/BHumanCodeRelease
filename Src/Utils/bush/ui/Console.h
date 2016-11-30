@@ -34,9 +34,9 @@ class ScrollArea : public QScrollArea
   bool scrollEnabled;
 
 public:
-  ScrollArea(QWidget *parent);
+  ScrollArea(QWidget* parent);
 
-  bool viewportEvent(QEvent *event);
+  bool viewportEvent(QEvent* event);
 
 public slots:
   void updateScrollEnabled();
@@ -50,29 +50,29 @@ class Console : public QFrame
    * It does not really display output but contains all other visual
    * representations of further contexts.
    */
-  VisualContext *visualContext;
+  VisualContext* visualContext;
 
   /** The teamSelector which knows which robots and which team are selected. */
-  TeamSelector *teamSelector;
+  TeamSelector* teamSelector;
 
-  ScrollArea *scrollArea;
+  ScrollArea* scrollArea;
 
   /** bush> */
-  QLabel *prompt;
+  QLabel* prompt;
 
   /** The thing where commands can be typed in. */
-  CommandLineEdit *cmdLine;
+  CommandLineEdit* cmdLine;
 
 public:
-  Console(TeamSelector *teamSelector);
+  Console(TeamSelector* teamSelector);
   QSize minimumSizeHint() const { return QSize(100, 250); }
 
   /** Is executed when the console is shown and sets the focus to the
    * commandLineEdit so that the user can just start to type.
    */
-  void showEvent(QShowEvent *event);
+  void showEvent(QShowEvent* event);
 
-  void fireCommand(const QString &command);
+  void fireCommand(const QString& command);
   void cancel();
 
 protected slots:

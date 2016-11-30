@@ -17,24 +17,22 @@ RobotModel::RobotModel(const JointAngles& jointAngles, const RobotDimensions& ro
 void RobotModel::setJointData(const JointAngles& jointAngles, const RobotDimensions& robotDimensions, const MassCalibration& massCalibration)
 {
   ForwardKinematic::calculateHeadChain(jointAngles, robotDimensions, limbs);
+  ForwardKinematic::calculateArmChain(Arms::left, jointAngles, robotDimensions, limbs);
+  ForwardKinematic::calculateArmChain(Arms::right, jointAngles, robotDimensions, limbs);
+  ForwardKinematic::calculateLegChain(Legs::left, jointAngles, robotDimensions, limbs);
+  ForwardKinematic::calculateLegChain(Legs::right, jointAngles, robotDimensions, limbs);
 
-  for(unsigned side = 0; side < 2; side++)
-  {
-    const bool left = side == 0;
-    ForwardKinematic::calculateArmChain(Arms::Arm(side), jointAngles, robotDimensions, limbs);
-    ForwardKinematic::calculateLegChain(left, jointAngles, robotDimensions, limbs);
-  }
+  soleLeft = limbs[Limbs::footLeft] + Vector3f(0.f, 0.f, -robotDimensions.footHeight);
+  soleRight = limbs[Limbs::footRight] + Vector3f(0.f, 0.f, -robotDimensions.footHeight);
 
   // calculate center of mass
   centerOfMass = Vector3f::Zero();
-  totalMass = 0.0;
   for(int i = 0; i < Limbs::numOfLimbs; i++)
   {
-    const MassCalibration::MassInfo& limb(massCalibration.masses[i]);
-    totalMass += limb.mass;
+    const MassCalibration::MassInfo& limb = massCalibration.masses[i];
     centerOfMass += (limbs[i] * limb.offset) * limb.mass;
   }
-  centerOfMass /= totalMass;
+  centerOfMass /= massCalibration.totalMass;
 }
 
 void RobotModel::draw() const
@@ -48,10 +46,7 @@ void RobotModel::draw() const
   DECLARE_DEBUG_DRAWING3D("representation:RobotModel:centerOfMass", "robot");
   SPHERE3D("representation:RobotModel:centerOfMass", centerOfMass.x(), centerOfMass.y(), centerOfMass.z(), 10, ColorRGBA::red);
 
-  DECLARE_PLOT("representation:RobotModel:centerOfMassX");
-  DECLARE_PLOT("representation:RobotModel:centerOfMassY");
-  DECLARE_PLOT("representation:RobotModel:centerOfMassZ");
-  PLOT("representation:RobotModel:centerOfMassX", centerOfMass.x());
-  PLOT("representation:RobotModel:centerOfMassY", centerOfMass.y());
-  PLOT("representation:RobotModel:centerOfMassZ", centerOfMass.z());
+  PLOT("representation:RobotModel:centerOfMass:x", centerOfMass.x());
+  PLOT("representation:RobotModel:centerOfMass:x", centerOfMass.y());
+  PLOT("representation:RobotModel:centerOfMass:z", centerOfMass.z());
 }

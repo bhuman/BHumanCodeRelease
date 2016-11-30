@@ -12,10 +12,10 @@
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Debugging/DebugDrawings.h"
 
-#if defined(TARGET_ROBOT) || defined(TARGET_SIM)
-#include "Modules/Infrastructure/ReceivedSPLStandardMessagesProvider.h"
+#if defined TARGET_ROBOT || defined TARGET_SIM
+#include "Modules/Communication/ReceivedSPLStandardMessagesProvider.h"
 #else
-#include "Representations/Infrastructure/SPLStandardMessage.h"
+#include "Representations/Communication/SPLStandardMessage.h"
 #endif
 
 TeamHandler::TeamHandler(MessageQueue& in, MessageQueue& out) :
@@ -62,7 +62,6 @@ void TeamHandler::send()
     out.clear();
 
   // Plot usage of data buffer in percent:
-  DECLARE_PLOT("module:TeamHandler:standardMessageDataBufferUsageInPercent");
   const float usageInPercent = outMsg.numOfDataBytes * 100.f / static_cast<float>(SPL_STANDARD_MESSAGE_DATA_SIZE);
   PLOT("module:TeamHandler:standardMessageDataBufferUsageInPercent", usageInPercent);
 }
@@ -86,7 +85,7 @@ unsigned TeamHandler::receive()
       receivedSize = static_cast<unsigned>(size);
       inMsg.toMessageQueue(in, remoteIp, receivedSize - offsetof(RoboCup::SPLStandardMessage, data));
 
-#if defined(TARGET_ROBOT) || defined(TARGET_SIM)
+#if defined TARGET_ROBOT || defined TARGET_SIM
       ReceivedSPLStandardMessagesProvider::addMessage(inMsg);
 #endif
     }

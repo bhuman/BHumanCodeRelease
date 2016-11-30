@@ -50,7 +50,7 @@ std::string SimCmd::getSimulatorExecutable(const std::string& buildConfig)
 {
   std::string simulatorExecutable = std::string(File::getBHDir()) + "/Build/"
                                     + platformDirectory() + "/SimRobot/" + buildConfig + "/SimRobot";
-#ifdef OSX
+#ifdef MACOS
   simulatorExecutable += ".app/Contents/MacOS/SimRobot";
 #elif defined WINDOWS
   simulatorExecutable += ".exe";

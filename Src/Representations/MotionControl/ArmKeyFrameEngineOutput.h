@@ -7,7 +7,7 @@
 /**
  * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
  */
-STREAMABLE_WITH_BASE(ArmKeyFrameEngineOutput, JointRequest,
+STREAMABLE_WITH_BASE(ArmKeyFrameEngineOutput, ArmJointRequest,
 {
   STREAMABLE(Arm,
   {,
@@ -15,5 +15,5 @@ STREAMABLE_WITH_BASE(ArmKeyFrameEngineOutput, JointRequest,
     ((ArmKeyFrameRequest) ArmKeyFrameId)(useDefault) motion, /**< The arm motion being executed. */
   }),
 
-  (Arm[Arms::numOfArms]) arms,
+  (ENUM_INDEXED_ARRAY(Arm, (Arms) Arm)) arms,
 });

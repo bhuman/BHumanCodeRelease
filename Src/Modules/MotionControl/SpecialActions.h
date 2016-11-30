@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Representations/MotionControl/MotionSelection.h"
+#include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
@@ -21,7 +21,7 @@ MODULE(SpecialActions,
 {,
   REQUIRES(FrameInfo),
   REQUIRES(JointAngles),
-  REQUIRES(MotionSelection),
+  REQUIRES(LegMotionSelection),
   REQUIRES(StiffnessSettings),
   PROVIDES(SpecialActionsOutput),
 });
@@ -30,9 +30,9 @@ class SpecialActions : public SpecialActionsBase
 {
 private:
   /**
-  * Represents a node of the motion net.
-  * The motion net is organised in an array of nodes (MotionNetNode).
-  */
+   * Represents a node of the motion net.
+   * The motion net is organised in an array of nodes (MotionNetNode).
+   */
   class MotionNetNode
   {
   public:
@@ -50,7 +50,7 @@ private:
     {typeData, d[0]..d[21], interpolationMode, dataRepetitionCounter, execMotionRequest}
     {typeConditionalTransition, to_motion, via_label, 17*0, execMotionRequest}
     {typeTransition, to_label, 18*0, execMotionRequest}
-    */
+     */
 
     void toJointRequest(JointRequest& jointRequest, int& dataRepetitionCounter, bool& interpolationMode, bool& deShakeMode) const
     {
@@ -75,8 +75,8 @@ private:
   };
 
   /**
-  * MotionNetData encapsulates all the motion data in the motion net.
-  */
+   * MotionNetData encapsulates all the motion data in the motion net.
+   */
   class MotionNetData
   {
   public:
@@ -97,16 +97,16 @@ private:
   };
 
   /**
-  * Odometry table entry.
-  */
+   * Odometry table entry.
+   */
   class SpecialActionInfo : public Streamable
   {
   private:
     /**
-    * The method makes the object streamable.
-    * @param in The stream from which the object is read
-    * @param out The stream to which the object is written
-    */
+     * The method makes the object streamable.
+     * @param in The stream from which the object is read
+     * @param out The stream to which the object is written
+     */
     virtual void serialize(In* in, Out* out)
     {
       STREAM_REGISTER_BEGIN;
@@ -120,8 +120,8 @@ private:
 
   public:
     /**
-    * Enum for odometry types
-    */
+     * Enum for odometry types
+     */
     ENUM(OdometryType,
     {,
       none, /**< No odometry, means no movement. */
@@ -135,8 +135,8 @@ private:
     bool isMotionStable; /**< Is the position of the camera directly related to the kinematic chain of joint angles? */
 
     /**
-    * Default constructor.
-    */
+     * Default constructor.
+     */
     SpecialActionInfo() : type(none), isMotionStable(false) {}
   };
 
@@ -146,12 +146,12 @@ private:
   });
 
   StiffnessData currentStiffnessRequest, /**< The current stiffness of the joints */
-               lastStiffnessRequest; /**< The last stiffness data*/
+                lastStiffnessRequest; /**< The last stiffness data*/
   bool wasEndOfSpecialAction; /**< Was the SpecialAction at the end in the last frame? */
   int stiffnessInterpolationCounter, /**< Cycle counter for current stiffness interpolation */
       stiffnessInterpolationLength; /**< Length of the current stiffness interpolation */
 
-  static PROCESS_LOCAL SpecialActions* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static thread_local SpecialActions* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
   bool wasActive; /**< Was this module active in the previous frame? */
   MotionNetData motionNetData; /**< The motion data array. */
   short currentNode; /**< Current motion net node */
@@ -167,10 +167,10 @@ private:
   bool mirror; /**< Mirror current special actions? */
 
   /**
-  * Called from a MessageQueue to distribute messages.
-  * @param message The message that can be read.
-  * @return True if the message was handled.
-  */
+   * Called from a MessageQueue to distribute messages.
+   * @param message The message that can be read.
+   * @return True if the message was handled.
+   */
   virtual bool handleMessage2(InMessage& message);
 
   /** Get next motion node from motion net */
@@ -183,19 +183,19 @@ private:
 
 public:
   /*
-  * Default constructor.
-  */
+   * Default constructor.
+   */
   SpecialActions();
 
   /*
-  * Destructor.
-  */
-  ~SpecialActions() {theInstance = 0;}
+   * Destructor.
+   */
+  ~SpecialActions() {theInstance = nullptr;}
 
   /**
-  * The method is called for every incoming debug message.
-  * @param message An interface to read the message from the queue.
-  * @return Was the message handled?
-  */
+   * The method is called for every incoming debug message.
+   * @param message An interface to read the message from the queue.
+   * @return Was the message handled?
+   */
   static bool handleMessage(InMessage& message);
 };

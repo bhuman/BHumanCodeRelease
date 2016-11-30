@@ -1,0 +1,14 @@
+#!/bin/bash
+
+## open xfce4-terminal shells for the deployer
+
+hash xfce4-terminal 2>/dev/null || { echo >&2 "xfce4-terminal is required but not installed."; exit 1; }
+
+test $# -eq 1 || { echo >&2 "Please supply the path to the b-human dir"; exit 1; }
+
+xfce4-terminal --geometry 94x22 --title="make" --default-working-directory="$1/Make/Linux"
+xfce4-terminal --geometry 94x22 --title="bush" --default-working-directory="$1/Build/Linux/bush/Release"
+xfce4-terminal --geometry 94x22 --title="simrobot" --default-working-directory="$1/Build/Linux/SimRobot/Release"
+xfce4-terminal --geometry 94x22 --title="gamecontroller" --default-working-directory="$1/Util/GameController/"
+# xfce4-terminal --geometry 92x32 --title="substitute1"
+# xfce4-terminal --geometry 92x32 --title="substitute2"

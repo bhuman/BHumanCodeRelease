@@ -96,7 +96,7 @@ public:
   void cancelMessage() {writePosition = 0;}
 
   /**
-   * The method returns whether the the currently selected message for reading was read completely.
+   * The method returns whether the currently selected message for reading was read completely.
    * @return Has the end of the message been reached?
    */
   bool eof() const {return readPosition == getMessageSize();}

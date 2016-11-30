@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Platform/SystemCall.h"
+#include "Platform/Thread.h"
 
 // Only declare prototypes. Don't include anything here, because this
 // file is included in many other files.
@@ -28,16 +28,16 @@ class TimingManager;
 class Global
 {
 private:
-  static PROCESS_LOCAL AnnotationManager* theAnnotationManager;
-  static PROCESS_LOCAL OutMessage* theDebugOut;
-  static PROCESS_LOCAL OutMessage* theTeamOut;
-  static PROCESS_LOCAL Settings* theSettings;
-  static PROCESS_LOCAL DebugRequestTable* theDebugRequestTable;
-  static PROCESS_LOCAL DebugDataTable* theDebugDataTable;
-  static PROCESS_LOCAL StreamHandler* theStreamHandler;
-  static PROCESS_LOCAL DrawingManager* theDrawingManager;
-  static PROCESS_LOCAL DrawingManager3D* theDrawingManager3D;
-  static PROCESS_LOCAL TimingManager* theTimingManager;
+  static thread_local AnnotationManager* theAnnotationManager;
+  static thread_local OutMessage* theDebugOut;
+  static thread_local OutMessage* theTeamOut;
+  static thread_local Settings* theSettings;
+  static thread_local DebugRequestTable* theDebugRequestTable;
+  static thread_local DebugDataTable* theDebugDataTable;
+  static thread_local StreamHandler* theStreamHandler;
+  static thread_local DrawingManager* theDrawingManager;
+  static thread_local DrawingManager3D* theDrawingManager3D;
+  static thread_local TimingManager* theTimingManager;
 
 public:
   /**

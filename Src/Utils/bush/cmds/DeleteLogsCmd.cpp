@@ -1,7 +1,7 @@
 /**
-* @file DeleteLogs.cpp
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file DeleteLogs.cpp
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #include "DeleteLogsCmd.h"
 #include "Platform/File.h"
@@ -11,8 +11,6 @@
 #include "Utils/bush/tools/Platform.h"
 #include "Utils/bush/tools/ShellTools.h"
 #include "Utils/bush/tools/StringTools.h"
-
-
 
 #include <QMessageBox>
 

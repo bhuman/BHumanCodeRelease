@@ -1,21 +1,28 @@
 /**
-* @file Processes/Debug.cpp
-*
-* Implementation of class Debug.
-*
-* @author Martin Lötzsch
-*/
+ * @file Processes/Debug.cpp
+ *
+ * Implementation of class Debug.
+ *
+ * @author Martin Lötzsch
+ */
 
 #include "Debug.h"
 #include "Tools/Debugging/Debugging.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
+#include <iostream>
 
 Debug::Debug() :
-  INIT_EXTERNAL_DEBUGGING,
-  INIT_DEBUG_RECEIVER(Cognition),
-  INIT_DEBUG_RECEIVER(Motion),
-  INIT_DEBUG_SENDER(Cognition),
-  INIT_DEBUG_SENDER(Motion)
+  Process(theDebugReceiver, theDebugSender),
+#ifdef TARGET_ROBOT
+  debugHandler(theDebugReceiver, theDebugSender, MAX_PACKAGE_SEND_SIZE, 0),
+#else
+  theDebugReceiver(this),
+  theDebugSender(this),
+#endif
+  theCognitionReceiver(this),
+  theMotionReceiver(this),
+  theCognitionSender(this),
+  theMotionSender(this)
 {
   theDebugSender.setSize(MAX_PACKAGE_SEND_SIZE - 2000);
   theDebugReceiver.setSize(MAX_PACKAGE_RECEIVE_SIZE - 2000);
@@ -23,9 +30,9 @@ Debug::Debug() :
   theCognitionSender.setSize(2800000);
 
   theMotionReceiver.setSize(70000);
-  theMotionSender.setSize(200000);
+  theMotionSender.setSize(500000);
   if(SystemCall::getMode() == SystemCall::physicalRobot)
-    setPriority(5);
+    setPriority(1);
 }
 
 bool Debug::main()
@@ -60,7 +67,7 @@ bool Debug::main()
   switch(outQueueMode.behavior)
   {
     case QueueFillRequest::sendAfter:
-      if(SystemCall::getCurrentSystemTime() > sendTime)
+      if(Time::getCurrentSystemTime() > sendTime)
       {
         // Send messages that are in the queue (now matter how long it takes), but don't take new messages
         sendNow = true;
@@ -69,13 +76,13 @@ bool Debug::main()
       break;
 
     case QueueFillRequest::sendEvery:
-      if(SystemCall::getCurrentSystemTime() > sendTime)
+      if(Time::getCurrentSystemTime() > sendTime)
       {
         // Send now (if the network is busy, this send time is effectively skipped)
         sendNow = true;
 
         // Compute time for next sending
-        sendTime = SystemCall::getCurrentSystemTime() + outQueueMode.timingMilliseconds;
+        sendTime = Time::getCurrentSystemTime() + outQueueMode.timingMilliseconds;
       }
       break;
 
@@ -136,12 +143,14 @@ bool Debug::main()
 #ifdef TARGET_SIM
   theCognitionSender.send(true);
   theMotionSender.send(true);
+  if(sendToGUI)
+    theDebugSender.send();
 #else
   theCognitionSender.send(false);
   theMotionSender.send(false);
+  debugHandler.communicate(sendToGUI);
 #endif
 
-  DO_EXTERNAL_DEBUGGING(sendToGUI);
   return true;
 }
 
@@ -171,7 +180,6 @@ bool Debug::handleMessage(InMessage& message)
 
     // messages to Motion
     case idMotionNet:
-    case idWalkingEngineKick:
       message >> theMotionSender;
       return true;
 
@@ -179,7 +187,7 @@ bool Debug::handleMessage(InMessage& message)
     case idQueueFillRequest:
       // Read message queue settings and compute time when next to send (if in a timed mode)
       message.bin >> outQueueMode;
-      sendTime = SystemCall::getCurrentSystemTime() + outQueueMode.timingMilliseconds;
+      sendTime = Time::getCurrentSystemTime() + outQueueMode.timingMilliseconds;
       if(fout)
       {
         delete fout;

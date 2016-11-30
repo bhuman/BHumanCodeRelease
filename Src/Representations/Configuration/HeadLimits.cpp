@@ -6,44 +6,43 @@
 
 #include "HeadLimits.h"
 #include "Representations/Infrastructure/JointAngles.h"
-#include "Representations/Perception/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Eigen.h"
 
 #include <algorithm>
 
-Vector2f HeadLimits::getTiltBound(float pan) const
+Range<Angle> HeadLimits::getTiltBound(Angle pan) const
 {
-  const std::vector<float>::const_iterator begin = intervals.begin();
-  const std::vector<float>::const_iterator end = intervals.end();
-  const std::vector<float>::const_iterator it = std::lower_bound(begin, end, pan);
+  auto begin = intervals.cbegin();
+  auto end = intervals.cend();
+  auto it = std::lower_bound(begin, end, pan);
 
   if(it == end)
-    return Vector2f(JointAngles::off, JointAngles::off); // Unreachable pan angle
+    return Rangea(JointAngles::off, JointAngles::off); // Unreachable pan angle
 
   const size_t index = it - begin;
-  const float xe = intervals[index];   // Interval end
-  const float le = lowerBounds[index]; // Lower bound at interval end
-  const float ue = upperBounds[index]; // Upper bound at interval end
+  const Angle xe = intervals[index];   // Interval end
+  const Angle le = lowerBounds[index]; // Lower bound at interval end
+  const Angle ue = upperBounds[index]; // Upper bound at interval end
   if(pan == xe)
-    return Vector2f(ue, le);
+    return Rangea(le, ue);
 
   if(index == 0)
-    return Vector2f(JointAngles::off, JointAngles::off); // Unreachable pan angle (smaller than begin of first interval)
+    return Rangea(JointAngles::off, JointAngles::off); // Unreachable pan angle (smaller than begin of first interval)
 
-  const float xs = intervals[index - 1];   // Interval start
-  const float ls = lowerBounds[index - 1]; // Lower bound at interval start.
-  const float us = upperBounds[index - 1]; // Upper bound at interval start
+  const Angle xs = intervals[index - 1];   // Interval start
+  const Angle ls = lowerBounds[index - 1]; // Lower bound at interval start.
+  const Angle us = upperBounds[index - 1]; // Upper bound at interval start
 
-  const float lowerSlope = (le - ls) / (xe - xs);
-  const float upperSlope = (ue - us) / (xe - xs);
-  return Vector2f(us + upperSlope * (pan - xs),
-                  ls + lowerSlope * (pan - xs));
+  const Angle lowerSlope = (le - ls) / (xe - xs);
+  const Angle upperSlope = (ue - us) / (xe - xs);
+  return Rangea(ls + lowerSlope * (pan - xs),
+                us + upperSlope * (pan - xs));
 }
 
 bool HeadLimits::imageCenterHiddenByShoulder(const RobotCameraMatrix& robotCameraMatrix,
-    const Vector3f& shoulderInOrigin,
-    const float imageTilt, const float hysteresis) const
+    const Vector3f& shoulderInOrigin, const Angle imageTilt, const float hysteresis) const
 {
   Vector3f intersection = Vector3f::Zero();
   if(!intersectionWithShoulderPlane(robotCameraMatrix, shoulderInOrigin, imageTilt, intersection))
@@ -52,8 +51,7 @@ bool HeadLimits::imageCenterHiddenByShoulder(const RobotCameraMatrix& robotCamer
 }
 
 bool HeadLimits::intersectionWithShoulderEdge(const RobotCameraMatrix& robotCameraMatrix,
-    const Vector3f& shoulderInOrigin,
-    Vector3f& intersection) const
+    const Vector3f& shoulderInOrigin, Vector3f& intersection) const
 {
   if(!intersectionWithShoulderPlane(robotCameraMatrix, shoulderInOrigin, 0.0f, intersection))
     return false; // No intersection with the plane.
@@ -65,16 +63,15 @@ bool HeadLimits::intersectionWithShoulderEdge(const RobotCameraMatrix& robotCame
 }
 
 bool HeadLimits::intersectionWithShoulderPlane(const RobotCameraMatrix& robotCameraMatrix,
-    const Vector3f& shoulderInOrigin,
-    const float imageTilt, Vector3f& intersection) const
+    const Vector3f& shoulderInOrigin, Angle imageTilt, Vector3f& intersection) const
 {
-  static const Vector3f normal(0.0, 1.0f, 0.0f);
+  const Vector3f& normal = Vector3f::UnitY();
   Pose3f camera2Shoulder(-shoulderInOrigin);
   camera2Shoulder.conc(robotCameraMatrix);
-  Vector3f line(std::cos(-imageTilt), 0.0f, std::sin(-imageTilt));
+  Vector3f line(std::cos(-imageTilt), 0.f, std::sin(-imageTilt));
   line = camera2Shoulder * line - camera2Shoulder.translation;
   const float denominator = normal.dot(line);
-  if(denominator == 0.0f)
+  if(denominator == 0.f)
     return false; // Line is parallel to the shoulder plane
   const float scale = (normal.dot(camera2Shoulder.translation)) / denominator;
   intersection = camera2Shoulder.translation - line * scale;
@@ -83,8 +80,8 @@ bool HeadLimits::intersectionWithShoulderPlane(const RobotCameraMatrix& robotCam
 
 void HeadLimits::draw() const
 {
-  DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:left", "lShoulderPitch");
-  DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:right", "rShoulderPitch");
+  DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:left", "LShoulderPitch");
+  DECLARE_DEBUG_DRAWING3D("representation:HeadLimits:right", "RShoulderPitch");
   SPHERE3D("representation:HeadLimits:left", 0, 0, 0, shoulderRadius, ColorRGBA::orange);
   SPHERE3D("representation:HeadLimits:right", 0, 0, 0, shoulderRadius, ColorRGBA::orange);
 }

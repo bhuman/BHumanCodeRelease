@@ -1,9 +1,9 @@
 /**
-* @file Controller/Views/ModuleGraphView.cpp
-* Implementation of a class to represent a view displaying the module layout of the process.
-* @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
-* @author Colin Graf
-*/
+ * @file Controller/Views/ModuleGraphView.cpp
+ * Implementation of a class to represent a view displaying the module layout of the process.
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Colin Graf
+ */
 
 #include "ModuleGraphView.h"
 #include "Controller/RobotConsole.h"
@@ -12,7 +12,8 @@
 #include <algorithm>
 
 ModuleGraphViewObject::ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier, ModuleBase::Category category) :
-  DotViewObject(fullName), console(console), processIdentifier(processIdentifier), category(category), lastModulInfoTimeStamp(0) {}
+  DotViewObject(fullName), console(console), processIdentifier(processIdentifier), category(category)
+{}
 
 bool ModuleGraphViewObject::hasChanged()
 {
@@ -30,7 +31,7 @@ QString ModuleGraphViewObject::generateDotFileContent()
   std::stringstream stream;
   stream << "digraph G {" << std::endl;
   stream << "node [style=filled,fillcolor=lightyellow,fontname=Arial"
-#ifdef OSX
+#ifdef MACOS
             "MT"
 #endif
             ",fontsize=9,height=0.2];" << std::endl;

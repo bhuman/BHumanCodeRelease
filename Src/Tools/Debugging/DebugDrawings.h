@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-#include "Tools/ColorRGBA.h"
+#include "Tools/Debugging/ColorRGBA.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Eigen.h"
@@ -19,9 +19,8 @@ namespace Drawings
    */
   enum ShapeType
   {
-    circle, polygon, ellipse, line, dot, midDot, largeDot,
-    arrow, text, tip, origin, gridRGBA, gridMono, rectangle,
-    arc
+    arc, arrow, circle, dot, dotLarge, dotMedium, ellipse,
+    line, origin, polygon, rectangle, text, tip
   };
 
   /** The pen style that is used for basic shapes*/
@@ -36,8 +35,6 @@ namespace Drawings
     noBrush, solidBrush
   };
 };
-
-class Framework;
 
 /**
  * Singleton drawing manager class
@@ -67,7 +64,6 @@ private:
   friend class Process;
   friend class RobotConsole;
   friend class DrawingManager3D;
-  friend class Framework;
   friend In& operator>>(In& stream, DrawingManager&);
   friend Out& operator<<(Out& stream, const DrawingManager&);
 
@@ -133,6 +129,8 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   return "unknown";
 }
 
+#ifndef TARGET_TOOL
+
 /**
  * A macro that declares
  * @param id A drawing id
@@ -143,10 +141,10 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   if(Global::getDrawingManager().addDrawingId(id, type), _debugRequestActive("debug drawing:" id))
 
 /**
-* A macro that declares
-* @param id A drawing id
-* @param type A drawing type
-*/
+ * A macro that declares
+ * @param id A drawing id
+ * @param type A drawing type
+ */
 #define DECLARE_DEBUG_DRAWING(id, type) \
   do \
   { \
@@ -176,7 +174,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define CIRCLE(id, center_x, center_y, radius, penWidth, penStyle, penColor, brushStyle, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::circle << \
@@ -203,13 +201,13 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define ARC(id, center_x, center_y, radius, startAngle, spanAngle, penWidth, penStyle, penColor, brushStyle, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::arc << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
              (int)(center_x) << (int)(center_y) << (int)(radius) << \
-             int(toDegrees(startAngle) * 16.f + 0.5f) << int(toDegrees(spanAngle) * 16.f + 0.5f) << \
+             Angle(startAngle) << Angle(spanAngle) << \
              (char)(penWidth) << \
              (char)(penStyle) << ColorRGBA(penColor) << (char)(brushStyle) << ColorRGBA(brushColor)\
       ); \
@@ -231,7 +229,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define ELLIPSE(id, center, radiusX, radiusY, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::ellipse << \
@@ -255,7 +253,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define RECTANGLE2(id, topLeft, width, height, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::rectangle << \
@@ -279,7 +277,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define POLYGON(id, numberOfPoints, points, penWidth, penStyle, penColor, brushStyle, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OutTextSize _size; \
       for(int _i = 0; _i < numberOfPoints; ++_i) \
@@ -302,80 +300,6 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   while(false)
 
 /**
- * A macro that sends a grid which has quadratic cells of different colors
- * @param id A drawing id (Drawings::FieldDrawing or Drawings::ImageDrawing)
- * @param x The x-coordinate of the grid center.
- * @param y The y-coordinate of the grid center.
- * @param cellSize The side length of a cell
- * @param cellsX The number of cells in x direction
- * @param cellsY The number of cells in y direction
- * @param cells An array containing the colors of the cells
- */
-#define GRID_RGBA(id, x, y, cellSize, cellsX, cellsY, cells) \
-  do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
-    { \
-      OutTextSize _size; \
-      for(int _i = 0; _i < (cellsX*cellsY); ++_i) \
-        _size << cells[_i]; \
-      char* _buf = new char[_size.getSize() + 1]; \
-      OutTextMemory _stream(_buf); \
-      for(int _i = 0; _i < (cellsX*cellsY); ++_i) \
-        _stream << cells[_i]; \
-      _buf[_size.getSize()] = 0; \
-      OUTPUT(idDebugDrawing, bin, \
-             (char)Drawings::gridRGBA << \
-             (char)Global::getDrawingManager().getDrawingId(id) << \
-             int(x) << \
-             int(y) << \
-             int(cellSize) << \
-             int(cellsX) << \
-             int(cellsY) << \
-             _buf \
-            ); \
-      delete [] _buf; \
-    } \
-  while(false)
-
-/**
- * A macro that sends a grid which has quadratic cells of different color intensity
- * @param id A drawing id (Drawings::FieldDrawing or Drawings::ImageDrawing)
- * @param x The x-coordinate of the grid center.
- * @param y The y-coordinate of the grid center.
- * @param cellSize The side length of a cell
- * @param cellsX The number of cells in x direction
- * @param cellsY The number of cells in y direction
- * @param baseColor A color for drawing. The RGB (not A) values will become multiplied by cell[i]/256
- * @param cells An array (of unsigned char) containing the color intensities of the cells
- */
-#define GRID_MONO(id, x, y, cellSize, cellsX, cellsY, baseColor, cells) \
-  do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
-    { \
-      OutTextSize _size; \
-      for(int _i = 0; _i < (cellsX*cellsY); ++_i) \
-        _size << cells[_i]; \
-      char* _buf = new char[_size.getSize() + 1]; \
-      OutTextMemory _stream(_buf); \
-      for(int _i = 0; _i < (cellsX*cellsY); ++_i) \
-        _stream << cells[_i]; \
-      _buf[_size.getSize()] = 0; \
-      OUTPUT(idDebugDrawing, bin, \
-             (char)Drawings::gridMono << \
-             (char)Global::getDrawingManager().getDrawingId(id) << \
-             int(x) << \
-             int(y) << \
-             int(cellSize) << \
-             int(cellsX) << \
-             int(cellsY) << \
-             ColorRGBA(baseColor) << \
-             _buf \
-            ); \
-      delete [] _buf; \
-    } \
-  while(false)
-
-/**
  * A macro that sends a dot (a quadratic box with a border)
  * @param id A drawing id
  * @param x The x coordinate of the center of the box
@@ -385,7 +309,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define DOT(id, x, y, penColor, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::dot << \
@@ -404,7 +328,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define DOT_AS_VECTOR(id, xy, penColor, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::dot << \
@@ -424,10 +348,10 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define MID_DOT(id, x, y, penColor, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
-             (char)Drawings::midDot << \
+             (char)Drawings::dotMedium << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
              (int)(x) << (int)(y) << ColorRGBA(penColor) << ColorRGBA(brushColor) \
             ); \
@@ -444,10 +368,10 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define LARGE_DOT(id, x, y, penColor, brushColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
-             (char)Drawings::largeDot << \
+             (char)Drawings::dotLarge << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
              (int)(x) << (int)(y) << ColorRGBA(penColor) << ColorRGBA(brushColor) \
             ); \
@@ -467,7 +391,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define LINE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::line << \
@@ -476,6 +400,13 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
             ); \
     } \
   while(false)
+
+#define RAY(id, base, angle, penWidth, penStyle, penColor) \
+  COMPLEX_DRAWING(id) \
+  { \
+    const Vector2f to = base + Vector2f(10000.f,0.f).rotate(angle); \
+    LINE(id, base.x(), base.y(), to.x(), to.y(), penWidth, penStyle, penColor); \
+  }
 
 /**
  * A macro that sends an arrow
@@ -490,35 +421,13 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define ARROW(id, x1, y1, x2, y2, penWidth, penStyle, penColor) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::arrow << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
              (int)(x1) << (int)(y1) << (int)(x2) << (int)(y2) << (char)(penWidth) << (char)(penStyle) << ColorRGBA(penColor) \
             ); \
-    } \
-  while(false)
-
-/**
- * A macro that sends an arrow for a pose
- * @param id A drawing id
- * @param p A Pose2f describing the arrow
- * @param color The color of the line arrow (Drawings::Color)
- */
-#define POSE_2D_SAMPLE(id, p, color) \
-  do \
-    COMPLEX_DRAWING(id) \
-    { \
-      Pose2f current = p; current += Pose2f(-100,0); \
-      LINE(id, int(current.translation.x()),int(current.translation.y()), int(p.translation.x()), int(p.translation.y()), \
-           1, Drawings::solidPen, color); \
-      current = p; current += Pose2f(-40,-40); \
-      LINE(id, int(current.translation.x()), int(current.translation.y()), int(p.translation.x()), int(p.translation.y()), \
-           1, Drawings::solidPen, color); \
-      current = p; current += Pose2f(-40,40); \
-      LINE(id, int(current.translation.x()),int(current.translation.y()),int(p.translation.x()), int(p.translation.y()), \
-           1, Drawings::solidPen, color); \
     } \
   while(false)
 
@@ -612,7 +521,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
  */
 #define DRAWTEXT(id, x, y, fontSize, color, txt) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OutTextRawSize size; \
       size << txt; \
@@ -630,35 +539,16 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   while(false)
 
 /**
- * A macro that defines a new origin
- * @param id A drawing id
- * @param x The x coordinate of the new origin.
- * @param y The y coordinate of the new origin.
- * @param angle The orientation of the new origin.
- */
-#define ORIGIN(id, x, y, angle) \
-  do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
-    { \
-      OUTPUT(idDebugDrawing, bin, \
-             (char)Drawings::origin << \
-             (char)Global::getDrawingManager().getDrawingId(id) << \
-             (int)(x) << (int)(y) << (float)(angle) \
-            ); \
-    } \
-  while(false)
-
-/**
  * A macro that sends a tip (popup text)
  * @param id A drawing id
- * @param center_x The x coordinate of the center of the anchor area
- * @param center_y The y coordinate of the center of the anchor area
+ * @param x The x coordinate of the center of the anchor area
+ * @param y The y coordinate of the center of the anchor area
  * @param radius The radius of the anchor area
  * @param text The text (streaming is possible)
  */
-#define TIP(id, center_x, center_y, radius, text) \
+#define TIP(id, x, y, radius, text) \
   do \
-    DECLARED_DEBUG_RESPONSE("debug drawing:" id) \
+    COMPLEX_DRAWING(id) \
     { \
       OutTextRawSize size; \
       size << text; \
@@ -669,9 +559,28 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::tip << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
-             (int)(center_x) << (int)(center_y) << (int)(radius) << _buf \
+             (int)(x) << (int)(y) << (int)(radius) << _buf \
             ); \
       delete [] _buf; \
+    } \
+  while(false)
+
+/**
+ * A macro that defines a new origin
+ * @param id A drawing id
+ * @param x The x coordinate of the new origin.
+ * @param y The y coordinate of the new origin.
+ * @param angle The orientation of the new origin.
+ */
+#define ORIGIN(id, x, y, angle) \
+  do \
+    COMPLEX_DRAWING(id) \
+    { \
+      OUTPUT(idDebugDrawing, bin, \
+             (char)Drawings::origin << \
+             (char)Global::getDrawingManager().getDrawingId(id) << \
+             (int)(x) << (int)(y) << (float)(angle) \
+            ); \
     } \
   while(false)
 
@@ -686,7 +595,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
     COMPLEX_DRAWING(id) \
     { \
       Vector2f bodyPoints[4] = {Vector2f(55, 90), Vector2f(-55, 90), \
-                                 Vector2f(-55, -90), Vector2f(55, -90)}; \
+                                Vector2f(-55, -90), Vector2f(55, -90)}; \
       Vector2f translation = p.translation; \
       float rotation = p.rotation; \
       for(int i = 0; i < 4; i++) \
@@ -698,10 +607,64 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
            20, Drawings::solidPen, ColorRGBA::white); \
       POLYGON(id, 4, bodyPoints, 20, Drawings::solidPen, \
               ColorRGBA::black, Drawings::solidBrush, color); \
-      CIRCLE(id, translation.x(), translation.y(), 42, 0, \
+      CIRCLE(id, translation.x(), translation.y(), 42, 20, \
              Drawings::solidPen, ColorRGBA::black, Drawings::solidBrush, color); \
     } \
   while(false)
+
+ /**
+ * A macro that sends a RobotPose (Pose2f)
+ * @param id A drawing id
+ * @param p The desired Pose2f
+ * @param color The desired color for this drawing
+ * @param headRotation the Z-rotation of the head
+ */
+#define DRAW_ROBOT_POSE_WITH_HEAD_ROTATION(id, p, color, headRotation) \
+  do \
+    COMPLEX_DRAWING(id) \
+    { \
+      Vector2f bodyPoints[4] = {Vector2f(55, 90), Vector2f(-55, 90), \
+                                Vector2f(-55, -90), Vector2f(55, -90)}; \
+      Vector2f translation = p.translation; \
+      float rotation = p.rotation; \
+      for(int i = 0; i < 4; i++) \
+        bodyPoints[i] = p * bodyPoints[i]; \
+      Vector2f dirVec(200.f, 0.f); \
+      dirVec.rotate(rotation); \
+      dirVec += translation; \
+      LINE(id, translation.x(), translation.y(), dirVec.x(), dirVec.y(), \
+           20, Drawings::solidPen, ColorRGBA::white); \
+      POLYGON(id, 4, bodyPoints, 20, Drawings::solidPen, \
+              ColorRGBA::black, Drawings::solidBrush, color); \
+      CIRCLE(id, translation.x(), translation.y(), 42, 20, \
+             Drawings::solidPen, ColorRGBA::black, Drawings::solidBrush, color); \
+      Vector2f dirHeadVec(150.f, 0.f); \
+      dirHeadVec.rotate(rotation); \
+      dirHeadVec.rotate(headRotation); \
+      dirHeadVec += translation; \
+      LINE(id, translation.x(), translation.y(), dirHeadVec.x(), dirHeadVec.y(), \
+           20, Drawings::solidPen, ColorRGBA::violet); \
+    } \
+  while(false)
+
+/**
+ * A macro that sends a RobotPose (Pose2f) and draws and arc for the rotational standard deviation
+ * @param id A drawing id
+ * @param p The desired Pose2f
+ * @param stdDev The standard deviation
+ * @param color The desired color for this drawing
+ */
+#define DRAW_ROBOT_POSE_ROTATIONAL_STANDARD_DEVIATION(id, p, stdDev, color) \
+  do \
+    COMPLEX_DRAWING(id) \
+    { \
+      DRAW_ROBOT_POSE(id, p, color); \
+      ARC(id, p.translation.x(), p.translation.y(), \
+      200.f, (-stdDev/2.f + p.rotation), stdDev, 20, Drawings::solidPen, ColorRGBA::white, \
+      Drawings::noBrush, ColorRGBA::white); \
+    } \
+  while(false)
+
 
 /**
  * A macro that sends a covariance ellipse
@@ -776,3 +739,34 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
     PLOT(id "Z", vec.z()); \
   } \
   while(false)
+
+#else
+//Ignore everything
+#define DEBUG_DRAWING(id, type) if(false)
+#define DECLARE_DEBUG_DRAWING(id, type) ((void) 0)
+#define COMPLEX_DRAWING(id) ((void) 0)
+#define CIRCLE(id, center_x, center_y, radius, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define ARC(id, center_x, center_y, radius, startAngle, spanAngle, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define ELLIPSE(id, center, radiusX, radiusY, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define RECTANGLE2(id, topLeft, width, height, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define POLYGON(id, numberOfPoints, points, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define DOT(id, x, y, penColor, brushColor) ((void) 0)
+#define DOT_AS_VECTOR(id, xy, penColor, brushColor) ((void) 0)
+#define MID_DOT(id, x, y, penColor, brushColor) ((void) 0)
+#define LARGE_DOT(id, x, y, penColor, brushColor) ((void) 0)
+#define LINE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
+#define ARROW(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
+#define QUADRANGLE(id, x1, y1, x2, y2, x3, y3, x4, y4, penWidth, penStyle, penColor) ((void) 0)
+#define RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
+#define FILLED_RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+#define CROSS(id, x, y, size, penWidth, penStyle, penColor) ((void) 0)
+#define DRAWTEXT(id, x, y, fontSize, color, txt) ((void) 0)
+#define ORIGIN(id, x, y, angle) ((void) 0)
+#define DRAW_ROBOT_POSE(id, p, color) ((void) 0)
+#define DRAW_ROBOT_POSE_ROTATIONAL_STANDARD_DEVIATION(id, p, stdDev, color) ((void) 0)
+#define COVARIANCE2D(id, cov, mean) ((void) 0)
+#define PLOT(id, value) ((void) 0)
+#define DECLARE_PLOT(id) ((void) 0)
+#define DECLARE_VEC3_PLOT(id) ((void) 0)
+#define PLOT_VEC3(id, vec) ((void) 0)
+#endif

@@ -79,7 +79,7 @@
 /**
  * Determine the number of entries in a tuple.
  */
-#ifdef WINDOWS
+#if defined _MSC_VER && !defined Q_MOC_RUN
 #define _STREAM_TUPLE_SIZE(...) _STREAM_JOIN(_STREAM_TUPLE_SIZE_II, (__VA_ARGS__, \
   100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
   79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
@@ -110,7 +110,7 @@
  * Determine whether a sequence is of the form "(a) b" or "(a)(b) c".
  * In the first case, 1 is returned, otherwise 2.
  */
-#if !defined(WINDOWS) || defined(__INTELLISENSE__)
+#if !defined _MSC_VER  || defined __INTELLISENSE__ || defined Q_MOC_RUN
 #define _STREAM_SEQ_SIZE(...) _STREAM_CAT(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_0 __VA_ARGS__))
 #define _STREAM_SEQ_SIZE_0(...) _STREAM_SEQ_SIZE_1
 #define _STREAM_SEQ_SIZE_1(...) _STREAM_SEQ_SIZE_2
@@ -128,9 +128,9 @@
 
 /**
  * Remove surrounding parentheses from header. Ignored for Microsoft's compiler, but required
- * on Linux and OS X.
+ * on Linux and macOS.
  */
-#ifdef WINDOWS
+#if defined _MSC_VER && !defined Q_MOC_RUN
 #define _STREAM_UNWRAP
 #else
 #define _STREAM_UNWRAP(...) __VA_ARGS__
@@ -199,6 +199,7 @@
 #define _STREAM_ATTR_58(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57)
 #define _STREAM_ATTR_59(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58)
 #define _STREAM_ATTR_60(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59)
+#define _STREAM_ATTR_61(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60)
 
 /** Simply drop all parameters passed. */
 #define _STREAM_DROP(...)
@@ -206,9 +207,6 @@
 /** Concatenate the two parameters. Works in some situations. */
 #define _STREAM_CAT(a, ...) _STREAM_CAT_I(a, __VA_ARGS__)
 #define _STREAM_CAT_I(a, ...) a ## __VA_ARGS__
-
-#define _STREAM_CAT2(a, ...) _STREAM_CAT2_I(a, __VA_ARGS__)
-#define _STREAM_CAT2_I(a, ...) a __VA_ARGS__
 
 /** Concatenate the two parameters. Works in other situations. */
 #define _STREAM_JOIN(a, b) _STREAM_JOIN_I(a, b)
@@ -283,7 +281,7 @@
  *               allowed if enclosed by parantheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#ifdef WINDOWS
+#if defined _MSC_VER && !defined Q_MOC_RUN
 #define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , header, __VA_ARGS__)
 #else
 #define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , (header), __VA_ARGS__)
@@ -301,17 +299,17 @@
  *               allowed if enclosed by parantheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#ifdef WINDOWS
+#if defined _MSC_VER && !defined Q_MOC_RUN
 #define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), header, __VA_ARGS__)
 #else
 #define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), (header), __VA_ARGS__)
 #endif
 
 /**
- * Use this macro to protect code with commas that are not enclosed by parantheses
+ * Use this macro to replace a comma that is not enclosed by parantheses
  * inside the header of a streamable class.
  */
-#define PROTECT(...) __VA_ARGS__
+#define COMMA ,
 
 namespace Streaming
 {

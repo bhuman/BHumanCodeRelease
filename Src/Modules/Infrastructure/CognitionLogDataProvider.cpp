@@ -5,10 +5,13 @@
  */
 
 #include "CognitionLogDataProvider.h"
+#include "Platform/Time.h"
 #include "Representations/Infrastructure/Thumbnail.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/Debugging/DebugImages.h"
+#include <iostream>
 
-PROCESS_LOCAL CognitionLogDataProvider* CognitionLogDataProvider::theInstance = nullptr;
+thread_local CognitionLogDataProvider* CognitionLogDataProvider::theInstance = nullptr;
 
 MAKE_MODULE(CognitionLogDataProvider, cognitionInfrastructure)
 
@@ -23,22 +26,27 @@ CognitionLogDataProvider::~CognitionLogDataProvider()
 {
   if(lowFrameRateImage)
     delete lowFrameRateImage;
-  theInstance = 0;
+
+  theInstance = nullptr;
 }
 
 void CognitionLogDataProvider::update(Image& image)
 {
+  CameraInfo& info = (CameraInfo&) Blackboard::getInstance()["CameraInfo"];
+
   if(SystemCall::getMode() == SystemCall::logfileReplay)
   {
-    CameraInfo& info = (CameraInfo&) Blackboard::getInstance()["CameraInfo"];
     if(lowFrameRateImage)
     {
       if(lowFrameRateImage->imageUpdated)
         lastImages[info.camera] = lowFrameRateImage->image;
       image = lastImages[info.camera];
     }
-    else if(info.width != image.width || info.height != image.height)
-      image = Image(true, info.width, info.height);
+    else if(info.width / 2 != image.width || info.height / 2 != image.height)
+    {
+      image = Image(true, info.width / 2, info.height / 2);
+      image.isFullSize = true;
+    }
   }
 
   static const float distance = 300.f;
@@ -67,32 +75,35 @@ void CognitionLogDataProvider::update(ImageCoordinateSystem& imageCoordinateSyst
         imageCoordinateSystem.origin.x() + imageCoordinateSystem.rotation(0, 1) * 50,
         imageCoordinateSystem.origin.y() + imageCoordinateSystem.rotation(1, 1) * 50,
         0, Drawings::solidPen, ColorRGBA(255, 0, 0));
-  COMPLEX_IMAGE(corrected)
+  COMPLEX_IMAGE("corrected")
   {
     if(Blackboard::getInstance().exists("Image"))
     {
       const Image& image = (const Image&) Blackboard::getInstance()["Image"];
-      INIT_DEBUG_IMAGE_BLACK(corrected, theCameraInfo.width, theCameraInfo.height);
+      corrected.setResolution(theCameraInfo.width / 2, theCameraInfo.height);
+      memset(corrected[0], 0, (theCameraInfo.width / 2) * theCameraInfo.height * sizeof(PixelTypes::YUVPixel));
       int yDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, 0).y();
       for(int ySrc = 0; ySrc < theCameraInfo.height; ++ySrc)
         for(int yDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).y(); yDest <= yDest2; ++yDest)
         {
-          int xDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).x();
-          for(int xSrc = 0; xSrc < theCameraInfo.width; ++xSrc)
+          int xDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).x() / 2;
+          for(int xSrc = 0; xSrc < theCameraInfo.width; xSrc += 2)
           {
-            for(int xDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(xSrc, ySrc).x(); xDest <= xDest2; ++xDest)
+            for(int xDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(xSrc, ySrc).x() / 2; xDest <= xDest2; ++xDest)
             {
-              DEBUG_IMAGE_SET_PIXEL_YUV(corrected, xDest + int(theCameraInfo.opticalCenter.x() + 0.5f),
-                                        yDest + int(theCameraInfo.opticalCenter.y() + 0.5f),
-                                        image[ySrc][xSrc].y,
-                                        image[ySrc][xSrc].cb,
-                                        image[ySrc][xSrc].cr);
+              corrected[yDest + int(theCameraInfo.opticalCenter.y() + 0.5f)][xDest + int(theCameraInfo.opticalCenter.x() + 0.5f) / 2].color = (image[ySrc / 2] + image.width * (ySrc & 1))[xSrc / 2].color;
             }
           }
         }
-      SEND_DEBUG_IMAGE(corrected);
+      SEND_DEBUG_IMAGE("corrected", corrected);
     }
   }
+}
+
+void CognitionLogDataProvider::update(FieldColors& fieldColors)
+{
+  DEBUG_RESPONSE_ONCE("representation:FieldColors:once")
+  OUTPUT(idFieldColors, bin, fieldColors);
 }
 
 bool CognitionLogDataProvider::handleMessage(InMessage& message)
@@ -103,7 +114,9 @@ bool CognitionLogDataProvider::handleMessage(InMessage& message)
 bool CognitionLogDataProvider::isFrameDataComplete()
 {
   if(!theInstance)
+  {
     return true;
+  }
   else if(theInstance->frameDataComplete)
   {
     OUTPUT(idLogResponse, bin, '\0');
@@ -128,8 +141,20 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
       {
         FrameInfo& frameInfo = (FrameInfo&) Blackboard::getInstance()["FrameInfo"];
         const Image& image = (const Image&) Blackboard::getInstance()["Image"];
-        frameInfo.cycleTime = (float) (image.timeStamp - frameInfo.time) * 0.001f;
+        frameInfo.cycleTime = (float)(image.timeStamp - frameInfo.time) * 0.001f;
         frameInfo.time = image.timeStamp;
+      }
+      return true;
+
+    case idImagePatches:
+      if(Blackboard::getInstance().exists("Image"))
+      {
+        ImagePatches imagePatches;
+        message.bin >> imagePatches;
+        if(fillImagePatchesBackground)
+          imagePatches.toImage((Image&) Blackboard::getInstance()["Image"], imagePatchesBackgroundColor);
+        else
+          imagePatches.toImage((Image&) Blackboard::getInstance()["Image"]);
       }
       return true;
 
@@ -148,12 +173,15 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
 
     case idStopwatch:
     {
-      const int size = message.getMessageSize();
-      std::vector<unsigned char> data;
-      data.resize(size);
-      message.bin.read(&data[0], size);
-      Global::getDebugOut().bin.write(&data[0], size);
-      Global::getDebugOut().finishMessage(idStopwatch);
+      DEBUG_RESPONSE_NOT("timing")
+      {
+        const int size = message.getMessageSize();
+        std::vector<unsigned char> data;
+        data.resize(size);
+        message.bin.read(&data[0], size);
+        Global::getDebugOut().bin.write(&data[0], size);
+        Global::getDebugOut().finishMessage(idStopwatch);
+      }
       return true;
     }
 

@@ -1,7 +1,7 @@
 /**
-* @file AnnotationWidget.h
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file AnnotationWidget.h
+ * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ */
 
 #pragma once
 
@@ -33,11 +33,14 @@ private:
   std::unordered_map<unsigned, Row*> rows;
 
   QCheckBox* stopCheckBox;
+  QCheckBox* useRegExCheckBox;
 
   QString filter;
   void applyFilter();
 
 private slots:
+  void useRegExCheckBoxStateChanged(int state);
+  void stopCheckBoxStateChanged(int state);
   void filterChanged(const QString& newFilter);
   void jumpFrame(int row, int column);
 };

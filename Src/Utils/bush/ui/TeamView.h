@@ -31,6 +31,7 @@ class TeamView : public QFrame
   QComboBox* cbBuildConfig;
   QComboBox* cbDeployDevice;
   QSlider* sVolume;
+  QSpinBox* sbMagic;
 
   void init();
 public:
@@ -46,4 +47,5 @@ private slots:
   void buildConfigChanged(const QString& build);
   void volumeChanged(const int volume);
   void deployDeviceChanged(const QString& device);
+  void magicNumberChanged(int magicnumber);
 };

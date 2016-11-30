@@ -16,8 +16,8 @@
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
-#include "Representations/Perception/CameraMatrix.h"
-#include "Representations/Perception/LineSpots.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Tools/RingBufferWithSum.h"
 #include "Tools/Math/Eigen.h"
@@ -33,7 +33,7 @@ MODULE(AutomaticCameraCalibrator,
   REQUIRES(CameraInfo),
   REQUIRES(CameraResolution),
   REQUIRES(FieldDimensions),
-  REQUIRES(LineSpots),
+  REQUIRES(LinesPercept),
   REQUIRES(JointAngles),
   REQUIRES(RobotDimensions),
   REQUIRES(TorsoMatrix),
@@ -46,16 +46,16 @@ MODULE(AutomaticCameraCalibrator,
   {,
     (float)(0.001f) terminationCriterion, /**< The difference of two succesive parameter sets that are taken as a convergation */
     (float)(1000000.f) aboveHorizonError, /**< The error for a sample the error of which cannot be computed regularly */
-    (unsigned)(15) numOfFramesToWait, /**< The number of frames to wait between two iterations (necessary to keep the debug connection alive) */
+    (unsigned)(10) numOfFramesToWait, /**< The number of frames to wait between two iterations (necessary to keep the debug connection alive) */
     (unsigned)(5) minSuccessiveConvergations, /**< The number of consecutive iterations that fulfil the termination criterion to converge */
-    (unsigned)(1) numOfSecondsToWaitForUser,
+    (float)(1.f) waitForUserTime, /** (in s) */
     (std::vector<float>)({2.1f, 1.0f, 0.1f, -1.0f, -2.1f}) headPans,
     (float)(0.38f) upperCameraHeadTilt,
-    (float)(-0.38f) lowerCameraHeadTilt,
+    (float)(-0.25f) lowerCameraHeadTilt,
     (float)(0.5f) headSpeed, /** speed of headmovement*/
-    (unsigned)(1000) headMotionWaitTime,  /** time the robot has to wait to change the headposition */
+    (float)(0.5f) headMotionWaitTime,  /** time the robot has to wait to change the headposition (in s) */
     (unsigned)(300) minimumSampleDistance,  /** the minimum field distance of samples to eachother */
-    (int)(30) deletionThreshold,
+    (float)(5.f) deletionThreshold,
   }),
 });
 
@@ -76,6 +76,7 @@ private:
     WaitForUser,
     WaitForOptimize,
     Optimize,
+    ManualManipulation,
   });
 
   /**
@@ -87,11 +88,14 @@ private:
     lowerCameraRollCorrection,
     lowerCameraTiltCorrection,
     //lowerCameraPanCorrection,
+
     upperCameraRollCorrection,
     upperCameraTiltCorrection,
     //upperCameraPanCorrection,
+
     bodyRollCorrection,
     bodyTiltCorrection,
+
     robotPoseXCorrection,
     robotPoseYCorrection,
     robotPoseRotationCorrection,
@@ -110,6 +114,27 @@ private:
     float headYaw, headPitch;
     CameraInfo cameraInfo;
   };
+
+  using Parameters = GaussNewtonOptimizer<numOfParameterTranslations>::Vector;
+
+  struct Functor2 : public GaussNewtonOptimizer<numOfParameterTranslations>::Functor
+  {
+    AutomaticCameraCalibrator& calibrator;
+
+    Functor2(AutomaticCameraCalibrator& calibrator) : calibrator(calibrator) {};
+
+    /**
+     * This method computes the error value for a sample and a parameter vector.
+     * @param params The parameter vector for which the error should be evaluated.
+     * @param measurement The i-th measurement for which the error should be computed.
+     * @return The error.
+     */
+    float operator()(const Parameters& params, size_t measurement) const;
+
+    size_t getNumOfMeasurements() const { return calibrator.samples.size(); };
+  };
+  Functor2 functor;
+  friend struct Functor2;
 
   State state; /**< The state of the calibrator. */
   std::function<void()> states[numOfStates];
@@ -131,24 +156,26 @@ private:
   RingBufferWithSum<float, 5> headPositionPanBuffer;
   RingBufferWithSum<float, 5> headPositionTiltBuffer;
   unsigned int waitTill = 0; //For timing
-  CameraResolution::Resolutions nextResolution = CameraResolution::noRequest;
+  enum class NextResolution {none, hiResUpper, hiResLower} nextResolution = NextResolution::none;
 
   // accumulation variables
   unsigned accumulationTimestamp;
   bool lastActionWasInsertion = false; //For the undo mechanism
   //for deleting unwanted samples
-  Vector2i unwantedPoint; /**< The sample to be deleted. */
-  CameraInfo::Camera deletionOnCamera; /**< The camera which detected the sample to delete. */
+  Vector2i unwantedPoint = Vector2i::Zero(); /**< The sample to be deleted. */
+  CameraInfo::Camera deletionOnCamera = CameraInfo::lower; /**< The camera which detected the sample to delete. */
   Sample lastDeletedSample; /**< The last sample the calibrator has deleted.  */
   bool alreadyRevertedDeletion = true; /**< Have you already done undo?*/
   //for inserting wanted samples
-  Vector2i wantedPoint; /**< The sample to be inserted. */
-  CameraInfo::Camera insertionOnCamera; /**< The camera which detected the sample to insert. */
+  Vector2i wantedPoint = Vector2i::Zero(); /**< The sample to be inserted. */
+  CameraInfo::Camera insertionOnCamera = CameraInfo::lower; /**< The camera which detected the sample to insert. */
   Sample lastInsertedSample; /**< The last sample the calibrator has inserted.  */
   bool alreadyRevertedInsertion = true; /**< Have you already done undo?*/
+  bool insertionValueExistant = false, deletionValueExistant = false;
 
   // optimization variables
-  GaussNewtonOptimizer<Sample, AutomaticCameraCalibrator>* optimizer = nullptr; /**< A pointer to the currently used optimizer, or nullptr if there is none. */
+  GaussNewtonOptimizer<numOfParameterTranslations>* optimizer = nullptr;
+  Parameters optimizationParameters;
   CameraCalibration nextCameraCalibration;
   unsigned successiveConvergations; /**< The number of consecutive iterations that fulfil the termination criterion. */
   int framesToWait; /**< The remaining number of frames to wait for the next iteration. */
@@ -166,6 +193,7 @@ private:
   void accumulate();
   void waitForUser();
   void optimize();
+  void listen();
 
   /**
    * Automatically inverts the BodyRotationCorrection so the user does not have to do it.
@@ -229,32 +257,22 @@ private:
    * @return The distance.
    */
   float computeError(const Sample& sample, const CameraCalibration& cameraCalibration,
-                     const RobotPose& robotPose, bool inImage = true) const;
+                     const Pose2f& robotPose, bool inImage = true) const;
 
   /**
-   * This method computes the error value for a sample and a parameter vector.
-   * @param sample The sample point for which the distance / error should be computed.
-   * @param parameters The parameter vector for which the error should be evaluated.
-   * @return The error.
+   * This method packs a camera calibration and a robot pose into a parameter vector.
+   * @param cameraCalibration The camera calibration to be translated.
+   * @param robotPose The robot pose to be translated.
    */
-  float computeErrorParameterVector(const Sample& sample, const std::vector<float>& parameters) const;
+  Parameters pack(const CameraCalibration& cameraCalibration, const Pose2f& robotPose) const;
 
   /**
-   * This method converts a parameter vector to a camera calibration and a robot pose they stand for.
-   * @param parameters The parameter vector to be translated.
+   * This method unpacks a parameter vector into a camera calibration and a robot pose.
+   * @param params The parameter vector to be unpacked.
    * @param cameraCalibration The camera calibration the values of which are set to the corresponding values in the parameter vector.
    * @param robotPose The robot pose the values of which are set to the corresponding values in the parameter vector.
    */
-  void translateParameters(const std::vector<float>& parameters, CameraCalibration& cameraCalibration, RobotPose& robotPose) const;
-
-  /**
-   * This method converts a camera calibration and a robot pose to a parameter vector.
-   * @param cameraCalibration The camera calibration to be translated.
-   * @param robotPose The robot pose to be translated.
-   * @param parameters The resulting parameter vector containing the values from the given camera calibration and robot pose.
-   */
-  void translateParameters(const CameraCalibration& cameraCalibration, const RobotPose& robotPose,
-                           std::vector<float>& parameters) const;
+  void unpack(const Parameters& params, CameraCalibration& cameraCalibration, Pose2f& robotPose) const;
 
   /**
    * This method projects a line given in robot relative field coordinates into

@@ -47,31 +47,30 @@ void CameraSettings::V4L2Setting::enforceBounds()
     value = max;
 }
 
-CameraSettings::CameraSettings(CameraInfo::Camera camera) :
-  camera(camera)
+CameraSettings::CameraSettingCollection::CameraSettingCollection()
+{
 #ifdef CAMERA_INCLUDED
-{
-  settings[AutoExposure] = V4L2Setting(V4L2_CID_EXPOSURE_AUTO, -1000, 0, 1);
-  settings[AutoExposure].influencingSettings[0] = Exposure;
-  settings[AutoExposure].influencingSettings[1] = Gain;
-  settings[AutoWhiteBalance] = V4L2Setting(V4L2_CID_AUTO_WHITE_BALANCE, -1000, 0, 1);
-  settings[AutoWhiteBalance].influencingSettings[0] = WhiteBalance;
-  settings[Contrast] = V4L2Setting(V4L2_CID_CONTRAST, -1000, 16, 64);
-  settings[Exposure] = V4L2Setting(V4L2_CID_EXPOSURE, -1000, 0, 1000);
-  settings[FadeToBlack] = V4L2Setting(V4L2_MT9M114_FADE_TO_BLACK, -1000, 0, 1);
-  settings[Gain] = V4L2Setting(V4L2_CID_GAIN, -1000, 0, 255);
-  settings[Hue] = V4L2Setting(V4L2_CID_HUE, -1000, -22, 22);
-  settings[Saturation] = V4L2Setting(V4L2_CID_SATURATION, -1000, 0, 255);
-  settings[Sharpness] = V4L2Setting(V4L2_CID_SHARPNESS, -1000, -7, 7);
-  settings[WhiteBalance] = V4L2Setting(V4L2_CID_WHITE_BALANCE_TEMPERATURE, -1000, 2700, 6500);
-}
-#else
-{}
+  settings[autoExposure] = V4L2Setting(V4L2_CID_EXPOSURE_AUTO, -1000, 0, 1);
+  settings[autoExposure].influencingSettings[0] = exposure;
+  settings[autoExposure].influencingSettings[1] = gain;
+  settings[autoExposureAlgorithm] = V4L2Setting(V4L2_CID_EXPOSURE_ALGORITHM, -1000, 0, 3);
+  settings[autoWhiteBalance] = V4L2Setting(V4L2_CID_AUTO_WHITE_BALANCE, -1000, 0, 1);
+  settings[autoWhiteBalance].influencingSettings[0] = whiteBalance;
+  settings[brightness] = V4L2Setting(V4L2_CID_BRIGHTNESS, -1000, 0, 255);
+  settings[contrast] = V4L2Setting(V4L2_CID_CONTRAST, -1000, 16, 64);
+  settings[exposure] = V4L2Setting(V4L2_CID_EXPOSURE, -1000, 0, 333);
+  settings[fadeToBlack] = V4L2Setting(V4L2_MT9M114_FADE_TO_BLACK, -1000, 0, 1);
+  settings[gain] = V4L2Setting(V4L2_CID_GAIN, -1000, 32, 255);
+  settings[hue] = V4L2Setting(V4L2_CID_HUE, -1000, -22, 22);
+  settings[saturation] = V4L2Setting(V4L2_CID_SATURATION, -1000, 0, 255);
+  settings[sharpness] = V4L2Setting(V4L2_CID_SHARPNESS, -1000, -7, 7);
+  settings[whiteBalance] = V4L2Setting(V4L2_CID_WHITE_BALANCE_TEMPERATURE, -1000, 2700, 6500);
 #endif
+}
 
-bool CameraSettings::operator==(const CameraSettings& other) const
+bool CameraSettings::CameraSettingCollection::operator==(const CameraSettingCollection& other) const
 {
-  for(int i = 0; i < numOfCameraSettings; ++i)
+  FOREACH_ENUM(CameraSetting, i)
   {
     if(settings[i] != other.settings[i])
       return false;
@@ -79,34 +78,37 @@ bool CameraSettings::operator==(const CameraSettings& other) const
   return true;
 }
 
-bool CameraSettings::operator!=(const CameraSettings& other) const
+bool CameraSettings::CameraSettingCollection::operator!=(const CameraSettingCollection& other) const
 {
   return !(*this == other);
 }
 
-void CameraSettings::enforceBounds()
+void CameraSettings::CameraSettingCollection::enforceBounds()
 {
-  for(int i = 0; i < numOfCameraSettings; ++i)
+  FOREACH_ENUM(CameraSetting, i)
     settings[i].enforceBounds();
 }
 
-void CameraSettings::serialize(In* in, Out* out)
+void CameraSettings::CameraSettingCollection::serialize(In* in, Out* out)
 {
-  V4L2Setting& autoExposure = settings[AutoExposure];
-  V4L2Setting& autoWhiteBalance = settings[AutoWhiteBalance];
-  V4L2Setting& contrast = settings[Contrast];
-  V4L2Setting& exposure = settings[Exposure];
-  V4L2Setting& fadeToBlack = settings[FadeToBlack];
-  V4L2Setting& gain = settings[Gain];
-  V4L2Setting& hue = settings[Hue];
-  V4L2Setting& saturation = settings[Saturation];
-  V4L2Setting& sharpness = settings[Sharpness];
-  V4L2Setting& whiteBalance = settings[WhiteBalance];
+  V4L2Setting& autoExposure = settings[CameraSettings::autoExposure];
+  ExposureAlgorithm autoExposureAlgorithm = (ExposureAlgorithm)settings[CameraSettings::autoExposureAlgorithm].value;
+  V4L2Setting& autoWhiteBalance = settings[CameraSettings::autoWhiteBalance];
+  V4L2Setting& brightness = settings[CameraSettings::brightness];
+  V4L2Setting& contrast = settings[CameraSettings::contrast];
+  V4L2Setting& exposure = settings[CameraSettings::exposure];
+  V4L2Setting& fadeToBlack = settings[CameraSettings::fadeToBlack];
+  V4L2Setting& gain = settings[CameraSettings::gain];
+  V4L2Setting& hue = settings[CameraSettings::hue];
+  V4L2Setting& saturation = settings[CameraSettings::saturation];
+  V4L2Setting& sharpness = settings[CameraSettings::sharpness];
+  V4L2Setting& whiteBalance = settings[CameraSettings::whiteBalance];
 
   STREAM_REGISTER_BEGIN;
-  STREAM(camera, CameraInfo);
   STREAM(autoExposure);
+  STREAM(autoExposureAlgorithm, CameraSettings);
   STREAM(autoWhiteBalance);
+  STREAM(brightness);
   STREAM(contrast);
   STREAM(exposure);
   STREAM(fadeToBlack);
@@ -116,6 +118,8 @@ void CameraSettings::serialize(In* in, Out* out)
   STREAM(sharpness);
   STREAM(whiteBalance);
   STREAM_REGISTER_FINISH;
+
+  settings[CameraSettings::autoExposureAlgorithm].value = (int)autoExposureAlgorithm;
 
   if(in)
     enforceBounds();

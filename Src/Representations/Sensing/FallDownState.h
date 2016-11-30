@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 
 /**
  * @struct FallDownState
@@ -25,6 +25,7 @@ STREAMABLE(FallDownState,
     onGround,
     staggering,
     falling,
+    pickedUp,
   });
 
   ENUM(Direction,
@@ -44,11 +45,18 @@ STREAMABLE(FallDownState,
     fallen, // robot did not get up since last sideward fall
   });
 
+  ENUM(Provider,
+  {,
+    fallDownStateDet,
+    toppleOverParabolaDet,
+  });
+
   /** Debug drawing. */
   void draw() const,
-
+  
   (State)(undefined) state, /**< Current state of the robot's body. */
   (Direction)(none) direction, /**< The robot is falling / fell into this direction. */
   (Sidestate)(noot) sidewards, /**< Did the robot fell sidewards before? */
   (float)(0) odometryRotationOffset,
+  (Provider)(fallDownStateDet) provider,
 });

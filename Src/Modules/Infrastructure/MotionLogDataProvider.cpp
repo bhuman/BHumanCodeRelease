@@ -10,7 +10,7 @@
 
 MAKE_MODULE(MotionLogDataProvider, motionInfrastructure)
 
-PROCESS_LOCAL MotionLogDataProvider* MotionLogDataProvider::theInstance = 0;
+thread_local MotionLogDataProvider* MotionLogDataProvider::theInstance = nullptr;
 
 MotionLogDataProvider::MotionLogDataProvider() :
   frameDataComplete(false)
@@ -20,7 +20,7 @@ MotionLogDataProvider::MotionLogDataProvider() :
 
 MotionLogDataProvider::~MotionLogDataProvider()
 {
-  theInstance = 0;
+  theInstance = nullptr;
 }
 
 void MotionLogDataProvider::update(GroundTruthOdometryData& groundTruthOdometryData)
@@ -61,8 +61,11 @@ bool MotionLogDataProvider::handleMessage2(InMessage& message)
       {
         FrameInfo& frameInfo = (FrameInfo&) Blackboard::getInstance()["FrameInfo"];
         const JointAngles& jointAngles = (const JointAngles&) Blackboard::getInstance()["JointAngles"];
-        frameInfo.cycleTime = (float)(jointAngles.timestamp - frameInfo.time) * 0.001f;
-        frameInfo.time = jointAngles.timestamp;
+        if(jointAngles.timestamp != frameInfo.time) // Do not change frameInfo, when it is provided by a logfile.
+        {
+          frameInfo.cycleTime = (float)(jointAngles.timestamp - frameInfo.time) * 0.001f;
+          frameInfo.time = jointAngles.timestamp;
+        }
       }
       return true;
 
@@ -89,6 +92,20 @@ bool MotionLogDataProvider::handleMessage2(InMessage& message)
     case idProcessFinished:
       frameDataComplete = true;
       return true;
+
+    case idStopwatch:
+    {
+      DEBUG_RESPONSE_NOT("timing")
+      {
+        const int size = message.getMessageSize();
+        std::vector<unsigned char> data;
+        data.resize(size);
+        message.bin.read(&data[0], size);
+        Global::getDebugOut().bin.write(&data[0], size);
+        Global::getDebugOut().finishMessage(idStopwatch);
+      }
+      return true;
+    }
 
     default:
       return handle(message);

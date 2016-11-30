@@ -207,3 +207,8 @@ Out& operator<<(Out& stream, const MessageQueue& messageQueue);
  * @param queue The MessageQueue object.
  */
 void operator>>(InMessage& message, MessageQueue& queue);
+
+class CognitionToDebug : public MessageQueue {};
+class DebugToCognition : public MessageQueue {};
+class MotionToDebug : public MessageQueue {};
+class DebugToMotion : public MessageQueue {};

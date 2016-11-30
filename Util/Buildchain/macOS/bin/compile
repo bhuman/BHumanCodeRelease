@@ -1,0 +1,56 @@
+#!/bin/sh
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname ${scriptPath})
+if [ ! "$4" = "-Link" -a ! "$6" = "-Link" ]; then
+  if [ "$2" = "c++-header" -o "$2" = "objective-c++-header" ]; then
+    "${basePath}"/../lib/../bin/clang++ $*
+  else
+    export CCACHE_CPP2=1
+    export CCACHE_SLOPPINESS=pch_defines,time_macros
+    "${basePath}"/ccache "${basePath}"/../lib/../bin/clang++ $*
+  fi
+else
+  CALL=
+  SHARED=
+  while true; do
+    case $1 in
+      "")
+        break;
+        ;;
+      "-arch")
+        shift
+        ;;
+      "-isysroot")
+        shift
+        ;;
+      "-single_module")
+        ;;
+      "-filelist")
+        shift
+        CALL="$CALL `cat $1`"
+        ;;
+      "-F"*)
+        ;;
+      "-Link")
+        ;;
+      "-Xlinker")
+        shift
+        ;;
+      "-soname"*)
+        SHARED=1
+        CALL="$CALL $1"
+        ;;
+      "-mmacosx-version-min="*)
+        ;;
+      *)
+        CALL="$CALL $1"
+        ;;
+    esac
+    shift
+  done
+  if [ -z $SHARED ]; then
+    ${basePath}/ld --eh-frame-hdr -m elf_i386 -dynamic-linker=/lib/ld-linux.so.2 ../../Util/Buildchain/gcc/lib/crt1.o ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.21 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtend.o ../../Util/Buildchain/gcc/lib/crtn.o
+  else
+    ${basePath}/ld --eh-frame-hdr -m elf_i386 -shared ../../Util/Buildchain/gcc/lib/crti.o ../../Util/Buildchain/gcc/lib/crtbeginS.o $CALL ../../Util/Buildchain/gcc/lib/libstdc++.so.6.0.21 ../../Util/Buildchain/gcc/lib/libm-2.13.so ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared ../../Util/Buildchain/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/gcc/lib/ld-2.13.so ../../Util/Buildchain/gcc/lib/crtendS.o ../../Util/Buildchain/gcc/lib/crtn.o
+  fi
+fi

@@ -1,11 +1,11 @@
 /**
-* @file FrictionLearner.h
-*
-* This file implements another module that estimates the ball friction coefficient.
-*
-* @author Tim Laue
-* @author Felix Wenk
-*/
+ * @file FrictionLearner.h
+ *
+ * This file implements another module that estimates the ball friction coefficient.
+ *
+ * @author Tim Laue
+ * @author Felix Wenk
+ */
 
 #include "FrictionLearner.h"
 
@@ -14,7 +14,7 @@ MAKE_MODULE(FrictionLearner, cognitionInfrastructure)
 void FrictionLearner::update(DummyRepresentation& dummy)
 {
   if(theBallPercept.status == BallPercept::seen && theBallModel.estimate.velocity.norm() != 0.f)
-    balls.push_back(BallObservation(theBallPercept.relativePositionOnField, theFrameInfo.time));
+    balls.push_back(BallObservation(theBallPercept.positionOnField, theFrameInfo.time));
 
   if(balls.size() != 0 && theFrameInfo.getTimeSince(balls.back().time) > timeout)
   {
@@ -33,7 +33,7 @@ void FrictionLearner::determineFrictionCoefficient()
   for(unsigned int i = 0; i < balls.size() - offset; i++)
   {
     const BallObservation& b1 = balls[i];
-    const BallObservation& b2 = balls[i+offset];
+    const BallObservation& b2 = balls[i + offset];
     const auto dt    = (b2.time - b1.time) / 1000.f;   // in s
     const auto tToB1 = (b1.time - t0) / 1000.f;        // in s
     const auto dPos = (b2.pos - b1.pos) / 1000.f;      // in m
@@ -41,14 +41,14 @@ void FrictionLearner::determineFrictionCoefficient()
     z(i * 2 + 1)     = dPos.y();
     A(i * 2, 0)      = dt;
     A(i * 2, 1)      = 0.f;
-    A(i * 2, 2)      = 0.5f * dt*dt + dt*tToB1;
+    A(i * 2, 2)      = 0.5f * dt * dt + dt * tToB1;
     A(i * 2, 3)      = 0.f;
     A(i * 2 + 1, 0)  = 0.f;
     A(i * 2 + 1, 1)  = dt;
     A(i * 2 + 1, 2)  = 0.f;
-    A(i * 2 + 1, 3)  = 0.5f * dt*dt + dt*tToB1;
+    A(i * 2 + 1, 3)  = 0.5f * dt * dt + dt * tToB1;
   }
   Vector4f x;
   x = (A.transpose() * A).inverse() * A.transpose() * z;
-  OUTPUT_TEXT("Result:  v=("<<x(0)<<","<<x(1)<<")   a=("<<x(2)<<","<<x(3)<<")   abs(a)=" << std::sqrt(x(2)*x(2) + x(3)*x(3)));
+  OUTPUT_TEXT("Result:  v=(" << x(0) << "," << x(1) << ")   a=(" << x(2) << "," << x(3) << ")   abs(a)=" << std::sqrt(x(2) * x(2) + x(3) * x(3)));
 }

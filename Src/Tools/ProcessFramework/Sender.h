@@ -11,6 +11,7 @@
 #include "Receiver.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Streams/OutStreams.h"
+#include "Tools/Streams/Streamable.h"
 
 const int RECEIVERS_MAX = 20; /**< The maximum number of receivers connected to a single sender */
 
@@ -136,10 +137,9 @@ protected:
 public:
   /**
    * @param process The process this sender is associated with.
-   * @param senderName The connection name of the sender without the process name.
    */
-  Sender(PlatformProcess* process, const char* senderName) :
-    SenderList(process, senderName)
+  Sender(PlatformProcess* process) :
+    SenderList(process, Streaming::demangle(typeid(T).name()))
   {}
 
   /**

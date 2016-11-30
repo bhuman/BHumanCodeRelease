@@ -1,4 +1,4 @@
-/*
+/**
  * TypeDeclarations.h
  *
  * This file registers additional types to qt.

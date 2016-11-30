@@ -1,5 +1,0 @@
-#!/bin/sh
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname ${scriptPath})
-cd $basePath
-open ../../Build/OSX/bush/Release/bush.app

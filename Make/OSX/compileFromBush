@@ -1,8 +1,0 @@
-#!/bin/bash
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname ${scriptPath})
-cd $basePath
-( xcodebuild -jobs `sysctl -n hw.ncpu` -parallelizeTargets -target $1 -configuration $2 | grep --line-buffered "^[^ -]" | grep --line-buffered -v -e "User defaults from command line:" -e "^Build Preparation" -e "^Build task concurrency" -e "^=== BUILD TARGET" -e "^Check dependencies" -e "^Write auxiliary files" -e "write-file" -e "PhaseScriptExecution" -e "^/bin/mkdir" -e "^chmod" | sed -l -e "s%CompileC [^ ]* \(.*/\)*\([^ ]*\).*%Compiling \2 ...%" -e "s%Ld \(.*/\)*\([^ ]*\).*%Linking \2 ...%"; test ${PIPESTATUS[0]} -eq 0 ) 2> >( grep "BUILD FAILED" >&2 )
-RESULT=$?
-sleep 1
-exit $RESULT

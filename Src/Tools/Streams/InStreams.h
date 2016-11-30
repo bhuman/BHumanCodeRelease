@@ -336,7 +336,7 @@ private:
 public:
   InText() {buf.reserve(200);};
 
-  /** 
+  /**
    * Resets theChar to be able to use the same instance of InText or InConfig
    * more than once.
    */
@@ -582,7 +582,7 @@ protected:
   virtual void readBool(bool& d, PhysicalInStream& stream)
   {
     char c;
-    stream.readFromStream(&c, sizeof(d)); 
+    stream.readFromStream(&c, sizeof(d));
     d = c != 0;
   }
 
@@ -821,8 +821,8 @@ protected:
   void open(const void* mem, size_t size = 0)
   {
     if(memory == nullptr)
-    { 
-      memory = reinterpret_cast<const char*>(mem); 
+    {
+      memory = reinterpret_cast<const char*>(mem);
       end = memory + size;
     }
   }
@@ -904,8 +904,8 @@ public:
    *             as relative to the configuration directory.
    */
   InTextFile(const std::string& name)
-  { 
-    open(name); 
+  {
+    open(name);
     initEof(*this);
   }
 };
@@ -1045,9 +1045,9 @@ protected:
    */
   InMap(bool showErrors) : showErrors(showErrors) {}
 
-  ~InMap() 
-  { 
-    if(map != nullptr) 
+  ~InMap()
+  {
+    if(map != nullptr)
       delete map;
   }
 

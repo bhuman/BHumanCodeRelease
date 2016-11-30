@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "Tools/Arms.h"
-#include "Tools/Limbs.h"
+#include "Tools/RobotParts/Arms.h"
+#include "Tools/RobotParts/Limbs.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 struct JointAngles;
 struct Pose3f;
@@ -15,7 +16,7 @@ struct RobotDimensions;
 
 namespace ForwardKinematic
 {
-  void calculateArmChain(Arms::Arm arm, const JointAngles& joints, const RobotDimensions& robotDimensions, Pose3f limbs[Limbs::numOfLimbs]);
-  void calculateLegChain(bool left, const JointAngles& joints, const RobotDimensions& robotDimensions, Pose3f limbs[Limbs::numOfLimbs]);
-  void calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, Pose3f limbs[Limbs::numOfLimbs]);
+  void calculateArmChain(Arms::Arm arm, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs);
+  void calculateLegChain(Legs::Leg leg, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs);
+  void calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs);
 };

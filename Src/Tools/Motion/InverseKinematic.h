@@ -2,11 +2,13 @@
  * @file InverseKinematic.h
  * @author Alexander Härtl
  * @author jeff
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
 #include "Tools/Math/Eigen.h"
+#include "Tools/RobotParts/Arms.h"
 
 struct CameraCalibration;
 struct JointAngles;
@@ -41,7 +43,7 @@ namespace InverseKinematic
   bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Vector2f& bodyRotation, JointAngles& jointAngles,
                      const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
   bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation, JointAngles& jointAngles,
-                const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
+                     const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
 
   /**
    * Solves the inverse kinematics for the head of the Nao such that the camera looks at a certain point.
@@ -52,6 +54,61 @@ namespace InverseKinematic
    * @param robotDimensions The robot dimensions needed for the calculation.
    * @param cameraCalibration The camera calibration
    */
-  void calcHeadJoints(const Vector3f& position, const float imageTilt, const RobotDimensions& robotDimensions,
-                      const bool lowerCamera, Vector2f& panTilt, const CameraCalibration& cameraCalibration);
+  void calcHeadJoints(const Vector3f& position, Angle imageTilt, const RobotDimensions& robotDimensions,
+                      bool lowerCamera, Vector2a& panTilt, const CameraCalibration& cameraCalibration);
+
+  GLOBAL_ENUM(IKAError,
+  {,
+    shoulderPitchOutOfRange,
+    shoulderRollOutOfRange,
+    elbowYawOutOfRange,
+    elbowRollOutOfRange,
+    armToShort,
+    noPossibleElbowPosition,
+  });
+
+  /**
+   * This method calculates the joint angles for an arm of the robot from a elbow and hand position.
+   *
+   * @param arm specifies the arm (left or right) to calculate for
+   * @param elBowPosition the elbow position to calc from (relativ to the robots origin)
+   * @param handPostion the hand position to calc from (relativ to the robots origin)
+   * @param robotDimensions the dimensions of the robot
+   * @param jointCalibration the joint calibration of the robot
+   * @param jointAngle the result: the calculated joint angles for the given parameters
+   * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
+   *      note: the lengths will not be checked
+   */
+  unsigned calcArmJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const Vector3f& handPosition,
+                         const RobotDimensions& robotDimensions, const JointCalibration& jointCalibration,
+                         JointAngles& jointAngles) WARN_UNUSED_RESULT;
+
+  /**
+   * This method calculates the joint angles for an arm of the robot from a hand pose.
+   *
+   * @param arm specifies the arm (left or right) to calculate for
+   * @param handPostion the hand pose to calc from (relativ to the robots origin)
+   * @param robotDimensions the dimensions of the robot
+   * @param jointCalibration the joint calibration of the robot
+   * @param jointAngle the result: the calculated joint angles for the given parameters
+   * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
+   *      note: the lengths will not be checked
+   */
+  unsigned calcArmJoints(const Arms::Arm arm, const Pose3f& handPose, const RobotDimensions& robotDimensions,
+                         const JointCalibration& jointCalibration, JointAngles& jointAngles) WARN_UNUSED_RESULT;
+
+  /**
+   * This method calculates the joint angles for an upper arm of the robot from a elbow position.
+   *
+   * @param arm specifies the arm (left or right) to calculate for
+   * @param elBowPosition the elbow position to calc from (relativ to the robots origin)
+   * @param robotDimensions the dimensions of the robot
+   * @param jointCalibration the joint calibration of the robot
+   * @param jointAngle the result: the calculated joint angles for the given parameters
+   * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
+   *      note: the length will not be checked
+   */
+  unsigned calcShoulderJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const RobotDimensions& robotDimensions,
+                              const JointCalibration& jointCalibration, JointAngles& jointAngles);
 };
+

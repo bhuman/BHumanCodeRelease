@@ -10,59 +10,44 @@ option(HandlePenaltyState)
     transition
     {
       if(theRobotInfo.penalty != PENALTY_NONE)
-        goto prePenalized;
+        goto penalized;
     }
     action
     {
       HandleGameState();
     }
   }
-
-  /** In case of any penalty, the robots stands still. Delay sound playback. */
-  state(prePenalized)
-  {
-    transition
-    {
-      if(theRobotInfo.penalty == PENALTY_NONE)
-        goto notPenalized;
-      else if(state_time > 500)
-        goto penalized;
-    }
-    action
-    {
-      SpecialAction(SpecialActionRequest::standHigh);
-      theHeadControlMode = HeadControl::lookForward;
-    }
-  }
-
+  
   /** In case of any penalty, the robots stands still. */
   state(penalized)
   {
     transition
     {
       if(theRobotInfo.penalty == PENALTY_NONE)
-          goto unPenalized;
+        goto preUnpenalize;
     }
     action
     {
       PlaySound("penalized.wav");
+      LookForward();
       SpecialAction(SpecialActionRequest::standHigh);
-      theHeadControlMode = HeadControl::lookForward;
     }
   }
 
-  /** If the penalty is removed say "not penalized" and continue. */
-  state(unPenalized)
+  state(preUnpenalize)
   {
     transition
-    {     
-      goto notPenalized;
-    }
-    action
     {
-      PlaySound("penalized.wav");
-      theHeadControlMode = HeadControl::lookForward;
-      SpecialAction(SpecialActionRequest::standHigh);
+      if(theRobotInfo.penalty != PENALTY_NONE)
+        goto penalized;
+      else if(theGameInfo.state == STATE_INITIAL || state_time > 500)
+        goto notPenalized;
+    }
+      action
+    {
+      PlaySound("notPenalized.wav");
+      LookForward();
+      Stand();
     }
   }
 }

@@ -1,5 +1,5 @@
 #!/bin/bash
 pushd "$(dirname $0)" >/dev/null
-../../Util/SimRobot/Util/mare/Linux/bin/mare --codelite
+../../Util/SimRobot/Util/mare/Linux/bin/mare --codelite && sed <SimRobot.project "s%\(<General[^>]*\)/>%\1 IsGUIProgram=\"yes\"/>%" >/tmp/mare.tmp && mv /tmp/mare.tmp SimRobot.project
 popd >/dev/null
 

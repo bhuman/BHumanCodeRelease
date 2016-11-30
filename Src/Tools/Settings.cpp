@@ -5,21 +5,21 @@
  */
 
 #include "Settings.h"
-#include "Tools/Streams/InStreams.h"
-#include "Representations/Infrastructure/RoboCupGameControlData.h"
 #ifdef TARGET_SIM
 #include "Controller/ConsoleRoboCupCtrl.h"
 #endif
 #ifdef TARGET_ROBOT
-#include "Platform/Linux/NaoBody.h"
+#include "Platform/Nao/NaoBody.h"
 #include <cstdio>
 #endif
 #include "Platform/BHAssert.h"
 #include "Platform/File.h"
 #include "Platform/SystemCall.h"
+#include "Representations/Infrastructure/RoboCupGameControlData.h"
 #include "Tools/Global.h"
-#include "Tools/Streams/StreamHandler.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Streams/InStreams.h"
+#include "Tools/Streams/StreamHandler.h"
 
 STREAMABLE(Robots,
 {
@@ -63,7 +63,7 @@ Settings::Settings()
     playerNumber = index % 6 + 1;
   }
 
-  robotName = "Nao";
+  headName = bodyName = "Nao";
 
   ConsoleRoboCupCtrl* ctrl = dynamic_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller);
   if(ctrl)
@@ -71,26 +71,21 @@ Settings::Settings()
     std::string logFileName = ctrl->getLogFile();
     if(logFileName != "")
     {
-      QRegExp re("[0-9]_[A-Za-z]*_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].log", Qt::CaseSensitive, QRegExp::RegExp2);
+      QRegExp re("([A-Za-z]*)_([A-Za-z]*)__", Qt::CaseSensitive, QRegExp::RegExp2);
       int pos = re.indexIn(logFileName.c_str());
       if(pos != -1)
       {
-        robotName = logFileName.substr(pos + 2);
-        robotName = robotName.substr(0, robotName.find("_"));
+        headName = re.capturedTexts()[1].toUtf8().constData();
+        bodyName = re.capturedTexts()[2].toUtf8().constData();
       }
       else
-        robotName = "Default";
+        headName = bodyName = "Default";
     }
   }
-
-  bodyName = robotName.c_str();
 
 #endif
 
   isDropInGame = location.find("DropIn") != std::string::npos;
-  isCornerChallenge = location.find("CornerChallenge") != std::string::npos;
-  isCarpetChallenge = location.find("CarpetChallenge") != std::string::npos;
-  isRealBallChallenge = location.find("RealisticBallChallenge") != std::string::npos;
   isGoalkeeper = !isDropInGame && playerNumber == 1;
 }
 
@@ -103,8 +98,8 @@ bool Settings::load()
   }
 
 #ifdef TARGET_ROBOT
-  robotName = SystemCall::getHostName();
-  
+  headName = SystemCall::getHostName();
+
   std::string bhdir = File::getBHDir();
   InMapFile robotsStream(bhdir + "/Config/Robots/robots.cfg");
   if(!robotsStream.exists())
@@ -125,14 +120,14 @@ bool Settings::load()
         break;
       }
     }
-    if(bodyId.empty())
+    if(bodyName.empty())
     {
-      TRACE("Could not find bodyId in robots.cfg");
+      TRACE("Could not find bodyName in robots.cfg! BodyId: %s", bodyId.c_str());
       return false;
     }
   }
 #else
-  robotName = "Nao";
+  headName = "Nao";
   bodyName = "Nao";
 #endif
 
@@ -141,20 +136,21 @@ bool Settings::load()
     stream >> *this;
   else
   {
-    TRACE("Could not load settings for robot \"%s\" from settings.cfg", robotName.c_str());
+    TRACE("Could not load settings for robot \"%s\" from settings.cfg", headName.c_str());
     return false;
   }
 
 #ifdef TARGET_ROBOT
-  if(robotName == bodyName)
-    printf("Hi, I am %s.\n", robotName.c_str());
+  if(headName == bodyName)
+    printf("Hi, I am %s.\n", headName.c_str());
   else
-    printf("Hi, I am %s (using %ss Body).\n", robotName.c_str(), bodyName.c_str());
+    printf("Hi, I am %s (using %ss Body).\n", headName.c_str(), bodyName.c_str());
   printf("teamNumber %d\n", teamNumber);
   printf("teamPort %d\n", teamPort);
   printf("teamColor %s\n", getName(teamColor));
   printf("playerNumber %d\n", playerNumber);
   printf("location %s\n", location.c_str());
+  printf("magicNumber %d\n", magicNumber);
 #endif
 
   return true;

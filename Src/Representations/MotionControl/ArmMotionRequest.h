@@ -1,13 +1,14 @@
 /**
  * @file Representations/MotionControl/ArmMotionRequest.h
  * This file declares a struct that represents the arm motions that can be requested from the robot.
- * @author Jesse Richter-Klug
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
 
 #include "ArmKeyFrameRequest.h"
-#include "Tools/Arms.h"
+#include "Tools/RobotParts/Arms.h"
+#include "Tools/Math/Eigen.h"
 
 /**
  * @struct ArmMotionRequest
@@ -15,14 +16,18 @@
  */
 STREAMABLE(ArmMotionRequest,
 {
-  ENUM(ArmMotion,
+  ENUM(ArmRequest,
   {,
     none, //< The motionengine provides wich also provides the leg motions, provides also the arms
     keyFrame,
+    pointAt,
   });
 
   ArmMotionRequest() { armMotion[Arms::left] = armMotion[Arms::right] = none; },
 
-  (ArmMotion[Arms::numOfArms]) armMotion, /**< The selected armmotion per arm*/
-  (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request, if it is the selected armmotion.  */
+  (ENUM_INDEXED_ARRAY((ArmMotionRequest) ArmRequest, (Arms) Arm)) armMotion, /**< The selected armmotion per arm */
+  (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request, if it is the selected armmotion. */
+  (Vector3f)(Vector3f::Zero()) pointToPointAt, /**< The point to point at, if selected */
 });
+
+struct ArmMotionInfo : public ArmMotionRequest {};

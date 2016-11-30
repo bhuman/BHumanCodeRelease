@@ -16,8 +16,8 @@ mr FrameInfo CognitionLogDataProvider
 mr JointSensorData MotionLogDataProvider
 mr InertialSensorData MotionLogDataProvider
 mr KeyStates MotionLogDataProvider
-mr UsSensorData MotionLogDataProvider
 mr FrameInfo MotionLogDataProvider
+mr FieldFeatureOverview default
 mr GroundTruthWorldState CognitionLogDataProvider
 mr GroundTruthRobotPose OracledWorldModelProvider
 mr GroundTruthBallModel OracledWorldModelProvider
@@ -25,27 +25,33 @@ mr GroundTruthBallModel OracledWorldModelProvider
 # Fast, because we do not compute images
 ci off
 mr Image default
+mr ECImage default
 
 # Deactivate unused modules
 mr RobotHealth default
 mr Thumbnail off
+mr NetworkThumbnail default
 
 call Includes/FieldViews
 
 mr PlayersPercept OracledPerceptsProvider
-mr GoalPercept OracledPerceptsProvider
-mr LinePercept OracledPerceptsProvider
+mr LinesPercept OracledPerceptsProvider
+mr CirclePercept OracledPerceptsProvider
 mr BallPercept OracledPerceptsProvider
 mr FieldBoundary OracledPerceptsProvider
 mr PenaltyMarkPercept OracledPerceptsProvider
-mr LineSpots off
-mr PotentialLineSpots off
+mr FieldBoundary2 off
+mr FieldBoundarySpots off
+mr GoalFrame default
+mr CNSImage off
+mr CNSRegions off
+mr BallRegions off
 mr BallSpots off
-mr ScanlineRegionsClipped off
-mr ScanlineRegions off
+mr ColorScanlineRegionsHorizontal off
+mr ColorScanlineRegionsVerticalClipped off
+mr ColorScanlineRegionsVertical default
 mr ScanGrid off
-mr ColorTable default
-mr BodyContour default
+mr BodyContour off
 
 call Includes/DebugResponses
 call Includes/GameStates

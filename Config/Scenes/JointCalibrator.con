@@ -1,7 +1,11 @@
 mr JointCalibration JointCalibrator
 dr module:JointCalibrator:init 
 
-mr StandOutput CalibrationStand
+mr StandArmRequest CalibrationStand
+mr StandLegRequest CalibrationStand
+set module:CalibrationStand:jointCalibrationMode true;
+mr WalkingEngineOutput default
+mr WalkingEngineState default
 dr module:CalibrationStand:height
 
 echo dr module:JointCalibrator:reset

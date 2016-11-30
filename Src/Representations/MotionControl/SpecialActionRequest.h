@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 
 /**
  * @struct SpecialActionRequest
@@ -22,6 +22,8 @@ STREAMABLE(SpecialActionRequest,
     sitDown,
     stand,
     standHigh,
+    standHighLookUp,
+    getUpEngineDummy, //used for debugging motion of getUpEngine
   });
 
   /**

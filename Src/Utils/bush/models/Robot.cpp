@@ -7,7 +7,7 @@
 #include "Utils/bush/tools/Platform.h"
 #include <iostream>
 
-#if defined(LINUX) || defined(OSX)
+#if defined LINUX || defined MACOS
 #include <cstdlib>
 #include <sys/types.h>
 #include <cerrno>
@@ -46,7 +46,7 @@ std::vector<Robot> Robot::getRobots()
   return robots;
 }
 
-void Robot::initRobotsByName(std::map<std::string, Robot*> &robotsByName)
+void Robot::initRobotsByName(std::map<std::string, Robot*>& robotsByName)
 {
   std::vector<Robot> robots = getRobots();
   for(size_t i = 0; i < robots.size(); ++i)

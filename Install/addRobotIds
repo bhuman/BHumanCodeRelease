@@ -83,14 +83,19 @@ addIds() {
   elif [[ $(grep "bodyId = \"${bodyId}\"" "${robotsFile}") ]]; then
     fatal "The bodyId ${bodyId} is already in use!"
   else
-    line="\ \ { name = \"${name}\"; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
-    if [[ $(grep -Pz '\[\n\]' "${robotsFile}") ]]; then
-	  sed -i "/\[/ a ${line}" "${robotsFile}"
-	elif [[ $(grep -Pz '}\n\];' "${robotsFile}") ]]; then
-	  sed -i "/}$/,/\];/ s/}/},\n${line}/" "${robotsFile}"
-	else
-	  fatal "Could not parse ${robotsFile}"
-	fi
+    line="{ name = \"${name}\"; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
+    if [[ $(tr '\n' '|' <"${robotsFile}" | grep '\[|\]') ]]; then
+      sed "s%\[%[|  ${line}%" <"${robotsFile}" \
+      | tr '|' '\n' >/tmp/addRobotIds.tmp \
+      && mv /tmp/addRobotIds.tmp "${robotsFile}"
+    elif [[ $(tr '\n' '|' <"${robotsFile}" | grep '}|\];') ]]; then
+      tr <"${robotsFile}" '\n' '|' \
+      | sed "s%},*|\];%},|  ${line}|];%" \
+      | tr '|' '\n' >/tmp/addRobotIds.tmp \
+      && mv /tmp/addRobotIds.tmp "${robotsFile}"
+    else
+      fatal "Could not parse ${robotsFile}"
+    fi
   fi
 }
 

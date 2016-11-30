@@ -10,8 +10,9 @@
 
 #include <cstddef>
 #include <cstring>
+#include <iterator>
 #include "Platform/BHAssert.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Memory.h"
 
 template<typename T, std::size_t n = 0> class RingBuffer
 {
@@ -23,7 +24,7 @@ private:
 
 public:
   /** A class for iterators with its typical interface. */
-  class iterator
+  class iterator : public std::iterator<std::forward_iterator_tag, T>
   {
   private:
     RingBuffer<T, n>& buffer; /**< The buffer. */
@@ -44,7 +45,7 @@ public:
   };
 
   /** A class for constant iterators with its typical interface. */
-  class const_iterator
+  class const_iterator : public std::iterator<std::forward_iterator_tag, T>
   {
   private:
     const RingBuffer<T, n>& buffer; /**< The buffer. */
@@ -70,7 +71,7 @@ public:
    *                 the second template parameter is used as default capacity.
    */
   RingBuffer(size_t capacity = n) :
-    buffer(reinterpret_cast<T*>(SystemCall::alignedMalloc(capacity * sizeof(T)))),
+    buffer(reinterpret_cast<T*>(Memory::alignedMalloc(capacity * sizeof(T)))),
     allocated(capacity)
   {}
 
@@ -79,7 +80,7 @@ public:
    * @param other The buffer this one is constructed from.
    */
   RingBuffer(const RingBuffer& other) :
-    buffer(reinterpret_cast<T*>(SystemCall::alignedMalloc(other.allocated * sizeof(T)))),
+    buffer(reinterpret_cast<T*>(Memory::alignedMalloc(other.allocated * sizeof(T)))),
     allocated(other.allocated)
   {
     for(std::size_t i = other.entries; i-- > 0;)
@@ -91,7 +92,7 @@ public:
   {
     clear();
     if(buffer)
-      SystemCall::alignedFree(reinterpret_cast<char*>(buffer));
+      Memory::alignedFree(reinterpret_cast<char*>(buffer));
   }
 
   /**
@@ -104,8 +105,8 @@ public:
     if(allocated != other.allocated)
     {
       if(buffer)
-        SystemCall::alignedFree(reinterpret_cast<char*>(buffer));
-      buffer = reinterpret_cast<T*>(SystemCall::alignedMalloc(other.allocated * sizeof(T)));
+        Memory::alignedFree(reinterpret_cast<char*>(buffer));
+      buffer = reinterpret_cast<T*>(Memory::alignedMalloc(other.allocated * sizeof(T)));
     }
     allocated = other.allocated;
     head = 0;
@@ -133,7 +134,7 @@ public:
     ASSERT(allocated);
     if(entries < allocated)
     {
-      new (buffer + head) T(value);
+      new(buffer + head) T(value);
       ++entries;
     }
     else
@@ -157,11 +158,11 @@ public:
   T& operator[](size_t index) {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
   const T& operator[](size_t index) const {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
 
-  /** Access the the first element of the buffer. */
+  /** Access the first element of the buffer. */
   T& front() {ASSERT(!empty()); return (*this)[0];}
   const T& front() const {ASSERT(!empty()); return (*this)[0];}
 
-  /** Access the the last element of the buffer. */
+  /** Access the last element of the buffer. */
   T& back() {ASSERT(!empty()); return (*this)[entries - 1];}
   const T& back() const {ASSERT(!empty()); return (*this)[entries - 1];}
 
@@ -183,7 +184,7 @@ public:
         pop_back();
 
       T* prev = buffer;
-      buffer = reinterpret_cast<T*>(SystemCall::alignedMalloc(capacity * sizeof(T)));
+      buffer = reinterpret_cast<T*>(Memory::alignedMalloc(capacity * sizeof(T)));
       if(head >= entries)
         std::memcpy(buffer, prev + head - entries, entries * sizeof(T));
       else
@@ -194,7 +195,7 @@ public:
       allocated = capacity;
       head = allocated > entries ? entries : 0;
       if(prev)
-        SystemCall::alignedFree(reinterpret_cast<char*>(prev));
+        Memory::alignedFree(reinterpret_cast<char*>(prev));
     }
   }
 
@@ -215,4 +216,7 @@ public:
 protected:
   /** Is the buffer at the begin of a cycle? */
   bool cycled() const {return head == 0;}
+
+  /** Is the current content wrapped around the end of the buffer? */
+  bool wrapped() const {return head < entries;}
 };

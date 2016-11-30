@@ -340,7 +340,7 @@ void InBinary::readAngle(Angle& d, PhysicalInStream& stream)
 
 InFile::~InFile()
 {
-  if(stream != nullptr) 
+  if(stream != nullptr)
     delete stream;
 }
 
@@ -356,13 +356,13 @@ bool InFile::getEof() const
 
 void InFile::open(const std::string& name)
 {
-  if(stream == nullptr) 
+  if(stream == nullptr)
     stream = new File(name, "rb");
 }
 
 void InFile::readFromStream(void* p, size_t size)
 {
-  if(stream != nullptr) 
+  if(stream != nullptr)
     stream->read(p, size);
 }
 

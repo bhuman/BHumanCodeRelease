@@ -11,9 +11,10 @@
 
 #include "Tools/Boundary.h"
 #include "Tools/Math/Pose2f.h"
-#include "Tools/Enum.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 STREAMABLE(SimpleFieldDimensions,
 {,
@@ -55,9 +56,6 @@ STREAMABLE(SimpleFieldDimensions,
   (float) ballRadius,
   (float) ballFriction, // in 1/s
   (float) penaltyMarkSize, //vertical (and horizontal) size of a penaltyMark
-  (float) penaltyMarkDistance, //distance between penaltyMark and Goal line
-  (float) penaltyAreaLength, //length of penaltyArea
-  (float) penaltyAreaWidth, //width of penaltyArea
 });
 
 /**
@@ -95,7 +93,7 @@ struct FieldDimensions : public SimpleFieldDimensions
     void pushCircle(const Vector2f& center, float radius, int numOfSegments);
 
     /**
-     * Get the the closest point to p on a field line
+     * Get the closest point to p on a field line
      */
     Vector2f getClosestPoint(const Vector2f& p) const;
 
@@ -140,20 +138,6 @@ struct FieldDimensions : public SimpleFieldDimensions
   };
 
   /**
-   * The struct represents all corners of a certain type.
-   */
-  struct CornersTable : public std::vector<Vector2f>
-  {
-    /**
-     * The method returns the position of the corner closest to a point.
-     * The method is only defined if !empty().
-     * @param p The point.
-     * @return The position of the closest corner.
-     */
-    const Vector2f& getClosest(const Vector2f& p) const;
-  };
-
-  /**
    * All different corner classes.
    */
   ENUM(CornerClass,
@@ -176,7 +160,7 @@ struct FieldDimensions : public SimpleFieldDimensions
   LinesTable fieldLinesWithGoalFrame; ///< Table of line segments that contains both fieldLines and goalFrameLines
   LinesTable carpetBorder; ///< Describes a polygon around the border of the field carpet. All legal robot positions are inside this polygon.
   LinesTable fieldBorder; ///< Describes a polygon around the border of the playing field. All legal ball positions are inside this polygon.
-  CornersTable corners[numOfCornerClasses]; ///< All corners on the field.
+  ENUM_INDEXED_ARRAY(std::vector<Vector2f>, CornerClass) corners; ///< All corners on the field.
 
   /**
    * Read field dimensions from configuration file.
@@ -186,7 +170,7 @@ struct FieldDimensions : public SimpleFieldDimensions
   /**
    * Returns true when p is inside the carpet.
    */
-  bool isInsideCarpet(const Vector2f &p) const
+  bool isInsideCarpet(const Vector2f& p) const
   {
     return carpetBorder.isInside(p);
   }
@@ -204,7 +188,7 @@ struct FieldDimensions : public SimpleFieldDimensions
   /**
    * Returns true when p is inside the playing field.
    */
-  bool isInsideField(const Vector2f &p) const
+  bool isInsideField(const Vector2f& p) const
   {
     return fieldBorder.isInside(p);
   }
