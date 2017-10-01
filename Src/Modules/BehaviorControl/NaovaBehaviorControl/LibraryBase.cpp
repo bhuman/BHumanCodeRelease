@@ -1,0 +1,16 @@
+/**
+ * The file implements the base class for all behavior libraries.
+ * If a library is used by another library, it must be added here.
+ * @author Thomas Röfer
+ */
+
+#include "Libraries.h"
+
+namespace NaovaBehavior
+{
+  LibraryBase::LibraryBase() :
+    BehaviorBase(*Libraries::theInstance)
+  {
+    Libraries::theInstance->libraries.push_back(this);
+  }
+}
