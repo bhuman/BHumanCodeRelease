@@ -3,8 +3,6 @@
  *
  * This contains some often used mathematical definitions and functions.
  *
- * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
- * @author Max Risler
  * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
  */
 
@@ -126,4 +124,35 @@ template<typename T>
 constexpr unsigned bit(T t)
 {
   return 1 << static_cast<unsigned>(t);
+}
+
+/**
+ * Checks, if a given value is between two others
+ * @param value The value
+ * @param a The lower bound
+ * @param b The upper bound
+ * @return The square of \c a.
+ */
+template<typename T>
+bool between(const T value, const T a, const T b)
+{
+  return value >= (a < b ? a : b) && value <= (a > b ? a : b);
+}
+
+/**
+ * Clips a value to a range
+ * @param val The value
+ * @param min The lower bound
+ * @param max The upper bound
+ * @return The clipped value
+ */
+template<typename T>
+T clip(const T val, const T min, const T max)
+{
+  if(val <= min)
+    return min;
+  else if(val >= max)
+    return max;
+  else
+    return val;
 }

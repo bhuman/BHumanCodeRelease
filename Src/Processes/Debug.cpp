@@ -124,7 +124,7 @@ bool Debug::main()
         {
           if(!fout)
           {
-            fout = new OutBinaryFile("logfile.log");
+            fout = std::make_unique<OutBinaryFile>("logfile.log");
             theDebugSender.writeAppendableHeader(*fout);
           }
           // Append the outgoing queue to the file on the memory stick
@@ -156,6 +156,8 @@ bool Debug::main()
 
 void Debug::init()
 {
+  BH_TRACE_INIT("Debug");
+
   // read requests.dat
   InBinaryFile stream("requests.dat");
   if(stream.exists() && !stream.eof())
@@ -188,11 +190,7 @@ bool Debug::handleMessage(InMessage& message)
       // Read message queue settings and compute time when next to send (if in a timed mode)
       message.bin >> outQueueMode;
       sendTime = Time::getCurrentSystemTime() + outQueueMode.timingMilliseconds;
-      if(fout)
-      {
-        delete fout;
-        fout = 0;
-      }
+      fout = nullptr;
       return true;
 
     // messages to Cognition and Motion
@@ -224,4 +222,6 @@ bool Debug::handleMessage(InMessage& message)
   }
 }
 
+#if !defined TARGET_ROBOT || !defined NDEBUG
 MAKE_PROCESS(Debug);
+#endif

@@ -40,6 +40,7 @@
 #ifndef QGENERICMATRIX_H
 #define QGENERICMATRIX_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qmetatype.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qdatastream.h>
@@ -63,7 +64,7 @@ public:
 
     void fill(T value);
 
-    QGenericMatrix<M, N, T> transposed() const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QGenericMatrix<M, N, T> transposed() const;
 
     QGenericMatrix<N, M, T>& operator+=(const QGenericMatrix<N, M, T>& other);
     QGenericMatrix<N, M, T>& operator-=(const QGenericMatrix<N, M, T>& other);

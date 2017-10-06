@@ -83,9 +83,9 @@ class FrameSlider : public QSlider
 };
 
 LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerControlView) :
-logPlayerControlView(logPlayerControlView),
-playIcon(":/Icons/Player/play.png"), pauseIcon(":/Icons/Player/pause.png"),
-lastState(logPlayerControlView.logPlayer.state)
+  logPlayerControlView(logPlayerControlView),
+  playIcon(":/Icons/Player/play.png"), pauseIcon(":/Icons/Player/pause.png"),
+  lastState(logPlayerControlView.logPlayer.state)
 {
   QVBoxLayout* vBoxLayout = new QVBoxLayout();
   QHBoxLayout* statusLayout = new QHBoxLayout();
@@ -216,6 +216,22 @@ lastState(logPlayerControlView.logPlayer.state)
 
   QShortcut* sc_prev_image = new QShortcut(QKeySequence("DOWN"), this);
   connect(sc_prev_image, &QShortcut::activated, nextImageButton, &QPushButton::released);
+
+  QShortcut* sc_fast_forward = new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Right), this);
+  connect(sc_fast_forward, &QShortcut::activated, this, [&]()
+  {
+    SYNC_WITH(logPlayerControlView.console);
+    const int frame = logPlayerControlView.logPlayer.currentFrameNumber + 100;
+    logPlayerControlView.logPlayer.gotoFrame(std::max<>(std::min<>(frame - 1, logPlayerControlView.logPlayer.numberOfFrames - 1), 0));
+  });
+
+  QShortcut* sc_fast_backward = new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Left), this);
+  connect(sc_fast_backward, &QShortcut::activated, this, [&]()
+  {
+    SYNC_WITH(logPlayerControlView.console);
+    const int frame = logPlayerControlView.logPlayer.currentFrameNumber - 100;
+    logPlayerControlView.logPlayer.gotoFrame(std::max<>(std::min<>(frame - 1, logPlayerControlView.logPlayer.numberOfFrames - 1), 0));
+  });
 
   setDisabled(logPlayerControlView.logPlayer.isLogfileLoaded());
 }

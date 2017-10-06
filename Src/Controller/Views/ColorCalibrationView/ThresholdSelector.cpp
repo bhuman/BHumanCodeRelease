@@ -34,53 +34,10 @@ ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget
   layout->addWidget(slider);
 }
 
-void ThresholdSelector::updateWidgets()
-{
-  if(parent->currentColor == FieldColors::none)
-  {
-    setEnabled(true);
-    setTitle("Max Black/White Saturation");
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
-  }
-  else if(parent->currentColor == FieldColors::white)
-  {
-    setEnabled(true);
-    setTitle("Y-Threshold White");
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.minYWhite);
-  }
-  else if(parent->currentColor == FieldColors::black)
-  {
-    setEnabled(true);
-    setTitle("Y-Threshold Black");
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxYBlack);
-  }
-  else
-    setEnabled(false);
-}
-
 void ThresholdSelector::setEnabled(bool value)
 {
   slider->setEnabled(value);
   lineEdit->setEnabled(value);
-}
-
-void ThresholdSelector::updateColorCalibration(int value)
-{
-  if(parent->currentColor == FieldColors::none)
-  {
-    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
-  if(parent->currentColor == FieldColors::white)
-  {
-    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.minYWhite);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
-  else if(parent->currentColor == FieldColors::black)
-  {
-    updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxYBlack);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
 }
 
 void ThresholdSelector::sliderChanged(int value)
@@ -92,4 +49,46 @@ void ThresholdSelector::sliderChanged(int value)
 void ThresholdSelector::lineEditChanged(QString value)
 {
   slider->setValue(value.toInt());
+}
+
+void ColorSelector::updateWidgets()
+{
+  if(parent->currentColor < FieldColors::numOfNonColors)
+  {
+    setEnabled(true);
+    setTitle("Color Delimiter");
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  }
+  else
+    setEnabled(false);
+}
+
+void ColorSelector::updateColorCalibration(int value)
+{
+  if(parent->currentColor < FieldColors::numOfNonColors)
+  {
+    ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+    parent->colorCalibrationView.console.colorCalibrationChanged = true;
+  }
+}
+
+void BlackWhiteSelector::updateWidgets()
+{
+  if(parent->currentColor < FieldColors::numOfNonColors)
+  {
+    setEnabled(true);
+    setTitle("Black-White Delimiter");
+    updateSlider(parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
+  }
+  else
+    setEnabled(false);
+}
+
+void BlackWhiteSelector::updateColorCalibration(int value)
+{
+  if(parent->currentColor < FieldColors::numOfNonColors)
+  {
+    ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
+    parent->colorCalibrationView.console.colorCalibrationChanged = true;
+  }
 }

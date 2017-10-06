@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 
+static DECLARE_SYNC;
+
 void Thread::stop()
 {
   running = false;
@@ -21,12 +23,14 @@ void Thread::threadStart(std::function<void()> lambda)
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0);
   lambda();
+  SYNC;
   running = false;
   terminated.post();
 }
 
 void Thread::changePriority()
 {
+  SYNC;
   if(thread && running)
   {
     ASSERT((priority >= -2 && priority <= 0)

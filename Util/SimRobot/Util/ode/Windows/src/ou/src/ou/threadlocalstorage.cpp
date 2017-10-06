@@ -24,6 +24,11 @@
  *                                                                       *
  *************************************************************************/
 
+#include <ou/features.h>
+
+
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
+
 #include <ou/threadlocalstorage.h>
 #include <ou/atomicflags.h>
 #include <ou/atomic.h>
@@ -1325,4 +1330,7 @@ void CTLSInitialization::FinalizeTLSAPIValidated(unsigned int uiInstanceKind)
 
 
 END_NAMESPACE_OU();
+
+
+#endif // #if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 

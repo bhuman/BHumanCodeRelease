@@ -168,7 +168,7 @@ JointHeaderedWidget::JointHeaderedWidget(JointView& sensorView, RobotConsole& co
   headerView->resizeSection(5, 50);
   jointWidget = new JointWidget(sensorView, headerView, this);
   setWidget(jointWidget);
-  connect(getHeaderView(), SIGNAL(sectionResized(int,int,int)), jointWidget, SLOT(forceUpdate()));
+  connect(getHeaderView(), SIGNAL(sectionResized(int, int, int)), jointWidget, SLOT(forceUpdate()));
 }
 
 JointView::JointView(const QString& fullName, RobotConsole& robotConsole, const JointSensorData& jointSensorData, const JointRequest& jointRequest) :

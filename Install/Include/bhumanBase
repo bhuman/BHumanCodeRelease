@@ -11,7 +11,8 @@ export makeDir="${bhDir}/Make/"
 
 export robotsFile="${configDir}/Robots/robots.cfg"
 
-export privateKey="${configDir}/Keys/id_rsa_nao"
+export privateKeySource="${configDir}/Keys/id_rsa_nao"
+export privateKey=/tmp/id_rsa_nao
 export sshOptions="-c arcfour -o PreferredAuthentications=publickey,keyboard-interactive -o NumberOfPasswordPrompts=1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [ `uname` = Darwin ]; then
   export rsyncOptions="-qzPha --delete"
@@ -123,12 +124,14 @@ robotsIds = [
 # $1: The robotIp
 copyKey() {
   message "Copying authorized keys. If prompted please enter password twice (usually nao)."
+  cp "${privateKeySource}" "${privateKey}"
   chmod 600 "${privateKey}"
-  chmod 600 "${fileDir}/authorized_keys"
+  cp "${fileDir}/authorized_keys" /tmp/authorized_keys
+  chmod 600 "/tmp/authorized_keys"
   if [[ $(uname) == "*CYGWIN*" ]] ; then
     which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${privateKey}" #due to windows 8
-    which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "${fileDir}/authorized_keys" #due to windows 8
+    which setfacl >/dev/null && setfacl -s u::rw-,g::---,o:--- "/tmp/authorized_keys" #due to windows 8
   fi
-  ssh -i "${privateKey}" ${sshOptions} nao@${1} "mkdir -p .ssh && chmod -R 700 .ssh"
-  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/authorized_keys" nao@${1}:.ssh/authorized_keys
+  ssh -i "${privateKey}" ${sshOptions} nao@${1} "mkdir -p .ssh && chmod -R 700 .ssh" || fatal "Can't change access rights on NAO's '.ssh' folder"
+  rsync ${rsyncOptions} -e "${sshCommand}" "/tmp/authorized_keys" nao@${1}:.ssh/authorized_keys || fatal "Can't copy 'authorized_keys' to NAO"
 }

@@ -40,7 +40,10 @@
 #ifndef QPUSHBUTTON_H
 #define QPUSHBUTTON_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qabstractbutton.h>
+
+QT_REQUIRE_CONFIG(pushbutton);
 
 QT_BEGIN_NAMESPACE
 
@@ -86,9 +89,6 @@ public Q_SLOTS:
 
 protected:
     bool event(QEvent *e) Q_DECL_OVERRIDE;
-#ifdef Q_DEAD_CODE_FROM_QT4_MAC
-    bool hitButton(const QPoint &pos) const;
-#endif // Q_DEAD_CODE_FROM_QT4_MAC
     void paintEvent(QPaintEvent *) Q_DECL_OVERRIDE;
     void keyPressEvent(QKeyEvent *) Q_DECL_OVERRIDE;
     void focusInEvent(QFocusEvent *) Q_DECL_OVERRIDE;

@@ -59,10 +59,12 @@
 #include "collision_trimesh_internal.h"
 #include "util.h"
 
+
 #if dTRIMESH_ENABLED
 
 // OPCODE version
 #if dTRIMESH_OPCODE
+
 // largest number, double or float
 #if defined(dSINGLE)
 #define MAX_REAL	FLT_MAX
@@ -167,7 +169,7 @@ struct sTrimeshCapsuleColliderData
     // mesh data
     // dMatrix4  mHullDstPl;
     dMatrix3   m_mTriMeshRot;
-    dVector3   m_mTriMeshPos;
+    dVector3   m_vTriMeshPos;
     dVector3   m_vE0, m_vE1, m_vE2;
 
     // global collider data
@@ -507,7 +509,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         return FALSE; 
     }
 
-    if (flags & dxTriMeshData::kEdge0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_EDGE)
     {
         // axis CxE0 - Edge 0
         dCalcVectorCross3(vAxis,m_vCapsuleAxis,m_vE0);
@@ -519,7 +521,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_EDGE)
     {
         // axis CxE1 - Edge 1
         dCalcVectorCross3(vAxis,m_vCapsuleAxis,m_vE1);
@@ -531,7 +533,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_EDGE)
     {
         // axis CxE2 - Edge 2
         //vAxis = ( m_vCapsuleAxis cross m_vE2 );
@@ -543,7 +545,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_EDGE)
     {
         // first capsule point
         // axis ((Cp0-V0) x E0) x E0
@@ -556,7 +558,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_EDGE)
     {
         // axis ((Cp0-V1) x E1) x E1
         _CalculateAxis(vCp0,v1,m_vE1,m_vE1,vAxis);
@@ -568,7 +570,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_EDGE)
     {
         // axis ((Cp0-V2) x E2) x E2
         _CalculateAxis(vCp0,v2,m_vE2,m_vE2,vAxis);
@@ -580,7 +582,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_EDGE)
     {
         // second capsule point
         // axis ((Cp1-V0) x E0) x E0
@@ -593,7 +595,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_EDGE)
     {
         // axis ((Cp1-V1) x E1) x E1
         _CalculateAxis(vCp1,v1,m_vE1,m_vE1,vAxis);
@@ -605,7 +607,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kEdge2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_EDGE)
     {
         // axis ((Cp1-V2) x E2) x E2
         _CalculateAxis(vCp1,v2,m_vE2,m_vE2,vAxis);
@@ -617,7 +619,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_VERTEX)
     {
         // first vertex on triangle
         // axis ((V0-Cp0) x C) x C
@@ -630,7 +632,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_VERTEX)
     {
         // second vertex on triangle
         // axis ((V1-Cp0) x C) x C
@@ -643,7 +645,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_VERTEX)
     {
         // third vertex on triangle
         // axis ((V2-Cp0) x C) x C
@@ -659,7 +661,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
     // Test as separating axes direction vectors between each triangle
     // edge and each capsule's cap center
 
-    if (flags & dxTriMeshData::kVert0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_VERTEX)
     {
         // first triangle vertex and first capsule point
         //vAxis = v0 - vCp0;
@@ -671,7 +673,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_VERTEX)
     {
         // second triangle vertex and first capsule point
         //vAxis = v1 - vCp0;
@@ -683,7 +685,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_VERTEX)
     {
         // third triangle vertex and first capsule point
         //vAxis = v2 - vCp0;
@@ -695,7 +697,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert0)
+    if (flags & dxTriMeshData::CUF_USE_FIRST_VERTEX)
     {
         // first triangle vertex and second capsule point
         //vAxis = v0 - vCp1;
@@ -707,7 +709,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert1)
+    if (flags & dxTriMeshData::CUF_USE_SECOND_VERTEX)
     {
         // second triangle vertex and second capsule point
         //vAxis = v1 - vCp1;
@@ -719,7 +721,7 @@ BOOL sTrimeshCapsuleColliderData::_cldTestSeparatingAxesOfCapsule(
         }
     }
 
-    if (flags & dxTriMeshData::kVert2)
+    if (flags & dxTriMeshData::CUF_USE_THIRD_VERTEX)
     {
         // third triangle vertex and second capsule point
         //vAxis = v2 - vCp1;
@@ -773,18 +775,18 @@ void sTrimeshCapsuleColliderData::_cldTestOneTriangleVSCapsule(
         return;
     }
 
-    dVector3 vPnt0;
+    dVector3 vPnt0, vPnt1, vPnt2;
     SET	(vPnt0,v0);
-    dVector3 vPnt1;
-    SET	(vPnt1,v1);
-    dVector3 vPnt2;
-    SET	(vPnt2,v2);
 
-    if (fDistanceCapsuleCenterToPlane < 0 )
+    if (fDistanceCapsuleCenterToPlane < 0)
     {
-        SET	(vPnt0,v0);
         SET	(vPnt1,v2);
         SET	(vPnt2,v1);
+    }
+    else
+    {
+        SET	(vPnt1,v1);
+        SET	(vPnt2,v2);
     }
 
     // do intersection test and find best separating axis
@@ -930,7 +932,7 @@ void sTrimeshCapsuleColliderData::SetupInitialContext(dxTriMesh *TriMesh, dxGeom
     memcpy(m_mTriMeshRot, pTriRot, sizeof(dMatrix3));
 
     const dVector3* pTriPos = (const dVector3*)dGeomGetPosition(TriMesh);
-    memcpy(m_mTriMeshPos, pTriPos, sizeof(dVector3));
+    memcpy(m_vTriMeshPos, pTriPos, sizeof(dVector3));
 
     // global info for contact creation
     m_iStride			=skip;
@@ -971,65 +973,54 @@ static void dQueryCCTLPotentialCollisionTriangles(OBBCollider &Collider,
                                                   const sTrimeshCapsuleColliderData &cData, dxTriMesh *TriMesh, dxGeom *Capsule,
                                                   OBBCache &BoxCache)
 {
-    // It is a potential issue to explicitly cast to float 
-    // if custom width floating point type is introduced in OPCODE.
-    // It is necessary to make a typedef and cast to it
-    // (e.g. typedef float opc_float;)
-    // However I'm not sure in what header it should be added.
-
-    const dVector3 &vCapsulePosition = cData.m_vCapsulePosition;
-
-    Point cCenter(/*(float)*/ vCapsulePosition[0], /*(float)*/ vCapsulePosition[1], /*(float)*/ vCapsulePosition[2]);
-    Point cExtents(/*(float)*/ cData.m_vCapsuleRadius, /*(float)*/ cData.m_vCapsuleRadius,/*(float)*/ cData.m_fCapsuleSize/2);
-
-    Matrix3x3 obbRot;
-
-    const dMatrix3 &mCapsuleRotation = cData.m_mCapsuleRotation;
-
-    obbRot[0][0] = /*(float)*/ mCapsuleRotation[0];
-    obbRot[1][0] = /*(float)*/ mCapsuleRotation[1];
-    obbRot[2][0] = /*(float)*/ mCapsuleRotation[2];
-
-    obbRot[0][1] = /*(float)*/ mCapsuleRotation[4];
-    obbRot[1][1] = /*(float)*/ mCapsuleRotation[5];
-    obbRot[2][1] = /*(float)*/ mCapsuleRotation[6];
-
-    obbRot[0][2] = /*(float)*/ mCapsuleRotation[8];
-    obbRot[1][2] = /*(float)*/ mCapsuleRotation[9];
-    obbRot[2][2] = /*(float)*/ mCapsuleRotation[10];
-
-    OBB obbCapsule(cCenter,cExtents,obbRot);
-
-    Matrix4x4 CapsuleMatrix;
-    MakeMatrix(vCapsulePosition, mCapsuleRotation, CapsuleMatrix);
-
     Matrix4x4 MeshMatrix;
-    MakeMatrix(cData.m_mTriMeshPos, cData.m_mTriMeshRot, MeshMatrix);
+    const dVector3 vZeroVector3 = { REAL(0.0), };
+    MakeMatrix(vZeroVector3, cData.m_mTriMeshRot, MeshMatrix);
+
+    const dVector3 &vCapsulePos = cData.m_vCapsulePosition;
+    const dMatrix3 &mCapsuleRot = cData.m_mCapsuleRotation;
+
+    dVector3 vCapsuleOffsetPos;
+    dSubtractVectors3(vCapsuleOffsetPos, vCapsulePos, cData.m_vTriMeshPos);
+
+    const dReal fCapsuleRadius = cData.m_vCapsuleRadius, fCapsuleHalfAxis = cData.m_fCapsuleSize * REAL(0.5);
+
+    OBB obbCapsule;
+    obbCapsule.mCenter.Set(vCapsuleOffsetPos[0], vCapsuleOffsetPos[1], vCapsuleOffsetPos[2]);
+    obbCapsule.mExtents.Set(
+        0 == nCAPSULE_AXIS ? fCapsuleHalfAxis : fCapsuleRadius,
+        1 == nCAPSULE_AXIS ? fCapsuleHalfAxis : fCapsuleRadius,
+        2 == nCAPSULE_AXIS ? fCapsuleHalfAxis : fCapsuleRadius);
+    obbCapsule.mRot.Set(
+        mCapsuleRot[0], mCapsuleRot[4], mCapsuleRot[8],
+        mCapsuleRot[1], mCapsuleRot[5], mCapsuleRot[9],
+        mCapsuleRot[2], mCapsuleRot[6], mCapsuleRot[10]);
 
     // TC results
-    if (TriMesh->doBoxTC) {
+    if (TriMesh->getDoTC(dxTriMesh::TTC_BOX)) {
         dxTriMesh::BoxTC* BoxTC = 0;
-        for (int i = 0; i < TriMesh->BoxTCCache.size(); i++){
-            if (TriMesh->BoxTCCache[i].Geom == Capsule){
-                BoxTC = &TriMesh->BoxTCCache[i];
+        const int iBoxCacheSize = TriMesh->m_BoxTCCache.size();
+        for (int i = 0; i != iBoxCacheSize; i++){
+            if (TriMesh->m_BoxTCCache[i].Geom == Capsule){
+                BoxTC = &TriMesh->m_BoxTCCache[i];
                 break;
             }
         }
         if (!BoxTC){
-            TriMesh->BoxTCCache.push(dxTriMesh::BoxTC());
+            TriMesh->m_BoxTCCache.push(dxTriMesh::BoxTC());
 
-            BoxTC = &TriMesh->BoxTCCache[TriMesh->BoxTCCache.size() - 1];
+            BoxTC = &TriMesh->m_BoxTCCache[TriMesh->m_BoxTCCache.size() - 1];
             BoxTC->Geom = Capsule;
             BoxTC->FatCoeff = 1.0f;
         }
 
         // Intersect
         Collider.SetTemporalCoherence(true);
-        Collider.Collide(*BoxTC, obbCapsule, TriMesh->Data->BVTree, null, &MeshMatrix);
+        Collider.Collide(*BoxTC, obbCapsule, TriMesh->retrieveMeshBVTreeRef(), null, &MeshMatrix);
     }
     else {
         Collider.SetTemporalCoherence(false);
-        Collider.Collide(BoxCache, obbCapsule, TriMesh->Data->BVTree, null,&MeshMatrix);
+        Collider.Collide(BoxCache, obbCapsule, TriMesh->retrieveMeshBVTreeRef(), null, &MeshMatrix);
     }
 }
 
@@ -1053,11 +1044,11 @@ int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int s
     const unsigned uiTLSKind = TriMesh->getParentSpaceTLSKind();
     dIASSERT(uiTLSKind == Capsule->getParentSpaceTLSKind()); // The colliding spaces must use matching cleanup method
     TrimeshCollidersCache *pccColliderCache = GetTrimeshCollidersCache(uiTLSKind);
-    OBBCollider& Collider = pccColliderCache->_OBBCollider;
+    OBBCollider& Collider = pccColliderCache->m_OBBCollider;
 
     // Will it better to use LSS here? -> confirm Pierre.
     dQueryCCTLPotentialCollisionTriangles(Collider, cData, 
-        TriMesh, Capsule, pccColliderCache->defaultBoxCache);
+        TriMesh, Capsule, pccColliderCache->m_DefaultBoxCache);
 
     if (Collider.GetContactStatus()) 
     {
@@ -1068,9 +1059,9 @@ int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int s
         {
             const int* Triangles = (const int*)Collider.GetTouchedPrimitives();
 
-            if (TriMesh->ArrayCallback != null)
+            if (TriMesh->m_ArrayCallback != null)
             {
-                TriMesh->ArrayCallback(TriMesh, Capsule, Triangles, TriCount);
+                TriMesh->m_ArrayCallback(TriMesh, Capsule, Triangles, TriCount);
             }
 
             // allocate buffer for local contacts on stack
@@ -1078,18 +1069,18 @@ int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int s
 
             unsigned int ctContacts0 = cData.m_ctContacts;
 
-            uint8* UseFlags = TriMesh->Data->UseFlags;
+            const uint8 *useFlags = TriMesh->retrieveMeshSmartUseFlags();
 
             // loop through all intersecting triangles
             for (int i = 0; i < TriCount; i++)
             {
                 const int Triint = Triangles[i];
-                if (!Callback(TriMesh, Capsule, Triint)) continue;
+                if (!TriMesh->invokeCallback(Capsule, Triint)) continue;
 
                 dVector3 dv[3];
-                FetchTriangle(TriMesh, Triint, cData.m_mTriMeshPos, cData.m_mTriMeshRot, dv);
+                TriMesh->fetchMeshTriangle(dv, Triint, cData.m_vTriMeshPos, cData.m_mTriMeshRot);
 
-                uint8 flags = UseFlags ? UseFlags[Triint] : (uint8)dxTriMeshData::kUseAll;
+                uint8 flags = useFlags != NULL ? useFlags[Triint] : (uint8)dxTriMeshData::CUF__USE_ALL_COMPONENTS;
 
                 bool bFinishSearching;
                 ctContacts0 = cData.TestCollisionForSingleTriangle(ctContacts0, Triint, dv, flags, bFinishSearching);
@@ -1109,11 +1100,19 @@ int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int s
 
     return nContactCount;
 }
+
+
 #endif
+
 
 // GIMPACT version
 #if dTRIMESH_GIMPACT
+
+#include "gimpact_contact_export_helper.h"
+#include "gimpact_gim_contact_accessor.h"
+
 #define nCAPSULE_AXIS 2
+
 // capsule - trimesh  By francisco leon
 int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int skip)
 {
@@ -1167,44 +1166,18 @@ int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int s
     }
 
     GIM_CONTACT * ptrimeshcontacts = GIM_DYNARRAY_POINTER(GIM_CONTACT,trimeshcontacts);
-
     unsigned contactcount = trimeshcontacts.m_size;
-    unsigned contactmax = (unsigned)(flags & NUMC_MASK);
-    if (contactcount > contactmax)
-    {
-        contactcount = contactmax;
-    }
 
-    dContactGeom* pcontact;
-    unsigned i;
-
-    for (i=0;i<contactcount;i++)
-    {
-        pcontact = SAFECONTACT(flags, contact, i, skip);
-
-        pcontact->pos[0] = ptrimeshcontacts->m_point[0];
-        pcontact->pos[1] = ptrimeshcontacts->m_point[1];
-        pcontact->pos[2] = ptrimeshcontacts->m_point[2];
-        pcontact->pos[3] = 1.0f;
-
-        pcontact->normal[0] = ptrimeshcontacts->m_normal[0];
-        pcontact->normal[1] = ptrimeshcontacts->m_normal[1];
-        pcontact->normal[2] = ptrimeshcontacts->m_normal[2];
-        pcontact->normal[3] = 0;
-
-        pcontact->depth = ptrimeshcontacts->m_depth;
-        pcontact->g1 = TriMesh;
-        pcontact->g2 = gCylinder;
-        pcontact->side1 = ptrimeshcontacts->m_feature1;
-        pcontact->side2 = -1;
-
-        ptrimeshcontacts++;
-    }
+    dxGIMCContactAccessor contactaccessor(ptrimeshcontacts, TriMesh, gCylinder, -1);
+    contactcount = dxGImpactContactsExportHelper::ExportMaxDepthGImpactContacts(contactaccessor, contactcount, flags, contact, skip);
 
     GIM_DYNARRAY_DESTROY(trimeshcontacts);
 
     return (int)contactcount;
 }
-#endif
+
+
+#endif // dTRIMESH_GIMPACT
+
 
 #endif // dTRIMESH_ENABLED

@@ -634,6 +634,60 @@ bool Geometry::clipLineWithRectangleCohenSutherland(const Vector2i& topLeft, con
   return true;
 }
 
+bool Geometry::getCollisionReflectionWithRectangleRobotFeet(const Pose2f& robotPose, const Vector2f& colliderPosition, const Vector2f& colliderVelocity, Vector2f& reflectionVector)
+{
+  Angle rotAngle = robotPose.rotation;
+  const Matrix2f rot = Eigen::Rotation2D<float>(-rotAngle).toRotationMatrix();
+  const Vector2f footLength = Vector2f(153.f, 0.f);
+  const Vector2f footWidth = Vector2f(0.f, 79.f);
+  const Vector2f offsetBetweenFeet = Vector2f(0.f, 15.f);
+  const Vector2f extremum = footLength / 2.f + offsetBetweenFeet / 2.f + footWidth;
+  const Vector2f otherExtremum = footLength / 2.f - offsetBetweenFeet / 2.f - footWidth;
+  const Vector2f extremumDifferenceFromCenter = rot * extremum;
+  const Vector2f otherExtremumDifferenceFromCenter = rot * otherExtremum;
+  Vector2f frontRightExtremum = robotPose.translation + extremumDifferenceFromCenter;
+  Vector2f backLeftExtremum = robotPose.translation - extremumDifferenceFromCenter;
+  Vector2f frontLeftExtremum = robotPose.translation + otherExtremumDifferenceFromCenter;
+  Vector2f backRightExtremum = robotPose.translation - otherExtremumDifferenceFromCenter;
+  std::vector<Vector2f> extrema;
+  extrema.push_back(frontRightExtremum);
+  extrema.push_back(frontLeftExtremum);
+  extrema.push_back(backLeftExtremum);
+  extrema.push_back(backRightExtremum);
+  Vector2f upperRight = frontRightExtremum, lowerLeft = frontLeftExtremum;
+  for(const Vector2f& extremum : extrema)
+  {
+    if(extremum.x() >= upperRight.x() && extremum.y() >= upperRight.y()) // is upperRight?
+      upperRight = extremum;
+    if(extremum.x() <= lowerLeft.x() && extremum.y() <= lowerLeft.y()) // is lowerLeft?
+      lowerLeft = extremum;
+  }
+  Geometry::Line colliderLine = Geometry::Line(colliderPosition, colliderVelocity);
+  Vector2f firstIntersection = Vector2f::Zero(), secondIntersection = Vector2f::Zero();
+  bool success = getIntersectionPointsOfLineAndRectangle(lowerLeft, upperRight, colliderLine, firstIntersection, secondIntersection);
+  if(!success)
+    return false;
+  Angle rotationAngle = getCollisionAngle(robotPose, colliderPosition);
+  const Matrix2f solutionRot = Eigen::Rotation2D<float>(rotationAngle).toRotationMatrix();
+  reflectionVector = solutionRot * (colliderPosition - robotPose.translation);
+  return true;
+}
+
+Angle Geometry::getCollisionAngle(const Pose2f& yourPosition, const Vector2f& colliderPosition)
+{
+  float angle = angleTo(yourPosition, colliderPosition);
+  angle = std::fabs(toDegrees(angle) - toDegrees(yourPosition.rotation));
+  angle = fmod(angle, 180.f);
+  if(angle >= 160.f)
+    angle = 180.f - angle;
+  else if(angle >= 20.f)
+    angle = 90.f - angle;
+  else
+    angle = 0.f - angle;
+  angle *= 2;
+  return Angle::fromDegrees(angle);
+}
+
 bool Geometry::calculateBallInImage(const Vector2f& ballOffset, const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, float ballRadius, Circle& circle)
 {
   const Vector2f offset = ballOffset - cameraMatrix.translation.head<2>();
@@ -905,4 +959,9 @@ float Geometry::distance(const LineSegment3D& S1, const LineSegment3D& S2, LineS
   SE.P1 = S2.P0 + tc * v;
 
   return dP.norm();   // return the closest distance
+}
+
+bool Geometry::isPointLeftOfLine(const Vector2f& start, const Vector2f& end, const Vector2f& point)
+{
+  return ((end.x() - start.x()) * (point.y() - start.y()) - (end.y() - start.y()) * (point.x() - start.x())) > 0.f;
 }

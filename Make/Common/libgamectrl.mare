@@ -15,11 +15,7 @@ libgamectrl = cppDynamicLibrary + {
   root = "$(srcDirRoot)/libgamectrl"
   files = {
     "$(srcDirRoot)/libgamectrl/*.cpp" = cppSource
-    "$(srcDirRoot)/libgamectrl/*.h" = {
-      message = "Determining build information...";
-      command = "bash -c \"../Common/buildInfo $(configuration) $(buildDir)\"";
-      output = "dummy2";
-    }
+    "$(srcDirRoot)/libgamectrl/*.h"
   }
 
   includePaths = {
@@ -54,8 +50,8 @@ libgamectrl = cppDynamicLibrary + {
   output = "$(buildDir)/libgamectrl.so"
 
   if (tool == "vcxproj") {
-    buildCommand = "bash -c \"$(winMarePath) --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
-    reBuildCommand = "bash -c \"$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    buildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies $(target) config=$(configuration)@' | bash\""
+    reBuildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@' | bash\""
     cleanCommand = "$(winMarePath) --ignore-dependencies clean $(target) config=$(configuration)"
   }
 }

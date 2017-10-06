@@ -34,25 +34,30 @@
 
 #ifdef __cplusplus
 
-template <typename element_type>
+template <unsigned a_stride, typename element_type>
 ODE_INLINE
-void _dSetZero (element_type *a, size_t n)
+void dxtSetZero (element_type *a, size_t n)
 {
-    element_type *acurr = a;
-    element_type *const aend = a + n;
-    while (acurr != aend) {
-        *(acurr++) = 0;
+    element_type *const aend = a + n * a_stride;
+    for (element_type *acurr = a; acurr != aend; acurr += a_stride) {
+        *acurr = (element_type)0;
     }
 }
 
 template <typename element_type>
 ODE_INLINE
-void _dSetValue (element_type *a, size_t n, element_type value)
+void dxSetZero (element_type *a, size_t n)
 {
-    element_type *acurr = a;
+    dxtSetZero<1>(a, n);
+}
+
+template <typename element_type>
+ODE_INLINE
+void dxSetValue (element_type *a, size_t n, element_type value)
+{
     element_type *const aend = a + n;
-    while (acurr != aend) {
-        *(acurr++) = value;
+    for (element_type *acurr = a; acurr != aend; ++acurr) {
+        *acurr = value;
     }
 }
 
@@ -60,22 +65,22 @@ void _dSetValue (element_type *a, size_t n, element_type value)
 #else // #ifndef __cplusplus
 
 ODE_PURE_INLINE
-void _dSetZero (dReal *a, size_t n)
+void dxSetZero (dReal *a, size_t n)
 {
-    dReal *acurr = a;
     dReal *const aend = a + n;
-    while (acurr != aend) {
-        *(acurr++) = 0;
+    dReal *acurr;
+    for (acurr = a; acurr != aend; ++acurr) {
+        *acurr = 0;
     }
 }
 
 ODE_PURE_INLINE
-void _dSetValue (dReal *a, size_t n, dReal value)
+void dxSetValue (dReal *a, size_t n, dReal value)
 {
-    dReal *acurr = a;
     dReal *const aend = a + n;
-    while (acurr != aend) {
-        *(acurr++) = value;
+    dReal *acurr;
+    for (acurr = a; acurr != aend; ++acurr) {
+        *acurr = value;
     }
 }
 
@@ -83,92 +88,96 @@ void _dSetValue (dReal *a, size_t n, dReal value)
 #endif // #ifdef __cplusplus
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+template<unsigned b_stride>
+dReal dxtDot (const dReal *a, const dReal *b, unsigned n);
+template<unsigned d_stride>
+void dxtFactorLDLT (dReal *A, dReal *d, unsigned n, unsigned nskip);
+template<unsigned b_stride>
+void dxtSolveL1 (const dReal *L, dReal *b, unsigned n, unsigned lskip1);
+template<unsigned b_stride>
+void dxtSolveL1T (const dReal *L, dReal *b, unsigned n, unsigned lskip1);
+template<unsigned a_stride, unsigned d_stride>
+void dxtVectorScale (dReal *a, const dReal *d, unsigned n);
+template<unsigned d_stride, unsigned b_stride>
+void dxtSolveLDLT (const dReal *L, const dReal *d, dReal *b, unsigned n, unsigned nskip);
 
-dReal _dDot (const dReal *a, const dReal *b, int n);
-void _dMultiply0 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r);
-void _dMultiply1 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r);
-void _dMultiply2 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r);
-int _dFactorCholesky (dReal *A, int n, void *tmpbuf);
-void _dSolveCholesky (const dReal *L, dReal *b, int n, void *tmpbuf);
-int _dInvertPDMatrix (const dReal *A, dReal *Ainv, int n, void *tmpbuf);
-int _dIsPositiveDefinite (const dReal *A, int n, void *tmpbuf);
-void _dFactorLDLT (dReal *A, dReal *d, int n, int nskip);
-void _dSolveL1 (const dReal *L, dReal *b, int n, int nskip);
-void _dSolveL1T (const dReal *L, dReal *b, int n, int nskip);
-void _dVectorScale (dReal *a, const dReal *d, int n);
-void _dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int nskip);
-void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tmpbuf);
-void _dLDLTRemove (dReal **A, const int *p, dReal *L, dReal *d, int n1, int n2, int r, int nskip, void *tmpbuf);
-void _dRemoveRowCol (dReal *A, int n, int nskip, int r);
+dReal dxDot (const dReal *a, const dReal *b, unsigned n);
+void dxMultiply0 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r);
+void dxMultiply1 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r);
+void dxMultiply2 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r);
+int dxFactorCholesky (dReal *A, unsigned n, void *tmpbuf);
+void dxSolveCholesky (const dReal *L, dReal *b, unsigned n, void *tmpbuf);
+int dxInvertPDMatrix (const dReal *A, dReal *Ainv, unsigned n, void *tmpbuf);
+int dxIsPositiveDefinite (const dReal *A, unsigned n, void *tmpbuf);
+void dxFactorLDLT (dReal *A, dReal *d, unsigned n, unsigned nskip);
+void dxSolveL1 (const dReal *L, dReal *b, unsigned n, unsigned lskip1);
+void dxSolveL1T (const dReal *L, dReal *b, unsigned n, unsigned lskip1);
+void dxVectorScale (dReal *a, const dReal *d, unsigned n);
+void dxSolveLDLT (const dReal *L, const dReal *d, dReal *b, unsigned n, unsigned nskip);
+void dxLDLTAddTL (dReal *L, dReal *d, const dReal *a, unsigned n, unsigned nskip, void *tmpbuf);
+void dxLDLTRemove (dReal **A, const unsigned *p, dReal *L, dReal *d, unsigned n1, unsigned n2, unsigned r, unsigned nskip, void *tmpbuf);
+void dxRemoveRowCol (dReal *A, unsigned n, unsigned nskip, unsigned r);
 
-ODE_PURE_INLINE size_t _dEstimateFactorCholeskyTmpbufSize(int n)
+ODE_PURE_INLINE size_t dxEstimateFactorCholeskyTmpbufSize(unsigned n)
 {
     return dPAD(n) * sizeof(dReal);
 }
 
-ODE_PURE_INLINE size_t _dEstimateSolveCholeskyTmpbufSize(int n)
+ODE_PURE_INLINE size_t dxEstimateSolveCholeskyTmpbufSize(unsigned n)
 {
     return dPAD(n) * sizeof(dReal);
 }
 
-ODE_PURE_INLINE size_t _dEstimateInvertPDMatrixTmpbufSize(int n)
+ODE_PURE_INLINE size_t dxEstimateInvertPDMatrixTmpbufSize(unsigned n)
 {
-    size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
-    size_t SolveCholesky_size = _dEstimateSolveCholeskyTmpbufSize(n);
+    size_t FactorCholesky_size = dxEstimateFactorCholeskyTmpbufSize(n);
+    size_t SolveCholesky_size = dxEstimateSolveCholeskyTmpbufSize(n);
     size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size ? FactorCholesky_size : SolveCholesky_size;
-    return dPAD(n) * (n + 1) * sizeof(dReal) + MaxCholesky_size;
+    return (size_t)dPAD(n) * (n + 1) * sizeof(dReal) + MaxCholesky_size;
 }
 
-ODE_PURE_INLINE size_t _dEstimateIsPositiveDefiniteTmpbufSize(int n)
+ODE_PURE_INLINE size_t dxEstimateIsPositiveDefiniteTmpbufSize(unsigned n)
 {
-    return dPAD(n) * n * sizeof(dReal) + _dEstimateFactorCholeskyTmpbufSize(n);
+    return (size_t)dPAD(n) * n * sizeof(dReal) + dxEstimateFactorCholeskyTmpbufSize(n);
 }
 
-ODE_PURE_INLINE size_t _dEstimateLDLTAddTLTmpbufSize(int nskip)
+ODE_PURE_INLINE size_t dxEstimateLDLTAddTLTmpbufSize(unsigned nskip)
 {
-    return nskip * 2 * sizeof(dReal);
+    return nskip * (2 * sizeof(dReal));
 }
 
-ODE_PURE_INLINE size_t _dEstimateLDLTRemoveTmpbufSize(int n2, int nskip)
+ODE_PURE_INLINE size_t dxEstimateLDLTRemoveTmpbufSize(unsigned n2, unsigned nskip)
 {
-    return n2 * sizeof(dReal) + _dEstimateLDLTAddTLTmpbufSize(nskip);
+    return n2 * sizeof(dReal) + dxEstimateLDLTAddTLTmpbufSize(nskip);
 }
 
 /* For internal use */
-#define dSetZero(a, n) _dSetZero(a, n)
-#define dSetValue(a, n, value) _dSetValue(a, n, value)
-#define dDot(a, b, n) _dDot(a, b, n)
-#define dMultiply0(A, B, C, p, q, r) _dMultiply0(A, B, C, p, q, r)
-#define dMultiply1(A, B, C, p, q, r) _dMultiply1(A, B, C, p, q, r)
-#define dMultiply2(A, B, C, p, q, r) _dMultiply2(A, B, C, p, q, r)
-#define dFactorCholesky(A, n, tmpbuf) _dFactorCholesky(A, n, tmpbuf)
-#define dSolveCholesky(L, b, n, tmpbuf) _dSolveCholesky(L, b, n, tmpbuf)
-#define dInvertPDMatrix(A, Ainv, n, tmpbuf) _dInvertPDMatrix(A, Ainv, n, tmpbuf)
-#define dIsPositiveDefinite(A, n, tmpbuf) _dIsPositiveDefinite(A, n, tmpbuf)
-#define dFactorLDLT(A, d, n, nskip) _dFactorLDLT(A, d, n, nskip)
-#define dSolveL1(L, b, n, nskip) _dSolveL1(L, b, n, nskip)
-#define dSolveL1T(L, b, n, nskip) _dSolveL1T(L, b, n, nskip)
-#define dVectorScale(a, d, n) _dVectorScale(a, d, n)
-#define dSolveLDLT(L, d, b, n, nskip) _dSolveLDLT(L, d, b, n, nskip)
-#define dLDLTAddTL(L, d, a, n, nskip, tmpbuf) _dLDLTAddTL(L, d, a, n, nskip, tmpbuf)
-#define dLDLTRemove(A, p, L, d, n1, n2, r, nskip, tmpbuf) _dLDLTRemove(A, p, L, d, n1, n2, r, nskip, tmpbuf)
-#define dRemoveRowCol(A, n, nskip, r) _dRemoveRowCol(A, n, nskip, r)
+#define dSetZero(a, n) dxSetZero(a, n)
+#define dSetValue(a, n, value) dxSetValue(a, n, value)
+#define dDot(a, b, n) dxDot(a, b, n)
+#define dMultiply0(A, B, C, p, q, r) dxMultiply0(A, B, C, p, q, r)
+#define dMultiply1(A, B, C, p, q, r) dxMultiply1(A, B, C, p, q, r)
+#define dMultiply2(A, B, C, p, q, r) dxMultiply2(A, B, C, p, q, r)
+#define dFactorCholesky(A, n, tmpbuf) dxFactorCholesky(A, n, tmpbuf)
+#define dSolveCholesky(L, b, n, tmpbuf) dxSolveCholesky(L, b, n, tmpbuf)
+#define dInvertPDMatrix(A, Ainv, n, tmpbuf) dxInvertPDMatrix(A, Ainv, n, tmpbuf)
+#define dIsPositiveDefinite(A, n, tmpbuf) dxIsPositiveDefinite(A, n, tmpbuf)
+#define dFactorLDLT(A, d, n, nskip) dxFactorLDLT(A, d, n, nskip)
+#define dSolveL1(L, b, n, nskip) dxSolveL1(L, b, n, nskip)
+#define dSolveL1T(L, b, n, nskip) dxSolveL1T(L, b, n, nskip)
+#define dVectorScale(a, d, n) dxVectorScale(a, d, n)
+#define dSolveLDLT(L, d, b, n, nskip) dxSolveLDLT(L, d, b, n, nskip)
+#define dLDLTAddTL(L, d, a, n, nskip, tmpbuf) dxLDLTAddTL(L, d, a, n, nskip, tmpbuf)
+#define dLDLTRemove(A, p, L, d, n1, n2, r, nskip, tmpbuf) dxLDLTRemove(A, p, L, d, n1, n2, r, nskip, tmpbuf)
+#define dRemoveRowCol(A, n, nskip, r) dxRemoveRowCol(A, n, nskip, r)
 
 
-#define dEstimateFactorCholeskyTmpbufSize(n) _dEstimateFactorCholeskyTmpbufSize(n)
-#define dEstimateSolveCholeskyTmpbufSize(n) _dEstimateSolveCholeskyTmpbufSize(n)
-#define dEstimateInvertPDMatrixTmpbufSize(n) _dEstimateInvertPDMatrixTmpbufSize(n)
-#define dEstimateIsPositiveDefiniteTmpbufSize(n) _dEstimateIsPositiveDefiniteTmpbufSize(n)
-#define dEstimateLDLTAddTLTmpbufSize(nskip) _dEstimateLDLTAddTLTmpbufSize(nskip)
-#define dEstimateLDLTRemoveTmpbufSize(n2, nskip) _dEstimateLDLTRemoveTmpbufSize(n2, nskip)
-
-
-#ifdef __cplusplus
-}
-#endif
+#define dEstimateFactorCholeskyTmpbufSize(n) dxEstimateFactorCholeskyTmpbufSize(n)
+#define dEstimateSolveCholeskyTmpbufSize(n) dxEstimateSolveCholeskyTmpbufSize(n)
+#define dEstimateInvertPDMatrixTmpbufSize(n) dxEstimateInvertPDMatrixTmpbufSize(n)
+#define dEstimateIsPositiveDefiniteTmpbufSize(n) dxEstimateIsPositiveDefiniteTmpbufSize(n)
+#define dEstimateLDLTAddTLTmpbufSize(nskip) dxEstimateLDLTAddTLTmpbufSize(nskip)
+#define dEstimateLDLTRemoveTmpbufSize(n2, nskip) dxEstimateLDLTRemoveTmpbufSize(n2, nskip)
 
 
 #endif // #ifndef _ODE__PRIVATE_MATRIX_H_

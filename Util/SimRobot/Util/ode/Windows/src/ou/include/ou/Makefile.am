@@ -3,6 +3,7 @@ EXTRA_DIST =    assert.h \
                 atomic.h \
                 customization.h \
                 enumarrays.h \
+                features.h \
                 flagsdefines.h \
                 flags.h \
                 inttypes.h \

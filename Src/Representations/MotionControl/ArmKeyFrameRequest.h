@@ -18,7 +18,7 @@ STREAMABLE(ArmKeyFrameRequest,
   {,
     // IF U TOUCH THIS MAKE SURE U LOOKING IN THE MOTIONCOMBINATOR AND TAKE CARE TO SAVE THE ARMS CORRECTLY IN A FALLING CASE
     useDefault,  /**< No explicit arm motion, so WalkingEngine's arm angles will be used */
-    back,
+    back,       /**< Move arm to the back */
     reverse,     /**< Reverse current arm keyframe motion */
   });
 

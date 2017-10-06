@@ -98,8 +98,7 @@ void MarkedIntersection::draw() const
 
   const FieldLineIntersections::Intersection& intersection = theFieldLineIntersections->intersections[intersectionIndex];
 
-  DECLARE_DEBUG_DRAWING("representation:MarkedField:field", "drawingOnField");
-  COMPLEX_DRAWING("representation:MarkedField:field")
+  DEBUG_DRAWING("representation:MarkedField:field", "drawingOnField")
   {
     switch(intersection.type)
     {

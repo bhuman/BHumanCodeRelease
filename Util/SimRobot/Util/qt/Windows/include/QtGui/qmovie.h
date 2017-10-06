@@ -40,16 +40,16 @@
 #ifndef QMOVIE_H
 #define QMOVIE_H
 
+#include <QtGui/qtguiglobal.h>
+
 #include <QtCore/qobject.h>
-
-#ifndef QT_NO_MOVIE
-
 #include <QtCore/qbytearray.h>
 #include <QtCore/qlist.h>
 #include <QtGui/qimagereader.h>
 
-QT_BEGIN_NAMESPACE
+QT_REQUIRE_CONFIG(movie);
 
+QT_BEGIN_NAMESPACE
 
 class QByteArray;
 class QColor;
@@ -142,7 +142,5 @@ private:
 };
 
 QT_END_NAMESPACE
-
-#endif // QT_NO_MOVIE
 
 #endif // QMOVIE_H

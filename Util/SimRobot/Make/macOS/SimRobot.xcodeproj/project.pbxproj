@@ -58,7 +58,6 @@
 		200213358292268425781108 /* BoxMass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017663969804 /* BoxMass.cpp */; };
 		201C9BBE1C29BD30005E4AAD /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 201C9BB61C29BC71005E4AAD /* QtCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BBF1C29BD3D005E4AAD /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 201C9BB81C29BC8D005E4AAD /* QtGui */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		201C9BC01C29BD62005E4AAD /* QtDBus in Copy QtDBus Framework */ = {isa = PBXBuildFile; fileRef = 201C9BB71C29BC80005E4AAD /* QtDBus */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BC11C29BD74005E4AAD /* QtOpenGL in Copy QtOpenGL Framework */ = {isa = PBXBuildFile; fileRef = 201C9BB91C29BC9F005E4AAD /* QtOpenGL */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BC21C29BD7F005E4AAD /* QtSvg in Copy QtSvg Framework */ = {isa = PBXBuildFile; fileRef = 201C9BBB1C29BCBE005E4AAD /* QtSvg */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BC31C29BD93005E4AAD /* libqcocoa.dylib in Copy Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BBD1C29BCE7005E4AAD /* libqcocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -77,11 +76,13 @@
 		201C9BD21C29BF02005E4AAD /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BB11C29BC55005E4AAD /* QtGui.framework */; };
 		201C9BD31C29BF02005E4AAD /* QtSvg.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BB41C29BC55005E4AAD /* QtSvg.framework */; };
 		201C9BD41C29BF02005E4AAD /* QtWidgets.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BB51C29BC55005E4AAD /* QtWidgets.framework */; };
+		20221F181ED3000300382EB1 /* QtOpenGL.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */; };
 		203413545705460679776020 /* Actuator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 054883492296083704723806 /* Actuator.cpp */; };
 		205085731159048831426864 /* SphereAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358291402458630570 /* SphereAppearance.cpp */; };
 		205085735802439372562738 /* SingleDistanceSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358292236069112250 /* SingleDistanceSensor.cpp */; };
 		205085735837361739595564 /* ApproxDistanceSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 200213358292238167607398 /* ApproxDistanceSensor.cpp */; };
 		2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
+		20818FC51D10ADC300105735 /* PT2Motor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 20818FC21D10AD8800105735 /* PT2Motor.cpp */; };
 		2084439811FA33FF0037FA87 /* SimRobot.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000104308786552787657 /* SimRobot.icns */; };
 		2084439911FA33FF0037FA87 /* SimRobotDoc.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000837455616402576855 /* SimRobotDoc.icns */; };
 		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
@@ -262,17 +263,6 @@
 				201C9BC71C29BDDE005E4AAD /* QtWidgets in Copy QtWidgets Framework */,
 			);
 			name = "Copy QtWidgets Framework";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		202B6E6817FB5FB800555411 /* Copy QtDBus Framework */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = QtDBus.framework/Versions/5;
-			dstSubfolderSpec = 10;
-			files = (
-				201C9BC01C29BD62005E4AAD /* QtDBus in Copy QtDBus Framework */,
-			);
-			name = "Copy QtDBus Framework";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		20C115211793473400961A38 /* Copy QtCore Framework */ = {
@@ -478,14 +468,12 @@
 		200213358292236069112250 /* SingleDistanceSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SingleDistanceSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/SingleDistanceSensor.cpp; sourceTree = SOURCE_ROOT; };
 		200213358292238167607398 /* ApproxDistanceSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ApproxDistanceSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/ApproxDistanceSensor.cpp; sourceTree = SOURCE_ROOT; };
 		201C9BAF1C29BC55005E4AAD /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../Util/qt/macOS/lib/QtCore.framework; sourceTree = SOURCE_ROOT; };
-		201C9BB01C29BC55005E4AAD /* QtDBus.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtDBus.framework; path = ../../Util/qt/macOS/lib/QtDBus.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB11C29BC55005E4AAD /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../Util/qt/macOS/lib/QtGui.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../Util/qt/macOS/lib/QtOpenGL.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB31C29BC55005E4AAD /* QtPrintSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtPrintSupport.framework; path = ../../Util/qt/macOS/lib/QtPrintSupport.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB41C29BC55005E4AAD /* QtSvg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtSvg.framework; path = ../../Util/qt/macOS/lib/QtSvg.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB51C29BC55005E4AAD /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = ../../Util/qt/macOS/lib/QtWidgets.framework; sourceTree = SOURCE_ROOT; };
 		201C9BB61C29BC71005E4AAD /* QtCore */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtCore; path = ../../Util/qt/macOS/lib/QtCore.framework/Versions/5/QtCore; sourceTree = SOURCE_ROOT; };
-		201C9BB71C29BC80005E4AAD /* QtDBus */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtDBus; path = ../../Util/qt/macOS/lib/QtDBus.framework/Versions/5/QtDBus; sourceTree = SOURCE_ROOT; };
 		201C9BB81C29BC8D005E4AAD /* QtGui */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtGui; path = ../../Util/qt/macOS/lib/QtGui.framework/Versions/5/QtGui; sourceTree = SOURCE_ROOT; };
 		201C9BB91C29BC9F005E4AAD /* QtOpenGL */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtOpenGL; path = ../../Util/qt/macOS/lib/QtOpenGL.framework/Versions/5/QtOpenGL; sourceTree = SOURCE_ROOT; };
 		201C9BBA1C29BCB1005E4AAD /* QtPrintSupport */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtPrintSupport; path = ../../Util/qt/macOS/lib/QtPrintSupport.framework/Versions/5/QtPrintSupport; sourceTree = SOURCE_ROOT; };
@@ -495,6 +483,8 @@
 		2044A8C112C0F80200B772CD /* libiconv.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.dylib; path = /usr/lib/libiconv.dylib; sourceTree = "<absolute>"; };
 		2044A8C212C0F80200B772CD /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
 		2061F22D152CA4430089659C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		20818FC21D10AD8800105735 /* PT2Motor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PT2Motor.cpp; sourceTree = "<group>"; };
+		20818FC31D10AD8800105735 /* PT2Motor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PT2Motor.h; sourceTree = "<group>"; };
 		20844A6111FB5F1C0037FA87 /* libode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libode.a; path = ../../Util/ode/macOS/lib/libode.a; sourceTree = SOURCE_ROOT; };
 		20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		20844F1811FE33150037FA87 /* Factory.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = Factory.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -577,6 +567,7 @@
 				2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */,
 				201C9BD11C29BF02005E4AAD /* QtCore.framework in Frameworks & Libraries */,
 				201C9BD21C29BF02005E4AAD /* QtGui.framework in Frameworks & Libraries */,
+				20221F181ED3000300382EB1 /* QtOpenGL.framework in Frameworks & Libraries */,
 				201C9BD31C29BF02005E4AAD /* QtSvg.framework in Frameworks & Libraries */,
 				201C9BD41C29BF02005E4AAD /* QtWidgets.framework in Frameworks & Libraries */,
 			);
@@ -795,6 +786,8 @@
 		000000837455631959284767 /* Motors */ = {
 			isa = PBXGroup;
 			children = (
+				20818FC21D10AD8800105735 /* PT2Motor.cpp */,
+				20818FC31D10AD8800105735 /* PT2Motor.h */,
 				000214388641781576913908 /* Motor.h */,
 				027344194553936359999546 /* ServoMotor.cpp */,
 				006835980402548000648366 /* ServoMotor.h */,
@@ -905,7 +898,7 @@
 				000000000000000000023799 /* Controllers */,
 				2024566F1205D86500C3BCD9 /* Libs */,
 				000000000000099476610718 /* SimRobot */,
-				ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */,
+				ED1E82605DD74B483AF3C982 /* Frameworks */,
 				20D139C911F0B445007DFC5D /* Target Files */,
 			);
 			name = "B-Human";
@@ -932,7 +925,7 @@
 			name = "Target Files";
 			sourceTree = "<group>";
 		};
-		ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */ = {
+		ED1E82605DD74B483AF3C982 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				2044A8C112C0F80200B772CD /* libiconv.dylib */,
@@ -943,14 +936,12 @@
 				2061F22D152CA4430089659C /* Foundation.framework */,
 				20BE6B371795DBB10096D6E4 /* OpenGL.framework */,
 				201C9BAF1C29BC55005E4AAD /* QtCore.framework */,
-				201C9BB01C29BC55005E4AAD /* QtDBus.framework */,
 				201C9BB11C29BC55005E4AAD /* QtGui.framework */,
 				201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */,
 				201C9BB31C29BC55005E4AAD /* QtPrintSupport.framework */,
 				201C9BB41C29BC55005E4AAD /* QtSvg.framework */,
 				201C9BB51C29BC55005E4AAD /* QtWidgets.framework */,
 				201C9BB61C29BC71005E4AAD /* QtCore */,
-				201C9BB71C29BC80005E4AAD /* QtDBus */,
 				201C9BB81C29BC8D005E4AAD /* QtGui */,
 				201C9BB91C29BC9F005E4AAD /* QtOpenGL */,
 				201C9BBA1C29BCB1005E4AAD /* QtPrintSupport */,
@@ -958,7 +949,7 @@
 				201C9BBC1C29BCCD005E4AAD /* QtWidgets */,
 				201C9BBD1C29BCE7005E4AAD /* libqcocoa.dylib */,
 			);
-			name = "Frameworks and Libraries";
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1049,7 +1040,6 @@
 				207DB5521A829BE50012AD4E /* Get SimpleVehicle Controller */,
 				3787F99312C85FF0073FD7BA /* Bundle Resources */,
 				20C115211793473400961A38 /* Copy QtCore Framework */,
-				202B6E6817FB5FB800555411 /* Copy QtDBus Framework */,
 				20C115241793478A00961A38 /* Copy QtGui Framework */,
 				20C11530179348A000961A38 /* Copy QtOpenGL Framework */,
 				201C9BC41C29BD97005E4AAD /* Copy QtPrintSupport Framework */,
@@ -1078,7 +1068,7 @@
 		91B15E841AA80083484172DE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0810;
+				LastUpgradeCheck = 0830;
 			};
 			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "SimRobot" */;
 			compatibilityVersion = "Xcode 6.3";
@@ -1310,6 +1300,7 @@
 				001820873683264210991104 /* Joint.cpp in Sources */,
 				002811661383151940666284 /* SphereMass.cpp in Sources */,
 				002811661384081231455426 /* Gyroscope.cpp in Sources */,
+				20818FC51D10ADC300105735 /* PT2Motor.cpp in Sources */,
 				002811661385770537457910 /* ServoMotor.cpp in Sources */,
 				006835980402513220605916 /* SensorWidget.cpp in Sources */,
 				013720755211442969720332 /* Parser.cpp in Sources */,
@@ -1505,12 +1496,12 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
 					NDEBUG,
-					FIX_OSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
-					FIX_OSX_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_OSX_TOOLBAR_RENDERING_BUG,
-					FIX_OSX_BROKEN_TEXTURES_ON_NVIDIA_BUG,
-					FIX_OSX_PINCH_SCALE_RELATIVE_BUG,
-					FIX_OSX_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
+					FIX_MACOS_TOOLBAR_RENDERING_BUG,
+					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
+					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
+					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
 					FIX_MACOS_SUBMENU_MISSING_BUG,
 				);
 				GCC_UNROLL_LOOPS = YES;
@@ -1527,6 +1518,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Develop;
@@ -1560,7 +1552,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1585,7 +1576,6 @@
 					../../Util/ode/macOS/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
-				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
@@ -1598,7 +1588,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -1736,7 +1725,6 @@
 					../../Util/ode/macOS/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
-				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
@@ -1773,7 +1761,6 @@
 					../../Util/ode/macOS/lib,
 				);
 				PRODUCT_NAME = SimRobotCore2;
-				SHARED_PRECOMPS_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				USER_HEADER_SEARCH_PATHS = ../../Src/SimRobotCore2;
 				WARNING_CFLAGS = (
 					"$(inherited)",
@@ -1841,18 +1828,19 @@
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
 					_DEBUG,
-					FIX_OSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
-					FIX_OSX_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_OSX_TOOLBAR_RENDERING_BUG,
-					FIX_OSX_BROKEN_TEXTURES_ON_NVIDIA_BUG,
-					FIX_OSX_PINCH_SCALE_RELATIVE_BUG,
-					FIX_OSX_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
+					FIX_MACOS_TOOLBAR_RENDERING_BUG,
+					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
+					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
+					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
 					FIX_MACOS_SUBMENU_MISSING_BUG,
 				);
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
@@ -1869,6 +1857,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Debug;
@@ -1888,12 +1877,12 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
 					NDEBUG,
-					FIX_OSX_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
-					FIX_OSX_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_OSX_TOOLBAR_RENDERING_BUG,
-					FIX_OSX_BROKEN_TEXTURES_ON_NVIDIA_BUG,
-					FIX_OSX_PINCH_SCALE_RELATIVE_BUG,
-					FIX_OSX_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
+					FIX_MACOS_TOOLBAR_RENDERING_BUG,
+					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
+					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
+					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
 					FIX_MACOS_SUBMENU_MISSING_BUG,
 				);
 				GCC_UNROLL_LOOPS = YES;
@@ -1910,6 +1899,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Release;

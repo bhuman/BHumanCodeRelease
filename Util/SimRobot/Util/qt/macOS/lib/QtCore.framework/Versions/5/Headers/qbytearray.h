@@ -1,38 +1,31 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
-** Copyright (C) 2016 Intel Corporation.
-** Contact: https://www.qt.io/licensing/
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
 **
@@ -262,21 +255,21 @@ public:
 #    define Q_REQUIRED_RESULT
 #    define Q_REQUIRED_RESULT_pushed
 #  endif
-    Q_ALWAYS_INLINE QByteArray toLower() const & Q_REQUIRED_RESULT
+    QByteArray toLower() const & Q_REQUIRED_RESULT
     { return toLower_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray toLower() && Q_REQUIRED_RESULT
+    QByteArray toLower() && Q_REQUIRED_RESULT
     { return toLower_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray toUpper() const & Q_REQUIRED_RESULT
+    QByteArray toUpper() const & Q_REQUIRED_RESULT
     { return toUpper_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray toUpper() && Q_REQUIRED_RESULT
+    QByteArray toUpper() && Q_REQUIRED_RESULT
     { return toUpper_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray trimmed() const & Q_REQUIRED_RESULT
+    QByteArray trimmed() const & Q_REQUIRED_RESULT
     { return trimmed_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray trimmed() && Q_REQUIRED_RESULT
+    QByteArray trimmed() && Q_REQUIRED_RESULT
     { return trimmed_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray simplified() const & Q_REQUIRED_RESULT
+    QByteArray simplified() const & Q_REQUIRED_RESULT
     { return simplified_helper(*this); }
-    Q_ALWAYS_INLINE QByteArray simplified() && Q_REQUIRED_RESULT
+    QByteArray simplified() && Q_REQUIRED_RESULT
     { return simplified_helper(*this); }
 #  ifdef Q_REQUIRED_RESULT_pushed
 #    pragma pop_macro("Q_REQUIRED_RESULT")
@@ -292,17 +285,14 @@ public:
     QByteArray rightJustified(int width, char fill = ' ', bool truncate = false) const Q_REQUIRED_RESULT;
 
     QByteArray &prepend(char c);
-    QByteArray &prepend(int count, char c);
     QByteArray &prepend(const char *s);
     QByteArray &prepend(const char *s, int len);
     QByteArray &prepend(const QByteArray &a);
     QByteArray &append(char c);
-    QByteArray &append(int count, char c);
     QByteArray &append(const char *s);
     QByteArray &append(const char *s, int len);
     QByteArray &append(const QByteArray &a);
     QByteArray &insert(int i, char c);
-    QByteArray &insert(int i, int count, char c);
     QByteArray &insert(int i, const char *s);
     QByteArray &insert(int i, const char *s, int len);
     QByteArray &insert(int i, const QByteArray &a);
@@ -578,10 +568,6 @@ inline QByteArray::const_iterator QByteArray::cend() const
 { return d->data() + d->size; }
 inline QByteArray::const_iterator QByteArray::constEnd() const
 { return d->data() + d->size; }
-inline QByteArray &QByteArray::append(int n, char ch)
-{ return insert(d->size, n, ch); }
-inline QByteArray &QByteArray::prepend(int n, char ch)
-{ return insert(0, n, ch); }
 inline QByteArray &QByteArray::operator+=(char c)
 { return append(c); }
 inline QByteArray &QByteArray::operator+=(const char *s)
@@ -604,41 +590,41 @@ inline bool QByteArray::contains(const QByteArray &a) const
 { return indexOf(a) != -1; }
 inline bool QByteArray::contains(char c) const
 { return indexOf(c) != -1; }
-inline bool operator==(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator==(const QByteArray &a1, const QByteArray &a2)
 { return (a1.size() == a2.size()) && (memcmp(a1.constData(), a2.constData(), a1.size())==0); }
-inline bool operator==(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+inline bool operator==(const QByteArray &a1, const char *a2)
 { return a2 ? qstrcmp(a1,a2) == 0 : a1.isEmpty(); }
-inline bool operator==(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator==(const char *a1, const QByteArray &a2)
 { return a1 ? qstrcmp(a1,a2) == 0 : a2.isEmpty(); }
-inline bool operator!=(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator!=(const QByteArray &a1, const QByteArray &a2)
 { return !(a1==a2); }
-inline bool operator!=(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+inline bool operator!=(const QByteArray &a1, const char *a2)
 { return a2 ? qstrcmp(a1,a2) != 0 : !a1.isEmpty(); }
-inline bool operator!=(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator!=(const char *a1, const QByteArray &a2)
 { return a1 ? qstrcmp(a1,a2) != 0 : !a2.isEmpty(); }
-inline bool operator<(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator<(const QByteArray &a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) < 0; }
- inline bool operator<(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+ inline bool operator<(const QByteArray &a1, const char *a2)
 { return qstrcmp(a1, a2) < 0; }
-inline bool operator<(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator<(const char *a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) < 0; }
-inline bool operator<=(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator<=(const QByteArray &a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) <= 0; }
-inline bool operator<=(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+inline bool operator<=(const QByteArray &a1, const char *a2)
 { return qstrcmp(a1, a2) <= 0; }
-inline bool operator<=(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator<=(const char *a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) <= 0; }
-inline bool operator>(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator>(const QByteArray &a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) > 0; }
-inline bool operator>(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+inline bool operator>(const QByteArray &a1, const char *a2)
 { return qstrcmp(a1, a2) > 0; }
-inline bool operator>(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator>(const char *a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) > 0; }
-inline bool operator>=(const QByteArray &a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator>=(const QByteArray &a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) >= 0; }
-inline bool operator>=(const QByteArray &a1, const char *a2) Q_DECL_NOTHROW
+inline bool operator>=(const QByteArray &a1, const char *a2)
 { return qstrcmp(a1, a2) >= 0; }
-inline bool operator>=(const char *a1, const QByteArray &a2) Q_DECL_NOTHROW
+inline bool operator>=(const char *a1, const QByteArray &a2)
 { return qstrcmp(a1, a2) >= 0; }
 #if !defined(QT_USE_QSTRINGBUILDER)
 inline const QByteArray operator+(const QByteArray &a1, const QByteArray &a2)

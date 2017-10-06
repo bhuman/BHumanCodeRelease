@@ -3,23 +3,92 @@
  * Implementation of class SoundPlayer.
  * @attention this is the Windows implementation
  * @author Colin Graf
+ * @author Lukas Post
  */
 
 #include <Windows.h>
 
 #include "SoundPlayer.h"
 #include "Platform/File.h"
+#include "Platform/BHAssert.h"
+
+SoundPlayer SoundPlayer::soundPlayer;
+
+SoundPlayer::SoundPlayer() :
+  started(false), closing(false)
+{}
+
+SoundPlayer::~SoundPlayer()
+{
+  if(started)
+  {
+    closing = true;
+    sem.post();
+  }
+}
+
+void SoundPlayer::start()
+{
+  Thread::start(this, &SoundPlayer::main);
+}
+
+void SoundPlayer::main()
+{
+  while(isRunning() && !closing)
+  {
+    flush();
+    VERIFY(sem.wait());
+  }
+}
+
+void SoundPlayer::playDirect(const std::string& basename)
+{
+  playing = true;
+  std::string filePath(filePrefix);
+  filePath += basename;
+  PlaySound(filePath.c_str(), nullptr, SND_SYNC | SND_FILENAME);
+  playing = false;
+}
+
+void SoundPlayer::flush()
+{
+  for(;;)
+  {
+    std::string first;
+    {
+      SYNC;
+      if(0 == queue.size())
+        break;
+      first = queue.front();
+      queue.pop_front();
+    }
+
+    playDirect(first);
+  }
+}
 
 int SoundPlayer::play(const std::string& name)
 {
-  std::string filePath(File::getBHDir());
-  filePath += "/Config/Sounds/";
-  filePath += name;
-  PlaySound(filePath.c_str(), nullptr, SND_ASYNC | SND_FILENAME);
-  return 1;
+  int queuelen;
+
+  {
+    SYNC_WITH(soundPlayer);
+    soundPlayer.queue.push_back(name.c_str()); // avoid copy-on-write
+    queuelen = static_cast<int>(soundPlayer.queue.size());
+    if(!soundPlayer.started)
+    {
+      soundPlayer.started = true;
+      soundPlayer.filePrefix = File::getBHDir();
+      soundPlayer.filePrefix += "/Config/Sounds/";
+      soundPlayer.start();
+    }
+    else
+      soundPlayer.sem.post();
+  }
+  return queuelen;
 }
 
-int SoundPlayer::playSamples(std::vector<short>& samples)
+bool SoundPlayer::isPlaying()
 {
-  return 1;
+  return soundPlayer.playing;
 }

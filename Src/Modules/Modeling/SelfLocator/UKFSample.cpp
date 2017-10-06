@@ -28,13 +28,6 @@ void UKFSample::init(const Pose2f& pose, const Pose2f& defaultPoseDeviation, int
     sigmaPoints[i] = Vector3f::Zero();
 }
 
-void UKFSample::prepare(const Vector2f& robotRotationDeviationInStand, const Vector2f& robotRotationDeviation,
-                           const MotionInfo& motionInfo, const Pose3f& invCameraMatrix)
-{
-  inverseCameraMatrix = invCameraMatrix;
-  currentRotationDeviation = motionInfo.isStanding() ? robotRotationDeviationInStand : robotRotationDeviation;
-}
-
 void UKFSample::mirror()
 {
   const Pose2f newPose = Pose2f(pi) + getPose();
@@ -104,7 +97,8 @@ void UKFSample::updateByLine(const RegisteredLine& line)
   }
 }
 
-void UKFSample::updateByPose(const RegisteredPose& pose, const CameraMatrix& cameraMatrix, const FieldDimensions& theFieldDimensions)
+void UKFSample::updateByPose(const RegisteredPose& pose, const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
+                             const Vector2f& currentRotationDeviation, const FieldDimensions& theFieldDimensions)
 {
   Vector3f measurement;
   measurement.x() = pose.pose.translation.x();
@@ -116,7 +110,7 @@ void UKFSample::updateByPose(const RegisteredPose& pose, const CameraMatrix& cam
   const float s = sin(pose.pose.rotation);
   const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
   const Matrix2f covXR = angleRotationMatrix * perceivedCenterCovariance * angleRotationMatrix.transpose();
-  const Matrix2f circleCov = getCovOfCircle(pose.p.translation, theFieldDimensions.centerCircleRadius, cameraMatrix);
+  const Matrix2f circleCov = getCovOfCircle(pose.p.translation, theFieldDimensions.centerCircleRadius, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
   const Matrix2f covY = angleRotationMatrix * circleCov * angleRotationMatrix.transpose();
 
   const float xVariance = covXR(0, 0);
@@ -130,7 +124,8 @@ void UKFSample::updateByPose(const RegisteredPose& pose, const CameraMatrix& cam
 }
 
 Matrix2f UKFSample::getCovOfCircle(const Vector2f& circlePos, float centerCircleRadius,
-                                      const CameraMatrix& cameraMatrix) const
+                                   const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
+                                   const Vector2f& currentRotationDeviation) const
 {
   float circleDistance = circlePos.norm();
   Vector2f increasedCirclePos = circlePos;

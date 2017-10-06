@@ -109,7 +109,7 @@ public:
    */
   virtual bool isBinary() const {return false;}
 
-  virtual void select(const char* name, int type, const char* (*enumToString)(int) = 0) {}
+  virtual void select(const char* name, int type, const char* (*enumToString)(int) = nullptr) {}
   virtual void deselect() {}
 
   /**
@@ -375,7 +375,7 @@ public:
    *             >= 0: array/list element index.
    * @param enumToString A function that translates an enum to a string.
    */
-  virtual void select(const char* name, int type, const char * (*enumToString)(int) = 0) {}
+  virtual void select(const char* name, int type, const char* (*enumToString)(int) = nullptr) {}
 
   /**
    * Deselects a field for reading.

@@ -46,14 +46,9 @@ public:
   QueueFillRequest outQueueMode; /**< The mode (behavior, filter, target) for the outgoing queue. */
   unsigned sendTime = 0; /**< The next time the outgoing queue should be sent/written. */
   char processIdentifier = 0; /**< The process the messages from the GUI are meant to be sent to. */
-  OutBinaryFile* fout = nullptr; /**< Stream to store data on disk/stick. */
+  std::unique_ptr<OutBinaryFile> fout; /**< Stream to store data on disk/stick. */
 
   Debug();
-  ~Debug()
-  {
-    if(fout)
-      delete fout;
-  }
 
   /** The main function of the process */
   bool main();

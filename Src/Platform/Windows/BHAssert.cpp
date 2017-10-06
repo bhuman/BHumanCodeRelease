@@ -30,6 +30,12 @@ void Assert::print(const char* file, int line, const char* format, ...)
   OutputDebugString(data);
 }
 
+void Assert::print(const char* file, int line, const std::string& message)
+{
+  const std::string expandedMessage = std::string(file) + ":" + std::to_string(line) + ": " + message + "\n";
+  OutputDebugString(expandedMessage.c_str());
+}
+
 void Assert::abort()
 {
   __debugbreak();

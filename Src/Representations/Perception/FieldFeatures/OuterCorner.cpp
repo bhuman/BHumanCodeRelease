@@ -65,5 +65,4 @@ const Pose2f OuterCorner::getGlobalFeaturePosition() const
   const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
 
   return Pose2f(isRightCorner ? pi_2 : -pi_2, theFieldDimensions.xPosOpponentGroundline, isRightCorner ? theFieldDimensions.yPosRightSideline : theFieldDimensions.yPosLeftSideline);
-
 }

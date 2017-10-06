@@ -1,8 +1,9 @@
 /**
  * @file ActivationGraph
+ *
  * The graph of executed options and states.
  *
- * @author Max Risler
+ * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 
 #pragma once

@@ -40,10 +40,14 @@
 #ifndef QABSTRACTITEMVIEW_H
 #define QABSTRACTITEMVIEW_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qabstractscrollarea.h>
 #include <QtCore/qabstractitemmodel.h>
 #include <QtCore/qitemselectionmodel.h>
 #include <QtWidgets/qabstractitemdelegate.h>
+
+class tst_QAbstractItemView;
+class tst_QTreeView;
 
 QT_BEGIN_NAMESPACE
 
@@ -58,7 +62,6 @@ class QAbstractItemViewPrivate;
 class Q_WIDGETS_EXPORT QAbstractItemView : public QAbstractScrollArea
 {
     Q_OBJECT
-    Q_FLAGS(EditTriggers)
     Q_PROPERTY(bool autoScroll READ hasAutoScroll WRITE setAutoScroll)
     Q_PROPERTY(int autoScrollMargin READ autoScrollMargin WRITE setAutoScrollMargin)
     Q_PROPERTY(EditTriggers editTriggers READ editTriggers WRITE setEditTriggers)
@@ -114,6 +117,7 @@ public:
     };
 
     Q_DECLARE_FLAGS(EditTriggers, EditTrigger)
+    Q_FLAG(EditTriggers)
 
     enum ScrollMode {
         ScrollPerItem,
@@ -363,10 +367,12 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_modelDestroyed())
     Q_PRIVATE_SLOT(d_func(), void _q_layoutChanged())
     Q_PRIVATE_SLOT(d_func(), void _q_headerDataChanged())
-#ifndef QT_NO_GESTURES
+#if QT_CONFIG(gestures) && QT_CONFIG(scroller)
     Q_PRIVATE_SLOT(d_func(), void _q_scrollerStateChanged())
 #endif
 
+    friend class ::tst_QAbstractItemView;
+    friend class ::tst_QTreeView;
     friend class QTreeViewPrivate; // needed to compile with MSVC
     friend class QListModeViewBase;
     friend class QListViewPrivate;

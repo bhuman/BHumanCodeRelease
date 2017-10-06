@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Tools/Communication/TcpComm.h"
+#include <memory>
 
 #define MAX_PACKAGE_SIZE 67108864 // max package size that can be received. prevent from allocating too much buffer (max ~64 MB)
 
@@ -27,7 +28,7 @@ public:
   };
 
 private:
-  TcpComm* tcpComm = nullptr; /**< The TCP/IP connection. */
+  std::unique_ptr<TcpComm> tcpComm; /**< The TCP/IP connection. */
   bool ack = false;
   bool client = false;;
   Handshake handshake = noHandshake; /**< The handshake mode. */
@@ -54,8 +55,6 @@ public:
   {
     connect(ip, port, handshake, maxPackageSendSize, maxPackageReceiveSize);
   }
-
-  ~TcpConnection() { if(tcpComm) delete tcpComm; }
 
   /**
    * The function will first try to connect another process as

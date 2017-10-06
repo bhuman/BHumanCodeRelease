@@ -124,16 +124,16 @@ void SensorWidget::paintFsrSensorData()
 {
   const FsrSensorData& data = sensorView.fsrSensorData;
   print("Fsr sensor data:", "");
-  print(" Fsr lfl", printValue(ValueType::pressure, data.left[FsrSensors::fl]));
-  print(" Fsr lfr", printValue(ValueType::pressure, data.left[FsrSensors::fr]));
-  print(" Fsr lbl", printValue(ValueType::pressure, data.left[FsrSensors::bl]));
-  print(" Fsr lbr", printValue(ValueType::pressure, data.left[FsrSensors::br]));
-  print(" Fsr rfl", printValue(ValueType::pressure, data.right[FsrSensors::fl]));
-  print(" Fsr rfr", printValue(ValueType::pressure, data.right[FsrSensors::fr]));
-  print(" Fsr rbl", printValue(ValueType::pressure, data.right[FsrSensors::bl]));
-  print(" Fsr rbr", printValue(ValueType::pressure, data.right[FsrSensors::br]));
-  print(" Fsr total left", printValue(ValueType::pressure, data.leftTotal));
-  print(" Fsr total right", printValue(ValueType::pressure, data.rightTotal));
+  print(" Fsr lfl", printValue(ValueType::pressure, data.pressures[Legs::left][FsrSensors::fl]));
+  print(" Fsr lfr", printValue(ValueType::pressure, data.pressures[Legs::left][FsrSensors::fr]));
+  print(" Fsr lbl", printValue(ValueType::pressure, data.pressures[Legs::left][FsrSensors::bl]));
+  print(" Fsr lbr", printValue(ValueType::pressure, data.pressures[Legs::left][FsrSensors::br]));
+  print(" Fsr rfl", printValue(ValueType::pressure, data.pressures[Legs::right][FsrSensors::fl]));
+  print(" Fsr rfr", printValue(ValueType::pressure, data.pressures[Legs::right][FsrSensors::fr]));
+  print(" Fsr rbl", printValue(ValueType::pressure, data.pressures[Legs::right][FsrSensors::bl]));
+  print(" Fsr rbr", printValue(ValueType::pressure, data.pressures[Legs::right][FsrSensors::br]));
+  print(" Fsr total left", printValue(ValueType::pressure, data.totals[Legs::left]));
+  print(" Fsr total right", printValue(ValueType::pressure, data.totals[Legs::right]));
 }
 
 void SensorWidget::paintInertialSensorData()
@@ -260,5 +260,5 @@ SensorHeaderedWidget::SensorHeaderedWidget(SensorView& sensorView, RobotConsole&
   headerView->resizeSection(1, 50);
   sensorWidget = new SensorWidget(sensorView, headerView, this);
   setWidget(sensorWidget);
-  connect(getHeaderView(), SIGNAL(sectionResized(int,int,int)), sensorWidget, SLOT(forceUpdate()));
+  connect(getHeaderView(), SIGNAL(sectionResized(int, int, int)), sensorWidget, SLOT(forceUpdate()));
 }

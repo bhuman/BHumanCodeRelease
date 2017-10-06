@@ -11,7 +11,7 @@
 #include "Platform/Thread.h"
 #include <cstring>
 
-DECLARE_SYNC_STATIC;
+static DECLARE_SYNC;
 
 static char* trim(char* pBegin, char* pEnd)
 {

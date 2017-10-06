@@ -86,14 +86,11 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
   if(!Global::settingsExist())
     return;
 
-  // Simulation scene should only use blue and red for now
-  ASSERT(Global::getSettings().teamColor == Settings::blue || Global::getSettings().teamColor == Settings::red);
-
-  const bool teammate = Global::getSettings().teamColor == Settings::blue;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
-    playerToObstacle(theGroundTruthWorldState.bluePlayers[i], obstacleModel, teammate);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
-    playerToObstacle(theGroundTruthWorldState.redPlayers[i], obstacleModel, !teammate);
+  const bool teammate = Global::getSettings().teamNumber == 1;
+  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
+    playerToObstacle(theGroundTruthWorldState.firstTeamPlayers[i], obstacleModel, teammate);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
+    playerToObstacle(theGroundTruthWorldState.secondTeamPlayers[i], obstacleModel, !teammate);
 
   //add goal posts
   float squaredObstacleModelMaxDistance = sqr(obstacleModelMaxDistance);
@@ -133,11 +130,7 @@ void OracledWorldModelProvider::update(RobotPose& robotPose)
 void OracledWorldModelProvider::update(GroundTruthRobotPose& groundTruthRobotPose)
 {
   computeRobotPose();
-  groundTruthRobotPose.translation = theRobotPose.translation;
-  groundTruthRobotPose.rotation = theRobotPose.rotation;
-  groundTruthRobotPose.covariance = theRobotPose.covariance;
-  groundTruthRobotPose.deviation = theRobotPose.deviation;
-  groundTruthRobotPose.validity = theRobotPose.validity;
+  static_cast<RobotPose&>(groundTruthRobotPose) = theRobotPose;
   groundTruthRobotPose.timestamp = theFrameInfo.time;
 }
 

@@ -42,10 +42,13 @@
 
 #include <QtCore/qglobal.h>
 
+#if defined(Q_CC_MSVC) && _MSC_VER > 1500
+#include <intrin.h>
+#endif
+
 QT_BEGIN_NAMESPACE
 QT_WARNING_PUSH
-QT_WARNING_DISABLE_GCC("-Wdeprecated-declarations")
-QT_WARNING_DISABLE_CLANG("-Wdeprecated-declarations")
+QT_WARNING_DISABLE_DEPRECATED
 
 /*
     Warning: The contents of QAlgorithmsPrivate is not a part of the public Qt API
@@ -142,15 +145,9 @@ QT_DEPRECATED_X("Use std::count") inline void qCount(const Container &container,
 }
 
 #ifdef Q_QDOC
-template <typename T>
-LessThan qLess()
-{
-}
-
-template <typename T>
-LessThan qGreater()
-{
-}
+typedef void* LessThan;
+template <typename T> LessThan qLess();
+template <typename T> LessThan qGreater();
 #else
 template <typename T>
 class QT_DEPRECATED_X("Use std::less") qLess
@@ -522,20 +519,171 @@ QT_DEPRECATED_X("Use std::binary_search") Q_OUTOFLINE_TEMPLATE RandomAccessItera
 
 #endif // QT_DEPRECATED_SINCE(5, 2)
 
-} //namespace QAlgorithmsPrivate
-
-
-// Use __builtin_popcount on gcc. Clang claims to be gcc
-// but has a bug where __builtin_popcount is not marked as
-// constexpr.
-#if defined(Q_CC_GNU) && !defined(Q_CC_CLANG)
-#define QALGORITHMS_USE_BUILTIN_POPCOUNT
+#ifdef Q_CC_CLANG
+// Clang had a bug where __builtin_ctz/clz/popcount were not marked as constexpr.
+#  if (defined __apple_build_version__ &&  __clang_major__ >= 7) || (Q_CC_CLANG >= 307)
+#    define QT_HAS_CONSTEXPR_BUILTINS
+#  endif
+#elif defined(Q_CC_MSVC) && !defined(Q_CC_INTEL) && !defined(Q_OS_WINCE) && !defined(Q_PROCESSOR_ARM)
+#  define QT_HAS_CONSTEXPR_BUILTINS
+#elif defined(Q_CC_GNU)
+#  define QT_HAS_CONSTEXPR_BUILTINS
 #endif
 
-Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint32 v) Q_DECL_NOTHROW
+#if defined QT_HAS_CONSTEXPR_BUILTINS
+#if defined(Q_CC_GNU) || defined(Q_CC_CLANG)
+#  define QT_HAS_BUILTIN_CTZS
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_ctzs(quint16 v) Q_DECL_NOTHROW
+{
+#  if QT_HAS_BUILTIN(__builtin_ctzs)
+    return __builtin_ctzs(v);
+#  else
+    return __builtin_ctz(v);
+#  endif
+}
+#define QT_HAS_BUILTIN_CLZS
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_clzs(quint16 v) Q_DECL_NOTHROW
+{
+#  if QT_HAS_BUILTIN(__builtin_clzs)
+    return __builtin_clzs(v);
+#  else
+    return __builtin_clz(v) - 16U;
+#  endif
+}
+#define QT_HAS_BUILTIN_CTZ
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_ctz(quint32 v) Q_DECL_NOTHROW
+{
+    return __builtin_ctz(v);
+}
+#define QT_HAS_BUILTIN_CLZ
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_clz(quint32 v) Q_DECL_NOTHROW
+{
+    return __builtin_clz(v);
+}
+#define QT_HAS_BUILTIN_CTZLL
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_ctzll(quint64 v) Q_DECL_NOTHROW
+{
+    return __builtin_ctzll(v);
+}
+#define QT_HAS_BUILTIN_CLZLL
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_clzll(quint64 v) Q_DECL_NOTHROW
+{
+    return __builtin_clzll(v);
+}
+#define QALGORITHMS_USE_BUILTIN_POPCOUNT
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_popcount(quint32 v) Q_DECL_NOTHROW
+{
+    return __builtin_popcount(v);
+}
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_popcount(quint8 v) Q_DECL_NOTHROW
+{
+    return __builtin_popcount(v);
+}
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_popcount(quint16 v) Q_DECL_NOTHROW
+{
+    return __builtin_popcount(v);
+}
+#define QALGORITHMS_USE_BUILTIN_POPCOUNTLL
+Q_DECL_CONSTEXPR Q_ALWAYS_INLINE uint qt_builtin_popcountll(quint64 v) Q_DECL_NOTHROW
+{
+    return __builtin_popcountll(v);
+}
+#elif defined(Q_CC_MSVC) && !defined(Q_OS_WINCE) && !defined(Q_PROCESSOR_ARM)
+#define QT_POPCOUNT_CONSTEXPR
+#define QT_HAS_BUILTIN_CTZ
+Q_ALWAYS_INLINE unsigned long qt_builtin_ctz(quint32 val)
+{
+    unsigned long result;
+    _BitScanForward(&result, val);
+    return result;
+}
+#define QT_HAS_BUILTIN_CLZ
+Q_ALWAYS_INLINE unsigned long qt_builtin_clz(quint32 val)
+{
+    unsigned long result;
+    _BitScanReverse(&result, val);
+    // Now Invert the result: clz will count *down* from the msb to the lsb, so the msb index is 31
+    // and the lsb index is 0. The result for the index when counting up: msb index is 0 (because it
+    // starts there), and the lsb index is 31.
+    result ^= sizeof(quint32) * 8 - 1;
+    return result;
+}
+#if Q_PROCESSOR_WORDSIZE == 8
+// These are only defined for 64bit builds.
+#define QT_HAS_BUILTIN_CTZLL
+Q_ALWAYS_INLINE unsigned long qt_builtin_ctzll(quint64 val)
+{
+    unsigned long result;
+    _BitScanForward64(&result, val);
+    return result;
+}
+// MSVC calls it _BitScanReverse and returns the carry flag, which we don't need
+#define QT_HAS_BUILTIN_CLZLL
+Q_ALWAYS_INLINE unsigned long qt_builtin_clzll(quint64 val)
+{
+    unsigned long result;
+    _BitScanReverse64(&result, val);
+    // see qt_builtin_clz
+    result ^= sizeof(quint64) * 8 - 1;
+    return result;
+}
+#endif // MSVC 64bit
+#  define QT_HAS_BUILTIN_CTZS
+Q_ALWAYS_INLINE uint qt_builtin_ctzs(quint16 v) Q_DECL_NOTHROW
+{
+    return qt_builtin_ctz(v);
+}
+#define QT_HAS_BUILTIN_CLZS
+Q_ALWAYS_INLINE uint qt_builtin_clzs(quint16 v) Q_DECL_NOTHROW
+{
+    return qt_builtin_clz(v) - 16U;
+}
+
+// Neither MSVC nor the Intel compiler define a macro for the POPCNT processor
+// feature, so we're using either the SSE4.2 or the AVX macro as a proxy (Clang
+// does define the macro). It's incorrect for two reasons:
+// 1. It's a separate bit in CPUID, so a processor could implement SSE4.2 and
+//    not POPCNT, but that's unlikely to happen.
+// 2. There are processors that support POPCNT but not AVX (Intel Nehalem
+//    architecture), but unlike the other compilers, MSVC has no option
+//    to generate code for those processors.
+// So it's an acceptable compromise.
+#if defined(__AVX__) || defined(__SSE4_2__) || defined(__POPCNT__)
+#define QALGORITHMS_USE_BUILTIN_POPCOUNT
+Q_ALWAYS_INLINE uint qt_builtin_popcount(quint32 v) Q_DECL_NOTHROW
+{
+    return __popcnt(v);
+}
+Q_ALWAYS_INLINE uint qt_builtin_popcount(quint8 v) Q_DECL_NOTHROW
+{
+    return __popcnt16(v);
+}
+Q_ALWAYS_INLINE uint qt_builtin_popcount(quint16 v) Q_DECL_NOTHROW
+{
+    return __popcnt16(v);
+}
+#if Q_PROCESSOR_WORDSIZE == 8
+#define QALGORITHMS_USE_BUILTIN_POPCOUNTLL
+Q_ALWAYS_INLINE uint qt_builtin_popcountll(quint64 v) Q_DECL_NOTHROW
+{
+    return __popcnt64(v);
+}
+#endif // MSVC 64bit
+#endif // __AVX__ || __SSE4_2__ || __POPCNT__
+
+#endif // MSVC
+#endif // QT_HAS_CONSTEXPR_BUILTINS
+
+#ifndef QT_POPCOUNT_CONSTEXPR
+#define QT_POPCOUNT_CONSTEXPR Q_DECL_CONSTEXPR
+#endif
+
+} //namespace QAlgorithmsPrivate
+
+Q_DECL_CONST_FUNCTION QT_POPCOUNT_CONSTEXPR inline uint qPopulationCount(quint32 v) Q_DECL_NOTHROW
 {
 #ifdef QALGORITHMS_USE_BUILTIN_POPCOUNT
-    return __builtin_popcount(v);
+    return QAlgorithmsPrivate::qt_builtin_popcount(v);
 #else
     // See http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
     return
@@ -545,20 +693,20 @@ Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint32 v) Q
 #endif
 }
 
-Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint8 v) Q_DECL_NOTHROW
+Q_DECL_CONST_FUNCTION QT_POPCOUNT_CONSTEXPR inline uint qPopulationCount(quint8 v) Q_DECL_NOTHROW
 {
 #ifdef QALGORITHMS_USE_BUILTIN_POPCOUNT
-    return __builtin_popcount(v);
+    return QAlgorithmsPrivate::qt_builtin_popcount(v);
 #else
     return
         (((v      ) & 0xfff)    * Q_UINT64_C(0x1001001001001) & Q_UINT64_C(0x84210842108421)) % 0x1f;
 #endif
 }
 
-Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint16 v) Q_DECL_NOTHROW
+Q_DECL_CONST_FUNCTION QT_POPCOUNT_CONSTEXPR inline uint qPopulationCount(quint16 v) Q_DECL_NOTHROW
 {
 #ifdef QALGORITHMS_USE_BUILTIN_POPCOUNT
-    return __builtin_popcount(v);
+    return QAlgorithmsPrivate::qt_builtin_popcount(v);
 #else
     return
         (((v      ) & 0xfff)    * Q_UINT64_C(0x1001001001001) & Q_UINT64_C(0x84210842108421)) % 0x1f +
@@ -566,10 +714,10 @@ Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint16 v) Q
 #endif
 }
 
-Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint64 v) Q_DECL_NOTHROW
+Q_DECL_CONST_FUNCTION QT_POPCOUNT_CONSTEXPR inline uint qPopulationCount(quint64 v) Q_DECL_NOTHROW
 {
-#ifdef QALGORITHMS_USE_BUILTIN_POPCOUNT
-    return __builtin_popcountll(v);
+#ifdef QALGORITHMS_USE_BUILTIN_POPCOUNTLL
+    return QAlgorithmsPrivate::qt_builtin_popcountll(v);
 #else
     return
         (((v      ) & 0xfff)    * Q_UINT64_C(0x1001001001001) & Q_UINT64_C(0x84210842108421)) % 0x1f +
@@ -581,7 +729,7 @@ Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(quint64 v) Q
 #endif
 }
 
-Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(long unsigned int v) Q_DECL_NOTHROW
+Q_DECL_CONST_FUNCTION QT_POPCOUNT_CONSTEXPR inline uint qPopulationCount(long unsigned int v) Q_DECL_NOTHROW
 {
     return qPopulationCount(static_cast<quint64>(v));
 }
@@ -589,11 +737,12 @@ Q_DECL_CONST_FUNCTION Q_DECL_CONSTEXPR inline uint qPopulationCount(long unsigne
 #if defined(Q_CC_GNU) && !defined(Q_CC_CLANG)
 #undef QALGORITHMS_USE_BUILTIN_POPCOUNT
 #endif
+#undef QT_POPCOUNT_CONSTEXPR
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint32 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_ctz(v) : 32U;
+#if defined(QT_HAS_BUILTIN_CTZ)
+    return v ? QAlgorithmsPrivate::qt_builtin_ctz(v) : 32U;
 #else
     // see http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
     unsigned int c = 32; // c will be the number of zero bits on the right
@@ -610,8 +759,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint32 v) Q_DECL_NO
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint8 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_ctz(v) : 8U;
+#if defined(QT_HAS_BUILTIN_CTZ)
+    return v ? QAlgorithmsPrivate::qt_builtin_ctz(v) : 8U;
 #else
     unsigned int c = 8; // c will be the number of zero bits on the right
     v &= -signed(v);
@@ -625,12 +774,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint8 v) Q_DECL_NOT
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint16 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-#  if QT_HAS_BUILTIN(__builtin_ctzs) || defined(__BMI__)
-    return v ? __builtin_ctzs(v) : 16U;
-#  else
-    return v ? __builtin_ctz(v) : 16U;
-#  endif
+#if defined(QT_HAS_BUILTIN_CTZS)
+    return v ? QAlgorithmsPrivate::qt_builtin_ctzs(v) : 16U;
 #else
     unsigned int c = 16; // c will be the number of zero bits on the right
     v &= -signed(v);
@@ -645,8 +790,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint16 v) Q_DECL_NO
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(quint64 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_ctzll(v) : 64;
+#if defined(QT_HAS_BUILTIN_CTZLL)
+    return v ? QAlgorithmsPrivate::qt_builtin_ctzll(v) : 64;
 #else
     quint32 x = static_cast<quint32>(v);
     return x ? qCountTrailingZeroBits(x)
@@ -661,8 +806,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountTrailingZeroBits(unsigned long v) Q_D
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint32 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_clz(v) : 32U;
+#if defined(QT_HAS_BUILTIN_CLZ)
+    return v ? QAlgorithmsPrivate::qt_builtin_clz(v) : 32U;
 #else
     // Hacker's Delight, 2nd ed. Fig 5-16, p. 102
     v = v | (v >> 1);
@@ -676,8 +821,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint32 v) Q_DECL_NOT
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint8 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_clz(v)-24U : 8U;
+#if defined(QT_HAS_BUILTIN_CLZ)
+    return v ? QAlgorithmsPrivate::qt_builtin_clz(v)-24U : 8U;
 #else
     v = v | (v >> 1);
     v = v | (v >> 2);
@@ -688,12 +833,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint8 v) Q_DECL_NOTH
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint16 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-#  if QT_HAS_BUILTIN(__builtin_clzs) || defined(__BMI__)
-    return v ? __builtin_clzs(v) : 16U;
-#  else
-    return v ? __builtin_clz(v)-16U : 16U;
-#  endif
+#if defined(QT_HAS_BUILTIN_CLZS)
+    return v ? QAlgorithmsPrivate::qt_builtin_clzs(v) : 16U;
 #else
     v = v | (v >> 1);
     v = v | (v >> 2);
@@ -705,8 +846,8 @@ Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint16 v) Q_DECL_NOT
 
 Q_DECL_RELAXED_CONSTEXPR inline uint qCountLeadingZeroBits(quint64 v) Q_DECL_NOTHROW
 {
-#if defined(Q_CC_GNU)
-    return v ? __builtin_clzll(v) : 64U;
+#if defined(QT_HAS_BUILTIN_CLZLL)
+    return v ? QAlgorithmsPrivate::qt_builtin_clzll(v) : 64U;
 #else
     v = v | (v >> 1);
     v = v | (v >> 2);

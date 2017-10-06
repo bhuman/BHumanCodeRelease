@@ -51,75 +51,6 @@
  */
 class ModuleBase
 {
-private:
-  /**
-   * Helper class to check whether a class defines a draw method itself.
-   */
-  template<typename T> struct HasDrawMethod
-  {
-    template<typename U, void (U::*)()> struct Draw {};
-    template<typename U, void (U::*)() const> struct ConstDraw {};
-    template<typename U> static char Test(Draw<U, &U::draw>*);
-    template<typename U> static char Test(ConstDraw<U, &U::draw>*);
-    template<typename U> static int Test(...);
-    static const bool value = sizeof(Test<T>(nullptr)) == sizeof(char);
-  };
-
-  /**
-   * This class defines a method that is called when a class has a
-   * draw() method. The latter is called.
-   * @param T The type of the representation.
-   * @param hasDraw States, whether T has a draw() method.
-   */
-  template<typename T, bool hasDraw = true> struct Draw
-  {
-    static void draw(T& t) {t.draw();}
-  };
-
-  /**
-   * This class defines a method that is called when a class does not
-   * have a draw() method.
-   * @param T The type of the representation.
-   */
-  template<typename T> struct Draw<T, false>
-  {
-    static void draw(T& t) {}
-  };
-
-  /**
-   * Helper class to check whether a class defines a verify method itself.
-   */
-  template<typename T> struct HasVerifyMethod
-  {
-    template<typename U, void (U::*)()> struct Verify {};
-    template<typename U, void (U::*)() const> struct ConstVerify {};
-    template<typename U> static char Test(Verify<U, &U::verify>*);
-    template<typename U> static char Test(ConstVerify<U, &U::verify>*);
-    template<typename U> static int Test(...);
-    static const bool value = sizeof(Test<T>(nullptr)) == sizeof(char);
-  };
-
-  /**
-   * This class defines a method that is called when a class has a
-   * verify() method. The latter is called.
-   * @param T The type of the representation.
-   * @param hasVerify States, whether T has a verify() method.
-   */
-  template<typename T, bool hasVerify = true> struct Verify
-  {
-    static void verify(T& t) { t.verify(); }
-  };
-
-  /**
-   * This class defines a method that is called when a class does not
-   * have a verify() method.
-   * @param T The type of the representation.
-   */
-  template<typename T> struct Verify<T, false>
-  {
-    static void verify(T& t) {}
-  };
-
 public:
   ENUM(Category,
   {,
@@ -159,25 +90,29 @@ public:
     return ::undefined;
   }
 
+  /** Helpers to check whether a class defines a draw method that is not inherited. */
+  template<typename T, void (T::*)()> struct Draw {};
+  template<typename T, void (T::*)() const> struct ConstDraw {};
+
   /**
-   * Calls a draw method if a representation has one.
+   * Calls a draw method if a representation has one that is not inherited.
    * @param T The type of the representation.
    * @param t The representation.
    */
-  template<typename T> static void draw(T& t)
-  {
-    Draw<T, HasDrawMethod<T>::value>::draw(t);
-  }
+  template<typename T> static auto draw(T* t) -> decltype(Draw<T, &T::draw>(), void()) {t->draw();}
+  template<typename T> static auto draw(const T* t) -> decltype(ConstDraw<T, &T::draw>(), void()) {t->draw();}
+  static void draw(void*) {}
+  static void draw(const void*) {}
 
   /**
    * Calls a verify method if a representation has one.
    * @param T The type of the representation.
    * @param t The representation.
    */
-  template<typename T> static void verify(T& t)
-  {
-    Verify<T, HasVerifyMethod<T>::value>::verify(t);
-  }
+  template<typename T> static auto verify(T* t) -> decltype(t->verify(), void()) {t->verify();}
+  template<typename T> static auto verify(const T* t) -> decltype(t->verify(), void()) {t->verify();}
+  static void verify(void*) {}
+  static void verify(const void*) {}
 
 private:
   static ModuleBase* first; /**< The head of the list of all modules available. */
@@ -259,8 +194,9 @@ STREAMABLE(NoParameters,
  * @param moduleName The filename is determined from the name of the module if it
  *                   is not explicitly specified.
  * @param fileName The filename used or nullptr if it should be created from the module's name.
+ * @param failOnMissing Abort program if file is missing (not in Release).
  */
-void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName);
+void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName, bool failOnMissing = true);
 
 // Some of the following macros can also be found in AutoStreamable.h with different names.
 // However, separate versions are required here, because the preprocessor only expands each
@@ -270,31 +206,23 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * Determine the number of entries in a tuple.
  */
 #ifdef _MSC_VER
-#define _MODULE_TUPLE_SIZE(...) _MODULE_JOIN(_MODULE_TUPLE_SIZE_II, (__VA_ARGS__, \
-  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
-  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
-  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
-  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
-  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+#define _MODULE_TUPLE_SIZE(...) _MODULE_JOIN(_MODULE_TUPLE_SIZE_II, (__VA_ARGS__, _MODULE_TUPLE_SIZE_III))
 #else
-#define _MODULE_TUPLE_SIZE(...) _MODULE_TUPLE_SIZE_I((__VA_ARGS__, \
-  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
-  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
-  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
-  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
-  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+#define _MODULE_TUPLE_SIZE(...) _MODULE_TUPLE_SIZE_I((__VA_ARGS__, _MODULE_TUPLE_SIZE_III))
 #define _MODULE_TUPLE_SIZE_I(params) _MODULE_TUPLE_SIZE_II params
 #endif
-
-/**
- * The last part of a macro to determine the number of entries in a tuple.
- */
 #define _MODULE_TUPLE_SIZE_II( \
   a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
   a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
   a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, \
   a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, \
   a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, ...) a100
+#define _MODULE_TUPLE_SIZE_III \
+  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
+  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
+  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
+  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
+  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 /**
  * Apply a macro to all elements of a tuple.
@@ -381,6 +309,16 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_ATTR_79(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78)
 #define _MODULE_ATTR_80(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79)
 #define _MODULE_ATTR_81(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80)
+#define _MODULE_ATTR_82(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81)
+#define _MODULE_ATTR_83(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82)
+#define _MODULE_ATTR_84(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83)
+#define _MODULE_ATTR_85(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84)
+#define _MODULE_ATTR_86(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85)
+#define _MODULE_ATTR_87(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86)
+#define _MODULE_ATTR_88(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87)
+#define _MODULE_ATTR_89(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88)
+#define _MODULE_ATTR_90(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a90)
+#define _MODULE_ATTR_91(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a90) f(a91)
 
 /** Concatenate the two parameters. */
 #define _MODULE_JOIN(a, b) _MODULE_JOIN_I(a, b)
@@ -423,10 +361,16 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_LOAD__MODULE_DEFINES_PARAMETERS(...)
 #define _MODULE_LOAD__MODULE_LOADS_PARAMETERS(...) loadModuleParameters(*this, moduleName, fileName);
 
+#if defined TARGET_ROBOT && defined NDEBUG
+#define _MODULE_DRAW(...)
+#else
+#define _MODULE_DRAW(r) ModuleBase::draw(&r);
+#endif
+
 #ifdef NDEBUG
 #define _MODULE_VERIFY(...)
 #else
-#define _MODULE_VERIFY(r) ModuleBase::verify(r);
+#define _MODULE_VERIFY(r) ModuleBase::verify(&r);
 #endif
 
 /**
@@ -439,10 +383,10 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_DECLARE_PROVIDES(type) _MODULE_PROVIDES(type, \
   MODIFY("representation:" #type, r); \
   _MODULE_VERIFY(r) \
-  ModuleBase::draw(r);)
+  _MODULE_DRAW(r))
 #define _MODULE_DECLARE_PROVIDES_WITHOUT_MODIFY(type) _MODULE_PROVIDES(type, \
   _MODULE_VERIFY(r) \
-  ModuleBase::draw(r);)
+  _MODULE_DRAW(r))
 #define _MODULE_DECLARE_REQUIRES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE_USES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE__MODULE_DEFINES_PARAMETERS(...)

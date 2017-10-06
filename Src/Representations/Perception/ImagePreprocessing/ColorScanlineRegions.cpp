@@ -57,6 +57,28 @@ void ColorScanlineRegionsVerticalClipped::draw() const
   }
 }
 
+void CompressedColorScanlineRegionsVertical::draw() const
+{
+  static const ColorRGBA colors[] =
+  {
+    ColorRGBA::gray,
+    ColorRGBA::white,
+    ColorRGBA::black,
+    ColorRGBA::green
+  };
+
+  DEBUG_DRAWING("representation:CompressedColorScanlineRegionsVertical:image", "drawingOnImage")
+  {
+    for(const Scanline& line : scanlines)
+    {
+      for(const ScanlineRegion& r : line.regions)
+      {
+        LINE("representation:CompressedColorScanlineRegionsVertical:image", line.x, r.range.from, line.x, r.range.to - 1, 4, Drawings::solidPen, colors[r.color]);
+      }
+    }
+  }
+}
+
 void ColorScanlineRegionsHorizontal::draw() const
 {
   static const ColorRGBA colors[] =

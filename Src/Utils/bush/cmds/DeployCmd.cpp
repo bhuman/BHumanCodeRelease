@@ -33,29 +33,31 @@ bool DeployCmd::DeployTask::execute()
   args.push_back(QString("-nr"));
   args.push_back(buildConfig);
   args.push_back(fromString(robot->getBestIP(context())));
-  if(team->getPlayersPerNumber()[team->getPlayerNumber(*robot)-1][1] == robot)
+  if(team->getPlayersPerNumber()[team->getPlayerNumber(*robot) - 1][1] == robot)
   {
-    args.push_back(QString("-s"));
+    args.push_back(QString("-n"));
   }
   else
   {
-    args.push_back(QString("-r"));
+    args.push_back(QString("-b"));
   }
-  args.push_back(QString("-n"));
+  args.push_back(QString("-t"));
   args.push_back(QString::number(team->number));
   args.push_back(QString("-o"));
   args.push_back(QString::number(team->port));
-  args.push_back(QString("-t"));
+  args.push_back(QString("-c"));
   args.push_back(team->color.c_str());
   args.push_back(QString("-p"));
   args.push_back(QString::number(team->getPlayerNumber(*robot)));
+  args.push_back(QString("-s"));
+  args.push_back(team->scenario.c_str());
   args.push_back(QString("-l"));
   args.push_back(team->location.c_str());
   args.push_back(QString("-w"));
   args.push_back(team->wlanConfig.c_str());
   args.push_back(QString("-v"));
   args.push_back(QString::number(team->volume));
-  args.push_back(QString("-mn"));
+  args.push_back(QString("-m"));
   args.push_back(QString::number(team->magicNumber));
 
   ProcessRunner r(context(), command, args);
@@ -111,7 +113,7 @@ bool DeployCmd::preExecution(Context& context, const std::vector<std::string>& p
     buildConfig = fromString(params[0]);
 
   // compile and deploy if compiling was successful
-  return context.execute("compile " + toString(buildConfig));
+  return team->compile ? context.execute("compile " + toString(buildConfig)) : true;
 }
 
 Task* DeployCmd::perRobotExecution(Context& context, Robot& robot)

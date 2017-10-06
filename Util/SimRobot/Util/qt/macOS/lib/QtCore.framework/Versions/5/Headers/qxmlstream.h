@@ -1,37 +1,31 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
 **
@@ -58,10 +52,7 @@ public:
     inline QXmlStreamStringRef():m_position(0), m_size(0){}
     inline QXmlStreamStringRef(const QStringRef &aString)
         :m_string(aString.string()?*aString.string():QString()), m_position(aString.position()), m_size(aString.size()){}
-    QXmlStreamStringRef(const QString &aString) : m_string(aString), m_position(0), m_size(m_string.size()) {}
-#ifdef Q_COMPILER_RVALUE_REFS
-    QXmlStreamStringRef(QString &&aString) Q_DECL_NOTHROW : m_string(std::move(aString)), m_position(0), m_size(m_string.size()) {}
-#endif
+    inline QXmlStreamStringRef(const QString &aString):m_string(aString), m_position(0), m_size(aString.size()){}
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     QXmlStreamStringRef(const QXmlStreamStringRef &other) // = default
@@ -99,16 +90,13 @@ class QXmlStreamReaderPrivate;
 class QXmlStreamAttributes;
 class Q_CORE_EXPORT QXmlStreamAttribute {
     QXmlStreamStringRef m_name, m_namespaceUri, m_qualifiedName, m_value;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void *reserved;
-#endif
     uint m_isDefault : 1;
     friend class QXmlStreamReaderPrivate;
     friend class QXmlStreamAttributes;
 public:
     QXmlStreamAttribute();
     QXmlStreamAttribute(const QString &qualifiedName, const QString &value);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QXmlStreamAttribute(const QString &namespaceUri, const QString &name, const QString &value);
     QXmlStreamAttribute(const QXmlStreamAttribute &);
 #ifdef Q_COMPILER_RVALUE_REFS
@@ -135,8 +123,6 @@ public:
 #endif
     QXmlStreamAttribute& operator=(const QXmlStreamAttribute &);
     ~QXmlStreamAttribute();
-#endif // < Qt 6
-
     inline QStringRef namespaceUri() const { return m_namespaceUri; }
     inline QStringRef name() const { return m_name; }
     inline QStringRef qualifiedName() const { return m_qualifiedName; }
@@ -190,34 +176,15 @@ public:
 
 class Q_CORE_EXPORT QXmlStreamNamespaceDeclaration {
     QXmlStreamStringRef m_prefix, m_namespaceUri;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void *reserved;
-#endif
 
     friend class QXmlStreamReaderPrivate;
 public:
     QXmlStreamNamespaceDeclaration();
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QXmlStreamNamespaceDeclaration(const QXmlStreamNamespaceDeclaration &);
-    QXmlStreamNamespaceDeclaration(QXmlStreamNamespaceDeclaration &&other) Q_DECL_NOTHROW // = default
-        : m_prefix(std::move(other.m_prefix)),
-          m_namespaceUri(std::move(other.m_namespaceUri)),
-          reserved(other.reserved)
-    {
-        other.reserved = nullptr;
-    }
-    QXmlStreamNamespaceDeclaration &operator=(QXmlStreamNamespaceDeclaration &&other) Q_DECL_NOTHROW // = default
-    {
-        m_prefix = std::move(other.m_prefix);
-        m_namespaceUri = std::move(other.m_namespaceUri);
-        qSwap(reserved, other.reserved);
-        return *this;
-    }
     QXmlStreamNamespaceDeclaration(const QString &prefix, const QString &namespaceUri);
     ~QXmlStreamNamespaceDeclaration();
     QXmlStreamNamespaceDeclaration& operator=(const QXmlStreamNamespaceDeclaration &);
-#endif // < Qt 6
-
     inline QStringRef prefix() const { return m_prefix; }
     inline QStringRef namespaceUri() const { return m_namespaceUri; }
     inline bool operator==(const QXmlStreamNamespaceDeclaration &other) const {
@@ -232,35 +199,14 @@ typedef QVector<QXmlStreamNamespaceDeclaration> QXmlStreamNamespaceDeclarations;
 
 class Q_CORE_EXPORT QXmlStreamNotationDeclaration {
     QXmlStreamStringRef m_name, m_systemId, m_publicId;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void *reserved;
-#endif
 
     friend class QXmlStreamReaderPrivate;
 public:
     QXmlStreamNotationDeclaration();
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     ~QXmlStreamNotationDeclaration();
     QXmlStreamNotationDeclaration(const QXmlStreamNotationDeclaration &);
-    QXmlStreamNotationDeclaration(QXmlStreamNotationDeclaration &&other) Q_DECL_NOTHROW // = default
-        : m_name(std::move(other.m_name)),
-          m_systemId(std::move(other.m_systemId)),
-          m_publicId(std::move(other.m_publicId)),
-          reserved(other.reserved)
-    {
-        other.reserved = nullptr;
-    }
     QXmlStreamNotationDeclaration& operator=(const QXmlStreamNotationDeclaration &);
-    QXmlStreamNotationDeclaration &operator=(QXmlStreamNotationDeclaration &&other) Q_DECL_NOTHROW // = default
-    {
-        m_name = std::move(other.m_name);
-        m_systemId = std::move(other.m_systemId);
-        m_publicId = std::move(other.m_publicId);
-        qSwap(reserved, other.reserved);
-        return *this;
-    }
-#endif // < Qt 6
-
     inline QStringRef name() const { return m_name; }
     inline QStringRef systemId() const { return m_systemId; }
     inline QStringRef publicId() const { return m_publicId; }
@@ -277,39 +223,14 @@ typedef QVector<QXmlStreamNotationDeclaration> QXmlStreamNotationDeclarations;
 
 class Q_CORE_EXPORT QXmlStreamEntityDeclaration {
     QXmlStreamStringRef m_name, m_notationName, m_systemId, m_publicId, m_value;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void *reserved;
-#endif
 
     friend class QXmlStreamReaderPrivate;
 public:
     QXmlStreamEntityDeclaration();
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     ~QXmlStreamEntityDeclaration();
     QXmlStreamEntityDeclaration(const QXmlStreamEntityDeclaration &);
-    QXmlStreamEntityDeclaration(QXmlStreamEntityDeclaration &&other) Q_DECL_NOTHROW // = default
-        : m_name(std::move(other.m_name)),
-          m_notationName(std::move(other.m_notationName)),
-          m_systemId(std::move(other.m_systemId)),
-          m_publicId(std::move(other.m_publicId)),
-          m_value(std::move(other.m_value)),
-          reserved(other.reserved)
-    {
-        other.reserved = nullptr;
-    }
     QXmlStreamEntityDeclaration& operator=(const QXmlStreamEntityDeclaration &);
-    QXmlStreamEntityDeclaration &operator=(QXmlStreamEntityDeclaration &&other) Q_DECL_NOTHROW // = default
-    {
-        m_name = std::move(other.m_name);
-        m_notationName = std::move(other.m_notationName);
-        m_systemId = std::move(other.m_systemId);
-        m_publicId = std::move(other.m_publicId);
-        m_value = std::move(other.m_value);
-        qSwap(reserved, other.reserved);
-        return *this;
-    }
-#endif // < Qt 6
-
     inline QStringRef name() const { return m_name; }
     inline QStringRef notationName() const { return m_notationName; }
     inline QStringRef systemId() const { return m_systemId; }

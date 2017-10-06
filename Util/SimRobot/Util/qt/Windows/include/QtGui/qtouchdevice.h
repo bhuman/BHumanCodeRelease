@@ -40,6 +40,7 @@
 #ifndef QTOUCHDEVICE_H
 #define QTOUCHDEVICE_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qobject.h>
 
 QT_BEGIN_NAMESPACE
@@ -86,6 +87,7 @@ public:
 
 private:
     QTouchDevicePrivate *d;
+    friend class QTouchDevicePrivate;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QTouchDevice::Capabilities)

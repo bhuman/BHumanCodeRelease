@@ -367,14 +367,25 @@ void gim_trimesh_get_triangle_data(GIM_TRIMESH * trimesh, GUINT32 triangle_index
     VEC_COPY_4((tri_data->m_planes.m_planes[3]),(planes->m_planes[3]));//edge3
 }
 
-void gim_trimesh_get_triangle_vertices(GIM_TRIMESH * trimesh, GUINT32 triangle_index, vec3f v1,vec3f v2,vec3f v3)
+void gim_trimesh_get_triangle_vertices(GIM_TRIMESH * trimesh, GUINT32 triangle_index, vec3f v1, vec3f v2, vec3f v3)
 {
     vec3f * transformed_vertices = GIM_BUFFER_ARRAY_POINTER(vec3f,trimesh->m_transformed_vertex_buffer,0);
 
     GUINT32 * triangle_indices = GIM_BUFFER_ARRAY_POINTER(GUINT32,trimesh->m_tri_index_buffer,triangle_index*3);
 
     //Copy the vertices
-    VEC_COPY(v1,transformed_vertices[triangle_indices[0]]);
-    VEC_COPY(v2,transformed_vertices[triangle_indices[1]]);
-    VEC_COPY(v3,transformed_vertices[triangle_indices[2]]);
+    if (v1 != NULL)
+    {
+        VEC_COPY(v1,transformed_vertices[triangle_indices[0]]);
+    }
+
+    if (v2 != NULL)
+    {
+        VEC_COPY(v2,transformed_vertices[triangle_indices[1]]);
+    }
+    
+    if (v3 != NULL)
+    {
+        VEC_COPY(v3,transformed_vertices[triangle_indices[2]]);
+    }
 }

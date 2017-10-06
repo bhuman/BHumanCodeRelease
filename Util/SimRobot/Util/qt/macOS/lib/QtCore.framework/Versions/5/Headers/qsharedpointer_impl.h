@@ -1,38 +1,31 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
-** Copyright (C) 2016 Intel Corporation.
-** Contact: https://www.qt.io/licensing/
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
 **
@@ -312,7 +305,7 @@ public:
     inline T &operator*() const { return *data(); }
     inline T *operator->() const { return data(); }
 
-    QSharedPointer() Q_DECL_NOTHROW : value(Q_NULLPTR), d(Q_NULLPTR) {}
+    QSharedPointer() : value(Q_NULLPTR), d(Q_NULLPTR) { }
     ~QSharedPointer() { deref(); }
 
     inline explicit QSharedPointer(T *ptr) : value(ptr) // noexcept
@@ -322,22 +315,22 @@ public:
     inline QSharedPointer(T *ptr, Deleter deleter) : value(ptr) // throws
     { internalConstruct(ptr, deleter); }
 
-    QSharedPointer(const QSharedPointer &other) Q_DECL_NOTHROW : value(other.value), d(other.d)
+    inline QSharedPointer(const QSharedPointer &other) : value(other.value), d(other.d)
     { if (d) ref(); }
-    QSharedPointer &operator=(const QSharedPointer &other) Q_DECL_NOTHROW
+    inline QSharedPointer &operator=(const QSharedPointer &other)
     {
         QSharedPointer copy(other);
         swap(copy);
         return *this;
     }
 #ifdef Q_COMPILER_RVALUE_REFS
-    QSharedPointer(QSharedPointer &&other) Q_DECL_NOTHROW
+    inline QSharedPointer(QSharedPointer &&other)
         : value(other.value), d(other.d)
     {
         other.d = Q_NULLPTR;
         other.value = Q_NULLPTR;
     }
-    QSharedPointer &operator=(QSharedPointer &&other) Q_DECL_NOTHROW
+    inline QSharedPointer &operator=(QSharedPointer &&other)
     {
         QSharedPointer moved(std::move(other));
         swap(moved);
@@ -493,14 +486,14 @@ private:
 
     void deref() Q_DECL_NOTHROW
     { deref(d); }
-    static void deref(Data *d) Q_DECL_NOTHROW
+    static void deref(Data *dd) Q_DECL_NOTHROW
     {
-        if (!d) return;
-        if (!d->strongref.deref()) {
-            d->destroy();
+        if (!dd) return;
+        if (!dd->strongref.deref()) {
+            dd->destroy();
         }
-        if (!d->weakref.deref())
-            delete d;
+        if (!dd->weakref.deref())
+            delete dd;
     }
 
     template <class X>
@@ -603,7 +596,7 @@ public:
     inline bool operator !() const { return isNull(); }
     inline T *data() const { return d == Q_NULLPTR || d->strongref.load() == 0 ? Q_NULLPTR : value; }
 
-    inline QWeakPointer() Q_DECL_NOTHROW : d(Q_NULLPTR), value(Q_NULLPTR) { }
+    inline QWeakPointer() : d(Q_NULLPTR), value(Q_NULLPTR) { }
     inline ~QWeakPointer() { if (d && !d->weakref.deref()) delete d; }
 
 #ifndef QT_NO_QOBJECT
@@ -621,26 +614,15 @@ public:
     { return *this = QWeakPointer(ptr); }
 #endif
 
-    QWeakPointer(const QWeakPointer &other) Q_DECL_NOTHROW : d(other.d), value(other.value)
+    inline QWeakPointer(const QWeakPointer &o) : d(o.d), value(o.value)
     { if (d) d->weakref.ref(); }
-#ifdef Q_COMPILER_RVALUE_REFS
-    QWeakPointer(QWeakPointer &&other) Q_DECL_NOTHROW
-        : d(other.d), value(other.value)
+    inline QWeakPointer &operator=(const QWeakPointer &o)
     {
-        other.d = Q_NULLPTR;
-        other.value = Q_NULLPTR;
-    }
-    QWeakPointer &operator=(QWeakPointer &&other) Q_DECL_NOTHROW
-    { QWeakPointer moved(std::move(other)); swap(moved); return *this; }
-#endif
-    QWeakPointer &operator=(const QWeakPointer &other) Q_DECL_NOTHROW
-    {
-        QWeakPointer copy(other);
-        swap(copy);
+        internalSet(o.d, o.value);
         return *this;
     }
 
-    void swap(QWeakPointer &other) Q_DECL_NOTHROW
+    inline void swap(QWeakPointer &other)
     {
         qSwap(this->d, other.d);
         qSwap(this->value, other.value);

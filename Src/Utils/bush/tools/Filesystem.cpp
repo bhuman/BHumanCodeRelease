@@ -28,6 +28,12 @@ std::vector<std::string> Filesystem::getLocations(const std::string prefix)
                     + "/Config/Locations/" + prefix, false, true);
 }
 
+std::vector<std::string> Filesystem::getScenarios(const std::string prefix)
+{
+  return getEntries(std::string(File::getBHDir())
+                    + "/Config/Scenarios/" + prefix, false, true);
+}
+
 std::vector<std::string> Filesystem::getProjects(const std::string prefix)
 {
 #ifdef WINDOWS
@@ -81,12 +87,4 @@ std::string Filesystem::getFileAsString(const std::string& filename)
   fin.close();
 
   return buf.str();
-}
-
-std::string Filesystem::getNaoKey()
-{
-  static std::string keyFile = std::string(File::getBHDir()) + linuxToPlatformPath("/Config/Keys/id_rsa_nao");
-
-  QFile::setPermissions(QString::fromUtf8(keyFile.c_str()), QFile::ReadOwner);//set correct permissions, otherwise ssh will complain
-  return keyFile;
 }

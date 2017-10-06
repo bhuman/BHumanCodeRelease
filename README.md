@@ -1,10 +1,11 @@
-BHumanCodeRelease
-=================
+# B-Human Code Release
 
-The official 2016 B-Human code release. 
+This is the official 2017 B-Human code release.
 
-The 2015 code release is tagged with "coderelease2015".
+* The 2016 code release is tagged with "coderelease2016".
 
-The 2014 code release is tagged with "coderelease2014".
+* The 2015 code release is tagged with "coderelease2015".
 
-The 2013 code release is tagged with "coderelease2013".
+* The 2014 code release is tagged with "coderelease2014".
+
+* The 2013 code release is tagged with "coderelease2013".

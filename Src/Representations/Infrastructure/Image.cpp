@@ -113,46 +113,21 @@ void Image::convertFromYCbCrToRGB(const Image& ycbcrImage)
                                           (*this)[y][x].b);
 }
 
-void Image::convertFromRGBToYCbCr(const Image& rgbImage)
+void Image::convertFromYCbCr422ToRGB(const Image& ycbcrImage)
 {
-  height = rgbImage.height;
-  width = rgbImage.width;
+  height = ycbcrImage.height * 2;
+  width = ycbcrImage.width * 2;
   for(int y = 0; y < height; ++y)
     for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromRGBToYUV(rgbImage[y][x].r,
-                                          rgbImage[y][x].g,
-                                          rgbImage[y][x].b,
-                                          (*this)[y][x].y,
-                                          (*this)[y][x].cb,
-                                          (*this)[y][x].cr);
-}
-
-void Image::convertFromYCbCrToHSI(const Image& ycbcrImage)
-{
-  height = ycbcrImage.height;
-  width = ycbcrImage.width;
-  for(int y = 0; y < height; ++y)
-    for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromYUVToHSI(ycbcrImage[y][x].y,
-                                          ycbcrImage[y][x].cb,
-                                          ycbcrImage[y][x].cr,
-                                          (*this)[y][x].h,
-                                          (*this)[y][x].s,
-                                          (*this)[y][x].i);
-}
-
-void Image::convertFromHSIToYCbCr(const Image& hsiImage)
-{
-  height = hsiImage.height;
-  width = hsiImage.width;
-  for(int y = 0; y < height; ++y)
-    for(int x = 0; x < width; ++x)
-      ColorModelConversions::fromHSIToYUV(hsiImage[y][x].h,
-                                          hsiImage[y][x].s,
-                                          hsiImage[y][x].i,
-                                          (*this)[y][x].y,
-                                          (*this)[y][x].cb,
-                                          (*this)[y][x].cr);
+    {
+      const Pixel pixel = ycbcrImage.getFullSizePixel(y, x);
+      ColorModelConversions::fromYUVToRGB(pixel.y,
+                                          pixel.cb,
+                                          pixel.cr,
+                                          (*this)[y][x].r,
+                                          (*this)[y][x].g,
+                                          (*this)[y][x].b);
+    }
 }
 
 void Image::setResolution(int newWidth, int newHeight, bool fullSize)

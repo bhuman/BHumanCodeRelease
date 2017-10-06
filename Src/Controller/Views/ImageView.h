@@ -18,6 +18,7 @@
 #include <QWidget>
 #include <QSettings>
 #include <QMenu>
+#include <QElapsedTimer>
 
 #include <SimRobot.h>
 #include "Tools/Math/Eigen.h"
@@ -64,7 +65,6 @@ private:
   const std::string name; /**< The name of the view. */
   bool segmented;  /**< The image will be segmented. */
   float gain; /**< The intensity is multiplied with this factor. */
-  bool isActImage; /**< Whether this is an auto color table image view */
 
   /**
    * The method returns a new instance of a widget for this direct view.
@@ -79,7 +79,7 @@ private:
   friend class ImageWidget;
 };
 
-class ImageWidget : public QWidget, public SimRobot::Widget
+class ImageWidget : public WIDGET2D, public SimRobot::Widget
 {
   Q_OBJECT
 public:
@@ -87,30 +87,24 @@ public:
   virtual ~ImageWidget();
 
   void setUndoRedo(const bool enableUndo, const bool enableRedo);
-  void setDrawnColor(FieldColors::Color color) { drawnColor = color; }
-  void setDrawAllColors(bool drawAll) { drawAllColors = drawAll; }
-  FieldColors::Color getDrawnColor() const { return drawnColor; }
 
 private:
   ImageView& imageView;
   QImage* imageData = nullptr;
+  void* imageDataStorage = nullptr;
   int imageWidth = Image::maxResolutionWidth;
   int imageHeight = Image::maxResolutionHeight;
   unsigned int lastImageTimeStamp = 0;
   unsigned int lastColorTableTimeStamp = 0;
   unsigned int lastDrawingsTimeStamp = 0;
   QPainter painter;
-  QPoint dragStart;
-  QPoint dragStartOffset;
-  QPoint dragPos;
+  QPointF dragStart;
+  QPointF dragStartOffset;
+  QPointF mousePos;
   float zoom = 1.f;
   float scale = 1.f;
-  QPoint offset;
+  QPointF offset;
   bool headControlMode = false;
-
-  // which classified should be drawn?
-  FieldColors::Color drawnColor = FieldColors::none;
-  bool drawAllColors = true;
 
   QAction* undoAction = nullptr;
   QAction* redoAction = nullptr;
@@ -120,10 +114,10 @@ private:
   void paintDrawings(QPainter& painter);
   void copyImage(const DebugImage& srcImage);
   void copyImageSegmented(const DebugImage& srcImage);
-  template<bool avx> void segmentImage(const DebugImage& srcImage);
+  void segmentImage(const DebugImage& srcImage);
   void paintImage(QPainter& painter, const DebugImage& srcImage);
   bool needsRepaint() const;
-  void window2viewport(QPoint& point);
+  void window2viewport(QPointF& point);
   void mouseMoveEvent(QMouseEvent* event);
   void mousePressEvent(QMouseEvent* event);
   void mouseReleaseEvent(QMouseEvent* event);
@@ -139,7 +133,9 @@ private:
   virtual void update()
   {
     if(needsRepaint())
+    {
       QWidget::update();
+    }
   }
 
   void forwardLastImage();
@@ -150,7 +146,6 @@ private:
 
 private slots:
   void saveImg();
-  void allColorsAct();
   void colorAct(int color);
 
 private:

@@ -140,21 +140,21 @@ struct dxRay : public dxGeom {
 
 struct dxConvex : public dxGeom 
 {  
-    dReal *planes; /*!< An array of planes in the form:
+    const dReal *planes; /*!< An array of planes in the form:
                    normal X, normal Y, normal Z,Distance
                    */
-    dReal *points; /*!< An array of points X,Y,Z */  
-    unsigned int *polygons; /*! An array of indices to the points of each polygon, it should be the number of vertices followed by that amount of indices to "points" in counter clockwise order*/
+    const dReal *points; /*!< An array of points X,Y,Z */  
+    const unsigned int *polygons; /*! An array of indices to the points of each polygon, it should be the number of vertices followed by that amount of indices to "points" in counter clockwise order*/
     unsigned int planecount; /*!< Amount of planes in planes */
     unsigned int pointcount;/*!< Amount of points in points */
     unsigned int edgecount;/*!< Amount of edges in convex */
     dReal saabb[6];/*!< Static AABB */
     dxConvex(dSpaceID space,
-        dReal *planes,
+        const dReal *planes,
         unsigned int planecount,
-        dReal *points,
+        const dReal *points,
         unsigned int pointcount,
-        unsigned int *polygons);
+        const unsigned int *polygons);
     ~dxConvex()
     {
         if((edgecount!=0)&&(edges!=NULL)) delete[] edges;

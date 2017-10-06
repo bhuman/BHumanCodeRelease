@@ -9,7 +9,7 @@
 
 ModuleBase* ModuleBase::first = nullptr;
 
-void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName)
+void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName, bool failOnMissing)
 {
   std::string name;
   if(!fileName)
@@ -24,6 +24,8 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
   else
     name = fileName;
   InMapFile stream(name);
-  ASSERT(stream.exists());
-  stream >> parameters;
+  if(stream.exists())
+    stream >> parameters;
+  else
+    ASSERT(!failOnMissing);
 }

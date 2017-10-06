@@ -94,8 +94,8 @@
     ARM is bi-endian, detect using __ARMEL__ or __ARMEB__, falling back to
     auto-detection implemented below.
 */
-#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(__aarch64__)
-#  if defined(__aarch64__)
+#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(__aarch64__) || defined(__ARM64__)
+#  if defined(__aarch64__) || defined(__ARM64__)
 #    define Q_PROCESSOR_ARM_64
 #    define Q_PROCESSOR_WORDSIZE 8
 #  else
@@ -107,14 +107,18 @@
 #    define Q_PROCESSOR_ARM __TARGET_ARCH_ARM
 #  elif defined(_M_ARM) && _M_ARM > 1
 #    define Q_PROCESSOR_ARM _M_ARM
-#  elif defined(__ARM64_ARCH_8__) || defined(__aarch64__)
+#  elif defined(__ARM64_ARCH_8__) \
+      || defined(__aarch64__) \
+      || defined(__ARMv8__) \
+      || defined(__ARMv8_A__)
 #    define Q_PROCESSOR_ARM 8
 #  elif defined(__ARM_ARCH_7__) \
       || defined(__ARM_ARCH_7A__) \
       || defined(__ARM_ARCH_7R__) \
       || defined(__ARM_ARCH_7M__) \
       || defined(__ARM_ARCH_7S__) \
-      || defined(_ARM_ARCH_7)
+      || defined(_ARM_ARCH_7) \
+      || defined(__CORE_CORTEXA__)
 #    define Q_PROCESSOR_ARM 7
 #  elif defined(__ARM_ARCH_6__) \
       || defined(__ARM_ARCH_6J__) \
@@ -231,9 +235,6 @@
 #  if defined(_MIPS_ARCH_MIPS2) || (defined(__mips) && __mips - 0 >= 2)
 #    define Q_PROCESSOR_MIPS_II
 #  endif
-#  if defined(_MIPS_ARCH_MIPS32) || defined(__mips32)
-#    define Q_PROCESSOR_MIPS_32
-#  endif
 #  if defined(_MIPS_ARCH_MIPS3) || (defined(__mips) && __mips - 0 >= 3)
 #    define Q_PROCESSOR_MIPS_III
 #  endif
@@ -242,6 +243,9 @@
 #  endif
 #  if defined(_MIPS_ARCH_MIPS5) || (defined(__mips) && __mips - 0 >= 5)
 #    define Q_PROCESSOR_MIPS_V
+#  endif
+#  if defined(_MIPS_ARCH_MIPS32) || defined(__mips32) || (defined(__mips) && __mips - 0 >= 32)
+#    define Q_PROCESSOR_MIPS_32
 #  endif
 #  if defined(_MIPS_ARCH_MIPS64) || defined(__mips64)
 #    define Q_PROCESSOR_MIPS_64
@@ -334,7 +338,7 @@
 #  elif defined(__BIG_ENDIAN__) || defined(_big_endian__) || defined(_BIG_ENDIAN)
 #    define Q_BYTE_ORDER Q_BIG_ENDIAN
 #  elif defined(__LITTLE_ENDIAN__) || defined(_little_endian__) || defined(_LITTLE_ENDIAN) \
-        || defined(_WIN32_WCE) || defined(WINAPI_FAMILY) // Windows CE is always little-endian according to MSDN.
+        || defined(WINAPI_FAMILY) // WinRT is always little-endian according to MSDN.
 #    define Q_BYTE_ORDER Q_LITTLE_ENDIAN
 #  else
 #    error "Unable to determine byte order!"

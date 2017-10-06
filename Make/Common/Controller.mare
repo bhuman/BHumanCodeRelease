@@ -8,20 +8,18 @@ Controller = cppStaticLibrary + {
   }
 
   files = {
-    "$(srcDirRoot)/Controller/**.cpp" = bhCppSource
-    "$(srcDirRoot)/Controller/**.h"
-    if (platform != "Linux") {
-      -"$(srcDirRoot)/Controller/Platform/Linux/**.cpp"
-      -"$(srcDirRoot)/Controller/Platform/Linux/**.h"
-    }
-    if (platform != "MacOSX") {
-      -"$(srcDirRoot)/Controller/Platform/macOS/**.cpp"
-      -"$(srcDirRoot)/Controller/Platform/macOS/**.h"
-    }
-    if (host != "Win32") {
-      -"$(srcDirRoot)/Controller/Platform/Windows/**.cpp"
-      -"$(srcDirRoot)/Controller/Platform/Windows/**.h"
-    }
+    "$(srcDirRoot)/Controller/Platform/*.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/Platform/*.h"
+    "$(srcDirRoot)/Controller/Platform/$(OS)/*.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/Platform/$(OS)/*.h"
+    "$(srcDirRoot)/Controller/Representations/**.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/Representations/**.h"
+    "$(srcDirRoot)/Controller/Views/**.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/Views/**.h"
+    "$(srcDirRoot)/Controller/Visualization/**.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/Visualization/**.h"
+    "$(srcDirRoot)/Controller/*.cpp" = bhCppSource
+    "$(srcDirRoot)/Controller/*.h"
     "$(srcDirRoot)/Tools/Precompiled/BHumanPch.h"
   }
   files += pchFiles
@@ -49,6 +47,7 @@ Controller = cppStaticLibrary + {
     "$(srcDirRoot)/Controller/Views/PlotView.h"
     "$(srcDirRoot)/Controller/Views/SensorView.h"
     "$(srcDirRoot)/Controller/Views/TimeView/TimeWidget.h"
+    "$(srcDirRoot)/Controller/Views/SnapshotView/SnapshotWidget.h"
   }
   files += qtFiles
 
@@ -86,27 +85,12 @@ Controller = cppStaticLibrary + {
       "$(utilDirRoot)/Buildchain/Windows/include"
     }
     if (platform == "Linux") {
-      "/usr/include/qt5"
-      "/usr/include/qt5/QtCore"
-      "/usr/include/qt5/QtGui"
-      "/usr/include/qt5/QtNetwork"
-      "/usr/include/qt5/QtOpenGL"
-      "/usr/include/qt5/QtSvg"
-      "/usr/include/qt5/QtWidgets"
-      "/usr/include/qt"
-      "/usr/include/qt/QtCore"
-      "/usr/include/qt/QtGui"
-      "/usr/include/qt/QtNetwork"
-      "/usr/include/qt/QtOpenGL"
-      "/usr/include/qt/QtSvg"
-      "/usr/include/qt/QtWidgets"
-      "/usr/include/x86_64-linux-gnu/qt5"
-      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
-      "/usr/include/x86_64-linux-gnu/qt5/QtGui"
-      "/usr/include/x86_64-linux-gnu/qt5/QtNetwork"
-      "/usr/include/x86_64-linux-gnu/qt5/QtOpenGL"
-      "/usr/include/x86_64-linux-gnu/qt5/QtSvg"
-      "/usr/include/x86_64-linux-gnu/qt5/QtWidgets"
+      "$(qtinclude)"
+      "$(qtinclude)/QtCore"
+      "$(qtinclude)/QtGui"
+      "$(qtinclude)/QtOpenGL"
+      "$(qtinclude)/QtSvg"
+      "$(qtinclude)/QtWidgets"
     }
   }
 
@@ -114,11 +98,22 @@ Controller = cppStaticLibrary + {
     if (tool == "vcxproj") {
       "/Zm200"
       "/wd4503"
-      if (avx == "true" ) {
+      if (avx2 == "true" ) {
+        "/arch:AVX2"
+      } else {
         "/arch:AVX"
       }
       if (configuration == "Release") {
         "/GS-"
+      }
+    } else if (platform == "Linux") {
+      "-Wno-return-stack-address"
+      "-mmmx -msse -msse2"
+      if (ssse3 == "true") {
+        "-msse3 -mssse3"
+      }
+      if (avx2 == "true") {
+        "-mavx -mavx2"
       }
     }
   }

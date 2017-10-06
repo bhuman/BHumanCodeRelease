@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-TEST(RingBufferWithSum, NotFullBufferSum)
+GTEST_TEST(RingBufferWithSum, NotFullBufferSum)
 {
   RingBufferWithSum<int> ring(static_cast<size_t>(8));
 

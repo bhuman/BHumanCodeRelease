@@ -28,19 +28,35 @@ else
   $PLIST "Set :DerivedDataLocationStyle Default" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string Default" $SETTINGSPATH
 fi
 
+# Create list of schemes that hides the default ones
+SETTINGSFILE=xcschememanagement.plist
+SETTINGSDIR=B-Human.xcodeproj/xcuserdata/$USER.xcuserdatad/xcschemes
+SETTINGSPATH=$SETTINGSDIR/$SETTINGSFILE
+if [ ! -e $SETTINGSPATH ]; then
+  mkdir -p $SETTINGSDIR
+  cp ../../Util/Buildchain/macOS/$SETTINGSFILE $SETTINGSPATH
+fi
+
 # Disable App Nap for SimRobot
 defaults write org.B-Human.SimRobot NSAppSleepDisabled -bool YES
 
 # Install data formatters for Xcode debugger
 if [ ! -e ~/Library/Developer/Xcode/UserData/Debugger/CustomDataFormatters ]; then
   mkdir -p ~/Library/Developer/Xcode/UserData/Debugger/
-  ln -s "`pwd`/../../Util/Buildchain/macOS/CustomDataFormatters" ~/Library/Developer/Xcode/UserData/Debugger/
+  ln -fs "`pwd`/../../Util/Buildchain/macOS/CustomDataFormatters" ~/Library/Developer/Xcode/UserData/Debugger/
 fi
 
 # Install AStyle for B-Human service
 mkdir -p ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 cp ../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/Info.plist ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 sed <../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/document.wflow >~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/document.wflow "s%PWD%`pwd`%"
+
+# Install certificate for app signing
+cp ../../Util/Buildchain/macOS/B-Human_Code_Release.keychain-db ~/Library/Keychains/
+security find-certificate -c B-Human_Code_Release >/dev/null 2>/dev/null
+if [ ! $? = 0 ]; then
+  security list-keychains -s `security list-keychains | tr '\n' ' ' | tr '\"' ' '` B-Human_Code_Release.keychain-db
+fi
 
 # Set link for address sanitizer
 rm -f ../../Util/Buildchain/macOS/lib

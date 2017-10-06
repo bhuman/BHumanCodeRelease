@@ -23,6 +23,7 @@ STREAMABLE(MotionRequest,
     specialAction,
     stand,
     getUp,
+    fall,
   });
 
   /** Draws something*/
@@ -33,5 +34,3 @@ STREAMABLE(MotionRequest,
   (WalkRequest) walkRequest, /**< The walk request, if it is the selected motion. */
   (KickRequest) kickRequest, /**< The kick request, if it is the selected motion. */
 });
-
-struct BehaviorMotionRequest : public MotionRequest {};

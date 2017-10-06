@@ -1,5 +1,6 @@
 /**
  * @author Alexis Tsogias
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #include "Thumbnail.h"
@@ -44,12 +45,18 @@ void Thumbnail::toImage(Image& dest) const
 
 void Thumbnail::serialize(In* in, Out* out)
 {
+  char grayscale = static_cast<char>(this->grayscale) | (this->grayscale && hasGrayscaleColorData ? 0xF0 : 0); //< this is done for compatibility reasons
   STREAM_REGISTER_BEGIN;
   STREAM(grayscale);
   STREAM(scale);
-  if(grayscale)
+  if((this->grayscale = ((grayscale & 0xF) != 0)))
   {
     STREAM(imageGrayscale);
+    if((grayscale & 0xF0) != 0)
+    {
+      STREAM(imageU);
+      STREAM(imageV);
+    }
   }
   else
   {

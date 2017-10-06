@@ -3,7 +3,7 @@
  * Declaration of class DebugDrawing.
  *
  * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #pragma once
@@ -37,7 +37,7 @@ public:
     const ElementType type;
     Drawings::PenStyle penStyle;
     ColorRGBA penColor;
-    int width;
+    float width;
 
     Element(ElementType type) : type(type) {};
   };
@@ -68,7 +68,7 @@ public:
   /** Stores a line */
   struct Line : public Element
   {
-    Vector2i start, end;
+    Vector2f start, end;
 
     Line() : Element(ElementType::line) {}
   };
@@ -161,7 +161,7 @@ public:
    * @param width Specifies the width of the line.
    * @param color Specifies the color of the line.
    */
-  void line(int xStart, int yStart, int xEnd, int yEnd, Drawings::PenStyle penStyle, int width, ColorRGBA color);
+  void line(float xStart, float yStart, float xEnd, float yEnd, Drawings::PenStyle penStyle, float width, ColorRGBA color);
 
   /**
    * Adds a line to the debug drawing. The line is a solid black line with width 1.
@@ -170,7 +170,7 @@ public:
    * @param xEnd Specifies the x-coordinate of the endpoint for the line.
    * @param yEnd Specifies the y-coordinate of the endpoint for the line.
    */
-  void line(int xStart, int yStart, int xEnd, int yEnd);
+  void line(float xStart, float yStart, float xEnd, float yEnd);
 
   /**
    * Adds a polygon to the debug drawing.
@@ -231,7 +231,7 @@ public:
    * @param radius The radius of the anchor region.
    */
   void tip(const char* text, int x, int y, int radius);
-  
+
   /**
    * Sets a new origin for further drawings
    * @param x Specifies the center of the new origin.

@@ -56,6 +56,8 @@ this also shows you how to use geom groups.
 #define CMASS 1		// chassis mass
 #define WMASS 0.2	// wheel mass
 
+static const dVector3 yunit = { 0, 1, 0 }, zunit = { 0, 0, 1 };
+
 
 // dynamics and collision objects (chassis, 3 wheels, environment)
 
@@ -74,7 +76,6 @@ static dGeomID ground_box;
 // things that the user controls
 
 static dReal speed=0,steer=0;	// user commands
-
 
 
 // this is called by dSpaceCollide when two objects in space are
@@ -257,8 +258,7 @@ int main (int argc, char **argv)
     dJointAttach (joint[i],body[0],body[i+1]);
     const dReal *a = dBodyGetPosition (body[i+1]);
     dJointSetHinge2Anchor (joint[i],a[0],a[1],a[2]);
-    dJointSetHinge2Axis1 (joint[i],0,0,1);
-    dJointSetHinge2Axis2 (joint[i],0,1,0);
+    dJointSetHinge2Axes (joint[i], zunit, yunit);
   }
 
   // set joint suspension

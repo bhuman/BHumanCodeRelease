@@ -9,41 +9,6 @@
 
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/Enum.h"
-#include "Tools/Streams/AutoStreamable.h"
-
-STREAMABLE(DynPoint,
-{
-  DynPoint() = default;
-  DynPoint(int limb, int phaseNumber, int duration, const Vector3f& translation, const Vector3f& angle, const Vector3f& odometryOffset);
-  DynPoint(int limb, int phaseNumber, const Vector3f& translation);
-
-  bool operator==(const DynPoint& other) const
-  {
-    return limb == other.limb &&
-           phaseNumber == other.phaseNumber &&
-           duration == other.duration &&
-           translation == other.translation &&
-           angle == other.angle &&
-           odometryOffset == other.odometryOffset;
-  },
-
-  (int) limb,
-  (int) phaseNumber,
-  (int)(0) duration,
-  (Vector3f)(Vector3f::Zero()) translation,
-  (Vector3f)(Vector3f::Zero()) angle,
-  (Vector3f)(Vector3f::Zero()) odometryOffset,
-});
-
-inline DynPoint::DynPoint(int limb, int phaseNumber, int duration, const Vector3f& translation,
-                          const Vector3f& angle, const Vector3f& odometryOffset) :
-  limb(limb), phaseNumber(phaseNumber), duration(duration),
-  translation(translation), angle(angle), odometryOffset(odometryOffset)
-{}
-
-inline DynPoint::DynPoint(int limb, int phaseNumber, const Vector3f& translation) :
-  limb(limb), phaseNumber(phaseNumber), translation(translation)
-{}
 
 class Phase : public Streamable
 {
@@ -74,6 +39,7 @@ public:
   Vector2f headOrigin = Vector2f::Zero();
   Vector3f odometryOffset = Vector3f::Zero();
 
+protected:
   virtual void serialize(In* in, Out* out);
 };
 
@@ -109,9 +75,8 @@ STREAMABLE(KickEngineParameters,
   (float)(0.f) kiy,
   (float)(0.f) kdy,
 
-  (float)(150.f) preview,
   (bool)(false) loop,
-  (bool)(false) autoComTra,
+  (bool)(true)  standLeft,
   (bool)(false) ignoreHead,
 
   (std::vector<Phase>) phaseParameters,

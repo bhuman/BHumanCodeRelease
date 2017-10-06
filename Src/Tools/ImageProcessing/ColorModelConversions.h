@@ -2,6 +2,11 @@
  * @file ColorModelConversions.h
  *
  * Declaration and implementation of class ColorModelConversions.
+ *
+ * =====================================================================
+ * THE USE OF THIS FILE FOR ANY IMAGE CALCULATION PURPOSES IS DEPRECATED
+ * AND MIGHT BE LEAD INTO ERRORS AND MISCALCULATIONS !
+ * =====================================================================
  */
 
 #pragma once
@@ -13,6 +18,11 @@
 
 /**
  * A class that defines static conversions between color models for single pixels.
+ *
+ * ==========================================================================
+ * THE USE OF THIS NAMESPACE FOR ANY IMAGE CALCULATION PURPOSES IS DEPRECATED
+ * AND MIGHT BE LEAD INTO ERRORS AND MISCALCULATIONS !
+ * ==========================================================================
  */
 namespace ColorModelConversions
 {
@@ -187,14 +197,14 @@ namespace ColorModelConversions
   }
 
   /**
-  * Converts an YUV pixel into an HSI pixel.
-  * @param Y The Y channel of the source pixel.
-  * @param U The U channel of the source pixel.
-  * @param V The V channel of the source pixel.
-  * @param H The H channel of the target pixel.
-  * @param S The S channel of the target pixel.
-  * @param I The I channel of the target pixel.
-  */
+   * Converts an YUV pixel into an HSI pixel.
+   * @param Y The Y channel of the source pixel.
+   * @param U The U channel of the source pixel.
+   * @param V The V channel of the source pixel.
+   * @param H The H channel of the target pixel.
+   * @param S The S channel of the target pixel.
+   * @param I The I channel of the target pixel.
+   */
   inline void fromYUVToHSI(const unsigned char Y,
                            const unsigned char U,
                            const unsigned char V,
@@ -208,14 +218,14 @@ namespace ColorModelConversions
   }
 
   /**
-  * Converts an HSI pixel into an YUV pixel.
-  * @param H The H channel of the source pixel.
-  * @param S The S channel of the source pixel.
-  * @param I The I channel of the source pixel.
-  * @param Y The Y channel of the target pixel.
-  * @param U The U channel of the target pixel.
-  * @param V The V channel of the target pixel.
-  */
+   * Converts an HSI pixel into an YUV pixel.
+   * @param H The H channel of the source pixel.
+   * @param S The S channel of the source pixel.
+   * @param I The I channel of the source pixel.
+   * @param Y The Y channel of the target pixel.
+   * @param U The U channel of the target pixel.
+   * @param V The V channel of the target pixel.
+   */
   inline void fromHSIToYUV(const unsigned char H,
                            const unsigned char S,
                            const unsigned char I,

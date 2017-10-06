@@ -107,7 +107,7 @@ namespace Covariance
     const Matrix2f rotationMatrix = (Matrix2f() << cosine, -sine, sine, cosine).finished();
     return (rotationMatrix * covariance) * rotationMatrix.transpose();
   }
-  
+
   /**
    * In some covariance matrices, m(0, 1) is not equal to m(1, 0). This is probably a result
    * of the low precision of "float". This method equals both values.
@@ -117,7 +117,7 @@ namespace Covariance
   {
     m(0, 1) = m(1, 0) = (m(0, 1) + m(1, 0)) * .5f;
   }
-  
+
   /**
    * In some covariance matrices, m(0, 1) is not equal to m(1, 0) and so on. This is probably a result
    * of the low precision of "float". This method equals both values.

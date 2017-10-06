@@ -8,13 +8,20 @@
 
 #pragma once
 
+#ifdef MACOS
+#include <QGLWidget>
+#define WIDGET2D QGLWidget
+#else
+#define WIDGET2D QWidget
+#endif
+
 #ifdef WINDOWS
 #include <WinSock2.h> // This must be included first to prevent errors, since Windows.h is included in one of the following headers.
 #endif
 
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/Configuration/FieldColors.h"
-#include "Representations/Configuration/JointCalibration.h"
+#include "Representations/Configuration/JointLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/RobotInfo.h"
@@ -24,11 +31,11 @@
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/Sensing/FootGroundContactState.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Debugging/DebugImages.h"
 #include "Tools/ProcessFramework/Process.h"
 
-#include "CameraCalibratorHandler.h"
 #include "AutomaticCameraCalibratorHandlerInsertion.h"
 #include "AutomaticCameraCalibratorHandlerDeletion.h"
 #include "LogPlayer.h" // Must be included after Process.h
@@ -128,6 +135,7 @@ protected:
   RobotInfo robotInfo; /**< The RobotInfo received from the robot code. */
   JointRequest jointRequest; /**< The joint angles request received from the robot code. */
   JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
+  FootGroundContactState footGroundContactState; /**< The most current footGroundContactState received from the robot code. */
   FsrSensorData fsrSensorData; /**< The most current set of fsr sensor data received from the robot code. */
   InertialSensorData inertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
   KeyStates keyStates; /**< The most current set of key states received from the robot code. */
@@ -138,11 +146,11 @@ protected:
   Vector3f moveRot = Vector3f::Zero(); /**< The rotation the robot is moved to. */
   MotionRequest motionRequest; /**< Motion request for the kick view. */
   int mrCounter = 0; /**< Counts the number of mr commands. */
-  JointCalibration jointCalibration; /**< The joint calibration received from the robot code. */
+  JointLimits jointLimits; /**< The joint calibration received from the robot code. */
   RobotDimensions robotDimensions; /**< The robotDimensions received from the robot code. */
   std::string printBuffer; /**< Buffer used for command get. */
   char drawingsViaProcess = 'b'; /** Which process is used to provide field and 3D drawings */
-  std::unordered_map<char, AnnotationInfo> annotationInfos;
+  AnnotationInfo annotationInfos;
 
 public:
   class ImagePtr
@@ -277,7 +285,6 @@ private:
   unsigned maxPlotSize = 0; /**< The maximum number of data points to remember for plots. */
   bool kickViewSet = false; /**Indicator if there is already a KikeView, we need it just once */
   int imageSaveNumber = 0; /**< A counter for generating image file names. */
-  CameraCalibratorHandler cameraCalibratorHandler;
   AutomaticCameraCalibratorHandlerInsertion automaticCameraCalibratorHandlerInsertion;
   AutomaticCameraCalibratorHandlerDeletion automaticCameraCalibratorHandlerDeletion;
 
@@ -441,8 +448,4 @@ private:
   bool acceptCamera(In&);
   bool setDrawingsViaProcess(In&);
   //!@}
-
-  friend class CameraCalibratorHandler;
-  friend class AutomaticCameraCalibratorHandlerInsertion;
-  friend class AutomaticCameraCalibratorHandlerDeletion;
 };

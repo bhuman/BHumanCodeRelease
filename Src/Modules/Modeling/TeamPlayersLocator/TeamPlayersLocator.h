@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Representations/Communication/TeammateData.h"
+#include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
@@ -26,7 +26,7 @@ MODULE(TeamPlayersLocator,
   REQUIRES(RobotPose),
   REQUIRES(RobotInfo),
   REQUIRES(BallModel),
-  REQUIRES(TeammateData),
+  REQUIRES(TeamData),
   REQUIRES(FieldDimensions),
   REQUIRES(FallDownState),
   REQUIRES(GameInfo),

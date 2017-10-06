@@ -40,7 +40,7 @@
 #ifndef QOPENGL_H
 #define QOPENGL_H
 
-#include <QtCore/qglobal.h>
+#include <QtGui/qtguiglobal.h>
 
 #ifndef QT_NO_OPENGL
 
@@ -49,7 +49,7 @@
 # include <QtCore/qt_windows.h>
 #endif
 
-// Note: Mac OSX is a "controlled platform" for OpenGL ABI so we
+// Note: Apple is a "controlled platform" for OpenGL ABI so we
 // use the system provided headers there. Controlled means that the
 // headers always match the actual driver implementation so there
 // is no possibility of drivers exposing additional functionality
@@ -64,7 +64,7 @@
 // which the system headers do not.
 
 #if defined(QT_OPENGL_ES_2)
-# if defined(Q_OS_MAC) // iOS
+# if defined(Q_OS_IOS) || defined(Q_OS_TVOS)
 #  if defined(QT_OPENGL_ES_3)
 #   include <OpenGLES/ES3/gl.h>
 #   include <OpenGLES/ES3/glext.h>
@@ -81,30 +81,38 @@
 */
 typedef void* GLeglImageOES;
 
-# else // "uncontrolled" ES2 platforms
+# elif !defined(Q_OS_DARWIN) // "uncontrolled" ES2 platforms
 
-// In "es2" builds (QT_OPENGL_ES_2) additional defines indicate if ES
-// 3.0 or higher is available. In this case include the corresponding
-// header. These are backwards compatible and it should be safe to
-// include headers on top of each other, meaning that applications can
-// include gl2.h even if gl31.h gets included here.
+// In "es2" builds (QT_OPENGL_ES_2) additional defines indicate GLES 3.0 or
+// higher is available *at build time*. In this case include the corresponding
+// header. These are backwards compatible and it should be safe to include
+// headers on top of each other, meaning that applications can include gl2.h
+// even if gl31.h gets included here.
 
-// NB! This file contains the only usages of the ES_3 and ES_3_1
-// macros. They are useless for pretty much anything else. The fact
-// that Qt was built against an SDK with f.ex. ES 2 only does not mean
-// applications cannot target ES 3. Therefore QOpenGLFunctions and
-// friends do everything dynamically and never rely on these macros.
+// NB! The fact that Qt was built against an SDK with GLES 2 only does not mean
+// applications cannot be deployed on a GLES 3 system. Therefore
+// QOpenGLFunctions and friends must do everything dynamically and must not rely
+// on these macros, except in special cases for controlled build/run environments.
+
+// Some Khronos headers use the ext proto guard in the standard headers as well,
+// which is bad. Work it around, but avoid spilling over to the ext header.
+#  ifndef GL_GLEXT_PROTOTYPES
+#   define GL_GLEXT_PROTOTYPES
+#   define QGL_TEMP_GLEXT_PROTO
+#  endif
 
 #  if defined(QT_OPENGL_ES_3_1)
 #   include <GLES3/gl31.h>
 #  elif defined(QT_OPENGL_ES_3)
 #   include <GLES3/gl3.h>
 #  else
-#   ifndef GL_GLEXT_PROTOTYPES
-#     define GL_GLEXT_PROTOTYPES
-#   endif
 #   include <GLES2/gl2.h>
 #endif
+
+#  ifdef QGL_TEMP_GLEXT_PROTO
+#   undef GL_GLEXT_PROTOTYPES
+#   undef QGL_TEMP_GLEXT_PROTO
+# endif
 
 /*
    Some GLES2 implementations (like the one on Harmattan) are missing the
@@ -119,28 +127,29 @@ typedef char GLchar;
 #else // non-ES2 platforms
 # if defined(Q_OS_MAC)
 #  include <OpenGL/gl.h>
-#  if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
-#   define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
-#   include <OpenGL/gl3.h>
-#  endif
+#  define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
+#  include <OpenGL/gl3.h>
 #  include <OpenGL/glext.h>
 # else
 #  define GL_GLEXT_LEGACY // Prevents GL/gl.h from #including system glext.h
-#  include <GL/gl.h>
+// Some Khronos headers use the ext proto guard in the standard headers as well,
+// which is bad. Work it around, but avoid spilling over to the ext header.
+#  ifndef GL_GLEXT_PROTOTYPES
+#   define GL_GLEXT_PROTOTYPES
+#   include <GL/gl.h>
+#   undef GL_GLEXT_PROTOTYPES
+#  else
+#   include <GL/gl.h>
+#  endif
 #  include <QtGui/qopenglext.h>
 # endif // Q_OS_MAC
 #endif // QT_OPENGL_ES_2
 
-// Desktops, apart from Mac OS X prior to 10.7 can support OpenGL 3.
-// Desktops, apart from Mac OS X prior to 10.9 can support OpenGL 4.
+// Desktops can support OpenGL 4.
 #if !defined(QT_OPENGL_ES_2)
-# if !defined(Q_OS_MAC) || (defined(Q_OS_MAC) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
-#  define QT_OPENGL_3
-#  define QT_OPENGL_3_2
-# endif
-# if !defined(Q_OS_MAC) || (defined(Q_OS_MAC) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
-#  define QT_OPENGL_4
-# endif
+#define QT_OPENGL_3
+#define QT_OPENGL_3_2
+#define QT_OPENGL_4
 # if !defined(Q_OS_MAC)
 #  define QT_OPENGL_4_3
 # endif

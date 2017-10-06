@@ -7,7 +7,7 @@
 
 class Context;
 class PingAgent;
-class PowerAgent;
+class StatusAgent;
 struct Robot;
 class Team;
 class IConsole;
@@ -41,7 +41,7 @@ class Session : public QObject
   LogLevel logLevel;
 
   PingAgent* pingAgent;
-  PowerAgent* powerAgent;
+  StatusAgent* statusAgent;
 
   Session();
 
@@ -63,8 +63,8 @@ public:
   void registerPingListener(QObject* qObject);
   void removePingListener(QObject* qObject);
 
-  void registerPowerListener(QObject* qObject, Robot* robot = nullptr);
-  void removePowerListener(QObject* qObject, Robot* robot = nullptr);
+  void registerStatusListener(QObject* qObject, Robot* robot = nullptr);
+  void removeStatusListener(QObject* qObject, Robot* robot = nullptr);
 
   std::vector<std::string> sendDebugRequest(const Context& context, const Robot* robot, const std::string& command);
 

@@ -22,7 +22,7 @@ profilesOnly=""
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} [-d] -t <teamID> -r <robotPart> <name>"
+  echo "${0} [-p] [-d] -t <teamID> -r <robotPart> <name>"
   echo "${0} -D <name>"
   echo ""
   echo " <name>     : name of the robot"
@@ -189,6 +189,11 @@ if [ -n "${profilesOnly}" ]; then
   
   if ! createProfiles; then
     error "Failed to create network profiles"
+    fatal "Rerun ${0} with -d"
+  fi
+
+  if ! createBushConfig; then
+    error "Failed to create configuration for the bush"
     fatal "Rerun ${0} with -d"
   fi
 else

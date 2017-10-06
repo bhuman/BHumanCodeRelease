@@ -68,6 +68,8 @@
 #define CANNON_BALL_MASS 10	// mass of the cannon ball
 #define CANNON_BALL_RADIUS 0.5
 
+static const dVector3 xunit = { 1, 0, 0 }, yunit = { 0, 1, 0 }, zpunit = { 0, 0, 1 }, zmunit = { 0, 0, -1 };
+
 //#define BOX
 #define CARS
 #define WALL
@@ -205,8 +207,7 @@ void makeCar(dReal x, dReal y, int &bodyI, int &jointI, int &boxI, int &sphereI)
 		dJointAttach (joint[jointI+i],body[bodyI],body[bodyI+i+1]);
 		const dReal *a = dBodyGetPosition (body[bodyI+i+1]);
 		dJointSetHinge2Anchor (joint[jointI+i],a[0],a[1],a[2]);
-		dJointSetHinge2Axis1 (joint[jointI+i],0,0,(i<2 ? 1 : -1));
-		dJointSetHinge2Axis2 (joint[jointI+i],0,1,0);
+		dJointSetHinge2Axes (joint[jointI+i], (i<2 ? zpunit : zmunit), yunit);
 		dJointSetHinge2Param (joint[jointI+i],dParamSuspensionERP,0.8);
 		dJointSetHinge2Param (joint[jointI+i],dParamSuspensionCFM,1e-5);
 		dJointSetHinge2Param (joint[jointI+i],dParamVel2,0);
@@ -377,8 +378,7 @@ void setupSimulation()
 				dJointAttach (joint[joints],body[bodies-2],body[bodies]);
 			const dReal *a = dBodyGetPosition (body[bodies++]);
 			dJointSetHinge2Anchor (joint[joints],a[0],a[1],a[2]);
-			dJointSetHinge2Axis1 (joint[joints],0,0,1);
-			dJointSetHinge2Axis2 (joint[joints],1,0,0);
+			dJointSetHinge2Axes (joint[joints], zpunit, xunit);
 			dJointSetHinge2Param (joint[joints],dParamSuspensionERP,1.0);
 			dJointSetHinge2Param (joint[joints],dParamSuspensionCFM,1e-5);
 			dJointSetHinge2Param (joint[joints],dParamLoStop,0);
@@ -401,8 +401,7 @@ void setupSimulation()
 				dJointAttach (joint[joints],body[bodies-2],body[bodies]);
 			const dReal *b = dBodyGetPosition (body[bodies++]);
 			dJointSetHinge2Anchor (joint[joints],b[0],b[1],b[2]);
-			dJointSetHinge2Axis1 (joint[joints],0,0,1);
-			dJointSetHinge2Axis2 (joint[joints],1,0,0);
+			dJointSetHinge2Axes (joint[joints], zpunit, xunit);
 			dJointSetHinge2Param (joint[joints],dParamSuspensionERP,1.0);
 			dJointSetHinge2Param (joint[joints],dParamSuspensionCFM,1e-5);
 			dJointSetHinge2Param (joint[joints],dParamLoStop,0);
@@ -633,9 +632,20 @@ int main (int argc, char **argv)
 	
 	setupSimulation();
 	
+	dThreadingImplementationID threading = dThreadingAllocateMultiThreadedImplementation();
+	dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(8, 0, dAllocateFlagBasicData, NULL);
+	dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
+	// dWorldSetStepIslandsProcessingMaxThreadCount(world, 1);
+	dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+
 	// run simulation
 	dsSimulationLoop (argc,argv,352,288,&fn);
 	
+	dThreadingImplementationShutdownProcessing(threading);
+	dThreadingFreeThreadPool(pool);
+	dWorldSetStepThreadingImplementation(world, NULL, NULL);
+	dThreadingFreeImplementation(threading);
+
 	shutdownSimulation();
 	dCloseODE();
 	return 0;

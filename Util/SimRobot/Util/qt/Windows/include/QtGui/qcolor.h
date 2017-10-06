@@ -40,6 +40,7 @@
 #ifndef QCOLOR_H
 #define QCOLOR_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/qrgb.h>
 #include <QtCore/qnamespace.h>
 #include <QtCore/qstringlist.h>
@@ -66,17 +67,18 @@ public:
     enum Spec { Invalid, Rgb, Hsv, Cmyk, Hsl };
     enum NameFormat { HexRgb, HexArgb };
 
-    QColor() Q_DECL_NOTHROW;
+    inline QColor() Q_DECL_NOTHROW;
     QColor(Qt::GlobalColor color) Q_DECL_NOTHROW;
-    QColor(int r, int g, int b, int a = 255);
+    inline QColor(int r, int g, int b, int a = 255);
     QColor(QRgb rgb) Q_DECL_NOTHROW;
     QColor(QRgba64 rgba64) Q_DECL_NOTHROW;
-    QColor(const QString& name);
-    QColor(const char *name);
+    inline QColor(const QString& name);
+    inline QColor(const char *aname) : QColor(QLatin1String(aname)) {}
+    inline QColor(QLatin1String name);
     QColor(Spec spec) Q_DECL_NOTHROW;
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    QColor(const QColor &color) Q_DECL_NOTHROW; // ### Qt 6: remove all of these, the trivial ones are fine.
+    inline QColor(const QColor &color) Q_DECL_NOTHROW; // ### Qt 6: remove all of these, the trivial ones are fine.
 # ifdef Q_COMPILER_RVALUE_REFS
     QColor(QColor &&other) Q_DECL_NOTHROW : cspec(other.cspec), ct(other.ct) {}
     QColor &operator=(QColor &&other) Q_DECL_NOTHROW
@@ -92,7 +94,9 @@ public:
     // ### Qt 6: merge overloads
     QString name() const;
     QString name(NameFormat format) const;
+
     void setNamedColor(const QString& name);
+    void setNamedColor(QLatin1String name);
 
     static QStringList colorNames();
 
@@ -187,7 +191,7 @@ public:
     QColor toCmyk() const Q_DECL_NOTHROW;
     QColor toHsl() const Q_DECL_NOTHROW;
 
-    QColor convertTo(Spec colorSpec) const Q_DECL_NOTHROW Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QColor convertTo(Spec colorSpec) const Q_DECL_NOTHROW;
 
     static QColor fromRgb(QRgb rgb) Q_DECL_NOTHROW;
     static QColor fromRgba(QRgb rgba) Q_DECL_NOTHROW;
@@ -207,10 +211,10 @@ public:
     static QColor fromHsl(int h, int s, int l, int a = 255);
     static QColor fromHslF(qreal h, qreal s, qreal l, qreal a = 1.0);
 
-    QColor light(int f = 150) const Q_DECL_NOTHROW Q_REQUIRED_RESULT;
-    QColor lighter(int f = 150) const Q_DECL_NOTHROW Q_REQUIRED_RESULT;
-    QColor dark(int f = 200) const Q_DECL_NOTHROW Q_REQUIRED_RESULT;
-    QColor darker(int f = 200) const Q_DECL_NOTHROW Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QColor light(int f = 150) const Q_DECL_NOTHROW;
+    Q_REQUIRED_RESULT QColor lighter(int f = 150) const Q_DECL_NOTHROW;
+    Q_REQUIRED_RESULT QColor dark(int f = 200) const Q_DECL_NOTHROW;
+    Q_REQUIRED_RESULT QColor darker(int f = 200) const Q_DECL_NOTHROW;
 
     bool operator==(const QColor &c) const Q_DECL_NOTHROW;
     bool operator!=(const QColor &c) const Q_DECL_NOTHROW;
@@ -218,11 +222,13 @@ public:
     operator QVariant() const;
 
     static bool isValidColor(const QString &name);
+    static bool isValidColor(QLatin1String) Q_DECL_NOTHROW;
 
 private:
 
     void invalidate() Q_DECL_NOTHROW;
-    bool setColorFromString(const QString &name);
+    template <typename String>
+    bool setColorFromString(const String &name);
 
     Spec cspec;
     union {
@@ -263,6 +269,7 @@ private:
     friend Q_GUI_EXPORT QDataStream &operator>>(QDataStream &, QColor &);
 #endif
 };
+Q_DECLARE_TYPEINFO(QColor, QT_VERSION >= QT_VERSION_CHECK(6,0,0) ? Q_MOVABLE_TYPE : Q_RELOCATABLE_TYPE);
 
 inline QColor::QColor() Q_DECL_NOTHROW
 { invalidate(); }
@@ -270,8 +277,8 @@ inline QColor::QColor() Q_DECL_NOTHROW
 inline QColor::QColor(int r, int g, int b, int a)
 { setRgb(r, g, b, a); }
 
-inline QColor::QColor(const char *aname)
-{ setNamedColor(QLatin1String(aname)); }
+inline QColor::QColor(QLatin1String aname)
+{ setNamedColor(aname); }
 
 inline QColor::QColor(const QString& aname)
 { setNamedColor(aname); }

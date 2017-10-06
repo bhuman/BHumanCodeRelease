@@ -1,5 +1,4 @@
 /**
- * @file Controller/Platform/Linux/Joystick.cpp
  * Implementation of the joystick interface class.
  * This is the Linux implementation.
  * @author Colin Graf
@@ -13,38 +12,25 @@
 #include <unistd.h>
 #include <cstdio>
 
-#include "Joystick.h"
+#include "Controller/Platform/Joystick.h"
 #include "Platform/BHAssert.h"
 
-unsigned int Joystick::usedJoysticks = 0;
-
-Joystick::Joystick() : jd(-1) {}
-
-bool Joystick::init()
+class Joystick::Private
 {
-  ASSERT(jd == -1);
-  for(int i = 0; i < 32; ++i)
-    if(!(usedJoysticks & (1 << i)))
-    {
-      char devname[16];
-      std::snprintf(devname, 16, "/dev/input/js%i", i);
+public:
+  static unsigned int usedJoysticks; /**< Joystick usage indicator. One bit per joystick. */
 
-      // try to open device
-      jd = open(devname, O_RDONLY | O_NONBLOCK);
-      if(jd != -1)
-      {
-        usedJoysticks |= 1 << i;
-        joystickId = i;
-        buttonState[0] = buttonState[1] = 0;
-        for(int i = 0; i < numOfAxes; ++i)
-          axisState[i] = 0;
-        return true;
-      }
-    }
-  return false;
-}
+  int jd = -1; /**< The joystick descriptor. */
+  unsigned int joystickId = 0; /**< The id of the joystick. */
+  int axisState[Joystick::numOfAxes]; /**< The state of each axis in the range [-32767...32767]. */
+  unsigned int buttonState[2]; /**< The button pressed states. One bit per button. */
 
-Joystick::~Joystick()
+  ~Private();
+};
+
+unsigned int Joystick::Private::usedJoysticks = 0;
+
+Joystick::Private::~Private()
 {
   if(jd != -1)
   {
@@ -53,9 +39,36 @@ Joystick::~Joystick()
   }
 }
 
+Joystick::Joystick() : p(new Private()) {}
+Joystick::~Joystick() = default;
+
+bool Joystick::init()
+{
+  ASSERT(jd == -1);
+  for(int i = 0; i < 32; ++i)
+    if(!(Joystick::Private::usedJoysticks & (1 << i)))
+    {
+      char devname[16];
+      std::snprintf(devname, 16, "/dev/input/js%i", i);
+
+      // try to open device
+      p->jd = open(devname, O_RDONLY | O_NONBLOCK);
+      if(p->jd != -1)
+      {
+        Joystick::Private::usedJoysticks |= 1 << i;
+        p->joystickId = i;
+        p->buttonState[0] = p->buttonState[1] = 0;
+        for(int i = 0; i < numOfAxes; ++i)
+          p->axisState[i] = 0;
+        return true;
+      }
+    }
+  return false;
+}
+
 bool Joystick::update()
 {
-  if(jd == -1)
+  if(p->jd == -1)
     return false;
 
   return true;
@@ -66,7 +79,7 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
   ASSERT(jd != -1);
   struct js_event e;
   ssize_t r;
-  while((r = read(jd, &e, sizeof(struct js_event))) > 0)
+  while((r = read(p->jd, &e, sizeof(struct js_event))) > 0)
   {
     //button press or release event
     if(e.type & JS_EVENT_BUTTON && e.number < numOfButtons)
@@ -74,9 +87,9 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
       buttonId = e.number;
       pressed = e.value ? true : false;
       if(pressed)
-        buttonState[e.number / 32] |= 1 << (buttonId % 32);
+        p->buttonState[e.number / 32] |= 1 << (buttonId % 32);
       else
-        buttonState[e.number / 32] &= ~(1 << (buttonId % 32));
+        p->buttonState[e.number / 32] &= ~(1 << (buttonId % 32));
       return true;
     }
     //axis position changed
@@ -88,7 +101,7 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
       else if(e.number == 5)
         e.number = 1;
 
-      axisState[e.number] = e.value;
+      p->axisState[e.number] = e.value;
     }
   }
 
@@ -97,14 +110,14 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
 
 float Joystick::getAxisState(unsigned int axisId) const
 {
-  ASSERT(jd != -1);
+  ASSERT(p->jd != -1);
   ASSERT(axisId < numOfAxes);
-  return float(-axisState[axisId]) / 32767.f;
+  return float(-p->axisState[axisId]) / 32767.f;
 }
 
 bool Joystick::isButtonPressed(unsigned int buttonId) const
 {
   ASSERT(jd != -1);
   ASSERT(buttonId < numOfButtons);
-  return buttonState[buttonId / 32] & (1 << (buttonId % 32)) ? true : false;
+  return p->buttonState[buttonId / 32] & (1 << (buttonId % 32)) ? true : false;
 }

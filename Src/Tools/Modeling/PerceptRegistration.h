@@ -11,10 +11,11 @@
 
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/FieldFeatures/GoalFeature.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
@@ -24,6 +25,7 @@
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
+#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/RingBuffer.h"
@@ -53,7 +55,6 @@ struct RegisteredPose
   Pose2f p;
   Pose2f pose;
 };
-
 
 /**
  * @struct RegisteredPercepts
@@ -89,7 +90,6 @@ struct RegisteredPercepts
   int totalNumberOfPerceivedPoses;
 };
 
-
 class PerceptRegistration
 {
 private:
@@ -97,25 +97,26 @@ private:
   const CirclePercept& theCirclePercept;
   const FieldDimensions& theFieldDimensions;
   const FrameInfo& theFrameInfo;
+  const GameInfo& theGameInfo;
+  const OwnTeamInfo& theOwnTeamInfo;
   const GoalFeature& theGoalFeature;
   const GoalFrame& theGoalFrame;
   const FieldLineIntersections& theFieldLineIntersections;
   const FieldLines& theFieldLines;
   const MidCircle& theMidCircle;
   const MidCorner& theMidCorner;
-  const MotionInfo& theMotionInfo;
   const OuterCorner& theOuterCorner;
-  const OwnSideModel& theOwnSideModel;
   const PenaltyArea& thePenaltyArea;
   const PenaltyMarkPercept& thePenaltyMarkPercept;
+  const GoalPostPercept& theGoalPostPercept;
 
-  const float& goalAssociationMaxAngle;
-  const float& goalAssociationMaxAngularDistance;
   const float& lineAssociationCorridor;
+  const float& longLineAssociationCorridor;
   const float& centerCircleAssociationDistance;
   const float& penaltyMarkAssociationDistance;
   const float& intersectionAssociationDistance;
-  const float& globalPoseAssociationDistance;
+  const float& globalPoseAssociationMaxDistanceDeviation;
+  const Angle& globalPoseAssociationMaxAngularDeviation;
 
   /**
    * A field line
@@ -127,6 +128,7 @@ private:
     Vector2f end; /**< The ending point of the line. */
     Vector2f dir; /**< The normalized direction of the line (from starting point). */
     float length; /**< The length of the line. */
+    bool isLong;  /**< The line is longer than the penalty area width */
     bool vertical; /**< Whether this is a vertical or horizontal line. */
   };
 
@@ -134,16 +136,17 @@ private:
 
   std::vector<FieldLine> verticalFieldLines;   /**< Relevant field lines  */
   std::vector<FieldLine> horizontalFieldLines; /**< Relevant field lines  */
+  FieldLine* centerLine;
 
   Vector2f goalPosts[4];  /**< The positions of the goal posts. */
   Vector2f ownPenaltyMark;
   Vector2f opponentPenaltyMark;
+  float penaltyAreaWidth;
 
   std::vector< Vector2f > xIntersections;
   std::vector< Vector2f > lIntersections;
   std::vector< Vector2f > tIntersections;
-  float unknownGoalAcceptanceThreshold;
-  float knownGoalAcceptanceThreshold;
+  float goalAcceptanceThreshold;
   Pose3f inverseCameraMatrix;
   Vector2f currentRotationDeviation;
 
@@ -172,9 +175,7 @@ private:
 
   bool getAssociatedPenaltyMark(const Vector2f& penaltyMarkPercept, Vector2f& associatedPenaltyMark) const;
 
-  bool getAssociatedUnknownGoalPost(const Vector2f& goalPercept, Vector2f& associatedPost) const;
-
-  bool getAssociatedKnownGoalPost(const Vector2f& goalPercept, bool isLeft, Vector2f& associatedPost) const;
+  bool getAssociatedGoalPost(const Vector2f& goalPostPercept, Vector2f& associatedGoalPost) const;
 
   const FieldLine* getPointerToAssociatedLine(const Vector2f& start, const Vector2f& end) const;
 
@@ -185,8 +186,14 @@ private:
   bool intersectLineWithLine(const Vector2f& lineBase1, const Vector2f& lineDir1,
                              const Vector2f& lineBase2, const Vector2f& lineDir2, Vector2f& intersection) const;
 
-  bool goalPostIsValid(const Vector2f& observedPosition, const Vector2f& modelPosition,
-                       float goalAcceptanceThreshold) const;
+  bool lineCouldBeOnCenterCircle(const Vector2f& lineStart, const Vector2f& direction) const;
+
+  bool iAmBeforeKickoffAndTheLineIsProbablyTheCenterLine(const Vector2f& lineStart, const Vector2f& lineEnd,
+                                                         const Vector2f& direction, const Vector2f& orthogonal,
+                                                         float length) const;
+  
+  bool iAmBeforeKickoffInTheCenterOfMyHalfLookingForward() const;
+
 
   void draw();
 
@@ -195,27 +202,28 @@ public:
                       const CirclePercept& circlePercept,
                       const FieldDimensions& fieldDimensions,
                       const FrameInfo& frameInfo,
+                      const GameInfo& gameInfo,
+                      const OwnTeamInfo& ownTeamInfo,
                       const GoalFeature& goalFeature,
                       const GoalFrame& goalFrame,
                       const FieldLineIntersections& fieldLineIntersections,
                       const FieldLines& fieldLines,
                       const MidCircle& midCircle,
                       const MidCorner& midCorner,
-                      const MotionInfo& motionInfo,
                       const OuterCorner& outerCorner,
-                      const OwnSideModel& ownSideModel,
                       const PenaltyArea& penaltyArea,
                       const PenaltyMarkPercept& penaltyMarkPercept,
-                      const float& goalAssociationMaxAngle,
-                      const float& goalAssociationMaxAngularDistance,
+                      const GoalPostPercept& theGoalPostPercept,
                       bool         goalFrameIsPerceivedAsLines,
                       const float& lineAssociationCorridor,
+                      const float& longLineAssociationCorridor,
                       const float& centerCircleAssociationDistance,
                       const float& penaltyMarkAssociationDistance,
                       const float& intersectionAssociationDistance,
-                      const float& globalPoseAssociationDistance);
+                      const float& globalPoseAssociationMaxDistanceDeviation,
+                      const Angle& globalPoseAssociationMaxAngularDeviation);
 
   /** Computes the representation */
   void update(const Pose2f& theRobotPose, RegisteredPercepts& registeredPercepts,
-              const Vector2f& robotRotationDeviationInStand, const Vector2f& robotRotationDeviation);
+              const Pose3f& inverseCameraMatrix, const Vector2f& currentRotationDeviation);
 };

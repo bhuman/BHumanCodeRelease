@@ -44,7 +44,6 @@
 #include <QtCore/qlist.h>
 #include <QtCore/qrefcount.h>
 #include <QtCore/qpair.h>
-#include <QtCore/qtypetraits.h>
 
 #ifdef Q_MAP_DEBUG
 #include <QtCore/qdebug.h>
@@ -52,6 +51,7 @@
 
 #include <map>
 #include <new>
+#include <functional>
 
 #ifdef Q_COMPILER_INITIALIZER_LISTS
 #include <initializer_list>
@@ -62,11 +62,8 @@ QT_BEGIN_NAMESPACE
 /*
     QMap uses qMapLessThanKey() to compare keys. The default
     implementation uses operator<(). For pointer types,
-    qMapLessThanKey() casts the pointers to integers before it
-    compares them, because operator<() is undefined on pointers
-    that come from different memory blocks. (In practice, this
-    is only a problem when running a program such as
-    BoundsChecker.)
+    qMapLessThanKey() uses std::less (because operator<() on
+    pointers can be used only between pointers in the same array).
 */
 
 template <class Key> inline bool qMapLessThanKey(const Key &key1, const Key &key2)
@@ -76,8 +73,7 @@ template <class Key> inline bool qMapLessThanKey(const Key &key1, const Key &key
 
 template <class Ptr> inline bool qMapLessThanKey(const Ptr *key1, const Ptr *key2)
 {
-    Q_STATIC_ASSERT(sizeof(quintptr) == sizeof(const Ptr *));
-    return quintptr(key1) < quintptr(key2);
+    return std::less<const Ptr *>()(key1, key2);
 }
 
 struct QMapDataBase;
@@ -103,10 +99,10 @@ struct Q_CORE_EXPORT QMapNodeBase
     void setParent(QMapNodeBase *pp) { p = (p & Mask) | quintptr(pp); }
 
     template <typename T>
-    static typename QtPrivate::QEnableIf<QTypeInfo<T>::isComplex>::Type
+    static typename std::enable_if<QTypeInfo<T>::isComplex>::type
     callDestructorIfNecessary(T &t) Q_DECL_NOTHROW { Q_UNUSED(t); t.~T(); } // Q_UNUSED: silence MSVC unused 't' warning
     template <typename T>
-    static typename QtPrivate::QEnableIf<!QTypeInfo<T>::isComplex>::Type
+    static typename std::enable_if<!QTypeInfo<T>::isComplex>::type
     callDestructorIfNecessary(T &) Q_DECL_NOTHROW {}
 };
 
@@ -130,15 +126,15 @@ struct QMapNode : public QMapNodeBase
     {
         callDestructorIfNecessary(key);
         callDestructorIfNecessary(value);
-        doDestroySubTree(QtPrivate::integral_constant<bool, QTypeInfo<T>::isComplex || QTypeInfo<Key>::isComplex>());
+        doDestroySubTree(std::integral_constant<bool, QTypeInfo<T>::isComplex || QTypeInfo<Key>::isComplex>());
     }
 
     QMapNode<Key, T> *lowerBound(const Key &key);
     QMapNode<Key, T> *upperBound(const Key &key);
 
 private:
-    void doDestroySubTree(QtPrivate::false_type) {}
-    void doDestroySubTree(QtPrivate::true_type)
+    void doDestroySubTree(std::false_type) {}
+    void doDestroySubTree(std::true_type)
     {
         if (left)
             leftNode()->destroySubTree();
@@ -213,8 +209,10 @@ struct QMapData : public QMapDataBase
 
     Node *root() const { return static_cast<Node *>(header.left); }
 
-    const Node *end() const { return static_cast<const Node *>(&header); }
-    Node *end() { return static_cast<Node *>(&header); }
+    // using reinterpret_cast because QMapDataBase::header is not
+    // actually a QMapNode.
+    const Node *end() const { return reinterpret_cast<const Node *>(&header); }
+    Node *end() { return reinterpret_cast<Node *>(&header); }
     const Node *begin() const { if (root()) return static_cast<const Node*>(mostLeftNode); return end(); }
     Node *begin() { if (root()) return static_cast<Node*>(mostLeftNode); return end(); }
 
@@ -535,6 +533,7 @@ public:
         typedef const Key *pointer;
         typedef const Key &reference;
 
+        key_iterator() = default;
         explicit key_iterator(const_iterator o) : i(o) { }
 
         const Key &operator*() const { return i.key(); }

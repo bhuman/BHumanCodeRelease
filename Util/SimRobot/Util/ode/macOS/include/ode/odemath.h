@@ -40,6 +40,34 @@
 #define dVALIDMAT4(m) (!(dIsNan(m[0]) || dIsNan(m[1]) || dIsNan(m[2]) || dIsNan(m[3]) || dIsNan(m[4]) || dIsNan(m[5]) || dIsNan(m[6]) || dIsNan(m[7]) || dIsNan(m[8]) || dIsNan(m[9]) || dIsNan(m[10]) || dIsNan(m[11]) || dIsNan(m[12]) || dIsNan(m[13]) || dIsNan(m[14]) || dIsNan(m[15]) ))
 
 
+ODE_PURE_INLINE void dZeroVector3(dVector3 res)
+{
+    res[dV3E_X] = REAL(0.0);
+    res[dV3E_Y] = REAL(0.0);
+    res[dV3E_Z] = REAL(0.0);
+}
+
+ODE_PURE_INLINE void dAssignVector3(dVector3 res, dReal x, dReal y, dReal z)
+{
+    res[dV3E_X] = x;
+    res[dV3E_Y] = y;
+    res[dV3E_Z] = z;
+}
+
+ODE_PURE_INLINE void dZeroMatrix3(dMatrix3 res)
+{
+    res[dM3E_XX] = REAL(0.0); res[dM3E_XY] = REAL(0.0); res[dM3E_XZ] = REAL(0.0);
+    res[dM3E_YX] = REAL(0.0); res[dM3E_YY] = REAL(0.0); res[dM3E_YZ] = REAL(0.0);
+    res[dM3E_ZX] = REAL(0.0); res[dM3E_ZY] = REAL(0.0); res[dM3E_ZZ] = REAL(0.0);
+}
+
+ODE_PURE_INLINE void dZeroMatrix4(dMatrix4 res)
+{
+    res[dM4E_XX] = REAL(0.0); res[dM4E_XY] = REAL(0.0); res[dM4E_XZ] = REAL(0.0); res[dM4E_XO] = REAL(0.0);
+    res[dM4E_YX] = REAL(0.0); res[dM4E_YY] = REAL(0.0); res[dM4E_YZ] = REAL(0.0); res[dM4E_YO] = REAL(0.0);
+    res[dM4E_ZX] = REAL(0.0); res[dM4E_ZY] = REAL(0.0); res[dM4E_ZZ] = REAL(0.0); res[dM4E_ZO] = REAL(0.0);
+    res[dM4E_OX] = REAL(0.0); res[dM4E_OY] = REAL(0.0); res[dM4E_OZ] = REAL(0.0); res[dM4E_OO] = REAL(0.0);
+}
 
 /* Some vector math */
 ODE_PURE_INLINE void dAddVectors3(dReal *res, const dReal *a, const dReal *b)
@@ -60,6 +88,15 @@ ODE_PURE_INLINE void dSubtractVectors3(dReal *res, const dReal *a, const dReal *
   res[0] = res_0; res[1] = res_1; res[2] = res_2;
 }
 
+ODE_PURE_INLINE void dAddVectorScaledVector3(dReal *res, const dReal *a, const dReal *b, dReal b_scale)
+{
+    const dReal res_0 = a[0] + b_scale * b[0];
+    const dReal res_1 = a[1] + b_scale * b[1];
+    const dReal res_2 = a[2] + b_scale * b[2];
+    /* Only assign after all the calculations are over to avoid incurring memory aliasing*/
+    res[0] = res_0; res[1] = res_1; res[2] = res_2;
+}
+
 ODE_PURE_INLINE void dAddScaledVectors3(dReal *res, const dReal *a, const dReal *b, dReal a_scale, dReal b_scale)
 {
   const dReal res_0 = a_scale * a[0] + b_scale * b[0];
@@ -67,6 +104,15 @@ ODE_PURE_INLINE void dAddScaledVectors3(dReal *res, const dReal *a, const dReal 
   const dReal res_2 = a_scale * a[2] + b_scale * b[2];
   /* Only assign after all the calculations are over to avoid incurring memory aliasing*/
   res[0] = res_0; res[1] = res_1; res[2] = res_2;
+}
+
+ODE_PURE_INLINE void dAddThreeScaledVectors3(dReal *res, const dReal *a, const dReal *b, const dReal *c, dReal a_scale, dReal b_scale, dReal c_scale)
+{
+    const dReal res_0 = a_scale * a[0] + b_scale * b[0] + c_scale * c[0];
+    const dReal res_1 = a_scale * a[1] + b_scale * b[1] + c_scale * c[1];
+    const dReal res_2 = a_scale * a[2] + b_scale * b[2] + c_scale * c[2];
+    /* Only assign after all the calculations are over to avoid incurring memory aliasing*/
+    res[0] = res_0; res[1] = res_1; res[2] = res_2;
 }
 
 ODE_PURE_INLINE void dScaleVector3(dReal *res, dReal nScale)
@@ -486,8 +532,8 @@ ODE_API void dNormalize4 (dVector4 a); /* Potentially asserts on zero vec*/
  */
 
 ODE_API void dPlaneSpace (const dVector3 n, dVector3 p, dVector3 q);
-/* Makes sure the matrix is a proper rotation */
-ODE_API void dOrthogonalizeR(dMatrix3 m);
+/* Makes sure the matrix is a proper rotation, returns a boolean status */
+ODE_API int dOrthogonalizeR(dMatrix3 m);
 
 
 

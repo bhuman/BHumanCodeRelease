@@ -17,6 +17,8 @@
 #include "Representations/Infrastructure/Thumbnail.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
+#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
+#include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Tools/Settings.h"
 #include "Tools/Debugging/DebugDataStreamer.h"
 #include "Tools/Debugging/QueueFillRequest.h"
@@ -28,6 +30,7 @@
 #include "Views/ColorCalibrationView/ColorCalibrationView.h"
 #include "Views/ColorSpaceView.h"
 #include "Views/FieldView.h"
+#include "Views/FootView/FootView.h"
 #include "Views/ImageView.h"
 #include "Views/JointView.h"
 #include "Views/KickView/KickView.h"
@@ -37,6 +40,7 @@
 #include "Views/SensorView.h"
 #include "Views/CABSLBehaviorView.h"
 #include "Views/TimeView/TimeView.h"
+#include "Views/SnapshotView/SnapshotView.h"
 
 using namespace std;
 
@@ -64,7 +68,6 @@ RobotConsole::RobotConsole(MessageQueue& in, MessageQueue& out) :
   logPlayer(out),
   debugOut(out),
   dataViewWriter(&dataViews),
-  cameraCalibratorHandler(this),
   automaticCameraCalibratorHandlerInsertion(this),
   automaticCameraCalibratorHandlerDeletion(this)
 {
@@ -92,8 +95,6 @@ RobotConsole::RobotConsole(MessageQueue& in, MessageQueue& out) :
   timeInfos['d'] = TimeInfo("Lower", 2);
   timeInfos['b'] = TimeInfo("Cognition", 1);
   timeInfos['m'] = TimeInfo("Motion", 1);
-  annotationInfos['c'];
-  annotationInfos['m'];
 }
 
 RobotConsole::~RobotConsole()
@@ -123,10 +124,10 @@ void RobotConsole::addViews()
 
   SimRobot::Object* annotationCategory = ctrl->addCategory("annotations", category);
   {
-    auto* cognitionAnnotationView = new AnnotationView(robotName + ".annotations.cognition", annotationInfos['c'], logPlayer, ctrl->application);
-    auto* motionAnnotationView = new AnnotationView(robotName + ".annotations.motion", annotationInfos['m'], logPlayer, ctrl->application);
-    annotationInfos['c'].view = cognitionAnnotationView;
-    annotationInfos['m'].view = motionAnnotationView;
+    auto* cognitionAnnotationView = new AnnotationView(robotName + ".annotations.cognition", annotationInfos.annotationProcesses['c'], logPlayer, mode, ctrl->application);
+    auto* motionAnnotationView = new AnnotationView(robotName + ".annotations.motion", annotationInfos.annotationProcesses['m'], logPlayer, mode, ctrl->application);
+    annotationInfos.annotationProcesses['c'].view = cognitionAnnotationView;
+    annotationInfos.annotationProcesses['m'].view = motionAnnotationView;
     ctrl->addView(cognitionAnnotationView, annotationCategory);
     ctrl->addView(motionAnnotationView, annotationCategory);
   }
@@ -140,7 +141,9 @@ void RobotConsole::addViews()
   ctrl->addCategory("colorSpace", ctrl->application->resolveObject(robotName));
   ctrl->addCategory("data", ctrl->application->resolveObject(robotName));
   ctrl->addCategory("field", ctrl->application->resolveObject(robotName));
-  ctrl->addCategory("image", ctrl->application->resolveObject(robotName));
+  ctrl->addView(new FootView(robotName + ".footView", *this, footGroundContactState, jointSensorData, robotDimensions), category);
+  SimRobot::Object* imageCategory = ctrl->addCategory("image", ctrl->application->resolveObject(robotName));
+  ctrl->addView(new SnapshotView(robotName + ".image.snapshot", *this), imageCategory);
   ctrl->addView(new JointView(robotName + ".jointData", *this, jointSensorData, jointRequest), category);
   if(mode == SystemCall::logfileReplay)
     ctrl->addView(new LogPlayerControlView(robotName + ".logPlayer", logPlayer, *this), category);
@@ -193,7 +196,7 @@ void RobotConsole::addColorSpaceViews(const std::string& id, const std::string& 
       {
         ctrl->addView(new ColorSpaceView(
                         modelCategoryName + "." + ColorSpaceView::getChannelNameForColorModel(ColorSpaceView::ColorModel(cm), channel),
-                        *this, id, ColorSpaceView::ColorModel(cm), channel + (cm == ColorSpaceView::YCbCr && channel ? 1 : 0), background, upperCam), modelCategory);
+                        *this, id, ColorSpaceView::ColorModel(cm), channel + (cm == ColorSpaceView::YCbCr&& channel ? 1 : 0), background, upperCam), modelCategory);
       }
     }
   }
@@ -297,6 +300,11 @@ bool RobotConsole::handleMessage(InMessage& message)
       message.bin >> *incompleteImages[id].image;
       incompleteImages[id].image->timeStamp = Time::getCurrentSystemTime();
       break;
+    }
+    case idFootGroundContactState:
+    {
+      message.bin >> footGroundContactState;
+      return true;
     }
     case idFsrSensorData:
     {
@@ -498,8 +506,8 @@ bool RobotConsole::handleMessage(InMessage& message)
       activationGraphReceived = Time::getCurrentSystemTime();
       return true;
     case idAnnotation:
-      ASSERT(annotationInfos.find(processIdentifier == 'd' ? 'c' : processIdentifier) != annotationInfos.end());
-      annotationInfos[processIdentifier == 'd' ? 'c' : processIdentifier].handleMessage(message);
+      ASSERT(annotationInfos.annotationProcesses.find(processIdentifier == 'd' ? 'c' : processIdentifier) != annotationInfos.annotationProcesses.end());
+      annotationInfos.handleMessage(message);
       return true;
     case idStopwatch:
       ASSERT(timeInfos.find(processIdentifier) != timeInfos.end());
@@ -632,14 +640,14 @@ bool RobotConsole::handleMessage(InMessage& message)
     case idRobotInfo:
     {
       message.bin >> robotInfo;
-      return true;
       --waitingFor[idRobotInfo];
+      return true;
     }
     case idRobotDimensions:
       message.bin >> robotDimensions;
       return true;
-    case idJointCalibration:
-      message.bin >> jointCalibration;
+    case idJointLimits:
+      message.bin >> jointLimits;
       return true;
     default:
       ;
@@ -896,24 +904,6 @@ bool RobotConsole::handleConsoleLine(const std::string& line)
   else if(command == "kick")
   {
     result = kickView();
-  }
-  else if(command == "cameraCalibrator")
-  {
-    std::string view, choice;
-    stream >> view >> choice;
-    result = true;
-    if(choice == "on")
-    {
-      cameraCalibratorHandler.setActive(view);
-    }
-    else if(choice == "off")
-    {
-      cameraCalibratorHandler.setInactive(view);
-    }
-    else
-    {
-      result = false;
-    }
   }
   else if(command == "cls")
   {
@@ -1260,6 +1250,16 @@ bool RobotConsole::log(In& stream, bool first)
       return logPlayer.saveAudioFile(name);
     }
   }
+  else if(command == "saveInertialSensorData")
+  {
+    SYNC;
+    return logPlayer.saveInertialSensorData();
+  }
+  else if(command == "saveJointAngleData")
+  {
+    SYNC;
+    return logPlayer.saveJointAngleData();
+  }
   else if(command == "saveImages")
   {
     SYNC;
@@ -1313,8 +1313,8 @@ bool RobotConsole::log(In& stream, bool first)
           BallPercept ballPercept;
           message.bin >> ballPercept;
           return (buf == "" && ballPercept.status != BallPercept::notSeen)
-                 || (buf == "seen" && ballPercept.status == BallPercept::seen)
-                 || (buf == "guessed" && ballPercept.status == BallPercept::guessed);
+          || (buf == "seen" && ballPercept.status == BallPercept::seen)
+          || (buf == "guessed" && ballPercept.status == BallPercept::guessed);
         }
         return false;
       });
@@ -1336,11 +1336,41 @@ bool RobotConsole::log(In& stream, bool first)
 
       return true;
     }
+    else if(command == "keep" && buf == "goalPostPercept")
+    {
+      logPlayer.keepFrames([&](InMessage& message) -> bool
+      {
+        if(message.getMessageID() == idGoalPostPercept)
+        {
+          GoalPostPercept goalPostPercept;
+          message.bin >> goalPostPercept;
+          return goalPostPercept.wasSeen;
+        }
+        return false;
+      });
+
+      return true;
+    }
     else if(command == "keep" && buf == "image")
     {
       logPlayer.keepFrames([&](InMessage& message) -> bool
       {
         return message.getMessageID() == idLowFrameRateImage && message.getMessageSize() > 1000;
+      });
+
+      return true;
+    }
+    else if(command == "keep" && buf == "penaltyMarkPercept")
+    {
+      logPlayer.keepFrames([&](InMessage& message) -> bool
+      {
+        if(message.getMessageID() == idPenaltyMarkPercept)
+        {
+          PenaltyMarkPercept penaltyMarkPercept;
+          message.bin >> penaltyMarkPercept;
+          return penaltyMarkPercept.wasSeen;
+        }
+        return false;
       });
 
       return true;
@@ -1366,30 +1396,30 @@ bool RobotConsole::log(In& stream, bool first)
         messageIDs.push_back(undefined);
         if(command == "keep")
           logPlayer.keep([&](InMessage& message) -> bool
+        {
+          MessageID* m = &messageIDs[0];
+          while(*m)
           {
-            MessageID* m = &messageIDs[0];
-            while(*m)
-            {
-              if(message.getMessageID() == *m ||
-                 message.getMessageID() == idProcessBegin ||
-                 message.getMessageID() == idProcessFinished)
-                return true;
-              ++m;
-            }
-            return false;
-          });
+            if(message.getMessageID() == *m ||
+            message.getMessageID() == idProcessBegin ||
+            message.getMessageID() == idProcessFinished)
+              return true;
+            ++m;
+          }
+          return false;
+        });
         else
           logPlayer.keep([&](InMessage& message) -> bool
+        {
+          MessageID* m = &messageIDs[0];
+          while(*m)
           {
-            MessageID* m = &messageIDs[0];
-            while(*m)
-            {
-              if(message.getMessageID() == *m)
-                return false;
-             ++m;
-           }
-           return true;
-          });
+            if(message.getMessageID() == *m)
+              return false;
+            ++m;
+          }
+          return true;
+        });
         return true;
       }
     }
@@ -1426,6 +1456,13 @@ bool RobotConsole::log(In& stream, bool first)
       }
     sprintf(buf, "%u", logPlayer.getNumberOfMessages());
     ctrl->printLn(std::string(buf) + "\ttotal");
+    return true;
+  }
+  else if(command == "merge")
+  {
+    SYNC;
+    logPlayer.merge();
+    handleConsole("log mr");
     return true;
   }
   else if(command == "mr") //log mr
@@ -1497,7 +1534,7 @@ bool RobotConsole::log(In& stream, bool first)
         LogPlayer::LogPlayerState state = logPlayer.state;
         bool result = logPlayer.open(name);
         if(result)
-          logPlayer.handleAllMessages(annotationInfos['c']);
+          logPlayer.handleAllMessages(annotationInfos);
         if(result && state == LogPlayer::playing)
           logPlayer.play();
         return result;
@@ -2200,6 +2237,20 @@ bool RobotConsole::viewDrawing(In& stream, RobotConsole::Views& views, const cha
     ctrl->printLn("");
     return true;
   }
+  else if(view == "off")
+  {
+    // remove every drawing that is not listed below.
+    for(const auto& viewPair : views)
+    {
+      views[viewPair.first].remove_if([](const auto & drawing)
+      {
+        return drawing != "field lines"
+               && drawing != "goal frame"
+               && drawing != "field polygons";
+      });
+    }
+    return true;
+  }
   else
   {
     bool all = view == "all";
@@ -2409,7 +2460,7 @@ bool RobotConsole::kickView()
     if(mode == SystemCall::simulatedRobot)
     {
       kickViewSet = true;
-      ctrl->addView(new KickView(robotName + ".KikeView", *this, motionRequest, jointSensorData, jointCalibration, robotDimensions, printBuffer,
+      ctrl->addView(new KickView(robotName + ".KikeView", *this, motionRequest, jointSensorData, jointLimits, robotDimensions, printBuffer,
                                  (SimRobotCore2::Body*)ctrl->application->resolveObject(robotFullName, SimRobotCore2::body)), robotName);
       return true;
     }
@@ -2418,7 +2469,7 @@ bool RobotConsole::kickView()
       kickViewSet = true;
       QString puppetName("RoboCup.puppets." + robotName);
 
-      ctrl->addView(new KickView(robotName + ".KikeView", *this, motionRequest, jointSensorData, jointCalibration, robotDimensions, printBuffer,
+      ctrl->addView(new KickView(robotName + ".KikeView", *this, motionRequest, jointSensorData, jointLimits, robotDimensions, printBuffer,
                                  (SimRobotCore2::Body*)ctrl->application->resolveObject(puppetName, SimRobotCore2::body)), robotName);
       return true;
     }

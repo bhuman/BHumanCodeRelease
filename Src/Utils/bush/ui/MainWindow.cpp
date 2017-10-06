@@ -57,9 +57,12 @@ MainWindow::MainWindow()
   QAction* deplayAction = shortcutBar->addShortcut("deploy", "deploy");
   deplayAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
   deplayAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
-  shortcutBar->addShortcut("download logs", "downloadLogs");
+  QAction* downloadLags = shortcutBar->addShortcut("download logs", "downloadLogs");
+  downloadLags->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+  downloadLags->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
   shortcutBar->addShortcut("delete logs", "deleteLogs");
   shortcutBar->addShortcut("simulator", "sim");
+  shortcutBar->addShortcut("ssh", "ssh");
   shortcutBar->addShortcut("shutdown", "shutdown -s");
   splitter->addWidget(console);
 

@@ -51,7 +51,7 @@ void ForwardKinematic::calculateLegChain(Legs::Leg leg, const JointAngles& joint
   foot = ankle * RotationMatrix::aroundX(joints.angles[hipJoint + 5]);
 }
 
-void ForwardKinematic::calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f , (Limbs) Limb)& limbs)
+void ForwardKinematic::calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs)
 {
   limbs[Limbs::neck] = Pose3f(0.f, 0.f, robotDimensions.hipToNeckLength) *= RotationMatrix::aroundZ(joints.angles[Joints::headYaw]);
   limbs[Limbs::head] = limbs[Limbs::neck] * RotationMatrix::aroundY(joints.angles[Joints::headPitch]);

@@ -381,13 +381,23 @@ _mm_cvtpd_ps(__m128d __a)
 static __inline__ __m128d __attribute__((__always_inline__, __nodebug__))
 _mm_cvtps_pd(__m128 __a)
 {
+#if __has_builtin(__builtin_ia32_cvtps2pd)
   return __builtin_ia32_cvtps2pd(__a);
+#else
+  return (__m128d) __builtin_convertvector(
+    __builtin_shufflevector((__v4sf)__a, (__v4sf)__a, 0, 1), __v2df);
+#endif
 }
 
 static __inline__ __m128d __attribute__((__always_inline__, __nodebug__))
 _mm_cvtepi32_pd(__m128i __a)
 {
+#if __has_builtin(__builtin_ia32_cvtdq2pd)
   return __builtin_ia32_cvtdq2pd((__v4si)__a);
+#else
+  return (__m128d) __builtin_convertvector(
+    __builtin_shufflevector((__v4si)__a, (__v4si)__a, 0, 1), __v2df);
+#endif
 }
 
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
@@ -587,7 +597,14 @@ _mm_store_pd(double *__dp, __m128d __a)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_storeu_pd(double *__dp, __m128d __a)
 {
+#if __has_builtin(__builtin_ia32_storeupd)
   __builtin_ia32_storeupd(__dp, __a);
+#else
+  struct __storeu_pd {
+    __m128d __v;
+  } __attribute__((__packed__, __may_alias__));
+  ((struct __storeu_pd*)__dp)->__v = __a;
+#endif
 }
 
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
@@ -1182,7 +1199,14 @@ _mm_store_si128(__m128i *__p, __m128i __b)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_storeu_si128(__m128i *__p, __m128i __b)
 {
+#if __has_builtin(__builtin_ia32_storedqu)
   __builtin_ia32_storedqu((char *)__p, (__v16qi)__b);
+#else
+  struct __storeu_si128 {
+    __m128i __v;
+  } __attribute__((__packed__, __may_alias__));
+  ((struct __storeu_si128*)__p)->__v = __b;
+#endif
 }
 
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
@@ -1203,13 +1227,21 @@ _mm_storel_epi64(__m128i *__p, __m128i __a)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_stream_pd(double *__p, __m128d __a)
 {
+#if __has_builtin(__builtin_ia32_movntpd)
   __builtin_ia32_movntpd(__p, __a);
+#else
+  __builtin_nontemporal_store((__v2df)__a, (__v2df*)__p);
+#endif
 }
 
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_stream_si128(__m128i *__p, __m128i __a)
 {
+#if __clang_major__ < 3 || __clang_major__ == 3 && __clang_minor__ < 9 
   __builtin_ia32_movntdq(__p, __a);
+#else
+  __builtin_nontemporal_store((__v2di)__a, (__v2di*)__p);
+#endif
 }
 
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
@@ -1226,23 +1258,29 @@ _mm_stream_si64(long long *__p, long long __a)
 }
 #endif
 
+#if !__has_builtin(_mm_clflush)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_clflush(void const *__p)
 {
   __builtin_ia32_clflush(__p);
 }
+#endif
 
+#if !__has_builtin(_mm_lfence)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_lfence(void)
 {
   __builtin_ia32_lfence();
 }
+#endif
 
+#if !__has_builtin(_mm_mfence)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_mfence(void)
 {
   __builtin_ia32_mfence();
 }
+#endif
 
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
 _mm_packs_epi16(__m128i __a, __m128i __b)
@@ -1438,11 +1476,13 @@ _mm_castsi128_pd(__m128i __a)
   return (__m128d)__a;
 }
 
+#if !__has_builtin(_mm_pause)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_pause(void)
 {
   __asm__ volatile ("pause");
 }
+#endif
 
 #define _MM_SHUFFLE2(x, y) (((x) << 1) | (y))
 

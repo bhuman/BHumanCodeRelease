@@ -51,7 +51,6 @@ SimulatedNao = cppDynamicLibrary + {
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
     "$(utilDirRoot)/snappy/include"
-    "$(utilDirRoot)/boost/linux"
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
@@ -62,21 +61,11 @@ SimulatedNao = cppDynamicLibrary + {
       "$(utilDirRoot)/Buildchain/Windows/include"
     } else if (platform == "Linux") {
       "$(buildDir)"
-      "/usr/include/qt5"
-      "/usr/include/qt5/QtCore"
-      "/usr/include/qt5/QtGui"
-      "/usr/include/qt5/QtOpenGL"
-      "/usr/include/qt5/QtWidgets"
-      "/usr/include/qt"
-      "/usr/include/qt/QtCore"
-      "/usr/include/qt/QtGui"
-      "/usr/include/qt/QtOpenGL"
-      "/usr/include/qt/QtWidgets"
-      "/usr/include/x86_64-linux-gnu/qt5"
-      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
-      "/usr/include/x86_64-linux-gnu/qt5/QtGui"
-      "/usr/include/x86_64-linux-gnu/qt5/QtOpenGL"
-      "/usr/include/x86_64-linux-gnu/qt5/QtWidgets"
+      "$(qtinclude)"
+      "$(qtinclude)/QtCore"
+      "$(qtinclude)/QtGui"
+      "$(qtinclude)/QtOpenGL"
+      "$(qtinclude)/QtWidgets"
       "$(utilDirRoot)/SimRobot/Util/ode/Linux/include"
     }
   }
@@ -90,6 +79,7 @@ SimulatedNao = cppDynamicLibrary + {
       "$(utilDirRoot)/libjpeg/lib/Linux"
       "$(utilDirRoot)/snappy/lib/Linux/x64"
     } else if (host == "Win32") {
+      "$(utilDirRoot)/fftw-3.3/Windows"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
       "$(utilDirRoot)/libjpeg/lib/Windows"
       "$(utilDirRoot)/snappy/lib/Windows"
@@ -106,7 +96,7 @@ SimulatedNao = cppDynamicLibrary + {
         "Qt5Core", "Qt5Gui", "Qt5OpenGl", "Qt5Svg", "Qt5Widgets"
         "snappy"
       }
-      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg"
+      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg", "libfftw3-3"
     } else if (platform == "Linux") {
       "Qt5Core", "Qt5Gui", "Qt5Network", "Qt5OpenGL", "Qt5Svg", "Qt5Widgets"
       "rt", "pthread", "GLEW", "GLU", "GL", "fftw3", "jpeg", "snappy"
@@ -116,7 +106,9 @@ SimulatedNao = cppDynamicLibrary + {
   cppFlags += {
     if (tool == "vcxproj") {
       "/Zm200"
-      if (avx == "true" ) {
+      if (avx2 == "true" ) {
+        "/arch:AVX2"
+      } else {
         "/arch:AVX"
       }
       if (configuration == "Develop") {
@@ -126,7 +118,13 @@ SimulatedNao = cppDynamicLibrary + {
         "/wd4101 /GS-"
       }
     } else {
-      "-mmmx -msse -msse2 -msse3 -mssse3"
+      "-mmmx -msse -msse2"
+      if (ssse3 == "true") {
+        "-msse3 -mssse3"
+      }
+      if (avx2 == "true") {
+        "-mavx -mavx2"
+      }
       "-Wno-switch" // deactivating this is a problem because of the ENUM macro, since numOf<ENUM>s is never used in switch.
       "-Wconversion"
       "-Wno-sign-conversion"

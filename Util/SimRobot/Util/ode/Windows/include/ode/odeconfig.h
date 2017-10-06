@@ -71,8 +71,33 @@
   #define ODE_EXTERN_C
 #endif
 
+#if defined(__GNUC__)
+#define ODE_NORETURN __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define ODE_NORETURN __declspec(noreturn)
+#else // #if !defined(_MSC_VER)
+#define ODE_NORETURN
+#endif // #if !defined(__GNUC__)
+
+
 /* Well-defined common data types...need to define for 64 bit systems */
-#if defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
+#if defined(__aarch64__)
+    #include <stdint.h>
+    typedef int64_t         dint64;
+    typedef uint64_t        duint64;
+    typedef int32_t         dint32;
+    typedef uint32_t        duint32;
+    typedef int16_t         dint16;
+    typedef uint16_t        duint16;
+    typedef int8_t          dint8;
+    typedef uint8_t         duint8;
+
+    typedef intptr_t        dintptr;
+    typedef uintptr_t       duintptr;
+    typedef ptrdiff_t       ddiffint;
+    typedef size_t          dsizeint;
+
+#elif defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
   #define X86_64_SYSTEM   1
 #if defined(_MSC_VER)
   typedef __int64         dint64;
@@ -87,6 +112,12 @@
   typedef unsigned short  duint16;
   typedef signed char     dint8;
   typedef unsigned char   duint8;
+
+  typedef dint64          dintptr;
+  typedef duint64         duintptr;
+  typedef dint64          ddiffint;
+  typedef duint64         dsizeint;
+
 #else
 #if defined(_MSC_VER)
   typedef __int64         dint64;
@@ -101,6 +132,12 @@
   typedef unsigned short  duint16;
   typedef signed char     dint8;
   typedef unsigned char   duint8;
+
+  typedef dint32          dintptr;
+  typedef duint32         duintptr;
+  typedef dint32          ddiffint;
+  typedef duint32         dsizeint;
+
 #endif
 
 
@@ -131,8 +168,18 @@
 
 
 /* Define the dNaN macro */
-#ifdef NAN
+#if defined(NAN)
   #define dNaN NAN
+#elif defined(__GNUC__)
+  #define dNaN ({ union { duint32 m_ui; float m_f; } un; un.m_ui = 0x7FC00000; un.m_f; })
+#elif defined(__cplusplus)
+  union _dNaNUnion
+  {
+      _dNaNUnion(): m_ui(0x7FC00000) {}
+      duint32 m_ui; 
+      float m_f;
+  };
+  #define dNaN (_dNaNUnion().m_f)
 #else
   #ifdef dSINGLE
     #define dNaN ((float)(dInfinity - dInfinity))

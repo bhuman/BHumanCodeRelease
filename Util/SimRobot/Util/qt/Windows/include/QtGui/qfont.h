@@ -40,6 +40,7 @@
 #ifndef QFONT_H
 #define QFONT_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/qwindowdefs.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qsharedpointer.h>
@@ -112,6 +113,7 @@ public:
     };
 
     enum Stretch {
+        AnyStretch     =   0,
         UltraCondensed =  50,
         ExtraCondensed =  62,
         Condensed      =  75,

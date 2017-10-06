@@ -12,7 +12,7 @@
 #ifndef __ICECONTAINER_H__
 #define __ICECONTAINER_H__
 
-	#define CONTAINER_STATS
+//	#define CONTAINER_STATS
 
 	enum FindMode
 	{
@@ -47,7 +47,11 @@
 		inline_	Container&		Add(udword entry)
 								{
 									// Resize if needed
-									if(mCurNbEntries==mMaxNbEntries)	Resize();
+									if (mCurNbEntries == mMaxNbEntries 
+										&& !Resize())
+									{
+										IceAbort();
+									}
 
 									// Add new entry
 									mEntries[mCurNbEntries++]	= entry;
@@ -57,7 +61,11 @@
 		inline_	Container&		Add(const uword* entries, udword nb)
 								{
 									// Resize if needed
-									if(mCurNbEntries+nb>mMaxNbEntries)	Resize(nb);
+									if (mCurNbEntries + nb > mMaxNbEntries
+										 && !Resize(nb))
+									{
+										IceAbort();
+									}
 
 									// Add new entry
 									CopyMemory(&mEntries[mCurNbEntries], entries, nb*sizeof(uword));
@@ -68,7 +76,11 @@
 		inline_	Container&		Add(const udword* entries, udword nb)
 								{
 									// Resize if needed
-									if(mCurNbEntries+nb>mMaxNbEntries)	Resize(nb);
+									if (mCurNbEntries + nb > mMaxNbEntries 
+										&& !Resize(nb))
+									{
+										IceAbort();
+									}
 
 									// Add new entry
 									CopyMemory(&mEntries[mCurNbEntries], entries, nb*sizeof(udword));
@@ -92,7 +104,11 @@
 		inline_	Container&		Add(float entry)
 								{
 									// Resize if needed
-									if(mCurNbEntries==mMaxNbEntries)	Resize();
+									if (mCurNbEntries == mMaxNbEntries
+										&& !Resize())
+									{
+										IceAbort();
+									}
 
 									// Add new entry
 									mEntries[mCurNbEntries++]	= IR(entry);
@@ -102,7 +118,11 @@
 		inline_	Container&		Add(const float* entries, udword nb)
 								{
 									// Resize if needed
-									if(mCurNbEntries+nb>mMaxNbEntries)	Resize(nb);
+									if (mCurNbEntries + nb > mMaxNbEntries
+										&& !Resize(nb))
+									{
+										IceAbort();
+									}
 
 									// Add new entry
 									CopyMemory(&mEntries[mCurNbEntries], entries, nb*sizeof(float));
@@ -172,7 +192,7 @@
 		//! Deletes the very last entry.
 		inline_	void			DeleteLastEntry()						{ if(mCurNbEntries)	mCurNbEntries--;			}
 		//! Deletes the entry whose index is given
-		inline_	void			DeleteIndex(udword index)				{ mEntries[index] = mEntries[--mCurNbEntries];	}
+		inline_	void			DeleteIndex(udword index)				{ ASSERT(index < mCurNbEntries); mEntries[index] = mEntries[--mCurNbEntries];	}
 
 		// Helpers
 				Container&		FindNext(udword& entry, FindMode find_mode=FIND_CLAMP);
@@ -186,8 +206,8 @@
 		inline_	udword			GetLast()						const	{ return mEntries[mCurNbEntries-1];		}
 
 		// Growth control
-		inline_	float			GetGrowthFactor()				const	{ return mGrowthFactor;					}	//!< Returns the growth factor
-		inline_	void			SetGrowthFactor(float growth)			{ mGrowthFactor = growth;				}	//!< Sets the growth factor
+		inline_	udword			GetGrowthFactor()				const	{ return mGrowthFactor;					}	//!< Returns the growth factor
+		inline_	void			SetGrowthFactor(udword growth)			{ mGrowthFactor = growth;				}	//!< Sets the growth factor
 		inline_	bool			IsFull()						const	{ return mCurNbEntries==mMaxNbEntries;	}	//!< Checks the container is full
 		inline_	BOOL			IsNotEmpty()					const	{ return mCurNbEntries;					}	//!< Checks the container is empty
 
@@ -217,7 +237,7 @@
 				udword			mMaxNbEntries;		//!< Maximum possible number of entries
 				udword			mCurNbEntries;		//!< Current number of entries
 				udword*			mEntries;			//!< List of entries
-				float			mGrowthFactor;		//!< Resize: new number of entries = old number * mGrowthFactor
+				udword			mGrowthFactor;		//!< Resize: new number of entries = old number * mGrowthFactor
 	};
 
 #endif // __ICECONTAINER_H__

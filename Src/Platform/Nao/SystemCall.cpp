@@ -42,7 +42,7 @@ int SystemCall::playSound(const char* name)
   return SoundPlayer::play(name);
 }
 
-int SystemCall::playSamples(std::vector<short>& samples)
+bool SystemCall::soundIsPlaying()
 {
-  return SoundPlayer::playSamples(samples);
+  return SoundPlayer::isPlaying();
 }

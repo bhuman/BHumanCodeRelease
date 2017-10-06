@@ -42,13 +42,10 @@ int dCollideRTL(dxGeom* g1, dxGeom* RayGeom, int Flags, dContactGeom* Contacts, 
 
     dxTriMesh* TriMesh = (dxTriMesh*)g1;
 
-    const dVector3& TLPosition = *(const dVector3*)dGeomGetPosition(TriMesh);
-    const dMatrix3& TLRotation = *(const dMatrix3*)dGeomGetRotation(TriMesh);
-
     const unsigned uiTLSKind = TriMesh->getParentSpaceTLSKind();
     dIASSERT(uiTLSKind == RayGeom->getParentSpaceTLSKind()); // The colliding spaces must use matching cleanup method
     TrimeshCollidersCache *pccColliderCache = GetTrimeshCollidersCache(uiTLSKind);
-    RayCollider& Collider = pccColliderCache->_RayCollider;
+    RayCollider& Collider = pccColliderCache->m_RayCollider;
 
     dReal Length = dGeomRayGetLength(RayGeom);
 
@@ -61,45 +58,50 @@ int dCollideRTL(dxGeom* g1, dxGeom* RayGeom, int Flags, dContactGeom* Contacts, 
     Collider.SetCulling(BackfaceCull != 0);
     Collider.SetMaxDist(Length);
 
+    const dVector3& TLPosition = *(const dVector3*)dGeomGetPosition(TriMesh);
+    const dMatrix3& TLRotation = *(const dMatrix3*)dGeomGetRotation(TriMesh);
+
+    Matrix4x4 MeshMatrix;
+    const dVector3 ZeroVector3 = { REAL(0.0), };
+    MakeMatrix(ZeroVector3, TLRotation, MeshMatrix);
+
     dVector3 Origin, Direction;
     dGeomRayGet(RayGeom, Origin, Direction);
 
+    dVector3 OffsetOrigin;
+    dSubtractVectors3(OffsetOrigin, Origin, TLPosition);
+
     /* Make Ray */
     Ray WorldRay;
-    WorldRay.mOrig.x = Origin[0];
-    WorldRay.mOrig.y = Origin[1];
-    WorldRay.mOrig.z = Origin[2];
-    WorldRay.mDir.x = Direction[0];
-    WorldRay.mDir.y = Direction[1];
-    WorldRay.mDir.z = Direction[2];
+    WorldRay.mOrig.Set(OffsetOrigin[0], OffsetOrigin[1], OffsetOrigin[2]);
+    WorldRay.mDir.Set(Direction[0], Direction[1], Direction[2]);
 
     /* Intersect */
-    Matrix4x4 amatrix;
     int TriCount = 0;
-    if (Collider.Collide(WorldRay, TriMesh->Data->BVTree, &MakeMatrix(TLPosition, TLRotation, amatrix))) {
-        TriCount = pccColliderCache->Faces.GetNbFaces();
+    if (Collider.Collide(WorldRay, TriMesh->retrieveMeshBVTreeRef(), &MeshMatrix)) {
+        TriCount = pccColliderCache->m_Faces.GetNbFaces();
     }
 
     if (TriCount == 0) {
         return 0;
     }
 
-    const CollisionFace* Faces = pccColliderCache->Faces.GetFaces();
+    const CollisionFace* Faces = pccColliderCache->m_Faces.GetFaces();
 
     int OutTriCount = 0;
     for (int i = 0; i < TriCount; i++) {
-        if (TriMesh->RayCallback == null ||
-            TriMesh->RayCallback(TriMesh, RayGeom, Faces[i].mFaceID,
+        if (TriMesh->m_RayCallback == null ||
+            TriMesh->m_RayCallback(TriMesh, RayGeom, Faces[i].mFaceID,
             Faces[i].mU, Faces[i].mV)) {
                 const int& TriIndex = Faces[i].mFaceID;
-                if (!Callback(TriMesh, RayGeom, TriIndex)) {
+                if (!TriMesh->invokeCallback(RayGeom, TriIndex)) {
                     continue;
                 }
 
                 dContactGeom* Contact = SAFECONTACT(Flags, Contacts, OutTriCount, Stride);
 
                 dVector3 dv[3];
-                FetchTriangle(TriMesh, TriIndex, TLPosition, TLRotation, dv);
+                TriMesh->fetchMeshTriangle(dv, TriIndex, TLPosition, TLRotation);
 
                 dVector3 vu;
                 vu[0] = dv[1][0] - dv[0][0];
@@ -160,8 +162,8 @@ int dCollideRTL(dxGeom* g1, dxGeom* RayGeom, int Flags, dContactGeom* Contacts, 
     dxTriMesh* TriMesh = (dxTriMesh*)g1;
 
     dReal Length = dGeomRayGetLength(RayGeom);
-    int FirstContact, BackfaceCull;
-    dGeomRayGetParams(RayGeom, &FirstContact, &BackfaceCull);
+    int FirstContact = dGeomRayGetFirstContact(RayGeom);
+    int BackfaceCull = dGeomRayGetBackfaceCull(RayGeom);
     int ClosestHit = dGeomRayGetClosestHit(RayGeom);
     dVector3 Origin, Direction;
     dGeomRayGet(RayGeom, Origin, Direction);
@@ -184,8 +186,8 @@ int dCollideRTL(dxGeom* g1, dxGeom* RayGeom, int Flags, dContactGeom* Contacts, 
     }
 
 
-    if(!TriMesh->RayCallback || 
-        TriMesh->RayCallback(TriMesh, RayGeom, contact_data.m_face_id, contact_data.u , contact_data.v))
+    if(!TriMesh->m_RayCallback || 
+        TriMesh->m_RayCallback(TriMesh, RayGeom, contact_data.m_face_id, contact_data.u , contact_data.v))
     {
         dContactGeom* Contact = &( Contacts[ 0 ] );
         VEC_COPY(Contact->pos,contact_data.m_point);

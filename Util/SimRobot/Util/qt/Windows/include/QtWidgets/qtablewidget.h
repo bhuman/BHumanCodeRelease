@@ -40,6 +40,7 @@
 #ifndef QTABLEWIDGET_H
 #define QTABLEWIDGET_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qtableview.h>
 #include <QtCore/qvariant.h>
 #include <QtCore/qvector.h>
@@ -330,8 +331,9 @@ protected:
 
     QModelIndex indexFromItem(QTableWidgetItem *item) const;
     QTableWidgetItem *itemFromIndex(const QModelIndex &index) const;
+#if QT_CONFIG(draganddrop)
     void dropEvent(QDropEvent *event) Q_DECL_OVERRIDE;
-
+#endif
 private:
     void setModel(QAbstractItemModel *model) Q_DECL_OVERRIDE;
 

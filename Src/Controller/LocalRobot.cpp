@@ -25,7 +25,7 @@ LocalRobot::LocalRobot() :
     logFile = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getLogFile();
     if(logPlayer.open(logFile))
     {
-      logPlayer.handleAllMessages(annotationInfos['c']);
+      logPlayer.handleAllMessages(annotationInfos);
       logPlayer.play();
       puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
       if(puppet)
@@ -94,7 +94,6 @@ bool LocalRobot::main()
           {
             FrameInfo frameInfo;
             frameInfo.time = image.timeStamp;
-            frameInfo.cycleTime = 1.f / (float)ctrl->calculateImageFps;
             debugOut.out.bin << frameInfo;
             debugOut.out.finishMessage(idFrameInfo);
           }

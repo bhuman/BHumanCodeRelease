@@ -240,7 +240,11 @@ _mm_cmpge_ss(__m128 __a, __m128 __b)
 static __inline__ __m128 __attribute__((__always_inline__, __nodebug__))
 _mm_cmpge_ps(__m128 __a, __m128 __b)
 {
+#if __has_builtin(__builtin_ia32_cmpleps)
+  return (__m128)__builtin_ia32_cmpleps((__v4sf)__b, (__v4sf)__a);
+#else
   return (__m128)__builtin_ia32_cmpps(__b, __a, 2);
+#endif
 }
 
 static __inline__ __m128 __attribute__((__always_inline__, __nodebug__))
@@ -638,7 +642,14 @@ _mm_store_ss(float *__p, __m128 __a)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_storeu_ps(float *__p, __m128 __a)
 {
+#if __has_builtin(__builtin_ia32_storeups)
   __builtin_ia32_storeups(__p, __a);
+#else
+  struct __storeu_ps {
+    __m128 __v;
+  } __attribute__((__packed__, __may_alias__));
+  ((struct __storeu_ps*)__p)->__v = __a;
+#endif
 }
 
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
@@ -686,14 +697,20 @@ _mm_stream_pi(__m64 *__p, __m64 __a)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_stream_ps(float *__p, __m128 __a)
 {
+#if __has_builtin(__builtin_ia32_movntps)
   __builtin_ia32_movntps(__p, __a);
+#else
+  __builtin_nontemporal_store((__v4sf)__a, (__v4sf*)__p);
+#endif
 }
 
+#if !__has_builtin(_mm_sfence)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_sfence(void)
 {
   __builtin_ia32_sfence();
 }
+#endif
 
 static __inline__ int __attribute__((__always_inline__, __nodebug__))
 _mm_extract_pi16(__m64 __a, int __n)
@@ -774,17 +791,21 @@ _mm_sad_pu8(__m64 __a, __m64 __b)
   return (__m64)__builtin_ia32_psadbw((__v8qi)__a, (__v8qi)__b);
 }
 
+#if !__has_builtin(_mm_getcsr)
 static __inline__ unsigned int __attribute__((__always_inline__, __nodebug__))
 _mm_getcsr(void)
 {
   return __builtin_ia32_stmxcsr();
 }
+#endif
 
+#if !__has_builtin(_mm_setcsr)
 static __inline__ void __attribute__((__always_inline__, __nodebug__))
 _mm_setcsr(unsigned int __i)
 {
   __builtin_ia32_ldmxcsr(__i);
 }
+#endif
 
 #define _mm_shuffle_ps(a, b, mask) __extension__ ({ \
   __m128 __a = (a); \

@@ -17,7 +17,7 @@ class TabBar : public QTabBar
   Q_OBJECT
 
 public:
-  TabBar(QWidget* parent = 0);
+  TabBar(QWidget* parent = nullptr);
 
 protected:
   void mousePressEvent(QMouseEvent* event);
@@ -36,7 +36,7 @@ private:
 class TabWidget : public QTabWidget
 {
 public:
-  TabWidget(QWidget* parent = 0);
+  TabWidget(QWidget* parent = nullptr);
 
   QTabBar* getTabBar() { return tb; }
 

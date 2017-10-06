@@ -39,5 +39,5 @@ SenderList* SenderList::lookup(const std::string& processName, const std::string
   for(SenderList* p = getFirst(); p; p = p->getNext())
     if(processName + "." + p->name == senderName)
       return p;
-  return 0;
+  return nullptr;
 }

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
@@ -15,6 +16,7 @@
 
 MODULE(ScanGridProvider,
 {,
+  REQUIRES(BallSpecification),
   REQUIRES(BodyContour),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),

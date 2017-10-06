@@ -176,14 +176,14 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4* world0, const M
 	{
 		if(cache.Model0->IsQuantized())
 		{
-			const AABBQuantizedNoLeafTree* T0 = (const AABBQuantizedNoLeafTree*)cache.Model0->GetTree();
-			const AABBQuantizedNoLeafTree* T1 = (const AABBQuantizedNoLeafTree*)cache.Model1->GetTree();
+			const AABBQuantizedNoLeafTree* T0 = static_cast<const AABBQuantizedNoLeafTree *>(cache.Model0->GetTree());
+			const AABBQuantizedNoLeafTree* T1 = static_cast<const AABBQuantizedNoLeafTree *>(cache.Model1->GetTree());
 			Status = Collide(T0, T1, world0, world1, &cache);
 		}
 		else
 		{
-			const AABBNoLeafTree* T0 = (const AABBNoLeafTree*)cache.Model0->GetTree();
-			const AABBNoLeafTree* T1 = (const AABBNoLeafTree*)cache.Model1->GetTree();
+			const AABBNoLeafTree* T0 = static_cast<const AABBNoLeafTree *>(cache.Model0->GetTree());
+			const AABBNoLeafTree* T1 = static_cast<const AABBNoLeafTree *>(cache.Model1->GetTree());
 			Status = Collide(T0, T1, world0, world1, &cache);
 		}
 	}
@@ -191,14 +191,14 @@ bool AABBTreeCollider::Collide(BVTCache& cache, const Matrix4x4* world0, const M
 	{
 		if(cache.Model0->IsQuantized())
 		{
-			const AABBQuantizedTree* T0 = (const AABBQuantizedTree*)cache.Model0->GetTree();
-			const AABBQuantizedTree* T1 = (const AABBQuantizedTree*)cache.Model1->GetTree();
+			const AABBQuantizedTree* T0 = static_cast<const AABBQuantizedTree *>(cache.Model0->GetTree());
+			const AABBQuantizedTree* T1 = static_cast<const AABBQuantizedTree *>(cache.Model1->GetTree());
 			Status = Collide(T0, T1, world0, world1, &cache);
 		}
 		else
 		{
-			const AABBCollisionTree* T0 = (const AABBCollisionTree*)cache.Model0->GetTree();
-			const AABBCollisionTree* T1 = (const AABBCollisionTree*)cache.Model1->GetTree();
+			const AABBCollisionTree* T0 = static_cast<const AABBCollisionTree *>(cache.Model0->GetTree());
+			const AABBCollisionTree* T1 = static_cast<const AABBCollisionTree *>(cache.Model1->GetTree());
 			Status = Collide(T0, T1, world0, world1, &cache);
 		}
 	}

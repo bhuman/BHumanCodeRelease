@@ -111,13 +111,6 @@ void Thread::start(C* o, void (C::*f)())
 #define DECLARE_SYNC std::recursive_mutex _mutex
 
 /**
- * The macro places a std::recursive_mutex as static member variable into a
- * class or as a static global variable into a compilation unit.
- * This is the precondition for using the macro SYNC.
- */
-#define DECLARE_SYNC_STATIC static std::recursive_mutex _mutex
-
-/**
  * The macro SYNC ensures that the access to member variables is synchronized.
  * So only one thread can enter a SYNC block for this object at the same time.
  * The SYNC is automatically released at the end of the current code block.

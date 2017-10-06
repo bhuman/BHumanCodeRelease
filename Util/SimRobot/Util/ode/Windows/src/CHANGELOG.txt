@@ -8,6 +8,121 @@ the rules for this file:
   * keep the format consistent (79 char width, M/D/Y date format).
 
 ------------------------------------------------------------------------------
+02/20/2017 Oleh Derevenko
+        * Project generation options have been changed to have built-in
+          multithreaded threading implementation enabled by default.
+
+02/19/2017 Oleh Derevenko
+        * dWorldStep threaded implementation has been extended to the final 
+          steps of constraint force applications and body position updates
+          after the LCP solving. Note that body callbacks (if set) may be
+          called from multiple threads if threaded execution is enabled.
+        * OU atomicord32 type has been fixed to be unsigned on all supported
+          platforms.
+
+01/09/2017 Oleh Derevenko
+        * dGeomTriMeshDataPreprocess2() public function has been added to 
+          replace dGeomTriMeshDataPreprocess(). Face angles pre-computation
+          for triangle meshes has been implemented.
+
+11/13/2016 Oleh Derevenko
+        * dGeomTriMeshDataGetBuff and dGeomTriMeshDataSetBuff have been marked 
+          deprecated and their functionality implemented via 
+          dGeomTriMeshDataGet and dGeomTriMeshDataSet. Extra function variant
+          dGeomTriMeshDataGet2() has been added to allow returning data size.
+
+11/07/2016 Oleh Derevenko
+        * The implementation of OPCODE TriMesh data pre-processing 
+          (dGeomTriMeshDataPreprocess()) has been optimized to only contain
+          a sort and a single pass over edges (used to be a sort and O(N^2)).
+
+10/29/2016 Oleh Derevenko
+        * dGeomTriMeshDataPreprocess() public function has been changed to 
+          return a boolean status (it can fail in low memory conditions).
+
+07/10/2016 Oleh Derevenko
+        * The correct handling of dJOINT_REVERSE mode for AngularMotor Joint 
+          implemented (issue #37).
+
+06/29/2016 Oleh Derevenko
+        * A bug fixed with HashSpace calling big boxes collision twice 
+          (both straight and reverse geometries order) since revision #1831.
+
+06/03/2016 Oleh Derevenko
+        * dJointSetHinge2Axes public function has been added and 
+          dJointSetHinge2Axis1/2 have been marked deprecated due to being 
+          unsafe.
+
+05/13/2016 Oleh Derevenko
+        * ICE Container class allocation strategy fixed to avoid reserving 
+          excess memory with large collections.
+
+05/10/2016 Oleh Derevenko
+        * dSafeNormalize3 and dSafeNormalize4 functions changed to leave the
+          parameter intact instead of replacing it with the X-axis unit in case 
+          of fault.
+
+04/12/2016 Oleh Derevenko
+        * A function to create a self-threaded threading implementation object
+          has been moved back to public headers as there could be a use for it
+          while running several worlds in parallel threads.
+
+01/09/2016 Oleh Derevenko
+        * Hinge2 joint corected to avoid faulting asserts when the axes get 
+          temporarily invalid during assignments (suggested by David Mansolino)
+
+01/03/2016 Oleh Derevenko
+        * An invalid memory access fixed in dxSAPSpace::BoxPruning() in case
+          if there were NaN values in AABBs to be sorted.
+
+12/25/2015 Oleh Derevenko
+        * Unexpected joint mode assignment (instead of comparison) fixed within
+          an dUASSERT in dJointSetTransmissionAxis2() of transmission joint
+
+11/28/2015 Oleh Derevenko
+        * Convex-Trimesh collider added (libccd+GIMPACT only)(by Piotr Piastucki)
+        * dCreateConvex() and dGeomSetConvex() public APIs changed to expect 
+          their parameter arrays as const pointers
+
+11/01/2015 Oleh Derevenko
+        * OPCODE mesh colliders' input coordinates have been offset to  
+          mesh-relative frames to decrease potential computational errors
+          (suggested by luckytrashsc2@g***l.com)
+
+08/05/2015 Oleh Derevenko
+        * Implemented change to return highest depth contacts subset for GIMPACT 
+          in cases if contacts count exceeds requested maximum (as suggested in 
+          the issue #36 by Piotr Piastucki)
+
+11/17/2014 Daniel K. O.
+        * Added support for using libccd from the system (if found via
+          pkg-config)
+
+11/10/2014 Oleh Derevenko
+        * Floating point division by zero in capsule-ray collision routine 
+          in case if the ray axis was parallel the cylinder and the ray started
+          from within it fixed (issue #26)
+
+11/08/2014 Oleh Derevenko
+        * Threading support has been extended to complete implementation 
+          of QuickStep
+
+10/29/2014 Daniel K. O.
+        * Added dJointSetDBallDistance
+
+10/19/2014 Oleh Derevenko
+        * Built-in threading implementation compilation fixed for OSX
+          (clock_gettime() is missing from the system - reported by Bram)
+
+08/10/2014 Oleh Derevenko
+        * Declarations of dWorld[Get/Set]AutoDisableLinearAverageThreshold and
+          dWorld[Get/Set]AutoDisableAngularAverageThreshold have been removed 
+          from public headers (were orphaned since rev.1052)
+
+07/16/2014 Oleh Derevenko
+        * Two fixes by Francesco Cat applied (fixes for mistakes made during
+          code style improvements in the past)
+		 
 02/27/14 Daniel K. O.
         * Added dODE_VERSION macro to public headers (issue #24).
 

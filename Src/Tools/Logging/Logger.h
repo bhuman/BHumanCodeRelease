@@ -28,17 +28,20 @@
 #include "Platform/Thread.h"
 #include "Platform/Time.h"
 #include "Representations/Infrastructure/GameInfo.h"
-#include "Tools/Cabsl.h"
+#include "Tools/Debugging/Debugging.h"
+#include "Tools/MessageQueue/MessageQueue.h"
 #include "Tools/Module/Blackboard.h"
+#include "Tools/Cabsl.h"
+#include "Tools/Streams/Enum.h"
 
 class Logger : public Cabsl<Logger>
 {
 public:
-  enum class LoggedProcess
-  {
+  ENUM(LoggedProcess,
+  {,
     cognition,
-    motion
-  };
+    motion,
+  });
 
   Logger(LoggedProcess loggedProcess);
   ~Logger();
@@ -73,11 +76,11 @@ private:
   class Loggable
   {
   public:
-    Streamable* representation;
+    const Streamable* representation;
     MessageID id;
 
     Loggable() = default;
-    Loggable(Streamable* representation, MessageID id) : representation(representation), id(id) {}
+    Loggable(const Streamable* representation, MessageID id) : representation(representation), id(id) {}
   };
 
   Parameters parameters;

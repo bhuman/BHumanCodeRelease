@@ -54,7 +54,7 @@ JPEGImage& JPEGImage::operator=(const Image& src)
 
   while(cInfo.next_scanline < cInfo.image_height)
   {
-    JSAMPROW rowPointer = const_cast<JSAMPROW>(isFullSize ? (unsigned char*) (src[0] + width * cInfo.next_scanline)
+    JSAMPROW rowPointer = const_cast<JSAMPROW>(isFullSize ? (unsigned char*)(src[0] + width * cInfo.next_scanline)
                                                           : &aiboAlignedImage[cInfo.next_scanline * cInfo.image_width]);
     jpeg_write_scanlines(&cInfo, &rowPointer, 1);
   }
@@ -117,7 +117,7 @@ void JPEGImage::toImage(Image& dest) const
   }
   else
   {
-    ASSERT(false);
+    FAIL("Unsupported number of colors: " << cInfo.num_components << ".");
   }
 
   // finish decompress
@@ -127,7 +127,7 @@ void JPEGImage::toImage(Image& dest) const
 
 int JPEGImage::onDestEmpty(j_compress_ptr)
 {
-  ASSERT(false);
+  FAIL("Unsupported operation.");
   return false;
 }
 
@@ -137,7 +137,7 @@ void JPEGImage::onSrcSkip(j_decompress_ptr, long) {}
 
 int JPEGImage::onSrcEmpty(j_decompress_ptr)
 {
-  ASSERT(false);
+  FAIL("Unsupported operation.");
   return false;
 }
 

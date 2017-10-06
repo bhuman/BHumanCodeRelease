@@ -5,13 +5,14 @@
 
 #include "Tools/Math/Eigen.h" // include first to avoid conflicts between Cabsl defines and some clang headers
 #include "Cognition.h" // include second header conflicts on Windows
-#include "Modules/Communication/TeammateDataProvider.h"
-#include "Modules/Configuration/CognitionConfigurationDataProvider.h"
-#include "Modules/Infrastructure/CameraProvider.h"
-#include "Modules/Infrastructure/CognitionLogDataProvider.h"
+#include "Modules/Configuration/ConfigurationDataProvider/CognitionConfigurationDataProvider.h"
+#include "Modules/Infrastructure/CameraProvider/CameraProvider.h"
+#include "Modules/Infrastructure/LogDataProvider/CognitionLogDataProvider.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
-#include "Representations/Communication/TeammateData.h"
+
+#include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/BHumanMessage.h"
 
 Cognition::Cognition() :
   Process(theDebugReceiver, theDebugSender),
@@ -19,26 +20,23 @@ Cognition::Cognition() :
   theDebugSender(this),
   theMotionReceiver(this),
   theMotionSender(this),
-  theTeamHandler(theTeamReceiver, theTeamSender),
-  moduleManager({ModuleBase::cognitionInfrastructure, ModuleBase::communication, ModuleBase::perception, ModuleBase::modeling, ModuleBase::behaviorControl}),
+  theSPLMessageHandler(inTeamMessages, outTeamMessage),
+  moduleManager({ModuleBase::cognitionInfrastructure, ModuleBase::communication,
+                 ModuleBase::perception, ModuleBase::modeling, ModuleBase::behaviorControl}),
   logger(Logger::LoggedProcess::cognition)
 {
   theDebugSender.setSize(5200000, 100000);
   theDebugReceiver.setSize(2800000);
-  const unsigned size = SPL_STANDARD_MESSAGE_DATA_SIZE - SPLStandardMessage::bhumanHeaderSize - 2 * sizeof(unsigned);
-  theTeamSender.setSize(size * 2); // TODO: Remove the *2
-  theTeamReceiver.setSize(5 * size); // more than 4 because of additional data
   theMotionSender.moduleManager = theMotionReceiver.moduleManager = &moduleManager;
 }
 
 void Cognition::init()
 {
-  Global::theTeamOut = &theTeamSender.out;
 #ifdef TARGET_SIM
-  theTeamHandler.startLocal(Global::getSettings().teamPort, static_cast<unsigned>(Global::getSettings().playerNumber));
+  theSPLMessageHandler.startLocal(Global::getSettings().teamPort, static_cast<unsigned>(Global::getSettings().playerNumber));
 #else
   std::string bcastAddr = UdpComm::getWifiBroadcastAddress();
-  theTeamHandler.start(Global::getSettings().teamPort, bcastAddr.c_str());
+  theSPLMessageHandler.start(Global::getSettings().teamPort, bcastAddr.c_str());
 #endif
   moduleManager.load();
   BH_TRACE_INIT("Cognition");
@@ -57,15 +55,19 @@ void Cognition::terminate()
 bool Cognition::main()
 {
   // read from team comm udp socket
-  static_cast<void>(theTeamHandler.receive());
+  static_cast<void>(theSPLMessageHandler.receive());
 
   if(CognitionLogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete())
   {
     timingManager.signalProcessStart();
     annotationManager.signalProcessStart();
 
-    BH_TRACE_MSG("before TeammateDataProvider");
-    TeammateDataProvider::handleMessages(theTeamReceiver);
+    BH_TRACE_MSG("before TeamData");
+    // push teammate data in our system
+    if(Blackboard::getInstance().exists("TeamData") &&
+       static_cast<const TeamData&>(Blackboard::getInstance()["TeamData"]).generate.operator bool())
+      while(!inTeamMessages.empty())
+        static_cast<const TeamData&>(Blackboard::getInstance()["TeamData"]).generate(inTeamMessages.takeBack());
 
     // Reset coordinate system for debug field drawing
     DECLARE_DEBUG_DRAWING("origin:Reset", "drawingOnField"); // Set the origin to the (0,0,0)
@@ -81,15 +83,14 @@ bool Cognition::main()
     BH_TRACE_MSG("before theMotionSender.send()");
     theMotionSender.send();
 
-    if(!theTeamSender.isEmpty())
+    if(Blackboard::getInstance().exists("BHumanMessageOutputGenerator")
+       && static_cast<const BHumanMessageOutputGenerator&>(Blackboard::getInstance()["BHumanMessageOutputGenerator"]).generate.operator bool()
+       && static_cast<const BHumanMessageOutputGenerator&>(Blackboard::getInstance()["BHumanMessageOutputGenerator"]).sendThisFrame)
     {
-      if(Blackboard::getInstance().exists("TeammateData") &&
-         static_cast<const TeammateData&>(Blackboard::getInstance()["TeammateData"]).sendThisFrame)
-      {
-        BH_TRACE_MSG("before theTeamHandler.send()");
-        theTeamHandler.send();
-      }
-      theTeamSender.clear(); // team messages are purged even when not sent.
+      static_cast<const BHumanMessageOutputGenerator&>(Blackboard::getInstance()["BHumanMessageOutputGenerator"]).generate(&outTeamMessage);
+
+      BH_TRACE_MSG("before theTeamHandler.send()");
+      theSPLMessageHandler.send();
     }
 
     timingManager.signalProcessStop();
@@ -127,7 +128,7 @@ bool Cognition::main()
     OUTPUT(idProcessBegin, bin, 'c');
   }
   else if(Global::getDebugRequestTable().pollCounter > 0 &&
-    --Global::getDebugRequestTable().pollCounter == 0)
+          --Global::getDebugRequestTable().pollCounter == 0)
     OUTPUT(idDebugResponse, text, "pollingFinished");
 
   if(Blackboard::getInstance().exists("Image"))
@@ -163,7 +164,19 @@ bool Cognition::handleMessage(InMessage& message)
              CognitionConfigurationDataProvider::handleMessage(message) ||
              Process::handleMessage(message);
   }
-  BH_TRACE_MSG("after Cognition:handleMessage");
 }
 
 MAKE_PROCESS(Cognition);
+
+// Make sure that two time consuming modules are linked from the Controller library.
+#ifdef MACOS
+
+#include "Modules/Perception/BallPerceptors/BallPerceptor.h"
+extern Module<BallPerceptor, BallPerceptorBase> theBallPerceptorModule;
+auto linkBallPerceptor = &theBallPerceptorModule;
+
+#include "Modules/Perception/ImagePreprocessors/ECImageProvider.h"
+extern Module<ECImageProvider, ECImageProviderBase> theECImageProviderModule;
+auto linkECImageProvider = &theECImageProviderModule;
+
+#endif

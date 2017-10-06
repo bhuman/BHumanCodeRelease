@@ -20,7 +20,7 @@ STREAMABLE(IntersectionsPercept,
     });
 
     Intersection() = default;
-    Intersection(const IntersectionType & t, const Vector2f & p, const Vector2f & d1, const Vector2f & d2, unsigned l1, unsigned l2)
+    Intersection(const IntersectionType& t, const Vector2f& p, const Vector2f& d1, const Vector2f& d2, unsigned l1, unsigned l2)
     {
       type = t;
       pos = p;
@@ -46,12 +46,9 @@ STREAMABLE(IntersectionsPercept,
   (std::vector<Intersection>) intersections,
 });
 
-struct EdgePercept : public IntersectionsPercept {};
-
 inline void IntersectionsPercept::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:IntersectionsPercept:field", "drawingOnField");
-  COMPLEX_DRAWING("representation:IntersectionsPercept:field")
+  DEBUG_DRAWING("representation:IntersectionsPercept:field", "drawingOnField")
   {
     for(const Intersection& intersection : intersections)
     {

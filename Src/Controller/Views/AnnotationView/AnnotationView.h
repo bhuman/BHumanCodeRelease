@@ -1,12 +1,14 @@
 /**
  * @file AnnotationView.h
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #pragma once
 
 #include <SimRobot.h>
 #include <QIcon>
+#include "Platform/SystemCall.h"
+#include "Controller/Representations/AnnotationInfo.h"
 
 class AnnotationInfo;
 class RobotConsole;
@@ -15,13 +17,14 @@ class LogPlayer;
 class AnnotationView : public SimRobot::Object
 {
 public:
-  AnnotationView(const QString& fullName, AnnotationInfo& info, LogPlayer& logPlayer, SimRobot::Application* application);
+  AnnotationView(const QString& fullName, AnnotationInfo::ProcessAnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application);
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
   const QIcon icon; /**< The icon used for listing this view in the scene graph */
-  AnnotationInfo& info;
+  AnnotationInfo::ProcessAnnotationInfo& info;
   LogPlayer& logPlayer; /**< Used to jump to frames */
+  SystemCall::Mode mode; /**< Only jump if replaying logs */
   SimRobot::Application* application;
 
   bool stopOnFilter = false;

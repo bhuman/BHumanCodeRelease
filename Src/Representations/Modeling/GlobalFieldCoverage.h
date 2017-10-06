@@ -1,7 +1,7 @@
 /**
-* @file GlobalFieldCoverage.h
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file GlobalFieldCoverage.h
+ * @author Andreas Stolpmann
+ */
 
 #pragma once
 
@@ -14,19 +14,21 @@ STREAMABLE(GlobalFieldCoverage,
   STREAMABLE(Cell,
   {
     Cell() = default;
-    Cell(const unsigned timestamp, const unsigned value,
+    Cell(const int coverage, unsigned timestamp,
          const float positionOnFieldX, const float positionOnFieldY,
          const float cellLengthX, const float cellLengthY);
 
-    Vector2f polygon[4], // Used for drawing
+    const Vector2f polygon[4], // Used for drawing
 
-    (unsigned) (0) timestamp,
-    (unsigned) (0) value,
+    (int)(0) coverage,
+    (unsigned)(0) timestamp,
     (Vector2f) positionOnField,
   });
 
   void draw() const,
 
-  (bool) (false) newDataThisFrame,
+  (int)(0) meanCoverage,
   (std::vector<Cell>) grid,
+
+  (Vector2f)(Vector2f::Zero()) ballDropInPosition,
 });

@@ -115,6 +115,16 @@ then
 fi
 CPPFLAGS="$CPPFLAGS -D_OU_NAMESPACE=$OU_NAMESPACE"
 
+AC_ARG_VAR([OU_FEATURE_SET], [feature set to be compiled within the OU])
+AC_ARG_WITH([feature-set],
+    AC_HELP_STRING([--feature-set=_OU_FEATURE_SET_BASICS|_OU_FEATURE_SET_ATOMICS|_OU_FEATURE_SET_TLS|_OU_FEATURE_SET__MAX],[sets the feature set to be enabled]),
+    [OU_FEATURE_SET=$withval])
+if test x$OU_FEATURE_SET = xno -o x$OU_FEATURE_SET = x
+then
+    OU_NAMESPACE=_OU_FEATURE_SET__MAX
+fi
+CPPFLAGS="$CPPFLAGS -D_OU_FEATURE_SET=$OU_FEATURE_SET"
+
 AC_ARG_ENABLE([asserts],
         AS_HELP_STRING([--disable-asserts],
             [disables debug error checking]),
@@ -131,4 +141,5 @@ AC_CONFIG_FILES([Makefile
 AC_OUTPUT
 
 echo "OU namespace: $OU_NAMESPACE"
+echo "OU feature set: $OU_FEATURE_SET"
 

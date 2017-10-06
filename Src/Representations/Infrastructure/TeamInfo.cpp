@@ -54,7 +54,7 @@ TeamInfo::TeamInfo()
 
 void TeamInfo::serialize(In* in, Out* out)
 {
-  PlayerInfo(&players)[4] = reinterpret_cast<PlayerInfo(&)[4]>(this->players);
+  PlayerInfo(&players)[5] = reinterpret_cast<PlayerInfo(&)[5]>(this->players);
   PlayerInfo& coach = reinterpret_cast<PlayerInfo&>(this->coach);
   char buf[sizeof(this->coachMessage) + 1];
   strncpy(buf, (const char*) this->coachMessage, sizeof(this->coachMessage));
@@ -63,7 +63,7 @@ void TeamInfo::serialize(In* in, Out* out)
 
   STREAM_REGISTER_BEGIN;
   STREAM(teamNumber); // unique team number
-  STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK
+  STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK, ...
   STREAM(score); // team's score
   STREAM(coachMessage); // last coach message received
   STREAM(coach); // team's coach
@@ -127,7 +127,7 @@ void TeamInfo::draw() const
 {
   DECLARE_DEBUG_DRAWING3D("representation:TeamInfo", "field");
   {
-    float x = teamColor == TEAM_BLUE ? -1535.f : 1465.f;
+    float x = teamNumber == 1 ? -1535.f : 1465.f;
     drawDigit(score / 10, Vector3f(x, 3500, 1000), 200, teamColor);
     drawDigit(score % 10, Vector3f(x + 270, 3500, 1000), 200, teamColor);
   };
@@ -135,7 +135,14 @@ void TeamInfo::draw() const
 
 OwnTeamInfo::OwnTeamInfo()
 {
-  teamColor = Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLUE;
+  teamColor = Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLACK;
+}
+
+void OwnTeamInfo::operator >> (BHumanMessage& m) const
+{
+  m.theBHULKsStandardMessage.gameControlData.score = score;
+  for(int i = 0; i < BHULKS_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
+    m.theBHULKsStandardMessage.gameControlData.playersArePenalized[i] = players[i].penalty != PENALTY_NONE;
 }
 
 void OwnTeamInfo::draw() const
@@ -151,5 +158,5 @@ void OwnTeamInfo::draw() const
 
 OpponentTeamInfo::OpponentTeamInfo()
 {
-  teamColor = 1 ^ (Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLUE);
+  teamColor = 1 ^ (Global::settingsExist() ? Global::getSettings().teamColor : TEAM_RED);
 }

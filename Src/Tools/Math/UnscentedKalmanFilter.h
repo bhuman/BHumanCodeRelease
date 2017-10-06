@@ -1,6 +1,8 @@
 /**
  * @file Tools/Math/UnscentedKalmanFilter.h
  *
+ * A generic implementation of an Unscented Kalman Filter.
+ *
  * @author <a href="mailto:alexists@tzi.de">Alexis Tsogias</a>
  */
 
@@ -14,62 +16,126 @@
 #include <functional>
 #include <limits>
 
+/**
+ * A Manifold construct to handle state spaces with singularities and encapsualte
+ * the topological stucure with [+] and [-] operations.
+ */
 template<unsigned N>
 struct Manifold
 {
   static constexpr unsigned DOF = N;
-  using Vectorf = Eigen::Matrix<float, DOF, 1>;
+  using Vectorf = Eigen::Matrix<float, DOF, 1>; // Handle the element like a vector
 
-  Manifold operator+(const Vectorf& vec) const;
+  Manifold operator+(const Vectorf& vec) const; // The [+] operator
   Manifold& operator+=(const Vectorf& vec);
-  Vectorf operator-(const Manifold& other) const;
+  Vectorf operator-(const Manifold& other) const; // The [-] operator
 };
 
 namespace impl
 {
+  /**
+   * A struct to run a calculation of mean for given sigma points.
+   */
   template<typename State, unsigned DOF, typename Array, bool IsManifold>
   struct MeanOfSigmaPoints
   {
     static State run(const Array& sigmaPoints);
   };
 
+  /**
+   * The class for the Unscented Kalman Filter for hypotheses generation by using
+   * Kalman filtering using Sigma Points.
+   */
   template<typename State, unsigned DOF, bool Manifold>
   class UnscentedKalmanFilter
   {
   public:
-    using CovarianceType = Eigen::Matrix<float, DOF, DOF>;
+    using CovarianceType = Eigen::Matrix<float, DOF, DOF>; // The covariance size to use
     template<unsigned N>
-    using Vectorf = Eigen::Matrix<float, N, 1>;
+    using Vectorf = Eigen::Matrix<float, N, 1>; // The vector size to use
 
   private:
     template<typename T>
-    using SigmaArray = std::array<T, DOF * 2 + 1>;
+    using SigmaArray = std::array < T, DOF * 2 + 1 >; // The array type for the sigma points
 
   public:
-    State mean;
-    CovarianceType cov = CovarianceType::Zero();
+    State mean; // The mean of the hypothesis that is generated
+    CovarianceType cov = CovarianceType::Zero(); // The covariance of the hypothesis to quantify the certainty
 
   private:
-    SigmaArray<State> sigmaPoints;
+    SigmaArray<State> sigmaPoints; // The array for the sigma points
 
   public:
+    /**
+     * The constructor for the filter that requires an initial state to start with.
+     * @param initState, the state to initialize the filter
+     */
     UnscentedKalmanFilter(const State& initState);
 
+    /**
+     * Initalization function to start the process. Setting the mean, covariance and sigma points.
+     * @param initState, the mean to be set
+     * @param initNoise, the noise as a standard deviation to initialize the covariance (the given matrix will be squared)
+     */
     void init(const State& initState, const CovarianceType& initNoise);
 
+    /**
+     * The prediction step to propagate the whole hypothesis with a given dynamic model and an operation specific noise.
+     * In other works this function is referred as dynamic step.
+     * @param dynamicModel, a function to propagate the state
+     * @param noise, the propagation specific noise to quantify the uncertainty
+     */
     void predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise);
 
+    /**
+     * The multi dimensional update step to integrate a measurement into an existing hypothesis.
+     * In other works this function is referred as measurement step.
+     * @param measurement, a vector that stores all relevant data of a measurement
+     * @param measurementModel, a function that returns a measurement for a state
+     * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+     */
     template<unsigned N>
     void update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise);
+
+    /**
+     * The single dimensional update step to integrate a measurement into an existing hypothesis.
+     * In other works this function is referred as measurement step.
+     * @param measurement, a float value that represents a measurement
+     * @param measurementModel, a function that returns a measurement for a state
+     * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+     */
     void update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise);
 
   private:
+    /**
+     * The helper function to calculate sigma points using the given mean and the covariance.
+     */
     void updateSigmaPoints();
+
+    /**
+     * The function to call a new mean out of the sigma points.
+     * @return the state that is the new mean
+     */
     State meanOfSigmaPoints() const;
+
+    /**
+     * A helper function to validate if a covariance is still a covariance.
+     * The validation is done via asserts.
+     * @param cov, the covariance to check
+     */
     void covarianceMatrixValidation(const CovarianceType& cov) const;
+
+    /**
+     * A helper function to fix a covariance by forcing the symmetric property.
+     * @param cov, the covariance to fix
+     */
     void fixCovarianceMatrix(CovarianceType& cov);
   };
 
+  /**
+   * The constructor for the filter that requires an initial state to start with.
+   * @param initState, the state to initialize the filter
+   */
   template<typename State, unsigned DOF, bool Manifold>
   UnscentedKalmanFilter<State, DOF, Manifold>::UnscentedKalmanFilter(const State& initState) :
     mean(initState)
@@ -77,14 +143,25 @@ namespace impl
     sigmaPoints.fill(initState);
   }
 
+  /**
+   * Initalization function to start the process. Setting the mean, covariance and sigma points.
+   * @param initState, the mean to be set
+   * @param initNoise, the noise as a standard deviation to initialize the covariance (the given matrix will be squared)
+   */
   template<typename State, unsigned DOF, bool Manifold>
   void UnscentedKalmanFilter<State, DOF, Manifold>::init(const State& initState, const CovarianceType& initNoise)
   {
     mean = initState;
-    cov = initNoise.array().square().matrix();
+    cov = initNoise.cwiseAbs2();
     sigmaPoints.fill(initState);
   }
 
+  /**
+   * The prediction step to propagate the whole hypothesis with a given dynamic model and an operation specific noise.
+   * In other works this function is referred as dynamic step.
+   * @param dynamicModel, a function to propagate the state
+   * @param noise, the propagation specific noise to quantify the uncertainty
+   */
   template<typename State, unsigned DOF, bool Manifold>
   void UnscentedKalmanFilter<State, DOF, Manifold>::predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise)
   {
@@ -111,6 +188,13 @@ namespace impl
     covarianceMatrixValidation(cov);
   }
 
+  /**
+   * The multi dimensional update step to integrate a measurement into an existing hypothesis.
+   * In other works this function is referred as measurement step.
+   * @param measurement, a vector that stores all relevant data of a measurement
+   * @param measurementModel, a function that returns a measurement for a state
+   * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   template<unsigned N>
   void UnscentedKalmanFilter<State, DOF, IsManifold>::update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise)
@@ -160,12 +244,19 @@ namespace impl
     covarianceMatrixValidation(cov);
   }
 
+  /**
+   * The single dimensional update step to integrate a measurement into an existing hypothesis.
+   * In other works this function is referred as measurement step.
+   * @param measurement, a float value that represents a measurement
+   * @param measurementModel, a function that returns a measurement for a state
+   * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   void UnscentedKalmanFilter<State, DOF, IsManifold>::update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise)
   {
     ASSERT(measurementNoise > 0.f);
 
-    using MixedCovarianceType = Eigen::Matrix<float, State::DOF, 1>;
+    using MixedCovarianceType = Eigen::Matrix<float, DOF, 1>;
 
     updateSigmaPoints();
 
@@ -202,6 +293,9 @@ namespace impl
     covarianceMatrixValidation(cov);
   }
 
+  /**
+   * The helper function to calculate sigma points using the given mean and the covariance.
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   void UnscentedKalmanFilter<State, DOF, IsManifold>::updateSigmaPoints()
   {
@@ -224,12 +318,21 @@ namespace impl
     }
   }
 
+  /**
+   * The function to call a new mean out of the sigma points.
+   * @return the state that is the new mean
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   inline State UnscentedKalmanFilter<State, DOF, IsManifold>::meanOfSigmaPoints() const
   {
     return MeanOfSigmaPoints<State, DOF, SigmaArray<State>, IsManifold>::run(sigmaPoints);
   }
 
+  /**
+   * A helper function to validate if a covariance is still a covariance.
+   * The validation is done via asserts.
+   * @param cov, the covariance to check
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   inline void UnscentedKalmanFilter<State, DOF, IsManifold>::covarianceMatrixValidation(const CovarianceType& cov) const
   {
@@ -247,6 +350,10 @@ namespace impl
     }
   }
 
+  /**
+   * A helper function to fix a covariance by forcing the symmetric property.
+   * @param cov, the covariance to fix
+   */
   template<typename State, unsigned DOF, bool IsManifold>
   inline void UnscentedKalmanFilter<State, DOF, IsManifold>::fixCovarianceMatrix(CovarianceType& cov)
   {
@@ -259,16 +366,25 @@ namespace impl
     }
   }
 
+  /**
+   * A struct to run a calculation of mean for given sigma points with manifold.
+   */
   template<typename State, unsigned DOF, typename Array>
   struct MeanOfSigmaPoints<State, DOF, Array, true>
   {
-    using Vectorf = Eigen::Matrix<float, DOF, 1>;
+    using Vectorf = Eigen::Matrix<float, DOF, 1>; // The vector type to operate on
 
+    /**
+     * Calculate the mean of states via manifold convergence algorithm.
+     * @param sigmaPoints, an array of states to get a mean of
+     * @return the mean
+     */
     static State run(const Array& sigmaPoints)
     {
-      State mean = sigmaPoints[0];
-      State lastMean;
-      unsigned iterations = 0;
+      State mean = sigmaPoints[0]; // The mean to use for convergence
+      State lastMean; // The mean to check convergence with
+      unsigned iterations = 0; // The iteration counter
+      // Move the mean each step into the direction of the sigma points till the difference is minimal or the limit is reached
       do
       {
         lastMean = mean;
@@ -283,9 +399,17 @@ namespace impl
     }
   };
 
+  /**
+   * A struct to run a calculation of mean for given sigma points without manifold.
+   */
   template<typename State, unsigned DOF, typename Array>
   struct MeanOfSigmaPoints<State, DOF, Array, false>
   {
+    /**
+     * Calculate the arithmetic mean of vectors.
+     * @param sigmaPoints, an array of vectors to get a mean of
+     * @return the mean
+     */
     static State run(const Array& sigmaPoints)
     {
       State sum = State::Zero();
@@ -296,6 +420,9 @@ namespace impl
   };
 }
 
+/**
+ * UKF type for easy acces with and without manifold.
+ */
 template<unsigned DOF>
 using UKF = impl::UnscentedKalmanFilter<Eigen::Matrix<float, DOF, 1>, DOF, false>;
 

@@ -1,6 +1,6 @@
 /**
  * @file AnnotationInfo.cpp
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #pragma once
@@ -23,11 +23,19 @@ public:
     std::string annotation;
   };
 
-  DECLARE_SYNC;
-  std::vector<AnnotationData> newAnnotations;
-  unsigned timeOfLastMessage = 0;
+  struct ProcessAnnotationInfo
+  {
+    DECLARE_SYNC;
+    std::vector<AnnotationData> newAnnotations;
+    unsigned timeOfLastMessage = 0;
+    const AnnotationView* view = nullptr;
+  };
 
-  const AnnotationView* view = nullptr;
+  ProcessAnnotationInfo* currentProcess = nullptr;
+
+  std::unordered_map<char, ProcessAnnotationInfo> annotationProcesses;
+
+  AnnotationInfo();
 
   bool handleMessage(InMessage& message);
 };

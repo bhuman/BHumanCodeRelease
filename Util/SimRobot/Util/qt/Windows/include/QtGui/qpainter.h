@@ -40,6 +40,7 @@
 #ifndef QPAINTER_H
 #define QPAINTER_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qnamespace.h>
 #include <QtCore/qrect.h>
 #include <QtCore/qpoint.h>
@@ -82,7 +83,6 @@ class Q_GUI_EXPORT QPainter
 {
     Q_DECLARE_PRIVATE(QPainter)
     Q_GADGET
-    Q_FLAGS(RenderHint RenderHints)
 
 public:
     enum RenderHint {
@@ -93,8 +93,10 @@ public:
         NonCosmeticDefaultPen = 0x10,
         Qt4CompatiblePainting = 0x20
     };
+    Q_FLAG(RenderHint)
 
     Q_DECLARE_FLAGS(RenderHints, RenderHint)
+    Q_FLAG(RenderHints)
 
     class PixmapFragment {
     public:

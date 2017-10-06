@@ -48,8 +48,8 @@ void BHToolBar::unsetMenuPointer()
 {
   menu = nullptr;
   if(!motionButtonsDisabled && (
-    currentMotion == none || currentMotion == standing || currentMotion == isDown ||
-     (lastRequest.isValid() && lastRequest.secsTo(QTime::currentTime()) >= 3)))
+       currentMotion == none || currentMotion == standing || currentMotion == isDown ||
+       (lastRequest.isValid() && lastRequest.secsTo(QTime::currentTime()) >= 3)))
     motionButtonsDisabled = false;
 }
 

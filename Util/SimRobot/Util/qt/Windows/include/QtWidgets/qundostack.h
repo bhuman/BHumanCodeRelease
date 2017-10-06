@@ -40,6 +40,7 @@
 #ifndef QUNDOSTACK_H
 #define QUNDOSTACK_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qstring.h>
 
@@ -67,6 +68,9 @@ public:
     QString text() const;
     QString actionText() const;
     void setText(const QString &text);
+
+    bool isObsolete() const;
+    void setObsolete(bool obsolete);
 
     virtual int id() const;
     virtual bool mergeWith(const QUndoCommand *other);
@@ -127,6 +131,7 @@ public:
 
 public Q_SLOTS:
     void setClean();
+    void resetClean();
     void setIndex(int idx);
     void undo();
     void redo();

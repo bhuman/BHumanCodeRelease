@@ -10,6 +10,7 @@
 
 #include "SimulatedRobot.h"
 #include "GameController.h"
+#include "Tools/Settings.h"
 
 #include <QList>
 #include <QString>
@@ -26,6 +27,8 @@ public:
   static RoboCupCtrl* controller; /**< A pointer to the SimRobot controller. */
   static SimRobot::Application* application; /**< The interface to the SimRobot GUI */
   GameController gameController;
+  Settings::TeamColor firstTeamColor; /** Color of the first team */
+  Settings::TeamColor secondTeamColor; /** Color of the second team */
 
 protected:
   const char* robotName; /**< The name of the robot currently constructed. */
@@ -140,4 +143,9 @@ protected:
    * Has to be called by derived class to stop processes.
    */
   void stop();
+
+  /**
+   * Maps a std::string to a color enum from Settings.
+   */
+  Settings::TeamColor parseColorFromString(const std::string& color);
 };

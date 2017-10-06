@@ -1,0 +1,34 @@
+#!/bin/bash
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+basePath=$(dirname "${scriptPath}")
+cd "${basePath}"
+
+modules_root=../../Src/Modules
+
+echo "Your Name is:"
+read name
+echo "Name of Module:"
+read module
+echo "This Module provides:"
+read provides
+echo "Category (perception, modeling, ...):"
+read category
+echo "Save location (relative to Src/Modules):"
+read -i $modules_root/ -e path
+
+sed \
+   <../../Util/Buildchain/macOS/templates/Module.xctemplate/Default/___FILEBASENAME___.cpp \
+   >${path%/}/$module.cpp \
+  -e "s/___FILENAME___/${module}.cpp/g" \
+  -e "s/___FULLUSERNAME___/${name}/g" \
+  -e "s/___FILEBASENAME___/${module}/g" \
+  -e "s/___VARIABLE_category:identifier___/${category}/g" \
+  -e "s/___VARIABLE_representation:identifier___/${provides}/g"
+
+sed \
+   <../../Util/Buildchain/macOS/templates/Module.xctemplate/Default/___FILEBASENAME___.h \
+   >${path%/}/$module.h \
+  -e "s/___FILENAME___/${module}.h/g" \
+  -e "s/___FULLUSERNAME___/${name}/g" \
+  -e "s/___FILEBASENAME___/${module}/g" \
+  -e "s/___VARIABLE_representation:identifier___/${provides}/g"

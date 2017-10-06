@@ -25,6 +25,7 @@
 #include <ccd/precision.h>
 #include <ccd/compiler.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -37,7 +38,7 @@ extern "C" {
 #endif /* CCD_SINGLE */
 
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER < 1700
 /* Define fmin, fmax, fminf, fmaxf which are missing from MSVC (up to VS2005 at least) */
 static __inline double fmin(double x, double y) { return __min(x, y); }
 static __inline double fmax(double x, double y) { return __max(x, y); }
@@ -143,7 +144,7 @@ _ccd_inline void ccdVec3Set(ccd_vec3_t *v, ccd_real_t x, ccd_real_t y, ccd_real_
 _ccd_inline void ccdVec3Copy(ccd_vec3_t *v, const ccd_vec3_t *w);
 
 /**
- * Substracts coordinates of vector w from vector v. v = v - w
+ * Subtracts coordinates of vector w from vector v. v = v - w
  */
 _ccd_inline void ccdVec3Sub(ccd_vec3_t *v, const ccd_vec3_t *w);
 
@@ -161,6 +162,7 @@ _ccd_inline void ccdVec3Sub2(ccd_vec3_t *d, const ccd_vec3_t *v, const ccd_vec3_
  * d = d * k;
  */
 _ccd_inline void ccdVec3Scale(ccd_vec3_t *d, ccd_real_t k);
+
 
 /**
  * Normalizes given vector to unit length.
@@ -182,7 +184,7 @@ _ccd_inline void ccdVec3Cross(ccd_vec3_t *d, const ccd_vec3_t *a, const ccd_vec3
 /**
  * Returns distance2 of point P to segment ab.
  * If witness is non-NULL it is filled with coordinates of point from which
- * was computaed distance to point P.
+ * was computed distance to point P.
  */
 ccd_real_t ccdVec3PointSegmentDist2(const ccd_vec3_t *P,
                                 const ccd_vec3_t *a, const ccd_vec3_t *b,
@@ -286,6 +288,7 @@ _ccd_inline void ccdVec3Sub(ccd_vec3_t *v, const ccd_vec3_t *w)
     v->v[1] -= w->v[1];
     v->v[2] -= w->v[2];
 }
+
 _ccd_inline void ccdVec3Sub2(ccd_vec3_t *d, const ccd_vec3_t *v, const ccd_vec3_t *w)
 {
     d->v[0] = v->v[0] - w->v[0];

@@ -28,6 +28,11 @@
 #define _OU_THREADLOCALSTORAGE_H_INCLUDED
 
 
+#include <ou/features.h>
+
+
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
+
 #include <ou/typewrapper.h>
 #include <ou/macros.h>
 #include <ou/assert.h>
@@ -284,6 +289,9 @@ private:
 
 
 END_NAMESPACE_OU();
+
+
+#endif // #if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 
 
 #endif // #ifndef _OU_THREADLOCALSTORAGE_H_INCLUDED

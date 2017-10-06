@@ -1,20 +1,19 @@
 /**
  * @file Math/Random.h
  * This contains some functions for creating random numbers.
- * @author <a href="mailto:martin.kallnik@gmx.de">Martin Kallnik</a>
- * @author Max Risler
+ *
+ * @author Alexis Tsogias
  */
 
 #pragma once
 
-//#include <cstdlib>
 #include <random>
 
 class Random
 {
 public:
   /**
-   * Returns true with a probabillity of p.
+   * Returns true with a probability of p.
    */
   static bool bernoulli(double p = 0.5);
 
@@ -59,7 +58,6 @@ public:
   template<typename T = float>
   static T triangular(T low, T mean, T high);
 
-private:
   static std::mt19937& getGenerator();
 };
 

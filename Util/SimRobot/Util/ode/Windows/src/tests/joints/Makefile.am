@@ -5,9 +5,12 @@ AM_CPPFLAGS = -I$(srcdir)/../UnitTest++/src \
 
 check_LTLIBRARIES = libjoints.la
 
+libjoints_la_LDFLAGS = -static
+
 libjoints_la_SOURCES = \
     amotor.cpp \
     ball.cpp \
+    dball.cpp \
     fixed.cpp \
     hinge.cpp \
     hinge2.cpp \

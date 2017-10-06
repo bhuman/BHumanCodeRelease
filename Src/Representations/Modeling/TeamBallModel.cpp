@@ -38,8 +38,21 @@ void TeamBallModel::draw() const
 
   COMPLEX_DRAWING("representation:TeamBallModel")
   {
-    CIRCLE("representation:TeamBallModel", position.x(), position.y(), 30, 20, Drawings::solidPen, ColorRGBA::blue, Drawings::noBrush, ColorRGBA::black);
-    ARROW("representation:TeamBallModel", position.x(), position.y(), position.x() + velocity.x(), position.y() + velocity.y(), 5, 1, ColorRGBA::blue);
-    DRAWTEXT("representation:TeamBallModel", 1000, 1000, 200, ColorRGBA::black, isValid);
+    ColorRGBA teamBallColor(54, 81, 124, 240);
+    CIRCLE("representation:TeamBallModel", position.x(), position.y(), 60, 20, Drawings::solidPen, teamBallColor, Drawings::solidBrush, teamBallColor);
+    ARROW("representation:TeamBallModel", position.x(), position.y(), position.x() + velocity.x(), position.y() + velocity.y(), 5, 1, teamBallColor);
+    for(auto& b : balls)
+    {
+      CIRCLE("representation:TeamBallModel", b.position.x(), b.position.y(), 30, 20, Drawings::solidPen, teamBallColor, Drawings::solidBrush, teamBallColor);
+      LINE("representation:TeamBallModel", b.position.x(), b.position.y(), position.x(), position.y(), 10, Drawings::dashedPen, teamBallColor);
+    }
+    if(isValid)
+    {
+      CIRCLE("representation:TeamBallModel", position.x(), position.y(), 60, 20, Drawings::solidPen, ColorRGBA::white, Drawings::noBrush, teamBallColor);
+    }
+    else
+    {
+      CIRCLE("representation:TeamBallModel", position.x(), position.y(), 60, 20, Drawings::solidPen, ColorRGBA::red, Drawings::noBrush, teamBallColor);
+    }
   }
 }

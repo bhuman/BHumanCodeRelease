@@ -40,6 +40,7 @@
 #ifndef QSTATICTEXT_H
 #define QSTATICTEXT_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qmetatype.h>

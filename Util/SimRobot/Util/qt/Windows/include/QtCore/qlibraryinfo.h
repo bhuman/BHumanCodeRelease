@@ -42,6 +42,7 @@
 
 #include <QtCore/qstring.h>
 #include <QtCore/qdatetime.h>
+#include <QtCore/qversionnumber.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -50,8 +51,10 @@ class QStringList;
 class Q_CORE_EXPORT QLibraryInfo
 {
 public:
-    static QString licensee();
-    static QString licensedProducts();
+#if QT_DEPRECATED_SINCE(5, 8)
+    static QT_DEPRECATED QString licensee();
+    static QT_DEPRECATED QString licensedProducts();
+#endif
 
 #ifndef QT_NO_DATESTRING
 #if QT_DEPRECATED_SINCE(5, 5)
@@ -62,6 +65,10 @@ public:
     static const char * build() Q_DECL_NOTHROW;
 
     static bool isDebugBuild();
+
+#ifndef QT_BOOTSTRAPPED
+    static QVersionNumber version() Q_DECL_NOTHROW Q_DECL_CONST_FUNCTION;
+#endif
 
     enum LibraryLocation
     {
@@ -84,6 +91,7 @@ public:
 #ifdef QT_BUILD_QMAKE
         // These are not subject to binary compatibility constraints
         SysrootPath,
+        SysrootifyPrefixPath,
         HostBinariesPath,
         HostLibrariesPath,
         HostDataPath,
@@ -98,6 +106,7 @@ public:
 #ifdef QT_BUILD_QMAKE
     enum PathGroup { FinalPaths, EffectivePaths, EffectiveSourcePaths, DevicePaths };
     static QString rawLocation(LibraryLocation, PathGroup);
+    static void reload();
 #endif
 
     static QStringList platformPluginArguments(const QString &platformName);

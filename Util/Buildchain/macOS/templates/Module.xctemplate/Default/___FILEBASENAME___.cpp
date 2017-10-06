@@ -1,4 +1,4 @@
-/*
+/**
  * @file ___FILENAME___
  *
  * This file implements a module that <#...#>

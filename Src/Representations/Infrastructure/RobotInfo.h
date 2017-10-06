@@ -54,7 +54,7 @@ public:
 
   bool hasFeature(const RobotFeature feature) const;
 
-private:
+protected:
   /**
    * The method makes the object streamable.
    * @param in The stream from which the object is read (if in != 0).

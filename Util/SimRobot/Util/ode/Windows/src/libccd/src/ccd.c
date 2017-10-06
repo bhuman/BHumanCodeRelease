@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <float.h>
 #include <ccd/ccd.h>
-#include <ccd/vec3.h>
+#include <ccdcustom/vec3.h>
 #include <ccd/simplex.h>
 #include <ccd/polytope.h>
 #include <ccd/alloc.h>
@@ -183,15 +183,16 @@ int ccdGJKPenetration(const void *obj1, const void *obj2, const ccd_t *ccd,
 
     // set separation vector
     if (ret == 0 && nearest){
-        // compute depth of penetration
-        *depth = CCD_SQRT(nearest->dist);
-
         // store normalized direction vector
         ccdVec3Copy(dir, &nearest->witness);
-        ccdVec3Normalize(dir);
+        ret = ccdVec3SafeNormalize(dir);
 
-        // compute position
-        penEPAPos(&polytope, nearest, pos);
+        if (ret == 0) {
+            // compute depth of penetration
+            *depth = CCD_SQRT(nearest->dist);
+            // compute position
+            penEPAPos(&polytope, nearest, pos);
+        }
     }
 
     ccdPtDestroy(&polytope);

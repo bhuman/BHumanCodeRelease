@@ -71,62 +71,59 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&KickEdit"));
 
-  QAction* undoAct, *redoAct, *singleDraw, *reachedDraw, *show3D, *showEditor,
-           *show1D, *show2D, *showVelo, *showAccel, *noExtraView, *followMode;
-
-  undoAct = new QAction(QIcon(":/Icons/arrow_undo.png"), tr("Undo"), menu);
+  QAction* undoAct = new QAction(QIcon(":/Icons/arrow_undo.png"), tr("Undo"), menu);
   undoAct->setShortcut(QKeySequence::Undo);
   undoAct->setStatusTip(tr("Undo last change"));
   undoAct->setEnabled(!undo.empty());
   connect(this, SIGNAL(undoAvailable(bool)), undoAct, SLOT(setEnabled(bool)));
 
-  redoAct = new QAction(QIcon(":/Icons/arrow_redo.png"), tr("Redo"), menu);
+  QAction* redoAct = new QAction(QIcon(":/Icons/arrow_redo.png"), tr("Redo"), menu);
   redoAct->setShortcut(QKeySequence::Redo);
   redoAct->setStatusTip(tr("Redo last undone change"));
   redoAct->setEnabled(!redo.empty());
   connect(this, SIGNAL(redoAvailable(bool)), redoAct, SLOT(setEnabled(bool)));
 
-  show3D = new QAction(tr("Display Phase Drawings"), menu);
+  QAction* show3D = new QAction(tr("Display Phase Drawings"), menu);
   show3D->setStatusTip(tr("Draws curves for every limb either for the current phase or all phases"));
   show3D->setCheckable(true);
   show3D->setChecked(kickViewWidget->getDrawings());
 
-  singleDraw = new QAction(tr("Display Only Current Phase"), menu);
+  QAction* singleDraw = new QAction(tr("Display Only Current Phase"), menu);
   singleDraw->setStatusTip(tr("Draws only curves for the current Phase"));
   singleDraw->setCheckable(true);
   singleDraw->setChecked(kickViewWidget->getSingleDrawing());
 
-  reachedDraw = new QAction(tr("Display Reached Positions"), menu);
+  QAction* reachedDraw = new QAction(tr("Display Reached Positions"), menu);
   reachedDraw->setStatusTip(tr("Draws the reached positions into the 3D view"));
   reachedDraw->setCheckable(true);
   reachedDraw->setChecked(kickViewWidget->getReachedDrawing());
 
-  showEditor = new QAction(tr("Display Editor View"), menu);
+  QAction* showEditor = new QAction(tr("Display Editor View"), menu);
   showEditor->setStatusTip(tr("Shows the editor view"));
   showEditor->setCheckable(true);
   showEditor->setChecked(kickViewWidget->getEditor());
 
-  show1D = new QAction(tr("Display 1D Views"), menu);
+  QAction* show1D = new QAction(tr("Display 1D Views"), menu);
   show1D->setStatusTip(tr("Shows 1D views of one curve for each axis"));
   show1D->setCheckable(true);
   show1D->setChecked(kickViewWidget->getTra1d());
 
-  show2D = new QAction(tr("Display 2D Views"), menu);
+  QAction* show2D = new QAction(tr("Display 2D Views"), menu);
   show2D->setStatusTip(tr("Shows 2D views of one curve for plane"));
   show2D->setCheckable(true);
   show2D->setChecked(kickViewWidget->getTra2d());
 
-  showVelo = new QAction(tr("Display Velocity Views"), menu);
+  QAction* showVelo = new QAction(tr("Display Velocity Views"), menu);
   showVelo->setStatusTip(tr("Shows the velocity of one curve"));
   showVelo->setCheckable(true);
   showVelo->setChecked(kickViewWidget->getVelocity());
 
-  showAccel = new QAction(tr("Display Acceleration Views"), menu);
+  QAction* showAccel = new QAction(tr("Display Acceleration Views"), menu);
   showAccel->setStatusTip(tr("Shows the acceleration of one curve"));
   showAccel->setCheckable(true);
   showAccel->setChecked(kickViewWidget->getAccel());
 
-  noExtraView = new QAction(tr("Display No Extra View"), menu);
+  QAction* noExtraView = new QAction(tr("Display No Extra View"), menu);
   noExtraView->setStatusTip(tr("Hides all extra views"));
   noExtraView->setCheckable(true);
   noExtraView->setChecked(!kickViewWidget->getTra1d()
@@ -134,7 +131,7 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
                           && !kickViewWidget->getVelocity()
                           && !kickViewWidget->getAccel());
 
-  followMode = new QAction(tr("Enable Follow Mode"), menu);
+  QAction* followMode = new QAction(tr("Enable Follow Mode"), menu);
   followMode->setStatusTip(tr("The robot will react to changes directly"));
   followMode->setCheckable(true);
   followMode->setChecked(kickViewWidget->getFollowMode());
@@ -211,8 +208,7 @@ void KickViewHeaderedWidget::newButtonClicked()
   parameters.kpy = 0;
 
   parameters.loop = false;
-  parameters.preview = 100;
-  parameters.autoComTra = false;
+  parameters.standLeft = true;
   parameters.comOrigin = Vector2f(10.f, 0.f);
 
   undo.clear();
@@ -297,15 +293,14 @@ void KickViewHeaderedWidget::writeParametersToFile(const std::string& name)
   file << "kpy" << "=" << parameters.kpy << ";" << endl;
   file << "kiy" << "=" << parameters.kiy << ";" << endl;
   file << "kdy" << "=" << parameters.kdy << ";" << endl;
-  file << "preview" << "=" << parameters.preview << ";" << endl;
   if(parameters.loop)
     file << "loop" << "=" << "true" << ";" << endl;
   else
     file << "loop" << "=" << "false" << ";" << endl;
-  if(parameters.autoComTra)
-    file << "autoComTra" << "=" << "true" << ";" << endl;
+  if(parameters.standLeft)
+    file << "standLeft" << "=" << "true" << ";" << endl;
   else
-    file << "autoComTra" << "=" << "false" << ";" << endl;
+    file << "standLeft" << "=" << "false" << ";" << endl;
 
   if(parameters.ignoreHead)
     file << "ignoreHead" << "=" << "true" << ";" << endl;
@@ -473,9 +468,9 @@ void KickViewHeaderedWidget::redoChanges()
 }
 
 KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
-                   const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
+                   const JointLimits& jointLimits, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
   fullName(fullName), console(console), motionRequest(motionRequest), jointAngles(jointAngles),
-  jointCalibration(jointCalibration), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
+  jointLimits(jointLimits), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
 {}
 
 SimRobot::Widget* KickView::createWidget()

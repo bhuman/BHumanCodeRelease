@@ -327,7 +327,7 @@ bool StreamHandler::areSpecificationsForTypesCompatible(StreamHandler& other, st
       }
     }
     else
-      ASSERT(false);
+      FAIL("Specification for " << t << " not found.");
   }
   return false;
 }

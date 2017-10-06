@@ -48,7 +48,6 @@ Nao = cppApplication + {
     "$(utilDirRoot)/fftw-3.3"
     "$(utilDirRoot)/libjpeg/src"
     "$(utilDirRoot)/snappy/include"
-    "$(utilDirRoot)/boost/linux"
   }
 
   libPaths = {
@@ -59,24 +58,28 @@ Nao = cppApplication + {
   }
 
   libs = {
-    "rt-2.13", "jpeg-atom", "pthread-2.13", "pthread_nonshared", "fftw3", "snappy", "asound", "dl-2.13"
+    "rt-2.13", "jpeg-atom", "pthread-2.13", "pthread_nonshared", "fftw3", "fftw3f", "snappy", "asound", "dl-2.13"
   }
 
   cppFlags += {
     "-Wconversion"
     "-Wno-sign-conversion"
     "-nostdinc -march=atom -target i686-pc-linux-gnu"
+    "-mmmx -msse -msse2 -msse3 -mssse3"
     if (host == "Win32") { "-x c++" }
     if (tool != "vcxproj") {
       "-Wno-switch" // deactivating this is a problem because of the ENUM macro, since numOf<ENUM>s is never used in switch.
+      if (configuration == "Release") {
+        "-Wno-unused" // resolving debugging macros to nothing would create many of these warnings
+      }
     }
   }
 
   linkFlags += "-nostdlib"
 
   if (tool == "vcxproj") {
-    buildCommand = "bash -c \"$(winMarePath) --ignore-dependencies $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
-    reBuildCommand = "bash -c \"$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration) 2>&1 | sed -u -e \\\"s=:\\([0-9][0-9]*\\)[:,]\\([0-9][0-9]*:\\)*=(\\1):=\\\" -e \\\"s=/=\\\\\\\\\\\\=g\\\" 1>&2\""
+    buildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies $(target) config=$(configuration)@' | bash\""
+    reBuildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@' | bash\""
     cleanCommand = "$(winMarePath) --ignore-dependencies clean $(target) config=$(configuration)"
   }
 }

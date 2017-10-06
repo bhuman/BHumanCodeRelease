@@ -17,11 +17,11 @@ void AlternativeRobotPoseHypothesis::draw() const
     if(isValid)
     {
       ColorRGBA col = isInOwnHalf ? ColorRGBA(180, 180, 255) : ColorRGBA(255, 0, 0);
-      DRAW_ROBOT_POSE("representation:AlternativeRobotPoseHypothesis", pose, ColorRGBA(0,0,0));
+      DRAW_ROBOT_POSE("representation:AlternativeRobotPoseHypothesis", pose, ColorRGBA(0, 0, 0));
       CIRCLE("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y(),
              500, 40, Drawings::solidPen, col, Drawings::noBrush, col);
-      DRAWTEXT("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y()+700, 200,
-               ColorRGBA(0,0,0), numOfContributingObservations);
+      DRAWTEXT("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y() + 700, 200,
+               ColorRGBA(0, 0, 0), numOfContributingObservations);
     }
   }
 }

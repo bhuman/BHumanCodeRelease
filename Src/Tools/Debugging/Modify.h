@@ -9,6 +9,8 @@
 
 #include "DebugDataTable.h"
 
+#if !defined TARGET_ROBOT || !defined NDEBUG
+
 /**
  * Allows for the continuous modification of an object implementing a complete streaming
  * operator with macros from Tools/Streams/Streamable.h (or scalar).
@@ -72,3 +74,12 @@
       OUTPUT(idDebugDataResponse, bin, id << Streaming::demangle(typeid(object).name()) << (unsigned char) object); \
   } \
   while(false)
+
+#else
+
+#define MODIFY(id, object) ((void) 0)
+#define MODIFY_ONCE(id, object) ((void) 0)
+#define MODIFY_ENUM(id, ...) ((void) 0)
+#define MODIFY_ENUM_ONCE(id, ...) ((void) 0)
+
+#endif

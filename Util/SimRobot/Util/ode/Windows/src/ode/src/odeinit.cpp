@@ -46,6 +46,19 @@ ODE initialization/finalization code
 static unsigned int g_uiODEInitCounter = 0;
 static unsigned int g_uiODEInitModes = 0;
 
+
+#if dTRIMESH_ENABLED && dTRIMESH_OPCODE
+
+static 
+void OPCODEAbort()
+{
+    dICHECK(!"OPCODE Library Abort");
+}
+
+
+#endif // #if dTRIMESH_ENABLED && dTRIMESH_OPCODE
+
+
 enum EODEINITMODE
 {
     OIM__MIN,
@@ -282,7 +295,7 @@ static bool InitODEForMode(EODEINITMODE imInitMode)
             bWorldThreadingInitialized = true;
 
 #if dTRIMESH_ENABLED && dTRIMESH_OPCODE
-            if (!Opcode::InitOpcode())
+            if (!Opcode::InitOpcode(&OPCODEAbort))
             {
                 break;
             }

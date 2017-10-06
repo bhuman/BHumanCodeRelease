@@ -191,7 +191,7 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
         case dCylinderClass:
           if(geometry1->material->getRollingFriction(*geometry2->material, rollingFriction))
           {
-            dBodySetAngularDamping(bodyId1, 0.2);
+            dBodySetAngularDamping(bodyId1, 0.2f);
             Vector3<> linearVel;
             ODETools::convertVector(dBodyGetLinearVel(bodyId1), linearVel);
             linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));
@@ -207,7 +207,7 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
         case dCylinderClass:
           if(geometry2->material->getRollingFriction(*geometry1->material, rollingFriction))
           {
-            dBodySetAngularDamping(bodyId2, 0.2);
+            dBodySetAngularDamping(bodyId2, 0.2f);
             Vector3<> linearVel;
             ODETools::convertVector(dBodyGetLinearVel(bodyId2), linearVel);
             linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));

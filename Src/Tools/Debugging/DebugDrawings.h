@@ -129,7 +129,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   return "unknown";
 }
 
-#ifndef TARGET_TOOL
+#if !defined TARGET_TOOL && (!defined TARGET_ROBOT || !defined NDEBUG)
 
 /**
  * A macro that declares
@@ -215,7 +215,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   while(false)
 
 /**
- * A macro that sends a ellipse
+ * A macro that sends an ellipse
  * @param id A drawing id
  * @param center The coordinate of the center of the ellipse (Vector2f)
  * @param radiusX The radius in x direction
@@ -379,16 +379,16 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
   while(false)
 
 /**
- * A macro that sends a line
- * @param id A drawing id
- * @param x1 The x coordinate of the starting point.
- * @param y1 The y coordinate of the starting point.
- * @param x2 The x coordinate of the end point.
- * @param y2 The y coordinate of the end point.
- * @param penWidth The width of the line
- * @param penStyle The pen style of the line (Drawings::PenStyle)
- * @param penColor The color of the line (Drawings::Color)
- */
+* A macro that sends a line with fload values
+* @param id A drawing id
+* @param x1 The x coordinate of the starting point.
+* @param y1 The y coordinate of the starting point.
+* @param x2 The x coordinate of the end point.
+* @param y2 The y coordinate of the end point.
+* @param penWidth The width of the line
+* @param penStyle The pen style of the line (Drawings::PenStyle)
+* @param penColor The color of the line (Drawings::Color)
+*/
 #define LINE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) \
   do \
     COMPLEX_DRAWING(id) \
@@ -396,7 +396,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
       OUTPUT(idDebugDrawing, bin, \
              (char)Drawings::line << \
              (char)Global::getDrawingManager().getDrawingId(id) << \
-             (int)(x1) << (int)(y1) << (int)(x2) << (int)(y2) << (char)(penWidth) << (char)(penStyle) << ColorRGBA(penColor) \
+             (float)(x1) << (float)(y1) << (float)(x2) << (float)(y2) << (float)(penWidth) << (char)(penStyle) << ColorRGBA(penColor) \
             ); \
     } \
   while(false)
@@ -612,13 +612,13 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
     } \
   while(false)
 
- /**
- * A macro that sends a RobotPose (Pose2f)
- * @param id A drawing id
- * @param p The desired Pose2f
- * @param color The desired color for this drawing
- * @param headRotation the Z-rotation of the head
- */
+/**
+* A macro that sends a RobotPose (Pose2f)
+* @param id A drawing id
+* @param p The desired Pose2f
+* @param color The desired color for this drawing
+* @param headRotation the Z-rotation of the head
+*/
 #define DRAW_ROBOT_POSE_WITH_HEAD_ROTATION(id, p, color, headRotation) \
   do \
     COMPLEX_DRAWING(id) \
@@ -660,11 +660,10 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
     { \
       DRAW_ROBOT_POSE(id, p, color); \
       ARC(id, p.translation.x(), p.translation.y(), \
-      200.f, (-stdDev/2.f + p.rotation), stdDev, 20, Drawings::solidPen, ColorRGBA::white, \
-      Drawings::noBrush, ColorRGBA::white); \
+          200.f, (-stdDev/2.f + p.rotation), stdDev, 20, Drawings::solidPen, ColorRGBA::white, \
+          Drawings::noBrush, ColorRGBA::white); \
     } \
   while(false)
-
 
 /**
  * A macro that sends a covariance ellipse
@@ -744,7 +743,7 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
 //Ignore everything
 #define DEBUG_DRAWING(id, type) if(false)
 #define DECLARE_DEBUG_DRAWING(id, type) ((void) 0)
-#define COMPLEX_DRAWING(id) ((void) 0)
+#define COMPLEX_DRAWING(id) if(false)
 #define CIRCLE(id, center_x, center_y, radius, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
 #define ARC(id, center_x, center_y, radius, startAngle, spanAngle, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
 #define ELLIPSE(id, center, radiusX, radiusY, rotation, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
@@ -755,14 +754,17 @@ inline const char* DrawingManager::getTypeName(char id, char processIdentifier) 
 #define MID_DOT(id, x, y, penColor, brushColor) ((void) 0)
 #define LARGE_DOT(id, x, y, penColor, brushColor) ((void) 0)
 #define LINE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
+#define RAY(id, base, angle, penWidth, penStyle, penColor) ((void) 0)
 #define ARROW(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
 #define QUADRANGLE(id, x1, y1, x2, y2, x3, y3, x4, y4, penWidth, penStyle, penColor) ((void) 0)
 #define RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) ((void) 0)
 #define FILLED_RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
 #define CROSS(id, x, y, size, penWidth, penStyle, penColor) ((void) 0)
 #define DRAWTEXT(id, x, y, fontSize, color, txt) ((void) 0)
+#define TIP(id, x, y, radius, text) ((void) 0)
 #define ORIGIN(id, x, y, angle) ((void) 0)
 #define DRAW_ROBOT_POSE(id, p, color) ((void) 0)
+#define DRAW_ROBOT_POSE_WITH_HEAD_ROTATION(id, p, color, headRotation) ((void) 0)
 #define DRAW_ROBOT_POSE_ROTATIONAL_STANDARD_DEVIATION(id, p, stdDev, color) ((void) 0)
 #define COVARIANCE2D(id, cov, mean) ((void) 0)
 #define PLOT(id, value) ((void) 0)

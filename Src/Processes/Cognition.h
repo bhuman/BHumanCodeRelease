@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "Tools/ProcessFramework/TeamHandler.h" // include this first to prevent WinSock2.h/Windows.h conflicts
+#include "Tools/ProcessFramework/SPLMessageHandler.h" // include this first to prevent WinSock2.h/Windows.h conflicts
 
 #include "Tools/Logging/Logger.h"
 #include "Tools/Module/ModulePackage.h"
@@ -22,9 +22,11 @@ private:
   DebugSender<CognitionToDebug> theDebugSender;
   Receiver<MotionToCognition> theMotionReceiver;
   Sender<CognitionToMotion> theMotionSender;
-  MessageQueue theTeamReceiver;
-  MessageQueue theTeamSender;
-  TeamHandler theTeamHandler;
+
+  SPLStandardMessageBuffer<MAX_NUMBER_OF_PARALLEL_RECEIVABLE_SPLSTDMSG> inTeamMessages;
+  RoboCup::SPLStandardMessage outTeamMessage;
+  SPLMessageHandler theSPLMessageHandler;
+
   int numberOfMessages;
   ModuleManager moduleManager; /**< The solution manager handles the execution of modules. */
   Logger logger; /**< The logger logs representations in the background. */

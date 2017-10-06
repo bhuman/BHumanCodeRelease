@@ -37,13 +37,6 @@ Wed Apr 23 18:53:43 CEST 2003
 */
 
 
-# define        VoXYZ(v1, o1, x, y, z) \
-    ( \
-        (v1)[0] o1 (x), \
-        (v1)[1] o1 (y), \
-        (v1)[2] o1 (z)  \
-    )
-
 static const dReal   Midentity[3][3] =
 {
     {   1,  0,  0   },
@@ -93,11 +86,11 @@ dxJointPlane2D::getInfo1( dxJoint::Info1 *info )
 
 
 void
-dxJointPlane2D::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointPlane2D::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    int r0 = 0;
-    int r1 = info->rowskip;
-    int r2 = 2 * r1;
     dReal eps = worldFPS * worldERP;
 
     /*
@@ -117,36 +110,41 @@ dxJointPlane2D::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info
 
     // fill in linear and angular coeff. for left hand side:
 
-    VoXYZ( &info->J1l[r0], = , 0, 0, 1 );
-    VoXYZ( &info->J1l[r1], = , 0, 0, 0 );
-    VoXYZ( &info->J1l[r2], = , 0, 0, 0 );
-
-    VoXYZ( &info->J1a[r0], = , 0, 0, 0 );
-    VoXYZ( &info->J1a[r1], = , 1, 0, 0 );
-    VoXYZ( &info->J1a[r2], = , 0, 1, 0 );
+    J1[GI2_JLZ] = 1;
+    J1[rowskip + GI2_JAX] = 1;
+    J1[2 * rowskip + GI2_JAY] = 1;
 
     // error correction (against drift):
 
     // a) linear vz, so that z (== pos[2]) == 0
-    info->c[0] = eps * -node[0].body->posr.pos[2];
+    pairRhsCfm[GI2_RHS] = eps * -node[0].body->posr.pos[2];
 
 # if 0
     // b) angular correction? -> left to application !!!
     dReal       *body_z_axis = &node[0].body->R[8];
-    info->c[1] = eps * + atan2( body_z_axis[1], body_z_axis[2] );  // wx error
-    info->c[2] = eps * -atan2( body_z_axis[0], body_z_axis[2] );  // wy error
+    pairRhsCfm[pairskip + GI2_RHS] = eps * + atan2( body_z_axis[1], body_z_axis[2] );  // wx error
+    pairRhsCfm[2 * pairskip + GI2_RHS] = eps * -atan2( body_z_axis[0], body_z_axis[2] );  // wy error
 # endif
 
     // if the slider is powered, or has joint limits, add in the extra row:
 
     if ( row_motor_x > 0 )
-        motor_x.addLimot( this, worldFPS, info, row_motor_x, Midentity[0], 0 );
+    {
+        int currRowSkip = row_motor_x * rowskip, currPairSkip = row_motor_x * pairskip;
+        motor_x.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, Midentity[0], 0 );
+    }
 
     if ( row_motor_y > 0 )
-        motor_y.addLimot( this, worldFPS, info, row_motor_y, Midentity[1], 0 );
+    {
+        int currRowSkip = row_motor_y * rowskip, currPairSkip = row_motor_y * pairskip;
+        motor_y.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, Midentity[1], 0 );
+    }
 
     if ( row_motor_angle > 0 )
-        motor_angle.addLimot( this, worldFPS, info, row_motor_angle, Midentity[2], 1 );
+    {
+        int currRowSkip = row_motor_angle * rowskip, currPairSkip = row_motor_angle * pairskip;
+        motor_angle.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, Midentity[2], 1 );
+    }
 }
 
 

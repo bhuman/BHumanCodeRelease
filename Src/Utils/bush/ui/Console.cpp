@@ -1,19 +1,15 @@
+#include <QApplication>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPalette>
 #include <QPushButton>
 #include <QResizeEvent>
-#include <QtCore>
 #include <QScrollBar>
-#include <QApplication>
-
-#if QT_VERSION >= 0x050000
 #include <QtConcurrent>
-#endif
-
-#include <QMessageBox>
+#include <QtCore>
 
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/tools/StringTools.h"

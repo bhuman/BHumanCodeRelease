@@ -40,6 +40,7 @@
 #ifndef QRAWFONT_H
 #define QRAWFONT_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qiodevice.h>
 #include <QtCore/qglobal.h>
@@ -117,6 +118,7 @@ public:
     QFont::HintingPreference hintingPreference() const;
 
     qreal ascent() const;
+    qreal capHeight() const;
     qreal descent() const;
     qreal leading() const;
     qreal xHeight() const;
@@ -155,6 +157,8 @@ private:
 Q_DECLARE_SHARED(QRawFont)
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QRawFont::LayoutFlags)
+
+Q_GUI_EXPORT uint qHash(const QRawFont &font, uint seed = 0) Q_DECL_NOTHROW;
 
 inline QVector<QPointF> QRawFont::advancesForGlyphIndexes(const QVector<quint32> &glyphIndexes, QRawFont::LayoutFlags layoutFlags) const
 {

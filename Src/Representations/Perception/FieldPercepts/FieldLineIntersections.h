@@ -1,6 +1,6 @@
 /**
  * @file FieldLineIntersections.h
- * Declaration of a struct that represents the fieldline intersection percepts
+ * Declaration of a struct that represents the fieldline intersection percepts.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -19,7 +19,7 @@ STREAMABLE(FieldLineIntersections,
 {
   /**
    * @struct Intersection
-   * A struct representing a intersection of two fieldlines
+   * A struct representing an intersection of two fieldlines.
    */
   STREAMABLE(Intersection,
   {

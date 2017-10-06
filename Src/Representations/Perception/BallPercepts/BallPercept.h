@@ -3,7 +3,7 @@
  *
  * Very simple representation of a seen ball
  *
- * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  * @autor Jesse
  */
 

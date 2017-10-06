@@ -1,7 +1,7 @@
 /**
 * @file Simulation/Joints/Hinge.cpp
 * Implementation of class Hinge
-* @author <A href="mailto:Tim.Laue@dfki.de">Tim Laue</A>
+* @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
 * @author <A href="mailto:kspiess@informatik.uni-bremen.de">Kai Spiess</A>
 * @author Colin Graf
 */

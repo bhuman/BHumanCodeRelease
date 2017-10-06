@@ -50,6 +50,7 @@ struct PrintingContext {
     void printIndent();
     void printReal (dReal x);
     void print (const char *name, int x);
+    void print (const char *name, unsigned x);
     void print (const char *name, dReal x);
     void print (const char *name, const dReal *x, int n=3);
     void print (const char *name, const char *x=0);
@@ -70,6 +71,11 @@ void PrintingContext::print (const char *name, int x)
     fprintf (file,"%s = %d,\n",name,x);
 }
 
+void PrintingContext::print (const char *name, unsigned x)
+{
+    printIndent();
+    fprintf (file,"%s = %u,\n",name,x);
+}
 
 void PrintingContext::printReal (dReal x)
 {
@@ -343,21 +349,28 @@ static void printLMotor (PrintingContext &c, dxJoint *j)
     for (int i=0; i<3; i++) printLimot (c,a->limot[i],i+1);
 }
 
+struct dxAMotorJointPrinter
+{
+    static void print(PrintingContext &c, dxJointAMotor *a)
+    {
+        c.print ("num",a->m_num);
+        c.print ("mode",a->m_mode);
+        c.printIndent();
+        fprintf (c.file,"rel = {%d,%d,%d},\n",a->m_rel[0],a->m_rel[1],a->m_rel[2]);
+        c.print ("axis1",a->m_axis[0]);
+        c.print ("axis2",a->m_axis[1]);
+        c.print ("axis3",a->m_axis[2]);
+        for (int i=0; i<3; i++) printLimot (c,a->m_limot[i],i+1);
+        c.print ("angle1",a->m_angle[0]);
+        c.print ("angle2",a->m_angle[1]);
+        c.print ("angle3",a->m_angle[2]);
+    }
+};
 
 static void printAMotor (PrintingContext &c, dxJoint *j)
 {
     dxJointAMotor *a = (dxJointAMotor*) j;
-    c.print ("num",a->num);
-    c.print ("mode",a->mode);
-    c.printIndent();
-    fprintf (c.file,"rel = {%d,%d,%d},\n",a->rel[0],a->rel[1],a->rel[2]);
-    c.print ("axis1",a->axis[0]);
-    c.print ("axis2",a->axis[1]);
-    c.print ("axis3",a->axis[2]);
-    for (int i=0; i<3; i++) printLimot (c,a->limot[i],i+1);
-    c.print ("angle1",a->angle[0]);
-    c.print ("angle2",a->angle[1]);
-    c.print ("angle3",a->angle[2]);
+    dxAMotorJointPrinter::print(c, a);
 }
 
 //***************************************************************************

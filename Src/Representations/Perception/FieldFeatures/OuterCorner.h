@@ -1,6 +1,6 @@
 /**
  * @file OuterCorner.h
- * Declaration of a struct that represents a outer corner
+ * Declaration of a struct that represents an outer corner.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -10,8 +10,8 @@
 
 /**
  * @struct OuterCorner
- * it defines a the pose of a outer corner in relativ field coords to the robot
- * the outer corner pose: position => position of the corner; rotation => looking in direction of goal
+ * It defines a the pose of an outer corner in relative field coordinates to the robot.
+ * The outer corner pose: position => position of the corner; rotation => looking in direction of goal
  */
 STREAMABLE_WITH_BASE(OuterCorner, FieldFeature,
 {
@@ -22,7 +22,7 @@ STREAMABLE_WITH_BASE(OuterCorner, FieldFeature,
   OuterCorner(const Pose2f& pose) : FieldFeature(pose) {};
 
   /**
-   * Assignment operator for Pose2f objects
+   * Assignment operator for Pose2f objects.
    * @param other A Pose2f object
    * @return A reference to the object after the assignment
    */
@@ -34,9 +34,9 @@ STREAMABLE_WITH_BASE(OuterCorner, FieldFeature,
   };
 
   /**
-   * returns 1 of the 2 global position of this feature (in case of isValid == true)
+   * Returns 1 of the 2 global position of this feature (in case of isValid == true).
    */
-  const Pose2f getGlobalFeaturePosition() const,
+  const Pose2f getGlobalFeaturePosition() const override,
 
   (bool) isRightCorner,
 });

@@ -40,6 +40,7 @@
 #ifndef QWIDGET_H
 #define QWIDGET_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtGui/qwindowdefs.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qmargins.h>
@@ -160,6 +161,7 @@ class Q_WIDGETS_EXPORT QWidget : public QObject, public QPaintDevice
     Q_PROPERTY(QCursor cursor READ cursor WRITE setCursor RESET unsetCursor)
 #endif
     Q_PROPERTY(bool mouseTracking READ hasMouseTracking WRITE setMouseTracking)
+    Q_PROPERTY(bool tabletTracking READ hasTabletTracking WRITE setTabletTracking)
     Q_PROPERTY(bool isActiveWindow READ isActiveWindow)
     Q_PROPERTY(Qt::FocusPolicy focusPolicy READ focusPolicy WRITE setFocusPolicy)
     Q_PROPERTY(bool focus READ hasFocus)
@@ -326,6 +328,9 @@ public:
     void setMouseTracking(bool enable);
     bool hasMouseTracking() const;
     bool underMouse() const;
+
+    void setTabletTracking(bool enable);
+    bool hasTabletTracking() const;
 
     void setMask(const QBitmap &);
     void setMask(const QRegion &);
@@ -561,6 +566,7 @@ public:
 
     void setWindowFlags(Qt::WindowFlags type);
     inline Qt::WindowFlags windowFlags() const;
+    void setWindowFlag(Qt::WindowType, bool on = true);
     void overrideWindowFlags(Qt::WindowFlags type);
 
     inline Qt::WindowType windowType() const;
@@ -568,16 +574,6 @@ public:
     static QWidget *find(WId);
     inline QWidget *childAt(int x, int y) const;
     QWidget *childAt(const QPoint &p) const;
-
-#if defined(Q_DEAD_CODE_FROM_QT4_X11)
-    const QX11Info &x11Info() const;
-    Qt::HANDLE x11PictureHandle() const;
-#endif
-
-#if defined(Q_DEAD_CODE_FROM_QT4_MAC)
-    Qt::HANDLE macQDHandle() const;
-    Qt::HANDLE macCGHandle() const;
-#endif
 
     void setAttribute(Qt::WidgetAttribute, bool on = true);
     inline bool testAttribute(Qt::WidgetAttribute) const;
@@ -675,6 +671,7 @@ protected:
     void destroy(bool destroyWindow = true,
                  bool destroySubWindows = true);
 
+    friend class QDataWidgetMapperPrivate; // for access to focusNextPrevChild
     virtual bool focusNextPrevChild(bool next);
     inline bool focusNextChild() { return focusNextPrevChild(true); }
     inline bool focusPreviousChild() { return focusNextPrevChild(false); }
@@ -815,6 +812,12 @@ inline bool QWidget::hasMouseTracking() const
 
 inline bool QWidget::underMouse() const
 { return testAttribute(Qt::WA_UnderMouse); }
+
+inline void QWidget::setTabletTracking(bool enable)
+{ setAttribute(Qt::WA_TabletTracking, enable); }
+
+inline bool QWidget::hasTabletTracking() const
+{ return testAttribute(Qt::WA_TabletTracking); }
 
 inline bool QWidget::updatesEnabled() const
 { return !testAttribute(Qt::WA_UpdatesDisabled); }

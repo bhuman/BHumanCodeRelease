@@ -57,7 +57,7 @@ Command* Commands::operator[](const std::string& cmd)
 {
   std::map<std::string, Command*>::iterator iter = commands.find(cmd);
   if(iter == commands.end())
-    return 0;
+    return nullptr;
   return iter->second;
 }
 

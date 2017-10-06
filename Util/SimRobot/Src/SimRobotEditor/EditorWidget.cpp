@@ -137,7 +137,7 @@ SimRobot::Widget* FileEditorObject::createWidget()
   if(!file.open(QFile::ReadOnly | QFile::Text))
   {
     EditorModule::application->showWarning(QObject::tr("SimRobotEditor"), QObject::tr("Cannot read file %1:\n%2.").arg(filePath).arg(file.errorString()));
-    return 0;
+    return nullptr;
   }
   QTextStream in(&file);
   return new EditorWidget(this, in.readAll());

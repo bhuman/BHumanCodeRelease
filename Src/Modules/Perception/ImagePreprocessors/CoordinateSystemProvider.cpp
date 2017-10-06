@@ -33,15 +33,9 @@ void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSyst
   RotationMatrix r(theCameraMatrix.rotation.inverse() * cmPrev.rotation);
 
   Vector2f offset(r.getZAngle(), r.getYAngle());
-  if((offset.x() - prevOffset.x()) * (prevOffset.x() - prevPrevOffset.x()) < 0)
-    imageCoordinateSystem.offset.x() = 0;
-  else
-    imageCoordinateSystem.offset.x() = offset.x();
-  if((offset.y() - prevOffset.y()) * (prevOffset.y() - prevPrevOffset.y()) < 0)
-    imageCoordinateSystem.offset.y() = 0;
-  else
-    imageCoordinateSystem.offset.y() = offset.y();
-  prevPrevOffset = prevOffset;
+  // Reject calculated offset if velocity direction changed.
+  imageCoordinateSystem.offset.x() = offset.x() * prevOffset.x() < 0 ? 0 : offset.x();
+  imageCoordinateSystem.offset.y() = offset.y() * prevOffset.y() < 0 ? 0 : offset.y();
   prevOffset = offset;
 
   calcScaleFactors(imageCoordinateSystem.a, imageCoordinateSystem.b, theJointSensorData.timestamp - cameraMatrixPrevTimeStamp[theCameraInfo.camera]);
@@ -79,8 +73,11 @@ void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSyst
         corrected.x() -= theCameraInfo.opticalCenter.x();
         corrected.y() -= theCameraInfo.opticalCenter.y();
         const Vector2f& horizonAligned(imageCoordinateSystem.toHorizonAligned(corrected));
-
-        horizonAlignedImage[int(horizonAligned.y() + theCameraInfo.opticalCenter.y() + 0.5f)][int(horizonAligned.x() + theCameraInfo.opticalCenter.x() + 0.5f) / 2].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
+        const Vector2i writePos = (horizonAligned + theCameraInfo.opticalCenter + Vector2f(0.5f, 0.5f)).cast<int>().array() / Eigen::Array<int, 2, 1>(2, 1);
+        if(writePos.x() > 0 && writePos.y() > 0 && writePos.x() < horizonAlignedImage.width && writePos.y() < horizonAlignedImage.height)
+        {
+          horizonAlignedImage[writePos.y()][writePos.x()].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
+        }
       }
     SEND_DEBUG_IMAGE("horizonAligned", horizonAlignedImage);
   }

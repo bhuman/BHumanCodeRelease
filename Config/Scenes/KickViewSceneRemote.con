@@ -1,0 +1,21 @@
+# connect to a robot
+call Includes/connectDialog Includes/connect
+
+# motion request is required by simulation
+dr representation:MotionRequest
+
+call Includes/DebugResponses
+
+dr representation:RobotDimensions:once
+dr representation:JointLimits:once
+kick
+
+vp plot1 1000 -50 50
+vpd plot1 module:KickEngine:refy red
+vpd plot1 module:KickEngine:comy blue
+vpd plot1 module:KickEngine:diffy orange
+
+vp plot2 1000 -50 50
+vpd plot2 module:KickEngine:refx red
+vpd plot2 module:KickEngine:comx blue
+vpd plot2 module:KickEngine:diffx orange

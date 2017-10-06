@@ -71,20 +71,20 @@ void Logger::execute()
         if(Blackboard::getInstance().exists(representation.c_str()))
         {
           FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
-            if(getName(id) == "id" + representation)
+            if(::getName(id) == "id" + representation)
             {
               loggables.push_back(Loggable(&Blackboard::getInstance()[representation.c_str()], id));
               goto found;
             }
           OUTPUT_WARNING(name << "Logger: " << representation << " has no message id.");
-          ASSERT(false);
-        found:;
+          FAIL(name << "Logger: " << representation << " has no message id.");
+        found:
+          ;
         }
         else
         {
-          // This pair of braces avoids strange bug in VS2013
           OUTPUT_WARNING(name << "Logger: " << representation << " is not available in blackboard.");
-          ASSERT(false);
+          FAIL(name << "Logger: " << representation << " is not available in blackboard.");
         }
 
       blackboardVersion = Blackboard::getInstance().getVersion();
@@ -109,10 +109,10 @@ std::string Logger::generateFilename() const
         filename += gameInfo.secondaryState == STATE2_PENALTYSHOOT ? "ShootOut_" :
                     gameInfo.firstHalf ? "1stHalf_" : "2ndHalf_";
         filename += static_cast<char>(Global::getSettings().playerNumber + '0');
-        return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "__" + filename;
+        return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + filename;
       }
   }
-  return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "__" + "Testing";
+  return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + "Testing_" + static_cast<char>(Global::getSettings().playerNumber + '0');
 }
 
 void Logger::createStreamSpecification()
@@ -180,6 +180,7 @@ void Logger::logFrame()
 
 void Logger::writeThread()
 {
+  BH_TRACE_INIT(getName(loggedProcess));
   const size_t compressedSize = snappy_max_compressed_length(parameters.blockSize + 2 * sizeof(unsigned));
   std::vector<char> compressedBuffer(compressedSize + sizeof(unsigned)); // Also reserve 4 bytes for header
   OutBinaryFile* file = nullptr;

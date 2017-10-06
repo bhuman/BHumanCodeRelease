@@ -7,14 +7,14 @@
  * @author Colin Graf
  */
 
-#include <QWidget>
-#include <QPainter>
 #include <QApplication>
+#include <QWidget>
+#include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPinchGesture>
 #include <QResizeEvent>
 #include <QSettings>
-#include <QMenu>
 
 #include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
@@ -26,7 +26,7 @@
 #define MAXZOOM 20.f
 #define MINZOOM 0.1f
 
-class FieldWidget : public QWidget, public SimRobot::Widget
+class FieldWidget : public WIDGET2D, public SimRobot::Widget
 {
 public:
   FieldWidget(FieldView& fieldView) :

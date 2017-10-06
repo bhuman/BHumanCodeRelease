@@ -1,6 +1,6 @@
 /**
  * @file AnnotationWidget.h
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #pragma once
@@ -8,6 +8,7 @@
 #include <SimRobot.h>
 #include <QWidget>
 #include <unordered_map>
+#include "Platform/SystemCall.h"
 
 struct Row;
 class AnnotationView;
@@ -19,7 +20,7 @@ class AnnotationWidget : public QWidget, public SimRobot::Widget
   Q_OBJECT;
 
 public:
-  AnnotationWidget(AnnotationView& view);
+  AnnotationWidget(AnnotationView& view, SystemCall::Mode mode);
   virtual ~AnnotationWidget();
 
   virtual QWidget* getWidget();

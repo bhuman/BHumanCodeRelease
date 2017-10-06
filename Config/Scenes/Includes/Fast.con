@@ -30,35 +30,38 @@ mr Image default
 
 # Deactivate unused modules
 mr RobotHealth default
-mr Thumbnail off
-mr NetworkThumbnail default
 
 # Deactivate modules depending on images
 mr FieldBoundary default
-
-mr PlayersPercept default
+mr CameraCalibrationRating default
+mr AutoExposureWeightTable off
+mr PlayersImagePercept default
+mr PlayersFieldPercept default
 mr FieldLines default
 mr GoalFrame default
+mr GoalFeature default
 mr CirclePercept default
-mr FieldBoundary2 off
-mr FieldBoundarySpots off
 mr FieldLineIntersections default
 mr PenaltyMarkPercept default
-mr BallPercept off
+mr DebuggingOutput off
 mr OuterCorner default
 mr PenaltyArea default
 mr MidCorner default
 mr IntersectionsPercept off
 mr LinesPercept off
+mr BallPercept off
 mr CNSImage off
 mr CNSRegions off
 mr BallRegions off
+mr CNSPenaltyMarkRegions off
+mr PenaltyMarkRegions off
 mr BallSpots off
 mr ColorScanlineRegionsHorizontal off
 mr ColorScanlineRegionsVerticalClipped off
 mr ColorScanlineRegionsVertical off
 mr ScanGrid off
 mr BodyContour off
+mr Thumbnail off
 
 mr ECImage off
 

@@ -157,8 +157,7 @@ int main(int argc, char* argv[])
               naoBody.setCrashed(WIFSIGNALED(status) ? int(WTERMSIG(status)) : int(abnormalTerminationState));
               naoBody.cleanup();
             }
-            Assert::logDump(true, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
-            Assert::logDump(false, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
+            Assert::logDump(WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
           }
 
           // quit here?
@@ -172,12 +171,11 @@ int main(int argc, char* argv[])
           // restart in release mode only
 #ifndef NDEBUG
           exit(EXIT_FAILURE);
-#endif
-
+#else
           // deactivate the pre-initial state
           recover = true;
-
           usleep(2000 * 1000);
+#endif
         }
         else
         {

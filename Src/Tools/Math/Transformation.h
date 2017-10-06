@@ -31,7 +31,7 @@ namespace Transformation
    * to coordinates relative to the robot.
    * @param  rp Current robot pose
    * @param  fieldPos A position in absolute field coordinates
-   * @return Returns the positon relative to the robot
+   * @return Returns the position relative to the robot
    */
   Vector2f fieldToRobot(const Pose2f& rp, const Vector2f& fieldPos);
 

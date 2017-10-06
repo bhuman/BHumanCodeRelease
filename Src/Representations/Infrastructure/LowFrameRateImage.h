@@ -14,6 +14,7 @@ struct LowFrameRateImage : public Streamable
   Image image;
   bool imageUpdated = false; /**< True if image was updated this frame */
 
+protected:
   virtual void serialize(In* in, Out* out)
   {
     STREAM_REGISTER_BEGIN;

@@ -31,7 +31,7 @@ void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
           headMotionRequest.cameraControlMode = HeadMotionRequest::upperCamera;
           break;
         default:
-          ASSERT(false);
+          FAIL("Unknown camera.");
       }
 
       headMotionRequest.speed = 150_deg;

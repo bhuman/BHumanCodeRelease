@@ -342,6 +342,7 @@ static void command(int cmd)
             dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
             dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
                                         &Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+            dGeomTriMeshDataPreprocess2(new_tmdata, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
 
             obj[i].geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
 

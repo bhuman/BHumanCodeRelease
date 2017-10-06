@@ -64,6 +64,11 @@ void RobotView::init()
   statusLayout->addWidget(powerLabel, 2, 0, Qt::AlignLeft);
   statusLayout->addWidget(powerBar, 2, 1);
 
+  QLabel* logLabel = new QLabel("<font size=2><b>Logs</b></font>", statusWidget);
+  logStatus = new QLabel("--");
+  statusLayout->addWidget(logLabel, 3, 0, Qt::AlignLeft);
+  statusLayout->addWidget(logStatus, 3, 1);
+
   layout->addRow(cPlayerNumber, statusWidget);
 
   setLayout(layout);
@@ -72,7 +77,7 @@ void RobotView::init()
   if(robot)
   {
     Session::getInstance().registerPingListener(this);
-    Session::getInstance().registerPowerListener(this, robot);
+    Session::getInstance().registerStatusListener(this, robot);
   }
 
   setStyleSheet("QGroupBox::title { \
@@ -166,7 +171,7 @@ void RobotView::setRobot(Robot* robot)
   if(this->robot)
   {
     Session::getInstance().removePingListener(this);
-    Session::getInstance().removePowerListener(this, this->robot);
+    Session::getInstance().removeStatusListener(this, this->robot);
   }
   this->robot = robot;
   if(playerNumber)
@@ -177,7 +182,7 @@ void RobotView::setRobot(Robot* robot)
   if(robot)
   {
     Session::getInstance().registerPingListener(this);
-    Session::getInstance().registerPowerListener(this, robot);
+    Session::getInstance().registerStatusListener(this, robot);
   }
   emit robotChanged();
 }
@@ -202,7 +207,6 @@ void RobotView::setPings(ENetwork network, std::map<std::string, double>* pings)
     bar->setText(QString::number(value) + " ms");
   else
     bar->setText("n/a");
-
 }
 
 void RobotView::setPower(std::map<std::string, Power>* power)
@@ -221,6 +225,15 @@ void RobotView::setPower(std::map<std::string, Power>* power)
     powerBar->setStyleSheet("QProgressBar::chunk { background-color: lime; }");
   else
     powerBar->setStyleSheet("QProgressBar::chunk { background-color: red; }");
+}
+
+void RobotView::setLogs(std::map<std::string, int>* logs)
+{
+  int numOfLogs = (*logs)[robot->name];
+  if(numOfLogs != 0)
+    logStatus->setText(QString("<font color='red'><b>") + QString::number(numOfLogs) + QString("<b/></font>"));
+  else
+    logStatus->setText("--");
 }
 
 void RobotView::mouseMoveEvent(QMouseEvent* me)

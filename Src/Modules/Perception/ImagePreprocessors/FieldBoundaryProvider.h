@@ -55,6 +55,7 @@ private:
   InImage lowerCamSpotsInImage;
   InImage lowerCamSpotsInterpol;
   std::vector<InImage> convexBoundaryCandidates; ///< Possible boundary candidates.
+  CameraInfo::Camera lastCamera = CameraInfo::Camera::numOfCameras;
 
   void update(FieldBoundary& fieldBoundary);
 

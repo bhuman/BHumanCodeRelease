@@ -8,6 +8,7 @@
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
 #include <algorithm>
+#include <map>
 
 ModuleManager::Configuration::RepresentationProvider::RepresentationProvider(const std::string& representation,
                                                                              const std::string& provider) :
@@ -45,7 +46,7 @@ const ModuleBase::Info* ModuleManager::find(const ModuleBase* module, const std:
   for(const ModuleBase::Info* i = module->info; i->representation; ++i)
     if((i->update || all) && representation == i->representation)
       return i;
-  return 0;
+  return nullptr;
 }
 
 bool ModuleManager::calcShared(const Configuration& config)
@@ -163,6 +164,9 @@ void ModuleManager::update(In& stream, unsigned timeStamp)
     m.required = false;
   }
 
+  // remember which representations were provided by which module before
+  Configuration prevConfig(config);
+
   stream >> config;
 
   // fill shared representations
@@ -196,6 +200,25 @@ void ModuleManager::update(In& stream, unsigned timeStamp)
   {
     rollBack(providersBackup, sentBackup, receivedBackup);
     return;
+  }
+
+  // Reset all blackboard entries that are now provided by a different module or no module anymore
+  std::multimap<std::string, std::string> currentProviders;
+  for(const auto& currentProvider : config.representationProviders)
+    currentProviders.insert(std::pair<std::string, std::string>(currentProvider.representation, currentProvider.provider));
+  for(const auto& prevProvider : prevConfig.representationProviders)
+  {
+    auto range = currentProviders.equal_range(prevProvider.representation);
+    if(range.first != range.second)
+    {
+      for(auto i = range.first; i != range.second; ++i)
+        if(i->second == prevProvider.provider)
+          goto found;
+      if(Blackboard::getInstance().exists(prevProvider.representation.c_str()))
+        Blackboard::getInstance().reset(prevProvider.representation.c_str());
+    found:
+      ;
+    }
   }
 
   // Delete all modules that are not required anymore
@@ -297,7 +320,7 @@ void ModuleManager::execute()
     if(p.moduleState->required)
     {
       if(!p.moduleState->instance)
-        p.moduleState->instance = p.moduleState->module->createNew(); // returns 0 if provided by "default"
+        p.moduleState->instance = p.moduleState->module->createNew();
 #ifdef TARGET_ROBOT
       unsigned timeStamp = Time::getCurrentSystemTime();
 #endif

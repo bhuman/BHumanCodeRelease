@@ -84,7 +84,7 @@ const char* File::getBHDir()
         break;
       end--;
     }
-    ASSERT(false);
+    FAIL("Could not find the Config directory.");
   }
   return dir;
 }

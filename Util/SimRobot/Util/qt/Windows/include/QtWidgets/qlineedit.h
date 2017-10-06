@@ -40,6 +40,7 @@
 #ifndef QLINEEDIT_H
 #define QLINEEDIT_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qframe.h>
 #include <QtGui/qtextcursor.h>
 #include <QtCore/qstring.h>
@@ -173,9 +174,11 @@ public:
     void getTextMargins(int *left, int *top, int *right, int *bottom) const;
     QMargins textMargins() const;
 
+#if QT_CONFIG(action)
     using QWidget::addAction;
     void addAction(QAction *action, ActionPosition position);
     QAction *addAction(const QIcon &icon, ActionPosition position);
+#endif
 
 public Q_SLOTS:
     void setText(const QString &);
@@ -238,6 +241,7 @@ public:
 private:
     friend class QAbstractSpinBox;
     friend class QAccessibleLineEdit;
+    friend class QComboBox;
 #ifdef QT_KEYPAD_NAVIGATION
     friend class QDateTimeEdit;
 #endif

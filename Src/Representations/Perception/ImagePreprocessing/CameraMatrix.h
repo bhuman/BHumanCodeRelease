@@ -9,6 +9,7 @@
 #include "Tools/Math/Pose3f.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/CameraCalibration.h"
+#include "Platform/SystemCall.h"
 
 /**
  * Matrix describing transformation from center of hip to camera.
@@ -29,6 +30,10 @@ struct RobotCameraMatrix : public Pose3f
  */
 STREAMABLE_WITH_BASE(CameraMatrix, Pose3f,
 {
+private:
+  Pose3f invPos; /**< the inverse */
+
+public:
   CameraMatrix() = default;
 
   /**
@@ -39,6 +44,13 @@ STREAMABLE_WITH_BASE(CameraMatrix, Pose3f,
   CameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration);
 
   void computeCameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration);
+
+  inline Pose3f inverse() const
+  {
+    return invPos;
+  }
+
+  void onRead();
 
   /** Draws the camera matrix. */
   void draw() const,

@@ -95,14 +95,14 @@ public:
 
     virtual int remainingTime(int timerId) = 0;
 
-#ifdef Q_OS_WIN
+#if defined(Q_OS_WIN) || defined(Q_QDOC)
     virtual bool registerEventNotifier(QWinEventNotifier *notifier) = 0;
     virtual void unregisterEventNotifier(QWinEventNotifier *notifier) = 0;
 #endif
 
     virtual void wakeUp() = 0;
     virtual void interrupt() = 0;
-    virtual void flush() = 0;
+    virtual void flush() = 0; // ### Qt6: remove, mark final or make protected
 
     virtual void startingUp();
     virtual void closingDown();
@@ -111,7 +111,8 @@ public:
     void removeNativeEventFilter(QAbstractNativeEventFilter *filterObj);
     bool filterNativeEvent(const QByteArray &eventType, void *message, long *result);
 #if QT_DEPRECATED_SINCE(5, 0)
-    QT_DEPRECATED bool filterEvent(void *message) { return filterNativeEvent("", message, 0); }
+    QT_DEPRECATED bool filterEvent(void *message)
+    { return filterNativeEvent("", message, Q_NULLPTR); }
 #endif
 
 Q_SIGNALS:

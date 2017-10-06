@@ -1,16 +1,8 @@
-#define QT_VERSION_MAJOR    5
-#define QT_VERSION_MINOR    7
-#define QT_VERSION_PATCH    0
-#define QT_VERSION_STR      "5.7.0"
-
-/* Everything */
-
-/* License information */
-#define QT_PRODUCT_LICENSEE "Open Source"
-#define QT_PRODUCT_LICENSE "OpenSource"
-
-
-// Compiler sub-arch support
+#define QT_FEATURE_cross_compile -1
+#define QT_FEATURE_framework -1
+#define QT_FEATURE_rpath -1
+#define QT_FEATURE_shared 1
+#define QT_FEATURE_appstore_compliant -1
 #define QT_COMPILER_SUPPORTS_SSE2 1
 #define QT_COMPILER_SUPPORTS_SSE3 1
 #define QT_COMPILER_SUPPORTS_SSSE3 1
@@ -18,96 +10,21 @@
 #define QT_COMPILER_SUPPORTS_SSE4_2 1
 #define QT_COMPILER_SUPPORTS_AVX 1
 #define QT_COMPILER_SUPPORTS_AVX2 1
-
-// Compile time features
-#if defined(QT_LARGEFILE_SUPPORT) && defined(QT_NO_LARGEFILE_SUPPORT)
-# undef QT_LARGEFILE_SUPPORT
-#elif !defined(QT_LARGEFILE_SUPPORT)
-# define QT_LARGEFILE_SUPPORT 64
-#endif
-
-#if defined(QT_NO_CUPS) && defined(QT_CUPS)
-# undef QT_NO_CUPS
-#elif !defined(QT_NO_CUPS)
-# define QT_NO_CUPS
-#endif
-
-#if defined(QT_NO_EVDEV) && defined(QT_EVDEV)
-# undef QT_NO_EVDEV
-#elif !defined(QT_NO_EVDEV)
-# define QT_NO_EVDEV
-#endif
-
-#if defined(QT_NO_EVENTFD) && defined(QT_EVENTFD)
-# undef QT_NO_EVENTFD
-#elif !defined(QT_NO_EVENTFD)
-# define QT_NO_EVENTFD
-#endif
-
-#if defined(QT_NO_FONTCONFIG) && defined(QT_FONTCONFIG)
-# undef QT_NO_FONTCONFIG
-#elif !defined(QT_NO_FONTCONFIG)
-# define QT_NO_FONTCONFIG
-#endif
-
-#if defined(QT_NO_GLIB) && defined(QT_GLIB)
-# undef QT_NO_GLIB
-#elif !defined(QT_NO_GLIB)
-# define QT_NO_GLIB
-#endif
-
-#if defined(QT_NO_ICONV) && defined(QT_ICONV)
-# undef QT_NO_ICONV
-#elif !defined(QT_NO_ICONV)
-# define QT_NO_ICONV
-#endif
-
-#if defined(QT_NO_IMAGEFORMAT_JPEG) && defined(QT_IMAGEFORMAT_JPEG)
-# undef QT_NO_IMAGEFORMAT_JPEG
-#elif !defined(QT_NO_IMAGEFORMAT_JPEG)
-# define QT_NO_IMAGEFORMAT_JPEG
-#endif
-
-#if defined(QT_NO_INOTIFY) && defined(QT_INOTIFY)
-# undef QT_NO_INOTIFY
-#elif !defined(QT_NO_INOTIFY)
-# define QT_NO_INOTIFY
-#endif
-
-#if defined(QT_NO_MTDEV) && defined(QT_MTDEV)
-# undef QT_NO_MTDEV
-#elif !defined(QT_NO_MTDEV)
-# define QT_NO_MTDEV
-#endif
-
-#if defined(QT_NO_NIS) && defined(QT_NIS)
-# undef QT_NO_NIS
-#elif !defined(QT_NO_NIS)
-# define QT_NO_NIS
-#endif
-
-#if defined(QT_NO_OPENSSL) && defined(QT_OPENSSL)
-# undef QT_NO_OPENSSL
-#elif !defined(QT_NO_OPENSSL)
-# define QT_NO_OPENSSL
-#endif
-
-#if defined(QT_NO_OPENVG) && defined(QT_OPENVG)
-# undef QT_NO_OPENVG
-#elif !defined(QT_NO_OPENVG)
-# define QT_NO_OPENVG
-#endif
-
-#if defined(QT_NO_SSL) && defined(QT_SSL)
-# undef QT_NO_SSL
-#elif !defined(QT_NO_SSL)
-# define QT_NO_SSL
-#endif
-
-#if defined(QT_NO_TSLIB) && defined(QT_TSLIB)
-# undef QT_NO_TSLIB
-#elif !defined(QT_NO_TSLIB)
-# define QT_NO_TSLIB
-#endif
-
-#define QT_QPA_DEFAULT_PLATFORM_NAME "windows"
+#define QT_FEATURE_debug_and_release 1
+#define QT_FEATURE_build_all 1
+#define QT_FEATURE_c__11 1
+#define QT_FEATURE_c__14 -1
+#define QT_FEATURE_c__1z -1
+#define QT_FEATURE_concurrent 1
+#define QT_FEATURE_pkg_config -1
+#define QT_COMPILER_SUPPORTS_F16C 1
+#define QT_FEATURE_force_asserts -1
+#define QT_LARGEFILE_SUPPORT 64
+#define QT_NO_MREMAP
+#define QT_FEATURE_separate_debug_info -1
+#define QT_FEATURE_simulator_and_device -1
+#define QT_FEATURE_static -1
+#define QT_VERSION_STR "5.9.1"
+#define QT_VERSION_MAJOR 5
+#define QT_VERSION_MINOR 9
+#define QT_VERSION_PATCH 1

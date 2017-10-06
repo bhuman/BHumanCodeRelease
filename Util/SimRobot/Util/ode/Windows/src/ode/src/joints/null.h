@@ -34,7 +34,10 @@ struct dxJointNull : public dxJoint
     dxJointNull( dxWorld *w );
     virtual void getSureMaxInfo( SureMaxInfo* info );
     virtual void getInfo1( Info1* info );
-    virtual void getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* info );
+    virtual void getInfo2( dReal worldFPS, dReal worldERP, 
+        int rowskip, dReal *J1, dReal *J2,
+        int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+        int *findex );
     virtual dJointType type() const;
     virtual size_t size() const;
 };

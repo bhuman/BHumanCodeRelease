@@ -40,6 +40,7 @@
 #ifndef QFONTMETRICS_H
 #define QFONTMETRICS_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/qfont.h>
 #include <QtCore/qsharedpointer.h>
 #ifndef QT_INCLUDE_COMPAT
@@ -72,6 +73,7 @@ public:
     { qSwap(d, other.d); }
 
     int ascent() const;
+    int capHeight() const;
     int descent() const;
     int height() const;
     int leading() const;
@@ -145,6 +147,7 @@ public:
     void swap(QFontMetricsF &other) { qSwap(d, other.d); }
 
     qreal ascent() const;
+    qreal capHeight() const;
     qreal descent() const;
     qreal height() const;
     qreal leading() const;

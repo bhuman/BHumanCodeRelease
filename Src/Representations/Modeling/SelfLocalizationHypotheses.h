@@ -24,6 +24,7 @@ STREAMABLE(SelfLocalizationHypotheses,
   STREAMABLE(Hypothesis,
   {,
     (Pose2f) pose,             /** the pose in 2D (position + rotation) */
+    (float) validity,
     (float) xVariance,
     (float) yVariance,
     (float) xyCovariance,

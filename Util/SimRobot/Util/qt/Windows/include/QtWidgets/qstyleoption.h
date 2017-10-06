@@ -40,6 +40,7 @@
 #ifndef QSTYLEOPTION_H
 #define QSTYLEOPTION_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtCore/qvariant.h>
 #include <QtWidgets/qabstractspinbox.h>
 #include <QtGui/qicon.h>
@@ -664,25 +665,25 @@ protected:
 template <typename T>
 T qstyleoption_cast(const QStyleOption *opt)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type Opt;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type Opt;
     if (opt && opt->version >= Opt::Version && (opt->type == Opt::Type
         || int(Opt::Type) == QStyleOption::SO_Default
         || (int(Opt::Type) == QStyleOption::SO_Complex
             && opt->type > QStyleOption::SO_Complex)))
         return static_cast<T>(opt);
-    return 0;
+    return Q_NULLPTR;
 }
 
 template <typename T>
 T qstyleoption_cast(QStyleOption *opt)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type Opt;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type Opt;
     if (opt && opt->version >= Opt::Version && (opt->type == Opt::Type
         || int(Opt::Type) == QStyleOption::SO_Default
         || (int(Opt::Type) == QStyleOption::SO_Complex
             && opt->type > QStyleOption::SO_Complex)))
         return static_cast<T>(opt);
-    return 0;
+    return Q_NULLPTR;
 }
 
 // -------------------------- QStyleHintReturn -------------------------------
@@ -727,21 +728,21 @@ public:
 template <typename T>
 T qstyleoption_cast(const QStyleHintReturn *hint)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type Opt;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type Opt;
     if (hint && hint->version <= Opt::Version &&
         (hint->type == Opt::Type || int(Opt::Type) == QStyleHintReturn::SH_Default))
         return static_cast<T>(hint);
-    return 0;
+    return Q_NULLPTR;
 }
 
 template <typename T>
 T qstyleoption_cast(QStyleHintReturn *hint)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type Opt;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type Opt;
     if (hint && hint->version <= Opt::Version &&
         (hint->type == Opt::Type || int(Opt::Type) == QStyleHintReturn::SH_Default))
         return static_cast<T>(hint);
-    return 0;
+    return Q_NULLPTR;
 }
 
 #if !defined(QT_NO_DEBUG_STREAM)

@@ -128,8 +128,8 @@ void RemoteRobot::update()
   char buf[33];
   sprintf(buf, "%.1lf kb/s", transferSpeed);
   QString statusText = robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData() +
-    (isConnected() ? QString(": connected to ") + QString::fromStdString(ip) + ", " + buf
-                   : QString(": connection lost from ") + QString::fromStdString(ip));
+                       (isConnected() ? QString(": connected to ") + QString::fromStdString(ip) + ", " + buf
+                        : QString(": connection lost from ") + QString::fromStdString(ip));
 
   if(logPlayer.getNumberOfMessages() != 0)
   {

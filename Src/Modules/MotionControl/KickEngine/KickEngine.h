@@ -8,8 +8,8 @@
 
 #include "KickEngineData.h"
 #include "KickEngineParameters.h"
+#include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/JointAngles.h"
-#include "Representations/MotionControl/HeadJointRequest.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
@@ -17,22 +17,22 @@
 #include "Representations/Sensing/InertialData.h"
 #include "Tools/Module/Module.h"
 #include "Tools/Streams/InStreams.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
 
 MODULE(KickEngine,
 {,
   USES(JointRequest),
   REQUIRES(FrameInfo),
-  REQUIRES(HeadJointRequest),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
-  REQUIRES(JointCalibration),
+  REQUIRES(JointLimits),
   REQUIRES(MassCalibration),
   REQUIRES(MotionRequest),
   REQUIRES(LegMotionSelection),
+  REQUIRES(KeyStates),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(TorsoMatrix),
-  //REQUIRES(StandOutput),
   PROVIDES(KickEngineOutput),
 });
 

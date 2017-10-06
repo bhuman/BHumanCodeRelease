@@ -13,6 +13,7 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
@@ -42,6 +43,7 @@ MODULE(AlternativeRobotPoseProvider,
   REQUIRES(Odometer),
   REQUIRES(OwnSideModel),
   REQUIRES(PenaltyArea),
+  REQUIRES(RobotInfo),
   PROVIDES(AlternativeRobotPoseHypothesis),
   DEFINES_PARAMETERS(
   {,

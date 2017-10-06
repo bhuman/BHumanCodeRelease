@@ -365,11 +365,11 @@ void SimObjectRenderer::rotateCamera(float x, float y)
     v = rotateZ * v3;
     cameraPos = cameraTarget + v;
   }
-  else // if(cameraMode == SimRobotCore2::Renderer::FREECAM)
+  else // if(cameraMode == SimRobotCore2::Renderer::freeCam)
   {
     Vector3<> v = cameraTarget - cameraPos;
     Matrix3x3<> rotateY(Vector3<>(0.f, y, 0.f));
-    Matrix3x3<> rotateZ(Vector3<>(0.f, 0.f, x));
+    Matrix3x3<> rotateZ(Vector3<>(0.f, 0.f, -x));
     Vector3<> v2(sqrtf(v.x * v.x + v.y * v.y), 0.f, v.z);
     v2 = rotateY * v2;
     if(v2.x < 0.001f)
@@ -479,7 +479,7 @@ bool SimObjectRenderer::intersectRayAndPlane(const Vector3<>& point, const Vecto
 Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
 {
   if(&simObject != Simulation::simulation->scene)
-    return 0;
+    return nullptr;
 
   class Callback
   {
@@ -531,7 +531,7 @@ Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
   dGeomDestroy(ray);
 
   if(!callback.closestBody)
-    return 0;
+    return nullptr;
   Body* body = callback.closestBody;
   return body->rootBody;
 }
@@ -603,16 +603,16 @@ bool SimObjectRenderer::moveDrag(int x, int y)
       if(dragType == dragRotate || dragType == dragRotateWorld)
       {
       }
-      else // if(dragType == DRAG_NORMAL)
+      else // if(dragType == dragNormal)
         rotateCamera((x - dragStartPos.x) * -0.01f, (y - dragStartPos.y) * -0.01f);
     }
-    else // if(cameraMode == SimRobotCore2::Renderer::FREECAM)
+    else // if(cameraMode == SimRobotCore2::Renderer::freeCam)
     {
       if(dragType == dragRotate || dragType == dragRotateWorld)
       {
       }
-      else // if(dragType == DRAG_NORMAL)
-        rotateCamera((x - dragStartPos.x) * -0.001f, (y - dragStartPos.y) * 0.001f);
+      else // if(dragType == dragNormal)
+        rotateCamera((x - dragStartPos.x) * -0.001f, (y - dragStartPos.y) * -0.001f);
     }
 
     dragStartPos.x = x;

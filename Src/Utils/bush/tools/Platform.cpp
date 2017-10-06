@@ -19,7 +19,7 @@ std::string bhumandDirOnRobot = "/home/nao/";
 std::string makeDirectory()
 {
 #ifdef WINDOWS
-  return "VS2015";
+  return "VS2017";
 #elif defined MACOS
   return "macOS";
 #else
@@ -68,15 +68,21 @@ std::string linuxToPlatformPath(const std::string& path)
 #endif
 }
 
-std::string getLinuxPath(const std::string& path)
+std::string getVisualStudioPath()
 {
 #ifdef WINDOWS
-  QString command("cygpath -u \"");
-  command += fromString(path) + "\"";
-  ProcessRunner r(command);
-  r.run();
-  return toString(r.getOutput().trimmed());
-#else
-  return path;
+  HKEY regKey;
+  if(ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\SxS\\VS7", 0, KEY_QUERY_VALUE, &regKey))
+  {
+    DWORD bufSize = _MAX_PATH;
+    char buf[_MAX_PATH];
+    if(ERROR_SUCCESS == RegGetValueA(regKey, nullptr, "15.0", RRF_RT_REG_SZ, nullptr, buf, &bufSize))
+    {
+      RegCloseKey(regKey);
+      return std::string(buf);
+    }
+    RegCloseKey(regKey);
+  }
 #endif
+  return "";
 }

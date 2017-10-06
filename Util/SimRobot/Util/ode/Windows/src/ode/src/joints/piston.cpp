@@ -219,55 +219,49 @@ dxJointPiston::getInfo1 ( dxJoint::Info1 *info )
 
 
 void
-dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    const int s0 = 0;
-    const int s1 = info->rowskip;
-    const int s2 = 2 * s1, s3 = 3 * s1 /*, s4=4*s1*/;
-
     const dReal k = worldFPS * worldERP;
 
 
     // Pull out pos and R for both bodies. also get the `connection'
     // vector pos2-pos1.
 
-    dReal *pos1, *pos2, *R1, *R2=0;
     dVector3 dist; // Current position of body_1  w.r.t "anchor"
     // 2 bodies anchor is center of body 2
     // 1 bodies anchor is origin
-    dVector3 lanchor2=
-    {
-        0,0,0
-    };
+    dVector3 lanchor2 = { 0,0,0 };
 
-    pos1 = node[0].body->posr.pos;
-    R1   = node[0].body->posr.R;
+    dReal *pos1 = node[0].body->posr.pos;
+    dReal *R1   = node[0].body->posr.R;
+    dReal *R2 = NULL;
 
-    if ( node[1].body )
+    dxBody *body1 = node[1].body;
+
+    if ( body1 ) 
     {
-        pos2 = node[1].body->posr.pos;
-        R2   = node[1].body->posr.R;
+        dReal *pos2 = body1->posr.pos;
+        R2   = body1->posr.R;
 
         dMultiply0_331 ( lanchor2, R2, anchor2 );
         dist[0] = lanchor2[0] + pos2[0] - pos1[0];
         dist[1] = lanchor2[1] + pos2[1] - pos1[1];
         dist[2] = lanchor2[2] + pos2[2] - pos1[2];
-    }
-    else
+    } 
+    else 
     {
         // pos2 = 0; // N.B. We can do that to be safe but it is no necessary
         // R2 = 0;   // N.B. We can do that to be safe but it is no necessary
-        if (flags & dJOINT_REVERSE )
+        if ( (flags & dJOINT_REVERSE) != 0 )
         {
-            dist[0] = pos1[0] - anchor2[0]; // Invert the value
-            dist[1] = pos1[1] - anchor2[1];
-            dist[2] = pos1[2] - anchor2[2];
+            dSubtractVectors3(dist, pos1, anchor2); // Invert the value
         }
         else
         {
-            dist[0] = anchor2[0] - pos1[0];
-            dist[1] = anchor2[1] - pos1[1];
-            dist[2] = anchor2[2] - pos1[2];
+            dSubtractVectors3(dist, anchor2, pos1);
         }
     }
 
@@ -305,24 +299,25 @@ dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info
     // Since there is no constraint along the rotoide axis
     // only along p and q that we want the same angular velocity and need to reduce
     // the error
-    dVector3 ax1, p, q;
+    dVector3 b, ax1, p, q;
     dMultiply0_331 ( ax1, node[0].body->posr.R, axis1 );
 
     // Find the 2 axis perpendicular to the rotoide axis.
     dPlaneSpace ( ax1, p, q );
 
     // LHS
-    dCopyVector3 ( ( info->J1a ) + s0, p );
-    dCopyVector3 ( ( info->J1a ) + s1, q );
+    dCopyVector3 ( J1 + GI2__JA_MIN, p );
 
-    dVector3 b;
-    if ( node[1].body )
+    if ( body1 )
     {
-        // LHS
-        //  info->J2a[s0+i] = -p[i]
-        dCopyNegatedVector3 ( ( info->J2a ) + s0, p );
-        dCopyNegatedVector3 ( ( info->J2a ) + s1, q );
+        dCopyNegatedVector3 ( J2 + GI2__JA_MIN, p );
+    }
 
+    dCopyVector3 ( J1 + rowskip + GI2__JA_MIN, q );
+
+    if ( body1 ) 
+    {
+        dCopyNegatedVector3 ( J2 + rowskip + GI2__JA_MIN, q );
 
         // Some math for the RHS
         dVector3 ax2;
@@ -336,8 +331,8 @@ dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info
     }
 
     // RHS
-    info->c[0] = k * dCalcVectorDot3 ( p, b );
-    info->c[1] = k * dCalcVectorDot3 ( q, b );
+    pairRhsCfm[GI2_RHS] = k * dCalcVectorDot3 ( p, b );
+    pairRhsCfm[pairskip + GI2_RHS] = k * dCalcVectorDot3 ( q, b );
 
 
     // ======================================================================
@@ -367,26 +362,33 @@ dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info
     // Coeff for 1er line of: J1a => dist x p, J2a => p x anchor2
     // Coeff for 2er line of: J1a => dist x q, J2a => q x anchor2
 
-    dCalcVectorCross3( ( info->J1a ) + s2, dist, p );
-
-    dCalcVectorCross3( ( info->J1a ) + s3, dist, q );
-
-    dCopyVector3 ( ( info->J1l ) + s2, p );
-    dCopyVector3 ( ( info->J1l ) + s3, q );
-
-    if ( node[1].body )
+    int currRowSkip = 2 * rowskip;
     {
-        // q x anchor2 instead of anchor2 x q since we want the negative value
-        dCalcVectorCross3( ( info->J2a ) + s2, p, lanchor2 );
+        dCopyVector3 ( J1 + currRowSkip + GI2__JL_MIN, p );
+        dCalcVectorCross3( J1 + currRowSkip + GI2__JA_MIN, dist, p );
 
-        // The cross product is in reverse order since we want the negative value
-        dCalcVectorCross3( ( info->J2a ) + s3, q, lanchor2 );
-
-        // info->J2l[s2+i] = -p[i];
-        dCopyNegatedVector3 ( ( info->J2l ) + s2, p );
-        dCopyNegatedVector3 ( ( info->J2l ) + s3, q );
+        if ( body1 )
+        {
+            // info->J2l[s2+i] = -p[i];
+            dCopyNegatedVector3 ( J2 + currRowSkip + GI2__JL_MIN, p );
+            // q x anchor2 instead of anchor2 x q since we want the negative value
+            dCalcVectorCross3( J2 + currRowSkip + GI2__JA_MIN, p, lanchor2 );
+        }
     }
 
+    currRowSkip += rowskip;
+    {
+        dCopyVector3 ( J1 + currRowSkip + GI2__JL_MIN, q );
+        dCalcVectorCross3( J1 + currRowSkip + GI2__JA_MIN, dist, q );
+
+        if ( body1 )
+        {
+            // info->J2l[s3+i] = -q[i];
+            dCopyNegatedVector3 ( J2 + currRowSkip + GI2__JL_MIN, q );
+            // The cross product is in reverse order since we want the negative value
+            dCalcVectorCross3( J2 + currRowSkip + GI2__JA_MIN, q, lanchor2 );
+        }
+    }
 
     // We want to make correction for motion not in the line of the axis
     // We calculate the displacement w.r.t. the "anchor" pt.
@@ -399,27 +401,37 @@ dxJointPiston::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info
     dMultiply0_331 ( err, R1, anchor1 );
     dSubtractVectors3( err, dist, err );
 
-    info->c[2] = k * dCalcVectorDot3 ( p, err );
-    info->c[3] = k * dCalcVectorDot3 ( q, err );
-
-
-    int row = 4;
-    if (  node[1].body )
+    int currPairSkip = 2 * pairskip;
     {
-        row += limotP.addLimot ( this, worldFPS, info, 4, ax1, 0 );
+        pairRhsCfm[currPairSkip + GI2_RHS] = k * dCalcVectorDot3 ( p, err );
     }
-    else if (flags & dJOINT_REVERSE )
+
+    currPairSkip += pairskip;
     {
-        dVector3 rAx1;
-        rAx1[0] = -ax1[0];
-        rAx1[1] = -ax1[1];
-        rAx1[2] = -ax1[2];
-        row += limotP.addLimot ( this, worldFPS, info, 4, rAx1, 0 );
+        pairRhsCfm[currPairSkip + GI2_RHS] = k * dCalcVectorDot3 ( q, err );
+    }
+
+    currRowSkip += rowskip; currPairSkip += pairskip;
+    
+    if ( body1 || (flags & dJOINT_REVERSE) == 0 )
+    {
+        if (limotP.addLimot ( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 0 ))
+        {
+            currRowSkip += rowskip; currPairSkip += pairskip;
+        }
     }
     else
-        row += limotP.addLimot ( this, worldFPS, info, 4, ax1, 0 );
+    {
+        dVector3 rAx1;
+        dCopyNegatedVector3(rAx1, ax1);
 
-    limotR.addLimot ( this, worldFPS, info, row, ax1, 1 );
+        if (limotP.addLimot ( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, rAx1, 0 ))
+        {
+            currRowSkip += rowskip; currPairSkip += pairskip;
+        }
+    }
+
+    limotR.addLimot ( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 1 );
 }
 
 void dJointSetPistonAnchor ( dJointID j, dReal x, dReal y, dReal z )
@@ -527,7 +539,7 @@ void dJointSetPistonAxisDelta ( dJointID j, dReal x, dReal y, dReal z,
         c[2] = ( joint->node[0].body->posr.pos[2] -
             joint->node[1].body->posr.pos[2] - dz );
     }
-    else if ( joint->node[0].body )
+    else /*if ( joint->node[0].body )*/ // -- body[0] should always be present -- there is a matrix multiplication below
     {
         c[0] = joint->node[0].body->posr.pos[0] - dx;
         c[1] = joint->node[0].body->posr.pos[1] - dy;

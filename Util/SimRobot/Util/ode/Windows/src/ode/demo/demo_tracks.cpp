@@ -304,7 +304,7 @@ void nearCallback(void *, dGeomID a, dGeomID b)
         dSubtractVectors3(v, contacts[i].geom.pos, xyz);
         dVector3 c;
         dCalcVectorCross3(c, v, contacts[i].geom.pos);
-        dSafeNormalize3(c);
+        dNormalize3(c);
         dVector3 pos1;
         dAddScaledVectors3(pos1, contacts[i].geom.pos, c, 1, 0.005);
         dVector3 pos2;

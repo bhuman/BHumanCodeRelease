@@ -3,7 +3,7 @@
  *
  * This contains some probabilistic functions
  *
- * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #pragma once
@@ -53,7 +53,7 @@ inline float probabiltyOfInterval(float mu, float s, float a, float b)
  * @param covariance The covariance matrix of the normal distribution. This variable will be updated
  * @param mean2 The mean of the second normal distribution
  * @param covariance2 The covariance matrix of the second normal distribution
- * @return Wheter the equation could be solved
+ * @return Whether the equation could be solved
  */
 inline bool twoDimSquareEquation(Vector2f& mean, Matrix2f& covariance, const Vector2f& mean2, const Matrix2f& covariance2)
 {

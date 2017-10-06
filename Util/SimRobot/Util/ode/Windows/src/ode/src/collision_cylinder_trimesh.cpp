@@ -880,7 +880,7 @@ void sCylinderTrimeshColliderData::TestOneTriangleVsCylinder(
     // if best separation axis is not found
     if ( m_iBestAxis == 0 ) 
     {
-        // this should not happen (we should already exit in that case)
+        // this should not happen (the function should have already returned in this case)
         dIASSERT(false);
         // do nothing
         return;
@@ -971,72 +971,59 @@ static void dQueryCTLPotentialCollisionTriangles(OBBCollider &Collider,
                                                  sCylinderTrimeshColliderData &cData, dxGeom *Cylinder, dxTriMesh *Trimesh,
                                                  OBBCache &BoxCache)
 {
+    Matrix4x4 MeshMatrix;
+    const dVector3 vZeroVector3 = { REAL(0.0), };
+    MakeMatrix(vZeroVector3, cData.m_mTrimeshRot, MeshMatrix);
+
     const dVector3 &vCylinderPos = cData.m_vCylinderPos;
-
-    Point cCenter(vCylinderPos[0],vCylinderPos[1],vCylinderPos[2]);
-
-    Point cExtents(cData.m_fCylinderRadius,cData.m_fCylinderRadius,cData.m_fCylinderRadius);
-    cExtents[nCYLINDER_AXIS] = cData.m_fCylinderSize * REAL(0.5);
-
-    Matrix3x3 obbRot;
-
     const dMatrix3 &mCylinderRot = cData.m_mCylinderRot;
 
-    // It is a potential issue to explicitly cast to float 
-    // if custom width floating point type is introduced in OPCODE.
-    // It is necessary to make a typedef and cast to it
-    // (e.g. typedef float opc_float;)
-    // However I'm not sure in what header it should be added.
+    dVector3 vCylinderOffsetPos;
+    dSubtractVectors3(vCylinderOffsetPos, vCylinderPos, cData.m_vTrimeshPos);
 
-    obbRot[0][0] = /*(float)*/mCylinderRot[0];
-    obbRot[1][0] = /*(float)*/mCylinderRot[1];
-    obbRot[2][0] = /*(float)*/mCylinderRot[2];
+    const dReal fCylinderRadius = cData.m_fCylinderRadius, fCylinderHalfAxis = cData.m_fCylinderSize * REAL(0.5);
 
-    obbRot[0][1] = /*(float)*/mCylinderRot[4];
-    obbRot[1][1] = /*(float)*/mCylinderRot[5];
-    obbRot[2][1] = /*(float)*/mCylinderRot[6];
-
-    obbRot[0][2] = /*(float)*/mCylinderRot[8];
-    obbRot[1][2] = /*(float)*/mCylinderRot[9];
-    obbRot[2][2] = /*(float)*/mCylinderRot[10];
-
-    OBB obbCapsule(cCenter,cExtents,obbRot);
-
-    Matrix4x4 CapsuleMatrix;
-    MakeMatrix(vCylinderPos, mCylinderRot, CapsuleMatrix);
-
-    Matrix4x4 MeshMatrix;
-    MakeMatrix(cData.m_vTrimeshPos, cData.m_mTrimeshRot, MeshMatrix);
+    OBB obbCylinder;
+    obbCylinder.mCenter.Set(vCylinderOffsetPos[0], vCylinderOffsetPos[1], vCylinderOffsetPos[2]);
+    obbCylinder.mExtents.Set(
+        0 == nCYLINDER_AXIS ? fCylinderHalfAxis : fCylinderRadius,
+        1 == nCYLINDER_AXIS ? fCylinderHalfAxis : fCylinderRadius,
+        2 == nCYLINDER_AXIS ? fCylinderHalfAxis : fCylinderRadius);
+    obbCylinder.mRot.Set(
+        mCylinderRot[0], mCylinderRot[4], mCylinderRot[8],
+        mCylinderRot[1], mCylinderRot[5], mCylinderRot[9],
+        mCylinderRot[2], mCylinderRot[6], mCylinderRot[10]);
 
     // TC results
-    if (Trimesh->doBoxTC) 
+    if (Trimesh->getDoTC(dxTriMesh::TTC_BOX)) 
     {
         dxTriMesh::BoxTC* BoxTC = 0;
-        for (int i = 0; i < Trimesh->BoxTCCache.size(); i++)
+        const int iBoxCacheSize = Trimesh->m_BoxTCCache.size();
+        for (int i = 0; i != iBoxCacheSize; i++)
         {
-            if (Trimesh->BoxTCCache[i].Geom == Cylinder)
+            if (Trimesh->m_BoxTCCache[i].Geom == Cylinder)
             {
-                BoxTC = &Trimesh->BoxTCCache[i];
+                BoxTC = &Trimesh->m_BoxTCCache[i];
                 break;
             }
         }
         if (!BoxTC)
         {
-            Trimesh->BoxTCCache.push(dxTriMesh::BoxTC());
+            Trimesh->m_BoxTCCache.push(dxTriMesh::BoxTC());
 
-            BoxTC = &Trimesh->BoxTCCache[Trimesh->BoxTCCache.size() - 1];
+            BoxTC = &Trimesh->m_BoxTCCache[Trimesh->m_BoxTCCache.size() - 1];
             BoxTC->Geom = Cylinder;
             BoxTC->FatCoeff = REAL(1.0);
         }
 
         // Intersect
         Collider.SetTemporalCoherence(true);
-        Collider.Collide(*BoxTC, obbCapsule, Trimesh->Data->BVTree, null, &MeshMatrix);
+        Collider.Collide(*BoxTC, obbCylinder, Trimesh->retrieveMeshBVTreeRef(), null, &MeshMatrix);
     }
     else 
     {
         Collider.SetTemporalCoherence(false);
-        Collider.Collide(BoxCache, obbCapsule, Trimesh->Data->BVTree, null,&MeshMatrix);
+        Collider.Collide(BoxCache, obbCylinder, Trimesh->retrieveMeshBVTreeRef(), null, &MeshMatrix);
     }
 }
 
@@ -1059,9 +1046,9 @@ int dCollideCylinderTrimesh(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *con
     const unsigned uiTLSKind = Trimesh->getParentSpaceTLSKind();
     dIASSERT(uiTLSKind == Cylinder->getParentSpaceTLSKind()); // The colliding spaces must use matching cleanup method
     TrimeshCollidersCache *pccColliderCache = GetTrimeshCollidersCache(uiTLSKind);
-    OBBCollider& Collider = pccColliderCache->_OBBCollider;
+    OBBCollider& Collider = pccColliderCache->m_OBBCollider;
 
-    dQueryCTLPotentialCollisionTriangles(Collider, cData, Cylinder, Trimesh, pccColliderCache->defaultBoxCache);
+    dQueryCTLPotentialCollisionTriangles(Collider, cData, Cylinder, Trimesh, pccColliderCache->m_DefaultBoxCache);
 
     // Retrieve data
     int TriCount = Collider.GetNbTouchedPrimitives();
@@ -1070,9 +1057,9 @@ int dCollideCylinderTrimesh(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *con
     {
         const int* Triangles = (const int*)Collider.GetTouchedPrimitives();
 
-        if (Trimesh->ArrayCallback != null)
+        if (Trimesh->m_ArrayCallback != NULL)
         {
-            Trimesh->ArrayCallback(Trimesh, Cylinder, Triangles, TriCount);
+            Trimesh->m_ArrayCallback(Trimesh, Cylinder, Triangles, TriCount);
         }
 
         // allocate buffer for local contacts on stack
@@ -1084,11 +1071,11 @@ int dCollideCylinderTrimesh(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *con
         for (int i = 0; i < TriCount; i++)
         {
             const int Triint = Triangles[i];
-            if (!Callback(Trimesh, Cylinder, Triint)) continue;
+            if (!Trimesh->invokeCallback(Cylinder, Triint)) continue;
 
 
             dVector3 dv[3];
-            FetchTriangle(Trimesh, Triint, cData.m_vTrimeshPos, cData.m_mTrimeshRot, dv);
+            Trimesh->fetchMeshTriangle(dv, Triint, cData.m_vTrimeshPos, cData.m_mTrimeshRot);
 
             bool bFinishSearching;
             ctContacts0 = cData.TestCollisionForSingleTriangle(ctContacts0, Triint, dv, bFinishSearching);
@@ -1129,14 +1116,7 @@ int dCollideCylinderTrimesh(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *con
 
     //*****at first , collide box aabb******//
 
-    aabb3f test_aabb;
-
-    test_aabb.minX = o1->aabb[0];
-    test_aabb.maxX = o1->aabb[1];
-    test_aabb.minY = o1->aabb[2];
-    test_aabb.maxY = o1->aabb[3];
-    test_aabb.minZ = o1->aabb[4];
-    test_aabb.maxZ = o1->aabb[5];
+    aabb3f test_aabb(o1->aabb[0], o1->aabb[1], o1->aabb[2], o1->aabb[3], o1->aabb[4], o1->aabb[5]);
 
 
     GDYNAMIC_ARRAY collision_result;

@@ -10,6 +10,8 @@
 
 #include <cmath>
 #include <cstdlib>
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/Debugging/DebugImages.h"
 #include "Tools/ImageProcessing/TImage.h"
 
 /**
@@ -17,7 +19,7 @@
  * A CNS response is a vector with length <=1 that points into the direction
  * of the gradient. The length defines, which fraction of the weighted image
  * contrast at the respective point comes from the linear gradient. Hence,
- * the length is a illumination independent indicator of quality.
+ * the length is an illumination independent indicator of quality.
 
  * \f{equation}{
  *   CNS (x,y) = \frac{
@@ -48,7 +50,7 @@
  * The memory layout of this class, i.e. having two consecutive signed
  * bytes is hard-coded in the respective routines. Don't change.
  */
-struct CNSResponse
+struct CNSResponse : public PixelTypes::Edge2Pixel
 {
   /**
    * Factor by which the float responses are scaled to get integer.
@@ -67,8 +69,8 @@ struct CNSResponse
    *   filterY = CNS(x,y)_y SCALE
    * \f}
    */
-  unsigned char filterX = OFFSET;
-  unsigned char filterY = OFFSET;
+  //filterX inside base class
+  //filterY inside base class
 
   /** Checks, whether both numbers are in a valid range. */
   bool valid() const
@@ -85,7 +87,7 @@ struct CNSResponse
   }
 
   /** Uninitialized constructor. */
-  CNSResponse() = default;
+  CNSResponse() : PixelTypes::Edge2Pixel(OFFSET, OFFSET) {};
 
   /** Initializes CNSResponse incl. clipping and scaling. */
   CNSResponse(float filterX, float filterY)
@@ -126,8 +128,8 @@ struct CNSResponse
   /** Return the norm as float [0 .. 1]. */
   float normFloat() const
   {
-    float dX=xFloat();
-    float dY=yFloat();
+    float dX = xFloat();
+    float dY = yFloat();
     return std::sqrt(dX * dX + dY * dY);
   }
 };
@@ -139,5 +141,18 @@ struct CNSImage : public TImage<CNSResponse>
                                    TImage<CNSResponse>::maxWidth * 64 * sizeof(CNSResponse))
   {
     std::memset(reinterpret_cast<char*>((*this)[-64]), CNSResponse::OFFSET, width * (128 + height) * sizeof(CNSResponse));
+  }
+
+  void draw() const
+  {
+    SEND_DEBUG_IMAGE("CNSImage", *this, PixelTypes::Edge2);
+  }
+};
+
+struct CNSImageCompressed : public CNSImage
+{
+  void draw() const
+  {
+    SEND_DEBUG_IMAGE("CNSImageCompressed", *this, PixelTypes::Edge2);
   }
 };

@@ -1,48 +1,42 @@
 /**
-* @file FieldCoverageProvider.cpp
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file FieldCoverageProvider.cpp
+ * @author Andreas Stolpmann
+ */
 
 #pragma once
 
 #include "Tools/Module/Module.h"
 
+#include "Representations/Communication/BHumanMessage.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
-#include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Math/Geometry.h"
-#include <vector>
 
+#include <vector>
 
 MODULE(FieldCoverageProvider,
 {,
-  REQUIRES(BallModel),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
   REQUIRES(ObstacleModel),
-  REQUIRES(OwnTeamInfo),
   REQUIRES(RobotPose),
-  REQUIRES(TeamBallModel),
+  REQUIRES(BHumanMessageOutputGenerator),
 
   PROVIDES_WITHOUT_MODIFY(FieldCoverage),
 
   DEFINES_PARAMETERS(
   {,
-    (float) (2000.f) ballVisibilityRange,
-    (float) (200.f) obstacleRadius,
-    (int) (3000) maxTimeToBallDropIn,
-    (float) (1000.f) dropInPenaltyDistance,
+    (int)(18) numOfCellsX,
+    (int)(12) numOfCellsY,
+
+    (float)(2000.f) ballVisibilityRange,
+    (float)(200.f) obstacleRadius,
   }),
 });
 
@@ -54,15 +48,14 @@ public:
   void update(FieldCoverage& fieldCoverage);
 
 private:
-  struct Cell
+  struct InternalCell
   {
-    unsigned& timeStamp;
-    unsigned& lastSeen;
+    unsigned& timestamp;
     Vector2f positionOnField;
     Vector2f polygon[4];
 
-    Cell(unsigned& timeStamp, unsigned& lastSeen, const float positionOnFieldX, const float positionOnFieldY, const float cellLengthX, const float cellLengthY)
-      : timeStamp(timeStamp), lastSeen(lastSeen), positionOnField(positionOnFieldX, positionOnFieldY)
+    InternalCell(unsigned& timestamp, float positionOnFieldX, float positionOnFieldY, float cellLengthX, float cellLengthY)
+      : timestamp(timestamp), positionOnField(positionOnFieldX, positionOnFieldY)
     {
       const float xMin = positionOnFieldX - cellLengthX / 2.f;
       const float xMax = positionOnFieldX + cellLengthX / 2.f;
@@ -75,7 +68,7 @@ private:
       polygon[3] = Vector2f(xMax - 25.0f, yMin + 25.0f);
     }
   };
-  std::vector<Cell> cells;
+  std::vector<InternalCell> cells;
 
   struct CoverageObstacle
   {
@@ -87,30 +80,11 @@ private:
       : angleLeft(angleLeft), angleRight(angleRight), sqrDistance(sqrDistance) {}
   };
   std::vector<CoverageObstacle> obstacles;
-
-  float cellLengthX = 500;
-  float cellLengthY = 500;
-
-  int calculateThisFrame = 0;
-
-  unsigned lastTimeBallWasSeenInsideField = 0;
-  unsigned lastTimeBallWasSeenOutsideField = 0;
-
-  Vector2f lastBallPositionInsideField = Vector2f::Zero();
-  Vector2f lastBallPositionOutsideField = Vector2f::Zero();
-  Vector2f lastBallPositionLyingInsideField = Vector2f::Zero();
-
-  unsigned lastTimeBallWentOut = 0;
-  Vector2f ballOutPosition = Vector2f::Zero();
-
-  void accountForBallDropIn(FieldCoverage& fieldCoverage);
-  void calculateBallOutPosition();
-  void calculateDropInPosition(FieldCoverage& fieldCoverage);
-
   void calculateObstacles();
-  bool isViewBlocked(const Angle angle, const float sqrDistance);
 
-  void accountForBallPosition(FieldCoverage& fieldCoverage);
+  bool isViewBlocked(const Angle angle, const float sqrDistance) const;
+
+  int nextLineToCalculate = 0;
 
   bool initDone = false;
   void init(FieldCoverage& fieldCoverage);

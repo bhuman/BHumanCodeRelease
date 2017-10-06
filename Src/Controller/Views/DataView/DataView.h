@@ -9,15 +9,7 @@
 
 #include <SimRobot.h>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
-#endif
 #include <QIcon>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
 #include <QObject>
 #include <QString>
 #include <map>
@@ -40,7 +32,7 @@ class OutBinaryMessage;
 /**
  * A class which can be used to display streamable data.
  *
- * The view will display any data that is given to its via handleMessage.
+ * The view will display any data that is given to it via handleMessage.
  * A StreamHandler is used to get the needed specification data.
  *
  */

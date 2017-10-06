@@ -47,6 +47,30 @@ typedef struct dxThreadingThreadPool *dThreadingThreadPoolID;
 
 
 /**
+ * @brief Allocates built-in self-threaded threading implementation object.
+ *
+ * A self-threaded implementation is a type of implementation that performs 
+ * processing of posted calls by means of caller thread itself. This type of 
+ * implementation does not need thread pool to serve it.
+ * 
+ * The processing is arranged in a way to prevent call stack depth growth 
+ * as more and more nested calls are posted.
+ *
+ * Note that it is not necessary to create and assign a self-threaded 
+ * implementation to a world, as there is a global one used by default 
+ * if no implementation is explicitly assigned. You should only assign 
+ * each world an individual threading implementation instance if simulations 
+ * need to be run in parallel in multiple threads for the worlds.
+ *
+ * @returns ID of object allocated or NULL on failure
+ * 
+ * @ingroup threading
+ * @see dThreadingAllocateMultiThreadedImplementation
+ * @see dThreadingFreeImplementation
+ */
+ODE_API dThreadingImplementationID dThreadingAllocateSelfThreadedImplementation();
+
+/**
  * @brief Allocates built-in multi-threaded threading implementation object.
  *
  * A multi-threaded implementation is a type of implementation that has to be 

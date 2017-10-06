@@ -44,7 +44,7 @@ private:
    * Hides all rows from the table that fit the filter
    */
   void applyFilter();
-  
+
   // Create Context Menu
   virtual QMenu* createEditMenu() const;
 

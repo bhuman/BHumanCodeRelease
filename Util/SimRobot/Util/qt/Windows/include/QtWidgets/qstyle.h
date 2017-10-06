@@ -40,6 +40,7 @@
 #ifndef QSTYLE_H
 #define QSTYLE_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qrect.h>
 #include <QtCore/qsize.h>
@@ -569,6 +570,9 @@ public:
 
         PM_HeaderDefaultSectionSizeHorizontal,
         PM_HeaderDefaultSectionSizeVertical,
+
+        PM_TitleBarButtonIconSize,
+        PM_TitleBarButtonSize,
 
         // do not add any values below/greater than this
         PM_CustomBase = 0xf0000000

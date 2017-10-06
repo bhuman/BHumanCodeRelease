@@ -91,23 +91,22 @@ void IntersectionRelations::LineIntersectionRelations::serialize(In* in, Out* ou
 void IntersectionRelations::propagateMarkedIntersection(const MarkedIntersection& start, const FieldLineIntersections& theFieldLineIntersections,
     const FieldLines& theFieldLines, FieldFeature& ff) const
 {
-  std::vector<bool> usedIntersection = std::vector<bool>(theFieldLineIntersections.intersections.size(), false);
+  std::vector<bool> usedIntersection(theFieldLineIntersections.intersections.size(), false);
   usedIntersection[start.intersectionIndex] = true;
-  std::vector<bool> usedLines = std::vector<bool>(theFieldLines.lines.size(), false);
+  std::vector<bool> usedLines(theFieldLines.lines.size(), false);
 
   std::vector<MarkedIntersection> handleIntersections;
-  handleIntersections.push_back(start);
-
+  handleIntersections.emplace_back(start);
 
   while(!handleIntersections.empty())
   {
-    ff.markedIntersections.push_back(handleIntersections.back());
+    ff.markedIntersections.emplace_back(handleIntersections.back());
 
     const MarkedIntersection& currentMI = ff.markedIntersections.back();
     const FieldLineIntersections::Intersection& currIntersection = theFieldLineIntersections.intersections[currentMI.intersectionIndex];
     handleIntersections.pop_back();
 
-    auto findIntersections = [&](const MarkedLine & mLine)
+    auto findIntersections = [&](const MarkedLine& mLine)
     {
       usedLines[mLine.lineIndex] = true;
       const bool mirror = mLine.marker >= MarkedLine::firstLineMarkerOther;
@@ -172,7 +171,6 @@ void IntersectionRelations::propagateMarkedIntersection(const MarkedIntersection
 void IntersectionRelations::propagateMarkedLinePoint(const MarkedLine& start, const float linePoint, const Vector2f& fieldPoint,
     const FieldLineIntersections& theFieldLineIntersections, const FieldLines& theFieldLines, FieldFeature& ff) const
 {
-
   const bool mirror = start.marker >= MarkedLine::firstLineMarkerOther;
   const MarkedLine::LineMarker calcMLineMarker = mirror ? start.mirror() : start.marker;
 

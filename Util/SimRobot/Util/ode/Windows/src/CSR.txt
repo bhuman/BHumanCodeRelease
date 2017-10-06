@@ -1,0 +1,422 @@
+CODING STYLE REQUIREMENTS
+
+Copyright (c) 2011-2017 Oleh Derevenko
+This article is provided to you under the terms of Artistic License 2.0
+(http://www.opensource.org/licenses/artistic-license-2.0).
+
+(I) General Coding Requirements
+=============================================================================
+
+1. Not more than one complex construction per function
+----------------------------------------------------------------------------
+
+A function must not contain more than one* operator from the following set:
+for, while, do..while, switch and constructions try..catch, try..finally. 
+Moreover, those operators/constructions must not appear inside of a 
+conditional operator.
+
+* Loop inclusion is allowed if multi-dimensional array must be iterated and 
+all the elements are uniform and need to be processed linearly.
+try..finally construction inclusion is allowed for several resource 
+allocations that need to be performed together.
+
+
+2. Absence of jumps
+----------------------------------------------------------------------------
+
+goto and continue operators must not be used.
+
+
+3. Single exit point at the end of function
+----------------------------------------------------------------------------
+
+A function must not have other exit points except for the end of its 
+definition. If a function returns a value, return operator must be the last
+syntactical construction in the function.
+
+
+4. Zero value means failure
+----------------------------------------------------------------------------
+
+Function results must be chosen the way that binary zero value had a meaning
+of failure. Similarly, types must be designed so that binary zero element 
+had the meaning of an invalid value (if invalid element concept is applicable
+for the type).
+
+
+5. Variables and parameters are initialized with zeroes
+----------------------------------------------------------------------------
+
+Variables and class fields must be initialized with values of binary zero 
+presentation. Public enumerated types must be designed to have zero element 
+and that element is to be the default element. Function default parameters 
+must be chosen in the form to have binary zero value.
+
+
+6. Variables are not reused
+----------------------------------------------------------------------------
+
+Variables must not be reused for other purposes after they have already been
+used for something. The only value that might be stored in a variable is that
+described with its name.
+
+
+7. Parameters passed by value are treated as constants
+----------------------------------------------------------------------------
+
+Parameters that are passed by value must not be modified*. All of them must
+be treated as if they have been implicitly declared with const modifier.
+
+* An exception could be the case when a value loses its meaning (e.g. a 
+pointer to an object being deleted).
+
+
+8. Result assignment is performed at the end of function
+----------------------------------------------------------------------------
+
+Every function returning a result must have a variable to contain the result
+of that function. It is to be declared (initialized if necessary) at the 
+beginning of the function* and the only access to it after that should be its
+final value assignment. The assignment should be the last meaningful operator
+in an execution branch**. Several assignments, one per each execution branch,
+are allowed.
+
+* It is allowed to declare result variable with assignment immediately before
+return operator.
+** It is allowed to include technical constructions like logging or 
+performance measuring after result variable assignment.
+
+
+9. Parameters by reference are not used in expressions
+----------------------------------------------------------------------------
+
+Parameters of simple types passed by reference must be copied into local 
+variables at function entry and then be assigned their final values at 
+function exit.
+Output parameters can be initialized at function entry and must be assigned
+their final values immediately before the function result variable assignment.
+
+
+(II) Class Design Requirements
+=============================================================================
+
+1. Classes work with their fields on their own
+----------------------------------------------------------------------------
+
+A function or method must not call several methods of other class, some of
+them being used to return and the others being used to assign the class fields.
+Such a code must be implemented as a method of that other class.
+
+
+2. No direct access to the fields
+----------------------------------------------------------------------------
+
+All the work with class fields (including fields of own class) must be 
+performed with aid of dedicated methods (accessors) that return and assign 
+field values. Exceptions can be made for constructors/destructors and methods
+dedicated for field initialization/finalization.
+
+
+3. Private fields only
+----------------------------------------------------------------------------
+
+All class fields must be private.
+
+
+4. No code in constructors and destructors
+----------------------------------------------------------------------------
+
+Class constructors must not have raw code other than doing trivial field 
+initialization. If creation of contained objects is necessary or other 
+operations need to be done they are to be performed via calls to the class 
+methods rather than placed directly in constructor. Initial zero-assignment
+to a field is always required even if that field is later to be 
+unconditionally assigned in methods called from the constructor.
+Similarly, a destructor must free contained objects with calls to the class 
+methods rather than containing that code inline.
+
+
+5. No code in callbacks
+----------------------------------------------------------------------------
+
+Event handlers, callback interface methods and static callback methods must 
+not have meaningful code within them. Their implementation should validate 
+input arguments, convert them to proper internal types if necessary, and call 
+one or more other methods of the class. These methods must not be declated in
+public section.
+
+
+6. No public virtual methods
+----------------------------------------------------------------------------
+
+Methods declared as virtual must not be public. The public calls to such 
+methods must be wrapped with ordinary class methods.
+
+
+7. No logical level violations
+----------------------------------------------------------------------------
+
+Methods of lower logical levels must not call any methods of higher logical 
+levels of the class. In particular, methods declared as protected and private
+must not call methods declared in public sections of own or ancestor classes.
+Methods declared as public may only call protected and private methods.
+Similarly classes of lower logical levels must not call public methods of 
+classes at higher logical levels. Such calls are only possible via dedicated 
+callback methods or callback interfaces.
+
+
+(III) Canonical Function Structures
+=============================================================================
+
+0. Preamble
+----------------------------------------------------------------------------
+
+Following are general function structures encouraged to be used for coding 
+all the program logic. Any algorithm with branching can be implemented
+with these types of functions.
+
+Using these function structures helps to make code clear and error-proof.
+
+
+1. A Boolean Function
+----------------------------------------------------------------------------
+
+The Boolean Function can be used to implement algorithms with conditional 
+branching.
+
+bool PerformSomeAction(...)
+{
+    bool bResult = false;
+
+    // Some linear code
+
+    if (...)
+    {
+        // Some linear code
+
+        if (...) // Optionally...
+        {
+            bResult = true;
+        }
+    }
+    // Optionally...
+    else if (...)
+    {
+        // Some linear code
+        
+        bResult = true;
+    }
+
+    return bResult;
+}
+
+The idea is to have result variable initialized with false at entry and then 
+have an arbitrary structure of conditional operators with some branches 
+changing result variable to true on exit.
+
+
+2. A Validation Function
+----------------------------------------------------------------------------
+
+The Validation Function is an alternative to Boolean Function to implement 
+conditional logic. It's mostly convenient for implementing multi-step 
+algorithms that may fail (like validations or initializations of multiple 
+items of non-uniform nature).
+
+bool PerformSomeValidation(...)
+{
+    bool bResult = false;
+
+    do
+    {
+        // Some linear code
+
+        // Optionally...
+        if ( !(...) )
+        {
+            // Some error handling // Optionally...
+            break;
+        }
+
+        // Optionally...
+        if (...)
+        {
+            // Some linear code
+
+            if ( !(...) )
+            {
+                // Some error handling // Optionally...
+                break;
+            }
+
+            // Some linear code
+        }
+
+        bResult = true;
+    }
+    while (false);
+
+    return bResult;
+}
+
+If function execution has side effects which need to be rolled back in case 
+of failures on subsequent steps the function structure can be altered to the
+following form.
+
+bool PerformSomeInitialization(...)
+{
+    bool bResult = false;
+
+    bool bFirstSideEffectApplied = false, bSecondSideEffectApplied = false, ...;
+
+    do
+    {
+        // Some linear code
+
+        if ( !ExecuteFirstSideEffectApplication(...) )
+        {
+            // Some error handling // Optionally...
+            break;
+        }
+
+        bFirstSideEffectApplied = true
+
+        // Some linear code
+
+        if ( !ExecuteSecondSideEffectApplication(...) )
+        {
+            // Some error handling // Optionally...
+            break;
+        }
+
+        bSecondSideEffectApplied = true
+
+        ...
+
+        // Some linear code
+
+        if ( !ExecuteLastSideEffectApplication(...) )
+        {
+            // Some error handling // Optionally...
+            break;
+        }
+
+        bResult = true;
+    }
+    while (false);
+
+    if (!bResult)
+    {
+        if (bFirstSideEffectApplied)
+        {
+            if (bSecondSideEffectApplied)
+            {
+                if (...)
+                {
+                    ...
+                }
+
+                ExecuteSecondSideEffectRollback(...);
+            }
+
+            ExecuteFirstSideEffectRollback(...);
+        }
+    }
+
+    return bResult;
+}
+
+
+3. A Loop Validation Function
+----------------------------------------------------------------------------
+
+The Loop Validation Function can be used for processing sequences of items 
+while the processing of each or some individual items can fail.
+
+bool PerformLoopValidation(...)
+{
+    bool bAnyFailure = false;
+
+    for (...) // Or any other loop control operator
+    {
+        // Some linear code
+
+        if ( !(...) )
+        {
+            // Some error handling // Optional
+            bAnyFailure = true;
+            break;
+        }
+
+        // Some linear code
+    }
+
+    bool bResult = !bAnyFailure;
+    return bResult;
+}
+
+In case if a loop processing function may apply side effects on each step 
+which need to be reverted in case of a failure on subsequent steps the 
+functions need to be organized in the following four-function two-level 
+structure.
+
+bool PerformLoopInitialization(...)
+{
+    bool bResult = false;
+
+    size_t nFailureItem;
+
+    if (DoPerformLoopInitialization(..., nFailureItem))
+    {
+        bResult = true;
+    }
+    else
+    {
+        DoPerformLoopFinalization(..., nFailureItem);
+    }
+
+    return bResult;
+}
+
+void PerformLoopFinalization(...)
+{
+    DoPerformLoopFinalization(..., npos); // Here "npos" stands for the invalid item index
+}
+
+bool DoPerformLoopInitialization(..., size_t &nOutFailureItem)
+{
+    bool bAnyFailure = false;
+    size_t nOutFailureItem = npos;
+
+    for (...) // Or any other loop control operator
+    {
+        // Some linear code
+
+        if ( !(...) )
+        {
+            // Some error handling // Optional
+            nOutFailureItem = ...;
+            bAnyFailure = true;
+            break;
+        }
+
+        // Some linear code
+    }
+
+    bool bResult = !bAnyFailure;
+    return bResult;
+}
+
+void DoPerformLoopFinalization(..., size_t nExternalFinalizationEndItem/*=npos*/)
+{
+    size_t nFinalizationEndItem = nExternalFinalizationEndItem == npos 
+        ? ... /* total item count */
+        : nExternalFinalizationEndItem;
+
+    for (... /* loop until nFinalizationEndItem */) // Or any other loop control operator
+    {
+        // Some linear code
+        RevertLoopItemSideEffects(...);
+    }
+}
+

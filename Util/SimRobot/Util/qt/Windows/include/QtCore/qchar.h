@@ -578,6 +578,22 @@ Q_DECL_CONSTEXPR inline bool operator>=(QChar c1, QChar c2) Q_DECL_NOTHROW { ret
 Q_DECL_CONSTEXPR inline bool operator> (QChar c1, QChar c2) Q_DECL_NOTHROW { return  operator< (c2, c1); }
 Q_DECL_CONSTEXPR inline bool operator<=(QChar c1, QChar c2) Q_DECL_NOTHROW { return !operator< (c2, c1); }
 
+
+Q_DECL_CONSTEXPR inline bool operator==(QChar lhs, std::nullptr_t) Q_DECL_NOTHROW { return lhs.isNull(); }
+Q_DECL_CONSTEXPR inline bool operator< (QChar,     std::nullptr_t) Q_DECL_NOTHROW { return false; }
+Q_DECL_CONSTEXPR inline bool operator==(std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return rhs.isNull(); }
+Q_DECL_CONSTEXPR inline bool operator< (std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return !rhs.isNull(); }
+
+Q_DECL_CONSTEXPR inline bool operator!=(QChar lhs, std::nullptr_t) Q_DECL_NOTHROW { return !operator==(lhs, nullptr); }
+Q_DECL_CONSTEXPR inline bool operator>=(QChar lhs, std::nullptr_t) Q_DECL_NOTHROW { return !operator< (lhs, nullptr); }
+Q_DECL_CONSTEXPR inline bool operator> (QChar lhs, std::nullptr_t) Q_DECL_NOTHROW { return  operator< (nullptr, lhs); }
+Q_DECL_CONSTEXPR inline bool operator<=(QChar lhs, std::nullptr_t) Q_DECL_NOTHROW { return !operator< (nullptr, lhs); }
+
+Q_DECL_CONSTEXPR inline bool operator!=(std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return !operator==(nullptr, rhs); }
+Q_DECL_CONSTEXPR inline bool operator>=(std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return !operator< (nullptr, rhs); }
+Q_DECL_CONSTEXPR inline bool operator> (std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return  operator< (rhs, nullptr); }
+Q_DECL_CONSTEXPR inline bool operator<=(std::nullptr_t, QChar rhs) Q_DECL_NOTHROW { return !operator< (rhs, nullptr); }
+
 #ifndef QT_NO_DATASTREAM
 Q_CORE_EXPORT QDataStream &operator<<(QDataStream &, QChar);
 Q_CORE_EXPORT QDataStream &operator>>(QDataStream &, QChar &);

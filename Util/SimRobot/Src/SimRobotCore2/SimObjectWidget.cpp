@@ -19,10 +19,6 @@
 #include "Simulation/Simulation.h"
 #include "Simulation/Scene.h"
 
-#if QT_VERSION < 0x050000
-#define devicePixelRatio() 1
-#endif
-
 SimObjectWidget::SimObjectWidget(SimObject& simObject) : QGLWidget(QGLFormat(QGL::SampleBuffers | QGL::AccumBuffer), 0, Simulation::simulation->renderer.getWidget()),
   object(dynamic_cast<SimRobot::Object&>(simObject)), objectRenderer(simObject),
   wkey(false), akey(false), skey(false), dkey(false)
