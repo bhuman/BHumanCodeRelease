@@ -23,6 +23,7 @@ STREAMABLE(MotionRequest,
     specialAction,
     stand,
     getUp,
+    dive,
   });
 
   /** Draws something*/
