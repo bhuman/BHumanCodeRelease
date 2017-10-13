@@ -9,7 +9,7 @@ option(Goaler)
     transition
     {
       if(state_time > 1000)
-        goto walkToBall;
+        goto waitForBall;
     }
     action
     {
@@ -27,7 +27,7 @@ state(waitForBall)
       if(libCodeRelease.between(theBallModel.estimate.position.x(),0.f,50.f)
 	&& libCodeRelease.between(theBallModel.estimate.velocity.y(),0.f,50.f) 
 	&& libCodeRelease.between(theBallModel.estimate.position.x(),0.f,40.f)
-	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,40.f)
+	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,40.f))
         goto stopBall;
     }
     action
@@ -45,13 +45,14 @@ state(stopBall)
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
-      if(libCodeRelease.between(theBallModel.estimate.position.x(),40.f,400.f)
-	&& libCodeRelease.between(theBallModel.estimate.position.y(),40.f,400.f)
+      /*if(libCodeRelease.between(theBallModel.estimate.position.x(),40.f,400.f)
+	&& libCodeRelease.between(theBallModel.estimate.position.y(),40.f,400.f))*/
 	
     }
     action
     {
-      Dive(); /** todo **/
+        /** todo **/
+        Dive();
     }
   }
 

@@ -18,7 +18,7 @@ option(Demo)
   {
     action
     {
-      Striker();
+      Goaler();
       LookForward();
     }
   }

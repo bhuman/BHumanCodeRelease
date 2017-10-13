@@ -18,12 +18,14 @@
 #include "Options/Output/MotionRequest/WalkToTarget.h"
 #include "Options/Output/MotionRequest/InWalkKick.h"
 #include "Options/Output/MotionRequest/GetUpEngine.h"
+#include "Options/Output/MotionRequest/Dive.h"
 #include "Options/Output/PlaySound.h"
 #include "Options/Output/PlaySamples.h"
 
 #include "Options/Skills/GetUp.h"
 
 #include "Options/Roles/Striker.h"
+#include "Options/Roles/Goaler.h"
 
 #include "Options/DemoOptions/Demo.h"
 #include "Options/DemoOptions/Waving.h"
