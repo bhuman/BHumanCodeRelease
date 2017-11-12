@@ -23,12 +23,8 @@ SimpleVehicle = cppDynamicLibrary + {
     "$(simRobotDir)/Src/Controllers"
     "$(simRobotDir)/Src/SimRobotCore2"
     if (platform == "Linux") {
-      "/usr/include/qt5"
-      "/usr/include/qt5/QtCore"
-      "/usr/include/qt"
-      "/usr/include/qt/QtCore"
-      "/usr/include/x86_64-linux-gnu/qt5"
-      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
+      "$(qtinclude)"
+      "$(qtinclude)/QtCore"
     } else if (host == "Win32") {
       "$(simRobotDir)/Util/glew/Windows/include"
       "$(simRobotDir)/Util/qt/Windows/include"

@@ -12,14 +12,17 @@ namespace Approx
   template<typename T>
   bool isZero(T a, T prec = std::numeric_limits<T>::epsilon())
   {
-    return std::abs(a) < prec;
+    using std::abs;
+    return abs(a) < prec;
   }
 
   template<typename T>
   bool isEqual(T a, T b, T prec = std::numeric_limits<T>::epsilon())
   {
-    const T diff = std::abs(a - b);
-    return diff < prec || diff < prec * std::max(std::abs(a), std::abs(b));
+    using std::abs;
+    using std::max;
+    const T diff = abs(a - b);
+    return diff < prec || diff < prec * max(abs(a), abs(b));
   }
 
   /**

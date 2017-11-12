@@ -100,9 +100,9 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
   }
 
   if(lowerCam)
-    headAngleRequest.tilt = tiltBoundLowerCam.limit(headAngleRequest.tilt);
+    tiltBoundLowerCam.clamp(headAngleRequest.tilt);
   else
-    headAngleRequest.tilt = tiltBoundUpperCam.limit(headAngleRequest.tilt);
+    tiltBoundUpperCam.clamp(headAngleRequest.tilt);
 
   if(theHeadMotionRequest.mode == HeadMotionRequest::panTiltMode)
   {

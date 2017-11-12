@@ -1,6 +1,6 @@
 /**
  * @file FieldFeatureOverviewProvider.h
- * profides FieldFeatureOverview
+ * Provides FieldFeatureOverview.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 

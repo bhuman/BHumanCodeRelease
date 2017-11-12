@@ -42,7 +42,7 @@ public:
 
   struct Data
   {
-    Thread thread[2];
+    Thread thread[10];
     int currentThread;
   };
 
@@ -104,7 +104,7 @@ bool Assert::logInit(const char* name)
   return true;
 }
 
-void Assert::logAdd(int trackId, const char* file, int lineNum, const char* message)
+void Assert::logAdd(int trackId, const char* file, int lineNum, const std::string& message)
 {
   assert(AssertFramework::threadData);
   assert(trackId >= 0 && trackId < int(sizeof(AssertFramework::threadData->track) / sizeof(*AssertFramework::threadData->track)));
@@ -113,7 +113,7 @@ void Assert::logAdd(int trackId, const char* file, int lineNum, const char* mess
   memccpy(line->file, file, 0, sizeof(line->file) - 1);
   line->file[sizeof(line->file) - 1] = 0;
   line->line = lineNum;
-  memccpy(line->message, message, 0, sizeof(line->message) - 1);
+  memccpy(line->message, message.c_str(), 0, sizeof(line->message) - 1);
   line->message[sizeof(line->message) - 1] = 0;
   track->active = true;
 }
@@ -129,17 +129,11 @@ const std::string currentTimeStamp()
   return buf;
 }
 
-void Assert::logDump(bool toStderr, int termSignal)
+void Assert::logDump(int termSignal)
 {
   assertFramework.init(false);
-  std::stringstream ssfilename;
-  ssfilename << "/home/nao/logs/bhuman.assert_"
-             << currentTimeStamp()
-             << ".log";
 
-  FILE* fp = toStderr ? stderr : fopen(ssfilename.str().c_str(), "w");
-  if(fp == 0)
-    return;
+  FILE* fp =  stderr;
 
   for(int i = 0; i < int(sizeof(assertFramework.data->thread) / sizeof(*assertFramework.data->thread)); ++i)
   {
@@ -190,7 +184,4 @@ void Assert::logDump(bool toStderr, int termSignal)
   const char* termSignalName = termSignal < 0 || termSignal >= int(sizeof(termSignalNames) / sizeof(*termSignalNames)) ? "" : termSignalNames[termSignal];
   if(*termSignalName)
     fprintf(fp, "%s\n", termSignalName);
-
-  if(fp != stderr)
-    fclose(fp);
 }

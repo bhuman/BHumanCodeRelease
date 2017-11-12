@@ -139,7 +139,7 @@ STREAMABLE(LEDRequest,
   bool operator!=(const LEDRequest& other) const
   {
     return !(*this == other);
-  }
-  ,
-  (ENUM_INDEXED_ARRAY(LEDState, LED)) ledStates, /**< The intended states of the LEDs (use type State). */
+  },
+  
+  (ENUM_INDEXED_ARRAY((LEDRequest) LEDState, LED)) ledStates, /**< The intended states of the LEDs (use type State). */
 });

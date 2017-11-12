@@ -47,6 +47,15 @@
 #endif
 #endif
 
+#if defined(__GNUC__)
+#define OPCODE_NORETURN __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define OPCODE_NORETURN __declspec(noreturn)
+#else // #if !defined(_MSC_VER)
+#define OPCODE_NORETURN
+#endif // #if !defined(__GNUC__)
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Compilation messages
 #ifdef _MSC_VER
@@ -109,7 +118,8 @@
 		#include "OPC_Picking.h"
 
 
-		FUNCTION OPCODE_API bool InitOpcode();
+		typedef void (*OPCODE_AbortHandler)();
+		FUNCTION OPCODE_API bool InitOpcode(OPCODE_AbortHandler fnAbortHandler=NULL);
 		FUNCTION OPCODE_API bool CloseOpcode();
 	}
 

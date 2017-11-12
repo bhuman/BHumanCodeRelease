@@ -24,6 +24,7 @@
 #include "Simulation/Geometries/SphereGeometry.h"
 #include "Simulation/Geometries/CylinderGeometry.h"
 #include "Simulation/Geometries/CapsuleGeometry.h"
+#include "Simulation/Motors/PT2Motor.h"
 #include "Simulation/Motors/ServoMotor.h"
 #include "Simulation/Motors/VelocityMotor.h"
 #include "Simulation/Appearances/BoxAppearance.h"
@@ -131,6 +132,8 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
       0, motorClass | deflectionClass, setClass},
     {"Deflection", deflectionClass, &Parser::deflectionElement, 0, 0,
       0, 0, 0},
+    {"PT2Motor", motorClass, &Parser::PT2MotorElement, 0, 0,
+      0, 0, 0},
     {"ServoMotor", motorClass, &Parser::servoMotorElement, 0, 0,
       0, 0, 0},
     {"VelocityMotor", motorClass, &Parser::velocityMotorElement, 0, 0,
@@ -163,13 +166,13 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
 Element* Parser::simulationElement()
 {
   passedSimulationTag = true;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::includeElement()
 {
   includeFile = getString("href", true);
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::setElement()
@@ -180,7 +183,7 @@ Element* Parser::setElement()
   std::unordered_map<std::string, std::string>& vars = elementData->parent->vars;
   if(vars.find(name) == vars.end())
     vars[name] = value;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::sceneElement()
@@ -213,7 +216,7 @@ Element* Parser::quickSolverElement()
   scene->useQuickSolver = true;
   scene->quickSolverIterations = getIntegerNonZeroPositive("iterations", false, -1);
   scene->quickSolverSkip = getIntegerNonZeroPositive("skip", false, 1);
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::lightElement()
@@ -369,7 +372,7 @@ Element* Parser::frictionElement()
   const std::string& otherMaterial = getString("material", true);
   float friction = getFloatPositive("value", true, 1.f);
   material->frictions[otherMaterial] = friction;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::rollingFrictionElement()
@@ -379,7 +382,7 @@ Element* Parser::rollingFrictionElement()
   const std::string& otherMaterial = getString("material", true);
   float rollingFriction = getFloatPositive("value", true, 1.f);
   material->rollingFrictions[otherMaterial] = rollingFriction;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::appearanceElement()
@@ -579,7 +582,7 @@ Element* Parser::translationElement()
     ASSERT(!mass->translation);
     mass->translation = translation;
   }
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::rotationElement()
@@ -601,7 +604,7 @@ Element* Parser::rotationElement()
     ASSERT(!mass->rotation);
     mass->rotation = rotation;
   }
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::axisElement()
@@ -643,7 +646,24 @@ Element* Parser::deflectionElement()
 
   ASSERT(!axis->deflection);
   axis->deflection = deflection;
-  return 0;
+  return nullptr;
+}
+
+Element* Parser::PT2MotorElement()
+{
+  PT2Motor* pt2motor = new PT2Motor();
+  Axis* axis = dynamic_cast<Axis*>(element);
+  ASSERT(axis);
+  ASSERT(!axis->motor);
+
+  pt2motor->T = getFloat("T", true, 0.f);
+  pt2motor->D = getFloat("D", true, 0.f);
+  pt2motor->K = getFloat("K", true, 0.f);
+  pt2motor->V = getFloat("V", true, 0.f);
+  pt2motor->F = getForce("F", true, 0.f);
+
+  axis->motor = pt2motor;
+  return nullptr;
 }
 
 Element* Parser::servoMotorElement()
@@ -666,7 +686,7 @@ Element* Parser::servoMotorElement()
   servoMotor->controller.d = getFloat("d", false, 0.f);
 
   axis->motor = servoMotor;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::velocityMotorElement()
@@ -686,7 +706,7 @@ Element* Parser::velocityMotorElement()
   velocityMotor->maxForce = getForce("maxForce", true, 0.f);
 
   axis->motor = velocityMotor;
-  return 0;
+  return nullptr;
 }
 
 Element* Parser::surfaceElement()
@@ -1322,7 +1342,7 @@ const std::string* Parser::resolvePlaceholder(const std::string& name)
       return &iter->second;
     elementData = elementData->parent;
   } while(elementData);
-  return 0;
+  return nullptr;
 }
 
 const std::string& Parser::replacePlaceholders(const std::string& str)
@@ -1892,5 +1912,4 @@ bool Parser::getColor(const char* key, bool required, float* color)
     handleError("Invalid color format");
     return false;
   }
-  return false;
 }

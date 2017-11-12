@@ -40,15 +40,16 @@
 #ifndef QITEMSELECTIONMODEL_H
 #define QITEMSELECTIONMODEL_H
 
+#include <QtCore/qglobal.h>
+
+#ifndef QT_NO_ITEMVIEWS
+
 #include <QtCore/qset.h>
 #include <QtCore/qvector.h>
 #include <QtCore/qlist.h>
 #include <QtCore/qabstractitemmodel.h>
 
 QT_BEGIN_NAMESPACE
-
-
-#ifndef QT_NO_ITEMVIEWS
 
 class Q_CORE_EXPORT QItemSelectionRange
 {
@@ -115,30 +116,7 @@ public:
         { return (tl == other.tl && br == other.br); }
     inline bool operator!=(const QItemSelectionRange &other) const
         { return !operator==(other); }
-    inline bool operator<(const QItemSelectionRange &other) const
-        {
-            // Comparing parents will compare the models, but if two equivalent ranges
-            // in two different models have invalid parents, they would appear the same
-            if (other.tl.model() == tl.model()) {
-                // parent has to be calculated, so we only do so once.
-                const QModelIndex topLeftParent = tl.parent();
-                const QModelIndex otherTopLeftParent = other.tl.parent();
-                if (topLeftParent == otherTopLeftParent) {
-                    if (other.tl.row() == tl.row()) {
-                        if (other.tl.column() == tl.column()) {
-                            if (other.br.row() == br.row()) {
-                                return br.column() < other.br.column();
-                            }
-                            return br.row() < other.br.row();
-                        }
-                        return tl.column() < other.tl.column();
-                    }
-                    return tl.row() < other.tl.row();
-                }
-                return topLeftParent < otherTopLeftParent;
-            }
-            return tl.model() < other.tl.model();
-        }
+    bool operator<(const QItemSelectionRange &other) const;
 
     inline bool isValid() const
     {
@@ -250,6 +228,24 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(QItemSelectionModel::SelectionFlags)
 // dummy implentation of qHash() necessary for instantiating QList<QItemSelectionRange>::toSet() with MSVC
 inline uint qHash(const QItemSelectionRange &) { return 0; }
 
+#ifdef Q_CC_MSVC
+
+/*
+   ### Qt 6:
+   ### This needs to be removed for next releases of Qt. It is a workaround for vc++ because
+   ### Qt exports QItemSelection that inherits QList<QItemSelectionRange>.
+*/
+
+# ifndef Q_TEMPLATE_EXTERN
+#  if defined(QT_BUILD_CORE_LIB)
+#   define Q_TEMPLATE_EXTERN
+#  else
+#   define Q_TEMPLATE_EXTERN extern
+#  endif
+# endif
+Q_TEMPLATE_EXTERN template class Q_CORE_EXPORT QList<QItemSelectionRange>;
+#endif // Q_CC_MSVC
+
 class Q_CORE_EXPORT QItemSelection : public QList<QItemSelectionRange>
 {
 public:
@@ -272,11 +268,11 @@ Q_DECLARE_SHARED_NOT_MOVABLE_UNTIL_QT6(QItemSelection)
 Q_CORE_EXPORT QDebug operator<<(QDebug, const QItemSelectionRange &);
 #endif
 
-#endif // QT_NO_ITEMVIEWS
-
 QT_END_NAMESPACE
 
 Q_DECLARE_METATYPE(QItemSelectionRange)
 Q_DECLARE_METATYPE(QItemSelection)
+
+#endif // QT_NO_ITEMVIEWS
 
 #endif // QITEMSELECTIONMODEL_H

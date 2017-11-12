@@ -6,6 +6,11 @@
  * 1: right microphone
  * 2: front microphone
  * 3: rear microphone
+ * And on a V5:
+ * 0: back left microphone
+ * 1: back right microphone
+ * 2: front left microphone
+ * 3: front right microphone
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 

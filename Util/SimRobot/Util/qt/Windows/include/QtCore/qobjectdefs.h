@@ -124,6 +124,11 @@ class QString;
     friend Q_DECL_CONSTEXPR const char *qt_getEnumName(ENUM) Q_DECL_NOEXCEPT { return #ENUM; }
 #define Q_ENUM(x) Q_ENUMS(x) Q_ENUM_IMPL(x)
 #define Q_FLAG(x) Q_FLAGS(x) Q_ENUM_IMPL(x)
+#define Q_ENUM_NS_IMPL(ENUM) \
+    inline Q_DECL_CONSTEXPR const QMetaObject *qt_getEnumMetaObject(ENUM) Q_DECL_NOEXCEPT { return &staticMetaObject; } \
+    inline Q_DECL_CONSTEXPR const char *qt_getEnumName(ENUM) Q_DECL_NOEXCEPT { return #ENUM; }
+#define Q_ENUM_NS(x) Q_ENUMS(x) Q_ENUM_NS_IMPL(x)
+#define Q_FLAG_NS(x) Q_FLAGS(x) Q_ENUM_NS_IMPL(x)
 #define Q_SCRIPTABLE QT_ANNOTATE_FUNCTION(qt_scriptable)
 #define Q_INVOKABLE  QT_ANNOTATE_FUNCTION(qt_invokable)
 #define Q_SIGNAL QT_ANNOTATE_FUNCTION(qt_signal)
@@ -142,34 +147,8 @@ class QString;
 # define QT_TR_FUNCTIONS
 #endif
 
-#if defined(QT_NO_QOBJECT_CHECK)
-/* qmake ignore Q_OBJECT */
-#define Q_OBJECT_CHECK
-#else
-
-/* This is a compile time check that ensures that any class cast with qobject_cast
-   actually contains a Q_OBJECT macro. Note: qobject_cast will fail if a QObject
-   subclass doesn't contain Q_OBJECT.
-
-   In qt_check_for_QOBJECT_macro, we call a dummy templated function with two
-   parameters, the first being "this" and the other the target of the qobject
-   cast. If the types are not identical, we know that a Q_OBJECT macro is missing.
-
-   If you get a compiler error here, make sure that the class you are casting
-   to contains a Q_OBJECT macro.
-*/
-
-/* qmake ignore Q_OBJECT */
-#define Q_OBJECT_CHECK \
-    template <typename ThisObject> inline void qt_check_for_QOBJECT_macro(const ThisObject &_q_argument) const \
-    { int i = qYouForgotTheQ_OBJECT_Macro(this, &_q_argument); i = i + 1; }
-
-template <typename T>
-inline int qYouForgotTheQ_OBJECT_Macro(T, T) { return 0; }
-
-template <typename T1, typename T2>
-inline void qYouForgotTheQ_OBJECT_Macro(T1, T2) {}
-#endif // QT_NO_QOBJECT_CHECK
+// ### Qt6: remove
+#define Q_OBJECT_CHECK  /* empty, unused since Qt 5.2 */
 
 #if defined(Q_CC_INTEL)
 // Cannot redefine the visibility of a method in an exported class
@@ -180,6 +159,8 @@ inline void qYouForgotTheQ_OBJECT_Macro(T1, T2) {}
 
 #if defined(Q_CC_CLANG) && Q_CC_CLANG >= 306
 #  define Q_OBJECT_NO_OVERRIDE_WARNING      QT_WARNING_DISABLE_CLANG("-Winconsistent-missing-override")
+#elif defined(Q_CC_GNU) && !defined(Q_CC_INTEL) && Q_CC_GNU >= 501
+#  define Q_OBJECT_NO_OVERRIDE_WARNING      QT_WARNING_DISABLE_GCC("-Wsuggest-override")
 #else
 #  define Q_OBJECT_NO_OVERRIDE_WARNING
 #endif
@@ -193,7 +174,6 @@ inline void qYouForgotTheQ_OBJECT_Macro(T1, T2) {}
 /* qmake ignore Q_OBJECT */
 #define Q_OBJECT \
 public: \
-    Q_OBJECT_CHECK \
     QT_WARNING_PUSH \
     Q_OBJECT_NO_OVERRIDE_WARNING \
     static const QMetaObject staticMetaObject; \
@@ -225,6 +205,12 @@ private: \
     QT_WARNING_POP \
     QT_ANNOTATE_CLASS(qt_qgadget, "") \
     /*end*/
+
+#define Q_NAMESPACE \
+    extern const QMetaObject staticMetaObject; \
+    QT_ANNOTATE_CLASS(qt_qnamespace, "") \
+    /*end*/
+
 #endif // QT_NO_META_MACROS
 
 #else // Q_MOC_RUN
@@ -253,6 +239,11 @@ private: \
 #define Q_SIGNAL Q_SIGNAL
 #define Q_SLOT Q_SLOT
 #endif //Q_MOC_RUN
+
+#ifdef Q_CLANG_QDOC
+#undef Q_GADGET
+#define Q_GADGET
+#endif
 
 #ifndef QT_NO_META_MACROS
 // macro for onaming members

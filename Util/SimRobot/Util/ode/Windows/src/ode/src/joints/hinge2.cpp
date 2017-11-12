@@ -155,30 +155,29 @@ dxJointHinge2::getAxisInfo(dVector3 ax1, dVector3 ax2, dVector3 axCross,
 
 
 void
-dxJointHinge2::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointHinge2::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
     // get information we need to set the hinge row
     dReal s, c;
     dVector3 q;
-    const dxJointHinge2 *joint = this;
 
     dVector3 ax1, ax2;
-    joint->getAxisInfo( ax1, ax2, q, s, c );
+    getAxisInfo( ax1, ax2, q, s, c );
     dNormalize3( q );   // @@@ quicker: divide q by s ?
 
     // set the three ball-and-socket rows (aligned to the suspension axis ax1)
-    setBall2( this, worldFPS, worldERP, info, anchor1, anchor2, ax1, susp_erp );
+    setBall2( this, worldFPS, worldERP, rowskip, J1, J2, pairskip, pairRhsCfm, anchor1, anchor2, ax1, susp_erp );
+    // set parameter for the suspension
+    pairRhsCfm[GI2_CFM] = susp_cfm;
 
     // set the hinge row
-    int s3 = 3 * info->rowskip;
-    info->J1a[s3+0] = q[0];
-    info->J1a[s3+1] = q[1];
-    info->J1a[s3+2] = q[2];
-    if ( joint->node[1].body )
-    {
-        info->J2a[s3+0] = -q[0];
-        info->J2a[s3+1] = -q[1];
-        info->J2a[s3+2] = -q[2];
+    int currRowSkip = 3 * rowskip;
+    dCopyVector3(J1 + currRowSkip + GI2__JA_MIN, q);
+    if ( node[1].body ) {
+        dCopyNegatedVector3(J2 + currRowSkip + GI2__JA_MIN, q);
     }
 
     // compute the right hand side for the constrained rotational DOF.
@@ -197,16 +196,18 @@ dxJointHinge2::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info 
     //       c0 = cos(theta0), s0 = sin(theta0)
 
     dReal k = worldFPS * worldERP;
-    info->c[3] = k * ( c0 * s - joint->s0 * c );
 
+    int currPairSkip = 3 * pairskip;
+    pairRhsCfm[currPairSkip + GI2_RHS] = k * ( c0 * s - this->s0 * c );
+
+    currRowSkip += rowskip; currPairSkip += pairskip;
     // if the axis1 hinge is powered, or has joint limits, add in more stuff
-    int row = 4 + limot1.addLimot( this, worldFPS, info, 4, ax1, 1 );
+    if (limot1.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 1 )) {
+        currRowSkip += rowskip; currPairSkip += pairskip;
+    }
 
     // if the axis2 hinge is powered, add in more stuff
-    limot2.addLimot( this, worldFPS, info, row, ax2, 1 );
-
-    // set parameter for the suspension
-    info->cfm[0] = susp_cfm;
+    limot2.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax2, 1 );
 }
 
 
@@ -223,20 +224,19 @@ dxJointHinge2::makeV1andV2()
         dMultiply0_331( ax1, node[0].body->posr.R, axis1 );
         dMultiply0_331( ax2, node[1].body->posr.R, axis2 );
 
-        // don't do anything if the axis1 or axis2 vectors are zero or the same
-        if (( ax1[0] == 0 && ax1[1] == 0 && ax1[2] == 0 ) ||
-            ( ax2[0] == 0 && ax2[1] == 0 && ax2[2] == 0 ) ||
-            ( ax1[0] == ax2[0] && ax1[1] == ax2[1] && ax1[2] == ax2[2] ) ) return;
-
         // modify axis 2 so it's perpendicular to axis 1
         dReal k = dCalcVectorDot3( ax1, ax2 );
-        for ( int i = 0; i < 3; i++ ) ax2[i] -= k * ax1[i];
-        dNormalize3( ax2 );
-
-        // make v1 = modified axis2, v2 = axis1 x (modified axis2)
-        dCalcVectorCross3( v, ax1, ax2 );
-        dMultiply1_331( v1, node[0].body->posr.R, ax2 );
-        dMultiply1_331( v2, node[0].body->posr.R, v );
+        dAddVectorScaledVector3(ax2, ax2, ax1, -k);
+        
+        if (dxSafeNormalize3( ax2 )) {
+            // make v1 = modified axis2, v2 = axis1 x (modified axis2)
+            dCalcVectorCross3( v, ax1, ax2 );
+            dMultiply1_331( v1, node[0].body->posr.R, ax2 );
+            dMultiply1_331( v2, node[0].body->posr.R, v );
+        }
+        else {
+            dUASSERT(false, "Hinge2 axes must be chosen to be linearly independent");
+        }
     }
 }
 
@@ -252,69 +252,81 @@ dxJointHinge2::makeW1andW2()
         dMultiply0_331( ax1, node[0].body->posr.R, axis1 );
         dMultiply0_331( ax2, node[1].body->posr.R, axis2 );
 
-        // don't do anything if the axis1 or axis2 vectors are zero or the same
-        if (( ax1[0] == 0 && ax1[1] == 0 && ax1[2] == 0 ) ||
-            ( ax2[0] == 0 && ax2[1] == 0 && ax2[2] == 0 ) ||
-            ( ax1[0] == ax2[0] && ax1[1] == ax2[1] && ax1[2] == ax2[2] ) ) return;
-
         // modify axis 1 so it's perpendicular to axis 2
         dReal k = dCalcVectorDot3( ax2, ax1 );
-        for ( int i = 0; i < 3; i++ ) ax1[i] -= k * ax2[i];
-        dNormalize3( ax1 );
-
-        // make w1 = modified axis1, w2 = axis2 x (modified axis1)
-        dCalcVectorCross3( w, ax2, ax1 );
-        dMultiply1_331( w1, node[1].body->posr.R, ax1 );
-        dMultiply1_331( w2, node[1].body->posr.R, w );
+        dAddVectorScaledVector3(ax1, ax1, ax2, -k);
+        
+        if (dxSafeNormalize3( ax1 )) {
+            // make w1 = modified axis1, w2 = axis2 x (modified axis1)
+            dCalcVectorCross3( w, ax2, ax1 );
+            dMultiply1_331( w1, node[1].body->posr.R, ax1 );
+            dMultiply1_331( w2, node[1].body->posr.R, w );
+        }
+        else {
+            dUASSERT(false, "Hinge2 axes must be chosen to be linearly independent");
+        }
     }
 }
 
 
+/*ODE_API */
 void dJointSetHinge2Anchor( dJointID j, dReal x, dReal y, dReal z )
 {
     dxJointHinge2* joint = ( dxJointHinge2* )j;
     dUASSERT( joint, "bad joint argument" );
     checktype( joint, Hinge2 );
+
     setAnchors( joint, x, y, z, joint->anchor1, joint->anchor2 );
+    
     joint->makeV1andV2();
     joint->makeW1andW2();
 }
 
 
+/*ODE_API */
+void dJointSetHinge2Axes (dJointID j, const dReal *axis1/*=[dSA__MAX],=NULL*/, const dReal *axis2/*=[dSA__MAX],=NULL*/)
+{
+    dxJointHinge2* joint = ( dxJointHinge2* )j;
+    dUASSERT( joint, "bad joint argument" );
+    checktype( joint, Hinge2 );
+
+    dAASSERT(axis1 != NULL || axis2 != NULL);
+    dAASSERT(joint->node[0].body != NULL || axis1 == NULL);
+    dAASSERT(joint->node[1].body != NULL || axis2 == NULL);
+
+    if ( axis1 != NULL )
+    {
+        setAxes(joint, axis1[dSA_X], axis1[dSA_Y], axis1[dSA_Z], joint->axis1, NULL);
+    }
+    
+    if ( axis2 != NULL )
+    {
+        setAxes(joint, axis2[dSA_X], axis2[dSA_Y], axis2[dSA_Z], NULL, joint->axis2);
+    }
+
+    // compute the sin and cos of the angle between axis 1 and axis 2
+    dVector3 ax1, ax2, ax;
+    joint->getAxisInfo( ax1, ax2, ax, joint->s0, joint->c0 );
+
+    joint->makeV1andV2();
+    joint->makeW1andW2();
+}
+
+
+/*ODE_API_DEPRECATED ODE_API */
 void dJointSetHinge2Axis1( dJointID j, dReal x, dReal y, dReal z )
 {
-    dxJointHinge2* joint = ( dxJointHinge2* )j;
-    dUASSERT( joint, "bad joint argument" );
-    checktype( joint, Hinge2 );
-    if ( joint->node[0].body )
-    {
-        setAxes(joint, x, y, z, joint->axis1, NULL);
-
-        // compute the sin and cos of the angle between axis 1 and axis 2
-        dVector3 ax1, ax2, ax;
-        joint->getAxisInfo( ax1, ax2, ax, joint->s0, joint->c0 );
-    }
-    joint->makeV1andV2();
-    joint->makeW1andW2();
+    dVector3 axis1;
+    axis1[dSA_X] = x; axis1[dSA_Y] = y; axis1[dSA_Z] = z;
+    dJointSetHinge2Axes(j, axis1, NULL);
 }
 
-
+/*ODE_API_DEPRECATED ODE_API */
 void dJointSetHinge2Axis2( dJointID j, dReal x, dReal y, dReal z )
 {
-    dxJointHinge2* joint = ( dxJointHinge2* )j;
-    dUASSERT( joint, "bad joint argument" );
-    checktype( joint, Hinge2 );
-    if ( joint->node[1].body )
-    {
-        setAxes(joint, x, y, z, NULL, joint->axis2);
-
-
-        // compute the sin and cos of the angle between axis 1 and axis 2
-        dVector3 ax1, ax2, ax;;
-        joint->getAxisInfo( ax1, ax2, ax, joint->s0, joint->c0 );
-    }
-    joint->makeV1andV2();
-    joint->makeW1andW2();
+    dVector3 axis2;
+    axis2[dSA_X] = x; axis2[dSA_Y] = y; axis2[dSA_Z] = z;
+    dJointSetHinge2Axes(j, NULL, axis2);
 }
 
 
@@ -372,6 +384,11 @@ void dJointGetHinge2Axis1( dJointID j, dVector3 result )
     {
         dMultiply0_331( result, joint->node[0].body->posr.R, joint->axis1 );
     }
+    else
+    {
+        dZeroVector3(result);
+        dUASSERT( false, "the joint does not have first body attached" );
+    }
 }
 
 
@@ -384,6 +401,11 @@ void dJointGetHinge2Axis2( dJointID j, dVector3 result )
     if ( joint->node[1].body )
     {
         dMultiply0_331( result, joint->node[1].body->posr.R, joint->axis2 );
+    }
+    else
+    {
+        dZeroVector3(result);
+        dUASSERT( false, "the joint does not have second body attached" );
     }
 }
 

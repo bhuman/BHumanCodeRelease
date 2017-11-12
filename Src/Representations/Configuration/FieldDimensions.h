@@ -53,8 +53,6 @@ STREAMABLE(SimpleFieldDimensions,
   (float) goalPostRadius,
   (float) crossBarRadius,
   (float) goalHeight,
-  (float) ballRadius,
-  (float) ballFriction, // in 1/s
   (float) penaltyMarkSize, //vertical (and horizontal) size of a penaltyMark
 });
 
@@ -154,6 +152,11 @@ struct FieldDimensions : public SimpleFieldDimensions
   });
   enum { numOfCornerClasses = numOfCornerClasss }; // extra, because numOfCornerClasss isn't so nice
 
+private:
+  LinesTable straightFieldLines; /**< The field lines as read from the stream. */
+  LinesTable::Circle centerCircle; /**< The center circle as read from the stream. */
+
+public:
   Boundaryf boundary; ///< The outer boundary of the field.
   LinesTable fieldLines; ///< Table of line segments
   LinesTable goalFrameLines; ///< Table of line segments that contains the parts of the goal frame that are on the ground.
@@ -231,9 +234,10 @@ struct FieldDimensions : public SimpleFieldDimensions
    */
   void drawPolygons(int ownColor) const;
 
-private:
+protected:
   virtual void serialize(In* in, Out* out);
 
+private:
   /**
    * The method draws the field lines.
    */

@@ -1,6 +1,6 @@
 /**
  * @file FieldRelations.h
- * Declaration TODO
+ * Declaration of a struct that represents intersection relations.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -19,8 +19,8 @@ STREAMABLE(IntersectionRelations,
 {
   STREAMABLE(IntersectionLineRelations,
   {
-    IntersectionLineRelations();
-    ,
+    IntersectionLineRelations(),
+
     ((MarkedLine) LineMarker[MarkedIntersection::firstIntersectionMarkerOther]) lineMarkerOfDir1,
     ((MarkedLine) LineMarker[MarkedIntersection::firstIntersectionMarkerOther]) lineMarkerOfDir2,
   });
@@ -28,22 +28,23 @@ STREAMABLE(IntersectionRelations,
   struct LineIntersectionRelations : public Streamable
   {
     LineIntersectionRelations() = default;
-    LineIntersectionRelations(const FieldDimensions & theFieldDimensions);
+    LineIntersectionRelations(const FieldDimensions& theFieldDimensions);
 
     MarkedIntersection::IntersectionMarker intersections[MarkedLine::firstLineMarkerOther][4];
     float intersectionPositions[MarkedLine::firstLineMarkerOther][4];
 
-  private:
-    virtual void serialize(In * in, Out * out);
+  protected:
+    virtual void serialize(In* in, Out* out);
   };
-  IntersectionRelations() = default;
-  IntersectionRelations(const FieldDimensions & fd) : intersectionLineRelations() COMMA lineIntersectionRelations(fd) {};
 
-  void propagateMarkedIntersection(const MarkedIntersection & start, const FieldLineIntersections & theFieldLineIntersections,
-                                   const FieldLines & theFieldLines, FieldFeature & ff) const;
-  void propagateMarkedLinePoint(const MarkedLine & start, const float linePoint, const Vector2f & fieldPoint,
-                                const FieldLineIntersections & theFieldLineIntersections, const FieldLines & theFieldLines, FieldFeature & ff) const;
-  ,
+  IntersectionRelations() = default;
+  IntersectionRelations(const FieldDimensions& fd) : lineIntersectionRelations(fd) {}
+
+  void propagateMarkedIntersection(const MarkedIntersection& start, const FieldLineIntersections& theFieldLineIntersections,
+                                   const FieldLines& theFieldLines, FieldFeature& ff) const;
+  void propagateMarkedLinePoint(const MarkedLine& start, const float linePoint, const Vector2f& fieldPoint,
+                                const FieldLineIntersections& theFieldLineIntersections, const FieldLines& theFieldLines, FieldFeature& ff) const,
+
   (IntersectionLineRelations) intersectionLineRelations,
   (LineIntersectionRelations) lineIntersectionRelations,
 });

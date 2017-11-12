@@ -29,6 +29,9 @@
 /* Define to 1 if you have the `atan2f' function. */
 #undef HAVE_ATAN2F
 
+/* Define to 1 if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
+
 /* Define to 1 if you have the `copysign' function. */
 #undef HAVE_COPYSIGN
 
@@ -76,6 +79,9 @@
 
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
+
+/* Define to 1 if you have the `rt' library (-lrt). */
+#undef HAVE_LIBRT
 
 /* Define to 1 if you have the `sunmath' library (-lsunmath). */
 #undef HAVE_LIBSUNMATH
@@ -179,8 +185,7 @@
 /* Define to 1 if you have the `__isnanf' function. */
 #undef HAVE___ISNANF
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Mac OS X version setting for OU Library */
@@ -239,6 +244,9 @@
 /* compiling for a X86_64 system on a gcc-based platform? */
 #undef X86_64_SYSTEM
 
+/* OU features enabled */
+#undef _OU_FEATURE_SET
+
 /* libou namespace for ODE */
 #undef _OU_NAMESPACE
 
@@ -253,7 +261,7 @@
 /* Atomic API of OU is enabled */
 #undef dATOMICS_ENABLED
 
-/* Built-in multithreaded threading implementation included */
+/* Built-in multithreaded threading implementation is included */
 #undef dBUILTIN_THREADING_IMPL_ENABLED
 
 /* Generic OU features are enabled */
@@ -303,11 +311,6 @@
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
-
-/* an integer type that we can safely cast a pointer to and
- * from without loss of bits.
- */
-typedef uintptr_t intP;
 
 
 #ifdef dSINGLE

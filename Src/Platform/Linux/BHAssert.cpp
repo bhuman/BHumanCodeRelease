@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdarg>
+#include <iostream>
 
 void Assert::print(const char* file, int line, const char* format, ...)
 {
@@ -30,6 +31,11 @@ void Assert::print(const char* file, int line, const char* format, ...)
   data[length] = '\0';
   fputs(data, stderr);
   fflush(stderr);
+}
+
+void Assert::print(const char* file, int line, const std::string& message)
+{
+  std::cerr << file << ":" << line << ": " << message << std::endl;
 }
 
 void Assert::abort()

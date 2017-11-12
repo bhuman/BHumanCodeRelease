@@ -57,54 +57,51 @@ dxJointFixed::getInfo1 ( dxJoint::Info1 *info )
 
 
 void
-dxJointFixed::getInfo2 ( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointFixed::getInfo2 ( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    int s = info->rowskip;
-
     // Three rows for orientation
-    setFixedOrientation ( this, worldFPS, worldERP, info, qrel, 3 );
+    setFixedOrientation ( this, worldFPS, worldERP, 
+        rowskip, J1 + dSA__MAX * rowskip, J2 + dSA__MAX * rowskip,
+        pairskip, pairRhsCfm + dSA__MAX * pairskip, qrel );
 
     // Three rows for position.
-    // set jacobian
-    info->J1l[0] = 1;
-    info->J1l[s+1] = 1;
-    info->J1l[2*s+2] = 1;
+    // set Jacobian
+    J1[GI2_JLX] = 1;
+    J1[rowskip + GI2_JLY] = 1;
+    J1[2 * rowskip + GI2_JLZ] = 1;
 
-    info->cfm[0] = this->cfm;
-    info->cfm[1] = this->cfm;
-    info->cfm[2] = this->cfm;
-
+    dReal k = worldFPS * this->erp;
     dxBody *b0 = node[0].body, *b1 = node[1].body;
 
     dVector3 ofs;
     dMultiply0_331 ( ofs, b0->posr.R, offset );
 
-    if ( b1 )
-    {
-        dSetCrossMatrixPlus( info->J1a, ofs, s );
-        info->J2l[0] = -1;
-        info->J2l[s+1] = -1;
-        info->J2l[2*s+2] = -1;
+    if ( b1 ) {
+        dSetCrossMatrixPlus( J1 + GI2__JA_MIN, ofs, rowskip );
+
+        J2[GI2_JLX] = -1;
+        J2[rowskip + GI2_JLY] = -1;
+        J2[2 * rowskip + GI2_JLZ] = -1;
     }
 
     // set right hand side for the first three rows (linear)
-    dReal k = worldFPS * this->erp;
-    if ( b1 )
-    {
-        for ( int j = 0; j < 3; j++ )
-        {
-            info->c[j] = k * ( b1->posr.pos[j]
-                - b0->posr.pos[j]
-                + ofs[j] );
+    if ( b1 ) {
+        for ( int j = 0, currPairSkip = 0; j < 3; currPairSkip += pairskip, ++j ) {
+            pairRhsCfm[currPairSkip + GI2_RHS] = k * ( b1->posr.pos[j] - b0->posr.pos[j] + ofs[j] );
+        }
+    } else {
+        for ( int j = 0, currPairSkip = 0; j < 3; currPairSkip += pairskip, ++j ) {
+            pairRhsCfm[currPairSkip + GI2_RHS] = k * ( offset[j] - b0->posr.pos[j] );
         }
     }
-    else
-    {
-        for ( int j = 0; j < 3; j++ )
-        {
-            info->c[j] = k * ( offset[j] - b0->posr.pos[j] );
-        }
-    }
+
+    dReal cfm = this->cfm;
+    pairRhsCfm[GI2_CFM] = cfm;
+    pairRhsCfm[pairskip + GI2_CFM] = cfm;
+    pairRhsCfm[2 * pairskip + GI2_CFM] = cfm;
 }
 
 

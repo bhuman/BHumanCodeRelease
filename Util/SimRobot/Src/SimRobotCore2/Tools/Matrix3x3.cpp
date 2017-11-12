@@ -16,7 +16,7 @@ template <class V> Matrix3x3<V>::Matrix3x3(const Vector3<V>& a)
     axis /= angle; // normalize a, rotation is only possible with unit vectors
   const V &x = axis.x, &y = axis.y, &z = axis.z;
   //compute sine and cosine of angle because it is needed quite often for complete matrix
-  const V si = (V) sin(angle), co = (V) cos(angle);
+  const V si = std::sin(angle), co = std::cos(angle);
   //compute all components needed more than once for complete matrix
   const V v = 1 - co;
   const V xyv = x * y * v;

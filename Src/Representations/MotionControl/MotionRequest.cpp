@@ -22,10 +22,10 @@ void MotionRequest::draw() const
         ARROW("representation:MotionRequest", walkRequest.target.translation.x(), walkRequest.target.translation.y(), walkRequest.target.translation.x() + rotation.x(), walkRequest.target.translation.y() + rotation.y(), 0, Drawings::solidPen, ColorRGBA(0xcd, 0, 0, 127));
         break;
       }
-      case WalkRequest::speedMode:
-      case WalkRequest::percentageSpeedMode:
+      case WalkRequest::absoluteSpeedMode:
+      case WalkRequest::relativeSpeedMode:
       {
-        Vector2f translation = walkRequest.mode == WalkRequest::speedMode ? walkRequest.speed.translation * 10.f : walkRequest.speed.translation * 1000.f;
+        Vector2f translation = walkRequest.mode == WalkRequest::absoluteSpeedMode ? walkRequest.speed.translation * 10.f : walkRequest.speed.translation * 1000.f;
         ARROW("representation:MotionRequest", 0, 0, translation.x(), translation.y(), 0, Drawings::solidPen, ColorRGBA(0xcd, 0, 0));
         if(walkRequest.target.rotation != 0.0f)
         {

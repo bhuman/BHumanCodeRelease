@@ -26,12 +26,12 @@ void SelfLocalizationHypotheses::draw() const
     {
       float stdDev = std::sqrt(h.rotVariance);
       DRAW_ROBOT_POSE_ROTATIONAL_STANDARD_DEVIATION("representation:SelfLocalizationHypotheses:covariance",
-                                                    h.pose, stdDev, ColorRGBA(100, 100, 100,100));
+                                                    h.pose, stdDev, ColorRGBA(100, 100, 100, 100));
       Matrix2f cov;
-      cov(0,0) = h.xVariance;
-      cov(1,1) = h.yVariance;
-      cov(1,0) = h.xyCovariance;
-      cov(0,1) = h.xyCovariance;
+      cov(0, 0) = h.xVariance;
+      cov(1, 1) = h.yVariance;
+      cov(1, 0) = h.xyCovariance;
+      cov(0, 1) = h.xyCovariance;
       COVARIANCE2D("representation:SelfLocalizationHypotheses:covariance", cov, h.pose.translation);
     }
   }

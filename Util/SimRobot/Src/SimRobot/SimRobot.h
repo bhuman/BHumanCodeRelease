@@ -23,9 +23,9 @@ namespace SimRobot
     virtual QWidget* getWidget() = 0;
     virtual void update() {}
     virtual bool canClose() {return true;}
-    virtual QMenu* createFileMenu() const {return 0;}
-    virtual QMenu* createEditMenu() const {return 0;}
-    virtual QMenu* createUserMenu() const {return 0;}
+    virtual QMenu* createFileMenu() const {return nullptr;}
+    virtual QMenu* createEditMenu() const {return nullptr;}
+    virtual QMenu* createUserMenu() const {return nullptr;}
     virtual void paint(QPainter& painter) {}
   };
 
@@ -36,14 +36,14 @@ namespace SimRobot
   {
   public:
     virtual ~Object() = default;
-    virtual Widget* createWidget() {return 0;}
+    virtual Widget* createWidget() {return nullptr;}
 
     /** Accesses pathname to the object in the scene graph
     * @return The pathname
     */
     virtual const QString& getFullName() const = 0;
 
-    virtual const QIcon* getIcon() const {return 0;}
+    virtual const QIcon* getIcon() const {return nullptr;}
     virtual int getKind() const {return 0;}
 
     /**
@@ -128,7 +128,7 @@ namespace SimRobot
     /**
     * Create a menu for this module. If 0 is returned, there is no menu.
     */
-    virtual QMenu* createUserMenu() const {return 0;}
+    virtual QMenu* createUserMenu() const {return nullptr;}
   };
 
   /**

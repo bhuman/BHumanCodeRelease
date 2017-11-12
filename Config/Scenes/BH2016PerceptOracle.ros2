@@ -8,6 +8,11 @@
     <!-- <QuickSolver iterations="100" skip="2"/>  -->
     <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
 
+    <Compound name="teamcolors">
+        <Appearance name="black"/>
+        <Appearance name="red"/>
+    </Compound>
+
     <Compound name="robots">
       <Body ref="Nao" name="robot2">
         <Translation x="0.9" z="320mm"/>

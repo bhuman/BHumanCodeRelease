@@ -34,7 +34,7 @@ void DebugDataStreamer::serialize(In* in, Out* out)
 
   if(type[type.size() - 1] == ']' || type[type.size() - 1] == '*')
   {
-    unsigned size;
+    unsigned size = 0;
     std::string elementType;
     bool staticSize = type[type.size() - 1] == ']';
     if(staticSize)
@@ -170,7 +170,7 @@ void DebugDataStreamer::serialize(In* in, Out* out)
       else if(std::string(t).find("Angle") != std::string::npos)
         streamIt<Angle>(in, out);
       else
-        ASSERT(false);
+        FAIL(t << " is not a streamable type!");
     }
     else if(e != streamHandler.enumSpecification.end())
     {
@@ -179,8 +179,7 @@ void DebugDataStreamer::serialize(In* in, Out* out)
     }
     else
     {
-      std::cerr << "Specification for " << t << " not found" << std::endl;
-      ASSERT(false); // specification missing
+      FAIL("Specification for " << t << " not found");
     }
   }
 }

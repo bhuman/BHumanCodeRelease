@@ -45,13 +45,13 @@ void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
   }
 
   ownTeam[theRobotInfo.number] = theRobotPose;
-  for(auto const& teammate : theTeammateData.teammates)
+  for(auto const& teammate : theTeamData.teammates)
   {
     if(teammate.status == Teammate::PLAYING)
     {
-      if(teammate.pose.deviation < teammatePoseDeviation)
+      if(teammate.theRobotPose.deviation < teammatePoseDeviation)
       {
-        ownTeam[teammate.number] = teammate.pose; //position of teammates
+        ownTeam[teammate.number] = teammate.theRobotPose; //position of teammates
       }
     }
   }
@@ -75,27 +75,26 @@ void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
 
   STOPWATCH("TeamPlayersLocator:obstaclesByTeammates")
   {
-    for(auto const& teammate : theTeammateData.teammates)
+    for(auto const& teammate : theTeamData.teammates)
     {
-      if(teammate.status == Teammate::PLAYING && teammate.pose.deviation < teammatePoseDeviation)
+      if(teammate.status == Teammate::PLAYING && teammate.theRobotPose.deviation < teammatePoseDeviation)
       {
-        for(const auto& obstacle : teammate.obstacleModel.obstacles)
+        for(const auto& obstacle : teammate.theObstacleModel.obstacles)
         {
           if(obstacle.type == GOALPOST)
             continue;
           //if seen robots are detected inside the field
-          const Vector2f p = teammate.pose * obstacle.center.cast<float>();
+          const Vector2f p = teammate.theRobotPose * obstacle.center.cast<float>();
           if(std::abs(p.x()) < theFieldDimensions.xPosOpponentFieldBorder && std::abs(p.y()) < theFieldDimensions.xPosOpponentFieldBorder)
           {
             if(isGoalPost(p) || isTeammate(p, squaredDistanceThreshold, teammate.number))
               continue;
-            Matrix2f covariance = (Matrix2f() << obstacle.covXX, obstacle.covXY, obstacle.covXY, obstacle.covYY).finished();
-            Obstacle converted = Obstacle(Covariance::rotateCovarianceMatrix(covariance, teammate.pose.rotation), p, obstacle.type);
+            Obstacle converted = Obstacle(Covariance::rotateCovarianceMatrix(obstacle.covariance, teammate.theRobotPose.rotation), p, obstacle.type);
             if(isInsideOwnDetectionArea(p, teammate.number, obstacle.lastSeen)
                && !collideOtherDetectionArea(p, teammate.number, ownTeam, obstacle.center.cast<float>().squaredNorm()))
-              obstacles.emplace_back(Obstacle(covariance, p, obstacle.lastSeen, obstacle.type));
+              obstacles.emplace_back(Obstacle(obstacle.covariance, p, obstacle.lastSeen, obstacle.type));
             else
-              others.emplace_back(Obstacle(covariance, p, obstacle.lastSeen, obstacle.type), 0);
+              others.emplace_back(Obstacle(obstacle.covariance, p, obstacle.lastSeen, obstacle.type), 0);
           }
         }
       }
@@ -172,7 +171,7 @@ bool TeamPlayersLocator::isInsideOwnDetectionArea(const Vector2f& position, int 
 }
 
 bool TeamPlayersLocator::collideOtherDetectionArea(const Vector2f& position, int robotNumber, std::map<int, RobotPose>& ownTeam,
-                                                      const float distance) const
+                                                   const float distance) const
 {
   float tempDistance;
   for(const auto& otherPlayer : ownTeam)

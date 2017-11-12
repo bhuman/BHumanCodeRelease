@@ -66,6 +66,19 @@ typedef GREAL quatf[4];
 
 //! Axis aligned box
 struct aabb3f{
+    aabb3f() {}
+    
+    template<typename tboundfloat>
+    aabb3f(const tboundfloat &_minX, const tboundfloat &_maxX, const tboundfloat &_minY, const tboundfloat &_maxY, const tboundfloat &_minZ, const tboundfloat &_maxZ):
+        minX((GREAL)_minX),
+        maxX((GREAL)_maxX),
+        minY((GREAL)_minY),
+        maxY((GREAL)_maxY),
+        minZ((GREAL)_minZ),
+        maxZ((GREAL)_maxZ)
+    {
+    }
+    
     GREAL minX;
     GREAL maxX;
     GREAL minY;

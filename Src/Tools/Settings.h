@@ -23,6 +23,7 @@ public:
     yellow,
     black,
     white,
+    green,
     orange,
     purple,
     brown,
@@ -34,10 +35,8 @@ public:
 
   static bool recover; /**< Start directly without the pre-initial state. */
 
-  static constexpr int highestValidPlayerNumber = 6; /**< No player can have a number greater than this */
+  static constexpr int highestValidPlayerNumber = 10; /**< No player can have a number greater than this */
   static constexpr int lowestValidPlayerNumber = 1;  /**< No player can have a number smaller than this */
-  bool isGoalkeeper;            /**< Is this robot the goaliekeeper? */
-  bool isDropInGame = false;    /**< Is this a normal game or a dropin game? */
 
   friend class ConsoleRoboCupCtrl; /**< To access settings. */
 
@@ -65,12 +64,11 @@ private:
     teamColor = other.teamColor;
     playerNumber = other.playerNumber;
     location = other.location.c_str(); // avoid copy-on-write
+    scenario = other.scenario.c_str();
     teamPort = other.teamPort;
     magicNumber = other.magicNumber;
     headName = other.headName.c_str(); // avoid copy-on-write
     bodyName = other.bodyName.c_str(); // avoid copy-on-write
-    isGoalkeeper = other.isGoalkeeper;
-    isDropInGame = other.isDropInGame;
     return *this;
   }
 
@@ -79,12 +77,12 @@ private:
    * @return Whether the settings were loaded successfully.
    */
   bool load();
-public:
-  ,
-  (int)(0) teamNumber, /**< The number of our team in the game controller. Use theOwnTeamInfo.teamNumber instead. */
-  (TeamColor)(blue) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColor instead. */
-  (int)(0) playerNumber, /**< The number of the robot in the team. Use theRobotInfo.playerNumber instead. */
-  (std::string)("Default") location, /**< The name of the location. */
-  (int)(0) teamPort, /**< The UDP port our team uses for team communication. */
-  (unsigned char)(42) magicNumber, /**< Magic Number for the TC. Assuring no foreign packages will be processed. */
+public:,
+  (int) teamNumber, /**< The number of our team in the game controller. Use theOwnTeamInfo.teamNumber instead. */
+  (TeamColor) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColor instead. */
+  (int) playerNumber, /**< The number of the robot in the team. Use theRobotInfo.playerNumber instead. */
+  (std::string) location, /**< The name of the location. */
+  (std::string) scenario, /**< The name of the scenario. */
+  (int) teamPort, /**< The UDP port our team uses for team communication. */
+  (unsigned char) magicNumber, /**< Magic Number for the TC. Assuring no foreign packages will be processed. */
 });

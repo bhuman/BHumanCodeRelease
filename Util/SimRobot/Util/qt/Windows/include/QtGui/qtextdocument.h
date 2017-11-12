@@ -40,6 +40,7 @@
 #ifndef QTEXTDOCUMENT_H
 #define QTEXTDOCUMENT_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qobject.h>
 #include <QtCore/qsize.h>
 #include <QtCore/qrect.h>
@@ -150,6 +151,7 @@ public:
     void setHtml(const QString &html);
 #endif
 
+    QString toRawText() const;
     QString toPlainText() const;
     void setPlainText(const QString &text);
 

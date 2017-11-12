@@ -1,7 +1,7 @@
 #define QT_VERSION_MAJOR    5
-#define QT_VERSION_MINOR    7
-#define QT_VERSION_PATCH    0
-#define QT_VERSION_STR      "5.7.0"
+#define QT_VERSION_MINOR    6
+#define QT_VERSION_PATCH    2
+#define QT_VERSION_STR      "5.6.2"
 
 /* Everything */
 /* Compile time features */
@@ -16,8 +16,6 @@
 #define QT_COMPILER_SUPPORTS_SSE4_2 1
 #define QT_COMPILER_SUPPORTS_AVX 1
 #define QT_COMPILER_SUPPORTS_AVX2 1
-#define QT_COMPILER_SUPPORTS_AVX512F 1
-#define QT_COMPILER_SUPPORTS_AVX512ER 1
 
 #ifndef QT_BOOTSTRAPPED
 
@@ -123,6 +121,12 @@
 # define QT_NO_PULSEAUDIO
 #endif
 
+#if defined(QT_NO_STYLE_GTK) && defined(QT_STYLE_GTK)
+# undef QT_NO_STYLE_GTK
+#elif !defined(QT_NO_STYLE_GTK) && !defined(QT_STYLE_GTK)
+# define QT_NO_STYLE_GTK
+#endif
+
 #if defined(QT_NO_TSLIB) && defined(QT_TSLIB)
 # undef QT_NO_TSLIB
 #elif !defined(QT_NO_TSLIB) && !defined(QT_TSLIB)
@@ -151,6 +155,18 @@
 # undef QT_RUNTIME_XFIXES
 #elif !defined(QT_RUNTIME_XFIXES) && !defined(QT_NO_RUNTIME_XFIXES)
 # define QT_RUNTIME_XFIXES
+#endif
+
+#if defined(QT_RUNTIME_XINERAMA) && defined(QT_NO_RUNTIME_XINERAMA)
+# undef QT_RUNTIME_XINERAMA
+#elif !defined(QT_RUNTIME_XINERAMA) && !defined(QT_NO_RUNTIME_XINERAMA)
+# define QT_RUNTIME_XINERAMA
+#endif
+
+#if defined(QT_RUNTIME_XINPUT) && defined(QT_NO_RUNTIME_XINPUT)
+# undef QT_RUNTIME_XINPUT
+#elif !defined(QT_RUNTIME_XINPUT) && !defined(QT_NO_RUNTIME_XINPUT)
+# define QT_RUNTIME_XINPUT
 #endif
 
 #if defined(QT_RUNTIME_XRANDR) && defined(QT_NO_RUNTIME_XRANDR)

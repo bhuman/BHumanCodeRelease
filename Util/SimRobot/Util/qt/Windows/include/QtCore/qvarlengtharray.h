@@ -76,7 +76,8 @@ public:
     QVarLengthArray(std::initializer_list<T> args)
         : a(Prealloc), s(0), ptr(reinterpret_cast<T *>(array))
     {
-        append(args.begin(), args.size());
+        if (args.size())
+            append(args.begin(), int(args.size()));
     }
 #endif
 
@@ -145,15 +146,35 @@ public:
     T value(int i, const T &defaultValue) const;
 
     inline void append(const T &t) {
-        if (s == a)   // i.e. s != 0
+        if (s == a) {   // i.e. s != 0
+            T copy(t);
             realloc(s, s<<1);
-        const int idx = s++;
-        if (QTypeInfo<T>::isComplex) {
-            new (ptr + idx) T(t);
+            const int idx = s++;
+            if (QTypeInfo<T>::isComplex) {
+                new (ptr + idx) T(std::move(copy));
+            } else {
+                ptr[idx] = std::move(copy);
+            }
         } else {
-            ptr[idx] = t;
+            const int idx = s++;
+            if (QTypeInfo<T>::isComplex) {
+                new (ptr + idx) T(t);
+            } else {
+                ptr[idx] = t;
+            }
         }
     }
+
+    void append(T &&t) {
+        if (s == a)
+            realloc(s, s << 1);
+        const int idx = s++;
+        if (QTypeInfo<T>::isComplex)
+            new (ptr + idx) T(std::move(t));
+        else
+            ptr[idx] = std::move(t);
+    }
+
     void append(const T *buf, int size);
     inline QVarLengthArray<T, Prealloc> &operator<<(const T &t)
     { append(t); return *this; }
@@ -207,6 +228,7 @@ public:
     // STL compatibility:
     inline bool empty() const { return isEmpty(); }
     inline void push_back(const T &t) { append(t); }
+    void push_back(T &&t) { append(std::move(t)); }
     inline void pop_back() { removeLast(); }
     inline T &front() { return first(); }
     inline const T &front() const { return first(); }
@@ -339,6 +361,7 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int a
     int osize = s;
 
     const int copySize = qMin(asize, osize);
+    Q_ASSUME(copySize >= 0);
     if (aalloc != a) {
         if (aalloc > Prealloc) {
             T* newPtr = reinterpret_cast<T *>(malloc(aalloc * sizeof(T)));
@@ -351,7 +374,7 @@ Q_OUTOFLINE_TEMPLATE void QVarLengthArray<T, Prealloc>::realloc(int asize, int a
             a = Prealloc;
         }
         s = 0;
-        if (QTypeInfo<T>::isStatic) {
+        if (!QTypeInfoQuery<T>::isRelocatable) {
             QT_TRY {
                 // copy all the old elements
                 while (s < copySize) {
@@ -444,7 +467,7 @@ Q_OUTOFLINE_TEMPLATE typename QVarLengthArray<T, Prealloc>::iterator QVarLengthA
     if (n != 0) {
         resize(s + n);
         const T copy(t);
-        if (QTypeInfo<T>::isStatic) {
+        if (!QTypeInfoQuery<T>::isRelocatable) {
             T *b = ptr + offset;
             T *j = ptr + s;
             T *i = j - n;

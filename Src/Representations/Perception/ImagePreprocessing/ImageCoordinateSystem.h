@@ -107,13 +107,13 @@ public:
   Vector2f toCorrected(const Vector2f& imageCoords) const
   {
     const float factor = a + imageCoords.y() * b;
-    return Vector2f(float(cameraInfo.opticalCenter.x() - tan(atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength),
-                    float(cameraInfo.opticalCenter.y() + tan(atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) - factor * offset.y()) * cameraInfo.focalLength));
+    return Vector2f(cameraInfo.opticalCenter.x() - std::tan(std::atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength,
+                    cameraInfo.opticalCenter.y() + std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) - factor * offset.y()) * cameraInfo.focalLength);
   }
 
   /**
-   * This is simply the inverse version of the function "toCorrected". 
-   *  
+   * This is simply the inverse version of the function "toCorrected".
+   *
    * Also just approximated too, if imageCoords.y() != result.y(), because "factor" has to be calculated with result.y() for exact result.
    *
    * Used by UnionPlayersPerceptor.
@@ -125,9 +125,8 @@ public:
   Vector2f toCorrectedInverse(const Vector2f imageCoords) const
   {
     const float factor = a + imageCoords.y() * b;
-    return Vector2f(float(-(tan(-atan((imageCoords.x() - cameraInfo.opticalCenter.x()) / cameraInfo.focalLength) + factor * offset.x()) * cameraInfo.focalLength - cameraInfo.opticalCenter.x())),
-                    float(tan(atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) + factor * offset.y()) * cameraInfo.focalLength + cameraInfo.opticalCenter.y()));
-
+    return Vector2f(-(std::tan(-std::atan((imageCoords.x() - cameraInfo.opticalCenter.x()) / cameraInfo.focalLength) + factor * offset.x()) * cameraInfo.focalLength - cameraInfo.opticalCenter.x()),
+                    std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) + factor * offset.y()) * cameraInfo.focalLength + cameraInfo.opticalCenter.y());
   }
   /**
    * Corrects image coordinates so that the distortion resulting from the rolling

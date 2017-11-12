@@ -1,13 +1,15 @@
 /**
  * @file RobotHealth.h
  * The file declares two classes to transport information about the current robot health
- * @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #pragma once
 
+#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/RobotParts/Joints.h"
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include <cstring>
 
 /**
@@ -26,8 +28,11 @@ STREAMABLE(MotionRobotHealth,
  * @struct RobotHealth
  * Full information about the robot.
  */
-STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
+STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbitraryMessageParticle<idRobotHealth>
 {
+  /** BHumanMessageParticle functions */
+  void operator >> (BHumanMessage& m) const override;
+  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
   /**
    * Configurations that can be deployed-
    * Note that they must start with an uppercase letter.
@@ -42,8 +47,6 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
   RobotHealth()
   {
     load[0] = load[1] = load[2] = 0;
-    strncpy(hash, "unknown", sizeof(hash));
-    strncpy(location, "unknown", sizeof(location));
   }
 
   /**
@@ -61,37 +64,21 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth,
   void draw() const
   {
     PLOT("representation:RobotHealth:batteryLevel", batteryLevel);
-    PLOT("representation:RobotHealth:maxJointTemperature", maxJointTemperature);
+    PLOT("representation:RobotHealth:maxJointTemperature", maxJointTemperatureStatus);
     PLOT("representation:RobotHealth:totalCurrent", totalCurrent);
-  }
-
-  std::string csv() const
-  {
-    static bool first = true;
-    if(first)
-    {
-      first = false;
-      return "motionFrameRate,avgMotionTime,maxMotionTime,minMotionTime,cognitionFrameRate,batteryLevel,totalCurrent,maxJointTemperature,jointWithMaxTeperature,cpuTemperature,load,memoryUsage,ballPercepts,linePercepts,goalPercepots,robotName\n" +
-             std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + robotName + "\n";
-    }
-    else
-      return std::to_string(motionFrameRate) + "," + std::to_string(avgMotionTime) + "," + std::to_string(maxMotionTime) + "," + std::to_string(minMotionTime) + "," + std::to_string(cognitionFrameRate) + "," + std::to_string(batteryLevel) + "," + std::to_string(totalCurrent) + "," + std::to_string(maxJointTemperature) + ", ," + std::to_string(cpuTemperature) + ", ," + std::to_string(memoryUsage) + "," + std::to_string(ballPercepts) + "," + std::to_string(linePercepts) + "," + robotName + "\n";
   },
 
-  (float)(0.f) cognitionFrameRate, /**< Frames per second within process "Cognition" */
-  (unsigned char)(0) batteryLevel, /**< Current batteryLevel of robot battery in percent */
-  (float)(0.f) totalCurrent, /**< Sum of all motor currents ( as a measure for the robot's current load) */
-  (unsigned char)(0) maxJointTemperature, /**< Highest temperature of a robot actuator */
-  ((Joints) Joint)(headYaw) jointWithMaxTemperature, /**< The hottest joint. */
-  (unsigned char)(0) cpuTemperature, /**< The temperature of the cpu */
-  (unsigned char[3]) load, /**< load averages */
-  (unsigned char)(0) memoryUsage, /**< Percentage of used memory */
-  (std::string) robotName, /**< For fancier drawing :-) */
-  (unsigned)(0) ballPercepts, /**< A ball percept counter used to determine ball percepts per hour */
-  (unsigned)(0) linePercepts, /**< A line percept counter used to determine line percepts per hour */
-  (bool)(true) wlan, /**< Status of the wlan hardware. true: wlan hardware is ok. false: wlan hardware is (probably physically) broken. */
-  (Configuration)(Develop) configuration, /**< The configuration that was deployed. */
-  (char[5]) hash, /**< The first 5 digits of the hash of the git HEAD that was deployed. */
-  (bool)(false) clean, /**< Was the working copy clean when it was deployed? */
-  (char[3]) location, /**< The first 3 letters of the location selected. */
+  (float)(0.f)                                   cognitionFrameRate,        /**< Frames per second within process "Cognition" */
+  (unsigned char)(0)                             batteryLevel,              /**< Current batteryLevel of robot battery in percent */
+  (float)(0.f)                                   totalCurrent,              /**< Sum of all motor currents (as a measure for the robot's current load) */
+  ((JointSensorData) TemperatureStatus)(regular) maxJointTemperatureStatus, /**< Highest temperature status of a robot actuator */
+  ((Joints) Joint)(headYaw)                      jointWithMaxTemperature,   /**< The hottest joint. */
+  (unsigned char)(0)                             cpuTemperature,            /**< The temperature of the cpu */
+  (std::array<unsigned char, 3>)                 load,                      /**< cpu load averages */
+  (unsigned char)(0)                             memoryUsage,               /**< Percentage of used memory */
+  (bool)(true)                                   wlan,                      /**< Status of the wlan hardware. true: wlan hardware is ok. false: wlan hardware is (probably physically) broken. */
+  (std::string)                                  robotName,                 /**< For fancier drawing :-) */
+  (Configuration)(Develop)                       configuration,             /**< The configuration that was deployed. */
+  (std::string)                                  location,                  /**< The location selected. */
+  (std::string)                                  scenario,                  /**< The scenario selected. */
 });

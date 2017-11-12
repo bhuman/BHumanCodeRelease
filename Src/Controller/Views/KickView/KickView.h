@@ -15,9 +15,9 @@
 #include <QString>
 #include <QIcon>
 
-struct MotionRequest;
-struct JointCalibration;
 struct JointAngles;
+struct JointLimits;
+struct MotionRequest;
 struct RobotDimensions;
 class RobotConsole;
 class KickViewWidget;
@@ -30,13 +30,13 @@ public:
   RobotConsole& console;
   const MotionRequest& motionRequest;
   const JointAngles& jointAngles;
-  const JointCalibration& jointCalibration;
+  const JointLimits& jointLimits;
   const RobotDimensions& robotDimensions;
   const std::string& motionRequestCommand;
   SimRobotCore2::Body* robot;
 
   KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
-           const JointCalibration& jointCalibration, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
+           const JointLimits& jointLimits, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
 
 private:
   virtual SimRobot::Widget* createWidget();

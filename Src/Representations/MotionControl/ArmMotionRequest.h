@@ -18,16 +18,14 @@ STREAMABLE(ArmMotionRequest,
 {
   ENUM(ArmRequest,
   {,
-    none, //< The motionengine provides wich also provides the leg motions, provides also the arms
+    none, /**< The motionengine provides which also provides the leg motions, provides also the arms */
     keyFrame,
-    pointAt,
   });
 
   ArmMotionRequest() { armMotion[Arms::left] = armMotion[Arms::right] = none; },
 
   (ENUM_INDEXED_ARRAY((ArmMotionRequest) ArmRequest, (Arms) Arm)) armMotion, /**< The selected armmotion per arm */
   (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request, if it is the selected armmotion. */
-  (Vector3f)(Vector3f::Zero()) pointToPointAt, /**< The point to point at, if selected */
 });
 
 struct ArmMotionInfo : public ArmMotionRequest {};

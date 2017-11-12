@@ -229,6 +229,18 @@ DS_API void dsDrawTriangle (const float pos[3], const float R[12],
 		     const float *v0, const float *v1, const float *v2, int solid);
 
 /**
+ * @brief Draw triangles.
+ * @ingroup drawstuff
+ * @param pos Position of center
+ * @param R orientation
+ * @param v list of vertices (x0, y0, z0, x1, y1, z1, ...)
+ * @param n number of vertices
+ * @param solid set to 0 for wireframe
+ */
+DS_API void dsDrawTriangles (const float pos[3], const float R[12],
+		     const float *v, const int n, int solid);
+
+/**
  * @brief Draw a z-aligned cylinder
  * @ingroup drawstuff
  */
@@ -253,11 +265,11 @@ DS_API void dsDrawLine (const float pos1[3], const float pos2[3]);
  * @ingroup drawstuff
  */
 DS_API void dsDrawConvex(const float pos[3], const float R[12],
-		  float *_planes,
+		  const float *_planes,
 		  unsigned int _planecount,
-		  float *_points,
+		  const float *_points,
 		  unsigned int _pointcount,
-		  unsigned int *_polygons);
+		  const unsigned int *_polygons);
 
  /* these drawing functions are identical to the ones above, except they take
  * double arrays for `pos' and `R'.
@@ -268,17 +280,19 @@ DS_API void dsDrawSphereD (const double pos[3], const double R[12],
 		    const float radius);
 DS_API void dsDrawTriangleD (const double pos[3], const double R[12],
 		      const double *v0, const double *v1, const double *v2, int solid);
+DS_API void dsDrawTrianglesD (const double pos[3], const double R[12],
+		      const double *v, const int n, int solid);
 DS_API void dsDrawCylinderD (const double pos[3], const double R[12],
 		      float length, float radius);
 DS_API void dsDrawCapsuleD (const double pos[3], const double R[12],
 		     float length, float radius);
 DS_API void dsDrawLineD (const double pos1[3], const double pos2[3]);
 DS_API void dsDrawConvexD(const double pos[3], const double R[12],
-		  double *_planes,
+		  const double *_planes,
 		  unsigned int _planecount,
-		  double *_points,
+		  const double *_points,
 		  unsigned int _pointcount,
-		  unsigned int *_polygons);
+		  const unsigned int *_polygons);
 
 /**
  * @brief Set the quality with which curved objects are rendered.

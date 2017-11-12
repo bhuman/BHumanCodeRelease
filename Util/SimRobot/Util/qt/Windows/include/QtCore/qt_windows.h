@@ -48,10 +48,13 @@
 #if defined(Q_CC_MINGW)
 // mingw's windows.h does not set _WIN32_WINNT, resulting breaking compilation
 #  ifndef WINVER
-#    define WINVER 0x501
+#    define WINVER 0x600
 #  endif
 #  ifndef _WIN32_WINNT
-#    define _WIN32_WINNT 0x0501
+#    define _WIN32_WINNT 0x600
+#  endif
+#  ifndef NTDDI_VERSION
+#    define NTDDI_VERSION 0x06000000
 #  endif
 #endif
 
@@ -65,10 +68,6 @@
 #endif
 #if !defined(_WIN32_IE)
 #  define _WIN32_IE 0x0501
-#endif
-
-#ifdef _WIN32_WCE
-#include <ceconfig.h>
 #endif
 
 // already defined when compiled with WINVER >= 0x0500
@@ -143,14 +142,5 @@
 #ifndef CLEARTYPE_QUALITY
 #define CLEARTYPE_QUALITY 5
 #endif
-
-#ifdef Q_OS_WINCE
-#ifndef LR_DEFAULTSIZE
-#define LR_DEFAULTSIZE 0
-#endif
-#ifndef LR_SHARED
-#define LR_SHARED 0
-#endif
-#endif // Q_OS_WINCE
 
 #endif // QT_WINDOWS_H

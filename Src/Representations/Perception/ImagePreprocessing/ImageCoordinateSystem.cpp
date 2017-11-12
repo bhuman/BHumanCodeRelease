@@ -38,11 +38,11 @@ void ImageCoordinateSystem::draw() const
 {
   DECLARE_DEBUG_DRAWING("horizon", "drawingOnImage"); // displays the horizon
   ARROW("horizon", origin.x(), origin.y(),
-        origin.x() + rotation(0, 0) * 50,
-        origin.y() + rotation(1, 0) * 50,
-        0, Drawings::solidPen, ColorRGBA::red);
+        origin.x() + rotation(0, 0) * 100,
+        origin.y() + rotation(1, 0) * 100,
+        5, Drawings::solidPen, ColorRGBA::red);
   ARROW("horizon", origin.x(), origin.y(),
-        origin.x() + rotation(0, 1) * 50,
-        origin.y() + rotation(1, 1) * 50,
-        0, Drawings::solidPen, ColorRGBA::red);
+        origin.x() + rotation(0, 1) * 100,
+        origin.y() + rotation(1, 1) * 100,
+        5, Drawings::solidPen, ColorRGBA::red);
 }

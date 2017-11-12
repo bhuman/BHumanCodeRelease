@@ -3,7 +3,7 @@
 #set -x
 
 scriptPath=$(echo ${0} | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname ${scriptPath})
+basePath=$(dirname "${scriptPath}")
 currPath=$(pwd)
 
 usage()
@@ -19,10 +19,12 @@ usage()
 
 #Variables
 logpath="/home/nao/logs/"
-keyFile="${basePath}/../../Config/Keys/id_rsa_nao"
+keySource="${basePath}/../../Config/Keys/id_rsa_nao"
+keyFile=/tmp/id_rsa_nao
+cp "${keySource}" ${keyFile}
 sshoptions="-c arcfour -i ${keyFile} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
-chmod 400 $keyFile
+chmod 600 $keyFile
 
 if [ $# -lt 2 ]
 then

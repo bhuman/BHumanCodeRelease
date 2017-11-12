@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Tools/Streams/Enum.h"
+#include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/AutoStreamable.h"
 
@@ -28,7 +29,7 @@ STREAMABLE(FieldLines,
      * @param p a point
      * @return the distance
      */
-    float calculateDistToLine(const Vector2f & p) const
+    float calculateDistToLine(const Vector2f& p) const
     {
       return p.x() * std::cos(alpha) + p.y() * std::sin(alpha) - d;
     }
@@ -38,9 +39,9 @@ STREAMABLE(FieldLines,
      * @param p a point
      * @return the closest point on this line
      */
-    Vector2f calculateClosestPointOnLine(const Vector2f & p) const,
+    Vector2f calculateClosestPointOnLine(const Vector2f& p) const,
 
-    (float) alpha, /**< direction of this line in Hesse norm form */
+    (Angle) alpha, /**< direction of this line in Hesse norm form */
     (float) d, /**< distance of this line in Hesse norm form */
     (bool) midLine, /**< Whether this is the line throught the center circle */
     (bool) isLong, /**< Whether this is a long line */
@@ -53,7 +54,7 @@ STREAMABLE(FieldLines,
    * @param retLine the closest line
    * @return the distance from point to retLine
    * */
-  float getClosestLine(Vector2f point, Line & retLine) const;
+  float getClosestLine(Vector2f point, Line& retLine) const;
 
   /**
    * The method draws the percepts to image/field/3D scene.

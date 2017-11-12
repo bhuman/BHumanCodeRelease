@@ -1,6 +1,6 @@
 dnl AC_INIT does not take a macro as a version nr: set it separately! - Bram
-AC_INIT([ODE],[0.13.1],[ode@ode.org])
-ODE_VERSION=0.13.1
+AC_INIT([ODE],[0.15.2],[ode@ode.org])
+ODE_VERSION=0.15.2
 AC_SUBST(ODE_VERSION)
 
 # Those are instructions from the Libtool manual:
@@ -22,8 +22,8 @@ AC_SUBST(ODE_VERSION)
 #
 #  6. If any interfaces have been removed since the last public release,
 #     then set AGE to 0.
-CURRENT=5
-REVISION=0
+CURRENT=7
+REVISION=2
 AGE=1
 
 AC_ARG_ENABLE(version-info,
@@ -66,6 +66,10 @@ AC_C_INLINE
 AC_C_VOLATILE
 PKG_PROG_PKG_CONFIG
 
+AC_ARG_VAR([DOXYGEN], [set to doxygen binary to generate doxygen docs])
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test x$DOXYGEN = xdoxygen])
+
 
 dnl this may NOT be the machine on which the code is going to run in,
 dnl so allow users to compile programs for their target machine.
@@ -98,7 +102,7 @@ AC_CHECK_HEADERS( [alloca.h stdio.h inttypes.h stdint.h stdlib.h math.h \
 
 opcode=no
 gimpact=no
-AC_ARG_WITH(trimesh, AS_HELP_STRING([--with-trimesh=[opcode|gimpact|none]],
+AC_ARG_WITH(trimesh, AS_HELP_STRING([--with-trimesh=@<:@opcode|gimpact|none@:>@],
         [use the specified system for trimesh support @<:@default=opcode@:>@]),
         trimesh=$withval,trimesh=opcode
 )
@@ -280,12 +284,13 @@ AC_TYPE_UINT32_T
 dnl Check for autoscan sugested functions
 AC_CHECK_LIB(m, [main])
 AC_CHECK_LIB(sunmath, [main])
-AC_CHECK_FUNCS([floor memmove memset sqrt sqrtf sinf cosf fabsf atan2f fmodf copysignf copysign snprintf vsnprintf gettimeofday isnan isnanf _isnan _isnanf __isnan __isnanf strchr strstr pthread_attr_setstacklazy])
+AC_CHECK_LIB(rt, [main])
+AC_CHECK_FUNCS([floor memmove memset sqrt sqrtf sinf cosf fabsf atan2f fmodf copysignf copysign snprintf vsnprintf gettimeofday clock_gettime isnan isnanf _isnan _isnanf __isnan __isnanf strchr strstr pthread_attr_setstacklazy])
 AC_FUNC_ALLOCA 
 
 AC_ARG_ENABLE([threading-intf],
         AS_HELP_STRING([--disable-threading-intf],
-            [disable threading interface support (external implementations may not be assigned; overrides --enable-builtin-threading-impl)]
+            [disable threading interface support (external implementations cannot be assigned)]
         ),
         threading_intf=$enableval,threading_intf=yes)
 AC_ARG_ENABLE([ou],
@@ -298,68 +303,85 @@ if test x$use_ou_tls = xyes -o x$threading_intf = xyes
 then
     use_ou="yes"
 fi
+
+OU_NAMESPACE=odeou
+AC_CONFIG_COMMANDS_POST([export OU_NAMESPACE=$OU_NAMESPACE])
+AC_DEFINE([_OU_NAMESPACE],[odeou],[libou namespace for ODE])
+AC_DEFINE([dOU_ENABLED],[1],[Generic OU features are enabled])
+
+if test x$use_ou_tls = xyes
+then
+    OU_FEATURE_SET=_OU_FEATURE_SET_TLS
+    AC_DEFINE([_OU_FEATURE_SET],[_OU_FEATURE_SET_TLS],[OU features enabled])
+elif test x$use_ou = xyes
+then
+    OU_FEATURE_SET=_OU_FEATURE_SET_ATOMICS
+    AC_DEFINE([_OU_FEATURE_SET],[_OU_FEATURE_SET_ATOMICS],[OU features enabled])
+else
+    OU_FEATURE_SET=_OU_FEATURE_SET_BASICS
+    AC_DEFINE([_OU_FEATURE_SET],[_OU_FEATURE_SET_BASICS],[OU features enabled])
+fi
+AC_CONFIG_COMMANDS_POST([export OU_FEATURE_SET=$OU_FEATURE_SET])
+
 if test x$use_ou = xyes
 then
-    OU_NAMESPACE=odeou
-    AC_CONFIG_COMMANDS_POST([export OU_NAMESPACE=odeou])
-    AC_DEFINE([_OU_NAMESPACE],[odeou],[libou namespace for ODE])
-    AC_DEFINE([dOU_ENABLED],[1],[Generic OU features are enabled])
     AC_DEFINE([dATOMICS_ENABLED],[1],[Atomic API of OU is enabled])
     if test x$use_ou_tls = xyes
     then
       AC_DEFINE([dTLS_ENABLED],[1],[Thread Local Storage API of OU is enabled])
     fi
-
-    case "$host_os" in
-      cygwin* | mingw*)
-        targetos=_OU_TARGET_OS_WINDOWS
-        ;;
-      *qnx*)
-        targetos=_OU_TARGET_OS_QNX
-        ;;
-      *apple* | *darwin*)
-        targetos=_OU_TARGET_OS_MAC
-        ;;
-      *sunos*)
-        targetos=_OU_TARGET_OS_SUNOS
-        ;;
-      *aix*)
-        targetos=_OU_TARGET_OS_AIX
-        ;;
-      *)
-        targetos=_OU_TARGET_OS_GENUNIX
-        ;;
-    esac
-
-    if test $targetos = _OU_TARGET_OS_MAC
-    then
-        MAC_OS_X_VERSION=1000
-        AC_CHECK_FUNC([OSAtomicAdd32Barrier], [MAC_OS_X_VERSION=1040])
-        AC_CHECK_FUNC([OSAtomicAnd32OrigBarrier], [MAC_OS_X_VERSION=1050])
-        AC_DEFINE_UNQUOTED(MAC_OS_X_VERSION, $MAC_OS_X_VERSION, [Mac OS X version setting for OU Library])
-    fi
-    
-    if test $targetos = _OU_TARGET_OS_SUNOS
-    then
-        AC_CHECK_FUNC(atomic_inc_32_nv, [],
-            [targetos=_OU_TARGET_OS_GENUNIX])
-    fi
-    
-    AC_DEFINE_UNQUOTED(_OU_TARGET_OS, $targetos, [Target OS setting for OU Library])
 fi
+
+case "$host_os" in
+  cygwin* | mingw*)
+    targetos=_OU_TARGET_OS_WINDOWS
+    ;;
+  *qnx*)
+    targetos=_OU_TARGET_OS_QNX
+    ;;
+  *apple* | *darwin*)
+    targetos=_OU_TARGET_OS_MAC
+    ;;
+  *sunos*)
+    targetos=_OU_TARGET_OS_SUNOS
+    ;;
+  *aix*)
+    targetos=_OU_TARGET_OS_AIX
+    ;;
+  *)
+    targetos=_OU_TARGET_OS_GENUNIX
+    ;;
+esac
+
+if test $targetos = _OU_TARGET_OS_MAC
+then
+    MAC_OS_X_VERSION=1000
+    AC_CHECK_FUNC([OSAtomicAdd32Barrier], [MAC_OS_X_VERSION=1040])
+    AC_CHECK_FUNC([OSAtomicAnd32OrigBarrier], [MAC_OS_X_VERSION=1050])
+    AC_DEFINE_UNQUOTED(MAC_OS_X_VERSION, $MAC_OS_X_VERSION, [Mac OS X version setting for OU Library])
+fi
+
+if test $targetos = _OU_TARGET_OS_SUNOS
+then
+    AC_CHECK_FUNC(atomic_inc_32_nv, [],
+        [targetos=_OU_TARGET_OS_GENUNIX])
+fi
+
+AC_DEFINE_UNQUOTED(_OU_TARGET_OS, $targetos, [Target OS setting for OU Library])
+
 AC_CONFIG_SUBDIRS([ou])
-AM_CONDITIONAL(ENABLE_OU, test x$use_ou = xyes)
+AM_CONDITIONAL(ENABLE_OU, true)
 
 if test x$threading_intf = xyes
 then
     AC_ARG_ENABLE([builtin-threading-impl],
-        AS_HELP_STRING([--enable-builtin-threading-impl],
-            [include built-in multithreaded threading implementation (still must be created and assigned to be used)]
+        AS_HELP_STRING([--disable-builtin-threading-impl],
+            [disable built-in multithreaded threading implementation]
         ),
-        use_builtin_threading_impl=$enableval,use_builtin_threading_impl=no)
+        use_builtin_threading_impl=$enableval,use_builtin_threading_impl=yes)
     if test x$use_builtin_threading_impl = xyes
     then
-        AC_DEFINE([dBUILTIN_THREADING_IMPL_ENABLED],[1],[Built-in multithreaded threading implementation included])
+        AC_DEFINE([dBUILTIN_THREADING_IMPL_ENABLED],[1],[Built-in multithreaded threading implementation is included])
     fi
 else
     AC_DEFINE([dTHREADING_INTF_DISABLED],[1],[Threading interface is disabled])
@@ -376,7 +398,7 @@ col_convex_sphere=default
 col_convex_convex=default
 
 
-libccd=no
+use_libccd=no
 libccd_all=no
 AC_ARG_ENABLE(libccd, AS_HELP_STRING([--enable-libccd],
             [enable all libccd colliders (except box-cylinder)]),
@@ -390,7 +412,7 @@ then
     col_convex_cylinder=libccd
     col_convex_sphere=libccd
     col_convex_convex=libccd
-    libccd=yes
+    use_libccd=yes
 fi
 
 
@@ -428,12 +450,31 @@ if test x$col_cylinder_cylinder = xlibccd -o \
     x$col_convex_sphere = libccd -o \
     x$col_convex_convex = libccd
 then
-    libccd=yes
+    use_libccd=yes
 fi
 
+
+libccd_source=internal
+
+AC_ARG_WITH(libccd,
+        [AS_HELP_STRING([--with-libccd=@<:@internal|system@:>@],
+                [use the specified libccd @<:@default=system@:>@])],
+        [libccd_source=$withval],
+        [libccd_source=system])
+
+if test x$use_libccd = xyes
+then
+    if test x$libccd_source = xsystem
+    then
+        PKG_CHECK_MODULES(CCD, ccd, ,[libccd_source=internal])
+    fi
+fi
+
+# Configure libccd unconditionally as that may be needed for special make targets
 AC_CONFIG_SUBDIRS([libccd])
 
-AM_CONDITIONAL(LIBCCD, test x$libccd != xno)
+AM_CONDITIONAL(LIBCCD, test x$use_libccd != xno)
+AM_CONDITIONAL(LIBCCD_INTERNAL, test x$libccd_source = xinternal)
 AM_CONDITIONAL(LIBCCD_BOX_CYL,          test x$col_box_cylinder = xlibccd)
 AM_CONDITIONAL(LIBCCD_CYL_CYL,          test x$col_cylinder_cylinder = xlibccd)
 AM_CONDITIONAL(LIBCCD_CAP_CYL,          test x$col_capsule_cylinder = xlibccd)
@@ -451,11 +492,7 @@ AC_ARG_ENABLE([asserts],
         asserts=$enableval,asserts=yes)
 if test x$asserts = xno
 then
-    CPPFLAGS="$CPPFLAGS -DdNODEBUG"
-    if test x$use_ou = xyes
-    then
-        CPPFLAGS="$CPPFLAGS -DNDEBUG"
-    fi
+    CPPFLAGS="$CPPFLAGS -DdNODEBUG -DNDEBUG"
 fi
 
 
@@ -478,11 +515,6 @@ AH_BOTTOM([
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
-
-/* an integer type that we can safely cast a pointer to and
- * from without loss of bits.
- */
-typedef uintptr_t intP;
 
 
 #ifdef dSINGLE
@@ -510,6 +542,8 @@ AC_CONFIG_FILES([
  include/ode/version.h
  include/ode/precision.h
  ode/Makefile
+ ode/doc/Doxyfile
+ ode/doc/Makefile
  ode/src/Makefile
  ode/src/joints/Makefile
  ode/demo/Makefile
@@ -543,6 +577,13 @@ echo "  Use drawstuff:           $drawstuff"
 echo "  Demos enabled:           $enable_demos"
 echo "  Use OPCODE:              $opcode"
 echo "  Use GIMPACT:             $gimpact"
+echo "  Use libccd:              $use_libccd"
+
+if test x$use_libccd = xyes
+then
+echo "  libccd source:           $libccd_source"
+fi
+
 echo "  Custom colliders:"
 echo "        cylinder-cylinder: $col_cylinder_cylinder"
 echo "        box-cylinder:      $col_box_cylinder"

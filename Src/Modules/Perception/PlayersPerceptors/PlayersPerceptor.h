@@ -8,9 +8,10 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Perception/PlayersPercepts/PlayersPercept.h"
+#include "Representations/Perception/PlayersPercepts/PlayersImagePercept.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -42,6 +43,7 @@ inline HSI::HSI(unsigned char h, unsigned char s, unsigned char i) : h(h), s(s),
 MODULE(PlayersPerceptor,
 {,
   REQUIRES(CameraMatrix),
+  REQUIRES(GameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(Image),
   REQUIRES(BodyContour),
@@ -51,7 +53,7 @@ MODULE(PlayersPerceptor,
   REQUIRES(OwnTeamInfo),
   REQUIRES(OpponentTeamInfo),
 
-  PROVIDES(PlayersPercept),
+  PROVIDES(PlayersImagePercept),
   LOADS_PARAMETERS(
   {,
     (int) xStep, // step size between vertical scans
@@ -113,12 +115,12 @@ private:
   int nearestMinWidth; // same as farthestMinWidth for the nearest visible point
 
   /** Updates the PlayersPercept. */
-  void update(PlayersPercept& PlayersPercept);
+  void update(PlayersImagePercept& PlayersPercept);
 
   bool calcRealWorldSizes(); // calculates the real world sizes in pixel; returns false, if it is impossible
   void scanVerticalLine(int index, int x); // performs a vertical scan at given x coordinate and writes result in verticalLines array
-  bool combineVerticalLines(PlayersPercept& PlayersPercept); // one try to combine vertical scan lines to complete obstacles; returns false, if more tries would not help
-  bool scanJersey(PlayersPercept::Player& obstacle, float height, bool searchForPlayer); // scans for jersey at given height in Player and writes result into it; returns true, if a jersey was detected
+  bool combineVerticalLines(PlayersImagePercept& PlayersPercept); // one try to combine vertical scan lines to complete obstacles; returns false, if more tries would not help
+  bool scanJersey(PlayersImagePercept::PlayerInImage& obstacle, float height, bool searchForPlayer); // scans for jersey at given height in Player and writes result into it; returns true, if a jersey was detected
   void analyzePixel(int x, int y, const Image::Pixel& current, const Image::Pixel& color, unsigned char blackI,
                     bool searchForPlayer, int& black, int& nonBlack) const;
   Vector2f computeVanishingPointZ() const;

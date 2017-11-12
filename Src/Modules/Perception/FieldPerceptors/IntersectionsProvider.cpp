@@ -60,14 +60,14 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
         bool lineIsEnd(true);
         bool line2IsEnd(true);
 
-        if(intersectionIsOnLine || intersectionGoesWithLine2)
+        if(intersectionIsOnLine || insersectionIsOnLine2)
         {
-          auto getVector2f = [&](const Vector2i & vi)
+          auto getVector2f = [&](const Vector2i& vi)
           {
             return Vector2f(vi.x(), vi.y());
           };
 
-          auto minLength = [&](const Vector2f & a, const Vector2f & b)
+          auto minLength = [&](const Vector2f& a, const Vector2f& b)
           {
             const float aSL = a.squaredNorm();
             const float bSL = b.squaredNorm();
@@ -87,6 +87,9 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
               line2IsEnd = maxOverheadToDecleareAsEnd >= minLength(line2Img.base - intersectionImg, getVector2f(theLinesPercept.lines[j].lastImg) - intersectionImg);
           }
         }
+
+        lineIsEnd |= (lineEndCloser - intersection).squaredNorm() < sqr(2 * theFieldDimensions.fieldLinesWidth);
+        line2IsEnd |= (line2EndCloser - intersection).squaredNorm() < sqr(2 * theFieldDimensions.fieldLinesWidth);
 
         if(lineIsEnd && line2IsEnd) // L
           addIntersection(intersectionsPercept, IntersectionsPercept::Intersection::L, intersection, lineEndFurther - intersection, line2EndFurther - intersection, i, j);

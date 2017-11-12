@@ -115,12 +115,12 @@ SUITE (TestdxJointHinge2)
     dJointGetHinge2Anchor(jId[1], anchor);
     dJointSetHinge2Anchor(jId[1], anchor[0], anchor[1], anchor[2]);
 
-    dVector3 axis;
-    dJointGetHinge2Axis1(jId[1], axis);
-    dJointSetHinge2Axis1(jId[1], axis[0], axis[1], axis[2]);
-
-    dJointGetHinge2Axis2(jId[1], axis);
-    dJointSetHinge2Axis2(jId[1], axis[0], axis[1], axis[2]);
+    dVector3 axis1, axis2;
+    dJointGetHinge2Axis1(jId[1], axis1);
+    dJointGetHinge2Axis2(jId[1], axis2);
+    dJointSetHinge2Axes(jId[1], axis1, axis2);
+    dJointSetHinge2Axes(jId[1], axis1, NULL);
+    dJointSetHinge2Axes(jId[1], NULL, axis2);
 
 
     for (int b=0; b<2; ++b) {

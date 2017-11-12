@@ -483,3 +483,31 @@ Out& operator<<(Out& stream, const Eigen::Quaternion<T, OPTIONS>& quaternion)
 
   return stream;
 }
+
+template<typename T>
+In& operator>>(In& stream, Eigen::AngleAxis<T>& angleaxis)
+{
+  T& angle = angleaxis.angle();
+  Eigen::Matrix<T, 3, 1>& axis = angleaxis.axis();
+
+  STREAM_REGISTER_BEGIN_EXT(angleaxis);
+  STREAM_EXT(stream, angle);
+  STREAM_EXT(stream, axis);
+  STREAM_REGISTER_FINISH;
+
+  return stream;
+}
+
+template<typename T>
+Out& operator<<(Out& stream, const Eigen::AngleAxis<T>& angleaxis)
+{
+  const T& angle = angleaxis.angle();
+  const Eigen::Matrix<T, 3, 1>& axis = angleaxis.axis();
+
+  STREAM_REGISTER_BEGIN_EXT(angleaxis);
+  STREAM_EXT(stream, angle);
+  STREAM_EXT(stream, axis);
+  STREAM_REGISTER_FINISH;
+
+  return stream;
+}

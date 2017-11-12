@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Tools/Math/Eigen.h"
+#include "Tools/Math/Angle.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 /**
@@ -17,7 +18,8 @@ STREAMABLE(PenaltyMarkPercept,
 {
   void draw() const,
 
-  (Vector2i)(Vector2i::Zero()) position, /**< Position in the image. */
+  (Vector2i)(Vector2i::Zero()) positionInImage, /**< Position in the image. */
   (Vector2f)(Vector2f::Zero()) positionOnField, /**< Position relative to robot on the field. */
-  (unsigned)(0) timeLastSeen, /**< When was the percept last seen? */
+  (Angle)(pi) quarterRotationOnField, /**< The rotation on the field in the range [-pi/4 and pi/4[. Don't use if outside that range */
+  (bool)(false) wasSeen, /**< Indicates whether the feature has been seen in the last frame */
 });

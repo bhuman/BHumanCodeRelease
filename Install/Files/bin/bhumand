@@ -1,12 +1,8 @@
 #!/bin/sh
 
-NAME=$2
-
-[ -z $NAME ] && NAME=Default 
-
 case "$1" in
   start)
-    /home/nao/bin/bhuman $NAME -b &
+    /home/nao/bin/bhuman -b &
     ;;
 
   stop)

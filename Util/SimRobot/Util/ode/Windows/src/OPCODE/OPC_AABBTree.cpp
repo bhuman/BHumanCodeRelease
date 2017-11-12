@@ -309,8 +309,8 @@ bool AABBTreeNode::Subdivide(AABBTreeBuilder* builder)
 	builder->IncreaseCount(2);
 
 	// Assign children
-	AABBTreeNode* Pos = (AABBTreeNode*)GetPos();
-	AABBTreeNode* Neg = (AABBTreeNode*)GetNeg();
+	AABBTreeNode* Pos = const_cast<AABBTreeNode *>(GetPos());
+	AABBTreeNode* Neg = const_cast<AABBTreeNode *>(GetNeg());
 	Pos->mNodePrimitives	= &mNodePrimitives[0];
 	Pos->mNbPrimitives		= NbPos;
 	Neg->mNodePrimitives	= &mNodePrimitives[NbPos];
@@ -334,8 +334,8 @@ void AABBTreeNode::_BuildHierarchy(AABBTreeBuilder* builder)
 	Subdivide(builder);
 
 	// 3) Recurse
-	AABBTreeNode* Pos = (AABBTreeNode*)GetPos();
-	AABBTreeNode* Neg = (AABBTreeNode*)GetNeg();
+	AABBTreeNode* Pos = const_cast<AABBTreeNode *>(GetPos());
+	AABBTreeNode* Neg = const_cast<AABBTreeNode *>(GetNeg());
 	if(Pos)	Pos->_BuildHierarchy(builder);
 	if(Neg)	Neg->_BuildHierarchy(builder);
 }
@@ -352,8 +352,8 @@ void AABBTreeNode::_Refit(AABBTreeBuilder* builder)
 	builder->ComputeGlobalBox(mNodePrimitives, mNbPrimitives, mBV);
 
 	// 2) Recurse
-	AABBTreeNode* Pos = (AABBTreeNode*)GetPos();
-	AABBTreeNode* Neg = (AABBTreeNode*)GetNeg();
+	AABBTreeNode* Pos = const_cast<AABBTreeNode *>(GetPos());
+	AABBTreeNode* Neg = const_cast<AABBTreeNode *>(GetNeg());
 	if(Pos)	Pos->_Refit(builder);
 	if(Neg)	Neg->_Refit(builder);
 }
@@ -523,7 +523,7 @@ bool AABBTree::Refit2(AABBTreeBuilder* builder)
 
 		if(Current.IsLeaf())
 		{
-			builder->ComputeGlobalBox(Current.GetPrimitives(), Current.GetNbPrimitives(), *(AABB*)Current.GetAABB());
+			builder->ComputeGlobalBox(Current.GetPrimitives(), Current.GetNbPrimitives(), *const_cast<AABB*>(Current.GetAABB()));
 		}
 		else
 		{
@@ -536,7 +536,7 @@ bool AABBTree::Refit2(AABBTreeBuilder* builder)
 			Min.Min(Min_);
 			Max.Max(Max_);
 
-			((AABB*)Current.GetAABB())->SetMinMax(Min, Max);
+			const_cast<AABB*>(Current.GetAABB())->SetMinMax(Min, Max);
 		}
 	}
 	return true;

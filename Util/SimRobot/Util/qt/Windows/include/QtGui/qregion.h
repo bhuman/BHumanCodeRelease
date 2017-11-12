@@ -40,6 +40,7 @@
 #ifndef QREGION_H
 #define QREGION_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qatomic.h>
 #include <QtCore/qrect.h>
 #include <QtGui/qwindowdefs.h>
@@ -81,37 +82,49 @@ public:
     bool isEmpty() const;
     bool isNull() const;
 
+    typedef const QRect *const_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    const_iterator begin()  const Q_DECL_NOTHROW;
+    const_iterator cbegin() const Q_DECL_NOTHROW { return begin(); }
+    const_iterator end()    const Q_DECL_NOTHROW;
+    const_iterator cend()   const Q_DECL_NOTHROW { return end(); }
+    const_reverse_iterator rbegin()  const Q_DECL_NOTHROW { return const_reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const Q_DECL_NOTHROW { return rbegin(); }
+    const_reverse_iterator rend()    const Q_DECL_NOTHROW { return const_reverse_iterator(begin()); }
+    const_reverse_iterator crend()   const Q_DECL_NOTHROW { return rend(); }
+
     bool contains(const QPoint &p) const;
     bool contains(const QRect &r) const;
 
     void translate(int dx, int dy);
     inline void translate(const QPoint &p) { translate(p.x(), p.y()); }
-    QRegion translated(int dx, int dy) const Q_REQUIRED_RESULT;
-    inline QRegion translated(const QPoint &p) const Q_REQUIRED_RESULT { return translated(p.x(), p.y()); }
+    Q_REQUIRED_RESULT QRegion translated(int dx, int dy) const;
+    Q_REQUIRED_RESULT inline QRegion translated(const QPoint &p) const { return translated(p.x(), p.y()); }
 
-    QRegion united(const QRegion &r) const Q_REQUIRED_RESULT;
-    QRegion united(const QRect &r) const Q_REQUIRED_RESULT;
-    QRegion intersected(const QRegion &r) const Q_REQUIRED_RESULT;
-    QRegion intersected(const QRect &r) const Q_REQUIRED_RESULT;
-    QRegion subtracted(const QRegion &r) const Q_REQUIRED_RESULT;
-    QRegion xored(const QRegion &r) const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QRegion united(const QRegion &r) const;
+    Q_REQUIRED_RESULT QRegion united(const QRect &r) const;
+    Q_REQUIRED_RESULT QRegion intersected(const QRegion &r) const;
+    Q_REQUIRED_RESULT QRegion intersected(const QRect &r) const;
+    Q_REQUIRED_RESULT QRegion subtracted(const QRegion &r) const;
+    Q_REQUIRED_RESULT QRegion xored(const QRegion &r) const;
 
 #if QT_DEPRECATED_SINCE(5, 0)
-    inline QT_DEPRECATED QRegion unite(const QRegion &r) const Q_REQUIRED_RESULT { return united(r); }
-    inline QT_DEPRECATED QRegion unite(const QRect &r) const Q_REQUIRED_RESULT { return united(r); }
-    inline QT_DEPRECATED QRegion intersect(const QRegion &r) const Q_REQUIRED_RESULT { return intersected(r); }
-    inline QT_DEPRECATED QRegion intersect(const QRect &r) const Q_REQUIRED_RESULT { return intersected(r); }
-    inline QT_DEPRECATED QRegion subtract(const QRegion &r) const Q_REQUIRED_RESULT { return subtracted(r); }
-    inline QT_DEPRECATED QRegion eor(const QRegion &r) const Q_REQUIRED_RESULT { return xored(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion unite(const QRegion &r) const { return united(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion unite(const QRect &r) const { return united(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion intersect(const QRegion &r) const { return intersected(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion intersect(const QRect &r) const { return intersected(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion subtract(const QRegion &r) const { return subtracted(r); }
+    Q_REQUIRED_RESULT inline QT_DEPRECATED QRegion eor(const QRegion &r) const { return xored(r); }
 #endif
 
     bool intersects(const QRegion &r) const;
     bool intersects(const QRect &r) const;
 
-    QRect boundingRect() const;
+    QRect boundingRect() const Q_DECL_NOTHROW;
     QVector<QRect> rects() const;
     void setRects(const QRect *rect, int num);
-    int rectCount() const;
+    int rectCount() const Q_DECL_NOTHROW;
 #ifdef Q_COMPILER_MANGLES_RETURN_TYPE
     // ### Qt 6: remove these, they're kept for MSVC compat
     const QRegion operator|(const QRegion &r) const;
@@ -165,6 +178,7 @@ Q_GUI_EXPORT
     static const struct QRegionData shared_empty;
     static void cleanUp(QRegionData *x);
 };
+Q_DECLARE_SHARED_NOT_MOVABLE_UNTIL_QT6(QRegion)
 
 /*****************************************************************************
   QRegion stream functions

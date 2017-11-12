@@ -45,31 +45,11 @@ RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent
   setEnabled(false);
 }
 
-void RangeSelector::updateWidgets()
-{
-  if(parent->currentColor >= FieldColors::numOfNonColors)
-  {
-    setEnabled(true);
-    updateSlider(parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
-  }
-  else
-    setEnabled(false);
-}
-
 void RangeSelector::setEnabled(bool value)
 {
   slider->setEnabled(value);
   lower->setEnabled(value);
   upper->setEnabled(value);
-}
-
-void RangeSelector::updateColorCalibration(int value, bool isMin)
-{
-  if(parent->currentColor >= FieldColors::numOfNonColors)
-  {
-    updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
 }
 
 void RangeSelector::sliderLowerChanged(int value)
@@ -92,4 +72,34 @@ void RangeSelector::labelLowerChanged(QString value)
 void RangeSelector::labelUpperChanged(QString value)
 {
   slider->setUpperValue(value.toInt());
+}
+
+void HueFieldSelector::updateWidgets()
+{
+  setEnabled(true);
+
+  updateSlider(parent->colorCalibrationView.console.colorCalibration.fieldHue);
+}
+
+void HueFieldSelector::updateColorCalibration(int value, bool isMin)
+{
+  RangeSelector::updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration.fieldHue);
+
+  parent->colorCalibrationView.console.colorCalibrationChanged = true;
+}
+
+void HueSelector::updateWidgets()
+{
+  ASSERT(parent->currentColor >= FieldColors::numOfNonColors);
+
+  setEnabled(true);
+  updateSlider(parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
+}
+
+void HueSelector::updateColorCalibration(int value, bool isMin)
+{
+  ASSERT(parent->currentColor >= FieldColors::numOfNonColors);
+
+  RangeSelector::updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
+  parent->colorCalibrationView.console.colorCalibrationChanged = true;
 }

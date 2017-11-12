@@ -1,5 +1,6 @@
 /**
  * @author Felix Thielke
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
@@ -11,12 +12,17 @@ namespace PixelTypes
 {
   GLOBAL_ENUM(PixelType,
   {,
-    RGB,       // useful for DebugImages?
-    BGRA,      // the format that QImage uses
-    YUYV,      // the format the NaoCamera supplies
-    YUV,       // useful for DebugImages?
-    Colored,   // format of the colored image in ECImage
-    Grayscale, // format of the grayscaled image in ECImage
+    RGB,              // useful for DebugImages?
+    BGRA,             // the format that QImage uses
+    YUYV,             // the format the NaoCamera supplies
+    YUV,              // useful for DebugImages?
+    Colored,          // format of the colored image in ECImage
+    Grayscale,        // format of the grayscaled image in ECImage
+    Hue,              // hue channel of a YHS image
+    Binary,           //
+    Edge2,            //
+    Edge2MonoAvg,     //
+    Edge2MonoAbsAvg,  //
   });
 
   struct RGBPixel
@@ -104,8 +110,30 @@ namespace PixelTypes
     };
   };
 
-  using GrayscaledPixel = unsigned char;
   using ColoredPixel = FieldColors::Color;
+  using GrayscaledPixel = unsigned char;
+  class HuePixel
+  {
+  private:
+    unsigned char value = 0;
+
+  public:
+    constexpr HuePixel() = default;
+    constexpr HuePixel(unsigned char hue) : value(hue) {}
+
+    operator unsigned char& () { return value; }
+    constexpr operator const unsigned char& () const { return value; }
+
+    constexpr HuePixel operator-() const { return -value; }
+    HuePixel& operator+=(unsigned char hue) { value += hue; return *this; }
+    HuePixel& operator-=(unsigned char hue) { value -= hue; return *this; }
+    HuePixel& operator*=(unsigned char hue) { value *= hue; return *this; }
+    HuePixel& operator/=(unsigned char hue) { value /= hue; return *this; }
+  };
+
+  using BinaryPixel = bool;
+
+  struct Edge2Pixel { unsigned char filterX, filterY; Edge2Pixel() = default; Edge2Pixel(unsigned char e1, unsigned char e2) : filterX(e1), filterY(e2) {} };
 
   constexpr size_t pixelSize(const PixelType type)
   {
@@ -115,6 +143,9 @@ namespace PixelTypes
                  : (type == YUV ? sizeof(YUVPixel)
                     : (type == Grayscale ? sizeof(GrayscaledPixel)
                        : (type == Colored ? sizeof(ColoredPixel)
-                          : 0)))));
+                          : (type == Hue ? sizeof(HuePixel)
+                             : ((type == Edge2 || type == Edge2MonoAvg || type == Edge2MonoAbsAvg) ? sizeof(Edge2Pixel)
+                                : (type == Binary ? sizeof(BinaryPixel)
+                                   : 0))))))));
   }
 }

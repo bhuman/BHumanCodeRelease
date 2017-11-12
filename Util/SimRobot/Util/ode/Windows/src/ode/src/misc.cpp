@@ -147,7 +147,7 @@ dReal dRandReal()
 //****************************************************************************
 // matrix utility stuff
 
-void dPrintMatrix (const dReal *A, int n, int m, char *fmt, FILE *f)
+void dPrintMatrix (const dReal *A, int n, int m, const char *fmt, FILE *f)
 {
     int skip = dPAD(m);
     const dReal *Arow = A;

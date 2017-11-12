@@ -16,11 +16,12 @@ STREAMABLE_WITH_BASE(JointRequest, JointAngles,
   Angle mirror(const Joints::Joint joint) const;
 
   /** Checkes if the JointRequest is valide. */
-  bool isValid() const;
-  ,
+  bool isValid() const,
+
   (StiffnessData) stiffnessData, /**< the stiffness for all joints */
 });
 
+struct HeadJointRequest : public JointRequest {};
 struct ArmJointRequest : public JointRequest {};
 struct LegJointRequest : public JointRequest
 {

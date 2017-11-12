@@ -182,6 +182,10 @@ public:
         ddependencycount_t member_count, dCallReleaseeID dependent_releasee/*=NULL*/, 
         dThreadedCallFunction *call_func, void *call_context, 
         const char *call_name/*=NULL*/) const;
+    void PostThreadedCallsIndexOverridenGroup(int *out_summary_fault/*=NULL*/, 
+        ddependencycount_t member_count, dCallReleaseeID dependent_releasee/*=NULL*/, 
+        dThreadedCallFunction *call_func, void *call_context, unsigned index_override, 
+        const char *call_name/*=NULL*/) const;
     void PostThreadedCallForUnawareReleasee(int *out_summary_fault/*=NULL*/, 
         dCallReleaseeID *out_post_releasee/*=NULL*/, ddependencycount_t dependencies_count, dCallReleaseeID dependent_releasee/*=NULL*/, 
         dCallWaitID call_wait/*=NULL*/, 

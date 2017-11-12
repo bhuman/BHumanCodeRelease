@@ -88,7 +88,7 @@ public:
   void update();
   void paintEvent(QPaintEvent* event);
 
-  public slots:
+public slots:
   void forceUpdate();
 
 private:
@@ -96,4 +96,3 @@ private:
   void newSection();
   QSize sizeHint() const { return QSize(260, 400); }
 };
-

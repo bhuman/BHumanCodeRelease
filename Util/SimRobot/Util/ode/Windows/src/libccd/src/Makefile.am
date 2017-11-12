@@ -1,5 +1,6 @@
-SUBDIRS = . testsuites
+SUBDIRS = testsuites
 
+AM_CPPFLAGS = -I./custom
 AM_CFLAGS = -std=c99
 
 noinst_LTLIBRARIES = libccd.la
@@ -10,10 +11,10 @@ libccd_la_SOURCES = alloc.c ccd/alloc.h \
 		ccd.c ccd/ccd.h \
 		ccd/list.h \
 		polytope.c ccd/polytope.h \
-		ccd/quat.h \
+		ccd/quat.h custom/ccdcustom/quat.h \
 		ccd/simplex.h \
 		support.c ccd/support.h \
-		vec3.c ccd/vec3.h \
+		vec3.c ccd/vec3.h custom/ccdcustom/vec3.h \
         mpr.c
 
 nodist_libccd_la_SOURCES = ccd/precision.h

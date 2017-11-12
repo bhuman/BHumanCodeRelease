@@ -27,18 +27,10 @@ SimRobotEditor = cppDynamicLibrary + {
   includePaths = {
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
     if (platform == "Linux") {
-      "/usr/include/qt5"
-      "/usr/include/qt5/QtCore"
-      "/usr/include/qt5/QtGui"
-      "/usr/include/qt5/QtWidgets"
-      "/usr/include/qt"
-      "/usr/include/qt/QtCore"
-      "/usr/include/qt/QtGui"
-      "/usr/include/qt/QtWidgets"
-      "/usr/include/x86_64-linux-gnu/qt5"
-      "/usr/include/x86_64-linux-gnu/qt5/QtCore"
-      "/usr/include/x86_64-linux-gnu/qt5/QtGui"
-      "/usr/include/x86_64-linux-gnu/qt5/QtWidgets"
+      "$(qtinclude)"
+      "$(qtinclude)/QtCore"
+      "$(qtinclude)/QtGui"
+      "$(qtinclude)/QtWidgets"
     } else if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"

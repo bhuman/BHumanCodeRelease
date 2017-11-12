@@ -11,17 +11,17 @@ void AutomaticCameraCalibratorHandlerDeletion::deliverPoint(const Vector2i& poin
   {
     std::stringstream line1;
     line1 << "set module:AutomaticCameraCalibrator:deletionCurrentCamera " << (upper ? "upper;" : "lower;");
-    robotConsole->handleConsoleLine(line1.str());
+    robotConsole->handleConsole(line1.str());
     std::stringstream line2;
     line2 << "set module:AutomaticCameraCalibrator:deletionPoint x = ";
     line2 << point.x();
     line2 << "; y = ";
     line2 << point.y();
     line2 << ";";
-    robotConsole->handleConsoleLine(line2.str());
+    robotConsole->handleConsole(line2.str());
     std::stringstream line3;
     line3 << "dr module:AutomaticCameraCalibrator:deletePoint";
-    robotConsole->handleConsoleLine(line3.str());
+    robotConsole->handleConsole(line3.str());
   }
 }
 

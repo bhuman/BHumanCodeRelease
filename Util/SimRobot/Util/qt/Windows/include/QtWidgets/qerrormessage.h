@@ -40,12 +40,14 @@
 #ifndef QERRORMESSAGE_H
 #define QERRORMESSAGE_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
+
+#ifndef QT_NO_ERRORMESSAGE
+
 #include <QtWidgets/qdialog.h>
 
 QT_BEGIN_NAMESPACE
 
-
-#ifndef QT_NO_ERRORMESSAGE
 
 class QErrorMessagePrivate;
 
@@ -71,8 +73,8 @@ private:
     Q_DISABLE_COPY(QErrorMessage)
 };
 
-#endif // QT_NO_ERRORMESSAGE
-
 QT_END_NAMESPACE
+
+#endif // QT_NO_ERRORMESSAGE
 
 #endif // QERRORMESSAGE_H

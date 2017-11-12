@@ -40,6 +40,7 @@
 #ifndef QSPLITTER_H
 #define QSPLITTER_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qframe.h>
 #include <QtWidgets/qsizepolicy.h>
 
@@ -70,6 +71,7 @@ public:
 
     void addWidget(QWidget *widget);
     void insertWidget(int index, QWidget *widget);
+    QWidget *replaceWidget(int index, QWidget *widget);
 
     void setOrientation(Qt::Orientation);
     Qt::Orientation orientation() const;

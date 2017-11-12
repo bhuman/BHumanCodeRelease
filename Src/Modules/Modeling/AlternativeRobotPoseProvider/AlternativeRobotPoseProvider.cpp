@@ -12,12 +12,12 @@
 
 MAKE_MODULE(AlternativeRobotPoseProvider, modeling)
 
-
 void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& alternativeRobotPoseHypothesis)
 {
   clusters.clear();
   alternativeRobotPoseHypothesis.isValid = false;
-  if((theGameInfo.state == STATE_SET || theGameInfo.state == STATE_INITIAL) && !theGroundContactState.contact)
+  if(((theGameInfo.state == STATE_SET || theGameInfo.state == STATE_INITIAL) && !theGroundContactState.contact) || // Robot was probably manually placed
+     (!theMotionInfo.isStanding() && theMotionInfo.motion != MotionInfo::walk && theMotionInfo.motion != MotionInfo::kick)) // Robot has done something that is not good for odometry/localization
   {
     observations.clear();
     return;
@@ -40,7 +40,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
   clusterObservations();
   unsigned int bestClusterIdx = 0;
   int bestClusterSize = clusters[0].numOfPoses;
-  for(unsigned int i=1; i<clusters.size(); i++)
+  for(unsigned int i = 1; i < clusters.size(); i++)
   {
     if(clusters[i].numOfPoses > bestClusterSize)
     {
@@ -78,9 +78,12 @@ void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* f
 
 void AlternativeRobotPoseProvider::removeOldObservations()
 {
+  int timeToKeepObservation = maxTimeToKeepObservation;
+  if(!theRobotInfo.hasFeature(RobotInfo::zGyro))
+    timeToKeepObservation /= 2;
   while(!observations.empty())
   {
-    if(theFrameInfo.getTimeSince(observations.back().timeOfObservation) > maxTimeToKeepObservation)
+    if(theFrameInfo.getTimeSince(observations.back().timeOfObservation) > timeToKeepObservation)
       observations.pop_back();
     else
       break;
@@ -118,7 +121,7 @@ void AlternativeRobotPoseProvider::clusterObservations()
     ASSERT(c.numOfPoses > 0); // Should not happen!
     ASSERT(c.timeOfNewestObservation > 0); // Should not happen!
     c.pose.translation /= static_cast<float>(c.numOfPoses);
-    c.pose.rotation = std::atan2(angleY,angleX);
+    c.pose.rotation = std::atan2(angleY, angleX);
     clusters.push_back(c);
   }
 }

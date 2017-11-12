@@ -42,20 +42,26 @@
 
 //using namespace ode;
 
-static dWorld   dyn_world;
-static dBody    dyn_bodies[N_BODIES];
-static dReal    bodies_sides[N_BODIES][3];
+struct GlobalVars
+{
+    dWorld   dyn_world;
+    dBody    dyn_bodies[N_BODIES];
+    dReal    bodies_sides[N_BODIES][3];
 
-static dSpaceID coll_space_id;
-static dJointID plane2d_joint_ids[N_BODIES];
-static dJointGroup
-                coll_contacts;
+    dSpaceID coll_space_id;
+    dJointID plane2d_joint_ids[N_BODIES];
+    dJointGroup coll_contacts;
+};
+
+static GlobalVars *g_globals_ptr = NULL;
 
 
 
 static void     cb_start ()
 /*************************/
 {
+    dAllocateODEDataForThread(dAllocateMaskAll);
+
     static float    xyz[3] = { 0.5f*STAGE_SIZE, 0.5f*STAGE_SIZE, 0.65f*STAGE_SIZE};
     static float    hpr[3] = { 90.0f, -90.0f, 0 };
 
@@ -88,8 +94,8 @@ static void     cb_near_collision (void *, dGeomID o1, dGeomID o2)
 
     if (dCollide (o1, o2, 1, &contact.geom, sizeof (dContactGeom)))
     {
-        dJointID c = dJointCreateContact (dyn_world.id(),
-                        coll_contacts.id (), &contact);
+        dJointID c = dJointCreateContact (g_globals_ptr->dyn_world.id(),
+                        g_globals_ptr->coll_contacts.id (), &contact);
         dJointAttach (c, b1, b2);
     }
 }
@@ -117,7 +123,7 @@ static void     cb_sim_step (int pause)
 
         angle += REAL( 0.01 );
 
-        track_to_pos (dyn_bodies[0], plane2d_joint_ids[0],
+        track_to_pos (g_globals_ptr->dyn_bodies[0], g_globals_ptr->plane2d_joint_ids[0],
             dReal( STAGE_SIZE/2 + STAGE_SIZE/2.0 * cos (angle) ),
             dReal( STAGE_SIZE/2 + STAGE_SIZE/2.0 * sin (angle) ));
 
@@ -126,16 +132,16 @@ static void     cb_sim_step (int pause)
         /* { */
             /* double   p = 1 + b / (double) N_BODIES; */
             /* double   q = 2 - b / (double) N_BODIES; */
-            /* dyn_bodies[b].addForce (f0 * cos (p*angle), f0 * sin (q*angle), 0); */
+            /* g_globals_ptr->dyn_bodies[b].addForce (f0 * cos (p*angle), f0 * sin (q*angle), 0); */
         /* } */
-        /* dyn_bodies[0].addTorque (0, 0, 0.1); */
+        /* g_globals_ptr->dyn_bodies[0].addTorque (0, 0, 0.1); */
 
         const int n = 10;
         for (int i = 0; i < n; i ++)
         {
-            dSpaceCollide (coll_space_id, 0, &cb_near_collision);
-            dyn_world.step (dReal(TIME_STEP/n));
-            coll_contacts.empty ();
+            dSpaceCollide (g_globals_ptr->coll_space_id, 0, &cb_near_collision);
+            g_globals_ptr->dyn_world.step (dReal(TIME_STEP/n));
+            g_globals_ptr->coll_contacts.empty ();
         }
     }
 
@@ -144,13 +150,13 @@ static void     cb_sim_step (int pause)
         // @@@ hack Plane2D constraint error reduction here:
         for (int b = 0; b < N_BODIES; b ++)
         {
-            const dReal     *rot = dBodyGetAngularVel (dyn_bodies[b].id());
+            const dReal     *rot = dBodyGetAngularVel (g_globals_ptr->dyn_bodies[b].id());
             const dReal     *quat_ptr;
             dReal           quat[4],
                             quat_len;
 
 
-            quat_ptr = dBodyGetQuaternion (dyn_bodies[b].id());
+            quat_ptr = dBodyGetQuaternion (g_globals_ptr->dyn_bodies[b].id());
             quat[0] = quat_ptr[0];
             quat[1] = 0;
             quat[2] = 0;
@@ -158,8 +164,8 @@ static void     cb_sim_step (int pause)
             quat_len = sqrt (quat[0] * quat[0] + quat[3] * quat[3]);
             quat[0] /= quat_len;
             quat[3] /= quat_len;
-            dBodySetQuaternion (dyn_bodies[b].id(), quat);
-            dBodySetAngularVel (dyn_bodies[b].id(), 0, 0, rot[2]);
+            dBodySetQuaternion (g_globals_ptr->dyn_bodies[b].id(), quat);
+            dBodySetAngularVel (g_globals_ptr->dyn_bodies[b].id(), 0, 0, rot[2]);
         }
     }
 # endif  /* ] */
@@ -170,13 +176,13 @@ static void     cb_sim_step (int pause)
         // @@@ friction
         for (int b = 0; b < N_BODIES; b ++)
         {
-            const dReal *vel = dBodyGetLinearVel (dyn_bodies[b].id()),
-                        *rot = dBodyGetAngularVel (dyn_bodies[b].id());
+            const dReal *vel = dBodyGetLinearVel (g_globals_ptr->dyn_bodies[b].id()),
+                        *rot = dBodyGetAngularVel (g_globals_ptr->dyn_bodies[b].id());
             dReal       s = 1.00;
             dReal       t = 0.99;
 
-            dBodySetLinearVel (dyn_bodies[b].id(), s*vel[0],s*vel[1],s*vel[2]);
-            dBodySetAngularVel (dyn_bodies[b].id(),t*rot[0],t*rot[1],t*rot[2]);
+            dBodySetLinearVel (g_globals_ptr->dyn_bodies[b].id(), s*vel[0],s*vel[1],s*vel[2]);
+            dBodySetAngularVel (g_globals_ptr->dyn_bodies[b].id(),t*rot[0],t*rot[1],t*rot[2]);
         }
     }
 # endif  /* ] */
@@ -193,9 +199,9 @@ static void     cb_sim_step (int pause)
             else
             dsSetColor (0, 0.5, 1.0);
 #ifdef dDOUBLE
-            dsDrawBoxD (dyn_bodies[b].getPosition(), dyn_bodies[b].getRotation(), bodies_sides[b]);
+            dsDrawBoxD (g_globals_ptr->dyn_bodies[b].getPosition(), g_globals_ptr->dyn_bodies[b].getRotation(), g_globals_ptr->bodies_sides[b]);
 #else
-            dsDrawBox (dyn_bodies[b].getPosition(), dyn_bodies[b].getRotation(), bodies_sides[b]);
+            dsDrawBox (g_globals_ptr->dyn_bodies[b].getPosition(), g_globals_ptr->dyn_bodies[b].getRotation(), g_globals_ptr->bodies_sides[b]);
 #endif
         }
     }
@@ -214,7 +220,9 @@ extern int      main
     dsFunctions drawstuff_functions;
 
 
-    dInitODE();
+    dInitODE2(0);
+
+    g_globals_ptr = new GlobalVars();
 
     // dynamic world
 
@@ -222,11 +230,11 @@ extern int      main
     dReal  err_reduct;// = TIME_STEP * K_SPRING * cf_mixing;
     err_reduct = REAL( 0.5 );
     cf_mixing = REAL( 0.001 );
-    dWorldSetERP (dyn_world.id (), err_reduct);
-    dWorldSetCFM (dyn_world.id (), cf_mixing);
-    dyn_world.setGravity (0, 0.0, -1.0);
+    dWorldSetERP (g_globals_ptr->dyn_world.id (), err_reduct);
+    dWorldSetCFM (g_globals_ptr->dyn_world.id (), cf_mixing);
+    g_globals_ptr->dyn_world.setGravity (0, 0.0, -1.0);
 
-    coll_space_id = dSimpleSpaceCreate (0);
+    g_globals_ptr->coll_space_id = dSimpleSpaceCreate (0);
 
     // dynamic bodies
     for (b = 0; b < N_BODIES; b ++)
@@ -236,45 +244,45 @@ extern int      main
         dReal  y = dReal( (0.5 + (b % l)) / l * STAGE_SIZE );
         dReal  z = REAL( 1.0 ) + REAL( 0.1 ) * (dReal)drand48();
 
-        bodies_sides[b][0] = dReal( 5 * (0.2 + 0.7*drand48()) / sqrt((double)N_BODIES) );
-        bodies_sides[b][1] = dReal( 5 * (0.2 + 0.7*drand48()) / sqrt((double)N_BODIES) );
-        bodies_sides[b][2] = z;
+        g_globals_ptr->bodies_sides[b][0] = dReal( 5 * (0.2 + 0.7*drand48()) / sqrt((double)N_BODIES) );
+        g_globals_ptr->bodies_sides[b][1] = dReal( 5 * (0.2 + 0.7*drand48()) / sqrt((double)N_BODIES) );
+        g_globals_ptr->bodies_sides[b][2] = z;
 
-        dyn_bodies[b].create (dyn_world);
-        dyn_bodies[b].setPosition (x, y, z/2);
-        dyn_bodies[b].setData ((void*) (size_t)b);
-        dBodySetLinearVel (dyn_bodies[b].id (),
+        g_globals_ptr->dyn_bodies[b].create (g_globals_ptr->dyn_world);
+        g_globals_ptr->dyn_bodies[b].setPosition (x, y, z/2);
+        g_globals_ptr->dyn_bodies[b].setData ((void*) (size_t)b);
+        dBodySetLinearVel (g_globals_ptr->dyn_bodies[b].id (),
             dReal( 3 * (drand48 () - 0.5) ), 
 			dReal( 3 * (drand48 () - 0.5) ), 0);
 
         dMass m;
-        m.setBox (1, bodies_sides[b][0],bodies_sides[b][1],bodies_sides[b][2]);
-        m.adjust (REAL(0.1) * bodies_sides[b][0] * bodies_sides[b][1]);
-        dyn_bodies[b].setMass (&m);
+        m.setBox (1, g_globals_ptr->bodies_sides[b][0],g_globals_ptr->bodies_sides[b][1],g_globals_ptr->bodies_sides[b][2]);
+        m.adjust (REAL(0.1) * g_globals_ptr->bodies_sides[b][0] * g_globals_ptr->bodies_sides[b][1]);
+        g_globals_ptr->dyn_bodies[b].setMass (&m);
 
-        plane2d_joint_ids[b] = dJointCreatePlane2D (dyn_world.id (), 0);
-        dJointAttach (plane2d_joint_ids[b], dyn_bodies[b].id (), 0);
+        g_globals_ptr->plane2d_joint_ids[b] = dJointCreatePlane2D (g_globals_ptr->dyn_world.id (), 0);
+        dJointAttach (g_globals_ptr->plane2d_joint_ids[b], g_globals_ptr->dyn_bodies[b].id (), 0);
     }
 
-    dJointSetPlane2DXParam (plane2d_joint_ids[0], dParamFMax, 10);
-    dJointSetPlane2DYParam (plane2d_joint_ids[0], dParamFMax, 10);
+    dJointSetPlane2DXParam (g_globals_ptr->plane2d_joint_ids[0], dParamFMax, 10);
+    dJointSetPlane2DYParam (g_globals_ptr->plane2d_joint_ids[0], dParamFMax, 10);
 
 
     // collision geoms and joints
-    dCreatePlane (coll_space_id,  1, 0, 0, 0);
-    dCreatePlane (coll_space_id, -1, 0, 0, -STAGE_SIZE);
-    dCreatePlane (coll_space_id,  0,  1, 0, 0);
-    dCreatePlane (coll_space_id,  0, -1, 0, -STAGE_SIZE);
+    dCreatePlane (g_globals_ptr->coll_space_id,  1, 0, 0, 0);
+    dCreatePlane (g_globals_ptr->coll_space_id, -1, 0, 0, -STAGE_SIZE);
+    dCreatePlane (g_globals_ptr->coll_space_id,  0,  1, 0, 0);
+    dCreatePlane (g_globals_ptr->coll_space_id,  0, -1, 0, -STAGE_SIZE);
 
     for (b = 0; b < N_BODIES; b ++)
     {
         dGeomID coll_box_id;
-        coll_box_id = dCreateBox (coll_space_id,
-            bodies_sides[b][0], bodies_sides[b][1], bodies_sides[b][2]);
-        dGeomSetBody (coll_box_id, dyn_bodies[b].id ());
+        coll_box_id = dCreateBox (g_globals_ptr->coll_space_id,
+            g_globals_ptr->bodies_sides[b][0], g_globals_ptr->bodies_sides[b][1], g_globals_ptr->bodies_sides[b][2]);
+        dGeomSetBody (coll_box_id, g_globals_ptr->dyn_bodies[b].id ());
     }
 
-    coll_contacts.create ();
+    g_globals_ptr->coll_contacts.create ();
 
     {
         // simulation loop (by drawstuff lib)
@@ -288,6 +296,9 @@ extern int      main
         dsSimulationLoop (argc, argv, 352,288,&drawstuff_functions);
     }
 
-	 dCloseODE();
+    delete g_globals_ptr;
+    g_globals_ptr = NULL;
+
+	dCloseODE();
     return 0;
 }

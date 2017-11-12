@@ -28,30 +28,76 @@
 
 // angular motor
 
-struct dxJointAMotor : public dxJoint
+typedef dxJoint dxJointAMotor_Parent;
+class dxJointAMotor:
+    public dxJointAMotor_Parent
 {
-    int num;                // number of axes (0..3)
-    int mode;               // a dAMotorXXX constant
-    int rel[3];             // what the axes are relative to (global,b1,b2)
-    dVector3 axis[3];       // three axes
-    dxJointLimitMotor limot[3]; // limit+motor info for axes
-    dReal angle[3];         // user-supplied angles for axes
-    // these vectors are used for calculating euler angles
-    dVector3 reference1;    // original axis[2], relative to body 1
-    dVector3 reference2;    // original axis[0], relative to body 2
+public:
+    dxJointAMotor(dxWorld *w);
+    virtual ~dxJointAMotor();
 
-
-    void computeGlobalAxes( dVector3 ax[3] );
-    void computeEulerAngles( dVector3 ax[3] );
-    void setEulerReferenceVectors();
-
-
-    dxJointAMotor( dxWorld *w );
-    virtual void getSureMaxInfo( SureMaxInfo* info );
-    virtual void getInfo1( Info1* info );
-    virtual void getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* info );
+public:
+    virtual void getSureMaxInfo(SureMaxInfo* info);
+    virtual void getInfo1(Info1* info);
+    virtual void getInfo2(dReal worldFPS, dReal worldERP, 
+        int rowskip, dReal *J1, dReal *J2,
+        int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+        int *findex);
     virtual dJointType type() const;
     virtual size_t size() const;
+
+public:
+    void setOperationMode(int mode);
+    int getOperationMode() const { return m_mode; }
+
+    void setNumAxes(unsigned num);
+    int getNumAxes() const { return m_num; }
+
+    dJointBodyRelativity getAxisBodyRelativity(unsigned anum) const;
+
+    void setAxisValue(unsigned anum, dJointBodyRelativity rel, dReal x, dReal y, dReal z);
+    void getAxisValue(dVector3 result, unsigned anum) const;
+
+private:
+    void doGetUserAxis(dVector3 result, unsigned anum) const;
+    void doGetEulerAxis(dVector3 result, unsigned anum) const;
+
+public:
+    void setAngleValue(unsigned anum, dReal angle);
+    dReal getAngleValue(unsigned anum) const { dAASSERT(dIN_RANGE(anum, dSA__MIN, dSA__MAX)); return m_angle[anum]; }
+
+    dReal calculateAngleRate(unsigned anum) const;
+
+    void setLimotParameter(unsigned anum, int limotParam, dReal value) { dAASSERT(dIN_RANGE(anum, dSA__MIN, dSA__MAX)); m_limot[anum].set(limotParam, value); }
+    dReal getLimotParameter(unsigned anum, int limotParam) const { dAASSERT(dIN_RANGE(anum, dSA__MIN, dSA__MAX)); return m_limot[anum].get(limotParam); }
+
+public:
+    void addTorques(dReal torque1, dReal torque2, dReal torque3);
+
+private:
+    void computeGlobalAxes(dVector3 ax[dSA__MAX]) const;
+    void doComputeGlobalUserAxes(dVector3 ax[dSA__MAX]) const;
+    void doComputeGlobalEulerAxes(dVector3 ax[dSA__MAX]) const;
+
+    void computeEulerAngles(dVector3 ax[dSA__MAX]);
+    void setEulerReferenceVectors();
+
+private:
+    inline dSpaceAxis BuildFirstBodyEulerAxis() const;
+    inline dJointConnectedBody BuildFirstEulerAxisBody() const;
+
+private:
+    friend struct dxAMotorJointPrinter;
+
+private:
+    int m_mode;                                   // a dAMotorXXX constant
+    unsigned m_num;                               // number of axes (0..3)
+    dJointBodyRelativity m_rel[dSA__MAX];         // what the axes are relative to (global,b1,b2)
+    dVector3 m_axis[dSA__MAX];                    // three axes
+    // these vectors are used for calculating Euler angles
+    dVector3 m_references[dJCB__MAX];             // original axis[2], relative to body 1; original axis[0], relative to body 2
+    dReal m_angle[dSA__MAX];                      // user-supplied angles for axes
+    dxJointLimitMotor m_limot[dJBR__MAX];         // limit+motor info for axes
 };
 
 

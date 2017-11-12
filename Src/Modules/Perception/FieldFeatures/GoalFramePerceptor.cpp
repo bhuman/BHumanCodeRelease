@@ -9,10 +9,15 @@ void GoalFramePerceptor::update(GoalFrame& goalFrame)
 
   if(searchByBigT(goalFrame) ||
      searchByBigX(goalFrame) ||
-     searchByTT(goalFrame))
+     searchByTT(goalFrame) ||
+     searchByGPAndLine(goalFrame))
     goalFrame.isValid = goalFrame.isGroundLineValid = true;
   else
     goalFrame.isValid = false;
+
+  // QUICK HACK RoboCup17 (Jesse)
+  // Sometimes there are a few misdetections, but the benefit of searching them right now is not big enough.
+  goalFrame.isValid = false;
 }
 
 bool GoalFramePerceptor::searchByBigT(GoalFrame& goalFrame) const
@@ -74,11 +79,22 @@ bool GoalFramePerceptor::searchByTT(GoalFrame& goalFrame) const
   for(unsigned i = 0u; i < useTIntersections.size(); i++)
     for(unsigned j = i + 1u; j < useTIntersections.size(); j++)
       if(std::abs((useTIntersections[i]->pos - useTIntersections[j]->pos).norm() - diffTT) < tTDistanceThreshold)
-        if(std::abs(Angle(std::abs(useTIntersections[i]->dir1.angle() - useTIntersections[j]->dir1.angle()) - pi).normalize()) < allowedTTAngleDivergence)
+        if(Angle(useTIntersections[i]->dir1.angle()).diffAbs(useTIntersections[j]->dir1.angle()) < allowedTTAngleDivergence)
           if(calcGoalFrame(Pose2f(Angle(useTIntersections[i]->dir2.angle() + pi_2).normalize(),
                                   useTIntersections[i]->pos + 0.5f * (useTIntersections[j]->pos - useTIntersections[i]->pos)),
                            yTTPos, goalFrame))
             return true;
+
+  return false;
+}
+
+bool GoalFramePerceptor::searchByGPAndLine(GoalFrame& goalFrame) const
+{
+  if(theGoalPostPercept.wasSeen)
+    for(LinesPercept::Line line : theLinesPercept.lines)
+      if(std::abs(Geometry::getDistanceToLine(line.line, theGoalPostPercept.positionOnField)) < allowedGoalPostToLineDistance)
+        if(calcGoalFrame(Pose2f(Angle(line.line.direction.angle() + 90_deg).normalize(), line.line.base), theFieldDimensions.yPosLeftGoal, goalFrame))
+          goalFrame.isGroundLineValid = true;
 
   return false;
 }

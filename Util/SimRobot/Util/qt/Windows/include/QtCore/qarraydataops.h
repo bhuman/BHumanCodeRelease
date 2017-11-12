@@ -49,6 +49,11 @@ QT_BEGIN_NAMESPACE
 
 namespace QtPrivate {
 
+QT_WARNING_PUSH
+#if defined(Q_CC_GNU) && Q_CC_GNU >= 700
+QT_WARNING_DISABLE_GCC("-Wstringop-overflow")
+#endif
+
 template <class T>
 struct QPodArrayOps
     : QTypedArrayData<T>
@@ -131,6 +136,7 @@ struct QPodArrayOps
         this->size -= (e - b);
     }
 };
+QT_WARNING_POP
 
 template <class T>
 struct QGenericArrayOps
@@ -145,7 +151,7 @@ struct QGenericArrayOps
 
         T *const begin = this->begin();
         do {
-            new (begin + this->size) T();
+            new (begin + this->size) T;
         } while (uint(++this->size) != newSize);
     }
 
@@ -319,7 +325,8 @@ struct QMovableArrayOps
                 , end(finish)
                 , displace(diff)
             {
-                ::memmove(begin + displace, begin, (end - begin) * sizeof(T));
+                ::memmove(static_cast<void *>(begin + displace), static_cast<void *>(begin),
+                          (end - begin) * sizeof(T));
             }
 
             void commit() { displace = 0; }
@@ -327,7 +334,8 @@ struct QMovableArrayOps
             ~ReversibleDisplace()
             {
                 if (displace)
-                    ::memmove(begin, begin + displace, (end - begin) * sizeof(T));
+                    ::memmove(static_cast<void *>(begin), static_cast<void *>(begin + displace),
+                              (end - begin) * sizeof(T));
             }
 
             T *const begin;
@@ -384,7 +392,7 @@ struct QMovableArrayOps
 
             ~Mover()
             {
-                ::memmove(destination, source, n * sizeof(T));
+                ::memmove(static_cast<void *>(destination), static_cast<const void *>(source), n * sizeof(T));
                 size -= (source - destination);
             }
 
@@ -409,18 +417,18 @@ struct QArrayOpsSelector
 
 template <class T>
 struct QArrayOpsSelector<T,
-    typename QEnableIf<
-        !QTypeInfo<T>::isComplex && !QTypeInfo<T>::isStatic
-    >::Type>
+    typename std::enable_if<
+        !QTypeInfoQuery<T>::isComplex && QTypeInfoQuery<T>::isRelocatable
+    >::type>
 {
     typedef QPodArrayOps<T> Type;
 };
 
 template <class T>
 struct QArrayOpsSelector<T,
-    typename QEnableIf<
-        QTypeInfo<T>::isComplex && !QTypeInfo<T>::isStatic
-    >::Type>
+    typename std::enable_if<
+        QTypeInfoQuery<T>::isComplex && QTypeInfoQuery<T>::isRelocatable
+    >::type>
 {
     typedef QMovableArrayOps<T> Type;
 };

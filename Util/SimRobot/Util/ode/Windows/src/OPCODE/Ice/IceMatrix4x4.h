@@ -43,25 +43,27 @@
 		inline_						~Matrix4x4()								{}
 
 		//! Assign values (rotation only)
-		inline_	Matrix4x4&			Set(	float m00, float m01, float m02,
-											float m10, float m11, float m12,
-											float m20, float m21, float m22)
+		template<typename trotationfloat>
+		inline_	Matrix4x4&			Set(	trotationfloat m00, trotationfloat m01, trotationfloat m02,
+											trotationfloat m10, trotationfloat m11, trotationfloat m12,
+											trotationfloat m20, trotationfloat m21, trotationfloat m22)
 									{
-										m[0][0] = m00;	m[0][1] = m01;	m[0][2] = m02;
-										m[1][0] = m10;	m[1][1] = m11;	m[1][2] = m12;
-										m[2][0] = m20;	m[2][1] = m21;	m[2][2] = m22;
+										m[0][0] = (float)m00;	m[0][1] = (float)m01;	m[0][2] = (float)m02;
+										m[1][0] = (float)m10;	m[1][1] = (float)m11;	m[1][2] = (float)m12;
+										m[2][0] = (float)m20;	m[2][1] = (float)m21;	m[2][2] = (float)m22;
 										return *this;
 									}
 		//! Assign values
-		inline_	Matrix4x4&			Set(	float m00, float m01, float m02, float m03,
-											float m10, float m11, float m12, float m13,
-											float m20, float m21, float m22, float m23,
-											float m30, float m31, float m32, float m33)
+		template<typename trotationfloat, typename toffsetfloat, typename textrafloat>
+		inline_	Matrix4x4&			Set(	trotationfloat m00, trotationfloat m01, trotationfloat m02, textrafloat m03,
+											trotationfloat m10, trotationfloat m11, trotationfloat m12, textrafloat m13,
+											trotationfloat m20, trotationfloat m21, trotationfloat m22, textrafloat m23,
+											toffsetfloat m30, toffsetfloat m31, toffsetfloat m32, textrafloat m33)
 									{
-										m[0][0] = m00;	m[0][1] = m01;	m[0][2] = m02;	m[0][3] = m03;
-										m[1][0] = m10;	m[1][1] = m11;	m[1][2] = m12;	m[1][3] = m13;
-										m[2][0] = m20;	m[2][1] = m21;	m[2][2] = m22;	m[2][3] = m23;
-										m[3][0] = m30;	m[3][1] = m31;	m[3][2] = m32;	m[3][3] = m33;
+										m[0][0] = (float)m00;	m[0][1] = (float)m01;	m[0][2] = (float)m02;	m[0][3] = (float)m03;
+										m[1][0] = (float)m10;	m[1][1] = (float)m11;	m[1][2] = (float)m12;	m[1][3] = (float)m13;
+										m[2][0] = (float)m20;	m[2][1] = (float)m21;	m[2][2] = (float)m22;	m[2][3] = (float)m23;
+										m[3][0] = (float)m30;	m[3][1] = (float)m31;	m[3][2] = (float)m32;	m[3][3] = (float)m33;
 										return *this;
 									}
 

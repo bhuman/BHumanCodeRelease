@@ -332,13 +332,11 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   list5.append(makeValue((float) 0.f));
   pidy->appendRow(list5);
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Preview (in Frames)"), (int)0));
-
   parentItem->appendRow(makeStringAndValueRow(QString("Loop"), (bool)0));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Auto COM"), (bool)0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Stand Left"), (bool)0));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("ignore head"), (bool)1));
+  parentItem->appendRow(makeStringAndValueRow(QString("Ignore Head"), (bool)1));
 
   treeViewCommon->setModel(modelCommon);
   modelCommon->setColumnCount(5);
@@ -430,10 +428,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   parameters.kpy = 0.f;
   parameters.kdy = 0.f;
   parameters.kiy = 0.f;
-  parameters.preview = 150;
   parameters.comOrigin = Vector2f(10.f, 0.f);
   parameters.headOrigin = Vector2f::Zero();
-  parameters.autoComTra = false;
+  parameters.standLeft = true;
   parameters.ignoreHead = true;
   strcpy(parameters.name, "newKick");
 
@@ -766,7 +763,6 @@ void KickViewWidget::setArmsBackFix(int state)
   armsBackFix = (state == Qt::Checked);
 }
 
-
 void KickViewWidget::playWholeMotion()
 {
   if(parameters.numberOfPhases > 0)
@@ -780,7 +776,8 @@ void KickViewWidget::playWholeMotion()
     todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
     todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
-    todo << (armsBackFix ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
+    todo << "false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }
@@ -800,7 +797,8 @@ void KickViewWidget::playMotionTilActive()
     todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
     todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
-    todo << (armsBackFix ? "true" : "false") << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
+    todo << "false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }
@@ -829,10 +827,9 @@ void KickViewWidget::playMotion(int phase)
                                  + floatToStr(parameters.kdx) + "; kpy = "
                                  + floatToStr(parameters.kpy) + "; kiy = "
                                  + floatToStr(parameters.kiy) + "; kdy = "
-                                 + floatToStr(parameters.kdy) + "; preview = "
-                                 + floatToStr(parameters.preview) + "; loop = "
-                                 + boolToStr(parameters.loop) + "; autoComTra = "
-                                 + boolToStr(parameters.autoComTra) + "; ignoreHead = "
+                                 + floatToStr(parameters.kdy) + "; loop = "
+                                 + boolToStr(parameters.loop) + "; standLeft = "
+                                 + boolToStr(parameters.standLeft) + "; ignoreHead = "
                                  + boolToStr(parameters.ignoreHead) + "; phaseParameters = [";
 
   for(int i = 0; i < phase; i++)
@@ -1040,10 +1037,9 @@ void KickViewWidget::updateCommon()
   rootItem->child(9, 0)->child(0, 3)->setData(QVariant(parameters.kiy), Qt::DisplayRole);
   rootItem->child(9, 0)->child(0, 4)->setData(QVariant(parameters.kdy), Qt::DisplayRole);
 
-  rootItem->child(10, 1)->setData(QVariant(parameters.preview), Qt::DisplayRole);
-  rootItem->child(11, 1)->setData(QVariant(parameters.loop), Qt::DisplayRole);
-  rootItem->child(12, 1)->setData(QVariant(parameters.autoComTra), Qt::DisplayRole);
-  rootItem->child(13, 1)->setData(QVariant(parameters.ignoreHead), Qt::DisplayRole);
+  rootItem->child(10, 1)->setData(QVariant(parameters.loop), Qt::DisplayRole);
+  rootItem->child(11, 1)->setData(QVariant(parameters.standLeft), Qt::DisplayRole);
+  rootItem->child(12, 1)->setData(QVariant(parameters.ignoreHead), Qt::DisplayRole);
 
   connect(modelCommon, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updateCommonParameters(QStandardItem*)));
 }
@@ -1416,10 +1412,9 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
   int row = item->row();
   if(!mamaItem)
   {
-    if(row == 10) parameters.preview = item->data(Qt::DisplayRole).toInt();
-    if(row == 11) parameters.loop = item->data(Qt::DisplayRole).toInt();
-    if(row == 12) parameters.autoComTra = item->data(Qt::DisplayRole).toInt();
-    if(row == 13) parameters.ignoreHead = item->data(Qt::DisplayRole).toInt();
+    if(row == 10) parameters.loop = item->data(Qt::DisplayRole).toInt();
+    if(row == 11) parameters.standLeft = item->data(Qt::DisplayRole).toInt();
+    if(row == 12) parameters.ignoreHead = item->data(Qt::DisplayRole).toInt();
   }
   else
   {

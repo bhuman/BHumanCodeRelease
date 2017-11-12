@@ -4,10 +4,10 @@
  */
 
 #include "Motion.h"
-#include "Modules/Infrastructure/MotionLogDataProvider.h"
-#include "Modules/Infrastructure/NaoProvider.h"
-#include "Modules/MotionControl/MotionSelector.h"
-#include "Modules/MotionControl/SpecialActions.h"
+#include "Modules/Infrastructure/LogDataProvider/MotionLogDataProvider.h"
+#include "Modules/Infrastructure/NaoProvider/NaoProvider.h"
+#include "Modules/MotionControl/MotionSelector/MotionSelector.h"
+#include "Modules/MotionControl/SpecialActions/SpecialActions.h"
 #include "Platform/Time.h"
 
 Motion::Motion() :

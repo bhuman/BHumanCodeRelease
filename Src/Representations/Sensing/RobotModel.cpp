@@ -25,6 +25,11 @@ void RobotModel::setJointData(const JointAngles& jointAngles, const RobotDimensi
   soleLeft = limbs[Limbs::footLeft] + Vector3f(0.f, 0.f, -robotDimensions.footHeight);
   soleRight = limbs[Limbs::footRight] + Vector3f(0.f, 0.f, -robotDimensions.footHeight);
 
+  updateCenterOfMass(massCalibration);
+}
+
+void RobotModel::updateCenterOfMass(const MassCalibration& massCalibration)
+{
   // calculate center of mass
   centerOfMass = Vector3f::Zero();
   for(int i = 0; i < Limbs::numOfLimbs; i++)
@@ -37,8 +42,7 @@ void RobotModel::setJointData(const JointAngles& jointAngles, const RobotDimensi
 
 void RobotModel::draw() const
 {
-  DECLARE_DEBUG_DRAWING3D("representation:RobotModel", "robot");
-  COMPLEX_DRAWING3D("representation:RobotModel")
+  DEBUG_DRAWING3D("representation:RobotModel", "robot")
   {
     for(int i = 0; i < Limbs::numOfLimbs; ++i)
       SUBCOORDINATES3D("representation:RobotModel", limbs[i], 50, 1);

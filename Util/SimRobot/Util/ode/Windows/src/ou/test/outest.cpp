@@ -24,6 +24,7 @@
  *                                                                       *
  *************************************************************************/
 
+#include <ou/features.h>
 #include <ou/platform.h>
 
 #if _OU_COMPILER == _OU_COMPILER_MSVC
@@ -33,9 +34,15 @@
 
 #endif
 
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 #include <ou/threadlocalstorage.h>
+#endif
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 #include <ou/atomic.h>
+#endif
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 #include <ou/atomicflags.h>
+#endif
 #include <ou/simpleflags.h>
 #include <ou/flagsdefines.h>
 #include <ou/enumarrays.h>
@@ -86,6 +93,8 @@ bool TestSubsystem(unsigned int &nOutSuccessCount, unsigned int &nOutTestCount,
 
 
 //////////////////////////////////////////////////////////////////////////
+
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 
 bool g_bTestTLSAPIInitialized = false;
 HTLSKEY g_htkTestTLSKey;
@@ -420,7 +429,12 @@ bool TestTLS(unsigned int &nOutSuccessCount, unsigned int &nOutTestCount)
 }
 
 
+#endif // #if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
+
+
 //////////////////////////////////////////////////////////////////////////
+
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 
 bool TestAtomic_Increment()
 {
@@ -1022,7 +1036,12 @@ bool TestAtomic(unsigned int &nOutSuccessCount, unsigned int &nOutTestCount)
 }
 
 
+#endif // #if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
+
+
 //////////////////////////////////////////////////////////////////////////
+
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 
 const atomicord32 g_aoTestValue32 = (atomicord32)0xA5A5A5A5;
 const atomicord32 g_aoTestMask32 = (atomicord32)0xC6C6C6C6;
@@ -2172,6 +2191,9 @@ bool TestAtomicFlags(unsigned int &nOutSuccessCount, unsigned int &nOutTestCount
 	
 	return bResult;
 }
+
+
+#endif // #if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -8883,14 +8905,20 @@ enum EOUSUBSYSTEMTEST
 	OST_MALLOC,
 	OST_CUSTOMIZATION,
 	OST_ENUMARRAYS,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	OST_ATOMIC,
+#endif
 	OST_FLAGSDEFINES,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	OST_ATOMICFLAGS,
+#endif
 	OST_SIMPLEFLAGS64,
 	OST_SIMPLEFLAGS32,
 	OST_SIMPLEFLAGS16,
 	OST_SIMPLEFLAGS8,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 	OST_TLS,
+#endif
 	OST_PLATFORM,
 
 	OST__MAX,
@@ -8909,14 +8937,20 @@ COUSubsystemTestProcedure const CEnumUnsortedElementArray<EOUSUBSYSTEMTEST, OST_
 	&TestMalloc, // OST_MALLOC,
 	&TestCustomization, // OST_CUSTOMIZATION,
 	&TestEnumArrays, // OST_ENUMARRAYS,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	&TestAtomic, // OST_ATOMIC,
+#endif
 	&TestFlagsDefines, // OST_FLAGSDEFINES,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	&TestAtomicFlags, // OST_ATOMICFLAGS,
+#endif
 	&TestSimpleFlags64, // OST_SIMPLEFLAGS64,
 	&TestSimpleFlags32, // OST_SIMPLEFLAGS32,
 	&TestSimpleFlags16, // OST_SIMPLEFLAGS16,
 	&TestSimpleFlags8, // OST_SIMPLEFLAGS8,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 	&TestTLS, // OST_TLS,
+#endif
 	&TestPlatform, // OST_PLATFORM,
 };
 static const CEnumUnsortedElementArray<EOUSUBSYSTEMTEST, OST__MAX, COUSubsystemTestProcedure> g_afnOUSubsystemTestProcedures;
@@ -8932,14 +8966,20 @@ const char *const CEnumUnsortedElementArray<EOUSUBSYSTEMTEST, OST__MAX, const ch
 	"Malloc", // OST_MALLOC,
 	"Customization", // OST_CUSTOMIZATION,
 	"EnumArrays", // OST_ENUMARRAYS,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	"Atomic", // OST_ATOMIC,
+#endif
 	"FlagsDefines", // OST_FLAGSDEFINES,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_ATOMICS
 	"AtomicFlags", // OST_ATOMICFLAGS,
+#endif
 	"SimpleFlags64", // OST_SIMPLEFLAGS64,
 	"SimpleFlags32", // OST_SIMPLEFLAGS32,
 	"SimpleFlags16", // OST_SIMPLEFLAGS16,
 	"SimpleFlags8", // OST_SIMPLEFLAGS8,
+#if _OU_FEATURE_SET >= _OU_FEATURE_SET_TLS
 	"TLS", // OST_TLS,
+#endif
 	"Platform", // OST_PLATFORM,
 };
 static const CEnumUnsortedElementArray<EOUSUBSYSTEMTEST, OST__MAX, const char *> g_aszOUSubsystemNames;

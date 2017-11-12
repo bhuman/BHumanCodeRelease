@@ -8,16 +8,14 @@
  * @param angle code in rad
  * @return angle coded in degrees
  */
-template <class V> constexpr V toDegrees(V angle) { return angle * V(180.f / pi); }
+template<class V>
+constexpr V toDegrees(V angle) { return angle * V(180.f / pi); }
 
 /**
  * The Angle class stores the represented angle in radiant.
  */
 class Angle
 {
-private:
-  float value = 0.f;
-
 public:
   constexpr Angle() = default;
   constexpr Angle(float angle) : value(angle) {}
@@ -25,7 +23,7 @@ public:
   operator float& () { return value; }
   constexpr operator const float& () const { return value; }
 
-  constexpr Angle operator-() const { return -value; }
+  constexpr Angle operator-() const { return Angle(-value); }
   Angle& operator+=(float angle) { value += angle; return *this; }
   Angle& operator-=(float angle) { value -= angle; return *this; }
   Angle& operator*=(float angle) { value *= angle; return *this; }
@@ -38,13 +36,18 @@ public:
    * @param data angle coded in rad
    * @return normalized angle coded in rad
    */
-  template <class V>
+  template<class V>
   static V normalize(V data);
+
+  Angle diffAbs(Angle b) const { return std::abs(normalize(value - b)); }
 
   static constexpr Angle fromDegrees(float degrees) { return Angle((degrees / 180.f) * pi); }
   static constexpr Angle fromDegrees(int degrees) { return fromDegrees(static_cast<float>(degrees)); }
 
-  float constexpr toDegrees() const { return (value / pi) * 180.f; }
+  constexpr float toDegrees() const { return (value / pi) * 180.f; }
+
+private:
+  float value = 0.f;
 };
 
 inline constexpr Angle operator "" _deg(unsigned long long int angle)
@@ -68,7 +71,7 @@ inline constexpr Angle operator "" _rad(long double angle)
 }
 
 template<class V>
-inline V Angle::normalize(V data)
+V Angle::normalize(V data)
 {
   if(data >= -V(pi) && data < V(pi))
     return data;

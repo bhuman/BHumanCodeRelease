@@ -18,8 +18,8 @@ struct FieldDimensions;
 struct RobotPose;
 
 /**
- * The class Geometry defines representations for geometric objects and Methods
- * for calculations with such object.
+ * The namespace Geometry contanins representations for geometric objects and methods
+ * for calculations with such objects.
  */
 namespace Geometry
 {
@@ -27,7 +27,7 @@ namespace Geometry
   STREAMABLE(Circle,
   {
     Circle() = default;
-    Circle(const Vector2f & c, float r),
+    Circle(const Vector2f& c, float r),
 
     (Vector2f)(Vector2f::Zero()) center,
     (float)(0) radius,
@@ -41,10 +41,10 @@ namespace Geometry
   STREAMABLE(Line,
   {
     Line() = default;
-    Line(const Vector2f & base, const Vector2f & direction);
-    Line(const Vector2i & base, const Vector2f & direction);
-    Line(const Vector2i & base, const Vector2i & direction);
-    Line(const Pose2f & base, float length = 1.f);
+    Line(const Vector2f& base, const Vector2f& direction);
+    Line(const Vector2i& base, const Vector2f& direction);
+    Line(const Vector2i& base, const Vector2i& direction);
+    Line(const Pose2f& base, float length = 1.f);
     Line(float baseX, float baseY, float directionX, float directionY);
 
     void normalizeDirection(),
@@ -144,6 +144,26 @@ namespace Geometry
   bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V) WARN_UNUSED_RESULT;
   bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2i& point) WARN_UNUSED_RESULT;
   bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2f& point) WARN_UNUSED_RESULT;
+
+  /**
+   * A function to compute the reflection angle that even checks if a collision exists.
+   * The robot shape is approximated as a rectangle.
+   * @param robotPose, the robot localization
+   * @param colliderPosition, the position of the ball
+   * @param colliderVelocity, the velocity of the ball
+   * @param reflectionVector, the resulting direction
+   * @return true, if a collision exists else false
+   */
+  bool getCollisionReflectionWithRectangleRobotFeet(const Pose2f& robotPose, const Vector2f& colliderPosition, const Vector2f& colliderVelocity, Vector2f& reflectionVector) WARN_UNUSED_RESULT;
+
+  /**
+   * The helper function for the function above. Calculate the angle of a position to the
+   * robot position regarding the robots rotation.
+   * @param yourPosition, usually the robot position
+   * @param colliderPosition, the position of the collider/ball
+   * @return the angle to the collider/ball
+   */
+  Angle getCollisionAngle(const Pose2f& yourPosition, const Vector2f& colliderPosition);
 
   /**
    * Clips a line with a rectangle
@@ -267,4 +287,6 @@ namespace Geometry
    * Computes the distance between two line segments in 3-dimensional space
    */
   float distance(const LineSegment3D& segment1, const LineSegment3D& segment2, LineSegment3D& connectionSegment);
+
+  bool isPointLeftOfLine(const Vector2f& start, const Vector2f& end, const Vector2f& point);
 };

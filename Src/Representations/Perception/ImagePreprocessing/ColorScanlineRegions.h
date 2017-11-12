@@ -40,7 +40,7 @@ struct ScanlineRegion : public Streamable
   ScanlineRange range;
   FieldColors::Color color;
 
-private:
+protected:
   void serialize(In* in, Out* out);
 };
 
@@ -48,7 +48,7 @@ inline ScanlineRegion::ScanlineRegion(const unsigned short from, const unsigned 
   range(from, to), color(c)
 {}
 
-inline void ScanlineRegion::serialize(In * in, Out * out)
+inline void ScanlineRegion::serialize(In* in, Out* out)
 {
   STREAM_REGISTER_BEGIN;
   STREAM(color);
@@ -81,11 +81,18 @@ inline ColorScanlineRegionsVertical::Scanline::Scanline(const unsigned short x) 
   regions.reserve(100);
 }
 
+/**
+ * A version of the ColorScanlineRegionsVertical that has been clipped at the FieldBoundary
+ */
+struct ColorScanlineRegionsVerticalClipped : public ColorScanlineRegionsVertical
+{
+  void draw() const;
+};
 
 /**
-* A version of the ColorScanlineRegionsVertical that has been clipped at the FieldBoundary
-*/
-struct ColorScanlineRegionsVerticalClipped : public ColorScanlineRegionsVertical
+ * A version of the ColorScanlineRegionsVertical which is scaled (linear interpolated?)
+ */
+struct CompressedColorScanlineRegionsVertical : public ColorScanlineRegionsVertical
 {
   void draw() const;
 };

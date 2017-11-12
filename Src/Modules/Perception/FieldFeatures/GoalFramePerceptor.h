@@ -1,6 +1,6 @@
 /**
  * @file GoalFramePerceptor.h
- * profides GoalFrame
+ * Provides GoalFrame.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -9,6 +9,7 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
+#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -20,6 +21,7 @@
 MODULE(GoalFramePerceptor,
 {,
   REQUIRES(FieldDimensions),
+  REQUIRES(GoalPostPercept),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(LinesPercept),
@@ -46,6 +48,7 @@ private:
   bool searchByBigT(GoalFrame& goalFrame) const;
   bool searchByBigX(GoalFrame& goalFrame) const;
   bool searchByTT(GoalFrame& goalFrame) const;
+  bool searchByGPAndLine(GoalFrame& goalFrame) const;
 
   bool calcGoalFrame(const Pose2f& prePose, const float yTranslation, GoalFrame& goalFrame) const;
 };

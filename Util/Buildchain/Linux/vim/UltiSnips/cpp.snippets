@@ -1,0 +1,251 @@
+# to use this file with UltiSnips, add this folder to your search path in your
+# vimrc, e.g. like this:
+#
+#	let g:UltiSnipsSnippetDirectories = [ "UltiSnips",
+#             \ "/path/to/repository/Util/Buildchain/Linux/vim/UltiSnips" ]
+
+snippet aborted_state "aborted_state" b
+aborted_state(${1:name})
+{
+	transition
+	{
+		if(${2:condition})
+			goto ${3:state};
+	}
+	action
+	{
+		${4:actions}
+	}
+}
+endsnippet
+
+snippet action "action" b
+action
+{
+	${1:actions}
+}
+endsnippet
+
+snippet classdef "classdef" b
+class ${1:class_name}
+{
+private:
+	${2:instance_variables}
+
+public:
+	${3:member_functions}
+};
+endsnippet
+
+snippet common_transition "common_transition" b
+common_transition
+{
+	if(${1:condition})
+		goto ${2:state};
+}
+endsnippet
+
+snippet DEFINES_PARAMETERS "DEFINES_PARAMETERS" b
+DEFINES_PARAMETERS(
+{,
+	(${1:type})(${2:init}) ${3:var},
+}),
+endsnippet
+
+snippet dowhile "dowhile" b
+do
+{
+	${1:${VISUAL:statements}}
+}
+while(${2:condition});
+endsnippet
+
+snippet ENUM "ENUM" b
+ENUM(${1:name},
+{,
+	${2:element},
+});
+endsnippet
+
+snippet enumdef "enumdef" b
+enum ${1:enumeration_name}
+{
+	${1:enumerator1} = ${2:value1},
+	${3:enumerator2} = ${4:value2}
+};
+endsnippet
+
+snippet for "for" b
+for(${1:initialization}; ${2:condition}; ${3:increment})
+{
+	${4:${VISUAL:statements}}
+}
+endsnippet
+
+snippet if "if" b
+if(${1:condition})
+{
+	${2:${VISUAL:statements}}
+}
+endsnippet
+
+snippet ifelse "ifelse" b
+if(${1:condition})
+{
+	${1:${VISUAL:statements_if_true}}
+}
+else
+{
+	${1:statements_if_false}
+}
+endsnippet
+
+snippet initial_state "initial_state" b
+initial_state(${1:name})
+{
+	transition
+	{
+		if(${2:condition})
+			goto ${3:state};
+	}
+	action
+	{
+		${4:actions}
+	}
+}
+endsnippet
+
+snippet LOADS_PARAMETERS "LOADS_PARAMETERS" b
+LOADS_PARAMETERS(
+{,
+	(${1:type}) ${2:var},
+}),
+endsnippet
+
+snippet MODULE "MODULE" b
+MODULE(${1:`!p snip.rv = fn.rstrip(".cpp")`},
+{,
+});
+endsnippet
+
+snippet namespace "namespace" b
+namespace ${1:namespace_name}
+{
+	${1:declarations}
+}
+endsnippet
+
+snippet option "option" b
+option(${1:name})
+{
+	${2:states}
+}
+endsnippet
+
+snippet state "state" b
+state(${1:name})
+{
+	transition
+	{
+		if(${2:condition})
+			goto ${3:state};
+	}
+	action
+	{
+		${4:actions}
+	}
+}
+endsnippet
+
+snippet STREAMABLE "STREAMABLE" b
+STREAMABLE(${1:name},
+{,
+	(${2:type})(${3:init}) ${4:var},
+});
+endsnippet
+
+snippet structdef "structdef" b
+struct ${1:struct_name}
+{
+	${2:instance_variables}
+};
+endsnippet
+
+snippet switch "switch" b
+switch(${1:expression})
+{
+	case ${2:constant}:
+		${3:statements}
+		break;
+
+	default:
+		${4:statements}
+		break;
+}
+endsnippet
+
+snippet target_state "target_state" b
+target_state(${1:name})
+{
+	transition
+	{
+		if(${2:condition})
+			goto ${3:state};
+	}
+	action
+	{
+		${4:actions}
+	}
+}
+endsnippet
+
+snippet templateclass "templateclass" b
+template <${1:template_parameters}> class ${2:class_name}
+{
+private:
+	${3:instance variables}
+
+public:
+	${4:member functions}
+};
+endsnippet
+
+snippet templatefunction "templatefunction" b
+template <${1:template_parameters}> ${2:return_type} ${3:function_name}(${4:function_parameters})
+{
+	${5:statements}
+}
+endsnippet
+
+snippet transition "transition" b
+transition
+{
+	if(${1:condition})
+		goto ${2:state};
+}
+endsnippet
+
+snippet try "try" b
+try
+{
+	${1:${VISUAL:statements}}
+}
+catch(${2:catch parameter})
+{
+	${3:statements}
+}
+endsnippet
+
+snippet uniondef "uniondef" b
+union ${1:union_name}
+{
+	${2:instance_variables}
+};
+endsnippet
+
+snippet while "while" b
+while(${1:condition})
+{
+	${2:${VISUAL:statements}}
+}
+endsnippet

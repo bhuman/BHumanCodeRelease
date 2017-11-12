@@ -65,8 +65,8 @@ static inline void removeObjectFromList (dObject *obj)
     if (obj->next) obj->next->tome = obj->tome;
     *(obj->tome) = obj->next;
     // safeguard
-    obj->next = 0;
-    obj->tome = 0;
+    obj->next = NULL;
+    obj->tome = NULL;
 }
 
 
@@ -78,7 +78,7 @@ static void removeJointReferencesFromAttachedBodies (dxJoint *j)
         dxBody *body = j->node[i].body;
         if (body) {
             dxJointNode *n = body->firstjoint;
-            dxJointNode *last = 0;
+            dxJointNode *last = NULL;
             while (n) {
                 if (n->joint == j) {
                     if (last) last->next = n->next;
@@ -90,10 +90,10 @@ static void removeJointReferencesFromAttachedBodies (dxJoint *j)
             }
         }
     }
-    j->node[0].body = 0;
-    j->node[0].next = 0;
-    j->node[1].body = 0;
-    j->node[1].next = 0;
+    j->node[0].body = NULL;
+    j->node[0].next = NULL;
+    j->node[1].body = NULL;
+    j->node[1].next = NULL;
 }
 
 //****************************************************************************
@@ -239,11 +239,11 @@ dxBody *dBodyCreate (dxWorld *w)
 {
     dAASSERT (w);
     dxBody *b = new dxBody(w);
-    b->firstjoint = 0;
+    b->firstjoint = NULL;
     b->flags = 0;
-    b->geom = 0;
-    b->average_lvel_buffer = 0;
-    b->average_avel_buffer = 0;
+    b->geom = NULL;
+    b->average_lvel_buffer = NULL;
+    b->average_avel_buffer = NULL;
     dMassSetParameters (&b->mass,1,0,0,0,1,1,1,0,0,0);
     dSetZero (b->invI,4*3);
     b->invI[0] = 1;
@@ -263,7 +263,7 @@ dxBody *dBodyCreate (dxWorld *w)
     w->nb++;
 
     // set auto-disable parameters
-    b->average_avel_buffer = b->average_lvel_buffer = 0; // no buffer at beginning
+    b->average_avel_buffer = b->average_lvel_buffer = NULL; // no buffer at beginning
     dBodySetAutoDisableDefaults (b);	// must do this after adding to world
     b->adis_stepsleft = b->adis.idle_steps;
     b->adis_timeleft = b->adis.idle_time;
@@ -271,7 +271,7 @@ dxBody *dBodyCreate (dxWorld *w)
     b->average_ready = 0; // average buffer not filled on the beginning
     dBodySetAutoDisableAverageSamplesCount(b, b->adis.average_samples);
 
-    b->moved_callback = 0;
+    b->moved_callback = NULL;
 
     dBodySetDampingDefaults(b);	// must do this after adding to world
 
@@ -292,7 +292,7 @@ void dBodyDestroy (dxBody *b)
     // to disappear. note that the call to dGeomSetBody(geom,0) will result in
     // dGeomGetBodyNext() returning 0 for the body, so we must get the next body
     // before setting the body to 0.
-    dxGeom *next_geom = 0;
+    dxGeom *next_geom = NULL;
     for (dxGeom *geom = b->geom; geom; geom = next_geom) {
         next_geom = dGeomGetBodyNext (geom);
         dGeomSetBody (geom,0);
@@ -302,10 +302,10 @@ void dBodyDestroy (dxBody *b)
     dxJointNode *n = b->firstjoint;
     while (n) {
         // sneaky trick to speed up removal of joint references (black magic)
-        n->joint->node[(n == n->joint->node)].body = 0;
+        n->joint->node[(n == n->joint->node)].body = NULL;
 
         dxJointNode *next = n->next;
-        n->next = 0;
+        n->next = NULL;
         removeJointReferencesFromAttachedBodies (n->joint);
         n = next;
     }
@@ -316,12 +316,12 @@ void dBodyDestroy (dxBody *b)
     if(b->average_lvel_buffer)
     {
         delete[] (b->average_lvel_buffer);
-        b->average_lvel_buffer = 0;
+        b->average_lvel_buffer = NULL;
     }
     if(b->average_avel_buffer)
     {
         delete[] (b->average_avel_buffer);
-        b->average_avel_buffer = 0;
+        b->average_avel_buffer = NULL;
     }
 
     delete b;
@@ -360,13 +360,17 @@ void dBodySetRotation (dBodyID b, const dMatrix3 R)
     dAASSERT (b && R);
 
     memcpy(b->posr.R, R, sizeof(dMatrix3));
-    dOrthogonalizeR(b->posr.R);
+    
+    bool bOrthogonalizeResult = dxOrthogonalizeR(b->posr.R);
+    dAVERIFY(bOrthogonalizeResult);
+
     dRtoQ (R, b->q);
     dNormalize4 (b->q);
 
     // notify all attached geoms that this body has moved
-    for (dxGeom *geom = b->geom; geom; geom = dGeomGetBodyNext (geom))
+    for (dxGeom *geom = b->geom; geom; geom = dGeomGetBodyNext (geom)) {
         dGeomMoved (geom);
+    }
 }
 
 
@@ -925,12 +929,12 @@ void dBodySetAutoDisableAverageSamplesCount (dBodyID b, unsigned int average_sam
     if(b->average_lvel_buffer)
     {
         delete[] b->average_lvel_buffer;
-        b->average_lvel_buffer = 0;
+        b->average_lvel_buffer = NULL;
     }
     if(b->average_avel_buffer)
     {
         delete[] b->average_avel_buffer;
-        b->average_avel_buffer = 0;
+        b->average_avel_buffer = NULL;
     }
     if(b->adis.average_samples > 0)
     {
@@ -939,8 +943,8 @@ void dBodySetAutoDisableAverageSamplesCount (dBodyID b, unsigned int average_sam
     }
     else
     {
-        b->average_lvel_buffer = 0;
-        b->average_avel_buffer = 0;
+        b->average_lvel_buffer = NULL;
+        b->average_avel_buffer = NULL;
     }
     // new buffer is empty
     b->average_counter = 0;
@@ -1378,26 +1382,26 @@ void dJointAttach (dxJoint *joint, dxBody *body1, dxBody *body2)
 {
     // check arguments
     dUASSERT (joint,"bad joint argument");
-    dUASSERT (body1 == 0 || body1 != body2,"can't have body1==body2");
+    dUASSERT (body1 == NULL || body1 != body2, "can't have body1==body2");
     dxWorld *world = joint->world;
-    dUASSERT ( (!body1 || body1->world == world) &&
-        (!body2 || body2->world == world),
+    dUASSERT ( (body1 == NULL || body1->world == world) &&
+        (body2 == NULL || body2->world == world),
         "joint and bodies must be in same world");
 
     // check if the joint can not be attached to just one body
     dUASSERT (!((joint->flags & dJOINT_TWOBODIES) &&
-        ((body1 != 0) ^ (body2 != 0))),
+        ((body1 != NULL) != (body2 != NULL))),
         "joint can not be attached to just one body");
 
     // remove any existing body attachments
-    if (joint->node[0].body || joint->node[1].body) {
+    if (joint->node[0].body != NULL || joint->node[1].body != NULL) {
         removeJointReferencesFromAttachedBodies (joint);
     }
 
     // if a body is zero, make sure that it is body2, so 0 --> node[1].body
-    if (body1==0) {
+    if (body1 == NULL) {
         body1 = body2;
-        body2 = 0;
+        body2 = NULL;
         joint->flags |= dJOINT_REVERSE;
     }
     else {
@@ -1407,24 +1411,29 @@ void dJointAttach (dxJoint *joint, dxBody *body1, dxBody *body2)
     // attach to new bodies
     joint->node[0].body = body1;
     joint->node[1].body = body2;
-    if (body1) {
+    
+    if (body1 != NULL) {
         joint->node[1].next = body1->firstjoint;
         body1->firstjoint = &joint->node[1];
     }
-    else joint->node[1].next = 0;
-    if (body2) {
+    else {
+        joint->node[1].next = NULL;
+    }
+    
+    if (body2 != NULL) {
         joint->node[0].next = body2->firstjoint;
         body2->firstjoint = &joint->node[0];
     }
     else {
-        joint->node[0].next = 0;
+        joint->node[0].next = NULL;
     }
 
     // Since the bodies are now set.
     // Calculate the values depending on the bodies.
     // Only need to calculate relative value if a body exist
-    if (body1 || body2)
+    if (body1 != NULL || body2 != NULL) {
         joint->setRelativeValues();
+    }
 }
 
 void dJointEnable (dxJoint *joint)
@@ -1592,11 +1601,11 @@ void dWorldDestroy (dxWorld *w)
         nextj = (dxJoint*)j->next;
         if (j->flags & dJOINT_INGROUP) {
             // the joint is part of a group, so "deactivate" it instead
-            j->world = 0;
-            j->node[0].body = 0;
-            j->node[0].next = 0;
-            j->node[1].body = 0;
-            j->node[1].next = 0;
+            j->world = NULL;
+            j->node[0].body = NULL;
+            j->node[0].next = NULL;
+            j->node[1].body = NULL;
+            j->node[1].next = NULL;
             dMessage (0,"warning: destroying world containing grouped joints");
         }
         else {
@@ -2110,8 +2119,8 @@ extern "C" void dTestDataStructures()
     dJointID joint [NUM];
     int nj = 0;
 
-    for (i=0; i<NUM; i++) body[i] = 0;
-    for (i=0; i<NUM; i++) joint[i] = 0;
+    for (i=0; i<NUM; i++) body[i] = NULL;
+    for (i=0; i<NUM; i++) joint[i] = NULL;
 
     DO(printf ("creating world\n"));
     dWorldID w = dWorldCreate();

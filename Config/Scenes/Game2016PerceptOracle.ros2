@@ -9,6 +9,11 @@
 
     <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
 
+    <Compound name="teamcolors">
+        <Appearance name="black"/>
+        <Appearance name="red"/>
+    </Compound>
+
     <Compound name="robots">
       <Body ref="Nao" name="robot1">
         <Translation x="3.0" y = "-3" z="320mm"/>

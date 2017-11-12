@@ -54,6 +54,26 @@
 #endif
 
 
+#if !HAVE_CLOCK_GETTIME
+
+#include <sys/time.h>
+
+#if !defined(CLOCK_MONOTONIC)
+#define CLOCK_MONOTONIC 2
+#endif
+
+static inline 
+int clock_gettime(int clock_type, timespec *ts)
+{
+    (void)clock_type; // Unused
+    timeval tv;
+    return gettimeofday(&tv, NULL) == 0 ? (ts->tv_sec = tv.tv_sec, ts->tv_nsec = tv.tv_usec * 1000, 0) : (-1);
+}
+
+
+#endif // #if !HAVE_CLOCK_GETTIME
+
+
 #endif // #if dBUILTIN_THREADING_IMPL_ENABLED
 
 
@@ -142,12 +162,14 @@ bool dxCondvarWakeup::DoInitializeObject()
 
         condattr_initialized = true;
 
+#if HAVE_CLOCK_GETTIME
         int condattr_clock_result = pthread_condattr_setclock(&cond_condattr, CLOCK_MONOTONIC);
         if (condattr_clock_result != EOK)
         {
             errno = condattr_clock_result;
             break;
         }
+#endif // #if HAVE_CLOCK_GETTIME
 
         int cond_result = pthread_cond_init(&m_wakeup_cond, &cond_condattr);
         if (cond_result != EOK)

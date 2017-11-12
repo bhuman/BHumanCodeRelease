@@ -41,7 +41,7 @@ namespace Rotation
 
   namespace Aldebaran
   {
-    // Aldebaran uses these angles when calculating the orientatino of the robot via the imu
+    // Aldebaran uses these angles when calculating the orientation of the robot via the imu
     float getXAngle(const Quaternionf& rot);
     float getXAngle(const Matrix3f& rot);
     float getYAngle(const Quaternionf& rot);

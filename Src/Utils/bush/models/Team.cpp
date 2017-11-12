@@ -27,8 +27,10 @@ Team::Team()
     number(0),
     port(0),
     color(""),
+    scenario(""),
     location(""),
     wlanConfig(""),
+    compile(true),
     buildConfig(""),
     volume(100),
     deployDevice(""),
@@ -44,8 +46,10 @@ Team::Team(const std::string& name, unsigned short number)
     number(number),
     port(0),
     color(""),
+    scenario(""),
     location(""),
     wlanConfig(""),
+    compile(true),
     buildConfig(""),
     volume(100),
     deployDevice(""),
@@ -141,7 +145,9 @@ void Team::serialize(In* in, Out* out)
   STREAM(number);
   STREAM(port);
   STREAM(color);
+  STREAM(scenario);
   STREAM(location);
+  STREAM(compile);
   STREAM(buildConfig);
   STREAM(wlanConfig);
   STREAM(volume);

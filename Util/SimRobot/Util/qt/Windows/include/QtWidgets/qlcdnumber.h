@@ -40,12 +40,12 @@
 #ifndef QLCDNUMBER_H
 #define QLCDNUMBER_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qframe.h>
 
 QT_BEGIN_NAMESPACE
 
-
-#ifndef QT_NO_LCDNUMBER
+QT_REQUIRE_CONFIG(lcdnumber);
 
 class QLCDNumberPrivate;
 class Q_WIDGETS_EXPORT QLCDNumber : public QFrame // LCD number widget
@@ -113,8 +113,6 @@ private:
     Q_DISABLE_COPY(QLCDNumber)
     Q_DECLARE_PRIVATE(QLCDNumber)
 };
-
-#endif // QT_NO_LCDNUMBER
 
 QT_END_NAMESPACE
 

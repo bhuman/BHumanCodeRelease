@@ -52,7 +52,7 @@ private:
    * @param out The stream to which the object is written. Must be 0 if this object was constructed for a writing stream.
    * @param enumToString A function that can provide element names if we are stream an enum value. Otherwise 0.
    */
-  template<typename T> void streamIt(In* in, Out* out, const char* (*enumToString)(int) = 0);
+  template<typename T> void streamIt(In* in, Out* out, const char* (*enumToString)(int) = nullptr);
 
 public:
   /**
@@ -63,7 +63,7 @@ public:
    * @param type The string representation of the type of the data streamed.
    * @param name The name of the data streamed. 0 if it does not have a name.
    */
-  DebugDataStreamer(StreamHandler& streamHandler, In& stream, const std::string& type, const char* name = 0);
+  DebugDataStreamer(StreamHandler& streamHandler, In& stream, const std::string& type, const char* name = nullptr);
 
   /**
    * Constructs an object that writes to a debug data stream.
@@ -73,7 +73,7 @@ public:
    * @param type The string representation of the type of the data streamed.
    * @param name The name of the data streamed. 0 if it does not have a name.
    */
-  DebugDataStreamer(StreamHandler& streamHandler, Out& stream, const std::string& type, const char* name = 0);
+  DebugDataStreamer(StreamHandler& streamHandler, Out& stream, const std::string& type, const char* name = nullptr);
 };
 
 template<typename T> void DebugDataStreamer::streamIt(In* in, Out* out, const char* (*enumToString)(int))

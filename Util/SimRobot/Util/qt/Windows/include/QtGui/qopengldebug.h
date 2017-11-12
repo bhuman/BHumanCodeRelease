@@ -40,7 +40,7 @@
 #ifndef QOPENGLDEBUG_H
 #define QOPENGLDEBUG_H
 
-#include <QtCore/qglobal.h>
+#include <QtGui/qtguiglobal.h>
 
 #ifndef QT_NO_OPENGL
 
@@ -51,6 +51,11 @@
 #include <QtCore/qmetatype.h>
 #include <QtCore/qdebug.h>
 #include <QtGui/qopenglcontext.h>
+
+#if defined(Q_CLANG_QDOC)
+#undef GLuint
+typedef unsigned int GLuint;
+#endif
 
 QT_BEGIN_NAMESPACE
 

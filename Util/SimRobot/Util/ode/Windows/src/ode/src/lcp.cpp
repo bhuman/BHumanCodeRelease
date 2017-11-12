@@ -117,6 +117,11 @@ rows/columns and manipulate C.
 #include "mat.h"		// for testing
 #include "util.h"
 
+#include "fastdot_impl.h"
+#include "matrix_impl.h"
+#include "fastldlt_impl.h"
+
+
 //***************************************************************************
 // code generation parameters
 
@@ -124,6 +129,9 @@ rows/columns and manipulate C.
 //#define DEBUG_LCP
 
 #define dLCP_FAST		// use fast dLCP object
+
+#define NUB_OPTIMIZATIONS // use NUB optimizations
+
 
 // option 1 : matrix row pointers (less data copying)
 #define ROWPTRS
@@ -135,9 +143,31 @@ rows/columns and manipulate C.
 //#define ATYPE dReal *
 //#define AROW(i) (m_A+(i)*m_nskip)
 
-#define NUB_OPTIMIZATIONS
 
 //***************************************************************************
+
+#define dMIN(A,B)  ((A)>(B) ? (B) : (A))
+#define dMAX(A,B)  ((B)>(A) ? (B) : (A))
+
+
+#define LMATRIX_ALIGNMENT       dMAX(64, EFFICIENT_ALIGNMENT)
+
+//***************************************************************************
+
+
+// transfer b-values to x-values
+template<bool zero_b>
+inline 
+void transfer_b_to_x(dReal pairsbx[PBX__MAX], unsigned n)
+{
+    dReal *const endbx = pairsbx + (size_t)n * PBX__MAX;
+    for (dReal *currbx = pairsbx; currbx != endbx; currbx += PBX__MAX) {
+        currbx[PBX_X] = currbx[PBX_B];
+        if (zero_b) {
+            currbx[PBX_B] = REAL(0.0);
+        }
+    }
+}
 
 // swap row/column i1 with i2 in the n*n matrix A. the leading dimension of
 // A is nskip. this only references and swaps the lower triangle.
@@ -145,7 +175,8 @@ rows/columns and manipulate C.
 // rows will be swapped by exchanging row pointers. otherwise the data will
 // be copied.
 
-static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip, 
+static 
+void swapRowsAndCols (ATYPE A, unsigned n, unsigned i1, unsigned i2, unsigned nskip, 
                              int do_fast_row_swaps)
 {
     dAASSERT (A && n > 0 && i1 >= 0 && i2 >= 0 && i1 < n && i2 < n &&
@@ -154,7 +185,7 @@ static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip,
 # ifdef ROWPTRS
     dReal *A_i1 = A[i1];
     dReal *A_i2 = A[i2];
-    for (int i=i1+1; i<i2; ++i) {
+    for (unsigned i=i1+1; i<i2; ++i) {
         dReal *A_i_i1 = A[i] + i1;
         A_i1[i] = *A_i_i1;
         *A_i_i1 = A_i2[i];
@@ -169,43 +200,33 @@ static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip,
     }
     else {
         // Only swap till i2 column to match A plain storage variant.
-        for (int k = 0; k <= i2; ++k) {
-            dReal tmp = A_i1[k];
-            A_i1[k] = A_i2[k];
-            A_i2[k] = tmp;
+        for (unsigned k = 0; k <= i2; ++k) {
+            dxSwap(A_i1[k], A_i2[k]);
         }
     }
     // swap columns the hard way
-    for (int j=i2+1; j<n; ++j) {
+    for (unsigned j = i2 + 1; j < n; ++j) {
         dReal *A_j = A[j];
-        dReal tmp = A_j[i1];
-        A_j[i1] = A_j[i2];
-        A_j[i2] = tmp;
+        dxSwap(A_j[i1], A_j[i2]);
     }
 # else
-    dReal *A_i1 = A+i1*nskip;
-    dReal *A_i2 = A+i2*nskip;
-    for (int k = 0; k < i1; ++k) {
-        dReal tmp = A_i1[k];
-        A_i1[k] = A_i2[k];
-        A_i2[k] = tmp;
+    dReal *A_i1 = A + (size_t)nskip * i1;
+    dReal *A_i2 = A + (size_t)nskip * i2;
+
+    for (unsigned k = 0; k < i1; ++k) {
+        dxSwap(A_i1[k], A_i2[k]);
     }
+
     dReal *A_i = A_i1 + nskip;
-    for (int i=i1+1; i<i2; A_i+=nskip, ++i) {
-        dReal tmp = A_i2[i];
-        A_i2[i] = A_i[i1];
-        A_i[i1] = tmp;
+    for (unsigned i= i1 + 1; i < i2; A_i += nskip, ++i) {
+        dxSwap(A_i2[i], A_i[i1]);
     }
-    {
-        dReal tmp = A_i1[i1];
-        A_i1[i1] = A_i2[i2];
-        A_i2[i2] = tmp;
-    }
+
+    dxSwap(A_i1[i1], A_i2[i2]);
+
     dReal *A_j = A_i2 + nskip;
-    for (int j=i2+1; j<n; A_j+=nskip, ++j) {
-        dReal tmp = A_j[i1];
-        A_j[i1] = A_j[i2];
-        A_j[i2] = tmp;
+    for (unsigned j = i2 + 1; j < n; A_j += nskip, ++j) {
+        dxSwap(A_j[i1], A_j[i2]);
     }
 # endif
 }
@@ -213,51 +234,33 @@ static void swapRowsAndCols (ATYPE A, int n, int i1, int i2, int nskip,
 
 // swap two indexes in the n*n LCP problem. i1 must be <= i2.
 
-static void swapProblem (ATYPE A, dReal *x, dReal *b, dReal *w, dReal *lo,
-                         dReal *hi, int *p, bool *state, int *findex,
-                         int n, int i1, int i2, int nskip,
+static 
+void swapProblem (ATYPE A, dReal pairsbx[PBX__MAX], dReal *w, dReal pairslh[PLH__MAX],
+                         unsigned *p, bool *state, int *findex,
+                         unsigned n, unsigned i1, unsigned i2, unsigned nskip,
                          int do_fast_row_swaps)
 {
-    dReal tmpr;
-    int tmpi;
-    bool tmpb;
-    dIASSERT (n>0 && i1 >=0 && i2 >= 0 && i1 < n && i2 < n && nskip >= n && i1 <= i2);
-    if (i1==i2) return;
+    dIASSERT (n>0 && i1 < n && i2 < n && nskip >= n && i1 <= i2);
+    
+    if (i1 != i2) {
+        swapRowsAndCols (A, n, i1, i2, nskip, do_fast_row_swaps);
 
-    swapRowsAndCols (A,n,i1,i2,nskip,do_fast_row_swaps);
+        dxSwap((pairsbx + (size_t)i1 * PBX__MAX)[PBX_B], (pairsbx + (size_t)i2 * PBX__MAX)[PBX_B]);
+        dxSwap((pairsbx + (size_t)i1 * PBX__MAX)[PBX_X], (pairsbx + (size_t)i2 * PBX__MAX)[PBX_X]);
+        dSASSERT(PBX__MAX == 2);
 
-    tmpr = x[i1];
-    x[i1] = x[i2];
-    x[i2] = tmpr;
+        dxSwap(w[i1], w[i2]);
 
-    tmpr = b[i1];
-    b[i1] = b[i2];
-    b[i2] = tmpr;
+        dxSwap((pairslh + (size_t)i1 * PLH__MAX)[PLH_LO], (pairslh + (size_t)i2 * PLH__MAX)[PLH_LO]);
+        dxSwap((pairslh + (size_t)i1 * PLH__MAX)[PLH_HI], (pairslh + (size_t)i2 * PLH__MAX)[PLH_HI]);
+        dSASSERT(PLH__MAX == 2);
 
-    tmpr = w[i1];
-    w[i1] = w[i2];
-    w[i2] = tmpr;
+        dxSwap(p[i1], p[i2]);
+        dxSwap(state[i1], state[i2]);
 
-    tmpr = lo[i1];
-    lo[i1] = lo[i2];
-    lo[i2] = tmpr;
-
-    tmpr = hi[i1];
-    hi[i1] = hi[i2];
-    hi[i2] = tmpr;
-
-    tmpi = p[i1];
-    p[i1] = p[i2];
-    p[i2] = tmpi;
-
-    tmpb = state[i1];
-    state[i1] = state[i2];
-    state[i2] = tmpb;
-
-    if (findex) {
-        tmpi = findex[i1];
-        findex[i1] = findex[i2];
-        findex[i2] = tmpi;
+        if (findex != NULL) {
+            dxSwap(findex[i1], findex[i2]);
+        }
     }
 }
 
@@ -269,28 +272,29 @@ static void swapProblem (ATYPE A, dReal *x, dReal *b, dReal *w, dReal *lo,
 
 #ifdef DEBUG_LCP
 
-static void checkFactorization (ATYPE A, dReal *_L, dReal *_d,
-                                int nC, int *C, int nskip)
+static 
+void checkFactorization (ATYPE A, dReal *_L, dReal *_d,
+                                unsigned nC, unsigned *C, unsigned nskip)
 {
-    int i,j;
-    if (nC==0) return;
+    unsigned i, j;
+    if (nC == 0) return;
 
     // get A1=A, copy the lower triangle to the upper triangle, get A2=A[C,C]
-    dMatrix A1 (nC,nC);
-    for (i=0; i<nC; i++) {
-        for (j=0; j<=i; j++) A1(i,j) = A1(j,i) = AROW(i)[j];
+    dMatrix A1 (nC, nC);
+    for (i=0; i < nC; i++) {
+        for (j = 0; j <= i; j++) A1(i, j) = A1(j, i) = AROW(i)[j];
     }
-    dMatrix A2 = A1.select (nC,C,nC,C);
+    dMatrix A2 = A1.select (nC, C, nC, C);
 
     // printf ("A1=\n"); A1.print(); printf ("\n");
     // printf ("A2=\n"); A2.print(); printf ("\n");
 
     // compute A3 = L*D*L'
-    dMatrix L (nC,nC,_L,nskip,1);
-    dMatrix D (nC,nC);
-    for (i=0; i<nC; i++) D(i,i) = 1/_d[i];
+    dMatrix L (nC, nC, _L, nskip, 1);
+    dMatrix D (nC, nC);
+    for (i = 0; i < nC; i++) D(i, i) = 1.0 / _d[i];
     L.clearUpperTriangle();
-    for (i=0; i<nC; i++) L(i,i) = 1;
+    for (i = 0; i < nC; i++) L(i, i) = 1;
     dMatrix A3 = L * D * L.transpose();
 
     // printf ("L=\n"); L.print(); printf ("\n");
@@ -300,7 +304,7 @@ static void checkFactorization (ATYPE A, dReal *_L, dReal *_d,
     // compare A2 and A3
     dReal diff = A2.maxDifference (A3);
     if (diff > 1e-8)
-        dDebug (0,"L*D*L' check, maximum difference = %.6e\n",diff);
+        dDebug (0, "L*D*L' check, maximum difference = %.6e\n", diff);
 }
 
 #endif
@@ -310,10 +314,11 @@ static void checkFactorization (ATYPE A, dReal *_L, dReal *_d,
 
 #ifdef DEBUG_LCP
 
-static void checkPermutations (int i, int n, int nC, int nN, int *p, int *C)
+static 
+void checkPermutations (unsigned i, unsigned n, unsigned nC, unsigned nN, unsigned *p, unsigned *C)
 {
-    int j,k;
-    dIASSERT (nC>=0 && nN>=0 && (nC+nN)==i && i < n);
+    unsigned j,k;
+    dIASSERT (/*nC >= 0 && nN >= 0 && */(nC + nN) == i && i < n);
     for (k=0; k<i; k++) dIASSERT (p[k] >= 0 && p[k] < i);
     for (k=i; k<n; k++) dIASSERT (p[k] == k);
     for (j=0; j<nC; j++) {
@@ -360,92 +365,95 @@ static void checkPermutations (int i, int n, int nC, int nN, int *p, int *C)
 #ifdef dLCP_FAST
 
 struct dLCP {
-    const int m_n;
-    const int m_nskip;
-    int m_nub;
-    int m_nC, m_nN;				// size of each index set
+    const unsigned m_n;
+    const unsigned m_nskip;
+    unsigned m_nub;
+    unsigned m_nC, m_nN;				// size of each index set
     ATYPE const m_A;				// A rows
-    dReal *const m_x, * const m_b, *const m_w, *const m_lo,* const m_hi;	// permuted LCP problem data
+    dReal *const m_pairsbx, *const m_w, *const m_pairslh;	// permuted LCP problem data
     dReal *const m_L, *const m_d;				// L*D*L' factorization of set C
     dReal *const m_Dell, *const m_ell, *const m_tmp;
     bool *const m_state;
-    int *const m_findex, *const m_p, *const m_C;
+    int *const m_findex;
+    unsigned *const m_p, *const m_C;
 
-    dLCP (int _n, int _nskip, int _nub, dReal *_Adata, dReal *_x, dReal *_b, dReal *_w,
-        dReal *_lo, dReal *_hi, dReal *_L, dReal *_d,
+    dLCP (unsigned _n, unsigned _nskip, unsigned _nub, dReal *_Adata, dReal *_pairsbx, dReal *_w,
+        dReal *_pairslh, dReal *_L, dReal *_d,
         dReal *_Dell, dReal *_ell, dReal *_tmp,
-        bool *_state, int *_findex, int *_p, int *_C, dReal **Arows);
-    int getNub() const { return m_nub; }
-    void transfer_i_to_C (int i);
-    void transfer_i_to_N (int /*i*/) { m_nN++; }			// because we can assume C and N span 1:i-1
-    void transfer_i_from_N_to_C (int i);
-    void transfer_i_from_C_to_N (int i, void *tmpbuf);
-    static size_t estimate_transfer_i_from_C_to_N_mem_req(int nC, int nskip) { return dEstimateLDLTRemoveTmpbufSize(nC, nskip); }
-    int numC() const { return m_nC; }
-    int numN() const { return m_nN; }
-    int indexC (int i) const { return i; }
-    int indexN (int i) const { return i+m_nC; }
-    dReal Aii (int i) const  { return AROW(i)[i]; }
-    dReal AiC_times_qC (int i, dReal *q) const { return dDot (AROW(i), q, m_nC); }
-    dReal AiN_times_qN (int i, dReal *q) const { return dDot (AROW(i)+m_nC, q+m_nC, m_nN); }
+        bool *_state, int *_findex, unsigned *_p, unsigned *_C, dReal **Arows);
+    unsigned getNub() const { return m_nub; }
+    void transfer_i_to_C (unsigned i);
+    void transfer_i_to_N (unsigned /*i*/) { m_nN++; }			// because we can assume C and N span 1:i-1
+    void transfer_i_from_N_to_C (unsigned i);
+    void transfer_i_from_C_to_N (unsigned i, void *tmpbuf);
+    static size_t estimate_transfer_i_from_C_to_N_mem_req(unsigned nC, unsigned nskip) { return dEstimateLDLTRemoveTmpbufSize(nC, nskip); }
+    unsigned numC() const { return m_nC; }
+    unsigned numN() const { return m_nN; }
+    unsigned indexC (unsigned i) const { return i; }
+    unsigned indexN (unsigned i) const { return i+m_nC; }
+    dReal Aii (unsigned i) const  { return AROW(i)[i]; }
+    template<unsigned q_stride>
+    dReal AiC_times_qC (unsigned i, dReal *q) const { return dxtDot<q_stride> (AROW(i), q, m_nC); }
+    template<unsigned q_stride>
+    dReal AiN_times_qN (unsigned i, dReal *q) const { return dxtDot<q_stride> (AROW(i) + m_nC, q + (size_t)m_nC * q_stride, m_nN); }
     void pN_equals_ANC_times_qC (dReal *p, dReal *q);
-    void pN_plusequals_ANi (dReal *p, int i, int sign=1);
+    void pN_plusequals_ANi (dReal *p, unsigned i, bool dir_positive);
+    template<unsigned p_stride>
     void pC_plusequals_s_times_qC (dReal *p, dReal s, dReal *q);
     void pN_plusequals_s_times_qN (dReal *p, dReal s, dReal *q);
-    void solve1 (dReal *a, int i, int dir=1, int only_transfer=0);
-    void unpermute();
+    void solve1 (dReal *a, unsigned i, bool dir_positive, int only_transfer=0);
+    void unpermute_X();
+    void unpermute_W();
 };
 
 
-dLCP::dLCP (int _n, int _nskip, int _nub, dReal *_Adata, dReal *_x, dReal *_b, dReal *_w,
-            dReal *_lo, dReal *_hi, dReal *_L, dReal *_d,
+dLCP::dLCP (unsigned _n, unsigned _nskip, unsigned _nub, dReal *_Adata, dReal *_pairsbx, dReal *_w,
+            dReal *_pairslh, dReal *_L, dReal *_d,
             dReal *_Dell, dReal *_ell, dReal *_tmp,
-            bool *_state, int *_findex, int *_p, int *_C, dReal **Arows):
-m_n(_n), m_nskip(_nskip), m_nub(_nub), m_nC(0), m_nN(0),
+            bool *_state, int *_findex, unsigned *_p, unsigned *_C, dReal **Arows):
+    m_n(_n), m_nskip(_nskip), m_nub(_nub), m_nC(0), m_nN(0),
 # ifdef ROWPTRS
-m_A(Arows),
+    m_A(Arows),
 #else
-m_A(_Adata),
+    m_A(_Adata),
 #endif
-m_x(_x), m_b(_b), m_w(_w), m_lo(_lo), m_hi(_hi),
-m_L(_L), m_d(_d), m_Dell(_Dell), m_ell(_ell), m_tmp(_tmp),
-m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
+    m_pairsbx(_pairsbx), m_w(_w), m_pairslh(_pairslh), 
+    m_L(_L), m_d(_d), m_Dell(_Dell), m_ell(_ell), m_tmp(_tmp),
+    m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
 {
-    {
-        dSetZero (m_x,m_n);
-    }
+    dxtSetZero<PBX__MAX>(m_pairsbx + PBX_X, m_n);
 
     {
 # ifdef ROWPTRS
         // make matrix row pointers
         dReal *aptr = _Adata;
         ATYPE A = m_A;
-        const int n = m_n, nskip = m_nskip;
-        for (int k=0; k<n; aptr+=nskip, ++k) A[k] = aptr;
+        const unsigned n = m_n, nskip = m_nskip;
+        for (unsigned k=0; k<n; aptr+=nskip, ++k) A[k] = aptr;
 # endif
     }
 
     {
-        int *p = m_p;
-        const int n = m_n;
-        for (int k=0; k<n; ++k) p[k]=k;		// initially unpermuted
+        unsigned *p = m_p;
+        const unsigned n = m_n;
+        for (unsigned k=0; k != n; ++k) p[k] = k;		// initially unpermutted
     }
 
     /*
     // for testing, we can do some random swaps in the area i > nub
     {
-    const int n = m_n;
-    const int nub = m_nub;
+    const unsigned n = m_n;
+    const unsigned nub = m_nub;
     if (nub < n) {
-    for (int k=0; k<100; k++) {
-    int i1,i2;
+    for (unsigned k=0; k<100; k++) {
+    unsigned i1,i2;
     do {
     i1 = dRandInt(n-nub)+nub;
     i2 = dRandInt(n-nub)+nub;
     }
     while (i1 > i2); 
     //printf ("--> %d %d\n",i1,i2);
-    swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,m_findex,n,i1,i2,m_nskip,0);
+    swapProblem (m_A, m_pairsbx, m_w, m_pairslh, m_p, m_state, m_findex, n, i1, i2, m_nskip, 0);
     }
     }
     */
@@ -461,12 +469,12 @@ m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
 
     {
         int *findex = m_findex;
-        dReal *lo = m_lo, *hi = m_hi;
-        const int n = m_n;
-        for (int k = m_nub; k<n; ++k) {
+        dReal *pairslh = m_pairslh;
+        const unsigned n = m_n;
+        for (unsigned k = m_nub; k < n; ++k) {
             if (findex && findex[k] >= 0) continue;
-            if (lo[k]==-dInfinity && hi[k]==dInfinity) {
-                swapProblem (m_A,m_x,m_b,m_w,lo,hi,m_p,m_state,findex,n,m_nub,k,m_nskip,0);
+            if ((pairslh + (size_t)k * PLH__MAX)[PLH_LO] == -dInfinity && (pairslh + (size_t)k * PLH__MAX)[PLH_HI] == dInfinity) {
+                swapProblem (m_A, m_pairsbx, m_w, pairslh, m_p, m_state, findex, n, m_nub, k, m_nskip, 0);
                 m_nub++;
             }
         }
@@ -475,31 +483,32 @@ m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
     // if there are unbounded variables at the start, factorize A up to that
     // point and solve for x. this puts all indexes 0..nub-1 into C.
     if (m_nub > 0) {
-        const int nub = m_nub;
+        const unsigned nub = m_nub;
         {
             dReal *Lrow = m_L;
-            const int nskip = m_nskip;
-            for (int j=0; j<nub; Lrow+=nskip, ++j) memcpy(Lrow,AROW(j),(j+1)*sizeof(dReal));
+            const unsigned nskip = m_nskip;
+            for (unsigned j = 0; j < nub; Lrow += nskip, ++j) memcpy(Lrow, AROW(j), (j + 1) * sizeof(dReal));
         }
-        dFactorLDLT (m_L,m_d,nub,m_nskip);
-        memcpy (m_x,m_b,nub*sizeof(dReal));
-        dSolveLDLT (m_L,m_d,m_x,nub,m_nskip);
-        dSetZero (m_w,nub);
+        transfer_b_to_x<false> (m_pairsbx, nub);
+        dxtFactorLDLT<1> (m_L, m_d, nub, m_nskip);
+        dxtSolveLDLT<1, PBX__MAX> (m_L, m_d, m_pairsbx + PBX_X, nub, m_nskip);
+        dSetZero (m_w, nub);
         {
-            int *C = m_C;
-            for (int k=0; k<nub; ++k) C[k] = k;
+            unsigned *C = m_C;
+            for (unsigned k = 0; k < nub; ++k) C[k] = k;
         }
         m_nC = nub;
     }
 
     // permute the indexes > nub such that all findex variables are at the end
     if (m_findex) {
-        const int nub = m_nub;
+        const unsigned nub = m_nub;
         int *findex = m_findex;
-        int num_at_end = 0;
-        for (int k=m_n-1; k >= nub; k--) {
+        unsigned num_at_end = 0;
+        for (unsigned k = m_n; k > nub; ) {
+            --k;
             if (findex[k] >= 0) {
-                swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,findex,m_n,k,m_n-1-num_at_end,m_nskip,1);
+                swapProblem (m_A, m_pairsbx, m_w, m_pairslh, m_p, m_state, findex, m_n, k, m_n - 1 - num_at_end, m_nskip, 1);
                 num_at_end++;
             }
         }
@@ -508,11 +517,11 @@ m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
     // print info about indexes
     /*
     {
-    const int n = m_n;
-    const int nub = m_nub;
-    for (int k=0; k<n; k++) {
+    const unsigned n = m_n;
+    const unsigned nub = m_nub;
+    for (unsigned k=0; k<n; k++) {
     if (k<nub) printf ("C");
-    else if (m_lo[k]==-dInfinity && m_hi[k]==dInfinity) printf ("c");
+    else if ((m_pairslh + (size_t)k * PLH__MAX)[PLH_LO] == -dInfinity && (m_pairslh + (size_t)k * PLH__MAX)[PLH_HI] == dInfinity) printf ("c");
     else printf (".");
     }
     printf ("\n");
@@ -521,74 +530,76 @@ m_state(_state), m_findex(_findex), m_p(_p), m_C(_C)
 }
 
 
-void dLCP::transfer_i_to_C (int i)
+void dLCP::transfer_i_to_C (unsigned i)
 {
     {
-        if (m_nC > 0) {
+        const unsigned nC = m_nC;
+
+        if (nC > 0) {
             // ell,Dell were computed by solve1(). note, ell = D \ L1solve (L,A(i,C))
-            {
-                const int nC = m_nC;
-                dReal *const Ltgt = m_L + nC*m_nskip, *ell = m_ell;
-                for (int j=0; j<nC; ++j) Ltgt[j] = ell[j];
-            }
-            const int nC = m_nC;
-            m_d[nC] = dRecip (AROW(i)[i] - dDot(m_ell,m_Dell,nC));
+            dReal *const Ltgt = m_L + (size_t)m_nskip * nC, *ell = m_ell;
+            memcpy(Ltgt, ell, nC * sizeof(dReal));
+
+            dReal ell_Dell_dot = dxDot(m_ell, m_Dell, nC);
+            dReal AROW_i_i = AROW(i)[i] != ell_Dell_dot ? AROW(i)[i] : dNextAfter(AROW(i)[i], dInfinity); // A hack to avoid getting a zero in the denominator
+            m_d[nC] = dRecip (AROW_i_i - ell_Dell_dot);
         }
         else {
             m_d[0] = dRecip (AROW(i)[i]);
         }
 
-        swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,m_findex,m_n,m_nC,i,m_nskip,1);
+        swapProblem (m_A, m_pairsbx, m_w, m_pairslh, m_p, m_state, m_findex, m_n, nC, i, m_nskip, 1);
 
-        const int nC = m_nC;
         m_C[nC] = nC;
         m_nC = nC + 1; // nC value is outdated after this line
     }
 
 # ifdef DEBUG_LCP
-    checkFactorization (m_A,m_L,m_d,m_nC,m_C,m_nskip);
-    if (i < (m_n-1)) checkPermutations (i+1,m_n,m_nC,m_nN,m_p,m_C);
+    checkFactorization (m_A, m_L, m_d, m_nC, m_C, m_nskip);
+    if (i < (m_n-1)) checkPermutations (i+1, m_n, m_nC, m_nN, m_p, m_C);
 # endif
 }
 
 
-void dLCP::transfer_i_from_N_to_C (int i)
+void dLCP::transfer_i_from_N_to_C (unsigned i)
 {
     {
-        if (m_nC > 0) {
+        const unsigned nC = m_nC;
+        if (nC > 0) {
             {
                 dReal *const aptr = AROW(i);
                 dReal *Dell = m_Dell;
-                const int *C = m_C;
+                const unsigned *C = m_C;
 #   ifdef NUB_OPTIMIZATIONS
                 // if nub>0, initial part of aptr unpermuted
-                const int nub = m_nub;
-                int j=0;
+                const unsigned nub = m_nub;
+                unsigned j=0;
                 for ( ; j<nub; ++j) Dell[j] = aptr[j];
-                const int nC = m_nC;
                 for ( ; j<nC; ++j) Dell[j] = aptr[C[j]];
 #   else
-                const int nC = m_nC;
-                for (int j=0; j<nC; ++j) Dell[j] = aptr[C[j]];
+                for (unsigned j=0; j<nC; ++j) Dell[j] = aptr[C[j]];
 #   endif
             }
-            dSolveL1 (m_L,m_Dell,m_nC,m_nskip);
-            {
-                const int nC = m_nC;
-                dReal *const Ltgt = m_L + nC*m_nskip;
-                dReal *ell = m_ell, *Dell = m_Dell, *d = m_d;
-                for (int j=0; j<nC; ++j) Ltgt[j] = ell[j] = Dell[j] * d[j];
+            dxSolveL1 (m_L, m_Dell, nC, m_nskip);
+
+            dReal ell_Dell_dot = REAL(0.0);
+            dReal *const Ltgt = m_L + (size_t)m_nskip * nC;
+            dReal *ell = m_ell, *Dell = m_Dell, *d = m_d;
+            for (unsigned j = 0; j < nC; ++j) {
+                dReal ell_j, Dell_j = Dell[j];
+                Ltgt[j] = ell[j] = ell_j = Dell_j * d[j];
+                ell_Dell_dot += ell_j * Dell_j;
             }
-            const int nC = m_nC;
-            m_d[nC] = dRecip (AROW(i)[i] - dDot(m_ell,m_Dell,nC));
+            
+            dReal AROW_i_i = AROW(i)[i] != ell_Dell_dot ? AROW(i)[i] : dNextAfter(AROW(i)[i], dInfinity); // A hack to avoid getting a zero in the denominator
+            m_d[nC] = dRecip (AROW_i_i - ell_Dell_dot);
         }
         else {
             m_d[0] = dRecip (AROW(i)[i]);
         }
 
-        swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,m_findex,m_n,m_nC,i,m_nskip,1);
+        swapProblem (m_A, m_pairsbx, m_w, m_pairslh, m_p, m_state, m_findex, m_n, nC, i, m_nskip, 1);
 
-        const int nC = m_nC;
         m_C[nC] = nC;
         m_nN--;
         m_nC = nC + 1; // nC value is outdated after this line
@@ -606,25 +617,25 @@ void dLCP::transfer_i_from_N_to_C (int i)
 }
 
 
-void dLCP::transfer_i_from_C_to_N (int i, void *tmpbuf)
+void dLCP::transfer_i_from_C_to_N (unsigned i, void *tmpbuf)
 {
     {
-        int *C = m_C;
+        unsigned *C = m_C;
         // remove a row/column from the factorization, and adjust the
         // indexes (black magic!)
         int last_idx = -1;
-        const int nC = m_nC;
-        int j = 0;
-        for ( ; j<nC; ++j) {
-            if (C[j]==nC-1) {
+        const unsigned nC = m_nC;
+        unsigned j = 0;
+        for ( ; j < nC; ++j) {
+            if (C[j] == nC - 1) {
                 last_idx = j;
             }
-            if (C[j]==i) {
-                dLDLTRemove (m_A,C,m_L,m_d,m_n,nC,j,m_nskip,tmpbuf);
-                int k;
+            if (C[j] == i) {
+                dxLDLTRemove (m_A, C, m_L, m_d, m_n, nC, j, m_nskip, tmpbuf);
+                unsigned k;
                 if (last_idx == -1) {
-                    for (k=j+1 ; k<nC; ++k) {
-                        if (C[k]==nC-1) {
+                    for (k = j + 1 ; k < nC; ++k) {
+                        if (C[k] == nC - 1) {
                             break;
                         }
                     }
@@ -634,20 +645,20 @@ void dLCP::transfer_i_from_C_to_N (int i, void *tmpbuf)
                     k = last_idx;
                 }
                 C[k] = C[j];
-                if (j < (nC-1)) memmove (C+j,C+j+1,(nC-j-1)*sizeof(int));
+                if (j != (nC - 1)) memmove (C + j, C + j + 1, (nC - j - 1) * sizeof(C[0]));
                 break;
             }
         }
         dIASSERT (j < nC);
 
-        swapProblem (m_A,m_x,m_b,m_w,m_lo,m_hi,m_p,m_state,m_findex,m_n,i,nC-1,m_nskip,1);
+        swapProblem (m_A, m_pairsbx, m_w, m_pairslh, m_p, m_state, m_findex, m_n, i, nC - 1, m_nskip, 1);
 
         m_nN++;
         m_nC = nC - 1; // nC value is outdated after this line
     }
 
 # ifdef DEBUG_LCP
-    checkFactorization (m_A,m_L,m_d,m_nC,m_C,m_nskip);
+    checkFactorization (m_A, m_L, m_d, m_nC, m_C, m_nskip);
 # endif
 }
 
@@ -659,49 +670,51 @@ void dLCP::pN_equals_ANC_times_qC (dReal *p, dReal *q)
     // but i tried it and it actually made things slower on random 100x100
     // problems because of the overhead involved. so we'll stick with the
     // simple method for now.
-    const int nC = m_nC;
+    const unsigned nC = m_nC;
     dReal *ptgt = p + nC;
-    const int nN = m_nN;
-    for (int i=0; i<nN; ++i) {
-        ptgt[i] = dDot (AROW(i+nC),q,nC);
+    const unsigned nN = m_nN;
+    for (unsigned i = 0; i < nN; ++i) {
+        ptgt[i] = dxDot (AROW(i + nC), q, nC);
     }
 }
 
 
-void dLCP::pN_plusequals_ANi (dReal *p, int i, int sign)
+void dLCP::pN_plusequals_ANi (dReal *p, unsigned i, bool dir_positive)
 {
-    const int nC = m_nC;
+    const unsigned nC = m_nC;
     dReal *aptr = AROW(i) + nC;
     dReal *ptgt = p + nC;
-    if (sign > 0) {
-        const int nN = m_nN;
-        for (int j=0; j<nN; ++j) ptgt[j] += aptr[j];
+    if (dir_positive) {
+        const unsigned nN = m_nN;
+        for (unsigned j=0; j < nN; ++j) ptgt[j] += aptr[j];
     }
     else {
-        const int nN = m_nN;
-        for (int j=0; j<nN; ++j) ptgt[j] -= aptr[j];
+        const unsigned nN = m_nN;
+        for (unsigned j=0; j < nN; ++j) ptgt[j] -= aptr[j];
     }
 }
 
+template<unsigned p_stride>
 void dLCP::pC_plusequals_s_times_qC (dReal *p, dReal s, dReal *q)
 {
-    const int nC = m_nC;
-    for (int i=0; i<nC; ++i) {
-        p[i] += s*q[i];
+    const unsigned nC = m_nC;
+    dReal *q_end = q + nC;
+    for (; q != q_end; p += p_stride, ++q) {
+        *p += s * (*q);
     }
 }
 
 void dLCP::pN_plusequals_s_times_qN (dReal *p, dReal s, dReal *q)
 {
-    const int nC = m_nC;
+    const unsigned nC = m_nC;
     dReal *ptgt = p + nC, *qsrc = q + nC;
-    const int nN = m_nN;
-    for (int i=0; i<nN; ++i) {
-        ptgt[i] += s*qsrc[i];
+    const unsigned nN = m_nN;
+    for (unsigned i = 0; i < nN; ++i) {
+        ptgt[i] += s * qsrc[i];
     }
 }
 
-void dLCP::solve1 (dReal *a, int i, int dir, int only_transfer)
+void dLCP::solve1 (dReal *a, unsigned i, bool dir_positive, int only_transfer)
 {
     // the `Dell' and `ell' that are computed here are saved. if index i is
     // later added to the factorization then they can be reused.
@@ -709,108 +722,144 @@ void dLCP::solve1 (dReal *a, int i, int dir, int only_transfer)
     // @@@ question: do we need to solve for entire delta_x??? yes, but
     //     only if an x goes below 0 during the step.
 
-    if (m_nC > 0) {
+    const unsigned nC = m_nC;
+    if (nC > 0) {
         {
             dReal *Dell = m_Dell;
-            int *C = m_C;
+            unsigned *C = m_C;
             dReal *aptr = AROW(i);
 #   ifdef NUB_OPTIMIZATIONS
             // if nub>0, initial part of aptr[] is guaranteed unpermuted
-            const int nub = m_nub;
-            int j=0;
-            for ( ; j<nub; ++j) Dell[j] = aptr[j];
-            const int nC = m_nC;
-            for ( ; j<nC; ++j) Dell[j] = aptr[C[j]];
+            const unsigned nub = m_nub;
+            unsigned j = 0;
+            for ( ; j < nub; ++j) Dell[j] = aptr[j];
+            for ( ; j < nC; ++j) Dell[j] = aptr[C[j]];
 #   else
-            const int nC = m_nC;
-            for (int j=0; j<nC; ++j) Dell[j] = aptr[C[j]];
+            for (unsigned j = 0; j < nC; ++j) Dell[j] = aptr[C[j]];
 #   endif
         }
-        dSolveL1 (m_L,m_Dell,m_nC,m_nskip);
+        dxSolveL1 (m_L, m_Dell, nC, m_nskip);
         {
             dReal *ell = m_ell, *Dell = m_Dell, *d = m_d;
-            const int nC = m_nC;
-            for (int j=0; j<nC; ++j) ell[j] = Dell[j] * d[j];
+            for (unsigned j = 0; j < nC; ++j) ell[j] = Dell[j] * d[j];
         }
 
         if (!only_transfer) {
             dReal *tmp = m_tmp, *ell = m_ell;
             {
-                const int nC = m_nC;
-                for (int j=0; j<nC; ++j) tmp[j] = ell[j];
+                for (unsigned j = 0; j < nC; ++j) tmp[j] = ell[j];
             }
-            dSolveL1T (m_L,tmp,m_nC,m_nskip);
-            if (dir > 0) {
-                int *C = m_C;
+            dxSolveL1T (m_L, tmp, nC, m_nskip);
+            if (dir_positive) {
+                unsigned *C = m_C;
                 dReal *tmp = m_tmp;
-                const int nC = m_nC;
-                for (int j=0; j<nC; ++j) a[C[j]] = -tmp[j];
+                for (unsigned j = 0; j < nC; ++j) a[C[j]] = -tmp[j];
             } else {
-                int *C = m_C;
+                unsigned *C = m_C;
                 dReal *tmp = m_tmp;
-                const int nC = m_nC;
-                for (int j=0; j<nC; ++j) a[C[j]] = tmp[j];
+                for (unsigned j = 0; j < nC; ++j) a[C[j]] = tmp[j];
             }
         }
     }
 }
 
 
-void dLCP::unpermute()
+void dLCP::unpermute_X()
 {
-    // now we have to un-permute x and w
-    {
-        memcpy (m_tmp,m_x,m_n*sizeof(dReal));
-        dReal *x = m_x, *tmp = m_tmp;
-        const int *p = m_p;
-        const int n = m_n;
-        for (int j=0; j<n; ++j) x[p[j]] = tmp[j];
+    unsigned *p = m_p;
+    dReal *pairsbx = m_pairsbx;
+    const unsigned n = m_n;
+    for (unsigned j = 0; j < n; ++j) {
+        unsigned k = p[j];
+        if (k != j) {
+            // p[j] = j; -- not going to be checked anymore anyway
+            dReal x_j = (pairsbx + (size_t)j * PBX__MAX)[PBX_X];
+            for (;;) {
+                dxSwap(x_j, (pairsbx + (size_t)k * PBX__MAX)[PBX_X]);
+
+                unsigned orig_k = p[k];
+                p[k] = k;
+                if (orig_k == j) {
+                    break;
+                }
+                k = orig_k;
+            }
+            (pairsbx + (size_t)j * PBX__MAX)[PBX_X] = x_j;
+        }
     }
-    {
-        memcpy (m_tmp,m_w,m_n*sizeof(dReal));
-        dReal *w = m_w, *tmp = m_tmp;
-        const int *p = m_p;
-        const int n = m_n;
-        for (int j=0; j<n; ++j) w[p[j]] = tmp[j];
+}
+
+void dLCP::unpermute_W()
+{
+    memcpy (m_tmp, m_w, m_n * sizeof(dReal));
+
+    const unsigned *p = m_p;
+    dReal *w = m_w, *tmp = m_tmp;
+    const unsigned n = m_n;
+    for (unsigned j = 0; j < n; ++j) {
+        unsigned k = p[j];
+        w[k] = tmp[j];
     }
 }
 
 #endif // dLCP_FAST
 
 
+static void dxSolveLCP_AllUnbounded (dxWorldProcessMemArena *memarena, unsigned n, dReal *A, dReal pairsbx[PBX__MAX]);
+static void dxSolveLCP_Generic (dxWorldProcessMemArena *memarena, unsigned n, dReal *A, dReal pairsbx[PBX__MAX], 
+                                dReal *outer_w/*=NULL*/, unsigned nub, dReal pairslh[PLH__MAX], int *findex);
+
+/*extern */
+void dxSolveLCP (dxWorldProcessMemArena *memarena, unsigned n, dReal *A, dReal pairsbx[PBX__MAX],
+    dReal *outer_w/*=NULL*/, unsigned nub, dReal pairslh[PLH__MAX], int *findex)
+{
+    if (nub >= n)
+    {
+        dxSolveLCP_AllUnbounded (memarena, n, A, pairsbx);
+    }
+    else
+    {
+        dxSolveLCP_Generic (memarena, n, A, pairsbx, outer_w, nub, pairslh, findex);
+    }
+}
+
+//***************************************************************************
+// if all the variables are unbounded then we can just factor, solve, and return
+
+static 
+void dxSolveLCP_AllUnbounded (dxWorldProcessMemArena *memarena, unsigned n, dReal *A, dReal pairsbx[PBX__MAX])
+{
+    dAASSERT(A != NULL);
+    dAASSERT(pairsbx != NULL);
+    dAASSERT(n != 0);
+
+    transfer_b_to_x<true> (pairsbx, n);    
+
+    unsigned nskip = dPAD(n);
+    dxtFactorLDLT<PBX__MAX> (A, pairsbx + PBX_B, n, nskip);
+    dxtSolveLDLT<PBX__MAX, PBX__MAX> (A, pairsbx + PBX_B, pairsbx + PBX_X, n, nskip);
+}
+
 //***************************************************************************
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
-void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dReal *b,
-                dReal *outer_w/*=NULL*/, int nub, dReal *lo, dReal *hi, int *findex)
+static 
+void dxSolveLCP_Generic (dxWorldProcessMemArena *memarena, unsigned n, dReal *A, dReal pairsbx[PBX__MAX],
+    dReal *outer_w/*=NULL*/, unsigned nub, dReal pairslh[PLH__MAX], int *findex)
 {
-    dAASSERT (n>0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
+    dAASSERT (n > 0 && A && pairsbx && pairslh && nub >= 0 && nub < n);
 # ifndef dNODEBUG
     {
         // check restrictions on lo and hi
-        for (int k=0; k<n; ++k) dIASSERT (lo[k] <= 0 && hi[k] >= 0);
+        dReal *endlh = pairslh + (size_t)n * PLH__MAX;
+        for (dReal *currlh = pairslh; currlh != endlh; currlh += PLH__MAX) dIASSERT (currlh[PLH_LO] <= 0 && currlh[PLH_HI] >= 0);
     }
 # endif
 
-
-    // if all the variables are unbounded then we can just factor, solve,
-    // and return
-    if (nub >= n) {
-        dReal *d = memarena->AllocateArray<dReal> (n);
-        dSetZero (d, n);
-
-        int nskip = dPAD(n);
-        dFactorLDLT (A, d, n, nskip);
-        dSolveLDLT (A, d, b, n, nskip);
-        memcpy (x, b, n*sizeof(dReal));
-
-        return;
-    }
-
-    const int nskip = dPAD(n);
-    dReal *L = memarena->AllocateArray<dReal> (n*nskip);
+    const unsigned nskip = dPAD(n);
+    dReal *L = memarena->AllocateOveralignedArray<dReal> ((size_t)nskip * n, LMATRIX_ALIGNMENT);
     dReal *d = memarena->AllocateArray<dReal> (n);
-    dReal *w = outer_w ? outer_w : memarena->AllocateArray<dReal> (n);
+    dReal *w = outer_w != NULL ? outer_w : memarena->AllocateArray<dReal> (n);
     dReal *delta_w = memarena->AllocateArray<dReal> (n);
     dReal *delta_x = memarena->AllocateArray<dReal> (n);
     dReal *Dell = memarena->AllocateArray<dReal> (n);
@@ -820,16 +869,16 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
 #else
     dReal **Arows = NULL;
 #endif
-    int *p = memarena->AllocateArray<int> (n);
-    int *C = memarena->AllocateArray<int> (n);
+    unsigned *p = memarena->AllocateArray<unsigned> (n);
+    unsigned *C = memarena->AllocateArray<unsigned> (n);
 
     // for i in N, state[i] is 0 if x(i)==lo(i) or 1 if x(i)==hi(i)
     bool *state = memarena->AllocateArray<bool> (n);
 
     // create LCP object. note that tmp is set to delta_w to save space, this
     // optimization relies on knowledge of how tmp is used, so be careful!
-    dLCP lcp(n,nskip,nub,A,x,b,w,lo,hi,L,d,Dell,ell,delta_w,state,findex,p,C,Arows);
-    int adj_nub = lcp.getNub();
+    dLCP lcp(n, nskip, nub, A, pairsbx, w, pairslh, L, d, Dell, ell, delta_w, state, findex, p, C, Arows);
+    unsigned adj_nub = lcp.getNub();
 
     // loop over all indexes adj_nub..n-1. for index i, if x(i),w(i) satisfy the
     // LCP conditions then i is added to the appropriate index set. otherwise
@@ -841,7 +890,7 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
     // when that happens.
 
     bool hit_first_friction_index = false;
-    for (int i=adj_nub; i<n; ++i) {
+    for (unsigned i = adj_nub; i < n; ++i) {
         bool s_error = false;
         // the index i is the driving index and indexes i+1..n-1 are "dont care",
         // i.e. when we make changes to the system those x's will be zero and we
@@ -858,18 +907,19 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
 
         if (!hit_first_friction_index && findex && findex[i] >= 0) {
             // un-permute x into delta_w, which is not being used at the moment
-            for (int j=0; j<n; ++j) delta_w[p[j]] = x[j];
+            for (unsigned j = 0; j < n; ++j) delta_w[p[j]] = (pairsbx + (size_t)j * PBX__MAX)[PBX_X];
 
             // set lo and hi values
-            for (int k=i; k<n; ++k) {
+            for (unsigned k = i; k < n; ++k) {
+                dReal *currlh = pairslh + (size_t)k * PLH__MAX;
                 dReal wfk = delta_w[findex[k]];
                 if (wfk == 0) {
-                    hi[k] = 0;
-                    lo[k] = 0;
+                    currlh[PLH_HI] = 0;
+                    currlh[PLH_LO] = 0;
                 }
                 else {
-                    hi[k] = dFabs (hi[k] * wfk);
-                    lo[k] = -hi[k];
+                    currlh[PLH_HI] = dFabs (currlh[PLH_HI] * wfk);
+                    currlh[PLH_LO] = -currlh[PLH_HI];
                 }
             }
             hit_first_friction_index = true;
@@ -877,7 +927,11 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
 
         // thus far we have not even been computing the w values for indexes
         // greater than i, so compute w[i] now.
-        w[i] = lcp.AiC_times_qC (i,x) + lcp.AiN_times_qN (i,x) - b[i];
+        dReal wPrep = lcp.AiC_times_qC<PBX__MAX> (i, pairsbx + PBX_X) + lcp.AiN_times_qN<PBX__MAX> (i, pairsbx + PBX_X);
+
+        dReal *currbx = pairsbx + (size_t)i * PBX__MAX;
+
+        w[i] = wPrep - currbx[PBX_B];
 
         // if lo=hi=0 (which can happen for tangential friction when normals are
         // 0) then the index will be assigned to set N with some state. however,
@@ -889,61 +943,60 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
         // will never be checked for set changes. this means that the state for
         // these indexes may be incorrect, but that doesn't matter.
 
+        dReal *currlh = pairslh + (size_t)i * PLH__MAX;
+
         // see if x(i),w(i) is in a valid region
-        if (lo[i]==0 && w[i] >= 0) {
+        if (currlh[PLH_LO] == 0 && w[i] >= 0) {
             lcp.transfer_i_to_N (i);
             state[i] = false;
         }
-        else if (hi[i]==0 && w[i] <= 0) {
+        else if (currlh[PLH_HI] == 0 && w[i] <= 0) {
             lcp.transfer_i_to_N (i);
             state[i] = true;
         }
-        else if (w[i]==0) {
+        else if (w[i] == 0) {
             // this is a degenerate case. by the time we get to this test we know
             // that lo != 0, which means that lo < 0 as lo is not allowed to be +ve,
             // and similarly that hi > 0. this means that the line segment
             // corresponding to set C is at least finite in extent, and we are on it.
             // NOTE: we must call lcp.solve1() before lcp.transfer_i_to_C()
-            lcp.solve1 (delta_x,i,0,1);
+            lcp.solve1 (delta_x, i, false, 1);
 
             lcp.transfer_i_to_C (i);
         }
         else {
             // we must push x(i) and w(i)
             for (;;) {
-                int dir;
-                dReal dirf;
                 // find direction to push on x(i)
-                if (w[i] <= 0) {
-                    dir = 1;
-                    dirf = REAL(1.0);
-                }
-                else {
-                    dir = -1;
-                    dirf = REAL(-1.0);
-                }
+                bool dir_positive = (w[i] <= 0);
 
                 // compute: delta_x(C) = -dir*A(C,C)\A(C,i)
-                lcp.solve1 (delta_x,i,dir);
+                lcp.solve1 (delta_x, i, dir_positive);
 
-                // note that delta_x[i] = dirf, but we wont bother to set it
+                // note that delta_x[i] = (dir_positive ? 1 : -1), but we wont bother to set it
 
                 // compute: delta_w = A*delta_x ... note we only care about
                 // delta_w(N) and delta_w(i), the rest is ignored
-                lcp.pN_equals_ANC_times_qC (delta_w,delta_x);
-                lcp.pN_plusequals_ANi (delta_w,i,dir);
-                delta_w[i] = lcp.AiC_times_qC (i,delta_x) + lcp.Aii(i)*dirf;
+                lcp.pN_equals_ANC_times_qC (delta_w, delta_x);
+                lcp.pN_plusequals_ANi (delta_w, i, dir_positive);
+                delta_w[i] = dir_positive 
+                    ? lcp.AiC_times_qC<1> (i, delta_x) + lcp.Aii(i)
+                    : lcp.AiC_times_qC<1> (i, delta_x) - lcp.Aii(i);
 
                 // find largest step we can take (size=s), either to drive x(i),w(i)
                 // to the valid LCP region or to drive an already-valid variable
                 // outside the valid region.
 
                 int cmd = 1;		// index switching command
-                int si = 0;		// si = index to switch if cmd>3
-                dReal s = -w[i]/delta_w[i];
-                if (dir > 0) {
-                    if (hi[i] < dInfinity) {
-                        dReal s2 = (hi[i]-x[i])*dirf;	// was (hi[i]-x[i])/dirf	// step to x(i)=hi(i)
+                unsigned si = 0;		// si = index to switch if cmd>3
+
+                dReal s = delta_w[i] != REAL(0.0)
+                    ? -w[i] / delta_w[i]
+                    : (w[i] != REAL(0.0) ? dCopySign(dInfinity, -w[i]) : REAL(0.0));
+                    
+                if (dir_positive) {
+                    if (currlh[PLH_HI] < dInfinity) {
+                        dReal s2 = (currlh[PLH_HI] - currbx[PBX_X]);	// was (hi[i]-x[i])/dirf	// step to x(i)=hi(i)
                         if (s2 < s) {
                             s = s2;
                             cmd = 3;
@@ -951,8 +1004,8 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                     }
                 }
                 else {
-                    if (lo[i] > -dInfinity) {
-                        dReal s2 = (lo[i]-x[i])*dirf;	// was (lo[i]-x[i])/dirf	// step to x(i)=lo(i)
+                    if (currlh[PLH_LO] > -dInfinity) {
+                        dReal s2 = (currbx[PBX_X] - currlh[PLH_LO]); // was (lo[i]-x[i])/dirf	// step to x(i)=lo(i)
                         if (s2 < s) {
                             s = s2;
                             cmd = 2;
@@ -961,12 +1014,13 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                 }
 
                 {
-                    const int numN = lcp.numN();
-                    for (int k=0; k < numN; ++k) {
-                        const int indexN_k = lcp.indexN(k);
+                    const unsigned numN = lcp.numN();
+                    for (unsigned k = 0; k < numN; ++k) {
+                        const unsigned indexN_k = lcp.indexN(k);
                         if (!state[indexN_k] ? delta_w[indexN_k] < 0 : delta_w[indexN_k] > 0) {
                             // don't bother checking if lo=hi=0
-                            if (lo[indexN_k] == 0 && hi[indexN_k] == 0) continue;
+                            dReal *indexlh = pairslh + (size_t)indexN_k * PLH__MAX;
+                            if (indexlh[PLH_LO] == 0 && indexlh[PLH_HI] == 0) continue;
                             dReal s2 = -w[indexN_k] / delta_w[indexN_k];
                             if (s2 < s) {
                                 s = s2;
@@ -978,19 +1032,20 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                 }
 
                 {
-                    const int numC = lcp.numC();
-                    for (int k=adj_nub; k < numC; ++k) {
-                        const int indexC_k = lcp.indexC(k);
-                        if (delta_x[indexC_k] < 0 && lo[indexC_k] > -dInfinity) {
-                            dReal s2 = (lo[indexC_k]-x[indexC_k]) / delta_x[indexC_k];
+                    const unsigned numC = lcp.numC();
+                    for (unsigned k = adj_nub; k < numC; ++k) {
+                        const unsigned indexC_k = lcp.indexC(k);
+                        dReal *indexlh = pairslh + (size_t)indexC_k * PLH__MAX;
+                        if (delta_x[indexC_k] < 0 && indexlh[PLH_LO] > -dInfinity) {
+                            dReal s2 = (indexlh[PLH_LO] - (pairsbx + (size_t)indexC_k * PBX__MAX)[PBX_X]) / delta_x[indexC_k];
                             if (s2 < s) {
                                 s = s2;
                                 cmd = 5;
                                 si = indexC_k;
                             }
                         }
-                        if (delta_x[indexC_k] > 0 && hi[indexC_k] < dInfinity) {
-                            dReal s2 = (hi[indexC_k]-x[indexC_k]) / delta_x[indexC_k];
+                        if (delta_x[indexC_k] > 0 && indexlh[PLH_HI] < dInfinity) {
+                            dReal s2 = (indexlh[PLH_HI] - (pairsbx + (size_t)indexC_k * PBX__MAX)[PBX_X]) / delta_x[indexC_k];
                             if (s2 < s) {
                                 s = s2;
                                 cmd = 6;
@@ -1010,16 +1065,18 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                 if (s <= REAL(0.0)) {
                     dMessage (d_ERR_LCP, "LCP internal error, s <= 0 (s=%.4e)",(double)s);
                     if (i < n) {
-                        dSetZero (x+i,n-i);
-                        dSetZero (w+i,n-i);
+                        dxtSetZero<PBX__MAX>(currbx + PBX_X, n - i);
+                        dxSetZero (w + i, n - i);
                     }
                     s_error = true;
                     break;
                 }
 
                 // apply x = x + s * delta_x
-                lcp.pC_plusequals_s_times_qC (x, s, delta_x);
-                x[i] += s * dirf;
+                lcp.pC_plusequals_s_times_qC<PBX__MAX> (pairsbx + PBX_X, s, delta_x);
+                currbx[PBX_X] = dir_positive 
+                    ? currbx[PBX_X] + s
+                    : currbx[PBX_X] - s;
 
                 // apply w = w + s * delta_w
                 lcp.pN_plusequals_s_times_qN (w, s, delta_w);
@@ -1033,12 +1090,12 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                     lcp.transfer_i_to_C (i);
                     break;
                 case 2:		// done
-                    x[i] = lo[i];
+                    currbx[PBX_X] = currlh[PLH_LO];
                     state[i] = false;
                     lcp.transfer_i_to_N (i);
                     break;
                 case 3:		// done
-                    x[i] = hi[i];
+                    currbx[PBX_X] = currlh[PLH_HI];
                     state[i] = true;
                     lcp.transfer_i_to_N (i);
                     break;
@@ -1047,13 +1104,13 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
                     lcp.transfer_i_from_N_to_C (si);
                     break;
                 case 5:		// keep going
-                    x[si] = lo[si];
+                    (pairsbx + (size_t)si * PBX__MAX)[PBX_X] = (pairslh + (size_t)si * PLH__MAX)[PLH_LO];
                     state[si] = false;
                     tmpbuf = memarena->PeekBufferRemainder();
                     lcp.transfer_i_from_C_to_N (si, tmpbuf);
                     break;
                 case 6:		// keep going
-                    x[si] = hi[si];
+                    (pairsbx + (size_t)si * PBX__MAX)[PBX_X] = (pairslh + (size_t)si * PLH__MAX)[PLH_HI];
                     state[si] = true;
                     tmpbuf = memarena->PeekBufferRemainder();
                     lcp.transfer_i_from_C_to_N (si, tmpbuf);
@@ -1067,18 +1124,22 @@ void dSolveLCP (dxWorldProcessMemArena *memarena, int n, dReal *A, dReal *x, dRe
         if (s_error) {
             break;
         }
-    } // for (int i=adj_nub; i<n; ++i)
+    } // for (unsigned i = adj_nub; i < n; ++i)
 
-    lcp.unpermute();
+    // now we have to un-permute x and w
+    if (outer_w != NULL) {
+        lcp.unpermute_W();
+    }
+    lcp.unpermute_X(); // This destroys p[] and must be done last
 }
 
-size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
+size_t dxEstimateSolveLCPMemoryReq(unsigned n, bool outer_w_avail)
 {
-    const int nskip = dPAD(n);
+    const unsigned nskip = dPAD(n);
 
     size_t res = 0;
 
-    res += dEFFICIENT_SIZE(sizeof(dReal) * (n * nskip)); // for L
+    res += dOVERALIGNED_SIZE(sizeof(dReal) * ((size_t)n * nskip), LMATRIX_ALIGNMENT); // for L
     res += 5 * dEFFICIENT_SIZE(sizeof(dReal) * n); // for d, delta_w, delta_x, Dell, ell
     if (!outer_w_avail) {
         res += dEFFICIENT_SIZE(sizeof(dReal) * n); // for w
@@ -1086,7 +1147,7 @@ size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 #ifdef ROWPTRS
     res += dEFFICIENT_SIZE(sizeof(dReal *) * n); // for Arows
 #endif
-    res += 2 * dEFFICIENT_SIZE(sizeof(int) * n); // for p, C
+    res += 2 * dEFFICIENT_SIZE(sizeof(unsigned) * n); // for p, C
     res += dEFFICIENT_SIZE(sizeof(bool) * n); // for state
 
     // Use n instead of nC as nC varies at runtime while n is greater or equal to nC
@@ -1100,31 +1161,34 @@ size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 //***************************************************************************
 // accuracy and timing test
 
-static size_t EstimateTestSolveLCPMemoryReq(int n)
+static size_t EstimateTestSolveLCPMemoryReq(unsigned n)
 {
-    const int nskip = dPAD(n);
+    const unsigned nskip = dPAD(n);
 
     size_t res = 0;
 
-    res += 2 * dEFFICIENT_SIZE(sizeof(dReal) * (n * nskip)); // for A, A2
-    res += 10 * dEFFICIENT_SIZE(sizeof(dReal) * n); // for x, b, w, lo, hi, b2, lo2, hi2, tmp1, tmp2
+    res += 2 * dEFFICIENT_SIZE(sizeof(dReal) * ((size_t)n * nskip)); // for A, A2
+    res += 7 * dEFFICIENT_SIZE(sizeof(dReal) * n); // for x, b, w, lo, hi, tmp1, tmp2
+    res += dEFFICIENT_SIZE(sizeof(dReal) * PBX__MAX * n); // for pairsbx, 
+    res += dEFFICIENT_SIZE(sizeof(dReal) * PLH__MAX * n); // for pairslh
 
-    res += dEstimateSolveLCPMemoryReq(n, true);
+    res += dxEstimateSolveLCPMemoryReq(n, true);
 
     return res;
 }
 
 extern "C" ODE_API int dTestSolveLCP()
 {
-    const int n = 100;
+    const unsigned n = 100;
 
     size_t memreq = EstimateTestSolveLCPMemoryReq(n);
     dxWorldProcessMemArena *arena = dxAllocateTemporaryWorldProcessMemArena(memreq, NULL, NULL);
     if (arena == NULL) {
         return 0;
     }
+    arena->ResetState();
 
-    int i,nskip = dPAD(n);
+    unsigned i,nskip = dPAD(n);
 #ifdef dDOUBLE
     const dReal tol = REAL(1e-9);
 #endif
@@ -1141,15 +1205,14 @@ extern "C" ODE_API int dTestSolveLCP()
     dReal *hi = arena->AllocateArray<dReal> (n);
 
     dReal *A2 = arena->AllocateArray<dReal> (n*nskip);
-    dReal *b2 = arena->AllocateArray<dReal> (n);
-    dReal *lo2 = arena->AllocateArray<dReal> (n);
-    dReal *hi2 = arena->AllocateArray<dReal> (n);
+    dReal *pairsbx = arena->AllocateArray<dReal> (n * PBX__MAX);
+    dReal *pairslh = arena->AllocateArray<dReal> (n * PLH__MAX);
 
     dReal *tmp1 = arena->AllocateArray<dReal> (n);
     dReal *tmp2 = arena->AllocateArray<dReal> (n);
 
     double total_time = 0;
-    for (int count=0; count < 1000; count++) {
+    for (unsigned count=0; count < 1000; count++) {
         BEGIN_STATE_SAVE(arena, saveInner) {
 
             // form (A,b) = a random positive definite LCP problem
@@ -1160,7 +1223,7 @@ extern "C" ODE_API int dTestSolveLCP()
             for (i=0; i<n; i++) b[i] += (dRandReal()*REAL(0.2))-REAL(0.1);
 
             // choose `nub' in the range 0..n-1
-            int nub = 50; //dRandInt (n);
+            unsigned nub = 50; //dRandInt (n);
 
             // make limits
             for (i=0; i<nub; i++) lo[i] = -dInfinity;
@@ -1175,7 +1238,7 @@ extern "C" ODE_API int dTestSolveLCP()
             // set a few limits to lo=hi=0
             /*
             for (i=0; i<10; i++) {
-            int j = dRandInt (n-nub) + nub;
+            unsigned j = dRandInt (n-nub) + nub;
             lo[j] = 0;
             hi[j] = 0;
             }
@@ -1186,24 +1249,35 @@ extern "C" ODE_API int dTestSolveLCP()
             // ensure that it doesn't get referenced (if it does, the answer will be
             // wrong).
 
-            memcpy (A2,A,n*nskip*sizeof(dReal));
-            dClearUpperTriangle (A2,n);
-            memcpy (b2,b,n*sizeof(dReal));
-            memcpy (lo2,lo,n*sizeof(dReal));
-            memcpy (hi2,hi,n*sizeof(dReal));
-            dSetZero (x,n);
+            memcpy (A2, A, n * nskip * sizeof(dReal));
+            dClearUpperTriangle (A2, n);
+            for (i = 0; i != n; ++i) {
+                dReal *currbx = pairsbx + i * PBX__MAX;
+                currbx[PBX_B] = b[i];
+                currbx[PBX_X] = 0;
+            }
+            for (i = 0; i != n; ++i) {
+                dReal *currlh = pairslh + i * PLH__MAX;
+                currlh[PLH_LO] = lo[i];
+                currlh[PLH_HI] = hi[i];
+            }
             dSetZero (w,n);
 
             dStopwatch sw;
             dStopwatchReset (&sw);
             dStopwatchStart (&sw);
 
-            dSolveLCP (arena,n,A2,x,b2,w,nub,lo2,hi2,0);
+            dxSolveLCP (arena,n,A2,pairsbx,w,nub,pairslh,0);
 
             dStopwatchStop (&sw);
             double time = dStopwatchTime(&sw);
             total_time += time;
             double average = total_time / double(count+1) * 1000.0;
+
+            for (i = 0; i != n; ++i) {
+                const dReal *currbx = pairsbx + i * PBX__MAX;
+                x[i] = currbx[PBX_X];
+            }
 
             // check the solution
 
@@ -1213,7 +1287,7 @@ extern "C" ODE_API int dTestSolveLCP()
             // printf ("\tA*x = b+w, maximum difference = %.6e - %s (1)\n",diff,
             //	    diff > tol ? "FAILED" : "passed");
             if (diff > tol) dDebug (0,"A*x = b+w, maximum difference = %.6e",diff);
-            int n1=0,n2=0,n3=0;
+            unsigned n1=0,n2=0,n3=0;
             for (i=0; i<n; i++) {
                 if (x[i]==lo[i] && w[i] >= 0) {
                     n1++;	// ok

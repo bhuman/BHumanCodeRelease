@@ -188,37 +188,37 @@ void TimeWidget::applyFilter()
 QMenu* TimeWidget::createEditMenu() const
 {
   QMenu* menu = new QMenu(tr("&Timing"));
-  
+
   QAction* copyAction = menu->addAction(QIcon(":/Icons/page_copy.png"), tr("&Copy"));
   copyAction->setShortcut(QKeySequence(QKeySequence::Copy));
   copyAction->setStatusTip(tr("Copy the timing data to the clipboard"));
   connect(copyAction, SIGNAL(triggered()), this, SLOT(copy()));
-  
+
   return menu;
 }
 
 void TimeWidget::copy()
 {
   QApplication::clipboard()->clear();
-  
+
   QItemSelectionModel* selected = table->selectionModel();
   QModelIndexList indices = selected->selectedIndexes();
-  
+
   if(indices.size() < 1)
     return;
   qSort(indices);
-  
+
   QModelIndex previous = indices.first();
   indices.removeFirst();
   QString selected_text;
   QModelIndex current;
-  
+
   Q_FOREACH(current, indices)
   {
     QVariant data = table->model()->data(previous);
     QString text = data.toString();
     selected_text.append(text);
-    
+
     // Add last character for this element based on row or element change
     if(current.row() != previous.row())
       selected_text.append(QLatin1Char('\n'));
@@ -226,9 +226,9 @@ void TimeWidget::copy()
       selected_text.append(";");
     previous = current;
   }
-  
+
   // add last element
   selected_text.append(table->model()->data(current).toString());
-  
+
   QApplication::clipboard()->setText(selected_text);
 }

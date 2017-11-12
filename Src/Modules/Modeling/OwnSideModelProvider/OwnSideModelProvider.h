@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
+#include "Representations/BehaviorControl/Role.h"
 #include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -29,6 +30,7 @@ MODULE(OwnSideModelProvider,
   REQUIRES(RobotInfo),
   REQUIRES(GroundContactState),
   REQUIRES(Odometer),
+  USES(Role),
   PROVIDES(OwnSideModel),
   LOADS_PARAMETERS(
   {,

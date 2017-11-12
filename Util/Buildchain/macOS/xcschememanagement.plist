@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>Nao - Debug.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+		<key>Nao - Develop.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>Nao - Release.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+		<key>SimRobot - Debug.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
+		</dict>
+		<key>SimRobot - Develop.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
+		</dict>
+		<key>SimRobot - Release.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
+		<key>bush - Debug.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>6</integer>
+		</dict>
+		<key>bush - Release.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>7</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>20245218120416DB00C3BCD9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>203184E5173D0FE000E25227</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>203B32101E41E07100D16211</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>2042274C1202418600B9944D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20844AF411FC6F410037FA87</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20844B3611FCB34C0037FA87</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20844F1711FE33150037FA87</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20909CF9176BB55200A997C2</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20B7663F123001A300F11A62</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20C3017F12303D200014668E</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20DD73A1134E4E33003FF249</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>20EF877313B37D7500508E6A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>299502394E013F9C280A5D16</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>

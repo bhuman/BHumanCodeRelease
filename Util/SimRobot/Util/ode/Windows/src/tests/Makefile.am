@@ -26,5 +26,5 @@ tests_SOURCES = \
 
 tests_LDADD = \
     $(top_builddir)/ode/src/libode.la \
-    joints/libjoints.la \
+    joints/*.o \
     UnitTest++/src/libunittestpp.la

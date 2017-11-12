@@ -51,8 +51,8 @@ ODE_API dMessageFunction *dGetDebugHandler(void);
 ODE_API dMessageFunction *dGetMessageHandler(void);
 
 /* generate a fatal error, debug trap or a message. */
-ODE_API void dError (int num, const char *msg, ...);
-ODE_API void dDebug (int num, const char *msg, ...);
+ODE_API void ODE_NORETURN dError (int num, const char *msg, ...);
+ODE_API void ODE_NORETURN dDebug (int num, const char *msg, ...);
 ODE_API void dMessage (int num, const char *msg, ...);
 
 

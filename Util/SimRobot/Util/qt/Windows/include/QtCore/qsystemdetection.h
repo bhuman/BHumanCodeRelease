@@ -47,8 +47,8 @@
 /*
    The operating system, must be one of: (Q_OS_x)
 
-     DARWIN   - Any Darwin system (OS X, iOS, watchOS, tvOS)
-     OSX      - OS X
+     DARWIN   - Any Darwin system (macOS, iOS, watchOS, tvOS)
+     MACOS    - macOS
      IOS      - iOS
      WATCHOS  - watchOS
      TVOS     - tvOS
@@ -56,7 +56,6 @@
      OS2      - OS/2
      OS2EMX   - XFree86 on OS/2 (not PM)
      WIN32    - Win32 (Windows 2000/XP/Vista/7 and Windows Server 2003/2008)
-     WINCE    - WinCE (Windows CE 5.0)
      WINRT    - WinRT (Windows 8 Runtime)
      CYGWIN   - Cygwin
      SOLARIS  - Sun Solaris
@@ -67,6 +66,7 @@
      NETBSD   - NetBSD
      OPENBSD  - OpenBSD
      BSDI     - BSD/OS
+     INTERIX  - Interix
      IRIX     - SGI Irix
      OSF      - HP Tru64 UNIX
      SCO      - SCO OpenServer 5
@@ -102,19 +102,20 @@
 #      define Q_OS_DARWIN32
 #    endif
 #    if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-#      if defined(TARGET_OS_TV) && TARGET_OS_TV
-#        define Q_OS_TVOS
-#      elif defined(TARGET_OS_WATCH) && TARGET_OS_WATCH
+#      define QT_PLATFORM_UIKIT
+#      if defined(TARGET_OS_WATCH) && TARGET_OS_WATCH
 #        define Q_OS_WATCHOS
+#      elif defined(TARGET_OS_TV) && TARGET_OS_TV
+#        define Q_OS_TVOS
 #      else
 #        // TARGET_OS_IOS is only available in newer SDKs,
 #        // so assume any other iOS-based platform is iOS for now
 #        define Q_OS_IOS
 #      endif
 #    else
-#      // there is no "real" OS X define (rdar://22640089),
-#      // assume any non iOS-based platform is OS X for now
-#      define Q_OS_OSX
+#      // TARGET_OS_OSX is only available in newer SDKs,
+#      // so assume any non iOS-based platform is macOS for now
+#      define Q_OS_MACOS
 #    endif
 #  else
 #    error "Qt has not been ported to this Apple platform - see http://www.qt.io/developers"
@@ -128,14 +129,11 @@
 #  define Q_OS_WIN32
 #  define Q_OS_WIN64
 #elif !defined(SAG_COM) && (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__))
-#  if defined(WINCE) || defined(_WIN32_WCE)
-#    define Q_OS_WINCE
-#  elif defined(WINAPI_FAMILY)
+#  if defined(WINAPI_FAMILY)
 #    ifndef WINAPI_FAMILY_PC_APP
 #      define WINAPI_FAMILY_PC_APP WINAPI_FAMILY_APP
 #    endif
 #    if defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY==WINAPI_FAMILY_PHONE_APP
-#      define Q_OS_WINPHONE
 #      define Q_OS_WINRT
 #    elif WINAPI_FAMILY==WINAPI_FAMILY_PC_APP
 #      define Q_OS_WINRT
@@ -172,6 +170,9 @@
 #elif defined(__bsdi__)
 #  define Q_OS_BSDI
 #  define Q_OS_BSD4
+#elif defined(__INTERIX)
+#  define Q_OS_INTERIX
+#  define Q_OS_BSD4
 #elif defined(__sgi)
 #  define Q_OS_IRIX
 #elif defined(__osf__)
@@ -205,7 +206,7 @@
 #  error "Qt has not been ported to this OS - see http://www.qt-project.org/"
 #endif
 
-#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINCE) || defined(Q_OS_WINRT)
+#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64) || defined(Q_OS_WINRT)
 #  define Q_OS_WIN
 #endif
 
@@ -225,15 +226,16 @@
 #ifdef Q_OS_DARWIN64
 #define Q_OS_MAC64
 #endif
-#ifdef Q_OS_OSX
+#ifdef Q_OS_MACOS
 #define Q_OS_MACX
+#define Q_OS_OSX
 #endif
 
 #ifdef Q_OS_DARWIN
 #  include <Availability.h>
 #  include <AvailabilityMacros.h>
 #
-#  ifdef Q_OS_OSX
+#  ifdef Q_OS_MACOS
 #    if !defined(__MAC_OS_X_VERSION_MIN_REQUIRED) || __MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
 #       undef __MAC_OS_X_VERSION_MIN_REQUIRED
 #       define __MAC_OS_X_VERSION_MIN_REQUIRED __MAC_10_6
@@ -262,6 +264,9 @@
 #  if !defined(__MAC_10_11)
 #       define __MAC_10_11 101100
 #  endif
+#  if !defined(__MAC_10_12)
+#       define __MAC_10_12 101200
+#  endif
 #  if !defined(MAC_OS_X_VERSION_10_7)
 #       define MAC_OS_X_VERSION_10_7 1070
 #  endif
@@ -276,6 +281,9 @@
 #  endif
 #  if !defined(MAC_OS_X_VERSION_10_11)
 #       define MAC_OS_X_VERSION_10_11 101100
+#  endif
+#  if !defined(MAC_OS_X_VERSION_10_12)
+#       define MAC_OS_X_VERSION_10_12 101200
 #  endif
 #
 #  if !defined(__IPHONE_4_3)
@@ -316,6 +324,18 @@
 #  endif
 #  if !defined(__IPHONE_9_0)
 #       define __IPHONE_9_0 90000
+#  endif
+#  if !defined(__IPHONE_9_1)
+#       define __IPHONE_9_1 90100
+#  endif
+#  if !defined(__IPHONE_9_2)
+#       define __IPHONE_9_2 90200
+#  endif
+#  if !defined(__IPHONE_9_3)
+#       define __IPHONE_9_3 90300
+#  endif
+#  if !defined(__IPHONE_10_0)
+#       define __IPHONE_10_0 100000
 #  endif
 #endif
 

@@ -40,7 +40,10 @@
 #ifndef QABSTRACTSLIDER_H
 #define QABSTRACTSLIDER_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qwidget.h>
+
+QT_REQUIRE_CONFIG(abstractslider);
 
 QT_BEGIN_NAMESPACE
 

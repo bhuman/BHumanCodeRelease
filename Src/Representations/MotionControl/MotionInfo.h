@@ -20,10 +20,10 @@ STREAMABLE_WITH_BASE(MotionInfo, MotionRequest,
   bool isStanding() const
   {
     return motion == MotionRequest::stand ||
-    (motion == MotionRequest::specialAction &&
-     (specialActionRequest.specialAction == SpecialActionRequest::stand || specialActionRequest.specialAction == SpecialActionRequest::standHigh));
+           (motion == MotionRequest::specialAction &&
+            (specialActionRequest.specialAction == SpecialActionRequest::stand || specialActionRequest.specialAction == SpecialActionRequest::standHigh));
   },
-  
+
   (bool)(false) isMotionStable, /**< If true, the motion is stable, leading to a valid torso / camera matrix. */
   (Pose2f) upcomingOdometryOffset, /**< The remaining odometry offset for the currently executed motion. */
 });

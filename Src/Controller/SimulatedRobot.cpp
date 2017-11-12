@@ -53,7 +53,7 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   application = RoboCupCtrl::application;
 
   // get the robot's team color and number
-  blue = isBlue(robot);
+  firstTeam = isFirstTeam(robot);
   robotNumber = getNumber(robot);
   bool exists;
   // load camera Parameters
@@ -159,8 +159,8 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   stream >> jointCalibration;
 
   // fill arrays with pointers to other robots
-  blueRobots.clear();
-  redRobots.clear();
+  firstTeamRobots.clear();
+  secondTeamRobots.clear();
   // Parse "robots" group:
   SimRobot::Object* group = application->resolveObject("RoboCup.robots", SimRobotCore2::compound);
   for(unsigned currentRobot = 0, count = application->getObjectChildCount(*group); currentRobot < count; ++currentRobot)
@@ -170,9 +170,9 @@ void SimulatedRobot::init(SimRobot::Object* robot)
     if(number != robotNumber)
     {
       if(number <= 6)
-        blueRobots.push_back(robot);
+        firstTeamRobots.push_back(robot);
       else
-        redRobots.push_back(robot);
+        secondTeamRobots.push_back(robot);
     }
   }
   // Parse "extras" group:
@@ -184,9 +184,9 @@ void SimulatedRobot::init(SimRobot::Object* robot)
     if(number != robotNumber)
     {
       if(number <= 6)
-        blueRobots.push_back(robot);
+        firstTeamRobots.push_back(robot);
       else
-        redRobots.push_back(robot);
+        secondTeamRobots.push_back(robot);
     }
   }
 
@@ -208,22 +208,22 @@ void SimulatedRobot::getRobotPose(Pose2f& robotPose) const
   getPose2f(robot, robotPose);
   robotPose.translation = (getPosition(leftFoot) + getPosition(rightFoot)) * 0.5f;
 
-  if(blue)
+  if(firstTeam)
     robotPose = Pose2f(pi) + robotPose;
 }
 
 void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
 {
   // Initialize world state
-  worldState.bluePlayers.clear();
-  worldState.redPlayers.clear();
+  worldState.firstTeamPlayers.clear();
+  worldState.secondTeamPlayers.clear();
   worldState.balls.clear();
 
   // Get the standard ball position from the scene
   if(ball)
   {
     Vector3f ballPosition = getPosition3D(ball);
-    if(blue)
+    if(firstTeam)
       ballPosition = -ballPosition;
     worldState.balls.push_back(ballPosition);
   }
@@ -233,36 +233,36 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
   getPose2f(robot, tmp);
   worldState.ownPose = tmp;
   worldState.ownPose.translation = (getPosition(leftFoot) + getPosition(rightFoot)) * 0.5f;
-  if(blue)
+  if(firstTeam)
     worldState.ownPose = Pose2f(pi) + worldState.ownPose;
 
   // Add all other robots that are in this scene
-  for(unsigned int i = 0; i < blueRobots.size(); ++i)
+  for(unsigned int i = 0; i < firstTeamRobots.size(); ++i)
   {
     GroundTruthWorldState::GroundTruthPlayer newGTPlayer;
-    newGTPlayer.number = getNumber(blueRobots[i]);
-    newGTPlayer.upright = getPose2f(blueRobots[i], tmp);
+    newGTPlayer.number = getNumber(firstTeamRobots[i]);
+    newGTPlayer.upright = getPose2f(firstTeamRobots[i], tmp);
     newGTPlayer.pose = tmp;
-    if(blue)
+    if(firstTeam)
       newGTPlayer.pose = Pose2f(pi) + newGTPlayer.pose;
-    worldState.bluePlayers.push_back(newGTPlayer);
+    worldState.firstTeamPlayers.push_back(newGTPlayer);
   }
-  for(unsigned int i = 0; i < redRobots.size(); ++i)
+  for(unsigned int i = 0; i < secondTeamRobots.size(); ++i)
   {
     GroundTruthWorldState::GroundTruthPlayer newGTPlayer;
-    newGTPlayer.number = getNumber(redRobots[i]) - 6;
-    newGTPlayer.upright = getPose2f(redRobots[i], tmp);
+    newGTPlayer.number = getNumber(secondTeamRobots[i]) - 6;
+    newGTPlayer.upright = getPose2f(secondTeamRobots[i], tmp);
     newGTPlayer.pose = tmp;
-    if(blue)
+    if(firstTeam)
       newGTPlayer.pose = Pose2f(pi) + newGTPlayer.pose;
-    worldState.redPlayers.push_back(newGTPlayer);
+    worldState.secondTeamPlayers.push_back(newGTPlayer);
   }
 }
 
 void SimulatedRobot::getOdometryData(const Pose2f& robotPose, OdometryData& odometryData) const
 {
   ASSERT(robot);
-  (Pose2f&)odometryData = blue ? (Pose2f(pi) + robotPose) : robotPose;
+  (Pose2f&)odometryData = firstTeam ? (Pose2f(pi) + robotPose) : robotPose;
 }
 
 void SimulatedRobot::getAbsoluteBallPosition(Vector2f& ballPosition)
@@ -368,39 +368,19 @@ void SimulatedRobot::getImage(Image& image, CameraInfo& cameraInfo)
     image.setResolution(cameraInfo.width / 2, cameraInfo.height / 2, true);
 
     const unsigned char* const src = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->getValue().byteArray;
-    if(_supportsAVX2)
+    if(simdAligned<_supportsAVX2>(src))
     {
-      if(simdAligned<true>(src))
-      {
-        if(simdAligned<true>(image[0]))
-          convertImage<true, true, true>(src, image);
-        else
-          convertImage<true, false, true>(src, image);
-      }
+      if(simdAligned<_supportsAVX2>(image[0]))
+        convertImage<true, true, _supportsAVX2>(src, image);
       else
-      {
-        if(simdAligned<true>(image[0]))
-          convertImage<false, true, true>(src, image);
-        else
-          convertImage<false, false, true>(src, image);
-      }
+        convertImage<true, false, _supportsAVX2>(src, image);
     }
     else
     {
-      if(simdAligned<false>(src))
-      {
-        if(simdAligned<false>(image[0]))
-          convertImage<true, true, false>(src, image);
-        else
-          convertImage<true, false, false>(src, image);
-      }
+      if(simdAligned<_supportsAVX2>(image[0]))
+        convertImage<false, true, _supportsAVX2>(src, image);
       else
-      {
-        if(simdAligned<false>(image[0]))
-          convertImage<false, true, false>(src, image);
-        else
-          convertImage<false, false, false>(src, image);
-      }
+        convertImage<false, false, _supportsAVX2>(src, image);
     }
   }
 
@@ -426,14 +406,14 @@ void SimulatedRobot::getAndSetJointData(const JointRequest& jointRequest, JointS
   {
     // Get angles
     if(jointSensors[i])
-      jointSensorData.angles[i] = static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue - jointCalibration.joints[i].offset;
+      jointSensorData.angles[i] = static_cast<SimRobotCore2::SensorPort*>(jointSensors[i])->getValue().floatValue - jointCalibration.offsets[i];
     jointSensorData.currents.fill(SensorData::off);
     jointSensorData.temperatures.fill(0);
 
     // Set angles
     const float targetAngle = jointRequest.angles[i];
     if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore && jointActuators[i]) // if joint does exist
-      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
+      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
   }
   jointSensorData.timestamp = Time::getCurrentSystemTime();
 }
@@ -446,7 +426,7 @@ void SimulatedRobot::setJointRequest(const JointRequest& jointRequest) const
     // Set angles
     const float targetAngle = jointRequest.angles[i];
     if(targetAngle != JointAngles::off && targetAngle != JointAngles::ignore && jointActuators[i]) // if joint does exist
-      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.joints[i].offset);
+      reinterpret_cast<SimRobotCore2::ActuatorPort*>(jointActuators[i])->setValue(targetAngle + jointCalibration.offsets[i]);
   }
 }
 
@@ -463,23 +443,21 @@ void SimulatedRobot::getSensorData(FsrSensorData& fsrSensorData, InertialSensorD
   // FSR
   if(leftFoot && rightFoot)
   {
-    const SimRobot::Object* feet[2] = {leftFoot, rightFoot};
-    std::array<float, FsrSensors::numOfFsrSensors>* fsrs[2] = {&fsrSensorData.left, &fsrSensorData.right};
-    std::array<Vector2f, FsrSensors::numOfFsrSensors>* fsrPositions[2] = {&robotDimensions.leftFsrPositions, &robotDimensions.rightFsrPositions};
-    float* totals[2] = {&fsrSensorData.leftTotal, &fsrSensorData.rightTotal};
+    const SimRobot::Object* feet[Legs::numOfLegs] = {leftFoot, rightFoot};
+    std::array<Vector2f, FsrSensors::numOfFsrSensors>* fsrPositions[Legs::numOfLegs] = {&robotDimensions.leftFsrPositions, &robotDimensions.rightFsrPositions};
     static constexpr float weight = 0.415f;
-    for(int i = 0; i < 2; ++i)
+    FOREACH_ENUM((Legs) Leg, leg)
     {
       Pose3f pose;
-      getPose3f(feet[i], pose);
+      getPose3f(feet[leg], pose);
 
-      *totals[i] = 0.f;
-      for(int j = 0; j < 4; ++j)
+      fsrSensorData.totals[leg] = 0.f;
+      FOREACH_ENUM((FsrSensors) FsrSensor, sensor)
       {
-        const Vector2f& frsPos = (*fsrPositions[i])[j];
+        const Vector2f& frsPos = (*fsrPositions[leg])[sensor];
         Vector3f pos = (pose + Vector3f(frsPos.x(), frsPos.y(), -robotDimensions.footHeight)).translation;
-        (*fsrs[i])[j] = std::max(0.f, -pos.z() * weight);
-        *totals[i] += (*fsrs[i])[j];
+        fsrSensorData.pressures[leg][sensor] = std::max(0.f, -pos.z() * weight);
+        fsrSensorData.totals[leg] += fsrSensorData.pressures[leg][sensor];
       }
     }
   }
@@ -622,7 +600,7 @@ void SimulatedRobot::getPose3f(const SimRobot::Object* obj, Pose3f& pose3f) cons
   pose3f.rotation = rot;
 }
 
-bool SimulatedRobot::isBlue(const SimRobot::Object* obj)
+bool SimulatedRobot::isFirstTeam(const SimRobot::Object* obj)
 {
   return getNumber(obj) <= 6;
 }

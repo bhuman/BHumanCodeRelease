@@ -54,50 +54,46 @@ dxJointDHinge::getInfo1( dxJoint::Info1* info )
 
 
 void
-dxJointDHinge::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* info )
+dxJointDHinge::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    dxJointDBall::getInfo2( worldFPS, worldERP, info ); // sets row0
-    
-    const int skip = info->rowskip;
-    const int row1 = skip;
-    const int row2 = 2*skip;
-    const int row3 = 3*skip;
+    dxJointDBall::getInfo2( worldFPS, worldERP, rowskip, J1, J2, pairskip, pairRhsCfm, pairLoHi, findex ); // sets row0
     
     dVector3 globalAxis1;
     dBodyVectorToWorld(node[0].body, axis1[0], axis1[1], axis1[2], globalAxis1);
 
+    dxBody *body1 = node[1].body;
+
     // angular constraints, perpendicular to axis
     dVector3 p, q;
     dPlaneSpace(globalAxis1, p, q);
-    info->J1a[row1+0] = p[0];
-    info->J1a[row1+1] = p[1];
-    info->J1a[row1+2] = p[2];
-    info->J1a[row2+0] = q[0];
-    info->J1a[row2+1] = q[1];
-    info->J1a[row2+2] = q[2];
 
-    if ( node[1].body ) {
-        info->J2a[row1+0] = -p[0];
-        info->J2a[row1+1] = -p[1];
-        info->J2a[row1+2] = -p[2];
-        info->J2a[row2+0] = -q[0];
-        info->J2a[row2+1] = -q[1];
-        info->J2a[row2+2] = -q[2];
+    dCopyVector3(J1 + rowskip + GI2__JA_MIN, p);
+    if ( body1 ) {
+        dCopyNegatedVector3(J2 + rowskip + GI2__JA_MIN, p);
+    }
+
+    dCopyVector3(J1 + 2 * rowskip + GI2__JA_MIN, q);
+    if ( body1 ) {
+        dCopyNegatedVector3(J2 + 2 * rowskip + GI2__JA_MIN, q);
     }
 
     dVector3 globalAxis2;
-    if ( node[1].body )
-        dBodyVectorToWorld(node[1].body, axis2[0], axis2[1], axis2[2], globalAxis2);
-    else
+    if ( body1 ) {
+        dBodyVectorToWorld(body1, axis2[0], axis2[1], axis2[2], globalAxis2);
+    } else {
         dCopyVector3(globalAxis2, axis2);
+    }
     
     // similar to the hinge joint
     dVector3 u;
     dCalcVectorCross3(u, globalAxis1, globalAxis2);
-    const dReal k = worldFPS * this->erp;
 
-    info->c[1] = k * dCalcVectorDot3( u, p );
-    info->c[2] = k * dCalcVectorDot3( u, q );
+    const dReal k = worldFPS * this->erp;
+    pairRhsCfm[pairskip + GI2_RHS] = k * dCalcVectorDot3( u, p );
+    pairRhsCfm[2 * pairskip + GI2_RHS] = k * dCalcVectorDot3( u, q );
 
 
 
@@ -117,41 +113,32 @@ dxJointDHinge::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* info 
      * along this axis, and the linear constraint is enough.
      */
 
-    info->J1l[row3+0] = globalAxis1[0];
-    info->J1l[row3+1] = globalAxis1[1];
-    info->J1l[row3+2] = globalAxis1[2];
+    int rowskip_mul_3 = 3 * rowskip;
+    dCopyVector3(J1 + rowskip_mul_3 + GI2__JL_MIN, globalAxis1);
 
-    if ( node[1].body ) {
-
+    if ( body1 ) {
         dVector3 h;
-        dAddScaledVectors3(h, node[0].body->posr.pos, node[1].body->posr.pos, -0.5, 0.5);
+        dAddScaledVectors3(h, node[0].body->posr.pos, body1->posr.pos, -0.5, 0.5);
 
-        dVector3 omega;
-        dCalcVectorCross3(omega, h, globalAxis1);
-        info->J1a[row3+0] = omega[0];
-        info->J1a[row3+1] = omega[1];
-        info->J1a[row3+2] = omega[2];
+        dCalcVectorCross3(J1 + rowskip_mul_3 + GI2__JA_MIN, h, globalAxis1);
 
-        info->J2l[row3+0] = -globalAxis1[0];
-        info->J2l[row3+1] = -globalAxis1[1];
-        info->J2l[row3+2] = -globalAxis1[2];
-
-        info->J2a[row3+0] = omega[0];
-        info->J2a[row3+1] = omega[1];
-        info->J2a[row3+2] = omega[2];
+        dCopyNegatedVector3(J2 + rowskip_mul_3 + GI2__JL_MIN, globalAxis1);
+        dCopyVector3(J2 + rowskip_mul_3 + GI2__JA_MIN, J1 + rowskip_mul_3 + GI2__JA_MIN);
     }
 
     // error correction: both anchors should lie on the same plane perpendicular to the axis
     dVector3 globalA1, globalA2;
     dBodyGetRelPointPos(node[0].body, anchor1[0], anchor1[1], anchor1[2], globalA1);
-    if ( node[1].body )
-        dBodyGetRelPointPos(node[1].body, anchor2[0], anchor2[1], anchor2[2], globalA2);
-    else
+
+    if ( body1 ) {
+        dBodyGetRelPointPos(body1, anchor2[0], anchor2[1], anchor2[2], globalA2);
+    } else {
         dCopyVector3(globalA2, anchor2);
+    }
 
     dVector3 d;
     dSubtractVectors3(d, globalA1, globalA2); // displacement error
-    info->c[3] = -k * dCalcVectorDot3(globalAxis1, d);
+    pairRhsCfm[3 * pairskip + GI2_RHS] = -k * dCalcVectorDot3(globalAxis1, d);
 }
 
 void dJointSetDHingeAxis( dJointID j, dReal x, dReal y, dReal z )

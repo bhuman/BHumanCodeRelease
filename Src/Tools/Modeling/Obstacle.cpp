@@ -12,7 +12,7 @@ Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, unsigned 
   covariance(covariance), center(center), velocity(Vector2f::Zero()), lastSeen(lastSeen), type(type)
 {
   float radius = 55.f;
-  if(type != goalpost)
+  if(type != Obstacle::goalpost)
     radius = getRobotDepth();
   else if(Blackboard::getInstance().exists("FieldDimensions"))
     radius = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]).goalPostRadius;
@@ -40,4 +40,19 @@ void Obstacle::setLeftRight(const float radius)
   right.rotateRight();
   left += center;
   right += center;
+}
+
+bool Obstacle::isTeammate() const
+{
+  return type == Obstacle::teammate || type == Obstacle::fallenTeammate;
+}
+
+bool Obstacle::isOpponent() const
+{
+  return type == Obstacle::opponent || type == Obstacle::fallenOpponent;
+}
+
+bool Obstacle::hasOrientation() const
+{
+  return detectedOrientation == 2;
 }

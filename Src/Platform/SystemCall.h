@@ -46,5 +46,9 @@ public:
    */
   static int playSound(const char* name);
 
-  static int playSamples(std::vector<short>& samples);
+  /**
+   * Is the sound player currently playing a file?
+   * @return Is currently a file replayed?
+   */
+  static bool soundIsPlaying();
 };

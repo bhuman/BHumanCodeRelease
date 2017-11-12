@@ -59,7 +59,7 @@ void SoundPlayer::main()
 {
   while(isRunning())
   {
-    if(!isPlaying)
+    if(!playing)
     {
       std::string first;
       {
@@ -83,8 +83,8 @@ void SoundPlayer::playDirect(const std::string& basename)
   @autoreleasepool
   {
     NSSound* sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
-    [sound setDelegate:[[SoundPlayerDelegate alloc] initWithFlag:&isPlaying andSemaphore:&sem]];
-    isPlaying = (bool) [sound play];
+    [sound setDelegate:[[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem]];
+    playing = (bool) [sound play];
   }
 }
 
@@ -105,7 +105,7 @@ int SoundPlayer::play(const std::string& name)
   return queuelen;
 }
 
-int SoundPlayer::playSamples(std::vector<short>& samples)
+bool SoundPlayer::isPlaying()
 {
-  return 1;
+  return soundPlayer.playing;
 }

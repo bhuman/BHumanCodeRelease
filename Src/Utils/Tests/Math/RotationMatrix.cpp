@@ -7,13 +7,13 @@
 
 #include "gtest/gtest.h"
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 #define RUNS 1000
 #else
 #define RUNS 1000000
 #endif
 
-TEST(RotationMatrix, getAngleAxis)
+GTEST_TEST(RotationMatrix, getAngleAxis)
 {
   Vector3f vec(1, 2, 3);
   AngleAxisf aa(pi, Vector3f::UnitX());
@@ -22,7 +22,7 @@ TEST(RotationMatrix, getAngleAxis)
   Vector3f r2 = r.getAngleAxis() * vec;
   EXPECT_TRUE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(pi-0.000001f, Vector3f::UnitY());
+  r = aa = AngleAxisf(pi - 0.000001f, Vector3f::UnitY());
   r1 = aa * vec;
   r2 = r.getAngleAxis() * vec;
   EXPECT_TRUE(r1.isApprox(r2));
@@ -67,40 +67,44 @@ TEST(RotationMatrix, getAngleAxis)
     r1 = aa * vec;
     r2 = r.getAngleAxis() * vec;
     if(!r1.isApprox(r2, 1e-2f))
-      EXPECT_TRUE(r1.isApprox(r2, 1e-2f));
+      EXPECT_TRUE(r1.isApprox(r2, 1e-2f))
+          << "r1:\n"
+          << r1 << "\n"
+          << "r2\n"
+          << r2 << "\n";
   }
 }
 
-TEST(RotationMatrix, getPackedAngleAxisFaulty)
+GTEST_TEST(RotationMatrix, getPackedAngleAxisFaulty)
 {
   Vector3f vec(1, 2, 3);
-  AngleAxisf aa(pi-0.0001f, Vector3f::UnitX());
+  AngleAxisf aa(pi - 0.0001f, Vector3f::UnitX());
   RotationMatrix r = aa;
   Vector3f r1 = aa * vec;
   Vector3f r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(pi-0.0001f, Vector3f::UnitY());
+  r = aa = AngleAxisf(pi - 0.0001f, Vector3f::UnitY());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(pi-0.0001f, Vector3f::UnitZ());
+  r = aa = AngleAxisf(pi - 0.0001f, Vector3f::UnitZ());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(-pi+0.0001f, Vector3f::UnitX());
+  r = aa = AngleAxisf(-pi + 0.0001f, Vector3f::UnitX());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(-pi+0.0001f, Vector3f::UnitY());
+  r = aa = AngleAxisf(-pi + 0.0001f, Vector3f::UnitY());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
 
-  r = aa = AngleAxisf(-pi+0.0001f, Vector3f::UnitZ());
+  r = aa = AngleAxisf(-pi + 0.0001f, Vector3f::UnitZ());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
@@ -112,9 +116,9 @@ TEST(RotationMatrix, getPackedAngleAxisFaulty)
   EXPECT_FALSE(r1.isApprox(r2));
 }
 
-TEST(RotationMatrix, normalize)
+GTEST_TEST(RotationMatrix, normalize)
 {
-  for(int i = 0; i < 1000; ++i)
+  for(int i = 0; i < RUNS; ++i)
   {
     const Vector3f rVec = Vector3f::Random();
     const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
@@ -123,11 +127,15 @@ TEST(RotationMatrix, normalize)
 
     const Vector3f r1 = r * rVec;
     const Vector3f r2 = r.normalized() * rVec;
-    EXPECT_TRUE(r1.isApprox(r2));
+    EXPECT_TRUE(r1.isApprox(r2))
+        << "r1:\n"
+        << r1 << "\n"
+        << "r2\n"
+        << r2 << "\n";
   }
 }
 
-TEST(RotationMatrix, rotateX)
+GTEST_TEST(RotationMatrix, rotateX)
 {
   for(int i = 0; i < RUNS; ++i)
   {
@@ -139,11 +147,15 @@ TEST(RotationMatrix, rotateX)
 
     const Vector3f r1 = q * rVec;
     const Vector3f r2 = r * rVec;
-    EXPECT_TRUE(r1.isApprox(r2));
+    EXPECT_TRUE(r1.isApprox(r2))
+        << "r1:\n"
+        << r1 << "\n"
+        << "r2\n"
+        << r2 << "\n";
   }
 }
 
-TEST(RotationMatrix, rotateY)
+GTEST_TEST(RotationMatrix, rotateY)
 {
   for(int i = 0; i < RUNS; ++i)
   {
@@ -155,11 +167,15 @@ TEST(RotationMatrix, rotateY)
 
     const Vector3f r1 = q * rVec;
     const Vector3f r2 = r * rVec;
-    EXPECT_TRUE(r1.isApprox(r2));
+    EXPECT_TRUE(r1.isApprox(r2))
+        << "r1:\n"
+        << r1 << "\n"
+        << "r2\n"
+        << r2 << "\n";
   }
 }
 
-TEST(RotationMatrix, rotateZ)
+GTEST_TEST(RotationMatrix, rotateZ)
 {
   for(int i = 0; i < RUNS; ++i)
   {
@@ -172,11 +188,15 @@ TEST(RotationMatrix, rotateZ)
     const Vector3f r1 = q * rVec;
     const Vector3f r2 = r * rVec;
     if(!r1.isApprox(r2))
-      EXPECT_TRUE(r1.isApprox(r2));
+      EXPECT_TRUE(r1.isApprox(r2))
+          << "r1:\n"
+          << r1 << "\n"
+          << "r2\n"
+          << r2 << "\n";
   }
 }
 
-TEST(RotationMatrix, getXAngle)
+GTEST_TEST(RotationMatrix, getXAngle)
 {
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundX(angle);
@@ -209,11 +229,15 @@ TEST(RotationMatrix, getXAngle)
     r = RotationMatrix::aroundX(angle);
     xAngle = r.getXAngle();
     if(!Approx::isEqual(xAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(xAngle, angle, 1e-3f));
+      EXPECT_TRUE(Approx::isEqual(xAngle, angle, 1e-3f))
+          << "xAngle:\n"
+          << xAngle << "\n"
+          << "angle\n"
+          << angle << "\n";
   }
 }
 
-TEST(RotationMatrix, getYAngle)
+GTEST_TEST(RotationMatrix, getYAngle)
 {
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundY(angle);
@@ -246,11 +270,15 @@ TEST(RotationMatrix, getYAngle)
     const RotationMatrix r = RotationMatrix::aroundY(angle);
     float yAngle = r.getYAngle();
     if(!Approx::isEqual(yAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(yAngle, angle, 1e-3f));
+      EXPECT_TRUE(Approx::isEqual(yAngle, angle, 1e-3f))
+          << "yAngle:\n"
+          << yAngle << "\n"
+          << "angle\n"
+          << angle << "\n";
   }
 }
 
-TEST(RotationMatrix, getZAngle)
+GTEST_TEST(RotationMatrix, getZAngle)
 {
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundZ(angle);
@@ -283,6 +311,10 @@ TEST(RotationMatrix, getZAngle)
     r = RotationMatrix::aroundZ(angle);
     zAngle = r.getZAngle();
     if(!Approx::isEqual(zAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(zAngle, angle, 1e-3f));
+      EXPECT_TRUE(Approx::isEqual(zAngle, angle, 1e-3f))
+          << "zAngle:\n"
+          << zAngle << "\n"
+          << "angle\n"
+          << angle << "\n";
   }
 }

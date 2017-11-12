@@ -65,9 +65,9 @@ void PaintMethods::paintLine(const DebugDrawing::Line& element, QPainter& painte
   {
     setPen(element, painter);
     if(element.start == element.end)
-      painter.drawPoint(element.start.x(), element.start.y());
+      painter.drawPoint(QPointF(element.start.x() + 0.5f, element.start.y() + 0.5f));
     else
-      painter.drawLine(element.start.x(), element.start.y(), element.end.x(), element.end.y());
+      painter.drawLine(QLineF(element.start.x() + 0.5f, element.start.y() + 0.5f, element.end.x() + 0.5f, element.end.y() + 0.5f));
   }
 }
 
@@ -128,11 +128,12 @@ void PaintMethods::paintText(const DebugDrawing::Text& element, QPainter& painte
   painter.setFont(font);
 
   QTransform trans(painter.transform());
-  QTransform newTrans;
-  newTrans.translate(trans.dx(), trans.dy());
-  newTrans.scale(std::abs(trans.m11()), std::abs(trans.m22()));
+  QTransform newTrans(trans);
+  newTrans.translate(element.x, element.y);
+  newTrans.rotateRadians(std::atan2(trans.m21(), trans.m11()));
+  newTrans.scale(sgn(trans.m11()), sgn(trans.m22()));
   painter.setTransform(newTrans);
-  painter.drawText(QPoint(element.x * (int)sgn(trans.m11()), element.y * (int)sgn(trans.m22())), QObject::tr((const char*)(&element + 1)));
+  painter.drawText(QPoint(), QObject::tr((const char*)(&element + 1)));
   painter.setTransform(trans);
 }
 
@@ -163,7 +164,7 @@ void PaintMethods::setPen(const DebugDrawing::Element& element, QPainter& painte
   if(element.penStyle != Drawings::noPen)
   {
     pen.setColor(QColor(element.penColor.r, element.penColor.g, element.penColor.b, element.penColor.a));
-    pen.setWidth(element.width);
+    pen.setWidthF(element.width);
     switch(element.penStyle)
     {
       case Drawings::dashedPen:

@@ -27,6 +27,7 @@ class RobotView : public QGroupBox
   QLabel* pingBarWLAN;
   QLabel* pingBarLAN;
   QProgressBar* powerBar;
+  QLabel* logStatus;
   void init();
 public:
   void update();
@@ -49,6 +50,7 @@ public slots:
 private slots:
   void setPings(ENetwork network, std::map<std::string, double>* pings);
   void setPower(std::map<std::string, Power>* power);
+  void setLogs(std::map<std::string, int>* logs);
 signals:
   void robotChanged();
 };

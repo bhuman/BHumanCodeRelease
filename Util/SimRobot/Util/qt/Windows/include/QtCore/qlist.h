@@ -118,14 +118,18 @@ struct Q_CORE_EXPORT QListData {
 };
 
 template <typename T>
-class QList : public QListSpecialMethods<T>
+class QList
+#ifndef Q_QDOC
+    : public QListSpecialMethods<T>
+#endif
 {
 public:
     struct MemoryLayout
-        : QtPrivate::if_<
+        : std::conditional<
+            // must stay isStatic until ### Qt 6 for BC reasons (don't use !isRelocatable)!
             QTypeInfo<T>::isStatic || QTypeInfo<T>::isLarge,
             QListData::IndirectLayout,
-            typename QtPrivate::if_<
+            typename std::conditional<
                 sizeof(T) == sizeof(void*),
                 QListData::ArrayCompatibleLayout,
                 QListData::InlineWithPaddingLayout
@@ -891,7 +895,7 @@ Q_OUTOFLINE_TEMPLATE int QList<T>::removeAll(const T &_t)
             *n++ = *i;
     }
 
-    int removedCount = e - n;
+    int removedCount = int(e - n);
     d->end -= removedCount;
     return removedCount;
 }

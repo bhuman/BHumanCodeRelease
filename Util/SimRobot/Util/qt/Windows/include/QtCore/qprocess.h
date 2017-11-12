@@ -46,12 +46,13 @@
 
 #include <functional>
 
+QT_REQUIRE_CONFIG(processenvironment);
+
 QT_BEGIN_NAMESPACE
 
+class QProcessPrivate;
 
-#ifndef QT_NO_PROCESS
-
-#if !defined(Q_OS_WIN) || defined(Q_QDOC)
+#if !defined(Q_OS_WIN) || defined(Q_CLANG_QDOC)
 typedef qint64 Q_PID;
 #else
 QT_END_NAMESPACE
@@ -61,7 +62,6 @@ typedef struct _STARTUPINFOW Q_STARTUPINFO;
 QT_BEGIN_NAMESPACE
 #endif
 
-class QProcessPrivate;
 class QProcessEnvironmentPrivate;
 
 class Q_CORE_EXPORT QProcessEnvironment
@@ -104,6 +104,8 @@ private:
 };
 
 Q_DECLARE_SHARED(QProcessEnvironment)
+
+#if QT_CONFIG(process)
 
 class Q_CORE_EXPORT QProcess : public QIODevice
 {
@@ -187,7 +189,7 @@ public:
     void setStandardErrorFile(const QString &fileName, OpenMode mode = Truncate);
     void setStandardOutputProcess(QProcess *destination);
 
-#if defined(Q_OS_WIN)
+#if defined(Q_OS_WIN) || defined(Q_CLANG_QDOC)
     QString nativeArguments() const;
     void setNativeArguments(const QString &arguments);
     struct CreateProcessArguments
@@ -206,7 +208,7 @@ public:
     typedef std::function<void(CreateProcessArguments *)> CreateProcessArgumentModifier;
     CreateProcessArgumentModifier createProcessArgumentsModifier() const;
     void setCreateProcessArgumentsModifier(CreateProcessArgumentModifier modifier);
-#endif // Q_OS_WIN
+#endif // Q_OS_WIN || Q_CLANG_QDOC
 
     QString workingDirectory() const;
     void setWorkingDirectory(const QString &dir);
@@ -298,7 +300,7 @@ private:
     friend class QProcessManager;
 };
 
-#endif // QT_NO_PROCESS
+#endif // QT_CONFIG(process)
 
 QT_END_NAMESPACE
 

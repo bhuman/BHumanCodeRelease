@@ -40,6 +40,7 @@
 #ifndef QGUIAPPLICATION_H
 #define QGUIAPPLICATION_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qcoreapplication.h>
 #include <QtGui/qwindowdefs.h>
 #include <QtGui/qinputmethod.h>
@@ -72,7 +73,7 @@ class Q_GUI_EXPORT QGuiApplication : public QCoreApplication
 {
     Q_OBJECT
     Q_PROPERTY(QIcon windowIcon READ windowIcon WRITE setWindowIcon)
-    Q_PROPERTY(QString applicationDisplayName READ applicationDisplayName WRITE setApplicationDisplayName)
+    Q_PROPERTY(QString applicationDisplayName READ applicationDisplayName WRITE setApplicationDisplayName NOTIFY applicationDisplayNameChanged)
     Q_PROPERTY(QString desktopFileName READ desktopFileName WRITE setDesktopFileName)
     Q_PROPERTY(Qt::LayoutDirection layoutDirection READ layoutDirection WRITE setLayoutDirection NOTIFY layoutDirectionChanged)
     Q_PROPERTY(QString platformName READ platformName STORED false)
@@ -183,6 +184,7 @@ Q_SIGNALS:
     void saveStateRequest(QSessionManager &sessionManager);
 #endif
     void paletteChanged(const QPalette &pal);
+    void applicationDisplayNameChanged();
 
 protected:
     bool event(QEvent *) Q_DECL_OVERRIDE;

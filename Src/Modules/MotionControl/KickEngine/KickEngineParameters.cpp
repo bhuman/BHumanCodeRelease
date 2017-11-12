@@ -134,6 +134,7 @@ Vector2f KickEngineParameters::getComRefPosition(const float& phase, const int& 
   const Vector2f p2 = phaseParameters[phaseNumber].comTra[1];
   const Vector2f p3 = phaseParameters[phaseNumber].comTra[2];
 
+  //bezier
   return (-p0 + p1 * 3 - p2 * 3 + p3) * phase * phase * phase + (p0 * 3 - p1 * 6 + p2 * 3) * phase * phase + (p0 * -3 + p1 * 3) * phase + p0;
 }
 

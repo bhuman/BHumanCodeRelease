@@ -7,6 +7,8 @@
 #include "Platform/BHAssert.h"
 #include "Platform/Semaphore.h"
 #define pi _pi
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wnullability-completeness-on-arrays"
 #include <CoreServices.h>
 #undef pi
 

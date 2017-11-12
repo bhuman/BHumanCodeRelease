@@ -3,7 +3,7 @@
  * Implementation of class DebugDrawing3D.
  *
  * @author Philippe Schober
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #include "Controller/RobotConsole.h"

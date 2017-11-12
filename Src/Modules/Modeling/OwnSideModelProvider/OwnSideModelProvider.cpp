@@ -49,7 +49,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
             (theFrameInfo.getTimeSince(timeWhenPenalized) > minPenaltyTime || theGameInfo.state != gameStateWhenPenalized))
     {
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
-      largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyMark;
+      largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyMark + 700;
       ownSideModel.returnFromGameControllerPenalty = true;
     }
     else if(theCognitionStateChanges.lastGameState == STATE_SET && theGameInfo.state == STATE_PLAYING)
@@ -57,7 +57,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
       distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
       if(manuallyPlaced)
       {
-        if(Global::getSettings().isGoalkeeper)
+        if(theRole.isGoalkeeper())
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;
         else if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber)
           largestXPossibleAtKnownPosition = -theFieldDimensions.centerCircleRadius - awayFromLineDistance;
@@ -82,7 +82,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
 
   if(theGameInfo.state != STATE_SET)
     manuallyPlaced = false;
-  
+
   ownSideModel.manuallyPlaced = manuallyPlaced;
 }
 

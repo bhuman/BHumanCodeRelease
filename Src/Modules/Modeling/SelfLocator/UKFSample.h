@@ -20,10 +20,6 @@
  */
 class UKFSample : public UKFPose2D
 {
-private:
-  Pose3f inverseCameraMatrix;
-  Vector2f currentRotationDeviation;
-
 public:
   float weighting;
   float validity;
@@ -50,11 +46,13 @@ public:
 
   void updateByLine(const RegisteredLine& line);
 
-  void updateByPose(const RegisteredPose& pose, const CameraMatrix& cameraMatrix, const FieldDimensions& theFieldDimensions);
+  void updateByPose(const RegisteredPose& pose, const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
+                    const Vector2f& currentRotationDeviation, const FieldDimensions& theFieldDimensions);
 
 private:
   Matrix2f getCovOfCircle(const Vector2f& circlePos, float centerCircleRadius,
-                          const CameraMatrix& cameraMatrix) const;
+                          const CameraMatrix& cameraMatrix, const CameraMatrix& inverseCameraMatrix,
+                          const Vector2f& currentRotationDeviation) const;
 
   Vector2f getOrthogonalProjection(const Vector2f& base, const Vector2f& dir, const Vector2f& point) const;
 };

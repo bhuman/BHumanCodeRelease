@@ -1,42 +1,44 @@
 /**
-* @file FieldCoverage.cpp
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file FieldCoverage.cpp
+ * @author Andreas Stolpmann
+ */
 
 #include "FieldCoverage.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 
-FieldCoverage::GridLine& FieldCoverage::operator[](const int y)
+void FieldCoverage::operator >> (BHumanMessage& m) const
 {
-  return lines[y];
+  const GridLine& line = lines[lineToSendNext];
+
+  m.theBHumanArbitraryMessage.queue.out.bin << static_cast<char>(line.y);
+  for(size_t x = 0; x < line.timestamps.size(); ++x)
+    m.theBHumanArbitraryMessage.queue.out.bin << static_cast<unsigned short>(line.timestamps[x] / 100);
+  m.theBHumanArbitraryMessage.queue.out.finishMessage(id());
 }
 
-const FieldCoverage::GridLine& FieldCoverage::operator[](const int y) const
+void FieldCoverage::operator << (const BHumanMessage& m)
 {
-  return lines[y];
+  lines.clear();
 }
 
-FieldCoverageLineCompressed::FieldCoverageLineCompressed(const FieldCoverage::GridLine& line)
+bool FieldCoverage::handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp)
 {
-  y = static_cast<char>(line.y);
-  baseTime = static_cast<int>(line.timestamps[0]);
-  for(int x = 0; x < FieldCoverage::numOfCellsX; ++x)
-  {
-    timestamps[x] = static_cast<short>((static_cast<int>(line.timestamps[x]) - baseTime) / 20);
-    values[x] = static_cast<short>((static_cast<int>(line.values[x]) - baseTime) / 20);
-  }
-}
+  ASSERT(m.getMessageID() == id());
 
-FieldCoverageLineCompressed::operator FieldCoverage::GridLine() const
-{
-  FieldCoverage::GridLine line;
+  GridLine line;
+
+  char y;
+  m.bin >> y;
   line.y = static_cast<int>(y);
 
-  for(int x = 0; x < FieldCoverage::numOfCellsX; ++x)
+  unsigned short timestamp;
+  while(m.getBytesLeft())
   {
-    line.timestamps[x] = static_cast<unsigned>(static_cast<int>(timestamps[x] * 20) + baseTime);
-    line.values[x] = static_cast<unsigned>(static_cast<int>(values[x] * 20) + baseTime);
+    m.bin >> timestamp;
+    line.timestamps.emplace_back(toLocalTimestamp(static_cast<unsigned>(timestamp) * 100));
   }
 
-  return line;
+  lines.emplace_back(line);
+
+  return true;
 }

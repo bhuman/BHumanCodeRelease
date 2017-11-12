@@ -84,7 +84,7 @@ private:
   /** Converts ground truth player data to an obstacle
    * @param player A player
    * @param obstacleModel The model to which the player will be added
-   * @param isRed Whether a player is in team red or not
+   * @param isTeammate Whether a player is in the first team or not
    */
   void playerToObstacle(const GroundTruthWorldState::GroundTruthPlayer& player, ObstacleModel& obstacleModel, const bool isTeammate) const;
 

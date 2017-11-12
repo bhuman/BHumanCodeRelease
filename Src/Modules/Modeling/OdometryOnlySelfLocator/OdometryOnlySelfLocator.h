@@ -4,7 +4,7 @@
  * Declares a class that performs self-localization by adding odometry offsets.
  * This is not for real self-localization but for testing and debugging.
  *
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #pragma once

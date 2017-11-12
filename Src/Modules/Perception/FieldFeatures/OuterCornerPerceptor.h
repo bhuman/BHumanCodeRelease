@@ -32,6 +32,10 @@ MODULE(OuterCornerPerceptor,
     (Angle)(20_deg) allowedAngleDisplacement,
     (Angle)(20_deg) thresholdPostulatedCornerAngleOffset,
     (Angle)(20_deg) thesholdAngleDisForLTIntersections,
+
+    (float)(700.f) distrustAreaXRadius,
+    (float)(800.f) distrustAreaYRadius,
+    (Vector2f)(Vector2f(200.f, 0.f)) distrustAreaOffset,
   }),
 });
 

@@ -454,6 +454,15 @@ int dBoxTouchesBox (const dVector3 p1, const dMatrix3 R1,
 //****************************************************************************
 // other utility functions
 
+/*ODE_API */void dInfiniteAABB (dxGeom *geom, dReal aabb[6])
+{
+    aabb[0] = -dInfinity;
+    aabb[1] = dInfinity;
+    aabb[2] = -dInfinity;
+    aabb[3] = dInfinity;
+    aabb[4] = -dInfinity;
+    aabb[5] = dInfinity;
+}
 
 
 //****************************************************************************

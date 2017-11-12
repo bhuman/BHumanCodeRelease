@@ -59,11 +59,29 @@
       msg " (%s:%u)", __FILE__,__LINE__); }
 #  endif
 #  define dIVERIFY(a) dIASSERT(a)
+#  define dUVERIFY(a, msg) dUASSERT(a, msg)
 #else
 #  define dIASSERT(a) ((void)0)
 #  define dUASSERT(a,msg) ((void)0)
 #  define dDEBUGMSG(msg) ((void)0)
 #  define dIVERIFY(a) ((void)(a))
+#  define dUVERIFY(a, msg) ((void)(a))
+#endif
+
+#ifdef __GNUC__
+#define dUNUSED(Name) Name __attribute__((unused))
+#else // not __GNUC__
+#define dUNUSED(Name) Name
+#endif
+
+#if __cplusplus >= 201103L 
+#define dSASSERT(e)  static_assert(e, #e)
+#define dSMSGASSERT(e, message)  static_assert(e, message)
+#else
+#define d_SASSERT_INNER_TOKENPASTE(x, y) x ## y
+#define d_SASSERT_TOKENPASTE(x, y) d_SASSERT_INNER_TOKENPASTE(x, y)
+#define dSASSERT(e) typedef char dUNUSED(d_SASSERT_TOKENPASTE(d_StaticAssertionFailed_, __LINE__)[(e)?1:-1])
+#define dSMSGASSERT(e, message)  dSASSERT(e)
 #endif
 
 #  ifdef __GNUC__
@@ -75,7 +93,8 @@
 #  endif
 
 // Argument assert is a special case of user assert
-#define dAASSERT(a) dUASSERT(a,"Bad argument(s)")
+#define dAASSERT(a) dUASSERT(a, "Bad argument(s)")
+#define dAVERIFY(a) dUVERIFY(a, "Bad argument(s)")
 
 
 #endif

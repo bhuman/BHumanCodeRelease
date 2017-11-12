@@ -74,10 +74,13 @@ dxJointHinge::getInfo1( dxJoint::Info1 *info )
 }
 
 
-void dxJointHinge::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* info )
+void dxJointHinge::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
     // set the three ball-and-socket rows
-    setBall( this, worldFPS, worldERP, info, anchor1, anchor2 );
+    setBall( this, worldFPS, worldERP, rowskip, J1, J2, pairskip, pairRhsCfm, anchor1, anchor2 );
 
     // set the two hinge rows. the hinge axis should be the only unconstrained
     // rotational axis, the angular velocity of the two bodies perpendicular to
@@ -92,24 +95,18 @@ void dxJointHinge::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* i
     dMultiply0_331( ax1, node[0].body->posr.R, axis1 );
     dPlaneSpace( ax1, p, q );
 
-    int s3 = 3 * info->rowskip;
-    int s4 = 4 * info->rowskip;
+    dxBody *body1 = node[1].body;
+    
+    int currRowSkip = 3 * rowskip;
+    dCopyVector3(J1 + currRowSkip + GI2__JA_MIN, p);
+    if ( body1 ) {
+        dCopyNegatedVector3(J2 + currRowSkip + GI2__JA_MIN, p);
+    }
 
-    info->J1a[s3+0] = p[0];
-    info->J1a[s3+1] = p[1];
-    info->J1a[s3+2] = p[2];
-    info->J1a[s4+0] = q[0];
-    info->J1a[s4+1] = q[1];
-    info->J1a[s4+2] = q[2];
-
-    if ( node[1].body )
-    {
-        info->J2a[s3+0] = -p[0];
-        info->J2a[s3+1] = -p[1];
-        info->J2a[s3+2] = -p[2];
-        info->J2a[s4+0] = -q[0];
-        info->J2a[s4+1] = -q[1];
-        info->J2a[s4+2] = -q[2];
+    currRowSkip += rowskip;
+    dCopyVector3(J1 + currRowSkip + GI2__JA_MIN, q);
+    if ( body1 ) {
+        dCopyNegatedVector3(J2 + currRowSkip + GI2__JA_MIN, q);
     }
 
     // compute the right hand side of the constraint equation. set relative
@@ -128,24 +125,25 @@ void dxJointHinge::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr* i
     // ax1 x ax2 is in the plane space of ax1, so we project the angular
     // velocity to p and q to find the right hand side.
 
-    dVector3 ax2, b;
-    if ( node[1].body )
-    {
-        dMultiply0_331( ax2, node[1].body->posr.R, axis2 );
+    dVector3 b;
+    if ( body1 ) {
+        dVector3 ax2;
+        dMultiply0_331( ax2, body1->posr.R, axis2 );
+        dCalcVectorCross3( b, ax1, ax2 );
+    } else {
+        dCalcVectorCross3( b, ax1, axis2 );
     }
-    else
-    {
-        ax2[0] = axis2[0];
-        ax2[1] = axis2[1];
-        ax2[2] = axis2[2];
-    }
-    dCalcVectorCross3( b, ax1, ax2 );
+
     dReal k = worldFPS * worldERP;
-    info->c[3] = k * dCalcVectorDot3( b, p );
-    info->c[4] = k * dCalcVectorDot3( b, q );
+    int currPairSkip = 3 * pairskip;
+    pairRhsCfm[currPairSkip + GI2_RHS] = k * dCalcVectorDot3( b, p );
+    currPairSkip += pairskip;
+    pairRhsCfm[currPairSkip + GI2_RHS] = k * dCalcVectorDot3( b, q );
 
     // if the hinge is powered, or has joint limits, add in the stuff
-    limot.addLimot( this, worldFPS, info, 5, ax1, 1 );
+    currRowSkip += rowskip;
+    currPairSkip += pairskip;
+    limot.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 1 );
 }
 
 

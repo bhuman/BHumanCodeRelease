@@ -15,7 +15,7 @@ void TcpConnection::connect(const char* ip, int port, Handshake handshake, int m
   ack = false;
   client = false;
 
-  tcpComm = new TcpComm(ip, port, maxPackageSendSize, maxPackageReceiveSize);
+  tcpComm = std::make_unique<TcpComm>(ip, port, maxPackageSendSize, maxPackageReceiveSize);
   ASSERT(tcpComm);
   if(ip)
   {
@@ -23,8 +23,7 @@ void TcpConnection::connect(const char* ip, int port, Handshake handshake, int m
       client = true;
     else
     {
-      delete tcpComm;
-      tcpComm = new TcpComm(0, port, maxPackageSendSize, maxPackageReceiveSize);
+      tcpComm = std::make_unique<TcpComm>(nullptr, port, maxPackageSendSize, maxPackageReceiveSize);
       ASSERT(tcpComm);
     }
   }

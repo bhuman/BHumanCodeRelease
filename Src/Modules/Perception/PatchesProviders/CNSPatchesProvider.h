@@ -9,7 +9,7 @@
 
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/ImagePatches.h"
-#include "Representations/Perception/BallPercepts/BallRegions.h"
+#include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
 
 MODULE(CNSPatchesProvider,
 {,

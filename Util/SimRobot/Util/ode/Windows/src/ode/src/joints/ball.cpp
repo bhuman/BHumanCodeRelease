@@ -55,12 +55,15 @@ dxJointBall::getInfo1( dxJoint::Info1 *info )
 
 
 void
-dxJointBall::getInfo2( dReal worldFPS, dReal /*worldERP*/, const Info2Descr* info )
+dxJointBall::getInfo2( dReal worldFPS, dReal /*worldERP*/, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    info->cfm[0] = cfm;
-    info->cfm[1] = cfm;
-    info->cfm[2] = cfm;
-    setBall( this, worldFPS, this->erp, info, anchor1, anchor2 );
+    pairRhsCfm[GI2_CFM] = cfm;
+    pairRhsCfm[pairskip + GI2_CFM] = cfm;
+    pairRhsCfm[2 * pairskip + GI2_CFM] = cfm;
+    setBall( this, worldFPS, this->erp, rowskip, J1, J2, pairskip, pairRhsCfm, anchor1, anchor2 );
 }
 
 

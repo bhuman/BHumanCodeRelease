@@ -52,29 +52,11 @@ void enumInit(char* enums, const char** names, int numOfEnums);
  * Determine the number of entries in a tuple.
  */
 #ifdef _MSC_VER
-#define _ENUM_TUPLE_SIZE(...) _ENUM_JOIN(_ENUM_TUPLE_SIZE_II, (__VA_ARGS__, \
-  125, 124, 123, 122, 121, \
-  120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, \
-  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
-  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
-  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
-  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
-  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+#define _ENUM_TUPLE_SIZE(...) _ENUM_JOIN(_ENUM_TUPLE_SIZE_II, (__VA_ARGS__, _ENUM_TUPLE_SIZE_III))
 #else
-#define _ENUM_TUPLE_SIZE(...) _ENUM_TUPLE_SIZE_I((__VA_ARGS__, \
-  125, 124, 123, 122, 121, \
-  120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, \
-  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
-  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
-  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
-  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
-  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+#define _ENUM_TUPLE_SIZE(...) _ENUM_TUPLE_SIZE_I((__VA_ARGS__, _ENUM_TUPLE_SIZE_III))
 #define _ENUM_TUPLE_SIZE_I(params) _ENUM_TUPLE_SIZE_II params
 #endif
-
-/**
- * The last part of a macro to determine the number of entries in a tuple.
- */
 #define _ENUM_TUPLE_SIZE_II( \
   a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
   a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
@@ -83,6 +65,14 @@ void enumInit(char* enums, const char** names, int numOfEnums);
   a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, \
   a101, a102, a103, a104, a105, a106, a107, a108, a109, a110, a111, a112, a113, a114, a115, a116, a117, a118, a119, a120, \
   a121, a122, a123, a124, a125,...) a125
+#define _ENUM_TUPLE_SIZE_III \
+  125, 124, 123, 122, 121, \
+  120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, \
+  100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
+  79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
+  59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, \
+  39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, \
+  19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 #define _ENUM_REMOVELAST_1(a1)
 #define _ENUM_REMOVELAST_2(a1, a2) a1
@@ -270,7 +260,7 @@ void enumInit(char* enums, const char** names, int numOfEnums);
  * @param enum-domain Class or namespace in which the enum is defined (optional).
  * @param enum The enum type.
  * @param var The variable which holds the current enum value inside the loop.
- * @param limit Exclusive upper bound of the loop. Must be a value of the enum. 
+ * @param limit Exclusive upper bound of the loop. Must be a value of the enum.
  *              If not specified, all enum constants are enumerated.
  */
 #define FOREACH_ENUM(enum, ...) _FOREACH_ENUM_I(enum, _ENUM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
@@ -278,12 +268,12 @@ void enumInit(char* enums, const char** names, int numOfEnums);
 #define _FOREACH_ENUM_II(param, ...) _ENUM_JOIN param (__VA_ARGS__)
 #define _FOREACH_ENUM_1(enum, var) \
   for(_STREAM_DECL_I(enum))_STREAM_DECL_IV(enum))) var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(0); \
-      var < _STREAM_DECL_I(enum))_FOREACH_ENUM_NUMOFS(_FOREACH_ENUM_TYPE(enum)); \
-      var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
+    var < _STREAM_DECL_I(enum))_FOREACH_ENUM_NUMOFS(_FOREACH_ENUM_TYPE(enum)); \
+    var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
 #define _FOREACH_ENUM_2(enum, var, limit) \
   for(_STREAM_DECL_I(enum))_STREAM_DECL_IV(enum))) var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(0); \
-      var < _STREAM_DECL_I(enum))limit; \
-      var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
+    var < _STREAM_DECL_I(enum))limit; \
+    var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
 
 /** Extract the enum type from the declaration. */
 #define _FOREACH_ENUM_TYPE(...) _STREAM_JOIN(_FOREACH_ENUM_TYPE_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)

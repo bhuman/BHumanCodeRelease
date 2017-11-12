@@ -81,8 +81,8 @@ ODE_API void dMassAdd (dMass *a, const dMass *b);
 
 
 /* Backwards compatible API */
-ODE_API ODE_API_DEPRECATED void dMassSetCappedCylinder(dMass *a, dReal b, int c, dReal d, dReal e);
-ODE_API ODE_API_DEPRECATED void dMassSetCappedCylinderTotal(dMass *a, dReal b, int c, dReal d, dReal e);
+ODE_API_DEPRECATED ODE_API void dMassSetCappedCylinder(dMass *a, dReal b, int c, dReal d, dReal e);
+ODE_API_DEPRECATED ODE_API void dMassSetCappedCylinderTotal(dMass *a, dReal b, int c, dReal d, dReal e);
 
 
 struct dMass {

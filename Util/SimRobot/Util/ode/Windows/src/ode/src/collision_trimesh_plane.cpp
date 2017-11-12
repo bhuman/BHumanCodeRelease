@@ -34,7 +34,9 @@
 #include "collision_std.h"
 #include "collision_trimesh_internal.h"
 
+
 #if dTRIMESH_OPCODE
+
 int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* contacts, int skip )
 {
     dIASSERT( skip >= (int)sizeof( dContactGeom ) );
@@ -72,20 +74,21 @@ int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* conta
     const unsigned uiTLSKind = trimesh->getParentSpaceTLSKind();
     dIASSERT(uiTLSKind == plane->getParentSpaceTLSKind()); // The colliding spaces must use matching cleanup method
     TrimeshCollidersCache *pccColliderCache = GetTrimeshCollidersCache(uiTLSKind);
-    VertexUseCache &vertex_use_cache = pccColliderCache->VertexUses;
+    VertexUseCache &vertex_use_cache = pccColliderCache->m_VertexUses;
 
     // Reallocate vertex use cache if necessary
-    const int vertex_count = trimesh->Data->Mesh.GetNbVertices();
-    const bool cache_status = vertex_use_cache.ResizeAndResetVertexUSEDFlags(vertex_count);
+    const dxTriMeshData *meshData = trimesh->retrieveMeshData();
+    const int vertex_count = meshData->m_Mesh.GetNbVertices();
+    const bool cache_status = vertex_use_cache.resizeAndResetVertexUSEDFlags(vertex_count);
 
     // Cache the triangle count.
-    const int tri_count = trimesh->Data->Mesh.GetNbTriangles();
+    const int tri_count = meshData->m_Mesh.GetNbTriangles();
 
     // For each triangle
     for ( int t = 0; t < tri_count; ++t )
     {
         // Get triangle, which should also use callback.
-        bool ex_avail = trimesh->Data->Mesh.GetExTriangle( VPE, t, VC);
+        bool ex_avail = meshData->m_Mesh.GetExTriangle( VPE, t, VC);
 
         // For each vertex.
         for ( int v = 0; v < 3; ++v )
@@ -94,10 +97,10 @@ int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* conta
             if (cache_status && ex_avail)
             {
                 unsigned VIndex = VPE.Index[v];
-                if (vertex_use_cache.GetVertexUSEDFlag(VIndex))
+                if (vertex_use_cache.getVertexUSEDFlag(VIndex))
                     continue;
                 // mark this point as used
-                vertex_use_cache.SetVertexUSEDFlag(VIndex);
+                vertex_use_cache.setVertexUSEDFlag(VIndex);
             }
 
             //
@@ -164,9 +167,17 @@ int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* conta
     // Return contact count.
     return contact_count;
 }
+
+
 #endif // dTRIMESH_OPCODE
 
+
 #if dTRIMESH_GIMPACT
+
+#include "gimpact_contact_export_helper.h"
+#include "gimpact_plane_contact_accessor.h"
+
+
 int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* contacts, int skip )
 {
     dIASSERT( skip >= (int)sizeof( dContactGeom ) );
@@ -196,43 +207,18 @@ int dCollideTrimeshPlane( dxGeom *o1, dxGeom *o2, int flags, dContactGeom* conta
     }
 
 
+    vec4f * planecontact_results = GIM_DYNARRAY_POINTER(vec4f, collision_result);
     unsigned int contactcount = collision_result.m_size;
-    unsigned int contactmax = (unsigned int)(flags & NUMC_MASK);
-    if (contactcount > contactmax)
-    {
-        contactcount = contactmax;
-    }
-
-    dContactGeom* pcontact;
-    vec4f * planecontact_results = GIM_DYNARRAY_POINTER(vec4f,collision_result);
-
-    for(unsigned int i = 0; i < contactcount; i++ )
-    {
-        pcontact = SAFECONTACT(flags, contacts, i, skip);
-
-        pcontact->pos[0] = (*planecontact_results)[0];
-        pcontact->pos[1] = (*planecontact_results)[1];
-        pcontact->pos[2] = (*planecontact_results)[2];
-        pcontact->pos[3] = REAL(1.0);
-
-        pcontact->normal[0] = plane[0];
-        pcontact->normal[1] = plane[1];
-        pcontact->normal[2] = plane[2];
-        pcontact->normal[3] = 0;
-
-        pcontact->depth = (*planecontact_results)[3];
-        pcontact->g1 = o1; // trimesh geom
-        pcontact->g2 = o2; // plane geom
-        pcontact->side1 = -1; // note: don't have the triangle index, but OPCODE *does* do this properly
-        pcontact->side2 = -1;
-
-        planecontact_results++;
-    }
+    
+    dxPlaneContactAccessor contactaccessor(planecontact_results, plane, o1, o2);
+    contactcount = dxGImpactContactsExportHelper::ExportMaxDepthGImpactContacts(contactaccessor, contactcount, flags, contacts, skip);
 
     GIM_DYNARRAY_DESTROY(collision_result);
 
     return (int)contactcount;
 }
+
+
 #endif // dTRIMESH_GIMPACT
 
 

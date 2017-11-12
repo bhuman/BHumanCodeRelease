@@ -42,14 +42,13 @@
 #ifndef QFLAGS_H
 #define QFLAGS_H
 
-#include <QtCore/qtypeinfo.h>
-#include <QtCore/qtypetraits.h>
-
 #ifdef Q_COMPILER_INITIALIZER_LISTS
 #include <initializer_list>
 #endif
 
 QT_BEGIN_NAMESPACE
+
+class QDataStream;
 
 class QFlag
 {
@@ -94,16 +93,20 @@ class QFlags
     Q_STATIC_ASSERT_X((sizeof(Enum) <= sizeof(int)),
                       "QFlags uses an int as storage, so an enum with underlying "
                       "long long will overflow.");
+    Q_STATIC_ASSERT_X((std::is_enum<Enum>::value), "QFlags is only usable on enumeration types.");
+
     struct Private;
     typedef int (Private::*Zero);
+    template <typename E> friend QDataStream &operator>>(QDataStream &, QFlags<E> &);
+    template <typename E> friend QDataStream &operator<<(QDataStream &, QFlags<E>);
 public:
 #if defined(Q_CC_MSVC) || defined(Q_QDOC)
     // see above for MSVC
     // the definition below is too complex for qdoc
     typedef int Int;
 #else
-    typedef typename QtPrivate::if_<
-            QtPrivate::is_unsigned<Enum>::value,
+    typedef typename std::conditional<
+            std::is_unsigned<typename std::underlying_type<Enum>::type>::value,
             unsigned int,
             signed int
         >::type Int;
@@ -111,8 +114,8 @@ public:
     typedef Enum enum_type;
     // compiler-generated copy/move ctor/assignment operators are fine!
 #ifdef Q_QDOC
-    inline QFlags(const QFlags &other);
-    inline QFlags &operator=(const QFlags &other);
+    Q_DECL_CONSTEXPR inline QFlags(const QFlags &other);
+    Q_DECL_CONSTEXPR inline QFlags &operator=(const QFlags &other);
 #endif
     Q_DECL_CONSTEXPR inline QFlags(Enum f) Q_DECL_NOTHROW : i(Int(f)) {}
     Q_DECL_CONSTEXPR inline QFlags(Zero = Q_NULLPTR) Q_DECL_NOTHROW : i(0) {}
@@ -163,8 +166,10 @@ private:
     Int i;
 };
 
+#ifndef Q_MOC_RUN
 #define Q_DECLARE_FLAGS(Flags, Enum)\
 typedef QFlags<Enum> Flags;
+#endif
 
 #define Q_DECLARE_INCOMPATIBLE_FLAGS(Flags) \
 Q_DECL_CONSTEXPR inline QIncompatibleFlag operator|(Flags::enum_type f1, int f2) Q_DECL_NOTHROW \
@@ -179,8 +184,11 @@ Q_DECL_CONSTEXPR inline QFlags<Flags::enum_type> operator|(Flags::enum_type f1, 
 
 #else /* Q_NO_TYPESAFE_FLAGS */
 
+#ifndef Q_MOC_RUN
 #define Q_DECLARE_FLAGS(Flags, Enum)\
 typedef uint Flags;
+#endif
+
 #define Q_DECLARE_OPERATORS_FOR_FLAGS(Flags)
 
 #endif /* Q_NO_TYPESAFE_FLAGS */

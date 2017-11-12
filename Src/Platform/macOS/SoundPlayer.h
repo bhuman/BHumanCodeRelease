@@ -20,7 +20,7 @@ private:
   std::deque<std::string> queue;
   std::string filePrefix;
   Semaphore sem;
-  bool isPlaying = false;
+  bool playing = false;
 
 public:
   /**
@@ -31,7 +31,11 @@ public:
    */
   static int play(const std::string& name);
 
-  static int playSamples(std::vector<short>& samples);
+  /**
+   * Is the sound player currently playing a file?
+   * @return Is currently a file replayed?
+   */
+  static bool isPlaying();
 
 private:
   ~SoundPlayer();

@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Covariance.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Transformation.h"
-#include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 
 class BallLocatorTools
 {
@@ -55,11 +55,20 @@ public:
     return 1.f / std::max((pi2 * std::sqrt(std::max(cov.determinant(), 0.f))), 0.0000001f);
   }
 
+  /**
+   * Function calculates possible intersection between a line and a circle.
+   * @param lineBase, the base of the line
+   * @param lineDir, the direction of the line
+   * @param circleBase, the center of the circle
+   * @param circleRadius, the radius of the circle
+   * @param factor, the factor to stretch the radius
+   * @return true, if there is a possible intersection, else false
+   */
   static bool getSmallestLineWithCircleIntersectionFactor(const Vector2f& lineBase, const Vector2f& lineDir, const Vector2f& circleBase, float circleRadius, float& factor)
   {
     const Vector2f& dir = lineDir;
     float a = lineDir.dot(lineDir);
-    if(a == 0.f)
+    if(a == 0.f) // Check if the dirction is zero vector
       return false;
     const Vector2f base = lineBase - circleBase;
     float b = 2.f * (dir.dot(base));
@@ -83,7 +92,7 @@ public:
     factor1 = ((lineBase1.y() - lineBase2.y()) * lineDir2.x() - (lineBase1.x() - lineBase2.x()) * lineDir2.y()) / h;
     return true;
   }
-  
+
   /** Checks, if a ball is within the robot's current field of view and should thus be detected by the BallPerceptor
    * @param expectedBallPositionOnField A ball position in coordinates relative to the robot
    * @param expectedBallRadiusOnField The ball radius "in reality"

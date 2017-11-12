@@ -14,15 +14,16 @@ void BallSpotPatchesProvider::update(ImagePatches& imagePatches)
   for(const Vector2i& spot : theBallSpots.ballSpots)
   {
     const int scanRegionDimension = theCameraInfo.camera == CameraInfo::Camera::lower ? 48 * spot.y() / 185 + 48 : std::max(2 * theImage.neuralNetImageRadius, 259 * spot.y() / 1000 - 3);
-    const int offsetX = spot.x() - scanRegionDimension / 2, offsetY = spot.y() - scanRegionDimension / 2;
-    imagePatches.patches.emplace_back(
-      theImage,
-      Vector2s(
-        static_cast<short>(std::max(0, std::min(theImage.width - 1, offsetX))),
-        static_cast<short>(std::max(0, std::min(theImage.height - 1, offsetY)))
-      ),
-      static_cast<short>(std::min(scanRegionDimension, theImage.width - offsetX)),
-      static_cast<short>(std::min(scanRegionDimension, theImage.height - offsetY))
-    );
+    const int left = std::max(0, spot.x() - scanRegionDimension / 2) >> 1;
+    const int right = std::min(theCameraInfo.width, spot.x() + scanRegionDimension / 2) >> 1;
+    const int top = std::max(0, spot.y() - scanRegionDimension / 2) >> 1;
+    const int bottom = std::min(theCameraInfo.height, spot.y() + scanRegionDimension / 2) >> 1;
+    if(left < right && top < bottom)
+      imagePatches.patches.emplace_back(
+        theImage,
+        Vector2s(static_cast<short>(left), static_cast<short>(top)),
+        static_cast<short>(right - left),
+        static_cast<short>(bottom - top)
+      );
   }
 }

@@ -7,6 +7,11 @@ Legend
  [!]  An important note
 =======================
 
+2015/12/28 oleh_derevenko
+
+ [*]  Atomics assembler implementation has been improved and enabled for
+      GCC and _OU_TARGET_ARCH_X86/_OU_TARGET_ARCH_X64 with _OU_TARGET_OS_GENUNIX
+
 2010/04/24 oleh_derevenko
 
  [+]  A cast operator to non-const reference of contained type added for

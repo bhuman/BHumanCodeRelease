@@ -11,11 +11,14 @@
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 #include <algorithm>
 
-void PlayersPerceptor::update(PlayersPercept& playersPercept)
+void PlayersPerceptor::update(PlayersImagePercept& playersPercept)
 {
   DECLARE_DEBUG_DRAWING("module:PlayersPerceptor", "drawingOnImage");
 
   playersPercept.players.clear();
+
+  if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
+    return;
 
   if(!theCameraMatrix.isValid || !calcRealWorldSizes())
     return;
@@ -43,19 +46,7 @@ void PlayersPerceptor::update(PlayersPercept& playersPercept)
     else
       scanJersey(*i, jerseyYFirst, true) || scanJersey(*i, jerseyYSecond, true) || scanJersey(*i, jerseyYThird, true);
 
-    const Vector2f correctedCenter = theImageCoordinateSystem.toCorrected(Vector2i(i->realCenterX, i->y2));
-    const Vector2f correctedLeft = theImageCoordinateSystem.toCorrected(Vector2i(i->x1FeetOnly, i->y2));
-    const Vector2f correctedRight = theImageCoordinateSystem.toCorrected(Vector2i(i->x2FeetOnly, i->y2));
-
-    if(Transformation::imageToRobot(correctedCenter, theCameraMatrix, theCameraInfo, i->centerOnField) &&
-       Transformation::imageToRobot(correctedLeft, theCameraMatrix, theCameraInfo, i->leftOnField) &&
-       Transformation::imageToRobot(correctedRight, theCameraMatrix, theCameraInfo, i->rightOnField))
-    {
-      i->centerOnField.normalize(i->centerOnField.norm() + robotDepth);
-      ++i;
-    }
-    else
-      i = playersPercept.players.erase(i);
+    ++i;
   }
 }
 
@@ -78,7 +69,7 @@ bool PlayersPerceptor::calcRealWorldSizes()
       farthestYGap = yGapMillisUpper;
       farthestMinWidth = minWidthMillisUpper;
     }
-    
+
     horizon = 1;
     pCorrected = theImageCoordinateSystem.toCorrected(Vector2i(theCameraInfo.width / 2, horizon));
     if(!Transformation::imageToRobot(pCorrected, theCameraMatrix, theCameraInfo, point))
@@ -160,7 +151,7 @@ void PlayersPerceptor::scanVerticalLine(int index, int x)
     ASSERT(x >= 0 && x < theCameraInfo.width && y >= 0 && y < theCameraInfo.height);
     //RECTANGLE("module:PlayersPerceptor", x, y, x, y, 0, Drawings::solidPen, ColorRGBA::yellow);
     const PixelTypes::ColoredPixel& pixel = theECImage.colored[y][x];
-    if(pixel == FieldColors::green) //|| theColorTable[pixel].is(FieldColors::orange))
+    if(pixel == FieldColors::field || pixel == FieldColors::black)// HACK RoboCup17 added black
     {
       shortRange = 0;
       longRange -= greenMinus;
@@ -194,10 +185,10 @@ void PlayersPerceptor::scanVerticalLine(int index, int x)
   verticalLines[index].noFeet = (maxY == yEnd);
 }
 
-bool PlayersPerceptor::combineVerticalLines(PlayersPercept& playersPercept)
+bool PlayersPerceptor::combineVerticalLines(PlayersImagePercept& playersPercept)
 {
   int maxY = 0;
-  int maxYIndex;
+  int maxYIndex = 0;
   int xGap;
   int yGap;
   int connected;
@@ -313,7 +304,7 @@ bool PlayersPerceptor::combineVerticalLines(PlayersPercept& playersPercept)
   {
     //RECTANGLE("module:PlayersPerceptor", x, y, x, y, 0, Drawings::solidPen, ColorRGBA::yellow);
     const PixelTypes::ColoredPixel& pixel = theECImage.colored[y][x];
-    if(pixel == FieldColors::green)//|| theColorTable[pixel].is(FieldColors::orange))
+    if(pixel == FieldColors::field || pixel == FieldColors::black) // HACK RoboCup17 added black
     {
       if(++gap > 1)
       {
@@ -347,7 +338,7 @@ bool PlayersPerceptor::combineVerticalLines(PlayersPercept& playersPercept)
   }
 
   // register obstacle
-  PlayersPercept::Player obstacle = PlayersPercept::Player();
+  PlayersImagePercept::PlayerInImage obstacle = PlayersImagePercept::PlayerInImage();
   obstacle.x1 = left;
   obstacle.x2 = right;
   obstacle.y1 = top;
@@ -365,7 +356,7 @@ bool PlayersPerceptor::combineVerticalLines(PlayersPercept& playersPercept)
   return true;
 }
 
-bool PlayersPerceptor::scanJersey(PlayersPercept::Player& obstacle, float height, bool searchForPlayer)
+bool PlayersPerceptor::scanJersey(PlayersImagePercept::PlayerInImage& obstacle, float height, bool searchForPlayer)
 {
   Vector2f vanishingPoint = computeVanishingPointZ();
 
@@ -385,8 +376,8 @@ bool PlayersPerceptor::scanJersey(PlayersPercept::Player& obstacle, float height
   int white = 0;
 
   bool ownJerseyIsBlack = theOwnTeamInfo.teamColor == TEAM_BLACK;
-  bool opponentJerseyIsBlack = theOwnTeamInfo.teamColor == TEAM_BLACK;
-  ASSERT(theOwnTeamInfo.teamColor < 4 && theOpponentTeamInfo.teamColor < 4);
+  bool opponentJerseyIsBlack = theOpponentTeamInfo.teamColor == TEAM_BLACK;
+  ASSERT(theOwnTeamInfo.teamColor < 10 && theOpponentTeamInfo.teamColor < 10);
   Image::Pixel ownColor = colors[theOwnTeamInfo.teamColor];
   Image::Pixel opponentColor = colors[theOpponentTeamInfo.teamColor];
 
@@ -396,6 +387,9 @@ bool PlayersPerceptor::scanJersey(PlayersPercept::Player& obstacle, float height
   {
     Image::Pixel current = theImage.getFullSizePixel(y, static_cast<int>(x));
     ColorModelConversions::fromYUVToHSI(current.y, current.cb, current.cr, current.h, current.s, current.i);
+    //FIXME
+    //THE USAGE OF COLORMODELCONVERSION IS WRONG
+    //DON'T USE IMAGE AT ALL PLS
 
     RECTANGLE("module:PlayersPerceptor", x, y, x, y, 1, Drawings::solidPen, ColorRGBA::yellow);
 
@@ -421,28 +415,22 @@ bool PlayersPerceptor::scanJersey(PlayersPercept::Player& obstacle, float height
       int diffToOwnH = (int) std::min(std::min(std::abs(current.h - ownColor.h), (std::abs(current.h - ownColor.h + 256))), (std::abs(current.h - ownColor.h - 256)));
       int diffToOpponentsH = (int) std::min(std::min(std::abs(current.h - opponentColor.h), (std::abs(current.h - opponentColor.h + 256))), (std::abs(current.h - opponentColor.h - 256)));
       int maxRangeH = this->maxRangeH * (current.i < maxDarkI ? 2 : 1);
-      if(diffToOpponentsH < maxRangeH && diffToOwnH >= maxRangeH && current.s > maxGrayS)
+
+      // if there is no saturation, ignore:
+      if(current.s <= maxGrayS)
+        continue;
+
+      // if the pixel is in range of the opponents hue AND (the owns hue not OR the opponents hue is more in range than the own hue):
+      if(diffToOpponentsH < maxRangeH && (diffToOwnH >= maxRangeH || diffToOwnH >= diffToOpponentsH))
       {
         RECTANGLE("module:PlayersPerceptor", x, y, x, y, 1, Drawings::solidPen, ColorRGBA::red);
         opponent++;
       }
-      else if(diffToOpponentsH >= maxRangeH && diffToOwnH < maxRangeH && current.s > maxGrayS)
+      // if  the pixel is in range of the own hue AND (the opponents hue not OR the own hue is more in range than the opponents hue):
+      else if(diffToOwnH < maxRangeH && (diffToOpponentsH >= maxRangeH || diffToOwnH < diffToOpponentsH))
       {
         RECTANGLE("module:PlayersPerceptor", x, y, x, y, 1, Drawings::solidPen, ColorRGBA::blue);
         teammate++;
-      }
-      else if(diffToOpponentsH < maxRangeH && diffToOwnH < maxRangeH && current.s > maxGrayS)
-      {
-        if(diffToOwnH < diffToOpponentsH)
-        {
-          RECTANGLE("module:PlayersPerceptor", x, y, x, y, 1, Drawings::solidPen, ColorRGBA::blue);
-          teammate++;
-        }
-        else
-        {
-          RECTANGLE("module:PlayersPerceptor", x, y, x, y, 1, Drawings::solidPen, ColorRGBA::red);
-          opponent++;
-        }
       }
     }
   }

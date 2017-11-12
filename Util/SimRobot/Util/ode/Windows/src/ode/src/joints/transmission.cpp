@@ -27,7 +27,7 @@
 #include "joint_internal.h"
 
 namespace {
-    inline dReal clamp(dReal x, dReal minX, dReal maxX)
+    static inline dReal clamp(dReal x, dReal minX, dReal maxX)
     {
         return x < minX ? minX : (x > maxX ? maxX : x);
     }
@@ -80,9 +80,10 @@ dxJointTransmission::getInfo1( dxJoint::Info1* info )
 }
 
 void
-dxJointTransmission::getInfo2( dReal worldFPS, 
-                               dReal /*worldERP*/,
-                               const Info2Descr* info )
+dxJointTransmission::getInfo2( dReal worldFPS, dReal /*worldERP*/,
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
  {
     dVector3 a[2], n[2], l[2], r[2], c[2], s, t, O, d, z, u, v;
     dReal theta, delta, nn, na_0, na_1, cosphi, sinphi, m;
@@ -123,7 +124,7 @@ dxJointTransmission::getInfo2( dReal worldFPS,
         dIASSERT (ratio > 0);
         
         dSubtractVectors3(d, a[1], a[0]);
-        dAddScaledVectors3(c[0], a[0], d, 1, ratio / (1 + ratio));
+        dAddVectorScaledVector3(c[0], a[0], d, ratio / (1 + ratio));
         dCopyVector3(c[1], c[0]);
         
         dNormalize3(d);
@@ -160,7 +161,7 @@ dxJointTransmission::getInfo2( dReal worldFPS,
         for (i = 0 ; i < 2 ; i += 1) {
             dSubtractVectors3(d, a[i], O);
             m = dCalcVectorDot3(d, l[i]);        
-            dAddScaledVectors3(c[i], O, l[i], 1, m);
+            dAddVectorScaledVector3(c[i], O, l[i], m);
         }
 
         break;
@@ -233,7 +234,6 @@ dxJointTransmission::getInfo2( dReal worldFPS,
             //      reference[i][4],reference[i][5],reference[i][6],
             //      reference[i][8],reference[i][9],reference[i][10]);
 
-            radii[i] = radii[i];
             phase[i] = 0;
         }
 
@@ -329,7 +329,7 @@ dxJointTransmission::getInfo2( dReal worldFPS,
     // backlash gap.
 
     if (backlash == 0 || fabs(delta) > backlash) {
-        // The constraint is satisfied iff the absolute velocity of the
+        // The constraint is satisfied if the absolute velocity of the
         // contact point projected onto the tangent of the wheels is equal
         // for both gears.  This velocity can be calculated as:
         // 
@@ -343,30 +343,30 @@ dxJointTransmission::getInfo2( dReal worldFPS,
             dSubtractVectors3 (r[i], c[i], p[i]);
         }
 
-        dCalcVectorCross3(info->J1a, r[0], l[0]);
-        dCalcVectorCross3(info->J2a, l[1], r[1]);
+        dCopyVector3(J1 + GI2__JL_MIN, l[0]);
+        dCalcVectorCross3(J1 + GI2__JA_MIN, r[0], l[0]);
 
-        dCopyVector3(info->J1l, l[0]);
-        dCopyNegatedVector3(info->J2l, l[1]);
+        dCopyNegatedVector3(J2 + GI2__JL_MIN, l[1]);
+        dCalcVectorCross3(J2 + GI2__JA_MIN, l[1], r[1]);
 
         if (delta > 0) {
             if (backlash > 0) {
-                info->lo[0] = -dInfinity;
-                info->hi[0] = 0;
+                pairLoHi[GI2_LO] = -dInfinity;
+                pairLoHi[GI2_HI] = 0;
             }
 
-            info->c[0] = -worldFPS * erp * (delta - backlash);
+            pairRhsCfm[GI2_RHS] = -worldFPS * erp * (delta - backlash);
         } else {
             if (backlash > 0) {
-                info->lo[0] = 0;
-                info->hi[0] = dInfinity;
+                pairLoHi[GI2_LO] = 0;
+                pairLoHi[GI2_HI] = dInfinity;
             }
 
-            info->c[0] = -worldFPS * erp * (delta + backlash);
+            pairRhsCfm[GI2_RHS] = -worldFPS * erp * (delta + backlash);
         }
     }
 
-    info->cfm[0] = cfm;
+    pairRhsCfm[GI2_CFM] = cfm;
 
     // printf ("%f, %f, %f, %f, %f\n", delta, phase[0], phase[1], -phase[1] / phase[0], ratio);
 
@@ -416,7 +416,7 @@ void dJointSetTransmissionAxis2( dJointID j, dReal x, dReal y, dReal z )
 {    
     dxJointTransmission* joint = static_cast<dxJointTransmission*>(j);
     dUASSERT( joint, "bad joint argument" );
-    dUASSERT(joint->mode = dTransmissionIntersectingAxes,
+    dUASSERT(joint->mode == dTransmissionIntersectingAxes,
              "can't set individual axes in current mode" );
 
     if (joint->node[1].body) {

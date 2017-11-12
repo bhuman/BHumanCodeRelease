@@ -42,12 +42,30 @@ void dxThreadingBase::PostThreadedCallsGroup(
     dThreadedCallFunction *call_func, void *call_context, 
     const char *call_name/*=NULL*/) const
 {
+    dIASSERT(member_count != 0);
+
     dThreadingImplementationID impl;
     const dxThreadingFunctionsInfo *functions = FindThreadingImpl(impl);
 
     for (unsigned member_index = 0; member_index != member_count; ++member_index) {
         // Post individual group member jobs
         functions->post_call(impl, out_summary_fault, NULL, 0, dependent_releasee, NULL, call_func, call_context, member_index, call_name);
+    }
+}
+
+void dxThreadingBase::PostThreadedCallsIndexOverridenGroup(int *out_summary_fault/*=NULL*/, 
+    ddependencycount_t member_count, dCallReleaseeID dependent_releasee/*=NULL*/, 
+    dThreadedCallFunction *call_func, void *call_context, unsigned index_override, 
+    const char *call_name/*=NULL*/) const
+{
+    dIASSERT(member_count != 0);
+
+    dThreadingImplementationID impl;
+    const dxThreadingFunctionsInfo *functions = FindThreadingImpl(impl);
+
+    for (unsigned member_index = 0; member_index != member_count; ++member_index) {
+        // Post individual group member jobs
+        functions->post_call(impl, out_summary_fault, NULL, 0, dependent_releasee, NULL, call_func, call_context, index_override, call_name);
     }
 }
 

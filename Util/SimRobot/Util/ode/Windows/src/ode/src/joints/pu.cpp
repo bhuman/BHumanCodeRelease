@@ -261,10 +261,11 @@ dxJointPU::getInfo1( dxJoint::Info1 *info )
 
 
 void
-dxJointPU::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointPU::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    const int s1 = info->rowskip;
-    const int s2 = 2 * s1;
     const dReal k = worldFPS * worldERP;
 
     // ======================================================================
@@ -277,66 +278,74 @@ dxJointPU::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info )
     dVector3 uniPerp;  // Axis perpendicular to axes of rotation
     dCalcVectorCross3(uniPerp,ax1,ax2);
     dNormalize3( uniPerp );
-    dCopyVector3( info->J1a , uniPerp );
-    if ( node[1].body )
-    {
-        dCopyNegatedVector3( info->J2a , uniPerp );
+
+    dCopyVector3( J1 + GI2__JA_MIN, uniPerp );
+
+    dxBody *body1 = node[1].body;
+
+    if ( body1 ) {
+        dCopyNegatedVector3( J2 + GI2__JA_MIN , uniPerp );
     }
     // Corrective velocity attempting to keep uni axes perpendicular
     dReal val = dCalcVectorDot3( ax1, ax2 );
     // Small angle approximation : 
     // theta = asin(val)
     // theta is approximately val when val is near zero.
-    info->c[0] = -k * val; 
+    pairRhsCfm[GI2_RHS] = -k * val; 
     
     // ==========================================================================
     // Handle axes orthogonal to the prismatic 
     dVector3 an1, an2; // Global anchor positions
     dVector3 axP, sep; // Prismatic axis and separation vector
-    getAnchor(this,an1,anchor1);
-    getAnchor2(this,an2,anchor2);
+    getAnchor(this, an1, anchor1);
+    getAnchor2(this, an2, anchor2);
+
     if (flags & dJOINT_REVERSE) {
         getAxis2(this, axP, axisP1);
     } else {
         getAxis(this, axP, axisP1);
     }
-    dSubtractVectors3(sep,an2,an1);
+    dSubtractVectors3(sep, an2, an1);
 
-    dVector3 p,q;
-    dPlaneSpace(axP,p,q);
+    dVector3 p, q;
+    dPlaneSpace(axP, p, q);
 
-    dCopyVector3(( info->J1l ) + s1, p );
-    dCopyVector3(( info->J1l ) + s2, q );
+    dCopyVector3( J1 + rowskip + GI2__JL_MIN, p );
+    dCopyVector3( J1 + 2 * rowskip + GI2__JL_MIN, q );
     // Make the anchors be body local
     // Aliasing isn't a problem here.
-    dSubtractVectors3(an1,an1,node[0].body->posr.pos);
-    dCalcVectorCross3(( info->J1a ) + s1, an1, p );
-    dCalcVectorCross3(( info->J1a ) + s2, an1, q );
+    dSubtractVectors3(an1, an1, node[0].body->posr.pos);
+    dCalcVectorCross3( J1 + rowskip + GI2__JA_MIN, an1, p );
+    dCalcVectorCross3( J1 + 2 * rowskip + GI2__JA_MIN, an1, q );
 
-    if (node[1].body) {
-        dCopyNegatedVector3(( info->J2l ) + s1, p );
-        dCopyNegatedVector3(( info->J2l ) + s2, q );
-        dSubtractVectors3(an2,an2,node[1].body->posr.pos);
-        dCalcVectorCross3(( info->J2a ) + s1, p, an2 );
-        dCalcVectorCross3(( info->J2a ) + s2, q, an2 );
+    if (body1) {
+        dCopyNegatedVector3( J2 + rowskip + GI2__JL_MIN, p );
+        dCopyNegatedVector3( J2 + 2 * rowskip + GI2__JL_MIN, q );
+        dSubtractVectors3(an2, an2, body1->posr.pos);
+        dCalcVectorCross3( J2 + rowskip + GI2__JA_MIN, p, an2 );
+        dCalcVectorCross3( J2 + 2 * rowskip + GI2__JA_MIN, q, an2 );
     }
 
-    info->c[1] = k * dCalcVectorDot3( p, sep );
-    info->c[2] = k * dCalcVectorDot3( q, sep );
+    pairRhsCfm[pairskip + GI2_RHS] = k * dCalcVectorDot3( p, sep );
+    pairRhsCfm[2 * pairskip + GI2_RHS] = k * dCalcVectorDot3( q, sep );
     
     // ==========================================================================
     // Handle the limits/motors
-    int row = 3 + limot1.addLimot( this, worldFPS, info, 3, ax1, 1 );
-    row += limot2.addLimot( this, worldFPS, info, row, ax2, 1 );
+    int currRowSkip = 3 * rowskip, currPairSkip = 3 * pairskip;
 
-    if (  node[1].body || !(flags & dJOINT_REVERSE) )
-        limotP.addTwoPointLimot( this, worldFPS, info, row, axP, an1, an2 );
-    else
-    {
-        axP[0] = -axP[0];
-        axP[1] = -axP[1];
-        axP[2] = -axP[2];
-        limotP.addTwoPointLimot ( this, worldFPS, info, row, axP, an1, an2  );
+    if (limot1.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 1 )) {
+        currRowSkip += rowskip; currPairSkip += pairskip;
+    }
+
+    if (limot2.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax2, 1 )) {
+        currRowSkip += rowskip; currPairSkip += pairskip;
+    }
+
+    if (  body1 || (flags & dJOINT_REVERSE) == 0 ) {
+        limotP.addTwoPointLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, axP, an1, an2 );
+    } else {
+        dNegateVector3(axP);
+        limotP.addTwoPointLimot ( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, axP, an1, an2  );
     }
 }
 

@@ -139,7 +139,7 @@ public:
     inline QDebug &operator<<(signed short t) { stream->ts << t; return maybeSpace(); }
     inline QDebug &operator<<(unsigned short t) { stream->ts << t; return maybeSpace(); }
 #ifdef Q_COMPILER_UNICODE_STRINGS
-    inline QDebug &operator<<(char16_t t) { return *this << QChar(t); }
+    inline QDebug &operator<<(char16_t t) { return *this << QChar(ushort(t)); }
     inline QDebug &operator<<(char32_t t) { putUcs4(t); return maybeSpace(); }
 #endif
     inline QDebug &operator<<(signed int t) { stream->ts << t; return maybeSpace(); }
@@ -365,7 +365,7 @@ Q_CORE_EXPORT QDebug qt_QMetaEnum_debugOperator(QDebug&, int value, const QMetaO
 Q_CORE_EXPORT QDebug qt_QMetaEnum_flagDebugOperator(QDebug &dbg, quint64 value, const QMetaObject *meta, const char *name);
 
 template<typename T>
-typename QtPrivate::QEnableIf<QtPrivate::IsQEnumHelper<T>::Value, QDebug>::Type
+typename std::enable_if<QtPrivate::IsQEnumHelper<T>::Value, QDebug>::type
 operator<<(QDebug dbg, T value)
 {
     const QMetaObject *obj = qt_getEnumMetaObject(value);
@@ -374,9 +374,9 @@ operator<<(QDebug dbg, T value)
 }
 
 template <class T>
-inline typename QtPrivate::QEnableIf<
+inline typename std::enable_if<
     QtPrivate::IsQEnumHelper<T>::Value || QtPrivate::IsQEnumHelper<QFlags<T> >::Value,
-    QDebug>::Type
+    QDebug>::type
 qt_QMetaEnum_flagDebugOperator_helper(QDebug debug, const QFlags<T> &flags)
 {
     const QMetaObject *obj = qt_getEnumMetaObject(T());
@@ -385,9 +385,9 @@ qt_QMetaEnum_flagDebugOperator_helper(QDebug debug, const QFlags<T> &flags)
 }
 
 template <class T>
-inline typename QtPrivate::QEnableIf<
+inline typename std::enable_if<
     !QtPrivate::IsQEnumHelper<T>::Value && !QtPrivate::IsQEnumHelper<QFlags<T> >::Value,
-    QDebug>::Type
+    QDebug>::type
 qt_QMetaEnum_flagDebugOperator_helper(QDebug debug, const QFlags<T> &flags)
 #else // !QT_NO_QOBJECT && !Q_QDOC
 template <class T>
@@ -402,7 +402,7 @@ template<typename T>
 inline QDebug operator<<(QDebug debug, const QFlags<T> &flags)
 {
     // We have to use an indirection otherwise specialisation of some other overload of the
-    // operator<< the compiler would try to instantiate QFlags<T> for the QEnableIf
+    // operator<< the compiler would try to instantiate QFlags<T> for the std::enable_if
     return qt_QMetaEnum_flagDebugOperator_helper(debug, flags);
 }
 
@@ -438,8 +438,8 @@ inline QDebug operator<<(QDebug debug, const QFlags<T> &flags)
 
 #define QT_FORWARD_DECLARE_CF_TYPE(type) Q_FORWARD_DECLARE_CF_TYPE(type);
 #define QT_FORWARD_DECLARE_MUTABLE_CF_TYPE(type) Q_FORWARD_DECLARE_MUTABLE_CF_TYPE(type);
-#define QT_FORWARD_DECLARE_CG_TYPE(type) typedef const struct type *type ## Ref;
-#define QT_FORWARD_DECLARE_MUTABLE_CG_TYPE(type) typedef struct type *type ## Ref;
+#define QT_FORWARD_DECLARE_CG_TYPE(type) Q_FORWARD_DECLARE_CG_TYPE(type);
+#define QT_FORWARD_DECLARE_MUTABLE_CG_TYPE(type) Q_FORWARD_DECLARE_MUTABLE_CG_TYPE(type);
 
 QT_END_NAMESPACE
 Q_FORWARD_DECLARE_CF_TYPE(CFString);

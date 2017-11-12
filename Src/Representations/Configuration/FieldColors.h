@@ -1,9 +1,9 @@
 /**
-* @file FieldColors.h
-*
-* Declaration of struct that holds the color classifications
-* @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
-*/
+ * @file FieldColors.h
+ *
+ * Declaration of struct that holds the color classifications.
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ */
 
 #pragma once
 
@@ -13,45 +13,45 @@
 
 STREAMABLE(FieldColors,
 {
-  STREAMABLE(ColorRange,
-  {
-    bool operator==(const ColorRange & other) const
-    {
-      return y == other.y &&
-      h == other.h &&
-      s == other.s;
-    }
-
-    bool operator!=(const ColorRange & other) const
-    {
-      return !(*this == other);
-    }
-    ,
-    (Rangeuc) y,
-    (Rangeuc) h,
-    (Rangeuc) s,
-  });
-
   ENUM(Color,
   {,
     none,
     white,
     black,
+    field,
+
     numOfNonColors,
 
-    green = numOfNonColors,
-    
-    ownJersey,
+    ownJersey = numOfNonColors,
     opponentJersey,
 
     // new colors
   });
 
-  ColorRange& operator[](const Color c) { return colorRanges[c - numOfNonColors]; }
-  const ColorRange& operator[](const Color c) const { return colorRanges[c - numOfNonColors]; }
-  ,
-  (unsigned char)(175) minYWhite,
-  (unsigned char)(40) maxYBlack,
+  STREAMABLE(BasicParameters,
+  {
+    BasicParameters(const unsigned char& mNCS, const unsigned char& bWD, const Rangeuc& fH);
+
+    bool operator==(const BasicParameters& other) const { return maxNonColorSaturation == other.maxNonColorSaturation && blackWhiteDelimiter == other.blackWhiteDelimiter && fieldHue == other.fieldHue; }
+    bool operator!=(const BasicParameters& other) const { return !(*this == other); }
+    ,
+    (unsigned char) maxNonColorSaturation,
+    (unsigned char) blackWhiteDelimiter,
+    (Rangeuc) fieldHue,
+  });
+
+  BasicParameters copyBasicParameters() { return BasicParameters(maxNonColorSaturation, blackWhiteDelimiter, fieldHue); }
+  void setBasicParameters(const BasicParameters& p) { maxNonColorSaturation = p.maxNonColorSaturation; blackWhiteDelimiter = p.blackWhiteDelimiter; fieldHue = p.fieldHue; }
+
+  Rangeuc& operator[](const Color c) { return colorHues[c - numOfNonColors]; }
+  const Rangeuc& operator[](const Color c) const { return colorHues[c - numOfNonColors]; },
+
   (unsigned char)(64) maxNonColorSaturation,
-  (ColorRange[numOfColors - numOfNonColors]) colorRanges,
+  (unsigned char)(168) blackWhiteDelimiter,
+  (Rangeuc) fieldHue,
+
+  (Rangeuc[numOfColors - numOfNonColors]) colorHues,
 });
+
+inline FieldColors::BasicParameters::BasicParameters(const unsigned char& mNCS, const unsigned char& bWD, const Rangeuc& fH)
+  : maxNonColorSaturation(mNCS), blackWhiteDelimiter(bWD), fieldHue(fH) {}

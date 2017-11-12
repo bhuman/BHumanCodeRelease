@@ -33,29 +33,7 @@
 #define _ODE__PRIVATE_THREADING_IMPL_H_
 
 
-#include <ode/threading.h>
-
-
-// This function has been removed from public headers as there is no need for it
-// to be accessible to outer code at this time. In future it is possible 
-// it could be published back again.
-/**
- * @brief Allocates built-in self-threaded threading implementation object.
- *
- * A self-threaded implementation is a type of implementation that performs 
- * processing of posted calls by means of caller thread itself. This type of 
- * implementation does not need thread pool to serve it.
- * 
- * The processing is arranged in a way to prevent call stack depth growth 
- * as more and more nested calls are posted.
- *
- * @returns ID of object allocated or NULL on failure
- * 
- * @ingroup threading
- * @see dThreadingAllocateMultiThreadedImplementation
- * @see dThreadingFreeImplementation
- */
-/*ODE_API */dThreadingImplementationID dThreadingAllocateSelfThreadedImplementation();
+#include <ode/threading_impl.h>
 
 
 

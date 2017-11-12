@@ -26,10 +26,10 @@ STREAMABLE(ArmMotionSelection,
     specialActionArms,
     standArms,
     getUpArms,
+    fallArms,
 
     firstNonBodyMotion,
-    keyFrameS = firstNonBodyMotion, //assert same order as ArmMotionRequest,
-    pointAtS,
+    keyFrameS = firstNonBodyMotion, //assert same order as ArmMotionRequest
   });
 
   ArmMotionSelection()
@@ -41,7 +41,7 @@ STREAMABLE(ArmMotionSelection,
     armRatios[Arms::right][specialActionArms] = 1;
   },
 
-  (ENUM_INDEXED_ARRAY((ArmMotionSelection) ArmMotion, (Arms) Arm)) targetArmMotion, /**< The armmotion that is the destination of the current arminterpolation per arm */
+  (ENUM_INDEXED_ARRAY((ArmMotionSelection) ArmMotion, (Arms) Arm)) targetArmMotion, /**< The armmotion that is the destination of the current arminterpolation per arm. */
   (ENUM_INDEXED_ARRAY(ENUM_INDEXED_ARRAY(float, ArmMotion), (Arms) Arm)) armRatios, /**< The current ratio of each armmotion in the final joint request, for each arm. */
   (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request per arm, if it is an active armmotion. */
 });

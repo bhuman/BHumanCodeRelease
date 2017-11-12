@@ -88,7 +88,7 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
 {
   if(theLegMotionSelection.ratios[MotionRequest::kick] > 0.f)
   {
-    data.setCycleTime(theFrameInfo.cycleTime);
+    data.setCycleTime(Constants::motionCycleTime);
 
     if(theLegMotionSelection.ratios[MotionRequest::kick] < 1.f && !compensated)
       compensate = true;
@@ -99,7 +99,7 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
     {
       if(data.activateNewMotion(theMotionRequest.kickRequest, kickEngineOutput.isLeavingPossible) && theMotionRequest.motion == MotionRequest::kick)
       {
-        data.initData(theFrameInfo, theMotionRequest, params, theJointAngles, theTorsoMatrix);
+        data.initData(theFrameInfo, theMotionRequest, params, theJointAngles, theTorsoMatrix, kickEngineOutput, theRobotDimensions, theMassCalibration);
         data.setCurrentKickRequest(theMotionRequest);
         data.setExecutedKickRequest(kickEngineOutput.executedKickRequest);
 
@@ -118,7 +118,6 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
       {
         data.calcPhaseState();
         data.calcPositions();
-        data.setStaticReference();
         timeSinceLastPhase = theFrameInfo.time;
       }
       else
@@ -127,16 +126,31 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
         data.internalIsLeavingPossible = true;
       }
 
-      //  if(data.isMotionAlmostOver()) //last three phases are unstable
-      //    kickEngineOutput.isStable = false;
-
-      if(data.calcJoints(kickEngineOutput, theRobotDimensions, theHeadJointRequest))
+      if(data.calcJoints(kickEngineOutput, theRobotDimensions))
       {
         data.balanceCOM(kickEngineOutput, theRobotDimensions, theMassCalibration);
-        data.calcJoints(kickEngineOutput, theRobotDimensions, theHeadJointRequest);
+        data.calcJoints(kickEngineOutput, theRobotDimensions);
         data.mirrorIfNecessary(kickEngineOutput);
+
+        /*/ for evaluation
+        if(data.checkPhaseTime(theFrameInfo, theJointAngles, theTorsoMatrix))
+        {
+          Pose3f real = theRobotModel.soleRight * theRobotModel.soleLeft.inverse();
+          Pose3f kmc = Pose3f(data.positions[Phase::rightFootTra] - data.positions[Phase::leftFootTra]);
+          RobotModel rm(kickEngineOutput, theRobotDimensions, theMassCalibration);
+          Pose3f sent = rm.soleRight * rm.soleLeft.inverse();
+
+          if(theMotionRequest.kickRequest.mirror)
+          {
+            kmc.invert();
+            sent.invert();
+            real.invert();
+          }
+          bool hit = theKeyStates.pressed[KeyStates::leftFootLeft] || theKeyStates.pressed[KeyStates::leftFootRight] || theKeyStates.pressed[KeyStates::rightFootLeft] || theKeyStates.pressed[KeyStates::rightFootRight];
+          OUTPUT_TEXT("" << kmc.translation.x() << "," << kmc.translation.y() << "," << kmc.translation.z() << "," << sent.translation.x() << "," << sent.translation.y() << "," << sent.translation.z() << "," << real.translation.x() << "," << real.translation.y() << "," << real.translation.z() << "," << static_cast<int>(hit));
+        }*/
       }
-      data.addGyroBalance(kickEngineOutput, theJointCalibration, theInertialData, theLegMotionSelection.ratios[MotionRequest::kick]);
+      data.addGyroBalance(kickEngineOutput, theJointLimits, theInertialData, theLegMotionSelection.ratios[MotionRequest::kick]);
     }
   }
   else

@@ -1,7 +1,7 @@
 /*
  * File:   ColorCalibrationView.h
  * @author marcel
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  *
  * Created on June 25, 2013, 8:13 PM
  */
@@ -56,18 +56,18 @@ public:
   void expandCurrentColor(const PixelTypes::YUYVPixel& pixel, const bool reduce);
 
 private:
-  YSelector* y;
-  HSelector* h;
-  SSelector* s;
+  HueFieldSelector* hueField;
+  HueSelector* hue;
 
   // color class white
-  ThresholdSelector* thresholdY;
+  ThresholdSelector* thresholdColor;
+  ThresholdSelector* thresholdBlackWhite;
 
   QAction* redoAction = nullptr;
   QAction* undoAction = nullptr;
 
-  History<FieldColors::ColorRange> historyColors[FieldColors::numOfColors - FieldColors::numOfNonColors];
-  History<unsigned char> historyNonColor[FieldColors::numOfNonColors];
+  History<Rangeuc> historyColors[FieldColors::numOfColors - FieldColors::numOfNonColors];
+  History<FieldColors::BasicParameters> historyBasic;
 
   bool expandColor(const unsigned char value, int& min, int& max, const bool noWrapAround);
   bool reduceColor(const unsigned char value, int& min, int& max, const bool boolChangeOnlyMin);

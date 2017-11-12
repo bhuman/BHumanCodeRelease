@@ -39,7 +39,9 @@ work()
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 basePath=$(dirname "${scriptPath}")
 currPath=$(pwd)
-keyFile=../../Config/Keys/id_rsa_nao
+keySource=../../Config/Keys/id_rsa_nao
+keyFile=/tmp/id_rsa_nao
+cp $keySource $keyFile
 sshoptions="-i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [[ $(uname) == *CYGWIN* ]]; then
   pingoptions="-w 1 -n 1"
@@ -71,7 +73,7 @@ while true; do
 done
 
 #key may only be accessed by the owner. Otherwise ssh will complain
-chmod 400 $keyFile
+chmod 600 $keyFile
 
 if [ ! -z $REMOTE ]; then
   work $REMOTE $FORCE

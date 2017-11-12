@@ -1,6 +1,6 @@
 /**
  * @file CirclePercept.h
- * Declaration of a struct that represents the center circle
+ * Declaration of a struct that represents the center circle.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -12,7 +12,7 @@
 
 /**
  * @struct CirclePercept
- * A struct that represents the found field center circle
+ * A struct that represents the found field center circle.
  */
 STREAMABLE(CirclePercept,
 {
@@ -22,5 +22,5 @@ STREAMABLE(CirclePercept,
   void draw() const,
 
   (Vector2f)(Vector2f::Zero()) pos, /**< The position of the center of the center circle in field coordinates */
-  (unsigned)(0) lastSeen, /**< The last time the center circle was seen */
+  (bool)(false) wasSeen, /**< Has the percept been seen in the last frame? */
 });

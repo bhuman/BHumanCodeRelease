@@ -38,17 +38,13 @@ void TeamPlayersModel::verify() const
     ASSERT(std::isnormal(obstacle.covariance(1, 1)));
     ASSERT(std::isfinite(obstacle.covariance(0, 1)));
     ASSERT(std::isfinite(obstacle.covariance(1, 0)));
-    ASSERT(Approx::isEqual(obstacle.covariance(0, 1), obstacle.covariance(1, 0), 1e-20f)); 
+    ASSERT(Approx::isEqual(obstacle.covariance(0, 1), obstacle.covariance(1, 0), 1e-20f));
   }
 #endif
 }
 
 void TeamPlayersModel::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel:ownRobots", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel:oppRobots", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel:oppRobotsCovariance", "drawingOnField");
-
   DEBUG_DRAWING3D("representation:TeamPlayersModel", "field")
   {
     // draw robots
@@ -61,7 +57,7 @@ void TeamPlayersModel::draw() const
     }
   }
 
-  COMPLEX_DRAWING("representation:TeamPlayersModel:ownRobots")
+  DEBUG_DRAWING("representation:TeamPlayersModel:ownRobots", "drawingOnField")
   {
     for(const auto& obstacle : obstacles)
     {
@@ -72,11 +68,11 @@ void TeamPlayersModel::draw() const
       }
     }
   }
-  DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel:teamCoverage", "drawingOnField");
-  COMPLEX_DRAWING("representation:TeamPlayersModel:teamCoverage")
+
+  DEBUG_DRAWING("representation:TeamPlayersModel:teamCoverage", "drawingOnField")
   {
     if(Blackboard::getInstance().exists("BallModel") && Blackboard::getInstance().exists("FieldDimensions")
-      && Blackboard::getInstance().exists("RobotPose"))
+       && Blackboard::getInstance().exists("RobotPose"))
     {
       const BallModel& theBallModel = static_cast<const BallModel&>(Blackboard::getInstance()["BallModel"]);
       const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
@@ -116,7 +112,7 @@ void TeamPlayersModel::draw() const
               return;
             useRight = (intersection1 - obstacle.center).squaredNorm() < (intersection1 - gloBallPos).squaredNorm() ? intersection1 : intersection2;
 
-            const Vector2f points[3] = { gloBallPos , useRight , useLeft };
+            const Vector2f points[3] = { gloBallPos, useRight, useLeft };
             POLYGON("representation:TeamPlayersModel:teamCoverage", 3, points, 10, Drawings::noPen, color, Drawings::solidBrush, color);
           };
 
@@ -129,7 +125,8 @@ void TeamPlayersModel::draw() const
     }
   }
 
-  COMPLEX_DRAWING("representation:TeamPlayersModel:oppRobots")
+  DECLARE_DEBUG_DRAWING("representation:TeamPlayersModel:oppRobotsCovariance", "drawingOnField");
+  DEBUG_DRAWING("representation:TeamPlayersModel:oppRobots", "drawingOnField")
   {
     for(const auto& obstacle : obstacles)
     {

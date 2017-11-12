@@ -40,6 +40,7 @@
 #ifndef QABSTRACTTEXTDOCUMENTLAYOUT_H
 #define QABSTRACTTEXTDOCUMENTLAYOUT_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qobject.h>
 #include <QtGui/qtextlayout.h>
 #include <QtGui/qtextdocument.h>
@@ -82,7 +83,10 @@ public:
 
     virtual void draw(QPainter *painter, const PaintContext &context) = 0;
     virtual int hitTest(const QPointF &point, Qt::HitTestAccuracy accuracy) const = 0;
+
     QString anchorAt(const QPointF& pos) const;
+    QString imageAt(const QPointF &pos) const;
+    QTextFormat formatAt(const QPointF &pos) const;
 
     virtual int pageCount() const = 0;
     virtual QSizeF documentSize() const = 0;

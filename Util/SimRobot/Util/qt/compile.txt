@@ -1,17 +1,17 @@
-A short guide on how to compile the Qt library with Visual Studio 2015:
+A short guide on how to compile the Qt library with Visual Studio 2017:
 
 Requirements:
-  Visual Studio 2015 (Command Prompt)
+  Visual Studio 2017 (Command Prompt)
   Perl version 5.12 or later   [http://www.activestate.com/activeperl/]
   Python version 2.7 or later  [http://www.activestate.com/activepython/]
   some free disk space
   a lot of time
 
-1. Download and unpack the package (e.g. qt-everywhere-opensource-src-5.7.zip) to the path <builddir> (e.g. C:\Qt\qt-everywhere-opensource-src-5.7)
+1. Download and unpack the package (e.g. qt-everywhere-opensource-src-5.9.1.zip) to the path <builddir> (e.g. C:\Qt\qt-everywhere-opensource-src-5.9.1)
 
-2. Open the "Visual Studio 2015 x64 Command Prompt" and go to <builddir>.
+2. Open the "Visual Studio 2017 x64 Command Prompt" and go to <builddir>.
 
-3. Type: configure -debug-and-release -opensource -opengl desktop -platform win32-msvc2015 -nomake examples -nomake tests -confirm-license -mp
+3. Type: configure -debug-and-release -opensource -opengl desktop -platform win32-msvc2017 -nomake examples -nomake tests -confirm-license -mp
 
 4. *wait*
 

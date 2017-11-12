@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ ! -z "$(/etc/init.d/naoqi status | grep started)" ]; then
+if [ -n "$(ps -A | grep naoqi-bin)" ]; then
 	echo NaoQi is running
 else
 	echo NaoQi is not running

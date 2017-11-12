@@ -1,14 +1,12 @@
 Tests = cppApplication + {
   folder = "Utils"
-  root = { "$(srcDirRoot)/Utils/Tests", "$(srcDirRoot)" }
+  root = { "$(srcDirRoot)/Utils", "$(srcDirRoot)" }
 
   files = {
     "$(srcDirRoot)/Platform/$(OS)/*.cpp" = cppSource
     "$(srcDirRoot)/Platform/$(OS)/*.h"
     "$(srcDirRoot)/Platform/*.cpp" = cppSource
     "$(srcDirRoot)/Platform/*.h"
-    "$(srcDirRoot)/Representations/Sensing/BodyBoundary.cpp" = cppSource
-    "$(srcDirRoot)/Representations/Sensing/BodyBoundary.h"
     "$(srcDirRoot)/Utils/Tests/**.cpp" = cppSource
     "$(srcDirRoot)/Utils/Tests/**.h"
     "$(srcDirRoot)/Tools/Debugging/*.cpp" = cppSource
@@ -24,12 +22,12 @@ Tests = cppApplication + {
     "$(srcDirRoot)/Tools/Math/*.h"
     "$(srcDirRoot)/Tools/Motion/InverseKinematic.cpp" = cppSource
     "$(srcDirRoot)/Tools/Motion/InverseKinematic.h"
-    "$(srcDirRoot)/Tools/Motion/InverseKinematic/*.cpp" = cppSource
-    "$(srcDirRoot)/Tools/Motion/InverseKinematic/*.h"
+    "$(srcDirRoot)/Tools/Motion/ForwardKinematic.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Motion/ForwardKinematic.h"
     "$(srcDirRoot)/Tools/Motion/LIP.cpp" = cppSource
     "$(srcDirRoot)/Tools/Motion/LIP.h"
-    "$(srcDirRoot)/Tools/Network/TcpComm.cpp" = cppSource
-    "$(srcDirRoot)/Tools/Network/TcpComm.h"
+    "$(srcDirRoot)/Tools/Communication/TcpComm.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Communication/TcpComm.h"
     "$(srcDirRoot)/Tools/Streams/*.cpp" = cppSource
     "$(srcDirRoot)/Tools/Streams/*.h"
     "$(srcDirRoot)/Tools/*.cpp" = cppSource
@@ -38,6 +36,9 @@ Tests = cppApplication + {
 
   defines += {
     "TARGET_TOOL"
+    "IS_TESTED"
+    "GTEST_DONT_DEFINE_FAIL"
+    "GTEST_DONT_DEFINE_TEST"
     if (tool == "vcxproj") {
         "_CRT_SECURE_NO_WARNINGS"
     }
@@ -60,8 +61,10 @@ Tests = cppApplication + {
   }
 
   libs = {
-    "ws2_32"
-    "winmm"
+    if (host == "Win32") {
+      "ws2_32"
+      "winmm"
+    }
     if (configuration == "Debug") {
       "gtestd"
       "snappyd"

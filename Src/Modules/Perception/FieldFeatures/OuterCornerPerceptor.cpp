@@ -47,9 +47,12 @@ bool OuterCornerPerceptor::searchForBigLAndT(OuterCorner& outerCorner) const
           outerCorner.rotation = intersectionL->dir1.angle();
           outerCorner.isRightCorner = Angle(intersectionL->dir2.angle() - intersectionL->dir1.angle()).normalize() > 0;
 
-          //          outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionT, outerCorner.isRightCorner ? MarkedIntersection::STR : MarkedIntersection::STL));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionL->ownIndex, outerCorner.isRightCorner ? MarkedIntersection::BLR : MarkedIntersection::BLL),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }
@@ -60,9 +63,12 @@ bool OuterCornerPerceptor::searchForBigLAndT(OuterCorner& outerCorner) const
           outerCorner.rotation = intersectionL->dir2.angle();
           outerCorner.isRightCorner = Angle(intersectionL->dir1.angle() - intersectionL->dir2.angle()).normalize() > 0;
 
-          //          outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionT, outerCorner.isRightCorner ? MarkedIntersection::STR : MarkedIntersection::STL));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionL->ownIndex, outerCorner.isRightCorner ? MarkedIntersection::BLR : MarkedIntersection::BLL),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }
@@ -111,8 +117,12 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
         outerCorner.rotation = rotation;
         outerCorner.isRightCorner = true;
 
+        outerCorner.clear();
         theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(lIntersection->ownIndex, MarkedIntersection::BLR),
             theFieldLineIntersections, theFieldLines, outerCorner);
+
+        if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+          continue;
 
         return true;
       }
@@ -125,8 +135,12 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
         outerCorner.rotation = rotation;
         outerCorner.isRightCorner = true;
 
+        outerCorner.clear();
         theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(lIntersection->ownIndex, MarkedIntersection::BLR),
             theFieldLineIntersections, theFieldLines, outerCorner);
+
+        if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+          continue;
 
         return true;
       }
@@ -151,8 +165,12 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
         outerCorner.rotation = rotation;
         outerCorner.isRightCorner = false;
 
+        outerCorner.clear();
         theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(lIntersection->ownIndex, MarkedIntersection::BLL),
             theFieldLineIntersections, theFieldLines, outerCorner);
+
+        if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+          continue;
 
         return true;
       }
@@ -165,8 +183,12 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
         outerCorner.rotation = rotation;
         outerCorner.isRightCorner = false;
 
+        outerCorner.clear();
         theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(lIntersection->ownIndex, MarkedIntersection::BLL),
             theFieldLineIntersections, theFieldLines, outerCorner);
+
+        if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+          continue;
 
         return true;
       }
@@ -209,9 +231,12 @@ bool OuterCornerPerceptor::searchForBigLAndTL(OuterCorner& outerCorner) const
           outerCorner.rotation = intersectionBigL->dir2.angle();
           outerCorner.isRightCorner = false;
 
-          //          outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionSmallL, MarkedIntersection::STL));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionBigL->ownIndex, MarkedIntersection::BLL),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }
@@ -223,9 +248,12 @@ bool OuterCornerPerceptor::searchForBigLAndTL(OuterCorner& outerCorner) const
           outerCorner.rotation = intersectionBigL->dir1.angle();
           outerCorner.isRightCorner = true;
 
-          //          outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionSmallL, MarkedIntersection::STR));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionBigL->ownIndex, MarkedIntersection::BLR),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }
@@ -268,10 +296,14 @@ bool OuterCornerPerceptor::searchForBigLAndSmallL(OuterCorner& outerCorner) cons
         {
           outerCorner.translation = intersectionBigL->pos;
           outerCorner.rotation = intersectionBigL->dir2.angle();
+          outerCorner.isRightCorner = false;
 
-          //outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionSmallL, MarkedIntersection::SLL));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionBigL->ownIndex, MarkedIntersection::BLL),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }
@@ -281,10 +313,14 @@ bool OuterCornerPerceptor::searchForBigLAndSmallL(OuterCorner& outerCorner) cons
         {
           outerCorner.translation = intersectionBigL->pos;
           outerCorner.rotation = intersectionBigL->dir1.angle();
+          outerCorner.isRightCorner = true;
 
-          //outerCorner.markedIntersections.push_back(MarkedIntersection(*intersectionSmallL, MarkedIntersection::SLR));
+          outerCorner.clear();
           theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersectionBigL->ownIndex, MarkedIntersection::BLR),
               theFieldLineIntersections, theFieldLines, outerCorner);
+
+          if(!outerCorner.isLikeEnoughACorrectPerception(distrustAreaXRadius, distrustAreaYRadius, theFieldLines, distrustAreaOffset))
+            continue;
 
           return true;
         }

@@ -3,7 +3,7 @@
  * Implementation of class DebugDrawing.
  *
  * @author <A href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</A>
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #include <cstring>
@@ -89,7 +89,7 @@ const char* DebugDrawing::getTip(int& x, int& y, const Pose2f& origin) const
       minDiff2 = diff2;
       x = t.x;
       y = t.y;
-      text = (const char*) (&t + 1);
+      text = (const char*)(&t + 1);
     }
     i = t.next;
   }
@@ -144,18 +144,18 @@ void DebugDrawing::tip(const char* text, int x, int y, int radius)
   write(text, element.size);
 }
 
-void DebugDrawing::line(int xStart, int yStart, int xEnd, int yEnd, Drawings::PenStyle penStyle, int width, ColorRGBA penColor)
+void DebugDrawing::line(float xStart, float yStart, float xEnd, float yEnd, Drawings::PenStyle penStyle, float width, ColorRGBA penColor)
 {
   Line element;
-  element.start = Vector2i(xStart, yStart);
-  element.end = Vector2i(xEnd, yEnd);
+  element.start = Vector2f(xStart, yStart);
+  element.end = Vector2f(xEnd, yEnd);
   element.penStyle = penStyle;
   element.width = width;
   element.penColor = penColor;
   write(&element, sizeof(element));
 }
 
-void DebugDrawing::line(int xStart, int yStart, int xEnd, int yEnd)
+void DebugDrawing::line(float xStart, float yStart, float xEnd, float yEnd)
 {
   line(xStart, yStart, xEnd, yEnd, Drawings::solidPen, 1, ColorRGBA(0, 0, 0));
 }
@@ -339,8 +339,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     }
     case Drawings::line:
     {
-      int x1, y1, x2, y2;
-      char penWidth, penStyle;
+      float x1, y1, x2, y2, penWidth;
+      char penStyle;
       ColorRGBA penColor;
       message.bin >> x1;
       message.bin >> y1;

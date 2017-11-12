@@ -26,7 +26,7 @@
 UdpComm::UdpComm()
 {
   sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  target = (struct sockaddr*) (new struct sockaddr_in);
+  target = (struct sockaddr*)(new struct sockaddr_in);
 
   assert(sock != -1);
 }

@@ -87,15 +87,19 @@ dxJointLMotor::getInfo1( dxJoint::Info1 *info )
 }
 
 void
-dxJointLMotor::getInfo2( dReal worldFPS, dReal /*worldERP*/, const Info2Descr *info )
+dxJointLMotor::getInfo2( dReal worldFPS, dReal /*worldERP*/, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
-    int row = 0;
     dVector3 ax[3];
     computeGlobalAxes( ax );
 
-    for ( int i = 0;i < num;i++ )
-    {
-        row += limot[i].addLimot( this, worldFPS, info, row, ax[i], 0 );
+    int currRowSkip = 0, currPairSkip = 0;
+    for ( int i = 0; i < num; ++i ) {
+        if (limot[i].addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax[i], 0 )) {
+            currRowSkip += rowskip; currPairSkip += pairskip;
+        }
     }
 }
 

@@ -1,6 +1,16 @@
 AM_CPPFLAGS = -I$(top_srcdir)/include \
         -I$(top_builddir)/include \
-        -I$(top_srcdir)/ode/src
+        -I$(top_srcdir)/ode/src \
+        -D__ODE__
+
+
+if ENABLE_OU
+
+AM_CPPFLAGS += -I$(top_srcdir)/ou/include
+
+
+endif
+
 
 noinst_LTLIBRARIES = libjoints.la
 

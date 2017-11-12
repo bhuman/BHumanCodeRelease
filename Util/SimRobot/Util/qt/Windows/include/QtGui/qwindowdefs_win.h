@@ -40,7 +40,7 @@
 #ifndef QWINDOWDEFS_WIN_H
 #define QWINDOWDEFS_WIN_H
 
-#include <QtCore/qglobal.h>
+#include <QtGui/qtguiglobal.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -110,14 +110,5 @@ typedef long HRESULT;
 #endif
 
 typedef struct tagMSG MSG;
-
-QT_BEGIN_NAMESPACE
-
-Q_CORE_EXPORT HINSTANCE qWinAppInst();
-Q_CORE_EXPORT HINSTANCE qWinAppPrevInst();
-Q_CORE_EXPORT int       qWinAppCmdShow();
-Q_WIDGETS_EXPORT HDC           qt_win_display_dc();
-
-QT_END_NAMESPACE
 
 #endif // QWINDOWDEFS_WIN_H

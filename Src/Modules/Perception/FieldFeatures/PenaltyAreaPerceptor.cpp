@@ -13,16 +13,20 @@ void PenaltyAreaPerceptor::update(PenaltyArea& penaltyArea)
     penaltyArea.isValid = false;
 
   lastFrameTime = theFrameInfo.time;
+  theLastPenaltyMarkPercept = thePenaltyMarkPercept;
 }
 
 bool PenaltyAreaPerceptor::searchWithPMarkAndLine(PenaltyArea& penaltyArea) const
 {
-  if(theFrameInfo.getTimeSince(thePenaltyMarkPercept.timeLastSeen) > theFrameInfo.getTimeSince(lastFrameTime)
-    || theFrameInfo.getTimeSince(lastFrameTime) > maxTimeOffset
-    || theFrameInfo.time < thePenaltyMarkPercept.timeLastSeen) //because of logs backjumps
+  if(!usePenaltyMark
+     || !(thePenaltyMarkPercept.wasSeen
+          || (theLastPenaltyMarkPercept.wasSeen
+              && theFrameInfo.getTimeSince(lastFrameTime) <= maxTimeOffset // because of log forwards jumps (and missing images)
+              && theFrameInfo.time >= lastFrameTime) // because of logs backwards jumps
+         ))
     return false;
 
-  const Vector2f thePenaltyMarkPosition = theFrameInfo.getTimeSince(thePenaltyMarkPercept.timeLastSeen) > 0 ? theOdometer.odometryOffset * thePenaltyMarkPercept.positionOnField : thePenaltyMarkPercept.positionOnField;
+  const Vector2f thePenaltyMarkPosition = thePenaltyMarkPercept.wasSeen ? thePenaltyMarkPercept.positionOnField : theOdometer.odometryOffset * theLastPenaltyMarkPercept.positionOnField;
 
   static const float disPenaltyMarkGroundLine = theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyMark;
   static const float disPenaltyMarkPenaltyArea = theFieldDimensions.xPosOpponentPenaltyArea - theFieldDimensions.xPosOpponentPenaltyMark;
@@ -44,7 +48,7 @@ bool PenaltyAreaPerceptor::searchWithPMarkAndLine(PenaltyArea& penaltyArea) cons
 
       penaltyArea = posePA;
 
-      penaltyArea.markedPoints.emplace_back(thePenaltyMarkPosition, MarkedPoint::penaltyMark, theFrameInfo.getTimeSince(thePenaltyMarkPercept.timeLastSeen) == 0);
+      penaltyArea.markedPoints.emplace_back(thePenaltyMarkPosition, MarkedPoint::penaltyMark, thePenaltyMarkPercept.wasSeen);
       theIntersectionRelations.propagateMarkedLinePoint(MarkedLine(i, MarkedLine::groundLine), 0.f, Pose2f(penaltyArea.rotation, thePenaltyMarkPosition) * Vector2f(distanceToLine, 0.f),
           theFieldLineIntersections, theFieldLines, penaltyArea);
 
@@ -60,7 +64,7 @@ bool PenaltyAreaPerceptor::searchWithPMarkAndLine(PenaltyArea& penaltyArea) cons
 
       penaltyArea = posePA;
 
-      penaltyArea.markedPoints.emplace_back(thePenaltyMarkPosition, MarkedPoint::penaltyMark, theFrameInfo.getTimeSince(thePenaltyMarkPercept.timeLastSeen) == 0);
+      penaltyArea.markedPoints.emplace_back(thePenaltyMarkPosition, MarkedPoint::penaltyMark, thePenaltyMarkPercept.wasSeen);
       theIntersectionRelations.propagateMarkedLinePoint(MarkedLine(i, MarkedLine::groundPenalty), 0.f, Pose2f(penaltyArea.rotation, thePenaltyMarkPosition) * Vector2f(distanceToLine, 0.f),
           theFieldLineIntersections, theFieldLines, penaltyArea);
 
@@ -88,7 +92,9 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
         if(std::abs(((*i)->pos - (*j)->pos).norm() - ttDistance) < thresholdIntersections
            && std::abs(Angle((*i)->dir1.angle() - (*j)->dir1.angle()).normalize()) < thesholdAngleDisForIntersections)
         {
-          penaltyArea = Pose2f(Angle(((*i)->dir1.angle() + (*j)->dir1.angle()) / 2.f + pi).normalize(), ((*i)->pos + (*j)->pos) / 2.f);
+          penaltyArea.rotation = ((*i)->dir2 + (*i)->dir2).angle() + 90_deg;
+          penaltyArea.rotation.normalize();
+          penaltyArea.translation = ((*i)->pos + (*j)->pos) / 2.f - Vector2f(halfPenaltyDepth, 0.f).rotate(penaltyArea.rotation);
 
           theIntersectionRelations.propagateMarkedIntersection(
             MarkedIntersection((*i)->ownIndex, ((penaltyArea.inverse() * (*i)->pos).y() > 0.f) ? MarkedIntersection::STR : MarkedIntersection::STL),
@@ -105,8 +111,9 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
         {
           if(std::abs(Angle(tIntersection.dir1.angle() - lIntersection.dir1.angle() + pi).normalize()) < thesholdAngleDisForIntersections)
           {
-            penaltyArea = Pose2f(lIntersection.dir1.angle(),
-                                 lIntersection.pos + lIntersection.dir1.normalized(halfPenaltyDepth) + lIntersection.dir2.normalized(theFieldDimensions.yPosLeftPenaltyArea));
+            penaltyArea.rotation = (lIntersection.dir2 + tIntersection.dir2.rotated(pi)).angle() - 90_deg;
+            penaltyArea.rotation.normalize();
+            penaltyArea.translation = (lIntersection.pos + tIntersection.pos) / 2 + Vector2f(0.f, theFieldDimensions.yPosLeftPenaltyArea).rotate(penaltyArea.rotation);
 
             theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(tIntersection.ownIndex,
                 ((penaltyArea.inverse() * tIntersection.pos).y() > 0.f) ? MarkedIntersection::STL : MarkedIntersection::STR),
@@ -115,8 +122,9 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
           }
           else if(std::abs(Angle(tIntersection.dir1.angle() - lIntersection.dir2.angle() + pi).normalize()) < thesholdAngleDisForIntersections)
           {
-            penaltyArea = Pose2f(lIntersection.dir2.angle(),
-                                 lIntersection.pos + lIntersection.dir2.normalized(halfPenaltyDepth) + lIntersection.dir1.normalized(theFieldDimensions.yPosLeftPenaltyArea));
+            penaltyArea.rotation = (lIntersection.dir1 + tIntersection.dir2).angle() + 90_deg;
+            penaltyArea.rotation.normalize();
+            penaltyArea.translation = (lIntersection.pos + tIntersection.pos) / 2 - Vector2f(0.f, theFieldDimensions.yPosLeftPenaltyArea).rotate(penaltyArea.rotation);
 
             theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(tIntersection.ownIndex,
                 ((penaltyArea.inverse() * tIntersection.pos).y() > 0.f) ? MarkedIntersection::STL : MarkedIntersection::STR),

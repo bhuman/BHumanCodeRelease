@@ -25,18 +25,22 @@
 #include "matrix.h"
 #include "util.h"
 
+#include "matrix_impl.h"
+
+
 // misc defines
 #define ALLOCA dALLOCA16
 
 
-void _dMultiply0 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
+/*extern */
+void dxMultiply0 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r)
 {
     dAASSERT (A && B && C && p>0 && q>0 && r>0);
-    const int qskip = dPAD(q);
-    const int rskip = dPAD(r);
+    const unsigned qskip = dPAD(q);
+    const unsigned rskip = dPAD(r);
     dReal *aa = A;
     const dReal *bb = B;
-    for (int i=p; i; aa+=rskip, bb+=qskip, --i) {
+    for (unsigned i = p; i != 0; aa+=rskip, bb+=qskip, --i) {
         dReal *a = aa;
         const dReal *cc = C, *ccend = C + r;
         for (; cc != ccend; ++a, ++cc) {
@@ -44,7 +48,7 @@ void _dMultiply0 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
             const dReal *c = cc;
             const dReal *b = bb, *bend = bb + q;
             for (; b != bend; c+=rskip, ++b) {
-                sum += (*b)*(*c);
+                sum += (*b) * (*c);
             }
             (*a) = sum; 
         }
@@ -52,11 +56,12 @@ void _dMultiply0 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
 }
 
 
-void _dMultiply1 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
+/*extern */
+void dxMultiply1 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r)
 {
     dAASSERT (A && B && C && p>0 && q>0 && r>0);
-    const int pskip = dPAD(p);
-    const int rskip = dPAD(r);
+    const unsigned pskip = dPAD(p);
+    const unsigned rskip = dPAD(r);
     dReal *aa = A;
     const dReal *bb = B, *bbend = B + p;
     for (; bb != bbend; aa += rskip, ++bb) {
@@ -65,8 +70,8 @@ void _dMultiply1 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
         for (; cc != ccend; ++a, ++cc) {
             dReal sum = REAL(0.0);
             const dReal *b = bb, *c = cc;
-            for (int k=q; k; b+=pskip, c+=rskip, --k) {
-                sum += (*b)*(*c);
+            for (unsigned k = q; k != 0; b += pskip, c += rskip, --k) {
+                sum += (*b) * (*c);
             }
             (*a) = sum;
         }
@@ -74,21 +79,22 @@ void _dMultiply1 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
 }
 
 
-void _dMultiply2 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
+/*extern */
+void dxMultiply2 (dReal *A, const dReal *B, const dReal *C, unsigned p, unsigned q, unsigned r)
 {
     dAASSERT (A && B && C && p>0 && q>0 && r>0);
-    const int rskip = dPAD(r);
-    const int qskip = dPAD(q);
+    const unsigned rskip = dPAD(r);
+    const unsigned qskip = dPAD(q);
     dReal *aa = A;
     const dReal *bb = B;
-    for (int i=p; i; aa+=rskip, bb+=qskip, --i) {
+    for (unsigned i = p; i != 0; aa += rskip, bb += qskip, --i) {
         dReal *a = aa, *aend = aa + r;
         const dReal *cc = C;
         for (; a != aend; cc+=qskip, ++a) {
             dReal sum = REAL(0.0);
             const dReal *b = bb, *c = cc, *cend = cc + q;
             for (; c != cend; ++b, ++c) {
-                sum += (*b)*(*c);
+                sum += (*b) * (*c);
             }
             (*a) = sum; 
         }
@@ -96,22 +102,23 @@ void _dMultiply2 (dReal *A, const dReal *B, const dReal *C, int p, int q, int r)
 }
 
 
-int _dFactorCholesky (dReal *A, int n, void *tmpbuf/*[n]*/)
+/*extern */
+int dxFactorCholesky (dReal *A, unsigned n, void *tmpbuf/*[n]*/)
 {
     dAASSERT (n > 0 && A);
     bool failure = false;
-    const int nskip = dPAD (n);
+    const unsigned nskip = dPAD (n);
     dReal *recip = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (n * sizeof(dReal));
     dReal *aa = A;
-    for (int i=0; i<n; aa+=nskip, ++i) {
+    for (unsigned i = 0; i < n; aa += nskip, ++i) {
         dReal *cc = aa;
         {
             const dReal *bb = A;
-            for (int j=0; j<i; bb+=nskip, ++cc, ++j) {
+            for (unsigned j = 0; j < i; bb += nskip, ++cc, ++j) {
                 dReal sum = *cc;
                 const dReal *a = aa, *b = bb, *bend = bb + j;
                 for (; b != bend; ++a, ++b) {
-                    sum -= (*a)*(*b);
+                    sum -= (*a) * (*b);
                 }
                 *cc = sum * recip[j];
             }
@@ -135,61 +142,64 @@ int _dFactorCholesky (dReal *A, int n, void *tmpbuf/*[n]*/)
 }
 
 
-void _dSolveCholesky (const dReal *L, dReal *b, int n, void *tmpbuf/*[n]*/)
+/*extern */
+void dxSolveCholesky (const dReal *L, dReal *b, unsigned n, void *tmpbuf/*[n]*/)
 {
     dAASSERT (n > 0 && L && b);
-    const int nskip = dPAD (n);
-    dReal *y = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (n*sizeof(dReal));
+    const unsigned nskip = dPAD (n);
+    dReal *y = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (n * sizeof(dReal));
     {
         const dReal *ll = L;
-        for (int i=0; i<n; ll+=nskip, ++i) {
+        for (unsigned i = 0; i < n; ll += nskip, ++i) {
             dReal sum = REAL(0.0);
-            for (int k=0; k < i; ++k) {
-                sum += ll[k]*y[k];
+            for (unsigned k = 0; k < i; ++k) {
+                sum += ll[k] * y[k];
             }
             dIASSERT(ll[i] != dReal(0.0));
-            y[i] = (b[i]-sum)/ll[i];
+            y[i] = (b[i] - sum) / ll[i];
         }
     }
     {
         const dReal *ll = L + (n - 1) * (nskip + 1);
-        for (int i=n-1; i>=0; ll-=nskip+1, --i) {
+        for (unsigned i = n; i > 0; ll -= nskip + 1) {
+            --i;
             dReal sum = REAL(0.0);
             const dReal *l = ll + nskip;
-            for (int k=i+1; k<n; l+=nskip, ++k) {
-                sum += (*l)*b[k];
+            for (unsigned k = i + 1; k < n; l += nskip, ++k) {
+                sum += (*l) * b[k];
             }
             dIASSERT(*ll != dReal(0.0));
-            b[i] = (y[i]-sum)/(*ll);
+            b[i] = (y[i] - sum) / (*ll);
         }
     }
 }
 
 
-int _dInvertPDMatrix (const dReal *A, dReal *Ainv, int n, void *tmpbuf/*[nskip*(n+2)]*/)
+/*extern */
+int dxInvertPDMatrix (const dReal *A, dReal *Ainv, unsigned n, void *tmpbuf/*[nskip*(n+2)]*/)
 {
     dAASSERT (n > 0 && A && Ainv);
     bool success = false;
-    size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
-    size_t SolveCholesky_size = _dEstimateSolveCholeskyTmpbufSize(n);
+    size_t FactorCholesky_size = dxEstimateFactorCholeskyTmpbufSize(n);
+    size_t SolveCholesky_size = dxEstimateSolveCholeskyTmpbufSize(n);
     size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size ? FactorCholesky_size : SolveCholesky_size;
     dIASSERT(MaxCholesky_size % sizeof(dReal) == 0);
-    const int nskip = dPAD (n);
-    const int nskip_mul_n = nskip*n;
-    dReal *tmp = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (MaxCholesky_size + (nskip + nskip_mul_n)*sizeof(dReal));
+    const unsigned nskip = dPAD (n);
+    const size_t nskip_mul_n = (size_t)nskip * n;
+    dReal *tmp = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (MaxCholesky_size + (nskip + nskip_mul_n) * sizeof(dReal));
     dReal *X = (dReal *)((char *)tmp + MaxCholesky_size);
     dReal *L = X + nskip;
-    memcpy (L, A, nskip_mul_n*sizeof(dReal));
-    if (dFactorCholesky (L,n,tmp)) {
-        dSetZero (Ainv,nskip_mul_n);	// make sure all padding elements set to 0
+    memcpy (L, A, nskip_mul_n * sizeof(dReal));
+    if (dFactorCholesky (L, n, tmp)) {
+        dSetZero (Ainv, nskip_mul_n);	// make sure all padding elements set to 0
         dReal *aa = Ainv, *xi = X, *xiend = X + n;
         for (; xi != xiend; ++aa, ++xi) {
             dSetZero(X, n);
             *xi = REAL(1.0);
-            dSolveCholesky (L,X,n,tmp);
+            dSolveCholesky (L, X, n, tmp);
             dReal *a = aa;
             const dReal *x = X, *xend = X + n;
-            for (; x!=xend; a+=nskip, ++x) {
+            for (; x != xend; a += nskip, ++x) {
                 *a = *x;
             }
         }
@@ -199,50 +209,46 @@ int _dInvertPDMatrix (const dReal *A, dReal *Ainv, int n, void *tmpbuf/*[nskip*(
 }
 
 
-int _dIsPositiveDefinite (const dReal *A, int n, void *tmpbuf/*[nskip*(n+1)]*/)
+/*extern */
+int dxIsPositiveDefinite (const dReal *A, unsigned n, void *tmpbuf/*[nskip*(n+1)]*/)
 {
     dAASSERT (n > 0 && A);
-    size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
+    size_t FactorCholesky_size = dxEstimateFactorCholeskyTmpbufSize(n);
     dIASSERT(FactorCholesky_size % sizeof(dReal) == 0);
-    const int nskip = dPAD (n);
-    const int nskip_mul_n = nskip*n;
-    dReal *tmp = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (FactorCholesky_size + nskip_mul_n*sizeof(dReal));
+    const unsigned nskip = dPAD (n);
+    const size_t nskip_mul_n = (size_t)nskip * n;
+    dReal *tmp = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (FactorCholesky_size + nskip_mul_n * sizeof(dReal));
     dReal *Acopy = (dReal *)((char *)tmp + FactorCholesky_size);
     memcpy (Acopy, A, nskip_mul_n * sizeof(dReal));
     return dFactorCholesky (Acopy, n, tmp);
 }
 
-
-
-void _dVectorScale (dReal *a, const dReal *d, int n)
+/*extern */
+void dxVectorScale (dReal *a, const dReal *d, unsigned n)
 {
-    dAASSERT (a && d && n >= 0);
-    for (int i=0; i<n; i++) {
-        a[i] *= d[i];
-    }
+    dxtVectorScale<1, 1> (a, d, n);
 }
 
-
-void _dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int nskip)
+/*extern */
+void dxSolveLDLT (const dReal *L, const dReal *d, dReal *b, unsigned n, int nskip)
 {
-    dAASSERT (L && d && b && n > 0 && nskip >= n);
-    dSolveL1 (L,b,n,nskip);
-    dVectorScale (b,d,n);
-    dSolveL1T (L,b,n,nskip);
+    dIASSERT(n != 0);
+
+    dxtSolveLDLT<1, 1>(L, d, b, n, nskip);
 }
 
-
-void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tmpbuf/*[2*nskip]*/)
+/*extern */
+void dxLDLTAddTL (dReal *L, dReal *d, const dReal *a, unsigned n, unsigned nskip, void *tmpbuf/*[2*nskip]*/)
 {
     dAASSERT (L && d && a && n > 0 && nskip >= n);
 
     if (n < 2) return;
-    dReal *W1 = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA ((2*nskip)*sizeof(dReal));
+    dReal *W1 = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (nskip * (2 * sizeof(dReal)));
     dReal *W2 = W1 + nskip;
 
     W1[0] = REAL(0.0);
     W2[0] = REAL(0.0);
-    for (int j=1; j<n; ++j) {
+    for (unsigned j = 1; j < n; ++j) {
         W1[j] = W2[j] = (dReal) (a[j] * M_SQRT1_2);
     }
     dReal W11 = (dReal) ((REAL(0.5)*a[0]+1)*M_SQRT1_2);
@@ -266,7 +272,7 @@ void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tm
         dReal k1 = REAL(1.0) - W21*gamma1;
         dReal k2 = W21*gamma1*W11 - W21;
         dReal *ll = L + nskip;
-        for (int p=1; p<n; ll+=nskip, ++p) {
+        for (unsigned p = 1; p < n; ll += nskip, ++p) {
             dReal Wp = W1[p];
             dReal ell = *ll;
             W1[p] =    Wp - W11*ell;
@@ -275,7 +281,7 @@ void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tm
     }
 
     dReal *ll = L + (nskip + 1);
-    for (int j=1; j<n; ll+=nskip+1, ++j) {
+    for (unsigned j = 1; j < n; ll += nskip + 1, ++j) {
         dReal k1 = W1[j];
         dReal k2 = W2[j];
 
@@ -294,7 +300,7 @@ void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tm
         alpha2 = alphanew;
 
         dReal *l = ll + nskip;
-        for (int p=j+1; p<n; l+=nskip, ++p) {
+        for (unsigned p = j + 1; p < n; l += nskip, ++p) {
             dReal ell = *l;
             dReal Wp = W1[p] - k1 * ell;
             ell += gamma1 * Wp;
@@ -320,89 +326,93 @@ void _dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip, void *tm
 #define GETA(i,j) ((i > j) ? _GETA(i,j) : _GETA(j,i))
 
 
-void _dLDLTRemove (dReal **A, const int *p, dReal *L, dReal *d,
-                   int n1, int n2, int r, int nskip, void *tmpbuf/*n2 + 2*nskip*/)
+/*extern */
+void dxLDLTRemove (dReal **A, const unsigned *p, dReal *L, dReal *d,
+                   unsigned n1, unsigned n2, unsigned r, unsigned nskip, void *tmpbuf/*n2 + 2*nskip*/)
 {
-    dAASSERT(A && p && L && d && n1 > 0 && n2 > 0 && r >= 0 && r < n2 &&
+    dAASSERT(A && p && L && d && n1 > 0 && n2 > 0 /*&& r >= 0 */&& r < n2 &&
         n1 >= n2 && nskip >= n1);
 #ifndef dNODEBUG
-    for (int i=0; i<n2; ++i) dIASSERT(p[i] >= 0 && p[i] < n1);
+    for (unsigned i = 0; i < n2; ++i) dIASSERT(p[i] >= 0 && p[i] < n1);
 #endif
 
-    if (r==n2-1) {
+    if (r == n2 - 1) {
         return;		// deleting last row/col is easy
     }
     else {
-        size_t LDLTAddTL_size = _dEstimateLDLTAddTLTmpbufSize(nskip);
+        size_t LDLTAddTL_size = dxEstimateLDLTAddTLTmpbufSize(nskip);
         dIASSERT(LDLTAddTL_size % sizeof(dReal) == 0);
         dReal *tmp = tmpbuf ? (dReal *)tmpbuf : (dReal*) ALLOCA (LDLTAddTL_size + n2 * sizeof(dReal));
-        if (r==0) {
+        if (r == 0) {
             dReal *a = (dReal *)((char *)tmp + LDLTAddTL_size);
-            const int p_0 = p[0];
-            for (int i=0; i<n2; ++i) {
+            const unsigned p_0 = p[0];
+            for (unsigned i = 0; i < n2; ++i) {
                 a[i] = -GETA(p[i],p_0);
             }
             a[0] += REAL(1.0);
-            dLDLTAddTL (L,d,a,n2,nskip,tmp);
+            dLDLTAddTL (L, d, a, n2, nskip, tmp);
         }
         else {
             dReal *t = (dReal *)((char *)tmp + LDLTAddTL_size);
             {
                 dReal *Lcurr = L + r*nskip;
-                for (int i=0; i<r; ++Lcurr, ++i) {
+                for (unsigned i = 0; i < r; ++Lcurr, ++i) {
                     dIASSERT(d[i] != dReal(0.0));
                     t[i] = *Lcurr / d[i];
                 }
             }
             dReal *a = t + r;
             {
-                dReal *Lcurr = L + r*nskip;
-                const int *pp_r = p + r, p_r = *pp_r;
-                const int n2_minus_r = n2-r;
-                for (int i=0; i<n2_minus_r; Lcurr+=nskip,++i) {
-                    a[i] = dDot(Lcurr,t,r) - GETA(pp_r[i],p_r);
+                dReal *Lcurr = L + r * nskip;
+                const unsigned *pp_r = p + r, p_r = *pp_r;
+                const unsigned n2_minus_r = n2 - r;
+                for (unsigned i = 0; i < n2_minus_r; Lcurr += nskip, ++i) {
+                    a[i] = dDot(Lcurr, t, r) - GETA(pp_r[i], p_r);
                 }
             }
             a[0] += REAL(1.0);
-            dLDLTAddTL (L + r*nskip+r, d+r, a, n2-r, nskip, tmp);
+            dLDLTAddTL (L + (size_t)(nskip + 1) * r, d + r, a, n2 - r, nskip, tmp);
         }
     }
 
     // snip out row/column r from L and d
-    dRemoveRowCol (L,n2,nskip,r);
-    if (r < (n2-1)) memmove (d+r,d+r+1,(n2-r-1)*sizeof(dReal));
+    dRemoveRowCol (L, n2, nskip, r);
+    if (r < (n2 - 1)) memmove (d + r, d + r + 1, (n2 - r - 1) * sizeof(dReal));
 }
 
 
-void _dRemoveRowCol (dReal *A, int n, int nskip, int r)
+/*extern */
+void dxRemoveRowCol (dReal *A, unsigned n, unsigned nskip, unsigned r)
 {
     dAASSERT(A && n > 0 && nskip >= n && r >= 0 && r < n);
-    if (r >= n-1) return;
+    if (r >= n - 1) return;
     if (r > 0) {
         {
-            const size_t move_size = (n-r-1)*sizeof(dReal);
+            const size_t move_size = (n - r - 1) * sizeof(dReal);
             dReal *Adst = A + r;
-            for (int i=0; i<r; Adst+=nskip,++i) {
+            for (unsigned i = 0; i < r; Adst += nskip, ++i) {
                 dReal *Asrc = Adst + 1;
-                memmove (Adst,Asrc,move_size);
+                memmove (Adst, Asrc, move_size);
             }
         }
         {
-            const size_t cpy_size = r*sizeof(dReal);
-            dReal *Adst = A + r * nskip;
-            for (int i=r; i<(n-1); ++i) {
+            const size_t cpy_size = r * sizeof(dReal);
+            dReal *Adst = A + (size_t)nskip * r;
+            unsigned n1 = n - 1;
+            for (unsigned i = r; i < n1; ++i) {
                 dReal *Asrc = Adst + nskip;
-                memcpy (Adst,Asrc,cpy_size);
+                memcpy (Adst, Asrc, cpy_size);
                 Adst = Asrc;
             }
         }
     }
     {
-        const size_t cpy_size = (n-r-1)*sizeof(dReal);
-        dReal *Adst = A + r * (nskip + 1);
-        for (int i=r; i<(n-1); ++i) {
+        const size_t cpy_size = (n - r - 1) * sizeof(dReal);
+        dReal *Adst = A + (size_t)(nskip + 1) * r;
+        unsigned n1 = n - 1;
+        for (unsigned i = r; i < n1; ++i) {
             dReal *Asrc = Adst + (nskip + 1);
-            memcpy (Adst,Asrc,cpy_size);
+            memcpy (Adst, Asrc, cpy_size);
             Adst = Asrc - 1;
         }
     }
@@ -429,79 +439,103 @@ void _dRemoveRowCol (dReal *A, int n, int nskip, int r)
 #undef dRemoveRowCol
 
 
+/*extern */
 void dSetZero (dReal *a, int n)
 {
-    _dSetZero (a, n);
+    dxSetZero (a, n);
 }
 
+/*extern */
 void dSetValue (dReal *a, int n, dReal value)
 {
-    _dSetValue (a, n, value);
+    dxSetValue (a, n, value);
 }
 
 // dReal dDot (const dReal *a, const dReal *b, int n);
 
+/*extern */
 void dMultiply0 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r)
 {
-    _dMultiply0 (A, B, C, p, q, r);
+    dxMultiply0 (A, B, C, p, q, r);
 }
 
+/*extern */
 void dMultiply1 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r)
 {
-    _dMultiply1 (A, B, C, p, q, r);
+    dxMultiply1 (A, B, C, p, q, r);
 }
 
+/*extern */
 void dMultiply2 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r)
 {
-    _dMultiply2 (A, B, C, p, q, r);
+    dxMultiply2 (A, B, C, p, q, r);
 }
 
+/*extern */
 int dFactorCholesky (dReal *A, int n)
 {
-    return _dFactorCholesky (A, n, NULL);
+    return dxFactorCholesky (A, n, NULL);
 }
 
+/*extern */
 void dSolveCholesky (const dReal *L, dReal *b, int n)
 {
-    _dSolveCholesky (L, b, n, NULL);
+    dxSolveCholesky (L, b, n, NULL);
 }
 
+/*extern */
 int dInvertPDMatrix (const dReal *A, dReal *Ainv, int n)
 {
-    return _dInvertPDMatrix (A, Ainv, n, NULL);
+    return dxInvertPDMatrix (A, Ainv, n, NULL);
 }
 
+/*extern */
 int dIsPositiveDefinite (const dReal *A, int n)
 {
-    return _dIsPositiveDefinite (A, n, NULL);
+    return dxIsPositiveDefinite (A, n, NULL);
 }
 
 // void dFactorLDLT (dReal *A, dReal *d, int n, int nskip);
 // void dSolveL1 (const dReal *L, dReal *b, int n, int nskip);
 // void dSolveL1T (const dReal *L, dReal *b, int n, int nskip);
 
+/*extern */
 void dVectorScale (dReal *a, const dReal *d, int n)
 {
-    _dVectorScale (a, d, n);
+    dxVectorScale (a, d, n);
 }
 
+/*extern */
 void dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int nskip)
 {
-    _dSolveLDLT (L, d, b, n, nskip);
+    dAASSERT(n != 0);
+
+    if (n != 0)
+    {
+        dAASSERT(L != NULL);
+        dAASSERT(d != NULL);
+        dAASSERT(b != NULL);
+
+        dxSolveLDLT(L, d, b, n, nskip);
+    }
 }
 
+/*extern */
 void dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip)
 {
-    _dLDLTAddTL (L, d, a, n, nskip, NULL);
+    dxLDLTAddTL (L, d, a, n, nskip, NULL);
 }
 
+/*extern */
 void dLDLTRemove (dReal **A, const int *p, dReal *L, dReal *d, int n1, int n2, int r, int nskip)
 {
-    _dLDLTRemove (A, p, L, d, n1, n2, r, nskip, NULL);
+    dxLDLTRemove (A, (const unsigned *)p, L, d, n1, n2, r, nskip, NULL);
+    dSASSERT(sizeof(unsigned) == sizeof(*p));
 }
 
+/*extern */
 void dRemoveRowCol (dReal *A, int n, int nskip, int r)
 {
-    _dRemoveRowCol (A, n, nskip, r);
+    dxRemoveRowCol (A, n, nskip, r);
 }
 

@@ -543,12 +543,12 @@ void InMap::inUInt(unsigned int& value)
 
 void InMap::read(void* p, size_t size)
 {
-  ASSERT(false);
+  FAIL("Unsupported operation.");
 }
 
 void InMap::skip(size_t size)
 {
-  ASSERT(false);
+  FAIL("Unsupported operation.");
 }
 
 void InMap::select(const char* name, int type, const char* (*enumToString)(int))

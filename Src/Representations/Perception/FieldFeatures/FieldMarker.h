@@ -1,6 +1,6 @@
 /**
  * @file FieldMarker.h
- * Declaration representations to mark the field percepts (major lines and line-intersections)
+ * Declaration of representations to mark the field percepts (major lines and line-intersections).
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -12,7 +12,7 @@
 
 /**
  * @struct MarkedLine
- * it defines a line that is marked
+ * It defines a line that is marked.
  */
 STREAMABLE(MarkedLine,
 {
@@ -45,16 +45,18 @@ STREAMABLE(MarkedLine,
   LineMarker mirror() const;
 
   MarkedLine() = default;
-  MarkedLine(unsigned line, LineMarker marker) : lineIndex(line) COMMA marker(marker) {};
+  MarkedLine(unsigned line, LineMarker marker);
   void draw() const,
 
   (unsigned) lineIndex,
   (LineMarker)(numOfLineMarkers) marker,
 });
 
+inline MarkedLine::MarkedLine(unsigned line, LineMarker marker) : lineIndex(line), marker(marker) {}
+
 /**
  * @struct MarkedIntersection
- * it defines a intersection that is marked
+ * It defines an intersection that is marked.
  */
 STREAMABLE(MarkedIntersection,
 {
@@ -96,7 +98,7 @@ STREAMABLE(MarkedIntersection,
   IntersectionMarker mirror() const;
 
   MarkedIntersection() = default;
-  MarkedIntersection(unsigned intersection, IntersectionMarker marker) : intersectionIndex(intersection) COMMA marker(marker) {};
+  MarkedIntersection(unsigned intersection, IntersectionMarker marker);
 
   void draw() const,
 
@@ -104,9 +106,12 @@ STREAMABLE(MarkedIntersection,
   (IntersectionMarker)(numOfIntersectionMarkers) marker,
 });
 
+inline MarkedIntersection::MarkedIntersection(unsigned intersection, IntersectionMarker marker)
+  : intersectionIndex(intersection), marker(marker) {};
+
 /**
  * @struct MarkedPoint
- * it defines a point that is marked
+ * It defines a point that is marked.
  */
 STREAMABLE(MarkedPoint,
 {
@@ -126,7 +131,7 @@ STREAMABLE(MarkedPoint,
   PointMarker mirror() const;
 
   MarkedPoint() = default;
-  MarkedPoint(Vector2f p, PointMarker marker, bool outOfCurrentFrame = true) : point(p) COMMA marker(marker) COMMA outOfCurrentFrame(outOfCurrentFrame) {};
+  MarkedPoint(const Vector2f& p, PointMarker marker, bool outOfCurrentFrame = true);
 
   void draw() const,//TODO
 
@@ -134,3 +139,6 @@ STREAMABLE(MarkedPoint,
   (PointMarker)(numOfPointMarkers) marker,
   (bool)(false) outOfCurrentFrame,
 });
+
+inline MarkedPoint::MarkedPoint(const Vector2f& p, PointMarker marker, bool outOfCurrentFrame)
+  : point(p), marker(marker), outOfCurrentFrame(outOfCurrentFrame) {}

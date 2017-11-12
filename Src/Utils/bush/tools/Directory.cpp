@@ -76,5 +76,4 @@ bool Directory::read(std::string& name, bool& isDir)
       return true;
     }
   }
-  return false; // unreachable
 }

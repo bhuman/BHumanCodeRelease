@@ -8,7 +8,19 @@
 
 #pragma once
 
+#include <memory>
+#include <functional>
+
 class Streamable;
+
+/**
+ * Helper class to check whether a type has an accessible serialize method.
+ */
+struct HasSerialize
+{
+  template<typename T> static auto test(T* t) -> decltype(t->serialize(nullptr, nullptr), bool()) {return true;}
+  static bool test(void*) {return false;}
+};
 
 class Blackboard
 {
@@ -16,12 +28,13 @@ private:
   /** A single entry of the blackboard. */
   struct Entry
   {
-    Streamable* data = nullptr; /**< The representation. */
+    std::unique_ptr<Streamable> data; /**< The representation. */
     int counter = 0; /**< How many modules requested its existance? */
+    std::function<void(Streamable*)> reset;
   };
 
   class Entries; /**< Type of the map for all entries. */
-  Entries& entries; /**< All entries of the blackboard. */
+  std::unique_ptr<Entries> entries; /**< All entries of the blackboard. */
   int version = 0; /**< A version that is increased with each configuration change. */
 
   /**
@@ -74,10 +87,18 @@ public:
     Entry& entry = get(representation);
     if(entry.counter++ == 0)
     {
-      entry.data = new T;
+      entry.data = std::make_unique<T>();
+      if(HasSerialize::test(dynamic_cast<T*>(&*entry.data)))
+        entry.reset = [](Streamable* data)
+        {
+          dynamic_cast<T*>(data)->~T();
+          new (dynamic_cast<T*>(data)) T();
+        };
+      else
+        entry.reset = [](Streamable* data) {};
       ++version;
     }
-    return *dynamic_cast<T*>(entry.data);
+    return dynamic_cast<T&>(*entry.data);
   }
 
   /**
@@ -87,6 +108,13 @@ public:
    * @param representation The name of the representation.
    */
   void free(const char* representation);
+
+  /**
+   * Reset the blackboard entry for a representation of a certain
+   * name to its default state.
+   * @param representation The name of the representation.
+   */
+  void reset(const char* representation);
 
   /**
    * Access a representation of a certain name. The representation

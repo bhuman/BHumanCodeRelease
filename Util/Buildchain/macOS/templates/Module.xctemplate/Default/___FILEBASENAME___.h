@@ -18,5 +18,9 @@ MODULE(___FILEBASENAME___,
 
 class ___FILEBASENAME___ : public ___FILEBASENAME___Base
 {
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param the___VARIABLE_representation:identifier___ The representation updated.
+   */
   void update(___VARIABLE_representation:identifier___& the___VARIABLE_representation:identifier___);
 };

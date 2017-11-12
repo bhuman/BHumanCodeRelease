@@ -40,6 +40,7 @@
 #ifndef QRASTERWINDOW_H
 #define QRASTERWINDOW_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/QPaintDeviceWindow>
 
 QT_BEGIN_NAMESPACE
@@ -53,6 +54,7 @@ class Q_GUI_EXPORT QRasterWindow : public QPaintDeviceWindow
 
 public:
     explicit QRasterWindow(QWindow *parent = Q_NULLPTR);
+    ~QRasterWindow();
 
 protected:
     int metric(PaintDeviceMetric metric) const Q_DECL_OVERRIDE;
