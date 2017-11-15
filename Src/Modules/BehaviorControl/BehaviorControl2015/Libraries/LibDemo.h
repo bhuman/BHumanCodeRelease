@@ -22,6 +22,7 @@ public:
   { ,
     wavingPlinking,
     normal,
+    striker,
   });
 
   DemoGameState demoGameState;

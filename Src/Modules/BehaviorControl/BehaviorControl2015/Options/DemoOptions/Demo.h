@@ -8,6 +8,8 @@ option(Demo)
         goto waving;
       case LibDemo::normal:
         goto normal;
+      case LibDemo::striker:
+        goto striker;
       default:
         ASSERT(false);
         break;
@@ -28,6 +30,15 @@ option(Demo)
     action
     {
       LookForward();
+      Waving();
+    }
+  }
+  
+  state(striker)
+  {
+    action
+    {
+      Striker();
       Waving();
     }
   }

@@ -24,6 +24,7 @@
 #include "Options/Skills/GetUp.h"
 
 #include "Options/Roles/Striker.h"
+#include "Options/Roles/Goaler.h"
 
 #include "Options/DemoOptions/Demo.h"
 #include "Options/DemoOptions/Waving.h"
