@@ -40,7 +40,7 @@
 #ifndef QICONENGINE_H
 #define QICONENGINE_H
 
-#include <QtCore/qglobal.h>
+#include <QtGui/qtguiglobal.h>
 #include <QtCore/qlist.h>
 #include <QtGui/qicon.h>
 
@@ -51,6 +51,7 @@ class Q_GUI_EXPORT QIconEngine
 {
 public:
     QIconEngine();
+    QIconEngine(const QIconEngine &other);  // ### Qt6: make protected
     virtual ~QIconEngine();
     virtual void paint(QPainter *painter, const QRect &rect, QIcon::Mode mode, QIcon::State state) = 0;
     virtual QSize actualSize(const QSize &size, QIcon::Mode mode, QIcon::State state);
@@ -64,7 +65,7 @@ public:
     virtual bool read(QDataStream &in);
     virtual bool write(QDataStream &out) const;
 
-    enum IconEngineHook { AvailableSizesHook = 1, IconNameHook, IsNullHook };
+    enum IconEngineHook { AvailableSizesHook = 1, IconNameHook, IsNullHook, ScaledPixmapHook };
 
     struct AvailableSizesArgument
     {
@@ -78,8 +79,21 @@ public:
 
     virtual QString iconName() const;
     bool isNull() const; // ### Qt6 make virtual
+    QPixmap scaledPixmap(const QSize &size, QIcon::Mode mode, QIcon::State state, qreal scale); // ### Qt6 make virtual
+
+    struct ScaledPixmapArgument
+    {
+        QSize size;
+        QIcon::Mode mode;
+        QIcon::State state;
+        qreal scale;
+        QPixmap pixmap;
+    };
 
     virtual void virtual_hook(int id, void *data);
+
+private:
+    QIconEngine &operator=(const QIconEngine &other) Q_DECL_EQ_DELETE;
 };
 
 #if QT_DEPRECATED_SINCE(5, 0)

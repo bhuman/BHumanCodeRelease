@@ -831,14 +831,16 @@ public:
     { dJointSetHinge2Anchor (get_id(), x, y, z); }
   void setAnchor (const dVector3 a)
     { setAnchor(a[0], a[1], a[2]); }
-  void setAxis1 (dReal x, dReal y, dReal z)
-    { dJointSetHinge2Axis1 (get_id(), x, y, z); }
-  void setAxis1 (const dVector3 a)
-    { setAxis1 (a[0], a[1], a[2]); }
-  void setAxis2 (dReal x, dReal y, dReal z)
-    { dJointSetHinge2Axis2 (get_id(), x, y, z); }
-  void setAxis2 (const dVector3 a)
-    { setAxis2 (a[0], a[1], a[2]); }
+  void setAxes (const dReal *axis1/*=NULL*/, const dReal *axis2/*=NULL*/)
+    {  dJointSetHinge2Axes (get_id(), axis1, axis2); }
+  ODE_API_DEPRECATED void setAxis1 (dReal x, dReal y, dReal z)
+    { dVector3 a = { x, y, z }; dJointSetHinge2Axes (get_id(), a, NULL); }
+  ODE_API_DEPRECATED void setAxis1 (const dVector3 a)
+    { dJointSetHinge2Axes (get_id(), a, NULL); }
+  ODE_API_DEPRECATED void setAxis2 (dReal x, dReal y, dReal z)
+    { dVector3 a = { x, y, z }; dJointSetHinge2Axes (get_id(), NULL, a); }
+  ODE_API_DEPRECATED void setAxis2 (const dVector3 a)
+    { dJointSetHinge2Axes (get_id(), NULL, a); }
     
   void getAnchor (dVector3 result) const
     { dJointGetHinge2Anchor (get_id(), result); }

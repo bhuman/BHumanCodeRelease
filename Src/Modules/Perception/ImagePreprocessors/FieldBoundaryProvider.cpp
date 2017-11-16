@@ -32,7 +32,8 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
     if(theCameraInfo.camera == CameraInfo::Camera::upper)
     {
       fieldBoundary.boundaryOnField.clear();
-      fieldBoundary.isValid = false;
+      if(validLowerCamSpots)
+        handleLowerCamSpots();
     }
     else
     {
@@ -40,28 +41,31 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
       validLowerCamSpots = true;
     }
 
-    if(theCameraInfo.camera == CameraInfo::Camera::upper && validLowerCamSpots)
-    {
-      handleLowerCamSpots();
-    }
     findBoundarySpots(fieldBoundary);
-    bool valid = cleanupBoundarySpots(fieldBoundary.boundarySpots);
-    calcBoundaryCandidates(fieldBoundary.boundarySpots);
-    findBestBoundary(convexBoundaryCandidates, fieldBoundary.boundarySpots, fieldBoundary.convexBoundary);
-
-    if(theCameraInfo.camera == CameraInfo::Camera::upper)
+    if(!cleanupBoundarySpots(fieldBoundary.boundarySpots))
     {
-      fieldBoundary.isValid = valid;
+      if(theCameraInfo.camera == CameraInfo::Camera::lower)
+        validLowerCamSpots = false;
+      else
+      {
+        lastCamera = theCameraInfo.camera;
+        invalidateBoundary(fieldBoundary);
+        draw();
+        return;
+      }
+    }
+    else
+    {
+      calcBoundaryCandidates(fieldBoundary.boundarySpots);
+      findBestBoundary(convexBoundaryCandidates, fieldBoundary.boundarySpots, fieldBoundary.convexBoundary);
     }
   }
   else
   {
     lowerCamConvexHullOnField.clear();
-
     invalidateBoundary(fieldBoundary);
-
+    lastCamera = theCameraInfo.camera;
     draw();
-
     return;
   }
   bool valid = true;
@@ -74,42 +78,94 @@ void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
       valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
       fieldBoundary.boundaryOnField.push_back(pField);
     }
-    fieldBoundary.isValid = valid;
+    if(!valid)
+    {
+      lastCamera = theCameraInfo.camera;
+      invalidateBoundary(fieldBoundary);
+      draw();
+      return;
+    }
+    fieldBoundary.isValid = true;
     fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
   }
-  else
+  else if(lastCamera != theCameraInfo.camera && lastCamera != CameraInfo::Camera::numOfCameras) // Current image is lower. Last image was upper.
   {
-    // Project the convex Hull to the field.
+    if(validLowerCamSpots)
+    {
+      // Project the convexBoundary to the field.
+      for(const Vector2i& p : fieldBoundary.convexBoundary)
+      {
+        Vector2f pField;
+        valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
+        lowerCamConvexHullOnField.push_back(pField);
+      }
+      if(!valid)
+      {
+        lowerCamConvexHullOnField.clear();
+        validLowerCamSpots = false;
+      }
+    }
+    if(fieldBoundary.isValid)
+    {
+      // Update fieldboundary from last upper image so it is shown correctly on the lower image.
+      valid = true;
+      InImage projectedPoints;
+      projectedPoints.reserve(fieldBoundary.boundaryOnField.size());
+      for(Vector2f& point : fieldBoundary.boundaryOnField)
+      {
+        point = theOdometer.odometryOffset.inverse() * point;
+
+        Vector2f pImg;
+        valid &= Transformation::robotToImage(point, theCameraMatrix, theCameraInfo, pImg);
+        projectedPoints.emplace_back(static_cast<int>(pImg.x() + 0.5f), static_cast<int>(pImg.y() + 0.5f));
+      }
+      if(!valid)
+      {
+        lastCamera = theCameraInfo.camera;
+        invalidateBoundary(fieldBoundary);
+        draw();
+        return;
+      }
+
+      std::sort(projectedPoints.begin(), projectedPoints.end(), [](const Vector2i& a, const Vector2i& b)
+      {
+        return a.x() < b.x() || (a.x() == b.x() && a.y() < b.y());
+      });
+      fieldBoundary.isValid = true;
+      fieldBoundary.boundaryInImage.clear();
+      getUpperConvexHull(projectedPoints, fieldBoundary.boundaryInImage);
+    }
+    else
+      invalidateBoundary(fieldBoundary);
+  }
+  else if(validLowerCamSpots) // Current image is lower. Last image was lower or this is the very first image.
+  {
+    // Project the convexBoundary to the field.
     for(const Vector2i& p : fieldBoundary.convexBoundary)
     {
       Vector2f pField;
       valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
       lowerCamConvexHullOnField.push_back(pField);
     }
-
-    // Update fieldboundary from last upper image so it is shown correctly on the lower image.
-    InImage projectedPoints;
-    projectedPoints.reserve(fieldBoundary.boundaryOnField.size());
-    for(Vector2f& point : fieldBoundary.boundaryOnField)
+    if(!valid)
     {
-      point = theOdometer.odometryOffset.inverse() * point;
-
-      Vector2f pImg;
-      valid &= Transformation::robotToImage(point, theCameraMatrix, theCameraInfo, pImg);
-      projectedPoints.emplace_back(static_cast<int>(pImg.x() + 0.5f), static_cast<int>(pImg.y() + 0.5f));
+      lastCamera = theCameraInfo.camera;
+      lowerCamConvexHullOnField.clear();
+      validLowerCamSpots = false;
+      invalidateBoundary(fieldBoundary);
+      draw();
+      return;
     }
-
-    std::sort(projectedPoints.begin(), projectedPoints.end(), [](const Vector2i & a, const Vector2i & b)
-    {
-      return a.x() < b.x() || (a.x() == b.x() && a.y() < b.y());
-    });
-    fieldBoundary.boundaryInImage.clear();
-    getUpperConvexHull(projectedPoints, fieldBoundary.boundaryInImage);
+    fieldBoundary.isValid = true;
+    fieldBoundary.boundaryOnField = lowerCamConvexHullOnField;
+    fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
+  }
+  else // Current image is lower. Last image was lower or this is the very first image. No valid lower cam spots.
+  {
+    invalidateBoundary(fieldBoundary);
   }
 
-  if(!valid)
-    invalidateBoundary(fieldBoundary);
-
+  lastCamera = theCameraInfo.camera;
   draw();
 }
 
@@ -209,7 +265,7 @@ void FieldBoundaryProvider::findBoundarySpots(FieldBoundary& fieldBoundary)
       else
         regionSize = region.range.lower - region.range.upper;
 
-      if(region.is(FieldColors::green))
+      if(region.is(FieldColors::field))
         spot.score += reward * regionSize;
       else
         spot.score -= penalty * regionSize;
@@ -224,13 +280,13 @@ void FieldBoundaryProvider::findBoundarySpots(FieldBoundary& fieldBoundary)
     {
       int yEnd = spot.yMax + static_cast<int>(minGreenCount * 1.5);
       const PixelTypes::ColoredPixel* pImg = &theECImage.colored[spot.yMax][scanline.x];
-      if(*pImg == FieldColors::green)
+      if(*pImg == FieldColors::field)
       {
         pImg += theECImage.colored.width;
         int greenCount = 1;
         for(int y = spot.yMax + 1; y < yEnd && y < theECImage.colored.height; ++y)
         {
-          if(*pImg == FieldColors::green)
+          if(*pImg == FieldColors::field)
           {
             ++greenCount;
           }
@@ -318,7 +374,7 @@ void FieldBoundaryProvider::calcBoundaryCandidates(InImage boundarySpots)
       }
     }
     else
-      ASSERT(false);
+      FAIL("Unsupported number of boundary candidates (" << boundaryCandidate.size() << ").");
   }
 }
 

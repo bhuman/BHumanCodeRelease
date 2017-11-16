@@ -8,7 +8,7 @@
 #pragma once
 
 #include "BallLocatorTools.h"
-#include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Tools/Debugging/Debugging.h"
@@ -41,7 +41,7 @@ struct BallHypothesis
                     const Vector4f& odometryTranslationCov, const Matrix4f& movingOdometryRotationDeviationRotation,
                     const Matrix2f& fixedOdometryRotation, const Vector2f& fixedOdometryTranslation,
                     const Matrix2f& fixedOdometryRotationTransposed, const Matrix2f& fixedOdometryRotationDeviationRotation,
-                    const FieldDimensions& theFieldDimensions, float deltaTime)
+                    const BallSpecification& theBallSpecification, float deltaTime)
   {
     if(type == BallHypothesis::moving)
     {
@@ -93,7 +93,7 @@ struct BallHypothesis
       Vector4f& x = movingX;
       Vector2f newPosition = x.topRows(2);
       Vector2f newVelocity = x.bottomRows(2);
-      BallPhysics::applyFrictionToPositionAndVelocity(newPosition, newVelocity, deltaTime, theFieldDimensions.ballFriction);
+      BallPhysics::applyFrictionToPositionAndVelocity(newPosition, newVelocity, deltaTime, theBallSpecification.friction);
       x << newPosition, newVelocity;
       if(newVelocity.squaredNorm() < sqr(100.f))
       {

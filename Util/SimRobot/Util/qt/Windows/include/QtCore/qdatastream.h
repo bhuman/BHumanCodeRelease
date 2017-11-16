@@ -50,7 +50,7 @@
 
 QT_BEGIN_NAMESPACE
 
-
+class qfloat16;
 class QByteArray;
 class QIODevice;
 
@@ -63,6 +63,9 @@ template <class Key, class T> class QMap;
 
 #if !defined(QT_NO_DATASTREAM) || defined(QT_BOOTSTRAPPED)
 class QDataStreamPrivate;
+namespace QtPrivate {
+class StreamStateSaver;
+}
 class Q_CORE_EXPORT QDataStream
 {
 public:
@@ -91,10 +94,12 @@ public:
         Qt_5_5 = Qt_5_4,
         Qt_5_6 = 17,
         Qt_5_7 = Qt_5_6,
-#if QT_VERSION >= 0x050800
+        Qt_5_8 = Qt_5_7,
+        Qt_5_9 = Qt_5_8,
+#if QT_VERSION >= 0x050a00
 #error Add the datastream version for this Qt version and update Qt_DefaultCompiledVersion
 #endif
-        Qt_DefaultCompiledVersion = Qt_5_7
+        Qt_DefaultCompiledVersion = Qt_5_9
     };
 
     enum ByteOrder {
@@ -147,8 +152,10 @@ public:
     QDataStream &operator>>(quint32 &i);
     QDataStream &operator>>(qint64 &i);
     QDataStream &operator>>(quint64 &i);
+    QDataStream &operator>>(std::nullptr_t &ptr) { ptr = nullptr; return *this; }
 
     QDataStream &operator>>(bool &i);
+    QDataStream &operator>>(qfloat16 &f);
     QDataStream &operator>>(float &f);
     QDataStream &operator>>(double &f);
     QDataStream &operator>>(char *&str);
@@ -161,7 +168,9 @@ public:
     QDataStream &operator<<(quint32 i);
     QDataStream &operator<<(qint64 i);
     QDataStream &operator<<(quint64 i);
+    QDataStream &operator<<(std::nullptr_t) { return *this; }
     QDataStream &operator<<(bool i);
+    QDataStream &operator<<(qfloat16 f);
     QDataStream &operator<<(float f);
     QDataStream &operator<<(double f);
     QDataStream &operator<<(const char *str);
@@ -192,8 +201,125 @@ private:
     Status q_status;
 
     int readBlock(char *data, int len);
+    friend class QtPrivate::StreamStateSaver;
 };
 
+namespace QtPrivate {
+
+class StreamStateSaver
+{
+public:
+    inline StreamStateSaver(QDataStream *s) : stream(s), oldStatus(s->status())
+    {
+        if (!stream->dev || !stream->dev->isTransactionStarted())
+            stream->resetStatus();
+    }
+    inline ~StreamStateSaver()
+    {
+        if (oldStatus != QDataStream::Ok) {
+            stream->resetStatus();
+            stream->setStatus(oldStatus);
+        }
+    }
+
+private:
+    QDataStream *stream;
+    QDataStream::Status oldStatus;
+};
+
+template <typename Container>
+QDataStream &readArrayBasedContainer(QDataStream &s, Container &c)
+{
+    StreamStateSaver stateSaver(&s);
+
+    c.clear();
+    quint32 n;
+    s >> n;
+    c.reserve(n);
+    for (quint32 i = 0; i < n; ++i) {
+        typename Container::value_type t;
+        s >> t;
+        if (s.status() != QDataStream::Ok) {
+            c.clear();
+            break;
+        }
+        c.append(t);
+    }
+
+    return s;
+}
+
+template <typename Container>
+QDataStream &readListBasedContainer(QDataStream &s, Container &c)
+{
+    StreamStateSaver stateSaver(&s);
+
+    c.clear();
+    quint32 n;
+    s >> n;
+    for (quint32 i = 0; i < n; ++i) {
+        typename Container::value_type t;
+        s >> t;
+        if (s.status() != QDataStream::Ok) {
+            c.clear();
+            break;
+        }
+        c << t;
+    }
+
+    return s;
+}
+
+template <typename Container>
+QDataStream &readAssociativeContainer(QDataStream &s, Container &c)
+{
+    StreamStateSaver stateSaver(&s);
+
+    c.clear();
+    quint32 n;
+    s >> n;
+    for (quint32 i = 0; i < n; ++i) {
+        typename Container::key_type k;
+        typename Container::mapped_type t;
+        s >> k >> t;
+        if (s.status() != QDataStream::Ok) {
+            c.clear();
+            break;
+        }
+        c.insertMulti(k, t);
+    }
+
+    return s;
+}
+
+template <typename Container>
+QDataStream &writeSequentialContainer(QDataStream &s, const Container &c)
+{
+    s << quint32(c.size());
+    for (const typename Container::value_type &t : c)
+        s << t;
+
+    return s;
+}
+
+template <typename Container>
+QDataStream &writeAssociativeContainer(QDataStream &s, const Container &c)
+{
+    s << quint32(c.size());
+    // Deserialization should occur in the reverse order.
+    // Otherwise, value() will return the least recently inserted
+    // value instead of the most recently inserted one.
+    auto it = c.constEnd();
+    auto begin = c.constBegin();
+    while (it != begin) {
+        --it;
+        s << it.key() << it.value();
+    }
+
+    return s;
+}
+
+} // QtPrivate namespace
 
 /*****************************************************************************
   QDataStream inline functions
@@ -235,194 +361,84 @@ inline QDataStream &QDataStream::operator<<(quint32 i)
 inline QDataStream &QDataStream::operator<<(quint64 i)
 { return *this << qint64(i); }
 
+template <typename Enum>
+inline QDataStream &operator<<(QDataStream &s, QFlags<Enum> e)
+{ return s << e.i; }
+
+template <typename Enum>
+inline QDataStream &operator>>(QDataStream &s, QFlags<Enum> &e)
+{ return s >> e.i; }
+
 template <typename T>
-QDataStream& operator>>(QDataStream& s, QList<T>& l)
+inline QDataStream &operator>>(QDataStream &s, QList<T> &l)
 {
-    l.clear();
-    quint32 c;
-    s >> c;
-    l.reserve(c);
-    for(quint32 i = 0; i < c; ++i)
-    {
-        T t;
-        s >> t;
-        l.append(t);
-        if (s.atEnd())
-            break;
-    }
-    return s;
+    return QtPrivate::readArrayBasedContainer(s, l);
 }
 
 template <typename T>
-QDataStream& operator<<(QDataStream& s, const QList<T>& l)
+inline QDataStream &operator<<(QDataStream &s, const QList<T> &l)
 {
-    s << quint32(l.size());
-    for (int i = 0; i < l.size(); ++i)
-        s << l.at(i);
-    return s;
+    return QtPrivate::writeSequentialContainer(s, l);
 }
 
 template <typename T>
-QDataStream& operator>>(QDataStream& s, QLinkedList<T>& l)
+inline QDataStream &operator>>(QDataStream &s, QLinkedList<T> &l)
 {
-    l.clear();
-    quint32 c;
-    s >> c;
-    for(quint32 i = 0; i < c; ++i)
-    {
-        T t;
-        s >> t;
-        l.append(t);
-        if (s.atEnd())
-            break;
-    }
-    return s;
+    return QtPrivate::readListBasedContainer(s, l);
 }
 
 template <typename T>
-QDataStream& operator<<(QDataStream& s, const QLinkedList<T>& l)
+inline QDataStream &operator<<(QDataStream &s, const QLinkedList<T> &l)
 {
-    s << quint32(l.size());
-    typename QLinkedList<T>::ConstIterator it = l.constBegin();
-    for(; it != l.constEnd(); ++it)
-        s << *it;
-    return s;
+    return QtPrivate::writeSequentialContainer(s, l);
 }
 
 template<typename T>
-QDataStream& operator>>(QDataStream& s, QVector<T>& v)
+inline QDataStream &operator>>(QDataStream &s, QVector<T> &v)
 {
-    v.clear();
-    quint32 c;
-    s >> c;
-    v.resize(c);
-    for(quint32 i = 0; i < c; ++i) {
-        T t;
-        s >> t;
-        v[i] = t;
-    }
-    return s;
+    return QtPrivate::readArrayBasedContainer(s, v);
 }
 
 template<typename T>
-QDataStream& operator<<(QDataStream& s, const QVector<T>& v)
+inline QDataStream &operator<<(QDataStream &s, const QVector<T> &v)
 {
-    s << quint32(v.size());
-    for (typename QVector<T>::const_iterator it = v.begin(); it != v.end(); ++it)
-        s << *it;
-    return s;
+    return QtPrivate::writeSequentialContainer(s, v);
 }
 
 template <typename T>
-QDataStream &operator>>(QDataStream &in, QSet<T> &set)
+inline QDataStream &operator>>(QDataStream &s, QSet<T> &set)
 {
-    set.clear();
-    quint32 c;
-    in >> c;
-    for (quint32 i = 0; i < c; ++i) {
-        T t;
-        in >> t;
-        set << t;
-        if (in.atEnd())
-            break;
-    }
-    return in;
+    return QtPrivate::readListBasedContainer(s, set);
 }
 
 template <typename T>
-QDataStream& operator<<(QDataStream &out, const QSet<T> &set)
+inline QDataStream &operator<<(QDataStream &s, const QSet<T> &set)
 {
-    out << quint32(set.size());
-    typename QSet<T>::const_iterator i = set.constBegin();
-    while (i != set.constEnd()) {
-        out << *i;
-        ++i;
-    }
-    return out;
+    return QtPrivate::writeSequentialContainer(s, set);
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QHash<Key, T> &hash)
+inline QDataStream &operator>>(QDataStream &s, QHash<Key, T> &hash)
 {
-    QDataStream::Status oldStatus = in.status();
-    in.resetStatus();
-    hash.clear();
-
-    quint32 n;
-    in >> n;
-
-    for (quint32 i = 0; i < n; ++i) {
-        if (in.status() != QDataStream::Ok)
-            break;
-
-        Key k;
-        T t;
-        in >> k >> t;
-        hash.insertMulti(k, t);
-    }
-
-    if (in.status() != QDataStream::Ok)
-        hash.clear();
-    if (oldStatus != QDataStream::Ok)
-        in.setStatus(oldStatus);
-    return in;
+    return QtPrivate::readAssociativeContainer(s, hash);
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QDataStream &operator<<(QDataStream &out, const QHash<Key, T>& hash)
+inline QDataStream &operator<<(QDataStream &s, const QHash<Key, T> &hash)
 {
-    out << quint32(hash.size());
-    typename QHash<Key, T>::ConstIterator it = hash.end();
-    typename QHash<Key, T>::ConstIterator begin = hash.begin();
-    while (it != begin) {
-        --it;
-        out << it.key() << it.value();
-    }
-    return out;
-}
-#ifdef Q_QDOC
-template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QMap<Key, T> &map)
-#else
-template <class aKey, class aT>
-Q_OUTOFLINE_TEMPLATE QDataStream &operator>>(QDataStream &in, QMap<aKey, aT> &map)
-#endif
-{
-    QDataStream::Status oldStatus = in.status();
-    in.resetStatus();
-    map.clear();
-
-    quint32 n;
-    in >> n;
-
-    map.detach();
-    for (quint32 i = 0; i < n; ++i) {
-        if (in.status() != QDataStream::Ok)
-            break;
-
-        aKey key;
-        aT value;
-        in >> key >> value;
-        map.insertMulti(key, value);
-    }
-    if (in.status() != QDataStream::Ok)
-        map.clear();
-    if (oldStatus != QDataStream::Ok)
-        in.setStatus(oldStatus);
-    return in;
+    return QtPrivate::writeAssociativeContainer(s, hash);
 }
 
 template <class Key, class T>
-Q_OUTOFLINE_TEMPLATE QDataStream &operator<<(QDataStream &out, const QMap<Key, T> &map)
+inline QDataStream &operator>>(QDataStream &s, QMap<Key, T> &map)
 {
-    out << quint32(map.size());
-    typename QMap<Key, T>::ConstIterator it = map.end();
-    typename QMap<Key, T>::ConstIterator begin = map.begin();
-    while (it != begin) {
-        --it;
-        out << it.key() << it.value();
-    }
-    return out;
+    return QtPrivate::readAssociativeContainer(s, map);
+}
+
+template <class Key, class T>
+inline QDataStream &operator<<(QDataStream &s, const QMap<Key, T> &map)
+{
+    return QtPrivate::writeAssociativeContainer(s, map);
 }
 
 #ifndef QT_NO_DATASTREAM

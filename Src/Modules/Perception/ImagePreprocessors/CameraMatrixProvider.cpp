@@ -6,7 +6,6 @@
  */
 
 #include "CameraMatrixProvider.h"
-#include "Modules/Infrastructure/CognitionLogDataProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/RotationMatrix.h"
@@ -17,9 +16,10 @@ void CameraMatrixProvider::update(CameraMatrix& cameraMatrix)
 {
   cameraMatrix.computeCameraMatrix(theTorsoMatrix, theRobotCameraMatrix, theCameraCalibration);
   cameraMatrix.isValid = theTorsoMatrix.isValid && theMotionInfo.isMotionStable &&
-                         theFallDownState.state == FallDownState::upright &&
+                         (theFallDownState.state == FallDownState::upright ||
+                          theFallDownState.state == FallDownState::squatting) &&
                          theFrameInfo.getTimeSince(theJointSensorData.timestamp) < 500 &&
-                         theRobotInfo.penalty == PENALTY_NONE;
+                         (theRobotInfo.penalty == PENALTY_NONE || theRobotInfo.penalty == PENALTY_SPL_ILLEGAL_MOTION_IN_SET);
 
   DEBUG_DRAWING("module:CameraMatrixProvider:calibrationHelper", "drawingOnImage") drawFieldLines(cameraMatrix);
   DEBUG_DRAWING3D("module:CameraMatrixProvider:cameraMatrix", "field")

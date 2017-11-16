@@ -1,7 +1,7 @@
 /**
  * @file FrictionLearner.h
  *
- * This file declares another module that estimates the ball friction coefficient.
+ * This file declares a module that estimates the ball friction coefficient.
  *
  * @author Tim Laue
  * @author Felix Wenk

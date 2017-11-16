@@ -42,6 +42,18 @@ atomicord32 ThrsafeExchange(volatile atomicord32 *paoDestination, atomicord32 ao
 }
 
 static inline 
+void ThrsafeAdd(volatile atomicord32 *paoDestination, atomicord32 aoAddend)
+{
+    AtomicExchangeAddNoResult(paoDestination, aoAddend);
+}
+
+static inline 
+atomicord32 ThrsafeExchangeAdd(volatile atomicord32 *paoDestination, atomicord32 aoAddend)
+{
+    return AtomicExchangeAdd(paoDestination, aoAddend);
+}
+
+static inline 
 bool ThrsafeCompareExchangePointer(volatile atomicptr *papDestination, atomicptr apComparand, atomicptr apExchange)
 {
     return AtomicCompareExchangePointer(papDestination, apComparand, apExchange);
@@ -71,6 +83,20 @@ atomicord32 ThrsafeExchange(volatile atomicord32 *paoDestination, atomicord32 ao
 }
 
 static inline 
+void ThrsafeAdd(volatile atomicord32 *paoDestination, atomicord32 aoAddend)
+{
+    *paoDestination += aoAddend;
+}
+
+static inline 
+atomicord32 ThrsafeExchangeAdd(volatile atomicord32 *paoDestination, atomicord32 aoAddend)
+{
+    atomicord32 aoDestinationValue = *paoDestination;
+    *paoDestination += aoAddend;
+    return aoDestinationValue;
+}
+
+static inline 
 bool ThrsafeCompareExchangePointer(volatile atomicptr *papDestination, atomicptr apComparand, atomicptr apExchange)
 {
     return (*papDestination == apComparand) ? ((*papDestination = apExchange), true) : false;
@@ -89,7 +115,7 @@ atomicptr ThrsafeExchangePointer(volatile atomicptr *papDestination, atomicptr a
 
 
 static inline 
-unsigned int ThrsafeIncrementIntUpToLimit(volatile unsigned int *storagePointer, unsigned int limitValue)
+unsigned int ThrsafeIncrementIntUpToLimit(volatile atomicord32 *storagePointer, unsigned int limitValue)
 {
     unsigned int resultValue;
     while (true) {
@@ -97,7 +123,7 @@ unsigned int ThrsafeIncrementIntUpToLimit(volatile unsigned int *storagePointer,
         if (resultValue == limitValue) {
             break;
         }
-        if (ThrsafeCompareExchange((volatile atomicord32 *)storagePointer, (atomicord32)resultValue, (atomicord32)(resultValue + 1))) {
+        if (ThrsafeCompareExchange(storagePointer, (atomicord32)resultValue, (atomicord32)(resultValue + 1))) {
             break;
         }
     }

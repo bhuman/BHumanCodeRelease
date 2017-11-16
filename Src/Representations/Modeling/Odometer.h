@@ -3,7 +3,7 @@
  *
  * Some additional odometry information
  *
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  * @author marcel
  */
 

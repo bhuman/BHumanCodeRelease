@@ -48,11 +48,9 @@
 #include <QtCore/qpair.h>
 #include <QtCore/qglobal.h>
 
-#ifdef Q_OS_MAC
+#if defined(Q_OS_DARWIN) || defined(Q_QDOC)
 Q_FORWARD_DECLARE_CF_TYPE(CFURL);
-#  ifdef __OBJC__
 Q_FORWARD_DECLARE_OBJC_CLASS(NSURL);
-#  endif
 #endif
 
 QT_BEGIN_NAMESPACE
@@ -71,8 +69,8 @@ public:
     Q_DECL_CONSTEXPR inline QUrlTwoFlags(E1 f) : i(f) {}
     Q_DECL_CONSTEXPR inline QUrlTwoFlags(E2 f) : i(f) {}
     Q_DECL_CONSTEXPR inline QUrlTwoFlags(QFlag f) : i(f) {}
-    Q_DECL_CONSTEXPR inline QUrlTwoFlags(QFlags<E1> f) : i(f.operator int()) {}
-    Q_DECL_CONSTEXPR inline QUrlTwoFlags(QFlags<E2> f) : i(f.operator int()) {}
+    Q_DECL_CONSTEXPR inline QUrlTwoFlags(QFlags<E1> f) : i(f.operator typename QFlags<E1>::Int()) {}
+    Q_DECL_CONSTEXPR inline QUrlTwoFlags(QFlags<E2> f) : i(f.operator typename QFlags<E2>::Int()) {}
     Q_DECL_CONSTEXPR inline QUrlTwoFlags(Zero = 0) : i(0) {}
 
     inline QUrlTwoFlags &operator&=(int mask) { i &= mask; return *this; }
@@ -164,6 +162,12 @@ public:
     };
     Q_DECLARE_FLAGS(ComponentFormattingOptions, ComponentFormattingOption)
 #ifdef Q_QDOC
+private:
+    // We need to let qdoc think that FormattingOptions is a normal QFlags, but
+    // it needs to be a QUrlTwoFlags for compiling default arguments of somme functions.
+    template<typename T> struct QFlags : QUrlTwoFlags<T, ComponentFormattingOption>
+    { using QUrlTwoFlags<T, ComponentFormattingOption>::QUrlTwoFlags; };
+public:
     Q_DECLARE_FLAGS(FormattingOptions, UrlFormattingOption)
 #else
     typedef QUrlTwoFlags<UrlFormattingOption, ComponentFormattingOption> FormattingOptions;
@@ -192,7 +196,7 @@ public:
     QString url(FormattingOptions options = FormattingOptions(PrettyDecoded)) const;
     QString toString(FormattingOptions options = FormattingOptions(PrettyDecoded)) const;
     QString toDisplayString(FormattingOptions options = FormattingOptions(PrettyDecoded)) const;
-    QUrl adjusted(FormattingOptions options) const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QUrl adjusted(FormattingOptions options) const;
 
     QByteArray toEncoded(FormattingOptions options = FullyEncoded) const;
     static QUrl fromEncoded(const QByteArray &url, ParsingMode mode = TolerantMode);
@@ -231,7 +235,9 @@ public:
 
     void setHost(const QString &host, ParsingMode mode = DecodedMode);
     QString host(ComponentFormattingOptions = FullyDecoded) const;
+#if QT_CONFIG(topleveldomain)
     QString topLevelDomain(ComponentFormattingOptions options = FullyDecoded) const;
+#endif
 
     void setPort(int port);
     int port(int defaultPort = -1) const;
@@ -249,7 +255,7 @@ public:
     QString fragment(ComponentFormattingOptions options = PrettyDecoded) const;
     void setFragment(const QString &fragment, ParsingMode mode = TolerantMode);
 
-    QUrl resolved(const QUrl &relative) const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QUrl resolved(const QUrl &relative) const;
 
     bool isRelative() const;
     bool isParentOf(const QUrl &url) const;
@@ -271,13 +277,11 @@ public:
     static QByteArray toPercentEncoding(const QString &,
                                         const QByteArray &exclude = QByteArray(),
                                         const QByteArray &include = QByteArray());
-#if defined(Q_OS_MAC) || defined(Q_QDOC)
+#if defined(Q_OS_DARWIN) || defined(Q_QDOC)
     static QUrl fromCFURL(CFURLRef url);
     CFURLRef toCFURL() const Q_DECL_CF_RETURNS_RETAINED;
-#  if defined(__OBJC__) || defined(Q_QDOC)
     static QUrl fromNSURL(const NSURL *url);
     NSURL *toNSURL() const Q_DECL_NS_RETURNS_AUTORELEASED;
-#  endif
 #endif
 
 #if QT_DEPRECATED_SINCE(5,0)
@@ -372,6 +376,7 @@ Q_DECLARE_SHARED(QUrl)
 Q_DECLARE_OPERATORS_FOR_FLAGS(QUrl::ComponentFormattingOptions)
 //Q_DECLARE_OPERATORS_FOR_FLAGS(QUrl::FormattingOptions)
 
+#ifndef Q_QDOC
 Q_DECL_CONSTEXPR inline QUrl::FormattingOptions operator|(QUrl::UrlFormattingOption f1, QUrl::UrlFormattingOption f2)
 { return QUrl::FormattingOptions(f1) | f2; }
 Q_DECL_CONSTEXPR inline QUrl::FormattingOptions operator|(QUrl::UrlFormattingOption f1, QUrl::FormattingOptions f2)
@@ -399,6 +404,7 @@ Q_DECL_CONSTEXPR inline QUrl::FormattingOptions operator|(QUrl::ComponentFormatt
 
 //inline QUrl::UrlFormattingOption &operator=(const QUrl::UrlFormattingOption &i, QUrl::ComponentFormattingOptions f)
 //{ i = int(f); f; }
+#endif // Q_QDOC
 
 #ifndef QT_NO_DATASTREAM
 Q_CORE_EXPORT QDataStream &operator<<(QDataStream &, const QUrl &);

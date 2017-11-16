@@ -34,6 +34,8 @@ internal data structures and functions for collision detection.
 #include <ode/collision.h>
 #include "objects.h"
 #include "odetls.h"
+#include "common.h"
+
 
 //****************************************************************************
 // constants and macros
@@ -42,7 +44,12 @@ internal data structures and functions for collision detection.
 #define NUMC_MASK (0xffff)
 
 #define IS_SPACE(geom) \
-    ((geom)->type >= dFirstSpaceClass && (geom)->type <= dLastSpaceClass)
+    dIN_RANGE((geom)->type, dFirstSpaceClass, dLastSpaceClass + 1)
+
+#define CHECK_NOT_LOCKED(space) \
+    dUASSERT ((space) == NULL || (space)->lock_count == 0, \
+        "Invalid operation for locked space")
+
 
 //****************************************************************************
 // geometry object base class
@@ -119,8 +126,21 @@ struct dxGeom : public dBase {
     // Get parent space TLS kind
     unsigned getParentSpaceTLSKind() const;
 
-    // calculate our new final position from our offset and body
-    void computePosr();
+    const dVector3 &buildUpdatedPosition()
+    {
+        dIASSERT(gflags & GEOM_PLACEABLE);
+        
+        recomputePosr();
+        return final_posr->pos;
+    }
+
+    const dMatrix3 &buildUpdatedRotation()
+    {
+        dIASSERT(gflags & GEOM_PLACEABLE);
+
+        recomputePosr();
+        return final_posr->R;
+    }
 
     // recalculate our new final position if needed
     void recomputePosr()
@@ -130,6 +150,9 @@ struct dxGeom : public dBase {
             gflags &= ~GEOM_POSR_BAD;
         }
     }
+
+    // calculate our new final position from our offset and body
+    void computePosr();
 
     bool checkControlValueSizeValidity(void *dataValue, int *dataSize, int iRequiresSize) { return (*dataSize == iRequiresSize && dataValue != 0) ? true : !(*dataSize = iRequiresSize); } // Here it is the intent to return true for 0 required size in any case
     virtual bool controlGeometry(int controlClass, int controlCode, void *dataValue, int *dataSize);
@@ -158,6 +181,8 @@ struct dxGeom : public dBase {
             gflags &= ~GEOM_AABB_BAD;
         }
     }
+
+    inline void markAABBBad();
 
     // add and remove this geom from a linked list maintained by a space.
 
@@ -244,6 +269,15 @@ struct dxSpace : public dxGeom {
     virtual void collide (void *data, dNearCallback *callback)=0;
     virtual void collide2 (void *data, dxGeom *geom, dNearCallback *callback)=0;
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+
+/*inline */
+void dxGeom::markAABBBad() {
+    gflags |= (GEOM_DIRTY | GEOM_AABB_BAD);
+    CHECK_NOT_LOCKED(parent_space);
+}
 
 
 //****************************************************************************

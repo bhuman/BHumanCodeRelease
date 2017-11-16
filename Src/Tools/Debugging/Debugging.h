@@ -17,7 +17,9 @@
 #endif
 #include "Tools/Global.h"
 
-#ifdef TARGET_TOOL
+#if defined TARGET_TOOL || (defined TARGET_ROBOT && defined NDEBUG)
+#include <iostream>
+
 /**
  * A macro for sending warning messages.
  * @param message A message streamable as text.
@@ -43,8 +45,11 @@
  */
 #define DECLARED_DEBUG_RESPONSE(id) if(false)
 #define DEBUG_RESPONSE(id) if(false)
+#define DEBUG_RESPONSE_ONCE(id) if(false)
+#define DEBUG_RESPONSE_NOT(id) if(true)
 #define DECLARE_DEBUG_RESPONSE(id) ((void) 0)
 #define OUTPUT(type, format, expression) ((void) 0)
+#define OUTPUT_TEXT(expression) ((void) 0)
 #else
 /**
  * A macro for sending debug messages.

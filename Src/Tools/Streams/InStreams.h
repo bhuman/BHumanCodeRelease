@@ -82,7 +82,7 @@ protected:
   virtual void readSChar(signed char& d, PhysicalInStream& stream) = 0;
 
   /**
-   * reads a unsigned character from a stream
+   * reads an unsigned character from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
@@ -96,21 +96,21 @@ protected:
   virtual void readShort(short& d, PhysicalInStream& stream) = 0;
 
   /**
-   * reads a unsigned short from a stream
+   * reads an unsigned short from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
   virtual void readUShort(unsigned short& d, PhysicalInStream& stream) = 0;
 
   /**
-   * reads a int from a stream
+   * reads an int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
   virtual void readInt(int& d, PhysicalInStream& stream) = 0;
 
   /**
-   * reads a unsigned int from a stream
+   * reads an unsigned int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
@@ -330,7 +330,7 @@ protected:
        theNextChar = ' ';
 private:
   std::string buf; /**< A buffer to convert read strings. */
-  bool eof = false , /**< Stores whether the end of file was reached during the last call to nextChar. */
+  bool eof = false,  /**< Stores whether the end of file was reached during the last call to nextChar. */
        nextEof = false;
 
 public:
@@ -389,7 +389,7 @@ protected:
   virtual void readSChar(signed char& d, PhysicalInStream& stream);
 
   /**
-   * reads a unsigned character from a stream
+   * reads an unsigned character from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
@@ -403,21 +403,21 @@ protected:
   virtual void readShort(short& d, PhysicalInStream& stream);
 
   /**
-   * reads a unsigned short from a stream
+   * reads an unsigned short from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
   virtual void readUShort(unsigned short& d, PhysicalInStream& stream);
 
   /**
-   * reads a int from a stream
+   * reads an int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
   virtual void readInt(int& d, PhysicalInStream& stream);
 
   /**
-   * reads a unsigned int from a stream
+   * reads an unsigned int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */

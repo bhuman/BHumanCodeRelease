@@ -11,6 +11,7 @@
 #pragma once
 
 #include "Tools/Streams/Enum.h"
+#include "Tools/RobotParts/Arms.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 /**
@@ -29,23 +30,21 @@ STREAMABLE(ArmContactModel,
     SW,   /**< Arm is being pushed to the back and the left */
     SE,   /**< Arm is being pushed to the back and the right */
     NONE, /**< If no contact is detected */
+  });
+
+  STREAMABLE(ArmContact,
+  {,
+    (bool)(false) contact, /**< The contact state of the robot's arm. */
+
+    // only evaluate these values if contact is true */
+    ((ArmContactModel) PushDirection)(ArmContactModel::NONE) pushDirection, /**< direction in which the arm is being pushed */
+    ((ArmContactModel) PushDirection)(ArmContactModel::NONE) lastPushDirection, /**< direction in which the arm was last pushed */
+
+    // The duration of the push in motion frames (100fps = 1s).
+    (unsigned)(0) duration,
+
+    (unsigned)(0) timeOfLastContact,
   }),
 
-  (bool)(false) contactLeft, /**< The contact state of the robot's left arm. */
-  (bool)(false) contactRight, /**< The contact state of the robot's right arm. */
-
-  // only evaluate these values if contactLeft or contactRight is true */
-  (PushDirection)(NONE) pushDirectionLeft, /**< direction in which the left arm is being pushed */
-  (PushDirection)(NONE) pushDirectionRight, /**< direction in which the right arm is being pushed */
-
-  // only evaluate these values if contactLeft or contactRight is true
-  (PushDirection)(NONE) lastPushDirectionLeft, /**< direction in which the left arm was last pushed */
-  (PushDirection)(NONE) lastPushDirectionRight, /**< direction in which the right arm was last pushed */
-
-  // The duration of the push in motion frames (100fps = 1s).
-  (unsigned)(0) durationLeft,
-  (unsigned)(0) durationRight,
-
-  (unsigned)(0) timeOfLastContactLeft,
-  (unsigned)(0) timeOfLastContactRight,
+  (ArmContact[Arms::numOfArms]) status,
 });

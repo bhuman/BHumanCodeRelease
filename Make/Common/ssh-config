@@ -14,7 +14,8 @@ set -eu
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 baseDir=$(dirname "${scriptPath}")
 robotsDir="../../Install/Robots"
-sshKeyPath="${baseDir}/../../Config/Keys/id_rsa_nao"
+sshKeySource="${baseDir}/../../Config/Keys/id_rsa_nao"
+sshKeyPath=/tmp/id_rsa_nao
 install=false
 config=~/.ssh/config
 startm="### B-HUMAN ssh config start" # start marker
@@ -34,7 +35,8 @@ if [[ $# -ge 1 ]] ; then
 fi
 
 # change mod of private key
-chmod 400 "${sshKeyPath}"
+cp "${sshKeySource}" "${sshKeyPath}"
+chmod 600 "${sshKeyPath}"
 
 # create host for each robot
 hosts=""
@@ -44,8 +46,8 @@ do
   wlanDir=${robotsDir}/${robot}/wireless
 
   if [ -e ${lanDir} ]; then
-    lan=`cat ${lanDir} | grep -o -P '(?<=BASE_ETH0_IP=").*(?=")'``cat ${lanDir} | grep -o -P '(?<=ROBOT_ID=").*(?=")'`
-    wlan=`cat ${wlanDir} | grep -o -P '(?<=BASE_WLAN0_IP=").*(?=")'``cat ${wlanDir} | grep -o -P '(?<=ROBOT_ID=").*(?=")'`
+    lan=`cat ${lanDir} | grep -e "^BASE_ETH0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
+    wlan=`cat ${wlanDir} | grep -e "^BASE_WLAN0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
 
     hosts=${hosts}"Host ${robot}\n"
     hosts=${hosts}"  HostName ${lan}\n"

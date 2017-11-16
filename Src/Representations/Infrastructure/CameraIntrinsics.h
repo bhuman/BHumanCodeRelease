@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file CameraIntrinsics.h
  * Declaration of a struct for representing the intrinsic parameters of the cameras.
  * @author Alexis Tsogias

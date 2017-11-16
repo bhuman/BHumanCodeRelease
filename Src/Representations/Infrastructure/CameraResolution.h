@@ -31,7 +31,7 @@ struct CameraResolutionRequest : public CameraResolution
 {
   /**
    * Request a resolution change.
-   * A resolution change is only possible on a phisical robot. Thus, all other modes will return false;
+   * A resolution change is only possible on a physical robot. Thus, all other modes will return false;
    *
    * @return true if the request is viable.
    */

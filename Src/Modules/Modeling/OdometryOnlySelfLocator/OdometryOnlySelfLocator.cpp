@@ -4,7 +4,7 @@
  * Declares a class that performs self-localization by adding odometry offsets.
  * This is not for real self-localization but for testing and debugging.
  *
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
 
 #include "OdometryOnlySelfLocator.h"
@@ -26,7 +26,7 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
   Covariance::fixCovariance(robotPose.covariance);
 
   MODIFY("module:OdometryOnlySelfLocator:basePose", base);
-  DEBUG_RESPONSE_ONCE("module:OdometrOnlySelfLocator:resetReferenceOdometry")
+  DEBUG_RESPONSE_ONCE("module:OdometryOnlySelfLocator:resetReferenceOdometry")
   {
     referenceOdometry = theOdometryData;
     robotPose.covariance.setIdentity();

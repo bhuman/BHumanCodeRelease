@@ -62,7 +62,7 @@ protected:
   virtual void writeSChar(signed char d, PhysicalOutStream& stream) = 0;
 
   /**
-   * Writes a unsigned character to a stream.
+   * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -76,21 +76,21 @@ protected:
   virtual void writeShort(short d, PhysicalOutStream& stream) = 0;
 
   /**
-   * Writes a unsigned short to a stream.
+   * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeUShort(unsigned short d, PhysicalOutStream& stream) = 0;
 
   /**
-   * Writes a int to a stream.
+   * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeInt(int d, PhysicalOutStream& stream) = 0;
 
   /**
-   * Writes a unsigned int to a stream.
+   * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -305,7 +305,7 @@ protected:
   }
 
   /**
-   * Writes a unsigned character to a stream.
+   * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -325,7 +325,7 @@ protected:
   }
 
   /**
-   * Writes a unsigned short to a stream.
+   * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -335,7 +335,7 @@ protected:
   }
 
   /**
-   * Writes a int to a stream.
+   * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -345,7 +345,7 @@ protected:
   }
 
   /**
-   * Writes a unsigned int to a stream.
+   * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -440,7 +440,7 @@ protected:
   virtual void writeSChar(signed char d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned character to a stream.
+   * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -454,21 +454,21 @@ protected:
   virtual void writeShort(short d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned short to a stream.
+   * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeUShort(unsigned short d, PhysicalOutStream& stream);
 
   /**
-   * Writes a int to a stream.
+   * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeInt(int d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned int to a stream.
+   * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -554,7 +554,7 @@ protected:
   virtual void writeSChar(signed char d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned character to a stream.
+   * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
@@ -568,21 +568,21 @@ protected:
   virtual void writeShort(short d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned short to a stream.
+   * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeUShort(unsigned short d, PhysicalOutStream& stream);
 
   /**
-   * Writes a int to a stream.
+   * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
   virtual void writeInt(int d, PhysicalOutStream& stream);
 
   /**
-   * Writes a unsigned int to a stream.
+   * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */

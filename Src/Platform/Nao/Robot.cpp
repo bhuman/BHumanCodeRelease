@@ -41,7 +41,7 @@ SenderList* Robot::getSender(const std::string& senderName)
     if(sender)
       return sender;
   }
-  return 0;
+  return nullptr;
 }
 
 ReceiverList* Robot::getReceiver(const std::string& receiverName)
@@ -52,5 +52,5 @@ ReceiverList* Robot::getReceiver(const std::string& receiverName)
     if(receiver)
       return receiver;
   }
-  return 0;
+  return nullptr;
 }

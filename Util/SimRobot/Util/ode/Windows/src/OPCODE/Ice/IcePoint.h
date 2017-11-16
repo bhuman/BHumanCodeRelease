@@ -32,7 +32,8 @@
 //		inline_					Point(float val) : x(val), y(val), z(val)					{}
 // Removed since it introduced the nasty "Point T = *Matrix4x4.GetTrans();" bug.......
 		//! Constructor from floats
-		inline_					Point(float xx, float yy, float zz) : x(xx), y(yy), z(zz)	{}
+		template<typename toffsetfloat>
+		inline_					Point(toffsetfloat xx, toffsetfloat yy, toffsetfloat zz) : x((float)xx), y((float)yy), z((float)zz)	{}
 		//! Constructor from array
 		inline_					Point(const float f[3]) : x(f[X]), y(f[Y]), z(f[Z])		{}
 		//! Copy constructor
@@ -54,7 +55,8 @@
 				Point&			UnitRandomVector();
 
 		//! Assignment from values
-		inline_	Point&			Set(float xx, float yy, float zz)		{ x  = xx;		y  = yy;	z  = zz;			return *this;	}
+		template<typename toffsetfloat>
+		inline_	Point&			Set(toffsetfloat xx, toffsetfloat yy, toffsetfloat zz)	{ x  = (float)xx;	y  = (float)yy;	z  = (float)zz;	return *this;	}
 		//! Assignment from array
 		inline_	Point&			Set(const float f[3])					{ x  = f[X];	y  = f[Y];	z  = f[Z];			return *this;	}
 		//! Assignment from another point

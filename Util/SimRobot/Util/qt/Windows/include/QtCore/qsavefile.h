@@ -58,14 +58,18 @@ class QSaveFilePrivate;
 
 class Q_CORE_EXPORT QSaveFile : public QFileDevice
 {
+#ifndef QT_NO_QOBJECT
     Q_OBJECT
+#endif
     Q_DECLARE_PRIVATE(QSaveFile)
 
 public:
 
     explicit QSaveFile(const QString &name);
+#ifndef QT_NO_QOBJECT
     explicit QSaveFile(QObject *parent = Q_NULLPTR);
     explicit QSaveFile(const QString &name, QObject *parent);
+#endif
     ~QSaveFile();
 
     QString fileName() const Q_DECL_OVERRIDE;
@@ -84,6 +88,9 @@ protected:
 
 private:
     void close() Q_DECL_OVERRIDE;
+#if !QT_CONFIG(translation)
+    static QString tr(const char *string) { return QString::fromLatin1(string); }
+#endif
 
 private:
     Q_DISABLE_COPY(QSaveFile)

@@ -55,6 +55,7 @@ private:
   const RobotConsole::PlotViews* plotViews = nullptr; /**< Points to the map of plot views used for tab-completion. */
   BHToolBar toolBar; /**< The toolbar shown for this controller. */
 
+  friend class MultiImageSaveWidget;
 public:
   /**
    * @param application The interface to SimRobot.
@@ -88,9 +89,9 @@ public:
    * The function is called when a console command has been entered.
    * @param command The command.
    * @param console Use this console to execute the command.
-   * @param locationOnly Only interpret command "loc".
+   * @param scenarioAndLocationOnly Only interpret commands "cs" and "cl".
    */
-  void executeConsoleCommand(std::string command, RobotConsole* console = nullptr, bool locationOnly = false);
+  void executeConsoleCommand(std::string command, RobotConsole* console = nullptr, bool scenarioAndLocationOnly = false);
 
   /**
    * Execute command using handleCommand() on all currently selected RobotConsole robot
@@ -209,10 +210,10 @@ private:
    * @param name2 The file to execute if name1 does not exist.
    * @param printError Print error message if file is not found.
    * @param console Use this console to execute all commands in the file.
-   * @param locationOnly Only interpret command "loc".
+   * @param scenarioAndLocationOnly Only interpret commands "cs" and "cl".
    */
   void executeFile(const std::string& name1, const std::string& name2,
-                   bool printError, RobotConsole* console, bool locationOnly);
+                   bool printError, RobotConsole* console, bool scenarioAndLocationOnly);
 
   /**
    * The function adds a robot with a certain name to the set of selected robots.

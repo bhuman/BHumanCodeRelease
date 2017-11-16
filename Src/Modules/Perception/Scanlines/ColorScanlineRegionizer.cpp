@@ -42,8 +42,8 @@ void ColorScanlineRegionizer::update(ColorScanlineRegionsHorizontal& colorScanli
     colorScanlineRegionsHorizontal.scanlines.emplace_back(y);
     ColorScanlineRegionsHorizontal::Scanline& scanline = colorScanlineRegionsHorizontal.scanlines.back();
 
-    FieldColors::Color curColor;
-    unsigned int count = 0;
+    FieldColors::Color curColor = FieldColors::Color::none;
+    unsigned short count = 0;
     int x = 0;
 
     for(size_t i = theScanGrid.lowResStart; i < theScanGrid.lines.size(); i += theScanGrid.lowResStep)

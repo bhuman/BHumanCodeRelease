@@ -1,13 +1,12 @@
 /**
  * @file CirclePercept.cpp
- * Implementation of a struct that represents the center circle
+ * Implementation of a struct that represents the center circle.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #include "CirclePercept.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
@@ -18,12 +17,10 @@
 
 void CirclePercept::draw() const
 {
-
   FieldDimensions* theFieldDimensions = nullptr;
   CameraInfo* theCameraInfo = nullptr;
   CameraMatrix* theCameraMatrix = nullptr;
   ImageCoordinateSystem* theImageCoordinateSystem = nullptr;
-  FrameInfo* theFrameInfo = nullptr;
   Image* theImage = nullptr;
 
   if(Blackboard::getInstance().exists("FieldDimensions"))
@@ -34,17 +31,15 @@ void CirclePercept::draw() const
     theCameraMatrix = static_cast<CameraMatrix*>(&(Blackboard::getInstance()["CameraMatrix"]));
   if(Blackboard::getInstance().exists("ImageCoordinateSystem"))
     theImageCoordinateSystem =  static_cast<ImageCoordinateSystem*>(&(Blackboard::getInstance()["ImageCoordinateSystem"]));
-  if(Blackboard::getInstance().exists("FrameInfo"))
-    theFrameInfo = static_cast<FrameInfo*>(&(Blackboard::getInstance()["FrameInfo"]));
   if(Blackboard::getInstance().exists("Image"))
     theImage = static_cast<Image*>(&(Blackboard::getInstance()["Image"]));
 
-  if(theFieldDimensions == nullptr || theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr || theFrameInfo == nullptr)
+  if(theFieldDimensions == nullptr || theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr)
     return;
 
   DEBUG_DRAWING("representation:CirclePercept:field", "drawingOnField")
   {
-    if(theImage->timeStamp == lastSeen)
+    if(wasSeen)
     {
       CROSS("representation:CirclePercept:field", pos.x(), pos.y(), 40, 40, Drawings::solidPen, ColorRGBA::black);
       CIRCLE("representation:CirclePercept:field", pos.x(), pos.y(), theFieldDimensions->centerCircleRadius, 30, Drawings::solidPen, ColorRGBA::black, Drawings::noBrush, ColorRGBA::black);
@@ -53,7 +48,7 @@ void CirclePercept::draw() const
 
   DEBUG_DRAWING("representation:FieldLines:field", "drawingOnField")
   {
-    if(theFrameInfo->getTimeSince(lastSeen) == 0)
+    if(wasSeen)
     {
       CROSS("representation:FieldLines:field", pos.x(), pos.y(), 40, 40, Drawings::solidPen, ColorRGBA::red);
       CIRCLE("representation:FieldLines:field", pos.x(), pos.y(), theFieldDimensions->centerCircleRadius, 30, Drawings::solidPen, ColorRGBA::red, Drawings::noBrush, ColorRGBA::red);
@@ -62,7 +57,7 @@ void CirclePercept::draw() const
 
   DEBUG_DRAWING("representation:FieldLines:image", "drawingOnImage")
   {
-    if(theFrameInfo->getTimeSince(lastSeen) == 0)
+    if(wasSeen)
     {
       Vector2f p1;
       if(Transformation::robotToImage(pos, *theCameraMatrix, *theCameraInfo, p1))
@@ -90,7 +85,7 @@ void CirclePercept::draw() const
   TRANSLATE3D("representation:FieldLines", 0, 0, -210);
   COMPLEX_DRAWING3D("representation:FieldLines")
   {
-    if(theFrameInfo->getTimeSince(lastSeen) == 0)
+    if(wasSeen)
     {
       Vector2f v1(pos.x() + theFieldDimensions->centerCircleRadius, pos.y());
       for(int i = 1; i < 33; ++i)

@@ -539,8 +539,11 @@ void dxQuadTreeSpace::cleanGeoms(){
         if (IS_SPACE(g)){
             ((dxSpace*)g)->cleanGeoms();
         }
+        
         g->recomputeAABB();
-        g->gflags &= (~(GEOM_DIRTY|GEOM_AABB_BAD));
+        dIASSERT((g->gflags & GEOM_AABB_BAD) == 0);
+
+        g->gflags &= ~GEOM_DIRTY;
 
         ((Block*)g->tome_ex)->Traverse(g);
     }

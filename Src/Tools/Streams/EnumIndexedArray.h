@@ -1,7 +1,7 @@
 /**
  * This file defines a macro that allow to declare one-dimensional arrays that use
  * an enumeration type as its index. The enumeration type must have been defined
- * using the ENUM or GLOBAL_ENUM macros. When such an array is streamed and 
+ * using the ENUM or GLOBAL_ENUM macros. When such an array is streamed and
  * visualized, it appears as a struct with members named after the enumeration
  * constants rather than a sequence of array elements.
  * Examples:
@@ -94,6 +94,7 @@
 template <typename Elem, const char* (*getElemName)(Elem), typename Enum, Enum numOfElements, const char* (*getEnumName)(Enum)>
 class EnumIndexedArray : public std::array<Elem, numOfElements>, public Streamable
 {
+protected:
   void serialize(In* in, Out* out)
   {
     STREAM_REGISTER_BEGIN

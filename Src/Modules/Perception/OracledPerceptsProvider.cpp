@@ -167,7 +167,7 @@ void OracledPerceptsProvider::trueBallPercept(BallPercept& ballPercept)
   if(Random::bernoulli(1. - ballRecognitionRate))
     return;
   Geometry::Circle circle;
-  if(Geometry::calculateBallInImage(ballOffset, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
+  if(Geometry::calculateBallInImage(ballOffset, theCameraMatrix, theCameraInfo, theBallSpecification.radius, circle))
   {
     if((circle.center.x() >= -circle.radius / 1.5f) &&
        (circle.center.x() < theCameraInfo.width + circle.radius / 1.5f) &&
@@ -182,7 +182,7 @@ void OracledPerceptsProvider::trueBallPercept(BallPercept& ballPercept)
       if(applyBallNoise)
       {
         applyNoise(ballCenterInImageStdDev, ballPercept.positionInImage);
-        if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theFieldDimensions.ballRadius, theCameraMatrix, theCameraInfo, ballPercept.positionOnField))
+        if(!Transformation::imageToRobotHorizontalPlane(ballPercept.positionInImage, theBallSpecification.radius, theCameraMatrix, theCameraInfo, ballPercept.positionOnField))
         {
           ballPercept.status = BallPercept::notSeen;
           return;
@@ -197,13 +197,13 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
   std::vector<BallPercept> possiblePercepts;
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
 
-  auto addPercept = [&](const Vector2f & positionOnField)
+  auto addPercept = [&](const Vector2f& positionOnField)
   {
     if(isPointBehindObstacle(positionOnField))
       return;
     const Vector2f relativePosition = robotPoseInv * positionOnField;
     Geometry::Circle circle;
-    if(Geometry::calculateBallInImage(relativePosition, theCameraMatrix, theCameraInfo, theFieldDimensions.ballRadius, circle))
+    if(Geometry::calculateBallInImage(relativePosition, theCameraMatrix, theCameraInfo, theBallSpecification.radius, circle))
     {
       if((circle.center.x() >= -circle.radius / 1.5f) &&
          (circle.center.x() < theCameraInfo.width + circle.radius / 1.5f) &&
@@ -222,10 +222,10 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
 
   for(size_t i = 0; i < goalPosts.size(); i++)
     addPercept(goalPosts[i]);
-  for(size_t i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
-    addPercept(theGroundTruthWorldState.bluePlayers[i].pose.translation);
-  for(size_t i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
-    addPercept(theGroundTruthWorldState.redPlayers[i].pose.translation);
+  for(size_t i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation);
+  for(size_t i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation);
   for(size_t i = 0; i < intersections.size(); ++i)
     addPercept(intersections[i].pos);
   for(size_t i = 0; i < penaltyMarks.size(); ++i)
@@ -233,6 +233,39 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
 
   if(possiblePercepts.size())
     ballPercept = possiblePercepts[Random::uniformInt(possiblePercepts.size() - 1)];
+}
+
+void OracledPerceptsProvider::update(GoalPostPercept& goalPostPercept)
+{
+  goalPostPercept.wasSeen = false;
+  if(!theCameraMatrix.isValid)
+    return;
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  for(unsigned int i = 0; i < goalPosts.size(); i++)
+  {
+    const Vector2f relativePostPos = robotPoseInv * goalPosts[i];
+    if(relativePostPos.norm() > nearGoalPostMaxVisibleDistance || isPointBehindObstacle(goalPosts[i]))
+      continue;
+    if(Random::bernoulli(1. - nearGoalPostRecognitionRate))
+      continue;
+    Vector2f postInImage;
+    if(pointIsInImage(relativePostPos, postInImage))
+    {
+      goalPostPercept.positionInImage.x() = static_cast<int>(std::floor(postInImage.x() + 0.5f));
+      goalPostPercept.positionInImage.y() = static_cast<int>(std::floor(postInImage.y() + 0.5f));
+      goalPostPercept.positionOnField = relativePostPos;
+      // Add some noise:
+      if(applyNearGoalPostNoise)
+      {
+        applyNoise(nearGoalPostPosInImageStdDev, goalPostPercept.positionInImage);
+        if(!Transformation::imageToRobot(goalPostPercept.positionInImage.x(), goalPostPercept.positionInImage.y(), theCameraMatrix, theCameraInfo, goalPostPercept.positionOnField))
+        {
+          continue;
+        }
+      }
+      goalPostPercept.wasSeen = true;
+    }
+  }
 }
 
 void OracledPerceptsProvider::update(LinesPercept& linesPercept)
@@ -292,6 +325,10 @@ void OracledPerceptsProvider::update(LinesPercept& linesPercept)
 
 void OracledPerceptsProvider::update(CirclePercept& circlePercept)
 {
+  circlePercept.wasSeen = false;
+  if(!theCameraMatrix.isValid)
+    return;
+
   // Find center circle (at least one out of five center circle points must be inside the current image)
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   bool pointFound = false;
@@ -322,7 +359,7 @@ void OracledPerceptsProvider::update(CirclePercept& circlePercept)
         if(Transformation::imageToRobot(nPImg, theCameraMatrix, theCameraInfo, circlePos)) // TODO right?
         {
           circlePercept.pos = circlePos;
-          circlePercept.lastSeen = theFrameInfo.time;
+          circlePercept.wasSeen = true;
         }
       }
     }
@@ -331,6 +368,7 @@ void OracledPerceptsProvider::update(CirclePercept& circlePercept)
 
 void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
 {
+  penaltyMarkPercept.wasSeen = false;
   if(!theCameraMatrix.isValid)
     return;
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
@@ -353,29 +391,41 @@ void OracledPerceptsProvider::update(PenaltyMarkPercept& penaltyMarkPercept)
       if(success)
       {
         penaltyMarkPercept.positionOnField = relativeMarkPos;
-        penaltyMarkPercept.position        = Vector2i(static_cast<int>(penaltyMarkInImage.x()), static_cast<int>(penaltyMarkInImage.y()));
-        penaltyMarkPercept.timeLastSeen    = theFrameInfo.time;
+        penaltyMarkPercept.positionInImage = Vector2i(static_cast<int>(penaltyMarkInImage.x()), static_cast<int>(penaltyMarkInImage.y()));
+        penaltyMarkPercept.wasSeen         = true;
       }
     }
   }
 }
 
-void OracledPerceptsProvider::update(PlayersPercept& playersPercept)
+void OracledPerceptsProvider::update(PlayersImagePercept& playersPercept)
 {
   playersPercept.players.clear();
   if(!theCameraMatrix.isValid || !Global::settingsExist())
     return;
 
-  // Simulation scene should only use blue and red for now
-  ASSERT(Global::getSettings().teamColor == Settings::blue || Global::getSettings().teamColor == Settings::red);
+  const bool isFirstTeam = Global::getSettings().teamNumber == 1;
+  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.firstTeamPlayers[i], !isFirstTeam, playersPercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.secondTeamPlayers[i], isFirstTeam, playersPercept);
+}
 
-  const bool isBlue = Global::getSettings().teamColor == Settings::blue;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.bluePlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.bluePlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.bluePlayers[i], !isBlue, playersPercept);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.redPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.redPlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.redPlayers[i], isBlue, playersPercept);
+void OracledPerceptsProvider::update(PlayersFieldPercept& playersPercept)
+{
+  playersPercept.players.clear();
+  if(!theCameraMatrix.isValid || !Global::settingsExist())
+    return;
+
+  const bool isFirstTeam = Global::getSettings().teamNumber == 1;
+  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation))
+      createPlayerOnField(theGroundTruthWorldState.firstTeamPlayers[i], !isFirstTeam, playersPercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation))
+      createPlayerOnField(theGroundTruthWorldState.secondTeamPlayers[i], isFirstTeam, playersPercept);
 }
 
 void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
@@ -427,7 +477,7 @@ void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
   }
 }
 
-void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, PlayersPercept& playersPercept)
+void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, PlayersImagePercept& playersPercept)
 {
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
@@ -446,12 +496,42 @@ void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::Groun
     }
     if(success)
     {
-      PlayersPercept::Player p;
+      PlayersImagePercept::PlayerInImage p;
       p.x1 = p.x2 = p.x1FeetOnly = p.x2FeetOnly = p.realCenterX = static_cast<int>(std::floor(playerInImage.x() + 0.5f));
       p.y1 = p.y2 = static_cast<int>(std::floor(playerInImage.y() + 0.5f));
       p.lowerCamera = theCameraInfo.camera == CameraInfo::lower;
       p.detectedJersey = true;
-      p.detectedFeet   = true;
+      p.detectedFeet = true;
+      p.ownTeam = !isOpponent;
+      p.fallen = !player.upright;
+      playersPercept.players.push_back(p);
+    }
+  }
+}
+
+void OracledPerceptsProvider::createPlayerOnField(const GroundTruthWorldState::GroundTruthPlayer& player, bool isOpponent, PlayersFieldPercept& playersPercept)
+{
+  const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
+  Vector2f relativePlayerPos = robotPoseInv * player.pose.translation;
+  if(relativePlayerPos.norm() > playerMaxVisibleDistance)
+    return;
+  if(Random::bernoulli(1. - playerRecognitionRate))
+    return;
+  Vector2f playerInImage;
+  if(pointIsInImage(relativePlayerPos, playerInImage))
+  {
+    bool success = true;
+    if(applyPlayerNoise)
+    {
+      applyNoise(playerPosInImageStdDev, playerInImage);
+      success = Transformation::imageToRobot(playerInImage, theCameraMatrix, theCameraInfo, relativePlayerPos);
+    }
+    if(success)
+    {
+      PlayersFieldPercept::PlayerOnField p;
+      p.lowerCamera = theCameraInfo.camera == CameraInfo::lower;
+      p.detectedJersey = true;
+      p.detectedFeet = true;
       p.ownTeam = !isOpponent;
       p.fallen = !player.upright;
       p.rightOnField = p.centerOnField = p.leftOnField = relativePlayerPos;
@@ -461,7 +541,39 @@ void OracledPerceptsProvider::createPlayerBox(const GroundTruthWorldState::Groun
       p.leftOnField.rotateLeft();
       p.rightOnField += p.centerOnField;
       p.leftOnField += p.centerOnField;
-
+      p.borderInImage[0] = 0; //< has to be filled for correct debug drawings!
+      p.borderInImage[1] = 0;
+      p.borderInImage[2] = 0;
+      p.borderInImage[3] = 0;
+      if(Random::bernoulli(playerOrientationRecognitionRate))
+      {
+        // get the ground truth orientation relative to the robot by calculating the angle between the own look vector * -1 and the robots look vector (both normalized)
+        const Angle robotRotation = player.pose.rotation;
+        const Angle ownRotation = theGroundTruthWorldState.ownPose.rotation;
+        const Vector2f normalizedLookVectorOwn = Vector2f(1, 0).rotate(ownRotation);
+        const Vector2f normalizedLookVectorOther = Vector2f(1, 0).rotate(robotRotation);
+        float groundTruthRelativeOrientation = Angle(std::acos((normalizedLookVectorOwn * -1).dot(normalizedLookVectorOther))).toDegrees();
+        if(applyPlayerNoise)
+        {
+          applyNoise(playerOrientationDetectionStdDev, groundTruthRelativeOrientation);
+        }
+        if(Random::bernoulli(playerCorrectOrientationRecognitionRate))
+        {
+          p.detectedOrientation = 2;
+          p.orientation = groundTruthRelativeOrientation;
+        }
+        else
+        {
+          p.detectedOrientation = 1;
+          p.orientation = groundTruthRelativeOrientation > 90
+                          ? -(90 - (groundTruthRelativeOrientation - 90))
+                          : groundTruthRelativeOrientation;
+        }
+      }
+      else
+      {
+        p.detectedOrientation = 0;
+      }
       playersPercept.players.push_back(p);
     }
   }
@@ -640,13 +752,19 @@ void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2i& p) c
   p.y() += static_cast<int>(floor(errorY + 0.5f));
 }
 
+void OracledPerceptsProvider::applyNoise(float standardDeviation, float& angle) const
+{
+  const float error = Random::normal(standardDeviation);
+  angle += error;
+}
+
 bool OracledPerceptsProvider::isPointBehindObstacle(const Vector2f& pointGlo) const
 {
   const Pose2f robotPoseInv = theGroundTruthWorldState.ownPose.inverse();
   const float sqrDistTopoint = (pointGlo - theGroundTruthWorldState.ownPose.translation).squaredNorm();
   const Angle pointAngle = (robotPoseInv * pointGlo).angle();
 
-  auto isBehind = [&](const Vector2f & obstacle)
+  auto isBehind = [&](const Vector2f& obstacle)
   {
     const float sqrDistToObstacle = (obstacle - theGroundTruthWorldState.ownPose.translation).squaredNorm();
     if(sqrDistToObstacle < 10 || sqrDistTopoint <= sqrDistToObstacle)
@@ -661,11 +779,11 @@ bool OracledPerceptsProvider::isPointBehindObstacle(const Vector2f& pointGlo) co
     return pointAngle < leftPointAngle && pointAngle > rightPointAngle; //would not work on behind the robot, but we can not see anything there too
   };
 
-  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.redPlayers)
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.secondTeamPlayers)
     if(player.upright && isBehind(player.pose.translation))
       return true;
 
-  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.bluePlayers)
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.firstTeamPlayers)
     if(player.upright && isBehind(player.pose.translation))
       return true;
 

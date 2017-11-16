@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -eu
+
+scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+baseDir=$(dirname "${scriptPath}")
+
+cd "$baseDir"
+
+find lib -name "*.prl" | xargs rm
+find lib -name "*_debug" | xargs rm

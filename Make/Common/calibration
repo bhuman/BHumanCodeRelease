@@ -10,11 +10,6 @@ for i in `ls | grep -v Default | grep -v Nao | grep -v robots.cfg | grep -v "^.$
   else
     echo "$(printf "%-18s" $(basename $i)) Joints: MISSING" | cat
   fi
-  if [ -e "Body/walkingEngine.cfg" ]; then
-    git log -1 --pretty="tformat:            WalkingEngine: %s (%an, %ar)" $* Body/walkingEngine.cfg | cat
-  else
-    echo "            WalkingEngine: MISSING" | cat
-  fi
   cd ..
   if [ -z "`ls */$i/cameraCalibration.cfg 2>/dev/null`" ]; then
     echo "                   Camera: MISSING" | cat

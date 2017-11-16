@@ -59,6 +59,9 @@ Constants starting with G_
 #define GINT32 int32_t
 #define GUINT32 uint32_t
 
+#ifdef GPTR
+#undef GPTR
+#endif
 #define GPTR void*
 
 /*! Constants for integers*/

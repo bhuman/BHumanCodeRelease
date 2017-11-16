@@ -13,6 +13,10 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #define ALWAYSINLINE __forceinline
+
+#if __AVX2__
+#define __AVX2__ 1
+#endif
 #else
 #include <x86intrin.h>
 #define ALWAYSINLINE inline __attribute((always_inline))
@@ -72,10 +76,7 @@
 /**
  * Workarounds for platforms not supporting SSSE3.
  */
-#if !defined TARGET_ROBOT && !defined MACOS
-bool _checkSSSE3();
-const bool _supportsSSSE3 = _checkSSSE3();
-
+#if !defined TARGET_ROBOT && !defined MACOS && !defined __SSSE3__
 ALWAYSINLINE __m128i my_mm_shuffle_epi8(__m128i a, __m128i m)
 {
   __m128i r;
@@ -162,23 +163,30 @@ ALWAYSINLINE __m128i my_mm_maddubs_epi16(const __m128i a, const __m128i b)
 
 // if _mm_alignr_epi8 is defined as a macro, we cannot simply replace it.
 #ifdef _mm_alignr_epi8
-#define my_mm_alignr_epi8_org(a, b, n) __extension__ ({ \
-    __m128i __a = (a); \
-    __m128i __b = (b); \
-    (__m128i)__builtin_ia32_palignr128((__v16qi)__a, (__v16qi)__b, (n)); })
 #undef _mm_alignr_epi8
-#define _mm_alignr_epi8(a, b, count) (_supportsSSSE3 ? my_mm_alignr_epi8_org(a, b, count) : my_mm_alignr_epi8(a, b, count))
+#define _mm_alignr_epi8(a, b, count) my_mm_alignr_epi8(a, b, count)
 #else
-#define _mm_alignr_epi8(a, b, count) (_supportsSSSE3 ? _mm_alignr_epi8(a, b, count) : my_mm_alignr_epi8(a, b, count))
+#define _mm_alignr_epi8(a, b, count) my_mm_alignr_epi8(a, b, count)
 #endif
 
-#define _mm_abs_epi16(a) (_supportsSSSE3 ? _mm_abs_epi16(a) : my_mm_abs_epi16(a))
-#define _mm_hadd_epi16(a, b) (_supportsSSSE3 ? _mm_hadd_epi16(a, b) : my_mm_hadd_epi16(a, b))
-#define _mm_hadd_epi32(a, b) (_supportsSSSE3 ? _mm_hadd_epi32(a, b) : my_mm_hadd_epi32(a, b))
-#define _mm_maddubs_epi16(a, b) (_supportsSSSE3 ? _mm_maddubs_epi16(a, b) : my_mm_maddubs_epi16(a, b))
-#define _mm_mulhrs_epi16(a, b) (_supportsSSSE3 ? _mm_mulhrs_epi16(a, b) : my_mm_mulhrs_epi16(a, b))
-#define _mm_shuffle_epi8(a, m) (_supportsSSSE3 ? _mm_shuffle_epi8(a, m) : my_mm_shuffle_epi8(a, m))
+#define _mm_abs_epi16(a) my_mm_abs_epi16(a)
+#define _mm_hadd_epi16(a, b) my_mm_hadd_epi16(a, b)
+#define _mm_hadd_epi32(a, b) my_mm_hadd_epi32(a, b)
+#define _mm_maddubs_epi16(a, b) my_mm_maddubs_epi16(a, b)
+#define _mm_mulhrs_epi16(a, b) my_mm_mulhrs_epi16(a, b)
+#define _mm_shuffle_epi8(a, m) my_mm_shuffle_epi8(a, m)
 #endif
+
+/**
+ * Averages packed signed 8-bit values.
+ *
+ * @return (a + b + 1) / 2
+ */
+static ALWAYSINLINE __m128i _mm_avg_epi8(const __m128i a, const __m128i b)
+{
+  static const __m128i c_128 = _mm_set1_epi8(char(128));
+  return _mm_add_epi8(c_128, _mm_avg_epu8(_mm_add_epi8(c_128, a), _mm_add_epi8(c_128, b)));
+}
 
 /**
  * Aligned / unaligned load by template parameter.

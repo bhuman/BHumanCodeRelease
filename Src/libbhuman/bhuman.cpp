@@ -38,78 +38,103 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/HeadYaw/Position/Sensor/Value",
   "Device/SubDeviceList/HeadYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/HeadYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/HeadYaw/Temperature/Sensor/Status",
   "Device/SubDeviceList/HeadPitch/Position/Sensor/Value",
   "Device/SubDeviceList/HeadPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/HeadPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/HeadPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LShoulderPitch/Position/Sensor/Value",
   "Device/SubDeviceList/LShoulderPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LShoulderPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LShoulderPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LShoulderRoll/Position/Sensor/Value",
   "Device/SubDeviceList/LShoulderRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LShoulderRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LShoulderRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/LElbowYaw/Position/Sensor/Value",
   "Device/SubDeviceList/LElbowYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LElbowYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LElbowYaw/Temperature/Sensor/Status",
   "Device/SubDeviceList/LElbowRoll/Position/Sensor/Value",
   "Device/SubDeviceList/LElbowRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LElbowRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LElbowRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/LWristYaw/Position/Sensor/Value",
   "Device/SubDeviceList/LWristYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LWristYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LWristYaw/Temperature/Sensor/Status",
   "Device/SubDeviceList/LHand/Position/Sensor/Value",
   "Device/SubDeviceList/LHand/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LHand/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LHand/Temperature/Sensor/Status",
   "Device/SubDeviceList/RShoulderPitch/Position/Sensor/Value",
   "Device/SubDeviceList/RShoulderPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RShoulderPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RShoulderPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RShoulderRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RShoulderRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RShoulderRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/RElbowYaw/Position/Sensor/Value",
   "Device/SubDeviceList/RElbowYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RElbowYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RElbowYaw/Temperature/Sensor/Status",
   "Device/SubDeviceList/RElbowRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RElbowRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RElbowRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RElbowRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/RWristYaw/Position/Sensor/Value",
   "Device/SubDeviceList/RWristYaw/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RWristYaw/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RWristYaw/Temperature/Sensor/Status",
   "Device/SubDeviceList/RHand/Position/Sensor/Value",
   "Device/SubDeviceList/RHand/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RHand/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RHand/Temperature/Sensor/Status",
   "Device/SubDeviceList/LHipYawPitch/Position/Sensor/Value",
   "Device/SubDeviceList/LHipYawPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LHipYawPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LHipYawPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LHipRoll/Position/Sensor/Value",
   "Device/SubDeviceList/LHipRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LHipRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LHipRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/LHipPitch/Position/Sensor/Value",
   "Device/SubDeviceList/LHipPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LHipPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LHipPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LKneePitch/Position/Sensor/Value",
   "Device/SubDeviceList/LKneePitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LKneePitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LKneePitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LAnklePitch/Position/Sensor/Value",
   "Device/SubDeviceList/LAnklePitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LAnklePitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LAnklePitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/LAnkleRoll/Position/Sensor/Value",
   "Device/SubDeviceList/LAnkleRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/LAnkleRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/LAnkleRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/RHipRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RHipRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RHipRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RHipRoll/Temperature/Sensor/Status",
   "Device/SubDeviceList/RHipPitch/Position/Sensor/Value",
   "Device/SubDeviceList/RHipPitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RHipPitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RHipPitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/RKneePitch/Position/Sensor/Value",
   "Device/SubDeviceList/RKneePitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RKneePitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RKneePitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/RAnklePitch/Position/Sensor/Value",
   "Device/SubDeviceList/RAnklePitch/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RAnklePitch/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RAnklePitch/Temperature/Sensor/Status",
   "Device/SubDeviceList/RAnkleRoll/Position/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/ElectricCurrent/Sensor/Value",
   "Device/SubDeviceList/RAnkleRoll/Temperature/Sensor/Value",
+  "Device/SubDeviceList/RAnkleRoll/Temperature/Sensor/Status",
 
   // touch sensors
   "Device/SubDeviceList/Head/Touch/Front/Sensor/Value",
@@ -144,6 +169,7 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/Battery/Charge/Sensor/Value",
   "Device/SubDeviceList/Battery/Charge/Sensor/Status",
   "Device/SubDeviceList/Battery/Temperature/Sensor/Value",
+  "Device/SubDeviceList/Battery/Temperature/Sensor/Status",
 
   // fsr sensors
   "Device/SubDeviceList/LFoot/FSR/FrontLeft/Sensor/Value",
@@ -377,6 +403,7 @@ private:
   int ledIndex = 0; /**< The index of the last LED set. */
 
   int rightEarLEDsChangedTime = 0; // Last time when the right ear LEDs were changed by the B-Human code
+  float requestedRightEarLEDs[earsLedRight324DegActuator - earsLedRight0DegActuator + 1]; // The state prevously requested by the B-Human code
 
   float startAngles[lbhNumOfPositionActuatorIds]; /**< Start angles for standing up or sitting down. */
   float startStiffness[lbhNumOfPositionActuatorIds]; /**< Start stiffness for sitting down. */
@@ -448,15 +475,15 @@ private:
   void setBatteryLeds(float* actuators)
   {
     for(int i = earsLedRight0DegActuator; i <= earsLedRight324DegActuator; ++i)
-      if(actuators[i] != requestedActuators[i])
+      if(actuators[i] != requestedRightEarLEDs[i - earsLedRight0DegActuator])
       {
         rightEarLEDsChangedTime = dcmTime;
-        requestedActuators[i] = actuators[i];
+        requestedRightEarLEDs[i - earsLedRight0DegActuator] = actuators[i];
       }
 
     if(state != standing || dcmTime - rightEarLEDsChangedTime > 5000)
-      for(int i = 0; i < int(*sensorPtrs[batteryChargeSensor] * 10.f) && i < 10; ++i)
-        actuators[earsLedRight0DegActuator + i] = 1.f;
+      for(int i = 0; i < 10; ++i)
+        actuators[earsLedRight0DegActuator + i] = i < int(*sensorPtrs[batteryChargeSensor] * 10.f) ? 1.f : 0.f;
   }
 
   /**
@@ -469,7 +496,7 @@ private:
     for(int i = faceLedRedLeft0DegActuator; i < lbhNumOfActuatorIds; ++i)
       destActuators[i] = srcActuators[i];
   }
-  
+
   /**
    * Handles the different states libbhuman can be in.
    * @param actuators The actuator values requested. They will not be changed, but might
@@ -632,7 +659,7 @@ private:
         }
 
       // set team info
-      // since this should very rarely, we don't use a proxy here
+      // since this should happen very rarely, we don't use a proxy here
       if(data->bhumanStartTime != lastBHumanStartTime)
       {
         for(int i = 0; i < lbhNumOfTeamInfoIds; ++i)
@@ -744,9 +771,9 @@ public:
     setModuleDescription("A module that provides basic ipc NaoQi DCM access using shared memory.");
     fprintf(stderr, "libbhuman: Starting.\n");
 
-    assert(lbhNumOfSensorIds == sizeof(sensorNames) / sizeof(*sensorNames));
-    assert(lbhNumOfActuatorIds == sizeof(actuatorNames) / sizeof(*actuatorNames));
-    assert(lbhNumOfTeamInfoIds == sizeof(teamInfoNames) / sizeof(*teamInfoNames));
+    static_assert(lbhNumOfSensorIds == sizeof(sensorNames) / sizeof(*sensorNames), "sensor enum size does not match sensor name array size");
+    static_assert(lbhNumOfActuatorIds == sizeof(actuatorNames) / sizeof(*actuatorNames), "actuator enum size does not match actuator name array size");
+    static_assert(lbhNumOfTeamInfoIds == sizeof(teamInfoNames) / sizeof(*teamInfoNames), "team info enum size does not match team info name array size");
 
     // create shared memory
     memoryHandle = shm_open(LBH_MEM_NAME, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -861,6 +888,8 @@ public:
             memset(requestedActuators, 0, sizeof(requestedActuators));
             for(int i = faceLedRedLeft0DegActuator; i < chestBoardLedRedActuator; ++i)
               requestedActuators[i] = -1.f;
+            for(int i = earsLedRight0DegActuator; i <= earsLedRight324DegActuator; ++i)
+              requestedRightEarLEDs[i - earsLedRight0DegActuator] = -1.f;
 
             // register "onPreProcess" and "onPostProcess" callbacks
             theInstance = this;

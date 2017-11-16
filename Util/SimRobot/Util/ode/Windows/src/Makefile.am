@@ -6,7 +6,9 @@ OU_DIR = ou
 endif
 
 if LIBCCD
+if LIBCCD_INTERNAL
 LIBCCD_DIR = libccd
+endif
 endif
 
 if ENABLE_DEMOS
@@ -37,7 +39,8 @@ release: dist-gzip dist-bzip2
 	@echo Created release packages for ${PACKAGE}-${VERSION}.
 
 EXTRA_DIST = bootstrap build tools \
-        CHANGELOG.txt COPYING INSTALL.txt README.md LICENSE.TXT \
+        CHANGELOG.txt COPYING INSTALL.txt CSR.txt README.md \
+        LICENSE.TXT LICENSE-BSD.TXT \
         bindings
 
 pkgconfigdir = $(libdir)/pkgconfig

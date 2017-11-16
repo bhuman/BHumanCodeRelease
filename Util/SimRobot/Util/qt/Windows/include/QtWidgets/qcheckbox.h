@@ -40,7 +40,10 @@
 #ifndef QCHECKBOX_H
 #define QCHECKBOX_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qabstractbutton.h>
+
+QT_REQUIRE_CONFIG(checkbox);
 
 QT_BEGIN_NAMESPACE
 

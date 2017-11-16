@@ -39,6 +39,7 @@
 #ifndef QTRANSFORM_H
 #define QTRANSFORM_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/qmatrix.h>
 #include <QtGui/qpainterpath.h>
 #include <QtGui/qpolygon.h>
@@ -115,9 +116,9 @@ public:
                    qreal m21, qreal m22, qreal m23,
                    qreal m31, qreal m32, qreal m33);
 
-    QTransform inverted(bool *invertible = Q_NULLPTR) const Q_REQUIRED_RESULT;
-    QTransform adjoint() const Q_REQUIRED_RESULT;
-    QTransform transposed() const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QTransform inverted(bool *invertible = Q_NULLPTR) const;
+    Q_REQUIRED_RESULT QTransform adjoint() const;
+    Q_REQUIRED_RESULT QTransform transposed() const;
 
     QTransform &translate(qreal dx, qreal dy);
     QTransform &scale(qreal sx, qreal sy);
@@ -290,6 +291,10 @@ inline qreal QTransform::dy() const
     return affine._dy;
 }
 
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_CLANG("-Wfloat-equal")
+QT_WARNING_DISABLE_GCC("-Wfloat-equal")
+
 inline QTransform &QTransform::operator*=(qreal num)
 {
     if (num == 1.)
@@ -346,6 +351,8 @@ inline QTransform &QTransform::operator-=(qreal num)
     m_dirty     = TxProject;
     return *this;
 }
+
+QT_WARNING_POP
 
 inline bool qFuzzyCompare(const QTransform& t1, const QTransform& t2)
 {

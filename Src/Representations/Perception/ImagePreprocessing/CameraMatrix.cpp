@@ -13,7 +13,7 @@
 #include "Tools/Module/Blackboard.h"
 
 CameraMatrix::CameraMatrix(const Pose3f& pose) :
-  Pose3f(pose), isValid(true)
+  Pose3f(pose), invPos(Pose3f::inverse()), isValid(true)
 {}
 
 void CameraMatrix::draw() const
@@ -169,7 +169,7 @@ void RobotCameraMatrix::draw() const
     const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
     lineBelowHorizon.direction = horizon.direction;
     lineBelowHorizon.base = horizon.base;
-    lineBelowHorizon.base += vertLineDirection * 15.0;
+    lineBelowHorizon.base += vertLineDirection * 15.f;
 
     // calculate the projection to the ground of the intersection points of the line parallel to the horizon and the image borders
     Vector2i beginPoint;
@@ -228,7 +228,7 @@ void RobotCameraMatrix::draw() const
       const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
       lineBelowHorizon.direction = horizon.direction;
       lineBelowHorizon.base = horizon.base;
-      lineBelowHorizon.base += vertLineDirection * 15.0;
+      lineBelowHorizon.base += vertLineDirection * 15.f;
 
       // calculate the projection to the ground of the intersection points of the line parallel to the horizon and the image borders
       Vector2f beginPoint;
@@ -312,4 +312,10 @@ void CameraMatrix::computeCameraMatrix(const Pose3f& torsoMatrix, const Pose3f& 
   rotateY(cameraCalibration.bodyRotationCorrection.y());
   rotateX(cameraCalibration.bodyRotationCorrection.x());
   conc(robotCameraMatrix);
+  onRead();
+}
+
+void CameraMatrix::onRead()
+{
+  invPos = Pose3f::inverse();
 }

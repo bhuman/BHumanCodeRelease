@@ -5,8 +5,8 @@
 # significantly.
 
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname ${scriptPath})
-cd $basePath
+basePath=$(dirname "${scriptPath}")
+cd "$basePath"
 
 ./generate >/dev/null
 

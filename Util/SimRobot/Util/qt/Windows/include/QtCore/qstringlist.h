@@ -73,6 +73,7 @@ public:
     inline int removeDuplicates();
 
     inline QString join(const QString &sep) const;
+    inline QString join(QLatin1String sep) const;
     inline QString join(QChar sep) const;
 
     inline QStringList filter(const QString &str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const;
@@ -149,6 +150,7 @@ public:
 
 Q_DECLARE_TYPEINFO(QStringList, Q_MOVABLE_TYPE);
 
+#ifndef Q_QDOC
 inline QStringList *QListSpecialMethods<QString>::self()
 { return static_cast<QStringList *>(this); }
 inline const QStringList *QListSpecialMethods<QString>::self() const
@@ -158,6 +160,7 @@ namespace QtPrivate {
     void Q_CORE_EXPORT QStringList_sort(QStringList *that, Qt::CaseSensitivity cs);
     int Q_CORE_EXPORT QStringList_removeDuplicates(QStringList *that);
     QString Q_CORE_EXPORT QStringList_join(const QStringList *that, const QChar *sep, int seplen);
+    Q_CORE_EXPORT QString QStringList_join(const QStringList &list, QLatin1String sep);
     QStringList Q_CORE_EXPORT QStringList_filter(const QStringList *that, const QString &str,
                                                Qt::CaseSensitivity cs);
 
@@ -197,6 +200,11 @@ inline int QListSpecialMethods<QString>::removeDuplicates()
 inline QString QListSpecialMethods<QString>::join(const QString &sep) const
 {
     return QtPrivate::QStringList_join(self(), sep.constData(), sep.length());
+}
+
+QString QListSpecialMethods<QString>::join(QLatin1String sep) const
+{
+    return QtPrivate::QStringList_join(*self(), sep);
 }
 
 inline QString QListSpecialMethods<QString>::join(QChar sep) const
@@ -284,6 +292,7 @@ inline int QStringList::lastIndexOf(const QRegularExpression &rx, int from) cons
 }
 #endif // QT_NO_REGULAREXPRESSION
 #endif // QT_BOOTSTRAPPED
+#endif // Q_QDOC
 
 QT_END_NAMESPACE
 

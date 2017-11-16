@@ -1,9 +1,8 @@
 /**
  * File:   ThresholdSelector.h
- * Author: marcel
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * Author: marcel
  *
- * Created on October 16, 2013, 12:22 PM
  */
 
 #pragma once
@@ -25,18 +24,12 @@ class ThresholdSelector : public QGroupBox
 public:
   ThresholdSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max);
 
-  void updateWidgets();
+  virtual void updateWidgets() = 0;
   void setEnabled(bool value);
 
 protected:
   QSlider* slider;
-
-private:
   const ColorCalibrationWidget* parent;
-  QLineEdit* lineEdit;
-
-  /** updates the ColorCalibration, usually invoked by the slider/labels. */
-  void updateColorCalibration(int value);
 
   void updateColorCalibration(int value, unsigned char& color)
   {
@@ -48,7 +41,37 @@ private:
     slider->setValue(static_cast<int>(color));
   }
 
+private:
+  QLineEdit* lineEdit;
+
+  /** updates the ColorCalibration, usually invoked by the slider/labels. */
+  virtual void updateColorCalibration(int value) = 0;
+
 private slots:
   void sliderChanged(int value);
   void lineEditChanged(QString value);
+};
+
+class ColorSelector : public ThresholdSelector
+{
+public:
+  ColorSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+    ThresholdSelector(name, parent, min, max)
+  {}
+
+  void updateWidgets();
+private:
+  void updateColorCalibration(int value);
+};
+
+class BlackWhiteSelector : public ThresholdSelector
+{
+public:
+  BlackWhiteSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
+    ThresholdSelector(name, parent, min, max)
+  {}
+
+  void updateWidgets();
+private:
+  void updateColorCalibration(int value);
 };

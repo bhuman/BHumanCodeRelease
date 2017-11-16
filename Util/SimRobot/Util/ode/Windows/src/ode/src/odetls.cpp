@@ -118,7 +118,7 @@ void COdeTls::DestroyTrimeshCollidersCache(EODETLSKIND tkTLSKind)
 {
     TrimeshCollidersCache *pccCacheInstance = (TrimeshCollidersCache *)CThreadLocalStorage::GetStorageValue(m_ahtkStorageKeys[tkTLSKind], OTI_TRIMESH_TRIMESH_COLLIDER_CACHE);
 
-    if (pccCacheInstance)
+    if (pccCacheInstance != NULL)
     {
         FreeTrimeshCollidersCache(pccCacheInstance);
 
@@ -132,7 +132,11 @@ void COdeTls::DestroyTrimeshCollidersCache(EODETLSKIND tkTLSKind)
 
 void COdeTls::FreeTrimeshCollidersCache(TrimeshCollidersCache *pccCacheInstance)
 {
+#if dTRIMESH_ENABLED 
     delete pccCacheInstance;
+#else
+    dIASSERT(pccCacheInstance == NULL); // The cache is not being allocated if the library is configured without trimeshes
+#endif
 }
 
 

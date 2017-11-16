@@ -66,24 +66,24 @@ bool FieldFeature::isLikeEnoughACorrectPerception(const float searchXRadius, con
 
   const Pose2f theInverse((*this + Pose2f(offset)).inverse());
 
-  auto goesThrowBox = [&](const FieldLines::Line& line)
+  auto goesThroughBox = [&](const FieldLines::Line& line)
   {
     Vector2f point1(theInverse * line.first);
     Vector2f point2(theInverse * line.last);
 
     if((std::abs(point1.x()) <= searchXRadius && std::abs(point1.y()) <= searchYRadius)
-      || (std::abs(point2.x()) <= searchXRadius && std::abs(point2.y()) <= searchYRadius))
+       || (std::abs(point2.x()) <= searchXRadius && std::abs(point2.y()) <= searchYRadius))
       return true;
 
-    auto isIntersecting = [&](float(*getPrimaryValue) (const Vector2f&, const float), float(*getSecondaryValue) (const Vector2f&),
-      const float rPrimary, const float rSecundary)
+    auto isIntersecting = [&](float(*getPrimaryValue)(const Vector2f&, const float), float(*getSecondaryValue)(const Vector2f&),
+                              const float rPrimary, const float rSecundary)
     {
       auto getPrimaryValue2 = [&](const Vector2f& a) {return getPrimaryValue(a, rPrimary); };
 
       return getPrimaryValue2(point1) * getPrimaryValue2(point2) < 0.f
-        && std::abs(getSecondaryValue(point1 +
-          std::abs(getPrimaryValue2(point1)) / (std::abs(getPrimaryValue2(point1)) + std::abs(getPrimaryValue2(point2)))
-          * (point2 - point1))) < rSecundary + 1.f;
+             && std::abs(getSecondaryValue(point1 +
+                                           std::abs(getPrimaryValue2(point1)) / (std::abs(getPrimaryValue2(point1)) + std::abs(getPrimaryValue2(point2)))
+                                           * (point2 - point1))) < rSecundary + 1.f;
     };
 
     return isIntersecting([](const Vector2f& a, const float) {return a.x(); }, [](const Vector2f& a) {return a.y(); }, searchXRadius, searchYRadius)
@@ -94,7 +94,7 @@ bool FieldFeature::isLikeEnoughACorrectPerception(const float searchXRadius, con
   unsigned count = 0u;
 
   for(size_t i = 0; i < theFieldLines.lines.size(); ++i)
-    if(!isMarked(i) && goesThrowBox(theFieldLines.lines[i]))
+    if(!isMarked(i) && goesThroughBox(theFieldLines.lines[i]))
       if(++count > allowedLines)
         return false;
 

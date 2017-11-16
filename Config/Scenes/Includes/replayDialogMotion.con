@@ -1,0 +1,2 @@
+# replay a log file.
+sl LOG "${Logfile:,../Logs/*Motion_*.log}"

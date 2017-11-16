@@ -7,12 +7,15 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
+#include "Tools/Math/Pose3f.h"
 #include "Tools/RobotParts/Arms.h"
+#include "Tools/RobotParts/Legs.h"
+#include "Representations/Sensing/RobotModel.h"
+#include "Tools/Motion/ForwardKinematic.h"
 
 struct CameraCalibration;
 struct JointAngles;
-struct JointCalibration;
+struct JointLimits;
 struct Pose3f;
 struct RobotDimensions;
 
@@ -31,7 +34,15 @@ namespace InverseKinematic
                      const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
 
   /**
-   * This method calculates the joint angles for the legs of the robot from a Pose3f for each leg and the body ptch and roll.
+   * is the given Position reachable in a balanced stand
+   * @param footPos swingFoot in SupportFoot-Coordinates
+   * @param torso position in SupportFoot-Coordinates, which is given by the Balancer
+   * @param HipYawPitch which is given by the Balancer
+   */
+  bool isPosePossible(const Pose3f& footPos, const Pose3f& torso, float HipYawPitch, const RobotDimensions& robotDimension, const JointLimits jointLimits);
+
+  /**
+   * This method calculates the joint angles for the legs of the robot from a Pose3f for each leg and the body pitch and roll.
    * @param positionLeft The desired position (translation + rotation) of the left foots point
    * @param positionRight The desired position (translation + rotation) of the right foots point
    * @param bodyRotation The rotation of the body around the x-Axis and y-Axis
@@ -44,7 +55,6 @@ namespace InverseKinematic
                      const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
   bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation, JointAngles& jointAngles,
                      const RobotDimensions& robotDimensions, float ratio = 0.5f) WARN_UNUSED_RESULT;
-
   /**
    * Solves the inverse kinematics for the head of the Nao such that the camera looks at a certain point.
    * @param position Point the camera should look at in cartesian space relative to the robot origin.
@@ -68,19 +78,19 @@ namespace InverseKinematic
   });
 
   /**
-   * This method calculates the joint angles for an arm of the robot from a elbow and hand position.
+   * This method calculates the joint angles for an arm of the robot from an elbow and hand position.
    *
    * @param arm specifies the arm (left or right) to calculate for
    * @param elBowPosition the elbow position to calc from (relativ to the robots origin)
    * @param handPostion the hand position to calc from (relativ to the robots origin)
    * @param robotDimensions the dimensions of the robot
-   * @param jointCalibration the joint calibration of the robot
+   * @param jointLimits the joint limits of the robot
    * @param jointAngle the result: the calculated joint angles for the given parameters
    * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
    *      note: the lengths will not be checked
    */
   unsigned calcArmJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const Vector3f& handPosition,
-                         const RobotDimensions& robotDimensions, const JointCalibration& jointCalibration,
+                         const RobotDimensions& robotDimensions, const JointLimits& jointLimits,
                          JointAngles& jointAngles) WARN_UNUSED_RESULT;
 
   /**
@@ -89,26 +99,25 @@ namespace InverseKinematic
    * @param arm specifies the arm (left or right) to calculate for
    * @param handPostion the hand pose to calc from (relativ to the robots origin)
    * @param robotDimensions the dimensions of the robot
-   * @param jointCalibration the joint calibration of the robot
+   * @param jointLimits the joint limits of the robot
    * @param jointAngle the result: the calculated joint angles for the given parameters
    * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
    *      note: the lengths will not be checked
    */
   unsigned calcArmJoints(const Arms::Arm arm, const Pose3f& handPose, const RobotDimensions& robotDimensions,
-                         const JointCalibration& jointCalibration, JointAngles& jointAngles) WARN_UNUSED_RESULT;
+                         const JointLimits& jointLimits, JointAngles& jointAngles) WARN_UNUSED_RESULT;
 
   /**
-   * This method calculates the joint angles for an upper arm of the robot from a elbow position.
+   * This method calculates the joint angles for an upper arm of the robot from an elbow position.
    *
    * @param arm specifies the arm (left or right) to calculate for
    * @param elBowPosition the elbow position to calc from (relativ to the robots origin)
    * @param robotDimensions the dimensions of the robot
-   * @param jointCalibration the joint calibration of the robot
+   * @param jointLimits the joint limits of the robot
    * @param jointAngle the result: the calculated joint angles for the given parameters
    * @return An ENUMSET of IKAError's. All marked errors are occurred -> 0 means no errors
    *      note: the length will not be checked
    */
   unsigned calcShoulderJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const RobotDimensions& robotDimensions,
-                              const JointCalibration& jointCalibration, JointAngles& jointAngles);
+                              const JointLimits& jointLimits, JointAngles& jointAngles);
 };
-

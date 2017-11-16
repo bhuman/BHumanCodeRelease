@@ -113,7 +113,7 @@ bool Transformation::robotToImage(const Vector3f& point, const CameraMatrix& cam
                                   const CameraInfo& cameraInfo, Vector2f& pointInImage)
 {
   Vector3f pointInCam = cameraMatrix.inverse() * point;
-  if(pointInCam.x() < 0)
+  if(pointInCam.x() <= 0)
     return false;
 
   pointInCam *= cameraInfo.focalLength / pointInCam.x();

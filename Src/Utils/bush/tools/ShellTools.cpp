@@ -6,34 +6,42 @@
 
 std::string remoteCommand(const std::string& command, const std::string ip)
 {
-  static std::string keyFile = Filesystem::getNaoKey();
   std::string ticks = "\"";
-
-  return "ssh -i \"" + keyFile + "\" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" +
-         ip + " " + ticks + command + " < /dev/null > /dev/null 2>&1 &" + ticks;
+  return remoteCommandForQProcess(" " + ticks + command + " < /dev/null > /dev/null 2>&1 &" + ticks, ip);
 }
 
 std::string remoteCommandForQProcess(const std::string& command, const std::string& ip)
 {
-  static std::string keyFile = Filesystem::getNaoKey();
-  return "ssh -i \"" + keyFile + "\" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" + ip + " " + command + "";
+  return connectCommand(ip + " " + command);
+}
+
+std::string connectCommand(const std::string& ip)
+{
+  return 
+#ifdef WINDOWS
+    "cmd /c "
+#endif
+    "bash -c \"cp Keys/id_rsa_nao /tmp/id_rsa_nao && chmod 600 /tmp/id_rsa_nao && ssh -i /tmp/id_rsa_nao -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" + ip + "\"";
 }
 
 std::string scpCommand(const std::string& fromFile, const std::string& fromHost, const std::string& toDir, const std::string& toHost)
 {
-  static std::string keyFile = Filesystem::getNaoKey();
   std::string from;
   if(fromHost == "")
-    from = enquoteString(getLinuxPath(fromFile));
+    from = enquoteString(fromFile);
   else
     from = fromHost + ":" + enquoteString(fromFile);
   std::string to;
   if(toHost == "")
-    to = enquoteString(getLinuxPath(toDir));
+    to = enquoteString(toDir);
   else
     to = toHost + ":" + enquoteString(toDir);
 
-  return "scp -r -i \"" + getLinuxPath(keyFile) + "\" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet " + from + " " + to;
+  return 
+#ifdef WINDOWS
+    "cmd /c "
+#endif
+    "bash -c \"cp Keys/id_rsa_nao /tmp/id_rsa_nao && chmod 600 /tmp/id_rsa_nao && scp -r -i /tmp/id_rsa_nao -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet " + from + " " + to + "\"";
 }
 
 std::string scpCommandFromRobot(const std::string& fromDir, const std::string& ip, const std::string& toDir)

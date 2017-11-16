@@ -9,10 +9,14 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JPEGImage.h"
 #include "Tools/MessageQueue/MessageQueue.h"
 #include "Tools/Streams/StreamHandler.h"
+
+#include <memory>
 
 /**
  * @class LogPlayer
@@ -48,7 +52,7 @@ private:
   int replayOffset;
   std::vector<int> frameIndex; /**< The message numbers the frames start at. */
   std::array<int, 601> gcTimeIndex; /**< The frames correspending to Game Controller times. */
-  StreamHandler* streamHandler = nullptr; /**< The stream specification of the log file entries. */
+  std::unique_ptr<StreamHandler> streamHandler; /**< The stream specification of the log file entries. */
 
   bool logfileLoaded = false;
   std::string logfilePath;
@@ -58,8 +62,6 @@ public:
    * @param targetQueue The queue into that messages from played logfiles shall be stored.
    */
   LogPlayer(MessageQueue& targetQueue);
-
-  ~LogPlayer() { if(streamHandler) delete streamHandler; }
 
   /** Deletes all messages from the queue */
   void init();
@@ -153,6 +155,20 @@ public:
   bool saveBallSpotImages(const std::string& fileName);
 
   /**
+   * Writes all inertial sensor data from the log into a space seperated
+   * dataset file.
+   * @return whether writing the file was successful or not
+   */
+  bool saveInertialSensorData();
+
+  /**
+   * Writes all joint angle and request data from the log into a space seperated
+   * dataset file.
+   * @return whether writing the file was successful or not
+   */
+  bool saveJointAngleData();
+
+  /**
    * Writes a csv with all module timings
    * @return true if writing was successful
    */
@@ -191,7 +207,7 @@ public:
 
   /**
    * The function filters the message queue frame-wise.
-   * @param filter Returns whether a frame should be kept because 
+   * @param filter Returns whether a frame should be kept because
    *               of this message.
    */
   void keepFrames(const std::function<bool(InMessage&)>& filter);
@@ -207,6 +223,11 @@ public:
    * @param frequency An array that is filled with the frequency of message ids.
    */
   void statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes = nullptr, char processIdentifier = 0);
+
+  /**
+   * Merges the current log file with a log file of the other process.
+   */
+  void merge();
 
 private:
   /**
@@ -234,13 +255,4 @@ private:
    * and it has not been replayed yet.
    */
   void replayStreamSpecification();
-
-  template<class T>
-  std::string represetation2csv(Streamable* stream);
 };
-
-template<class T>
-std::string LogPlayer::represetation2csv(Streamable* stream)
-{
-  return ((T*)stream)->csv();
-}

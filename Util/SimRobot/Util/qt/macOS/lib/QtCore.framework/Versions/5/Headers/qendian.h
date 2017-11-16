@@ -1,38 +1,31 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
-** Copyright (C) 2016 Intel Corporation.
-** Contact: https://www.qt.io/licensing/
+** Copyright (C) 2015 The Qt Company Ltd.
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
 **
@@ -58,26 +51,25 @@ QT_BEGIN_NAMESPACE
 /*
  * ENDIAN FUNCTIONS
 */
-inline void qbswap_helper(const void *src, void *dest, int size)
+inline void qbswap_helper(const uchar *src, uchar *dest, int size)
 {
-    for (int i = 0; i < size ; ++i)
-        static_cast<uchar *>(dest)[i] = static_cast<const uchar *>(src)[size - 1 - i];
+    for (int i = 0; i < size ; ++i) dest[i] = src[size - 1 - i];
 }
 
 /*
- * qbswap(const T src, const void *dest);
+ * qbswap(const T src, const uchar *dest);
  * Changes the byte order of \a src from big endian to little endian or vice versa
  * and stores the result in \a dest.
  * There is no alignment requirements for \a dest.
 */
-template <typename T> inline void qbswap(const T src, void *dest)
+template <typename T> inline void qbswap(const T src, uchar *dest)
 {
-    qbswap_helper(&src, dest, sizeof(T));
+    qbswap_helper(reinterpret_cast<const uchar *>(&src), dest, sizeof(T));
 }
 
 // Used to implement a type-safe and alignment-safe copy operation
 // If you want to avoid the memcpy, you must write specializations for these functions
-template <typename T> Q_ALWAYS_INLINE void qToUnaligned(const T src, void *dest)
+template <typename T> Q_ALWAYS_INLINE void qToUnaligned(const T src, uchar *dest)
 {
     // Using sizeof(T) inside memcpy function produces internal compiler error with
     // MSVC2008/ARM in tst_endian -> use extra indirection to resolve size of T.
@@ -90,7 +82,7 @@ template <typename T> Q_ALWAYS_INLINE void qToUnaligned(const T src, void *dest)
             (dest, &src, size);
 }
 
-template <typename T> Q_ALWAYS_INLINE T qFromUnaligned(const void *src)
+template <typename T> Q_ALWAYS_INLINE T qFromUnaligned(const uchar *src)
 {
     T dest;
     const size_t size = sizeof(T);
@@ -123,11 +115,11 @@ template <> inline quint32 qbswap<quint32>(quint32 source)
     return __builtin_bswap32(source);
 }
 
-template <> inline void qbswap<quint64>(quint64 source, void *dest)
+template <> inline void qbswap<quint64>(quint64 source, uchar *dest)
 {
     qToUnaligned<quint64>(__builtin_bswap64(source), dest);
 }
-template <> inline void qbswap<quint32>(quint32 source, void *dest)
+template <> inline void qbswap<quint32>(quint32 source, uchar *dest)
 {
     qToUnaligned<quint32>(__builtin_bswap32(source), dest);
 }
@@ -159,7 +151,7 @@ template <> inline quint16 qbswap<quint16>(quint16 source)
 {
     return __builtin_bswap16(source);
 }
-template <> inline void qbswap<quint16>(quint16 source, void *dest)
+template <> inline void qbswap<quint16>(quint16 source, uchar *dest)
 {
     qToUnaligned<quint16>(__builtin_bswap16(source), dest);
 }
@@ -171,6 +163,8 @@ template <> inline quint16 qbswap<quint16>(quint16 source)
                     | ((source & 0xff00) >> 8) );
 }
 #endif // GCC & Clang intrinsics
+
+#undef QT_HAS_BUILTIN
 
 // signed specializations
 template <> inline qint64 qbswap<qint64>(qint64 source)
@@ -188,17 +182,17 @@ template <> inline qint16 qbswap<qint16>(qint16 source)
     return qbswap<quint16>(quint16(source));
 }
 
-template <> inline void qbswap<qint64>(qint64 source, void *dest)
+template <> inline void qbswap<qint64>(qint64 source, uchar *dest)
 {
     qbswap<quint64>(quint64(source), dest);
 }
 
-template <> inline void qbswap<qint32>(qint32 source, void *dest)
+template <> inline void qbswap<qint32>(qint32 source, uchar *dest)
 {
     qbswap<quint32>(quint32(source), dest);
 }
 
-template <> inline void qbswap<qint16>(qint16 source, void *dest)
+template <> inline void qbswap<qint16>(qint16 source, uchar *dest)
 {
     qbswap<quint16>(quint16(source), dest);
 }
@@ -213,9 +207,9 @@ template <typename T> inline T qToLittleEndian(T source)
 { return qbswap<T>(source); }
 template <typename T> inline T qFromLittleEndian(T source)
 { return qbswap<T>(source); }
-template <typename T> inline void qToBigEndian(T src, void *dest)
+template <typename T> inline void qToBigEndian(T src, uchar *dest)
 { qToUnaligned<T>(src, dest); }
-template <typename T> inline void qToLittleEndian(T src, void *dest)
+template <typename T> inline void qToLittleEndian(T src, uchar *dest)
 { qbswap<T>(src, dest); }
 #else // Q_LITTLE_ENDIAN
 
@@ -227,9 +221,9 @@ template <typename T> inline T qToLittleEndian(T source)
 { return source; }
 template <typename T> inline T qFromLittleEndian(T source)
 { return source; }
-template <typename T> inline void qToBigEndian(T src, void *dest)
+template <typename T> inline void qToBigEndian(T src, uchar *dest)
 { qbswap<T>(src, dest); }
-template <typename T> inline void qToLittleEndian(T src, void *dest)
+template <typename T> inline void qToLittleEndian(T src, uchar *dest)
 { qToUnaligned<T>(src, dest); }
 
 #endif // Q_BYTE_ORDER == Q_BIG_ENDIAN
@@ -244,34 +238,34 @@ template <> inline qint8 qbswap<qint8>(qint8 source)
     return source;
 }
 
-/* T qFromLittleEndian(const void *src)
+/* T qFromLittleEndian(const uchar *src)
  * This function will read a little-endian encoded value from \a src
  * and return the value in host-endian encoding.
  * There is no requirement that \a src must be aligned.
 */
-template <typename T> inline T qFromLittleEndian(const void *src)
+template <typename T> inline T qFromLittleEndian(const uchar *src)
 {
     return qFromLittleEndian(qFromUnaligned<T>(src));
 }
 
-template <> inline quint8 qFromLittleEndian<quint8>(const void *src)
-{ return static_cast<const quint8 *>(src)[0]; }
-template <> inline qint8 qFromLittleEndian<qint8>(const void *src)
-{ return static_cast<const qint8 *>(src)[0]; }
+template <> inline quint8 qFromLittleEndian<quint8>(const uchar *src)
+{ return static_cast<quint8>(src[0]); }
+template <> inline qint8 qFromLittleEndian<qint8>(const uchar *src)
+{ return static_cast<qint8>(src[0]); }
 
 /* This function will read a big-endian (also known as network order) encoded value from \a src
  * and return the value in host-endian encoding.
  * There is no requirement that \a src must be aligned.
 */
-template <class T> inline T qFromBigEndian(const void *src)
+template <class T> inline T qFromBigEndian(const uchar *src)
 {
     return qFromBigEndian(qFromUnaligned<T>(src));
 }
 
-template <> inline quint8 qFromBigEndian<quint8>(const void *src)
-{ return static_cast<const quint8 *>(src)[0]; }
-template <> inline qint8 qFromBigEndian<qint8>(const void *src)
-{ return static_cast<const qint8 *>(src)[0]; }
+template <> inline quint8 qFromBigEndian<quint8>(const uchar *src)
+{ return static_cast<quint8>(src[0]); }
+template <> inline qint8 qFromBigEndian<qint8>(const uchar *src)
+{ return static_cast<qint8>(src[0]); }
 
 QT_END_NAMESPACE
 

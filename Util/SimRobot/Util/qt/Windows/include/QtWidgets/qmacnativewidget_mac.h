@@ -40,13 +40,13 @@
 #ifndef QMACNATIVEWIDGET_H
 #define QMACNATIVEWIDGET_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/QWidget>
 
 Q_FORWARD_DECLARE_OBJC_CLASS(NSView);
 
 QT_BEGIN_NAMESPACE
 
-class QMacNativeWidgetPrivate;
 class Q_WIDGETS_EXPORT QMacNativeWidget : public QWidget
 {
     Q_OBJECT
@@ -54,14 +54,11 @@ public:
     QMacNativeWidget(NSView *parentView = Q_NULLPTR);
     ~QMacNativeWidget();
 
-    QSize sizeHint() const;
+    QSize sizeHint() const override;
     NSView *nativeView() const;
 
 protected:
-    bool event(QEvent *ev);
-
-private:
-    Q_DECLARE_PRIVATE(QMacNativeWidget)
+    bool event(QEvent *ev) override;
 };
 
 QT_END_NAMESPACE

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cmath>
 #include "Tools/Math/Constants.h"

@@ -90,7 +90,7 @@ void CubicSpline::initNatural(const std::vector<Vector2f>& controllPoints)
     const float x0 = controllPoints[0].x();
     const float c0 = (controllPoints[1].y() - y0) / (controllPoints[1].x() - x0);
 
-    functions.emplace_back(0, 0, c0, y0, x0);
+    functions.emplace_back(0.f, 0.f, c0, y0, x0);
   }
   else
   {
@@ -113,7 +113,7 @@ void CubicSpline::initNatural(const std::vector<Vector2f>& controllPoints)
       v(i) = (controllPoints[i + 1].y() - controllPoints[i].y()) / hi - (controllPoints[i].y() - controllPoints[i - 1].y()) / hi_1;
     }
     v *= 3.f;
-    
+
     Eigen::LLT<MatrixXf> llt = A.llt();
     ASSERT(llt.info() == Eigen::ComputationInfo::Success);
     const VectorXf b = llt.solve(v);

@@ -14,6 +14,7 @@
 #include "Tools/Math/Eigen.h"
 #include "Representations/Infrastructure/RoboCupGameControlData.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Settings.h"
 #include <algorithm>
 
 using namespace std;
@@ -102,8 +103,7 @@ void FieldDimensions::draw() const
 
 void FieldDimensions::drawGoalFrame() const
 {
-  DECLARE_DEBUG_DRAWING("goal frame", "drawingOnField");
-  COMPLEX_DRAWING("goal frame")
+  DEBUG_DRAWING("goal frame", "drawingOnField")
   {
     for(const LinesTable::Line& l : goalFrameLines.lines)
     {
@@ -115,8 +115,7 @@ void FieldDimensions::drawGoalFrame() const
 
 void FieldDimensions::drawLines() const
 {
-  DECLARE_DEBUG_DRAWING("field lines", "drawingOnField");
-  COMPLEX_DRAWING("field lines")
+  DEBUG_DRAWING("field lines", "drawingOnField")
   {
     ASSERT(carpetBorder.lines.size() <= 4);
     Vector2f points[4];
@@ -130,12 +129,69 @@ void FieldDimensions::drawLines() const
       LINE("field lines", i->from.x(), i->from.y(), i->to.x(), i->to.y(), fieldLinesWidth, Drawings::solidPen, lineColor);
     }
   }
+
+  if(Global::settingsExist() && Global::getSettings().location == "MZH1400")
+  {
+    DEBUG_DRAWING("foil cuts", "drawingOnField")
+    {
+      LINE("foil cuts", -3000, yPosLeftFieldBorder, -3000, yPosRightFieldBorder, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", -1000, yPosLeftFieldBorder, -1000, yPosRightFieldBorder, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 1000, yPosLeftFieldBorder, 1000, yPosRightFieldBorder, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 3000, yPosLeftFieldBorder, 3000, yPosRightFieldBorder, 50, Drawings::dashedPen, ColorRGBA::black);
+
+      LINE("foil cuts", xPosOwnFieldBorder, 2500, -3000, 2500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", -1000, 2500, 1000, 2500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 3000, 2500, xPosOpponentFieldBorder, 2500, 50, Drawings::dashedPen, ColorRGBA::black);
+
+      LINE("foil cuts", xPosOwnFieldBorder, 1500, -3000, 1500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", -1000, 1500, 1000, 1500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 3000, 1500, xPosOpponentFieldBorder, 1500, 50, Drawings::dashedPen, ColorRGBA::black);
+
+      LINE("foil cuts", xPosOwnFieldBorder, -1500, -3000, -1500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", -1000, -1500, 1000, -1500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 3000, -1500, xPosOpponentFieldBorder, -1500, 50, Drawings::dashedPen, ColorRGBA::black);
+
+      LINE("foil cuts", xPosOwnFieldBorder, -2500, -3000, -2500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", -1000, -2500, 1000, -2500, 50, Drawings::dashedPen, ColorRGBA::black);
+      LINE("foil cuts", 3000, -2500, xPosOpponentFieldBorder, -2500, 50, Drawings::dashedPen, ColorRGBA::black);
+    }
+
+    DEBUG_DRAWING("highlight praum parts", "drawingOnField")
+    {
+      ColorRGBA color(192, 192, 192, 60);
+      FILLED_RECTANGLE("highlight praum parts", xPosOwnFieldBorder, yPosLeftFieldBorder, -3000, 2500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", xPosOwnFieldBorder, 1500, -3000, -1500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", xPosOwnFieldBorder, yPosRightFieldBorder, -3000, -2500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+
+      FILLED_RECTANGLE("highlight praum parts", 1000, yPosLeftFieldBorder, -1000, 2500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", 1000, 1500, -1000, -1500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", 1000, -2500, -1000, yPosRightFieldBorder, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+
+      FILLED_RECTANGLE("highlight praum parts", xPosOpponentFieldBorder, yPosLeftFieldBorder, 3000, 2500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", xPosOpponentFieldBorder, 1500, 3000, -1500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+      FILLED_RECTANGLE("highlight praum parts", xPosOpponentFieldBorder, yPosRightFieldBorder, 3000, -2500, 1, Drawings::noPen, ColorRGBA::black, Drawings::solidBrush, color);
+    }
+  }
+
+  DEBUG_DRAWING("half meter grid", "drawingOnField")
+  {
+    for(int y = 0; y < yPosLeftFieldBorder; y += 500)
+    {
+      LINE("half meter grid", xPosOwnFieldBorder, y, xPosOpponentFieldBorder, y, 10, Drawings::dottedPen, ColorRGBA::black);
+      LINE("half meter grid", xPosOwnFieldBorder, -y, xPosOpponentFieldBorder, -y, 10, Drawings::dottedPen, ColorRGBA::black);
+    }
+
+    for(int x = 0; x < xPosOpponentFieldBorder; x += 500)
+    {
+      LINE("half meter grid", x, yPosLeftFieldBorder, x, yPosRightFieldBorder, 10, Drawings::dottedPen, ColorRGBA::black);
+      LINE("half meter grid", -x, yPosLeftFieldBorder, -x, yPosRightFieldBorder, 10, Drawings::dottedPen, ColorRGBA::black);
+    }
+  }
 }
 
 void FieldDimensions::drawPolygons(int ownColor) const
 {
-  DECLARE_DEBUG_DRAWING("field polygons", "drawingOnField");
-  COMPLEX_DRAWING("field polygons")
+  DEBUG_DRAWING("field polygons", "drawingOnField")
   {
     static const ColorRGBA colors[] =
     {
@@ -438,13 +494,10 @@ float FieldDimensions::LinesTable::getDistance(const Pose2f& pose) const
 
 void FieldDimensions::serialize(In* in, Out* out)
 {
-  ASSERT(in); // handling center circle only works when reading
-
   std::vector<LinesTable::Line>& carpetBorder(this->carpetBorder.lines);
   std::vector<LinesTable::Line>& fieldBorder(this->fieldBorder.lines);
-  std::vector<LinesTable::Line>& fieldLines(this->fieldLines.lines);
+  std::vector<LinesTable::Line>& fieldLines(straightFieldLines.lines);
   std::vector<LinesTable::Line>& goalFrameLines(this->goalFrameLines.lines);
-  LinesTable::Circle centerCircle;
 
   STREAM_REGISTER_BEGIN;
   STREAM_BASE(SimpleFieldDimensions)
@@ -453,14 +506,20 @@ void FieldDimensions::serialize(In* in, Out* out)
   STREAM(fieldBorder);
   STREAM(fieldLines);
   STREAM(centerCircle);
-  this->fieldLines.pushCircle(centerCircle.center, centerCircle.radius, centerCircle.numOfSegments);
-
   STREAM(corners);
   STREAM_REGISTER_FINISH;
 
-  //merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame
-  for(LinesTable::Line& line : fieldLines)
-    fieldLinesWithGoalFrame.lines.push_back(line);
-  for(LinesTable::Line& line : goalFrameLines)
-    fieldLinesWithGoalFrame.lines.push_back(line);
+  if(in)
+  {
+    // merge straightFieldLines and centerCircle to fieldLines
+    this->fieldLines = straightFieldLines;
+    this->fieldLines.pushCircle(centerCircle.center, centerCircle.radius, centerCircle.numOfSegments);
+
+    // merge fieldLines and goalFrameLines into fieldLinesWithGoalFrame
+    fieldLinesWithGoalFrame.lines.clear();
+    for(LinesTable::Line& line : this->fieldLines.lines)
+      fieldLinesWithGoalFrame.lines.push_back(line);
+    for(LinesTable::Line& line : goalFrameLines)
+      fieldLinesWithGoalFrame.lines.push_back(line);
+  }
 }

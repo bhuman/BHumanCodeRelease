@@ -57,7 +57,7 @@ STREAMABLE(RobotDimensions,
   (float) xOffsetElbowToWrist,      //!< The length from Elbow to WristJoint.
   (Vector3f) handOffset,            //!< The offset of a hand relative to his wrist coordinate frame.
   (float) handRadius,               //!< The radius of a virtuel sphere a hand can span.
-  (float) armRadius,                //!< The radius of a arm.
+  (float) armRadius,                //!< The radius of an arm.
 
   (Vector3f) imuOffset,             //!< The offset of the imu relative to the torso coordinate frame.
 

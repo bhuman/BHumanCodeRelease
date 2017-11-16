@@ -2,7 +2,7 @@
 * @file Matrix3x3.h
 * Contains template class Matrix3x3 of type V
 * @author <a href="mailto:Kai_Engel@gmx.de">Kai Engel</a>
-* @author <a href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</a>
+* @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
 * @author Colin Graf
 */
 

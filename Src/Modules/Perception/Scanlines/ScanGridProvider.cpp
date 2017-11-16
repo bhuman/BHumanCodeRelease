@@ -38,7 +38,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
 
   const int xStepUpperBound = theCameraInfo.width / minNumOfLowResScanlines;
   const int maxXStep = std::min(xStepUpperBound,
-                                static_cast<int>(theCameraInfo.width * theFieldDimensions.ballRadius * 2.f *
+                                static_cast<int>(theCameraInfo.width * theBallSpecification.radius * 2.f *
                                                  ballWidthRatio / (leftOnField - rightOnField).norm()));
   Vector2f pointOnField = (leftOnField + rightOnField) / 2.f;
 
@@ -67,7 +67,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   int minXStep = minStepSize;
   if(Transformation::imageToRobotWithCameraRotation(Vector2i(0, 0), theCameraMatrix, theCameraInfo, leftOnField) &&
      Transformation::imageToRobotWithCameraRotation(Vector2i(theCameraInfo.width, 0), theCameraMatrix, theCameraInfo, rightOnField))
-    minXStep = std::max(minXStep, static_cast<int>(theCameraInfo.width * theFieldDimensions.ballRadius *
+    minXStep = std::max(minXStep, static_cast<int>(theCameraInfo.width * theBallSpecification.radius *
                                                    2.f * ballWidthRatio / (leftOnField - rightOnField).norm()));
   minXStep = std::min(xStepUpperBound, minXStep);
 
@@ -77,7 +77,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
 
   while(maxXStep2 * 2 <= maxXStep)
   {
-    float distance = Geometry::getDistanceBySize(theCameraInfo, theFieldDimensions.ballRadius * ballWidthRatio, static_cast<float>(maxXStep2));
+    float distance = Geometry::getDistanceBySize(theCameraInfo, theBallSpecification.radius * ballWidthRatio, static_cast<float>(maxXStep2));
     VERIFY(Transformation::robotWithCameraRotationToImage(Vector2f(distance, 0), theCameraMatrix, theCameraInfo, pointInImage));
     scanGrid.yStarts.push_back(static_cast<int>(pointInImage.y() + 0.5f));
     maxXStep2 *= 2;

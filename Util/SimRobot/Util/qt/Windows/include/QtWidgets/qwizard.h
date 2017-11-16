@@ -40,12 +40,14 @@
 #ifndef QWIZARD_H
 #define QWIZARD_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
+
+#ifndef QT_NO_WIZARD
+
 #include <QtWidgets/qdialog.h>
 
 QT_BEGIN_NAMESPACE
 
-
-#ifndef QT_NO_WIZARD
 
 class QAbstractButton;
 class QWizardPage;
@@ -54,7 +56,6 @@ class QWizardPrivate;
 class Q_WIDGETS_EXPORT QWizard : public QDialog
 {
     Q_OBJECT
-    Q_FLAGS(WizardOptions)
     Q_PROPERTY(WizardStyle wizardStyle READ wizardStyle WRITE setWizardStyle)
     Q_PROPERTY(WizardOptions options READ options WRITE setOptions)
     Q_PROPERTY(Qt::TextFormat titleFormat READ titleFormat WRITE setTitleFormat)
@@ -119,6 +120,7 @@ public:
     Q_ENUM(WizardOption)
 
     Q_DECLARE_FLAGS(WizardOptions, WizardOption)
+    Q_FLAG(WizardOptions)
 
     explicit QWizard(QWidget *parent = Q_NULLPTR, Qt::WindowFlags flags = Qt::WindowFlags());
     ~QWizard();
@@ -187,7 +189,7 @@ protected:
     bool event(QEvent *event) Q_DECL_OVERRIDE;
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
     void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-#ifdef Q_OS_WIN
+#if defined(Q_OS_WIN) || defined(Q_CLANG_QDOC)
     bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
 #endif
     void done(int result) Q_DECL_OVERRIDE;

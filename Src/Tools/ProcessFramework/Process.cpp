@@ -73,4 +73,3 @@ bool Process::handleMessage(InMessage& message)
       return false;
   }
 }
-

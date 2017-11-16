@@ -22,66 +22,63 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		200C742F17F76EC60081E703 /* SimulatedNao.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200C742E17F76E940081E703 /* SimulatedNao.dylib */; };
+		200C742F17F76EC60081E703 /* SimulatedNao.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200C742E17F76E940081E703 /* SimulatedNao.dylib */; };
 		201231421950B32C004B1C6C /* libdl-2.13.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 201231411950B322004B1C6C /* libdl-2.13.so */; };
-		201C9B781C2998A6005E4AAD /* QtWidgets.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
+		201C9B781C2998A6005E4AAD /* QtWidgets.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		201C9B791C2998A6005E4AAD /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		201C9B7A1C2998A6005E4AAD /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		201C9B7B1C2998A6005E4AAD /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
-		201C9B801C2998D8005E4AAD /* QtCore.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
+		201C9B801C2998D8005E4AAD /* QtCore.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
 		201C9B811C2998D8005E4AAD /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
 		201C9B821C2998D8005E4AAD /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
 		201C9B831C2998D8005E4AAD /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
-		201C9B841C2998D8005E4AAD /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
+		201C9B841C2998D8005E4AAD /* QtGui.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
 		201C9B851C2998D8005E4AAD /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
 		201C9B861C2998D8005E4AAD /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
 		201C9B871C2998D8005E4AAD /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
-		201C9B881C2998D8005E4AAD /* QtOpenGL.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; };
+		201C9B881C2998D8005E4AAD /* QtOpenGL.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; };
 		201C9B891C2998D8005E4AAD /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; };
 		201C9B8A1C2998D8005E4AAD /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; };
 		201C9B8B1C2998D8005E4AAD /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; };
-		201C9B8C1C2998D8005E4AAD /* QtSvg.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
+		201C9B8C1C2998D8005E4AAD /* QtSvg.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
 		201C9B8D1C2998D8005E4AAD /* QtSvg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
 		201C9B8E1C2998D8005E4AAD /* QtSvg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
 		201C9B8F1C2998D8005E4AAD /* QtSvg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
 		201C9B981C29AA77005E4AAD /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 201C9B901C29A8ED005E4AAD /* QtCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9B991C29AA8F005E4AAD /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 201C9B921C29A96A005E4AAD /* QtGui */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		201C9B9A1C29AAC3005E4AAD /* QtDBus in Copy QtDBus Framework */ = {isa = PBXBuildFile; fileRef = 201C9B911C29A938005E4AAD /* QtDBus */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9B9B1C29AAE2005E4AAD /* QtOpenGL in Copy QtOpenGL Framework */ = {isa = PBXBuildFile; fileRef = 201C9B931C29A98D005E4AAD /* QtOpenGL */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9B9C1C29AAF6005E4AAD /* QtSvg in Copy QtSvg Framework */ = {isa = PBXBuildFile; fileRef = 201C9B951C29A9FC005E4AAD /* QtSvg */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9B9E1C29AB34005E4AAD /* QtPrintSupport in Copy QtPrintSupport Framework */ = {isa = PBXBuildFile; fileRef = 201C9B941C29A9DC005E4AAD /* QtPrintSupport */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA01C29AB76005E4AAD /* QtWidgets in Copy QtWidgets Framework */ = {isa = PBXBuildFile; fileRef = 201C9B961C29AA3B005E4AAD /* QtWidgets */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA21C29AC0D005E4AAD /* libqcocoa.dylib in Copy Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		201C9BA41C29AE2C005E4AAD /* QtConcurrent.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BA31C29AE2C005E4AAD /* QtConcurrent.framework */; };
+		201C9BA41C29AE2C005E4AAD /* QtConcurrent.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BA31C29AE2C005E4AAD /* QtConcurrent.framework */; };
 		201C9BA51C29AE7B005E4AAD /* QtConcurrent in Copy QtConcurrent Framework */ = {isa = PBXBuildFile; fileRef = 201C9B971C29AA64005E4AAD /* QtConcurrent */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA61C29AE81005E4AAD /* QtCore in Copy QtCore Framework */ = {isa = PBXBuildFile; fileRef = 201C9B901C29A8ED005E4AAD /* QtCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		201C9BA71C29AF6F005E4AAD /* QtDBus in Copy QTDBus Framework */ = {isa = PBXBuildFile; fileRef = 201C9B911C29A938005E4AAD /* QtDBus */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA81C29AF75005E4AAD /* QtGui in Copy QtGui Framework */ = {isa = PBXBuildFile; fileRef = 201C9B921C29A96A005E4AAD /* QtGui */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA91C29AF81005E4AAD /* QtPrintSupport in Copy QTPrintSupport Framework */ = {isa = PBXBuildFile; fileRef = 201C9B941C29A9DC005E4AAD /* QtPrintSupport */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BAA1C29AF8A005E4AAD /* QtWidgets in Copy QtWidgets Framework */ = {isa = PBXBuildFile; fileRef = 201C9B961C29AA3B005E4AAD /* QtWidgets */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BAB1C29AF90005E4AAD /* libqcocoa.dylib in Copy QT Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		201C9BAC1C29B03A005E4AAD /* QtCore.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
-		201C9BAD1C29B03E005E4AAD /* QtGui.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
-		201C9BAE1C29B042005E4AAD /* QtWidgets.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
+		201C9BAC1C29B03A005E4AAD /* QtCore.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
+		201C9BAD1C29B03E005E4AAD /* QtGui.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
+		201C9BAE1C29B042005E4AAD /* QtWidgets.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		2024529F12041A9300C3BCD9 /* libController.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20245219120416DB00C3BCD9 /* libController.a */; };
 		20318598173D298000E25227 /* libqtpropertybrowser.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20318536173D0FE000E25227 /* libqtpropertybrowser.a */; };
 		203E5A8417A52FD200401CAA /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
 		20432DA2194F55500082B079 /* libasound.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 20432DA1194F55270082B079 /* libasound.so */; };
-		2048B1C71794838700553A54 /* qt.conf in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
-		2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
+		2048B1C71794838700553A54 /* qt.conf in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
+		2061F22E152CA4430089659C /* Foundation.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
 		2078CFE31C2F53EC005EF5E9 /* Info.plist in Copy QtCore Info */ = {isa = PBXBuildFile; fileRef = 2078CFE11C2F5353005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2078CFE61C2F5479005EF5E9 /* Info.plist in Copy QtDBus Info */ = {isa = PBXBuildFile; fileRef = 2078CFE41C2F543B005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2078CFE91C2F54BA005EF5E9 /* Info.plist in Copy QtGUI Info */ = {isa = PBXBuildFile; fileRef = 2078CFE71C2F549F005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2078CFEC1C2F550E005EF5E9 /* Info.plist in Copy QtOpenGL Info */ = {isa = PBXBuildFile; fileRef = 2078CFEA1C2F54DB005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2078CFEF1C2F5565005EF5E9 /* Info.plist in Copy QtPrintSupport Info */ = {isa = PBXBuildFile; fileRef = 2078CFED1C2F5530005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2078CFF21C2F55A1005EF5E9 /* Info.plist in Copy QtSvg Info */ = {isa = PBXBuildFile; fileRef = 2078CFF01C2F5583005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2078CFF51C2F55EE005EF5E9 /* Info.plist in Copy QtWidgets Info */ = {isa = PBXBuildFile; fileRef = 2078CFF31C2F55CD005EF5E9 /* Info.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
+		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
 		208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 208460E511FE413F0037FA87 /* libjpeg.a */; };
 		2084615711FED7420037FA87 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
 		2084637011FF64E10037FA87 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
 		208B2E4C14B898AC003A08A0 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 208B2E4B14B898AC003A08A0 /* libxml2.dylib */; };
-		208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */; };
+		208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */; };
 		20909D03176C8ACB00A997C2 /* GameCtrl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000798319009676 /* GameCtrl.cpp */; };
 		2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD05175CE13100E764EF /* libsnappy.a */; };
 		2098CD08175CE16C00E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD07175CE16C00E764EF /* libsnappy.a */; };
@@ -89,17 +86,17 @@
 		20A0EB181217F4AC0033F048 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20A0EB141217F49C0033F048 /* IOKit.framework */; };
 		20B288081966851900E08377 /* libfftw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20B288071966851900E08377 /* libfftw3.a */; };
 		20B2880A1966862000E08377 /* libfftw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20B288091966862000E08377 /* libfftw3.a */; };
-		20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
+		20C1154D17934BDC00961A38 /* qt.conf in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
 		20C3018A123040570014668E /* bhuman.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000049871213554 /* bhuman.cpp */; };
-		20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000210128052140591905 /* SimRobot.icns */; };
-		20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000001676308541306894187 /* SimRobotDoc.icns */; };
-		20D32B9013D810D300AE1B12 /* bush.icns in Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000000003194532100095 /* bush.icns */; };
+		20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000210128052140591905 /* SimRobot.icns */; };
+		20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000001676308541306894187 /* SimRobotDoc.icns */; };
+		20D32B9013D810D300AE1B12 /* bush.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000000003194532100095 /* bush.icns */; };
 		20DD73EA134E4E33003FF249 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
 		20DD73EF134E4E33003FF249 /* libode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20844A6111FB5F1C0037FA87 /* libode.a */; };
 		20DD73F1134E4E33003FF249 /* libiconv.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C112C0F80200B772CD /* libiconv.dylib */; };
 		20DD73F2134E4E33003FF249 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2044A8C212C0F80200B772CD /* libz.dylib */; };
-		20DEC9211BCD664100E86922 /* AppKit.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
-		20F2188B13B38F0400D19518 /* CoreServices.framework in Frameworks & Libraries */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
+		20DEC9211BCD664100E86922 /* AppKit.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
+		20F2188B13B38F0400D19518 /* CoreServices.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -330,17 +327,6 @@
 			name = "Copy QtWidgets Framework";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		202B6E5917FB344900555411 /* Copy QtDBus Framework */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = QtDBus.framework/Versions/5;
-			dstSubfolderSpec = 10;
-			files = (
-				201C9B9A1C29AAC3005E4AAD /* QtDBus in Copy QtDBus Framework */,
-			);
-			name = "Copy QtDBus Framework";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		2048B1BC1794825400553A54 /* Copy QtCore Framework */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -372,17 +358,6 @@
 				2078CFE31C2F53EC005EF5E9 /* Info.plist in Copy QtCore Info */,
 			);
 			name = "Copy QtCore Info";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		2078CFE51C2F545B005EF5E9 /* Copy QtDBus Info */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = QtDBus.framework/Resources;
-			dstSubfolderSpec = 10;
-			files = (
-				2078CFE61C2F5479005EF5E9 /* Info.plist in Copy QtDBus Info */,
-			);
-			name = "Copy QtDBus Info";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2078CFE81C2F54A4005EF5E9 /* Copy QtGUI Info */ = {
@@ -506,17 +481,6 @@
 			name = "Copy QT Platform Plugins";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6524BF0F1C0A31B3001E2178 /* Copy QTDBus Framework */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = QtDBus.framework/Versions/5;
-			dstSubfolderSpec = 10;
-			files = (
-				201C9BA71C29AF6F005E4AAD /* QtDBus in Copy QTDBus Framework */,
-			);
-			name = "Copy QTDBus Framework";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		6524BF121C0A3232001E2178 /* Copy QTPrintSupport Framework */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -561,7 +525,6 @@
 		201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtOpenGL.framework; sourceTree = "<group>"; };
 		201C9B7F1C2998D8005E4AAD /* QtSvg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtSvg.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtSvg.framework; sourceTree = "<group>"; };
 		201C9B901C29A8ED005E4AAD /* QtCore */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtCore; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtCore.framework/Versions/5/QtCore; sourceTree = SOURCE_ROOT; };
-		201C9B911C29A938005E4AAD /* QtDBus */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtDBus; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtDBus.framework/Versions/5/QtDBus; sourceTree = SOURCE_ROOT; };
 		201C9B921C29A96A005E4AAD /* QtGui */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtGui; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtGui.framework/Versions/5/QtGui; sourceTree = SOURCE_ROOT; };
 		201C9B931C29A98D005E4AAD /* QtOpenGL */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtOpenGL; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtOpenGL.framework/Versions/5/QtOpenGL; sourceTree = SOURCE_ROOT; };
 		201C9B941C29A9DC005E4AAD /* QtPrintSupport */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = QtPrintSupport; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtPrintSupport.framework/Versions/5/QtPrintSupport; sourceTree = SOURCE_ROOT; };
@@ -578,7 +541,6 @@
 		2044A8C212C0F80200B772CD /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
 		2061F22D152CA4430089659C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		2078CFE11C2F5353005EF5E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtCore.framework/Versions/5/Resources/Info.plist; sourceTree = "<group>"; };
-		2078CFE41C2F543B005EF5E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtDBus.framework/Versions/5/Resources/Info.plist; sourceTree = "<group>"; };
 		2078CFE71C2F549F005EF5E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtGui.framework/Versions/5/Resources/Info.plist; sourceTree = "<group>"; };
 		2078CFEA1C2F54DB005EF5E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtOpenGL.framework/Versions/5/Resources/Info.plist; sourceTree = "<group>"; };
 		2078CFED1C2F5530005EF5E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtPrintSupport.framework/Versions/5/Resources/Info.plist; sourceTree = "<group>"; };
@@ -680,32 +642,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		20EF878E13B37D7500508E6A /* Frameworks & Libraries */ = {
+		20EF878E13B37D7500508E6A /* Link Binary With Libraries */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				20DEC9211BCD664100E86922 /* AppKit.framework in Frameworks & Libraries */,
-				20F2188B13B38F0400D19518 /* CoreServices.framework in Frameworks & Libraries */,
-				201C9BA41C29AE2C005E4AAD /* QtConcurrent.framework in Frameworks & Libraries */,
-				201C9BAC1C29B03A005E4AAD /* QtCore.framework in Frameworks & Libraries */,
-				201C9BAD1C29B03E005E4AAD /* QtGui.framework in Frameworks & Libraries */,
-				201C9BAE1C29B042005E4AAD /* QtWidgets.framework in Frameworks & Libraries */,
+				20DEC9211BCD664100E86922 /* AppKit.framework in Link Binary With Libraries */,
+				20F2188B13B38F0400D19518 /* CoreServices.framework in Link Binary With Libraries */,
+				201C9BA41C29AE2C005E4AAD /* QtConcurrent.framework in Link Binary With Libraries */,
+				201C9BAC1C29B03A005E4AAD /* QtCore.framework in Link Binary With Libraries */,
+				201C9BAD1C29B03E005E4AAD /* QtGui.framework in Link Binary With Libraries */,
+				201C9BAE1C29B042005E4AAD /* QtWidgets.framework in Link Binary With Libraries */,
 			);
-			name = "Frameworks & Libraries";
+			name = "Link Binary With Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		2A1043669E6E5A7426EA502A /* Frameworks & Libraries */ = {
+		2A1043669E6E5A7426EA502A /* Link Binary With Libraries */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				201C9B881C2998D8005E4AAD /* QtOpenGL.framework in Frameworks & Libraries */,
-				201C9B801C2998D8005E4AAD /* QtCore.framework in Frameworks & Libraries */,
-				201C9B841C2998D8005E4AAD /* QtGui.framework in Frameworks & Libraries */,
-				2061F22E152CA4430089659C /* Foundation.framework in Frameworks & Libraries */,
-				201C9B781C2998A6005E4AAD /* QtWidgets.framework in Frameworks & Libraries */,
-				201C9B8C1C2998D8005E4AAD /* QtSvg.framework in Frameworks & Libraries */,
+				201C9B881C2998D8005E4AAD /* QtOpenGL.framework in Link Binary With Libraries */,
+				201C9B801C2998D8005E4AAD /* QtCore.framework in Link Binary With Libraries */,
+				201C9B841C2998D8005E4AAD /* QtGui.framework in Link Binary With Libraries */,
+				2061F22E152CA4430089659C /* Foundation.framework in Link Binary With Libraries */,
+				201C9B781C2998A6005E4AAD /* QtWidgets.framework in Link Binary With Libraries */,
+				201C9B8C1C2998D8005E4AAD /* QtSvg.framework in Link Binary With Libraries */,
 			);
-			name = "Frameworks & Libraries";
+			name = "Link Binary With Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -729,7 +691,7 @@
 				000000000000000000023799 /* Nao */,
 				2024566F1205D86500C3BCD9 /* Libs */,
 				2086A0AD17EDCE5D004AD507 /* Utils */,
-				ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */,
+				ED1E82605DD74B483AF3C982 /* Frameworks */,
 				20D139C911F0B445007DFC5D /* Target Files */,
 			);
 			name = "B-Human";
@@ -766,7 +728,6 @@
 				2044A8C212C0F80200B772CD /* libz.dylib */,
 				201C9B971C29AA64005E4AAD /* QtConcurrent */,
 				201C9B901C29A8ED005E4AAD /* QtCore */,
-				201C9B911C29A938005E4AAD /* QtDBus */,
 				201C9B921C29A96A005E4AAD /* QtGui */,
 				201C9B931C29A98D005E4AAD /* QtOpenGL */,
 				201C9B941C29A9DC005E4AAD /* QtPrintSupport */,
@@ -794,7 +755,6 @@
 			isa = PBXGroup;
 			children = (
 				2078CFE11C2F5353005EF5E9 /* Info.plist */,
-				2078CFE41C2F543B005EF5E9 /* Info.plist */,
 				2078CFE71C2F549F005EF5E9 /* Info.plist */,
 				2078CFEA1C2F54DB005EF5E9 /* Info.plist */,
 				2078CFED1C2F5530005EF5E9 /* Info.plist */,
@@ -831,7 +791,7 @@
 			name = "Target Files";
 			sourceTree = "<group>";
 		};
-		ED1E82605DD74B483AF3C982 /* Frameworks and Libraries */ = {
+		ED1E82605DD74B483AF3C982 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				2078CFDE1C2F528E005EF5E9 /* bin */,
@@ -850,7 +810,7 @@
 				201C9B7F1C2998D8005E4AAD /* QtSvg.framework */,
 				201C9B771C2998A6005E4AAD /* QtWidgets.framework */,
 			);
-			name = "Frameworks and Libraries";
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -860,7 +820,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2024521E1204174D00C3BCD9 /* Build configuration list for PBXNativeTarget "Controller" */;
 			buildPhases = (
-				20A05D4612115F1E00BE52B1 /* Check Resource Dependencies */,
+				20A05D4612115F1E00BE52B1 /* Resource Dependencies */,
 				20245216120416DB00C3BCD9 /* Sources */,
 			);
 			buildRules = (
@@ -878,7 +838,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20318532173D0FE000E25227 /* Build configuration list for PBXNativeTarget "qtpropertybrowser" */;
 			buildPhases = (
-				203184E6173D0FE000E25227 /* Check Resource Dependencies */,
+				203184E6173D0FE000E25227 /* Resource Dependencies */,
 				2031859C173D483100E25227 /* Generate MOC from Headers */,
 				2031859D173D564D00E25227 /* Generate MOC from Implementation Files */,
 				203184E7173D0FE000E25227 /* Sources */,
@@ -898,7 +858,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */;
 			buildPhases = (
-				20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */,
+				20844E5C11FE0ECC0037FA87 /* Resource Dependencies */,
 				20844AF211FC6F410037FA87 /* Sources */,
 				20844AF311FC6F410037FA87 /* Frameworks */,
 			);
@@ -939,7 +899,6 @@
 			buildPhases = (
 				20909CFA176BB55200A997C2 /* Sources */,
 				20909CFC176BB55200A997C2 /* Frameworks */,
-				202573CD18E4187A005A3928 /* Determining build information */,
 			);
 			buildRules = (
 			);
@@ -988,7 +947,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */;
 			buildPhases = (
-				20DD73A2134E4E33003FF249 /* Check Resource Dependencies */,
+				20DD73A2134E4E33003FF249 /* Resource Dependencies */,
 				20DD73A3134E4E33003FF249 /* Sources */,
 				20DD73E6134E4E33003FF249 /* Frameworks */,
 			);
@@ -1007,13 +966,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20EF87A013B37D7500508E6A /* Build configuration list for PBXNativeTarget "bush" */;
 			buildPhases = (
-				20EF878213B37D7500508E6A /* Check Resource Dependencies */,
+				20EF878213B37D7500508E6A /* Resource Dependencies */,
 				20EF878313B37D7500508E6A /* Sources */,
-				20EF878E13B37D7500508E6A /* Frameworks & Libraries */,
-				20EF879313B37D7500508E6A /* Bundle Resources */,
+				20EF878E13B37D7500508E6A /* Link Binary With Libraries */,
+				20EF879313B37D7500508E6A /* Copy Bundle Resources */,
 				65B48F9A1C0A0F9B00EBF4A3 /* Copy QtConcurrent Framework */,
 				2048B1BC1794825400553A54 /* Copy QtCore Framework */,
-				6524BF0F1C0A31B3001E2178 /* Copy QTDBus Framework */,
 				2048B1BE1794829F00553A54 /* Copy QtGui Framework */,
 				6524BF121C0A3232001E2178 /* Copy QTPrintSupport Framework */,
 				65B48F9C1C0A0FFA00EBF4A3 /* Copy QtWidgets Framework */,
@@ -1034,15 +992,15 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7C33BA0A0E7432AB00ACB790 /* Build configuration list for PBXNativeTarget "SimRobot" */;
 			buildPhases = (
-				20844D9211FDF51B0037FA87 /* Check Resource Dependencies */,
+				20844D9211FDF51B0037FA87 /* Resource Dependencies */,
 				C29B8785722055ED95EF7B57 /* Sources */,
-				2A1043669E6E5A7426EA502A /* Frameworks & Libraries */,
+				2A1043669E6E5A7426EA502A /* Link Binary With Libraries */,
 				2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */,
 				207DB5481A8297EB0012AD4E /* Get SimRobotEditor Library */,
 				207DB54A1A8297F70012AD4E /* Get SimulatedNao Library */,
-				3787F99312C85FF0073FD7BA /* Bundle Resources */,
+				3787F99312C85FF0073FD7BA /* Copy Bundle Resources */,
+				2017E2381C402CEC001E1587 /* Unlock Keychain */,
 				20C115211793473400961A38 /* Copy QtCore Framework */,
-				202B6E5917FB344900555411 /* Copy QtDBus Framework */,
 				20C115241793478A00961A38 /* Copy QtGui Framework */,
 				20C11530179348A000961A38 /* Copy QtOpenGL Framework */,
 				201C9B9D1C29AB05005E4AAD /* Copy QtPrintSupport Framework */,
@@ -1050,7 +1008,6 @@
 				201C9B9F1C29AB4F005E4AAD /* Copy QtWidgets Framework */,
 				20C1153F17934A2700961A38 /* Copy Platform Plugins */,
 				2078CFE21C2F53C1005EF5E9 /* Copy QtCore Info */,
-				2078CFE51C2F545B005EF5E9 /* Copy QtDBus Info */,
 				2078CFE81C2F54A4005EF5E9 /* Copy QtGUI Info */,
 				2078CFEB1C2F54E0005EF5E9 /* Copy QtOpenGL Info */,
 				2078CFEE1C2F5541005EF5E9 /* Copy QtPrintSupport Info */,
@@ -1077,7 +1034,7 @@
 		91B15E841AA80083484172DE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0810;
+				LastUpgradeCheck = 0900;
 			};
 			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "B-Human" */;
 			compatibilityVersion = "Xcode 6.3";
@@ -1107,62 +1064,87 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		20EF879313B37D7500508E6A /* Bundle Resources */ = {
+		20EF879313B37D7500508E6A /* Copy Bundle Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2048B1C71794838700553A54 /* qt.conf in Bundle Resources */,
-				20D32B9013D810D300AE1B12 /* bush.icns in Bundle Resources */,
+				2048B1C71794838700553A54 /* qt.conf in Copy Bundle Resources */,
+				20D32B9013D810D300AE1B12 /* bush.icns in Copy Bundle Resources */,
 			);
-			name = "Bundle Resources";
+			name = "Copy Bundle Resources";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3787F99312C85FF0073FD7BA /* Bundle Resources */ = {
+		3787F99312C85FF0073FD7BA /* Copy Bundle Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				20C1154D17934BDC00961A38 /* qt.conf in Bundle Resources */,
-				208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Bundle Resources */,
-				20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Bundle Resources */,
-				20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Bundle Resources */,
-				20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Bundle Resources */,
-				200C742F17F76EC60081E703 /* SimulatedNao.dylib in Bundle Resources */,
+				20C1154D17934BDC00961A38 /* qt.conf in Copy Bundle Resources */,
+				208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Copy Bundle Resources */,
+				20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Copy Bundle Resources */,
+				20CA7E8B17DA1B790012BD17 /* SimRobot.icns in Copy Bundle Resources */,
+				20CA7E8C17DA1B790012BD17 /* SimRobotDoc.icns in Copy Bundle Resources */,
+				200C742F17F76EC60081E703 /* SimulatedNao.dylib in Copy Bundle Resources */,
 			);
-			name = "Bundle Resources";
+			name = "Copy Bundle Resources";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		202573CD18E4187A005A3928 /* Determining build information */ = {
+		2017E2381C402CEC001E1587 /* Unlock Keychain */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
+				"$(QT_DIR)/lib/QtCore.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtCore.framework/Versions/5/QtCore",
+				"$(QT_DIR)/lib/QtDBus.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtDBus.framework/Versions/5/QtDBus",
+				"$(QT_DIR)/lib/QtGui.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtGui.framework/Versions/5/QtGui",
+				"$(QT_DIR)/lib/QtOpenGL.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtOpenGL.framework/Versions/5/QtOpenGL",
+				"$(QT_DIR)/lib/QtPrintSupport.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtPrintSupport.framework/Versions/5/QtPrintSupport",
+				"$(QT_DIR)/lib/QtSvg.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtSvg.framework/Versions/5/QtSvg",
+				"$(QT_DIR)/lib/QtWidgets.framework/Versions/5/Resources/Info.plist",
+				"$(QT_DIR)/lib/QtWidgets.framework/Versions/5/QtWidgets",
+				"$(QT_DIR)/plugins/platforms/libqcocoa.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Info.plist",
+				"$(CONFIGURATION_TEMP_DIR)/LinkMap.txt",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/PkgInfo",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/qt.conf",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/SimRobot.icns",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/SimRobotCore2.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/SimRobotDoc.icns",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/SimRobotEditor.dylib",
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/Resources/SimulatedNao.dylib",
 			);
-			name = "Determining build information";
+			name = "Unlock Keychain";
 			outputPaths = (
+				"$(CONFIGURATION_TEMP_DIR)/SimRobot.app/Contents/_CodeSignature/CodeResources",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ ! -z \"`which git`\" ]; then\n  HASH=`git rev-parse HEAD`\n  if [ -z \"`git status -u -s`\" ]; then\n    CLEAN=true\n  else\n    CLEAN=false\n  fi\nelse\n  HASH=unknown\n  CLEAN=false\nfi\necho configuration = $CONFIGURATION\\; >$CONFIGURATION_TEMP_DIR/build.cfg\necho hash = $HASH\\; >>$CONFIGURATION_TEMP_DIR/build.cfg\necho clean = $CLEAN\\; >>$CONFIGURATION_TEMP_DIR/build.cfg";
+			shellScript = "security unlock-keychain -p nao B-Human_Code_Release.keychain";
 			showEnvVarsInLog = 0;
 		};
-		203184E6173D0FE000E25227 /* Check Resource Dependencies */ = {
+		203184E6173D0FE000E25227 /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Util/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Util/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
 		2031859C173D483100E25227 /* Generate MOC from Headers */ = {
@@ -1209,7 +1191,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-r\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nif [ -e ../../Config/Scenes/Includes/connect.con ]; then\n  COMMAND=\"`head -1 ../../Config/Scenes/Includes/connect.con | sed \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`$OPTIONS\"\nelse\n  COMMAND=\"<ipaddress>$OPTIONS\"\nfi\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `../../Util/Buildchain/macOS/bin/getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"usage:\t<ipaddress> {options}\\noptions:\\n    -a \t(auto deploy these settings in future)\\n    -d\t(delete all logs)\\n    -l <location>\\n    -mn <magic number>\\n    -n <team number>\\n    -o <team port>\\n    -p <player number>\\n    -r \t(restart bhuman)\\n    -s \t(stop naoqi)\\n    -t <team color>\\n    -v <volume percent>\\n    -w <wireless profile>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  echo \"$COMMAND\" | sed \"s% *\\([^ ]*\\).*%sc Remote \\1%\" >../../Config/Scenes/Includes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<ipaddress>%%\"`\nfi";
+			shellScript = "if [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-b\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nif [ -e ../../Config/Scenes/Includes/connect.con ]; then\n  COMMAND=\"`head -1 ../../Config/Scenes/Includes/connect.con | sed \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`$OPTIONS\"\nelse\n  COMMAND=\"<ipaddress>$OPTIONS\"\nfi\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `../../Util/Buildchain/macOS/bin/getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"usage:\t<ipaddress> {options}\\noptions:\\n    -a \t(auto deploy these settings in future)\\n    -b \t(restart bhuman)\\n    -c <team color>\\n    -d\t(delete all logs)\\n    -l <location>\\n    -m <magic number>\\n    -n \t(stop naoqi)\\n    -o <team port>\\n    -p <player number>\\n    -s <scenario>\\n    -t <team number>\\n    -v <volume percent>\\n    -w <wireless profile>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  echo \"$COMMAND\" | sed \"s% *\\([^ ]*\\).*%sc Remote \\1%\" >../../Config/Scenes/Includes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<ipaddress>%%\"`\nfi";
 			showEnvVarsInLog = 0;
 		};
 		2046C1E61446DE7900CADD6F /* Get Libraries */ = {
@@ -1282,84 +1264,84 @@
 			shellScript = "cp $BUILD_DIR/SimulatedNao/$CONFIGURATION/SimulatedNao.dylib $CONFIGURATION_TEMP_DIR/SimulatedNao.dylib\n";
 			showEnvVarsInLog = 0;
 		};
-		20844D9211FDF51B0037FA87 /* Check Resource Dependencies */ = {
+		20844D9211FDF51B0037FA87 /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
-		20844E5C11FE0ECC0037FA87 /* Check Resource Dependencies */ = {
+		20844E5C11FE0ECC0037FA87 /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
-		20A05D4612115F1E00BE52B1 /* Check Resource Dependencies */ = {
+		20A05D4612115F1E00BE52B1 /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
-		20DD73A2134E4E33003FF249 /* Check Resource Dependencies */ = {
+		20DD73A2134E4E33003FF249 /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Util/SimRobot/Src/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Util/SimRobot/Src/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
-		20EF878213B37D7500508E6A /* Check Resource Dependencies */ = {
+		20EF878213B37D7500508E6A /* Resource Dependencies */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Resource Dependencies";
+			name = "Resource Dependencies";
 			outputPaths = (
 				"../../Src/Utils/$(PRODUCT_NAME)/$(PRODUCT_NAME).qrc",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "touch $SRCROOT/../../Src/Utils/$PRODUCT_NAME/$PRODUCT_NAME.qrc";
+			shellScript = "";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -1497,7 +1479,6 @@
 					"$(inherited)",
 					QT_CORE_LIB,
 					QT_GUI_LIB,
-					QT_NETWORK_LIB,
 					QT_OPENGL_LIB,
 					QT_SHARED,
 					TARGET_SIM,
@@ -1541,7 +1522,6 @@
 					"$(inherited)",
 					QT_CORE_LIB,
 					QT_GUI_LIB,
-					QT_NETWORK_LIB,
 					QT_NO_DEBUG,
 					QT_OPENGL_LIB,
 					QT_SHARED,
@@ -1585,7 +1565,6 @@
 					"$(inherited)",
 					QT_CORE_LIB,
 					QT_GUI_LIB,
-					QT_NETWORK_LIB,
 					QT_NO_DEBUG,
 					QT_OPENGL_LIB,
 					QT_SHARED,
@@ -1716,7 +1695,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
@@ -1729,6 +1708,7 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
+					"CONFIGURATION=$(CONFIGURATION)",
 					NDEBUG,
 					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
@@ -1740,8 +1720,9 @@
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_GENERATE_MAP_FILE = YES;
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = ../../Util/SimRobot/Util/qt/macOS;
 				SHARED_PRECOMPS_DIR = "$(OBJROOT)/PrecompiledHeaders";
@@ -1757,6 +1738,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Develop;
@@ -1764,6 +1746,7 @@
 		2081799C1201800A0005F60F /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1822,6 +1805,7 @@
 				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
+					"CONFIGURATION=$(CONFIGURATION)",
 					QT_NO_DEBUG,
 					QT_SHARED,
 					QT_OPENGL_LIB,
@@ -1841,7 +1825,6 @@
 					../../Util/libqxt,
 					../../Util/qtpropertybrowser,
 					../../Util/snappy/include,
-					../../Util/boost/linux,
 					$QT_DIR/lib/QtCore.framework/Headers,
 					$QT_DIR/lib/QtGui.framework/Headers,
 					$QT_DIR/lib/QtMultimedia.framework/Headers,
@@ -1934,7 +1917,6 @@
 					../../Util/libqxt,
 					../../Util/qtpropertybrowser,
 					../../Util/snappy/include,
-					../../Util/boost/linux,
 					$QT_DIR/lib/QtCore.framework/Headers,
 					$QT_DIR/lib/QtGui.framework/Headers,
 					$QT_DIR/lib/QtMultimedia.framework/Headers,
@@ -1984,7 +1966,6 @@
 					../../Util/libqxt,
 					../../Util/qtpropertybrowser,
 					../../Util/snappy/include,
-					../../Util/boost/linux,
 					$QT_DIR/lib/QtCore.framework/Headers,
 					$QT_DIR/lib/QtGui.framework/Headers,
 					$QT_DIR/lib/QtMultimedia.framework/Headers,
@@ -2184,6 +2165,7 @@
 				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
 					_DEBUG,
@@ -2193,7 +2175,6 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Util/boost/linux,
 					../../Util/Eigen,
 					"../../Util/fftw-3.3",
 					../../Util/GameController/include,
@@ -2230,6 +2211,7 @@
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
+					"-Wno-unused",
 				);
 			};
 			name = Debug;
@@ -2250,6 +2232,7 @@
 				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
 					USEPCH,
@@ -2258,7 +2241,6 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Util/boost/linux,
 					../../Util/Eigen,
 					"../../Util/fftw-3.3",
 					../../Util/GameController/include,
@@ -2295,6 +2277,7 @@
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
+					"-Wno-unused",
 				);
 			};
 			name = Develop;
@@ -2315,6 +2298,7 @@
 				GCC_PREFIX_HEADER = ../../Src/Tools/Precompiled/BHumanPch.cpp;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
 					TARGET_ROBOT,
 					__STRICT_ANSI__,
 					NDEBUG,
@@ -2323,7 +2307,6 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
 				HEADER_SEARCH_PATHS = (
-					../../Util/boost/linux,
 					../../Util/Eigen,
 					"../../Util/fftw-3.3",
 					../../Util/GameController/include,
@@ -2360,6 +2343,7 @@
 				WARNING_CFLAGS = (
 					"${inherited}",
 					"-Wno-switch",
+					"-Wno-unused",
 				);
 			};
 			name = Release;
@@ -2709,6 +2693,7 @@
 		7C33BA060E74328D00ACB790 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2733,6 +2718,7 @@
 		7C33BA070E74328D00ACB790 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2761,7 +2747,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
@@ -2775,6 +2761,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
+					"CONFIGURATION=$(CONFIGURATION)",
 					_DEBUG,
 					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
@@ -2785,8 +2772,9 @@
 					FIX_MACOS_SUBMENU_MISSING_BUG,
 				);
 				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_GENERATE_MAP_FILE = YES;
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				ONLY_ACTIVE_ARCH = YES;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = ../../Util/SimRobot/Util/qt/macOS;
@@ -2803,6 +2791,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Debug;
@@ -2812,7 +2801,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
@@ -2825,6 +2814,7 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
+					"CONFIGURATION=$(CONFIGURATION)",
 					NDEBUG,
 					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
@@ -2836,8 +2826,9 @@
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LDPLUSPLUS_x86_64 = "$(CC)";
+				LD_GENERATE_MAP_FILE = YES;
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = ../../Util/SimRobot/Util/qt/macOS;
 				SHARED_PRECOMPS_DIR = "$(OBJROOT)/PrecompiledHeaders";
@@ -2853,6 +2844,7 @@
 					"-Wno-deprecated",
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
+					"-Wunreachable-code",
 				);
 			};
 			name = Release;

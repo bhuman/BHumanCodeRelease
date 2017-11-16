@@ -15,14 +15,15 @@
 #include "Representations/Infrastructure/AudioData.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/LowFrameRateImage.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/Thumbnail.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
-#include "Platform/SystemCall.h"
 #include "Tools/Logging/LogFileFormat.h"
 
 #include <snappy-c.h>
 #include <vector>
 #include <map>
+#include <fstream>
 
 LogPlayer::LogPlayer(MessageQueue& targetQueue) :
   targetQueue(targetQueue)
@@ -39,11 +40,7 @@ void LogPlayer::init()
   replayOffset = 0;
   state = initial;
   loop = false; //default: loop disabled
-  if(streamHandler)
-  {
-    delete streamHandler;
-    streamHandler = nullptr;
-  }
+  streamHandler = nullptr;
   streamSpecificationReplayed = false;
 }
 
@@ -67,7 +64,7 @@ bool LogPlayer::open(const std::string& fileName)
 
     if(magicByte == Logging::logFileStreamSpecification)
     {
-      streamHandler = new StreamHandler;
+      streamHandler = std::unique_ptr<StreamHandler>(new StreamHandler);
       file >> *streamHandler;
       file >> magicByte;
     }
@@ -225,8 +222,7 @@ void LogPlayer::stepRepeat()
   if(state == paused && currentFrameNumber >= 0)
   {
     --currentFrameNumber;
-    currentMessageNumber = currentFrameNumber >= 0 ? frameIndex[currentFrameNumber] : 0;
-    queue.setSelectedMessageForReading(currentMessageNumber);
+    currentMessageNumber = currentFrameNumber >= 0 ? frameIndex[currentFrameNumber] - 1 : -1;
     stepForward();
   }
 }
@@ -306,6 +302,96 @@ bool LogPlayer::saveImages(const bool raw, const std::string& fileName)
       return false;
     }
   }
+  stop();
+  return true;
+}
+
+bool LogPlayer::saveInertialSensorData()
+{
+  InertialSensorData data;
+  FrameInfo frame;
+  std::ofstream file;
+  std::string filename = "sensordata_" + logfilePath.substr(logfilePath.find_last_of('/') + 1) + ".csv";
+  file.open(filename.c_str());
+  file << "# frame index, gyro x, gyro y, gyro z, acc x, acc y, acc z, angle x, angle y";
+  file << std::endl;
+  for(currentMessageNumber = 0;
+      currentMessageNumber < getNumberOfMessages();
+      currentMessageNumber++)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber);
+    switch(queue.getMessageID())
+    {
+      case idInertialSensorData:
+        in.bin >> data;
+        continue;
+      case idFrameInfo:
+        in.bin >> frame;
+        continue;
+      case idProcessFinished:
+        file << frame.time << ",";
+        file << data.gyro.x() << ",";
+        file << data.gyro.y() << ",";
+        file << data.gyro.z() << ",";
+        file << data.acc.x() << ",";
+        file << data.acc.y() << ",";
+        file << data.acc.z() << ",";
+        file << data.angle.x() << ",";
+        file << data.angle.y() << std::endl;
+        continue;
+      default:
+        continue;
+    }
+  }
+  file.close();
+  stop();
+  return true;
+}
+
+bool LogPlayer::saveJointAngleData()
+{
+  JointAngles angles;
+  JointRequest request;
+  FrameInfo frame;
+  std::ofstream file;
+  std::string filename = "jointangledata_" + logfilePath.substr(logfilePath.find_last_of('/') + 1) + ".csv";
+  file.open(filename.c_str());
+  file << "frame index, ";
+  for(int i = 0; i < Joints::numOfJoints; i++)
+  {
+    file << "request " << i << ", angle " << i << ", " ;
+  }
+  file << std::endl;
+  for(currentMessageNumber = 0;
+      currentMessageNumber < getNumberOfMessages();
+      currentMessageNumber++)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber);
+    switch(queue.getMessageID())
+    {
+      case idFrameInfo:
+        in.bin >> frame;
+        continue;
+      case idJointAngles:
+        in.bin >> angles;
+        continue;
+      case idJointRequest:
+        in.bin >> request;
+        continue;
+      case idProcessFinished:
+        file << frame.time << ",";
+        for(int i = 0; i < Joints::numOfJoints; i++)
+        {
+          file << request.angles[i].toDegrees() << ",";
+          file << angles.angles[i].toDegrees() << ",";
+        }
+        file << std::endl;
+        continue;
+      default:
+        continue;
+    }
+  }
+  file.close();
   stop();
   return true;
 }
@@ -670,7 +756,6 @@ void LogPlayer::countFrames()
   }
 }
 
-
 std::string LogPlayer::expandImageFileName(const std::string& fileName, int imageNumber)
 {
   std::string name = fileName;
@@ -709,14 +794,14 @@ bool LogPlayer::saveImage(const Image& image, const std::string& fileName, int i
   if(YUV2RGB)
   {
     r = new Image;
-    const_cast<Image*>(r)->convertFromYCbCrToRGB(image);
+    const_cast<Image*>(r)->convertFromYCbCr422ToRGB(image);
   }
-  QImage img(image.width, image.height, QImage::Format_RGB888);
-  for(int y = 0; y < image.height; ++y)
+  QImage img(r->width, r->height, QImage::Format_RGB888);
+  for(int y = 0; y < r->height; ++y)
   {
     const Image::Pixel* pSrc = &(*r)[y][0];
     unsigned char* p = img.scanLine(y);
-    unsigned char* pEnd = p + 3 * image.width;
+    unsigned char* pEnd = p + 3 * r->width;
 
     if(YUV2RGB)
       while(p != pEnd)
@@ -916,4 +1001,146 @@ void LogPlayer::replayStreamSpecification()
     targetQueue.out.finishMessage(idStreamSpecification);
     streamSpecificationReplayed = true;
   }
+}
+
+void LogPlayer::merge()
+{
+  stop();
+
+  //copy the currently loaded logfile
+  LogPlayer logCopy((MessageQueue&)*this);
+  logCopy.setSize(queue.getSize());
+  moveAllMessages(logCopy);
+  logCopy.countFrames();
+  logCopy.createIndices();
+
+  //parse filename and find the corresponding other logfile
+  std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
+  std::size_t prefixPos = file.find_first_of('_');
+  std::string processName = file.substr(0, prefixPos);
+  std::string remainderName = file.substr(prefixPos);
+  std::string logOtherFile = logfilePath.substr(0, logfilePath.find_last_of('/') + 1) + (processName == "Motion" ? "Cognition" : "Motion") + remainderName;
+
+  //open other logfile
+  LogPlayer logOther((MessageQueue&)*this);
+  if(!logOther.open(logOtherFile))
+  {
+    OUTPUT_ERROR("Could not open " << logOtherFile);
+    return;
+  }
+
+  //merge stream specification
+  {
+    OutBinarySize size;
+    size << *logOther.streamHandler;
+    char* buffer = new char[size.getSize()];
+    OutBinaryMemory out(buffer);
+    out << *logOther.streamHandler;
+    InBinaryMemory in(buffer);
+    in >> *streamHandler;
+    delete[] buffer;
+  }
+
+  //TODO: ugly as hell -> use processidentifier stuff
+  LogPlayer& motionLog = processName == "Motion" ? logCopy : logOther;
+  LogPlayer& cognitionLog = processName == "Motion" ? logOther : logCopy;
+
+  //Intermediate representation of messages
+  struct FrameData
+  {
+    unsigned int time;
+    int messageStart;
+    int messageEnd;
+  };
+
+  std::vector<FrameData> cognitionData;
+  std::vector<FrameData> motionData;
+  motionData.reserve(motionLog.getNumberOfMessages());
+  cognitionData.reserve(cognitionLog.getNumberOfMessages());
+
+  FrameInfo frameInfo;
+  JointAngles jointAngles;
+  FrameData frameData;
+  for(int i = 0; i < 2; ++i)
+  {
+    bool isMotionLog = i == 0;
+    LogPlayer& lp = isMotionLog ? motionLog : cognitionLog;
+    std::vector<FrameData>& fd = isMotionLog ? motionData : cognitionData;
+    for(lp.currentMessageNumber = 0; lp.currentMessageNumber < lp.getNumberOfMessages(); ++lp.currentMessageNumber)
+    {
+      lp.queue.setSelectedMessageForReading(lp.currentMessageNumber);
+      lp.in.config.reset();
+      lp.in.text.reset();
+      switch(lp.queue.getMessageID())
+      {
+        case idProcessBegin:
+          frameData.messageStart = lp.currentMessageNumber;
+          break;
+        case idJointAngles:
+          lp.in.bin >> jointAngles;
+          frameData.time = jointAngles.timestamp;
+          break;
+        case idFrameInfo:
+          if(isMotionLog)
+            break;
+          lp.in.bin >> frameInfo;
+          frameData.time = frameInfo.time;
+          break;
+        case idProcessFinished:
+          frameData.messageEnd = lp.currentMessageNumber;
+          fd.push_back(frameData);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  auto motionItr = motionData.begin();
+  const auto& motionEnd = motionData.end();
+
+  auto cognitionItr = cognitionData.begin();
+  const auto& cognitionEnd = cognitionData.end();
+
+  while(true)
+  {
+    if(motionItr == motionEnd)
+    {
+      while(cognitionItr != cognitionEnd)
+      {
+        for(int i = cognitionItr->messageStart; i <= cognitionItr->messageEnd; ++i)
+          cognitionLog.copyMessage(i, *this);
+        ++cognitionItr;
+      }
+      break;
+    }
+    if(cognitionItr == cognitionEnd)
+    {
+      while(motionItr != motionEnd)
+      {
+        for(int i = motionItr->messageStart; i <= motionItr->messageEnd; ++i)
+          motionLog.copyMessage(i, *this);
+        ++motionItr;
+      }
+      break;
+    }
+
+    if(motionItr->time < cognitionItr->time)
+    {
+      for(int i = motionItr->messageStart; i <= motionItr->messageEnd; ++i)
+        motionLog.copyMessage(i, *this);
+      ++motionItr;
+    }
+    else
+    {
+      for(int i = cognitionItr->messageStart; i <= cognitionItr->messageEnd; ++i)
+        cognitionLog.copyMessage(i, *this);
+      ++cognitionItr;
+    }
+  }
+  countFrames();
+  createIndices();
+
+  targetQueue.out.bin << *streamHandler;
+  targetQueue.out.finishMessage(idStreamSpecification);
 }

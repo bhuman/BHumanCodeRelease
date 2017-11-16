@@ -1,6 +1,6 @@
 /**
  * @file DeleteLogs.cpp
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #include "DeleteLogsCmd.h"

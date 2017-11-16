@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDECodeSnippetCompletionPrefix</key>
+	<string>REQUIRES</string>
+	<key>IDECodeSnippetCompletionScopes</key>
+	<array>
+		<string>All</string>
+	</array>
+	<key>IDECodeSnippetContents</key>
+	<string>REQUIRES(&lt;#Representation#&gt;),</string>
+	<key>IDECodeSnippetIdentifier</key>
+	<string>9B587FE1-1F5A-4AE5-80ED-0A6498080521</string>
+	<key>IDECodeSnippetLanguage</key>
+	<string>Xcode.SourceCodeLanguage.C-Plus-Plus</string>
+	<key>IDECodeSnippetSummary</key>
+	<string>Definition of a requirement of a module.</string>
+	<key>IDECodeSnippetTitle</key>
+	<string>Requirement Definition</string>
+	<key>IDECodeSnippetUserSnippet</key>
+	<true/>
+	<key>IDECodeSnippetVersion</key>
+	<integer>2</integer>
+</dict>
+</plist>

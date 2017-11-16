@@ -1,46 +1,17 @@
 #!/bin/sh
 
-NAME=$1
-FLAGS=$2
-CURRDIR=/home/nao
-DIR=$CURRDIR
+FLAGS=$1
+DIR=/home/nao
 
 usage()
 {
-  echo "usage: $0 [<name>] [<flags>] - Starts the last deployed or named bhuman version."
-  exit 1
-}
-
-error()
-{
-  echo "$1"
+  echo "usage: $0 [<flags>] - Starts the last deployed bhuman version."
   exit 1
 }
 
 if [ $(whoami) != nao ]; then
   echo "bhuman can only be started by user 'nao'."
   exit 1
-fi
-
-[ x$NAME = xDefault ] && NAME=""
-[ ! -z $NAME ] && DIR="$CURRDIR/Saves/$NAME"
-
-[ ! -d "$DIR" ] && error "There is no bhuman version called $NAME."
-
-if [ ! -z $NAME ]; then
-  echo "Copying colortables..."
-  for name in $(find "$DIR/Config" -name '*.c64'); do
-    mv "$name" "$name.bak" || exit
-  done
-  for name in $(find $CURRDIR/Config/ -name '*.c64'); do
-    echo $(echo $name | sed -e s:$CURRDIR/::)
-    DEST="$(echo $name | sed -e s:$CURRDIR:$DIR:)"
-    cp "$name" "$DEST" || exit
-  done
-  echo "Copying team.cfg and settings.cfg"
-  cp "$CURRDIR/Config/team.cfg" "$DIR/Config/team.cfg"
-  cp "$CURRDIR/Config/settings.cfg" "$DIR/Config/settings.cfg"
-  echo ""
 fi
 
 # this should fix a freaky cygwin bug

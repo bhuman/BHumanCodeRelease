@@ -48,7 +48,7 @@ ReceiverList* ReceiverList::lookup(const std::string& processName, const std::st
   for(ReceiverList* p = getFirst(); p; p = p->getNext())
     if(processName + "." + p->name == receiverName)
       return p;
-  return 0;
+  return nullptr;
 }
 
 void ReceiverList::setPackage(void* p)

@@ -40,6 +40,7 @@
 #ifndef QDYNAMICMAINWINDOW_H
 #define QDYNAMICMAINWINDOW_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qwidget.h>
 #include <QtWidgets/qtabwidget.h>
 
@@ -59,7 +60,6 @@ class Q_WIDGETS_EXPORT QMainWindow : public QWidget
 {
     Q_OBJECT
 
-    Q_FLAGS(DockOptions)
     Q_PROPERTY(QSize iconSize READ iconSize WRITE setIconSize)
     Q_PROPERTY(Qt::ToolButtonStyle toolButtonStyle READ toolButtonStyle WRITE setToolButtonStyle)
 #ifndef QT_NO_DOCKWIDGET
@@ -88,6 +88,7 @@ public:
     };
     Q_ENUM(DockOption)
     Q_DECLARE_FLAGS(DockOptions, DockOption)
+    Q_FLAG(DockOptions)
 
     explicit QMainWindow(QWidget *parent = Q_NULLPTR, Qt::WindowFlags flags = Qt::WindowFlags());
     ~QMainWindow();
@@ -195,6 +196,9 @@ public Q_SLOTS:
 Q_SIGNALS:
     void iconSizeChanged(const QSize &iconSize);
     void toolButtonStyleChanged(Qt::ToolButtonStyle toolButtonStyle);
+#ifndef QT_NO_DOCKWIDGET
+    void tabifiedDockWidgetActivated(QDockWidget *dockWidget);
+#endif
 
 protected:
 #ifndef QT_NO_CONTEXTMENU

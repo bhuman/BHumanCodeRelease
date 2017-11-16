@@ -141,7 +141,6 @@ private:
   bool mirror = false,
        armsBackFix = false;
 
-
   friend class KickViewGLWidget;
 
   //TreeView, StandardModel and Editor

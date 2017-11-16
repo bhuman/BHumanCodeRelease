@@ -10,9 +10,18 @@
 #include "Platform/Memory.h"
 #include "Platform/BHAssert.h"
 #include <cstring>
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/Debugging/DebugImages.h"
 
 struct Thumbnail : public Streamable
 {
+  void draw() const
+  {
+    SEND_DEBUG_IMAGE("ThumbnailGrayscale", imageGrayscale);
+    SEND_DEBUG_IMAGE("ThumbnailImageU", imageU);
+    SEND_DEBUG_IMAGE("ThumbnailImageV", imageV);
+  };
+
   template<typename Pixel>
   struct CompressedImage : public TImage<Pixel>
   {
@@ -22,19 +31,23 @@ struct Thumbnail : public Streamable
 
   using ThumbnailImage = TImage<Image::Pixel>;
   using ThumbnailImageCompressed = CompressedImage<unsigned short>;
-  using ThumbnailImageGrayscale = TImage<unsigned char>;
+  using ThumbnailImageGrayscale = TImage<PixelTypes::GrayscaledPixel>;
+  using ThumbnailImageU = TImage<PixelTypes::GrayscaledPixel>;
+  using ThumbnailImageV = TImage<PixelTypes::GrayscaledPixel>;
 
   ThumbnailImage image;
   ThumbnailImageCompressed compressedImage;
   ThumbnailImageGrayscale imageGrayscale;
+  ThumbnailImageU imageU;
+  ThumbnailImageV imageV;
 
   int scale;
   bool grayscale;
+  bool hasGrayscaleColorData;
 
-public:
   void toImage(Image& dest) const;
 
-private:
+protected:
   virtual void serialize(In* in, Out* out);
 };
 

@@ -47,7 +47,6 @@ class CoordinateSystemProvider : public CoordinateSystemProviderBase
   CameraMatrix cameraMatrixPrev[CameraInfo::numOfCameras];
   unsigned cameraMatrixPrevTimeStamp[CameraInfo::numOfCameras];
   Vector2f prevOffset = Vector2f::Zero();
-  Vector2f prevPrevOffset = Vector2f::Zero();
 
   mutable TImage<PixelTypes::YUYVPixel> correctedImage;
   mutable TImage<PixelTypes::YUYVPixel> horizonAlignedImage;

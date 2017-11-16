@@ -62,7 +62,7 @@ private:
   void updatePlayPauseButton();
   void updateLoopButton();
 
-  private slots:
+private slots:
   void changeFrame(int newFrame);
   void togglePlayPause();
 };

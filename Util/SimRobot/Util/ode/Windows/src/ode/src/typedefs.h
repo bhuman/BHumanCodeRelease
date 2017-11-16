@@ -30,12 +30,19 @@
  */
 
 
+typedef dint64 int64;
+typedef duint64 uint64;
 typedef dint32 int32;
 typedef duint32 uint32;
 typedef dint16 int16;
 typedef duint16 uint16;
 typedef dint8 int8;
 typedef duint8 uint8;
+
+typedef dintptr intptr;
+typedef duintptr uintptr;
+typedef ddiffint diffint;
+typedef dsizeint sizeint;
 
 
 #endif

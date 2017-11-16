@@ -23,7 +23,7 @@ class AbstractConsole : public QObject,
 
 public:
 
-  explicit AbstractConsole(QObject* parent = 0);
+  explicit AbstractConsole(QObject* parent = nullptr);
   virtual void print(const std::string& msg);
   virtual void printLine(const std::string& msg);
   virtual void error(const std::string& msg);

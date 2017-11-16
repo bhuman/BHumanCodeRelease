@@ -30,5 +30,5 @@ See the [COPYING](http://bitbucket.org/odedevs/ode/raw/default/COPYING) file for
  * API documentation is in the file ode/docs/index.html, or you
    can view it on the web at [opende.sf.net/docs/index.html](http://opende.sf.net/docs/index.html).
 
+ * Coding style requirements can be found in the [CSR.txt](http://bitbucket.org/odedevs/ode/raw/default/CSR.txt) file.
 
-[![Build Status](https://drone.io/bitbucket.org/odedevs/ode/status.png)](https://drone.io/bitbucket.org/odedevs/ode/latest)

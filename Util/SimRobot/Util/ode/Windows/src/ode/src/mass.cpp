@@ -240,8 +240,8 @@ void dMassSetTrimesh( dMass *m, dReal density, dGeomID g )
 
 #if dTRIMESH_ENABLED
 
-    dxTriMesh *TriMesh = (dxTriMesh *)g;
-    unsigned int triangles = FetchTriangleCount( TriMesh );
+    dxTriMesh *TriMesh = static_cast<dxTriMesh *>(g);
+    unsigned int triangles = TriMesh->getMeshTriangleCount();
 
     dReal nx, ny, nz;
     unsigned int i, A, B, C;
@@ -259,7 +259,7 @@ void dMassSetTrimesh( dMass *m, dReal density, dGeomID g )
     for( i = 0; i < triangles; i++ )	 	
     {
         dVector3 v[3];
-        FetchTransformedTriangle( TriMesh, i, v);
+        TriMesh->fetchMeshTransformedTriangle(v, i);
 
         dVector3 n, a, b;
         dSubtractVectors3( a, v[1], v[0] ); 

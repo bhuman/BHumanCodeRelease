@@ -1,6 +1,6 @@
 /**
  * @file AnnotationManager.h
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #pragma once

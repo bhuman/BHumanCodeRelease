@@ -12,16 +12,20 @@ class Team : public Streamable
   std::vector<std::vector<Robot*>> players;
   std::map<Robot*, bool> selectedPlayers;
 
+  void init();
+
+protected:
   void serialize(In*, Out*);
 
-  void init();
 public:
   std::string name;
   unsigned short number;
   unsigned short port;
   std::string color;
+  std::string scenario;
   std::string location;
   std::string wlanConfig;
+  bool compile;
   std::string buildConfig;
   unsigned short volume;
   std::string deployDevice;

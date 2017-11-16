@@ -1,5 +1,5 @@
 /**
- * @author Alexander Stöwing <stoewing@uni-bremen.de>, please dont let me explain this in detail
+ * @author Alexander Stšwing <stoewing@uni-bremen.de>, please dont let me explain this in detail
  */
 #pragma once
 

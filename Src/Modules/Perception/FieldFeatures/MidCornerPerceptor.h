@@ -1,6 +1,6 @@
 /**
  * @file MidCornerPerceptor.h
- * profides MidCorner
+ * Provides MidCorner.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -8,6 +8,7 @@
 
 #include "Tools/Module/Module.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldFeatures/FieldRelations.h"
@@ -19,12 +20,13 @@ MODULE(MidCornerPerceptor,
   REQUIRES(IntersectionRelations),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLines),
+  REQUIRES(GameInfo),
   PROVIDES(MidCorner),
   DEFINES_PARAMETERS(
   {,
     (float)(600.f) distrustAreaXRadius,
     (float)(500.f) distrustAreaYRadius,
-    (Vector2f)(Vector2f(200.f,0.f)) distrustAreaOffset,
+    (Vector2f)(Vector2f(200.f, 0.f)) distrustAreaOffset,
   }),
 });
 

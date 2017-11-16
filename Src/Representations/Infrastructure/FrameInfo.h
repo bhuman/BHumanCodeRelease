@@ -20,10 +20,9 @@ STREAMABLE(FrameInfo,
    * @param timeStamp A time stamp, usually in the past.
    * @return The number of ms passed since the given time stamp.
    */
-  int getTimeSince(unsigned timeStamp) const;
-  ,
+  int getTimeSince(unsigned timeStamp) const,
+
   (unsigned)(0) time, /**< The time stamp of the data processed in the current frame in ms. */
-  (float)(1) cycleTime, /**< Length of one cycle in seconds. */
 });
 
 inline int FrameInfo::getTimeSince(unsigned timeStamp) const

@@ -91,7 +91,7 @@ void TeamSelector::removeTeam(Team* team)
 Team* TeamSelector::getSelectedTeam() const
 {
   if(!teams.size())
-    return 0;
+    return nullptr;
   int i = currentIndex();
   return teams[i >= 0 ? i : 0];
 }

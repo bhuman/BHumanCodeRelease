@@ -12,10 +12,10 @@ except ImportError:
 try:
     ode_cflags = Popen(
         ["pkg-config", "--cflags", "ode"],
-        stdout=PIPE).stdout.read().split()
+        stdout=PIPE).stdout.read().decode('ascii').split()
     ode_libs = Popen(
         ["pkg-config", "--libs", "ode"],
-        stdout=PIPE).stdout.read().split()
+        stdout=PIPE).stdout.read().decode('ascii').split()
 except (OSError, CalledProcessError):
     raise SystemExit("Failed to find ODE with 'pkg-config'. Please make sure "
                      "that it is installed and available on your system path.")

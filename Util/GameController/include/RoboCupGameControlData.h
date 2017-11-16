@@ -7,7 +7,7 @@
 #define GAMECONTROLLER_RETURN_PORT     3939
 
 #define GAMECONTROLLER_STRUCT_HEADER   "RGme"
-#define GAMECONTROLLER_STRUCT_VERSION  9
+#define GAMECONTROLLER_STRUCT_VERSION  10
 
 #define MAX_NUM_PLAYERS             11
 
@@ -30,7 +30,8 @@
 
 #define GAME_ROUNDROBIN             0
 #define GAME_PLAYOFF                1
-#define GAME_DROPIN                 2
+#define GAME_MIXEDTEAM_ROUNDROBIN   2
+#define GAME_MIXEDTEAM_PLAYOFF      3
 
 #define STATE_INITIAL               0
 #define STATE_READY                 1
@@ -99,7 +100,7 @@ struct RoboCupGameControlData
   uint16_t version;             // version of the data structure
   uint8_t packetNumber;         // number incremented with each packet sent (with wraparound)
   uint8_t playersPerTeam;       // the number of players on a team
-  uint8_t gameType;             // type of the game (GAME_ROUNDROBIN, GAME_PLAYOFF, GAME_DROPIN)
+  uint8_t gameType;             // type of the game (GAME_ROUNDROBIN, GAME_PLAYOFF, GAME_MIXEDTEAM_ROUNDROBIN, GAME_MIXEDTEAM_PLAYOFF)
   uint8_t state;                // state of the game (STATE_READY, STATE_PLAYING, etc)
   uint8_t firstHalf;            // 1 = game in first half, 0 otherwise
   uint8_t kickOffTeam;          // the team number of the next team to kick off or DROPBALL

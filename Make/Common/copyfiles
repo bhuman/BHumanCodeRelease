@@ -3,28 +3,28 @@
 
 usage()
 {
-  echo "usage: copyfiles [Release|Develop|Debug] [<ipaddress>|(-m <playernumber> <ipaddress>)*] {options}"
+  echo "usage: copyfiles [Release|Develop|Debug] [<ipaddress>|(-r <playernumber> <ipaddress>)*] {options}"
   echo "  options:"
+  echo "    -b                     restart bhuman"
+  echo "    -c <color>             set team color to blue, red, yellow, black, white, orange, purple, brown, or gray"
+  echo "    -d                     delete all log files before copying"
+  echo "    -h | --help | /h | /?  print this text"
   echo "    -l <location>          set location"
-  echo "    -t <color>             set team color to blue, red, yellow, black, white, orange, purple, brown, or gray"
-  echo "    -p <number>            set player number"
-  echo "    -n <number>            set team number"
-  echo "    -o <port>              overwrite team port"
-  echo "    -r                     restart bhuman"
-  echo "    -s                     stop NAOqi"
-  echo "    -m <n> <ip>            copy to <ip>, and set playernumber to <n> (one -m per robot)"
-  echo "    -wc                    compile also under Windows"
+  echo "    -m <number>            set magic number for teamcomm (0-255). Set -1 for random."
+  echo "    -n                     stop NAOqi"
   echo "    -nc                    never compile"
   echo "    -nr                    do not check whether target is reachable"
-  echo "    -d                     delete all log files before copying"
+  echo "    -o <port>              overwrite team port"
+  echo "    -p <number>            set player number"
+  echo "    -r <n> <ip>            copy to <ip>, and set playernumber to <n> (one -r per robot)"
+  echo "    -s <scenario>          set scenario"
+  echo "    -t <number>            set team number"
   echo "    -v <percent>           set NAO's volume"
   echo "    -w <profile>           set wireless profile"
-  echo "    -mn <number>           set magic number for teamcomm (0-255). Set -1 for random."
-  echo "    -h | --help | /h | /?  print this text"
   echo "  examples:"
   echo "    ./copyfiles Develop 192.168.5.14 -p 1"
-  echo "    ./copyfiles Release -m 1 10.0.5.14 -m 3 10.0.0.2"
-  echo "  Without -s, NAOqi will be restarted if libbhuman or libgamectrl were changed."
+  echo "    ./copyfiles Release -r 1 10.0.5.14 -r 3 10.0.0.2"
+  echo "  Without -n, NAOqi will be restarted if libbhuman or libgamectrl were changed."
   exit 1
 }
 
@@ -79,7 +79,7 @@ copy()
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --exclude=/Keys --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. ../../Build/Linux/libgamectrl/$CONFIG/build.cfg nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --exclude=/Keys --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
 
   echo "updating libs"
   RESULT=`rsync --chmod=u+rw,go+r,Dugo+x --stats -zce "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config`
@@ -98,6 +98,9 @@ copy()
   #New naoqi versions use "Master", old use "PCM" as amixer SCONTROL
   ssh $sshoptions nao@$REMOTE "amixer set Master $VOLUME% unmute &> /dev/null"
 
+  #reset capture volume to 100%
+  ssh $sshoptions nao@$REMOTE "amixer set Capture 100% unmute &> /dev/null"
+
   #check if magic number is too big
   if [ ! -z $MAGICNUMBER ]; then
     if [ $MAGICNUMBER -gt 255 ]; then
@@ -112,9 +115,10 @@ copy()
   fi
 
   # set settings on robot
-  if [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ] || [ ! -z $MAGICNUMBER ]; then
+  if [ ! -z $SCENARIO ] || [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ] || [ ! -z $MAGICNUMBER ]; then
     echo "updating settings"
     SEDFLAGS=""
+    [ ! -z $SCENARIO ] && SEDFLAGS="$SEDFLAGS -e 's/scenario.*/scenario = $SCENARIO;/'"
     [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location.*/location = $LOCATION;/'"
     [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor.*/teamColor = $TEAM;/'"
     [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber.*/playerNumber = $PLAYER;/'"
@@ -144,7 +148,8 @@ set -e
 scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
 basePath=$(dirname "${scriptPath}")
 currPath=$(pwd)
-keyFile=../../Config/Keys/id_rsa_nao
+keySource=../../Config/Keys/id_rsa_nao
+keyFile=/tmp/id_rsa_nao
 sshoptions="-c arcfour -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [[ $(uname) == *CYGWIN* ]]; then
   pingoptions="-w 1 -n 1"
@@ -155,20 +160,20 @@ else
 fi
 
 cd "${basePath}"
+cp $keySource $keyFile
 
 # init variables
 [ -z $CONFIG ] && CONFIG="Develop"
-SOLUTION="B-Human.sln"
 COMPONENT="Nao"
 PLAYER=
 TEAM=
 NUMBER=
+SCENARIO=
 LOCATION=
 REMOTE=
 COMPILE=1
 CHECK=1
 NUMMULTIPLE=0
-WINDOWSCOMPILE=
 RESTARTNAOQI=
 STOPNAOQI=
 MULTIPLEDATA=
@@ -189,15 +194,19 @@ while true; do
       shift
       PLAYER=$1
       ;;
+    "-s" | "/s")
+      shift
+      SCENARIO=$1
+      ;;
     "-l" | "/l")
       shift
       LOCATION=$1
       ;;
-    "-t" | "/t")
+    "-c" | "/c")
       shift
       TEAM=$1
       ;;
-    "-n" | "/n")
+    "-t" | "/t")
       shift
       NUMBER=$1
       if [ -z $PORT ]; then
@@ -208,16 +217,13 @@ while true; do
       shift
       PORT=$1
       ;;
-    "-wc" | "/wc")
-      WINDOWSCOMPILE=1
-      ;;
     "-nc" | "/nc")
       COMPILE=
       ;;
-    "-r" | "/r")
+    "-b" | "/b")
       RESTART=1
       ;;
-    "-s" | "/s")
+    "-n" | "/n")
       STOPNAOQI=1
       ;;
     "-nr" | "/nr")
@@ -230,7 +236,7 @@ while true; do
     "-h" | "/h" | "/?" | "--help")
       usage
       ;;
-    "-m" | "/m")
+    "-r" | "/r")
       shift
       MULTIPLEDATA[$NUMMULTIPLE]=$1
       shift
@@ -245,7 +251,7 @@ while true; do
       shift
       PROFILE=$1
       ;;
-    "-mn" | "/mn")
+    "-m" | "/m")
       shift
       MAGICNUMBER=$1
       ;;
@@ -272,6 +278,20 @@ while true; do
   shift
 done
 
+if [ ! -z $SCENARIO ]; then
+  if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
+    if [ "$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})" != "" ]; then
+      echo "Scenario $SCENARIO is not present"
+      LOCATION="$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})"
+      echo "Did you mean $SCENARIO?"
+      echo "Now using $SCENARIO"
+    else
+      echo "Scenario \"$SCENARIO\" is not present"
+      exit 1
+    fi
+  fi
+fi
+
 if [ ! -z $LOCATION ]; then
   if [ "$(ls ../../Config/Locations/ | grep ${LOCATION})" == "" ]; then
     if [ "$(ls ../../Config/Locations/ | grep -i ${LOCATION})" != "" ]; then
@@ -287,7 +307,7 @@ if [ ! -z $LOCATION ]; then
 fi
 
 #key may only be accessed by the owner. Otherwise ssh will complain
-chmod 400 $keyFile
+chmod 600 $keyFile
 
 if [ ! -z $COMPILE ]; then
   if [ "`uname`" = "Darwin" ]; then
@@ -298,12 +318,10 @@ if [ ! -z $COMPILE ]; then
     # Linux
     make $COMPONENT CONFIG=$CONFIG
     [ $? -ne 0 ] && exit 1
-  elif [ ! -z $WINDOWSCOMPILE ]; then
+  else
     # Windows
     echo "------ Compiling $COMPONENT ($CONFIG) ------"
-    DEVENV="$(cygpath -u "$(cygpath -m -s "${VS120COMNTOOLS}")../IDE/devenv.com")"
-    CMD="${DEVENV} ../VS2015/${SOLUTION} /Build ${CONFIG} /Project ${COMPONENT}"
-    $CMD
+    ../../Util/SimRobot/Util/mare/Windows/bin/mare.exe ${COMPONENT} CONFIG=${CONFIG}
     [ $? -ne 0 ] && exit 1
     echo "------ Successfully compiled ------"
   fi

@@ -52,10 +52,30 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 
 class dxWorldProcessMemArena;
 
-void dSolveLCP (dxWorldProcessMemArena *memarena, 
-                int n, dReal *A, dReal *x, dReal *b, dReal *w,
-                int nub, dReal *lo, dReal *hi, int *findex);
+enum dxLCPBXElement
+{
+    PBX__MIN,
 
-size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail);
+    PBX_B = PBX__MIN,
+    PBX_X,
+
+    PBX__MAX,
+};
+
+enum dxLCPLHElement
+{
+    PLH__MIN,
+
+    PLH_LO = PLH__MIN,
+    PLH_HI,
+
+    PLH__MAX,
+};
+
+void dxSolveLCP (dxWorldProcessMemArena *memarena, 
+    unsigned n, dReal *A, dReal pairsbx[PBX__MAX], dReal *w,
+    unsigned nub, dReal pairslh[PLH__MAX], int *findex);
+
+size_t dxEstimateSolveLCPMemoryReq(unsigned n, bool outer_w_avail);
 
 #endif

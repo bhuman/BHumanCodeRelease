@@ -13,10 +13,12 @@ vfd worldState representation:OuterCorner:field
 vfd worldState representation:MidCircle:field
 vfd worldState representation:MidCorner:field
 vfd worldState representation:GoalFrame:field
+vfd worldState representation:GoalFeature:field
 vfd worldState representation:ObstacleModel:rectangle
+vfd worldState representation:ObstacleModel:orientation 
 vfd worldState representation:MotionRequest
 vfd worldState representation:FieldBoundary:field
-vfd worldState representation:PlayersPercept:field
+vfd worldState representation:PlayersFieldPercept:field
 
 # back to global coordinates
 vfd worldState origin:Reset

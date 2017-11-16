@@ -3,7 +3,7 @@
   <Body name="Nao"> <!-- Torso -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="blue"/>
+    <Set name="NaoColor" value="black"/>
 
     <InertiaMatrixMass value="1049.56g" x="-4.13mm" y="0.09mm" z="43.42mm"
       ixx="5062340.58g*mm^2" ixy="14311.58g*mm^2" ixz="155190.82g*mm^2"
@@ -15,6 +15,8 @@
     <Geometry name="origin">
       <Translation z="-0.085"/>
     </Geometry>
+
+    <Geometry name="$NaoColor"/>
 
     <ComplexAppearance ref="CHEST_COORD_MACRO0"/>
     <ComplexAppearance ref="CHEST_COORD_MACRO1"/>
@@ -527,7 +529,7 @@
   <Body name="NaoDummy"><!-- A box that looks like a Nao -->
     <Translation z="400mm"/>
 
-    <Set name="NaoColor" value="blue"/>
+    <Set name="NaoColor" value="black"/>
 
     <BoxGeometry depth="100mm" width="200mm" height="566mm">
       <Translation x="5mm" z="-50mm"/>
@@ -685,6 +687,14 @@
   <Surface name="nao-black" diffuseColor="rgb(0%, 0%, 0%)" ambientColor="rgb(0%, 0%, 0%)"/>
   <Surface name="nao-blue" diffuseColor="rgb(0%, 100%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
   <Surface name="nao-red" diffuseColor="rgb(100%, 0%, 100%)" ambientColor="rgb(20%, 12%, 12%)"/>
+  <Surface name="nao-hgray" diffuseColor="rgb(30%, 30%, 30%)" ambientColor="rgb(20%, 20%, 20%)"/>
+
+  <Surface name="nao-yellow" diffuseColor="rgb(100%, 100%, 0%)" ambientColor="rgb(20%, 12%, 12%)"/>
+  <Surface name="nao-white" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(42%, 42%, 42%)"/>
+  <Surface name="nao-green" diffuseColor="rgb(5%, 61%, 0%)" ambientColor="rgb(42%, 42%, 42%)"/>
+  <Surface name="nao-orange" diffuseColor="rgb(100%, 51%, 0%)" ambientColor="rgb(47%, 24%, 0%)"/>
+  <Surface name="nao-purple" diffuseColor="rgb(46%, 0%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
+  <Surface name="nao-brown" diffuseColor="rgb(42%, 19%, 9%)" ambientColor="rgb(20%, 12%, 12%)"/>
 
   <Surface name="nao-logo" diffuseColor="rgb(100%, 100%, 100%)" ambientColor="rgb(15%, 15%, 15%)" specularColor="rgb(40%, 40%, 40%)" shininess="10" diffuseTexture="../Textures/textures-button_gray.png"/>
 

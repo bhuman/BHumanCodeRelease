@@ -51,6 +51,8 @@
 #include <initializer_list>
 #endif
 
+#include <algorithm>
+
 #if defined(Q_CC_MSVC)
 #pragma warning( push )
 #pragma warning( disable : 4311 ) // disable pointer truncation warning
@@ -432,6 +434,7 @@ public:
         typedef const Key *pointer;
         typedef const Key &reference;
 
+        key_iterator() = default;
         explicit key_iterator(const_iterator o) : i(o) { }
 
         const Key &operator*() const { return i.key(); }
@@ -744,7 +747,7 @@ Q_INLINE_TEMPLATE T &QHash<Key, T>::operator[](const Key &akey)
     Node **node = findNode(akey, &h);
     if (*node == e) {
         if (d->willGrow())
-            node = findNode(akey, &h);
+            node = findNode(akey, h);
         return createNode(h, akey, T(), node)->value;
     }
     return (*node)->value;
@@ -760,11 +763,11 @@ Q_INLINE_TEMPLATE typename QHash<Key, T>::iterator QHash<Key, T>::insert(const K
     Node **node = findNode(akey, &h);
     if (*node == e) {
         if (d->willGrow())
-            node = findNode(akey, &h);
+            node = findNode(akey, h);
         return iterator(createNode(h, akey, avalue, node));
     }
 
-    if (!QtPrivate::is_same<T, QHashDummyValue>::value)
+    if (!std::is_same<T, QHashDummyValue>::value)
         (*node)->value = avalue;
     return iterator(*node);
 }
@@ -935,18 +938,24 @@ Q_OUTOFLINE_TEMPLATE bool QHash<Key, T>::operator==(const QHash &other) const
     const_iterator it = begin();
 
     while (it != end()) {
-        const Key &akey = it.key();
+        // Build two equal ranges for i.key(); one for *this and one for other.
+        // For *this we can avoid a lookup via equal_range, as we know the beginning of the range.
+        auto thisEqualRangeEnd = it;
+        while (thisEqualRangeEnd != end() && it.key() == thisEqualRangeEnd.key())
+            ++thisEqualRangeEnd;
 
-        const_iterator it2 = other.find(akey);
-        do {
-            if (it2 == other.end() || !(it2.key() == akey))
-                return false;
-            if (!(it.value() == it2.value()))
-                return false;
-            ++it;
-            ++it2;
-        } while (it != end() && it.key() == akey);
+        const auto otherEqualRange = other.equal_range(it.key());
+
+        if (std::distance(it, thisEqualRangeEnd) != std::distance(otherEqualRange.first, otherEqualRange.second))
+            return false;
+
+        // Keys in the ranges are equal by construction; this checks only the values.
+        if (!std::is_permutation(it, thisEqualRangeEnd, otherEqualRange.first))
+            return false;
+
+        it = thisEqualRangeEnd;
     }
+
     return true;
 }
 
@@ -961,8 +970,7 @@ QPair<typename QHash<Key, T>::iterator, typename QHash<Key, T>::iterator> QHash<
 template <class Key, class T>
 QPair<typename QHash<Key, T>::const_iterator, typename QHash<Key, T>::const_iterator> QHash<Key, T>::equal_range(const Key &akey) const Q_DECL_NOTHROW
 {
-    uint h;
-    Node *node = *findNode(akey, &h);
+    Node *node = *findNode(akey);
     const_iterator firstIt = const_iterator(node);
 
     if (node != e) {
@@ -1094,6 +1102,27 @@ Q_INLINE_TEMPLATE int QMultiHash<Key, T>::count(const Key &key, const T &value) 
 
 Q_DECLARE_ASSOCIATIVE_ITERATOR(Hash)
 Q_DECLARE_MUTABLE_ASSOCIATIVE_ITERATOR(Hash)
+
+template <class Key, class T>
+uint qHash(const QHash<Key, T> &key, uint seed = 0)
+    Q_DECL_NOEXCEPT_EXPR(noexcept(qHash(std::declval<Key&>())) && noexcept(qHash(std::declval<T&>())))
+{
+    QtPrivate::QHashCombineCommutative hash;
+    for (auto it = key.begin(), end = key.end(); it != end; ++it) {
+        const Key &k = it.key();
+        const T   &v = it.value();
+        seed = hash(seed, std::pair<const Key&, const T&>(k, v));
+    }
+    return seed;
+}
+
+template <class Key, class T>
+inline uint qHash(const QMultiHash<Key, T> &key, uint seed = 0)
+    Q_DECL_NOEXCEPT_EXPR(noexcept(qHash(std::declval<Key&>())) && noexcept(qHash(std::declval<T&>())))
+{
+    const QHash<Key, T> &key2 = key;
+    return qHash(key2, seed);
+}
 
 QT_END_NAMESPACE
 

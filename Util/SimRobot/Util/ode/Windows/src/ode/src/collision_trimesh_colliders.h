@@ -32,6 +32,7 @@ int dCollideBTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int sk
 int dCollideRTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int skip);
 int dCollideTTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int skip);
 int dCollideCCTL(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int skip);
+int dCollideConvexTrimesh(dxGeom *o1, dxGeom *o2, int flags, dContactGeom *contact, int skip);
 
 ODE_PURE_INLINE int dCollideRayTrimesh( dxGeom *ray, dxGeom *trimesh, int flags,
                                        dContactGeom *contact, int skip )

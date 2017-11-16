@@ -1,7 +1,7 @@
 /**
 * @file ODETools.h
 * Utility functions for using the Open Dynamics Engine
-* @author <A href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</A>
+* @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
 * @author <A href="mailto:kspiess@informatik.uni-bremen.de">Kai Spiess</A>
 */
 
@@ -65,7 +65,7 @@ public:
   }
 
   /**
-  * Converts a 3-dimensional vector from the ODE format to a array of any type
+  * Converts a 3-dimensional vector from the ODE format to an array of any type
   * @param vODE The original ODE vector
   * @param farray The float array
   */

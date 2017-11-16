@@ -29,7 +29,7 @@ public:
   * Parses a .ros2 file, builds the scene graph up and fills parameter sets out
   * @param fileName The name of the file
   * @param errors List of errors occured while parsing
-  * @return Wheter the file was parses without errors or not
+  * @return Whether the file was parses without errors or not
   */
   bool parse(const std::string& fileName, std::list<std::string>& errors);
 
@@ -66,7 +66,7 @@ private:
     std::unordered_map<std::string, std::string> vars; /**< User defined variables for attribute strings */
     bool usedPlaceholdersInAttributes;
 
-    ElementData(ElementData* parent, const ElementInfo* info = 0) : parent(parent), info(info), parsedChildren(0), parsedAttributes(0), usedPlaceholdersInAttributes(false) {}
+    ElementData(ElementData* parent, const ElementInfo* info = nullptr) : parent(parent), info(info), parsedChildren(0), parsedAttributes(0), usedPlaceholdersInAttributes(false) {}
   };
 
   class MacroElement
@@ -268,6 +268,7 @@ private:
   Element* sliderElement();
   Element* axisElement();
   Element* deflectionElement();
+  Element* PT2MotorElement();
   Element* servoMotorElement();
   Element* velocityMotorElement();
   Element* quickSolverElement();

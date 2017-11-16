@@ -60,9 +60,7 @@ void BodyContour::clipRight(int& x, int y) const
 
 void BodyContour::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:BodyContour", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("representation:BodyContour:maxY", "drawingOnImage");
-  COMPLEX_DRAWING("representation:BodyContour")
+  DEBUG_DRAWING("representation:BodyContour", "drawingOnImage")
   {
     for(std::vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
       LINE("representation:BodyContour", i->p1.x(), i->p1.y(), i->p2.x(), i->p2.y(), 1,
@@ -76,9 +74,12 @@ void BodyContour::draw() const
            Drawings::solidPen, ColorRGBA(255, 0, 255));
     }
   }
-  int maxY = getMaxY();
-  LINE("representation:BodyContour:maxY", 0, maxY, cameraResolution.x() - 1, maxY,
-       1, Drawings::solidPen, ColorRGBA(255, 0, 255));
+  DEBUG_DRAWING("representation:BodyContour:maxY", "drawingOnImage")
+  {
+    int maxY = getMaxY();
+    LINE("representation:BodyContour:maxY", 0, maxY, cameraResolution.x() - 1, maxY,
+         1, Drawings::solidPen, ColorRGBA(255, 0, 255));
+  }
 }
 
 int BodyContour::getMaxY() const

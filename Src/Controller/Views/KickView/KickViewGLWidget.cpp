@@ -1513,10 +1513,7 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
     if(widget.selectedPoint.limb == Phase::leftFootRot || widget.selectedPoint.limb == Phase::rightFootRot)
     {
       Vector3f& point = parameters.phaseParameters[widget.selectedPoint.phaseNumber].controlPoints[widget.selectedPoint.limb][widget.selectedPoint.pointNumber];
-      Rangef angleClipper(-pi_4, pi_4);
-      point.x() = angleClipper.limit(point.x());
-      point.y() = angleClipper.limit(point.y());
-      point.z() = angleClipper.limit(point.z());
+      Rangef(-pi_4, pi_4).clamp(point);
     }
 
     //clipping
@@ -1766,38 +1763,21 @@ bool KickViewGLWidget::clipLegJointsWithLimits(float& leg1, float& leg2, float& 
   bool clipped = false;
 
   //clip Leg1
-  if(kickView.jointCalibration.joints[joint + 1].maxAngle < leg1)
+  if(!kickView.jointLimits.limits[joint + 1].isInside(leg1))
   {
-    leg1 = kickView.jointCalibration.joints[joint + 1].maxAngle;
+    leg1 = kickView.jointLimits.limits[joint + 1].limit(leg1);
     clipped = true;
   }
-  if(kickView.jointCalibration.joints[joint + 1].minAngle > leg1)
-  {
-    leg1 = kickView.jointCalibration.joints[joint + 1].minAngle;
-    clipped = true;
-  }
-
   //clip Leg2
-  if(kickView.jointCalibration.joints[joint + 2].maxAngle < leg2)
+  if(!kickView.jointLimits.limits[joint + 2].isInside(leg2))
   {
-    leg2 = kickView.jointCalibration.joints[joint + 2].maxAngle;
+    leg2 = kickView.jointLimits.limits[joint + 2].limit(leg2);
     clipped = true;
   }
-  if(kickView.jointCalibration.joints[joint + 2].minAngle > leg2)
-  {
-    leg2 = kickView.jointCalibration.joints[joint + 2].minAngle;
-    clipped = true;
-  }
-
   //clip Leg3
-  if(kickView.jointCalibration.joints[joint + 3].maxAngle < leg3)
+  if(!kickView.jointLimits.limits[joint + 3].isInside(leg3))
   {
-    leg3 = kickView.jointCalibration.joints[joint + 3].maxAngle;
-    clipped = true;
-  }
-  if(kickView.jointCalibration.joints[joint + 3].minAngle > leg3)
-  {
-    leg3 = kickView.jointCalibration.joints[joint + 3].minAngle;
+    leg3 = kickView.jointLimits.limits[joint + 3].limit(leg3);
     clipped = true;
   }
   return clipped;

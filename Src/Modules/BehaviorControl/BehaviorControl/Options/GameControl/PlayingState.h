@@ -1,0 +1,10 @@
+option(PlayingState)
+{
+  initial_state(demo)
+  {
+    action
+    {
+      Demo();
+    }
+  }
+}

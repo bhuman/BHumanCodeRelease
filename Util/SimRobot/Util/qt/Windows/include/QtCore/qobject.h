@@ -55,6 +55,10 @@
 
 #include <QtCore/qobject_impl.h>
 
+#if QT_HAS_INCLUDE(<chrono>)
+#  include <chrono>
+#endif
+
 QT_BEGIN_NAMESPACE
 
 
@@ -150,19 +154,26 @@ public:
     void moveToThread(QThread *thread);
 
     int startTimer(int interval, Qt::TimerType timerType = Qt::CoarseTimer);
+#if QT_HAS_INCLUDE(<chrono>) || defined(Q_QDOC)
+    Q_ALWAYS_INLINE
+    int startTimer(std::chrono::milliseconds time, Qt::TimerType timerType = Qt::CoarseTimer)
+    {
+        return startTimer(int(time.count()), timerType);
+    }
+#endif
     void killTimer(int id);
 
     template<typename T>
     inline T findChild(const QString &aName = QString(), Qt::FindChildOptions options = Qt::FindChildrenRecursively) const
     {
-        typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+        typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
         return static_cast<T>(qt_qFindChild_helper(this, aName, ObjType::staticMetaObject, options));
     }
 
     template<typename T>
     inline QList<T> findChildren(const QString &aName = QString(), Qt::FindChildOptions options = Qt::FindChildrenRecursively) const
     {
-        typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+        typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
         QList<T> list;
         qt_qFindChildren_helper(this, aName, ObjType::staticMetaObject,
                                 reinterpret_cast<QList<void *> *>(&list), options);
@@ -173,7 +184,7 @@ public:
     template<typename T>
     inline QList<T> findChildren(const QRegExp &re, Qt::FindChildOptions options = Qt::FindChildrenRecursively) const
     {
-        typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+        typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
         QList<T> list;
         qt_qFindChildren_helper(this, re, ObjType::staticMetaObject,
                                 reinterpret_cast<QList<void *> *>(&list), options);
@@ -185,7 +196,7 @@ public:
     template<typename T>
     inline QList<T> findChildren(const QRegularExpression &re, Qt::FindChildOptions options = Qt::FindChildrenRecursively) const
     {
-        typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+        typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
         QList<T> list;
         qt_qFindChildren_helper(this, re, ObjType::staticMetaObject,
                                 reinterpret_cast<QList<void *> *>(&list), options);
@@ -210,8 +221,11 @@ public:
                         const char *member, Qt::ConnectionType type = Qt::AutoConnection) const;
 
 #ifdef Q_QDOC
+    template<typename PointerToMemberFunction>
     static QMetaObject::Connection connect(const QObject *sender, PointerToMemberFunction signal, const QObject *receiver, PointerToMemberFunction method, Qt::ConnectionType type = Qt::AutoConnection);
+    template<typename PointerToMemberFunction, typename Functor>
     static QMetaObject::Connection connect(const QObject *sender, PointerToMemberFunction signal, Functor functor);
+    template<typename PointerToMemberFunction, typename Functor>
     static QMetaObject::Connection connect(const QObject *sender, PointerToMemberFunction signal, const QObject *context, Functor functor, Qt::ConnectionType type = Qt::AutoConnection);
 #else
     //Connect a signal to a pointer to qobject member function
@@ -247,7 +261,7 @@ public:
 
     //connect to a function pointer  (not a member)
     template <typename Func1, typename Func2>
-    static inline typename QtPrivate::QEnableIf<int(QtPrivate::FunctionPointer<Func2>::ArgumentCount) >= 0, QMetaObject::Connection>::Type
+    static inline typename std::enable_if<int(QtPrivate::FunctionPointer<Func2>::ArgumentCount) >= 0, QMetaObject::Connection>::type
             connect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, Func2 slot)
     {
         return connect(sender, signal, sender, slot, Qt::DirectConnection);
@@ -255,8 +269,8 @@ public:
 
     //connect to a function pointer  (not a member)
     template <typename Func1, typename Func2>
-    static inline typename QtPrivate::QEnableIf<int(QtPrivate::FunctionPointer<Func2>::ArgumentCount) >= 0 &&
-                                                !QtPrivate::FunctionPointer<Func2>::IsPointerToMemberFunction, QMetaObject::Connection>::Type
+    static inline typename std::enable_if<int(QtPrivate::FunctionPointer<Func2>::ArgumentCount) >= 0 &&
+                                          !QtPrivate::FunctionPointer<Func2>::IsPointerToMemberFunction, QMetaObject::Connection>::type
             connect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const QObject *context, Func2 slot,
                     Qt::ConnectionType type = Qt::AutoConnection)
     {
@@ -287,7 +301,7 @@ public:
 
     //connect to a functor
     template <typename Func1, typename Func2>
-    static inline typename QtPrivate::QEnableIf<QtPrivate::FunctionPointer<Func2>::ArgumentCount == -1, QMetaObject::Connection>::Type
+    static inline typename std::enable_if<QtPrivate::FunctionPointer<Func2>::ArgumentCount == -1, QMetaObject::Connection>::type
             connect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, Func2 slot)
     {
         return connect(sender, signal, sender, slot, Qt::DirectConnection);
@@ -295,11 +309,10 @@ public:
 
     //connect to a functor, with a "context" object defining in which event loop is going to be executed
     template <typename Func1, typename Func2>
-    static inline typename QtPrivate::QEnableIf<QtPrivate::FunctionPointer<Func2>::ArgumentCount == -1, QMetaObject::Connection>::Type
+    static inline typename std::enable_if<QtPrivate::FunctionPointer<Func2>::ArgumentCount == -1, QMetaObject::Connection>::type
             connect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const QObject *context, Func2 slot,
                     Qt::ConnectionType type = Qt::AutoConnection)
     {
-#if defined (Q_COMPILER_VARIADIC_TEMPLATES)
         typedef QtPrivate::FunctionPointer<Func1> SignalType;
         const int FunctorArgumentCount = QtPrivate::ComputeFunctorArgumentCount<Func2 , typename SignalType::Arguments>::Value;
 
@@ -307,28 +320,6 @@ public:
                           "Signal and slot arguments are not compatible.");
         const int SlotArgumentCount = (FunctorArgumentCount >= 0) ? FunctorArgumentCount : 0;
         typedef typename QtPrivate::FunctorReturnType<Func2, typename QtPrivate::List_Left<typename SignalType::Arguments, SlotArgumentCount>::Value>::Value SlotReturnType;
-#else
-      // Without variadic template, we don't detect the best overload of operator(). We just
-      // assume there is only one simple operator() and connect to &Func2::operator()
-
-      /* If you get an error such as:
-             couldn't deduce template parameter 'Func2Operator'
-        or
-             cannot resolve address of overloaded function
-        It means the functor does not have a single operator().
-        Functors with overloaded or templated operator() are only supported if the compiler supports
-        C++11 variadic templates
-      */
-        typedef QtPrivate::FunctionPointer<decltype(&Func2::operator())> SlotType ;
-        typedef QtPrivate::FunctionPointer<Func1> SignalType;
-        typedef typename SlotType::ReturnType SlotReturnType;
-        const int SlotArgumentCount = SlotType::ArgumentCount;
-
-        Q_STATIC_ASSERT_X(int(SignalType::ArgumentCount) >= SlotArgumentCount,
-                          "The slot requires more arguments than the signal provides.");
-        Q_STATIC_ASSERT_X((QtPrivate::CheckCompatibleArguments<typename SignalType::Arguments, typename SlotType::Arguments>::value),
-                          "Signal and slot arguments are not compatible.");
-#endif
 
         Q_STATIC_ASSERT_X((QtPrivate::AreArgumentsCompatible<SlotReturnType, typename SignalType::ReturnType>::value),
                           "Return type of the slot is not compatible with the return type of the signal.");
@@ -360,6 +351,7 @@ public:
     static bool disconnect(const QMetaObject::Connection &);
 
 #ifdef Q_QDOC
+    template<typename PointerToMemberFunction>
     static bool disconnect(const QObject *sender, PointerToMemberFunction signal, const QObject *receiver, PointerToMemberFunction method);
 #else
     template <typename Func1, typename Func2>
@@ -394,8 +386,12 @@ public:
 #endif //Q_QDOC
 
 
-    void dumpObjectTree();
-    void dumpObjectInfo();
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    void dumpObjectTree(); // ### Qt 6: remove
+    void dumpObjectInfo(); // ### Qt 6: remove
+#endif
+    void dumpObjectTree() const;
+    void dumpObjectInfo() const;
 
 #ifndef QT_NO_PROPERTIES
     bool setProperty(const char *name, const QVariant &value);
@@ -442,8 +438,7 @@ protected:
     QScopedPointer<QObjectData> d_ptr;
 
     static const QMetaObject staticQtMetaObject;
-    friend inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT
-    { return &staticQtMetaObject; }
+    friend inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT;
 
     friend struct QMetaObject;
     friend struct QMetaObjectPrivate;
@@ -473,6 +468,9 @@ private:
 inline QMetaObject::Connection QObject::connect(const QObject *asender, const char *asignal,
                                             const char *amember, Qt::ConnectionType atype) const
 { return connect(asender, asignal, this, amember, atype); }
+
+inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT
+{ return &QObject::staticQtMetaObject; }
 
 #ifndef QT_NO_USERDATA
 class Q_CORE_EXPORT QObjectUserData {
@@ -510,7 +508,7 @@ inline QT_DEPRECATED QList<T> qFindChildren(const QObject *o, const QRegExp &re)
 template <class T>
 inline T qobject_cast(QObject *object)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
     Q_STATIC_ASSERT_X(QtPrivate::HasQ_OBJECT_Macro<ObjType>::Value,
                     "qobject_cast requires the type to have a Q_OBJECT macro");
     return static_cast<T>(ObjType::staticMetaObject.cast(object));
@@ -519,7 +517,7 @@ inline T qobject_cast(QObject *object)
 template <class T>
 inline T qobject_cast(const QObject *object)
 {
-    typedef typename QtPrivate::remove_cv<typename QtPrivate::remove_pointer<T>::type>::type ObjType;
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type ObjType;
     Q_STATIC_ASSERT_X(QtPrivate::HasQ_OBJECT_Macro<ObjType>::Value,
                       "qobject_cast requires the type to have a Q_OBJECT macro");
     return static_cast<T>(ObjType::staticMetaObject.cast(object));

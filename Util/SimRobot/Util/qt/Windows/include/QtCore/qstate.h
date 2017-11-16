@@ -44,10 +44,9 @@
 #include <QtCore/qlist.h>
 #include <QtCore/qmetaobject.h>
 
+QT_REQUIRE_CONFIG(statemachine);
+
 QT_BEGIN_NAMESPACE
-
-
-#ifndef QT_NO_STATEMACHINE
 
 class QAbstractTransition;
 class QSignalTransition;
@@ -82,6 +81,7 @@ public:
     void addTransition(QAbstractTransition *transition);
     QSignalTransition *addTransition(const QObject *sender, const char *signal, QAbstractState *target);
 #ifdef Q_QDOC
+    template<typename PointerToMemberFunction>
     QSignalTransition *addTransition(const QObject *sender, PointerToMemberFunction signal,
                        QAbstractState *target);
 #else
@@ -128,8 +128,6 @@ private:
     Q_DISABLE_COPY(QState)
     Q_DECLARE_PRIVATE(QState)
 };
-
-#endif //QT_NO_STATEMACHINE
 
 QT_END_NAMESPACE
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Format source code according to B-Human's style guide.
 # The script parameterizes AStyle to create the correct format.
 # It also works around some problems AStyle has with B-Human's
@@ -7,30 +7,62 @@
 # The script is used by the "AStyle for B-Human" system text
 # service on macOS.
 
-cd `dirname $0`
-
+export LC_ALL=C
+SCRIPTPATH=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+BASEDIR=$(dirname "${SCRIPTPATH}")
+WORDSTART="\\<"
+WORDEND="\\>"
+EOFHACK=" *_EOF_HACK"
 if [ "`uname`" = "Darwin" ]; then
-  ASTYLE=../../Util/Buildchain/macOS/bin/astyle
-else
+  ASTYLE=$BASEDIR/../../Util/Buildchain/macOS/bin/astyle
+  WORDSTART="[[:<:]]"
+  WORDEND="[[:>:]]"
+  EOFHACK="	 *_EOF_HACK"
+elif [ -z "${ComSpec}${COMSPEC}" ]; then
   ASTYLE=astyle
+else
+  ASTYLE=$BASEDIR/../../Util/Buildchain/Windows/bin/AStyle.exe
 fi
 
-sed <&0 \
+( tr -d '\r' <&0; echo "_EOF_HACK" ) | sed <&0 \
+-e "s%  *$%%" | sed \
+-e "/^$/N;/^\n$/D" | sed \
 -e "s%\(^ *\)MODULE(%\1struct MODULE %" \
 -e "s%\(^ *\)DEFINES_PARAMETERS(%\1struct DEFINES_PARAMETERS%" \
 -e "s%\(^ *\)LOADS_PARAMETERS(%\1struct LOADS_PARAMETERS%" \
 -e "s%\(^ *\)STREAMABLE(%\1struct STREAMABLE %" \
 -e "s%\(^ *\)STREAMABLE_WITH_BASE(%\1struct STREAMABLE_WITH_BASE %" \
 -e "s%\(^ *ENUM([^)]*,\)%\1)%" \
+-e "s%\(^ *\)FOREACH_ENUM%\1if/*FOREACH_ENUM*/%" \
+-e "s%\(^ *\)DEBUG_RESPONSE_ONCE%\1if/*DEBUG_RESPONSE_ONCE*/%" \
+-e "s%\(^ *\)DEBUG_RESPONSE_NOT%\1if/*DEBUG_RESPONSE_NOT*/%" \
+-e "s%\(^ *\)DEBUG_RESPONSE%\1if/*DEBUG_RESPONSE*/%" \
+-e "s%\(^ *\)DECLARED_DEBUG_RESPONSE%\1if/*DECLARED_DEBUG_RESPONSE*/%" \
+-e "s%\(^ *\)DEBUG_DRAWING3D%\1if/*DEBUG_DRAWING3D*/%" \
+-e "s%\(^ *\)DEBUG_DRAWING%\1if/*DEBUG_DRAWING*/%" \
+-e "s%\(^ *\)COMPLEX_DRAWING3D%\1if/*COMPLEX_DRAWING3D*/%" \
+-e "s%\(^ *\)COMPLEX_DRAWING%\1if/*COMPLEX_DRAWING*/%" \
+-e "s%\(^ *\)COMPLEX_IMAGE%\1if/*COMPLEX_IMAGE*/%" \
+-e "s%\(^ *\)STOPWATCH_WITH_PLOT%\1if/*STOPWATCH_WITH_PLOT*/%" \
+-e "s%\(^ *\)STOPWATCH%\1if/*STOPWATCH*/%" \
 -e "s%	%    %g" \
 -e "s%^\(\(  \)*\)\*%\1 *%" \
 | tr '\n' '\t' \
 | sed \
 -e "s%	$%%" \
+-e "s%\({,*\)		%\1	%g" \
+-e "s%		\( *}\)%	\1%g" \
 -e "s%\(, *\(/[/*][^	]*\)\{0,1\}	 *}\))%\1 //_PAREN%g" \
 -e "s%,\( *\(/[/*][^	]*\)\{0,1\}	 *	 *(\)%,; //_REMOVE\1%g" \
+-e "s%${WORDSTART}\([A-Z][A-Z]*[a-z][A-Za-z0-9_]*\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
+-e "s%${WORDSTART}bool$WORDEND\( *[*&][*&]*\)%bool_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}char$WORDEND\( *[*&][*&]*\)%char_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}double$WORDEND\( *[*&][*&]*\)%double_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}float$WORDEND\( *[*&][*&]*\)%float_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}short$WORDEND\( *[*&][*&]*\)%short_LAMBDA_HACK int\1%g" \
+-e "s%${WORDSTART}unsigned$WORDEND\( *[*&][*&]*\)%unsigned_LAMBDA_HACK int\1%g" \
 | tr '\t' '\n' \
-| $ASTYLE \
+| "$ASTYLE" \
 --style=allman \
 --indent=spaces=2 \
 --min-conditional-indent=0 \
@@ -44,6 +76,7 @@ sed <&0 \
 --unpad-paren \
 --keep-one-line-blocks \
 --mode=c \
+| tr -d '\r' \
 | sed \
 -e "s%\(^ *\)struct MODULE %\1MODULE(%" \
 -e "s%\(^ *\)struct DEFINES_PARAMETERS%\1DEFINES_PARAMETERS(%" \
@@ -51,8 +84,26 @@ sed <&0 \
 -e "s%\(^ *\)struct STREAMABLE %\1STREAMABLE(%" \
 -e "s%\(^ *\)struct STREAMABLE_WITH_BASE %\1STREAMABLE_WITH_BASE(%" \
 -e "s%\(^ *ENUM([^)]*,\))%\1%" \
+-e "s%\(^ *\)if/\*FOREACH_ENUM\*/%\1FOREACH_ENUM%" \
+-e "s%\(^ *\)if/\*DEBUG_RESPONSE_ONCE\*/%\1DEBUG_RESPONSE_ONCE%" \
+-e "s%\(^ *\)if/\*DEBUG_RESPONSE_NOT\*/%\1DEBUG_RESPONSE_NOT%" \
+-e "s%\(^ *\)if/\*DEBUG_RESPONSE\*/%\1DEBUG_RESPONSE%" \
+-e "s%\(^ *\)if/\*DECLARED_DEBUG_RESPONSE\*/%\1DECLARED_DEBUG_RESPONSE%" \
+-e "s%\(^ *\)if/\*DEBUG_DRAWING3D\*/%\1DEBUG_DRAWING3D%" \
+-e "s%\(^ *\)if/\*DEBUG_DRAWING\*/%\1DEBUG_DRAWING%" \
+-e "s%\(^ *\)if/\*COMPLEX_DRAWING3D\*/%\1COMPLEX_DRAWING3D%" \
+-e "s%\(^ *\)if/\*COMPLEX_DRAWING\*/%\1COMPLEX_DRAWING%" \
+-e "s%\(^ *\)if/\*COMPLEX_IMAGE\*/%\1COMPLEX_IMAGE%" \
+-e "s%\(^ *\)if/\*STOPWATCH_WITH_PLOT\*/%\1STOPWATCH_WITH_PLOT%" \
+-e "s%\(^ *\)if/\*STOPWATCH\*/%\1STOPWATCH%" \
 -e "s%\(^ *}\) //_PAREN%\1)%" \
 -e "s%; *//_REMOVE%%" \
 | tr '\n' '\t' \
-| sed -e "s%	$%%" -e "s%{ *	 *,%{,%g" \
+| sed \
+-e "s%_LAMBDA_HACK int%%g" \
+-e "s%	$%%" \
+-e "s%{ *	 *,%{,%g" \
+-e "s%${EOFHACK}%%g" \
+-e "s% *$%%g" \
+| tr -d '\n' \
 | tr '\t' '\n'

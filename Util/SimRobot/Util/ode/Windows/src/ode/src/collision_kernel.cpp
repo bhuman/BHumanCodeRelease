@@ -201,6 +201,7 @@ static void setAllColliders (int i, dColliderFn *fn)
     setCollider (dTriMeshClass,dCapsuleClass,&dCollideCCTL);
     setCollider (dTriMeshClass,dPlaneClass,&dCollideTrimeshPlane);
     setCollider (dCylinderClass,dTriMeshClass,&dCollideCylinderTrimesh);
+    setCollider (dConvexClass,dTriMeshClass,&dCollideConvexTrimesh);
 #endif
 
 #ifdef dLIBCCD_BOX_CYL
@@ -640,8 +641,8 @@ const dReal * dGeomGetPosition (dxGeom *g)
 {
     dAASSERT (g);
     dUASSERT (g->gflags & GEOM_PLACEABLE,"geom must be placeable");
-    g->recomputePosr();
-    return g->final_posr->pos;
+    
+    return g->buildUpdatedPosition();
 }
 
 
@@ -649,11 +650,11 @@ void dGeomCopyPosition(dxGeom *g, dVector3 pos)
 {
     dAASSERT (g);
     dUASSERT (g->gflags & GEOM_PLACEABLE,"geom must be placeable");
-    g->recomputePosr();
-    const dReal* src = g->final_posr->pos;
-    pos[0] = src[0];
-    pos[1] = src[1];
-    pos[2] = src[2];
+    
+    const dVector3 &src = g->buildUpdatedPosition();
+    pos[0] = src[dV3E_X];
+    pos[1] = src[dV3E_Y];
+    pos[2] = src[dV3E_Z];
 }
 
 
@@ -661,8 +662,8 @@ const dReal * dGeomGetRotation (dxGeom *g)
 {
     dAASSERT (g);
     dUASSERT (g->gflags & GEOM_PLACEABLE,"geom must be placeable");
-    g->recomputePosr();
-    return g->final_posr->R;
+    
+    return g->buildUpdatedRotation();
 }
 
 
@@ -670,17 +671,17 @@ void dGeomCopyRotation(dxGeom *g, dMatrix3 R)
 {
     dAASSERT (g);
     dUASSERT (g->gflags & GEOM_PLACEABLE,"geom must be placeable");
-    g->recomputePosr();
-    const dReal* src = g->final_posr->R;
-    R[0]  = src[0];
-    R[1]  = src[1];
-    R[2]  = src[2];
-    R[4]  = src[4];
-    R[5]  = src[5];
-    R[6]  = src[6];
-    R[8]  = src[8];
-    R[9]  = src[9];
-    R[10] = src[10];
+
+    const dMatrix3 &src = g->buildUpdatedRotation();
+    R[0]  = src[dM3E_XX];
+    R[1]  = src[dM3E_XY];
+    R[2]  = src[dM3E_XZ];
+    R[4]  = src[dM3E_YX];
+    R[5]  = src[dM3E_YY];
+    R[6]  = src[dM3E_YZ];
+    R[8]  = src[dM3E_ZX];
+    R[9]  = src[dM3E_ZY];
+    R[10] = src[dM3E_ZZ];
 }
 
 

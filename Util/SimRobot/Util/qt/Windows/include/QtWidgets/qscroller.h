@@ -40,9 +40,12 @@
 #ifndef QSCROLLER_H
 #define QSCROLLER_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtWidgets/QScrollerProperties>
+
+QT_REQUIRE_CONFIG(scroller);
 
 QT_BEGIN_NAMESPACE
 

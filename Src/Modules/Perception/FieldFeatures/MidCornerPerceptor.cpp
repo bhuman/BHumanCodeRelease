@@ -4,6 +4,12 @@ void MidCornerPerceptor::update(MidCorner& midCorner)
 {
   midCorner.clear();
 
+  if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
+  {
+    midCorner.isValid = false;
+    return;
+  }
+
   if(searchForBigT(midCorner))
     midCorner.isValid = true;
   else
@@ -19,10 +25,11 @@ bool MidCornerPerceptor::searchForBigT(MidCorner& midCorner) const
       midCorner.translation = intersection.pos;
       midCorner.rotation = intersection.dir1.angle();
 
-      midCorner.isValid = true;
+      midCorner.isValid = true; //< allows the next line to calculate
       if(!(midCorner.isValid = theFieldDimensions.isInsideCarpet(midCorner.getGlobalFeaturePosition() * midCorner.inverse().translation)))
         continue;
 
+      midCorner.clear();
       theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(intersection.ownIndex,  MarkedIntersection::BT),
           theFieldLineIntersections, theFieldLines, midCorner);
 

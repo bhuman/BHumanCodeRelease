@@ -24,6 +24,12 @@ void MidCircle::draw() const
     ASSERT(Blackboard::getInstance().exists("FieldDimensions"));
     const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
     CIRCLE("representation:MidCircle:field", this->translation.x(), this->translation.y(), theFieldDimensions.centerCircleRadius, 40, Drawings::solidPen, ColorRGBA::blue, Drawings::noBrush, ColorRGBA::blue);
+
+    {
+      Vector2f p1 = *this * Vector2f(0, theFieldDimensions.centerCircleRadius);
+      Vector2f p2 = *this * Vector2f(0, -theFieldDimensions.centerCircleRadius);
+      LINE("representation:MidCircle:field", p1.x(), p1.y(), p2.x(), p2.y(), 40, Drawings::solidPen, ColorRGBA::blue);
+    }
   }
   COMPLEX_DRAWING("representation:MidCircle:image")
   {
@@ -47,6 +53,13 @@ void MidCircle::draw() const
         Vector2f p2 = Vector2f::Zero();
         if(Transformation::robotToImage(Vector2f(this->translation + Vector2f(theFieldDimensions.centerCircleRadius, 0).rotate(i)), theCameraMatrix, theCameraInfo, p1) &&
            Transformation::robotToImage(Vector2f(this->translation + Vector2f(theFieldDimensions.centerCircleRadius, 0).rotate(i + stepSize)), theCameraMatrix, theCameraInfo, p2))
+          LINE("representation:MidCircle:image", p1.x(), p1.y(), p2.x(), p2.y(), 3, Drawings::solidPen, ColorRGBA::blue);
+      }
+      {
+        Vector2f p1 = Vector2f::Zero();
+        Vector2f p2 = Vector2f::Zero();
+        if(Transformation::robotToImage(*this * Vector2f(0, theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p1) &&
+           Transformation::robotToImage(*this * Vector2f(0, -theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p2))
           LINE("representation:MidCircle:image", p1.x(), p1.y(), p2.x(), p2.y(), 3, Drawings::solidPen, ColorRGBA::blue);
       }
     }

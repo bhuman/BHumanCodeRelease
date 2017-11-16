@@ -81,21 +81,17 @@ public:
       SYNC_WITH(cabslBehaviorView.console);
       const ActivationGraph& info(cabslBehaviorView.activationGraph);
 
-      for(const ActivationGraph::Node activeOption : info.graph)
+      for(const ActivationGraph::Node& activeOption : info.graph)
       {
         paintRectField0.setLeft(defaultLeft + 10 * activeOption.depth);
 
         sprintf(formattedTime, "%.02f", float(activeOption.optionTime) / 1000.f);
         print(activeOption.option.c_str(), formattedTime, true, true);
 
-        if(!activeOption.parameters.empty())
-        {
-          paintRectField0.setLeft(defaultLeft + 10 * activeOption.depth + 5);
-          for(const std::string& parameter : activeOption.parameters)
-            print(parameter.c_str(), "", false, false);
-        }
-
         paintRectField0.setLeft(defaultLeft + 10 * activeOption.depth + 5);
+        for(const std::string& parameter : activeOption.parameters)
+          print(parameter.c_str(), "", false, false);
+
         sprintf(formattedTime, "%.02f", float(activeOption.stateTime) / 1000.f);
         print(("state = " + activeOption.state).c_str(), formattedTime, false, true);
         newBlock();

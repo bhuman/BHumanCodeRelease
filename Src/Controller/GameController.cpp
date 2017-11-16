@@ -16,6 +16,7 @@
 #include <algorithm>
 
 FieldDimensions GameController::fieldDimensions;
+BallSpecification GameController::ballSpecification;
 Pose2f GameController::lastBallContactPose;
 
 const float GameController::footLength = 120.f;
@@ -30,10 +31,6 @@ GameController::GameController()
   gameInfo.kickOffTeam = 1;
   gameInfo.dropInTime = -1;
   gameInfo.secsRemaining = durationOfHalf;
-  teamInfos[TEAM_BLUE].teamNumber = 1;
-  teamInfos[TEAM_BLUE].teamColor = TEAM_BLUE;
-  teamInfos[TEAM_RED].teamNumber = 2;
-  teamInfos[TEAM_RED].teamColor = TEAM_RED;
 }
 
 void GameController::registerSimulatedRobot(int robot, SimulatedRobot& simulatedRobot)
@@ -76,10 +73,10 @@ bool GameController::handleGlobalCommand(const std::string& command)
       placeDefensivePlayers(gameInfo.kickOffTeam == 1 ? numOfRobots / 2 + 1 : 1);
       placeOffensivePlayers(gameInfo.kickOffTeam == 1 ? 1 : numOfRobots / 2 + 1);
       executePlacement();
+      SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
     }
 
     timeWhenStateBegan = Time::getCurrentSystemTime();
-    SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
     return true;
   }
   else if(command == "playing")
@@ -94,23 +91,23 @@ bool GameController::handleGlobalCommand(const std::string& command)
     gameInfo.state = STATE_FINISHED;
     return true;
   }
-  else if(command == "kickOffBlue")
+  else if(command == "kickOffFirstTeam")
   {
     gameInfo.kickOffTeam = 1;
     return true;
   }
-  else if(command == "kickOffRed")
+  else if(command == "kickOffSecondTeam")
   {
     gameInfo.kickOffTeam = 2;
     return true;
   }
-  else if(command == "outByBlue")
+  else if(command == "outByFirstTeam")
   {
     gameInfo.dropInTeam = 1;
     timeOfLastDropIn = Time::getCurrentSystemTime();
     return true;
   }
-  else if(command == "outByRed")
+  else if(command == "outBySecondTeam")
   {
     gameInfo.dropInTeam = 2;
     timeOfLastDropIn = Time::getCurrentSystemTime();
@@ -126,9 +123,14 @@ bool GameController::handleGlobalCommand(const std::string& command)
     gameInfo.gameType = GAME_ROUNDROBIN;
     return true;
   }
-  else if(command == "gameDropIn")
+  else if(command == "gameMixedTeamPlayoff")
   {
-    gameInfo.gameType = GAME_DROPIN;
+    gameInfo.gameType = GAME_MIXEDTEAM_PLAYOFF;
+    return true;
+  }
+  else if(command == "gameMixedTeamRoundRobin")
+  {
+    gameInfo.gameType = GAME_MIXEDTEAM_ROUNDROBIN;
     return true;
   }
   return false;
@@ -226,12 +228,12 @@ void GameController::placeGoalie(int robot)
 {
   Robot& r = robots[robot];
   r.manuallyPlaced = r.simulatedRobot &&
-    (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-     r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-     (robot < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
-                                  r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-     (robot >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                   r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+                     (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+                      r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+                      (robot < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                          r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+                      (robot >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                          r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
   if(r.manuallyPlaced)
     r.lastPose = robot < numOfRobots / 2 ? Pose2f(-pi, fieldDimensions.xPosOpponentGroundline - safeDistance, 0)
                                          : Pose2f(0, fieldDimensions.xPosOwnGroundline + safeDistance, 0);
@@ -292,12 +294,12 @@ void GameController::placeOffensivePlayers(int minRobot)
   {
     Robot& r = robots[i];
     r.manuallyPlaced = r.simulatedRobot &&
-      (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-       r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-       (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
-                                r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-       (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                 r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+                       (r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+                        r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+                        (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                            r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+                        (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                            r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
     if(r.manuallyPlaced)
       placeFromSet(i, minRobot, poses[i < numOfRobots / 2 ? 1 : 0]);
   }
@@ -328,13 +330,13 @@ void GameController::placeDefensivePlayers(int minRobot)
   {
     Robot& r = robots[i];
     r.manuallyPlaced = r.simulatedRobot &&
-      (r.lastPose.translation.norm() < fieldDimensions.centerCircleRadius + footLength ||
-       r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-       r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-       (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
-                                r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-       (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
-                                 r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
+                       (r.lastPose.translation.norm() < fieldDimensions.centerCircleRadius + footLength ||
+                        r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
+                        r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
+                        (i < numOfRobots / 2 && (r.lastPose.translation.x() < footLength ||
+                            r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
+                        (i >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength ||
+                            r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)));
     if(r.manuallyPlaced)
       placeFromSet(i, minRobot, poses[i < numOfRobots / 2 ? 1 : 0]);
   }
@@ -431,21 +433,21 @@ void GameController::referee()
       case STATE_PLAYING:
         switch(updateBall())
         {
-          case goalByBlue:
-            ++teamInfos[TEAM_BLUE].score;
-            VERIFY(handleGlobalCommand("kickOffRed"));
+          case goalByFirstTeam:
+            ++teamInfos[0].score;
+            VERIFY(handleGlobalCommand("kickOffSecondTeam"));
             VERIFY(handleGlobalCommand("ready"));
             break;
-          case goalByRed:
-            ++teamInfos[TEAM_RED].score;
-            VERIFY(handleGlobalCommand("kickOffBlue"));
+          case goalBySecondTeam:
+            ++teamInfos[1].score;
+            VERIFY(handleGlobalCommand("kickOffFirstTeam"));
             VERIFY(handleGlobalCommand("ready"));
             break;
-          case outByBlue:
-            VERIFY(handleGlobalCommand("outByBlue"));
+          case outByFirstTeam:
+            VERIFY(handleGlobalCommand("outByFirstTeam"));
             break;
-          case outByRed:
-            VERIFY(handleGlobalCommand("outByRed"));
+          case outBySecondTeam:
+            VERIFY(handleGlobalCommand("outBySecondTeam"));
             break;
           case notOut:
             break;
@@ -459,12 +461,12 @@ GameController::BallOut GameController::updateBall()
   BallOut result = notOut;
   Vector2f ballPos;
   SimulatedRobot::getAbsoluteBallPosition(ballPos);
-  Vector2f ballInnerEdge(ballPos.x() - sgn(ballPos.x()) * (fieldDimensions.ballRadius + fieldDimensions.fieldLinesWidth / 2.f),
-                         ballPos.y() - sgn(ballPos.y()) * (fieldDimensions.ballRadius + fieldDimensions.fieldLinesWidth / 2.f));
+  Vector2f ballInnerEdge(ballPos.x() - sgn(ballPos.x()) * (ballSpecification.radius + fieldDimensions.fieldLinesWidth / 2.f),
+                         ballPos.y() - sgn(ballPos.y()) * (ballSpecification.radius + fieldDimensions.fieldLinesWidth / 2.f));
   if(!fieldDimensions.isInsideField(ballInnerEdge))
   {
     if(std::abs(ballPos.y()) < fieldDimensions.yPosLeftGoal) // goal
-      result = ballPos.x() > 0 ? goalByRed : goalByBlue;
+      result = ballPos.x() > 0 ? goalBySecondTeam : goalByFirstTeam;
     else
     {
       float x;
@@ -487,7 +489,7 @@ GameController::BallOut GameController::updateBall()
         ballPos.y() = fieldDimensions.yPosLeftDropInLine; // left throw-in line
 
       SimulatedRobot::moveBall(Vector3f(ballPos.x(), ballPos.y(), 100.f), true);
-      result = lastBallContactPose.rotation == 0 ? outByRed : outByBlue;
+      result = lastBallContactPose.rotation == 0 ? outBySecondTeam : outByFirstTeam;
     }
   }
   return result;
@@ -495,7 +497,7 @@ GameController::BallOut GameController::updateBall()
 
 void GameController::setLastBallContactRobot(SimRobot::Object* robot)
 {
-  lastBallContactPose = Pose2f(SimulatedRobot::isBlue(robot) ? pi : 0, SimulatedRobot::getPosition(robot));
+  lastBallContactPose = Pose2f(SimulatedRobot::isFirstTeam(robot) ? pi : 0, SimulatedRobot::getPosition(robot));
 }
 
 void GameController::writeGameInfo(Out& stream)
@@ -505,7 +507,7 @@ void GameController::writeGameInfo(Out& stream)
     gameInfo.dropInTime = (unsigned short)(Time::getTimeSince(timeOfLastDropIn) / 1000);
   else
     gameInfo.dropInTime = -1;
-  if(gameInfo.state == STATE_PLAYING || (gameInfo.gameType != GAME_PLAYOFF && timeWhenHalfStarted))
+  if(gameInfo.state == STATE_PLAYING || (gameInfo.gameType != GAME_PLAYOFF && gameInfo.gameType != GAME_MIXEDTEAM_PLAYOFF  && timeWhenHalfStarted))
     gameInfo.secsRemaining = (uint16_t)(durationOfHalf - Time::getTimeSince(timeWhenHalfStarted) / 1000);
   gameInfo.timeLastPackageReceived = Time::getCurrentSystemTime();
   stream << gameInfo;
@@ -550,11 +552,12 @@ void GameController::addCompletion(std::set<std::string>& completion) const
     "set",
     "playing",
     "finished",
-    "kickOffBlue",
-    "kickOffRed",
-    "outByBlue",
-    "outByRed",
-    "gameDropIn"
+    "kickOffFirstTeam",
+    "kickOffSecondTeam",
+    "outByFirstTeam",
+    "outBySecondTeam",
+    "gameMixedTeamPlayoff",
+    "gameMixedTeamRoundRobin",
     "gamePlayoff",
     "gameRoundRobin"
   };
@@ -563,4 +566,12 @@ void GameController::addCompletion(std::set<std::string>& completion) const
     completion.insert(std::string("gc ") + commands[i]);
   FOREACH_ENUM(Penalty, i)
     completion.insert(std::string("pr ") + getName(i));
+}
+
+void GameController::setTeamInfos(Settings::TeamColor& firstTeamColor, Settings::TeamColor& secondTeamColor)
+{
+  teamInfos[0].teamNumber = 1;
+  teamInfos[0].teamColor = firstTeamColor;
+  teamInfos[1].teamNumber = 2;
+  teamInfos[1].teamColor = secondTeamColor;
 }

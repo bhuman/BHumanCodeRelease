@@ -51,8 +51,7 @@ void FieldLines::draw() const
   if(theCameraInfo == nullptr || theCameraMatrix == nullptr)
     return;
 
-  DECLARE_DEBUG_DRAWING("representation:FieldLines:field", "drawingOnField");
-  COMPLEX_DRAWING("representation:FieldLines:field")
+  DEBUG_DRAWING("representation:FieldLines:field", "drawingOnField")
   {
     for(vector<Line>::const_iterator line = lines.begin(); line != lines.end(); line++)
     {

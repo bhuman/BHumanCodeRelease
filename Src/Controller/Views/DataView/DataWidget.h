@@ -30,9 +30,9 @@ public:
 
   virtual bool canClose() { return true; }
 
-  virtual QMenu* createFileMenu() const { return 0; }
+  virtual QMenu* createFileMenu() const { return nullptr; }
   virtual QMenu* createUserMenu() const;
-  virtual QMenu* createEditMenu() const { return 0; }
+  virtual QMenu* createEditMenu() const { return nullptr; }
 
   /**
    * Sets the root property which is displayed by this widget.

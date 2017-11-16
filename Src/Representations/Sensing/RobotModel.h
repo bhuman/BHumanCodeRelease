@@ -41,6 +41,12 @@ STREAMABLE(RobotModel,
    */
   void setJointData(const JointAngles& jointAngles, const RobotDimensions& robotDimensions, const MassCalibration& massCalibration);
 
+  /**
+   * Re-calculate the center of mass in this model.
+   * @param massCalibration The mass calibration of the robot.
+   */
+  void updateCenterOfMass(const MassCalibration& massCalibration);
+
   /** Creates a 3-D drawing of the robot model. */
   void draw() const,
 

@@ -5,16 +5,16 @@
 
 void FsrSensorData::draw()
 {
-  PLOT("representation:FsrSensorData:leftFrontLeft", left[FsrSensors::fl]);
-  PLOT("representation:FsrSensorData:leftFrontRight", left[FsrSensors::fr]);
-  PLOT("representation:FsrSensorData:leftBackLeft", left[FsrSensors::bl]);
-  PLOT("representation:FsrSensorData:leftBackRight", left[FsrSensors::br]);
-  PLOT("representation:FsrSensorData:rightFrontLeft", right[FsrSensors::fl]);
-  PLOT("representation:FsrSensorData:rightFrontRight", right[FsrSensors::fr]);
-  PLOT("representation:FsrSensorData:rightBackLeft", right[FsrSensors::bl]);
-  PLOT("representation:FsrSensorData:rightBackRight", right[FsrSensors::br]);
-  PLOT("representation:FsrSensorData:leftTotal", leftTotal);
-  PLOT("representation:FsrSensorData:rightTotal", rightTotal);
+  PLOT("representation:FsrSensorData:leftFrontLeft", pressures[Legs::left][FsrSensors::fl]);
+  PLOT("representation:FsrSensorData:leftFrontRight", pressures[Legs::left][FsrSensors::fr]);
+  PLOT("representation:FsrSensorData:leftBackLeft", pressures[Legs::left][FsrSensors::bl]);
+  PLOT("representation:FsrSensorData:leftBackRight", pressures[Legs::left][FsrSensors::br]);
+  PLOT("representation:FsrSensorData:rightFrontLeft", pressures[Legs::right][FsrSensors::fl]);
+  PLOT("representation:FsrSensorData:rightFrontRight", pressures[Legs::right][FsrSensors::fr]);
+  PLOT("representation:FsrSensorData:rightBackLeft", pressures[Legs::right][FsrSensors::bl]);
+  PLOT("representation:FsrSensorData:rightBackRight", pressures[Legs::right][FsrSensors::br]);
+  PLOT("representation:FsrSensorData:leftTotal", totals[Legs::left]);
+  PLOT("representation:FsrSensorData:rightTotal", totals[Legs::right]);
 }
 
 void InertialSensorData::draw()

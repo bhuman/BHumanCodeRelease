@@ -39,7 +39,9 @@ namespace Drawings3D
  * singleton drawing manager class.
  */
 class DrawingManager3D : public DrawingManager {};
+#endif
 
+#if !defined TARGET_TOOL && (!defined TARGET_ROBOT || !defined NDEBUG)
 /**
  * A macro that declares.
  * @param id A drawing id.
@@ -222,12 +224,13 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      const Vector3f xAxis = pose * Vector3f(length, 0, 0); \
-      const Vector3f yAxis = pose * Vector3f(0, length, 0); \
-      const Vector3f zAxis = pose * Vector3f(0, 0, length); \
-      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), xAxis.x(), xAxis.y(), xAxis.z(), width, ColorRGBA::red); \
-      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), yAxis.x(), yAxis.y(), yAxis.z(), width, ColorRGBA::green); \
-      LINE3D(id, pose.translation.x(), pose.translation.y(), pose.translation.z(), zAxis.x(), zAxis.y(), zAxis.z(), width, ColorRGBA::blue); \
+      const Pose3f& p = pose; \
+      const Vector3f xAxis = p * Vector3f(length, 0, 0); \
+      const Vector3f yAxis = p * Vector3f(0, length, 0); \
+      const Vector3f zAxis = p * Vector3f(0, 0, length); \
+      LINE3D(id, p.translation.x(), p.translation.y(), p.translation.z(), xAxis.x(), xAxis.y(), xAxis.z(), width, ColorRGBA::red); \
+      LINE3D(id, p.translation.x(), p.translation.y(), p.translation.z(), yAxis.x(), yAxis.y(), yAxis.z(), width, ColorRGBA::green); \
+      LINE3D(id, p.translation.x(), p.translation.y(), p.translation.z(), zAxis.x(), zAxis.y(), zAxis.z(), width, ColorRGBA::blue); \
     } \
   while(false)
 
@@ -512,13 +515,13 @@ class DrawingManager3D : public DrawingManager {};
       DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
       { \
         OUTPUT(idDebugDrawing3D, bin, \
-                (char)Drawings3D::partDisc << \
-                (char)Global::getDrawingManager3D().getDrawingId(id) << \
-                (float)(from.x()) << (float)(from.y()) << (float)(from.z()) << \
-                (float)(rx) << (float)(ry) << (float)(0) << \
-                (float) (innerRadius) << (float) (outerRadius) << \
-                (float) (startAngle) <<(float) (endAngle-startAngle) <<  \
-                ColorRGBA(color) \
+               (char)Drawings3D::partDisc << \
+               (char)Global::getDrawingManager3D().getDrawingId(id) << \
+               (float)(from.x()) << (float)(from.y()) << (float)(from.z()) << \
+               (float)(rx) << (float)(ry) << (float)(0) << \
+               (float) (innerRadius) << (float) (outerRadius) << \
+               (float) (startAngle) <<(float) (endAngle-startAngle) <<  \
+               ColorRGBA(color) \
               ); \
       } \
     } \

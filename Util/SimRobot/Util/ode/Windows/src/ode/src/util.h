@@ -24,6 +24,7 @@
 #define _ODE_UTIL_H_
 
 #include "objects.h"
+#include "common.h"
 
 
 /* the efficient alignment. most platforms align data structures to some
@@ -45,9 +46,13 @@
 
 /* round something up to be a multiple of the EFFICIENT_ALIGNMENT */
 
-#define dEFFICIENT_SIZE(x) (((x)+(EFFICIENT_ALIGNMENT-1)) & ~((size_t)(EFFICIENT_ALIGNMENT-1)))
-#define dEFFICIENT_PTR(p) ((void *)dEFFICIENT_SIZE((size_t)(p)))
-#define dOFFSET_EFFICIENTLY(p, b) ((void *)((size_t)(p) + dEFFICIENT_SIZE(b)))
+#define dEFFICIENT_SIZE(x) (((x) + (EFFICIENT_ALIGNMENT - 1)) & (int)(~(EFFICIENT_ALIGNMENT - 1))) // Casting the mask to int ensures sign-extension to larger integer sizes
+#define dEFFICIENT_PTR(p) ((void *)dEFFICIENT_SIZE((uintptr_t)(p)))
+#define dOFFSET_EFFICIENTLY(p, b) ((void *)((uintptr_t)(p) + dEFFICIENT_SIZE(b)))
+
+#define dOVERALIGNED_SIZE(size, alignment) dEFFICIENT_SIZE((size) + ((alignment) - EFFICIENT_ALIGNMENT))
+#define dOVERALIGNED_PTR(buf_ptr, alignment) ((void *)(((uintptr_t)(buf_ptr) + ((alignment) - 1)) & (int)(~(alignment - 1)))) // Casting the mask to int ensures sign-extension to larger integer sizes
+#define dOFFSET_OVERALIGNEDLY(buf_ptr, size, alignment) ((void *)((uintptr_t)(buf_ptr) + dOVERALIGNED_SIZE(size, alignment)))
 
 /* alloca aligned to the EFFICIENT_ALIGNMENT. note that this can waste
  * up to 15 bytes per allocation, depending on what alloca() returns.
@@ -55,10 +60,6 @@
 #define dALLOCA16(n) \
     dEFFICIENT_PTR(alloca((n)+(EFFICIENT_ALIGNMENT)))
 
-
-#ifndef SIZE_MAX
-#define SIZE_MAX  ((size_t)(-1))
-#endif
 
 void dInternalHandleAutoDisabling (dxWorld *world, dReal stepsize);
 void dxStepBody (dxBody *b, dReal h);
@@ -166,9 +167,21 @@ public:
 
     void *AllocateBlock(size_t size)
     {
-        void *block = m_pAllocCurrentOrNextArena;
-        m_pAllocCurrentOrNextArena = dOFFSET_EFFICIENTLY(block, size);
+        void *arena = m_pAllocCurrentOrNextArena;
+        m_pAllocCurrentOrNextArena = dOFFSET_EFFICIENTLY(arena, size);
         dIASSERT(m_pAllocCurrentOrNextArena <= m_pAllocEnd);
+        dIASSERT(dEFFICIENT_PTR(arena) == arena);
+        
+        return arena;
+    }
+
+    void *AllocateOveralignedBlock(size_t size, unsigned alignment)
+    {
+        void *arena = m_pAllocCurrentOrNextArena;
+        m_pAllocCurrentOrNextArena = dOFFSET_OVERALIGNEDLY(arena, size, alignment);
+        dIASSERT(m_pAllocCurrentOrNextArena <= m_pAllocEnd);
+
+        void *block = dOVERALIGNED_PTR(arena, alignment);
         return block;
     }
 
@@ -176,6 +189,12 @@ public:
     ElementType *AllocateArray(size_t count)
     {
         return (ElementType *)AllocateBlock(count * sizeof(ElementType));
+    }
+
+    template<typename ElementType>
+    ElementType *AllocateOveralignedArray(size_t count, unsigned alignment)
+    {
+        return (ElementType *)AllocateOveralignedBlock(count * sizeof(ElementType), alignment);
     }
 
     template<typename ElementType>

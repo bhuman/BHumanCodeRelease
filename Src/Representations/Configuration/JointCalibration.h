@@ -12,19 +12,12 @@
 
 STREAMABLE(JointCalibration,
 {
-  STREAMABLE(JointInfo,
-  {
-    bool isMissing() const,
+  JointCalibration(),
 
-    (Angle)(0_deg) offset, /**< An offset added to the angle. */
-    (Angle)(150_deg) minAngle, /** the minmal angle */
-    (Angle)(150_deg) maxAngle, /** the maximal angle */
-  }),
-
-  (ENUM_INDEXED_ARRAY(JointInfo, (Joints) Joint)) joints, /**< Information on the calibration of all joints. */
+  (ENUM_INDEXED_ARRAY(Angle, (Joints) Joint)) offsets, /**< Information on the calibration of all joints. */
 });
 
-inline bool JointCalibration::JointInfo::isMissing() const
+inline JointCalibration::JointCalibration()
 {
-  return minAngle >= maxAngle;
+  offsets.fill(0_deg);
 }

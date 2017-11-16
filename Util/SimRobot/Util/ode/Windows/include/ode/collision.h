@@ -963,16 +963,18 @@ ODE_API dReal dGeomSpherePointDepth (dGeomID sphere, dReal x, dReal y, dReal z);
 
 /*--> Convex Functions*/
 ODE_API dGeomID dCreateConvex (dSpaceID space,
-			       dReal *_planes,
+			       const dReal *_planes,
 			       unsigned int _planecount,
-			       dReal *_points,
-			       unsigned int _pointcount,unsigned int *_polygons);
+			       const dReal *_points,
+			       unsigned int _pointcount,
+                   const unsigned int *_polygons);
 
 ODE_API void dGeomSetConvex (dGeomID g,
-			     dReal *_planes,
+			     const dReal *_planes,
 			     unsigned int _count,
-			     dReal *_points,
-			     unsigned int _pointcount,unsigned int *_polygons);
+			     const dReal *_points,
+			     unsigned int _pointcount,
+                 const unsigned int *_polygons);
 /*<-- Convex Functions*/
 
 /**

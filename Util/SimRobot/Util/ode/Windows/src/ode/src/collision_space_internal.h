@@ -31,10 +31,6 @@ stuff common to all spaces
 
 #define ALLOCA(x) dALLOCA16(x)
 
-#define CHECK_NOT_LOCKED(space) \
-    dUASSERT ((space)==0 || (space)->lock_count==0, \
-    "invalid operation for locked space");
-
 
 // collide two geoms together. for the hash table space, this is
 // called if the two AABBs inhabit the same hash table cells.

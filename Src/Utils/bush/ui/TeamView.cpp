@@ -7,6 +7,7 @@
 
 #include <QPushButton>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QFormLayout>
@@ -57,12 +58,21 @@ void TeamView::init()
     settingsGrid->addWidget(sbNumber);
     connect(sbNumber, SIGNAL(valueChanged(int)), this, SLOT(numberChanged(int)));
 
+    cbScenario = new QComboBox(this);
+    std::vector<std::string> scenarios = Filesystem::getScenarios();
+    for(size_t i = 0; i < scenarios.size(); ++i)
+      cbScenario->addItem(fromString(scenarios[i]));
+    cbScenario->setCurrentIndex(cbScenario->findText(fromString(team->scenario)));
+    settingsGrid->addWidget(new QLabel("<b>Scenario:</b>", cbScenario));
+    settingsGrid->addWidget(cbScenario);
+    connect(cbScenario, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(scenarioChanged(const QString&)));
+
     cbLocation = new QComboBox(this);
     std::vector<std::string> locations = Filesystem::getLocations();
     for(size_t i = 0; i < locations.size(); ++i)
       cbLocation->addItem(fromString(locations[i]));
     cbLocation->setCurrentIndex(cbLocation->findText(fromString(team->location)));
-    settingsGrid->addWidget(new QLabel("<b>Location:</b>", lePort));
+    settingsGrid->addWidget(new QLabel("<b>Location:</b>", cbLocation));
     settingsGrid->addWidget(cbLocation);
     connect(cbLocation, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(locationChanged(const QString&)));
 
@@ -113,6 +123,12 @@ void TeamView::init()
     settingsGrid->addWidget(sbMagic);
     connect(sbMagic, SIGNAL(valueChanged(int)), this, SLOT(magicNumberChanged(int)));
 
+    cbCompile = new QCheckBox(this);
+    cbCompile->setChecked(team->compile);
+    settingsGrid->addWidget(new QLabel("<b>Compile?</b>", cbCompile));
+    settingsGrid->addWidget(cbCompile);
+    connect(cbCompile, SIGNAL(toggled(bool)), this, SLOT(compileChanged(bool)));
+
     layout->addRow(settingsGrid);
 
     QFrame* hr = new QFrame(this);
@@ -136,7 +152,6 @@ TeamView::TeamView(TeamSelector* parent, Team* team)
     robotViews(),
     cbColor(0),
     sbNumber(0),
-    lePort(0),
     cbLocation(0),
     cbWlanConfig(0),
     cbBuildConfig(0)/*,
@@ -186,6 +201,12 @@ void TeamView::numberChanged(int number)
   }
 }
 
+void TeamView::scenarioChanged(const QString& scenario)
+{
+  if(team)
+    team->scenario = toString(scenario);
+}
+
 void TeamView::locationChanged(const QString& location)
 {
   if(team)
@@ -221,6 +242,12 @@ void TeamView::deployDeviceChanged(const QString& device)
 
 void TeamView::magicNumberChanged(const int magicnumber)
 {
-  if (team)
+  if(team)
     team->magicNumber = magicnumber;
+}
+
+void TeamView::compileChanged(const bool checked)
+{
+  if(team)
+    team->compile = checked;
 }

@@ -1,7 +1,7 @@
 /**
 * @file Simulation/Joints/Joint.cpp
 * Implementation of class Joint
-* @author <A href="mailto:Tim.Laue@dfki.de">Tim Laue</A>
+* @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
 * @author <A href="mailto:kspiess@informatik.uni-bremen.de">Kai Spiess</A>
 * @author Colin Graf
 * @author Thomas Röfer

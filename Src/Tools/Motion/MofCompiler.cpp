@@ -1,7 +1,7 @@
 /**
  * @file MofCompiler.cpp
  *
- * This file implements a all functions required to compile the motion net for special actions.
+ * This file implements all functions required to compile the motion net for special actions.
  *
  * @author Uwe Düffert
  * @author Martin Lötzsch
@@ -158,7 +158,7 @@ bool MofCompiler::parseMofs()
     do
     {
       ff = readdir(fd);
-      thereAreMore = ff > 0;
+      thereAreMore = ff != nullptr;
     }
     while(thereAreMore && (strlen(ff->d_name) <= 4 || strcmp(ff->d_name + strlen(ff->d_name) - 4, ".mof") != 0));
   }
@@ -173,7 +173,7 @@ bool MofCompiler::parseMofs()
       char name[512];
       sprintf(name, "%s/Config/mof/%s", File::getBHDir(), ff->d_name);
       FILE* f = fopen(name, "r");
-      if(f <= 0)
+      if(f == nullptr)
       {
         printf("error opening %s. Aborting.\n", name);
         return false;
@@ -410,7 +410,7 @@ bool MofCompiler::parseMofs()
       do
       {
         ff = readdir(fd);
-        thereAreMore = ff > 0;
+        thereAreMore = ff != nullptr;
       }
       while(thereAreMore && (strlen(ff->d_name) <= 4 || strcmp(ff->d_name + strlen(ff->d_name) - 4, ".mof") != 0));
     }
@@ -434,7 +434,7 @@ bool MofCompiler::parseExternMof()
   char name[512];
   sprintf(name, "%s/Config/mof/extern.mof", File::getBHDir());
   FILE* f = fopen(name, "r");
-  if(f <= 0)
+  if(f == nullptr)
   {
     printf("error opening %s. Aborting.\n", name);
     return false;

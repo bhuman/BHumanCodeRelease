@@ -21,14 +21,14 @@ STREAMABLE(Pose2f,
   Vector2f operator*(const Vector2f& other) const;
 
   /**
-   * Concatenation of this pose with another. The resulting rotation ist not normalized!
+   * Concatenation of this pose with another. The resulting rotation is not normalized!
    * Use operator+ / operator+= for normalized rotations.
    */
   Pose2f operator*(const Pose2f& other) const;
   Pose2f& operator*=(const Pose2f& other);
 
   /**
-   * Concatenation of this pose with another pose. The resulting rotation ist not normalized!
+   * Concatenation of this pose with another pose. The resulting rotation is not normalized!
    */
   Pose2f operator+(const Pose2f& other) const;
   Pose2f& operator+=(const Pose2f& other);
@@ -70,7 +70,7 @@ STREAMABLE(Pose2f,
 
   /** Inverts this pose and returns reference to this. */
   Pose2f& invert();
-  /** Calulates the inverse transformation of this pose */
+  /** Calculates the inverse transformation of this pose */
   Pose2f inverse() const;
 
   Pose2f dotMirror() const;

@@ -142,6 +142,7 @@ void RobotPool::dropEvent(QDropEvent* e)
     RobotView* source = dynamic_cast<RobotView*>(e->source());
     if(!source->getPlayerNumber())
       return;
+    source->setSelected(false);
     source->setRobot(0);
     source->update();
     update();

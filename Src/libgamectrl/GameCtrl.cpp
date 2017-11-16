@@ -29,6 +29,8 @@
 #include <RoboCupGameControlData.h>
 #include "UdpComm.h"
 
+static const int CHESTBUTTON_PRESS_DURATION = 3000; /**< Chest Button state changes are ignored when happening in more than 3000 ms. */
+static const int CHESTBUTTON_TIMEOUT = 300; /**< Changed Chest Button state when Chest Button was not pressed within the last 600 ms. */
 static const int BUTTON_DELAY = 30; /**< Button state changes are ignored when happening in less than 30 ms. */
 static const int GAMECONTROLLER_TIMEOUT = 2000; /**< Connected to GameController when packet was received within the last 2000 ms. */
 static const int ALIVE_DELAY = 1000; /**< Send an alive signal every 1000 ms. */
@@ -94,6 +96,7 @@ private:
   const int* teamNumberPtr; /** Points to where ALMemory stores the team number. The number be set to 0 after it was read. */
   const int* defaultTeamColour; /** Points to where ALMemory stores the default team color. */
   int teamNumber; /**< The team number. */
+  int chestButtonPressCounter; /**< Counter for pressing the chest button*/
   RoboCupGameControlData gameCtrlData; /**< The local copy of the GameController packet. */
   uint8_t previousState; /**< The game state during the previous cycle. Used to detect when LEDs have to be updated. */
   uint8_t previousSecondaryState; /**< The secondary game state during the previous cycle. Used to detect when LEDs have to be updated. */
@@ -104,6 +107,8 @@ private:
   bool previousLeftFootButtonPressed; /**< Whether the left foot bumper was pressed during the previous cycle. */
   bool previousRightFootButtonPressed; /**< Whether the right foot bumper was pressed during the previous cycle. */
   unsigned whenChestButtonStateChanged; /**< When last state change of the chest button occured (DCM time). */
+  unsigned whenChestButtonPressed; /**< When the chest button was pressed (DCM time). */
+  unsigned whenChestButtonReleased;/**< When the chest button was released (DCM time). */
   unsigned whenLeftFootButtonStateChanged; /**< When last state change of the left foot bumper occured (DCM time). */
   unsigned whenRightFootButtonStateChanged; /**< When last state change of the right foot bumper occured (DCM time). */
   unsigned whenPacketWasReceived; /**< When the last GameController packet was received (DCM time). */
@@ -114,15 +119,17 @@ private:
    */
   void init()
   {
+    chestButtonPressCounter = 0;
     memset(&gameControllerAddress, 0, sizeof(gameControllerAddress));
-    previousState = (uint8_t) -1;
-    previousSecondaryState = (uint8_t) -1;
-    previousKickOffTeam = (uint8_t) -1;
-    previousTeamColour = (uint8_t) -1;
-    previousPenalty = (uint8_t) -1;
+    previousState = (uint8_t) - 1;
+    previousSecondaryState = (uint8_t) - 1;
+    previousKickOffTeam = (uint8_t) - 1;
+    previousTeamColour = (uint8_t) - 1;
+    previousPenalty = (uint8_t) - 1;
     previousChestButtonPressed = false;
     previousLeftFootButtonPressed = false;
     previousRightFootButtonPressed = false;
+    whenChestButtonReleased = 0;
     whenChestButtonStateChanged = 0;
     whenLeftFootButtonStateChanged = 0;
     whenRightFootButtonStateChanged = 0;
@@ -162,6 +169,25 @@ private:
           case TEAM_YELLOW:
             setLED(leftFootRed, 1.f, 1.f, 0.f);
             break;
+          case TEAM_WHITE:
+            setLED(leftFootRed, 1.f, 1.f, 1.f);
+            break;
+          case TEAM_GREEN:
+            setLED(leftFootRed, 0.f, 1.f, 0.f);
+            break;
+          case TEAM_ORANGE:
+            setLED(leftFootRed, 1.f, 0.5f, 0.f);
+            break;
+          case TEAM_PURPLE:
+            setLED(leftFootRed, 1.f, 0.f, 1.f);
+            break;
+          case TEAM_BROWN:
+            setLED(leftFootRed, 0.2f, 0.1f, 0.f);
+            break;
+          case TEAM_GRAY:
+            setLED(leftFootRed, 0.2f, 0.2f, 0.2f);
+            break;
+          case TEAM_BLACK:
           default:
             setLED(leftFootRed, 0.f, 0.f, 0.f);
         }
@@ -190,7 +216,7 @@ private:
               setLED(chestRed, 0.f, 0.f, 1.f);
               break;
             case STATE_SET:
-              setLED(chestRed, 1.f, 1.0f, 0.f);
+              setLED(chestRed, 1.f, 0.4f, 0.f);
               break;
             case STATE_PLAYING:
               setLED(chestRed, 0.f, 1.f, 0.f);
@@ -241,7 +267,8 @@ private:
     unsigned now = (unsigned) proxy->getTime(0);
 
     if(*teamNumberPtr != 0)
-    { // new team number was set -> reset internal structure
+    {
+      // new team number was set -> reset internal structure
       teamNumber = *teamNumberPtr;
       memory->insertData("GameCtrl/teamNumber", 0);
       init();
@@ -262,7 +289,9 @@ private:
          gameCtrlData.teams[1].teamNumber != teamNumber)
       {
         uint8_t teamColour = (uint8_t) *defaultTeamColour;
-        if(teamColour != TEAM_BLUE && teamColour != TEAM_RED && teamColour != TEAM_YELLOW)
+        if(teamColour != TEAM_BLUE && teamColour != TEAM_RED && teamColour != TEAM_YELLOW  &&
+           teamColour != TEAM_WHITE && teamColour != TEAM_GREEN && teamColour != TEAM_ORANGE &&
+           teamColour != TEAM_PURPLE && teamColour != TEAM_BROWN && teamColour != TEAM_GRAY)
           teamColour = TEAM_BLACK;
         gameCtrlData.teams[0].teamNumber = (uint8_t) teamNumber;
         gameCtrlData.teams[0].teamColour = teamColour;
@@ -276,34 +305,53 @@ private:
       if(*playerNumber <= gameCtrlData.playersPerTeam)
       {
         bool chestButtonPressed = *buttons[chest] != 0.f;
-        if(chestButtonPressed != previousChestButtonPressed && now - whenChestButtonStateChanged >= BUTTON_DELAY)
-        {
-          if(chestButtonPressed && whenChestButtonStateChanged) // ignore first press, e.g. for getting up
-          {
-            RobotInfo& player = team.players[*playerNumber - 1];
-            if(player.penalty == PENALTY_NONE)
-            {
-              player.penalty = PENALTY_MANUAL;
-              if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
-                 send(GAMECONTROLLER_RETURN_MSG_MAN_PENALISE))
-                whenPacketWasSent = now;
-            }
-            else
-            {
-              player.penalty = PENALTY_NONE;
-              if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
-                 send(GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE))
-                whenPacketWasSent = now;
-              else
-                gameCtrlData.state = STATE_PLAYING;
-            }
-            publish();
-          }
+        bool chestButtonReleased = previousChestButtonPressed && !chestButtonPressed;
 
-          previousChestButtonPressed = chestButtonPressed;
-          whenChestButtonStateChanged = now;
+        if(!previousChestButtonPressed && chestButtonPressed)
+          whenChestButtonPressed = now;
+
+        if(chestButtonReleased && now - whenChestButtonStateChanged >= BUTTON_DELAY)
+        {
+          chestButtonPressCounter++;
+          chestButtonPressCounter %= 3;  // ignore triple press of a button, e.g. for sitting down
+          whenChestButtonReleased = now;
+
+          if(chestButtonPressCounter == 0)
+            whenChestButtonStateChanged = 0;  // reset last chest button state change to ignore the next press
         }
 
+        if(chestButtonPressCounter > 0 &&
+           now - whenChestButtonStateChanged >= BUTTON_DELAY &&
+           now - whenChestButtonPressed < CHESTBUTTON_PRESS_DURATION)
+        {
+          if(now - whenChestButtonReleased >= CHESTBUTTON_TIMEOUT)
+          {
+            if(whenChestButtonStateChanged)  // ignore first press, e.g. for getting up
+            {
+              RobotInfo& player = team.players[*playerNumber - 1];
+              if(player.penalty == PENALTY_NONE)
+              {
+                player.penalty = PENALTY_MANUAL;
+                if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
+                   send(GAMECONTROLLER_RETURN_MSG_MAN_PENALISE))
+                  whenPacketWasSent = now;
+              }
+              else
+              {
+                player.penalty = PENALTY_NONE;
+                if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
+                   send(GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE))
+                  whenPacketWasSent = now;
+                else
+                  gameCtrlData.state = STATE_PLAYING;
+              }
+              publish();
+            }
+            whenChestButtonStateChanged = now;
+            chestButtonPressCounter = 0;
+          }
+        }
+        previousChestButtonPressed = chestButtonPressed;
         if(gameCtrlData.state == STATE_INITIAL)
         {
           bool leftFootButtonPressed = *buttons[leftFootLeft] != 0.f || *buttons[leftFootRight] != 0.f;
@@ -353,7 +401,7 @@ private:
   {
     RoboCupGameControlReturnData returnPacket;
     returnPacket.team = (uint8_t) teamNumber;
-    returnPacket.player = (uint8_t) *playerNumber;
+    returnPacket.player = (uint8_t) * playerNumber;
     returnPacket.message = message;
     return !udp || udp->write((const char*) &returnPacket, sizeof(returnPacket));
   }
@@ -442,11 +490,11 @@ public:
    * @param pBroker A NAOqi broker that allows accessing other NAOqi modules.
    */
   GameCtrl(boost::shared_ptr<AL::ALBroker> pBroker)
-  : ALModule(pBroker, "GameCtrl"),
-    proxy(0),
-    memory(0),
-    udp(0),
-    teamNumber(0)
+    : ALModule(pBroker, "GameCtrl"),
+      proxy(0),
+      memory(0),
+      udp(0),
+      teamNumber(0)
   {
     setModuleDescription("A module that provides packets from the GameController.");
 

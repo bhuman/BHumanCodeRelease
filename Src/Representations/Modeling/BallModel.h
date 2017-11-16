@@ -3,13 +3,16 @@
  *
  * Declaration of struct BallModel
  *
- * @author <A href="mailto:timlaue@informatik.uni-bremen.de">Tim Laue</A>
+ * @author <A href="mailto:tlaue@uni-bremen.de">Tim Laue</A>
  */
 
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
+#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+
+#include "Representations/Communication/BHumanMessage.h"
 
 /**
  * @struct BallState
@@ -30,8 +33,12 @@ STREAMABLE(BallState,
  *
  * Contains all current knowledge about the ball.
  */
-STREAMABLE(BallModel,
+STREAMABLE(BallModel, COMMA public BHumanMessageParticle<idBallModel>
 {
+  /** BHumanMessageParticle functions */
+  void operator >> (BHumanMessage& m) const override;
+  void operator << (const BHumanMessage& m) override;
+
   /** Verifies that the ball model contains valid values. */
   void verify() const;
   /** Draws the estimate on the field */
@@ -54,24 +61,6 @@ struct GroundTruthBallModel : public BallModel
   /** Draws something*/
   void draw() const;
 };
-
-/**
- * @struct BallModelCompressed
- * A compressed version of BallModel used in team communication
- */
-STREAMABLE(BallModelCompressed,
-{
-  BallModelCompressed() = default;
-  BallModelCompressed(const BallModel& ballModel);
-  operator BallModel() const,
-
-  (Vector2s) lastPerception, /**< The last seen position of the ball */
-  (Vector2f) position,
-  (Vector2f) velocity,
-  (unsigned) timeWhenLastSeen, /**< Time stamp, indicating what its name says */
-  (unsigned) timeWhenDisappeared, /**< The time when the ball was not seen in the image altough it should have been there */
-  (std::array<float, 3>) covariance,
-});
 
 /**
  * @struct BallState

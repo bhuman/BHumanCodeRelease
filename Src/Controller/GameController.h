@@ -9,6 +9,7 @@
 #include <set>
 #include <SimRobotCore2.h>
 #include "Platform/Thread.h"
+#include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
@@ -61,6 +62,7 @@ private:
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
   static Pose2f lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
   static FieldDimensions fieldDimensions;
+  static BallSpecification ballSpecification;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
   unsigned timeWhenHalfStarted = 0;
@@ -70,7 +72,9 @@ private:
   Robot robots[numOfRobots];
 
   /** enum which declares the different types of balls leaving the field */
-  enum BallOut {notOut, goalByRed, goalByBlue, outByRed, outByBlue};
+  enum BallOut {notOut, goalBySecondTeam, goalByFirstTeam, outBySecondTeam, outByFirstTeam};
+
+  friend Settings;
 
 public:
   GameController();
@@ -143,6 +147,13 @@ public:
    */
   void addCompletion(std::set<std::string>& completion) const;
 
+  /**
+   * Sets the team info. This method is needed because we need the colors
+   * which can only be obtained using an instance of application. We are using
+   * RoboCupCtrl for this.
+   */
+  void setTeamInfos(Settings::TeamColor& firstTeamColor, Settings::TeamColor& secondTeamColor);
+
 private:
   /**
    * Handles the command "gc".
@@ -184,7 +195,7 @@ private:
    * Pick the pose the teammates would not pick.
    * @param robot The number of the robot to place [0 ... numOfRobots-1].
    * @param minRobot The number of the first field player in the team (1 or numOfRobots/2+1).
-   * @param poses Possible placepent poses for the robot.
+   * @param poses Possible placement poses for the robot.
    */
   void placeFromSet(int robot, int minRobot, const Pose2f* poses);
 
@@ -203,7 +214,7 @@ private:
   /**
    * Remove all but one field players from the penalty area.
    * @param minRobot The number of the first field player in the team (1 or numOfRobots/2+1).
-   * @param poses Possible placepent poses robots.
+   * @param poses Possible placement poses robots.
    */
   void freePenaltyArea(int minRobot, const Pose2f* poses);
 

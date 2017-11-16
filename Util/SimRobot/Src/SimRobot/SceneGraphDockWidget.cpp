@@ -26,9 +26,7 @@ SceneGraphDockWidget::SceneGraphDockWidget(QMenu* contextMenu, QWidget* parent) 
   treeWidget->setFrameStyle(QFrame::NoFrame);
   setWidget(treeWidget);
   setFocusProxy(treeWidget);
-#if QT_VERSION >= QT_VERSION_CHECK(4, 4, 0)
   treeWidget->setExpandsOnDoubleClick(false);
-#endif
   treeWidget->header()->hide();
 
   connect(treeWidget, SIGNAL(activated(const QModelIndex&)), this, SLOT(itemActivated(const QModelIndex&)));
@@ -133,14 +131,14 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const QString& fullName, i
     if(kind)
       break;
   }
-  return 0;
+  return nullptr;
 }
 
 SimRobot::Object* SceneGraphDockWidget::resolveObject(const SimRobot::Object* parent, const QVector<QString>& parts, int kind)
 {
   const int partsCount = parts.count();
   if(partsCount <= 0)
-    return 0;
+    return nullptr;
   for(QHash<int, QHash<QString, RegisteredObject*>*>::iterator i = kind ? registeredObjectsByKindAndName.find(kind) : registeredObjectsByKindAndName.begin(); i != registeredObjectsByKindAndName.end(); ++i)
   {
     QHash<QString, RegisteredObject*>* registeredObjectsByName = *i;
@@ -186,7 +184,7 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const SimRobot::Object* pa
     if(kind)
       break;
   }
-  return 0;
+  return nullptr;
 }
 
 int SceneGraphDockWidget::getObjectChildCount(const SimRobot::Object* object)

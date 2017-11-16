@@ -387,7 +387,7 @@ void OutMap::deselect()
 
 void OutMap::write(const void* p, size_t size)
 {
-  ASSERT(false);
+  FAIL("Unsupported operation.");
 }
 
 OutMapFile::OutMapFile(const std::string& name, bool singleLine) : OutMap(stream, singleLine), stream(name) {}

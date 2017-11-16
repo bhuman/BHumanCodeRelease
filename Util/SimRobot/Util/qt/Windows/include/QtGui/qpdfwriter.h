@@ -40,7 +40,7 @@
 #ifndef QPDFWRITER_H
 #define QPDFWRITER_H
 
-#include <QtCore/qglobal.h>
+#include <QtGui/qtguiglobal.h>
 
 #ifndef QT_NO_PDF
 
@@ -67,7 +67,7 @@ public:
     QString creator() const;
     void setCreator(const QString &creator);
 
-    bool newPage();
+    bool newPage() override;
 
     void setResolution(int resolution);
     int resolution() const;
@@ -83,14 +83,14 @@ public:
     using QPagedPaintDevice::setPageSize;
 #endif
 
-    void setPageSize(PageSize size);
-    void setPageSizeMM(const QSizeF &size);
+    void setPageSize(PageSize size) override;
+    void setPageSizeMM(const QSizeF &size) override;
 
-    void setMargins(const Margins &m);
+    void setMargins(const Margins &m) override;
 
 protected:
-    QPaintEngine *paintEngine() const;
-    int metric(PaintDeviceMetric id) const;
+    QPaintEngine *paintEngine() const override;
+    int metric(PaintDeviceMetric id) const override;
 
 private:
     Q_DISABLE_COPY(QPdfWriter)

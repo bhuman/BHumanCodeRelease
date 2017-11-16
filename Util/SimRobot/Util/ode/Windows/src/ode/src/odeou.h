@@ -57,6 +57,7 @@ ODE interface to OU library functions.
 
 
 using _OU_NAMESPACE::CEnumUnsortedElementArray;
+using _OU_NAMESPACE::CEnumSortedElementArray;
 
 #if dATOMICS_ENABLED
 using _OU_NAMESPACE::atomicord32;
@@ -65,6 +66,8 @@ using _OU_NAMESPACE::InitializeAtomicAPI;
 using _OU_NAMESPACE::FinalizeAtomicAPI;
 using _OU_NAMESPACE::AtomicCompareExchange;
 using _OU_NAMESPACE::AtomicExchange;
+using _OU_NAMESPACE::AtomicExchangeAddNoResult;
+using _OU_NAMESPACE::AtomicExchangeAdd;
 using _OU_NAMESPACE::AtomicCompareExchangePointer;
 using _OU_NAMESPACE::AtomicExchangePointer;
 #endif
@@ -83,10 +86,13 @@ public:
 };
 
 
-#else // !dOU_ENABLED
+#endif 
+
+
+#if !dOU_ENABLED || !dATOMICS_ENABLED
 
 typedef unsigned int atomicord32;
-typedef size_t atomicptr;
+typedef void *atomicptr;
 
 
 #endif // dOU_ENABLED

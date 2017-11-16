@@ -1,6 +1,6 @@
 #include "Utils/bush/Initializer.h"
 #include "Utils/bush/agents/PingAgent.h"
-#include "Utils/bush/agents/PowerAgent.h"
+#include "Utils/bush/agents/StatusAgent.h"
 #include "Utils/bush/bhwrapper/Framework.h"
 #include "Utils/bush/cmdlib/ProcessRunner.h"
 #include "Utils/bush/models/Robot.h"
@@ -52,7 +52,7 @@ Initializer::Initializer(int& argc, char** argv) : logLevel(WARN), app(0)
   Session::getInstance().pingAgent = new PingAgent;
   log(TRACE, "Initializer: Ping agent started.");
 
-  Session::getInstance().powerAgent = new PowerAgent(Session::getInstance().pingAgent);
+  Session::getInstance().statusAgent = new StatusAgent(Session::getInstance().pingAgent);
   log(TRACE, "Initializer: Power agent started.");
 
   Robot::initRobotsByName(Session::getInstance().robotsByName);
@@ -62,7 +62,7 @@ Initializer::Initializer(int& argc, char** argv) : logLevel(WARN), app(0)
   Session::getInstance().pingAgent->initializeProcesses(Session::getInstance().robotsByName);
   log(TRACE, "Initializer: Registered robots at ping agent.");
 
-  Session::getInstance().powerAgent->initialize(Session::getInstance().robotsByName);
+  Session::getInstance().statusAgent->initialize(Session::getInstance().robotsByName);
   log(TRACE, "Initializer: Registered robots at power agent.");
 
   mainWindow = new MainWindow;

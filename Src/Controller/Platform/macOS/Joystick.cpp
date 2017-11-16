@@ -6,17 +6,47 @@
  * @author Thomas Röfer
  */
 
-#include "Joystick.h"
+#include "Controller/Platform/Joystick.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Thread.h"
 #include <IOKit/hid/IOHIDLib.h>
 
-DECLARE_SYNC_STATIC;
-const void* Joystick::hidManager = 0;
-unsigned Joystick::usedJoysticks = 0;
-unsigned Joystick::nextDevice = 0;
+static DECLARE_SYNC;
 
-Joystick::Joystick() : deviceId(0), hatId(0)
+class Joystick::Private
+{
+public:
+  static const void* hidManager; /**< Handle of the human interface manager. */
+  static unsigned int nextDevice; /**< Index of the next device to checked for using as joystick. */
+  static unsigned int usedJoysticks; /**< Counts the joysticks already used. */
+
+  const void* deviceId = nullptr; /**< Handle of the joystick. */
+  const void* axisIds[Joystick::numOfAxes]; /**< Handles of all axes. 0 if they do not exist. */
+  int axisMin[Joystick::numOfAxes]; /**< Minimum readings of axes. */
+  int axisMax[Joystick::numOfAxes]; /**< Maximum readings of axes. */
+  const void* buttonIds[numOfButtons]; /**< Handles of all buttons. 0 if they do not exist. */
+  const void* hatId = nullptr; /**< Handles of the coolie hat. 0 if it does not exist. */
+  int axisState[Joystick::numOfAxes]; /**< The state of each axis. */
+  unsigned buttonState[2]; /**< The button pressed states. One bit per button. */
+  unsigned buttonEvents[2]; /**< Pending button changed events. One bit per button. */
+
+  Private();
+  ~Private();
+
+  /**
+   * The function is a helper.
+   * It is called to collect information about all human interface devices.
+   * @param value Address of the enumerated value.
+   * @param context Address of the collection the value is added to.
+   */
+  static void copyCallBack(const void* value, void* context);
+};
+
+const void* Joystick::Private::hidManager = nullptr;
+unsigned int Joystick::Private::nextDevice = 0;
+unsigned int Joystick::Private::usedJoysticks = 0;
+
+Joystick::Private::Private()
 {
   for(int i = 0; i < numOfAxes; ++i)
     axisIds[i] = 0;
@@ -26,7 +56,7 @@ Joystick::Joystick() : deviceId(0), hatId(0)
     buttonState[i] = buttonEvents[i] = 0;
 }
 
-Joystick::~Joystick()
+Joystick::Private::~Private()
 {
   SYNC;
   if(deviceId)
@@ -50,32 +80,35 @@ Joystick::~Joystick()
   {
     IOHIDManagerClose((IOHIDManagerRef) hidManager, kIOHIDOptionsTypeNone);
     CFRelease((IOHIDManagerRef) hidManager);
-    hidManager = 0;
+    hidManager = nullptr;
   }
 }
+
+Joystick::Joystick() : p(new Private()) {}
+Joystick::~Joystick() = default;
 
 bool Joystick::init()
 {
   SYNC;
-  if(!hidManager)
+  if(!p->hidManager)
   {
-    VERIFY(hidManager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone));
-    IOHIDManagerSetDeviceMatching((IOHIDManagerRef) hidManager, 0);
-    IOHIDManagerOpen((IOHIDManagerRef) hidManager, kIOHIDOptionsTypeNone);
-    nextDevice = 0;
+    VERIFY(p->hidManager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone));
+    IOHIDManagerSetDeviceMatching((IOHIDManagerRef) p->hidManager, 0);
+    IOHIDManagerOpen((IOHIDManagerRef) p->hidManager, kIOHIDOptionsTypeNone);
+    p->nextDevice = 0;
   }
 
-  CFSetRef copyOfDevices = IOHIDManagerCopyDevices((IOHIDManagerRef) hidManager);
+  CFSetRef copyOfDevices = IOHIDManagerCopyDevices((IOHIDManagerRef) p->hidManager);
   CFMutableArrayRef devArray = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-  CFSetApplyFunction(copyOfDevices, copyCallBack, (void*) devArray);
+  CFSetApplyFunction(copyOfDevices, Joystick::Private::copyCallBack, (void*) devArray);
   CFRelease(copyOfDevices);
 
-  while(!deviceId && nextDevice < (unsigned) CFArrayGetCount(devArray))
+  while(!p->deviceId && p->nextDevice < (unsigned) CFArrayGetCount(devArray))
   {
-    deviceId = CFArrayGetValueAtIndex(devArray, nextDevice++);
-    if(deviceId)
+    p->deviceId = CFArrayGetValueAtIndex(devArray, p->nextDevice++);
+    if(p->deviceId)
     {
-      CFArrayRef elemAry = IOHIDDeviceCopyMatchingElements((IOHIDDeviceRef) deviceId, 0, 0);
+      CFArrayRef elemAry = IOHIDDeviceCopyMatchingElements((IOHIDDeviceRef) p->deviceId, 0, 0);
       bool isJoystick = false;
       for(int i = 0; !isJoystick && i < (int) CFArrayGetCount(elemAry); ++i)
       {
@@ -86,8 +119,8 @@ bool Joystick::init()
       }
       if(isJoystick)
       {
-        CFRetain((IOHIDDeviceRef) deviceId);
-        ++usedJoysticks;
+        CFRetain((IOHIDDeviceRef) p->deviceId);
+        ++(p->usedJoysticks);
         for(int i = 0; i < (int) CFArrayGetCount(elemAry); ++i)
         {
           IOHIDElementRef elem = (IOHIDElementRef) CFArrayGetValueAtIndex(elemAry, i);
@@ -110,16 +143,16 @@ bool Joystick::init()
                 {
                   CFRetain(elem);
                   int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
-                  axisIds[axis] = elem;
-                  axisMin[axis] = (int) IOHIDElementGetLogicalMin(elem);
-                  axisMax[axis] = (int) IOHIDElementGetLogicalMax(elem);
+                  p->axisIds[axis] = elem;
+                  p->axisMin[axis] = (int) IOHIDElementGetLogicalMin(elem);
+                  p->axisMax[axis] = (int) IOHIDElementGetLogicalMax(elem);
                   break;
                 }
                 case kHIDUsage_GD_Hatswitch:
                   CFRetain(elem);
-                  hatId = elem;
-                  axisMin[6] = axisMin[7] = -1;
-                  axisMax[6] = axisMax[7] = 1;
+                  p->hatId = elem;
+                  p->axisMin[6] = p->axisMin[7] = -1;
+                  p->axisMax[6] = p->axisMax[7] = 1;
                   break;
               }
             else if(IOHIDElementGetUsagePage(elem) == kHIDPage_Button)
@@ -127,64 +160,64 @@ bool Joystick::init()
               CFRetain(elem);
               int button = IOHIDElementGetUsage(elem) - 1;
               if(button >= 0 && button < numOfButtons)
-                buttonIds[button] = elem;
+                p->buttonIds[button] = elem;
             }
           }
         }
       }
       else
-        deviceId = 0;
+        p->deviceId = 0;
       CFRelease(elemAry);
     }
   }
 
   CFRelease(devArray);
 
-  return deviceId != 0;
+  return p->deviceId != 0;
 }
 
 bool Joystick::update()
 {
-  if(!deviceId)
+  if(!p->deviceId)
     return false;
 
   IOHIDValueRef valueRef;
 
   for(int i = 0; i < numOfAxes; ++i)
-    if(axisIds[i])
+    if(p->axisIds[i])
     {
-      IOHIDDeviceGetValue((IOHIDDeviceRef) deviceId, (IOHIDElementRef) axisIds[i], &valueRef);
-      axisState[i] = (int) IOHIDValueGetIntegerValue(valueRef);
+      IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->axisIds[i], &valueRef);
+      p->axisState[i] = (int) IOHIDValueGetIntegerValue(valueRef);
     }
 
   unsigned newState = 0;
   for(int i = 0; i < numOfButtons; ++i)
-    if(buttonIds[i])
+    if(p->buttonIds[i])
     {
-      IOHIDDeviceGetValue((IOHIDDeviceRef) deviceId, (IOHIDElementRef) buttonIds[i], &valueRef);
+      IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->buttonIds[i], &valueRef);
       newState |= IOHIDValueGetIntegerValue(valueRef) ? 1 << i : 0;
     }
-  buttonEvents[0] |= buttonState[0] ^ newState;
-  buttonState[0] = newState;
+  p->buttonEvents[0] |= p->buttonState[0] ^ newState;
+  p->buttonState[0] = newState;
 
-  if(hatId)
+  if(p->hatId)
   {
-    IOHIDDeviceGetValue((IOHIDDeviceRef) deviceId, (IOHIDElementRef) hatId, &valueRef);
+    IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->hatId, &valueRef);
     int dir = (int) IOHIDValueGetIntegerValue(valueRef);
     newState = !(dir & 8) ? 1 << dir : 0;
-    buttonEvents[1] |= buttonState[1] ^ newState;
-    buttonState[1] = newState;
-    axisState[6] = axisState[7] = 0;
+    p->buttonEvents[1] |= p->buttonState[1] ^ newState;
+    p->buttonState[1] = newState;
+    p->axisState[6] = p->axisState[7] = 0;
     if(!(dir & 8))
     {
       if(dir == 7 || dir <= 1)
-        axisState[7] = axisMin[7];
+        p->axisState[7] = p->axisMin[7];
       else if(dir >= 3 && dir <= 5)
-        axisState[7] = axisMax[7];
+        p->axisState[7] = p->axisMax[7];
       if(dir >= 1 && dir <= 3)
-        axisState[6] = axisMax[6];
+        p->axisState[6] = p->axisMax[6];
       else if(dir >= 5 && dir <= 7)
-        axisState[6] = axisMin[6];
+        p->axisState[6] = p->axisMin[6];
     }
   }
 
@@ -193,18 +226,18 @@ bool Joystick::update()
 
 bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
 {
-  ASSERT(deviceId);
-  if(buttonEvents[0] == 0 && buttonEvents[1] == 0)
+  ASSERT(p->deviceId);
+  if(p->buttonEvents[0] == 0 && p->buttonEvents[1] == 0)
     return false;
 
   for(int j = 0; j < 2; ++j)
-    if(buttonEvents[j])
-      for(unsigned int i = 0, events = buttonEvents[j]; i < 32; ++i)
+    if(p->buttonEvents[j])
+      for(unsigned int i = 0, events = p->buttonEvents[j]; i < 32; ++i)
         if(events & (1 << i))
         {
           unsigned int bit = 1 << i;
-          buttonEvents[j] &= ~bit;
-          pressed = buttonState[j] & bit ? true : false;
+          p->buttonEvents[j] &= ~bit;
+          pressed = p->buttonState[j] & bit ? true : false;
           buttonId = i + j * 32;
           if(buttonId < numOfButtons)
             return true;
@@ -216,16 +249,16 @@ bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
 
 float Joystick::getAxisState(unsigned int axisId) const
 {
-  ASSERT(deviceId);
+  ASSERT(p->deviceId);
   ASSERT(axisId < numOfAxes);
-  if(axisIds[axisId] || (hatId && (0xc0 & 1 << axisId)))
+  if(p->axisIds[axisId] || (p->hatId && (0xc0 & 1 << axisId)))
   {
-    int middle = (axisMin[axisId] + axisMax[axisId]) / 2;
-    int diff = axisState[axisId] - middle;
+    int middle = (p->axisMin[axisId] + p->axisMax[axisId]) / 2;
+    int diff = p->axisState[axisId] - middle;
     if(diff < 0)
-      return float(diff) / (axisMin[axisId] - middle);
+      return float(diff) / (p->axisMin[axisId] - middle);
     else
-      return float(diff) / (middle - axisMax[axisId]);
+      return float(diff) / (middle - p->axisMax[axisId]);
   }
   else
     return 0.0f;
@@ -233,12 +266,12 @@ float Joystick::getAxisState(unsigned int axisId) const
 
 bool Joystick::isButtonPressed(unsigned int buttonId) const
 {
-  ASSERT(deviceId);
+  ASSERT(p->deviceId);
   ASSERT(buttonId < numOfButtons);
-  return buttonState[buttonId / 32] & (1 << (buttonId % 32)) ? true : false;
+  return p->buttonState[buttonId / 32] & (1 << (buttonId % 32)) ? true : false;
 }
 
-void Joystick::copyCallBack(const void* value, void* context)
+void Joystick::Private::copyCallBack(const void* value, void* context)
 {
   CFArrayAppendValue((CFMutableArrayRef) context, value);
 }

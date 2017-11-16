@@ -28,8 +28,8 @@ STREAMABLE(Robots,
     (std::string) name,
     (std::string) headId,
     (std::string) bodyId,
-  });
-  ,
+  }),
+
   (std::vector<RobotId>) robotsIds,
 });
 
@@ -45,7 +45,10 @@ Settings::Settings(bool master)
 
 Settings::Settings()
 {
-  static_assert(TEAM_BLUE == blue && TEAM_RED == red && TEAM_YELLOW == yellow && TEAM_BLACK == black, "These macros and enums have to match!");
+  static_assert(TEAM_BLUE == blue && TEAM_RED == red && TEAM_YELLOW == yellow && TEAM_BLACK == black
+                && TEAM_WHITE == white && TEAM_GREEN == green && TEAM_ORANGE == orange
+                && TEAM_PURPLE == purple && TEAM_BROWN == brown && TEAM_GRAY == gray,
+                "These macros and enums have to match!");
   if(!loaded)
   {
     VERIFY(settings.load());
@@ -59,7 +62,9 @@ Settings::Settings()
     int index = atoi(RoboCupCtrl::controller->getRobotName().c_str() + 5) - 1;
     teamNumber = index < 6 ? 1 : 2;
     teamPort = 10000 + teamNumber;
-    teamColor = index < 6 ? blue : red;
+    teamColor = index < 6
+                ? TeamColor(RoboCupCtrl::controller->gameController.teamInfos[0].teamColor)
+                : TeamColor(RoboCupCtrl::controller->gameController.teamInfos[1].teamColor);
     playerNumber = index % 6 + 1;
   }
 
@@ -71,22 +76,34 @@ Settings::Settings()
     std::string logFileName = ctrl->getLogFile();
     if(logFileName != "")
     {
-      QRegExp re("([A-Za-z]*)_([A-Za-z]*)__", Qt::CaseSensitive, QRegExp::RegExp2);
-      int pos = re.indexIn(logFileName.c_str());
-      if(pos != -1)
+      QRegExp re1("([A-Za-z]*)_([A-Za-z]*)__", Qt::CaseSensitive, QRegExp::RegExp2);
+      QRegExp re2("([A-Za-z]*)_([A-Za-z]*)_([A-Za-z0-9]*)_([A-Za-z0-9]*)__");
+      QRegExp re3("_([0-9][0-9]*)(_\\([0-9][0-9]*\\)){0,1}\\.");
+
+      int pos1 = re1.indexIn(logFileName.c_str());
+      int pos2 = re2.indexIn(logFileName.c_str());
+      int pos3 = re3.indexIn(logFileName.c_str());
+
+      if(pos2 != -1)
       {
-        headName = re.capturedTexts()[1].toUtf8().constData();
-        bodyName = re.capturedTexts()[2].toUtf8().constData();
+        headName = re2.capturedTexts()[1].toUtf8().constData();
+        bodyName = re2.capturedTexts()[2].toUtf8().constData();
+        scenario = re2.capturedTexts()[3].toUtf8().constData();
+        location = re2.capturedTexts()[4].toUtf8().constData();
+      }
+      else if(pos1 != -1)
+      {
+        headName = re1.capturedTexts()[1].toUtf8().constData();
+        bodyName = re1.capturedTexts()[2].toUtf8().constData();
       }
       else
-        headName = bodyName = "Default";
+        bodyName = headName = "Default";
+
+      if(pos3 != -1)
+        playerNumber = re3.capturedTexts()[1].toUtf8().constData()[0] - '0';
     }
   }
-
 #endif
-
-  isDropInGame = location.find("DropIn") != std::string::npos;
-  isGoalkeeper = !isDropInGame && playerNumber == 1;
 }
 
 bool Settings::load()
@@ -150,6 +167,7 @@ bool Settings::load()
   printf("teamColor %s\n", getName(teamColor));
   printf("playerNumber %d\n", playerNumber);
   printf("location %s\n", location.c_str());
+  printf("scenario %s\n", scenario.c_str());
   printf("magicNumber %d\n", magicNumber);
 #endif
 

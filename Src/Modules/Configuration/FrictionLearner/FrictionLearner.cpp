@@ -1,7 +1,7 @@
 /**
- * @file FrictionLearner.h
+ * @file FrictionLearner.cpp
  *
- * This file implements another module that estimates the ball friction coefficient.
+ * This file implements a module that estimates the ball friction coefficient.
  *
  * @author Tim Laue
  * @author Felix Wenk
@@ -20,6 +20,8 @@ void FrictionLearner::update(DummyRepresentation& dummy)
   {
     if(balls.size() >= minObservations + offset)
       determineFrictionCoefficient();
+    else
+      OUTPUT_TEXT("Not enough observations (" << static_cast<int>(balls.size()) << "/" << static_cast<int>(minObservations + offset) << ")");
     balls.clear();
   }
 }
@@ -51,4 +53,9 @@ void FrictionLearner::determineFrictionCoefficient()
   Vector4f x;
   x = (A.transpose() * A).inverse() * A.transpose() * z;
   OUTPUT_TEXT("Result:  v=(" << x(0) << "," << x(1) << ")   a=(" << x(2) << "," << x(3) << ")   abs(a)=" << std::sqrt(x(2) * x(2) + x(3) * x(3)));
+
+  // Compute residuals and print error on console:
+  Eigen::VectorXf residuals = A * x - z;
+  float meanError = residuals.norm() / std::sqrt(static_cast<float>(balls.size() - offset));
+  OUTPUT_TEXT("Mean error: " << meanError * 1000.f << " mm");
 }

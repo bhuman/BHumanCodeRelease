@@ -19,7 +19,7 @@ SimRobot::Widget* UserInput::InputPort::createWidget()
   CoreModule::module->application->openObject(CoreModule::module->actuatorsObject);
   if(ActuatorsWidget::actuatorsWidget)
     ActuatorsWidget::actuatorsWidget->openActuator(fullName);
-  return 0;
+  return nullptr;
 }
 
 void UserInput::InputPort::setValue(float value)

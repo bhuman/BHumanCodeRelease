@@ -332,17 +332,21 @@ void dxSAPSpace::remove( dxGeom* g )
     if( dirtyIdx != GEOM_INVALID_IDX ) {
         // we're in dirty list, remove
         int dirtySize = DirtyList.size();
-        dxGeom* lastG = DirtyList[dirtySize-1];
-        DirtyList[dirtyIdx] = lastG;
-        GEOM_SET_DIRTY_IDX(lastG,dirtyIdx);
+        if (dirtyIdx != dirtySize-1) {
+            dxGeom* lastG = DirtyList[dirtySize-1];
+            DirtyList[dirtyIdx] = lastG;
+            GEOM_SET_DIRTY_IDX(lastG,dirtyIdx);
+        }
         GEOM_SET_DIRTY_IDX(g,GEOM_INVALID_IDX);
         DirtyList.setSize( dirtySize-1 );
     } else {
         // we're in geom list, remove
         int geomSize = GeomList.size();
-        dxGeom* lastG = GeomList[geomSize-1];
-        GeomList[geomIdx] = lastG;
-        GEOM_SET_GEOM_IDX(lastG,geomIdx);
+        if (geomIdx != geomSize-1) {
+            dxGeom* lastG = GeomList[geomSize-1];
+            GeomList[geomIdx] = lastG;
+            GEOM_SET_GEOM_IDX(lastG,geomIdx);
+        }
         GEOM_SET_GEOM_IDX(g,GEOM_INVALID_IDX);
         GeomList.setSize( geomSize-1 );
     }
@@ -353,7 +357,7 @@ void dxSAPSpace::remove( dxGeom* g )
 void dxSAPSpace::dirty( dxGeom* g )
 {
     dAASSERT(g);
-    dUASSERT(g->parent_space == this,"object is not in this space");
+    dUASSERT(g->parent_space == this, "object is not in this space");
 
     // check if already dirtied
     int dirtyIdx = GEOM_GET_DIRTY_IDX(g);
@@ -365,9 +369,11 @@ void dxSAPSpace::dirty( dxGeom* g )
 
     // remove from geom list, place last in place of this
     int geomSize = GeomList.size();
-    dxGeom* lastG = GeomList[geomSize-1];
-    GeomList[geomIdx] = lastG;
-    GEOM_SET_GEOM_IDX(lastG,geomIdx);
+    if (geomIdx != geomSize-1) {
+        dxGeom* lastG = GeomList[geomSize-1];
+        GeomList[geomIdx] = lastG;
+        GEOM_SET_GEOM_IDX(lastG,geomIdx);
+    }
     GeomList.setSize( geomSize-1 );
 
     // add to dirty list
@@ -399,8 +405,12 @@ void dxSAPSpace::cleanGeoms()
         if( IS_SPACE(g) ) {
             ((dxSpace*)g)->cleanGeoms();
         }
+        
         g->recomputeAABB();
-        g->gflags &= (~(GEOM_DIRTY|GEOM_AABB_BAD));
+        dIASSERT((g->gflags & GEOM_AABB_BAD) == 0);
+        
+        g->gflags &= ~GEOM_DIRTY;
+        
         // remove from dirty list, add to geom list
         GEOM_SET_DIRTY_IDX( g, GEOM_INVALID_IDX );
         GEOM_SET_GEOM_IDX( g, geomSize + i );
@@ -444,9 +454,6 @@ void dxSAPSpace::collide( void *data, dNearCallback *callback )
     int tmp_geom_count = TmpGeomList.size();
     if ( tmp_geom_count > 0 )
     {
-        // Size the poslist (+1 for infinity end cap)
-        poslist.setSize( tmp_geom_count + 1 );
-
         // Generate a list of overlapping boxes
         BoxPruning( tmp_geom_count, (const dxGeom**)TmpGeomList.data(), overlapBoxes );
     }
@@ -510,11 +517,13 @@ void dxSAPSpace::collide2( void *data, dxGeom *geom, dNearCallback *callback )
 
 void dxSAPSpace::BoxPruning( int count, const dxGeom** geoms, dArray< Pair >& pairs )
 {
+    // Size the poslist (+1 for infinity end cap)
+    poslist.setSize( count );
+
     // 1) Build main list using the primary axis
     //  NOTE: uses floats instead of dReals because that's what radix sort wants
     for( int i = 0; i < count; ++i )
         poslist[ i ] = (float)TmpGeomList[i]->aabb[ ax0idx ];
-    poslist[ count++ ] = FLT_MAX;
 
     // 2) Sort the list
     const uint32* Sorted = sortContext.RadixSort( poslist.data(), count );
@@ -523,37 +532,50 @@ void dxSAPSpace::BoxPruning( int count, const dxGeom** geoms, dArray< Pair >& pa
     const uint32* const LastSorted = Sorted + count;
     const uint32* RunningAddress = Sorted;
 
+    bool bExitLoop;
     Pair IndexPair;
-    while ( RunningAddress < LastSorted && Sorted < LastSorted )
+    while ( Sorted < LastSorted )
     {
         IndexPair.id0 = *Sorted++;
 
         // empty, this loop just advances RunningAddress
-        while ( poslist[*RunningAddress++] < poslist[IndexPair.id0] ) {}
-
-        if ( RunningAddress < LastSorted )
+        for (bExitLoop = false; poslist[*RunningAddress++] < poslist[IndexPair.id0]; )
         {
-            const uint32* RunningAddress2 = RunningAddress;
-
-            const dReal idx0ax0max = geoms[IndexPair.id0]->aabb[ax0idx+1];
-            const dReal idx0ax1max = geoms[IndexPair.id0]->aabb[ax1idx+1];
-            const dReal idx0ax2max = geoms[IndexPair.id0]->aabb[ax2idx+1];
-
-            while ( poslist[ IndexPair.id1 = *RunningAddress2++ ] <= idx0ax0max )
+            if (RunningAddress == LastSorted)
             {
-                const dReal* aabb0 = geoms[ IndexPair.id0 ]->aabb;
-                const dReal* aabb1 = geoms[ IndexPair.id1 ]->aabb;
-
-                // Intersection?
-                if ( idx0ax1max >= aabb1[ax1idx] && aabb1[ax1idx+1] >= aabb0[ax1idx] )
-                    if ( idx0ax2max >= aabb1[ax2idx] && aabb1[ax2idx+1] >= aabb0[ax2idx] )
-                    {
-                        pairs.push( IndexPair );
-                    }
+                bExitLoop = true;
+                break;
             }
         }
 
-    }; // while ( RunningAddress < LastSorted && Sorted < LastSorted )
+        if ( bExitLoop || RunningAddress == LastSorted) // Not a bug!!!
+        {
+            break;
+        }
+
+        const float idx0ax0max = (float)geoms[IndexPair.id0]->aabb[ax0idx+1]; // To avoid wrong decisions caused by rounding errors, cast the AABB element to float similarly as we did at the function beginning
+        const dReal idx0ax1max = geoms[IndexPair.id0]->aabb[ax1idx+1];
+        const dReal idx0ax2max = geoms[IndexPair.id0]->aabb[ax2idx+1];
+
+        for (const uint32* RunningAddress2 = RunningAddress; poslist[ IndexPair.id1 = *RunningAddress2++ ] <= idx0ax0max; )
+        {
+            const dReal* aabb0 = geoms[ IndexPair.id0 ]->aabb;
+            const dReal* aabb1 = geoms[ IndexPair.id1 ]->aabb;
+
+            // Intersection?
+            if ( idx0ax1max >= aabb1[ax1idx] && aabb1[ax1idx+1] >= aabb0[ax1idx] 
+                && idx0ax2max >= aabb1[ax2idx] && aabb1[ax2idx+1] >= aabb0[ax2idx] )
+            {
+                pairs.push( IndexPair );
+            }
+
+            if (RunningAddress2 == LastSorted)
+            {
+                break;
+            }
+        }
+
+    } // while ( RunningAddress < LastSorted && Sorted < LastSorted )
 }
 
 
@@ -567,7 +589,7 @@ void dxSAPSpace::BoxPruning( int count, const dxGeom** geoms, dArray< Pair >& pa
 
 #define CHECK_PASS_VALIDITY(pass)															\
     /* Shortcut to current counters */														\
-    uint32* CurCount = &mHistogram[pass<<8];												\
+    const uint32* CurCount = &mHistogram[pass<<8];												\
     \
     /* Reset flag. The sorting pass is supposed to be performed. (default) */				\
     bool PerformPass = true;																\
@@ -581,7 +603,7 @@ void dxSAPSpace::BoxPruning( int count, const dxGeom** geoms, dArray< Pair >& pa
     /* for words and O(n) for bytes. Running time for floats depends on actual values... */	\
     \
     /* Get first byte */																	\
-    uint8 UniqueVal = *(((uint8*)input)+pass);												\
+    uint8 UniqueVal = *(((const uint8*)input)+pass);												\
     \
     /* Check that byte's counter */															\
     if(CurCount[UniqueVal]==nb)	PerformPass=false;
@@ -589,7 +611,17 @@ void dxSAPSpace::BoxPruning( int count, const dxGeom** geoms, dArray< Pair >& pa
 // WARNING ONLY SORTS IEEE FLOATING-POINT VALUES
 const uint32* RaixSortContext::RadixSort( const float* input2, uint32 nb )
 {
-    uint32* input = (uint32*)input2;
+    union _type_cast_union
+    {
+        _type_cast_union(const float *floats): asFloats(floats) {}
+        _type_cast_union(const uint32 *uints32): asUInts32(uints32) {}
+
+        const float *asFloats;
+        const uint32 *asUInts32;
+        const uint8 *asUInts8;
+    };
+
+    const uint32* input = _type_cast_union(input2).asUInts32;
 
     // Resize lists if needed
     ReallocateRanksIfNecessary(nb);
@@ -611,8 +643,8 @@ const uint32* RaixSortContext::RadixSort( const float* input2, uint32 nb )
         memset(mHistogram, 0, 256*4*sizeof(uint32));
 
         /* Prepare to count */
-        uint8* p = (uint8*)input;
-        uint8* pe = &p[nb*4];
+        const uint8* p = _type_cast_union(input).asUInts8;
+        const uint8* pe = &p[nb*4];
         uint32* h0= &mHistogram[0];		/* Histogram for first pass (LSB)	*/
         uint32* h1= &mHistogram[256];	/* Histogram for second pass		*/
         uint32* h2= &mHistogram[512];	/* Histogram for third pass			*/
@@ -623,7 +655,7 @@ const uint32* RaixSortContext::RadixSort( const float* input2, uint32 nb )
         if (!AreRanksValid())
         {
             /* Prepare for temporal coherence */
-            float* Running = (float*)input2;
+            const float* Running = input2;
             float PrevVal = *Running;
 
             while(p!=pe)
@@ -655,12 +687,12 @@ const uint32* RaixSortContext::RadixSort( const float* input2, uint32 nb )
             uint32* const Ranks1 = GetRanks1();
 
             uint32* Indices = Ranks1;
-            float PrevVal = (float)input2[*Indices];
+            float PrevVal = input2[*Indices];
 
             while(p!=pe)
             {
                 /* Read input input2 in previous sorted order */
-                float Val = (float)input2[*Indices++];
+                float Val = input2[*Indices++];
                 /* Check whether already sorted or not */
                 if(Val<PrevVal)	{ AlreadySorted = false; break; } /* Early out */
                 /* Update for next iteration */
@@ -710,7 +742,7 @@ const uint32* RaixSortContext::RadixSort( const float* input2, uint32 nb )
                 for(uint32 i=1;i<256;i++)		mLink[i] = mLink[i-1] + CurCount[i-1];
 
                 // Perform Radix Sort
-                uint8* InputBytes = (uint8*)input;
+                const uint8* InputBytes = _type_cast_union(input).asUInts8;
                 InputBytes += j;
                 if (!AreRanksValid())
                 {

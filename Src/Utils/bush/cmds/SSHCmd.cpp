@@ -1,3 +1,4 @@
+#include "Platform/File.h"
 #include "Utils/bush/cmds/SSHCmd.h"
 #include "Utils/bush/cmdlib/Context.h"
 #include "Utils/bush/cmdlib/Commands.h"
@@ -47,7 +48,23 @@ SSHCmd::SSHTask::SSHTask(Context& context,
 
 bool SSHCmd::SSHTask::execute()
 {
-  ProcessRunner r(context(), remoteCommandForQProcess(command, robot->getBestIP(context())));
+  std::string commandToRun = "";
+  if(command == "")
+  {
+#ifdef WINDOWS
+    commandToRun = "cmd /c start " + connectCommand(robot->getBestIP(context()));
+#elif defined LINUX
+    commandToRun = "xterm -hold -e " + connectCommand(robot->getBestIP(context()));
+#elif defined MACOS
+    commandToRun = std::string(File::getBHDir()) + "/Make/macOS/loginFromBush " + robot->getBestIP(context());
+#endif // WINDOWS
+  }
+  else
+  {
+    commandToRun = remoteCommandForQProcess(command, robot->getBestIP(context()));
+  }
+
+  ProcessRunner r(context(), commandToRun);
   r.run();
 
   if(r.error())

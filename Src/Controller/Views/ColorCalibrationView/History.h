@@ -1,6 +1,6 @@
 /**
  * @file History.h
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #include <vector>

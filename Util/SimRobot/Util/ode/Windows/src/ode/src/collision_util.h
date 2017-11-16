@@ -42,7 +42,8 @@ some useful collision utility stuff.
 #if 1
 #include "collision_kernel.h"
 // Fetches a contact
-static inline dContactGeom* SAFECONTACT(int Flags, dContactGeom* Contacts, int Index, int Stride){
+static inline 
+dContactGeom* SAFECONTACT(int Flags, dContactGeom* Contacts, int Index, int Stride){
     dIASSERT(Index >= 0 && Index < (Flags & NUMC_MASK));
     return ((dContactGeom*)(((char*)Contacts) + (Index * Stride)));
 }
@@ -89,82 +90,98 @@ void dClipPolyToPlane(const dVector3 avArrayIn[], const int ctIn, dVector3 avArr
 void dClipPolyToCircle(const dVector3 avArrayIn[], const int ctIn, dVector3 avArrayOut[], int &ctOut, const dVector4 &plPlane ,dReal fRadius);
 
 // Some vector math
-static inline void dVector3Subtract(const dVector3& a,const dVector3& b,dVector3& c)
+static inline 
+void dVector3Subtract(const dVector3& a,const dVector3& b,dVector3& c)
 {
     dSubtractVectors3(c, a, b);
 }
 
-static inline void dVector3Scale(dVector3& a,dReal nScale)
+static inline 
+void dVector3Scale(dVector3& a,dReal nScale)
 {
     dScaleVector3(a, nScale);
 }
 
-static inline void dVector3Add(const dVector3& a,const dVector3& b,dVector3& c)
+static inline 
+void dVector3Add(const dVector3& a,const dVector3& b,dVector3& c)
 {
     dAddVectors3(c, a, b);
 }
 
-static inline void dVector3Copy(const dVector3& a,dVector3& c)
+static inline 
+void dVector3Copy(const dVector3& a,dVector3& c)
 {
     dCopyVector3(c, a);
 }
 
-static inline void dVector4Copy(const dVector4& a,dVector4& c)
+static inline 
+void dVector4Copy(const dVector4& a,dVector4& c)
 {
     dCopyVector4(c, a);
 }
 
-static inline void dVector3Cross(const dVector3& a,const dVector3& b,dVector3& c)
+static inline 
+void dVector3Cross(const dVector3& a,const dVector3& b,dVector3& c)
 {
     dCalcVectorCross3(c, a, b);
 }
 
-static inline dReal dVector3Length(const dVector3& a)
+static inline 
+dReal dVector3Length(const dVector3& a)
 {
     return dCalcVectorLength3(a);
 }
 
-static inline dReal dVector3LengthSquare(const dVector3& a)
+static inline 
+dReal dVector3LengthSquare(const dVector3& a)
 {
     return dCalcVectorLengthSquare3(a);
 }
 
-static inline dReal dVector3Dot(const dVector3& a,const dVector3& b)
+static inline 
+dReal dVector3Dot(const dVector3& a,const dVector3& b)
 {
     return dCalcVectorDot3(a, b);
 }
 
-static inline void dVector3Inv(dVector3& a)
+static inline 
+void dVector3Inv(dVector3& a)
 {
     dNegateVector3(a);
 }
 
-static inline void dMat3GetCol(const dMatrix3& m,const int col, dVector3& v)
+static inline 
+void dMat3GetCol(const dMatrix3& m,const int col, dVector3& v)
 {
     dGetMatrixColumn3(v, m, col);
 }
 
-static inline void dVector3CrossMat3Col(const dMatrix3& m,const int col,const dVector3& v,dVector3& r)
+static inline 
+void dVector3CrossMat3Col(const dMatrix3& m,const int col,const dVector3& v,dVector3& r)
 {
     dCalcVectorCross3_114(r, v, m + col);
 }
 
-static inline void dMat3ColCrossVector3(const dMatrix3& m,const int col,const dVector3& v,dVector3& r)
+static inline 
+void dMat3ColCrossVector3(const dMatrix3& m,const int col,const dVector3& v,dVector3& r)
 {
     dCalcVectorCross3_141(r, m + col, v);
 }
 
-static inline void dMultiplyMat3Vec3(const dMatrix3& m,const dVector3& v, dVector3& r)
+static inline 
+void dMultiplyMat3Vec3(const dMatrix3& m,const dVector3& v, dVector3& r)
 {
     dMultiply0_331(r, m, v);
 }
 
-static inline dReal dPointPlaneDistance(const dVector3& point,const dVector4& plane)
+static inline 
+dReal dPointPlaneDistance(const dVector3& point,const dVector4& plane)
 {
     return (plane[0]*point[0] + plane[1]*point[1] + plane[2]*point[2] + plane[3]);
 }
 
-static inline void dConstructPlane(const dVector3& normal,const dReal& distance, dVector4& plane)
+static inline 
+void dConstructPlane(const dVector3& normal,const dReal& distance, dVector4& plane)
 {
     plane[0] = normal[0];
     plane[1] = normal[1];
@@ -172,12 +189,14 @@ static inline void dConstructPlane(const dVector3& normal,const dReal& distance,
     plane[3] = distance;
 }
 
-static inline void dMatrix3Copy(const dReal* source,dMatrix3& dest)
+static inline 
+void dMatrix3Copy(const dReal* source,dMatrix3& dest)
 {
     dCopyMatrix4x3(dest, source);
 }
 
-static inline dReal dMatrix3Det( const dMatrix3& mat )
+static inline 
+dReal dMatrix3Det( const dMatrix3& mat )
 {
     dReal det;
 
@@ -189,7 +208,8 @@ static inline dReal dMatrix3Det( const dMatrix3& mat )
 }
 
 
-inline void dMatrix3Inv( const dMatrix3& ma, dMatrix3& dst )
+static inline 
+void dMatrix3Inv( const dMatrix3& ma, dMatrix3& dst )
 {
     dReal det = dMatrix3Det( ma );
 
@@ -201,20 +221,21 @@ inline void dMatrix3Inv( const dMatrix3& ma, dMatrix3& dst )
 
     double detRecip = REAL(1.0) / det;
 
-    dst[0] =  ( ma[5]*ma[10] - ma[6]*ma[9]  ) * detRecip;
-    dst[1] =  ( ma[9]*ma[2]  - ma[1]*ma[10] ) * detRecip;
-    dst[2] =  ( ma[1]*ma[6]  - ma[5]*ma[2]  ) * detRecip;
+    dst[0] =  (dReal)(( ma[5]*ma[10] - ma[6]*ma[9]  ) * detRecip);
+    dst[1] =  (dReal)(( ma[9]*ma[2]  - ma[1]*ma[10] ) * detRecip);
+    dst[2] =  (dReal)(( ma[1]*ma[6]  - ma[5]*ma[2]  ) * detRecip);
 
-    dst[4] =  ( ma[6]*ma[8]  - ma[4]*ma[10] ) * detRecip;
-    dst[5] =  ( ma[0]*ma[10] - ma[8]*ma[2]  ) * detRecip;
-    dst[6] =  ( ma[4]*ma[2]  - ma[0]*ma[6]  ) * detRecip;
+    dst[4] =  (dReal)(( ma[6]*ma[8]  - ma[4]*ma[10] ) * detRecip);
+    dst[5] =  (dReal)(( ma[0]*ma[10] - ma[8]*ma[2]  ) * detRecip);
+    dst[6] =  (dReal)(( ma[4]*ma[2]  - ma[0]*ma[6]  ) * detRecip);
 
-    dst[8] =  ( ma[4]*ma[9]  - ma[8]*ma[5]  ) * detRecip;
-    dst[9] =  ( ma[8]*ma[1]  - ma[0]*ma[9]  ) * detRecip;
-    dst[10] = ( ma[0]*ma[5]  - ma[1]*ma[4]  ) * detRecip;
+    dst[8] =  (dReal)(( ma[4]*ma[9]  - ma[8]*ma[5]  ) * detRecip);
+    dst[9] =  (dReal)(( ma[8]*ma[1]  - ma[0]*ma[9]  ) * detRecip);
+    dst[10] = (dReal)(( ma[0]*ma[5]  - ma[1]*ma[4]  ) * detRecip);
 }
 
-inline void dQuatTransform(const dQuaternion& quat,const dVector3& source,dVector3& dest)
+static inline 
+void dQuatTransform(const dQuaternion& quat,const dVector3& source,dVector3& dest)
 {
 
     // Nguyen Binh : this code seem to be the fastest.
@@ -247,7 +268,8 @@ inline void dQuatTransform(const dQuaternion& quat,const dVector3& source,dVecto
     */
 }
 
-inline void dQuatInvTransform(const dQuaternion& quat,const dVector3& source,dVector3& dest)
+static inline 
+void dQuatInvTransform(const dQuaternion& quat,const dVector3& source,dVector3& dest)
 {
 
     dReal norm = quat[0]*quat[0] + quat[1]*quat[1] + quat[2]*quat[2] + quat[3]*quat[3];
@@ -270,7 +292,8 @@ inline void dQuatInvTransform(const dQuaternion& quat,const dVector3& source,dVe
     }
 }
 
-inline void dGetEulerAngleFromRot(const dMatrix3& mRot,dReal& rX,dReal& rY,dReal& rZ)
+static inline 
+void dGetEulerAngleFromRot(const dMatrix3& mRot,dReal& rX,dReal& rY,dReal& rZ)
 {
     rY = asin(mRot[0 * 4 + 2]);
     if (rY < M_PI /2)
@@ -295,16 +318,18 @@ inline void dGetEulerAngleFromRot(const dMatrix3& mRot,dReal& rX,dReal& rY,dReal
     }
 }
 
-inline void dQuatInv(const dQuaternion& source, dQuaternion& dest)
+static inline
+void dQuatInv(const dQuaternion& source, dQuaternion& dest)
 {
     dReal norm = source[0]*source[0] + source[1]*source[1] + source[2]*source[2] + source[3]*source[3];
 
     if (norm > 0.0f)
     {
-        dest[0] = source[0] / norm;
-        dest[1] = -source[1] / norm;
-        dest[2] = -source[2] / norm;
-        dest[3] = -source[3] / norm;	
+        dReal neg_norm_recip = -REAL(1.0) / norm;
+        dest[0] = -source[0] * neg_norm_recip;
+        dest[1] = source[1] * neg_norm_recip;
+        dest[2] = source[2] * neg_norm_recip;
+        dest[3] = source[3] * neg_norm_recip;	
     }
     else
     {
@@ -315,6 +340,19 @@ inline void dQuatInv(const dQuaternion& source, dQuaternion& dest)
         dest[3] = REAL(0.0);
     }
 }
+
+// Finds barycentric
+static inline 
+void GetPointFromBarycentric(const dVector3 dv[3], dReal u, dReal v, dVector3 Out){
+    dReal w = REAL(1.0) - u - v;
+
+    Out[0] = (dv[0][0] * w) + (dv[1][0] * u) + (dv[2][0] * v);
+    Out[1] = (dv[0][1] * w) + (dv[1][1] * u) + (dv[2][1] * v);
+    Out[2] = (dv[0][2] * w) + (dv[1][2] * u) + (dv[2][2] * v);
+    Out[3] = (dv[0][3] * w) + (dv[1][3] * u) + (dv[2][3] * v);
+}
+
+
 
 
 #endif

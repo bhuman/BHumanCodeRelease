@@ -36,8 +36,7 @@ private:
    */
   static float mirror(float angle);
 
-public:
-  ,
+public:,
   (ENUM_INDEXED_ARRAY(Angle, (Joints) Joint)) angles, /**< The angles of all joints. */
   (unsigned)(0) timestamp, /**< The time when the jointangles were received*/
 });

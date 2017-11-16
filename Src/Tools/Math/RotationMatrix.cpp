@@ -24,7 +24,7 @@ Vector3f RotationMatrix::getPackedAngleAxis() const
 
 Vector3f RotationMatrix::getPackedAngleAxisFaulty() const
 {
-  // This function suffers from a wrong handling of +-180° +- 1° rotations.
+  // This function suffers from a wrong handling of +-180Â° +- 1Â° rotations.
   // Additionally normalizing the result vector by (2.f * std::sin(angle)) is imprecise.
   // Unfortunately, the KickEngine kicks are tuned with this function.
 

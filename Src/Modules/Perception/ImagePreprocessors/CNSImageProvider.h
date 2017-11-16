@@ -7,16 +7,14 @@
 
 #pragma once
 
-#include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Representations/Perception/BallPercepts/BallRegions.h"
 #include "Representations/Perception/ImagePreprocessing/CNSImage.h"
+#include "Representations/Perception/ImagePreprocessing/ECImage.h"
+#include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
 #include "Tools/Module/Module.h"
 
 MODULE(CNSImageProvider,
 {,
   REQUIRES(CNSRegions),
-  REQUIRES(FieldDimensions),
   REQUIRES(ECImage),
   PROVIDES_WITHOUT_MODIFY(CNSImage),
   LOADS_PARAMETERS(
@@ -28,8 +26,6 @@ MODULE(CNSImageProvider,
 
 class CNSImageProvider : public CNSImageProviderBase
 {
-  mutable TImage<PixelTypes::YUVPixel> cnsDebugImage; /**< CNS debug image. Note that it can appear broken if CNS is only partially updated. */
-
   /**
    * Computes the cns image from the grayscale image.
    * If \c doBlur is true, the source image is blurred by a 3*3 Gaussian before computing
@@ -47,7 +43,4 @@ class CNSImageProvider : public CNSImageProviderBase
    */
   static void cnsResponse(const unsigned char* src, int width, int height,
                           int srcOfs, short* cns, float regVar);
-
-  /** Create a debug image. */
-  void draw(const CNSImage& cnsImage) const;
 };

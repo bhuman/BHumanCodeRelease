@@ -33,9 +33,9 @@ RobotInfo::RobotInfo() :
   bodyType = naoBody.getBodyType();
 
   std::cout << "headVersion: " << getName(headVersion)
-    << ", headType: " << getName(headType)
-    << ", bodyVersion: " << getName(bodyVersion)
-    << ", bodyType: " << getName(bodyType) << std::endl;
+            << ", headType: " << getName(headType)
+            << ", bodyVersion: " << getName(bodyVersion)
+            << ", bodyType: " << getName(bodyType) << std::endl;
 #endif
 }
 
@@ -55,8 +55,10 @@ bool RobotInfo::hasFeature(const RobotFeature feature) const
     case zGyro:
       return bodyVersion >= V5;
     default:
-      ASSERT(false);
+    {
+      FAIL("Unknown feature.");
       return false;
+    }
   }
 }
 

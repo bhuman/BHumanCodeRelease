@@ -74,10 +74,10 @@ template<typename T = float> STREAMABLE(Boundary,
    */
   void clip(Eigen::Matrix<T, 2, 1>& p) const
   {
-    p.x() = x.limit(p.x());
-    p.y() = y.limit(p.y());
-  }
-  ,
+    x.clamp(p.x());
+    y.clamp(p.y());
+  },
+
   (Range<T>) x, /**< The range in x-direction. */
   (Range<T>) y, /**< The range in y-direction. */
 });

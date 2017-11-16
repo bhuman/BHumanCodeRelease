@@ -25,67 +25,83 @@ from ode cimport *
 paramLoStop        = 0
 paramHiStop        = 1
 paramVel           = 2
-paramFMax          = 3
-paramFudgeFactor   = 4
-paramBounce        = 5
-paramCFM           = 6
-paramStopERP       = 7
-paramStopCFM       = 8
-paramSuspensionERP = 9
-paramSuspensionCFM = 10
+paramLoVel         = 3
+paramHiVel         = 4
+paramFMax          = 5
+paramFudgeFactor   = 6
+paramBounce        = 7
+paramCFM           = 8
+paramStopERP       = 9
+paramStopCFM       = 10
+paramSuspensionERP = 11
+paramSuspensionCFM = 12
+paramERP           = 13
 
 ParamLoStop        = 0
 ParamHiStop        = 1
 ParamVel           = 2
-ParamFMax          = 3
-ParamFudgeFactor   = 4
-ParamBounce        = 5
-ParamCFM           = 6
-ParamStopERP       = 7
-ParamStopCFM       = 8
-ParamSuspensionERP = 9
-ParamSuspensionCFM = 10
+ParamLoVel         = 3
+ParamHiVel         = 4
+ParamFMax          = 5
+ParamFudgeFactor   = 6
+ParamBounce        = 7
+ParamCFM           = 8
+ParamStopERP       = 9
+ParamStopCFM       = 10
+ParamSuspensionERP = 11
+ParamSuspensionCFM = 12
+ParamERP           = 13
 
 ParamLoStop2        = 256 + 0
 ParamHiStop2        = 256 + 1
 ParamVel2           = 256 + 2
-ParamFMax2          = 256 + 3
-ParamFudgeFactor2   = 256 + 4
-ParamBounce2        = 256 + 5
-ParamCFM2           = 256 + 6
-ParamStopERP2       = 256 + 7
-ParamStopCFM2       = 256 + 8
-ParamSuspensionERP2 = 256 + 9
-ParamSuspensionCFM2 = 256 + 10
+ParamLoVel2         = 256 + 3
+ParamHiVel2         = 256 + 4
+ParamFMax2          = 256 + 5
+ParamFudgeFactor2   = 256 + 6
+ParamBounce2        = 256 + 7
+ParamCFM2           = 256 + 8
+ParamStopERP2       = 256 + 9
+ParamStopCFM2       = 256 + 10
+ParamSuspensionERP2 = 256 + 11
+ParamSuspensionCFM2 = 256 + 12
+ParamERP2           = 256 + 13
 
 ParamLoStop3        = 512 + 0
 ParamHiStop3        = 512 + 1
 ParamVel3           = 512 + 2
-ParamFMax3          = 512 + 3
-ParamFudgeFactor3   = 512 + 4
-ParamBounce3        = 512 + 5
-ParamCFM3           = 512 + 6
-ParamStopERP3       = 512 + 7
-ParamStopCFM3       = 512 + 8
-ParamSuspensionERP3 = 512 + 9
-ParamSuspensionCFM3 = 512 + 10
+ParamLoVel3         = 512 + 3
+ParamHiVel3         = 512 + 4
+ParamFMax3          = 512 + 5
+ParamFudgeFactor3   = 512 + 6
+ParamBounce3        = 512 + 7
+ParamCFM3           = 512 + 8
+ParamStopERP3       = 512 + 9
+ParamStopCFM3       = 512 + 10
+ParamSuspensionERP3 = 512 + 11
+ParamSuspensionCFM3 = 512 + 12
+ParamERP3           = 512 + 13
 
 ParamGroup = 256
 
-ContactMu2    = 0x001
-ContactFDir1    = 0x002
-ContactBounce    = 0x004
-ContactSoftERP    = 0x008
-ContactSoftCFM    = 0x010
-ContactMotion1    = 0x020
-ContactMotion2    = 0x040
-ContactSlip1    = 0x080
-ContactSlip2    = 0x100
+ContactMu2          = 0x001
+ContactAxisDep      = 0x001
+ContactFDir1        = 0x002
+ContactBounce       = 0x004
+ContactSoftERP      = 0x008
+ContactSoftCFM      = 0x010
+ContactMotion1      = 0x020
+ContactMotion2      = 0x040
+ContactMotionN      = 0x080
+ContactSlip1        = 0x100
+ContactSlip2        = 0x200
+ContactRolling      = 0x400
 
-ContactApprox0 = 0x0000
+ContactApprox0      = 0x0000
 ContactApprox1_1    = 0x1000
 ContactApprox1_2    = 0x2000
-ContactApprox1    = 0x3000
+ContactApprox1_N    = 0x4000
+ContactApprox1      = 0x7000
 
 AMotorUser = dAMotorUser
 AMotorEuler = dAMotorEuler
@@ -2933,6 +2949,95 @@ cdef class Plane2DJoint(Joint):
         
     def setAngleParam(self, param, value):
         dJointSetPlane2DAngleParam(self.jid, param, value)
+
+
+# PRJoint
+cdef class PRJoint(Joint):
+    """Prismatic and Rotoide Joint.
+
+    Constructor::
+
+      PRJoint(world, jointgroup=None)
+    """
+
+    def __cinit__(self, World world not None, jointgroup=None):
+        cdef JointGroup jg
+        cdef dJointGroupID jgid
+
+        jgid = NULL
+        if jointgroup != None:
+            jg = jointgroup
+            jgid = jg.gid
+        self.jid = dJointCreatePR(world.wid, jgid)
+
+    def __init__(self, World world not None, jointgroup=None):
+        self.world = world
+        if jointgroup != None:
+            jointgroup._addjoint(self)
+
+    def getPosition(self):
+        """getPosition()
+
+        Get a PRJoint's linear extension.  (i.e. the prismatic's extension)
+        """
+        return dJointGetPRPosition(self.jid)
+
+    def setAnchor(self, pos):
+        """setAnchor(pos)
+
+        Set a PRJoint anchor.
+
+        @param pos: Anchor position
+        @type pos: 3-sequence of floats
+        """
+        dJointSetPRAnchor(self.jid, pos[0], pos[1], pos[2])
+
+    def getAnchor(self):
+        """getAnchor()
+
+        Get a PRJoint anchor.
+        """
+        cdef dVector3 a
+        dJointGetPRAnchor(self.jid, a)
+        return a[0], a[1], a[2]
+
+    def setAxis1(self, axis):
+        """setAxis1(axis)
+
+        Set a PRJoint's prismatic axis.
+
+        @param axis: Axis
+        @type axis: 3-sequence of floats
+        """
+        dJointSetPRAxis1(self.jid, axis[0], axis[1], axis[2])
+
+    def getAxis1(self):
+        """getAxis1()
+
+        Get a PRJoint's prismatic axis.
+        """
+        cdef dVector3 a
+        dJointGetPRAxis1(self.jid, a)
+        return a[0], a[1], a[2]
+
+    def setAxis2(self, axis):
+        """setAxis2(axis)
+
+        Set a PRJoint's rotoide axis.
+
+        @param axis: Axis
+        @type axis: 3-sequence of floats
+        """
+        dJointSetPRAxis2(self.jid, axis[0], axis[1], axis[2])
+
+    def getAxis2(self):
+        """getAxis2()
+
+        Get a PRJoint's rotoide axis.
+        """
+        cdef dVector3 a
+        dJointGetPRAxis2(self.jid, a)
+        return a[0], a[1], a[2]
 
 
 # Geom base class

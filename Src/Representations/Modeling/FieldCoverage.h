@@ -1,41 +1,28 @@
 /**
-* @file FieldCoverage.h
-* @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
-*/
+ * @file FieldCoverage.h
+ * @author Andreas Stolpmann
+ */
 
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
-#include <array>
+#include <vector>
+#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 
-STREAMABLE(FieldCoverage,
+STREAMABLE(FieldCoverage, COMMA public BHumanMessageParticle<idFieldCoverage>
 {
-  static constexpr int numOfCellsX = 18;
-  static constexpr int numOfCellsY = 12;
+  /** BHumanMessageParticle functions */
+  void operator >> (BHumanMessage& m) const override;
+  void operator << (const BHumanMessage& m) override;
+  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
 
   STREAMABLE(GridLine,
-  { ,
+  {,
     (int) y,
-    (std::array<unsigned, numOfCellsX>)({}) timestamps,
-    (std::array<unsigned, numOfCellsX>)({}) values,
-  });
+    (std::vector<unsigned>)() timestamps,
+  }),
 
-  GridLine& operator[](const int y);
-  const GridLine& operator[](const int y) const,
-
-  (Vector2f) (Vector2f::Zero()) ballDropInPosition,
-  (std::array<GridLine, numOfCellsY>) lines,
-});
-
-STREAMABLE(FieldCoverageLineCompressed,
-{
-  FieldCoverageLineCompressed() = default;
-  FieldCoverageLineCompressed(const FieldCoverage::GridLine& line);
-  operator FieldCoverage::GridLine() const,
-
-  (char) y,
-  (int) baseTime,
-  (std::array<short, FieldCoverage::numOfCellsX>)({}) timestamps,
-  (std::array<short, FieldCoverage::numOfCellsX>)({}) values,
+  (int)(0) lineToSendNext,
+  (std::vector<GridLine>) lines,
 });

@@ -3,7 +3,7 @@
  *
  * Implementation of module that computes some additional odometry information
  *
- * @author <a href="mailto:Tim.Laue@dfki.de">Tim Laue</a>
+ * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  * @author marcel
  */
 
@@ -36,7 +36,7 @@ void OdometerProvider::draw()
   {
     LINE("module:OdometerProvider:draw", theOdometryData.translation.x(), theOdometryData.translation.y(),
          lastOdometryData.translation.x(), theOdometryData.translation.y(), 10000, Drawings::noBrush, ColorRGBA::red);
-    Matrix2f cov; 
+    Matrix2f cov;
     cov << covariance(0, 0), covariance(0, 1), covariance(1, 0), covariance(1, 1);
     COVARIANCE2D("module:OdometerProvider:draw", cov, theOdometryData.translation);
   }

@@ -39,6 +39,13 @@ namespace YHSColorConversion
     return static_cast<unsigned char>(isqrt((uC * uC + vC * vC) * 2));
   }
 
+  inline unsigned char computeLightingIndependentSaturation(const unsigned char y, const unsigned char u, const unsigned char v)
+  {
+    const short uC = u - 128;
+    const short vC = v - 128;
+    return static_cast<unsigned char>((isqrt((uC * uC + vC * vC) * 2) << 8) / y);
+  }
+
   inline unsigned char computeHue(const unsigned char u, const unsigned char v)
   {
     return static_cast<unsigned char>(Approx::atan2(static_cast<short>(v - 128), static_cast<short>(u - 128)) >> 8);
@@ -46,12 +53,7 @@ namespace YHSColorConversion
 
   template<bool avx> ALWAYSINLINE __m_auto_i computeSaturation(const __m_auto_i uv0, const __m_auto_i uv1)
   {
-    const __m_auto_i factor0 = _mmauto_abs_epi8(uv0);
-    const __m_auto_i factor1 = _mmauto_abs_epi8(uv1);
-    return _mmauto_sqrt16_epu8<avx>(
-             _mmauto_slli_epi16(_mmauto_maddubs_epi16(factor0, factor0), 1),
-             _mmauto_slli_epi16(_mmauto_maddubs_epi16(factor1, factor1), 1)
-           );
+    return _mmauto_norm8_epi8<avx>(uv0, uv1);
   }
 
   template<bool avx> ALWAYSINLINE __m_auto_i computeLightingIndependentSaturation(const __m_auto_i y, const __m_auto_i uv)
@@ -89,91 +91,21 @@ namespace YHSColorConversion
            );
   }
 
-  template<bool avx> ALWAYSINLINE __m_auto_i _mmauto_div8_epi16(__m_auto_i min, __m_auto_i max)
-  {
-    __m_auto_i tally = _mmauto_set1_epi16(1 << 5);
-    __m_auto_i retVal = _mmauto_setzero_si_all();
-    max = _mmauto_slli_epi16(_mmauto_adds_epu16(max, _mmauto_set1_epi16(1)), 5);
-    min = _mmauto_slli_epi16(min, 6);
-
-    auto run = [&]()
-    {
-      const __m_auto_i temp = _mmauto_cmpgt_epi16(min, max);
-      retVal = _mmauto_adds_epi16(retVal, _mmauto_and_si_all(temp, tally));
-      min = _mmauto_sub_epi16(min, _mmauto_and_si_all(temp, max));
-      tally = _mmauto_srli_epi16(tally, 1);
-      max = _mmauto_srli_epi16(max, 1);
-    };
-
-    run();
-    run();
-    run();
-    run();
-    run();
-    return retVal;
-  }
-
   template<bool avx> ALWAYSINLINE __m_auto_i computeHue(const __m_auto_i uv0, const __m_auto_i uv1)
   {
-    static const __m_auto_i c_0 = _mmauto_setzero_si_all();
-    static const __m_auto_i c_64 = _mmauto_set1_epi8(64);
-    static const __m_auto_i c_128 = _mmauto_set1_epi8(char(128));
-    static const __m_auto_i c_129 = _mmauto_set1_epi8(char(0x81));
-    static const __m_auto_i c_5695 = _mmauto_set1_epi16(5695);
-    static const __m_auto_i c_11039 = _mmauto_set1_epi16(11039);
     static const __m_auto_i loMask = _mmauto_set1_epi16(0x00FF);
-
-    const __m_auto_i u = _mmauto_correct_256op(
-                           _mmauto_packus_epi16(
-                             _mmauto_and_si_all(uv0, loMask),
-                             _mmauto_and_si_all(uv1, loMask)
-                           )
-                         );
-    const __m_auto_i v = _mmauto_correct_256op(
-                           _mmauto_packus_epi16(
-                             _mmauto_srli_epi16(uv0, 8),
-                             _mmauto_srli_epi16(uv1, 8)
-                           )
-                         );
-
-    const __m_auto_i absU = _mmauto_abs_epi8(u);
-    const __m_auto_i absV = _mmauto_abs_epi8(v);
-
-    const __m_auto_i min = _mmauto_min_epu8(absU, absV);
-
-    __m_auto_i min0 = min;
-    __m_auto_i min1 = c_0;
-    _mmauto_unpacklohi_epi8(min0, min1);
-    __m_auto_i max0 = _mmauto_max_epu8(absU, absV);
-    __m_auto_i max1 = c_0;
-    _mmauto_unpacklohi_epi8(max0, max1);
-    const __m_auto_i quotient0 = _mmauto_div8_epi16<avx>(min0, max0);
-    const __m_auto_i quotient1 = _mmauto_div8_epi16<avx>(min1, max1);
-
-    const __m_auto_i absUnrotatedH = _mmauto_correct_256op(
-                                       _mmauto_packs_epi16(
-                                         _mmauto_mulhrs_epi16(_mmauto_sub_epi16(c_11039, _mmauto_mulhrs_epi16(c_5695, quotient0)), quotient0),
-                                         _mmauto_mulhrs_epi16(_mmauto_sub_epi16(c_11039, _mmauto_mulhrs_epi16(c_5695, quotient1)), quotient1)
-                                       )
-                                     );
-    const __m_auto_i uGtV = _mmauto_cmpeq_epi8(min, absV);
-    return _mmauto_add_epi8(
-             _mmauto_or_si_all(
-               _mmauto_and_si_all(
-                 uGtV,
-                 _mmauto_and_si_all(u, c_128)
-               ),
-               _mmauto_andnot_si_all(
-                 uGtV,
-                 _mmauto_or_si_all(
-                   c_64,
-                   _mmauto_and_si_all(v, c_128)
-                 )
+    return _mmauto_atan2_epi8<avx>(
+             _mmauto_correct_256op( // V
+               _mmauto_packus_epi16(
+                 _mmauto_srli_epi16(uv0, 8),
+                 _mmauto_srli_epi16(uv1, 8)
                )
              ),
-             _mmauto_sign_epi8(
-               absUnrotatedH,
-               _mmauto_sign_epi8(_mmauto_xor_si_all(uGtV, c_129), _mmauto_sign_epi8(u, v))
+             _mmauto_correct_256op( // U
+               _mmauto_packus_epi16(
+                 _mmauto_and_si_all(uv0, loMask),
+                 _mmauto_and_si_all(uv1, loMask)
+               )
              )
            );
   }

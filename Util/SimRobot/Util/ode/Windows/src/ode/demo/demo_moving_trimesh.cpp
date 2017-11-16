@@ -29,6 +29,84 @@
 #pragma warning(disable:4244 4305)  // for VC++, no precision loss complaints
 #endif
 
+//<---- Convex Object
+static const dReal planes[] =  // planes for a cube
+{
+    1.0f ,0.0f ,0.0f ,0.25f, 
+    0.0f ,1.0f ,0.0f ,0.25f, 
+    0.0f ,0.0f ,1.0f ,0.25f, 
+    0.0f ,0.0f ,-1.0f,0.25f, 
+    0.0f ,-1.0f,0.0f ,0.25f, 
+    -1.0f,0.0f ,0.0f ,0.25f 
+    /* 
+    1.0f ,0.0f ,0.0f ,2.0f, 
+    0.0f ,1.0f ,0.0f ,1.0f, 
+    0.0f ,0.0f ,1.0f ,1.0f, 
+    0.0f ,0.0f ,-1.0f,1.0f, 
+    0.0f ,-1.0f,0.0f ,1.0f, 
+    -1.0f,0.0f ,0.0f ,0.0f 
+    */ 
+};
+static const unsigned int planecount=6;
+
+static const dReal points[] = // points for a cube
+{ 
+    0.25f,0.25f,0.25f,  
+    -0.25f,0.25f,0.25f, 
+    
+    0.25f,-0.25f,0.25f, 
+    -0.25f,-0.25f,0.25f, 
+    
+    0.25f,0.25f,-0.25f, 
+    -0.25f,0.25f,-0.25f, 
+    
+    0.25f,-0.25f,-0.25f, 
+    -0.25f,-0.25f,-0.25f, 
+};
+static const unsigned int pointcount=8;
+
+static const unsigned int polygons[] = //Polygons for a cube (6 squares)
+  {
+    4,0,2,6,4, // positive X
+    4,1,0,4,5, // positive Y
+    4,0,1,3,2, // positive Z
+    4,3,1,5,7, // negative X
+    4,2,3,7,6, // negative Y
+    4,5,4,6,7, // negative Z
+  };
+//----> Convex Object
+
+int tmTriangles[] = 
+{
+    0,2,6,
+    0,6,4,
+    1,0,4,
+    1,4,5,
+    0,1,3,
+    0,3,2,
+    3,1,5,
+    3,5,7,
+    2,3,7,
+    2,7,6,
+    5,4,6,
+    5,6,7
+};
+
+float tmVertices[] = 
+{
+    0.25f,0.25f,0.25f,  //  point 0
+    -0.25f,0.25f,0.25f, //  point 1
+
+    0.25f,-0.25f,0.25f, //  point 2
+    -0.25f,-0.25f,0.25f,//  point 3
+
+    0.25f,0.25f,-0.25f, //  point 4
+    -0.25f,0.25f,-0.25f,//  point 5
+
+    0.25f,-0.25f,-0.25f,//  point 6
+    -0.25f,-0.25f,-0.25f,// point 7
+};
+
 // select correct drawing functions
 
 #ifdef dDOUBLE
@@ -38,6 +116,7 @@
 #define dsDrawCapsule dsDrawCapsuleD
 #define dsDrawLine dsDrawLineD
 #define dsDrawTriangle dsDrawTriangleD
+#define dsDrawConvex dsDrawConvexD
 #endif
 
 
@@ -128,6 +207,7 @@ static void start()
   printf ("   y for cylinder.\n");
   printf ("   c for capsule.\n");
   printf ("   x for a composite object.\n");
+  printf ("   v for a convex object.\n");
   printf ("   m for a trimesh.\n");
   printf ("To select an object, press space.\n");
   printf ("To disable the selected object, press d.\n");
@@ -155,7 +235,7 @@ static void command (int cmd)
     bool setBody = false;
 
     cmd = locase (cmd);
-    if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'm' || cmd == 'y' ) {
+    if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'm' || cmd == 'y' || cmd == 'v') {
         if (num < NUM) {
             i = num;
             num++;
@@ -203,6 +283,15 @@ static void command (int cmd)
             sides[0] *= 0.5;
             dMassSetCapsule (&m,DENSITY,3,sides[0],sides[1]);
             obj[i].geom[0] = dCreateCapsule (space,sides[0],sides[1]);
+        } else if (cmd == 'v') {
+
+            dMassSetBox (&m,DENSITY,0.25,0.25,0.25);
+            obj[i].geom[0] = dCreateConvex(space,
+                                           planes,
+                                           planecount,
+                                           points,
+                                           pointcount,
+                                           polygons);
         }
         else if (cmd == 'y') {
             sides[1] *= 0.5;
@@ -218,6 +307,8 @@ static void command (int cmd)
             dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
             dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
                                         (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+            dGeomTriMeshDataPreprocess2(new_tmdata, (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES), NULL);
+
 
             obj[i].geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
 
@@ -340,6 +431,13 @@ void drawGeom (dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
     dReal radius,length;
     dGeomCylinderGetParams (g,&radius,&length);
     dsDrawCylinder (pos,R,length,radius);
+  } else if (type == dConvexClass) {
+   //dVector3 sides={0.50,0.50,0.50};
+    dsDrawConvex(pos,R,planes,
+                 planecount,
+                 points,
+                 pointcount,
+                 polygons);
   }
 
   if (show_aabb) {
@@ -534,10 +632,13 @@ int main (int argc, char **argv)
   memset (obj,0,sizeof(obj));
 
   // note: can't share tridata if intending to trimesh-trimesh collide
+  const unsigned preprocessFlags = (1U << dTRIDATAPREPROCESS_BUILD_CONCAVE_EDGES) | (1U << dTRIDATAPREPROCESS_BUILD_FACE_ANGLES);
   TriData1 = dGeomTriMeshDataCreate();
   dGeomTriMeshDataBuildSingle(TriData1, &Vertices[0], 3 * sizeof(float), VertexCount, (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+  dGeomTriMeshDataPreprocess2(TriData1, preprocessFlags, NULL);
   TriData2 = dGeomTriMeshDataCreate();
   dGeomTriMeshDataBuildSingle(TriData2, &Vertices[0], 3 * sizeof(float), VertexCount, (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+  dGeomTriMeshDataPreprocess2(TriData2, preprocessFlags, NULL);
   
   TriMesh1 = dCreateTriMesh(space, TriData1, 0, 0, 0);
   TriMesh2 = dCreateTriMesh(space, TriData2, 0, 0, 0);

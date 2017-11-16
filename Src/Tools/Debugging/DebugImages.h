@@ -2,6 +2,7 @@
  * @file Tools/Debugging/DebugImages.h
  *
  * @author Felix Thielke
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
 #pragma once
@@ -11,6 +12,7 @@
 #include "Tools/ImageProcessing/PixelTypes.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Tools/ImageProcessing/TImage.h"
+#include <type_traits>
 
 struct DebugImage : public Streamable
 {
@@ -54,6 +56,18 @@ public:
   }
   DebugImage(const TImage<PixelTypes::ColoredPixel>& image)
     : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::Colored) {}
+  DebugImage(const TImage<PixelTypes::HuePixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::Hue) {}
+  DebugImage(const TImage<PixelTypes::BinaryPixel>& image)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(PixelTypes::PixelType::Binary) {}
+  template<typename SomeEdge2Pixel>
+  DebugImage(const TImage<SomeEdge2Pixel>& image, const PixelTypes::PixelType drawAs)
+    : data(const_cast<void*>(static_cast<const void*>(image[0]))), timeStamp(0), width(static_cast<unsigned short>(image.width)), height(static_cast<unsigned short>(image.height)), isReference(true), type(drawAs)
+  {
+    static_assert(sizeof(SomeEdge2Pixel) == PixelTypes::pixelSize(PixelTypes::Edge2), "");
+    static_assert(std::is_base_of<PixelTypes::Edge2Pixel, SomeEdge2Pixel>::value, "");
+    ASSERT(drawAs == PixelTypes::Edge2 || drawAs == PixelTypes::Edge2MonoAbsAvg || drawAs == PixelTypes::Edge2MonoAvg);
+  }
 
   ~DebugImage()
   {
@@ -154,11 +168,18 @@ protected:
   }
 };
 
-/**Sends the debug image with the specified id */
-#define SEND_DEBUG_IMAGE(id, image) \
+/**
+ * Sends the debug image.
+ * @param id The name under which it is sent.
+ * @param image The image that is sent.
+ * @param method Optionally, a pixel type that defines the drawing method to be used.
+ */
+#define SEND_DEBUG_IMAGE(id, ...) \
   do \
-    DEBUG_RESPONSE("debug images:" id) OUTPUT(idDebugImage, bin, id << DebugImage(image)); \
+    _STREAM_EXPAND(_STREAM_EXPAND(_STREAM_THIRD(__VA_ARGS__, _SEND_DEBUG_IMAGE_WITH_METHOD, _SEND_DEBUG_IMAGE_WITHOUT_METHOD))(id, __VA_ARGS__)) \
   while(false)
+#define _SEND_DEBUG_IMAGE_WITHOUT_METHOD(id, image) DEBUG_RESPONSE("debug images:" id) OUTPUT(idDebugImage, bin, id << DebugImage(image));
+#define _SEND_DEBUG_IMAGE_WITH_METHOD(id, image, method) DEBUG_RESPONSE("debug images:" id) OUTPUT(idDebugImage, bin, id << DebugImage(image, method));
 
 // all
 /** Generate debug image debug request, can be used for encapsulating the creation of debug images on request */

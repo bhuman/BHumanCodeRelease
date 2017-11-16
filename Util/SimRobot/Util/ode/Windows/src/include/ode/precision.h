@@ -10,7 +10,7 @@
 #elif defined(dIDEDOUBLE)
 #define dDOUBLE
 #else
-#define dDOUBLE
+#define dUNDEFINEDPRECISION
 #endif
 
 #endif

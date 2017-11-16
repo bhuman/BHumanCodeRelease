@@ -18,7 +18,7 @@ class SyntaxHighlighter: public QSyntaxHighlighter
   Q_OBJECT
 
 public:
-  SyntaxHighlighter(QTextDocument* parent = 0);
+  SyntaxHighlighter(QTextDocument* parent = nullptr);
 
   //Enumeration for the character formats. This is used in functions which get and set them.
   enum xmlCharFormat

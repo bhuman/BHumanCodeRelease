@@ -14,6 +14,7 @@
 
 class KickViewWidget;
 class KickEngineData;
+class StableKickEngineData;
 class RotationMatrix_getPackedAngleAxisFaulty_Test;
 
 /**
@@ -210,6 +211,7 @@ private:
   // The following is a hack in order to keep the kicks from the Kickengine working...
   friend class KickViewWidget;
   friend class KickEngineData;
+  friend class StableKickEngineData;
   friend class RotationMatrix_getPackedAngleAxisFaulty_Test;
 
   Vector3f getPackedAngleAxisFaulty() const;

@@ -70,34 +70,21 @@ SUITE(JointContact)
                  test_ZeroMu)
     {
         dxJoint::Info1 info1;
-        dxJoint::Info2Descr info2;
-        dReal dummy_J[3][12] = {{0}};
-        dReal dummy_c[3];
-        dReal dummy_cfm[3];
-        dReal dummy_lo[3];
-        dReal dummy_hi[3];
+        dReal dummy_J[3][16] = {{0}};
         int dummy_findex[3];
 
         dReal info2_fps = 100;
         dReal info2_erp = 0;
-        info2.J1l = dummy_J[0];
-        info2.J1a = dummy_J[0] + 3;
-        info2.J2l = dummy_J[0] + 6;
-        info2.J2a = dummy_J[0] + 9;
-        info2.rowskip = 12;
-        info2.c = dummy_c;
-        info2.cfm = dummy_cfm;
-        info2.lo = dummy_lo;
-        info2.hi = dummy_hi;
-        info2.findex = dummy_findex;
+        dReal *J1 = dummy_J[0];
+        dReal *J2 = dummy_J[0] + 8;
+        dReal *rhscfm = dummy_J[0] + 6;
+        dReal *lohi = dummy_J[0] + 14;
+        unsigned rowskip = 16;
+        int *findex = dummy_findex;
 
 #define ZERO_ALL do {                                           \
             memset(dummy_J, 0, sizeof dummy_J);                 \
-            memset(dummy_c, 0, sizeof dummy_c);                 \
-            memset(dummy_cfm, 0, sizeof dummy_cfm);             \
-            memset(dummy_lo, 0, sizeof dummy_lo);               \
-            memset(dummy_hi, 0, sizeof dummy_hi);               \
-            std::fill(dummy_findex, dummy_findex+3, -1);;       \
+            std::fill(dummy_findex, dummy_findex+3, -1);        \
         }                                                       \
         while (0)
 
@@ -138,19 +125,20 @@ SUITE(JointContact)
         joint->getInfo1(&info1);
         CHECK_EQUAL(2, (int)info1.m);
         ZERO_ALL;
-        joint->getInfo2(info2_fps, info2_erp, &info2);
+        joint->getInfo2(info2_fps, info2_erp, rowskip, J1, J2,
+            rowskip, rhscfm, lohi, findex);
         CHECK_CLOSE(0, dummy_J[1][0], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][1], 1e-6);
         CHECK_CLOSE(-1, dummy_J[1][2], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][3], 1e-6);
         CHECK_CLOSE(1, dummy_J[1][4], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][5], 1e-6);
-        CHECK_CLOSE(0, dummy_J[1][6], 1e-6);
-        CHECK_CLOSE(0, dummy_J[1][7], 1e-6);
-        CHECK_CLOSE(1, dummy_J[1][8], 1e-6);
+        CHECK_CLOSE(0, dummy_J[1][8], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][9], 1e-6);
         CHECK_CLOSE(1, dummy_J[1][10], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][11], 1e-6);
+        CHECK_CLOSE(1, dummy_J[1][12], 1e-6);
+        CHECK_CLOSE(0, dummy_J[1][13], 1e-6);
         CHECK_EQUAL(0, dummy_findex[1]); // because of dContactApprox1
         dJointDestroy(joint);
 
@@ -167,19 +155,20 @@ SUITE(JointContact)
         joint->getInfo1(&info1);
         CHECK_EQUAL(2, (int)info1.m);
         ZERO_ALL;
-        joint->getInfo2(info2_fps, info2_erp, &info2);
+        joint->getInfo2(info2_fps, info2_erp, rowskip, J1, J2,
+            rowskip, rhscfm, lohi, findex);
         CHECK_CLOSE(0, dummy_J[1][0], 1e-6);
         CHECK_CLOSE(1, dummy_J[1][1], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][2], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][3], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][4], 1e-6);
         CHECK_CLOSE(1, dummy_J[1][5], 1e-6);
-        CHECK_CLOSE(0, dummy_J[1][6], 1e-6);
-        CHECK_CLOSE(-1, dummy_J[1][7], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][8], 1e-6);
-        CHECK_CLOSE(0, dummy_J[1][9], 1e-6);
+        CHECK_CLOSE(-1, dummy_J[1][9], 1e-6);
         CHECK_CLOSE(0, dummy_J[1][10], 1e-6);
-        CHECK_CLOSE(1, dummy_J[1][11], 1e-6);
+        CHECK_CLOSE(0, dummy_J[1][11], 1e-6);
+        CHECK_CLOSE(0, dummy_J[1][12], 1e-6);
+        CHECK_CLOSE(1, dummy_J[1][13], 1e-6);
         CHECK_EQUAL(0, dummy_findex[1]);  // because of dContactApprox1
         dJointDestroy(joint);
     }

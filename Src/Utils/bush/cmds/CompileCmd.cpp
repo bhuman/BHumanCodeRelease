@@ -120,7 +120,7 @@ bool CompileCmd::execute(Context& context, const std::vector<std::string>& param
 #ifdef WINDOWS
 QString CompileCmd::getCommand()
 {
-  return QString(getenv("VS140COMNTOOLS")) + "..\\IDE\\devenv.com";
+  return QString(getVisualStudioPath().c_str()) + "MSBuild\\15.0\\Bin\\MSBuild.exe";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)
@@ -128,7 +128,7 @@ QStringList CompileCmd::getParams(const QString& config, const QString& project)
   QStringList args;
   const QString makeDir(fromString(makeDirectory()));
   args << fromString(std::string(File::getBHDir())).replace("/", "\\") + "\\Make\\" + makeDir + "\\B-Human.sln";
-  args << QString("/Build") << config + "|x64" << QString("/Project") << project;
+  args << QString("/t:" + project) << QString("/p:Configuration=" + config);
   return args;
 }
 #elif defined MACOS

@@ -8,5 +8,3 @@ jc press 1 call Includes/Joystick
 jc press 2 call Includes/Joystick
 jc press 3 call Includes/Joystick
 jc press 4 call Includes/Joystick
-
-# use the experimental ball perceptor to detect the ball

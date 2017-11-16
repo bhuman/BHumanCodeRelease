@@ -40,6 +40,7 @@
 #ifndef QDYNAMICTOOLBAR_H
 #define QDYNAMICTOOLBAR_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtWidgets/qaction.h>
 #include <QtWidgets/qwidget.h>
 
@@ -100,17 +101,23 @@ public:
     QAction *addAction(const QIcon &icon, const QString &text,
                        const QObject *receiver, const char* member);
 #ifdef Q_QDOC
+    template<typename PointerToMemberFunction>
     QAction *addAction(const QString &text, const QObject *receiver, PointerToMemberFunction method);
+    template<typename Functor>
     QAction *addAction(const QString &text, Functor functor);
+    template<typename Functor>
     QAction *addAction(const QString &text, const QObject *context, Functor functor);
+    template<typename PointerToMemberFunction>
     QAction *addAction(const QIcon &icon, const QString &text, const QObject *receiver, PointerToMemberFunction method);
+    template<typename Functor>
     QAction *addAction(const QIcon &icon, const QString &text, Functor functor);
+    template<typename Functor>
     QAction *addAction(const QIcon &icon, const QString &text, const QObject *context, Functor functor);
 #else
     // addAction(QString): Connect to a QObject slot / functor or function pointer (with context)
     template<class Obj, typename Func1>
-    inline typename QtPrivate::QEnableIf<!QtPrivate::is_same<const char*, Func1>::value
-        && QtPrivate::IsPointerToTypeDerivedFromQObject<Obj*>::Value, QAction *>::Type
+    inline typename std::enable_if<!std::is_same<const char*, Func1>::value
+        && QtPrivate::IsPointerToTypeDerivedFromQObject<Obj*>::Value, QAction *>::type
         addAction(const QString &text, const Obj *object, Func1 slot)
     {
         QAction *result = addAction(text);
@@ -127,8 +134,8 @@ public:
     }
     // addAction(QString): Connect to a QObject slot / functor or function pointer (with context)
     template<class Obj, typename Func1>
-    inline typename QtPrivate::QEnableIf<!QtPrivate::is_same<const char*, Func1>::value
-        && QtPrivate::IsPointerToTypeDerivedFromQObject<Obj*>::Value, QAction *>::Type
+    inline typename std::enable_if<!std::is_same<const char*, Func1>::value
+        && QtPrivate::IsPointerToTypeDerivedFromQObject<Obj*>::Value, QAction *>::type
         addAction(const QIcon &actionIcon, const QString &text, const Obj *object, Func1 slot)
     {
         QAction *result = addAction(actionIcon, text);

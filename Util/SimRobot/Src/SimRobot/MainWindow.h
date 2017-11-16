@@ -6,12 +6,6 @@
 
 #pragma once
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wreturn-stack-address"
-#endif
-
 #include <QMainWindow>
 #include <QSignalMapper>
 #include <QActionGroup>
@@ -19,10 +13,6 @@
 #include <QSet>
 #include <QHash>
 #include <QLibrary>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include "SimRobot.h"
 

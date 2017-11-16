@@ -5,7 +5,7 @@
 AC_INIT([libccd], [1.0], [danfis@danfis.cz])
 AC_CONFIG_SRCDIR([src/ccd.c])
 AC_CONFIG_HEADERS([src/config.h])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE(foreign)
 
 # Checks for programs.
 AC_PROG_CXX

@@ -356,7 +356,7 @@ bool HybridModel::Refit()
 	Point Min,Max;
 	Point Min_,Max_;
 	udword Index = mTree->GetNbNodes();
-	AABBNoLeafNode* Nodes = (AABBNoLeafNode*)((AABBNoLeafTree*)mTree)->GetNodes();
+	AABBNoLeafNode* Nodes = const_cast<AABBNoLeafNode *>(static_cast<const AABBNoLeafNode *>(static_cast<AABBNoLeafTree *>(mTree)->GetNodes()));
 	while(Index--)
 	{
 		AABBNoLeafNode& Current = Nodes[Index];

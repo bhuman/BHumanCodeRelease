@@ -40,6 +40,7 @@
 #ifndef QMATRIX4X4_H
 #define QMATRIX4X4_H
 
+#include <QtGui/qtguiglobal.h>
 #include <QtGui/qvector3d.h>
 #include <QtGui/qvector4d.h>
 #include <QtGui/qquaternion.h>
@@ -211,6 +212,9 @@ private:
     friend class QGraphicsRotation;
 };
 
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_CLANG("-Wfloat-equal")
+QT_WARNING_DISABLE_GCC("-Wfloat-equal")
 Q_DECLARE_TYPEINFO(QMatrix4x4, Q_MOVABLE_TYPE);
 
 inline QMatrix4x4::QMatrix4x4
@@ -419,8 +423,9 @@ inline QMatrix4x4& QMatrix4x4::operator-=(const QMatrix4x4& other)
     return *this;
 }
 
-inline QMatrix4x4& QMatrix4x4::operator*=(const QMatrix4x4& other)
+inline QMatrix4x4& QMatrix4x4::operator*=(const QMatrix4x4& o)
 {
+    const QMatrix4x4 other = o; // prevent aliasing when &o == this ### Qt 6: take o by value
     flagBits |= other.flagBits;
 
     if (flagBits < Rotation2D) {
@@ -866,9 +871,9 @@ inline QPointF operator*(const QPointF& point, const QMatrix4x4& matrix)
         yin * matrix.m[3][1] +
         matrix.m[3][3];
     if (w == 1.0f) {
-        return QPointF(float(x), float(y));
+        return QPointF(qreal(x), qreal(y));
     } else {
-        return QPointF(float(x / w), float(y / w));
+        return QPointF(qreal(x / w), qreal(y / w));
     }
 }
 
@@ -906,33 +911,35 @@ inline QPoint operator*(const QMatrix4x4& matrix, const QPoint& point)
 
 inline QPointF operator*(const QMatrix4x4& matrix, const QPointF& point)
 {
-    float xin, yin;
-    float x, y, w;
+    qreal xin, yin;
+    qreal x, y, w;
     xin = point.x();
     yin = point.y();
     if (matrix.flagBits == QMatrix4x4::Identity) {
         return point;
     } else if (matrix.flagBits < QMatrix4x4::Rotation2D) {
         // Translation | Scale
-        return QPointF(xin * matrix.m[0][0] + matrix.m[3][0],
-                       yin * matrix.m[1][1] + matrix.m[3][1]);
+        return QPointF(xin * qreal(matrix.m[0][0]) + qreal(matrix.m[3][0]),
+                       yin * qreal(matrix.m[1][1]) + qreal(matrix.m[3][1]));
     } else if (matrix.flagBits < QMatrix4x4::Perspective) {
-        return QPointF(xin * matrix.m[0][0] + yin * matrix.m[1][0] + matrix.m[3][0],
-                       xin * matrix.m[0][1] + yin * matrix.m[1][1] + matrix.m[3][1]);
+        return QPointF(xin * qreal(matrix.m[0][0]) + yin * qreal(matrix.m[1][0]) +
+                       qreal(matrix.m[3][0]),
+                       xin * qreal(matrix.m[0][1]) + yin * qreal(matrix.m[1][1]) +
+                       qreal(matrix.m[3][1]));
     } else {
-        x = xin * matrix.m[0][0] +
-            yin * matrix.m[1][0] +
-            matrix.m[3][0];
-        y = xin * matrix.m[0][1] +
-            yin * matrix.m[1][1] +
-            matrix.m[3][1];
-        w = xin * matrix.m[0][3] +
-            yin * matrix.m[1][3] +
-            matrix.m[3][3];
-        if (w == 1.0f) {
-            return QPointF(float(x), float(y));
+        x = xin * qreal(matrix.m[0][0]) +
+            yin * qreal(matrix.m[1][0]) +
+            qreal(matrix.m[3][0]);
+        y = xin * qreal(matrix.m[0][1]) +
+            yin * qreal(matrix.m[1][1]) +
+            qreal(matrix.m[3][1]);
+        w = xin * qreal(matrix.m[0][3]) +
+            yin * qreal(matrix.m[1][3]) +
+            qreal(matrix.m[3][3]);
+        if (w == 1.0) {
+            return QPointF(qreal(x), qreal(y));
         } else {
-            return QPointF(float(x / w), float(y / w));
+            return QPointF(qreal(x / w), qreal(y / w));
         }
     }
 }
@@ -1089,6 +1096,8 @@ inline void QMatrix4x4::viewport(const QRectF &rect)
 {
     viewport(rect.x(), rect.y(), rect.width(), rect.height());
 }
+
+QT_WARNING_POP
 
 #ifndef QT_NO_DEBUG_STREAM
 Q_GUI_EXPORT QDebug operator<<(QDebug dbg, const QMatrix4x4 &m);

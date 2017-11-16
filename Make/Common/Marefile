@@ -15,6 +15,7 @@ buildPlatformDir = {
 buildDir = "$(buildPlatformDir)/$(target)/$(configuration)"
 
 winMarePath = "$(utilDirRoot)/SimRobot/Util/mare/Windows/bin/mare.exe"
+linuxMarePath = "$(utilDirRoot)/SimRobot/Util/mare/Linux/bin/mare"
 
 configurations = {
   Develop
@@ -45,6 +46,9 @@ defines = {
   } else if (platform == "MacOSX") {
     "MACOS"
   }
+  if (tool == "vcxproj" && ssse3 == "true") {
+    "__SSSE3__"
+  }
   if (configuration == "Debug") {
     "_DEBUG"
   } else {
@@ -53,6 +57,7 @@ defines = {
   if (configuration != "Release") {
     "EIGEN_INITIALIZE_MATRICES_BY_NAN"
   }
+  "CONFIGURATION=$(configuration)"
 }
 
 if (host == "Linux") {
@@ -68,19 +73,22 @@ cppFlags = {
     "/Gm- /MP" // disable minimal rebuild and enable multi processor compilation
     "/Zc:wchar_t-" // required for Qt
     if (configuration == "Debug") {
-      "/Od /ZI"
+      "/Od /ZI /bigobj"
     } else {
       "/Ox /Ob2 /Oi /Ot /Oy /GT"
     }
+    "/w44701"
   } else {
-    "-std=c++11"
+    "-std=c++14"
     "-pipe"
-    "-mssse3"
     "-fPIC"
     "-Wall"
-    //"-Wconversion" // Activate this again, as soon as qt get rid of its conversion warnings.
+    "-Wextra"
+    //"-Wconversion" // Activate this again, as soon as qt gets
+    //"-Wno-sign-conversion" // rid of its conversion warnings.
     "-Wliteral-conversion"
-    "-Wsign-compare"
+    "-Wno-unused-parameter"
+    "-Wunreachable-code"
     if (configuration == "Debug") {
       "-g"
     } else {

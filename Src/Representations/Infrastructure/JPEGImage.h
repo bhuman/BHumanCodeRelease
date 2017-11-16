@@ -90,5 +90,6 @@ private:
    */
   void fromAiboAlignment(const unsigned char* src, unsigned char* dst) const;
 
+protected:
   void serialize(In* in, Out* out);
 };

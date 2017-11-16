@@ -1,38 +1,32 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2013 Olivier Goffart <ogoffart@woboq.com>
-** Contact: https://www.qt.io/licensing/
+** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
 ** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
+** and conditions see http://www.qt.io/terms-conditions. For further
+** information use the contact form at http://www.qt.io/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
+** As a special exception, The Qt Company gives you certain additional
+** rights. These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** $QT_END_LICENSE$
 **
@@ -299,7 +293,7 @@ public:
             connect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, const QObject *context, Func2 slot,
                     Qt::ConnectionType type = Qt::AutoConnection)
     {
-#if defined (Q_COMPILER_VARIADIC_TEMPLATES)
+#if defined (Q_COMPILER_DECLTYPE) && defined (Q_COMPILER_VARIADIC_TEMPLATES)
         typedef QtPrivate::FunctionPointer<Func1> SignalType;
         const int FunctorArgumentCount = QtPrivate::ComputeFunctorArgumentCount<Func2 , typename SignalType::Arguments>::Value;
 
@@ -319,7 +313,15 @@ public:
         Functors with overloaded or templated operator() are only supported if the compiler supports
         C++11 variadic templates
       */
+#ifndef Q_COMPILER_DECLTYPE  //Workaround the lack of decltype using another function as indirection
+        return connect_functor(sender, signal, context, slot, &Func2::operator(), type); }
+    template <typename Func1, typename Func2, typename Func2Operator>
+    static inline QMetaObject::Connection connect_functor(const QObject *sender, Func1 signal, const QObject *context,
+                                                          Func2 slot, Func2Operator, Qt::ConnectionType type) {
+        typedef QtPrivate::FunctionPointer<Func2Operator> SlotType ;
+#else
         typedef QtPrivate::FunctionPointer<decltype(&Func2::operator())> SlotType ;
+#endif
         typedef QtPrivate::FunctionPointer<Func1> SignalType;
         typedef typename SlotType::ReturnType SlotReturnType;
         const int SlotArgumentCount = SlotType::ArgumentCount;
@@ -442,8 +444,7 @@ protected:
     QScopedPointer<QObjectData> d_ptr;
 
     static const QMetaObject staticQtMetaObject;
-    friend inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT
-    { return &staticQtMetaObject; }
+    friend inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT;
 
     friend struct QMetaObject;
     friend struct QMetaObjectPrivate;
@@ -473,6 +474,9 @@ private:
 inline QMetaObject::Connection QObject::connect(const QObject *asender, const char *asignal,
                                             const char *amember, Qt::ConnectionType atype) const
 { return connect(asender, asignal, this, amember, atype); }
+
+inline const QMetaObject *qt_getQtMetaObject() Q_DECL_NOEXCEPT
+{ return &QObject::staticQtMetaObject; }
 
 #ifndef QT_NO_USERDATA
 class Q_CORE_EXPORT QObjectUserData {

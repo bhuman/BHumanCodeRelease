@@ -4,7 +4,8 @@ namespace testing
 {
   namespace internal
   {
-    enum GTestColor {
+    enum GTestColor
+    {
       COLOR_DEFAULT,
       COLOR_RED,
       COLOR_GREEN,

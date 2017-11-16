@@ -80,7 +80,7 @@ protected:
   }
 
 public:
-  FloatSpinBox(QWidget* parent = 0) : QDoubleSpinBox(parent) {}
+  FloatSpinBox(QWidget* parent = nullptr) : QDoubleSpinBox(parent) {}
 };
 
 QWidget* PropertyEditorFactory::createEditor(QtVariantPropertyManager* pManager, QtProperty* pProperty, QWidget* pParent)

@@ -1,6 +1,6 @@
 /**
  * @file AnnotationWidget.cpp
- * @author <A href="mailto:andisto@tzi.de">Andreas Stolpmann</A>
+ * @author Andreas Stolpmann
  */
 
 #include "AnnotationWidget.h"
@@ -55,7 +55,8 @@ struct Row
   }
 };
 
-AnnotationWidget::AnnotationWidget(AnnotationView& view) : view(view), timeOfLastUpdate(0)
+AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
+  : view(view), timeOfLastUpdate(0)
 {
   table = new QTableWidget();
   table->setColumnCount(3);
@@ -74,7 +75,8 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view) : view(view), timeOfLas
   table->setSortingEnabled(true);
   table->setShowGrid(false);
 
-  QObject::connect(table, SIGNAL(cellDoubleClicked(int, int)), this, SLOT(jumpFrame(int, int)));
+  if(mode == SystemCall::Mode::logfileReplay)
+    QObject::connect(table, SIGNAL(cellDoubleClicked(int, int)), this, SLOT(jumpFrame(int, int)));
 
   QVBoxLayout* layout = new QVBoxLayout(this);
   QHBoxLayout* filterLayout = new QHBoxLayout();
@@ -237,10 +239,7 @@ void AnnotationWidget::filterChanged(const QString& newFilter)
 
 void AnnotationWidget::jumpFrame(int row, int column)
 {
-  if(SystemCall::getMode() == SystemCall::Mode::logfileReplay)
-  {
-    NumberTableWidgetItem* item = (NumberTableWidgetItem*)table->item(row, 0);
-    int frame = item->number;
-    view.logPlayer.gotoFrame(std::max(std::min(frame - 1, view.logPlayer.numberOfFrames - 1), 0));
-  }
+  NumberTableWidgetItem* item = (NumberTableWidgetItem*)table->item(row, 0);
+  int frame = item->number;
+  view.logPlayer.gotoFrame(std::max(std::min(frame - 1, view.logPlayer.numberOfFrames - 1), 0));
 }

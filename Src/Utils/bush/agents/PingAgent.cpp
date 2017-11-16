@@ -10,7 +10,6 @@
 #include <QRegExp>
 #include <iostream>
 
-
 PingAgent::~PingAgent()
 {
   cleanUp();

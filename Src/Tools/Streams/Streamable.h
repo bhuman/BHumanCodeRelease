@@ -267,23 +267,23 @@ namespace Streaming
   {
     typedef E(*S)[N];
     static void stream(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int))
-  {
-    registerWithSpecification(name, typeid(s));
-    if(enumToString)
-      Streaming::registerEnum(typeid(s[0]), (const char* (*)(int)) enumToString);
-    if(in)
     {
-      in->select(name, -1);
-      streamStaticArray(*in, (E*)s, N * sizeof(E), enumToString);
-      in->deselect();
+      registerWithSpecification(name, typeid(s));
+      if(enumToString)
+        Streaming::registerEnum(typeid(s[0]), (const char* (*)(int)) enumToString);
+      if(in)
+      {
+        in->select(name, -1);
+        streamStaticArray(*in, (E*)s, N * sizeof(E), enumToString);
+        in->deselect();
+      }
+      else
+      {
+        out->select(name, -1);
+        streamStaticArray(*out, (E*)s, N * sizeof(E), enumToString);
+        out->deselect();
+      }
     }
-    else
-    {
-      out->select(name, -1);
-      streamStaticArray(*out, (E*)s, N * sizeof(E), enumToString);
-      out->deselect();
-    }
-  }
   };
 
   template<typename E, typename A> struct Streamer<std::vector<E, A>>
@@ -351,6 +351,7 @@ namespace Streaming
           out->select(0, i, enumToString);
           *out << elem;
           out->deselect();
+          i++;
         }
         out->deselect();
       }
@@ -395,19 +396,19 @@ namespace Streaming
    *                     type, this parameter is 0.
    * This is the version for using inside of serialize methods.
    */
-  template<typename S> void streamIt(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int) = 0)
+  template<typename S> void streamIt(In* in, Out* out, const char* name, S& s, const char* (*enumToString)(int) = nullptr)
   {
     Streamer<S>::stream(in, out, name, s, enumToString);
   }
 
   /** This is the version for using inside operator>>. */
-  template<typename S> void streamIt(In& in, const char* name, S& s, const char* (*enumToString)(int) = 0)
+  template<typename S> void streamIt(In& in, const char* name, S& s, const char* (*enumToString)(int) = nullptr)
   {
     Streamer<S>::stream(&in, 0, skipDot(name), s, enumToString);
   }
 
   /** This is the version for using inside operator<<. */
-  template<typename S> void streamIt(Out& out, const char* name, const S& s, const char* (*enumToString)(int) = 0)
+  template<typename S> void streamIt(Out& out, const char* name, const S& s, const char* (*enumToString)(int) = nullptr)
   {
     Streamer<S>::stream(0, &out, skipDot(name), const_cast<S&>(s), enumToString);
   }
@@ -503,25 +504,25 @@ namespace Streaming
     /** Plain ints are misclassified as enums. Do not return a function in this case. */
     template<typename T> static const char* (*getNameFunction(const T&, const int&))(int)
     {
-      return 0;
+      return nullptr;
     }
 
     /** int arrays are misclassified as enum arrays. Do not return a function in this case. */
     template<typename T, size_t N> static const char* (*getNameFunction(const T&, const int(&)[N]))(int)
     {
-      return 0;
+      return nullptr;
     }
 
     /** int vectors are misclassified as enum vectors. Do not return a function in this case. */
     template<typename T, typename A> static const char* (*getNameFunction(const T&, const std::vector<int, A>&))(int)
     {
-      return 0;
+      return nullptr;
     }
 
     /** int lists are misclassified as enum lists. Do not return a function in this case. */
     template<typename T, typename A> static const char* (*getNameFunction(const T&, const std::list<int, A>&))(int)
     {
-      return 0;
+      return nullptr;
     }
   };
 
@@ -533,7 +534,7 @@ namespace Streaming
   {
     template<typename T, typename E> static const char* (*getNameFunction(const T&, const E&))(int)
     {
-      return 0;
+      return nullptr;
     }
   };
 

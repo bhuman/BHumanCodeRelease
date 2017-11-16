@@ -59,7 +59,7 @@ QMenu* RegisteredDockWidget::createFileMenu() const
 QMenu* RegisteredDockWidget::createEditMenu()
 {
   if(!widget)
-    return 0;
+    return nullptr;
 
   QMenu* menu = widget->createEditMenu();
 
@@ -83,7 +83,7 @@ QMenu* RegisteredDockWidget::createEditMenu()
 QMenu* RegisteredDockWidget::createUserMenu() const
 {
   if(!widget)
-    return 0;
+    return nullptr;
 
   QMenu* menu = widget->createUserMenu();
 

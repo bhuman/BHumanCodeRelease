@@ -11,7 +11,6 @@
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Covariance.h"
 
-
 void UKFPose2D::motionUpdate(const Pose2f& odometryOffset, const Pose2f& filterProcessDeviation,
                              const Pose2f& odometryDeviation, const Vector2f& odometryRotationDeviation)
 {

@@ -37,7 +37,7 @@ public:
     return start + (y * widthStep);
   }
 
-private:
+protected:
   virtual void serialize(In* in, Out* out);
 };
 
@@ -46,8 +46,8 @@ STREAMABLE(ImagePatches,
 private:
   mutable Image debugImage;
 public:
-  void toImage(Image & dest) const;
-  void toImage(Image & dest, unsigned color) const;
+  void toImage(Image& dest) const;
+  void toImage(Image& dest, unsigned color) const;
   void draw() const,
 
   (unsigned short) imageWidth,

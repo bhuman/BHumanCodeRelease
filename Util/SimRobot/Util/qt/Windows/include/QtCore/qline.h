@@ -73,8 +73,10 @@ public:
     inline void translate(const QPoint &p);
     inline void translate(int dx, int dy);
 
-    Q_DECL_CONSTEXPR inline QLine translated(const QPoint &p) const Q_REQUIRED_RESULT;
-    Q_DECL_CONSTEXPR inline QLine translated(int dx, int dy) const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QLine translated(const QPoint &p) const;
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QLine translated(int dx, int dy) const;
+
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QPoint center() const;
 
     inline void setP1(const QPoint &p1);
     inline void setP2(const QPoint &p2);
@@ -165,6 +167,11 @@ Q_DECL_CONSTEXPR inline QLine QLine::translated(int adx, int ady) const
     return translated(QPoint(adx, ady));
 }
 
+Q_DECL_CONSTEXPR inline QPoint QLine::center() const
+{
+    return QPoint(int((qint64(pt1.x()) + pt2.x()) / 2), int((qint64(pt1.y()) + pt2.y()) / 2));
+}
+
 inline void QLine::setP1(const QPoint &aP1)
 {
     pt1 = aP1;
@@ -214,7 +221,7 @@ public:
     Q_DECL_CONSTEXPR inline QLineF(qreal x1, qreal y1, qreal x2, qreal y2);
     Q_DECL_CONSTEXPR inline QLineF(const QLine &line) : pt1(line.p1()), pt2(line.p2()) { }
 
-    static QLineF fromPolar(qreal length, qreal angle) Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT static QLineF fromPolar(qreal length, qreal angle);
 
     Q_DECL_CONSTEXPR bool isNull() const;
 
@@ -238,8 +245,8 @@ public:
 
     qreal angleTo(const QLineF &l) const;
 
-    QLineF unitVector() const Q_REQUIRED_RESULT;
-    Q_DECL_CONSTEXPR inline QLineF normalVector() const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT QLineF unitVector() const;
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QLineF normalVector() const;
 
     // ### Qt 6: rename intersects() or intersection() and rename IntersectType IntersectionType
     IntersectType intersect(const QLineF &l, QPointF *intersectionPoint) const;
@@ -250,8 +257,10 @@ public:
     inline void translate(const QPointF &p);
     inline void translate(qreal dx, qreal dy);
 
-    Q_DECL_CONSTEXPR inline QLineF translated(const QPointF &p) const Q_REQUIRED_RESULT;
-    Q_DECL_CONSTEXPR inline QLineF translated(qreal dx, qreal dy) const Q_REQUIRED_RESULT;
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QLineF translated(const QPointF &p) const;
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QLineF translated(qreal dx, qreal dy) const;
+
+    Q_REQUIRED_RESULT Q_DECL_CONSTEXPR inline QPointF center() const;
 
     inline void setP1(const QPointF &p1);
     inline void setP2(const QPointF &p2);
@@ -355,6 +364,11 @@ Q_DECL_CONSTEXPR inline QLineF QLineF::translated(const QPointF &p) const
 Q_DECL_CONSTEXPR inline QLineF QLineF::translated(qreal adx, qreal ady) const
 {
     return translated(QPointF(adx, ady));
+}
+
+Q_DECL_CONSTEXPR inline QPointF QLineF::center() const
+{
+    return QPointF(0.5 * pt1.x() + 0.5 * pt2.x(), 0.5 * pt1.y() + 0.5 * pt2.y());
 }
 
 inline void QLineF::setLength(qreal len)

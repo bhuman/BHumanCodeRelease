@@ -151,12 +151,19 @@
         ../../Src/Processes/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
+
       );
       excludes = (
         ../../Src/Platform/Linux/**,
         ../../Src/Platform/Nao/**,
         ../../Src/Platform/Windows/**,
         ../../Src/Tools/Precompiled/*.cpp,
+
+        ../../Src/Modules/Perception/BallPerceptors/BallPerceptor.cpp,
+        ../../Src/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp,
+        ../../Src/Tools/ImageProcessing/CNS/*.cpp,
+        ../../Src/Tools/ImageProcessing/InImageSizeCalculations.cpp,
+        ../../Src/Tools/Modeling/UKFPose2D.cpp,
       );
     };
 
@@ -209,10 +216,13 @@
         ../../Src/Controller/**.(cpp|qrc),
         ../../Src/Controller/BHToolBar.h,
         ../../Src/Controller/TimeCtrl.h,
-        ../../Src/Controller/Views/**Widget.h,
+        ../../Src/Controller/Views/AnnotationView/AnnotationWidget.h,
         ../../Src/Controller/Views/CalibrationView.h,
-        ../../Src/Controller/Views/ColorCalibrationView/*.h,
+        ../../Src/Controller/Views/ColorCalibrationView/ColorCalibrationView.h,
+        ../../Src/Controller/Views/ColorCalibrationView/RangeSelector.h,
+        ../../Src/Controller/Views/ColorCalibrationView/ThresholdSelector.h,
         ../../Src/Controller/Views/ConsoleView.h,
+        ../../Src/Controller/Views/DataView/DataWidget.h,
         ../../Src/Controller/Views/DataView/PropertyEditorFactory.h,
         ../../Src/Controller/Views/DataView/PropertyManager.h,
         ../../Src/Controller/Views/Debugging/ImageReceiver.h,
@@ -221,15 +231,25 @@
         ../../Src/Controller/Views/ImageView.h,
         ../../Src/Controller/Views/JointView.h,
         ../../Src/Controller/Views/KickView/KickView.h,
+        ../../Src/Controller/Views/KickView/KickViewGLWidget.h,
+        ../../Src/Controller/Views/KickView/KickViewWidget.h,
+        ../../Src/Controller/Views/KickView/TabWidget.h,
+        ../../Src/Controller/Views/LogPlayerControlView/LogPlayerControlWidget.h,
+        ../../Src/Controller/Views/SnapshotView/SnapshotWidget.h,
         ../../Src/Controller/Views/PlotView.h,
         ../../Src/Controller/Views/SensorView.h,
+        ../../Src/Controller/Views/TimeView/TimeWidget.h,
         ../../Util/libqxt/qxtspanslider*.*,
+
+        ../../Src/Modules/Perception/BallPerceptors/BallPerceptor.cpp,
+        ../../Src/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp,
+        ../../Src/Tools/ImageProcessing/CNS/*.cpp,
+        ../../Src/Tools/ImageProcessing/InImageSizeCalculations.cpp,
+        ../../Src/Tools/Modeling/UKFPose2D.cpp,
       );
       excludes = (
         ../../Src/Controller/Platform/Windows/*.(cpp|h),
         ../../Src/Controller/Platform/Linux/*.(cpp|h),
-        ../../Src/Controller/Views/ColorCalibrationView/History.h,
-        ../../Src/Controller/Views/FootView/FootWidget.h,
       );
     };
 
@@ -247,7 +267,7 @@
         ../../Src/Utils/bush/**.(cpp|qrc),
         ../../Src/Utils/bush/Session.h,
         ../../Src/Utils/bush/agents/PingAgent.h,
-        ../../Src/Utils/bush/agents/PowerAgent.h,
+        ../../Src/Utils/bush/agents/StatusAgent.h,
         ../../Src/Utils/bush/cmdlib/AbstractConsole.h,
         ../../Src/Utils/bush/cmdlib/Context.h,
         ../../Src/Utils/bush/cmdlib/ProcessRunner.h,

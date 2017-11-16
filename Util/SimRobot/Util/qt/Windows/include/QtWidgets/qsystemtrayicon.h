@@ -40,6 +40,7 @@
 #ifndef QSYSTEMTRAYICON_H
 #define QSYSTEMTRAYICON_H
 
+#include <QtWidgets/qtwidgetsglobal.h>
 #include <QtCore/qobject.h>
 
 #ifndef QT_NO_SYSTEMTRAYICON
@@ -100,6 +101,7 @@ public Q_SLOTS:
     void setVisible(bool visible);
     inline void show() { setVisible(true); }
     inline void hide() { setVisible(false); }
+    void showMessage(const QString &title, const QString &msg, const QIcon &icon, int msecs = 10000);
     void showMessage(const QString &title, const QString &msg,
                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 

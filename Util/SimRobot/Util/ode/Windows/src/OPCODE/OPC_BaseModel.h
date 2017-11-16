@@ -24,7 +24,31 @@
 	struct OPCODE_API OPCODECREATE
 	{
 		//! Constructor
-								OPCODECREATE();
+        inline_ OPCODECREATE():
+            mIMesh(null),
+            mSettings(SPLIT_SPLATTER_POINTS | SPLIT_GEOM_CENTER),
+            mNoLeaf(true),
+            mQuantized(true),
+#ifdef __MESHMERIZER_H__
+            mCollisionHull(false),
+#endif // __MESHMERIZER_H__
+            mKeepOriginal(false),
+            mCanRemap(false)
+        {
+        }
+
+        inline_ OPCODECREATE(MeshInterface *IMesh, const BuildSettings &Settings, bool NoLeaf, bool Quantized):
+            mIMesh(IMesh),
+            mSettings(Settings),
+            mNoLeaf(NoLeaf),
+            mQuantized(Quantized),
+#ifdef __MESHMERIZER_H__
+            mCollisionHull(false),
+#endif // __MESHMERIZER_H__
+            mKeepOriginal(false),
+            mCanRemap(false)
+        {
+        }
 
 		MeshInterface*			mIMesh;			//!< Mesh interface (access to triangles & vertices) (*)
 		BuildSettings			mSettings;		//!< Builder's settings

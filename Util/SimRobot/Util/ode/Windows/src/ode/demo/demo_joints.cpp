@@ -65,6 +65,8 @@ you must verify visually.
 #define MASS (1.0)	// mass of a box
 #define STEPSIZE 0.05
 
+static const dVector3 xunit = { 1, 0, 0 }, zunit = { 0, 0, 1 };
+
 
 // dynamics objects
 static dWorldID world;
@@ -386,8 +388,7 @@ int setupTest (int n)
     joint = dJointCreateHinge2 (world,0);
     dJointAttach (joint,body[0],body[1]);
     dJointSetHinge2Anchor (joint,-0.5*SIDE,0,1);
-    dJointSetHinge2Axis1 (joint,0,0,1);
-    dJointSetHinge2Axis2 (joint,1,0,0);
+    dJointSetHinge2Axes (joint, zunit, xunit);
     max_iterations = 50;
     return 1;
 
@@ -400,8 +401,7 @@ int setupTest (int n)
     joint = dJointCreateHinge2 (world,0);
     dJointAttach (joint,body[0],body[1]);
     dJointSetHinge2Anchor (joint,-0.5*SIDE,0,1);
-    dJointSetHinge2Axis1 (joint,0,0,1);
-    dJointSetHinge2Axis2 (joint,1,0,0);
+    dJointSetHinge2Axes (joint, zunit, xunit);
     dJointSetHinge2Param (joint,dParamFMax,1);
     dJointSetHinge2Param (joint,dParamFMax2,1);
     if (n==431) {

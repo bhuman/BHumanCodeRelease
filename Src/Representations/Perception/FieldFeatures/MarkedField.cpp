@@ -15,7 +15,6 @@
 void MarkedField::draw() const //TODO
 {
   FieldFeature::draw();
-
 }
 
 const Pose2f MarkedField::getGlobalFeaturePosition() const

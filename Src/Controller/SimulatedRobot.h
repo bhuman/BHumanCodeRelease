@@ -35,14 +35,14 @@ class SimulatedRobot
 private:
   SimRobot::Application* application;
 
-  bool blue = false; /**< Whether this robot has blue as team color or not. */
+  bool firstTeam = false; /**< Whether this robot is in the first team or not. */
   int robotNumber; /**< The number of this robot */
   SimRobot::Object* robot = nullptr; /**< The simulated robot object. */
   SimRobot::Object* leftFoot = nullptr; /**< The simulated left foot of the robot. */
   SimRobot::Object* rightFoot = nullptr; /**< The simulated right foot of the robot. */
   static SimRobot::Object* ball; /**< The simulated ball. */
-  std::vector<SimRobot::Object*> blueRobots; /**< The simulated blue robots (excluding this robot). */
-  std::vector<SimRobot::Object*> redRobots; /**< The simulated red robots (excluding this robot). */
+  std::vector<SimRobot::Object*> firstTeamRobots; /**< The simulated robots in the first team(excluding this robot). */
+  std::vector<SimRobot::Object*> secondTeamRobots; /**< The simulated robots in the second team (excluding this robot). */
 
   SimRobot::Object* jointSensors[Joints::numOfJoints]; /**< The handles to the sensor ports of the joints. */
   SimRobot::Object* jointActuators[Joints::numOfJoints]; /**< The handles to the actuator ports of the joints. */
@@ -179,11 +179,11 @@ public:
   static Vector3f getPosition3D(const SimRobot::Object* obj);
 
   /**
-   * Determines whether a robot is member of the blue or red team
+   * Determines whether a robot is member of the first or second team
    * @param obj The robot
-   * @return \c true if the robot is in the blue team; \c false otherwise
+   * @return \c true if the robot is in the first team; \c false otherwise
    */
-  static bool isBlue(const SimRobot::Object* obj);
+  static bool isFirstTeam(const SimRobot::Object* obj);
 
 private:
   /**

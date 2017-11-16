@@ -136,7 +136,5 @@ bool Reader::readSubNodes(bool callHandler)
         break;
     }
   }
-  ASSERT(false);
-  return false;
 }
 

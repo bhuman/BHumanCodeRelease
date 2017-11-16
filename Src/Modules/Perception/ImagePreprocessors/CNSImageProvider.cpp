@@ -2,6 +2,7 @@
  * This file implements a module that calculates contrast normalized Sobel (cns) images.
  * @author Udo Frese
  * @author Thomas Röfer
+ * @author Jesse Richter-Klug
  * @author Lukas Post
  */
 
@@ -71,29 +72,29 @@ struct IntermediateValues
 
 /**
  * Internal subroutine for cnsResponse.
- * Load 8 image pixel and convert to 16 bit, also generates 1 pixel shifts for later filter computation.
+ * Load 2 x 8 image pixel and convert to 16 bit, also generates 1 pixel shifts for later filter computation.
  * img[i] contains src[i], imgL[i] contains src[i-1] and, imgR[i] contains src[i+1], i = 0..7
  * when interpreting __m128i as unsigned short[8].
- * \c isFirst must be set for first block in a row, which does not access src[-1] and uses 0 instead.
- * \c isLast must be set for the last block in a row, which does not access src[8] and uses 0 instead.
+ * lastScr is the __m128i directly before the current one (src), which is directly folllowed by nextSrc
  */
-ALWAYSINLINE static void load8PixelUsingSSE(__m128i& imgL, __m128i& img, __m128i& imgR,
-    const unsigned char* src, bool isFirst, bool isLast)
+ALWAYSINLINE static void load2x8PixelUsingSSE(__m128i& imgL, __m128i& img, __m128i& imgR,
+  __m128i& imgL2, __m128i& img2, __m128i& imgR2,
+  __m128i& lastSrc, __m128i& src,  const __m128i* const nextSrcP)
 {
-  __m128i imgRaw;
+  const __m128i nextSrc = _mm_load_si128(nextSrcP);
 
-  if(!isLast)
-  {
-    if(!isFirst) // regular pixel in the middle of the image
-      imgRaw = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src - 1));
-    else // on the left border take one adress later and shift
-      imgRaw = _mm_slli_si128(_mm_loadu_si128(reinterpret_cast<const __m128i*>(src)), 1);
-  }
-  else // right border take 7 adress earlier and shift
-    imgRaw = _mm_srli_si128(_mm_loadu_si128(reinterpret_cast<const __m128i*>(src - 8)), 7);
-  imgL = _mm_unpacklo_epi8(imgRaw, _mm_setzero_si128());
-  img = _mm_unpacklo_epi8(_mm_srli_si128(imgRaw, 1), _mm_setzero_si128());
-  imgR = _mm_unpacklo_epi8(_mm_srli_si128(imgRaw, 2), _mm_setzero_si128());
+  //imgL = _mm_unpacklo_epi8(_mmauto_add_epi8(_mmauto_srli_si_all(lastSrc, 15), _mmauto_slli_si_all(src, 1)), _mm_setzero_si128());
+  imgL = _mm_unpacklo_epi8(_mm_alignr_epi8(src, lastSrc, 15), _mm_setzero_si128());
+  img = _mm_unpacklo_epi8(src, _mm_setzero_si128());
+  imgR = _mm_unpacklo_epi8(_mm_srli_si128(src, 1), _mm_setzero_si128());
+
+  imgL2 = _mm_unpacklo_epi8(_mm_srli_si128(src, 7), _mm_setzero_si128());
+  img2 = _mm_unpacklo_epi8(_mm_srli_si128(src, 8), _mm_setzero_si128());
+  //imgR2 = _mm_unpacklo_epi8(_mmauto_add_epi8(_mmauto_srli_si_all(src, 9), _mmauto_slli_si_all(nextSrc, 7)), _mm_setzero_si128());
+  imgR2 = _mm_unpacklo_epi8(_mm_alignr_epi8(nextSrc, src, 9), _mm_setzero_si128());
+
+  lastSrc = src;
+  src = nextSrc;
 }
 
 /** Computes SIMD a+2*b+c. */
@@ -245,17 +246,25 @@ void CNSImageProvider::cnsResponse(const unsigned char* src, int width, int heig
 
   // *** Go through two lines to fill up the intermediate Buffers
   // This is exactly the same code as below apart from the final computations being removed
+  ASSERT(intptr_t(src) % 16 == 0);
+  ASSERT(srcOfs % 8 == 0);
+  ASSERT(width % 8 == 0);
   for(int i = 0; i < 2; ++i, ++srcY)
   {
     IntermediateValues* ivCurrent = &iv[srcY & 1][0];
     IntermediateValues* ivLast = &iv[1 - (srcY & 1)][0];
-    const unsigned char* pStart = src + srcY * srcOfs;
-    const unsigned char* pEnd = pStart + width;
-    for(const unsigned char* p = pStart; p < pEnd; p += 8, ++ivCurrent, ++ivLast)
+    const __m128i* pStart = reinterpret_cast<const __m128i*>(src + srcY * srcOfs - (srcY * srcOfs % 16 != 0 ? 8 : 0));
+    const __m128i* pEnd = (pStart + width / 16) + (srcY * srcOfs % 16 != 0 ? 1 : 0);
+    __m128i lastSrc, src;
+    const __m128i* p = pStart;
+    lastSrc = src = _mm_load_si128(p); //TODO change me (prev)
+    for(; p != pEnd; ++ivCurrent, ++ivLast)
     {
       __m128i imgL, img, imgR;
-      load8PixelUsingSSE(imgL, img, imgR, p, p == pStart, p + 8 >= pEnd);
+      __m128i imgL2, img2, imgR2;
+      load2x8PixelUsingSSE(imgL, img, imgR, imgL2, img2, imgR2, lastSrc, src, ++p);
       filters(*ivCurrent, *ivLast, imgL, img, imgR);
+      filters(*(++ivCurrent), *(++ivLast), imgL2, img2, imgR2);
     }
   }
 
@@ -265,18 +274,28 @@ void CNSImageProvider::cnsResponse(const unsigned char* src, int width, int heig
   {
     IntermediateValues* ivCurrent = &iv[srcY & 1][0];
     IntermediateValues* ivLast = &iv[1 - (srcY & 1)][0];
-    const unsigned char* pStart = src + srcY * srcOfs;
-    const unsigned char* pEnd = pStart + width;
+    const __m128i* pStart = reinterpret_cast<const __m128i*>(src + srcY * srcOfs);
+    const __m128i* pEnd = (pStart + width / 16);
     short* myCns = cns + (srcY - 1) * srcOfs;
-    for(const unsigned char* p = pStart; p < pEnd; p += 8, ++ivCurrent, ++ivLast, myCns += 8)
+
+    __m128i lastSrc, src;
+    const __m128i* p = pStart;
+    lastSrc = src = _mm_load_si128(p); //TODO change me (prev)
+
+    for(; p < pEnd; ++ivCurrent, ++ivLast, myCns += 8)
     {
       __m128i imgL, img, imgR;
+      __m128i imgL2, img2, imgR2;
       __m128i sobelX, sobelY, gaussI;
       __m128 gaussI2A, gaussI2B;
-      load8PixelUsingSSE(imgL, img, imgR, p, p == pStart, p + 8 >= pEnd);
+      load2x8PixelUsingSSE(imgL, img, imgR, imgL2, img2, imgR2, lastSrc, src, ++p);
       filters(*ivCurrent, *ivLast, sobelX, sobelY, gaussI, gaussI2A, gaussI2B, imgL, img, imgR);
       cnsFormula(*reinterpret_cast<__m128i*>(myCns), sobelX, sobelY, gaussI, gaussI2A, gaussI2B, scaleF, regVarF, offset);
+
+      filters(*(++ivCurrent), *(++ivLast), sobelX, sobelY, gaussI, gaussI2A, gaussI2B, imgL2, img2, imgR2);
+      cnsFormula(*reinterpret_cast<__m128i*>(myCns += 8), sobelX, sobelY, gaussI, gaussI2A, gaussI2B, scaleF, regVarF, offset);
     }
+
     // Left and right margin: set cns to offset (means 0) and ds to the source pixel
     myCns[-1] = myCns[-width] = static_cast<short>(static_cast<unsigned short>(CNSResponse::OFFSET + (CNSResponse::OFFSET << 8)));
   }
@@ -301,37 +320,4 @@ void CNSImageProvider::update(CNSImage& cnsImage)
       cnsResponse(&theECImage.grayscaled[region.y.min][region.x.min], region.x.getSize(),
                   region.y.getSize(), theECImage.grayscaled.width,
                   reinterpret_cast<short*>(&cnsImage[region.y.min][region.x.min]), sqr(minContrast));
-
-  draw(cnsImage);
-}
-
-template<bool avx> void drawCNSImage(const CNSImage& src, TImage<PixelTypes::YUVPixel>& dest)
-{
-  __m_auto_i* pDest = reinterpret_cast<__m_auto_i*>(dest[0]);
-  const __m_auto_i* const srcEnd = reinterpret_cast<const __m_auto_i*>(src[src.height]);
-  static const __m_auto_i offset = _mmauto_set1_epi8(char(CNSResponse::OFFSET));
-
-  for(const __m_auto_i* pSrc = reinterpret_cast<const __m_auto_i*>(src[0]); pSrc < srcEnd; pSrc++)
-  {
-    const __m_auto_i p = _mmauto_loadt_si_all<true>(pSrc);
-    const __m_auto_i offsetCorrected = _mmauto_abs_epi8(_mmauto_sub_epi8(p, offset));
-    __m_auto_i res0 = _mmauto_slli_epi16(_mmauto_sqrt_epu16<avx>(_mmauto_slli_epi16(_mmauto_maddubs_epi16(offsetCorrected, offsetCorrected), 1)), 8);
-    __m_auto_i res1 = p;
-    _mmauto_unpacklohi_epi8(res0, res1);
-    _mmauto_storet_si_all<true>(pDest++, res0);
-    _mmauto_storet_si_all<true>(pDest++, res1);
-  }
-}
-
-void CNSImageProvider::draw(const CNSImage& cnsImage) const
-{
-  COMPLEX_IMAGE("cnsImage")
-  {
-    cnsDebugImage.setResolution(cnsImage.width, cnsImage.height);
-    if(_supportsAVX2)
-      drawCNSImage<true>(cnsImage, cnsDebugImage);
-    else
-      drawCNSImage<false>(cnsImage, cnsDebugImage);
-    SEND_DEBUG_IMAGE("cnsImage", cnsDebugImage);
-  }
 }

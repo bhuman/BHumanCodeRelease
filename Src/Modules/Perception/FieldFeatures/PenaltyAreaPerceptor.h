@@ -1,6 +1,6 @@
 /**
  * @file PenaltyAreaPerceptor.h
- * profides PenaltyArea
+ * Provides PenaltyArea.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -27,8 +27,9 @@ MODULE(PenaltyAreaPerceptor,
   REQUIRES(Odometer),
   REQUIRES(PenaltyMarkPercept),
   PROVIDES(PenaltyArea),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
+    (bool)(true) usePenaltyMark,
     (float)(110.f) thresholdDisVaranzToPenaltyMark,
     (float)(750.f) maxDistVarianceOfLineEnds,
     (float)(70.f) thresholdIntersections,
@@ -41,8 +42,11 @@ MODULE(PenaltyAreaPerceptor,
 class PenaltyAreaPerceptor : public PenaltyAreaPerceptorBase
 {
   void update(PenaltyArea& penaltyArea);
+
 private:
-  int lastFrameTime = 1;
+  unsigned lastFrameTime = 1;
+  PenaltyMarkPercept theLastPenaltyMarkPercept;
+
   bool searchWithPMarkAndLine(PenaltyArea& penaltyArea) const;
   bool searchWithIntersections(PenaltyArea& penaltyArea) const;
 

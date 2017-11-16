@@ -9,6 +9,7 @@
 
 #include "RoboCupGameControlData.h"
 #include "Tools/Streams/Streamable.h"
+#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 
 struct TeamInfo : public RoboCup::TeamInfo, public Streamable
 {
@@ -21,7 +22,8 @@ public:
 
   /** Draws the score in the scene view. */
   void draw() const;
-private:
+
+protected:
   /**
    * The method makes the object streamable.
    * @param in The stream from which the object is read (if in != 0).
@@ -30,11 +32,14 @@ private:
   virtual void serialize(In* in, Out* out);
 };
 
-struct OwnTeamInfo : public TeamInfo
+STREAMABLE_WITH_BASE(OwnTeamInfo, TeamInfo, COMMA public BHumanMessageParticle<idOwnTeamInfo>
 {
+  /** BHumanMessageParticle functions */
+  void operator >> (BHumanMessage& m) const override;
+
   OwnTeamInfo();
-  void draw() const;
-};
+  void draw() const,
+});
 
 struct OpponentTeamInfo : public TeamInfo
 {

@@ -294,10 +294,13 @@ dxJointUniversal::getInfo1( dxJoint::Info1 *info )
 
 
 void
-dxJointUniversal::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *info )
+dxJointUniversal::getInfo2( dReal worldFPS, dReal worldERP, 
+    int rowskip, dReal *J1, dReal *J2,
+    int pairskip, dReal *pairRhsCfm, dReal *pairLoHi, 
+    int *findex )
 {
     // set the three ball-and-socket rows
-    setBall( this, worldFPS, worldERP, info, anchor1, anchor2 );
+    setBall( this, worldFPS, worldERP, rowskip, J1, J2, pairskip, pairRhsCfm, anchor1, anchor2 );
 
     // set the universal joint row. the angular velocity about an axis
     // perpendicular to both joint axes should be equal. thus the constraint
@@ -308,34 +311,30 @@ dxJointUniversal::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *in
 
     // length 1 joint axis in global coordinates, from each body
     dVector3 ax1, ax2;
-    dVector3 ax2_temp;
     // length 1 vector perpendicular to ax1 and ax2. Neither body can rotate
     // about this.
     dVector3 p;
-    dReal k;
-
+    
     // Since axis1 and axis2 may not be perpendicular
     // we find a axis2_tmp which is really perpendicular to axis1
     // and in the plane of axis1 and axis2
     getAxes( ax1, ax2 );
-    k = dCalcVectorDot3( ax1, ax2 );
-    ax2_temp[0] = ax2[0] - k * ax1[0];
-    ax2_temp[1] = ax2[1] - k * ax1[1];
-    ax2_temp[2] = ax2[2] - k * ax1[2];
+
+    dReal k = dCalcVectorDot3( ax1, ax2 );
+
+    dVector3 ax2_temp;
+    dAddVectorScaledVector3(ax2_temp, ax2, ax1, -k);
     dCalcVectorCross3( p, ax1, ax2_temp );
     dNormalize3( p );
 
-    int s3 = 3 * info->rowskip;
-
-    info->J1a[s3+0] = p[0];
-    info->J1a[s3+1] = p[1];
-    info->J1a[s3+2] = p[2];
-
-    if ( node[1].body )
+    int currRowSkip = 3 * rowskip;
     {
-        info->J2a[s3+0] = -p[0];
-        info->J2a[s3+1] = -p[1];
-        info->J2a[s3+2] = -p[2];
+        dCopyVector3( J1 + currRowSkip + GI2__JA_MIN, p);
+
+        if ( node[1].body )
+        {
+            dCopyNegatedVector3( J2 + currRowSkip + GI2__JA_MIN, p);
+        }
     }
 
     // compute the right hand side of the constraint equation. set relative
@@ -352,13 +351,21 @@ dxJointUniversal::getInfo2( dReal worldFPS, dReal worldERP, const Info2Descr *in
     // theta - Pi/2 ~= cos(theta), so
     //    |angular_velocity|  ~= (erp*fps) * (ax1 dot ax2)
 
-    info->c[3] = worldFPS * worldERP * - k;
+    int currPairSkip = 3 * pairskip;
+    {
+        pairRhsCfm[currPairSkip + GI2_RHS] = worldFPS * worldERP * (-k);
+    }
+
+    currRowSkip += rowskip; currPairSkip += pairskip;
 
     // if the first angle is powered, or has joint limits, add in the stuff
-    int row = 4 + limot1.addLimot( this, worldFPS, info, 4, ax1, 1 );
+    if (limot1.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax1, 1 ))
+    {
+        currRowSkip += rowskip; currPairSkip += pairskip;
+    }
 
     // if the second angle is powered, or has joint limits, add in more stuff
-    limot2.addLimot( this, worldFPS, info, row, ax2, 1 );
+    limot2.addLimot( this, worldFPS, J1 + currRowSkip, J2 + currRowSkip, pairRhsCfm + currPairSkip, pairLoHi + currPairSkip, ax2, 1 );
 }
 
 

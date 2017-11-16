@@ -12,6 +12,7 @@
 #include "RoboCupCtrl.h"
 #include "Platform/Time.h"
 #include "Platform/SimulatedNao/Robot.h"
+#include "Tools/Settings.h"
 
 #include <QIcon>
 
@@ -30,6 +31,26 @@ RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application) : robotName(nullptr
 
   this->controller = this;
   this->application = &application;
+
+  // Get colors of first and second team
+  // If there is no teamcolors compound, fall back to default (black, red)
+  SimRobot::Object* teamcolors(application.resolveObject("RoboCup.teamcolors", SimRobotCore2::compound));
+  if(teamcolors != nullptr)
+  {
+    const QString& fullNameFirstTeamColor = ((SimRobot::Object*)application.getObjectChild(*teamcolors, 0u))->getFullName();
+    const QString& fullNameSecondTeamColor = ((SimRobot::Object*)application.getObjectChild(*teamcolors, 1u))->getFullName();
+    const std::string baseNameFirstTeamColor = fullNameFirstTeamColor.mid(fullNameFirstTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
+    const std::string baseNameSecondTeamColor = fullNameSecondTeamColor.mid(fullNameSecondTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
+
+    firstTeamColor = parseColorFromString(baseNameFirstTeamColor);
+    secondTeamColor = parseColorFromString(baseNameSecondTeamColor);
+  }
+  else
+  {
+    firstTeamColor = Settings::TeamColor::black;
+    secondTeamColor = Settings::TeamColor::red;
+  }
+  gameController.setTeamInfos(firstTeamColor, secondTeamColor);
   Q_INIT_RESOURCE(Controller);
 }
 
@@ -49,6 +70,7 @@ bool RoboCupCtrl::compile()
 
   // get interfaces to simulated objects
   SimRobot::Object* group = application->resolveObject("RoboCup.robots", SimRobotCore2::compound);
+
   for(unsigned currentRobot = 0, count = application->getObjectChildCount(*group); currentRobot < count; ++currentRobot)
   {
     SimRobot::Object* robot = (SimRobot::Object*)application->getObjectChild(*group, currentRobot);
@@ -223,4 +245,46 @@ unsigned RoboCupCtrl::getTime() const
     return unsigned(time);
   else
     return unsigned(Time::getRealSystemTime() + time);
+}
+
+Settings::TeamColor RoboCupCtrl::parseColorFromString(const std::string& color)
+{
+  if(color == "blue")
+  {
+    return Settings::TeamColor::blue;
+  }
+  else if(color == "red")
+  {
+    return Settings::TeamColor::red;
+  }
+  else if(color == "yellow")
+  {
+    return Settings::TeamColor::yellow;
+  }
+  else if(color == "black")
+  {
+    return Settings::TeamColor::black;
+  }
+  else if(color == "white")
+  {
+    return Settings::TeamColor::white;
+  }
+  else if(color == "orange")
+  {
+    return Settings::TeamColor::orange;
+  }
+  else if(color == "purple")
+  {
+    return Settings::TeamColor::purple;
+  }
+  else if(color == "brown")
+  {
+    return Settings::TeamColor::brown;
+  }
+  else if(color == "gray")
+  {
+    return Settings::TeamColor::gray;
+  }
+  ASSERT(false); /** This should not happen! */
+  return Settings::TeamColor::black; /** Just to suppress warnings... */
 }

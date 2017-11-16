@@ -22,10 +22,64 @@ void RobotPose::onRead()
   inversePose.invert();
 }
 
+void RobotPose::operator >> (BHumanMessage& m) const
+{
+  m.theBSPLStandardMessage.pose[0] = translation.x();
+  m.theBSPLStandardMessage.pose[1] = translation.y();
+  m.theBSPLStandardMessage.pose[2] = rotation;
+  m.theBSPLStandardMessage.currentPositionConfidence = static_cast<int8_t>(validity * 100);
+
+  m.theBHumanStandardMessage.robotPoseValidity = static_cast<unsigned char>(validity * 255.f);
+  m.theBHumanStandardMessage.robotPoseDeviation = deviation;
+  m.theBHumanStandardMessage.robotPoseCovariance[0] = covariance(0, 0);
+  m.theBHumanStandardMessage.robotPoseCovariance[1] = covariance(1, 1);
+  m.theBHumanStandardMessage.robotPoseCovariance[2] = covariance(2, 2);
+  m.theBHumanStandardMessage.robotPoseCovariance[3] = (covariance(1, 0) + covariance(0, 1)) / 2.f;
+  m.theBHumanStandardMessage.robotPoseCovariance[4] = (covariance(2, 0) + covariance(0, 2)) / 2.f;
+  m.theBHumanStandardMessage.robotPoseCovariance[5] = (covariance(2, 1) + covariance(1, 2)) / 2.f;
+
+  m.theBHULKsStandardMessage.timestampLastJumped = timestampLastJump;
+}
+
+void RobotPose::operator<< (const BHumanMessage& m)
+{
+  translation.x() = m.theBSPLStandardMessage.pose[0];
+  translation.y() = m.theBSPLStandardMessage.pose[1];
+  rotation = m.theBSPLStandardMessage.pose[2];
+
+  inversePose = static_cast<Pose2f>(*this).inverse();
+
+  if(m.theBHULKsStandardMessage.member == B_HUMAN_MEMBER)
+  {
+    deviation = m.theBHumanStandardMessage.robotPoseDeviation;
+    validity = static_cast<float>(m.theBHumanStandardMessage.robotPoseValidity) / 255.f;
+
+    covariance(0, 0) = m.theBHumanStandardMessage.robotPoseCovariance[0];
+    covariance(1, 1) = m.theBHumanStandardMessage.robotPoseCovariance[1];
+    covariance(2, 2) = m.theBHumanStandardMessage.robotPoseCovariance[2];
+    covariance(1, 0) = covariance(0, 1) = m.theBHumanStandardMessage.robotPoseCovariance[3];
+    covariance(2, 0) = covariance(0, 2) = m.theBHumanStandardMessage.robotPoseCovariance[4];
+    covariance(2, 1) = covariance(1, 2) = m.theBHumanStandardMessage.robotPoseCovariance[5];
+  }
+  else
+  {
+    covariance(0, 0) = 1000.f;
+    covariance(1, 1) = 1000.f;
+    covariance(2, 2) = 0.2f;
+    covariance(1, 0) = covariance(0, 1) = 25.f;
+    covariance(2, 0) = covariance(0, 2) = 0.01f;
+    covariance(2, 1) = covariance(1, 2) = 0.01f;
+
+    deviation = std::sqrt(std::max(covariance(0, 0), covariance(1, 1)));
+    validity = 0.8f;
+  }
+  timestampLastJump = m.toLocalTimestamp(m.theBHULKsStandardMessage.timestampLastJumped);
+}
+
 Pose2f RobotPose::inverse() const
 {
-  ASSERT(false);//use theRobotPose.inversePose
-  return inversePose;//bad copy stuff
+  FAIL("Use RobotPose::inversePose instead.");
+  return inversePose;
 }
 
 void RobotPose::verify() const
@@ -78,7 +132,7 @@ void RobotPose::draw() const
     ColorRGBA::black
   };
   const ColorRGBA ownTeamColorForDrawing = colors[Blackboard::getInstance().exists("OwnTeamInfo") ?
-      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLUE];
+      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK];
 
   DEBUG_DRAWING("representation:RobotPose", "drawingOnField")
   {
@@ -178,12 +232,16 @@ void RobotPose::draw() const
           return;
         useRight = (intersection1 - this->translation).squaredNorm() < (intersection1 - gloBallPos).squaredNorm() ? intersection1 : intersection2;
 
-        const Vector2f points[3] = {gloBallPos , useRight , useLeft};
+        const Vector2f points[3] = {gloBallPos, useRight, useLeft};
         POLYGON("representation:RobotPose:coverage", 3, points, 10, Drawings::noPen, color, Drawings::solidBrush, color);
       };
 
-      const Vector2f points[3] = {gloBallPos , Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightGoal),
-                                  Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftGoal)};
+      const Vector2f points[3] =
+      {
+        gloBallPos,
+        Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightGoal),
+        Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftGoal)
+      };
       POLYGON("representation:RobotPose:coverage", 3, points, 10, Drawings::noPen, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50),
               Drawings::solidBrush, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50));
 
@@ -222,33 +280,4 @@ void GroundTruthRobotPose::draw() const
   DECLARE_DEBUG_DRAWING("origin:GroundTruthRobotPoseWithoutRotation", "drawingOnField");
   ORIGIN("origin:GroundTruthRobotPose", translation.x(), translation.y(), rotation);
   ORIGIN("origin:GroundTruthRobotPoseWithoutRotation", translation.x(), translation.y(), 0);
-}
-
-RobotPoseCompressed::RobotPoseCompressed(const RobotPose& robotPose) :
-  translation(robotPose.translation), rotation(robotPose.rotation), deviation(robotPose.deviation)
-{
-  validity = static_cast<unsigned char>(robotPose.validity * 255.f);
-  covariance[0] = robotPose.covariance(0, 0);
-  covariance[1] = robotPose.covariance(1, 1);
-  covariance[2] = robotPose.covariance(2, 2);
-  covariance[3] = (robotPose.covariance(1, 0) + robotPose.covariance(0, 1)) / 2.f;
-  covariance[4] = (robotPose.covariance(2, 0) + robotPose.covariance(0, 2)) / 2.f;
-  covariance[5] = (robotPose.covariance(2, 1) + robotPose.covariance(1, 2)) / 2.f;
-}
-
-RobotPoseCompressed::operator RobotPose() const
-{
-  RobotPose robotPose;
-  robotPose.translation = translation;
-  robotPose.rotation = rotation;
-  robotPose.validity = validity / 255.f;
-  robotPose.deviation = deviation;
-  robotPose.covariance(0, 0) = covariance[0];
-  robotPose.covariance(1, 1) = covariance[1];
-  robotPose.covariance(2, 2) = covariance[2];
-  robotPose.covariance(1, 0) = robotPose.covariance(0, 1) = covariance[3];
-  robotPose.covariance(2, 0) = robotPose.covariance(0, 2) = covariance[4];
-  robotPose.covariance(2, 1) = robotPose.covariance(1, 2) = covariance[5];
-
-  return robotPose;
 }

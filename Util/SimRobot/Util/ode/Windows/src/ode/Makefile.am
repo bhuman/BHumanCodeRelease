@@ -1,6 +1,6 @@
-SUBDIRS = src
+SUBDIRS = src doc
 if ENABLE_DEMOS
   SUBDIRS += demo
 endif
 
-EXTRA_DIST = doc
+#EXTRA_DIST = doc

@@ -1,8 +1,8 @@
 /**
-* @file bhumanemu.cpp
-* Implementation of a dummy libbhuman replication.
-* @author Colin Graf
-*/
+ * @file bhumanemu.cpp
+ * Implementation of a dummy libbhuman replication.
+ * @author Colin Graf
+ */
 
 #include <sys/types.h>
 #include <sys/mman.h>

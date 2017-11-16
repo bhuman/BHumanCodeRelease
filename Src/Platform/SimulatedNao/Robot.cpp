@@ -71,7 +71,7 @@ SenderList* Robot::getSender(const std::string& senderName)
       return sender;
   }
   TRACE("%s not found", senderName.c_str());
-  return 0;
+  return nullptr;
 }
 
 ReceiverList* Robot::getReceiver(const std::string& receiverName)
@@ -83,5 +83,5 @@ ReceiverList* Robot::getReceiver(const std::string& receiverName)
       return receiver;
   }
   TRACE("%s not found", receiverName.c_str());
-  return 0;
+  return nullptr;
 }

@@ -119,11 +119,13 @@ std::list<std::string> File::getConfigDirs()
     dirs.push_back(configDir + "Robots/" + Global::getSettings().headName + "/Head/");
     dirs.push_back(configDir + "Robots/" + Global::getSettings().bodyName + "/Body/");
     dirs.push_back(configDir + "Robots/" + Global::getSettings().headName + "/" + Global::getSettings().bodyName + "/");
-    dirs.push_back(configDir + "Robots/" + Global::getSettings().headName + "/");
-    dirs.push_back(configDir + "Robots/Default/");
-    dirs.push_back(configDir + "Locations/" + Global::getSettings().location + "/");
     if(Global::getSettings().location != "Default")
-      dirs.push_back(configDir + "Locations/Default/");
+      dirs.push_back(configDir + "Locations/" + Global::getSettings().location + "/");
+    if(Global::getSettings().scenario != "Default")
+      dirs.push_back(configDir + "Scenarios/" + Global::getSettings().scenario + "/");
+    dirs.push_back(configDir + "Robots/Default/");
+    dirs.push_back(configDir + "Locations/Default/");
+    dirs.push_back(configDir + "Scenarios/Default/");
   }
 #endif
   dirs.push_back(configDir);
