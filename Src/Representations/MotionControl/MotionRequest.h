@@ -9,6 +9,7 @@
 #include "SpecialActionRequest.h"
 #include "WalkRequest.h"
 #include "KickRequest.h"
+#include "DiveRequest.h"
 
 /**
  * @struct MotionRequest
