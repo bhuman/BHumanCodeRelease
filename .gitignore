@@ -3,6 +3,7 @@ Config/Logs
 Make/LinuxCodeLite/*.project
 Make/LinuxCodeLite/*.tags
 Make/LinuxCodeLite/*.workspace*
+Make/LinuxCodeLite/.*
 Make/VS2015/.vs
 Make/VS2015/obj
 Make/VS2015/*.filters
@@ -21,3 +22,5 @@ Make/NetBeans/*/
 Util/GameController/error.txt
 Util/GameController/logs/
 Util/GameController/logs_teamcomm/
+Util/alcommon/
+Util/boost
