@@ -27,9 +27,9 @@ state(waitForBall)
 	Stand();
 	
       if(libCodeRelease.between(theBallModel.estimate.position.x(),0.f,1000.f)
-	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,1000.f) 
-	&& libCodeRelease.between(theBallModel.estimate.velocity.x(),1.f,1000.f)
-	&& libCodeRelease.between(theBallModel.estimate.velocity.y(),1.f,1000.f))
+	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,1000.f)) 
+	//&& libCodeRelease.between(theBallModel.estimate.velocity.x(),1.f,1000.f)
+	//&& libCodeRelease.between(theBallModel.estimate.velocity.y(),1.f,1000.f))
         goto stopBall;
     }
     action
