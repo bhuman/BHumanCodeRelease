@@ -1,6 +1,7 @@
 /** All option files that belong to the current behavior have to be included by this file. */
 
 #include "Options/Soccer.h"
+
 #include "Options/GameControl/HandleGameState.h"
 #include "Options/GameControl/HandlePenaltyState.h"
 #include "Options/GameControl/PlayingState.h"
@@ -18,11 +19,12 @@
 #include "Options/Output/MotionRequest/WalkToTarget.h"
 #include "Options/Output/MotionRequest/InWalkKick.h"
 #include "Options/Output/MotionRequest/GetUpEngine.h"
-#include "Options/Output/MotionRequest/Dive.h"
 #include "Options/Output/PlaySound.h"
 #include "Options/Output/PlaySamples.h"
 
 #include "Options/Skills/GetUp.h"
+
+#include "Option/Tactic/HandleTeamTactic.h"
 
 #include "Options/Roles/Striker.h"
 #include "Options/Roles/Goaler.h"
