@@ -1,34 +1,31 @@
-//
-//  Dive.h
-//  Naova
-//
-//  Created by Marc-Antoine on 17-10-11.
-//
-option(Dive){
-    
-    initial_state(setRequest)
+/** Sets all members of the MotionRequest representation for simple standing */
+option(Dive)
+{
+  /** Set the motion request. */
+  initial_state(setRequest)
+  {
+    transition
     {
-        transition
-        {
-            if(theMotionInfo.motion == MotionRequest::dive)
-                goto requestIsExecuted;
-        }
-        action
-        {
-            theMotionInfo.motion = MotionRequest::dive;
-        }
+      if(theMotionInfo.motion == MotionRequest::dive)
+        goto requestIsExecuted;
     }
-    
-    target_state(requestIsExecuted)
+    action
     {
-        transition
-        {
-            if(theMotionInfo.motion != MotionRequest::dive)
-                goto setRequest;
-        }
-        action
-        {
-            theMotionInfo.motion = MotionRequest::dive;
-        }
+      theMotionRequest.motion = MotionRequest::dive;
     }
+  }
+
+  /** The motion process has started executing the request. */
+  target_state(requestIsExecuted)
+  {
+    transition
+    {
+      if(theMotionInfo.motion != MotionRequest::dive)
+        goto setRequest;
+    }
+    action
+    {
+      theMotionRequest.motion = MotionRequest::dive;
+    }
+  }
 }
