@@ -75,7 +75,7 @@ option(HandleGameState)
   {
     action
     {
-      ChooseRole();
+      PlayingState();
     }
   }
 }

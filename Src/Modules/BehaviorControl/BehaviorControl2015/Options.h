@@ -24,12 +24,9 @@
 
 #include "Options/Skills/GetUp.h"
 
-#include "Option/Tactic/HandleTeamTactic.h"
+#include "Options/Tactic/HandleTeamTactic.h"
 
 #include "Options/Roles/Striker.h"
 #include "Options/Roles/Goaler.h"
-
-#include "Options/DemoOptions/Demo.h"
-#include "Options/DemoOptions/Waving.h"
 
 #include "Options/Tools/ButtonPressedAndReleased.h"

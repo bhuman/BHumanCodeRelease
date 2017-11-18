@@ -9,7 +9,7 @@ option(PlayingState)
     }
     action
     {
-      Demo();
+      HandleTeamTactic();
     }
   }
 }
