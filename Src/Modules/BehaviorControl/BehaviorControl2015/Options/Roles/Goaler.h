@@ -22,14 +22,14 @@ state(waitForBall)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+     // if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         //goto searchForBall;
-	Stand();
+	//Stand();
 	
       if(libCodeRelease.between(theBallModel.estimate.position.x(),0.f,500.f)
-	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,500.f) 
-	&& libCodeRelease.between(theBallModel.estimate.velocity.x(),1.f,1000.f)
-	&& libCodeRelease.between(theBallModel.estimate.velocity.y(),1.f,1000.f))
+	&& libCodeRelease.between(theBallModel.estimate.position.y(),0.f,500.f))
+	//&& libCodeRelease.between(theBallModel.estimate.velocity.x(),1.f,1000.f)
+	//&& libCodeRelease.between(theBallModel.estimate.velocity.y(),1.f,1000.f))
         goto stopBall;
 	
 
@@ -53,8 +53,8 @@ state(stopBall)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        //goto searchForBall;
-	Stand();
+        goto waitForBall;
+	//Stand();
       /*if(libCodeRelease.between(theBallModel.estimate.position.x(),40.f,400.f)
 	&& libCodeRelease.between(theBallModel.estimate.position.y(),40.f,400.f))*/
 	
