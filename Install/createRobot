@@ -164,10 +164,17 @@ function createCalibrationDirectory()
 function createBushConfig()
 {
   message "Creating network.cfg"
+
+#HOTFIX Ben
+#cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
+#name = "${robotName}"; 
+#lan = "10.0.${teamID}.5${robotPart}";
+#wlan = "192.168.${teamID}.5${robotPart}";
+
 cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
-name = "${robotName}";
-lan = "192.168.${teamID}.${robotPart}";
-wlan = "10.0.${teamID}.${robotPart}";
+name = "${robotName}"; 
+lan = "10.0.0.5${robotPart}";
+wlan = "192.168.0.5${robotPart}";
 EOF
 }
 

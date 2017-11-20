@@ -3,8 +3,8 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-BASE_ETH0_IP="10.0.0."
-ROBOT_ID="%robotPart%"
+BASE_ETH0_IP="192.168.0."
+ROBOT_ID="20"
 
 depend() {
   need dbus
