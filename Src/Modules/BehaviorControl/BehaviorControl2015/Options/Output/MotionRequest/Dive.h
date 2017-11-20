@@ -1,4 +1,4 @@
-/** Sets all members of the MotionRequest representation for simple standing */
+/** Fichier gerant les etapes dd'un Dive (plonger, se relever) */
 option(Dive)
 {
   /** Set the motion request. */

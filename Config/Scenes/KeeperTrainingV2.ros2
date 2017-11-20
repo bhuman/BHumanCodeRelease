@@ -12,12 +12,12 @@
 
     <Compound name="robots">
      <Body ref="Nao" name="robot2">
-        <Translation x="-3" z="320mm"/>
+        <Translation x="-2.5" y="0.5m" z="320mm"/>
         <Rotation z="180degree"/>
       </Body>
 
       <Body ref="Nao" name="robot1">
-        <Translation x="-4.5" z="320mm"/>
+        <Translation x="-4.5" y="-0.2m" z="320mm"/>
 	<Set name="NaoColor" value="red"/>
       </Body>
 
@@ -28,7 +28,7 @@
 
     <Compound name="balls">
       <Body ref="ball">
-        <Translation x="-3.2m" />
+        <Translation x="-2.7m" y="0.5m" />
       </Body>
     </Compound>
 
