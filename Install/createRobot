@@ -35,6 +35,22 @@ usage() {
   echo " -D         : Only delete all files for the given robot"
   echo " -p         : Only update the network profiles"
   echo " -h         : Display this help"
+  echo ""
+  echo ""
+  echo "#########################################################################"
+  echo "########################      NAOVA       ###############################"
+  echo "########################           De Ben ###############################"
+  echo "#########################################################################"
+  echo ""
+  echo "La config réseau des Nao est générée en fonction de ce que vous ecrivez "
+  echo "ici. Il est donc important de respecter ce format pour que ca fonctionne"
+  echo "au club :"
+  echo "${0} -t <Un nombre d'equipe> -r <Un chiffre entre 1 et 9> <Nom du Robot>"
+  echo ""
+  echo "Le Nao sera joignable à l'adresse 192.168.0.5<chiffre entre 1 et 9>"
+  echo ""
+  echo "N'oubliez pas de rouler ./addRobotsIds si c'est pas déjà fait."
+  echo ""
   exit 1
 }
 
