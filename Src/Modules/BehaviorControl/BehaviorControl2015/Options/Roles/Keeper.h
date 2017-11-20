@@ -1,8 +1,8 @@
-/** A test goaler */
+/** A test Keeper */
 
 
 
-option(Goaler)
+option(Keeper)
 {
   initial_state(start)
   {

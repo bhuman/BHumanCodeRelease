@@ -27,6 +27,6 @@
 #include "Options/Tactic/HandleTeamTactic.h"
 
 #include "Options/Roles/Striker.h"
-#include "Options/Roles/Goaler.h"
+#include "Options/Roles/Keeper.h"
 
 #include "Options/Tools/ButtonPressedAndReleased.h"

@@ -5,7 +5,7 @@ option(HandleTeamTactic)
     transition
     {
       if(theRobotInfo.number == 1)
-        goto PlayGoaler;
+        goto PlayKeeper;
       else if(theRobotInfo.number == 2)
         goto PlayStriker;
     }
@@ -15,12 +15,12 @@ option(HandleTeamTactic)
     }
   }
   
-  state(PlayGoaler)
+  state(PlayKeeper)
   {
     action
     {
       LookForward();
-      Goaler();
+      Keeper();
     }
   }
   
