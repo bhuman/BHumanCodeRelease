@@ -13,8 +13,8 @@ option(Keeper)
          && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveRight; */
          
-      if(libCodeRelease.between(theBallModel.estimate.position.x(), 20.f, 1000.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
+      if(libCodeRelease.between(theBallModel.estimate.position.x(), 200.f, 1000.f)
+         && libCodeRelease.between(theBallModel.estimate.velocity.x(), -1000.f, -5.f))
       {
         goto sumo;
       }
