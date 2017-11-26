@@ -8,6 +8,8 @@ option(HandleTeamTactic)
         goto PlayKeeper;
       else if(theRobotInfo.number == 2)
         goto PlayStriker;
+       else if(theRobotInfo.number == 3)
+        goto PlayStriker;
     }
     action
     {

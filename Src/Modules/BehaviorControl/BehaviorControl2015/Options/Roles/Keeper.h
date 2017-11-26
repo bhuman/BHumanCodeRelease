@@ -15,6 +15,12 @@ option(Keeper)
          && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveRight;
   }*/
+
+
+
+ 
+
+
     
   initial_state(start)
   {
@@ -57,6 +63,20 @@ option(Keeper)
       //SpecialAction(SpecialActionRequest::diveRight);
     }
   }
+
+  state(sumo)
+  {
+    transition
+    {
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+        goto start;
+    }
+    action
+    {
+      
+      SpecialAction(SpecialActionRequest::sumo);
+    }
+  }
   
   state(alignToBall)
   {
@@ -64,6 +84,8 @@ option(Keeper)
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
+     if(libCodeRelease.between(theBallModel.estimate.position.x(), 20.f, 300.f))
+	goto sumo;
     }
     action
     {
