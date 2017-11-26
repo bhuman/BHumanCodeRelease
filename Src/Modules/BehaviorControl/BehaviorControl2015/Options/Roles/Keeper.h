@@ -1,9 +1,9 @@
 /** A test Keeper */
 option(Keeper)
 {
-  /*common_transition
+  common_transition
   {
-      if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
+      /*if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
          && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,1000.f)
          && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveLeft;
@@ -11,15 +11,23 @@ option(Keeper)
       if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
          && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,-1000.f)
          && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
-         goto diveRight;
-  }*/
-    
+         goto diveRight; */
+         
+      if(libCodeRelease.between(theBallModel.estimate.position.x(), 20.f, 1000.f)
+         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
+      {
+        goto sumo;
+      }
+  }
+
   initial_state(start)
   {
     transition
     {
       if(state_time > 1000)
+      {
         goto alignToBall;
+      }
     }
     action
     {
@@ -33,7 +41,9 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
         goto start;
+      }
     }
     action
     {
@@ -47,12 +57,30 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
         goto start;
+      }
     }
     action
     {
       // ** Desactivated until the special action exist **
       //SpecialAction(SpecialActionRequest::diveRight);
+    }
+  }
+
+  state(sumo)
+  {
+    transition
+    {
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+        goto start;
+      }
+    }
+    action
+    {
+      
+      SpecialAction(SpecialActionRequest::sumo);
     }
   }
   
@@ -61,10 +89,16 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
           if(theBallModel.estimate.velocity.y() > 0)
+          {
             goto searchLeftForBall;
+          }
           else if(theBallModel.estimate.velocity.y() < 0)
+          {
             goto searchRightForBall;
+          }
+      }
     }
     action
     {
@@ -78,12 +112,20 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
           if(theBallModel.estimate.velocity.y() > 0)
+          {
             goto searchLeftForBall;
+          }
           else if(theBallModel.estimate.velocity.y() < 0)
+          {
             goto searchRightForBall;
+          }
+      }
       if(std::abs(theBallModel.estimate.position.angle()) < 5_deg)
+      {
        goto walkToBall;
+      }
     
     }
     action
@@ -98,17 +140,52 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
           if(theBallModel.estimate.velocity.y() > 0)
+          {
             goto searchLeftForBall;
+          }
           else if(theBallModel.estimate.velocity.y() < 0)
+          {
             goto searchRightForBall;
-      if(theBallModel.estimate.position.norm() < 200.f)
-        goto alignBehindBall;
+          }
+      }
+      if(theBallModel.estimate.position.norm() < 500.f)
+      {
+        goto alignToGoal;
+      }
     }
     action
     {
       LookForward();
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), libCodeRelease.KeeperDesiredPos);
+    }
+  }
+  
+  state(alignToGoal)
+  {
+    transition
+    {
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+          if(theBallModel.estimate.position.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.position.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
+      if(std::abs(libCodeRelease.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      {
+        goto alignBehindBall;
+      }
+    }
+    action
+    {
+      LookForward();
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
 
@@ -117,14 +194,22 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
           if(theBallModel.estimate.velocity.y() > 0)
+          {
             goto searchLeftForBall;
+          }
           else if(theBallModel.estimate.velocity.y() < 0)
+          {
             goto searchRightForBall;
+          }
+      }
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-          && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
+         && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
+      {
         goto kick;
+      }
     }
     action
     {
@@ -138,7 +223,9 @@ option(Keeper)
     transition
     {
       if(state_time > 3000 || (state_time > 10 && action_done))
+      {
         goto start;
+      }
     }
     action
     {
@@ -152,7 +239,9 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      {
         goto alignToBall;
+      }
     }
     action
     {
@@ -166,7 +255,9 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      {
         goto alignToBall;
+      }
     }
     action
     {

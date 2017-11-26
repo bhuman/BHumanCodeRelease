@@ -18,6 +18,7 @@ transition standHighLookUp standHighLookUp start
 transition sitDown sitDown start
 
 transition dive dive start
+transition sumo sumo start
 
 "This line must be the last one
 transition extern extern start
