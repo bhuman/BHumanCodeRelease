@@ -14,9 +14,12 @@ public:
   
   
   bool between(float value, float min, float max);
+  float clamp(float value, float min, float max);
     
   int timeSinceBallWasSeen();
   
  
-  float angleToGoal;
+  float angleToOppGoal;
+  float angleToOwnGoal;
+  Vector2f KeeperDesiredPos; 
 };
