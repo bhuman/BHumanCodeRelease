@@ -53,13 +53,13 @@ option(Striker)
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
-      if(std::abs(libCodeRelease.angleToGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      if(std::abs(libCodeRelease.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
         goto alignBehindBall;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
 
@@ -71,13 +71,13 @@ option(Striker)
         goto searchForBall;
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
           && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(libCodeRelease.angleToGoal) < 2_deg)
+          && std::abs(libCodeRelease.angleToOppGoal) < 2_deg)
         goto kick;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
     }
   }
 
@@ -91,7 +91,7 @@ option(Striker)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
   
