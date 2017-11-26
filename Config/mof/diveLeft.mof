@@ -1,4 +1,4 @@
-motion_id = dive
+motion_id = diveLeft
 
 "mouvement done by goalie to stop the ball far left
 
@@ -17,6 +17,6 @@ label repeat
 
 
 
-transition dive dive repeat
+transition diveLeft diveLeft repeat
 
 transition allMotions extern start

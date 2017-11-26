@@ -8,16 +8,16 @@
 #include "Modules/MotionControl/KickEngine/KickEngineParameters.h"
 #include "Tools/Streams/AutoStreamable.h"
 
-STREAMABLE(DiveRequest,
+STREAMABLE(DiveLeftRequest,
 {
-  ENUM(DiveMotionID,
+  ENUM(DiveLeftMotionID,
   {,
-    Dive,
+    DiveLeft,
   });
 
-  static DiveMotionID getDiveMotionFromName(const char* name),
+  static DiveLeftMotionID getDiveLeftMotionFromName(const char* name),
 
-  (DiveMotionID)(Dive) DiveMotionType,
+  (DiveLeftMotionID)(DiveLeft) DiveLeftMotionType,
   (bool)(false) mirror,
   (bool)(false) armsBackFix,
   (std::vector<DynPoint>) dynPoints,
