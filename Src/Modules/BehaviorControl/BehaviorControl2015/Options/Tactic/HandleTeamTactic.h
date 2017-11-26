@@ -28,7 +28,7 @@ option(HandleTeamTactic)
   {
     action
     {
-      LookForward();
+      /**LookForward();/** The issue with staying in LookForward state is here **/
       Striker();
     }
   }
