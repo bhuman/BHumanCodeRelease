@@ -1,17 +1,17 @@
-/** Fichier gerant les etapes dd'un Dive (plonger, se relever) */
-option(Dive)
+/** Fichier gerant les etapes dd'un Dive sur la Gauche (plonger, se relever) */
+option(DiveLeft)
 {
   /** Set the motion request. */
   initial_state(setRequest)
   {
     transition
     {
-      if(theMotionInfo.motion == MotionRequest::dive)
-        goto requestIsExecuted;
+      if(theMotionInfo.motion == MotionRequest::diveLeft)
+        goto requestLeftIsExecuted;
     }
     action
     {
-      theMotionRequest.motion = MotionRequest::dive;
+      theMotionRequest.motion = MotionRequest::diveLeft;
     }
   }
 
@@ -48,16 +48,17 @@ option(Dive)
     }
 
   /** The motion process has started executing the request. */
-  target_state(requestIsExecuted)
+  target_state(requestLeftIsExecuted)
   {
     transition
     {
-      if(theFallDownState.state == FallDownState::onGround)
-        goto standUp;
+      if(theMotionInfo.motion =! MotionRequest::diveLeft)
+        goto setRequest;
     }
     action
     {
-      goto requestIsExecuted
+      theMotionRequest.motion = MotionRequest::diveLeft;
+      goto stand;
     }
   }
 }

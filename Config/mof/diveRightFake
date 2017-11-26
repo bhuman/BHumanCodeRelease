@@ -1,0 +1,22 @@
+motion_id = diveRight
+
+"mouvement done by goalie to stop the ball far left
+
+label start
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+stiffness * * 60 60 60 40 * * * * * * * * 40 40 40 40 40 40 60 60 60 60 60 60 10
+0.0   -9.7   87.4   27.3   -119.4   -22.9   5.7   0.0   83.8   -10.6   68.4   23.5   5.7   0.3   -9.7   -18.3   7.4   -5.2   5.2   -7.4   -9.7   -24.7   7.4   -5.2   5.2   7.4   1   200
+0.0   -0.8   -8.2   -      -104.0   -72.2   -     0.1   -        -       -      -    30.9  0.0   -4.7     -     -13.7   83.9   -64.5   -     -      -      -      -      -      -     1    600 
+0.0   -1.1   -8.6   27.3   -104.4   -72.1   5.7   0.1   83.8   -10.6   68.4   23.5   30.4   0.0   -5.1   -18.3   -13.7   83.9   -64.0   -4.2   -5.1   -24.7   7.4   -5.2   5.2   7.4   1   400
+
+label repeat
+
+-      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -   1  100
+
+
+
+
+transition diveRight diveRight repeat
+
+transition allMotions extern start

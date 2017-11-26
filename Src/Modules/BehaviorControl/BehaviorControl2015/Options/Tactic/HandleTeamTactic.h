@@ -9,7 +9,7 @@ option(HandleTeamTactic)
       else if(theRobotInfo.number == 2)
         goto PlayStriker;
        else if(theRobotInfo.number == 3)
-        goto PlayStriker;
+        goto PlayDefender;
     }
     action
     {
@@ -32,6 +32,14 @@ option(HandleTeamTactic)
     {
       /**LookForward();/** The issue with staying in LookForward state is here **/
       Striker();
+    }
+  }
+ state(PlayDefender)
+  {
+    action
+    {
+      LookForward();
+      Defender();
     }
   }
 }

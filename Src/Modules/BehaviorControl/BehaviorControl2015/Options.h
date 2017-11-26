@@ -28,5 +28,6 @@
 
 #include "Options/Roles/Striker.h"
 #include "Options/Roles/Keeper.h"
+#include "Options/Roles/Defender.h"
 
 #include "Options/Tools/ButtonPressedAndReleased.h"
