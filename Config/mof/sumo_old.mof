@@ -1,0 +1,18 @@
+motion_id = sumo
+"Arret jambes écartés v2
+
+label start
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+
+stiffness * * 40 30 30 * * * 40 30 30 *	* * 60 60 60 60	60 * 60	60 60 60 60 * 10
+
+0	16	119	10	-80	-22	0	0	119	-10	80	22	0	0	0	1	-60	103	-51	0	0	-1	-60	103	-51	0 1 300
+0	25	119	1	-9	-4	0	0	119	-1	-17	4	0	0	-62	45	-70	65	52	0	-61	-45	-68	73	40	3 1 600
+
+
+label repeat
+     -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -   1  100
+transition sumo sumo repeat
+
+transition allMotions extern start
