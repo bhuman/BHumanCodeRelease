@@ -13,6 +13,12 @@ option(Keeper)
          && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveRight;
   }*/
+
+
+
+ 
+
+
     
   initial_state(start)
   {
@@ -53,6 +59,20 @@ option(Keeper)
     {
       // ** Desactivated until the special action exist **
       //SpecialAction(SpecialActionRequest::diveRight);
+    }
+  }
+
+  state(sumo)
+  {
+    transition
+    {
+      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+        goto start;
+    }
+    action
+    {
+      
+      SpecialAction(SpecialActionRequest::sumo);
     }
   }
   
