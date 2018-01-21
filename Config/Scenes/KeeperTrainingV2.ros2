@@ -11,14 +11,14 @@
     <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
 
     <Compound name="robots">
-     <Body ref="Nao" name="robot2">
+     <Body ref="Nao" name="robot1">
         <Translation x="-2.5" y="0.5m" z="320mm"/>
         <Rotation z="180degree"/>
       </Body>
 
-      <Body ref="Nao" name="robot1">
+      <Body ref="Nao" name="robot2">
         <Translation x="-4.5" y="-0.2m" z="320mm"/>
-	<Set name="NaoColor" value="red"/>
+	
       </Body>
 
     </Compound>

@@ -19,6 +19,10 @@ transition sitDown sitDown start
 
 transition diveLeft diveLeft start
 transition diveRight diveRight start
+transition groundPunchLeft groundPunchLeft start
+transition groundPunchRight groundPunchRight start
+
+
 transition sumo sumo start
 
 "This line must be the last one

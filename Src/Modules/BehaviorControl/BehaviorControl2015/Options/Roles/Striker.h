@@ -59,7 +59,8 @@ option(Striker)
       }
       if(theBallModel.estimate.position.norm() < 500.f)
       {
-        goto alignToGoal;
+        //goto alignToGoal;
+          goto alignBehindBall;
       }
     }
     action
@@ -68,7 +69,7 @@ option(Striker)
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), theBallModel.estimate.position);
     }
   }
-
+/*
   state(alignToGoal)
   {
     transition
@@ -95,7 +96,7 @@ option(Striker)
       WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
-
+*/
   state(alignBehindBall)
   {
     transition
@@ -112,8 +113,8 @@ option(Striker)
           }
       }
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-         && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-         && std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
+         && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f))
+         //&& std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
       {
         goto kick;
       }

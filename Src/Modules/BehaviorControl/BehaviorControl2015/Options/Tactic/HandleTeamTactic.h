@@ -5,11 +5,13 @@ option(HandleTeamTactic)
     transition
     {
       if(theRobotInfo.number == 1)
-        goto PlayKeeper;
+        //goto PlayKeeper;
+         goto PlayStriker;
       else if(theRobotInfo.number == 2)
-        goto PlayStriker;
-       else if(theRobotInfo.number == 3)
-        goto PlayDefender;
+        goto PlayKeeper;
+          //goto PlayStriker;
+      // else if(theRobotInfo.number == 3)
+       // goto PlayDefender;
     }
     action
     {
