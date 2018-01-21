@@ -18,11 +18,8 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-          if(theBallModel.estimate.position.y() > 0)
-            goto searchLeftForBall;
-          else if(theBallModel.estimate.position.y() < 0)
-            goto searchRightForBall;
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+        goto lookForBall;
       if(std::abs(theBallModel.estimate.position.angle()) < 5_deg)
         goto walkToBall;
     }
@@ -37,11 +34,8 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-          if(theBallModel.estimate.position.y() > 0)
-            goto searchLeftForBall;
-          else if(theBallModel.estimate.position.y() < 0)
-            goto searchRightForBall;
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+        goto lookForBall;
       if(theBallModel.estimate.position.norm() < 500.f)
         goto alignToGoal;
     }
@@ -56,18 +50,18 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-          if(theBallModel.estimate.position.y() > 0)
-            goto searchLeftForBall;
-          else if(theBallModel.estimate.position.y() < 0)
-            goto searchRightForBall;
-      if(std::abs(libCodeRelease.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+	  {
+        goto lookForBall;
+	  }
+      if(std::abs(libInfo.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      {
         goto alignBehindBall;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
 
@@ -75,20 +69,24 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-          if(theBallModel.estimate.position.y() > 0)
-            goto searchLeftForBall;
-          else if(theBallModel.estimate.position.y() < 0)
-            goto searchRightForBall;
-      if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-          && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(libCodeRelease.angleToOppGoal) < 2_deg)
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+        goto lookForBall;
+	  }
+
+      if(libInfo.between(theBallModel.estimate.position.y(), 20.f, 50.f)
+         && libInfo.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(libInfo.angleToOwnGoal - 180_deg) < 2_deg)
+      {
         goto kick;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), 
+      Pose2f(libInfo.angleToOppGoal, 
+      theBallModel.estimate.position.x() - 150.f, 
+      theBallModel.estimate.position.y() - 30.f));
     }
   }
 
@@ -102,7 +100,7 @@ option(Striker)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
 
@@ -110,9 +108,9 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() < 200)
+      if(libInfo.timeSinceBallWasSeen() < 200)
         goto turnToBall;
-	  if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+	  if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
 		if(theBallModel.estimate.position.y() > 0)
         {
           goto searchLeftForBall;
@@ -133,7 +131,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      if(libInfo.timeSinceBallWasSeen() < 300)
         goto turnToBall;
     }
     action
@@ -147,7 +145,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      if(libInfo.timeSinceBallWasSeen() < 300)
         goto turnToBall;
     }
     action

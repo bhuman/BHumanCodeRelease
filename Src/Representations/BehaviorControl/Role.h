@@ -23,6 +23,10 @@ STREAMABLE(Role,
   ENUM(RoleType,
   {,
     undefined,
+    keeper,
+    striker,
+    supporter,
+    defender,
     none,
   });
 

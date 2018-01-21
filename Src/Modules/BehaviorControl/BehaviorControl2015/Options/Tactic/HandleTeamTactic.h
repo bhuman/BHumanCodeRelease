@@ -1,5 +1,12 @@
 option(HandleTeamTactic)
 {
+  // Desactivated for testing
+  //common_transition
+  //{
+  //if(LibInfo.oneGoaler)
+  //      goto PlayKeeper;
+  //}
+    
   initial_state(ChooseRole)
   {
     transition
@@ -19,8 +26,24 @@ option(HandleTeamTactic)
   {
     action
     {
+      theBehaviorStatus.role = Role::keeper;
       LookForward();
       Keeper();
+    }
+  }
+  
+  state(PlayDefender)
+  {
+    transition
+    {
+      if(LibInfo.nbOfDef > 2)
+        goto PlayStriker;
+    }
+    action
+    {
+      theBehaviorStatus.role = Role::defender;
+      LookForward();
+      Defender();
     }
   }
   
@@ -28,22 +51,16 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(theRobotInfo.number == 1)
+      if(LibInfo.nbOfDef == 0)
+        goto PlayDefender;
+      else if(!LibInfo.closerToTheBall)
         goto PlaySupporter;
     }
     action
     {
-      /**LookForward();/** The issue with staying in LookForward state is here **/
-      Striker();
-    }
-  }
-
-  state(PlayDefender)
-  {
-    action
-    {
+      theBehaviorStatus.role = Role::striker;
       LookForward();
-      Defender();
+      Striker();
     }
   }
 
@@ -51,11 +68,14 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(theRobotInfo.number == 1)
+      if(LibInfo.nbOfDef <= 1)
+        goto PlayDefender;
+      else if(LibInfo.closerToTheBall)
         goto PlayStriker;
     }
     action
-    {
+    {      
+      theBehaviorStatus.role = Role::supporter;
       LookForward();
       Supporter();
     }

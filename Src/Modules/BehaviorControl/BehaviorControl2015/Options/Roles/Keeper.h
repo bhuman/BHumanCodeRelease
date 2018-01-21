@@ -2,18 +2,18 @@ option(Keeper)
 {
   common_transition
   {
-      /*if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
-         && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,1000.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
+      /*if(libInfo.between(theBallModel.estimate.position.x(),200.f,600.f)
+         && libInfo.between(theBallModel.estimate.position.y(),0.f,1000.f)
+         && libInfo.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveLeft;
          
-      if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
-         && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,-1000.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
+      if(libInfo.between(theBallModel.estimate.position.x(),200.f,600.f)
+         && libInfo.between(theBallModel.estimate.position.y(),0.f,-1000.f)
+         && libInfo.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
          goto diveRight; */
          
-      if(libCodeRelease.between(theBallModel.estimate.position.x(), 200.f, 1500.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(), -1000.f, -100.f))
+      if(libInfo.between(theBallModel.estimate.position.x(), 200.f, 1500.f)
+         && libInfo.between(theBallModel.estimate.velocity.x(), -1000.f, -100.f))
       {
         goto sumo;
       }
@@ -37,7 +37,12 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+=======
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto start;
     }
     action
@@ -51,7 +56,12 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+=======
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto start;
     }
     action
@@ -65,7 +75,12 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+=======
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto start;
     }
     action
@@ -79,12 +94,16 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
 <<<<<<< HEAD
           if(theBallModel.estimate.velocity.y() > 0)
             goto searchLeftForBall;
           else if(theBallModel.estimate.velocity.y() < 0)
 =======
+=======
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+>>>>>>> 88fb655... WIP team tactic
       {
           if(theBallModel.estimate.position.y() > 0)
           {
@@ -98,7 +117,7 @@ option(Keeper)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), libCodeRelease.KeeperDesiredPos));
+      WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), libInfo.keeperDesiredPos));
     }
   }
 
@@ -106,12 +125,16 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
 <<<<<<< HEAD
           if(theBallModel.estimate.velocity.y() > 0)
             goto searchLeftForBall;
           else if(theBallModel.estimate.velocity.y() < 0)
 =======
+=======
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+>>>>>>> 88fb655... WIP team tactic
       {
           if(theBallModel.estimate.position.y() > 0)
           {
@@ -136,7 +159,7 @@ option(Keeper)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.position.y() > 0)
           {
@@ -147,13 +170,49 @@ option(Keeper)
             goto searchRightForBall;
           }
       }
+<<<<<<< HEAD
       if(theBallModel.estimate.position.norm() < 200.f)
+=======
+      if(theBallModel.estimate.position.norm() < 500.f)
+      {
+        goto alignToGoal;
+      }
+    }
+    action
+    {
+      LookForward();
+      WalkToTarget(Pose2f(50.f, 50.f, 50.f), libInfo.keeperDesiredPos);
+    }
+  }
+  
+  state(alignToGoal)
+  {
+    transition
+    {
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      {
+          if(theBallModel.estimate.position.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.position.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
+      if(std::abs(libInfo.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto alignBehindBall;
     }
     action
     {
       LookForward();
+<<<<<<< HEAD
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), libCodeRelease.KeeperDesiredPos);
+=======
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
+>>>>>>> 88fb655... WIP team tactic
     }
   }
 
@@ -161,7 +220,7 @@ option(Keeper)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.position.y() > 0)
           {
@@ -172,15 +231,22 @@ option(Keeper)
             goto searchRightForBall;
           }
       }
+<<<<<<< HEAD
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
           && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
           && std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
+=======
+      if(libInfo.between(theBallModel.estimate.position.y(), 20.f, 50.f)
+         && libInfo.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(libInfo.angleToOwnGoal - 180_deg) < 2_deg)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto kick;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, libCodeRelease.KeeperDesiredPos.x() - 150.f, libCodeRelease.KeeperDesiredPos.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libInfo.angleToOppGoal, libInfo.keeperDesiredPos.x() - 150.f, libInfo.keeperDesiredPos.y() - 30.f));
     }
   }
  
@@ -194,7 +260,7 @@ option(Keeper)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, libCodeRelease.KeeperDesiredPos.x() - 160.f, libCodeRelease.KeeperDesiredPos.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libInfo.angleToOppGoal, libInfo.keeperDesiredPos.x() - 160.f, libInfo.keeperDesiredPos.y() - 55.f));
     }
   }
   
@@ -202,7 +268,12 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() < 300)
+=======
+      if(libInfo.timeSinceBallWasSeen() < 300)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto alignToBall;
     }
     action
@@ -216,7 +287,12 @@ option(Keeper)
   {
     transition
     {
+<<<<<<< HEAD
       if(libCodeRelease.timeSinceBallWasSeen() < 300)
+=======
+      if(libInfo.timeSinceBallWasSeen() < 300)
+      {
+>>>>>>> 88fb655... WIP team tactic
         goto alignToBall;
     }
     action
