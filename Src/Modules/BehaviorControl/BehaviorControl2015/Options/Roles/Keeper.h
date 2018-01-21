@@ -1,8 +1,6 @@
 /** A test Keeper */
 option(Keeper)
 {
-    /** As game state changes are discrete external events and all states are independent of each other,
-      a common transition can be used here. */
   /*common_transition
   {
       if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
@@ -63,7 +61,10 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+          if(theBallModel.estimate.velocity.y() > 0)
+            goto searchLeftForBall;
+          else if(theBallModel.estimate.velocity.y() < 0)
+            goto searchRightForBall;
     }
     action
     {
@@ -77,7 +78,10 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+          if(theBallModel.estimate.velocity.y() > 0)
+            goto searchLeftForBall;
+          else if(theBallModel.estimate.velocity.y() < 0)
+            goto searchRightForBall;
       if(std::abs(theBallModel.estimate.position.angle()) < 5_deg)
        goto walkToBall;
     
@@ -94,14 +98,17 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+          if(theBallModel.estimate.velocity.y() > 0)
+            goto searchLeftForBall;
+          else if(theBallModel.estimate.velocity.y() < 0)
+            goto searchRightForBall;
       if(theBallModel.estimate.position.norm() < 200.f)
         goto alignBehindBall;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(50.f, 50.f, 50.f), theBallModel.estimate.position);
+      WalkToTarget(Pose2f(50.f, 50.f, 50.f), libCodeRelease.KeeperDesiredPos);
     }
   }
 
@@ -110,16 +117,19 @@ option(Keeper)
     transition
     {
       if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+          if(theBallModel.estimate.velocity.y() > 0)
+            goto searchLeftForBall;
+          else if(theBallModel.estimate.velocity.y() < 0)
+            goto searchRightForBall;
       if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
           && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(libCodeRelease.angleToOppGoal) < 2_deg)
+          && std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
         goto kick;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, libCodeRelease.KeeperDesiredPos.x() - 150.f, libCodeRelease.KeeperDesiredPos.y() - 30.f));
     }
   }
 
@@ -133,11 +143,11 @@ option(Keeper)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, libCodeRelease.KeeperDesiredPos.x() - 160.f, libCodeRelease.KeeperDesiredPos.y() - 55.f));
     }
   }
   
-  state(searchForBall)
+  state(searchLeftForBall)
   {
     transition
     {
@@ -148,6 +158,20 @@ option(Keeper)
     {
       LookForward();
       WalkAtSpeedPercentage(Pose2f(1.f, 0.f, 0.f));
+    }
+  }
+  
+  state(searchRightForBall)
+  {
+    transition
+    {
+      if(libCodeRelease.timeSinceBallWasSeen() < 300)
+        goto alignToBall;
+    }
+    action
+    {
+      LookForward();
+      WalkAtSpeedPercentage(Pose2f(-1.f, 0.f, 0.f));
     }
   }
 }
