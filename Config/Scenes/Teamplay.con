@@ -1,5 +1,7 @@
 call Includes/Fast
 
+dr debugDrawing3d:representation:RobotPose
+
 # field views
 vf worldState
 vfd worldState fieldLines

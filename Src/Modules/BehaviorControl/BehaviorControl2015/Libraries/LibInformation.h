@@ -2,11 +2,11 @@
 * @file LibCodeRelease.h
 */
 
-class LibCodeRelease : public LibraryBase
+class LibInformation : public LibraryBase
 {
 public:
   /** Constructor for initializing all members*/
-  LibCodeRelease();
+  LibInformation();
 
   void preProcess() override;
 

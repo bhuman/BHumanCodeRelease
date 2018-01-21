@@ -6,10 +6,8 @@ option(HandleTeamTactic)
     {
       if(theRobotInfo.number == 1)
         goto PlayKeeper;
-      else if(theRobotInfo.number == 2)
+      else
         goto PlayStriker;
-       else if(theRobotInfo.number == 3)
-        goto PlayDefender;
     }
     action
     {
@@ -28,18 +26,38 @@ option(HandleTeamTactic)
   
   state(PlayStriker)
   {
+    transition
+    {
+      if(theRobotInfo.number == 1)
+        goto PlaySupporter;
+    }
     action
     {
       /**LookForward();/** The issue with staying in LookForward state is here **/
       Striker();
     }
   }
- state(PlayDefender)
+
+  state(PlayDefender)
   {
     action
     {
       LookForward();
       Defender();
+    }
+  }
+
+  state(PlaySupporter)
+  {
+    transition
+    {
+      if(theRobotInfo.number == 1)
+        goto PlayStriker;
+    }
+    action
+    {
+      LookForward();
+      Supporter();
     }
   }
 }

@@ -9,16 +9,16 @@
 
 namespace Behavior2015
 {
-#include "LibDemo.h"
+#include "LibTactic.h"
 
-  LibDemo::LibDemo() : demoGameState(normal), lastSwtich(0), lastBumperState(false)
+  LibTactic::LibTactic() : demoGameState(normal), lastSwtich(0), lastBumperState(false)
   {
     InMapFile stream("BehaviorControl2015/libDemo.cfg");
     ASSERT(stream.exists());
     stream >> parameters;
   }
 
-  void LibDemo::preProcess()
+  void LibTactic::preProcess()
   {
     MODIFY("parameters:BehaviorControl2015:libDemo", parameters);
 

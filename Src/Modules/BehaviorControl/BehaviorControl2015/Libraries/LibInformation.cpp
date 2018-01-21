@@ -1,20 +1,20 @@
 /**
-* @file LibCodeRelease.cpp
+* @file LibInformation.cpp
 */
 
 #include "../LibraryBase.h"
 
 namespace Behavior2015
 {
-  #include "LibCodeRelease.h"
+  #include "LibInformation.h"
   
-  LibCodeRelease::LibCodeRelease():
+  LibInformation::LibInformation():
     angleToOppGoal(0.f),
     angleToOwnGoal(0.f),
     KeeperDesiredPos(0.f, 0.f)
   {}
   
-  void LibCodeRelease::preProcess()
+  void LibInformation::preProcess()
   {
     Vector2f middleBallGoal = (((theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, 0.f)) + Vector2f(theBallModel.estimate.position.x(), theBallModel.estimate.position.y())) / 2);
     float xPos = clamp(middleBallGoal.x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea)).x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea)).x());
@@ -27,21 +27,26 @@ namespace Behavior2015
     KeeperDesiredPos = Vector2f(xPos, yPos);
   }
 
-  void LibCodeRelease::postProcess()
+  void LibInformation::postProcess()
   {
   }
   
-  int LibCodeRelease::timeSinceBallWasSeen()
+  int LibInformation::timeSinceBallWasSeen()
+  {
+    return theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen);
+  }
+
+  int LibInformation::TeamMate()
   {
     return theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen);
   }
   
-  bool LibCodeRelease::between(float value, float min, float max)
+  bool LibInformation::between(float value, float min, float max)
   {
     return value >= min && value <= max;
   }
 
-  float LibCodeRelease::clamp(float value, float min, float max)
+  float LibInformation::clamp(float value, float min, float max)
   {
     if(min > max)
     {
