@@ -1,24 +1,14 @@
 /** A test Keeper */
 option(Keeper)
 {
-  /*common_transition
+  common_transition
   {
-      if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
-         && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,1000.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
-         goto diveLeft;
-         
-      if(libCodeRelease.between(theBallModel.estimate.position.x(),200.f,600.f)
-         && libCodeRelease.between(theBallModel.estimate.position.y(),0.f,-1000.f)
-         && libCodeRelease.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
-         goto diveRight;
-  }*/
-
-
-
- 
-
-
+      if(libCodeRelease.between(theBallModel.estimate.position.x(), 200.f, 1000.f)
+         && libCodeRelease.between(theBallModel.estimate.velocity.x(), -1000.f, -5.f))
+      {
+        goto sumo;
+      }
+  }
     
   initial_state(start)
   {
