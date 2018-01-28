@@ -36,7 +36,7 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibInfo.nbOfDef > 2)
+      if(libInfo.nbOfDef > 1)
         goto PlayStriker;
     }
     action
@@ -51,9 +51,9 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibInfo.nbOfDef == 0)
+      if(libInfo.nbOfDef == 0)
         goto PlayDefender;
-      else if(!LibInfo.closerToTheBall)
+      else if(!libInfo.closerToTheBall)
         goto PlaySupporter;
     }
     action
@@ -68,9 +68,9 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibInfo.nbOfDef <= 1)
+      if(libInfo.nbOfDef <= 1)
         goto PlayDefender;
-      else if(LibInfo.closerToTheBall)
+      else if(libInfo.closerToTheBall)
         goto PlayStriker;
     }
     action

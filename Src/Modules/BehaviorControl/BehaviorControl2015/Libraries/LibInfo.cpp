@@ -3,6 +3,7 @@
 */
 
 #include "../LibraryBase.h"
+#include "Platform/SystemCall.h"
 
 namespace Behavior2015
 {
@@ -12,7 +13,7 @@ namespace Behavior2015
     angleToOppGoal(0.f),
     angleToOwnGoal(0.f),
     keeperDesiredPos(0.f, 0.f),
-    SupporterDesiredPos(0.f,0.f),
+    supporterDesiredPos(0.f,0.f),
     distanceToBall(0.f),
     nbOfDef(0),
     closerToTheBall(false)
@@ -21,32 +22,37 @@ namespace Behavior2015
   void LibInfo::preProcess()
   {
     nbOfDef = howManyDef();
-    switch(WalkingEngineState.role)
+    closerToTheBall = isCloserToTheBall();
+    switch(theBehaviorStatus.role)
     {
-    case keeper:
-      Vector2f midPointBallGoal = (((theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, 0.f)) + Vector2f(theBallModel.estimate.position.x(), theBallModel.estimate.position.y())) / 2);
-      float xPos = clamp(midPointBallGoal.x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea)).x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea)).x());
-      float yPos = clamp(midPointBallGoal.y(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea)).y(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea)).y());
-      angleToOwnGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, 0.f)).angle();
-      keeperDesiredPos = Vector2f(xPos, yPos);
-      SystemCall::playSound("helpMe.wav");
-      break;
-    case defender:
-      SystemCall::playSound("theFlippingChicken.wav");
-      break;
-    case striker:
-      angleToOppGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGroundline, 0.f)).angle();
-      distanceToBall = sqr(theBallModel.estimate.position.x()^2 + theBallModel.estimate.position.y()^2) 
-      closerToTheBall = isCloserToTheBall();
-      SystemCall::playSound("falling.wav");
-      break;
-    case supporter:
-      distanceToBall = sqr(theBallModel.estimate.position.x()^2 + theBallModel.estimate.position.y()^2) 
-      closerToTheBall = isCloserToTheBall();
-      SystemCall::playSound("theMirrorCow.wav");
-      break;
-    default:
-      break;
+        case Role::keeper:
+        {
+            Vector2f midPointBallGoal = (((theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, 0.f)) + Vector2f(theBallModel.estimate.position.x(), theBallModel.estimate.position.y())) / 2);
+            float xPos = clamp(midPointBallGoal.x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea)).x(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea)).x());
+            float yPos = clamp(midPointBallGoal.y(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea)).y(), (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea)).y());
+            angleToOwnGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGroundline, 0.f)).angle();
+            keeperDesiredPos = Vector2f(xPos, yPos);
+            break;
+        }
+        case Role::defender:
+        {
+            break;
+        }
+        case Role::striker:
+        { 
+            angleToOppGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGroundline, 0.f)).angle();
+            distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
+            break;
+        }
+        case Role::supporter:
+        {
+            distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }  
   }
 
@@ -62,7 +68,7 @@ namespace Behavior2015
   int LibInfo::howManyDef()
   {
     int nb = 0;
-    for(int i = 0; i != theTeammateData.size(); i++)
+    for(int i = 0; i != theTeammateData.teammates.size(); i++)
     {
       if(theTeammateData.teammates[i].behaviorStatus.role == Role::defender)
       {
@@ -74,13 +80,13 @@ namespace Behavior2015
   
   bool LibInfo::isCloserToTheBall()
   {
-    for(int i = 0; i != theTeammateData.size(); i++)
+    for(int i = 0; i != theTeammateData.teammates.size(); i++)
     {
       if(theTeammateData.teammates[i].behaviorStatus.role == Role::supporter || theTeammateData.teammates[i].behaviorStatus.role == Role::striker)
       {
-          tmDistanceToBall = sqr(theTeammateData.teammates[i].theBallModel.estimate.position.x()^2 + theTeammateData.teammates[i].theBallModel.estimate.position.y()^2) 
+        double teammateDistanceToBall = abs(sqr(pow(theTeammateData.teammates[i].ball.estimate.position.x(),2) + pow(theTeammateData.teammates[i].ball.estimate.position.y(),2))); 
       
-        if(tmDistanceToBall < distanceToBall)
+        if(distanceToBall > teammateDistanceToBall)
         {
           return false;
         }
