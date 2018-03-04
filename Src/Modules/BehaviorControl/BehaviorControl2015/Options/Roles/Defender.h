@@ -19,7 +19,7 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
     }
     action
@@ -34,7 +34,7 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(std::abs(theBallModel.estimate.position.angle()) < 5_deg 
           && theBallModel.estimate.position.x() < 100.f
@@ -54,7 +54,7 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(theBallModel.estimate.position.norm() < 100.f)
         goto alignBehindBall;
@@ -70,15 +70,15 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
-      if(std::abs(libInfo.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      if(std::abs(LibTactic.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
         goto alignBehindBall;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
 */
@@ -86,17 +86,17 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
-      if(libInfo.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-          && libInfo.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(libInfo.angleToOppGoal) < 2_deg)
+      if(LibTactic.between(theBallModel.estimate.position.y(), 20.f, 50.f)
+          && LibTactic.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+          && std::abs(LibTactic.angleToOppGoal) < 2_deg)
         goto kick;
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x(), theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x(), theBallModel.estimate.position.y()));
     }
   }
 
@@ -110,7 +110,7 @@ option(Defender)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libInfo.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
   
@@ -118,7 +118,7 @@ option(Defender)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() < 300
+      if(LibTactic.timeSinceBallWasSeen() < 300
           &&theBallModel.estimate.position.x() >200.f
            &&theBallModel.estimate.position.y() > 200.f)
         goto turnToBallFar;
@@ -138,7 +138,7 @@ state(blockAttack)
   {
     transition
     {
-      if(libInfo.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(theBallModel.estimate.position.norm() < 200.f)
         goto walkToBall;

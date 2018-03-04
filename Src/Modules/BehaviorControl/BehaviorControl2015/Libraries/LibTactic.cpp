@@ -1,5 +1,5 @@
 /**
-* @file LibInformation.cpp
+* @file LibTacticrmation.cpp
 */
 
 #include "../LibraryBase.h"
@@ -7,9 +7,9 @@
 
 namespace Behavior2015
 {
-  #include "LibInfo.h"
+  #include "LibTactic.h"
   
-  LibInfo::LibInfo():
+  LibTactic::LibTactic():
     angleToOppGoal(0.f),
     angleToOwnGoal(0.f),
     keeperDesiredPos(0.f, 0.f),
@@ -19,7 +19,7 @@ namespace Behavior2015
     closerToTheBall(false)
   {}
   
-  void LibInfo::preProcess()
+  void LibTactic::preProcess()
   {
     nbOfDef = howManyDef();
     distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
@@ -55,14 +55,14 @@ namespace Behavior2015
     }  
   }
 
-  void LibInfo::postProcess(){}
+  void LibTactic::postProcess(){}
   
-  int LibInfo::timeSinceBallWasSeen()
+  int LibTactic::timeSinceBallWasSeen()
   {
     return theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen);
   }
   
-  int LibInfo::howManyDef()
+  int LibTactic::howManyDef()
   {
     int nb = 0;
     for(int i = 0; i != theTeammateData.teammates.size(); i++)
@@ -75,7 +75,7 @@ namespace Behavior2015
     return nb;
   }    
   
-  bool LibInfo::isCloserToTheBall()
+  bool LibTactic::isCloserToTheBall()
   {
     for(int i = 0; i != theTeammateData.teammates.size(); i++)
     {
@@ -92,12 +92,12 @@ namespace Behavior2015
     return true;
   }
   
-  bool LibInfo::between(float value, float min, float max)
+  bool LibTactic::between(float value, float min, float max)
   {
     return value >= min && value <= max;
   }
 
-  float LibInfo::clamp(float value, float min, float max)
+  float LibTactic::clamp(float value, float min, float max)
   {
     if(min > max)
     {

@@ -1,12 +1,12 @@
 /**
-* @file LibInfo.h
+* @file LibTactic.h
 */
 
-class LibInfo : public LibraryBase
+class LibTactic : public LibraryBase
 {
 public:
   /** Constructor for initializing all members*/
-  LibInfo();
+  LibTactic();
 
   void preProcess() override;
 

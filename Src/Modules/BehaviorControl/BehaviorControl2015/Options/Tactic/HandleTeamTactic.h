@@ -3,7 +3,7 @@ option(HandleTeamTactic)
   // Desactivated for testing
   //common_transition
   //{
-  //if(LibInfo.oneGoaler)
+  //if(LibTactic.oneGoaler)
   //      goto PlayKeeper;
   //}
     
@@ -36,7 +36,7 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(libInfo.nbOfDef > 1)
+      if(LibTactic.nbOfDef > 1)
         goto PlayStriker;
     }
     action
@@ -51,9 +51,9 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(libInfo.nbOfDef == 0)
+      if(LibTactic.nbOfDef == 0)
         goto PlayDefender;
-      else if(!libInfo.closerToTheBall)
+      else if(!LibTactic.closerToTheBall)
         goto PlaySupporter;
     }
     action
@@ -68,9 +68,9 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(libInfo.nbOfDef <= 1)
+      if(LibTactic.nbOfDef <= 1)
         goto PlayDefender;
-      else if(libInfo.closerToTheBall)
+      else if(LibTactic.closerToTheBall)
         goto PlayStriker;
     }
     action

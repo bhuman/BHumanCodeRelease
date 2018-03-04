@@ -10,7 +10,7 @@
 
 namespace Behavior2015
 {
-#include "Libraries/LibInfo.h"
+#include "Libraries/LibTactic.h"
 
   class Libraries : public BehaviorBase
   {
@@ -19,7 +19,7 @@ namespace Behavior2015
     std::vector<LibraryBase*> libraries; /**< All the member libraries of this class. */
 
   public:
-    LibInfo          libInfo;           /**< Contains information about stuff */
+    LibTactic          LibTactic;           /**< Contains information about stuff */
 
     Libraries(const BehaviorControl2015Base& base, BehaviorData& behaviorData);
     virtual ~Libraries() { theInstance = nullptr; }
