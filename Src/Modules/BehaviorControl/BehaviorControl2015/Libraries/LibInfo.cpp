@@ -22,6 +22,7 @@ namespace Behavior2015
   void LibInfo::preProcess()
   {
     nbOfDef = howManyDef();
+    distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
     closerToTheBall = isCloserToTheBall();
     switch(theBehaviorStatus.role)
     {
@@ -41,12 +42,10 @@ namespace Behavior2015
         case Role::striker:
         { 
             angleToOppGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGroundline, 0.f)).angle();
-            distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
             break;
         }
         case Role::supporter:
         {
-            distanceToBall = abs(sqr(pow(theBallModel.estimate.position.x(),2) + pow(theBallModel.estimate.position.y(),2)));
             break;
         }
         default:
@@ -56,9 +55,7 @@ namespace Behavior2015
     }  
   }
 
-  void LibInfo::postProcess()
-  {
-  }
+  void LibInfo::postProcess(){}
   
   int LibInfo::timeSinceBallWasSeen()
   {
@@ -86,7 +83,7 @@ namespace Behavior2015
       {
         double teammateDistanceToBall = abs(sqr(pow(theTeammateData.teammates[i].ball.estimate.position.x(),2) + pow(theTeammateData.teammates[i].ball.estimate.position.y(),2))); 
       
-        if(distanceToBall > teammateDistanceToBall)
+        if(distanceToBall < teammateDistanceToBall)
         {
           return false;
         }
