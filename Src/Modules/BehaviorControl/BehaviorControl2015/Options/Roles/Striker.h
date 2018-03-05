@@ -19,7 +19,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.velocity.y() > 0)
           {
@@ -46,7 +46,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.velocity.y() > 0)
           {
@@ -59,8 +59,7 @@ option(Striker)
       }
       if(theBallModel.estimate.position.norm() < 500.f)
       {
-        //goto alignToGoal;
-          goto alignBehindBall;
+        goto alignToGoal;
       }
     }
     action
@@ -69,12 +68,12 @@ option(Striker)
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), theBallModel.estimate.position);
     }
   }
-/*
+
   state(alignToGoal)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.position.y() > 0)
           {
@@ -85,7 +84,7 @@ option(Striker)
             goto searchRightForBall;
           }
       }
-      if(std::abs(libCodeRelease.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      if(std::abs(LibTactic.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
       {
         goto alignBehindBall;
       }
@@ -93,15 +92,15 @@ option(Striker)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
-*/
+
   state(alignBehindBall)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
       {
           if(theBallModel.estimate.velocity.y() > 0)
           {
@@ -112,9 +111,9 @@ option(Striker)
             goto searchRightForBall;
           }
       }
-      if(libCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-         && libCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f))
-         //&& std::abs(libCodeRelease.angleToOwnGoal - 180_deg) < 2_deg)
+      if(LibTactic.between(theBallModel.estimate.position.y(), 20.f, 50.f)
+         && LibTactic.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(LibTactic.angleToOwnGoal - 180_deg) < 2_deg)
       {
         goto kick;
       }
@@ -122,7 +121,7 @@ option(Striker)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
     }
   }
 
@@ -138,7 +137,7 @@ option(Striker)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(libCodeRelease.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
   
@@ -146,7 +145,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      if(LibTactic.timeSinceBallWasSeen() < 300)
       {
         goto turnToBall;
       }
@@ -162,7 +161,7 @@ option(Striker)
   {
     transition
     {
-      if(libCodeRelease.timeSinceBallWasSeen() < 300)
+      if(LibTactic.timeSinceBallWasSeen() < 300)
       {
         goto turnToBall;
       }

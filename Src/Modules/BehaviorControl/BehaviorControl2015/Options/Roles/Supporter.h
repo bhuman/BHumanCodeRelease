@@ -1,12 +1,11 @@
-/** A test Defender  */
-option(Defender)
+option(Supporter)
 {
   initial_state(start)
   {
     transition
     {
       if(state_time > 1000)
-        goto searchForBall;
+        goto turnToBall;
     }
     action
     {
@@ -15,31 +14,25 @@ option(Defender)
     }
   }
 
-  state(alignToBall)
+  state(turnToBall)
   {
     transition
     {
       if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
-    }
-    action
-    {
-      LookForward();
-      WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), 0.f, 0.f));
-    }
-  }
-
-
-  state(turnToBallFar)
-  {
-    transition
-    {
-      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
-      if(std::abs(theBallModel.estimate.position.angle()) < 5_deg 
-          && theBallModel.estimate.position.x() < 100.f
-           && theBallModel.estimate.position.y() < 100.f)
-        goto walkToBall;
+      {
+          if(theBallModel.estimate.velocity.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.velocity.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
+      if(std::abs(theBallModel.estimate.position.angle()) < 5_deg)
+      {
+       goto walkToBall;
+      }
     }
     action
     {
@@ -48,16 +41,25 @@ option(Defender)
     }
   }
 
-
-
   state(walkToBall)
   {
     transition
     {
       if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
-      if(theBallModel.estimate.position.norm() < 100.f)
-        goto alignBehindBall;
+      {
+          if(theBallModel.estimate.velocity.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.velocity.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
+      if(theBallModel.estimate.position.norm() < 500.f)
+      {
+        goto alignToGoal;
+      }
     }
     action
     {
@@ -66,14 +68,25 @@ option(Defender)
     }
   }
 
-/*  state(alignToGoal)
+  state(alignToGoal)
   {
     transition
     {
       if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+      {
+          if(theBallModel.estimate.position.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.position.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
       if(std::abs(LibTactic.angleToOppGoal) < 10_deg && std::abs(theBallModel.estimate.position.y()) < 100.f)
+      {
         goto alignBehindBall;
+      }
     }
     action
     {
@@ -81,22 +94,33 @@ option(Defender)
       WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
-*/
+
   state(alignBehindBall)
   {
     transition
     {
       if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
+      {
+          if(theBallModel.estimate.velocity.y() > 0)
+          {
+            goto searchLeftForBall;
+          }
+          else if(theBallModel.estimate.velocity.y() < 0)
+          {
+            goto searchRightForBall;
+          }
+      }
       if(LibTactic.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-          && LibTactic.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-          && std::abs(LibTactic.angleToOppGoal) < 2_deg)
+         && LibTactic.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(LibTactic.angleToOwnGoal - 180_deg) < 2_deg)
+      {
         goto kick;
+      }
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x(), theBallModel.estimate.position.y()));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 150.f, theBallModel.estimate.position.y() - 30.f));
     }
   }
 
@@ -105,7 +129,9 @@ option(Defender)
     transition
     {
       if(state_time > 3000 || (state_time > 10 && action_done))
+      {
         goto start;
+      }
     }
     action
     {
@@ -113,18 +139,15 @@ option(Defender)
       InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(LibTactic.angleToOppGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
-  
-  state(searchForBall)
+
+  state(searchLeftForBall)
   {
     transition
     {
-      if(LibTactic.timeSinceBallWasSeen() < 300
-          &&theBallModel.estimate.position.x() >200.f
-           &&theBallModel.estimate.position.y() > 200.f)
-        goto turnToBallFar;
-      else if (theBallModel.estimate.position.x() < 5.f
-           &&theBallModel.estimate.position.y() < 5.f)
-        goto blockAttack; 
+      if(LibTactic.timeSinceBallWasSeen() < 300)
+      {
+        goto turnToBall;
+      }
     }
     action
     {
@@ -133,21 +156,19 @@ option(Defender)
     }
   }
 
-
-state(blockAttack)
+  state(searchRightForBall)
   {
     transition
     {
-      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-        goto searchForBall;
-      if(theBallModel.estimate.position.norm() < 200.f)
-        goto walkToBall;
+      if(LibTactic.timeSinceBallWasSeen() < 300)
+      {
+        goto turnToBall;
+      }
     }
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(50.f, 50.f, 50.f), Pose2f(theBallModel.estimate.position.angle(), theBallModel.estimate.position.y() - 50.f
-                                                    ,theBallModel.estimate.position.y() - 50.f));
+      WalkAtSpeedPercentage(Pose2f(-1.f, 0.f, 0.f));
     }
   }
 }

@@ -28,9 +28,9 @@ STREAMABLE(MotionRequest,
     getUp,
     diveLeft,
     diveRight,
-    groundPunchLeft,
-    groundPunchRight,
-    sumo,	
+    sidePunchLeft,
+    sidePunchRight,
+    sumo,
   });
 
   /** Draws something*/

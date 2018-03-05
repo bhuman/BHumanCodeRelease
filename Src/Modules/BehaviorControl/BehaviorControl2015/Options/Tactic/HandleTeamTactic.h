@@ -1,17 +1,20 @@
 option(HandleTeamTactic)
 {
+  // Desactivated for testing
+  //common_transition
+  //{
+  //if(LibTactic.oneGoaler)
+  //      goto PlayKeeper;
+  //}
+
   initial_state(ChooseRole)
   {
     transition
     {
       if(theRobotInfo.number == 1)
-        //goto PlayKeeper;
-         goto PlayStriker;
-      else if(theRobotInfo.number == 2)
         goto PlayKeeper;
-          //goto PlayStriker;
-      // else if(theRobotInfo.number == 3)
-       // goto PlayDefender;
+      else
+        goto PlayStriker;
     }
     action
     {
@@ -23,25 +26,58 @@ option(HandleTeamTactic)
   {
     action
     {
+      theBehaviorStatus.role = Role::keeper;
       LookForward();
       Keeper();
     }
   }
   
-  state(PlayStriker)
+  state(PlayDefender)
   {
+    transition
+    {
+      if(LibTactic.nbOfDef > 1)
+        goto PlayStriker;
+    }
     action
     {
+      theBehaviorStatus.role = Role::defender;
+      LookForward();
+      Defender();
+    }
+  }
+
+  state(PlayStriker)
+  {
+    transition
+    {
+      if(LibTactic.nbOfDef == 0)
+        goto PlayDefender;
+      else if(!LibTactic.closerToTheBall)
+        goto PlaySupporter;
+    }
+    action
+    {
+      theBehaviorStatus.role = Role::striker;
       LookForward();
       Striker();
     }
   }
- state(PlayDefender)
+
+  state(PlaySupporter)
   {
+    transition
+    {
+      if(LibTactic.nbOfDef <= 1)
+        goto PlayDefender;
+      else if(LibTactic.closerToTheBall)
+        goto PlayStriker;
+    }
     action
     {
+      theBehaviorStatus.role = Role::supporter;
       LookForward();
-      Defender();
+      Supporter();
     }
   }
 }
