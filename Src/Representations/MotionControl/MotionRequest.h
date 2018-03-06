@@ -28,8 +28,8 @@ STREAMABLE(MotionRequest,
     getUp,
     diveLeft,
     diveRight,
-    sidePunchLeft,
-    sidePunchRight,
+    groundPunchLeft,
+    groundPunchRight,
     sumo,
   });
 

@@ -1,5 +1,4 @@
 motion_id = diveLeft
-
 "mouvement done by goalie to stop the ball far left
 
 label start
@@ -13,9 +12,6 @@ stiffness * * 60 60 60 40 * * * * * * * * 40 40 40 40 40 40 60 60 60 60 60 60 10
 label repeat
 
 -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -   1  100
-
-
-
 
 transition diveLeft diveLeft repeat
 
