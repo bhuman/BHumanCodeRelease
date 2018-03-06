@@ -1,15 +1,10 @@
 option(PlayingState)
 {
-  initial_state(demo)
+  initial_state(play)
   {
-    transition
-    {
-      //if(!libDemo.parameters.isDemoActive)
-      //  goto selectAction;
-    }
     action
     {
-      Demo();
+      HandleTeamTactic();
     }
   }
 }

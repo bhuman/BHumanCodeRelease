@@ -35,6 +35,22 @@ usage() {
   echo " -D         : Only delete all files for the given robot"
   echo " -p         : Only update the network profiles"
   echo " -h         : Display this help"
+  echo ""
+  echo ""
+  echo "#########################################################################"
+  echo "########################      NAOVA       ###############################"
+  echo "########################           De Ben ###############################"
+  echo "#########################################################################"
+  echo ""
+  echo "La config réseau des Nao est générée en fonction de ce que vous ecrivez "
+  echo "ici. Il est donc important de respecter ce format pour que ca fonctionne"
+  echo "au club :"
+  echo "${0} -t <Un nombre d'equipe> -r <Un chiffre entre 1 et 9> <Nom du Robot>"
+  echo ""
+  echo "Le Nao sera joignable à l'adresse 192.168.0.5<chiffre entre 1 et 9>"
+  echo ""
+  echo "N'oubliez pas de rouler ./addRobotsIds si c'est pas déjà fait."
+  echo ""
   exit 1
 }
 
@@ -164,10 +180,17 @@ function createCalibrationDirectory()
 function createBushConfig()
 {
   message "Creating network.cfg"
+
+#HOTFIX Ben
+#cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
+#name = "${robotName}"; 
+#lan = "10.0.${teamID}.5${robotPart}";
+#wlan = "192.168.${teamID}.5${robotPart}";
+
 cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
-name = "${robotName}";
-lan = "192.168.${teamID}.${robotPart}";
-wlan = "10.0.${teamID}.${robotPart}";
+name = "${robotName}"; 
+lan = "10.0.0.5${robotPart}";
+wlan = "192.168.0.5${robotPart}";
 EOF
 }
 

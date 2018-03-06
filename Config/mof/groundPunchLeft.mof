@@ -1,0 +1,19 @@
+motion_id = groundPunchLeft
+"semi plongeon vers la droite
+
+label start
+
+"   HY     HP    LSP    LSR    LEY    LER  _LWY_  _LH_     RSP    RSR    REY    RER  _RWY_   _RH_   LHYP    LHR    LHP    LKP    LAP    LAR   RHYP    RHR    RHP    RKP    RAP    RAR Int  Dur
+
+stiffness 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 10
+
+79.7154 -19.2507 87.9772 47.3712 -119.5 -12.8298 24.3436 0.27 83.8511 -6.94585 77.3423 3.43018 -58.4504 0.2752 -4.2164 30.5887 -75.8482 121.04 -57.5715 7.17351 -4.2164 -5.71056 7.11683 -5.29 4.74855 7.12163 1 450
+12.1267 -8.00056 87.7135 12.3903 -68.4701 -36.8242 6.32579 0.6 86.3121 -8.00056 77.8697 30.8524 9.31412 0.3468 -6.85315 5.18802 -59.5882 109.774 -58.9778 -0.612832 -6.85315 4.13332 -52.5617 105.033 -58.8851 4.39699 1 950
+
+label repeat
+
+     -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -      -   1  100
+
+transition groundPunchLeft groundPunchLeft repeat
+
+transition allMotions extern start

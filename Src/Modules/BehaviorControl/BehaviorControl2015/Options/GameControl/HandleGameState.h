@@ -75,7 +75,7 @@ option(HandleGameState)
   {
     action
     {
-      Demo();
+      PlayingState();
     }
   }
 }

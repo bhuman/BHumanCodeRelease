@@ -21,7 +21,7 @@ STREAMABLE(BallState,
   (Vector2f)(Vector2f::Zero()) position,      /**< The position of the ball relative to the robot (in mm)*/
   (Vector2f)(Vector2f::Zero()) velocity,      /**< The velocity of the ball relative to the robot (in mm/s)*/
   (float)(0) rotation,                        /**< The rotation of the ball (in rad/s)*/
-  (float)(50) radius,                         /**< The assumed radius of the ball (in mm)*/
+  (float)(30) radius,                         /**< The assumed radius of the ball (in mm)*/
   (Matrix2f)(Matrix2f::Identity()) covariance, /**< The covariance matrix of the ball*/
 });
 

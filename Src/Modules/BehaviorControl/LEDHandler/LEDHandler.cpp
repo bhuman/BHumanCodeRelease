@@ -195,6 +195,18 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
       case Role::none:
         //off
         break;
+      case Role::keeper:
+        setEyeColor(ledRequest, true, BehaviorLEDRequest::blue, state);
+        break;
+      case Role::striker:
+        setEyeColor(ledRequest, true, BehaviorLEDRequest::red, state);
+        break;
+      case Role::supporter:
+        setEyeColor(ledRequest, true, BehaviorLEDRequest::green, state);
+        break;
+      case Role::defender:
+        setEyeColor(ledRequest, true, BehaviorLEDRequest::magenta, state);
+        break;
       default:
         ASSERT(false);
     }

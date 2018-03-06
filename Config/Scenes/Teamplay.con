@@ -1,0 +1,14 @@
+call Includes/Fast
+
+dr debugDrawing3d:representation:RobotPose
+
+# field views
+vf worldState
+vfd worldState fieldLines
+vfd worldState fieldPolygons
+vfd worldState representation:RobotPose
+
+# views relative to robot
+vfd worldState origin:RobotPose
+vfd worldState representation:BallModel
+vfd worldState representation:MotionRequest

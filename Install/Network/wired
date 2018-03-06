@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-BASE_ETH0_IP="192.168.%teamID%."
+BASE_ETH0_IP="10.0.0."
 ROBOT_ID="%robotPart%"
 
 depend() {
@@ -18,7 +18,8 @@ start() {
     insmod /lib/modules/2.6.33.9-rt31-aldebaran-rt/kernel/drivers/net/r8168.ko
   fi
 
-  ifconfig eth0 "${BASE_ETH0_IP}${ROBOT_ID}" netmask 255.255.0.0
+  #ifconfig eth0 "${BASE_ETH0_IP}${ROBOT_ID}" netmask 255.255.0.0
+   ifconfig eth0 "10.0.0.20" netmask 255.255.255.0
   ifconfig eth0 up
 }
 

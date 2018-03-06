@@ -9,6 +9,9 @@
 #include "SpecialActionRequest.h"
 #include "WalkRequest.h"
 #include "KickRequest.h"
+#include "DiveLeftRequest.h"
+#include "DiveRightRequest.h"
+#include "SumoRequest.h"
 
 /**
  * @struct MotionRequest
@@ -23,6 +26,11 @@ STREAMABLE(MotionRequest,
     specialAction,
     stand,
     getUp,
+    diveLeft,
+    diveRight,
+    sidePunchLeft,
+    sidePunchRight,
+    sumo,
   });
 
   /** Draws something*/
@@ -32,6 +40,9 @@ STREAMABLE(MotionRequest,
   (SpecialActionRequest) specialActionRequest, /**< The special action request, if it is the selected motion. */
   (WalkRequest) walkRequest, /**< The walk request, if it is the selected motion. */
   (KickRequest) kickRequest, /**< The kick request, if it is the selected motion. */
+  (DiveLeftRequest) diveLeftRequest,
+  (DiveRightRequest) diveRightRequest,
+  (SumoRequest) sumoRequest,
 });
 
 struct BehaviorMotionRequest : public MotionRequest {};
