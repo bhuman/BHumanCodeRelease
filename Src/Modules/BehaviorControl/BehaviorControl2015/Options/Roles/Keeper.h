@@ -102,7 +102,7 @@ option(Keeper)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), LibTactic.keeperDesiredPos));
+      WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), LibTactic.DesiredPos));
     }
   }
 
@@ -157,7 +157,7 @@ option(Keeper)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(50.f, 50.f, 50.f), LibTactic.keeperDesiredPos);
+      WalkToTarget(Pose2f(50.f, 50.f, 50.f), LibTactic.DesiredPos);
     }
   }
 
@@ -213,7 +213,7 @@ option(Keeper)
     action
     {
       LookForward();
-      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, LibTactic.keeperDesiredPos.x() - 150.f, LibTactic.keeperDesiredPos.y() - 30.f));
+      WalkToTarget(Pose2f(80.f, 80.f, 80.f), Pose2f(LibTactic.angleToOppGoal, LibTactic.DesiredPos.x() - 150.f, LibTactic.DesiredPos.y() - 30.f));
     }
   }
 
@@ -229,7 +229,7 @@ option(Keeper)
     action
     {
       LookForward();
-      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(LibTactic.angleToOppGoal, LibTactic.keeperDesiredPos.x() - 160.f, LibTactic.keeperDesiredPos.y() - 55.f));
+      InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(LibTactic.angleToOppGoal, LibTactic.DesiredPos.x() - 160.f, LibTactic.DesiredPos.y() - 55.f));
     }
   }
   
