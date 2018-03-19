@@ -23,8 +23,7 @@ public:
   
   float angleToOppGoal;
   float angleToOwnGoal;
-  Vector2f keeperDesiredPos; 
-  Vector2f supporterDesiredPos; 
+  Vector2f DesiredPos;
   double distanceToBall;
   bool closerToTheBall;
   int nbOfDef;
