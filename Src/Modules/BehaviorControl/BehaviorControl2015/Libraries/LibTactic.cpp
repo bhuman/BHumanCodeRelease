@@ -36,7 +36,6 @@ namespace Behavior2015
     }
     else if(theBehaviorStatus.role == Role::striker)
     {
-
       angleToOppGoal = (theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOpponentGroundline, 0.f)).angle();
     }
     else if(theBehaviorStatus.role == Role::supporter)
@@ -72,10 +71,12 @@ namespace Behavior2015
   {
     for(int i = 0; i != theTeammateData.teammates.size(); i++)
     {
-      if(theTeammateData.teammates[i].behaviorStatus.role == Role::supporter || theTeammateData.teammates[i].behaviorStatus.role == Role::striker)
+      if(theTeammateData.teammates[i].behaviorStatus.role == Role::supporter ||
+          theTeammateData.teammates[i].behaviorStatus.role == Role::striker)
       {
-        double teammateDistanceToBall = abs(sqr(pow(theTeammateData.teammates[i].ball.estimate.position.x(),2) + pow(theTeammateData.teammates[i].ball.estimate.position.y(),2))); 
-      
+        double teammateDistanceToBall = abs(sqr(pow(theTeammateData.teammates[i].ball.estimate.position.x(), 2) +
+                                                pow(theTeammateData.teammates[i].ball.estimate.position.y(), 2)));
+
         if(this->distanceToBall < teammateDistanceToBall)
         {
           return false;
@@ -84,14 +85,6 @@ namespace Behavior2015
     }
     return true;
   }
-//
-//  Vector2f LibTactic::findStrikerPos()
-//  {
-//    for(int i = 0; i != theTeammateData.teammates.size(); i++)
-//    {
-//      if(theTeammateData.teammates[i].behaviorStatus.role == Role::striker)
-//      {
-//  }
   
   bool LibTactic::between(float value, float min, float max)
   {
