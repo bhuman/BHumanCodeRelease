@@ -340,7 +340,7 @@ inline std::ostream& operator << (std::ostream& o, const TriangleMesh::Edge& edg
 
 inline std::ostream& operator << (std::ostream& o, const TriangleMesh::Face& face)
 {
-  o << "[" << face.vertex[0] << " " << face.vertex[1] << " " << face.vertex[3] << " " << face.color << "]";
+  o << "[" << face.vertex[0] << " " << face.vertex[1] << " " << face.vertex[2] << " " << face.color << "]";
   return o;
 }
 

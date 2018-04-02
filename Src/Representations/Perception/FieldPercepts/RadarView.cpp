@@ -36,7 +36,7 @@ void RadarView::draw() const
       for(std::vector<FieldLines::Line>::const_iterator line = sortLines.at(i).eqLines.begin(); line != sortLines.at(i).eqLines.end(); line++)
       {
         unsigned char num = (unsigned char) i;
-        ColorRGBA color = ColorRGBA::ColorRGBA(255 / (unsigned char) sortLines.size() * num, 255 - (255 / (unsigned char) sortLines.size() * num), 255);
+        ColorRGBA color(255 / (unsigned char) sortLines.size() * num, 255 - (255 / (unsigned char) sortLines.size() * num), 255);
         const Drawings::PenStyle pen = line->midLine ? Drawings::dashedPen : Drawings::solidPen;
         LINE("representation:RadarView:field", line->first.x(), line->first.y(), line->last.x(), line->last.y(), 15, pen, color);
         ARROW("representation:RadarView:field", line->first.x(), line->first.y(), line->first.x() + cos(line->alpha - pi_2) * 100, line->first.y() + sin(line->alpha - pi_2) * 100, 15, pen, color);
