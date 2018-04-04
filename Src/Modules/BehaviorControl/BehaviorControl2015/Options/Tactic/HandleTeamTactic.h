@@ -1,20 +1,10 @@
 option(HandleTeamTactic)
 {
-  // Desactivated for testing
-  //common_transition
-  //{
-  //if(LibTactic.oneGoaler)
-  //      goto PlayKeeper;
-  //}
-
   initial_state(ChooseRole)
   {
     transition
     {
-      if(theRobotInfo.number == 1)
-        goto PlayKeeper;
-      else
-        goto PlayStriker;
+        goto PlaySupporter;
     }
     action
     {
@@ -24,6 +14,12 @@ option(HandleTeamTactic)
   
   state(PlayKeeper)
   {
+    transition
+    {
+      if(action_aborted)
+        if(LibTactic.nbOfKeeper >= 2)
+          goto PlayStriker;
+    }
     action
     {
       theBehaviorStatus.role = Role::keeper;
@@ -36,8 +32,11 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibTactic.nbOfDef > 1)
-        goto PlayStriker;
+      if(action_aborted)
+        if(LibTactic.nbOfStriker == 0)
+          goto PlayStriker;
+        if(LibTactic.nbOfDefender >= 3)
+          goto PlaySupporter;
     }
     action
     {
@@ -51,10 +50,13 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibTactic.nbOfDef == 0)
-        goto PlayDefender;
-      else if(!LibTactic.closerToTheBall)
-        goto PlaySupporter;
+      if(action_aborted)
+        if(LibTactic.nbOfKeeper == 0)
+          goto PlayKeeper;
+        else if(LibTactic.nbOfStriker >= 2)
+          goto PlayDefender;
+        else if(!LibTactic.closerToTheBall)
+          goto PlaySupporter;
     }
     action
     {
@@ -68,10 +70,11 @@ option(HandleTeamTactic)
   {
     transition
     {
-      if(LibTactic.nbOfDef <= 1)
-        goto PlayDefender;
-      else if(LibTactic.closerToTheBall)
-        goto PlayStriker;
+      if(action_aborted)
+        if(LibTactic.nbOfDefender <= 1)
+          goto PlayDefender;
+        else if(LibTactic.closerToTheBall)
+          goto PlayStriker;
     }
     action
     {

@@ -1,6 +1,13 @@
 /** A test striker option without common decision */
 option(Striker)
 {
+  common_transition
+  {
+    if(!LibTactic.closerToTheBall || LibTactic.nbOfKeeper == 0 || LibTactic.nbOfStriker >= 2)
+      if(state_time > theRobotInfo.number*100)
+        goto abortedState;
+  }
+
   initial_state(start)
   {
     transition
@@ -14,6 +21,8 @@ option(Striker)
       Stand();
     }
   }
+
+  aborted_state(abortedState){}
 
   state(turnToBall)
   {

@@ -10,13 +10,15 @@ option(Keeper)
       if(LibTactic.between(theBallModel.estimate.position.x(),200.f,600.f)
          && LibTactic.between(theBallModel.estimate.position.y(),0.f,-1000.f)
          && LibTactic.between(theBallModel.estimate.velocity.x(),5.f,1000.f))
-         goto diveRight; */
+         goto diveRight;
 
       if(LibTactic.between(theBallModel.estimate.position.x(), 200.f, 1000.f)
          && LibTactic.between(theBallModel.estimate.velocity.x(), -1000.f, -5.f))
-      {
-        goto sumo;
-      }
+         goto sumo;*/
+
+      if(LibTactic.nbOfKeeper >= 2)
+        if(state_time > theRobotInfo.number*100)
+          goto abortedState;
   }
 
   initial_state(start)
@@ -35,53 +37,55 @@ option(Keeper)
     }
   }
 
-  state(diveLeft)
-  {
-    transition
-    {
-      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-      {
-        goto start;
-      }
-    }
-    action
-    {
-      // ** Desactivated until the special action exist **
-      //SpecialAction(SpecialActionRequest::diveLeft);
-    }
-  }
-  
-  state(diveRight)
-  {
-    transition
-    {
-      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-      {
-        goto start;
-      }
-    }
-    action
-    {
-      // ** Desactivated until the special action exist **
-      //SpecialAction(SpecialActionRequest::diveRight);
-    }
-  }
+  aborted_state(abortedState){}
 
-  state(sumo)
-  {
-    transition
-    {
-      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
-      {
-        goto start;
-      }
-    }
-    action
-    {
-
-      SpecialAction(SpecialActionRequest::sumo);
-    }
-  }
+//  state(diveLeft)
+//  {
+//    transition
+//    {
+//      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+//      {
+//        goto start;
+//      }
+//    }
+//    action
+//    {
+//      // ** Desactivated until the special action exist **
+//      //SpecialAction(SpecialActionRequest::diveLeft);
+//    }
+//  }
+//
+//  state(diveRight)
+//  {
+//    transition
+//    {
+//      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+//      {
+//        goto start;
+//      }
+//    }
+//    action
+//    {
+//      // ** Desactivated until the special action exist **
+//      //SpecialAction(SpecialActionRequest::diveRight);
+//    }
+//  }
+//
+//  state(sumo)
+//  {
+//    transition
+//    {
+//      if(LibTactic.timeSinceBallWasSeen() > theBehaviorParameters.ballNotSeenTimeOut)
+//      {
+//        goto start;
+//      }
+//    }
+//    action
+//    {
+//      // ** Desactivated until it can recover from it **
+//      //SpecialAction(SpecialActionRequest::sumo);
+//    }
+//  }
 
   state(alignToBall)
   {
