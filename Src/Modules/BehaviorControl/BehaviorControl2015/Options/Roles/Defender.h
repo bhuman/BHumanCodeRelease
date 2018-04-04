@@ -1,6 +1,13 @@
 /** A test Defender  */
 option(Defender)
 {
+  common_transition
+  {
+    if(LibTactic.nbOfStriker == 0 || LibTactic.nbOfDefender >= 3)
+      if(state_time > theRobotInfo.number*100)
+        goto abortedState;
+  }
+
   initial_state(start)
   {
     transition
@@ -15,6 +22,8 @@ option(Defender)
     }
   }
 
+  aborted_state(abortedState){}
+
   state(alignToBall)
   {
     transition
@@ -28,7 +37,6 @@ option(Defender)
       WalkToTarget(Pose2f(90.f, 90.f, 90.f), Pose2f(theBallModel.estimate.position.angle(), 0.f, 0.f));
     }
   }
-
 
   state(turnToBallFar)
   {

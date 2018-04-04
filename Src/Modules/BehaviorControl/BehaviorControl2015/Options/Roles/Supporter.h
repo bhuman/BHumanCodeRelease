@@ -1,5 +1,12 @@
 option(Supporter)
 {
+  common_transition
+  {
+    if(LibTactic.closerToTheBall || LibTactic.nbOfDefender <= 1)
+      if(state_time > theRobotInfo.number*100)
+        goto abortedState;
+  }
+
   initial_state(start)
   {
     transition
@@ -13,6 +20,8 @@ option(Supporter)
       Stand();
     }
   }
+
+  aborted_state(abortedState){}
 
   state(turnToBall)
   {

@@ -17,16 +17,22 @@ public:
     
   int timeSinceBallWasSeen();
   
-  int howManyDef();
+  void countRoles();
   
   bool isCloserToTheBall();
-  
+
+  float xPos;
+  float yPos;
+  Vector2f midPointBallGoal;
   float angleToOppGoal;
   float angleToOwnGoal;
   Vector2f DesiredPos;
   double distanceToBall;
   bool closerToTheBall;
-  int nbOfDef;
+  int nbOfDefender;
+  int nbOfKeeper;
+  int nbOfStriker;
+  int nbOfSupporter;
 };
 
 
