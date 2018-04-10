@@ -27,7 +27,7 @@ MODULE(TeammateDataProvider,
   PROVIDES(TeammateData),
   DEFINES_PARAMETERS(
   {,
-    (int)(200) sendInterval, /** <  Time in ms between two messages that are sent to the teammates */
+    (int)(333) sendInterval, /** <  Time in ms between two messages that are sent to the teammates */
     (int)(4000) networkTimeout, /**< Time in ms after which teammates are considered as unconnected */
   }),
 });
