@@ -3,7 +3,8 @@
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
-#include "../ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "GoalFrame.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -37,10 +38,12 @@ void GoalFrame::draw() const
   }
   COMPLEX_DRAWING("representation:GoalFrame:image")
   {
-    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo"))
+    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo")
+       && Blackboard::getInstance().exists("ImageCoordinateSystem"))
     {
       const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
       const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
       const Vector2f a = (*this) * Vector2f(0.f, size);
       const Vector2f b = (*this) * Vector2f(0.f, -size);
@@ -55,6 +58,11 @@ void GoalFrame::draw() const
          Transformation::robotToImage(d, theCameraMatrix, theCameraInfo, dImage) &&
          Transformation::robotToImage(e, theCameraMatrix, theCameraInfo, eImage))
       {
+        aImage = theImageCoordinateSystem.fromCorrected(aImage);
+        bImage = theImageCoordinateSystem.fromCorrected(bImage);
+        cImage = theImageCoordinateSystem.fromCorrected(cImage);
+        dImage = theImageCoordinateSystem.fromCorrected(dImage);
+        eImage = theImageCoordinateSystem.fromCorrected(eImage);
         LINE("representation:GoalFrame:image", aImage.x(), aImage.y(), bImage.x(), bImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:GoalFrame:image", aImage.x(), aImage.y(), cImage.x(), cImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:GoalFrame:image", bImage.x(), bImage.y(), cImage.x(), cImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);

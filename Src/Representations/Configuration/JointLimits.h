@@ -8,7 +8,7 @@ STREAMABLE(JointLimits,
 {
   JointLimits(),
 
-  (ENUM_INDEXED_ARRAY(Rangea, (Joints) Joint)) limits, /**< Information on the calibration of all joints. */
+  (ENUM_INDEXED_ARRAY(Rangea, Joints::Joint)) limits, /**< Information on the calibration of all joints. */
 });
 
 inline JointLimits::JointLimits()

@@ -17,12 +17,13 @@ void TeamBallLocator::update(TeamBallModel& teamBallModel)
   // Check and adapt size of buffer -----
   if(balls.size() != static_cast<std::size_t>(Settings::highestValidPlayerNumber + 1))
     balls.resize(Settings::highestValidPlayerNumber + 1);
-  // Add new observations to buffer
-  updateBalls();
+  // Add new observations to buffer (except for phases during which everything is deleted)
+  if(!checkForResetByGameSituation())
+    updateInternalBallBuffers();
   // Compute model
   teamBallModel.balls.clear();
-  mergedBalls.clear();
-  weightingsOfMergedBalls.clear();
+  ballsConsideredForTeamBall.clear();
+  weightingsOfBallsConsideredForTeamBall.clear();
   unsigned timeWhenLastSeen = computeTeamBallModel(teamBallModel.position, teamBallModel.velocity);
   teamBallModel.isValid = timeWhenLastSeen != 0;
   if(teamBallModel.isValid)
@@ -34,56 +35,46 @@ void TeamBallLocator::update(TeamBallModel& teamBallModel)
       if(numberOfBallsByOthers > 0)
       {
         teamBallModel.contributors = TeamBallModel::meAndOthers;
-        teamBallModel.balls = mergedBalls;
+        teamBallModel.balls = ballsConsideredForTeamBall;
       }
       else
       {
         teamBallModel.contributors = TeamBallModel::onlyMe;
+        // List of balls remains empty as there is only one
       }
     }
     else // ... or not involved
     {
-      if(numberOfBallsByOthers == 1)
-      {
-        teamBallModel.contributors = TeamBallModel::oneOther;
-      }
-      else // must be > 1
+      if(numberOfBallsByOthers > 1)
       {
         teamBallModel.contributors = TeamBallModel::multipleOthers;
-        teamBallModel.balls = mergedBalls;
+        teamBallModel.balls = ballsConsideredForTeamBall;
+      }
+      else // must be == 1
+      {
+        teamBallModel.contributors = TeamBallModel::oneOther;
+        // List of balls remains empty as there is only one
       }
     }
     ASSERT(numberOfBallsByOthers + numberOfBallsByMe > 0); // Just to be sure. Should never happen.
   }
-  if(teamBallModel.isValid && teamBallModel.balls.size() > 1)
-  {
-    ASSERT(mergedBalls.size() == weightingsOfMergedBalls.size());
-    float varianceSum = 0.f;
-    for(unsigned int i = 0; i < mergedBalls.size(); i++)
-    {
-      const float wDist = (teamBallModel.position - mergedBalls[i].position).norm();
-      varianceSum += wDist * wDist * weightingsOfMergedBalls[i];
-    }
-    varianceSum /= mergedBalls.size();
-    teamBallModel.standardDeviationOfWeightedBalls = std::sqrt(varianceSum);
-  }
-  else
-  {
-    teamBallModel.standardDeviationOfWeightedBalls = 0.f;
-  }
 }
 
-void TeamBallLocator::updateBalls()
+void TeamBallLocator::updateInternalBallBuffers()
 {
   // I have new ball information!
   unsigned i = theRobotInfo.number;
-  if(balls[i].size() == 0 || balls[i][0].time != theBallModel.timeWhenLastSeen)
+  if(balls[i].size() == 0 ||                                          // No balls yet
+     balls[i][0].time != theBallModel.timeWhenLastSeen ||             // Current ball model is newer
+     balls[i][0].vel.norm() < theBallModel.estimate.velocity.norm())  // Current ball is faster. This means that we have kicked the ball but not seen it again
   {
     Ball newBall;
     newBall.robotPose           = theRobotPose;
+    newBall.poseValidity        = theRobotPose.validity;
     newBall.pos                 = theBallModel.estimate.position;
     newBall.vel                 = theBallModel.estimate.velocity;
     newBall.time                = theBallModel.timeWhenLastSeen;
+    newBall.velocityIsValid     = true;
     newBall.valid = true;
     balls[i].push_front(newBall);
   }
@@ -93,16 +84,20 @@ void TeamBallLocator::updateBalls()
     // teammate is participating in the game and has made a new ball observation
     unsigned n = teammate.number;
     if(teammate.status == Teammate::PLAYING &&
-       (balls[n].size() == 0 || balls[n][0].time != teammate.theBallModel.timeWhenLastSeen) &&
+       teammate.mateType == Teammate::BHumanRobot && // Sorry guys ...
+       (balls[n].size() == 0 ||
+        balls[n][0].time != teammate.theBallModel.timeWhenLastSeen ||
+        balls[n][0].vel.norm() < teammate.theBallModel.estimate.velocity.norm()) &&
        teammate.theBallModel.lastPerception != Vector2f::Zero() &&
-       teammate.theBallModel.estimate.position != Vector2f::Zero() &&
-       !ballIsNearOtherTeammate(teammate))
+       teammate.theBallModel.estimate.position != Vector2f::Zero())
     {
       Ball newBall;
       newBall.robotPose           = teammate.theRobotPose;
+      newBall.poseValidity        = teammate.theRobotPose.validity;
       newBall.pos                 = teammate.theBallModel.estimate.position;
       newBall.vel                 = teammate.theBallModel.estimate.velocity;
       newBall.time                = teammate.theBallModel.timeWhenLastSeen;
+      newBall.velocityIsValid     = teammate.mateType == Teammate::BHumanRobot;
       newBall.valid = true;
       balls[teammate.number].push_front(newBall);
     }
@@ -135,27 +130,13 @@ void TeamBallLocator::updateBalls()
   }
 }
 
-bool TeamBallLocator::ballIsNearOtherTeammate(const Teammate& teammate)
-{
-  Vector2f teammateGlobalBallPos = teammate.theRobotPose * teammate.theBallModel.estimate.position;
-  for(auto const& other : theTeamData.teammates)
-  {
-    if(other.number == teammate.number)
-      continue;
-    if((other.theRobotPose.translation - teammateGlobalBallPos).norm() < robotBanRadius)
-      return true;
-  }
-  if((theRobotPose.translation - teammateGlobalBallPos).norm() < robotBanRadius)
-    return true;
-  return false;
-}
-
 unsigned TeamBallLocator::computeTeamBallModel(Vector2f& pos, Vector2f& vel)
 {
   numberOfBallsByMe = 0;
   numberOfBallsByOthers = 0;
   unsigned timeWhenLastSeen = 0;
   float weightSum = 0.f;
+  float weightSumForVelocity = 0.f;
   Vector2f avgPos(0.f, 0.f);
   Vector2f avgVel(0.f, 0.f);
   for(unsigned int robot = 0; robot < balls.size(); ++robot)
@@ -179,24 +160,32 @@ unsigned TeamBallLocator::computeTeamBallModel(Vector2f& pos, Vector2f& vel)
           Vector2f absPos = ball.robotPose * ball.pos;
           Vector2f absVel = ball.vel;
           absVel.rotate(ball.robotPose.rotation);
-          if(ball.time < theFrameInfo.time)
+          if(ball.time < theFrameInfo.time && ball.velocityIsValid)
           {
             float t = (theFrameInfo.time - ball.time) / 1000.f;
+            // To be technically correct, for kicked (and not seen) balls, the propagation should start at the
+            // point of time of the kick and not at the point of time of the observation.
+            // However, as the error is not big and as would would require to send one more timestamp,
+            // this formula remains unchanged.
             BallPhysics::propagateBallPositionAndVelocity(absPos, absVel, t, theBallSpecification.friction);
           }
           // Final check to accept the ball:
           if(theFieldDimensions.isInsideCarpet(absPos))
           {
             avgPos += absPos * weighting;
-            avgVel += absVel * weighting;
             weightSum += weighting;
+            if(ball.velocityIsValid)
+            {
+              avgVel += absVel * weighting;
+              weightSumForVelocity += weighting;
+            }
             if(ball.time > timeWhenLastSeen)
               timeWhenLastSeen = ball.time;
             TeamBallModel::ConsideredBall consideredBall;
             consideredBall.position = absPos;
             consideredBall.playerNumber = static_cast<unsigned char>(robot);
-            mergedBalls.push_back(consideredBall);
-            weightingsOfMergedBalls.push_back(weighting);
+            ballsConsideredForTeamBall.push_back(consideredBall);
+            weightingsOfBallsConsideredForTeamBall.push_back(weighting);
             // Update statistics:
             if(robot == static_cast<unsigned int>(theRobotInfo.number))
               numberOfBallsByMe++;
@@ -208,27 +197,67 @@ unsigned TeamBallLocator::computeTeamBallModel(Vector2f& pos, Vector2f& vel)
     }
   }
   ASSERT(std::isfinite(weightSum));
+  ASSERT(std::isfinite(weightSumForVelocity));
+  ASSERT(weightSumForVelocity <= weightSum);
   if(weightSum != 0.f)
-  {
     pos = avgPos / weightSum;
+  if(weightSumForVelocity != 0.f)
     vel = avgVel / weightSum;
-  }
+  else
+    vel = Vector2f::Zero();
   return timeWhenLastSeen;
 }
 
 float TeamBallLocator::computeWeighting(const TeamBallLocator::Ball& ball) const
 {
-  if(theFrameInfo.getTimeSince(ball.time) > ballLastSeenTimeout)
+  const int timeSinceBallWasSeen = theFrameInfo.getTimeSince(ball.time);
+  // Hummm, the ball has not been seen for some time -> weighting is 0
+  if(timeSinceBallWasSeen > ballLastSeenTimeout)
     return 0.f;
 
-  float weighting = 1.0f - (1.0f / (1.0f + std::exp(-(theFrameInfo.getTimeSince(ball.time) - (float)ballLastSeenTimeout) / scalingFactorBallSinceLastSeen))); // sigmoid function based on ball_time_since_last_seen
-
+  // Computing the weighting is based on three parts:
+  // 1. the time that has passed since the ball was seen the last time (smaller is better)
+  // 2. the distance of the observer to the ball (closer is better)
+  // 3. the validity [0,..,1] of the robot's position estimate
+  
+  // Part 1: Time *****
+  // Compute a value in the interval [0,..,1], which indicates how much of the maximum possible ball age is over:
+  float ballAgeRelativeToTimeout = static_cast<float>(timeSinceBallWasSeen) / static_cast<float>(ballLastSeenTimeout);
+  // Use hyperbolic tangent for computing the age-based weighting.
+  // The input value is multiplied by 2, this has the following effect (given the tanh curve):
+  // - the ball weight is about 0.25, if half of the maximum time is over
+  // - the ball weight is close to 0, if the maximum time is almost over
+  float ballAgeWeight = 1.f - std::tanh(ballAgeRelativeToTimeout * 2.f);
+ 
+  // Part 2: Angular distance *****
   const float camHeight = 550.f;
   const float angleOfCamera = std::atan(ball.pos.norm() / camHeight); // angle of camera when looking at the ball
   const float ballPositionWithPositiveDeviation = std::tan(angleOfCamera + 1_deg) * camHeight; // ball position when angle of camera is a bit different in position direction
   const float ballPositionWithNegativeDeviation = std::tan(angleOfCamera - 1_deg) * camHeight; // ball position when angle of camera is a bit different in negative direction
-  const float ballDeviation = (ballPositionWithNegativeDeviation - ballPositionWithPositiveDeviation) / 2; // averaged deviation of the ball position
-  weighting *= 1.0f / ballDeviation;
-
+  const float ballDeviation = (ballPositionWithPositiveDeviation - ballPositionWithNegativeDeviation) / 2; // averaged deviation of the ball position
+  
+  // Part 3: Combination with validity *****
+  const float weighting = (ballAgeWeight / ballDeviation) * ball.poseValidity;
   return std::abs(weighting);
+}
+
+bool TeamBallLocator::checkForResetByGameSituation()
+{
+  bool reset = false;
+  // In READY, INITIAL, FINISHED, a team ball model does not make any sense:
+  if(theGameInfo.state != STATE_PLAYING && theGameInfo.state != STATE_SET)
+    reset = true;
+  // If the ball was out, all previous information is invalid:
+  if(theGameInfo.dropInTime == 0)
+    reset = true;
+  // Same for any goal free kick:
+  if(theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK)
+    reset = true;
+  // If any of the above conditions was true, we delete every ball information that we have stored:
+  if(reset)
+  {
+    for(unsigned int i = 0; i < balls.size(); ++i)
+      balls[i].clear();
+  }
+  return reset;
 }

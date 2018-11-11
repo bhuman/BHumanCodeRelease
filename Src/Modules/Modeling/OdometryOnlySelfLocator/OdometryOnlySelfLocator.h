@@ -37,5 +37,5 @@ private:
    *
    * @param robotPose The robot pose representation that is updated by this module.
    */
-  void update(RobotPose& robotPose);
+  void update(RobotPose& robotPose) override;
 };

@@ -42,26 +42,26 @@ private:
    * The entry has been selected by select() before.
    * @param value The value that is read.
    */
-  template<class T> void in(T& value)
+  template<typename T> void in(T& value)
   {
     Entry& e = stack.back();
     value = propertyManager.value(e.property).value<T>();
   }
 
 protected:
-  virtual void inBool(bool& value) { in(value); }
-  virtual void inChar(char& value) { in(value); }
-  virtual void inSChar(signed char& value) { in(value); }
-  virtual void inUChar(unsigned char& value) { in(value); }
-  virtual void inShort(short& value) { in(value); }
-  virtual void inUShort(unsigned short& value) { in(value); }
-  virtual void inInt(int& value) { in(value); }
-  virtual void inUInt(unsigned int& value);
-  virtual void inFloat(float& value) { in(value); }
-  virtual void inDouble(double& value) { in(value); }
-  virtual void inString(std::string& value) { in(value); }
-  virtual void inAngle(Angle& value);
-  virtual void inEndL() {}
+  void inBool(bool& value) override { in(value); }
+  void inChar(char& value) override { in(value); }
+  void inSChar(signed char& value) override { in(value); }
+  void inUChar(unsigned char& value) override { in(value); }
+  void inShort(short& value) override { in(value); }
+  void inUShort(unsigned short& value) override { in(value); }
+  void inInt(int& value) override { in(value); }
+  void inUInt(unsigned int& value) override;
+  void inFloat(float& value) override { in(value); }
+  void inDouble(double& value) override { in(value); }
+  void inString(std::string& value) override { in(value); }
+  void inAngle(Angle& value) override;
+  void inEndL() override {}
 
 public:
   PropertyTreeWriter(const PropertyManager& propertyManager, QtProperty* root) :
@@ -77,19 +77,19 @@ public:
    *             -2: value or record,
    *             -1: array,
    *             >= 0: array element index.
-   * @param enumToString A function that translates an enum to a string.
+   * @param enumType A function that translates an enum to a string.
    */
-  virtual void select(const char* name, int type, const char* (*enumToString)(int));
+  void select(const char* name, int type, const char* enumType) override;
 
   /** Deselects a field for reading. */
-  virtual void deselect() { stack.pop_back(); }
+  void deselect() override { stack.pop_back(); }
 
   /** Not allowed for this stream! */
-  virtual void read(void* p, size_t size) { ASSERT(false); }
+  void read(void* p, size_t size) override { ASSERT(false); }
 
   /** Not allowed for this stream! */
-  virtual void skip(size_t size) { ASSERT(false); }
+  void skip(size_t size) override { ASSERT(false); }
 
   /** Not allowed for this stream! */
-  virtual bool eof() const { ASSERT(false); return false; }
+  bool eof() const override { ASSERT(false); return false; }
 };

@@ -192,10 +192,10 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
           if(geometry1->material->getRollingFriction(*geometry2->material, rollingFriction))
           {
             dBodySetAngularDamping(bodyId1, 0.2f);
-            Vector3<> linearVel;
+            Vector3f linearVel;
             ODETools::convertVector(dBodyGetLinearVel(bodyId1), linearVel);
-            linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));
-            dBodySetLinearVel(bodyId1, linearVel.x, linearVel.y, linearVel.z);
+            linearVel -= linearVel.normalized(std::min(linearVel.norm(), rollingFriction * simulation->scene->stepLength));
+            dBodySetLinearVel(bodyId1, linearVel.x(), linearVel.y(), linearVel.z());
           }
           break;
       }
@@ -208,10 +208,10 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
           if(geometry2->material->getRollingFriction(*geometry1->material, rollingFriction))
           {
             dBodySetAngularDamping(bodyId2, 0.2f);
-            Vector3<> linearVel;
+            Vector3f linearVel;
             ODETools::convertVector(dBodyGetLinearVel(bodyId2), linearVel);
-            linearVel -= Vector3<>(linearVel).normalize(std::min(linearVel.abs(), rollingFriction * simulation->scene->stepLength));
-            dBodySetLinearVel(bodyId2, linearVel.x, linearVel.y, linearVel.z);
+            linearVel -= linearVel.normalized(std::min(linearVel.norm(), rollingFriction * simulation->scene->stepLength));
+            dBodySetLinearVel(bodyId2, linearVel.x(), linearVel.y(), linearVel.z());
           }
           break;
       }

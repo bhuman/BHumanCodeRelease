@@ -51,7 +51,7 @@ Tests = cppApplication + {
     "$(srcDirRoot)"
     "$(srcDirRoot)/Utils/Tests"
     "$(srcDirRoot)/Tools/Precompiled"
-    "$(utilDirRoot)/Eigen"
+    "$(utilDirRoot)/SimRobot/Util/Eigen"
     "$(utilDirRoot)/GameController/include"
     "$(utilDirRoot)/gtest/include"
     "$(utilDirRoot)/snappy/include"
@@ -96,6 +96,6 @@ Tests = cppApplication + {
 
   visualizers = {
     "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
-    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
+    "$(utilDirRoot)/SimRobot/Util/Eigen/debug/msvc/eigen.natvis"
   }
 }

@@ -28,7 +28,7 @@ public:
     settings.endGroup();
   }
 
-  virtual ~View3DWidget()
+  ~View3DWidget()
   {
     QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
     settings.beginGroup(view3D.fullName);
@@ -45,13 +45,13 @@ private:
   bool dragging = false;
   QPoint dragStart;
 
-  void resizeGL(int newWidth, int newHeight)
+  void resizeGL(int newWidth, int newHeight) override
   {
     width = newWidth;
     height = newHeight;
   }
 
-  void paintGL()
+  void paintGL() override
   {
     GLdouble aspect = height ? (GLdouble)width / (GLdouble)height : (GLdouble)width;
 
@@ -89,7 +89,7 @@ private:
     view3D.lastBackground = view3D.background;
   }
 
-  void mousePressEvent(QMouseEvent* event)
+  void mousePressEvent(QMouseEvent* event) override
   {
     QWidget::mousePressEvent(event);
 
@@ -100,14 +100,14 @@ private:
     }
   }
 
-  void mouseReleaseEvent(QMouseEvent* event)
+  void mouseReleaseEvent(QMouseEvent* event) override
   {
     QWidget::mouseReleaseEvent(event);
 
     dragging = false;
   }
 
-  void mouseMoveEvent(QMouseEvent* event)
+  void mouseMoveEvent(QMouseEvent* event) override
   {
     QWidget::mouseMoveEvent(event);
 
@@ -121,7 +121,7 @@ private:
     }
   }
 
-  void mouseDoubleClickEvent(QMouseEvent* event)
+  void mouseDoubleClickEvent(QMouseEvent* event) override
   {
     QWidget::mouseDoubleClickEvent(event);
 
@@ -129,7 +129,7 @@ private:
     updateGL();
   }
 
-  void wheelEvent(QWheelEvent* event)
+  void wheelEvent(QWheelEvent* event) override
   {
     if(event->delta())
     {
@@ -143,11 +143,11 @@ private:
       QGLWidget::wheelEvent(event);
   }
 
-  virtual QSize sizeHint() const { return QSize(320, 240); }
+  QSize sizeHint() const override { return QSize(320, 240); }
 
-  virtual QWidget* getWidget() { return this; }
+  QWidget* getWidget() override { return this; }
 
-  virtual void update()
+  void update() override
   {
     if(view3D.background != view3D.lastBackground || view3D.needsUpdate())
       QGLWidget::update();

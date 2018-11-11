@@ -16,6 +16,9 @@
 #include "Utils/bush/ui/ShortcutBar.h"
 #include "Utils/bush/ui/TeamSelector.h"
 #include "Utils/bush/ui/SizeManager.h"
+#ifdef MACOS
+#include "../Util/SimRobot/Src/SimRobot/Helper.h"
+#endif
 
 MainWindow::MainWindow()
 {
@@ -47,8 +50,9 @@ MainWindow::MainWindow()
 
   ShortcutBar* shortcutBar = new ShortcutBar(console);
 #ifdef MACOS
-  addToolBar(Qt::TopToolBarArea, shortcutBar);
+  setWindowTitleTransparent(this);
   setUnifiedTitleAndToolBarOnMac(true);
+  addToolBar(Qt::TopToolBarArea, shortcutBar);
   shortcutBar->setMovable(false);
 #else
   addToolBar(Qt::BottomToolBarArea, shortcutBar);

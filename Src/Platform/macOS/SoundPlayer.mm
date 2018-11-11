@@ -1,7 +1,7 @@
 /**
  * @file  Platform/macOS/SoundPlayer.cpp
  * Implementation of class SoundPlayer.
- * @attention This is the OSX implementation.
+ * @attention This is the macOS implementation.
  * @author Colin Graf
  * @author Thomas Röfer
  */
@@ -39,6 +39,12 @@
 @end
 
 SoundPlayer SoundPlayer::soundPlayer;
+static SoundPlayerDelegate* delegate;
+
+SoundPlayer::SoundPlayer()
+{
+  delegate = [[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem];
+}
 
 SoundPlayer::~SoundPlayer()
 {
@@ -48,6 +54,7 @@ SoundPlayer::~SoundPlayer()
     sem.post();
     stop();
   }
+  [delegate release];
 }
 
 void SoundPlayer::start()
@@ -57,6 +64,7 @@ void SoundPlayer::start()
 
 void SoundPlayer::main()
 {
+  Thread::nameThread("SoundPlayer");
   while(isRunning())
   {
     if(!playing)
@@ -83,7 +91,7 @@ void SoundPlayer::playDirect(const std::string& basename)
   @autoreleasepool
   {
     NSSound* sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
-    [sound setDelegate:[[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem]];
+    [sound setDelegate:delegate];
     playing = (bool) [sound play];
   }
 }

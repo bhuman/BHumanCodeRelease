@@ -2,8 +2,7 @@
 
 set -eu
 
-export scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
-export baseDir="$(dirname "${scriptPath}")"
+export baseDir="$(cd "$(dirname "$(which "$0")")" && pwd)"
 export bhDir="$(dirname "${baseDir}")"
 export includeDir="${baseDir}/Include/"
 defaultArchive="naoqi-sdk-2.1.4.13-linux32.tar.gz"

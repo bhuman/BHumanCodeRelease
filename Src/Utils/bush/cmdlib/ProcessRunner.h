@@ -118,7 +118,7 @@ public:
    * not 0. For the destruction of the process, deleteLater() is used to prevent
    * segmentation faults within the delivery of asynchronous signals.
    */
-  virtual ~ProcessRunner();
+  ~ProcessRunner();
 
   ProcessRunner& operator=(const ProcessRunner& other);
 
@@ -216,6 +216,7 @@ protected:
    * @param process The process to which the data should be passed to.
    */
   void interact(QProcess* process);
+
 public:
   /**
    * Constructs a new RemoteWriteProcessRunner.

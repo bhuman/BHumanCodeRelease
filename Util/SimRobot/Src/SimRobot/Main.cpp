@@ -85,7 +85,6 @@ int main(int argc, char *argv[])
 #ifdef WINDOWS
   app.setStyle("fusion");
 #elif defined MACOS
-  QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
   app.setStyle("macintosh");
   ::mainWindow = &mainWindow;
 #endif

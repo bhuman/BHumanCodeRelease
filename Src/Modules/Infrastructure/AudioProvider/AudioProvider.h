@@ -37,7 +37,7 @@ private:
   snd_pcm_t* handle;
   int channels;
 #endif
-  void update(AudioData& audioData);
+  void update(AudioData& audioData) override;
 
 public:
   /**

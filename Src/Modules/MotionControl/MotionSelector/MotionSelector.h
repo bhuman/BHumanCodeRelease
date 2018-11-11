@@ -45,8 +45,8 @@ MODULE(MotionSelector,
   LOADS_PARAMETERS(
   {,
     (int) playDeadDelay,
-    (ENUM_INDEXED_ARRAY(int, (MotionRequest) Motion)) interpolationTimes,
-    (ENUM_INDEXED_ARRAY(int, (ArmMotionSelection) ArmMotion)) armInterPolationTimes,
+    (ENUM_INDEXED_ARRAY(int, MotionRequest::Motion)) interpolationTimes,
+    (ENUM_INDEXED_ARRAY(int, ArmMotionSelection::ArmMotion)) armInterPolationTimes,
   }),
 });
 
@@ -70,12 +70,12 @@ private:
   MotionRequest::Motion prevLegMotion = MotionRequest::specialAction;
   std::array<ArmMotionSelection::ArmMotion, Arms::numOfArms> lastArmMotion;
   std::array<ArmMotionSelection::ArmMotion, Arms::numOfArms> prevArmMotion;
-  unsigned lastExecution;
+  unsigned lastExecution = 0;
   SpecialActionRequest::SpecialActionID lastActiveSpecialAction = SpecialActionRequest::playDead;
   std::array<ArmKeyFrameRequest::ArmKeyFrameId, Arms::numOfArms> lastActiveArmKeyFrame;
 
-  void update(LegMotionSelection& legMotionSelection);
-  void update(ArmMotionSelection& armMotionSelection);
+  void update(LegMotionSelection& legMotionSelection) override;
+  void update(ArmMotionSelection& armMotionSelection) override;
 
   void interpolate(float* ratios, const int amount, const int interpolationTime, const int targetMotion);
 };

@@ -11,19 +11,26 @@
 
 namespace GetUpMotions
 {
-  GLOBAL_ENUM(GetUpMotion,
+  ENUM(GetUpMotion,
   {, //all motions defined in getUpEngine.cfg
-    front,
     frontFast,
-    frontSlow,
-    back,
-    backGenu,
     backFast,
-    backSlow,
-    backOld,
+    backGenu,
     recoverAndWait,
     recoverFast,
+    recoverAfterBadBreakUp,
+    recoverFromSide,
+    recoverFromSideAfterJump,
+    recoverFastKeeperJump,
+    recoverBadArms,
     stand,
+    fromGenuflect,
+    fromSitDown,
+    fromSumo,
+    backFreeJoints,
+    frontFreeJoints,
+    sitDownFreeJoints,
+    backVeryFast,
   });
 
   using GetupMotionVector = std::vector<GetUpMotion>;

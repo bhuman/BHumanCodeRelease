@@ -11,7 +11,6 @@
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
 #include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-
 #include "Representations/Communication/BHumanMessage.h"
 
 /**
@@ -36,8 +35,8 @@ STREAMABLE(BallState,
 STREAMABLE(BallModel, COMMA public BHumanMessageParticle<idBallModel>
 {
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override;
+  void operator>>(BHumanMessage& m) const override;
+  void operator<<(const BHumanMessage& m) override;
 
   /** Verifies that the ball model contains valid values. */
   void verify() const;
@@ -56,11 +55,11 @@ STREAMABLE(BallModel, COMMA public BHumanMessageParticle<idBallModel>
  * The same as the BallModel, but - in general - provided by an external
  * source that has ground truth quality
  */
-struct GroundTruthBallModel : public BallModel
+STREAMABLE_WITH_BASE(GroundTruthBallModel, BallModel,
 {
   /** Draws something*/
-  void draw() const;
-};
+  void draw() const,
+});
 
 /**
  * @struct BallState

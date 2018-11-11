@@ -10,6 +10,7 @@
 #include "PerceptRegistration.h"
 #include "UKFPose2D.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Modeling/Measurements.h"
 
 PerceptRegistration::PerceptRegistration(const CameraMatrix& cameraMatrix,
     const CirclePercept& circlePercept,
@@ -17,7 +18,6 @@ PerceptRegistration::PerceptRegistration(const CameraMatrix& cameraMatrix,
     const FrameInfo& frameInfo,
     const GameInfo& gameInfo,
     const OwnTeamInfo& ownTeamInfo,
-    const GoalFeature& goalFeature,
     const GoalFrame& goalFrame,
     const FieldLineIntersections& fieldLineIntersections,
     const FieldLines& fieldLines,
@@ -26,7 +26,6 @@ PerceptRegistration::PerceptRegistration(const CameraMatrix& cameraMatrix,
     const OuterCorner& outerCorner,
     const PenaltyArea& penaltyArea,
     const PenaltyMarkPercept& penaltyMarkPercept,
-    const GoalPostPercept& theGoalPostPercept,
     bool         goalFrameIsPerceivedAsLines,
     const float& lineAssociationCorridor,
     const float& longLineAssociationCorridor,
@@ -36,10 +35,10 @@ PerceptRegistration::PerceptRegistration(const CameraMatrix& cameraMatrix,
     const float& globalPoseAssociationMaxDistanceDeviation,
     const Angle& globalPoseAssociationMaxAngularDeviation) :
   theCameraMatrix(cameraMatrix), theCirclePercept(circlePercept), theFieldDimensions(fieldDimensions),
-  theFrameInfo(frameInfo), theGameInfo(gameInfo), theOwnTeamInfo(ownTeamInfo), theGoalFeature(goalFeature),
+  theFrameInfo(frameInfo), theGameInfo(gameInfo), theOwnTeamInfo(ownTeamInfo),
   theGoalFrame(goalFrame), theFieldLineIntersections(fieldLineIntersections),
   theFieldLines(fieldLines), theMidCircle(midCircle), theMidCorner(midCorner), theOuterCorner(outerCorner),
-  thePenaltyArea(penaltyArea), thePenaltyMarkPercept(penaltyMarkPercept), theGoalPostPercept(theGoalPostPercept),
+  thePenaltyArea(penaltyArea), thePenaltyMarkPercept(penaltyMarkPercept),
   lineAssociationCorridor(lineAssociationCorridor), longLineAssociationCorridor(longLineAssociationCorridor),
   centerCircleAssociationDistance(centerCircleAssociationDistance),
   penaltyMarkAssociationDistance(penaltyMarkAssociationDistance), intersectionAssociationDistance(intersectionAssociationDistance),
@@ -179,8 +178,7 @@ int PerceptRegistration::registerPoses(std::vector<RegisteredPose>& poses)
          registerPose(poses, theMidCorner) +
          registerPose(poses, theGoalFrame) +
          registerPose(poses, theOuterCorner) +
-         registerPose(poses, thePenaltyArea) +
-         registerPose(poses, theGoalFeature);
+         registerPose(poses, thePenaltyArea);
 }
 
 int PerceptRegistration::registerPose(std::vector<RegisteredPose>& poses, const FieldFeature& feature)
@@ -242,28 +240,10 @@ int PerceptRegistration::registerLandmarks(std::vector<RegisteredLandmark>& land
       newLandmark.p = thePenaltyMarkPercept.positionOnField;
       if(lastPenaltyMarkCovarianceUpdate != theFrameInfo.time)
       {
-        penaltyMarkCovariance = UKFPose2D::getCovOfPointInWorld(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+        penaltyMarkCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
         lastPenaltyMarkCovarianceUpdate = theFrameInfo.time;
       }
       newLandmark.cov = penaltyMarkCovariance;
-      landmarks.push_back(newLandmark);
-    }
-    numOfLandmarks++;
-  }
-  if(theGoalPostPercept.wasSeen)
-  {
-    Vector2f goalPostInWorld;
-    if(getAssociatedGoalPost(theGoalPostPercept.positionOnField, goalPostInWorld))
-    {
-      RegisteredLandmark newLandmark;
-      newLandmark.w = goalPostInWorld;
-      newLandmark.p = theGoalPostPercept.positionOnField;
-      if(lastGoalPostCovarianceUpdate != theFrameInfo.time)
-      {
-        goalPostCovariance = UKFPose2D::getCovOfPointInWorld(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
-        lastGoalPostCovarianceUpdate = theFrameInfo.time;
-      }
-      newLandmark.cov = goalPostCovariance;
       landmarks.push_back(newLandmark);
     }
     numOfLandmarks++;
@@ -278,7 +258,21 @@ int PerceptRegistration::registerLandmarks(std::vector<RegisteredLandmark>& land
       newLandmark.p = theCirclePercept.pos;
       if(lastCirclePerceptCovarianceUpdate != theFrameInfo.time)
       {
-        circlePerceptCovariance = UKFPose2D::getCovOfPointInWorld(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+        // Some workaround stuff as the distance to a perceived center circle center
+        // might be very low (resulting in a very small covariance) but still be a subject
+        // to high noise as the center is computer and not directly perceived.
+        // Thus, a higher covariance is computer for close circles.
+        const float circleDistance = theCirclePercept.pos.norm();
+        const float centerCircleDiameter = theFieldDimensions.centerCircleRadius * 2.f;
+        Vector2f increasedCirclePos = theCirclePercept.pos;
+        if(circleDistance < centerCircleDiameter)
+        {
+          if(circleDistance < 10.f)
+            increasedCirclePos = Vector2f(centerCircleDiameter, 0.f);
+          else
+            increasedCirclePos *= centerCircleDiameter / circleDistance;
+        }
+        circlePerceptCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(increasedCirclePos, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
         lastCirclePerceptCovarianceUpdate = theFrameInfo.time;
       }
       newLandmark.cov = circlePerceptCovariance;
@@ -301,7 +295,7 @@ int PerceptRegistration::registerLandmarks(std::vector<RegisteredLandmark>& land
         newLandmark.p = intersection.pos;
         if(intersectionCovarianceUpdates[i] < theFrameInfo.time)
         {
-          intersectionCovariances[i] = UKFPose2D::getCovOfPointInWorld(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+          intersectionCovariances[i] = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLandmark.p, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
           intersectionCovarianceUpdates[i] = theFrameInfo.time;
         }
         newLandmark.cov = intersectionCovariances[i];
@@ -337,7 +331,7 @@ int PerceptRegistration::registerLines(std::vector<RegisteredLine>& lines)
       newLine.vertical  = (*fieldLine).vertical;
       if(lineCovarianceUpdates[i] < theFrameInfo.time)
       {
-        lineCovariances[i] = UKFPose2D::getCovOfPointInWorld(newLine.pCenter, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+        lineCovariances[i] = Measurements::positionToCovarianceMatrixInRobotCoordinates(newLine.pCenter, 0.f, theCameraMatrix, inverseCameraMatrix, currentRotationDeviation);
         lineCovarianceUpdates[i] = theFrameInfo.time;
       }
       newLine.covCenter = lineCovariances[i];
@@ -408,14 +402,14 @@ const PerceptRegistration::FieldLine* PerceptRegistration::getPointerToAssociate
   // Throw away lines on center circle (as they are currently not in the field lines)
   // To save computing time, do check for lines of up to medium length, only.
   // To avoid deleting short penalty area side lines, only consider lines that start somewhere near the field center
-  if(lineLength < 2000.f && startOnField.norm() < 2.f * theFieldDimensions.centerCircleRadius
-     && end.norm() < 2.f * theFieldDimensions.centerCircleRadius &&
+  if(lineLength < 2000.f && (startOnField.norm() < 2.f * theFieldDimensions.centerCircleRadius
+     || end.norm() < 2.f * theFieldDimensions.centerCircleRadius) &&
      lineCouldBeOnCenterCircle(startOnField, dirOnField))
     return nullptr;
   // Throw away short lines before kickoff (false positives on center circle that are confused with the center line)
   // when the other team has kickoff
   if(lineLength < 1000.f && iAmBeforeKickoffInTheCenterOfMyHalfLookingForward() &&
-     theGameInfo.kickOffTeam != theOwnTeamInfo.teamNumber)
+     theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
     return nullptr;
   const float sqrLineAssociationCorridor     = sqr(lineAssociationCorridor);
   const float sqrLongLineAssociationCorridor = sqr(longLineAssociationCorridor);

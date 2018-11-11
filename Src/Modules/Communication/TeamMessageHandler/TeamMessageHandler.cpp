@@ -12,16 +12,6 @@
 //#define SITTING_TEST
 //#define SELF_TEST
 
-/**
- * A macro for broadcasting team messages.
- * @param type The type of the message from the MessageID enum in MessageIDs.h
- * @param format The message format of the message (bin or text).
- * @param expression A streamable expression.
- */
-#define TEAM_OUTPUT(type,format,expression) \
-  { Global::getTeamOut().format << expression;\
-    Global::getTeamOut().finishMessage(type); }
-
 MAKE_MODULE(TeamMessageHandler, communication)
 
 void TeamMessageHandler::update(BHumanMessageOutputGenerator& outputGenerator)
@@ -53,32 +43,24 @@ void TeamMessageHandler::generateMessage(BHumanMessageOutputGenerator& outputGen
   outputGenerator.theBSPLStandardMessage.teamNum = static_cast<uint8_t>(Global::getSettings().teamNumber);
   outputGenerator.theBHumanStandardMessage.magicNumber = Global::getSettings().magicNumber;
 
-  outputGenerator.theBHULKsStandardMessage.member = B_HUMAN_MEMBER;
+  outputGenerator.theBHumanStandardMessage.timestamp = Time::getCurrentSystemTime();
 
-  outputGenerator.theBHULKsStandardMessage.timestamp = Time::getCurrentSystemTime();
-  outputGenerator.theBHULKsStandardMessage.headYawAngle = theJointAngles.angles[Joints::headYaw];
-
-  outputGenerator.theBHULKsStandardMessage.hasGroundContact = theGroundContactState.contact && theMotionInfo.motion != MotionInfo::getUp && theMotionRequest.motion != MotionRequest::getUp;
-  outputGenerator.theBHULKsStandardMessage.isUpright = theFallDownState.state == theFallDownState.upright;
+  outputGenerator.theBHumanStandardMessage.hasGroundContact = theGroundContactState.contact && theMotionInfo.motion != MotionInfo::getUp && theMotionRequest.motion != MotionRequest::getUp;
+  outputGenerator.theBHumanStandardMessage.isUpright = theFallDownState.state == theFallDownState.upright || theFallDownState.state == FallDownState::staggering || theFallDownState.state == FallDownState::squatting;
   if(theGroundContactState.contact) //FIXME waiting for reponse of andi -> TASK: speaking with tim instead; if this is not deliberately it hast to be outputGenerator.theBHumanStandardMessage.hasGroundContact instead
-    outputGenerator.theBHULKsStandardMessage.timeOfLastGroundContact = theFrameInfo.time;
+    outputGenerator.theBHumanStandardMessage.timeOfLastGroundContact = theFrameInfo.time;
 
-  outputGenerator.theBHULKsStandardMessage.isPenalized = theRobotInfo.penalty != PENALTY_NONE;
+  outputGenerator.theBHumanStandardMessage.isPenalized = theRobotInfo.penalty != PENALTY_NONE;
 
   outputGenerator.theBSPLStandardMessage.fallen =
-    !outputGenerator.theBHULKsStandardMessage.hasGroundContact || !outputGenerator.theBHULKsStandardMessage.isUpright;
+    !outputGenerator.theBHumanStandardMessage.hasGroundContact || !outputGenerator.theBHumanStandardMessage.isUpright;
 
   SEND_PARTICLE(BNTP);
-  SEND_PARTICLE(RawGameInfo);
-  SEND_PARTICLE(OwnTeamInfo);
 
   SEND_PARTICLE(BallModel);
   SEND_PARTICLE(RobotPose);
 
   SEND_PARTICLE(SideConfidence);
-  SEND_PARTICLE(TeammateRoles);
-  SEND_PARTICLE(BehaviorStatus);
-  SEND_PARTICLE(SPLStandardBehaviorStatus);
 
   SEND_PARTICLE(Whistle);
 
@@ -91,8 +73,7 @@ void TeamMessageHandler::generateMessage(BHumanMessageOutputGenerator& outputGen
   SEND_PARTICLE(FieldFeatureOverview);
 
   outputGenerator.theBSPLStandardMessage.numOfDataBytes =
-    static_cast<uint16_t>(outputGenerator.theBHULKsStandardMessage.sizeOfBHULKsMessage()
-                          + outputGenerator.theBHumanStandardMessage.sizeOfBHumanMessage()
+    static_cast<uint16_t>(outputGenerator.theBHumanStandardMessage.sizeOfBHumanMessage()
                           + outputGenerator.theBHumanArbitraryMessage.sizeOfArbitraryMessage());
 }
 
@@ -100,10 +81,8 @@ void TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenera
 {
   ASSERT(outputGenerator.sendThisFrame);
 
-  outputGenerator.theBHULKsStandardMessage.write(reinterpret_cast<void*>(m->data));
-  int offset = outputGenerator.theBHULKsStandardMessage.sizeOfBHULKsMessage();
-  outputGenerator.theBHumanStandardMessage.write(reinterpret_cast<void*>(m->data + offset));
-  offset += outputGenerator.theBHumanStandardMessage.sizeOfBHumanMessage();
+  outputGenerator.theBHumanStandardMessage.write(reinterpret_cast<void*>(m->data));
+  const int offset = outputGenerator.theBHumanStandardMessage.sizeOfBHumanMessage();
 
   const int restBytes = SPL_STANDARD_MESSAGE_DATA_SIZE - offset;
   ASSERT(restBytes > 10);
@@ -128,7 +107,10 @@ void TeamMessageHandler::writeMessage(BHumanMessageOutputGenerator& outputGenera
   outputGenerator.theBSPLStandardMessage.write(reinterpret_cast<void*>(&m->header[0]));
 
   outputGenerator.sentMessages++;
-  timeLastSent = theFrameInfo.time;
+  if(theFrameInfo.getTimeSince(timeLastSent) >= 2 * sendInterval)
+    timeLastSent = theFrameInfo.time;
+  else
+    timeLastSent += sendInterval;
 }
 
 void TeamMessageHandler::update(TeamData& teamData)
@@ -162,12 +144,17 @@ void TeamMessageHandler::maintainBMateList(TeamData& teamData) const
     // (new information has already been coming via handleMessages)
     for(auto& teammate : teamData.teammates)
     {
+      Teammate::Status newStatus = Teammate::PLAYING;
       if(teammate.isPenalized || theOwnTeamInfo.players[teammate.number - 1].penalty != PENALTY_NONE)
-        teammate.status = Teammate::PENALIZED;
+        newStatus = Teammate::PENALIZED;
       else if(!teammate.isUpright || !teammate.hasGroundContact)
-        teammate.status = Teammate::FALLEN;
-      else
-        teammate.status = Teammate::PLAYING;
+        newStatus = Teammate::FALLEN;
+
+      if(newStatus != teammate.status)
+      {
+        teammate.status = newStatus;
+        teammate.timeWhenStatusChanged = theFrameInfo.time;
+      }
 
       teammate.isGoalkeeper = teammate.number == 1;
     }
@@ -212,24 +199,33 @@ bool TeamMessageHandler::readSPLStandardMessage(const RoboCup::SPLStandardMessag
   if(receivedMessageContainer.theBSPLStandardMessage.teamNum != static_cast<uint8_t>(Global::getSettings().teamNumber))
     PARSING_ERROR("Invalid team number received");
 
-  if(!receivedMessageContainer.theBHULKsStandardMessage.read(m->data))
-    PARSING_ERROR(BHULKS_STANDARD_MESSAGE_STRUCT_HEADER " message part reading failed");
-
+  // B-Swift: B-Human provides the robots with numbers 3, 4 and 5. Mixed team numbers are >= 90 (and I do not want to rely on theGameInfo here).
 #ifdef TARGET_ROBOT
-  if(receivedMessageContainer.theBHULKsStandardMessage.member == B_HUMAN_MEMBER)
+  if(Global::getSettings().teamNumber < 90
+     || ((receivedMessageContainer.theBSPLStandardMessage.playerNum >= 3 && receivedMessageContainer.theBSPLStandardMessage.playerNum <= 5)
+         == (theRobotInfo.number >= 3 && theRobotInfo.number <= 5)))
+#else
+  // B-Swift: In simulated games, numbers 1, 2 and 6 will think they are B-Human and the others are rUNSWIft.
+  // 3, 4, 5 will also think they are B-Human and the others are rUNSWift.
+  if(theGameInfo.competitionType != COMPETITION_TYPE_MIXEDTEAM
+     || ((receivedMessageContainer.theBSPLStandardMessage.playerNum >= 3 && receivedMessageContainer.theBSPLStandardMessage.playerNum <= 5)
+         == (theRobotInfo.number >= 3 && theRobotInfo.number <= 5)))
 #endif
   {
-    size_t offset = receivedMessageContainer.theBHULKsStandardMessage.sizeOfBHULKsMessage();
-    if(!receivedMessageContainer.theBHumanStandardMessage.read(m->data + offset))
+    if(!receivedMessageContainer.theBHumanStandardMessage.read(m->data))
       PARSING_ERROR(BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER " message part reading failed");
 
     if(receivedMessageContainer.theBHumanStandardMessage.magicNumber != Global::getSettings().magicNumber)
       return (receivedMessageContainer.lastErrorCode = ReceivedBHumanMessage::magicNumberDidNotMatch) && false;
 
-    offset += receivedMessageContainer.theBHumanStandardMessage.sizeOfBHumanMessage();
+    const size_t offset = receivedMessageContainer.theBHumanStandardMessage.sizeOfBHumanMessage();
     if(!receivedMessageContainer.theBHumanArbitraryMessage.read(m->data + offset))
       PARSING_ERROR(BHUMAN_ARBITRARY_MESSAGE_STRUCT_HEADER " message part reading failed");
+
+    receivedMessageContainer.hasBHumanParts = true;
   }
+  else
+    receivedMessageContainer.hasBHumanParts = false;
 
   return true;
 }
@@ -249,33 +245,54 @@ Teammate& TeamMessageHandler::getBMate(TeamData& teamData) const
 #define RECEIVE_PARTICLE(particle) currentTeammate.the##particle << receivedMessageContainer
 void TeamMessageHandler::parseMessageIntoBMate(Teammate& currentTeammate)
 {
+#ifndef TARGET_ROBOT
+  // B-Swift:
+  // In the first frame(s) in which messages are received in the simulator, theGameInfo.competitionType is not MIXEDTEAM.
+  // As soon as this has changed, the already created teammates must be reset to default values.
+  if(currentTeammate.mateType == Teammate::BHumanRobot && !receivedMessageContainer.hasBHumanParts)
+    currentTeammate = Teammate();
+  // In real games this should never happen because whether this is a mixed team game is checked using the teamNumber which is already known at startup.
+#endif
+
   currentTeammate.number = receivedMessageContainer.theBSPLStandardMessage.playerNum;
-  currentTeammate.mateType = receivedMessageContainer.theBHULKsStandardMessage.member == B_HUMAN_MEMBER ? Teammate::BHumanRobot : Teammate::HULKsRobot;
-  theBNTP << receivedMessageContainer;
+  currentTeammate.mateType = receivedMessageContainer.hasBHumanParts ? Teammate::BHumanRobot : Teammate::otherTeamRobot;
 
-  receivedMessageContainer.bSMB = theBNTP[currentTeammate.number];
-  currentTeammate.bSMB = theBNTP[currentTeammate.number];
-  currentTeammate.timeWhenLastPacketReceived = theFrameInfo.time;
+  if(receivedMessageContainer.hasBHumanParts)
+  {
+    theBNTP << receivedMessageContainer;
 
-  currentTeammate.isUpright = receivedMessageContainer.theBHULKsStandardMessage.isUpright;
-  currentTeammate.timeOfLastGroundContact = receivedMessageContainer.toLocalTimestamp(receivedMessageContainer.theBHULKsStandardMessage.timeOfLastGroundContact);
-  currentTeammate.hasGroundContact = receivedMessageContainer.theBHULKsStandardMessage.hasGroundContact;
+    receivedMessageContainer.bSMB = theBNTP[currentTeammate.number];
+    currentTeammate.bSMB = theBNTP[currentTeammate.number];
+    currentTeammate.timeWhenLastPacketReceived = Time::getCurrentSystemTime();
 
-  currentTeammate.isPenalized = receivedMessageContainer.theBHULKsStandardMessage.isPenalized;
-  currentTeammate.theRawGCData = receivedMessageContainer.theBHULKsStandardMessage.gameControlData;
+    currentTeammate.isUpright = receivedMessageContainer.theBHumanStandardMessage.isUpright;
+    currentTeammate.timeOfLastGroundContact = receivedMessageContainer.toLocalTimestamp(receivedMessageContainer.theBHumanStandardMessage.timeOfLastGroundContact);
+    currentTeammate.hasGroundContact = receivedMessageContainer.theBHumanStandardMessage.hasGroundContact;
 
-  currentTeammate.headYawAngle = receivedMessageContainer.theBHULKsStandardMessage.headYawAngle;
+    currentTeammate.isPenalized = receivedMessageContainer.theBHumanStandardMessage.isPenalized;
+  }
+  else
+  {
+    receivedMessageContainer.bSMB = nullptr;
+    currentTeammate.bSMB = nullptr;
+    currentTeammate.timeWhenLastPacketReceived = Time::getCurrentSystemTime();
+
+    currentTeammate.isUpright = !receivedMessageContainer.theBSPLStandardMessage.fallen;
+    currentTeammate.hasGroundContact = !receivedMessageContainer.theBSPLStandardMessage.fallen;
+    if(currentTeammate.hasGroundContact)
+      currentTeammate.timeOfLastGroundContact = currentTeammate.timeWhenLastPacketReceived - 200;
+
+    currentTeammate.isPenalized = false;
+  }
 
   RECEIVE_PARTICLE(SideConfidence);
   RECEIVE_PARTICLE(RobotPose);
   RECEIVE_PARTICLE(BallModel);
   RECEIVE_PARTICLE(ObstacleModel);
-  RECEIVE_PARTICLE(BehaviorStatus);
-  RECEIVE_PARTICLE(SPLStandardBehaviorStatus);
   RECEIVE_PARTICLE(Whistle);
-  RECEIVE_PARTICLE(TeammateRoles);
   RECEIVE_PARTICLE(FieldCoverage);
   RECEIVE_PARTICLE(RobotHealth);
 
-  receivedMessageContainer.theBHumanArbitraryMessage.queue.handleAllMessages(currentTeammate);
+  if(receivedMessageContainer.hasBHumanParts)
+    receivedMessageContainer.theBHumanArbitraryMessage.queue.handleAllMessages(currentTeammate);
 }

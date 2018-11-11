@@ -1,5 +1,4 @@
 #include "Random.h"
-#include "Platform/Thread.h"
 #include <chrono>
 
 std::mt19937& Random::getGenerator()

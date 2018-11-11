@@ -109,12 +109,12 @@ public:
     * Registers an element as parent
     * @param element The element to register
     */
-    virtual void addParent(Element& element);
+    void addParent(Element& element) override;
   };
 
   /**
-   * A normals library
-   */
+  * A normals library
+  */
   class Normals : public Element
   {
   public:
@@ -122,10 +122,10 @@ public:
 
   private:
     /**
-     * Registers an element as parent
-     * @param element The element to register
-     */
-    virtual void addParent(Element& element);
+    * Registers an element as parent
+    * @param element The element to register
+    */
+    void addParent(Element& element) override;
   };
 
   /**
@@ -142,7 +142,7 @@ public:
     * Registers an element as parent
     * @param element The element to register
     */
-    virtual void addParent(Element& element);
+    void addParent(Element& element) override;
   };
 
   /**
@@ -166,7 +166,7 @@ public:
     * Registers an element as parent
     * @param element The element to register
     */
-    virtual void addParent(Element& element);
+    void addParent(Element& element) override;
   };
 
   Vertices* vertices; /**< The vertex library used for drawing the primitives */
@@ -184,8 +184,8 @@ private:
   * Loads textures and creates display lists. Hence, this function is called for each OpenGL
   * context the object should be drawn in.
   */
-  virtual void createGraphics();
+  void createGraphics() override;
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (in order to create a display list) */
-  virtual void assembleAppearances() const;
+  void assembleAppearances(SurfaceColor color) const override;
 };

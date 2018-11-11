@@ -53,7 +53,7 @@ public:
   });
 
 private:
-  void update(LEDRequest& ledRequest);
+  void update(LEDRequest& ledRequest) override;
 
   void setEyeColor(LEDRequest& ledRequest,
                    bool left,

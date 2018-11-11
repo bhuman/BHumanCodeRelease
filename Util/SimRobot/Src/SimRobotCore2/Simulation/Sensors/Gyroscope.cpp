@@ -21,6 +21,14 @@ Gyroscope::Gyroscope()
   sensor.data.floatArray = sensor.angularVel;
 }
 
+void Gyroscope::createPhysics()
+{
+  if(translation)
+    sensor.offset.translation = *translation;
+  if(rotation)
+    sensor.offset.rotation = *rotation;
+}
+
 void Gyroscope::addParent(Element& element)
 {
   sensor.body = dynamic_cast<Body*>(&element);
@@ -41,5 +49,10 @@ void Gyroscope::GyroscopeSensor::updateValue()
   const dReal* angularVelInWorld = dBodyGetAngularVel(body->body);
   dVector3 result;
   dBodyVectorFromWorld(body->body, angularVelInWorld[0], angularVelInWorld[1], angularVelInWorld[2], result);
-  ODETools::convertVector(result, angularVel);
+  Vector3f angularVelInBody;
+  ODETools::convertVector(result, angularVelInBody);
+  const Vector3f angularVelInSensor = offset.rotation.inverse() * angularVelInBody;
+  angularVel[0] = angularVelInSensor.x();
+  angularVel[1] = angularVelInSensor.y();
+  angularVel[2] = angularVelInSensor.z();
 }

@@ -2,8 +2,7 @@
 
 set -eu
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-baseDir=$(dirname "${scriptPath}")
+baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
 bhDir=$(dirname "${baseDir}")
 includeDir="${baseDir}/Include/"
 
@@ -61,20 +60,20 @@ parseOptions() {
         ;;
     esac
   done
-  
+
   debug $#
   debug $OPTIND
   shift $(($OPTIND-1))
-  
+
   if ! [ $# -eq 1 ] ; then
     error "bad number of arguments"
     usage
   fi
-  
+
   robotName=${1}
 
   robotDir="${baseDir}/Robots/${robotName}"
-  
+
   if [ -z ${deleteOnly} ]; then
     if [ -z "${teamID}" -o -z "${robotPart}" -o -z "${robotName}" ]; then
       usage
@@ -125,7 +124,7 @@ function checkFiles()
   if [ -n "${foundFiles}" ]; then
     error "Found files for robot ${robotName}"
     fatal "Use -d to cleanup before writing new files"
-  fi  
+  fi
 }
 
 function createRobotDirectory()
@@ -145,12 +144,16 @@ function createProfiles()
 {
   message "Creating network profiles"
   mkdir -p "${profileDir}"
-  
+
   sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired" >"${robotDir}/wired" || return 1
   chmod +x "${robotDir}/wired"
-  
+
+  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired.service" >"${robotDir}/wired.service" || return 1
+
   sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless" >"${robotDir}/wireless" || return 1
   chmod +x "${robotDir}/wireless"
+
+  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless.service" >"${robotDir}/wireless.service" || return 1
   return 0
 }
 
@@ -171,6 +174,24 @@ wlan = "10.0.${teamID}.${robotPart}";
 EOF
 }
 
+function createConnectDialog()
+{
+  message "Updating connectDialog.con"
+  (
+    echo "# This script connects to a remote robot."
+    echo -n "sc Remote \${IP address:"
+    if [ ! -z "$(ls 2>/dev/null "$bhDir"/Config/Robots/*/network.cfg)" ]; then
+      for ip in $(for file in "$bhDir"/Config/Robots/*/network.cfg; do grep "^lan" "$file" | sed -e 's%[^"]*"%%' -e 's%".*%%'; done | sort); do
+        echo -n ",$ip"; 
+      done
+      for ip in $(for file in "$bhDir"/Config/Robots/*/network.cfg; do grep "^wlan" "$file" | sed -e 's%[^"]*"%%' -e 's%".*%%'; done | sort); do
+        echo -n ",$ip"; 
+      done
+    fi
+    echo "}"
+  ) >"$bhDir/Config/Scenes/Includes/connectDialog.con"
+}
+
 ###############################################################################
 ##                                                                           ##
 ##  MAIN                                                                     ##
@@ -186,7 +207,7 @@ if [ -n "${profilesOnly}" ]; then
     error "Robot '${robotName}' does not exist"
     fatal "Rerun ${0} without -p"
   fi
-  
+
   if ! createProfiles; then
     error "Failed to create network profiles"
     fatal "Rerun ${0} with -d"
@@ -201,6 +222,7 @@ else
 
   if [ -n "${deleteOnly}" ]; then
     message "Successfully deleted all files for ${robotName}"
+    createConnectDialog
   else
     if ! createRobotDirectory; then
       error "Failed to create robot directory"
@@ -223,6 +245,7 @@ else
       fatal "Rerun ${0} with -d"
     fi
     createRobotsFile
+    createConnectDialog
     message "Created needed files for robot ${robotName}"
     message "Don't forget to run addRobotIds!"
   fi

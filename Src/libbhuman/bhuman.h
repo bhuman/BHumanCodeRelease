@@ -16,6 +16,7 @@ enum NAOVersion
   V33,
   V4,
   V5,
+  V6,
 };
 
 enum NAOType
@@ -155,6 +156,7 @@ enum LBHSensorIds
   accZSensor,
   angleXSensor,
   angleYSensor,
+  angleZSensor,
 
   // battery sensors
   batteryCurrentSensor,
@@ -364,8 +366,8 @@ struct LBHData
   volatile int readingActuators; /**< Index of actuator commands reserved for reading. */
   volatile int newestActuators; /**< Index of the newest actuator command. */
 
-  char bodyId[16]; /* Device/DeviceList/ChestBoard/BodyId */
-  char headId[16]; /* RobotConfig/Head/FullHeadId */
+  char bodyId[21]; /* Device/DeviceList/ChestBoard/BodyId */
+  char headId[21]; /* RobotConfig/Head/FullHeadId */
   NAOVersion headVersion;
   NAOVersion bodyVersion;
   NAOType headType;

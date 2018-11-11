@@ -6,7 +6,7 @@
 
 namespace Limbs
 {
-  GLOBAL_ENUM(Limb,
+  ENUM(Limb,
   {,
     neck,
     head,
@@ -48,7 +48,7 @@ namespace Limbs
     torso,
   });
 
-  GLOBAL_ENUM(LimbArmVarieties,
+  ENUM(LimbArmVarieties,
   {,
     shoulder,
     biceps,
@@ -57,7 +57,7 @@ namespace Limbs
     wrist,
   });
 
-  GLOBAL_ENUM(LimbLegVarieties,
+  ENUM(LimbLegVarieties,
   {,
     pelvis,
     hip,

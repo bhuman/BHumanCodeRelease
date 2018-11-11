@@ -1,7 +1,5 @@
 #!/bin/bash
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname "${scriptPath}")
-cd "${basePath}"
+cd "$(dirname "$(which "$0")")"
 
 modules_root=../../Src/Modules
 

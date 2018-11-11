@@ -172,10 +172,10 @@ public:
 };
 
 //! Define input streaming
-std::istream& operator >>(std::istream& i, CameraModelOpenCV& c);
+std::istream& operator>>(std::istream& i, CameraModelOpenCV& c);
 
 //! Define output streaming
-std::ostream& operator <<(std::ostream& o, const CameraModelOpenCV& c);
+std::ostream& operator<<(std::ostream& o, const CameraModelOpenCV& c);
 
 //! Returns the smallest rotation X, such that v1=X*v0
 inline Eigen::Isometry3d fromTo(const Eigen::Vector3d& v0, const Eigen::Vector3d& v1)

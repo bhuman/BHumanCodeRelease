@@ -30,7 +30,7 @@ public:
    * @param o The object the member function operates on.
    * @param f The member function.
    */
-  template<class C>
+  template<typename C>
   void start(C* o, void (C::*f)());
 
   /**
@@ -87,19 +87,19 @@ private:
    * an object.
    * @param p A pointer to the thread object.
    */
-  void threadStart(std::function<void()> lambda);
+  void threadStart(const std::function<void()>& lambda);
 
   void changePriority();
 };
 
-template<class C>
+template<typename C>
 void Thread::start(C* o, void (C::*f)())
 {
   if(thread)
     stop();
 
   running = true;
-  thread = new std::thread(&Thread::threadStart, this, [o, f]() { (o->*f)(); });
+  thread = new std::thread(&Thread::threadStart, this, [o, f, this]() { id = getCurrentId(); (o->*f)(); });
   id = thread->get_id();
   changePriority();
 }

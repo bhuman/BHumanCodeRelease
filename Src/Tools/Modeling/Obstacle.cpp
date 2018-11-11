@@ -51,8 +51,3 @@ bool Obstacle::isOpponent() const
 {
   return type == Obstacle::opponent || type == Obstacle::fallenOpponent;
 }
-
-bool Obstacle::hasOrientation() const
-{
-  return detectedOrientation == 2;
-}

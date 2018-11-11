@@ -44,7 +44,7 @@ void StatusAgent::setPings(ENetwork, std::map<std::string, double>*)
     if(currentTime - timeOfLastUpdate[it->first] > UPDATE_TIME && pingAgent->getBestNetwork(it->second) != ENetwork::NONE)
     {
       const std::string ip = pingAgent->getBestNetwork(it->second) == ENetwork::LAN ? it->second->lan : it->second->wlan;
-      const std::string cmd = "battery.py " + it->second->name + " | grep " + it->second->name;
+      const std::string cmd = "bash -l -c \\'battery.py " + it->second->name + "\\' | grep " + it->second->name;
 
       processes[it->first]->start(fromString(remoteCommandForQProcess(cmd, ip)));
 

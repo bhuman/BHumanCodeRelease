@@ -41,7 +41,7 @@ private:
    *
    * @param odometer The odometry information that is updated by this module.
    */
-  void update(Odometer& odometer);
+  void update(Odometer& odometer) override;
 
   void draw();
 };

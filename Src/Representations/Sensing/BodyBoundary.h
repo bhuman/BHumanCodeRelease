@@ -29,7 +29,7 @@ STREAMABLE(Object,
   virtual bool isIntersectingWith(const Object& object, Geometry::LineSegment3D& smallestConnectingVector) const = 0;
   virtual void draw() = 0,
 
-  ((Limbs) Limb)(Limb::numOfLimbs) origin,
+  (Limbs::Limb)(Limbs::numOfLimbs) origin,
   (ObjectType)(numOfObjectTypes) oType,
   (Pose3f) pose,
   (Vector3f)(Vector3f::Zero()) offset,

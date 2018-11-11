@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Controller/RobotConsole.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
@@ -50,11 +51,11 @@ public:
   /**
    * The function is called from the framework once in every frame
    */
-  virtual bool main();
+  bool main() override;
 
   /**
    * The function must be called to exchange data with SimRobot.
    * It sends the motor commands to SimRobot and acquires new sensor data.
    */
-  void update();
+  void update() override;
 };

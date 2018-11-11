@@ -1,7 +1,6 @@
 #include "Framework.h"
 #include "Utils/bush/Session.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Global.h"
 
 std::map<std::string, Framework*> Framework::theInstances;
 
@@ -27,13 +26,7 @@ Framework::Framework(const std::string& processName)
                                + " already defined, could not start TeamCommAgent.");
   }
   ASSERT(!theInstances[processName]);
-  Global::theStreamHandler = &streamHandler; // overwrite handler set by settings
 
   Session::getInstance().log(TRACE, "Framework: Initialized " + processName
                              + ".");
-}
-
-Framework::~Framework()
-{
-  Global::theStreamHandler = 0;
 }

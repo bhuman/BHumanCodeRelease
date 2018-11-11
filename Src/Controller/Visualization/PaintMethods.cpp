@@ -7,12 +7,15 @@
  */
 
 #include <QPainter>
+#include <QPainterPath>
 #include "PaintMethods.h"
+#include "Platform/File.h"
 
 QBrush PaintMethods::brush(Qt::SolidPattern);
 QBrush PaintMethods::noBrush(Qt::NoBrush);
 QPen PaintMethods::pen;
 QPen PaintMethods::noPen(Qt::NoPen);
+QImage PaintMethods::robot = QImage((std::string(File::getBHDir()) + "/Src/Controller/Icons/robot.png").c_str());
 
 void PaintMethods::paintDebugDrawing(QPainter& painter, const DebugDrawing& debugDrawing, const QTransform& baseTrans)
 {
@@ -20,40 +23,29 @@ void PaintMethods::paintDebugDrawing(QPainter& painter, const DebugDrawing& debu
     switch(e->type)
     {
       case DebugDrawing::ElementType::polygon:
-      {
         paintPolygon(*static_cast<const DebugDrawing::Polygon*>(e), painter);
         break;
-      }
       case DebugDrawing::ElementType::ellipse:
-      {
         paintEllipse(*static_cast<const DebugDrawing::Ellipse*>(e), painter);
         break;
-      }
       case DebugDrawing::ElementType::arc:
-      {
         paintArc(*static_cast<const DebugDrawing::Arc*>(e), painter);
         break;
-      }
       case DebugDrawing::ElementType::rectangle:
-      {
         paintRectangle(*static_cast<const DebugDrawing::Rectangle*>(e), painter);
         break;
-      }
       case DebugDrawing::ElementType::line:
-      {
         paintLine(*static_cast<const DebugDrawing::Line*>(e), painter);
         break;
-      }
       case DebugDrawing::ElementType::origin:
-      {
         paintOrigin(*static_cast<const DebugDrawing::Origin*>(e), painter, baseTrans);
         break;
-      }
       case DebugDrawing::ElementType::text:
-      {
         paintText(*static_cast<const DebugDrawing::Text*>(e), painter);
         break;
-      }
+      case DebugDrawing::ElementType::robot:
+        paintRobot(*static_cast<const DebugDrawing::Robot*>(e), painter);
+        break;
       default:
         break;
     }
@@ -108,8 +100,18 @@ void PaintMethods::paintArc(const DebugDrawing::Arc& element, QPainter& painter)
 {
   setBrush(element.brushStyle, element.brushColor, painter);
   setPen(element, painter);
-  painter.drawArc(element.center.x() - element.radius, element.center.y() - element.radius,
-                  2 * element.radius, 2 * element.radius, -((int)element.startAngle.toDegrees() * 16), -((int)element.spanAngle.toDegrees() * 16));
+  if(element.brushStyle == Drawings::noBrush)
+    painter.drawArc(element.center.x() - element.radius, element.center.y() - element.radius,
+                    2 * element.radius, 2 * element.radius, -((int)element.startAngle.toDegrees() * 16), -((int)element.spanAngle.toDegrees() * 16));
+  else
+  {
+    QPainterPath path;
+    path.moveTo(element.center.x(), element.center.y());
+    path.arcTo(element.center.x() - element.radius, element.center.y() - element.radius,
+               2 * element.radius, 2 * element.radius, -element.startAngle.toDegrees(), -element.spanAngle.toDegrees());
+    path.closeSubpath();
+    painter.drawPath(path);
+  }
 }
 
 void PaintMethods::paintOrigin(const DebugDrawing::Origin& element, QPainter& painter, const QTransform& baseTrans)
@@ -157,6 +159,60 @@ void PaintMethods::paintRectangle(const DebugDrawing::Rectangle& element, QPaint
   }
   else
     painter.drawRect(dRect);
+}
+
+void PaintMethods::paintRobot(const DebugDrawing::Robot& element, QPainter& painter)
+{
+  QColor colorBody(element.colorBody.r, element.colorBody.g, element.colorBody.b, element.colorBody.a);
+  QColor colorDirVec(element.colorDirVec.r, element.colorDirVec.g, element.colorDirVec.b, element.colorDirVec.a);
+  QColor colorDirHeadVec(element.colorDirHeadVec.r, element.colorDirHeadVec.g, element.colorDirHeadVec.b, element.colorDirHeadVec.a);
+
+  /** Draws a color on top of a copy the robot (ignored if alpha is 0) */
+  QImage mask(element.colorBody.a != 0 ? robot.copy() : robot);
+  if(element.colorBody.a != 0)
+  {
+    QPainter p;
+    p.begin(&mask);
+    p.setCompositionMode(QPainter::CompositionMode_SourceAtop);
+    QRectF rect(0, 0, mask.width(), mask.height());
+    p.setOpacity(0.5);
+    p.fillRect(rect, colorBody);
+    p.end();
+  }
+
+  QTransform trans(painter.transform());
+  QTransform transBack(painter.transform());
+  trans.translate(element.p.translation.x(), element.p.translation.y());
+  trans.rotateRadians(qreal(element.p.rotation));
+  trans.translate(-robot.width() / 2, -robot.height() / 2);
+  painter.setTransform(trans);
+
+  painter.setOpacity(element.alphaRobot);
+
+  painter.drawImage(0, 0, mask);
+
+  painter.setTransform(transBack);
+
+  painter.setOpacity(1.0);
+
+  /** Draws the direction vector of the robot (ignored if alpha is 0) */
+  if(element.colorDirVec.a != 0)
+  {
+    pen.setColor(colorDirVec);
+    pen.setWidthF(20);
+    pen.setStyle(Qt::SolidLine);
+    painter.setPen(pen);
+    painter.drawLine(QLineF(element.p.translation.x() + 0.5f, element.p.translation.y() + 0.5f, element.dirVec.x() + 0.5f, element.dirVec.y() + 0.5f));
+  }
+
+  /** Draws the head rotation of the robot (ignored if alpha is 0) */
+  if(element.colorDirHeadVec.a != 0)
+  {
+    pen.setWidthF(20);
+    pen.setColor(colorDirHeadVec);
+    painter.setPen(pen);
+    painter.drawLine(QLineF(element.p.translation.x() + 0.5f, element.p.translation.y() + 0.5f, element.dirHeadVec.x() + 0.5f, element.dirHeadVec.y() + 0.5f));
+  }
 }
 
 void PaintMethods::setPen(const DebugDrawing::Element& element, QPainter& painter)

@@ -34,7 +34,6 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
-#include "Representations/Perception/FieldFeatures/GoalFeature.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
 #include "Representations/Perception/FieldFeatures/MidCorner.h"
@@ -43,7 +42,6 @@
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
-#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Sensing/FallDownState.h"
 
@@ -57,7 +55,6 @@ MODULE(SelfLocator,
   REQUIRES(OwnTeamInfo),
   REQUIRES(FallDownState),
   REQUIRES(GameInfo),
-  REQUIRES(GoalFeature),
   REQUIRES(GoalFrame),
   REQUIRES(RobotInfo),
   REQUIRES(FieldLines),
@@ -66,7 +63,6 @@ MODULE(SelfLocator,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
-  REQUIRES(GoalPostPercept),
   REQUIRES(MidCircle),
   REQUIRES(MidCorner),
   REQUIRES(MotionInfo),
@@ -88,6 +84,10 @@ MODULE(SelfLocator,
   {,
     (int) numberOfSamples,                          /**< The number of samples used by the self-locator */
     (Pose2f) defaultPoseDeviation,                  /**< Standard deviation used for creating new hypotheses */
+    (Pose2f) walkInPoseDeviation,                   /**< Standard deviation used for creating new hypotheses at walk in positions */
+    (Pose2f) returnFromPenaltyPoseDeviation,        /**< Standard deviation used for creating new hypotheses when returning from a penalty */
+    (Pose2f) manualPlacementPoseDeviation,          /**< Standard deviation used for creating new hypotheses when being manually placed */
+    (Pose2f) penaltyShootoutPoseDeviation,          /**< Standard deviation used for creating new hypotheses in a penalty shootout */
     (Pose2f) filterProcessDeviation,                /**< The process noise for estimating the robot pose. */
     (Pose2f) odometryDeviation,                     /**< The percentage inaccuracy of the odometry. */
     (Vector2f) odometryRotationDeviation,           /**< A rotation deviation of each walked mm. */
@@ -114,14 +114,17 @@ MODULE(SelfLocator,
     (float) goalieNoPerceptsThreshold,              /**< Workaround for 180 degree turned goalie: Timeout for not having seen major percepts (ball, field features) */
     (float) goalieNoFarFieldBorderThreshold,        /**< Workaround for 180 degree turned goalie: Timeout for not having seen the "far" field border */
     (float) goalieTwistNoStandWalkKickTimeout,      /**< Workaround for 180 degree turned goalie: Do not execute the handling of this situation, if robot has not been standing, walking, kicking recently */
+    (bool) activateGoalieTwistHandling,             /**< Flag to turn the 180 degree goalie handling on and off */
     (float) positionJumpNotificationDistance,       /**< Threshold, min position change (distance) to give a notification. */
     (int) numberOfConsideredFramesForValidity,      /**< Robot pose validity is filtered over this number of frames. */
+    (bool) considerLinesForValidityComputation,     /**< Matched / unmatched lines can be considered when computing the pose validity, but they don't have to. */
     (int) minNumberOfObservationsForResetting,      /**< To accept an alternative robot pose, it must be based on at least this many observations of field features. */
     (float) translationalDeviationForResetting,     /**< To insert a new particle, the current alternative pose must be farther away from the current robot pose than this threshold. */
     (float) rotationalDeviationForResetting,        /**< To insert a new particle, the current alternative pose rotation must be more different from the current robot pose rotation than this threshold. */
     (bool) useCustomReturnFromPenaltyPoses,         /**< Flag to use the two following poses when localization is restarted after a penalty. This is only useful for certain demos on special fields. */
     (Pose2f) customReturnFromPenaltyPoseGoalie,     /**< Goalie pose is set to this pose after a penalty. */
     (Pose2f) customReturnFromPenaltyPoseFieldPlayer,/**< Field player pose is set to this pose after a penalty. */
+    (float) returnFromPenaltyMaxXOffset,            /**< When poses are generated after returning from a penalty, a random x offset is added to each pose. The absolute value of this offset is defined by this parameter. */
     (float) walkInYModificator,                     /**< Offset on Y axis, negative value means more inside, positive value means more outside */
     (bool) mirrorWalkInPositionsFieldPlayers,       /**< Lets field players walk in from opposite half, if true. Use for demos on small/half demo field */
   }),
@@ -141,6 +144,7 @@ private:
   RegisteredPercepts registeredPercepts;     /**< Collection of percepts that have been associated with elements on the field */
   unsigned lastTimeFarFieldBorderSeen;       /**< Timestamp for checking goalie localization */
   unsigned lastTimeJumpSound;                /**< When has the last sound been played? Avoid to flood the sound player in some situations */
+  unsigned lastTimePlayingSound;             /**< When has the last playing sound been played? Avoid to flood the sound player in some situations */
   unsigned timeOfLastReturnFromPenalty;      /**< Point of time when the last penalty of this robot was over */
   unsigned lastTimeNotInStandWalkKick;       /**< Timestamp to keep track of the time during which the robot was either standing, walking, or kicking */
   bool sampleSetHasBeenResetted;             /**< Flag indicating that all samples have been replaced in the current frame */
@@ -150,25 +154,26 @@ private:
   unsigned lastAlternativePoseTimestamp;     /**< Last time an alternative pose was valid */
   std::vector<Pose2f> walkInPositions;       /**< List of poses at which our robots stand at the beginning of a half */
   unsigned int nextWalkInPoseNumber;         /**< Counter for uniform walk-in pose selection, only needed for robots with a number > 5 */
-  bool nextReturnFromPenaltyIsLeft;          /**< Flag that is used to assure that after a penalty both alternative poses get the same number of samples */
+  unsigned int nextGPKCPoseNumber;           /**< Counter for pose selection in the general penalty kick challenge */
   Vector2f currentRotationDeviation;         /**< Set to either robotRotationDeviation or robotRotationDeviationInStand */
   Pose3f inverseCameraMatrix;                /**< Precomputed matrix that is needed multiple times */
   unsigned lastTimePenaltyMarkSeen;          /**< Last time a penalty mark was seen */
   unsigned lastTimeCirclePerceptSeen;        /**< Last time a circle percept was seen */
+  bool validitiesHaveBeenUpdated;            /**< Flag that indicates that the validities of the samples have been changed this frame */
 
   /**
    * The method provides the robot pose
    *
    * @param robotPose The robot pose representation that is updated by this module.
    */
-  void update(RobotPose& robotPose);
+  void update(RobotPose& robotPose) override;
 
   /**
    * The method provides the list of currently evaluated hypotheses.
    *
    * @param selfLocalizationHypotheses The representation that is updated by this module.
    */
-  void update(SelfLocalizationHypotheses& selfLocalizationHypotheses);
+  void update(SelfLocalizationHypotheses& selfLocalizationHypotheses) override;
 
   /** Integrate odometry offset into hypotheses */
   void motionUpdate();
@@ -219,9 +224,10 @@ private:
   bool allSamplesIDsAreUnique();
 
   /** Returns a pose at one of the two possible positions when returning from a penalty
+   * @param leftSideOfGoal Set to true, if the position left of the own goal should be returned. Set to false for the other side.
    * @return A robot pose
    */
-  Pose2f getNewPoseReturnFromPenaltyPosition();
+  Pose2f getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal);
 
   /** Returns the preconfigured pose for a robot to enter the field
    * @return A robot pose
@@ -232,6 +238,11 @@ private:
    * @return A robot pose
    */
   Pose2f getNewPoseAtManualPlacementPosition();
+
+  /** Returns a pose for a penalty shootout
+   * @return A robot pose
+   */
+  Pose2f getNewPoseAtPenaltyShootoutPosition();
 
   /** Computes a new pose based on the AlternativeRobotPoseHypothesis
    * @param forceOwnHalf The new pose must be inside the own half

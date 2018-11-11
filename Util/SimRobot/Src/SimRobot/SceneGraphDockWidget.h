@@ -14,7 +14,7 @@ class SceneGraphDockWidget : public QDockWidget
 
 public:
   SceneGraphDockWidget(QMenu* contextMenu, QWidget* parent);
-  virtual ~SceneGraphDockWidget();
+  ~SceneGraphDockWidget();
 
   void registerObject(const SimRobot::Module* module, SimRobot::Object* object, const SimRobot::Object* parent, int flags);
   void unregisterAllObjects();
@@ -58,12 +58,12 @@ private:
   QHash<const void*, RegisteredObject*> registeredObjectsByObject;
   QHash<int, QHash<QString, RegisteredObject*>*> registeredObjectsByKindAndName;
 
-  RegisteredObject* clickedItem;
+  RegisteredObject* clickedItem = nullptr;
 
   void deleteRegisteredObjectsFromModule(RegisteredObject* registeredObject, const SimRobot::Module* module);
   void deleteRegisteredObject(RegisteredObject* registeredObject);
 
-  virtual void contextMenuEvent(QContextMenuEvent* event);
+  void contextMenuEvent(QContextMenuEvent* event) override;
 
 private slots:
   void itemActivated(const QModelIndex& index);

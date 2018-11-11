@@ -58,9 +58,9 @@ void Body::createPhysics()
   }
 
   // compute moment of inertia tensor at center of mass and center of mass position
-  if(Vector3<>((float) mass.c[0], (float) mass.c[1], (float) mass.c[2]) != Vector3<>())
+  if(Vector3f(static_cast<float>(mass.c[0]), static_cast<float>(mass.c[1]), static_cast<float>(mass.c[2])) != Vector3f::Zero())
   {
-    centerOfMass += Vector3<>((float) mass.c[0], (float) mass.c[1], (float) mass.c[2]);
+    centerOfMass += Vector3f(static_cast<float>(mass.c[0]), static_cast<float>(mass.c[1]), static_cast<float>(mass.c[2]));
     dMassTranslate(&mass, -mass.c[0], -mass.c[1], -mass.c[2]);
 
     /* ^= !?
@@ -77,9 +77,9 @@ void Body::createPhysics()
   OpenGLTools::convertTransformation(0, &centerOfMass, centerOfMassTransformation);
 
   // set position
-  Pose3<> comPose = pose;
+  Pose3f comPose = pose;
   comPose.translate(centerOfMass);
-  dBodySetPosition(body, comPose.translation.x, comPose.translation.y, comPose.translation.z);
+  dBodySetPosition(body, comPose.translation.x(), comPose.translation.y(), comPose.translation.z());
   dMatrix3 matrix3;
   ODETools::convertMatrix(comPose.rotation, matrix3);
   dBodySetRotation(body, matrix3);
@@ -90,7 +90,7 @@ void Body::createPhysics()
     Geometry* geometry = dynamic_cast<Geometry*>(*iter);
     if(geometry)
     {
-      Pose3<> geomOffset(-centerOfMass);
+      Pose3f geomOffset(-centerOfMass);
       addGeometry(geomOffset, *geometry);
       for(++iter; iter != end; ++iter) // avoid constructing geomOffset again
       {
@@ -108,10 +108,10 @@ void Body::createPhysics()
   OpenGLTools::convertTransformation(pose, transformation);
 }
 
-void Body::addGeometry(const Pose3<>& parentOffset, Geometry& geometry)
+void Body::addGeometry(const Pose3f& parentOffset, Geometry& geometry)
 {
   // compute geometry offset
-  Pose3<> offset = parentOffset;
+  Pose3f offset = parentOffset;
   if(geometry.translation)
     offset.translate(*geometry.translation);
   if(geometry.rotation)
@@ -129,7 +129,7 @@ void Body::addGeometry(const Pose3<>& parentOffset, Geometry& geometry)
     dGeomSetBody(geom, body);
 
     // set offset
-    dGeomSetOffsetPosition(geom, offset.translation.x, offset.translation.y, offset.translation.z);
+    dGeomSetOffsetPosition(geom, offset.translation.x(), offset.translation.y(), offset.translation.z());
     dMatrix3 matrix3;
     ODETools::convertMatrix(offset.rotation, matrix3);
     dGeomSetOffsetRotation(geom, matrix3);
@@ -160,10 +160,10 @@ void Body::addMass(Mass& mass)
   }
   else
   {
-    if(centerOfMass != Vector3<>())
+    if(centerOfMass != Vector3f::Zero())
     {
-      dMassTranslate(&this->mass, centerOfMass.x, centerOfMass.y, centerOfMass.z);
-      centerOfMass = Vector3<>();
+      dMassTranslate(&this->mass, centerOfMass.x(), centerOfMass.y(), centerOfMass.z());
+      centerOfMass = Vector3f::Zero();
     }
 
     const dMass& constAdditionalMass = mass.createMass();
@@ -177,7 +177,7 @@ void Body::addMass(Mass& mass)
         dMassRotate(&additionalMass, matrix);
       }
       if(mass.translation)
-        dMassTranslate(&additionalMass, mass.translation->x, mass.translation->y, mass.translation->z);
+        dMassTranslate(&additionalMass, mass.translation->x(), mass.translation->y(), mass.translation->z());
       dMassAdd(&this->mass, &additionalMass);
     }
     else
@@ -207,14 +207,14 @@ void Body::updateTransformation()
     (*iter)->updateTransformation();
 }
 
-void Body::drawAppearances() const
+void Body::drawAppearances(SurfaceColor color, bool drawControllerDrawings) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
-  GraphicalObject::drawAppearances();
+  GraphicalObject::drawAppearances(color, drawControllerDrawings);
   glPopMatrix();
   for(std::list<Body*>::const_iterator iter = bodyChildren.begin(), end = bodyChildren.end(); iter != end; ++iter)
-    (*iter)->drawAppearances();
+    (*iter)->drawAppearances(color, drawControllerDrawings);
 }
 
 void Body::drawPhysics(unsigned int flags) const
@@ -244,26 +244,26 @@ void Body::drawPhysics(unsigned int flags) const
     (*iter)->drawPhysics(flags);
 }
 
-void Body::move(const Vector3<>& offset)
+void Body::move(const Vector3f& offset)
 {
   const dReal* pos = dBodyGetPosition(body);
-  dBodySetPosition(body, pos[0] + offset.x, pos[1] + offset.y, pos[2] + offset.z);
+  dBodySetPosition(body, pos[0] + offset.x(), pos[1] + offset.y(), pos[2] + offset.z());
   for(std::list<Body*>::const_iterator iter = bodyChildren.begin(), end = bodyChildren.end(); iter != end; ++iter)
     (*iter)->move(offset);
 
   Simulation::simulation->scene->lastTransformationUpdateStep = Simulation::simulation->simulationStep - 1; // enforce transformation update
 }
 
-void Body::rotate(const Matrix3x3<>& rotation, const Vector3<>& point)
+void Body::rotate(const RotationMatrix& rotation, const Vector3f& point)
 {
-  Pose3<> comPose;
+  Pose3f comPose;
   ODETools::convertVector(dBodyGetPosition(body), comPose.translation);
   ODETools::convertMatrix(dBodyGetRotation(body), comPose.rotation);
 
   comPose.translation = rotation * (comPose.translation - point) + point;
   comPose.rotation = rotation * comPose.rotation;
 
-  dBodySetPosition(body, comPose.translation.x, comPose.translation.y, comPose.translation.z);
+  dBodySetPosition(body, comPose.translation.x(), comPose.translation.y(), comPose.translation.z());
   dMatrix3 matrix3;
   ODETools::convertMatrix(comPose.rotation, matrix3);
   dBodySetRotation(body, matrix3);
@@ -292,13 +292,13 @@ void Body::enablePhysics(bool enable)
 
 void Body::resetDynamics()
 {
-  dBodySetLinearVel(body, 0,0,0);
-  dBodySetAngularVel(body, 0,0,0);
+  dBodySetLinearVel(body, 0, 0, 0);
+  dBodySetAngularVel(body, 0, 0, 0);
   for(std::list<Body*>::const_iterator iter = bodyChildren.begin(), end = bodyChildren.end(); iter != end; ++iter)
     (*iter)->resetDynamics();
 }
 
-const Pose3<>& Body::getPose()
+const Pose3f& Body::getPose()
 {
   ODETools::convertVector(dBodyGetPosition(body), pose.translation);
   ODETools::convertMatrix(dBodyGetRotation(body), pose.rotation);
@@ -308,25 +308,25 @@ const Pose3<>& Body::getPose()
 
 const float* Body::getPosition() const
 {
-  Pose3<>& pose = const_cast<Body*>(this)->pose;
+  Pose3f& pose = const_cast<Body*>(this)->pose;
   ODETools::convertVector(dBodyGetPosition(body), pose.translation);
   ODETools::convertMatrix(dBodyGetRotation(body), pose.rotation);
   pose.translate(-centerOfMass);
-  return &pose.translation.x;
+  return pose.translation.data();
 }
 
 bool Body::getPose(float* pos, float (*rot)[3]) const
 {
-  Pose3<>& pose = const_cast<Body*>(this)->pose;
+  Pose3f& pose = const_cast<Body*>(this)->pose;
   ODETools::convertVector(dBodyGetPosition(body), pose.translation);
   ODETools::convertMatrix(dBodyGetRotation(body), pose.rotation);
   pose.translate(-centerOfMass);
 
-  pos[0] = pose.translation.x; pos[1] = pose.translation.y; pos[2] = pose.translation.z;
+  pos[0] = pose.translation.x(); pos[1] = pose.translation.y(); pos[2] = pose.translation.z();
 
-  rot[0][0] = pose.rotation.c0.x; rot[0][1] = pose.rotation.c0.y; rot[0][2] = pose.rotation.c0.z;
-  rot[1][0] = pose.rotation.c1.x; rot[1][1] = pose.rotation.c1.y; rot[1][2] = pose.rotation.c1.z;
-  rot[2][0] = pose.rotation.c2.x; rot[2][1] = pose.rotation.c2.y; rot[2][2] = pose.rotation.c2.z;
+  rot[0][0] = pose.rotation(0, 0); rot[0][1] = pose.rotation(1, 0); rot[0][2] = pose.rotation(2, 0);
+  rot[1][0] = pose.rotation(0, 1); rot[1][1] = pose.rotation(1, 1); rot[1][2] = pose.rotation(2, 1);
+  rot[2][0] = pose.rotation(0, 2); rot[2][1] = pose.rotation(1, 2); rot[2][2] = pose.rotation(2, 2);
   return true;
 }
 
@@ -338,10 +338,13 @@ void Body::move(const float* pos, const float (*rot)[3])
   pose.translate(-centerOfMass);
 
   // compute position offset
-  Pose3<> newPose(Matrix3x3<>(Vector3<>(rot[0][0], rot[0][1], rot[0][2]), Vector3<>(rot[1][0], rot[1][1], rot[1][2]), Vector3<>(rot[2][0], rot[2][1], rot[2][2])), Vector3<>(pos[0], pos[1], pos[2]));
-  Pose3<> offset;
+  Pose3f newPose((Matrix3f() << rot[0][0], rot[1][0], rot[2][0],
+                                rot[0][1], rot[1][1], rot[2][1],
+                                rot[0][2], rot[1][2], rot[2][2]).finished(),
+                 Vector3f(pos[0], pos[1], pos[2]));
+  Pose3f offset;
   offset.translation = newPose.translation - pose.translation;
-  offset.rotation = newPose.rotation * pose.rotation.transpose();
+  offset.rotation = newPose.rotation * pose.rotation.inverse();
 
   // move object to new pose
   move(offset.translation);
@@ -356,7 +359,7 @@ void Body::move(const float* pos)
   pose.translate(-centerOfMass);
 
   // compute position offset
-  Vector3<> offset = Vector3<>(pos[0], pos[1], pos[2]) - pose.translation;
+  Vector3f offset = Vector3f(pos[0], pos[1], pos[2]) - pose.translation;
 
   // move object to new position
   move(offset);

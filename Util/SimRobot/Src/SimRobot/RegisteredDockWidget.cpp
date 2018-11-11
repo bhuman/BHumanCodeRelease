@@ -24,20 +24,9 @@ RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* par
 void RegisteredDockWidget::setWidget(SimRobot::Widget* widget, const SimRobot::Module* module, SimRobot::Object* object, int flags)
 {
   if(widget)
-  {
-#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
-    if(isFloating() && widget->getWidget()->inherits("QGLWidget"))
-    {
-      setFloating(false);
-      QDockWidget::setWidget(widget->getWidget());
-      setFloating(true);
-    }
-    else
-#endif
-      QDockWidget::setWidget(widget->getWidget());
-  }
+    QDockWidget::setWidget(widget->getWidget());
   else
-    QDockWidget::setWidget(0);
+    QDockWidget::setWidget(nullptr);
   if(this->widget)
     delete this->widget;
   this->module = module;
@@ -141,7 +130,7 @@ void RegisteredDockWidget::contextMenuEvent(QContextMenuEvent* event)
     return;
   }
 
-  QRect content(QDockWidget::widget()->geometry());
+  const QRect content(QDockWidget::widget()->geometry());
   if(!content.contains(event->x(), event->y()))
   { // click on window frame
     QDockWidget::contextMenuEvent(event);
@@ -152,12 +141,11 @@ void RegisteredDockWidget::contextMenuEvent(QContextMenuEvent* event)
   QMenu menu;
   QMenu* editMenu = createEditMenu();
   QMenu* userMenu = createUserMenu();
-  QMenu* simMenu = ((MainWindow*) MainWindow::application)->createSimMenu();
+  QMenu* simMenu = dynamic_cast<MainWindow*>(MainWindow::application)->createSimMenu();
   if(editMenu)
   {
     QMetaObject::invokeMethod(editMenu, "aboutToShow", Qt::DirectConnection);
-    const QList<QAction*> actions = editMenu->actions();
-    foreach(QAction* action, actions)
+    for(QAction* action : editMenu->actions())
     {
       editMenu->removeAction(action);
       menu.addAction(action);
@@ -169,15 +157,14 @@ void RegisteredDockWidget::contextMenuEvent(QContextMenuEvent* event)
   {
     QMetaObject::invokeMethod(userMenu, "aboutToShow", Qt::DirectConnection);
     menu.addSeparator();
-    const QList<QAction*> actions  = userMenu->actions();
-    foreach(QAction* action, actions)
+    for(QAction* action : userMenu->actions())
     {
       userMenu->removeAction(action);
       menu.addAction(action);
     }
   }
   event->accept();
-  QAction* action = menu.exec(mapToGlobal(QPoint(event->x(), event->y())));
+  const QAction* action = menu.exec(mapToGlobal(QPoint(event->x(), event->y())));
   delete simMenu;
   if(editMenu)
     delete editMenu;

@@ -430,17 +430,17 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      Vector3f forward = to - from; \
-      float height = forward.norm() - arrowlen; \
+      Vector3f forward = (to) - (from); \
+      float height = forward.norm() - (arrowlen); \
       forward.normalize(height * 0.5f); \
-      Vector3f center = from + forward; \
+      Vector3f center = (from) + forward; \
       float rx = 0.f, ry = 0.f; \
       rx = (forward.y() != 0.f || forward.z() != 0.f) ? -std::atan2(forward.y(), forward.z()) : 0.f; \
       float d = std::sqrt(forward.z() * forward.z() + forward.y() * forward.y()); \
       ry = (forward.x() != 0.f || d != 0.f) ? std::atan2(forward.x(), d) : 0.f; \
       CYLINDER3D(id, center.x(), center.y(), center.z(), rx, ry, 0.f, radius, height, color); \
-      forward.normalize(arrowlen * 0.5f); \
-      Vector3f arrowCenter = to - forward; \
+      forward.normalize((arrowlen) * 0.5f); \
+      Vector3f arrowCenter = (to) - forward; \
       CYLINDER3D2(id, arrowCenter.x(), arrowCenter.y(), arrowCenter.z(), rx, ry, 0.f, arrowradius, 0, arrowlen, color); \
     } \
   while(false)
@@ -457,10 +457,10 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      Vector3f forward = to - from; \
+      Vector3f forward = (to) - (from); \
       float height = forward.norm(); \
       forward.normalize(height * 0.5f); \
-      Vector3f center = from + forward; \
+      Vector3f center = (from) + forward; \
       float rx = 0.f, ry = 0.f; \
       rx = (forward.y() != 0.f || forward.z() != 0.f) ? -std::atan2(forward.y(), forward.z()) : 0.f; \
       float d = std::sqrt(forward.z() * forward.z() + forward.y() * forward.y()); \
@@ -482,8 +482,8 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      Vector3f from = origin.translated(Vector3f(-wideness/2,0,0)).translation; \
-      Vector3f to = origin.translated(Vector3f(wideness/2,0,0)).translation; \
+      Vector3f from = (origin).translated(Vector3f(-(wideness)/2,0,0)).translation; \
+      Vector3f to = (origin).translated(Vector3f((wideness)/2,0,0)).translation; \
       CYLINDERLINE3D(id, from, to, radius, color); \
     } \
   while(false)
@@ -503,8 +503,8 @@ class DrawingManager3D : public DrawingManager {};
   do \
     COMPLEX_DRAWING3D(id) \
     { \
-      Vector3f from = origin.translation; \
-      Vector3f to = origin.translated(Vector3f(1.f,0,0)).translation; \
+      Vector3f from = (origin).translation; \
+      Vector3f to = (origin).translated(Vector3f(1.f,0,0)).translation; \
       Vector3f forward = to - from; \
       float height = forward.norm(); \
       forward.normalize(height * 0.5f); \
@@ -515,13 +515,13 @@ class DrawingManager3D : public DrawingManager {};
       DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
       { \
         OUTPUT(idDebugDrawing3D, bin, \
-               (char)Drawings3D::partDisc << \
-               (char)Global::getDrawingManager3D().getDrawingId(id) << \
-               (float)(from.x()) << (float)(from.y()) << (float)(from.z()) << \
-               (float)(rx) << (float)(ry) << (float)(0) << \
-               (float) (innerRadius) << (float) (outerRadius) << \
-               (float) (startAngle) <<(float) (endAngle-startAngle) <<  \
-               ColorRGBA(color) \
+                (char)Drawings3D::partDisc << \
+                (char)Global::getDrawingManager3D().getDrawingId(id) << \
+                (float)(from.x()) << (float)(from.y()) << (float)(from.z()) << \
+                (float)(rx) << (float)(ry) << (float)(0) << \
+                (float) (innerRadius) << (float) (outerRadius) << \
+                (float) (startAngle) <<(float) (endAngle)-(startAngle) <<  \
+                ColorRGBA(color) \
               ); \
       } \
     } \

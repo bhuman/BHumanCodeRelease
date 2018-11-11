@@ -3,7 +3,8 @@
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
-#include "../ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "MidCircle.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -33,10 +34,12 @@ void MidCircle::draw() const
   }
   COMPLEX_DRAWING("representation:MidCircle:image")
   {
-    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo"))
+    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo")
+       && Blackboard::getInstance().exists("ImageCoordinateSystem"))
     {
       const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
       const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
       ASSERT(Blackboard::getInstance().exists("FieldDimensions"));
       const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
@@ -49,18 +52,26 @@ void MidCircle::draw() const
       const float stepSize = 0.2f;
       for(float i = 0; i < pi2; i += stepSize)
       {
-        Vector2f p1 = Vector2f::Zero();
-        Vector2f p2 = Vector2f::Zero();
+        Vector2f p1;
+        Vector2f p2;
         if(Transformation::robotToImage(Vector2f(this->translation + Vector2f(theFieldDimensions.centerCircleRadius, 0).rotate(i)), theCameraMatrix, theCameraInfo, p1) &&
            Transformation::robotToImage(Vector2f(this->translation + Vector2f(theFieldDimensions.centerCircleRadius, 0).rotate(i + stepSize)), theCameraMatrix, theCameraInfo, p2))
+        {
+          p1 = theImageCoordinateSystem.fromCorrected(p1);
+          p2 = theImageCoordinateSystem.fromCorrected(p2);
           LINE("representation:MidCircle:image", p1.x(), p1.y(), p2.x(), p2.y(), 3, Drawings::solidPen, ColorRGBA::blue);
+        }
       }
       {
-        Vector2f p1 = Vector2f::Zero();
-        Vector2f p2 = Vector2f::Zero();
+        Vector2f p1;
+        Vector2f p2;
         if(Transformation::robotToImage(*this * Vector2f(0, theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p1) &&
            Transformation::robotToImage(*this * Vector2f(0, -theFieldDimensions.centerCircleRadius), theCameraMatrix, theCameraInfo, p2))
+        {
+          p1 = theImageCoordinateSystem.fromCorrected(p1);
+          p2 = theImageCoordinateSystem.fromCorrected(p2);
           LINE("representation:MidCircle:image", p1.x(), p1.y(), p2.x(), p2.y(), 3, Drawings::solidPen, ColorRGBA::blue);
+        }
       }
     }
   }

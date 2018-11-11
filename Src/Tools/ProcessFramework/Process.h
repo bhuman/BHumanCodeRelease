@@ -9,7 +9,6 @@
 #include "ProcessFramework.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
-#include "Tools/Streams/StreamHandler.h"
 #include "Tools/Debugging/AnnotationManager.h"
 #include "Tools/Debugging/DebugRequest.h"
 #include "Tools/Debugging/DebugDataTable.h"
@@ -19,6 +18,11 @@
 #ifdef TARGET_ROBOT
 #include "Tools/AlignedMemory.h"
 #endif
+
+namespace asmjit
+{
+  class JitRuntime;
+}
 
 /**
  * @class Process
@@ -44,9 +48,9 @@ private:
   Settings settings;
   DebugRequestTable debugRequestTable;
   DebugDataTable debugDataTable;
-  StreamHandler streamHandler;
   DrawingManager drawingManager;
   DrawingManager3D drawingManager3D;
+  asmjit::JitRuntime* asmjitRuntime;
 
 public:
   /**
@@ -55,12 +59,14 @@ public:
    */
   Process(MessageQueue& debugIn, MessageQueue& debugOut);
 
+  ~Process();
+
   /**
    * The main function is called from the process framework once in each frame.
    * It does the debug handling and calls the main function in the derivates.
    * @return Should wait for external trigger?
    */
-  bool processMain();
+  bool processMain() override;
 
   /**
    * The method initializes the pointers in class Global.
@@ -86,7 +92,7 @@ protected:
    * @param message An interface to read the message from the queue
    * @return true if message was handled
    */
-  virtual bool handleMessage(InMessage& message);
+  bool handleMessage(InMessage& message) override;
 
   /**
    * Is called from within processMain() with the debugIn message queue.
@@ -111,7 +117,7 @@ protected:
  * This template class implements a sender for debug packages.
  * It ensures that only a package is sent if it is not empty.
  */
-template<class T> class DebugSender : public Sender<T>, private DebugSenderBase
+template<typename T> class DebugSender : public Sender<T>, private DebugSenderBase
 {
 public:
   /**
@@ -127,7 +133,7 @@ public:
    * In function will only send a package if it is not empty.
    * @param block Whether to block when the packet cannot be send immediatly
    */
-  virtual void send(bool block = false)
+  void send(bool block = false)
   {
     if(!Sender<T>::isEmpty())
     {
@@ -145,6 +151,4 @@ public:
       }
     }
   }
-
-  friend class RoboCupCtrl; // Access terminate
 };

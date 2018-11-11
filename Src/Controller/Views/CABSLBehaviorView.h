@@ -39,10 +39,10 @@ private:
    * The caller has to delete this instance. (Qt handles this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
+  SimRobot::Widget* createWidget() override;
 
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 
   friend class CABSLBehaviorWidget;
 };

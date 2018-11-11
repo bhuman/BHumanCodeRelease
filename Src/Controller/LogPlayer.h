@@ -8,15 +8,16 @@
 
 #pragma once
 
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/JointAngles.h"
-#include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/Image.h"
-#include "Representations/Infrastructure/JPEGImage.h"
+#include "Tools/Function.h"
 #include "Tools/MessageQueue/MessageQueue.h"
-#include "Tools/Streams/StreamHandler.h"
+#include "Tools/Streams/TypeInfo.h"
 
+#include <array>
+#include <cstring>
+#include <dirent.h>
 #include <memory>
+#include <string>
+#include <vector>
 
 /**
  * @class LogPlayer
@@ -41,10 +42,13 @@ public:
   LogPlayerState state; /**< The state of the log player. */
   int currentFrameNumber; /**< The number of the current frame. */
   int numberOfFrames; /**< The overall number of frames available. */
-  bool streamSpecificationReplayed; /**< The stream specification has to be replayed once. Already done? */
+  bool typeInfoReplayed; /**< The type information has to be replayed once. Already done? */
   int lastImageFrameNumber; /**< The number of the last frame that contained an image. */
+  bool logfileMerged = false;
+  std::string logfilePath;
 
 private:
+  friend class LogExtractor; /**< The LogExtractor use queue and logfilePath. */
   MessageQueue& targetQueue; /**< The queue into that messages from played logfiles shall be stored. */
   int currentMessageNumber; /**< The current message number in the message queue. */
   int numberOfMessagesWithinCompleteFrames; /**< The number of messages within complete frames. Messages behind that number will be skipped. */
@@ -52,10 +56,7 @@ private:
   int replayOffset;
   std::vector<int> frameIndex; /**< The message numbers the frames start at. */
   std::array<int, 601> gcTimeIndex; /**< The frames correspending to Game Controller times. */
-  std::unique_ptr<StreamHandler> streamHandler; /**< The stream specification of the log file entries. */
-
-  bool logfileLoaded = false;
-  std::string logfilePath;
+  std::unique_ptr<TypeInfo> typeInfo; /**< The type information of the log file entries. */
 
 public:
   /**
@@ -72,9 +73,6 @@ public:
    * @return if the reading was successful
    */
   bool open(const std::string& fileName);
-
-  bool isLogfileLoaded() { return logfileLoaded; }
-  std::string getLogfilePath() { return logfilePath; }
 
   /**
    * Plays the queue.
@@ -124,67 +122,6 @@ public:
   int getFrameForRemainingGCTime(int time);
 
   /**
-   * Writes all messages in the log player queue to a log file.
-   * @param fileName the name of the file to write
-   * @param streamHandler Specification of logged data types. Will be ignored if
-   *                      it is a nullptr or logger already has a specification.
-   * @return Whether the writing was successful
-   */
-  bool save(const std::string& fileName, const StreamHandler* streamHandler);
-
-  /**
-   * Writes all audio data in the log player queue to a single wav file.
-   * @param fileName the name of the file to write
-   * @return if the writing was successful
-   */
-  bool saveAudioFile(const std::string& fileName);
-
-  /**
-   * Writes all images in the log player queue to a bunch of image files (.png).
-   * @param raw Save color unconverted
-   * @param fileName The name of one file to write, all files will be enumerated by appending a 3 digit number to the filename.
-   * @return if writing all files was successful
-   */
-  bool saveImages(const bool raw, const std::string& fileName);
-
-  /**
-   * Writes all images around ballspots to a bunch of image files (.png).
-   * @param fileName The name of one file to write, all files will be enumerated by appending a 3 digit number to the filename.
-   * @return if writing all files was successful
-   */
-  bool saveBallSpotImages(const std::string& fileName);
-
-  /**
-   * Writes all inertial sensor data from the log into a space seperated
-   * dataset file.
-   * @return whether writing the file was successful or not
-   */
-  bool saveInertialSensorData();
-
-  /**
-   * Writes all joint angle and request data from the log into a space seperated
-   * dataset file.
-   * @return whether writing the file was successful or not
-   */
-  bool saveJointAngleData();
-
-  /**
-   * Writes a csv with all module timings
-   * @return true if writing was successful
-   */
-  bool writeTimingData(const std::string& fileName);
-
-  /**
-   * Save an image to a file.
-   * @param image The image to save.
-   * @param fileName The intended file name of the image. Its extension determines the file format (e.g. .jpg, .png, ...).
-   * @param imageNumber A number that will be integrated into the file name. -1: ignore.
-   * @param YUV2RGB Convert from YUV to RGB?
-   * @return Was writing successful?
-   */
-  static bool saveImage(const Image& image, const std::string& fileName, int imageNumber = -1, bool YUV2RGB = true);
-
-  /**
    * Adds the message to the queue depending on isRecording.
    * That function should be called for every message in the queue that the
    * log player shall work on.
@@ -229,6 +166,17 @@ public:
    */
   void merge();
 
+  /**
+   * Loads labels for the current log from a file and adds them to the log.
+   */
+  void loadLabels();
+
+  /**
+   * Insert the type information into the target queue if one is available
+   * and it has not been replayed yet.
+   */
+  void replayTypeInfo();
+
 private:
   /**
    * The method counts the number of frames.
@@ -240,19 +188,4 @@ private:
    * index of frames corresponding to Game Controller times.
    */
   void createIndices();
-
-  /**
-   * The method expands image file name to its full path and integrates
-   * an image number if desired.
-   * @param fileName The short file name of the image.
-   * @param imageNumber A number that will be integrated into the file name. -1: ignore.
-   * @return The full path of the image file.
-   */
-  static std::string expandImageFileName(const std::string& fileName, int imageNumber);
-
-  /**
-   * Insert the stream specifiation into the target queue if one is available
-   * and it has not been replayed yet.
-   */
-  void replayStreamSpecification();
 };

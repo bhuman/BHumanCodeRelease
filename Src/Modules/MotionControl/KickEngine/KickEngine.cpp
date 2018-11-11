@@ -48,7 +48,7 @@ KickEngine::KickEngine()
       }
       strcpy(parameters.name, name);
 
-      if(KickRequest::getKickMotionFromName(parameters.name) < KickRequest::none)
+      if(KickRequest::getKickMotionFromName(parameters.name) < KickRequest::newKick)
         params.push_back(parameters);
       else
       {
@@ -60,7 +60,7 @@ KickEngine::KickEngine()
   }
   closedir(dir);
 
-  for(int i = 0; i < KickRequest::numOfKickMotionIDs - 2; ++i)
+  for(int i = 0; i < KickRequest::newKick; ++i)
   {
     int id = -1;
     for(unsigned int p = 0; p < params.size(); ++p)
@@ -73,8 +73,8 @@ KickEngine::KickEngine()
     }
     if(id == -1)
     {
-      OUTPUT_TEXT("Warning: The kick motion file for id " << KickRequest::getName((KickRequest::KickMotionID) i) << " is missing.");
-      fprintf(stderr, "Warning: The kick motion file for id %s is missing. \n", KickRequest::getName((KickRequest::KickMotionID) i));
+      OUTPUT_TEXT("Warning: The kick motion file for id " << TypeRegistry::getEnumName((KickRequest::KickMotionID) i) << " is missing.");
+      fprintf(stderr, "Warning: The kick motion file for id %s is missing. \n", TypeRegistry::getEnumName((KickRequest::KickMotionID) i));
     }
   }
 
@@ -93,26 +93,30 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
     if(theLegMotionSelection.ratios[MotionRequest::kick] < 1.f && !compensated)
       compensate = true;
 
+    if(theMotionRequest.kickRequest.kickMotionType != KickRequest::none)
+      lastValidKickRequest = theMotionRequest.kickRequest;
+
     data.setRobotModel(theRobotModel);
 
     if(data.sitOutTransitionDisturbance(compensate, compensated, theInertialData, kickEngineOutput, theJointRequest, theFrameInfo))
     {
-      if(data.activateNewMotion(theMotionRequest.kickRequest, kickEngineOutput.isLeavingPossible) && theMotionRequest.motion == MotionRequest::kick)
+      if(data.activateNewMotion(lastValidKickRequest, kickEngineOutput.isLeavingPossible) && lastValidKickRequest.kickMotionType != KickRequest::none)
       {
-        data.initData(theFrameInfo, theMotionRequest, params, theJointAngles, theTorsoMatrix, kickEngineOutput, theRobotDimensions, theMassCalibration);
-        data.setCurrentKickRequest(theMotionRequest);
+        data.initData(theFrameInfo, lastValidKickRequest, params, theJointAngles, theTorsoMatrix, kickEngineOutput, theRobotDimensions, theMassCalibration, theDamageConfigurationBody);
+        data.setCurrentKickRequest(lastValidKickRequest);
         data.setExecutedKickRequest(kickEngineOutput.executedKickRequest);
 
         data.internalIsLeavingPossible = false;
         kickEngineOutput.isLeavingPossible = false;
 
+        data.calcOdometryOffset(kickEngineOutput, theRobotModel); //to init it
         kickEngineOutput.odometryOffset = Pose2f();
 
         for(int i = Joints::lShoulderPitch; i < Joints::numOfJoints; ++i)
           kickEngineOutput.stiffnessData.stiffnesses[i] = 100;
 
         kickEngineOutput.isStable = true;
-      }//this gotta go to config file and be more common
+      }
 
       if(data.checkPhaseTime(theFrameInfo, theJointAngles, theTorsoMatrix))
       {
@@ -126,29 +130,13 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
         data.internalIsLeavingPossible = true;
       }
 
-      if(data.calcJoints(kickEngineOutput, theRobotDimensions))
+      if(data.calcJoints(kickEngineOutput, theRobotDimensions, theDamageConfigurationBody))
       {
         data.balanceCOM(kickEngineOutput, theRobotDimensions, theMassCalibration);
-        data.calcJoints(kickEngineOutput, theRobotDimensions);
+        data.calcJoints(kickEngineOutput, theRobotDimensions, theDamageConfigurationBody);
         data.mirrorIfNecessary(kickEngineOutput);
 
-        /*/ for evaluation
-        if(data.checkPhaseTime(theFrameInfo, theJointAngles, theTorsoMatrix))
-        {
-          Pose3f real = theRobotModel.soleRight * theRobotModel.soleLeft.inverse();
-          Pose3f kmc = Pose3f(data.positions[Phase::rightFootTra] - data.positions[Phase::leftFootTra]);
-          RobotModel rm(kickEngineOutput, theRobotDimensions, theMassCalibration);
-          Pose3f sent = rm.soleRight * rm.soleLeft.inverse();
-
-          if(theMotionRequest.kickRequest.mirror)
-          {
-            kmc.invert();
-            sent.invert();
-            real.invert();
-          }
-          bool hit = theKeyStates.pressed[KeyStates::leftFootLeft] || theKeyStates.pressed[KeyStates::leftFootRight] || theKeyStates.pressed[KeyStates::rightFootLeft] || theKeyStates.pressed[KeyStates::rightFootRight];
-          OUTPUT_TEXT("" << kmc.translation.x() << "," << kmc.translation.y() << "," << kmc.translation.z() << "," << sent.translation.x() << "," << sent.translation.y() << "," << sent.translation.z() << "," << real.translation.x() << "," << real.translation.y() << "," << real.translation.z() << "," << static_cast<int>(hit));
-        }*/
+        data.calcOdometryOffset(kickEngineOutput, theRobotModel);
       }
       data.addGyroBalance(kickEngineOutput, theJointLimits, theInertialData, theLegMotionSelection.ratios[MotionRequest::kick]);
     }

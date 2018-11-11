@@ -22,12 +22,11 @@ class AbstractConsole : public QObject,
   Q_OBJECT
 
 public:
-
   explicit AbstractConsole(QObject* parent = nullptr);
-  virtual void print(const std::string& msg);
-  virtual void printLine(const std::string& msg);
-  virtual void error(const std::string& msg);
-  virtual void errorLine(const std::string& msg);
+  void print(const std::string& msg) override;
+  void printLine(const std::string& msg) override;
+  void error(const std::string& msg) override;
+  void errorLine(const std::string& msg) override;
 
 signals:
   void sPrint(ConsolePrintTarget target, const QString& msg);

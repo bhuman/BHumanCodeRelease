@@ -50,7 +50,7 @@ STREAMABLE(RobotModel,
   /** Creates a 3-D drawing of the robot model. */
   void draw() const,
 
-  (ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
+  (ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)) limbs, /**< Coordinate frame of the limbs of the robot relative to the robot's origin. */
   (Pose3f) soleLeft,
   (Pose3f) soleRight,
   (Vector3f)(Vector3f::Zero()) centerOfMass, /**< Position of the center of mass (center of gravity) relative to the robot's origin. */

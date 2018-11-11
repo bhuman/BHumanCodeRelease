@@ -25,3 +25,12 @@ void AlternativeRobotPoseHypothesis::draw() const
     }
   }
 }
+
+void AlternativeRobotPoseHypothesis::verify() const
+{
+  ASSERT(std::isfinite(pose.translation.x()));
+  ASSERT(std::isfinite(pose.translation.y()));
+  ASSERT(std::isfinite(pose.rotation));
+  ASSERT(pose.rotation >= -pi);
+  ASSERT(pose.rotation <= pi);
+}

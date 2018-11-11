@@ -30,17 +30,17 @@ usage()
 
 copy()
 {
-  REMOTE=$1
+  REMOTE=`$RESOLVE <<<"$1"`
   PLAYER=$2
 
   if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 6 )) ); then
-    echo "Error: Player number is $PLAYER!"
+    echo "error: player number is $PLAYER!" >&2
     exit 1
   fi
 
   if [ ! -z $CHECK ]; then
     if [ `ping ${pingoptions} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
-      echo "$REMOTE not reachable"
+      echo "$REMOTE not reachable" >&2
       exit 1
     fi
   fi
@@ -79,7 +79,7 @@ copy()
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Logs --exclude=/Scenes --exclude=/Keys --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --exclude=/Statistics --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
 
   echo "updating libs"
   RESULT=`rsync --chmod=u+rw,go+r,Dugo+x --stats -zce "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config`
@@ -100,19 +100,6 @@ copy()
 
   #reset capture volume to 100%
   ssh $sshoptions nao@$REMOTE "amixer set Capture 100% unmute &> /dev/null"
-
-  #check if magic number is too big
-  if [ ! -z $MAGICNUMBER ]; then
-    if [ $MAGICNUMBER -gt 255 ]; then
-      MAGICNUMBER=255
-    fi
-    #calculate random magic number
-    if [ $MAGICNUMBER -le -1 ]; then
-      MAGICNUMBER=$(awk 'BEGIN{srand();print int(rand()*255) }')
-    fi
-
-    echo "setting magic number to $MAGICNUMBER"
-  fi
 
   # set settings on robot
   if [ ! -z $SCENARIO ] || [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ] || [ ! -z $MAGICNUMBER ]; then
@@ -145,12 +132,10 @@ copy()
 
 set -e
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname "${scriptPath}")
-currPath=$(pwd)
 keySource=../../Config/Keys/id_rsa_nao
 keyFile=/tmp/id_rsa_nao
-sshoptions="-c arcfour -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
+cipher=`( ssh -Q cipher | grep "arcfour"; echo "aes128-ctr" ) | head -1`
+sshoptions="-c $cipher -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [[ $(uname) == *CYGWIN* ]]; then
   pingoptions="-w 1 -n 1"
 elif [ $(uname) == "Darwin" ]; then
@@ -159,7 +144,7 @@ else
   pingoptions="-w 1 -c 1"
 fi
 
-cd "${basePath}"
+cd "$(dirname "$(which "$0")")"
 cp $keySource $keyFile
 
 # init variables
@@ -174,6 +159,7 @@ REMOTE=
 COMPILE=1
 CHECK=1
 NUMMULTIPLE=0
+RESTART=
 RESTARTNAOQI=
 STOPNAOQI=
 MULTIPLEDATA=
@@ -182,6 +168,12 @@ VOLUME=100
 PROFILE=
 PORT=
 MAGICNUMBER=
+if [ -z "$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)" ]; then
+  RESOLVE=cat
+else
+  RESOLVE=`echo "sed"; ls ../../Config/Robots/*/network.cfg | xargs grep -H "^lan" | sed "s%.*/\(.*\)/.*\"\(.*\)\";.*%-e s/\1/\2/%"; ls ../../Config/Robots/*/network.cfg | xargs grep -H "^wlan" | sed "s%.*/\(.*\)/.*\"\(.*\)\";.*%-e s/\1/\2/%" | tr '[:upper:]' '[:lower:]'`
+  RESOLVE=`tr '\n' ' ' <<<"$RESOLVE"`
+fi
 
 # parse options
 [ "x" = "x$*" ] && usage
@@ -231,7 +223,6 @@ while true; do
       ;;
     "-d" | "/d")
       DELETELOGS=1
-      RESTART=1
       ;;
     "-h" | "/h" | "/?" | "--help")
       usage
@@ -268,7 +259,7 @@ while true; do
       CONFIG="Debug"
       ;;
     -*)
-      echo "unknown parameter: $1"
+      echo "unknown parameter: $1" >&2
       usage
       ;;
     *)
@@ -281,12 +272,12 @@ done
 if [ ! -z $SCENARIO ]; then
   if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
     if [ "$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})" != "" ]; then
-      echo "Scenario $SCENARIO is not present"
-      LOCATION="$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})"
+      echo "Scenario $SCENARIO is not present" >&2
+      SCENARIO="$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})"
       echo "Did you mean $SCENARIO?"
       echo "Now using $SCENARIO"
     else
-      echo "Scenario \"$SCENARIO\" is not present"
+      echo "Scenario \"$SCENARIO\" is not present" >&2
       exit 1
     fi
   fi
@@ -295,15 +286,37 @@ fi
 if [ ! -z $LOCATION ]; then
   if [ "$(ls ../../Config/Locations/ | grep ${LOCATION})" == "" ]; then
     if [ "$(ls ../../Config/Locations/ | grep -i ${LOCATION})" != "" ]; then
-      echo "Location $LOCATION is not present"
+      echo "Location $LOCATION is not present" >&2
       LOCATION="$(ls ../../Config/Locations/ | grep -i ${LOCATION})"
       echo "Did you mean $LOCATION?"
       echo "Now using $LOCATION"
     else
-      echo "Location \"$LOCATION\" is not present"
+      echo "Location \"$LOCATION\" is not present" >&2
       exit 1
     fi
   fi
+fi
+
+# check if magic number is too big
+if [ ! -z $MAGICNUMBER ]; then
+  if [ $MAGICNUMBER -gt 255 ]; then
+    MAGICNUMBER=255
+  fi
+  # calculate magic number from ip if -1
+  if [ $MAGICNUMBER -le -1 ]; then
+    if [[ $(uname) == *CYGWIN* ]]; then
+      MAGICNUMBER=$(ipconfig | grep -e "${REMOTE%.*}" | head -n 1 | sed "s%.*\.%%")
+    else      
+      MAGICNUMBER=$(ifconfig 2>/dev/null \
+                    | grep -e "${REMOTE%.*}" \
+                    | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
+    fi
+    if [ -z "$MAGICNUMBER" ]; then
+      echo "error: cannot generate magic number (set one other than -1)."
+      exit 1
+    fi
+  fi
+  echo "setting magic number to $MAGICNUMBER"
 fi
 
 #key may only be accessed by the owner. Otherwise ssh will complain
@@ -314,16 +327,16 @@ if [ ! -z $COMPILE ]; then
     # macOS
     ./compile $COMPONENT $CONFIG
     [ $? -ne 0 ] && exit 1
-  elif [ -z "${ComSpec}${COMSPEC}" ]; then
-    # Linux
-    make $COMPONENT CONFIG=$CONFIG
-    [ $? -ne 0 ] && exit 1
-  else
+  elif [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
     # Windows
     echo "------ Compiling $COMPONENT ($CONFIG) ------"
     ../../Util/SimRobot/Util/mare/Windows/bin/mare.exe ${COMPONENT} CONFIG=${CONFIG}
     [ $? -ne 0 ] && exit 1
     echo "------ Successfully compiled ------"
+  else
+    # Linux
+    make $COMPONENT CONFIG=$CONFIG
+    [ $? -ne 0 ] && exit 1
   fi
 fi
 
@@ -337,9 +350,6 @@ else # try to deploy to multiple targets
     done
     wait
   else
-    cd "${currPath}"
     exit 1
   fi
 fi
-
-cd "${currPath}"

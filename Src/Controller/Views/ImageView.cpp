@@ -30,29 +30,21 @@
 
 #include "ImageView.h"
 #include "ColorCalibrationView/ColorCalibrationView.h"
-#include "Controller/RobotConsole.h"
 #include "Controller/RoboCupCtrl.h"
+#include "Controller/RobotConsole.h"
 #include "Controller/Visualization/PaintMethods.h"
-#include "Controller/ImageViewAdapter.h"
 #include "Representations/Infrastructure/Image.h"
-#include "Platform/Thread.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 #include "Tools/ImageProcessing/YHS2SimpleConversion.h"
 #include "Tools/Math/Approx.h"
 
 #include "Tools/Math/Eigen.h"
 
-ImageView::ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain) :
+ImageView::ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain, float ddScale) :
   upperCam(upperCam), fullName(fullName), icon(":/Icons/tag_green.png"), console(console),
   background(background), name(name), segmented(segmented),
-  gain(gain)
+  gain(gain), ddScale(ddScale)
 {}
-
-void ImageView::forwardLastImage()
-{
-  if(widget != nullptr)
-    widget->forwardLastImage();
-}
 
 SimRobot::Widget* ImageView::createWidget()
 {
@@ -138,7 +130,8 @@ void ImageWidget::paint(QPainter& painter)
 
 void ImageWidget::paintDrawings(QPainter& painter)
 {
-  const QTransform baseTrans = painter.transform();
+  painter.scale(imageView.ddScale, imageView.ddScale);
+  const QTransform baseTrans = QTransform(painter.transform());
   const std::list<std::string>& drawings = imageView.console.imageViews[imageView.name];
   for(const std::string& drawing : drawings)
   {
@@ -177,19 +170,10 @@ void ImageWidget::copyImage(const DebugImage& srcImage)
       delete imageData;
     if(imageDataStorage)
       Memory::alignedFree(imageDataStorage);
-    imageDataStorage = Memory::alignedMalloc(srcImage.getImageWidth() * height * 4, 32);
+    imageDataStorage = Memory::alignedMalloc(srcImage.getImageWidth() * height * 4 + 256, 32);
     imageData = new QImage(reinterpret_cast<unsigned char*>(imageDataStorage), srcImage.getImageWidth(), height, desiredFormat);
   }
-
-  void* dest = imageData->scanLine(0);
-  if(srcImage.type == PixelTypes::BGRA)
-  {
-    memcpy(dest, srcImage.getView<PixelTypes::BGRAPixel>()[0], width * height * PixelTypes::pixelSize(srcImage.type));
-  }
-  else
-  {
-    srcImage.convertToBGRA(dest);
-  }
+  imageView.console.debugImageConverter.convertToBGRA(srcImage, imageData->scanLine(0));
 
   if(imageView.gain != 1.f)
   {
@@ -201,10 +185,10 @@ void ImageWidget::copyImage(const DebugImage& srcImage)
       int g = (int)(gain * (float)((*p >> 8) & 0xff));
       int b = (int)(gain * (float)((*p) & 0xff));
 
-      *p++ = (r < 0 ? 0 : r > 255 ? 255 : r) << 16 |
-             (g < 0 ? 0 : g > 255 ? 255 : g) << 8 |
-             (b < 0 ? 0 : b > 255 ? 255 : b) |
-             0xff000000;
+      *p = (r < 0 ? 0 : r > 255 ? 255 : r) << 16 |
+           (g < 0 ? 0 : g > 255 ? 255 : g) << 8 |
+           (b < 0 ? 0 : b > 255 ? 255 : b) |
+           0xff000000;
     }
   }
 }
@@ -234,22 +218,22 @@ void ImageWidget::segmentImage(const DebugImage& srcImage)
   TImage<PixelTypes::ColoredPixel> colored(srcImage.width * 2, srcImage.height);
   TImage<PixelTypes::GrayscaledPixel> grayPixel(0, 0);
   TImage<PixelTypes::HuePixel> huePixel(0, 0);
-  YHS2s::updateSSE<true, false, false, false, false>(srcImage.getView<PixelTypes::YUYVPixel>()[0], srcImage.width, srcImage.height, imageView.console.colorCalibration,
-      grayPixel, grayPixel, grayPixel, colored, huePixel, grayPixel);
+  YHS2s::updateSSE<false, false, false>(srcImage.getView<PixelTypes::YUYVPixel>()[0], srcImage.width, srcImage.height, imageView.console.colorCalibration, grayPixel, colored, huePixel, grayPixel);
 
-  DebugImage debugColored(colored);
-  void* dest = imageData->scanLine(0);
-  debugColored.convertToBGRA(dest);
+  imageView.console.debugImageConverter.convertToBGRA(DebugImage(colored), imageData->scanLine(0));
 }
 
 void ImageWidget::paintImage(QPainter& painter, const DebugImage& srcImage)
 {
   if(srcImage.timeStamp != lastImageTimeStamp || imageView.segmented)
   {
-    if(imageView.segmented)
-      copyImageSegmented(srcImage);
-    else
-      copyImage(srcImage);
+    if(srcImage.getImageWidth() > 1 && srcImage.height > 1)
+    {
+      if(imageView.segmented)
+        copyImageSegmented(srcImage);
+      else
+        copyImage(srcImage);
+    }
 
     lastImageTimeStamp = srcImage.timeStamp;
     if(imageView.segmented)
@@ -333,13 +317,11 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
   {
     const DebugDrawing& debugDrawing(imageView.upperCam ? imageView.console.upperCamImageDrawings[drawing] : imageView.console.lowerCamImageDrawings[drawing]);
     debugDrawing.updateOrigin(origin);
-    {
-      int x = static_cast<int>(pos.x());
-      int y = static_cast<int>(pos.y());
-      text = debugDrawing.getTip(x, y, origin);
-      pos.setX(x);
-      pos.setY(y);
-    }
+    int x = static_cast<int>(pos.x());
+    int y = static_cast<int>(pos.y());
+    text = debugDrawing.getTip(x, y, origin);
+    pos.setX(x);
+    pos.setY(y);
     if(text)
       break;
   }
@@ -444,42 +426,51 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* event)
   dragStart = QPointF(-1, -1);
   window2viewport(pos);
   Vector2i v = Vector2i(static_cast<int>(pos.x()), static_cast<int>(pos.y()));
-  if(event->modifiers() & Qt::ShiftModifier)
+
+  if(event->modifiers() & Qt::AltModifier)
   {
-    if(!headControlMode)
-    {
-      imageView.console.handleConsole("mr HeadMotionRequest ManualHeadMotionProvider");
-      headControlMode = true;
-    }
-    std::stringstream command;
-    command << "set parameters:ManualHeadMotionProvider xImg = " << v.x()
-            << "; yImg = " << v.y()
-            << "; camera = " << (imageView.upperCam ? "upper" : "lower") << ";";
-    imageView.console.handleConsole(command.str());
-  }
-  {
+    // update spot
     SYNC_WITH(imageView.console);
-    if(!(event->modifiers() & Qt::ShiftModifier))
+    const char* action = 0;
+    const std::list<std::string>& drawings(imageView.console.imageViews[imageView.name]);
+    Pose2f origin;
+    for(const std::string& drawing : drawings)
     {
-      if((!event->modifiers() || (event->modifiers() & Qt::ControlModifier))
-         && imageView.console.colorCalibrationView
-         && imageView.console.colorCalibrationView->widget
-         && imageView.console.colorCalibrationView->widget->expandColorMode)
+      const DebugDrawing& debugDrawing(imageView.upperCam ? imageView.console.upperCamImageDrawings[drawing] : imageView.console.lowerCamImageDrawings[drawing]);
+      debugDrawing.updateOrigin(origin);
+      action = debugDrawing.getSpot(static_cast<int>(pos.x()), static_cast<int>(pos.y()), origin);
+      if(action)
+        break;
+    }
+    if(action)
+      imageView.console.handleConsole(action);
+  }
+
+  SYNC_WITH(imageView.console);
+  const auto& commands = imageView.console.imageViewCommands[imageView.name];
+  for(const auto& command : commands)
+  {
+    if((event->modifiers() & command.modifierMask) == command.modifiers)
+    {
+      std::stringstream ss;
+      for(const auto& token : command.tokens)
       {
-        DebugImage* image = nullptr;
-        RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
-        RobotConsole::Images::const_iterator i = currentImages.find(imageView.background);
-        if(i != currentImages.end())
-          image = i->second.image;
-        if(image && pos.x() >= 0 && pos.y() >= 0 && pos.x() < image->width && pos.y() < image->height)
-          imageView.console.colorCalibrationView->widget->expandCurrentColor(image->getView<PixelTypes::YUYVPixel>()[static_cast<int>(pos.y())][static_cast<int>(pos.x())], event->modifiers() & Qt::ControlModifier);
+        switch(token.type)
+        {
+          case RobotConsole::ImageViewCommand::Token::literal:
+            ss << token.string;
+            break;
+          case RobotConsole::ImageViewCommand::Token::placeholder:
+            if(token.id == 1)
+              ss << v.x();
+            else if(token.id == 2)
+              ss << v.y();
+            else if(token.id == 3)
+              ss << (imageView.upperCam ? "upper" : "lower");
+            break;
+        }
       }
-      else if(event->modifiers() & Qt::ControlModifier)
-      {
-        ImageViewAdapter::fireClick(imageView.name, v, imageView.upperCam, false);
-      }
-      else
-        ImageViewAdapter::fireClick(imageView.name, v, imageView.upperCam, true);
+      imageView.console.handleConsole(ss.str());
     }
   }
 }
@@ -610,15 +601,6 @@ QMenu* ImageWidget::createUserMenu() const
   return menu;
 }
 
-void ImageWidget::forwardLastImage()
-{
-  DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
-  RobotConsole::Images::const_iterator j = currentImages.find(imageView.background);
-  if(j != currentImages.end())
-    image = j->second.image;
-}
-
 void ImageWidget::saveImg()
 {
   QSettings& settings = RoboCupCtrl::application->getSettings();
@@ -651,29 +633,5 @@ void ImageWidget::saveImg()
     paintImage(painter, *image);
     paintDrawings(painter);
     pixmap.save(fileName, "PNG");
-  }
-}
-
-void ImageWidget::colorAct(int color)
-{
-  ColorCalibrationView* colorView = imageView.console.colorCalibrationView;
-  if(colorView && colorView->widget)
-  {
-    colorView->widget->updateWidgets((FieldColors::Color) color);
-    colorView->widget->currentCalibrationChanged();
-  }
-}
-
-void ImageWidget::setUndoRedo(const bool enableUndo, const bool enableRedo)
-{
-  if(undoAction && redoAction)
-  {
-    ColorCalibrationView* colorView = imageView.console.colorCalibrationView;
-    disconnect(undoAction, nullptr, nullptr, nullptr);
-    disconnect(redoAction, nullptr, nullptr, nullptr);
-    connect(undoAction, SIGNAL(triggered()), colorView->widget, SLOT(undoColorCalibration()));
-    connect(redoAction, SIGNAL(triggered()), colorView->widget, SLOT(redoColorCalibration()));
-    undoAction->setEnabled(enableUndo);
-    redoAction->setEnabled(enableRedo);
   }
 }

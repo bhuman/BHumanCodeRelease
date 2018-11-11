@@ -57,25 +57,22 @@ class Console : public QFrame
 
   ScrollArea* scrollArea;
 
-  /** bush> */
-  QLabel* prompt;
-
   /** The thing where commands can be typed in. */
   CommandLineEdit* cmdLine;
 
 public:
   Console(TeamSelector* teamSelector);
-  QSize minimumSizeHint() const { return QSize(100, 250); }
+  QSize minimumSizeHint() const override { return QSize(100, 250); }
 
   /** Is executed when the console is shown and sets the focus to the
    * commandLineEdit so that the user can just start to type.
    */
-  void showEvent(QShowEvent* event);
+  void showEvent(QShowEvent* event) override;
 
   void fireCommand(const QString& command);
   void cancel();
 
 protected slots:
   /** Starts a new thread which executes the entered command. */
-  virtual void returnPressed();
+  void returnPressed();
 };

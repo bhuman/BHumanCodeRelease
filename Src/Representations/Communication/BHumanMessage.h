@@ -10,7 +10,6 @@
 #include "Tools/Streams/AutoStreamable.h"
 
 #include "BHumanTeamMessageParts/BSPLStandardMessage.h"
-#include "BHumanTeamMessageParts/BHULKsStandardMessage.h"
 #include "BHumanTeamMessageParts/BHumanStandardMessage.h"
 #include "BHumanTeamMessageParts/BHumanArbitraryMessage.h"
 
@@ -22,9 +21,9 @@ STREAMABLE(BHumanMessage,
   virtual unsigned toLocalTimestamp(unsigned remoteTimestamp) const { return 0u; },
 
   (BSPLStandardMessage) theBSPLStandardMessage,
-  (BHULKsStandardMessage) theBHULKsStandardMessage,
   (BHumanStandardMessage) theBHumanStandardMessage,
   (BHumanArbitraryMessage) theBHumanArbitraryMessage,
+  (bool)(false) hasBHumanParts,
 });
 
 /**

@@ -13,12 +13,13 @@ MAKE_MODULE(ArmMotionCombinator, motionControl)
 void ArmMotionCombinator::update(ArmJointRequest& armJointRequest)
 {
   const JointRequest* armJointRequests[ArmMotionSelection::numOfArmMotions];
-  armJointRequests[ArmMotionSelection::walkArms] = &theWalkArmRequest;
+  armJointRequests[ArmMotionSelection::walkArms] = &theWalkingEngineOutput;
   armJointRequests[ArmMotionSelection::fallArms] = &theFallEngineOutput;
   armJointRequests[ArmMotionSelection::kickArms] = &theKickEngineOutput;
   armJointRequests[ArmMotionSelection::specialActionArms] = &theSpecialActionsOutput;
   armJointRequests[ArmMotionSelection::standArms] = &theStandArmRequest;
   armJointRequests[ArmMotionSelection::getUpArms] = &theGetUpEngineOutput;
+
   armJointRequests[ArmMotionSelection::keyFrameS] = &theArmKeyFrameEngineOutput;
 
   auto combinateArmMotions = [&](Arms::Arm const arm)

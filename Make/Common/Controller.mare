@@ -4,7 +4,7 @@ Controller = cppStaticLibrary + {
   root = "$(srcDirRoot)"
 
   precompiledHeader = {
-    "$(srcDirRoot)/Tools/Precompiled/ControllerPch.h"
+    "$(srcDirRoot)/Tools/Precompiled/BHumanPch.h"
   }
 
   files = {
@@ -21,6 +21,20 @@ Controller = cppStaticLibrary + {
     "$(srcDirRoot)/Controller/*.cpp" = bhCppSource
     "$(srcDirRoot)/Controller/*.h"
     "$(srcDirRoot)/Tools/Precompiled/BHumanPch.h"
+    "$(utilDirRoot)/asmjit/src/**.cpp" = cppSource
+
+    if (configuration != "Release") {
+      if (platform == "Linux") {
+        "$(srcDirRoot)/Modules/MotionControl/WalkingEngine/Walk2014Generator.cpp" = bhCppSource
+        "$(srcDirRoot)/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp" = bhCppSource
+        "$(srcDirRoot)/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp" = bhCppSource
+        "$(srcDirRoot)/Representations/Sensing/RobotModel.cpp" = bhCppSource
+        "$(srcDirRoot)/Tools/ImageProcessing/InImageSizeCalculations.cpp" = bhCppSource
+        "$(srcDirRoot)/Tools/Math/**.cpp" = bhCppSource
+        "$(srcDirRoot)/Tools/Modeling/UKFPose2D.cpp" = bhCppSource
+        "$(srcDirRoot)/Tools/Motion/**.cpp" = bhCppSource
+      }
+    }
   }
   files += pchFiles
 
@@ -28,7 +42,7 @@ Controller = cppStaticLibrary + {
   qtRccFiles = "$(srcDirRoot)/Controller/*.qrc"
   qtMocFiles = {
     "$(srcDirRoot)/Controller/BHToolBar.h"
-    "$(srcDirRoot)/Controller/Views/AnnotationView/AnnotationWidget.h"
+    "$(srcDirRoot)/Controller/Views/AnnotationView.h"
     "$(srcDirRoot)/Controller/Views/ColorCalibrationView/ColorCalibrationView.h"
     "$(srcDirRoot)/Controller/Views/ColorCalibrationView/RangeSelector.h"
     "$(srcDirRoot)/Controller/Views/ColorCalibrationView/ThresholdSelector.h"
@@ -37,23 +51,31 @@ Controller = cppStaticLibrary + {
     "$(srcDirRoot)/Controller/Views/DataView/PropertyEditorFactory.h"
     "$(srcDirRoot)/Controller/Views/DataView/PropertyManager.h"
     "$(srcDirRoot)/Controller/Views/DotView.h"
+    "$(srcDirRoot)/Controller/Views/Statistics/StatisticRobotView.h"
+    "$(srcDirRoot)/Controller/Views/Statistics/StatisticsPlotView.h"
     "$(srcDirRoot)/Controller/Views/ImageView.h"
     "$(srcDirRoot)/Controller/Views/JointView.h"
     "$(srcDirRoot)/Controller/Views/KickView/KickView.h"
     "$(srcDirRoot)/Controller/Views/KickView/KickViewGLWidget.h"
     "$(srcDirRoot)/Controller/Views/KickView/KickViewWidget.h"
     "$(srcDirRoot)/Controller/Views/KickView/TabWidget.h"
-    "$(srcDirRoot)/Controller/Views/LogPlayerControlView/LogPlayerControlWidget.h"
+    "$(srcDirRoot)/Controller/Views/LogPlayerControlView.h"
     "$(srcDirRoot)/Controller/Views/PlotView.h"
     "$(srcDirRoot)/Controller/Views/SensorView.h"
-    "$(srcDirRoot)/Controller/Views/TimeView/TimeWidget.h"
-    "$(srcDirRoot)/Controller/Views/SnapshotView/SnapshotWidget.h"
+    "$(srcDirRoot)/Controller/Views/TimeView.h"
   }
   files += qtFiles
 
   defines += {
     "QXT_STATIC"
     "TARGET_SIM"
+    "ASMJIT_EMBED"
+    "ASMJIT_BUILD_X86"
+    "ASMJIT_DISABLE_BUILDER"
+    "ASMJIT_DISABLE_COMPILER"
+    "ASMJIT_DISABLE_LOGGING"
+    "ASMJIT_DISABLE_TEXT"
+    "ASMJIT_DISABLE_VALIDATION"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
     }
@@ -64,7 +86,7 @@ Controller = cppStaticLibrary + {
 
   includePaths = {
     "$(srcDirRoot)"
-    "$(utilDirRoot)/Eigen"
+    "$(utilDirRoot)/SimRobot/Util/Eigen"
     "$(utilDirRoot)/SimRobot/Src/SimRobot"
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
@@ -73,6 +95,7 @@ Controller = cppStaticLibrary + {
     "$(utilDirRoot)/libqxt"
     "$(utilDirRoot)/qtpropertybrowser"
     "$(utilDirRoot)/snappy/include"
+    "$(utilDirRoot)/asmjit/src"
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
@@ -121,6 +144,6 @@ Controller = cppStaticLibrary + {
   visualizers = {
     "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
     "$(utilDirRoot)/Buildchain/Windows/Visualizers/qt5.natvis"
-    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
+    "$(utilDirRoot)/SimRobot/Util/Eigen/debug/msvc/eigen.natvis"
   }
 }

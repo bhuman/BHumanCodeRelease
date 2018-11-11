@@ -61,8 +61,8 @@ bool CoreModule::compile()
     StepsLabel() : lastStep(-1) {}
   private:
     unsigned int lastStep;
-    virtual QWidget* getWidget() {return this;}
-    virtual void update()
+    QWidget* getWidget() override {return this;}
+    void update() override
     {
       unsigned int step = Simulation::simulation->simulationStep;
       if(step != lastStep)
@@ -81,8 +81,8 @@ bool CoreModule::compile()
     StepsPerSecondLabel() : lastFps(-1) {}
   private:
     int lastFps;
-    virtual QWidget* getWidget() {return this;}
-    virtual void update()
+    QWidget* getWidget() override {return this;}
+    void update() override
     {
       int fps = Simulation::simulation->currentFrameRate;
       if(fps != lastFps)
@@ -101,8 +101,8 @@ bool CoreModule::compile()
     CollisionsLabel() : lastCols(-1) {}
   private:
     int lastCols;
-    virtual QWidget* getWidget() {return this;}
-    virtual void update()
+    QWidget* getWidget() override {return this;}
+    void update() override
     {
       int cols = Simulation::simulation->collisions;
       if(cols != lastCols)
@@ -121,8 +121,8 @@ bool CoreModule::compile()
     RendererLabel() : lastRenderingMethod(-1) {}
   private:
     int lastRenderingMethod;
-    virtual QWidget* getWidget() {return this;}
-    virtual void update()
+    QWidget* getWidget() override {return this;}
+    void update() override
     {
       int renderingMethod = Simulation::simulation->renderer.getRenderingMethod();
       if(renderingMethod != lastRenderingMethod)

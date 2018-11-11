@@ -32,16 +32,16 @@ SimRobotEditor = cppDynamicLibrary + {
       "$(qtinclude)/QtGui",
       "$(qtinclude)/QtWidgets",
     } else if (host == "Win32") {
-      "$(simRobotDir)/Util/qt/Windows/include",
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtWidgets",
-      "$(simRobotDir)/Util/qt/Windows/include/QtCore",
-      "$(simRobotDir)/Util/qt/Windows/include/QtGUI",
+      "$(utilDirRoot)/qt/Windows/include",
+      "$(utilDirRoot)/qt/Windows/include/QtWidgets",
+      "$(utilDirRoot)/qt/Windows/include/QtCore",
+      "$(utilDirRoot)/qt/Windows/include/QtGUI",
     }
   }
   
   libPaths = {
     if (host == "Win32") {
-      "$(simRobotDir)/Util/qt/Windows/lib"
+      "$(utilDirRoot)/qt/Windows/lib"
     }
   }
   

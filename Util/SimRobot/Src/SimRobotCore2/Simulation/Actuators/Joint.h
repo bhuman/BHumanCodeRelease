@@ -27,18 +27,15 @@ public:
   Joint() : axis(0), joint(0) {}
 
   /** Destructor */
-  virtual ~Joint();
+  ~Joint();
 
 private:
-  /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (in order to create a display list) */
-  virtual void assembleAppearances() const;
-
   /**
   * Draws physical primitives of the object (including children) on the currently selected OpenGL context
   * @param flags Flags to enable or disable certain features
   */
-  virtual void drawPhysics(unsigned int flags) const;
+  void drawPhysics(unsigned int flags) const override;
 
   /** Registers this object with children, actuators and sensors at SimRobot's GUI */
-  virtual void registerObjects();
+  void registerObjects() override;
 };

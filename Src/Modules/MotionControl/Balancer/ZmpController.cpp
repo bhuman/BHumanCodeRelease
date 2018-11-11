@@ -1,5 +1,6 @@
 #include "ZmpController.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Motion/OptimalControl.h"
 
 bool ZmpControllerParameters::operator==(const ZmpControllerParameters& other) const
 {
@@ -57,7 +58,7 @@ Vector3f ZmpController::control(const Vector3f& inputState, const VectorXf& Zmps
 
   if(operational)
   {
-    const float error = C * inputState - Zmps(0);
+    const float error = C* inputState - Zmps(0);
 
     if(params.useIntegrator)
       integrationError = integrationError + error; //integrationError * 0.5f + error;
@@ -66,7 +67,7 @@ Vector3f ZmpController::control(const Vector3f& inputState, const VectorXf& Zmps
 
     const float u = -(GI * integrationError) - (Gx* inputState) - (Gd* Zmps);
 
-    return A * inputState + B * u;
+    return A* inputState + B* u;
   }
   else
     return Vector3f::Zero();
@@ -77,15 +78,15 @@ void ZmpController::calculateGains()
   DECLARE_PLOT("module:ZmpWalkingEngine:ZmpController:previewGains");
   ASSERT(params.numOfZmpPreviews > 0);
 
-  const Vector4f B = (Vector4f() << this->C * this->B, this->B).finished();
+  const Vector4f B = (Vector4f() << this->C* this->B, this->B).finished();
   const Vector4f I = Vector4f::Identity();
-  const Matrix4x3f F = (Matrix4x3f() << this->C * this->A, this->A).finished();
+  const Matrix4x3f F = (Matrix4x3f() << this->C* this->A, this->A).finished();
   const Matrix4f A = (Matrix4f() << I, F).finished();
   const Matrix4f Q = (Matrix4f() << params.Qe, RowVector3f::Zero(),
                       Vector3f::Zero(), Matrix3f(params.Qx.asDiagonal())).finished();
 
   Matrix4f K;
-  operational = dare(A, B, Q, params.R, K);
+  operational = OptimalControl::dare<4, 1>(A, B, Q, Eigen::Matrix<float, 1, 1>(params.R), K);
   if(operational)
   {
     const RowVector4f Bt = B.transpose();
@@ -95,8 +96,8 @@ void ZmpController::calculateGains()
     GI = rBtKBinv * BtK* I;
     Gx = rBtKBinv * BtK* F;
 
-    const Matrix4f Act = (A - B * rBtKBinv * BtK* A).transpose();
-    const Vector4f KI = K * I;
+    const Matrix4f Act = (A - B* rBtKBinv * BtK* A).transpose();
+    const Vector4f KI = K* I;
 
     Gd.resize(params.numOfZmpPreviews);
     Gd(0) = 0.f;
@@ -119,26 +120,6 @@ void ZmpController::calculateGains()
   {
     PLOT("module:ZmpWalkingEngine:ZmpController:previewGains", Gd(i));
   }
-}
-
-bool ZmpController::dare(const Matrix4f& A, const Vector4f& B, const Matrix4f& Q, float R, Matrix4f& K) const
-{
-  K = Q;
-  const Matrix4f At = A.transpose();
-  const RowVector4f Bt = B.transpose();
-  for(int i = 0; i < 50000; ++i)
-  {
-    const Matrix4f AtK = At* K;
-    const RowVector4f BtK = Bt* K;
-    const Matrix4f Knew = AtK* A - AtK* B * (1.f / (R + BtK* B)) * BtK* A + Q;
-    const float relError = (Knew - K).norm() / Knew.norm();
-    K = Knew;
-    if(!std::isfinite(relError))
-      return false;
-    else if(relError < 1e-08f)
-      return true;
-  }
-  return false;
 }
 
 void ZmpController::plot() const

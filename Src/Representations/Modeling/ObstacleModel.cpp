@@ -1,4 +1,5 @@
 #include "ObstacleModel.h"
+#include "Platform/SystemCall.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -8,82 +9,23 @@
 #include "Tools/Modeling/Obstacle.h"
 #include "Tools/Module/Blackboard.h"
 
-void ObstacleModel::operator >> (BHumanMessage& m) const
+void ObstacleModel::operator>>(BHumanMessage& m) const
 {
-  static_assert(BHULKS_STANDARD_MESSAGE_STRUCT_VERSION == 8, "This method is not adjusted for the current message version");
-
-  m.theBHULKsStandardMessage.obstacles.clear();
-
   std::sort(const_cast<std::vector<Obstacle>&>(obstacles).begin(), const_cast<std::vector<Obstacle>&>(obstacles).end(), [](const Obstacle& a, const Obstacle& b) {return a.center.squaredNorm() < b.center.squaredNorm(); });
 
-  const int numOfObstacle = std::min(BHULKS_STANDARD_MESSAGE_MAX_NUM_OF_OBSTACLES, static_cast<int>(obstacles.size()));
-  for(int i = 0; i < numOfObstacle; ++i)
-  {
-    const Obstacle& o = obstacles[i];
-    B_HULKs::Obstacle bhObstacle;
-
-    bhObstacle.center[0] = o.center.x();
-    bhObstacle.center[1] = o.center.y();
-    bhObstacle.timestampLastSeen = o.lastSeen;
-    bhObstacle.type = B_HULKs::ObstacleType(o.type);
-
-    m.theBHULKsStandardMessage.obstacles.emplace_back(bhObstacle);
-    m.theBHumanArbitraryMessage.queue.out.bin << o.covariance(0, 0);
-    m.theBHumanArbitraryMessage.queue.out.bin << o.covariance(0, 1);
-    m.theBHumanArbitraryMessage.queue.out.bin << o.covariance(1, 1);
-    m.theBHumanArbitraryMessage.queue.out.bin << o.left;
-    m.theBHumanArbitraryMessage.queue.out.bin << o.right;
-  }
-
-  if(!obstacles.empty())
-    m.theBHumanArbitraryMessage.queue.out.finishMessage(id());
+  const int numOfObstacles = std::min(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_OBSTACLES, static_cast<int>(obstacles.size()));
+  m.theBHumanStandardMessage.obstacles.resize(numOfObstacles);
+  for(int i = 0; i < numOfObstacles; ++i)
+    m.theBHumanStandardMessage.obstacles[i] = obstacles[i];
 }
 
-void ObstacleModel::operator << (const BHumanMessage& m)
+void ObstacleModel::operator<<(const BHumanMessage& m)
 {
   obstacles.clear();
+  if(!m.hasBHumanParts)
+    return;
 
-  OutBinarySize obstacleArbitrarySize;
-  {
-    Obstacle o;
-    obstacleArbitrarySize << o.covariance(0, 0);
-    obstacleArbitrarySize << o.covariance(0, 1);
-    obstacleArbitrarySize << o.covariance(1, 1);
-    obstacleArbitrarySize << o.left;
-    obstacleArbitrarySize << o.right;
-  }
-
-  for(const B_HULKs::Obstacle& bhObstacle : m.theBHULKsStandardMessage.obstacles)
-  {
-    obstacles.emplace_back();
-    Obstacle& o = obstacles.back();
-    o.center.x() = bhObstacle.center[0];
-    o.center.y() = bhObstacle.center[1];
-    o.lastSeen = m.toLocalTimestamp(bhObstacle.timestampLastSeen);
-    o.type = Obstacle::Type(bhObstacle.type);
-
-    //Fill with default (if we get arbitrary part, it will overwrite later)
-    o.covariance << 1000.f, 0.f, 0.f, 1000.f;
-    o.setLeftRight(Obstacle::getRobotDepth());
-  }
-}
-
-bool ObstacleModel::handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp)
-{
-  ASSERT(m.getMessageID() == id());
-  for(Obstacle& o : obstacles)
-  {
-    float covXX, covXY, covYY;
-    m.bin >> covXX;
-    m.bin >> covXY;
-    m.bin >> covYY;
-    o.covariance << covXX, covXY, covXY, covYY;
-
-    m.bin >> o.left;
-    m.bin >> o.right;
-  }
-
-  return true;
+  obstacles = m.theBHumanStandardMessage.obstacles;
 }
 
 void ObstacleModel::verify() const
@@ -103,7 +45,7 @@ void ObstacleModel::verify() const
     ASSERT(std::isfinite(obstacle.velocity.x()));
     ASSERT(std::isfinite(obstacle.velocity.y()));
 
-    //ASSERT((obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
+    ASSERT(SystemCall::getMode() == SystemCall::physicalRobot || (obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
 
     ASSERT(std::isnormal(obstacle.covariance(0, 0)));
     ASSERT(std::isnormal(obstacle.covariance(1, 1)));
@@ -126,19 +68,11 @@ void ObstacleModel::draw() const
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:fallen", "drawingOnField");
   DECLARE_DEBUG_DRAWING3D("representation:ObstacleModel", "robot");
 
-  static const ColorRGBA colors[] =
-  {
-    ColorRGBA::blue,
-    ColorRGBA::red,
-    ColorRGBA::yellow,
-    ColorRGBA::black
-  };
+  const ColorRGBA ownColor = ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OwnTeamInfo") ?
+      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK);
 
-  const ColorRGBA ownColor = colors[Blackboard::getInstance().exists("OwnTeamInfo") ?
-      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK];
-
-  const ColorRGBA opponentColor = colors[Blackboard::getInstance().exists("OpponentTeamInfo") ?
-      static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]).teamColor : TEAM_RED];
+  const ColorRGBA opponentColor = ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OpponentTeamInfo") ?
+      static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]).teamColor : TEAM_RED);
 
   ColorRGBA color;
   for(const auto& obstacle : obstacles)
@@ -165,7 +99,7 @@ void ObstacleModel::draw() const
       case Obstacle::fallenSomeRobot:
       case Obstacle::someRobot:
       {
-        color = ColorRGBA::orange;
+        color = ColorRGBA(200,200,200);
         break;
       }
       default:
@@ -190,7 +124,7 @@ void ObstacleModel::draw() const
     LINE("representation:ObstacleModel:leftRight", center.x(), center.y(), left.x(), left.y(), 20, Drawings::dottedPen, color);
     LINE("representation:ObstacleModel:leftRight", center.x(), center.y(), right.x(), right.y(), 20, Drawings::dottedPen, color);
     CIRCLE("representation:ObstacleModel:circle", center.x(), center.y(), obstacleRadius, 10, Drawings::dottedPen, color, Drawings::noBrush, color);
-    COVARIANCE2D("representation:ObstacleModel:covariance", obstacle.covariance, center);
+    COVARIANCE_ELLIPSES_2D("representation:ObstacleModel:covariance", obstacle.covariance, center);
 
     if(obstacle.velocity.squaredNorm() > 0)
       ARROW("representation:ObstacleModel:velocity", center.x(), center.y(),
@@ -199,22 +133,6 @@ void ObstacleModel::draw() const
     if(obstacle.type >= Obstacle::fallenSomeRobot)
     {
       DRAWTEXT("representation:ObstacleModel:fallen", center.x(), center.y(), 100, color, "FALLEN");
-    }
-
-    // draw orientation
-    if(obstacle.detectedOrientation == 2)
-    {
-      float x = std::cos(obstacle.orientation) * obstacleRadius;
-      float y = std::sin(obstacle.orientation) * obstacleRadius;
-
-      LINE("representation:ObstacleModel:orientation", obstacle.center.x() + x, obstacle.center.y() + y, obstacle.center.x(), obstacle.center.y(), 10, Drawings::solidPen, ColorRGBA::gray);
-    }
-    else if(obstacle.detectedOrientation == 1)
-    {
-      float x = std::cos(obstacle.orientation) * obstacleRadius;
-      float y = std::sin(obstacle.orientation) * obstacleRadius;
-
-      LINE("representation:ObstacleModel:orientation", obstacle.center.x() + x, obstacle.center.y() + y, obstacle.center.x() - x, obstacle.center.y() - y, 10, Drawings::solidPen, ColorRGBA::gray);
     }
   }
 }

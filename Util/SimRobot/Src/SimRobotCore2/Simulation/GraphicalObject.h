@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include <list>
+#include "Simulation/SimObject.h"
 
 /**
 * @class GraphicalObject
 * Abstract class for scene graph objects with graphical representation or subordinate graphical representation
 */
+enum SurfaceColor : unsigned char;
 class GraphicalObject
 {
 public:
@@ -28,10 +29,10 @@ public:
   virtual void createGraphics();
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (in order to create a display list) */
-  virtual void assembleAppearances() const;
+  virtual void assembleAppearances(SurfaceColor color) const;
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (as fast as possible) */
-  virtual void drawAppearances() const;
+  virtual void drawAppearances(SurfaceColor color, bool drawControllerDrawings) const;
 
 protected:
   unsigned int initializedContexts;
@@ -42,6 +43,11 @@ protected:
   */
   virtual void addParent(Element& element);
 
+  // API
+  virtual bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing);
+  virtual bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing);
+
 private:
   unsigned int listId; /**< The display list created for this object */
+  std::list<SimRobotCore2::Controller3DDrawing*> controllerDrawings; /**< Drawings registered by another SimRobot module */
 };

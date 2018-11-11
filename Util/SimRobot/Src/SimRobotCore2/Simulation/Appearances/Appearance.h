@@ -11,6 +11,28 @@
 
 class Texture;
 
+enum SurfaceColor : unsigned char
+{
+  ownColor,
+  red,
+  blue,
+  green,
+  yellow,
+  brown,
+  pink,
+  purple,
+  navy,
+  blueviolet,
+  deepskyblue,
+  olive,
+  lime,
+  lightseagreen,
+  chocolate,
+  orange,
+  darkorange,
+  numOfSurfaceColors //<-- this has to be last
+};
+
 /**
 * @class Appearance
 * Abstract class for the graphical representation of physical objects
@@ -21,6 +43,7 @@ public:
   class Surface : public Element
   {
   public:
+
     float diffuseColor[4];
     bool hasAmbientColor;
     float ambientColor[4];
@@ -28,7 +51,7 @@ public:
     float emissionColor[4];
     float shininess;
     std::string diffuseTexture;
-    Texture* texture;
+    Texture* texture = nullptr;
 
     /** Constructor */
     Surface();
@@ -37,7 +60,7 @@ public:
     * Selects this material surface in the currently selected OpenGL context.
     * @param defaultTextureSize Initialize a default texture size if the surface has a texture.
     */
-    void set(bool defaultTextureSize = true) const;
+    void set(SurfaceColor color = ownColor, bool defaultTextureSize = true) const;
 
     /**
     * Unbinds a texture that might be bound on a \c set call before. Call function this every time
@@ -52,7 +75,7 @@ public:
     * Registers an element as parent
     * @param element The element to register
     */
-    virtual void addParent(Element& element);
+    void addParent(Element& element) override;
   };
 
   Surface* surface; /**< The visual material of the object */
@@ -66,21 +89,26 @@ protected:
   * Loads textures and creates display lists. Hence, this function is called for each OpenGL
   * context the object should be drawn in.
   */
-  virtual void createGraphics();
+  void createGraphics() override;
+
+  /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (as fast as possible) */
+  void drawAppearances(SurfaceColor color, bool drawControllerDrawings) const override;
 
 private:
   /**
   * Registers an element as parent
   * @param element The element to register
   */
-  virtual void addParent(Element& element);
+  void addParent(Element& element) override;
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (in order to create a display list) */
-  virtual void assembleAppearances() const;
+  void assembleAppearances(SurfaceColor color) const override;
 
   //API
-  virtual const QString& getFullName() const {return SimObject::getFullName();}
-  virtual SimRobot::Widget* createWidget() {return SimObject::createWidget();}
-  virtual const QIcon* getIcon() const;
-  virtual SimRobotCore2::Renderer* createRenderer() {return SimObject::createRenderer();}
+  const QString& getFullName() const override {return SimObject::getFullName();}
+  SimRobot::Widget* createWidget() override {return SimObject::createWidget();}
+  const QIcon* getIcon() const override;
+  SimRobotCore2::Renderer* createRenderer() override {return SimObject::createRenderer();}
+  bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::GraphicalObject::registerDrawing(drawing);}
+  bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::GraphicalObject::unregisterDrawing(drawing);}
 };

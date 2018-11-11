@@ -37,11 +37,15 @@ STREAMABLE(CameraInfo,
   float focalLength;
   float focalLengthInv; // (1/focalLength) used to speed up certain calculations
   float focalLenPow2;
+  float focalLengthHeight;
+  float focalLengthHeightInv;
 
   CameraInfo() = default;
   CameraInfo(Camera camera) : camera(camera) {}
 
   void updateFocalLength();
+
+  void draw() const;
 
   void onRead() { updateFocalLength(); },
 

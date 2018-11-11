@@ -27,28 +27,6 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
 
   for(const SpotLine& line : theLinesPercept.lines)
   {
-    if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
-    {
-      if(std::abs(std::abs((theRobotPose * line.firstField - theRobotPose * line.lastField).angle()) - 90_deg) > 30_deg
-         && (std::abs((theRobotPose * line.firstField).y()) < theFieldDimensions.yPosLeftPenaltyArea - 150
-             || std::abs((theRobotPose * line.lastField).y()) < theFieldDimensions.yPosLeftPenaltyArea - 150))
-      {
-        spotLineUsage.push_back(thrown);
-        lineIndexTable.push_back(lostIndex);
-        continue;
-      }
-
-      const Vector2f corner1(theFieldDimensions.xPosOpponentFieldBorder, theFieldDimensions.yPosLeftFieldBorder - 200);
-      const Vector2f corner2(theFieldDimensions.xPosPenaltyStrikerStartPosition / 2, theFieldDimensions.yPosRightFieldBorder - 200);
-      if(!Geometry::isPointInsideRectangle2(corner1, corner2, theRobotPose * line.firstField)
-         || !Geometry::isPointInsideRectangle2(corner1, corner2, theRobotPose * line.lastField))
-      {
-        spotLineUsage.push_back(thrown);
-        lineIndexTable.push_back(lostIndex);
-        continue;
-      }
-    }
-
     if(line.belongsToCircle)
     {
       //FieldLines should not contain lines that are on the circle

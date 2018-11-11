@@ -99,7 +99,7 @@ public:
   DebugDrawing3D(const DebugDrawing3D* pDebugDrawing3D);
 
   /** draw the elements of this drawing. */
-  virtual void draw();
+  void draw() override;
   void draw2();
 
   /** The function empties the drawing. */

@@ -8,30 +8,30 @@
 
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Modeling/WorldModelPrediction.h"
+#include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Perception/BallPercepts/ConfirmedBallSpot.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
-#include "Representations/Perception/PlayersPercepts/PlayersImagePercept.h"
 #include "Tools/Module/Module.h"
 
 MODULE(CNSRegionsProvider,
 {,
   REQUIRES(BallSpecification),
+  REQUIRES(ConfirmedBallSpot),
   REQUIRES(BallSpots),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(CNSPenaltyMarkRegions),
   REQUIRES(BallRegions),
-  REQUIRES(WorldModelPrediction),
-  REQUIRES(PlayersImagePercept),
+  REQUIRES(FrameInfo),
   PROVIDES(BallRegions),
   PROVIDES(CNSRegions),
   LOADS_PARAMETERS(
   {,
     (bool) dontUseUpperImageButWholeLower, /** Will set one big region over the whole image if it is the lower, else zero regions are produced */
+    (bool) useBallRegionsForCNSRegions, /** Ball regions will be part of the CNS regions (they are provided in any case). */
     (bool) usePrediction, /**< Include block around predicted ball position. */
-    (bool) playersFeet, /**< Create CNS-Regions at players feet */
     (float) sizeFactor, /**< Factor to increase search space around ball spot radius. */
     (float) predictedFactor, /**< Factor to increase search space around the predicted ball position. */
     (int) blockSizeX, /**< Horizontal block size. Must be a multiple of 16. */
@@ -51,11 +51,8 @@ class CNSRegionsProvider : public CNSRegionsProviderBase
   char searchGrid[32][42];
   std::vector<Vector2i> stack; /**< The stack used by the flood fill algorithm to group blocks. */
 
-  void update(BallRegions& ballRegions);
-  void update(CNSRegions& cnsRegions);
-
-  /** Adds the regions occupied by assumed player feet to the search grid. */
-  void addPlayersFeetRegions();
+  void update(BallRegions& ballRegions) override;
+  void update(CNSRegions& cnsRegions) override;
 
   /**
    * Determines the size of connected region in the search grid.

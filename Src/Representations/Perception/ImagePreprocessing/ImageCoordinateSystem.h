@@ -9,6 +9,8 @@
 
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/Image.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/ImageProcessing/TImage.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
@@ -17,32 +19,13 @@
  * @struct ImageCoordinateSystem
  * A struct that provides transformations on image coordinates.
  */
-STREAMABLE(ImageCoordinateSystem,  // TODO: "Conditional jump or move depends on uninitialised value(s)"
+STREAMABLE(ImageCoordinateSystem,
 {
-private:
-  CameraInfo cameraInfo;
-  bool cameraInfoInitialized = false;
-  int* xTable = nullptr;
-  int* yTable = nullptr;
-  int table[6144];
-
 public:
-  ~ImageCoordinateSystem();
-
-  void setCameraInfo(const CameraInfo& cameraInfo);
+  CameraInfo cameraInfo; /**< A copy of the camera information that is required for the methods to work. Isn't logged. */
 
   /**
-   * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
-   * @param imageCoords The point in image coordinates.
-   * @return The point in horizon-aligned coordinates.
-   */
-  //Vector2f toHorizonAligned(const Vector2i& imageCoords) const
-  //{
-  //  return invRotation * imageCoords.cast<float>();
-  //}
-
-  /**
-   * Converts image coordintates into coordinates in the horizon-aligned coordinate system.
+   * Converts image coordinates into coordinates in the horizon-aligned coordinate system.
    * @param imageCoords The point in image coordinates.
    * @return The point in horizon-aligned coordinates.
    */
@@ -62,17 +45,6 @@ public:
     const Vector2f result = rotation * horizonAlignedCoords;
     return result.cast<int>();
   }
-
-  /**
-   * Converts image coordintates into coordinates in the horizon-based coordinate system,
-   * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
-   * @param imageCoords The point in image coordinates.
-   * @return The point in horizon-based coordinates.
-   */
-  //Vector2f toHorizonBased(const Vector2i& imageCoords) const
-  //{
-  //  return invRotation * (imageCoords.cast<float>() -origin);
-  //}
 
   /**
    * Converts image coordintates into coordinates in the horizon-based coordinate system,
@@ -108,26 +80,9 @@ public:
   {
     const float factor = a + imageCoords.y() * b;
     return Vector2f(cameraInfo.opticalCenter.x() - std::tan(std::atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength,
-                    cameraInfo.opticalCenter.y() + std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) - factor * offset.y()) * cameraInfo.focalLength);
+                    cameraInfo.opticalCenter.y() + std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLengthHeight) - factor * offset.y()) * cameraInfo.focalLengthHeight);
   }
 
-  /**
-   * This is simply the inverse version of the function "toCorrected".
-   *
-   * Also just approximated too, if imageCoords.y() != result.y(), because "factor" has to be calculated with result.y() for exact result.
-   *
-   * Used by UnionPlayersPerceptor.
-   *
-   * @param imageCoords The point in image coordinates.
-   * @return The corrected point (inverse).
-   */
-
-  Vector2f toCorrectedInverse(const Vector2f imageCoords) const
-  {
-    const float factor = a + imageCoords.y() * b;
-    return Vector2f(-(std::tan(-std::atan((imageCoords.x() - cameraInfo.opticalCenter.x()) / cameraInfo.focalLength) + factor * offset.x()) * cameraInfo.focalLength - cameraInfo.opticalCenter.x()),
-                    std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength) + factor * offset.y()) * cameraInfo.focalLength + cameraInfo.opticalCenter.y());
-  }
   /**
    * Corrects image coordinates so that the distortion resulting from the rolling
    * shutter is compensated.
@@ -141,112 +96,22 @@ public:
   }
 
   /**
-   * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
+   * Inverse of toCorrected.
+   *
+   * @param correctedCoords The corrected point in image coordinates.
+   * @return The original point.
    */
-  Vector2f fromCorrectedApprox(const Vector2f& coords) const
-  {
-    // This function may be called in BodyContourProvider:add() before theImageCordinateSystem has been
-    // initialized properly. If that happens, we simply keep the original vector, which appears to be less
-    // destructive than dropping all calculations and shuts up valgrind.
-    // TODO: Perform initialization earlier
-    if(!cameraInfoInitialized)
-      return coords;
-
-    float factor = a + cameraInfo.height / 2 * b;
-    Vector2f v(factor * offset.x() - std::atan((coords.x() - cameraInfo.opticalCenter.x()) / cameraInfo.focalLength),
-               factor * offset.y() + std::atan((coords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLength));
-    const float EPSILON = 0.1f;
-    if(v.x() < -pi_2 + EPSILON)
-      v.x() = -pi_2 + EPSILON;
-    else if(v.x() > pi_2 - EPSILON)
-      v.x() = pi_2 - EPSILON;
-
-    if(v.y() < -pi_2 + EPSILON)
-      v.y() = -pi_2 + EPSILON;
-    else if(v.y() > pi_2 - EPSILON)
-      v.y() = pi_2 - EPSILON;
-
-    return Vector2f(cameraInfo.opticalCenter.x() - std::tan(v.x()) * cameraInfo.focalLength,
-                    cameraInfo.opticalCenter.y() + std::tan(v.y()) * cameraInfo.focalLength);
-  }
+  Vector2f fromCorrected(const Vector2f& correctedCoords) const;
 
   /**
-   * "Incorrects" image coordinates so that the result contains an approximation of distortion from the rolling shutter.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
+   * Inverse of toCorrected.
+   *
+   * @param correctedCoords The corrected point in image coordinates.
+   * @return The original point.
    */
-  Vector2f fromCorrectedApprox(const Vector2i& coords) const
+  Vector2f fromCorrected(const Vector2i& correctedCoords) const
   {
-    return fromCorrectedApprox(Vector2f(coords.cast<float>()));
-  }
-
-  /**
-   * "Incorrects" image coordinates using a linearized version of the motion distortion model.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
-   */
-  Vector2f fromCorrectedLinearized(const Vector2f& coords) const
-  {
-    const float temp1 = cameraInfo.focalLength * offset.y();
-    const float temp2 = 1.0f / (1.0f - temp1 * b);
-    return Vector2f(coords.x() - cameraInfo.focalLength * offset.x() * (a + coords.y() * b) * temp2, (coords.y() + temp1 * a) * temp2);
-  }
-
-  /**
-   * "Incorrects" image coordinates using a linearized version of the motion distortion model.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
-   */
-  Vector2f fromCorrectedLinearized(const Vector2i& coords) const
-  {
-    return fromCorrectedLinearized(Vector2f(coords.cast<float>()));
-  }
-
-  /**
-   * Corrects image coordinates using a linearized version of the motion distortion model.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
-   */
-  Vector2f toCorrectedLinearized(const Vector2f& coords) const
-  {
-    const float temp = cameraInfo.focalLength * (a + coords.y() * b);
-    return Vector2f(coords.x() + temp * offset.x(), coords.y() - temp * offset.y());
-  }
-
-  /**
-   * Corrects image coordinates using a linearized version of the motion distortion model.
-   * @param coords The point in corrected image coordinates.
-   * @return The incorrected point.
-   */
-  //Vector2f toCorrectedLinearized(const Vector2i& coords) const
-  //{
-  //  return toCorrectedLinearized(Vector2f(coords.cast<float>()));
-  //}
-
-  /**
-   * Corrects image coordinates so that the distortion resulting from the rolling
-   * shutter is compensated.
-   * No clipping is done.
-   * @param x The x coordinate of the point in image coordinates.
-   * @param y The y coordinate of the point in image coordinates.
-   * @return The corrected point relative to the image center with negated signs.
-   */
-  Vector2i toCorrectedCenteredNeg(int x, int y) const
-  {
-    const float factor = a + y * b;
-    x = xTable[x * Image::maxResolutionWidth / cameraInfo.width] - int(factor * offset.x());
-    y = yTable[y * Image::maxResolutionHeight / cameraInfo.height] - int(factor * offset.y());
-    if(x < -3072)
-      x = -3072;
-    else if(x > 3071)
-      x = 3071;
-    if(y < -3072)
-      y = -3072;
-    else if(y > 3071)
-      y = 3071;
-    return Vector2i(table[x + 3072], -table[y + 3072]) * cameraInfo.width / Image::maxResolutionWidth;
+    return fromCorrected(Vector2f(correctedCoords.cast<float>()));
   }
 
   /**

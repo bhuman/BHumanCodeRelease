@@ -51,8 +51,8 @@ void DepthImageSensor::createPhysics()
 
     //Compute new resolution of rendering buffer
     float maxAngle(sensor.renderAngleX / 2.0f);
-    float minPixelWidth(tanf(maxAngle/(float(sensor.bufferWidth) / 2.0f)));
-    float totalWidth(tanf(maxAngle));
+    float minPixelWidth(std::tan(maxAngle/(float(sensor.bufferWidth) / 2.0f)));
+    float totalWidth(std::tan(maxAngle));
     float newXRes(totalWidth / minPixelWidth);
     sensor.renderWidth = (unsigned int) ceil(newXRes) * 2;
     sensor.renderBuffer = new float[sensor.renderWidth];
@@ -61,10 +61,10 @@ void DepthImageSensor::createPhysics()
     float firstAngle(-maxAngle);
     float step(maxAngle / ((float) sensor.bufferWidth / 2.0f));
     float currentAngle(firstAngle);
-    float gToPixelFactor(newXRes / tanf(maxAngle));
+    float gToPixelFactor(newXRes / std::tan(maxAngle));
     for(unsigned int i = 0; i < sensor.bufferWidth; ++i)
     {
-      float g(tanf(currentAngle));
+      float g(std::tan(currentAngle));
       g *= gToPixelFactor;
       int gPixel((int) g + (int) sensor.renderWidth / 2);
       sensor.lut[i] = &sensor.renderBuffer[gPixel];
@@ -95,7 +95,7 @@ void DepthImageSensor::createPhysics()
   sensor.max = max;
 
   const float zNear = std::max(min, 0.001f); // at least 1mm since zNear must not be zero
-  float aspect = tanf(sensor.renderAngleX * 0.5f) / tanf(angleY * 0.5f);
+  float aspect = std::tan(sensor.renderAngleX * 0.5f) / std::tan(angleY * 0.5f);
   OpenGLTools::computePerspective(angleY, aspect, zNear, max, sensor.projection);
 }
 
@@ -136,18 +136,18 @@ void DepthImageSensor::DistanceSensor::updateValue()
   glShadeModel(GL_FLAT);
 
   // setup camera position
-  Pose3<> pose = physicalObject->pose;
+  Pose3f pose = physicalObject->pose;
   pose.conc(offset);
-  static const Matrix3x3<> cameraRotation(Vector3<>(0.f, -1.f, 0.f), Vector3<>(0.f, 0.f, 1.f), Vector3<>(-1.f, 0.f, 0.f));
+  static const RotationMatrix cameraRotation = (Matrix3f() << Vector3f(0.f, -1.f, 0.f), Vector3f(0.f, 0.f, 1.f), Vector3f(-1.f, 0.f, 0.f)).finished();
   pose.rotate(cameraRotation);
-  pose.rotate(Matrix3x3<>(Vector3<>(0, (depthImageSensor->angleX - renderAngleX) / 2.0f, 0)));
+  pose.rotate(RotationMatrix::aroundY((depthImageSensor->angleX - renderAngleX) / 2.0f));
 
   float* val = imageBuffer;
   unsigned int widthLeft = depthImageSensor->imageWidth;
   for(unsigned int i = 0; i < numOfBuffers; ++i)
   {
     float transformation[16];
-    OpenGLTools::convertTransformation(pose.invert(), transformation);
+    OpenGLTools::convertTransformation(pose.inverse(), transformation);
     glLoadMatrixf(transformation);
 
     // disable color rendering
@@ -155,7 +155,7 @@ void DepthImageSensor::DistanceSensor::updateValue()
 
     // draw all objects
     glClear(GL_DEPTH_BUFFER_BIT);
-    Simulation::simulation->scene->drawAppearances();
+    Simulation::simulation->scene->drawAppearances(SurfaceColor(0), false);
 
     // enable color rendering again
     glColorMask(1, 1, 1, 1);
@@ -183,10 +183,10 @@ void DepthImageSensor::DistanceSensor::updateValue()
       for(unsigned int i = 0; i < end; ++i)
       {
         const float vx = (lut[i] - mid) * factor;
-        *val++ = std::min<float>(halfP34 / (*lut[i] + halfP33m1) * sqrtf(1.f + vx * vx * fInvSqr), max);
+        *val++ = std::min<float>(halfP34 / (*lut[i] + halfP33m1) * std::sqrt(1.f + vx * vx * fInvSqr), max);
       }
       widthLeft -= end;
-      pose.rotate(Matrix3x3<>(Vector3<>(0, -renderAngleX, 0)));
+      pose.rotate(RotationMatrix::aroundY(-renderAngleX));
     }
   }
 }
@@ -205,16 +205,16 @@ void DepthImageSensor::drawPhysics(unsigned int flags) const
 
   if(flags & SimRobotCore2::Renderer::showSensors)
   {
-    Vector3<> ml;
+    Vector3f ml;
     if(projection == perspectiveProjection)
-      ml = Vector3<> (max, -tanf(angleX * 0.5f) * max, 0);
+      ml = Vector3f(max, -std::tan(angleX * 0.5f) * max, 0);
     else
-      ml = Vector3<>(cosf(angleX * 0.5f) * max, -sinf(angleX * 0.5f) * max, 0);
-    Vector3<> mt(ml.x, 0, tanf(angleY * 0.5f) * max);
-    Vector3<> tl(ml.x, ml.y, mt.z);
-    Vector3<> tr(ml.x, -ml.y, mt.z);
-    Vector3<> bl(ml.x, ml.y, -mt.z);
-    Vector3<> br(ml.x, -ml.y, -mt.z);
+      ml = Vector3f(std::cos(angleX * 0.5f) * max, -std::sin(angleX * 0.5f) * max, 0);
+    Vector3f mt(ml.x(), 0, std::tan(angleY * 0.5f) * max);
+    Vector3f tl(ml.x(), ml.y(), mt.z());
+    Vector3f tr(ml.x(), -ml.y(), mt.z());
+    Vector3f bl(ml.x(), ml.y(), -mt.z());
+    Vector3f br(ml.x(), -ml.y(), -mt.z());
 
     glBegin(GL_LINE_LOOP);
       glColor3f(0, 0, 0.5f);
@@ -223,44 +223,44 @@ void DepthImageSensor::drawPhysics(unsigned int flags) const
       unsigned segments = int(18 * angleX / M_PI);
       if(projection == perspectiveProjection && segments > 0)
       {
-        glVertex3f(tl.x, tl.y, tl.z);
-        glVertex3f(tr.x, tr.y, tr.z);
-        glVertex3f(br.x, br.y, br.z);
+        glVertex3f(tl.x(), tl.y(), tl.z());
+        glVertex3f(tr.x(), tr.y(), tr.z());
+        glVertex3f(br.x(), br.y(), br.z());
       }
       else
       {
-        float rotX = cosf(angleX / float(segments));
-        float rotY = sinf(angleX / float(segments));
-        float x = tl.x;
-        float y = tl.y;
+        float rotX = std::cos(angleX / float(segments));
+        float rotY = std::sin(angleX / float(segments));
+        float x = tl.x();
+        float y = tl.y();
         for(unsigned int i = 0; i < segments; ++i)
         {
-          glVertex3f(x, y, tl.z);
+          glVertex3f(x, y, tl.z());
           float x2 = x * rotX - y * rotY;
           y = y * rotX + x * rotY;
           x = x2;
         }
-        glVertex3f(tr.x, tr.y, tr.z);
+        glVertex3f(tr.x(), tr.y(), tr.z());
         for(unsigned int i = 0; i < segments; ++i)
         {
-          glVertex3f(x, y, br.z);
+          glVertex3f(x, y, br.z());
           float x2 = x * rotX + y * rotY;
           y = y * rotX - x * rotY;
           x = x2;
         }
       }
 
-      glVertex3f(bl.x, bl.y, bl.z);
+      glVertex3f(bl.x(), bl.y(), bl.z());
     glEnd();
     glBegin(GL_LINE_STRIP);
-      glVertex3f(tl.x, tl.y, tl.z);
+      glVertex3f(tl.x(), tl.y(), tl.z());
       glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(tr.x, tr.y, tr.z);
+      glVertex3f(tr.x(), tr.y(), tr.z());
     glEnd();
     glBegin(GL_LINE_STRIP);
-      glVertex3f(bl.x, bl.y, bl.z);
+      glVertex3f(bl.x(), bl.y(), bl.z());
       glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(br.x, br.y, br.z);
+      glVertex3f(br.x(), br.y(), br.z());
     glEnd();
   }
 

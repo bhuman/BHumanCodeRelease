@@ -7,7 +7,7 @@
 #pragma once
 
 class QString;
-template <typename T> class QVector;
+template<typename T> class QVector;
 class QIcon;
 class QMenu;
 class QSettings;

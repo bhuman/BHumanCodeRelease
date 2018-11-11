@@ -1,5 +1,6 @@
 #include "InertialData.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Rotation.h"
 
 void InertialData::draw()
@@ -25,4 +26,10 @@ void InertialData::draw()
   PLOT("representation:InertialData:orientation3D:x", orientation3DVec.x().toDegrees());
   PLOT("representation:InertialData:orientation3D:y", orientation3DVec.y().toDegrees());
   PLOT("representation:InertialData:orientation3D:z", orientation3DVec.z().toDegrees());
+
+  DEBUG_DRAWING3D("representation:InertialData:down", "robot")
+  {
+    const Vector3f zRotated = orientation3D.inverse() * Vector3f(0.f, 0.f, -1000.f);
+    CYLINDERARROW3D("representation:InertialData:down", Vector3f::Zero(), zRotated, 5.f, 35.f, 35.f, ColorRGBA::blue);
+  }
 }

@@ -8,13 +8,11 @@
 #pragma once
 
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/SideConfidence.h"
-#include "Representations/BehaviorControl/SPLStandardBehaviorStatus.h"
 #include "Representations/Modeling/Whistle.h"
 
 #include "Tools/MessageQueue/InMessage.h"
@@ -31,7 +29,7 @@ namespace RoboCup
 STREAMABLE(Teammate, COMMA public MessageHandler
 {
   const SynchronizationMeasurementsBuffer* bSMB = nullptr;
-  
+
   unsigned toLocalTimestamp(unsigned remoteTimestamp) const
   {
     if(bSMB)
@@ -52,7 +50,7 @@ STREAMABLE(Teammate, COMMA public MessageHandler
 
   ENUM(TeamOrigin,
   {,
-    HULKsRobot,
+    otherTeamRobot,
     BHumanRobot,
   }),
 
@@ -65,20 +63,16 @@ STREAMABLE(Teammate, COMMA public MessageHandler
   (unsigned)(0) timeOfLastGroundContact,
   (bool)(true) hasGroundContact,
   (Status)(PENALIZED) status,
-  (Angle)(0_deg) headYawAngle,
+  (unsigned)(0) timeWhenStatusChanged,
 
   (RobotPose) theRobotPose,
   (BallModel) theBallModel,
   (ObstacleModel) theObstacleModel,
-  (BehaviorStatus) theBehaviorStatus,
-  (SPLStandardBehaviorStatus) theSPLStandardBehaviorStatus,
   (Whistle) theWhistle,
-  (TeammateRoles) theTeammateRoles,
   (FieldCoverage) theFieldCoverage,
   (SideConfidence) theSideConfidence,
 
   (RobotHealth) theRobotHealth,
-  (B_HULKs::OwnTeamInfo) theRawGCData,
 });
 
 /**

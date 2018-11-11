@@ -14,7 +14,7 @@ void MidCirclePerceptor::update(MidCircle& midCircle)
 {
   midCircle.clear();
 
-  if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
+  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
   {
     midCircle.isValid = false;
     return;
@@ -88,8 +88,8 @@ bool MidCirclePerceptor::searchCircleWithLine(MidCircle& midCircle) const
     };
 
     if(distanceToLine < maxLineDistanceToCircleCenter &&
-       (squaredFirstDist < sqr(theFieldDimensions.centerCircleRadius + allowedOffsetOfMidLineEndToCircleCenter) ||
-        squaredLastDist < sqr(theFieldDimensions.centerCircleRadius + allowedOffsetOfMidLineEndToCircleCenter) ||
+       (squaredFirstDist < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + allowedOffsetOfMidLineEndToCircleCenter)) ||
+        squaredLastDist  < sqr(std::max(0.f, theFieldDimensions.centerCircleRadius + allowedOffsetOfMidLineEndToCircleCenter)) ||
         (squaredFirstDist <= lineSquaredNorm && squaredLastDist <= lineSquaredNorm))
        && !rejectVerticallyLine())
     {

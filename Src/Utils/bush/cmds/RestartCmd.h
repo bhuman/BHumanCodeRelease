@@ -18,19 +18,21 @@ class RestartCmd : public RobotCommand
   {
     RestartType type;
     void reportStatus(const ProcessRunner& r);
+
   public:
     RestartTask(Context& context, Robot* robot, RestartType type);
-    virtual bool execute();
+    bool execute() override;
   };
 
   RestartType type;
 
   RestartCmd();
-  virtual std::string getName() const;
-  virtual std::string getDescription() const;
-  virtual std::vector<std::string> complete(const std::string& cmdLine) const;
-  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
-  virtual Task* perRobotExecution(Context& context, Robot& robot);
+  std::string getName() const override;
+  std::string getDescription() const override;
+  std::vector<std::string> complete(const std::string& cmdLine) const override;
+  bool preExecution(Context& context, const std::vector<std::string>& params) override;
+  Task* perRobotExecution(Context& context, Robot& robot) override;
+
 public:
   static RestartCmd theRestartCmd;
 };

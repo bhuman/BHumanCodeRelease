@@ -17,7 +17,6 @@ void MessageQueue::handleAllMessages(MessageHandler& handler)
   for(int i = 0; i < queue.numberOfMessages; ++i)
   {
     queue.setSelectedMessageForReading(i);
-    in.config.reset();
     in.text.reset();
     handler.handleMessage(in);
   }

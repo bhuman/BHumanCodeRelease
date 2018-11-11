@@ -7,7 +7,6 @@
 #include "CirclePercept.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/Image.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -21,7 +20,6 @@ void CirclePercept::draw() const
   CameraInfo* theCameraInfo = nullptr;
   CameraMatrix* theCameraMatrix = nullptr;
   ImageCoordinateSystem* theImageCoordinateSystem = nullptr;
-  Image* theImage = nullptr;
 
   if(Blackboard::getInstance().exists("FieldDimensions"))
     theFieldDimensions = static_cast<FieldDimensions*>(&(Blackboard::getInstance()["FieldDimensions"]));
@@ -31,8 +29,6 @@ void CirclePercept::draw() const
     theCameraMatrix = static_cast<CameraMatrix*>(&(Blackboard::getInstance()["CameraMatrix"]));
   if(Blackboard::getInstance().exists("ImageCoordinateSystem"))
     theImageCoordinateSystem =  static_cast<ImageCoordinateSystem*>(&(Blackboard::getInstance()["ImageCoordinateSystem"]));
-  if(Blackboard::getInstance().exists("Image"))
-    theImage = static_cast<Image*>(&(Blackboard::getInstance()["Image"]));
 
   if(theFieldDimensions == nullptr || theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr)
     return;
@@ -62,7 +58,7 @@ void CirclePercept::draw() const
       Vector2f p1;
       if(Transformation::robotToImage(pos, *theCameraMatrix, *theCameraInfo, p1))
       {
-        Vector2f uncor = theImageCoordinateSystem->fromCorrectedLinearized(p1);
+        Vector2f uncor = theImageCoordinateSystem->fromCorrected(p1);
         CROSS("representation:FieldLines:image", uncor.x(), uncor.y(), 5, 3, Drawings::solidPen, ColorRGBA::red);
       }
       const float stepSize = 0.2f;
@@ -73,8 +69,8 @@ void CirclePercept::draw() const
         if(Transformation::robotToImage(Vector2f(pos + Vector2f(theFieldDimensions->centerCircleRadius, 0).rotate(i)), *theCameraMatrix, *theCameraInfo, p1) &&
            Transformation::robotToImage(Vector2f(pos + Vector2f(theFieldDimensions->centerCircleRadius, 0).rotate(i + stepSize)), *theCameraMatrix, *theCameraInfo, p2))
         {
-          Vector2f uncor1 = theImageCoordinateSystem->fromCorrectedLinearized(p1);
-          Vector2f uncor2 = theImageCoordinateSystem->fromCorrectedLinearized(p2);
+          Vector2f uncor1 = theImageCoordinateSystem->fromCorrected(p1);
+          Vector2f uncor2 = theImageCoordinateSystem->fromCorrected(p2);
           LINE("representation:FieldLines:image", uncor1.x(), uncor1.y(), uncor2.x(), uncor2.y(), 3, Drawings::solidPen, ColorRGBA::red);
         }
       }

@@ -27,7 +27,7 @@ void Thread::stop()
   }
 }
 
-void Thread::threadStart(std::function<void()> lambda)
+void Thread::threadStart(const std::function<void()>& lambda)
 {
   lambda();
   running = false;

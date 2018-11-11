@@ -52,55 +52,6 @@ STREAMABLE(BalancingParameter,
 
 STREAMABLE(Balancer,
 {
-  ENUM(ImportantParamNames,
-  {,
-    oneLeggedTorsoRotation,
-    strictInitialTrajectory,
-    usePreviewController,
-    stabilizationRange,
-
-    weakAnkleTorso,
-    weakKneeTorso,
-    counterWeakAnkle,
-
-    balanceWithHipX,
-    balanceWithHipY,
-    balanceWithArmsY,
-
-    critBalanceWithLegY,
-    critBalanceWithHipY,
-    tiltFeedbackX,
-    tiltFeedbackY,
-
-    maxTilt,
-    criticalTiltThreshold,
-    fallingTiltFeedbackX,
-    fallingTiltFeedbackY,
-    fallingThresholdX,
-    fallingThresholdY,
-
-    sensorFeedbackX_pos,
-    sensorFeedbackX_vel,
-    sensorFeedbackX_zmp,
-
-    sensorFeedbackY_pos,
-    sensorFeedbackY_vel,
-    sensorFeedbackY_zmp,
-
-    previewControllerX_previews,
-    previewControllerX_R,
-    previewControllerX_Qe,
-    previewControllerX_Qx,
-    previewControllerX_Qy,
-    previewControllerX_Qz,
-
-    previewControllerY_previews,
-    previewControllerY_R,
-    previewControllerY_Qe,
-    previewControllerY_Qx,
-    previewControllerY_Qy,
-    previewControllerY_Qz,
-  });
   /**
    * Initializes the generator. Must be called whenever control over stabilization is handed over to this module
    * Must also be called once after creation.
@@ -140,6 +91,7 @@ STREAMABLE(Balancer,
 
   ,
   //For Analyzing via Logfiles
+  (std::vector<float>) standardParameter,
   (float)(0.f) tiltX,
   (float)(0.f) tiltY,
   (float)(0.f) stabilizationFactor,

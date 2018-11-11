@@ -26,24 +26,24 @@ private:
   SensorWidget* sensorWidget;
 
 public:
-  SensorHeaderedWidget(SensorView& sensorView, RobotConsole& console);
+  SensorHeaderedWidget(SensorView& sensorView);
 
 private:
-  virtual QWidget* getWidget() { return this; }
-  virtual void update() { sensorWidget->update(); }
+  QWidget* getWidget() override { return this; }
+  void update() override{ sensorWidget->update(); }
 };
 
-SensorView::SensorView(const QString& fullName, RobotConsole& robotConsole, const FsrSensorData& fsrSensorData,
+SensorView::SensorView(const QString& fullName, RobotConsole& console, const FsrSensorData& fsrSensorData,
                        const InertialSensorData& inertialSensorData, const KeyStates& keyStates,
                        const SystemSensorData& systemSensorData, const unsigned& timeStamp) :
-  fullName(fullName), icon(":/Icons/tag_green.png"), console(robotConsole), fsrSensorData(fsrSensorData),
+  fullName(fullName), icon(":/Icons/tag_green.png"), console(console), fsrSensorData(fsrSensorData),
   inertialSensorData(inertialSensorData), keyStates(keyStates), systemSensorData(systemSensorData),
   timeStamp(timeStamp)
 {}
 
 SimRobot::Widget* SensorView::createWidget()
 {
-  return new SensorHeaderedWidget(*this, console);
+  return new SensorHeaderedWidget(*this);
 }
 
 SensorWidget::SensorWidget(SensorView& sensorView, QHeaderView* headerView, QWidget* parent) :
@@ -148,6 +148,7 @@ void SensorWidget::paintInertialSensorData()
   print(" Acc z", printValue(ValueType::acceleration, data.acc.z()));
   print(" Angle x", printValue(ValueType::angle, data.angle.x()));
   print(" Angle y", printValue(ValueType::angle, data.angle.y()));
+  print(" Angle z", printValue(ValueType::angle, data.angle.z()));
 }
 
 void SensorWidget::paintKeyStates()
@@ -163,10 +164,10 @@ void SensorWidget::paintKeyStates()
   print(" Right hand back", printButton(data.pressed[KeyStates::rHandBack]));
   print(" Right hand left", printButton(data.pressed[KeyStates::rHandLeft]));
   print(" Right hand right", printButton(data.pressed[KeyStates::rHandRight]));
-  print(" Left foot left", printButton(data.pressed[KeyStates::leftFootLeft]));
-  print(" Left foot right", printButton(data.pressed[KeyStates::leftFootRight]));
-  print(" Right foot left", printButton(data.pressed[KeyStates::rightFootLeft]));
-  print(" Right foot right", printButton(data.pressed[KeyStates::rightFootRight]));
+  print(" Left foot left", printButton(data.pressed[KeyStates::lFootLeft]));
+  print(" Left foot right", printButton(data.pressed[KeyStates::lFootRight]));
+  print(" Right foot left", printButton(data.pressed[KeyStates::rFootLeft]));
+  print(" Right foot right", printButton(data.pressed[KeyStates::rFootRight]));
   print(" Chest", printButton(data.pressed[KeyStates::chest]));
 }
 
@@ -177,7 +178,7 @@ void SensorWidget::paintSystemSensorData()
   print(" Cpu temperature", printValue(ValueType::temperature, data.cpuTemperature));
   print(" Battery current", printValue(ValueType::current, data.batteryCurrent));
   print(" Battery level", printValue(ValueType::ratio, data.batteryLevel));
-  print(" Battery temperature", printValue(ValueType::ratio, data.batteryTemperature));
+  print(" Battery temperature", printValue(ValueType::temperature, data.batteryTemperature * (data.batteryTemperature == SensorData::off ? 1.f : 10.f)));
 }
 
 QString SensorWidget::printValue(ValueType valueType, float value) const
@@ -249,7 +250,7 @@ void SensorWidget::newSection()
   fillBackground = false;
 }
 
-SensorHeaderedWidget::SensorHeaderedWidget(SensorView& sensorView, RobotConsole& console)
+SensorHeaderedWidget::SensorHeaderedWidget(SensorView& sensorView)
 {
   QStringList headerLabels;
   headerLabels << "Sensor" << "Value";

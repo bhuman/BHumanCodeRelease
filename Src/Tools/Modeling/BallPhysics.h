@@ -226,46 +226,20 @@ public:
   }
 
   /**
-   * A function that propagates the ball state(position, velocity, rotation) assuming
-   * there is a collision with a robot.
-   * @param robotPosition, the pose of the robot
-   * @param position, the position of the ball
-   * @param velocity, the velocity of the ball
-   * @param rotation, the rotation of the ball
-   * @param ballFrictiom, the friction
+   * Computes the velocity that the ball has after needing a specific time for moving from one point to another
+   * @param p0 The previous point of the ball trajectory
+   * @param p1 The current point of the ball trajectory
+   * @param deltaTime The time it took the ball to travel from p0 to p1 (seconds)
+   * @param ballFriction The ball friction (negative force)  (in m/s^2)
+   * @return The velocity the ball has now (at p1).
    */
-  static void computeBallCollisionWithRobot(const Pose2f& robotPosition, Vector2f& position, Vector2f& velocity,
-      float rotation, const float ballFriction)
+  static Vector2f velocityAfterDistanceForTime(const Vector2f& p0, const Vector2f& p1, float deltaTime, float ballFriction)
   {
-    ASSERT(ballFriction < 0.0f);
-    Vector2f positionDifference = robotPosition.translation - position;
-    Vector2f oldPosition = position;
-    float distance = positionDifference.norm();
-    Vector2f startVelocity = velocity;
-    float neededTime = timeForDistance(startVelocity, distance, ballFriction);
-    if(neededTime == std::numeric_limits<float>::max())
-      return;
-    neededTime *= (float) 0.98; // We want to be just a small step ahead
-    propagateBallPositionAndVelocityWithRotation(position, velocity, neededTime, ballFriction, rotation);
-    ////alextastic collision
-    Vector2f reflectionVelocity = velocity, backupVelocity = velocity;
-    if(!Geometry::getCollisionReflectionWithRectangleRobotFeet(robotPosition, position, velocity, reflectionVelocity))
-    {
-      float tStop = computeTimeUntilBallStops(velocity, ballFriction);
-      propagateBallPositionAndVelocityWithRotation(position, velocity, tStop, ballFriction, rotation);
-      return;
-    }
-    const float accelerationFactor = 0.75;
-    velocity = reflectionVelocity.normalized() * backupVelocity.norm() * accelerationFactor;
-    Angle angle = Geometry::angleTo(robotPosition, velocity);
-    //Is there a chance that the ball gets his kind of random spin
-    int rotationSign = (0.f < angle) - (angle < 0.f);
-    if(velocity.squaredNorm() < 1000.f)
-      rotation = 0.349f * rotationSign; //20 degree in the other direction
-    else
-      rotation = 0.f;
-    float ballStopTime = computeTimeUntilBallStops(velocity, ballFriction);
-    propagateBallPositionAndVelocityWithRotation(position, velocity, ballStopTime, ballFriction, rotation);
+    // The scalar velocity that the ball has now when friction is assumed for the rolling period (smaller than (p1-p0)/dt because ballFriction is negative).
+    const float velocityNow = (p1 - p0).norm() / deltaTime + 0.5f * 1000.f * ballFriction * deltaTime;
+    if(velocityNow <= 0.f)
+      return Vector2f::Zero();
+    return (p1 - p0).normalized(velocityNow);
   }
 
 private:

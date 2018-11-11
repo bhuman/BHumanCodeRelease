@@ -57,7 +57,7 @@ void SceneGraphDockWidget::registerObject(const SimRobot::Module* module, SimRob
 {
   QTreeWidgetItem* parentItem = parent ? registeredObjectsByObject.value(parent) : treeWidget->invisibleRootItem();
   RegisteredObject* newItem = new RegisteredObject(module, object, parentItem, flags);
-  int parentFullNameLength = parent ? ((RegisteredObject*)parentItem)->fullName.length() : 0;
+  const int parentFullNameLength = parent ? ((RegisteredObject*)parentItem)->fullName.length() : 0;
   newItem->setText(0, parent ? newItem->fullName.mid(parentFullNameLength + 1) : newItem->fullName);
   const QIcon* icon = object->getIcon();
   if(icon)
@@ -121,7 +121,7 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const QString& fullName, i
 {
   for(QHash<int, QHash<QString, RegisteredObject*>*>::iterator i = kind ? registeredObjectsByKindAndName.find(kind) : registeredObjectsByKindAndName.begin(); i != registeredObjectsByKindAndName.end(); ++i)
   {
-    QHash<QString, RegisteredObject*>* registeredObjectsByName = *i;
+    const QHash<QString, RegisteredObject*>* registeredObjectsByName = *i;
     if(!registeredObjectsByName)
       continue;
     RegisteredObject* object = registeredObjectsByName->value(fullName);
@@ -145,7 +145,7 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const SimRobot::Object* pa
     if(!registeredObjectsByName)
       continue;
     const QString& lastPart = parts.at(partsCount - 1);
-    foreach(RegisteredObject* object, *registeredObjectsByName)
+    for(RegisteredObject* object : *registeredObjectsByName)
     {
       if(object->fullName.endsWith(lastPart))
       {
@@ -189,13 +189,13 @@ SimRobot::Object* SceneGraphDockWidget::resolveObject(const SimRobot::Object* pa
 
 int SceneGraphDockWidget::getObjectChildCount(const SimRobot::Object* object)
 {
-  RegisteredObject* item = registeredObjectsByObject.value(object);
+  const RegisteredObject* item = registeredObjectsByObject.value(object);
   return item ? item->childCount() : 0;
 }
 
 SimRobot::Object* SceneGraphDockWidget::getObjectChild(const SimRobot::Object* object, int index)
 {
-  RegisteredObject* item = registeredObjectsByObject.value(object);
+  const RegisteredObject* item = registeredObjectsByObject.value(object);
   return item && index >= 0 && index < item->childCount() ? ((RegisteredObject*)item->child(index))->object : 0;
 }
 
@@ -279,7 +279,7 @@ void SceneGraphDockWidget::deleteRegisteredObject(RegisteredObject* registeredOb
 
 void SceneGraphDockWidget::contextMenuEvent(QContextMenuEvent* event)
 {
-  QRect content(treeWidget->geometry());
+  const QRect content(treeWidget->geometry());
   if(!content.contains(event->x(), event->y()))
   {
     // click on window frame

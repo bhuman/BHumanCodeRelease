@@ -13,7 +13,7 @@ std::string enquoteString(const std::string& arg);
 
 QString fromString(const std::string& arg);
 
-template<class T>
+template<typename T>
 std::string toString(T arg)
 {
   return QString("%1").arg(arg).toUtf8().data();

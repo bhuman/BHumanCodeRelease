@@ -5,7 +5,7 @@
 
 namespace Arms
 {
-  GLOBAL_ENUM(Arm,
+  ENUM(Arm,
   {,
     left,
     right,

@@ -26,11 +26,13 @@ void CylinderRing::clip(double& minLambda, double& maxLambda, double a, double b
     double x0, x1;
     if(p > 0)
     {
-      x0 = -p / 2 - sqrt(rt), x1 = q / x0;
+      x0 = -p / 2 - sqrt(rt);
+      x1 = q / x0;
     }
     else
     {
-      x1 = -p / 2 + sqrt(rt), x0 = q / x1;
+      x1 = -p / 2 + sqrt(rt);
+      x0 = q / x1;
     }
     assert(x0 <= x1);
     assert(fabs(x0 + x1 + p) < 1e-3);

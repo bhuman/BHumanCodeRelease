@@ -19,8 +19,8 @@
 STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRobotPose>
 {
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override;
+  void operator>>(BHumanMessage& m) const override;
+  void operator<<(const BHumanMessage& m) override;
 
   /**
    * Assignment operator for Pose2f objects

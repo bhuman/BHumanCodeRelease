@@ -32,7 +32,7 @@ void SelfLocalizationHypotheses::draw() const
       cov(1, 1) = h.yVariance;
       cov(1, 0) = h.xyCovariance;
       cov(0, 1) = h.xyCovariance;
-      COVARIANCE2D("representation:SelfLocalizationHypotheses:covariance", cov, h.pose.translation);
+      COVARIANCE_ELLIPSES_2D("representation:SelfLocalizationHypotheses:covariance", cov, h.pose.translation);
     }
   }
 }

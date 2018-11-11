@@ -7,8 +7,6 @@
 
 void Phase::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN;
-
   STREAM(duration);
 
   Vector3f& leftFootTra1(controlPoints[leftFootTra][1]);
@@ -54,8 +52,34 @@ void Phase::serialize(In* in, Out* out)
   STREAM(headTra2)
 
   STREAM(odometryOffset)
+}
 
-  STREAM_REGISTER_FINISH;
+void Phase::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(Phase);
+  REG(duration);
+  REG(Vector3f, leftFootTra1);
+  REG(Vector3f, leftFootTra2);
+  REG(Vector3f, leftFootRot1);
+  REG(Vector3f, leftFootRot2);
+  REG(Vector3f, rightFootTra1);
+  REG(Vector3f, rightFootTra2);
+  REG(Vector3f, rightFootRot1);
+  REG(Vector3f, rightFootRot2);
+  REG(Vector3f, leftArmTra1);
+  REG(Vector3f, leftArmTra2);
+  REG(Vector3f, leftHandRot1);
+  REG(Vector3f, leftHandRot2);
+  REG(Vector3f, rightArmTra1);
+  REG(Vector3f, rightArmTra2);
+  REG(Vector3f, rightHandRot1);
+  REG(Vector3f, rightHandRot2);
+  REG(Vector2f, comTra1);
+  REG(Vector2f, comTra2);
+  REG(Vector2f, headTra1);
+  REG(Vector2f, headTra2);
+  REG(odometryOffset);
 }
 
 void KickEngineParameters::onRead()

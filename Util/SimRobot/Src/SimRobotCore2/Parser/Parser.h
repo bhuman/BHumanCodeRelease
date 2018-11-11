@@ -14,7 +14,7 @@ class Element;
 
 /**
 * @class Parser
-* A libxml2 parser for .ros2 files.
+* A parser for .ros2 files.
 */
 class Parser : protected Reader
 {
@@ -29,13 +29,13 @@ public:
   * Parses a .ros2 file, builds the scene graph up and fills parameter sets out
   * @param fileName The name of the file
   * @param errors List of errors occured while parsing
-  * @return Whether the file was parses without errors or not
+  * @return Whether the file was parsed without errors or not
   */
   bool parse(const std::string& fileName, std::list<std::string>& errors);
 
 private:
   typedef Element* (Parser::*StartElementProc)();
-  typedef void (Parser::*TextProc)(std::string& text);
+  typedef void (Parser::*TextProc)(std::string& text, Location location);
 
   /** Some flags to describe properties of an element class */
   enum ElementFlags
@@ -65,8 +65,10 @@ private:
     unsigned int parsedAttributes;
     std::unordered_map<std::string, std::string> vars; /**< User defined variables for attribute strings */
     bool usedPlaceholdersInAttributes;
+    Location location; /**< The location of the instanced element */
 
-    ElementData(ElementData* parent, const ElementInfo* info = nullptr) : parent(parent), info(info), parsedChildren(0), parsedAttributes(0), usedPlaceholdersInAttributes(false) {}
+    ElementData(ElementData* parent, const Location& location, const ElementInfo* info) :
+      parent(parent), info(info), parsedChildren(0), parsedAttributes(0), usedPlaceholdersInAttributes(false), location(location) {}
   };
 
   class MacroElement
@@ -76,17 +78,14 @@ private:
     const ElementInfo* elementInfo;
     Attributes attributes;
     std::string text;
+    Location textLocation;
     std::list<MacroElement*> children;
     Element* element; /**< An element that was created from the macro */
-    int line;
-    int column;
-    int endLine;
-    int endColumn;
+    Location location;
 
     MacroElement(MacroElement* parent, const ElementInfo* elementInfo,
-      Attributes& attributes,
-      int line, int column) :
-      parent(parent), elementInfo(elementInfo), element(0), line(line), column(column), endLine(0), endColumn(0)
+      Attributes& attributes, const Location& location) :
+      parent(parent), elementInfo(elementInfo), element(nullptr), location(location)
     {
       this->attributes.swap(attributes);
     }
@@ -105,8 +104,8 @@ private:
     std::string fileName; /**< The file in which the macro was declared */
     bool replaying; /**< A flag for detecting macro reference loops */
 
-    Macro(const ElementInfo* elementInfo, const std::string& fileName, Attributes& attributes, int line, int column) :
-      MacroElement(0, elementInfo, attributes, line, column), fileName(fileName), replaying(false) {}
+    Macro(const ElementInfo* elementInfo, const std::string& fileName, Attributes& attributes, const Location& location) :
+      MacroElement(nullptr, elementInfo, attributes, location), fileName(fileName), replaying(false) {}
   };
 
   std::unordered_map<std::string, const ElementInfo*> elementInfos; /** Mapping element name strings to handler member function pointers */
@@ -114,6 +113,7 @@ private:
   std::list<std::string>* errors; /**< List of errors occured while parsing */
   std::string parseRootDir; /**< The directory in which the main .ros2 file is stored. */
   std::string includeFile; /**< A file to be included */
+  Location includeFileLocation; /**< The location of the path to the included file in the including file */
 
   std::unordered_map<std::string, Macro*> macros; /**< A storage for macros */
   Macro* sceneMacro; /**< A macro created for the <Scene> element */
@@ -122,54 +122,46 @@ private:
   MacroElement* replayingMacroElement; /** A macro element set to insert subordinate nodes of a macro */
   Element* element; /**< The last inserted xml element */
   ElementData* elementData; /** Element context data required for parsing a xml element */
-  const Attributes* attributes;  /**< The current set of attributes */
+  const Attributes* attributes; /**< The current set of attributes */
 
   bool passedSimulationTag; /**< Whether the <Simulation>-tag was passed or not */
+  Location simulationTagLocation; /**< The location of the <Simulation>-tag */
 
   void parseSimulation();
   void parseMacroElements();
-  void parseMacroElement();
+  void parseMacroElement(ElementData& elementData);
 
   /**
-  * A handler called for each node from the input file. Call readSubNodes() within in the handler to parse subordinate nodes.
-  * @param node The name of the node
-  * @param attributes The attributes of the node
-  */
-  virtual void handleNode(const std::string& name, Attributes& attributes);
+   * A handler called for each parsed element
+   * Call \c readElements within the handler to parse subordinate elements.
+   * @param name The name of the element
+   * @param attributes The attributes of the element
+   * @param location The location of the element in the current file (first character after <)
+   * @return The result of \c readElements that has been called inside
+   */
+  bool handleElement(const std::string& name, Attributes& attributes, const Location& location) override;
 
   /**
-  * A handler for nodes inserted from a macro. Call readSubNodes() within in the handler to parse subordinate nodes.
-  * @param elementInfo Information about the element class to parse
-  * @param attributes The attributes of the element
-  */
-  void handleNodeFromMacro(const ElementInfo* elementInfo, Attributes& attributes);
-
+   * A handler called when text was parsed
+   * @param text The text read
+   * @param location The location of the text in the current file
+   */
+  void handleText(std::string& text, const Location& location) override;
   /**
-  * A function called to handle "normal" elements within in the <Scene></Scene> section.
-  * @param readOnlyAttributes Whether it is allowed to modify the set of attributes (\c attributes) or not.
-  */
-  void handleSceneElement(bool readOnlyAttributes);
+   * A handler called for syntax errors
+   * @param msg An error message
+   * @param location The location of the error in the current file
+   */
+  void handleError(const std::string& msg, const Location& location) override;
 
-  /**
-  * A handler called when text was parsed
-  * @param text The text read
-  */
-  virtual void handleText(std::string& text);
-
-  /**
-  * Adds an error message to the list of error messages.
-  * @param message The error message
-  */
-  virtual void handleError(const std::string& message);
-
-  /** Checks if there are any unexpected attributes in the current set of attributes. */
+  /** Checks if there are any unexpected attributes in the current set of attributes */
   void checkAttributes();
 
   /** Checks if some required subordinate elements have not been parsed */
   void checkElements();
 
   const std::string* resolvePlaceholder(const std::string& name);
-  const std::string& replacePlaceholders(const std::string& str);
+  const std::string& replacePlaceholders(const std::string& str, const Location& location);
   std::string placeholderBuffer;
 
   // functions for reading attributes
@@ -183,7 +175,7 @@ private:
   int getInteger(const char* key, bool required, int defaultValue);
   int getIntegerNonZeroPositive(const char* key, bool required, int defaultValue);
   float getFloatMinMax(const char* key, bool required, float defaultValue, float min, float max);
-  bool getFloatAndUnit(const char* key, bool required, float defaultValue, float& value, char** unit);
+  bool getFloatAndUnit(const char* key, bool required, float defaultValue, float& value, char** unit, Location& unitLocation);
   float getUnit(const char* key, bool required, float defaultValue);
   float getLength(const char* key, bool required, float defaultValue);
   float getMassLengthLength(const char* key, bool required, float defaultValue);
@@ -257,13 +249,13 @@ private:
   Element* complexAppearanceElement();
   Element* trianglesElement();
   Element* quadsElement();
-  void trianglesAndQuadsText(std::string& text);
+  void trianglesAndQuadsText(std::string& text, Location location);
   Element* verticesElement();
-  void verticesText(std::string& text);
+  void verticesText(std::string& text, Location location);
   Element* normalsElement();
-  void normalsText(std::string& text);
+  void normalsText(std::string& text, Location location);
   Element* texCoordsElement();
-  void texCoordsText(std::string& text);
+  void texCoordsText(std::string& text, Location location);
   Element* hingeElement();
   Element* sliderElement();
   Element* axisElement();
@@ -278,6 +270,7 @@ private:
   Element* accelerometerElement();
   Element* cameraElement();
   Element* collisionSensor2Element();
+  Element* objectSegmentedImageSensorElement();
   Element* singleDistanceSensorElement();
   Element* approxDistanceSensorElement();
   Element* depthImageSensorElement();

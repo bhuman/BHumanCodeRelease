@@ -25,7 +25,7 @@ class KickViewGLWidget : public QGLWidget
 
 public:
   KickViewGLWidget(KickView& kickView, KickEngineParameters& parameters, KickViewWidget* parent);
-  virtual ~KickViewGLWidget();
+  ~KickViewGLWidget();
 
 private:
   KickViewWidget& widget;

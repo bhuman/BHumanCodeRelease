@@ -28,7 +28,7 @@ class DebugDrawing
 public:
   enum class ElementType
   {
-    arc, ellipse, line, origin, polygon, rectangle, text, tip
+    arc, ellipse, line, origin, polygon, rectangle, text, tip, robot, spot
   };
 
   /** base class for all drawing elements */
@@ -119,6 +119,23 @@ public:
     Tip() : Element(ElementType::tip) {}
   };
 
+  /** Stores a robot */
+  struct Robot : public Element
+  {
+    Pose2f p;
+    Vector2f dirVec, dirHeadVec;
+    float alphaRobot;
+    ColorRGBA colorBody, colorDirVec, colorDirHeadVec;
+    Robot() : Element(ElementType::robot) {}
+  };
+
+  /** Stores a spot */
+  struct Spot : public Element
+  {
+    int x1, y1, x2, y2, size, next;
+    Spot() : Element(ElementType::spot) {}
+  };
+
   unsigned timeStamp; /**< The time when this drawing was created. */
 
   DebugDrawing();
@@ -138,6 +155,9 @@ public:
   /** Returns the tip text for a certain coordinate (or 0 if none exists). */
   const char* getTip(int& x, int& y, const Pose2f& origin) const;
 
+  /** Returns the spot action for a certain coordinate (or 0 if none exists)*/
+  const char* getSpot(int x, int y, const Pose2f& origin) const;
+
   /** Updates the origin if it was set in this drawing. */
   void updateOrigin(Pose2f& origin) const;
 
@@ -149,7 +169,7 @@ public:
    * @param width The width
    * @param color The color
    */
-  void arrow(Vector2f start, Vector2f end, Drawings::PenStyle penStyle, int width, ColorRGBA color);
+  void arrow(Vector2f start, Vector2f end, Drawings::PenStyle penStyle, float width, ColorRGBA color);
 
   /**
    * Adds a line to the debug drawing.
@@ -233,6 +253,12 @@ public:
   void tip(const char* text, int x, int y, int radius);
 
   /**
+   * Adds a spot with action to the debug drawing
+   *
+   */
+  void spot(const char* action, int x1, int y1, int x2, int y2);
+
+  /**
    * Sets a new origin for further drawings
    * @param x Specifies the center of the new origin.
    * @param y Specifies the center of the new origin.
@@ -240,12 +266,27 @@ public:
    */
   void origin(int x, int y, float angle);
 
+  /**
+   * Adds a robot to the debug drawing
+   * @param p The desired Pose2f
+   * @param dirVec The direction vector of the body
+   * @param dirHeadVec The direction vector of the head
+   * @param alphaRobot The alpha of the robot to draw
+   * @param colorBody The color of the robot
+   * @param colorDirVec The color of the direction vector of the body (Set alpha channel to 0, to disable this drawing)
+   * @param colorDirHeadVec The color of the direction vector of the head (Set alpha channel to 0, to disable this drawing)
+   */
+  void robot(Pose2f p, Vector2f dirVec, Vector2f dirHeadVec, float alphaRobot, ColorRGBA colorBody, ColorRGBA colorDirVec, ColorRGBA colorDirHeadVec);
+
   bool addShapeFromQueue(InMessage& message, Drawings::ShapeType shapeType);
   /**
    * The function returns a pointer to the first drawing element.
    * @return A pointer to the first drawing element or 0 if the drawing is empty.
    */
-  const Element* getFirst() const { return usedSize > 0 ? (const Element*)elements : 0; }
+  const Element* getFirst() const
+  {
+    return usedSize > 0 ? (const Element*)elements : 0;
+  }
 
   /**
    * The function returns a pointer to the next drawing element.
@@ -260,6 +301,7 @@ private:
   char* elements; /**< Contains all elements of this debug drawing */
   int firstTip = -1; /**< The index of the first tip. */
   int lastOrigin = -1; /** The index of the last origin. */
+  int firstSpot = -1; /**< The index of the last origin. */
 
   /**
    * The function reserves enough space in the element buffer to store a new element.

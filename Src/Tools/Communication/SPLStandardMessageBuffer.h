@@ -38,7 +38,7 @@ public:
    */
   RoboCup::SPLStandardMessage* setForward()
   {
-    entries = std::min(capacity - 1, ++entries);
+    entries = std::min(capacity, ++entries);
     (++head) %= capacity;
     return &buffer[head];
   }

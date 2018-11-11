@@ -8,6 +8,7 @@
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/FallEngineOutput.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
@@ -25,7 +26,8 @@ MODULE(FallEngine,
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
   REQUIRES(GameInfo),
-  USES(MotionRequest),
+  REQUIRES(MotionRequest),
+  USES(WalkingEngineOutput),
   USES(MotionInfo),
   USES(JointRequest),
   PROVIDES(FallEngineOutput),
@@ -33,28 +35,33 @@ MODULE(FallEngine,
   {,
     (int)(2000) waitAfterFalling,
     (int)(10000) noGameControllerThreshold,
-    (Angle)(20_deg) forwardThreshold,
-    (Angle)(-10_deg) backwardsThreshold,
+    (Angle)(0_deg) forwardThreshold,
+    (Angle)(-0_deg) backwardsThreshold,
   }),
 });
 
 class FallEngine : public FallEngineBase
 {
 public:
-  void update(FallEngineOutput& output);
+  void update(FallEngineOutput& output) override;
 
 private:
-  bool waitingForGetup = false;
 
   bool headYawInSafePosition = false;
   bool headPitchInSafePosition = false;
   bool shoulderInSafePosition = false;
   JointAngles lastJointsBeforeFall;
+  unsigned framesSinceFirstDetection = 0;
 
-  bool specialActionFall() const;
+  bool handleSpecialCases();
 
   void safeFall(FallEngineOutput& output) const;
   void safeArms(FallEngineOutput& output) const;
+  //void safeFallBack(FallEngineOutput& output) const;
+  //void protectedFallFront(FallEngineOutput& output);
+  //void safeFallFront(FallEngineOutput& output);
+  //void stand(FallEngineOutput& output);
+  //void safeFallSidewards(FallEngineOutput& output);
   void centerHead(FallEngineOutput& jointRequest);
 
   void calcDirection(FallEngineOutput& output);

@@ -121,7 +121,7 @@ class ArmContactModelProvider: public ArmContactModelProviderBase
   /** Executes this module.
    * @param ArmContactModel The data structure that is filled by this module.
    */
-  void update(ArmContactModel& armContactModel);
+  void update(ArmContactModel& armContactModel) override;
 
   /**
    * Calculates the angular speed of the robots hands.

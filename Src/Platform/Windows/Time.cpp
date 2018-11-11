@@ -23,7 +23,7 @@ unsigned Time::getRealSystemTime()
 {
   const unsigned time = timeGetTime();
   if(!base)
-    base = time - 10000; // avoid time == 0, because it is often used as a marker
+    base = time - 100000; // avoid time == 0, because it is often used as a marker
   return time - base;
 }
 

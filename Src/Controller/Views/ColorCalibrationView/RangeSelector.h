@@ -79,19 +79,8 @@ public:
     allowedSliderOverRun = false;
   }
 
-  void updateWidgets();
-private:
-  void updateColorCalibration(int value, bool isMin);
-};
+  void updateWidgets() override;
 
-class HueSelector : public RangeSelector
-{
-public:
-  HueSelector(const QString& name, ColorCalibrationWidget* parent, int min, int max) :
-    RangeSelector(name, parent, min, max)
-  {}
-
-  void updateWidgets();
 private:
-  void updateColorCalibration(int value, bool isMin);
+  void updateColorCalibration(int value, bool isMin) override;
 };

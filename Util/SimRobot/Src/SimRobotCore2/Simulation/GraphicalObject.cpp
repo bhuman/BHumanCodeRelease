@@ -30,23 +30,48 @@ void GraphicalObject::createGraphics()
   ASSERT(this->listId == 0 || this->listId == listId);
   this->listId = listId;
   glNewList(listId, GL_COMPILE);
-    assembleAppearances();
+    assembleAppearances(SurfaceColor::ownColor);
   glEndList();
 }
 
-void GraphicalObject::drawAppearances() const
+void GraphicalObject::drawAppearances(SurfaceColor color, bool drawControllerDrawings) const
 {
-  ASSERT(listId);
-  glCallList(listId);
+  if(drawControllerDrawings)
+    for(std::list<SimRobotCore2::Controller3DDrawing*>::const_iterator iter = controllerDrawings.begin(), end = controllerDrawings.end(); iter != end; ++iter)
+      (*iter)->draw();
+  else if(color == ownColor)
+  {
+    ASSERT(listId);
+    glCallList(listId);
+  }
+  else
+    assembleAppearances(color);
 }
 
-void GraphicalObject::assembleAppearances() const
+void GraphicalObject::assembleAppearances(SurfaceColor color) const
 {
   for(std::list<GraphicalObject*>::const_iterator iter = graphicalDrawings.begin(), end = graphicalDrawings.end(); iter != end; ++iter)
-    (*iter)->drawAppearances();
+    (*iter)->drawAppearances(color, false);
 }
 
 void GraphicalObject::addParent(Element& element)
 {
   dynamic_cast<GraphicalObject*>(&element)->graphicalDrawings.push_back(this);
+}
+
+bool GraphicalObject::registerDrawing(SimRobotCore2::Controller3DDrawing& drawing)
+{
+  controllerDrawings.push_back(&drawing);
+  return true;
+}
+
+bool GraphicalObject::unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing)
+{
+  for(std::list<SimRobotCore2::Controller3DDrawing*>::iterator iter = controllerDrawings.begin(), end = controllerDrawings.end(); iter != end; ++iter)
+    if(*iter == &drawing)
+    {
+      controllerDrawings.erase(iter);
+      return true;
+    }
+  return false;
 }

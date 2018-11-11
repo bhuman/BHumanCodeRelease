@@ -1,0 +1,17 @@
+[Unit]
+Description=B-Human WLAN network configuration
+After=dbus.service
+Before=network.target
+Wants=network.target
+Conflicts=wpa_supplicant.service
+
+[Service]
+Type=simple
+ExecStartPre=/sbin/ifconfig wlan0 up
+ExecStart=/usr/sbin/wpa_supplicant -iwlan0 -Dnl80211 -c/home/nao/Profiles/default
+ExecStartPost=/bin/sleep 1
+ExecStartPost=/sbin/ifconfig wlan0 10.0.%teamID%.%robotPart% netmask 255.255.0.0
+ExecStopPost=/sbin/ifconfig wlan0 down
+
+[Install]
+WantedBy=multi-user.target

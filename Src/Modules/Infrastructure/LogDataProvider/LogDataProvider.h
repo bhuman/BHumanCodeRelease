@@ -9,6 +9,7 @@
 #include "Tools/MessageQueue/MessageIDs.h"
 #include "Tools/MessageQueue/InMessage.h"
 #include "Tools/Module/Module.h"
+#include "Tools/Streams/TypeInfo.h"
 
 // No verify when replaying logfiles
 #ifndef NDEBUG
@@ -17,8 +18,6 @@
   if(SystemCall::getMode() != SystemCall::logfileReplay) \
     ModuleBase::verify(&r);
 #endif
-
-class StreamHandler;
 
 class LogDataProvider
 {
@@ -31,8 +30,8 @@ private:
   });
 
   std::array<State, numOfDataMessageIDs> states; /**< Should the corresponding message ids be replayed? */
-  StreamHandler* logStreamHandler = nullptr; /**< The stream specifications of all the types from the log file. */
-  StreamHandler* currentStreamHandler = nullptr; /**< The stream specifications of the types in this executable. */
+  TypeInfo* logTypeInfo = nullptr; /**< The specifications of all the types from the log file. */
+  const TypeInfo currentTypeInfo; /**< The specifications of the types in this executable. */
 
 public:
   LogDataProvider();

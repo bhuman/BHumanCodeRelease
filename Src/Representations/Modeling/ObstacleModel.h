@@ -22,9 +22,8 @@
 STREAMABLE(ObstacleModel, COMMA public BHumanMessageParticle<idObstacleModel>
 {
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override;
-  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
+  void operator>>(BHumanMessage& m) const override;
+  void operator<<(const BHumanMessage& m) override;
 
   ObstacleModel() = default;
   void draw() const;

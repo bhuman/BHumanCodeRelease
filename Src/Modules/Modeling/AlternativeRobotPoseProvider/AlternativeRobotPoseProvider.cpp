@@ -16,7 +16,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
 {
   clusters.clear();
   alternativeRobotPoseHypothesis.isValid = false;
-  if(((theGameInfo.state == STATE_SET || theGameInfo.state == STATE_INITIAL) && !theGroundContactState.contact) || // Robot was probably manually placed
+  if((theGameInfo.state == STATE_SET && !theGroundContactState.contact) || theGameInfo.state == STATE_INITIAL || // Robot was probably manually placed
      (!theMotionInfo.isStanding() && theMotionInfo.motion != MotionInfo::walk && theMotionInfo.motion != MotionInfo::kick)) // Robot has done something that is not good for odometry/localization
   {
     observations.clear();
@@ -27,7 +27,6 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
 
   if(theMotionInfo.motion == MotionRequest::walk || theMotionInfo.isStanding())
   {
-    addFieldFeatureToBuffer(&theGoalFeature);
     addFieldFeatureToBuffer(&theGoalFrame);
     addFieldFeatureToBuffer(&theMidCircle);
     addFieldFeatureToBuffer(&theMidCorner);

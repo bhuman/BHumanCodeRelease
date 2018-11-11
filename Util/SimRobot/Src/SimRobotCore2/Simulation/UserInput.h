@@ -24,12 +24,12 @@ public:
     SimRobotCore2::SensorPort::Data data; /**< The current value */
 
     // API
-    virtual bool getMinAndMax(float& min, float& max) const {min = this->min; max = this->max; return true;}
-    virtual const QString& getFullName() const {return fullName;}
-    virtual const QIcon* getIcon() const;
-    virtual SimRobot::Widget* createWidget();
-    virtual const QString& getUnit() const {return unit;}
-    virtual void setValue(float value);
+    bool getMinAndMax(float& min, float& max) const override {min = this->min; max = this->max; return true;}
+    const QString& getFullName() const override {return fullName;}
+    const QIcon* getIcon() const override;
+    SimRobot::Widget* createWidget() override;
+    const QString& getUnit() const override {return unit;}
+    void setValue(float value) override;
   } inputPort;
 
 private:
@@ -41,23 +41,23 @@ private:
     QStringList descriptions; /**< Dummy descriptions to return. */
 
     // API
-    virtual const QString& getFullName() const {return input->fullName;}
-    virtual const QIcon* getIcon() const;
-    virtual SimRobot::Widget* createWidget();
-    virtual const QList<int>& getDimensions() const {return dimensions;}
-    virtual const QStringList& getDescriptions() const {return descriptions;}
-    virtual const QString& getUnit() const {return input->unit;}
-    virtual SensorType getSensorType() const {return SensorType::floatSensor;}
-    virtual Data getValue() {return input->data;}
-    virtual bool renderCameraImages(SimRobotCore2::SensorPort** cameras, unsigned int count) {return false;}
-    virtual bool getMinAndMax(float& min, float& max) const {return input->getMinAndMax(min, max);}
+    const QString& getFullName() const override {return input->fullName;}
+    const QIcon* getIcon() const override;
+    SimRobot::Widget* createWidget() override;
+    const QList<int>& getDimensions() const override {return dimensions;}
+    const QStringList& getDescriptions() const override {return descriptions;}
+    const QString& getUnit() const override {return input->unit;}
+    SensorType getSensorType() const override {return SensorType::floatSensor;}
+    Data getValue() override {return input->data;}
+    bool renderCameraImages(SimRobotCore2::SensorPort** cameras, unsigned int count) override {return false;}
+    bool getMinAndMax(float& min, float& max) const override {return input->getMinAndMax(min, max);}
   } outputPort;
 
   /** Registers this object with children, actuators and sensors at SimRobot's GUI */
-  virtual void registerObjects();
+  void registerObjects() override;
 
   // API
-  virtual const QString& getFullName() const {return SimObject::getFullName();}
-  virtual SimRobot::Widget* createWidget() {return SimObject::createWidget();}
-  virtual const QIcon* getIcon() const;
+  const QString& getFullName() const override {return SimObject::getFullName();}
+  SimRobot::Widget* createWidget() override {return SimObject::createWidget();}
+  const QIcon* getIcon() const override;
 };

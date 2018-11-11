@@ -5,11 +5,11 @@
 	<key>BuildLocationStyle</key>
 	<string>CustomLocation</string>
 	<key>CustomBuildIntermediatesPath</key>
-	<string>../../Build/OSX</string>
+	<string>../../Build/macOS</string>
 	<key>CustomBuildLocationType</key>
 	<string>RelativeToWorkspace</string>
 	<key>CustomBuildProductsPath</key>
-	<string>../../Build/OSX</string>
+	<string>../../Build/macOS</string>
 	<key>DerivedDataLocationStyle</key>
 	<string>Default</string>
 </dict>

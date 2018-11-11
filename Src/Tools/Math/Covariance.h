@@ -1,7 +1,10 @@
 /**
  * @file Covariance.h
- * @author <a href="mailto:afabisch@tzi.de>Alexander Fabisch</a>
+ *
  * Some tools for covariance matrices.
+ *
+ * @author <a href="mailto:afabisch@tzi.de>Alexander Fabisch</a>
+ * @author Tim Laue
  */
 #pragma once
 
@@ -52,26 +55,42 @@ namespace Covariance
   /**
    * Calculates an ellipse of equiprobable points of a zero centered covariance.
    * This is usually used for debug drawings.
-   * @param covariance The covariance matrix.
+   * @param m The covariance matrix.
    * @param axis1 The major axis of the corresponding ellipse.
    * @param axis2 The minor axis of the corresponding ellipse.
    * @param angle The rotation of the ellipse.
-   * @param factor A scaling factor for the axes.
+   * @param p Size of the confidence interval covered by the ellipse with 0 < p < 1
    */
-  inline void errorEllipse(const Matrix2f& covariance, float& axis1, float& axis2,
-                           float& angle, const float factor = 1.0f)
+  inline void errorEllipse(const Matrix2f& m, float& axis1, float& axis2,
+                           float& angle, const float p = 0.95f)
   {
-    const float cov012 = covariance(1, 0) * covariance(1, 0);
-    const float varianceDiff = covariance(0, 0) - covariance(1, 1);
-    const float varianceDiff2 = varianceDiff * varianceDiff;
-    const float varianceSum = covariance(0, 0) + covariance(1, 1);
-    const float root = std::sqrt(varianceDiff2 + 4.0f * cov012);
-    const float eigenValue1 = 0.5f * (varianceSum + root);
-    const float eigenValue2 = 0.5f * (varianceSum - root);
+    // Compute the two eigenvalues of the matrix:
+    const float trace = m.trace();
+    const float rootExpression = std::sqrt(trace * trace - 4.f * m.determinant());
+    const float eigenValue1 = 0.5f * (trace + rootExpression);
+    const float eigenValue2 = 0.5f * (trace - rootExpression);
 
-    angle = 0.5f * std::atan2(2.0f * covariance(1, 0), varianceDiff);
-    axis1 = 2.0f * std::sqrt(factor * eigenValue1);
-    axis2 = 2.0f * std::sqrt(factor * eigenValue2);
+    // Axes lengths depend on eigenvalues and the size of the covered confidence.
+    // We can consider this whole thing as a Chi-Square distribution with two degrees of freedom:
+    float maxEigenValue = eigenValue1;
+    float minEigenValue = eigenValue2;
+    if(minEigenValue > maxEigenValue)
+    {
+      maxEigenValue = eigenValue2;
+      minEigenValue = eigenValue1;
+    }
+    const float s = -2.f * std::log10(1.f - p);
+    axis1 = 2.0f * std::sqrt(s * maxEigenValue);
+    axis2 = 2.0f * std::sqrt(s * minEigenValue);
+    
+    // Ellipse angle is the angle of the eigenvector of the larger eigen value:
+    angle = 0.f;
+    if(m(1,0) != 0.f) // There must be a covariance. Otherwise, the ellipse is not rotated (== axis-aligned)
+    {
+      // x is set to 1, y is computed by solving the matrix:
+      Vector2f eigenVector(1.f, (m(0,0) - maxEigenValue) / -m(1,0));
+      angle = std::atan2(eigenVector.y(), eigenVector.x());
+    }
   }
 
   /**

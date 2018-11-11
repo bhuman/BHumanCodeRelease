@@ -1036,15 +1036,15 @@ void KickViewGLWidget::paintGL()
           Vector3f point;
           if(widget.velocityWindows)
           {
-            point.x() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.x() + 3.f * (2 * phase - 4.f * phase + 3.f * phase * phase) * cpWindow1[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow1[1].y() + 3.f * phase * phase * cpWindow1[2].y();
-            point.y() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.y() + 3.f * (2 * phase - 4.f * phase + 3.f * phase * phase) * cpWindow2[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow2[1].y() + 3.f * phase * phase * cpWindow2[2].y();
-            point.z() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.z() + 3.f * (2 * phase - 4.f * phase + 3.f * phase * phase) * cpWindow3[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow3[1].y() + 3.f * phase * phase * cpWindow3[2].y();
+            point.x() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.x() + 3.f * (1.f - 4.f * phase + 3.f * phase * phase) * cpWindow1[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow1[1].y() + 3.f * phase * phase * cpWindow1[2].y();
+            point.y() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.y() + 3.f * (1.f - 4.f * phase + 3.f * phase * phase) * cpWindow2[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow2[1].y() + 3.f * phase * phase * cpWindow2[2].y();
+            point.z() = (-3.f + 6.f * phase - 3.f * phase * phase) * p0.z() + 3.f * (1.f - 4.f * phase + 3.f * phase * phase) * cpWindow3[0].y() + 3.f * (2.f * phase - 3.f * phase * phase) * cpWindow3[1].y() + 3.f * phase * phase * cpWindow3[2].y();
           }
           else
           {
-            point.x() = (6.f - 6.f * phase) * p0.x() + 3.f * (-2.f + 6.f * phase) * cpWindow1[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow1[1].y() + 6.f * phase * cpWindow1[2].y();
-            point.y() = (6.f - 6.f * phase) * p0.y() + 3.f * (-2.f + 6.f * phase) * cpWindow2[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow2[1].y() + 6.f * phase * cpWindow2[2].y();
-            point.z() = (6.f - 6.f * phase) * p0.z() + 3.f * (-2.f + 6.f * phase) * cpWindow3[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow3[1].y() + 6.f * phase * cpWindow3[2].y();
+            point.x() = (6.f - 6.f * phase) * p0.x() + 3.f * (-4.f + 6.f * phase) * cpWindow1[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow1[1].y() + 6.f * phase * cpWindow1[2].y();
+            point.y() = (6.f - 6.f * phase) * p0.y() + 3.f * (-4.f + 6.f * phase) * cpWindow2[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow2[1].y() + 6.f * phase * cpWindow2[2].y();
+            point.z() = (6.f - 6.f * phase) * p0.z() + 3.f * (-4.f + 6.f * phase) * cpWindow3[0].y() + 3.f * (2.f - 6.f * phase) * cpWindow3[1].y() + 6.f * phase * cpWindow3[2].y();
           }
           //point+=(originOffset-originPos);
 
@@ -1248,13 +1248,13 @@ void KickViewGLWidget::keyPressEvent(QKeyEvent* event)
   {
     case Qt::Key_PageUp:
       event->accept();
-      renderer.zoom(-100);
+      renderer.zoom(-100, -1, -1);
       update();
       break;
 
     case Qt::Key_PageDown:
       event->accept();
-      renderer.zoom(100);
+      renderer.zoom(100, -1, -1);
       update();
       break;
 
@@ -1294,13 +1294,13 @@ bool KickViewGLWidget::event(QEvent* event)
     QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
     if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
     {
-#ifdef OSX
+#ifdef FIX_MACOS_PINCH_SCALE_RELATIVE_BUG
       pinch->setLastScaleFactor(1.f);
 #endif
       float change = static_cast<float>(pinch->scaleFactor() > pinch->lastScaleFactor()
                                         ? -pinch->scaleFactor() / pinch->lastScaleFactor()
                                         : pinch->lastScaleFactor() / pinch->scaleFactor());
-      renderer.zoom(change * 100.f);
+      renderer.zoom(change * 100.f, -1, -1);
       update();
       return true;
     }
@@ -1313,7 +1313,7 @@ void KickViewGLWidget::wheelEvent(QWheelEvent* event)
 #ifndef MACOS
   if(event->orientation() == Qt::Vertical)
   {
-    renderer.zoom(event->delta());
+    renderer.zoom(event->delta(), -1, -1);
     update();
     event->accept();
     return;
@@ -1576,7 +1576,7 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
   }
   else
   {
-    if(renderer.moveDrag(event->x() * devicePixelRatio(), event->y() * devicePixelRatio()))
+    if(renderer.moveDrag(event->x() * devicePixelRatio(), event->y() * devicePixelRatio(), QApplication::keyboardModifiers() & Qt::ShiftModifier ? SimRobotCore2::Renderer::dragRotate : SimRobotCore2::Renderer::dragNormal))
     {
       event->accept();
       if(widget.selectedPoint.phaseNumber > -1)

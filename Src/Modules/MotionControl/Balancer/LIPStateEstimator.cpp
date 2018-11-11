@@ -27,7 +27,7 @@ void LIPStateEstimator::init(const Array2f& LIPHeights, const Vector2f& leftOrig
   const Vector4f measurement = measure(supportFoot, origin);
   const Vector6f initMean = (Vector6f() << measurement.head<2>(), Vector2f::Zero(), measurement.tail<2>()).finished();
   const Vector6f initNoise = (Vector6f() << params.positionProcessDeviation, params.velocityProcessDeviation, params.zmpProcessDeviation).finished();
-  ukf.init(initMean, initNoise.asDiagonal());
+  ukf.init(initMean, initNoise.cwiseAbs2().asDiagonal());
 }
 
 void LIPStateEstimator::update(float timePassed, const Array2f& LIPHeights, const Vector2f& leftOrigin)
@@ -65,6 +65,7 @@ void LIPStateEstimator::update(float timePassed, const Array2f& LIPHeights, cons
     lipState.update(timePassed, zmp);
     state << lipState.position, lipState.velocity, zmp;
   };
+
   auto measurementModel = [&](const Vector6f& state)
   {
     return (Vector4f() << state.head<2>(), state.tail<2>()).finished();
@@ -73,8 +74,8 @@ void LIPStateEstimator::update(float timePassed, const Array2f& LIPHeights, cons
   const Vector6f dynamicNoise = (Vector6f() << params.positionProcessDeviation, params.velocityProcessDeviation,
                                  params.zmpProcessDeviation).finished() * timePassed;
   const Vector4f measurementNoise = (Vector4f() << params.positionMeasurementDeviation, params.zmpMeasurementDeviation).finished() * timePassed;
-  ukf.predict(dynamicMoldel, dynamicNoise.asDiagonal());
-  ukf.update<4>(measurement, measurementModel, measurementNoise.asDiagonal());
+  ukf.predict(dynamicMoldel, dynamicNoise.cwiseAbs2().asDiagonal());
+  ukf.update<4>(measurement, measurementModel, measurementNoise.cwiseAbs2().asDiagonal());
 }
 
 LIPStateEstimator::EstimatedState LIPStateEstimator::getEstimate() const

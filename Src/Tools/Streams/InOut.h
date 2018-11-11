@@ -16,7 +16,7 @@ class Angle;
 
 namespace EnumHelpers
 {
-  template<class T, bool isEnum> struct EnumOrClass;
+  template<typename T, bool isEnum> struct EnumOrClass;
 }
 
 /**
@@ -109,7 +109,7 @@ public:
    */
   virtual bool isBinary() const {return false;}
 
-  virtual void select(const char* name, int type, const char* (*enumToString)(int) = nullptr) {}
+  virtual void select(const char* name, int type, const char* enumType = nullptr) {}
   virtual void deselect() {}
 
   /**
@@ -121,7 +121,7 @@ public:
    * @param t The object, array, or enum to stream.
    * @return The stream.
    */
-  template<class T> Out& operator<<(const T& t)
+  template<typename T> Out& operator<<(const T& t)
   {
     return EnumHelpers::EnumOrClass<T, std::is_enum<T>::value>::write(*this, t);
   }
@@ -373,9 +373,9 @@ public:
    *             -2: value or record,
    *             -1: array or list.
    *             >= 0: array/list element index.
-   * @param enumToString A function that translates an enum to a string.
+   * @param enumType The type as string if it is an enum. Otherwise nullptr.
    */
-  virtual void select(const char* name, int type, const char* (*enumToString)(int) = nullptr) {}
+  virtual void select(const char* name, int type, const char* enumType = nullptr) {}
 
   /**
    * Deselects a field for reading.
@@ -392,7 +392,7 @@ public:
    * @param t The object, array, or enum to stream.
    * @return The stream.
    */
-  template<class T> In& operator>>(T& t)
+  template<typename T> In& operator>>(T& t)
   {
     return EnumHelpers::EnumOrClass<T, std::is_enum<T>::value>::read(*this, t);
   }
@@ -531,8 +531,8 @@ namespace EnumHelpers
    * operators by versions that will never be called. They aren't even
    * implemented.
    */
-  class Out2 : public ::Out {template<class T> Out& operator<<(const int&);};
-  class In2 : public ::In {template<class T> In& operator>>(int&);};
+  class Out2 : public ::Out {template<typename T> Out& operator<<(const int&);};
+  class In2 : public ::In {template<typename T> In& operator>>(int&);};
 
   /**
    * @class EnumOrClass
@@ -547,7 +547,7 @@ namespace EnumHelpers
    * @param T The type of the value to stream.
    * @param isEnum Is T an enum type? For this version, this is always false.
    */
-  template<class T, bool isEnum> struct EnumOrClass
+  template<typename T, bool isEnum> struct EnumOrClass
   {
     // An error here usually means that you try to stream data that is not streamable
     static Out& write(Out& out, const T& t) {return (Out2&)out << t;}
@@ -561,7 +561,7 @@ namespace EnumHelpers
    * streaming enums (as integers).
    * @param T The type of the value to stream.
    */
-  template<class T> struct EnumOrClass<T, true>
+  template<typename T> struct EnumOrClass<T, true>
   {
     static Out& write(Out& out, const T& t)
     {

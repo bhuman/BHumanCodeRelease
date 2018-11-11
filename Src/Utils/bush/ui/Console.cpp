@@ -94,17 +94,9 @@ Console::Console(TeamSelector* teamSelector)
   : visualContext(new VisualContext(this)),
     teamSelector(teamSelector),
     scrollArea(new ScrollArea(this)),
-    prompt(0),
     cmdLine(0)
 {
   cmdLine = new CommandLineEdit(this);
-
-  prompt = new QLabel("bush>", cmdLine);
-  prompt->setAutoFillBackground(true);
-  QPalette p = prompt->palette();
-  p.setColor(QPalette::Background, p.color(QPalette::AlternateBase));
-  prompt->setPalette(p);
-
   QGridLayout* layout = new QGridLayout();
   layout->setHorizontalSpacing(0);
   scrollArea->setWidget(visualContext);
@@ -114,7 +106,7 @@ Console::Console(TeamSelector* teamSelector)
   layout->setRowStretch(0, 1);
   QFormLayout* fl = new QFormLayout();
   fl->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-  fl->addRow(prompt, cmdLine);
+  fl->addRow(new QLabel("bush>", cmdLine), cmdLine);
   layout->addLayout(fl, 1, 0);
   setLayout(layout);
 

@@ -16,6 +16,7 @@
 #include "Simulation/Motors/ServoMotor.h"
 #include "Platform/Assert.h"
 #include "CoreModule.h"
+#include "Tools/Math/Rotation.h"
 #include "Tools/OpenGLTools.h"
 
 void Hinge::createPhysics()
@@ -26,7 +27,7 @@ void Hinge::createPhysics()
   axis->create();
 
   if(axis->deflection && axis->deflection->offset != 0.f)
-    pose.rotate(Matrix3x3<>(Vector3<>(axis->x, axis->y, axis->z) * axis->deflection->offset));
+    pose.rotate(Rotation::AngleAxis::unpack(Vector3f(axis->x, axis->y, axis->z) * axis->deflection->offset));
 
   //
   ::PhysicalObject::createPhysics();
@@ -43,11 +44,11 @@ void Hinge::createPhysics()
   joint = dJointCreateHinge(Simulation::simulation->physicalWorld, 0);
   dJointAttach(joint, childBody->body, parentBody ? parentBody->body : 0);
   //set hinge joint parameter
-  dJointSetHingeAnchor(joint, pose.translation.x, pose.translation.y, pose.translation.z);
-  Vector3<> globalAxis = pose.rotation * Vector3<>(axis->x, axis->y, axis->z);
-  dJointSetHingeAxis(joint, globalAxis.x, globalAxis.y, globalAxis.z);
+  dJointSetHingeAnchor(joint, pose.translation.x(), pose.translation.y(), pose.translation.z());
+  const Vector3f globalAxis = pose.rotation * Vector3f(axis->x, axis->y, axis->z);
+  dJointSetHingeAxis(joint, globalAxis.x(), globalAxis.y(), globalAxis.z());
   if(axis->cfm != -1.f)
-    dJointSetHingeParam(joint, dParamCFM, dReal(axis->cfm));
+    dJointSetHingeParam(joint, dParamCFM, axis->cfm);
 
   if(axis->deflection)
   {
@@ -56,22 +57,20 @@ void Hinge::createPhysics()
     float maxHingeLimit = deflection.max;
     if(minHingeLimit > maxHingeLimit)
       minHingeLimit = maxHingeLimit;
-    //Set physical limits to higher values (+10%) to avoid strange hinge effects.
-    //Otherwise, sometimes the motor exceeds the limits.
-    float internalTolerance = (maxHingeLimit - minHingeLimit) * 0.1f;
-    if(dynamic_cast<ServoMotor*>(axis->motor))
+
+    // A servo motor will handle the limits, so ignore them here
+    // This is incorrect if the servo motor is not strong enough.
+    if(!dynamic_cast<ServoMotor*>(axis->motor))
     {
-      minHingeLimit -= internalTolerance;
-      maxHingeLimit += internalTolerance;
+      dJointSetHingeParam(joint, dParamLoStop, minHingeLimit - axis->deflection->offset);
+      dJointSetHingeParam(joint, dParamHiStop, maxHingeLimit - axis->deflection->offset);
+      // this has to be done due to the way ODE sets joint stops
+      dJointSetHingeParam(joint, dParamLoStop, minHingeLimit - axis->deflection->offset);
+      if(deflection.stopCFM != -1.f)
+        dJointSetHingeParam(joint, dParamStopCFM, deflection.stopCFM);
+      if(deflection.stopERP != -1.f)
+        dJointSetHingeParam(joint, dParamStopERP, deflection.stopERP);
     }
-    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit - axis->deflection->offset));
-    dJointSetHingeParam(joint, dParamHiStop, dReal(maxHingeLimit - axis->deflection->offset));
-    // this has to be done due to the way ODE sets joint stops
-    dJointSetHingeParam(joint, dParamLoStop, dReal(minHingeLimit - axis->deflection->offset));
-    if(deflection.stopCFM != -1.f)
-      dJointSetHingeParam(joint, dParamStopCFM, dReal(deflection.stopCFM));
-    if(deflection.stopERP != -1.f)
-      dJointSetHingeParam(joint, dParamStopERP, dReal(deflection.stopERP));
   }
 
   // create motor

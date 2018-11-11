@@ -46,5 +46,4 @@ STREAMABLE(TeamBallModel,
   (unsigned)(0) timeWhenLastSeen,              /**< The point of time when the ball was seen the last time by a teammate */
   (Contributors)(onlyMe) contributors,         /**< Information about which robot(s) contributed to the computation of this model */
   (std::vector<ConsideredBall>) balls,         /**< List of all merged balls, only filled if there are multiple contributors */
-  (float)(0) standardDeviationOfWeightedBalls, /**< Standard deviation of balls with overall position as mean. Computation involves the weightings used by the current TeamBallLocator */
 });

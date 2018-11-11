@@ -41,5 +41,11 @@ void CalibrationStand::update(StandLegRequest& standLegRequest)
     OUTPUT_TEXT("Warning: at least one foot pose unreachable");
   }
 
+  DEBUG_RESPONSE("module:CalibrationStand:head")
+  {
+    standLegRequest.angles[Joints::headPitch] = JointAngles::ignore;
+    standLegRequest.angles[Joints::headYaw] = JointAngles::ignore;
+  }
+
   standLegRequest.stiffnessData.stiffnesses.fill(legStiffness);
 }

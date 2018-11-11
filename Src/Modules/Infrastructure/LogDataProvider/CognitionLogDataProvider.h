@@ -12,7 +12,6 @@
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldColors.h"
 #include "Representations/Infrastructure/AudioData.h"
-#include "Representations/Infrastructure/DebuggingOutput.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
@@ -24,8 +23,10 @@
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/TeamInfo.h"
+#include "Representations/Infrastructure/Thumbnail.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/LabelImage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -40,16 +41,16 @@
 #include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
-#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/PlayersPercepts/PlayersFieldPercept.h"
-#include "Representations/Perception/PlayersPercepts/PlayersImagePercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Tools/ImageProcessing/PixelTypes.h"
 #include "Tools/ImageProcessing/TImage.h"
@@ -70,7 +71,7 @@ MODULE(CognitionLogDataProvider,
   PROVIDES(CameraInfo),
   PROVIDES(CameraMatrix),
   PROVIDES(CirclePercept),
-  PROVIDES(DebuggingOutput),
+  PROVIDES(ECImage),
   PROVIDES(FieldBoundary),
   PROVIDES(FieldColors),
   PROVIDES(FrameInfo),
@@ -78,12 +79,13 @@ MODULE(CognitionLogDataProvider,
   PROVIDES(GroundContactState),
   PROVIDES(GroundTruthWorldState),
   PROVIDES_WITHOUT_MODIFY(Image),
+  PROVIDES_WITHOUT_MODIFY(SegmentedImage),
   PROVIDES(ImageCoordinateSystem),
   PROVIDES(JointSensorData),
+  PROVIDES(LabelImage),
   PROVIDES(LinesPercept),
   PROVIDES(IntersectionsPercept),
   PROVIDES(FieldLines),
-  PROVIDES(GoalPostPercept),
   PROVIDES(MotionInfo),
   PROVIDES(MotionRequest),
   PROVIDES(ObstacleModel),
@@ -94,8 +96,8 @@ MODULE(CognitionLogDataProvider,
   PROVIDES(RobotHealth),
   PROVIDES(RobotInfo),
   PROVIDES(PenaltyMarkPercept),
-  PROVIDES(PlayersFieldPercept),
-  PROVIDES(PlayersImagePercept),
+  PROVIDES(ObstaclesFieldPercept),
+  PROVIDES(ObstaclesImagePercept),
   PROVIDES(RobotPose),
   PROVIDES(SelfLocalizationHypotheses),
   PROVIDES(SideConfidence),
@@ -116,57 +118,59 @@ private:
   static thread_local CognitionLogDataProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
   bool frameDataComplete; /**< Were all messages of the current frame received? */
   LowFrameRateImage* lowFrameRateImage; /**< This will be allocated when a low frame rate image was received. */
+  Thumbnail* thumbnail; /**< This will be allocated when a thumbnail was received. */
   Image lastImages[CameraInfo::numOfCameras]; /**< Stores images per camera received as low frame rate images. */
 
   mutable TImage<PixelTypes::YUYVPixel> corrected;
 
   // No-op update stubs
-  void update(ActivationGraph&) {}
-  void update(AlternativeRobotPoseHypothesis&) {}
-  void update(AudioData&) {}
-  void update(BallModel&) {}
-  void update(BallPercept&) {}
-  void update(BallSpots&) {}
-  void update(BehaviorStatus&) {}
-  void update(BodyContour&) {}
-  void update(CameraInfo& cameraInfo) {}
-  void update(CameraMatrix& cameraMatrix) {}
-  void update(CirclePercept&) {}
-  void update(DebuggingOutput&) {}
-  void update(FieldBoundary&) {}
-  void update(FieldColors&);
-  void update(FrameInfo&) {}
-  void update(GameInfo&) {}
-  void update(GroundContactState&) {}
-  void update(GroundTruthWorldState&) {}
-  void update(JointSensorData&) {}
-  void update(FieldLines&) {}
-  void update(GoalPostPercept&) {}
-  void update(LinesPercept&) {}
-  void update(IntersectionsPercept&) {}
-  void update(MotionInfo&) {}
-  void update(MotionRequest&) {}
-  void update(ObstacleModel&) {}
-  void update(Odometer&) {}
-  void update(OdometryData&) {}
-  void update(OpponentTeamInfo&) {}
-  void update(OwnTeamInfo&) {}
-  void update(RobotHealth&) {}
-  void update(RobotInfo&) {}
-  void update(PenaltyMarkPercept&) {}
-  void update(PlayersFieldPercept&) {}
-  void update(PlayersImagePercept&) {}
-  void update(RobotPose&) {}
-  void update(SelfLocalizationHypotheses&) {}
-  void update(SideConfidence&) {}
-  void update(TeamBallModel&) {}
-  void update(TeamData&) {}
-  void update(TeamPlayersModel&) {}
-  void update(Whistle&) {}
+  void update(ActivationGraph&) override {}
+  void update(AlternativeRobotPoseHypothesis&) override {}
+  void update(AudioData&) override {}
+  void update(BallModel&) override {}
+  void update(BallPercept&) override {}
+  void update(BallSpots&) override {}
+  void update(BehaviorStatus&) override {}
+  void update(BodyContour&) override {}
+  void update(CameraInfo& cameraInfo) override {}
+  void update(CameraMatrix& cameraMatrix) override {}
+  void update(CirclePercept&) override {}
+  void update(FieldBoundary&) override {}
+  void update(FieldColors&) override;
+  void update(FrameInfo&) override {}
+  void update(GameInfo&) override {}
+  void update(GroundContactState&) override {}
+  void update(GroundTruthWorldState&) override {}
+  void update(JointSensorData&) override {}
+  void update(FieldLines&) override {}
+  void update(LabelImage&) override {}
+  void update(LinesPercept&) override {}
+  void update(ImageCoordinateSystem& imageCoordinateSystem) override {}
+  void update(IntersectionsPercept&) override {}
+  void update(MotionInfo&) override {}
+  void update(MotionRequest&) override {}
+  void update(ObstacleModel&) override {}
+  void update(Odometer&) override {}
+  void update(OdometryData&) override {}
+  void update(OpponentTeamInfo&) override {}
+  void update(OwnTeamInfo&) override {}
+  void update(RobotHealth&) override {}
+  void update(RobotInfo&) override {}
+  void update(PenaltyMarkPercept&) override {}
+  void update(ObstaclesFieldPercept&) override {}
+  void update(ObstaclesImagePercept&) override {}
+  void update(RobotPose&) override {}
+  void update(SegmentedImage& image) override {}
+  void update(SelfLocalizationHypotheses&) override {}
+  void update(SideConfidence&) override {}
+  void update(TeamBallModel&) override {}
+  void update(TeamData&) override {}
+  void update(TeamPlayersModel&) override {}
+  void update(Whistle&) override {}
 
   // Updates with data
-  void update(Image& image);
-  void update(ImageCoordinateSystem& imageCoordinateSystem);
+  void update(Image& image) override;
+  void update(ECImage& ecImage) override;
 
   /**
    * The method is called for every incoming debug message by handleMessage.

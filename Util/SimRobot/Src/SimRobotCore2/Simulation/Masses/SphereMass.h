@@ -20,5 +20,5 @@ public:
 
 private:
   /** Creates the mass (not including children, \c translation or \c rotation) */
-  virtual void assembleMass();
+  void assembleMass() override;
 };

@@ -7,7 +7,7 @@
  *
  * MODULE(MyImageProcessor,
  * {,
- *   REQUIRES(Image),                         // Has to be updated before
+ *   REQUIRES(CameraImage),                         // Has to be updated before
  *   REQUIRES(CameraMatrix),                  // Has to be updated before
  *   USES(RobotPose),                         // Is used, but has not to be updated before
  *   PROVIDES(BallPercept),                   // Class provides a method to update BallPercept.
@@ -25,8 +25,8 @@
  *
  * class MyImageProcessor : public MyImageProcessorBase
  * {
- *   void update(BallPercept& ballPercept);
- *   void update(PlayersPercept& playersPercept);
+ *   void update(BallPercept& ballPercept) override;
+ *   void update(PlayersPercept& playersPercept) override;
  * };
  *
  * In the implementation file, the existence of the module has to be announced:
@@ -45,6 +45,8 @@
 #include "Tools/Debugging/Stopwatch.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Blackboard.h"
+
+#include <vector>
 
 /**
  * The class is the abstract base of all template classes that create modules.
@@ -85,7 +87,7 @@ public:
   static MessageID getMessageID(const std::string& name)
   {
     FOREACH_ENUM(MessageID, i)
-      if(name == ::getName(i) + 2)
+      if(name == TypeRegistry::getEnumName(i) + 2)
         return i;
     return ::undefined;
   }
@@ -119,7 +121,7 @@ private:
   ModuleBase* next; /**< The next entry in the list of all modules. */
   const char* name; /**< The name of the module that can be created by this instance. */
   Category category; /**< The category of this module. */
-  const Info* info; /**< Information about the requirements and provisions of the module. */
+  std::vector<Info> (*getModuleInfo)(); /**< A function that returns information about the requirements and provisions of the module. */
 
 protected:
   /**
@@ -133,9 +135,10 @@ public:
    * Constructor.
    * @param name The name of the module that can be created by this instance.
    * @param category The category of this module.
+   * @param getModuleInfo The function that returns the module info.
    */
-  ModuleBase(const char* name, Category category, const Info* info) :
-    next(first), name(name), category(category), info(info)
+  ModuleBase(const char* name, Category category, std::vector<Info> (*getModuleInfo)()) :
+    next(first), name(name), category(category), getModuleInfo(getModuleInfo)
   {
     first = this;
   }
@@ -148,16 +151,15 @@ public:
  * The template class provides a method to create a certain module, and it
  * registers all requirements and representations provided by that class.
  * @param M The type of the module created.
- * @param B The base class of the module.
  */
-template<class M, class B> class Module : public ModuleBase
+template<typename M> class Module : public ModuleBase
 {
 private:
   /**
    * The method creates an instance of the module.
    * @return The address of the newly created instance.
    */
-  Streamable* createNew()
+  Streamable* createNew() override
   {
     return (Streamable*) new M;
   }
@@ -175,9 +177,10 @@ public:
    * and it is used to do the registration of the information required.
    * @param name The name of the module that can be created by this instance.
    * @param category The category of this module.
+   * @param getModuleInfo The function that returns the module info.
    */
-  Module(const char* name, Category category) :
-    ModuleBase(name, category, B::getModuleInfo())
+  Module(const char* name, Category category, std::vector<ModuleBase::Info> (*getModuleInfo)()) :
+    ModuleBase(name, category, getModuleInfo)
   {}
 };
 
@@ -189,14 +192,15 @@ STREAMABLE(NoParameters,
 });
 
 /**
- * Load the parameters of a module.
+ * Load the parameters of a module, fails if file is missing (not in Release).
  * @param parameters The parameters.
  * @param moduleName The filename is determined from the name of the module if it
  *                   is not explicitly specified.
  * @param fileName The filename used or nullptr if it should be created from the module's name.
- * @param failOnMissing Abort program if file is missing (not in Release).
  */
-void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName, bool failOnMissing = true);
+void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName);
+
+void saveModuleParameters(const Streamable& parameters, const char* moduleName, const char* fileName);
 
 // Some of the following macros can also be found in AutoStreamable.h with different names.
 // However, separate versions are required here, because the preprocessor only expands each
@@ -212,11 +216,11 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_TUPLE_SIZE_I(params) _MODULE_TUPLE_SIZE_II params
 #endif
 #define _MODULE_TUPLE_SIZE_II( \
-  a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
-  a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
-  a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, \
-  a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, \
-  a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, ...) a100
+                               a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
+                               a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
+                               a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, \
+                               a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, \
+                               a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, ...) a100
 #define _MODULE_TUPLE_SIZE_III \
   100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, \
   79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, \
@@ -342,7 +346,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
 #define _MODULE_STREAMABLE(name, base, streamBase, header, ...) \
   struct name : public base \
     _MODULE_UNWRAP header; \
-    _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, streamBase, __VA_ARGS__)
+  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, base, streamBase, __VA_ARGS__)
 #else
 #define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
 #define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
@@ -381,12 +385,12 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  */
 #define _MODULE_DECLARE(x) _MODULE_JOIN(_MODULE_DECLARE_, x)
 #define _MODULE_DECLARE_PROVIDES(type) _MODULE_PROVIDES(type, \
-  MODIFY("representation:" #type, r); \
-  _MODULE_VERIFY(r) \
-  _MODULE_DRAW(r))
+                                                        MODIFY("representation:" #type, r); \
+                                                        _MODULE_VERIFY(r) \
+                                                        _MODULE_DRAW(r))
 #define _MODULE_DECLARE_PROVIDES_WITHOUT_MODIFY(type) _MODULE_PROVIDES(type, \
-  _MODULE_VERIFY(r) \
-  _MODULE_DRAW(r))
+    _MODULE_VERIFY(r) \
+    _MODULE_DRAW(r))
 #define _MODULE_DECLARE_REQUIRES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE_USES(type) public: const type& the##type = Blackboard::getInstance().alloc<type>(#type);
 #define _MODULE_DECLARE__MODULE_DEFINES_PARAMETERS(...)
@@ -411,9 +415,9 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * @param x The type name of a representation or the set of all parameters.
  */
 #define _MODULE_INFO(x) _MODULE_JOIN(_MODULE_INFO_, x)
-#define _MODULE_INFO_PROVIDES(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_PROVIDES_WITHOUT_MODIFY(type) ModuleBase::Info(#type, &BaseType::update##type),
-#define _MODULE_INFO_REQUIRES(type) ModuleBase::Info(#type, nullptr),
+#define _MODULE_INFO_PROVIDES(type) infos.emplace_back(#type, &BaseType::update##type);
+#define _MODULE_INFO_PROVIDES_WITHOUT_MODIFY(type) infos.emplace_back(#type, &BaseType::update##type);
+#define _MODULE_INFO_REQUIRES(type) infos.emplace_back(#type, nullptr);
 #define _MODULE_INFO_USES(type)
 #define _MODULE_INFO__MODULE_DEFINES_PARAMETERS(...)
 #define _MODULE_INFO__MODULE_LOADS_PARAMETERS(...)
@@ -444,7 +448,7 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
       ((BaseType&) module)._the##type = &Blackboard::getInstance().alloc<type>(#type); \
     type& r(*((BaseType&) module)._the##type); \
     BH_TRACE; \
-    STOPWATCH_WITH_PLOT(#type) ((BaseType&) module).update(r); \
+    STOPWATCH(#type) ((BaseType&) module).update(r); \
     mod \
     if(((BaseType&) module)._id##type != ::undefined) \
       DEBUG_RESPONSE("representation:" #type) OUTPUT(((BaseType&) module)._id##type, bin, r); \
@@ -463,48 +467,49 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * It create all the code and fills in data from the requirements, representations,
  * provided, and parameters defined.
  */
-#define _MODULE_II(name, n, params, load, declare, free, info) \
-  namespace name##Module \
+#define _MODULE_II(theName, n, params, load, declare, free, info) \
+  namespace theName##Module \
   { \
     _MODULE_ATTR_##n params \
     using Parameters = NoParameters; \
   } \
-  class name; \
-  class name##Base : public name##Module::Parameters \
+  class theName; \
+  class theName##Base : public theName##Module::Parameters \
   { \
   private: \
-    using BaseType = name##Base; \
+    using BaseType = theName##Base; \
     void modifyParameters() \
     { \
-      if(sizeof(NoParameters) < sizeof(name##Module::Parameters)) \
-        MODIFY("parameters:" #name, *this); \
-    } \
-  private: \
-    static const ModuleBase::Info* getModuleInfo() \
-    { \
-      static const ModuleBase::Info infos[] = \
+      if(sizeof(NoParameters) < sizeof(theName##Module::Parameters)) \
       { \
-        _MODULE_ATTR_##n info \
-        ModuleBase::Info(nullptr, nullptr) \
-      }; \
+        Global::getDebugDataTable().updateObject("parameters:" #theName, *this, false); \
+        DEBUG_RESPONSE_ONCE("debug data:parameters:" #theName) \
+          OUTPUT(idDebugDataResponse, bin, "parameters:" #theName << TypeRegistry::demangle(typeid(theName##Module::Parameters).name()) << *this); \
+      } \
+    } \
+  public: \
+    static std::vector<ModuleBase::Info> getModuleInfo() \
+    { \
+      std::vector<ModuleBase::Info> infos; \
+      _MODULE_ATTR_##n info \
       return infos; \
     } \
-    friend class Module<name, name##Base>; \
+  private: \
     _MODULE_ATTR_##n declare \
   public: \
-    using Parameters = name##Module::Parameters; \
-    name##Base(const char* fileName = nullptr) \
+    using Parameters = theName##Module::Parameters; \
+    theName##Base(const char* fileName = nullptr) \
     { \
-      static const char* moduleName = #name; \
+      static const char* moduleName = #theName; \
       (void) moduleName; \
       _MODULE_ATTR_##n load \
     } \
-    ~name##Base() \
+    ~theName##Base() \
     { \
       _MODULE_ATTR_##n free \
     } \
-    name##Base(const name##Base&) = delete; \
-    name##Base& operator=(const name##Base&) = delete; \
+    theName##Base(const theName##Base&) = delete; \
+    theName##Base& operator=(const theName##Base&) = delete; \
   }
 
 /**
@@ -526,6 +531,17 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
   _MODULE_I(name, _MODULE_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
 
 /**
+ * The macro creates a creator for the module with custom module info.
+ * This macro should only be used directly in special cases when a module has
+ * additional requirements that can not be listed in the module declaration.
+ * @param module The name of the module that can be created.
+ * @param category The category of this module.
+ * @param getModuleInfo The function that returns the module info.
+ */
+#define MAKE_MODULE_WITH_INFO(module, category, getModuleInfo) \
+  Module<module> the##module##Module(#module, ModuleBase::category, getModuleInfo);
+
+/**
  * The macro creates a creator for the module.
  * See beginning of this file.
  * It has to be part of the implementation file.
@@ -533,4 +549,4 @@ void loadModuleParameters(Streamable& parameters, const char* moduleName, const 
  * @param category The category of this module.
  */
 #define MAKE_MODULE(module, category) \
-  Module<module, module##Base> the##module##Module(#module, ModuleBase::category);
+  MAKE_MODULE_WITH_INFO(module, category, module##Base::getModuleInfo)

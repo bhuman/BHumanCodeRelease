@@ -59,9 +59,10 @@ public:
     ThresholdSelector(name, parent, min, max)
   {}
 
-  void updateWidgets();
+  void updateWidgets() override;
+
 private:
-  void updateColorCalibration(int value);
+  void updateColorCalibration(int value) override;
 };
 
 class BlackWhiteSelector : public ThresholdSelector
@@ -71,7 +72,8 @@ public:
     ThresholdSelector(name, parent, min, max)
   {}
 
-  void updateWidgets();
+  void updateWidgets() override;
+  
 private:
-  void updateColorCalibration(int value);
+  void updateColorCalibration(int value) override;
 };

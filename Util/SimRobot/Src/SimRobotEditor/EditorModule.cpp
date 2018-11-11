@@ -58,7 +58,7 @@ bool EditorModule::compile()
   application->registerObject(*this, *this, 0, SimRobot::Flag::windowless);
 
   QString filePath = application->getFilePath();
-  addEditor(filePath, "href=(\\\"([ \\\\/a-z0-9\\.\\-_]+\\.rsi2?)\\\"|[\\\\/a-z0-9\\.\\-_]+\\.rsi2?)", true);
+  addEditor(filePath, "href\\s*=\\s*\\\"([ \\\\/a-z0-9\\.\\-_]+\\.rsi2)\\\"", true);
 
   loadFromSettings();
 

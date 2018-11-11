@@ -51,15 +51,15 @@ public:
   Debug();
 
   /** The main function of the process */
-  bool main();
+  bool main() override;
 
   /** Is called before the first main() */
-  virtual void init();
+  void init() override;
 
   /**
    * Is called for every incoming debug message.
    * @param message the message to handle
    * @return if the message was handled
    */
-  virtual bool handleMessage(InMessage& message);
+  bool handleMessage(InMessage& message) override;
 };

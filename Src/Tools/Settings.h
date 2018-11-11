@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Representations/Infrastructure/RoboCupGameControlData.h"
 #include "Tools/Streams/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
 
@@ -33,9 +34,7 @@ public:
   std::string headName; /**< The name of this robot's head. */
   std::string bodyName; /**< The name of this robot's body. */
 
-  static bool recover; /**< Start directly without the pre-initial state. */
-
-  static constexpr int highestValidPlayerNumber = 10; /**< No player can have a number greater than this */
+  static constexpr int highestValidPlayerNumber = MAX_NUM_PLAYERS; /**< No player can have a number greater than this */
   static constexpr int lowestValidPlayerNumber = 1;  /**< No player can have a number smaller than this */
 
   friend class ConsoleRoboCupCtrl; /**< To access settings. */
@@ -46,6 +45,8 @@ public:
 
 private:
   static Settings settings; /**< The master settings instance. */
+  static std::vector<std::string> scenarios; /**< The master scenario per team. */
+
   static bool loaded; /**< True if the load() of the master settings instance succeeded. */
 
   /**
@@ -77,6 +78,7 @@ private:
    * @return Whether the settings were loaded successfully.
    */
   bool load();
+
 public:,
   (int) teamNumber, /**< The number of our team in the game controller. Use theOwnTeamInfo.teamNumber instead. */
   (TeamColor) teamColor, /**< The color of our team. Use theOwnTeamInfo.teamColor instead. */

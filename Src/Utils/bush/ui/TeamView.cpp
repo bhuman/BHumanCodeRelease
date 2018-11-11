@@ -117,7 +117,7 @@ void TeamView::init()
     sbMagic = new QSpinBox(this);
     sbMagic->setRange(-1, 255);
     sbMagic->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    sbMagic->setMaximumWidth(23);
+    sbMagic->setMaximumWidth(31);
     sbMagic->setValue(team->magicNumber);
     settingsGrid->addWidget(new QLabel("<b>Magic Number:</b>", sbMagic));
     settingsGrid->addWidget(sbMagic);

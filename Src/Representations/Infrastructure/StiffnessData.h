@@ -2,6 +2,7 @@
 
 #include "Tools/RobotParts/Joints.h"
 #include "Tools/Streams/EnumIndexedArray.h"
+#include "Tools/Debugging/Debugging.h"
 
 STREAMABLE(StiffnessData,
 {
@@ -26,10 +27,12 @@ STREAMABLE(StiffnessData,
   /** Checks wheather all stiffnesses are in the rangel [0, 100] or have the value useDefault. */
   bool isValid() const,
 
-  (ENUM_INDEXED_ARRAY(int, (Joints) Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
+  (ENUM_INDEXED_ARRAY(int, Joints::Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
 });
 
-struct StiffnessSettings : public StiffnessData {};
+STREAMABLE_WITH_BASE(StiffnessSettings, StiffnessData,
+{,
+});
 
 inline StiffnessData::StiffnessData()
 {
@@ -86,8 +89,12 @@ inline void StiffnessData::resetToDefault()
 
 inline bool StiffnessData::isValid() const
 {
-  for(auto& stiffness : stiffnesses)
-    if(stiffness > 100 || (stiffness < 0 && stiffness != useDefault))
-      return false;
-  return true;
+  bool isValid = true;
+  for(unsigned i = 0; i < Joints::numOfJoints; i++)
+    if(stiffnesses[i] > 100 || (stiffnesses[i] < 0 && stiffnesses[i] != useDefault))
+    {
+      OUTPUT_ERROR("Stiffness from Joint " << TypeRegistry::getEnumName(Joints::Joint(i)) << " is invalid");
+      isValid = false;
+    }
+  return isValid;
 }

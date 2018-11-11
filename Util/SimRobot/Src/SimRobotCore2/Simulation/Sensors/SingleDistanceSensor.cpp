@@ -57,8 +57,8 @@ void SingleDistanceSensor::DistanceSensor::staticCollisionCallback(SingleDistanc
 
   for(int i = 0; i < contacts; ++i)
   {
-    dContactGeom& contactGeom = contactGeoms[i];
-    const float sqrDistance = (Vector3<>((float) contactGeom.pos[0], (float) contactGeom.pos[1], (float) contactGeom.pos[2]) - sensor->pose.translation).squareAbs();
+    const dContactGeom& contactGeom = contactGeoms[i];
+    const float sqrDistance = (Vector3f(static_cast<float>(contactGeom.pos[0]), static_cast<float>(contactGeom.pos[1]), static_cast<float>(contactGeom.pos[2])) - sensor->pose.translation).squaredNorm();
     if(sqrDistance < sensor->closestSqrDistance)
     {
       sensor->closestSqrDistance = sqrDistance;
@@ -78,16 +78,16 @@ void SingleDistanceSensor::DistanceSensor::updateValue()
 {
   pose = physicalObject->pose;
   pose.conc(offset);
-  const Vector3<>& pos = pose.translation;
-  const Vector3<>& dir = pose.rotation.c0;
-  dGeomRaySet(geom, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
+  const Vector3f& pos = pose.translation;
+  const Vector3f dir = pose.rotation.col(0);
+  dGeomRaySet(geom, pos.x(), pos.y(), pos.z(), dir.x(), dir.y(), dir.z());
   closestGeom = 0;
   closestSqrDistance = maxSqrDist;
   dSpaceCollide2(geom, (dGeomID)Simulation::simulation->movableSpace, this, (dNearCallback*)&staticCollisionWithSpaceCallback);
   dSpaceCollide2(geom, (dGeomID)Simulation::simulation->staticSpace, this, (dNearCallback*)&staticCollisionCallback);
   if(closestGeom)
   {
-    data.floatValue = sqrtf(closestSqrDistance);
+    data.floatValue = std::sqrt(closestSqrDistance);
     if(data.floatValue < min)
       data.floatValue = min;
   }

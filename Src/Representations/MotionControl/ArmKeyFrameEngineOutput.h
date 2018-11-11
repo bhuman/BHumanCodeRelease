@@ -12,8 +12,8 @@ STREAMABLE_WITH_BASE(ArmKeyFrameEngineOutput, ArmJointRequest,
   STREAMABLE(Arm,
   {,
     (bool)(true) isFree,                                    /**< The arm is ready to release by key fram engine */
-    ((ArmKeyFrameRequest) ArmKeyFrameId)(useDefault) motion, /**< The arm motion being executed. */
+    (ArmKeyFrameRequest::ArmKeyFrameId)(ArmKeyFrameRequest::useDefault) motion, /**< The arm motion being executed. */
   }),
 
-  (ENUM_INDEXED_ARRAY(Arm, (Arms) Arm)) arms,
+  (ENUM_INDEXED_ARRAY(Arm, Arms::Arm)) arms,
 });

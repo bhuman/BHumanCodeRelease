@@ -12,6 +12,7 @@
 #include "Tools/Math/Covariance.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Probabilistics.h"
+#include "Tools/Modeling/Measurements.h"
 
 using namespace std;
 
@@ -105,7 +106,7 @@ void UKFSample::updateByPose(const RegisteredPose& pose, const CameraMatrix& cam
   measurement.y() = pose.pose.translation.y();
   measurement.z() = pose.pose.rotation;
 
-  const Matrix2f perceivedCenterCovariance = getCovOfPointInWorld(pose.p.translation, 0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+  const Matrix2f perceivedCenterCovariance = Measurements::positionToCovarianceMatrixInRobotCoordinates(pose.p.translation, 0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
   const float c = cos(pose.pose.rotation);
   const float s = sin(pose.pose.rotation);
   const Matrix2f angleRotationMatrix = (Matrix2f() << c, -s, s, c).finished();
@@ -128,15 +129,16 @@ Matrix2f UKFSample::getCovOfCircle(const Vector2f& circlePos, float centerCircle
                                    const Vector2f& currentRotationDeviation) const
 {
   float circleDistance = circlePos.norm();
+  const float centerCircleDiameter = centerCircleRadius * 2.f;
   Vector2f increasedCirclePos = circlePos;
-  if(circleDistance < centerCircleRadius * 2.f)
+  if(circleDistance < centerCircleDiameter)
   {
     if(circleDistance < 10.f)
-      increasedCirclePos = Vector2f(centerCircleRadius * 2, 0.f);
+      increasedCirclePos = Vector2f(centerCircleDiameter, 0.f);
     else
-      increasedCirclePos *= centerCircleRadius * 2.f / circleDistance;
+      increasedCirclePos *= centerCircleDiameter / circleDistance;
   }
-  return getCovOfPointInWorld(increasedCirclePos, 0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
+  return Measurements::positionToCovarianceMatrixInRobotCoordinates(increasedCirclePos, 0.f, cameraMatrix, inverseCameraMatrix, currentRotationDeviation);
 }
 
 void UKFSample::computeWeightingBasedOnValidity(float baseValidityWeighting)

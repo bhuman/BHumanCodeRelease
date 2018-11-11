@@ -3,7 +3,8 @@
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
-#include "../ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "MidCorner.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
@@ -32,10 +33,12 @@ void MidCorner::draw() const
   }
   COMPLEX_DRAWING("representation:MidCorner:image")
   {
-    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo"))
+    if(Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo")
+       && Blackboard::getInstance().exists("ImageCoordinateSystem"))
     {
       const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
       const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
       const Vector2f a = (*this) * Vector2f(0.f, size);
       const Vector2f b = (*this) * Vector2f(0.f, -size);
@@ -46,6 +49,9 @@ void MidCorner::draw() const
          Transformation::robotToImage(b, theCameraMatrix, theCameraInfo, bImage) &&
          Transformation::robotToImage(c, theCameraMatrix, theCameraInfo, cImage))
       {
+        aImage = theImageCoordinateSystem.fromCorrected(aImage);
+        bImage = theImageCoordinateSystem.fromCorrected(bImage);
+        cImage = theImageCoordinateSystem.fromCorrected(cImage);
         LINE("representation:MidCorner:image", aImage.x(), aImage.y(), bImage.x(), bImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:MidCorner:image", aImage.x(), aImage.y(), cImage.x(), cImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:MidCorner:image", bImage.x(), bImage.y(), cImage.x(), cImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);

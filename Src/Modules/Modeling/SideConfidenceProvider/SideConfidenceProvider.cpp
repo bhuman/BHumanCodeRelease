@@ -104,7 +104,11 @@ void SideConfidenceProvider::findAgreemates()
   // Check all teammates:
   for(const auto& teammate : theTeamData.teammates)
   {
+    // Robots that are not playing are of no interest
     if(teammate.status != Teammate::PLAYING)
+      continue;
+    // Only trust B-Human robots
+    if(teammate.mateType != Teammate::TeamOrigin::BHumanRobot)
       continue;
     if(ballModelCanBeUsed(teammate.theBallModel, teammate.theRobotPose))
     {

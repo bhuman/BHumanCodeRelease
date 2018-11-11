@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "Platform/Thread.h"
-
 // Only declare prototypes. Don't include anything here, because this
 // file is included in many other files.
 class AnnotationManager;
@@ -15,11 +13,14 @@ class OutMessage;
 struct Settings;
 class DebugRequestTable;
 class DebugDataTable;
-class StreamHandler;
 class DrawingManager;
 class DrawingManager3D;
 class ReleaseOptions;
 class TimingManager;
+namespace asmjit
+{
+  class JitRuntime;
+}
 
 /**
  * @class Global
@@ -30,14 +31,13 @@ class Global
 private:
   static thread_local AnnotationManager* theAnnotationManager;
   static thread_local OutMessage* theDebugOut;
-  static thread_local OutMessage* theTeamOut;
   static thread_local Settings* theSettings;
   static thread_local DebugRequestTable* theDebugRequestTable;
   static thread_local DebugDataTable* theDebugDataTable;
-  static thread_local StreamHandler* theStreamHandler;
   static thread_local DrawingManager* theDrawingManager;
   static thread_local DrawingManager3D* theDrawingManager3D;
   static thread_local TimingManager* theTimingManager;
+  static thread_local asmjit::JitRuntime* theAsmjitRuntime;
 
 public:
   /**
@@ -53,10 +53,10 @@ public:
   static OutMessage& getDebugOut() {return *theDebugOut;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the outgoing team message queue in this process.
+   * The method returns whether the outgoing message queue was already instantiated.
+   * @return Is it safe to use getDebugOut()?
    */
-  static OutMessage& getTeamOut() {return *theTeamOut;}
+  static bool debugOutExists() {return theDebugOut != nullptr;}
 
   /**
    * The method returns a reference to the process wide instance.
@@ -84,12 +84,6 @@ public:
 
   /**
    * The method returns a reference to the process wide instance.
-   * @return The instance of the stream handler in this process.
-   */
-  static StreamHandler& getStreamHandler() {return *theStreamHandler;}
-
-  /**
-   * The method returns a reference to the process wide instance.
    * @return The instance of the drawing manager in this process.
    */
   static DrawingManager& getDrawingManager() {return *theDrawingManager;}
@@ -104,12 +98,15 @@ public:
    * The method returns a reference to the process wide instance.
    * @return the instance of the timing manager in this process.
    */
-  static TimingManager& getTimingManager() {return *theTimingManager;}
+  static TimingManager& getTimingManager() { return *theTimingManager; }
+
+  /**
+   * The method returns a reference to the process wide instance.
+   * @return the instance of the asmjit runtime in this process.
+   */
+  static asmjit::JitRuntime& getAsmjitRuntime() { return *theAsmjitRuntime; }
 
   friend class Process; // The class Process can set these pointers.
-  friend class Cognition; // The class Cognition can set theTeamOut.
-  friend struct Settings; // The class Settings can set a default StreamHandler.
-  friend class ConsoleRoboCupCtrl; // The class ConsoleRoboCupCtrl can set theStreamHandler.
+  friend class ConsoleRoboCupCtrl; // The class ConsoleRoboCupCtrl can set theSettings.
   friend class RobotConsole; // The class RobotConsole can set theDebugOut.
-  friend class Framework;
 };

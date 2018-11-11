@@ -28,7 +28,7 @@ MODULE(SitCommander,
 
 class SitCommander : public SitCommanderBase
 {
-  void update(SitCommand& sitCommand);
+  void update(SitCommand& sitCommand) override;
 private:
   bool changedBefore = false;
 };

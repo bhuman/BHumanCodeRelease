@@ -103,7 +103,7 @@ T Random::triangular(T low, T mean, T high)
   // See: https://en.wikipedia.org/wiki/Triangular_distribution
 
   const T fmean = (mean - low) / (high - low);
-  const std::uniform_real_distribution<T> dist(T(0), T(1));
+  std::uniform_real_distribution<T> dist(T(0), T(1));
   const T randVal = dist(getGenerator());
   if(randVal < fmean)
     return low + std::sqrt(randVal * (high - low) * (mean - low));

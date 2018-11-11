@@ -24,7 +24,6 @@ Geometry::~Geometry()
 
 void Geometry::addParent(Element& element)
 {
-  SimObject::addParent(element);
   ::PhysicalObject::addParent(element);
 }
 

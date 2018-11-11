@@ -68,6 +68,8 @@ if (host == "Linux") {
 
 cppFlags = {
   if (tool == "vcxproj") {
+    "/std:c++14"
+    "/permissive-"
     "/W3" // warning level 3
     "/GF" // enable string pooling
     "/Gm- /MP" // disable minimal rebuild and enable multi processor compilation
@@ -181,6 +183,10 @@ targets = {
   include "bush.mare"
   include "copyfiles.mare"
   include "Tests.mare"
+}
+
+cppSource += {
+  message = "$(notdir $(file))"
 }
 
 // given $(precompiledHeader) build pch table

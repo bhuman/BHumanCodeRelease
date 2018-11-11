@@ -4,7 +4,7 @@
 
 namespace FsrSensors
 {
-  GLOBAL_ENUM(FsrSensor,
+  ENUM(FsrSensor,
   {,
     fl,
     fr,

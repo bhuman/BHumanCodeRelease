@@ -26,7 +26,6 @@ STREAMABLE(ScanGrid,
   (int)(0) fieldLimit, /**< Upper bound for all scanlines (exclusive). */
   (unsigned)(0) lowResStart, /**< First index of low res grid. */
   (unsigned)(1) lowResStep, /**< Steps between low res grid lines. */
-  (std::vector<int>) yStarts, /**< Information about the yStarts of the different resolutions. (for UnionPlayersPerceptor)*/
 });
 
 inline ScanGrid::Line::Line(int x, int yMax, unsigned yMaxIndex) :

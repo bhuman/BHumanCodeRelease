@@ -5,6 +5,7 @@
 */
 
 #include <QMenu>
+#include <QRegularExpression>
 #include <QSet>
 #include <QFileInfo>
 #include <QTextStream>
@@ -104,10 +105,10 @@ EditorObject::~EditorObject()
   QSettings& settings = EditorModule::application->getLayoutSettings();
   settings.beginWriteArray(fullName, editors.size());
   int i = 0;
-  foreach(EditorObject* editor, editors)
+  for(const EditorObject* editor : editors)
   {
     settings.setArrayIndex(i++);
-    FileEditorObject* fileEditorObject = dynamic_cast<FileEditorObject*>(editor);
+    const FileEditorObject* fileEditorObject = dynamic_cast<const FileEditorObject*>(editor);
     if(!fileEditorObject)
     {
       settings.setValue("filePath", QString());
@@ -148,8 +149,7 @@ EditorWidget::EditorWidget(FileEditorObject* editorObject, const QString& fileCo
   canCopy(false), canUndo(false), canRedo(false),
   highlighter(0)
 {
-  if(editorObject->filePath.endsWith(".ros") || editorObject->filePath.endsWith(".rsi") ||
-    editorObject->filePath.endsWith(".ros2") || editorObject->filePath.endsWith(".rsi2"))
+  if(editorObject->filePath.endsWith(".ros2") || editorObject->filePath.endsWith(".rsi2"))
     highlighter = new SyntaxHighlighter(document());
   setFrameStyle(QFrame::NoFrame);
 
@@ -179,7 +179,11 @@ EditorWidget::EditorWidget(FileEditorObject* editorObject, const QString& fileCo
   }
   verticalScrollBar()->setValue(settings.value("verticalScrollPosition").toInt());
   horizontalScrollBar()->setValue(settings.value("horizontalScrollPosition").toInt());
+  useTabStop = settings.value("useTabStop", false).toBool();
+  tabStopWidth = settings.value("tabStopWidth", 2).toInt();
   settings.endGroup();
+
+  setTabStopWidth(tabStopWidth * QFontMetrics(font).width(' '));
 
   connect(this, SIGNAL(copyAvailable(bool)), this, SLOT(copyAvailable(bool)));
   connect(this, SIGNAL(undoAvailable(bool)), this, SLOT(undoAvailable(bool)));
@@ -196,6 +200,8 @@ EditorWidget::~EditorWidget()
   settings.setValue("selectionEnd", cursor.position());
   settings.setValue("verticalScrollPosition", verticalScrollBar()->value());
   settings.setValue("horizontalScrollPosition", horizontalScrollBar()->value());
+  settings.setValue("useTabStop", useTabStop);
+  settings.setValue("tabStopWidth", tabStopWidth);
   settings.endGroup();
 
   if(!EditorModule::module->application->getFilePath().isEmpty()) // !closingDocument
@@ -250,15 +256,16 @@ void EditorWidget::updateEditMenu(QMenu* menu, bool aboutToShow) const
 
   if(aboutToShow && !editorObject->subFileRegExpPattern.isEmpty())
   {
-    QRegExp rx(editorObject->subFileRegExpPattern, Qt::CaseInsensitive);
+    QRegularExpression rx(editorObject->subFileRegExpPattern, QRegularExpression::CaseInsensitiveOption);
     QString fileContent = toPlainText();
     QStringList includeFiles;
     QSet<QString> inculdeFilesSet;
     QString suffix = QFileInfo(editorObject->name).suffix();
+    QRegularExpressionMatch match;
     int pos = 0;
-    while((pos = rx.indexIn(fileContent, pos)) != -1)
+    while((match = rx.match(fileContent, pos)).hasMatch())
     {
-      QString file = rx.cap(1).remove('\"');
+      QString file = match.captured(1).remove('\"');
       if(QFileInfo(file).suffix().isEmpty())
         (file += '.') += suffix;
       if(!inculdeFilesSet.contains(file))
@@ -266,15 +273,15 @@ void EditorWidget::updateEditMenu(QMenu* menu, bool aboutToShow) const
         includeFiles.append(file);
         inculdeFilesSet.insert(file);
       }
-      pos += rx.matchedLength();
+      pos = match.capturedEnd();
     }
 
     if(includeFiles.count() > 0)
     {
-      foreach(QString str, includeFiles)
+      for(const QString& str : includeFiles)
       {
         QAction* action = menu->addAction(tr("Open \"%1\"").arg(str));
-        const_cast<EditorWidget*>(this)->openFileMapper.setMapping(action, str);
+        openFileMapper.setMapping(action, str);
         connect(action, SIGNAL(triggered()), &openFileMapper, SLOT(map()));
       }
       menu->addSeparator();
@@ -341,9 +348,126 @@ void EditorWidget::focusInEvent(QFocusEvent * event)
 
 void EditorWidget::keyPressEvent(QKeyEvent* event)
 {
-  QTextEdit::keyPressEvent(event);
-  if(event->matches(QKeySequence::Copy) || event->matches(QKeySequence::Cut))
-    emit pasteAvailable(canPaste());
+  switch(event->key())
+  {
+    case Qt::Key_Tab:
+    case Qt::Key_Backtab:
+      event->accept();
+      {
+        QTextCursor cursor = textCursor();
+        if(event->key() == Qt::Key_Tab && cursor.position() == cursor.anchor())
+        {
+          if(useTabStop)
+            cursor.insertText("\t");
+          else
+          {
+            cursor.beginEditBlock();
+            const int position = cursor.position();
+            cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+            const int diff = position - cursor.position();
+            cursor.setPosition(position, QTextCursor::MoveAnchor);
+            cursor.insertText(QString().fill(' ', tabStopWidth - (diff % tabStopWidth)));
+            cursor.endEditBlock();
+          }
+        }
+        else
+        {
+          int anchor = cursor.anchor();
+          int position = cursor.position();
+
+          int delta; // The number of characters that have been added / removed in a line
+
+          cursor.beginEditBlock();
+          cursor.setPosition(std::min(anchor, position), QTextCursor::MoveAnchor);
+          cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+          do
+          {
+            const int insertionPosition = cursor.position();
+            if(event->key() == Qt::Key_Tab)
+            {
+              cursor.insertText(useTabStop ? "\t" : QString().fill(' ', tabStopWidth));
+              delta = useTabStop ? 1 : tabStopWidth;
+            }
+            else
+            {
+              cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+              QString line = cursor.selectedText();
+              if(line[0] == '\t')
+              {
+                cursor.insertText(line.mid(1));
+                delta = -1;
+              }
+              else
+              {
+                int width;
+                for(width = 0; width < line.length() && width < tabStopWidth; ++width)
+                  if(line[width] != ' ')
+                    break;
+                cursor.insertText(line.mid(width));
+                delta = -width;
+              }
+            }
+            // Adjust the original selection.
+            // When unindenting, it must not happen that the cursor moves to a line above.
+            if(insertionPosition <= anchor)
+            {
+              anchor += delta;
+              if(anchor < insertionPosition)
+                anchor = insertionPosition;
+            }
+            if(insertionPosition <= position)
+            {
+              position += delta;
+              if(position < insertionPosition)
+                position = insertionPosition;
+            }
+            // Continue with the next line.
+            cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor);
+            cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+            // Check if the last line has been reached.
+            if(cursor.position() == insertionPosition)
+              break;
+          }
+          while(cursor.position() < std::max(anchor, position));
+          // Restore the original selection.
+          cursor.setPosition(anchor, QTextCursor::MoveAnchor);
+          cursor.setPosition(position, QTextCursor::KeepAnchor);
+          cursor.endEditBlock();
+        }
+        setTextCursor(cursor);
+      }
+      break;
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+      event->accept();
+      {
+        QTextCursor cursor = textCursor();
+        cursor.beginEditBlock();
+        // Actually insert the new line.
+        cursor.insertText("\n");
+        // Find out how the line above was indented.
+        cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+        QString indentation = cursor.selectedText();
+        for(int i = 0; i < indentation.length(); ++i)
+          if(indentation[i] != ' ' && indentation[i] != '\t')
+          {
+            indentation.truncate(i);
+            break;
+          }
+        // Insert the indentation.
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor);
+        cursor.insertText(indentation);
+        cursor.endEditBlock();
+        setTextCursor(cursor);
+      }
+      break;
+    default:
+      QTextEdit::keyPressEvent(event);
+      if(event->matches(QKeySequence::Copy) || event->matches(QKeySequence::Cut))
+        emit pasteAvailable(canPaste());
+  }
 }
 
 void EditorWidget::contextMenuEvent(QContextMenuEvent* event)

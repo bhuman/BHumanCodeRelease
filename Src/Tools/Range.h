@@ -23,21 +23,21 @@ STREAMABLE(Range,
    * Constructor.
    * Defines an empty range.
    */
-  constexpr Range();
+  constexpr Range() : min(T()) COMMA max(T()) {};
 
   /**
    * Constructor.
    * Defines an empty range.
    * @param minmax A conjoined starting and ending point of the empty range.
    */
-  constexpr Range(T minmax);
+  constexpr Range(T minmax) : min(minmax) COMMA max(minmax) {};
 
   /**
    * Constructor.
    * @param min The minimum of the range.
    * @param max The maximum of the range.
    */
-  constexpr Range(T min, T max);
+  constexpr Range(T min, T max) : min(min) COMMA max(max) {};
 
   /** A range between 0 and 1. */
   static constexpr Range<T> ZeroOneRange();
@@ -146,6 +146,8 @@ STREAMABLE(Range,
   constexpr bool contains(const Range<T>& r) const {return min < r.min && max > r.max;}
   //!@}
 
+  constexpr bool operator!=(const Range<T>& r) const {return min != r.min || max != r.max;}
+
   // The size of the intersection of to ranges or 0 if there is no intersection
   constexpr T intersectionSizeWith(const Range<T>& r) const {return std::max(0.f, std::min(max, r.max) - std::max(min, r.min));},
 
@@ -159,10 +161,6 @@ using Rangea = Range<Angle>;
 using Rangei = Range<int>;
 using Rangef = Range<float>;
 using Rangeuc = Range<unsigned char>;
-
-template<typename T> constexpr Range<T>::Range() : min(T()), max(T()) {}
-template<typename T> constexpr Range<T>::Range(T minmax) : min(minmax), max(minmax) {}
-template<typename T> constexpr Range<T>::Range(T min, T max) : min(min), max(max) {}
 
 template<typename T>
 constexpr Range<T> Range<T>::ZeroOneRange()

@@ -17,7 +17,7 @@ STREAMABLE(WalkKick,
 
   void onRead(),
 
-  ((Legs) Leg)(left) kickLeg, // The leg the kick is defined for.
+  (Legs::Leg)(Legs::left) kickLeg, // The leg the kick is defined for.
   (bool)(false) requiresPrestep, // If a prestep is required for the kick.
   (Pose2f) preStepSize, // The stepsize of the previous step if one is necessary.
   (float)(0.f) duration, // The duration of the kick in s.
@@ -33,7 +33,7 @@ STREAMABLE(WalkKicks,
     none,
     forward,
   }),
-  
+
   (ENUM_INDEXED_ARRAY(WalkKick, Type)) kicks,
 });
 
@@ -44,8 +44,8 @@ STREAMABLE(WalkKickVariant,
 
   bool operator==(const WalkKickVariant& other) const,
 
-  ((WalkKicks) Type)(none) kickType,
-  ((Legs) Leg)(left) kickLeg,
+  (WalkKicks::Type)(WalkKicks::none) kickType,
+  (Legs::Leg)(Legs::left) kickLeg,
 });
 
 inline WalkKickVariant::WalkKickVariant(WalkKicks::Type kickType, Legs::Leg kickLeg) : kickType(kickType), kickLeg(kickLeg) {}

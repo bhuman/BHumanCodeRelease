@@ -54,7 +54,7 @@ void CommandLineCompleter::setCompletionPrefix(const QString& text)
   if(wc != wordCount)
   {
     QStringList strings;
-    foreach(std::string s, Commands::getInstance().complete(toString(text)))
+    for(const std::string& s : Commands::getInstance().complete(toString(text)))
     {
       strings << fromString(s);
     }

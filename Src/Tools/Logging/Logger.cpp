@@ -15,18 +15,22 @@
 #include "Tools/Settings.h"
 #include "Tools/Debugging/AnnotationManager.h"
 #include "Tools/MessageQueue/MessageQueue.h"
-#include "Tools/Streams/StreamHandler.h"
+#include "Tools/Streams/TypeInfo.h"
 
+#ifdef TARGET_ROBOT
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <limits.h>
+#endif
 #include <snappy-c.h>
 
-Logger::Logger(LoggedProcess loggedProcess) : loggedProcess(loggedProcess)
+Logger::Logger(const std::string& processName, char processIdentifier, int framesPerSecond) :
+  processName(processName),
+  typeInfo(200000),
+  processIdentifier(processIdentifier),
+  framesPerSecond(framesPerSecond)
 {
-  if(loggedProcess == LoggedProcess::cognition)
-    name = "Cognition";
-  else
-    name = "Motion";
-
-  InMapFile stream(std::string("logger") + name + ".cfg");
+  InMapFile stream(std::string("logger") + processName + ".cfg");
   if(stream.exists())
     stream >> parameters;
 
@@ -35,8 +39,22 @@ Logger::Logger(LoggedProcess loggedProcess) : loggedProcess(loggedProcess)
   parameters.logFilePath = "Logs/";
 #endif
 
+#ifdef TARGET_ROBOT
+  if(parameters.enabled && parameters.logToUSB)
+  {
+    if(SystemCall::usbIsMounted())
+    {
+      std::string fullPath = parameters.logUSBFilePath + Global::getSettings().headName;
+      _mkdir(fullPath.c_str());
+      parameters.logFilePath = fullPath + "/";
+    }
+  }
+
+#endif
+
   if(parameters.enabled)
   {
+    typeInfo << TypeInfo();
     InMapFile stream2("teamList.cfg");
     if(stream2.exists())
       stream2 >> teamList;
@@ -71,20 +89,20 @@ void Logger::execute()
         if(Blackboard::getInstance().exists(representation.c_str()))
         {
           FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
-            if(::getName(id) == "id" + representation)
+            if(TypeRegistry::getEnumName(id) == "id" + representation)
             {
               loggables.push_back(Loggable(&Blackboard::getInstance()[representation.c_str()], id));
               goto found;
             }
-          OUTPUT_WARNING(name << "Logger: " << representation << " has no message id.");
-          FAIL(name << "Logger: " << representation << " has no message id.");
+          OUTPUT_WARNING(processName << "Logger: " << representation << " has no message id.");
+          FAIL(processName << "Logger: " << representation << " has no message id.");
         found:
           ;
         }
         else
         {
-          OUTPUT_WARNING(name << "Logger: " << representation << " is not available in blackboard.");
-          FAIL(name << "Logger: " << representation << " is not available in blackboard.");
+          OUTPUT_WARNING(processName << "Logger: " << representation << " is not available in blackboard.");
+          FAIL(processName << "Logger: " << representation << " is not available in blackboard.");
         }
 
       blackboardVersion = Blackboard::getInstance().getVersion();
@@ -98,6 +116,7 @@ void Logger::execute()
 
 std::string Logger::generateFilename() const
 {
+  static_assert(Settings::highestValidPlayerNumber < 10, "This code does not work with player numbers >= 10.");
   if(receivedGameControllerPacket)
   {
     const OpponentTeamInfo& opponentTeamInfo = static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]);
@@ -106,22 +125,13 @@ std::string Logger::generateFilename() const
       {
         std::string filename = team.name + "_";
         const GameInfo& gameInfo = static_cast<const GameInfo&>(Blackboard::getInstance()["GameInfo"]);
-        filename += gameInfo.secondaryState == STATE2_PENALTYSHOOT ? "ShootOut_" :
+        filename += gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT ? "ShootOut_" :
                     gameInfo.firstHalf ? "1stHalf_" : "2ndHalf_";
         filename += static_cast<char>(Global::getSettings().playerNumber + '0');
-        return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + filename;
+        return parameters.logFilePath + processName + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + filename;
       }
   }
-  return parameters.logFilePath + name + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + "Testing_" + static_cast<char>(Global::getSettings().playerNumber + '0');
-}
-
-void Logger::createStreamSpecification()
-{
-  OutBinarySize size;
-  size << Global::getStreamHandler();
-  streamSpecification.resize(size.getSize());
-  OutBinaryMemory stream(streamSpecification.data());
-  stream << Global::getStreamHandler();
+  return parameters.logFilePath + processName + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + "Testing_" + static_cast<char>(Global::getSettings().playerNumber + '0');
 }
 
 void Logger::logFrame()
@@ -129,13 +139,13 @@ void Logger::logFrame()
   if(writeIndex == (readIndex + parameters.maxBufferSize - 1) % parameters.maxBufferSize)
   {
     // Buffer is full, can't do anything this frame
-    OUTPUT_WARNING(name << "Logger: Writer thread too slow, discarding frame.");
+    OUTPUT_WARNING(processName << "Logger: Writer thread too slow, discarding frame.");
     return;
   }
 
   OutMessage& out = buffer[writeIndex]->out;
 
-  out.bin << (loggedProcess == LoggedProcess::cognition ? 'c' : 'm');
+  out.bin << processIdentifier;
   out.finishMessage(idProcessBegin);
 
   // Stream all representations to the queue
@@ -145,7 +155,7 @@ void Logger::logFrame()
     {
       out.bin << *loggable.representation;
       if(!out.finishMessage(loggable.id))
-        OUTPUT_WARNING("Logging of " << ::getName(loggable.id) << " failed. The buffer is full.");
+        OUTPUT_WARNING("Logging of " << TypeRegistry::getEnumName(loggable.id) << " failed. The buffer is full.");
     }
 
     // Append annotations
@@ -157,20 +167,19 @@ void Logger::logFrame()
   if(timingData.getNumberOfMessages() > 0)
     timingData.copyAllMessages(*buffer[writeIndex]);
   else
-    OUTPUT_WARNING(name << "Logger: No timing data available.");
+    OUTPUT_WARNING(processName << "Logger: No timing data available.");
 
-  out.bin << (loggedProcess == LoggedProcess::cognition ? 'c' : 'm');
+  out.bin << processIdentifier;
   out.finishMessage(idProcessFinished);
 
-  // Cognition runs at 60 fps. Therefore use a new block every 60 frames.
-  // Thus one block is used per second.
-  if(++frameCounter == 60)
+  // One block is used per second.
+  if(++frameCounter == framesPerSecond)
   {
     // The next call to logFrame will use a new block.
     writeIndex = (writeIndex + 1) % parameters.maxBufferSize;
     framesToWrite.post(); // Signal to the writer thread that another block is ready
     if(parameters.debugStatistics)
-      OUTPUT_WARNING(name << "Logger buffer is "
+      OUTPUT_WARNING(processName << "Logger buffer is "
                      << ((parameters.maxBufferSize + readIndex - writeIndex) % parameters.maxBufferSize) /
                      static_cast<float>(parameters.maxBufferSize) * 100.f
                      << "% free.");
@@ -178,9 +187,57 @@ void Logger::logFrame()
   }
 }
 
+#ifdef TARGET_ROBOT
+void Logger::_mkdir(const char* dir)
+{
+  /* Copied from https://gist.github.com/JonathonReinhart/8c0d90191c38af2dcadb102c4e202950 */
+  const size_t len = strlen(dir);
+  char _path[PATH_MAX];
+  char* p;
+
+  errno = 0;
+
+  /* Copy string so its mutable */
+  if(len > sizeof(_path) - 1)
+  {
+    errno = ENAMETOOLONG;
+    return;
+  }
+  strcpy(_path, dir);
+
+  /* Iterate the string */
+  for(p = _path + 1; *p; p++)
+  {
+    if(*p == '/')
+    {
+      /* Temporarily truncate */
+      *p = '\0';
+
+      if(mkdir(_path, S_IRWXU) != 0)
+      {
+        if(errno != EEXIST)
+          return;
+      }
+
+      *p = '/';
+    }
+  }
+
+  if(mkdir(_path, S_IRWXU) != 0)
+  {
+    if(errno != EEXIST)
+      return;
+  }
+
+  return;
+}
+
+#endif
+
 void Logger::writeThread()
 {
-  BH_TRACE_INIT(getName(loggedProcess));
+  Thread::nameThread(std::string("Logger") + processName);
+  BH_TRACE_INIT(processName.c_str());
   const size_t compressedSize = snappy_max_compressed_length(parameters.blockSize + 2 * sizeof(unsigned));
   std::vector<char> compressedBuffer(compressedSize + sizeof(unsigned)); // Also reserve 4 bytes for header
   OutBinaryFile* file = nullptr;
@@ -218,8 +275,8 @@ void Logger::writeThread()
           ASSERT(file->exists());
           *file << Logging::logFileMessageIDs;
           queue.writeMessageIDs(*file);
-          *file << Logging::logFileStreamSpecification;
-          file->write(streamSpecification.data(), streamSpecification.size());
+          *file << Logging::logFileTypeInfo;
+          file->write(typeInfo.data(), typeInfo.size());
           *file << Logging::logFileCompressed; // Write magic byte that indicates a compressed log file
         }
         if(SystemCall::getFreeDiskSpace(logFilename.c_str())

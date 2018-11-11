@@ -35,14 +35,14 @@
     </CylinderAppearance>
 
     <Gyroscope>
-      <!-- <Translation x="-0.008" y="0.006" z="0.029"/> --><!-- not supported yet, pointless? -->
+      <Translation x="-0.008" y="0.006" z="0.029"/>
     </Gyroscope>
     <Accelerometer>
-      <!-- <Translation x="-0.008" y="0.00606" z="0.027"/> --><!-- not supported yet -->
+      <Translation x="-0.008" y="0.00606" z="0.027"/>
     </Accelerometer>
-	<!-- When setting the max distance of ApproxDistanceSensor to more then 1400mm 
-		 will result in false measurements from the ground.
-	-->
+    <!-- When setting the max distance of ApproxDistanceSensor to more then 1400mm
+         will result in false measurements from the ground.
+    -->
     <ApproxDistanceSensor name="SonarCenterRight" min="0mm" max="1400mm" angleX="90degree" angleY="20degree">
       <Translation x="0.0507" y="-0.00375" z="0.06"/>
       <Rotation z="-2.5degree"/>
@@ -686,6 +686,7 @@
 
   <Surface name="nao-black" diffuseColor="rgb(0%, 0%, 0%)" ambientColor="rgb(0%, 0%, 0%)"/>
   <Surface name="nao-blue" diffuseColor="rgb(0%, 100%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
+  <Surface name="nao-dblue" diffuseColor="rgb(0%, 20%, 100%)" ambientColor="rgb(12%, 12%, 20%)"/>
   <Surface name="nao-red" diffuseColor="rgb(100%, 0%, 100%)" ambientColor="rgb(20%, 12%, 12%)"/>
   <Surface name="nao-hgray" diffuseColor="rgb(30%, 30%, 30%)" ambientColor="rgb(20%, 20%, 20%)"/>
 

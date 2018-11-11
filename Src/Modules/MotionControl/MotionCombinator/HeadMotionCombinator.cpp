@@ -14,7 +14,7 @@ MAKE_MODULE(HeadMotionCombinator, motionControl)
 void HeadMotionCombinator::update(HeadJointRequest& jointRequest)
 {
   const JointRequest* jointRequests[MotionRequest::numOfMotions];
-  jointRequests[MotionRequest::walk] = &theWalkLegRequest;;
+  jointRequests[MotionRequest::walk] = &theWalkingEngineOutput;;
   jointRequests[MotionRequest::kick] = &theKickEngineOutput;
   jointRequests[MotionRequest::fall] = &theFallEngineOutput;
   jointRequests[MotionRequest::specialAction] = &theSpecialActionsOutput;

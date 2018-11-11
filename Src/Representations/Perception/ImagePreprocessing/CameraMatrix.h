@@ -14,7 +14,7 @@
 /**
  * Matrix describing transformation from center of hip to camera.
  */
-struct RobotCameraMatrix : public Pose3f
+STREAMABLE_WITH_BASE(RobotCameraMatrix, Pose3f,
 {
   RobotCameraMatrix() = default;
   RobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera);
@@ -22,8 +22,8 @@ struct RobotCameraMatrix : public Pose3f
   /** Draws the camera matrix. */
   void draw() const;
 
-  void computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera);
-};
+  void computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera),
+});
 
 /**
  * Matrix describing transformation from ground (center between booth feet) to camera.

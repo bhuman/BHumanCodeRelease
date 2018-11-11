@@ -15,7 +15,7 @@ STREAMABLE(DynPoint,
   DynPoint(int limb, int phaseNumber, const Vector3f& translationl, const int duration = -1);
 
   bool operator==(const DynPoint& other) const,
-  
+
   (int) limb,
   (int) phaseNumber,
   (int)(0) duration,
@@ -49,6 +49,8 @@ STREAMABLE(KickRequest,
   ENUM(KickMotionID,
   {,
     kickForward,
+    // kicks up to here are loaded by the KickEngine
+    newKick,
     none,
   });
 
@@ -64,7 +66,7 @@ STREAMABLE(KickRequest,
 
 STREAMABLE(Continuation,
 {,
-  ((KickRequest) KickMotionID)(KickRequest::none) kickType,
+  (KickRequest::KickMotionID)(KickRequest::none) kickType,
   (bool)(false) mirror,
 });
 

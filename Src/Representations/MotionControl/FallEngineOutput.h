@@ -17,4 +17,5 @@ STREAMABLE_WITH_BASE(FallEngineOutput, JointRequest,
   (unsigned)(0) startTime,
   (bool)(false) fallingBackwards,
   (bool)(false) fallingForward,
+  (bool)(false) waitingForGetup,
 });

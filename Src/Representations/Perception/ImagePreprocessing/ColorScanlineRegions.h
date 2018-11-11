@@ -35,10 +35,19 @@ struct ScanlineRegion : public Streamable
   ScanlineRegion() = default;
   ScanlineRegion(const unsigned short from, const unsigned short to, const FieldColors::Color c);
   bool is(FieldColors::Color cmpColor) const { return cmpColor == color; }
-  static const char* getName(FieldColors::Color e) { return FieldColors::getName(e); }
+  static const char* getName(FieldColors::Color e) { return TypeRegistry::getEnumName(e); }
 
   ScanlineRange range;
   FieldColors::Color color;
+
+  static void reg()
+  {
+    PUBLISH(reg);
+    REG_CLASS(ScanlineRegion);
+    REG(range.from);
+    REG(range.to);
+    REG(color);
+  }
 
 protected:
   void serialize(In* in, Out* out);
@@ -50,11 +59,9 @@ inline ScanlineRegion::ScanlineRegion(const unsigned short from, const unsigned 
 
 inline void ScanlineRegion::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN;
-  STREAM(color);
   STREAM(range.from);
   STREAM(range.to);
-  STREAM_REGISTER_FINISH;
+  STREAM(color);
 }
 
 STREAMABLE(ColorScanlineRegionsVertical,
@@ -84,18 +91,18 @@ inline ColorScanlineRegionsVertical::Scanline::Scanline(const unsigned short x) 
 /**
  * A version of the ColorScanlineRegionsVertical that has been clipped at the FieldBoundary
  */
-struct ColorScanlineRegionsVerticalClipped : public ColorScanlineRegionsVertical
+STREAMABLE_WITH_BASE(ColorScanlineRegionsVerticalClipped, ColorScanlineRegionsVertical,
 {
-  void draw() const;
-};
+  void draw() const,
+});
 
 /**
  * A version of the ColorScanlineRegionsVertical which is scaled (linear interpolated?)
  */
-struct CompressedColorScanlineRegionsVertical : public ColorScanlineRegionsVertical
+STREAMABLE_WITH_BASE(CompressedColorScanlineRegionsVertical, ColorScanlineRegionsVertical,
 {
-  void draw() const;
-};
+  void draw() const,
+});
 
 STREAMABLE(ColorScanlineRegionsHorizontal,
 {

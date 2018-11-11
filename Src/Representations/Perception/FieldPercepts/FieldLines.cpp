@@ -7,6 +7,7 @@
 #include "FieldLines.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Transformation.h"
@@ -42,13 +43,16 @@ void FieldLines::draw() const
 {
   CameraInfo* theCameraInfo = nullptr;
   CameraMatrix* theCameraMatrix = nullptr;
+  ImageCoordinateSystem* theImageCoordinateSystem = nullptr;
 
   if(Blackboard::getInstance().exists("CameraInfo"))
     theCameraInfo = static_cast<CameraInfo*>(&(Blackboard::getInstance()["CameraInfo"]));
   if(Blackboard::getInstance().exists("CameraMatrix"))
     theCameraMatrix = static_cast<CameraMatrix*>(&(Blackboard::getInstance()["CameraMatrix"]));
+  if(Blackboard::getInstance().exists("ImageCoordinateSystem"))
+    theImageCoordinateSystem = static_cast<ImageCoordinateSystem*>(&(Blackboard::getInstance()["ImageCoordinateSystem"]));
 
-  if(theCameraInfo == nullptr || theCameraMatrix == nullptr)
+  if(theCameraInfo == nullptr || theCameraMatrix == nullptr || theImageCoordinateSystem == nullptr)
     return;
 
   DEBUG_DRAWING("representation:FieldLines:field", "drawingOnField")
@@ -71,10 +75,10 @@ void FieldLines::draw() const
       Vector2f pImg;
       if(Transformation::robotToImage(line->first, *theCameraMatrix, *theCameraInfo, pImg))
       {
-        Vector2f startInImage = pImg;
+        Vector2f startInImage = theImageCoordinateSystem->fromCorrected(pImg);
         if(Transformation::robotToImage(line->last, *theCameraMatrix, *theCameraInfo, pImg))
         {
-          Vector2f endInImage = pImg;
+          Vector2f endInImage = theImageCoordinateSystem->fromCorrected(pImg);
           const Vector2f lineInImageDirection = endInImage - startInImage;
           const Vector2f offSet = Vector2f(5.f, -10.f);
           const Vector2f textPosition = startInImage + 0.5f * lineInImageDirection + offSet;

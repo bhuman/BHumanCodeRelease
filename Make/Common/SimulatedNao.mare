@@ -22,12 +22,32 @@ SimulatedNao = cppDynamicLibrary + {
     "$(srcDirRoot)/Representations/**.h"
     "$(srcDirRoot)/Tools/**.cpp" = bhCppSource
     "$(srcDirRoot)/Tools/**.h"
-    -"$(srcDirRoot)/Tools/Precompiled/ControllerPch.*"
+    "$(utilDirRoot)/asmjit/src/**.cpp" = cppSource
+
+    if (configuration != "Release") {
+      if (platform == "Linux") {
+        -"$(srcDirRoot)/Modules/MotionControl/WalkingEngine/Walk2014Generator.cpp"
+        -"$(srcDirRoot)/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp"
+        -"$(srcDirRoot)/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp"
+        -"$(srcDirRoot)/Representation/Sensing/RobotModel.cpp"
+        -"$(srcDirRoot)/Tools/ImageProcessing/InImageSizeCalculations.cpp"
+        -"$(srcDirRoot)/Tools/Math/**.cpp"
+        -"$(srcDirRoot)/Tools/Modeling/UKFPose2D.cpp"
+        -"$(srcDirRoot)/Tools/Motion/**.cpp"
+      }
+    }
   }
   files += pchFiles
 
   defines += {
     "TARGET_SIM"
+    "ASMJIT_EMBED"
+    "ASMJIT_BUILD_X86"
+    "ASMJIT_DISABLE_BUILDER"
+    "ASMJIT_DISABLE_COMPILER"
+    "ASMJIT_DISABLE_LOGGING"
+    "ASMJIT_DISABLE_TEXT"
+    "ASMJIT_DISABLE_VALIDATION"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
     }
@@ -41,7 +61,7 @@ SimulatedNao = cppDynamicLibrary + {
 
   includePaths = {
     "$(srcDirRoot)"
-    "$(utilDirRoot)/Eigen"
+    "$(utilDirRoot)/SimRobot/Util/Eigen"
     "$(utilDirRoot)/GameController/include"
     "$(utilDirRoot)/fftw-3.3"
     "$(utilDirRoot)/libjpeg/src"
@@ -51,6 +71,7 @@ SimulatedNao = cppDynamicLibrary + {
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
     "$(utilDirRoot)/snappy/include"
+    "$(utilDirRoot)/asmjit/src"
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
@@ -96,10 +117,10 @@ SimulatedNao = cppDynamicLibrary + {
         "Qt5Core", "Qt5Gui", "Qt5OpenGl", "Qt5Svg", "Qt5Widgets"
         "snappy"
       }
-      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg", "libfftw3-3"
+      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg", "libfftw3-3", "libfftw3f-3"
     } else if (platform == "Linux") {
       "Qt5Core", "Qt5Gui", "Qt5Network", "Qt5OpenGL", "Qt5Svg", "Qt5Widgets"
-      "rt", "pthread", "GLEW", "GLU", "GL", "fftw3", "jpeg", "snappy"
+      "rt", "pthread", "GLEW", "GLU", "GL", "fftw3", "fftw3f", "jpeg", "snappy"
     }
   }
 
@@ -129,7 +150,7 @@ SimulatedNao = cppDynamicLibrary + {
       "-Wconversion"
       "-Wno-sign-conversion"
       if (configuration == "Develop") {
-        -"-O3 -fomit-frame-pointer", "-g"
+        -"-O3 -fomit-frame-pointer", "-finline-functions -g"
       }
     }
   }
@@ -157,6 +178,6 @@ SimulatedNao = cppDynamicLibrary + {
 
   visualizers = {
     "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
-    "$(utilDirRoot)/Eigen/debug/msvc/eigen.natvis"
+    "$(utilDirRoot)/SimRobot/Util/Eigen/debug/msvc/eigen.natvis"
   }
 }

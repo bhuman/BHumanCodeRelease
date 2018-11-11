@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Simulation/SimObject.h"
-#include "Tools/Pose3.h"
+#include "Tools/Math/Pose3f.h"
 
 class Body;
 
@@ -21,7 +21,7 @@ public:
   PhysicalObject* parent; /**< The only parent of the primary object (or \c 0 in case that this is the root object) */
   Body* parentBody; /**< The superior body object (might be 0) */
 
-  Pose3<> pose; /**< The absolute pose of the object */
+  Pose3f pose; /**< The absolute pose of the object */
   std::list<PhysicalObject*> physicalChildren; /**< List of subordinate physical scene graph objects */
   std::list<PhysicalObject*> physicalDrawings; /**< List of subordinate physical objects that will be drawn relative to this one */
 
@@ -46,7 +46,7 @@ protected:
   * Registers an element as parent
   * @param element The element to register
   */
-  virtual void addParent(Element& element);
+  void addParent(Element& element) override;
 
 private:
   std::list<SimRobotCore2::Controller3DDrawing*> controllerDrawings; /**< Drawings registered by another SimRobot module */

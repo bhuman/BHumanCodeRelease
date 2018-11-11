@@ -8,8 +8,12 @@
 # service on macOS.
 
 export LC_ALL=C
-SCRIPTPATH=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-BASEDIR=$(dirname "${SCRIPTPATH}")
+if [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" ]; then
+  SCRIPTPATH=$(cygpath "$0")
+else
+  SCRIPTPATH="$0"
+fi
+BASEDIR=$(cd "$(dirname "$(which "$SCRIPTPATH")")" && pwd)
 WORDSTART="\\<"
 WORDEND="\\>"
 EOFHACK=" *_EOF_HACK"
@@ -18,15 +22,16 @@ if [ "`uname`" = "Darwin" ]; then
   WORDSTART="[[:<:]]"
   WORDEND="[[:>:]]"
   EOFHACK="	 *_EOF_HACK"
-elif [ -z "${ComSpec}${COMSPEC}" ]; then
-  ASTYLE=astyle
-else
+elif [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
   ASTYLE=$BASEDIR/../../Util/Buildchain/Windows/bin/AStyle.exe
+else
+  ASTYLE=astyle
 fi
 
 ( tr -d '\r' <&0; echo "_EOF_HACK" ) | sed <&0 \
 -e "s%  *$%%" | sed \
 -e "/^$/N;/^\n$/D" | sed \
+-e "/#include/s%\\\\%/%g" \
 -e "s%\(^ *\)MODULE(%\1struct MODULE %" \
 -e "s%\(^ *\)DEFINES_PARAMETERS(%\1struct DEFINES_PARAMETERS%" \
 -e "s%\(^ *\)LOADS_PARAMETERS(%\1struct LOADS_PARAMETERS%" \
@@ -45,6 +50,8 @@ fi
 -e "s%\(^ *\)COMPLEX_IMAGE%\1if/*COMPLEX_IMAGE*/%" \
 -e "s%\(^ *\)STOPWATCH_WITH_PLOT%\1if/*STOPWATCH_WITH_PLOT*/%" \
 -e "s%\(^ *\)STOPWATCH%\1if/*STOPWATCH*/%" \
+-e "s%\(^ *\)action\( *\)$%\1/*_ACTION*/\2%" \
+-e "s%\(^ *\)transition\( *\)$%\1/*_TRANSITION*/\2%" \
 -e "s%	%    %g" \
 -e "s%^\(\(  \)*\)\*%\1 *%" \
 | tr '\n' '\t' \
@@ -54,7 +61,9 @@ fi
 -e "s%		\( *}\)%	\1%g" \
 -e "s%\(, *\(/[/*][^	]*\)\{0,1\}	 *}\))%\1 //_PAREN%g" \
 -e "s%,\( *\(/[/*][^	]*\)\{0,1\}	 *	 *(\)%,; //_REMOVE\1%g" \
+-e "s%${WORDSTART}\([A-Z]\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
 -e "s%${WORDSTART}\([A-Z][A-Z]*[a-z][A-Za-z0-9_]*\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
+-e "s%${WORDSTART}\(std::[a-z0-9_]*\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
 -e "s%${WORDSTART}bool$WORDEND\( *[*&][*&]*\)%bool_LAMBDA_HACK int\1%g" \
 -e "s%${WORDSTART}char$WORDEND\( *[*&][*&]*\)%char_LAMBDA_HACK int\1%g" \
 -e "s%${WORDSTART}double$WORDEND\( *[*&][*&]*\)%double_LAMBDA_HACK int\1%g" \
@@ -72,6 +81,7 @@ fi
 --indent-labels \
 --indent-preprocessor \
 --indent-col1-comments \
+--max-continuation-indent=60 \
 --pad-oper \
 --unpad-paren \
 --keep-one-line-blocks \
@@ -96,6 +106,8 @@ fi
 -e "s%\(^ *\)if/\*COMPLEX_IMAGE\*/%\1COMPLEX_IMAGE%" \
 -e "s%\(^ *\)if/\*STOPWATCH_WITH_PLOT\*/%\1STOPWATCH_WITH_PLOT%" \
 -e "s%\(^ *\)if/\*STOPWATCH\*/%\1STOPWATCH%" \
+-e "s%\(^ *\)/\*_ACTION\*/\( *\)$%\1action\2%" \
+-e "s%\(^ *\)/\*_TRANSITION\*/\( *\)$%\1transition\2%" \
 -e "s%\(^ *}\) //_PAREN%\1)%" \
 -e "s%; *//_REMOVE%%" \
 | tr '\n' '\t' \

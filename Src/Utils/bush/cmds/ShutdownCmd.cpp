@@ -49,7 +49,6 @@ bool ShutdownCmd::ShutdownTask::execute()
   context().printLine(robot->name + ": Shutting down...");
   std::string command = remoteCommand("halt", ip);
   ProcessRunner r(context(), fromString(command));
-  r = ProcessRunner(context(), fromString(command));
   r.run();
   if(r.error())
   {

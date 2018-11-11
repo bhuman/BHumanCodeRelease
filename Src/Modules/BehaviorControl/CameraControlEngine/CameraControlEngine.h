@@ -44,7 +44,7 @@ public:
 private:
   Rangea panBounds;
 
-  void update(HeadAngleRequest& headAngleRequest);
+  void update(HeadAngleRequest& headAngleRequest) override;
 
   void calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2a& panTilt) const;
   void adjustTiltBoundToShoulder(Angle pan, bool lowerCamera, Rangea& tiltBound) const;

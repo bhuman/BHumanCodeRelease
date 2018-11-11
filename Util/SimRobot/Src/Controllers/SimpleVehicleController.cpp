@@ -66,7 +66,7 @@ public:
 
 
   /** Initializes drawing and objects for interfacing with actuators and sensor */
-  bool compile()
+  bool compile() override
   {
     // Init 3D drawing, attach it to the ball
     TestDrawing* testDrawing = new TestDrawing();
@@ -97,7 +97,7 @@ public:
 
 
   /** This function is called in every execution cycle of the simulation*/
-  void update()
+  void update() override
   {
     detectBall();
     // Oh behave:

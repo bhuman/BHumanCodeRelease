@@ -34,7 +34,7 @@ MODULE(ArmKeyFrameEngine,
 class ArmKeyFrameEngine : public ArmKeyFrameEngineBase
 {
 public:
-  void update(ArmKeyFrameEngineOutput& armKeyFrameEngineOutput);
+  void update(ArmKeyFrameEngineOutput& armKeyFrameEngineOutput) override;
 
   ArmKeyFrameEngine();
 

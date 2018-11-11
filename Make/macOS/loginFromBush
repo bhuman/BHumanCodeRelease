@@ -5,7 +5,7 @@
 # macOS does sadly not have a 'default terminal emulator' setting, so we'll
 # assume you want to use iterm2, when it's installed.
 
-SCRIPT_PATH=`dirname "$0"`
+SCRIPT_PATH=$(dirname "$(which "$0")")
 
 if [ ! -z `osascript -e "tell application \"Finder\" to return name of application file id \"com.googlecode.iterm2\"" 2>/dev/null` ]; then
     osascript -e "tell application \"iterm2\" to create window with default profile command \"$SCRIPT_PATH/login -b $1\"" 2>/dev/null

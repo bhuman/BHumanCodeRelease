@@ -75,7 +75,7 @@ namespace impl
     /**
      * Initalization function to start the process. Setting the mean, covariance and sigma points.
      * @param initState, the mean to be set
-     * @param initNoise, the noise as a standard deviation to initialize the covariance (the given matrix will be squared)
+     * @param initNoise, the noise (as a variance) to initialize the covariance
      */
     void init(const State& initState, const CovarianceType& initNoise);
 
@@ -83,7 +83,7 @@ namespace impl
      * The prediction step to propagate the whole hypothesis with a given dynamic model and an operation specific noise.
      * In other works this function is referred as dynamic step.
      * @param dynamicModel, a function to propagate the state
-     * @param noise, the propagation specific noise to quantify the uncertainty
+     * @param noise, the propagation specific noise (as a variance) to quantify the uncertainty
      */
     void predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise);
 
@@ -92,7 +92,7 @@ namespace impl
      * In other works this function is referred as measurement step.
      * @param measurement, a vector that stores all relevant data of a measurement
      * @param measurementModel, a function that returns a measurement for a state
-     * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+     * @param measurementNoise, the measurement specific noise (as a variance) to quantify the uncertainty
      */
     template<unsigned N>
     void update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise);
@@ -102,7 +102,7 @@ namespace impl
      * In other works this function is referred as measurement step.
      * @param measurement, a float value that represents a measurement
      * @param measurementModel, a function that returns a measurement for a state
-     * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+     * @param measurementNoise, the measurement specific noise (as a variance) to quantify the uncertainty
      */
     void update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise);
 
@@ -146,13 +146,13 @@ namespace impl
   /**
    * Initalization function to start the process. Setting the mean, covariance and sigma points.
    * @param initState, the mean to be set
-   * @param initNoise, the noise as a standard deviation to initialize the covariance (the given matrix will be squared)
+   * @param initNoise, the noise (as a variance) to initialize the covariance
    */
   template<typename State, unsigned DOF, bool Manifold>
   void UnscentedKalmanFilter<State, DOF, Manifold>::init(const State& initState, const CovarianceType& initNoise)
   {
     mean = initState;
-    cov = initNoise.cwiseAbs2();
+    cov = initNoise;
     sigmaPoints.fill(initState);
   }
 
@@ -160,7 +160,7 @@ namespace impl
    * The prediction step to propagate the whole hypothesis with a given dynamic model and an operation specific noise.
    * In other works this function is referred as dynamic step.
    * @param dynamicModel, a function to propagate the state
-   * @param noise, the propagation specific noise to quantify the uncertainty
+   * @param noise, the propagation specific noise (as variance) to quantify the uncertainty
    */
   template<typename State, unsigned DOF, bool Manifold>
   void UnscentedKalmanFilter<State, DOF, Manifold>::predict(std::function<void(State&)> dynamicModel, const CovarianceType& noise)
@@ -182,7 +182,7 @@ namespace impl
       cov += dist * dist.transpose();
     }
     cov *= 0.5f;
-    cov += noise.cwiseAbs2();
+    cov += noise;
 
     fixCovarianceMatrix(cov);
     covarianceMatrixValidation(cov);
@@ -193,13 +193,13 @@ namespace impl
    * In other works this function is referred as measurement step.
    * @param measurement, a vector that stores all relevant data of a measurement
    * @param measurementModel, a function that returns a measurement for a state
-   * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+   * @param measurementNoise, the measurement specific noise (as variance) to quantify the uncertainty
    */
   template<typename State, unsigned DOF, bool IsManifold>
   template<unsigned N>
   void UnscentedKalmanFilter<State, DOF, IsManifold>::update(const Vectorf<N>& measurement, std::function<Vectorf<N>(const State&)> measurementModel, const Eigen::Matrix<float, N, N>& measurementNoise)
   {
-    ASSERT((measurementNoise.array() >= 0.f).all());
+    ASSERT((measurementNoise.diagonal().array() >= 0.f).all());
     ASSERT(measurementNoise.trace() > 0.f);
 
     using MeasurementType = Vectorf<N>;
@@ -224,7 +224,7 @@ namespace impl
       sigmaz += dist * dist.transpose();
     }
     sigmaz *= 0.5f;
-    sigmaz += measurementNoise.cwiseAbs2();
+    sigmaz += measurementNoise;
 
     MixedCovarianceType simgaxz = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)
@@ -249,7 +249,7 @@ namespace impl
    * In other works this function is referred as measurement step.
    * @param measurement, a float value that represents a measurement
    * @param measurementModel, a function that returns a measurement for a state
-   * @param measurementNoise, the measurement specific noise to quantify the uncertainty
+   * @param measurementNoise, the measurement specific noise (as variance) to quantify the uncertainty
    */
   template<typename State, unsigned DOF, bool IsManifold>
   void UnscentedKalmanFilter<State, DOF, IsManifold>::update(float measurement, std::function<float(const State&)> measurementModel, float measurementNoise)
@@ -273,7 +273,7 @@ namespace impl
     for(float& Zi : Z)
       sigmaz += sqr(Zi - z);
     sigmaz *= 0.5f;
-    sigmaz += sqr(measurementNoise);
+    sigmaz += measurementNoise;
 
     MixedCovarianceType simgaxz = MixedCovarianceType::Zero();
     for(size_t i = 0; i < sigmaPoints.size(); ++i)

@@ -144,7 +144,7 @@ protected:
  *
  * Generic class for classes that do both formatting and physical writing of data to streams.
  */
-template <class S, class W> class OutStream : public S, public W, public Out
+template<typename S, typename W> class OutStream : public S, public W, public Out
 {
 public:
   /**
@@ -152,7 +152,7 @@ public:
    * @param p The address the data is located at.
    * @param size The number of bytes to be written.
    */
-  virtual void write(const void* p, size_t size)
+  void write(const void* p, size_t size) override
   {
     W::writeData(p, size, *this);
   }
@@ -161,7 +161,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const bool& value).
    */
-  virtual void outBool(bool d)
+  void outBool(bool d) override
   {
     W::writeBool(d, *this);
   }
@@ -169,7 +169,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const char& value).
    */
-  virtual void outChar(char d)
+  void outChar(char d) override
   {
     W::writeChar(d, *this);
   }
@@ -177,7 +177,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const signed char& value).
    */
-  virtual void outSChar(signed char d)
+  void outSChar(signed char d) override
   {
     W::writeSChar(d, *this);
   }
@@ -185,7 +185,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const unsigned char& value).
    */
-  virtual void outUChar(unsigned char d)
+  void outUChar(unsigned char d) override
   {
     W::writeUChar(d, *this);
   }
@@ -193,7 +193,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const short& value).
    */
-  virtual void outShort(short d)
+  void outShort(short d) override
   {
     W::writeShort(d, *this);
   }
@@ -201,7 +201,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const unsigned short& value).
    */
-  virtual void outUShort(unsigned short d)
+  void outUShort(unsigned short d) override
   {
     W::writeUShort(d, *this);
   }
@@ -209,7 +209,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const int& value).
    */
-  virtual void outInt(int d)
+  void outInt(int d) override
   {
     W::writeInt(d, *this);
   }
@@ -217,7 +217,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const unsigned& value).
    */
-  virtual void outUInt(unsigned int d)
+  void outUInt(unsigned int d) override
   {
     W::writeUInt(d, *this);
   }
@@ -225,7 +225,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const float& value).
    */
-  virtual void outFloat(float d)
+  void outFloat(float d) override
   {
     W::writeFloat(d, *this);
   }
@@ -233,7 +233,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const double& value).
    */
-  virtual void outDouble(double d)
+  void outDouble(double d) override
   {
     W::writeDouble(d, *this);
   }
@@ -241,7 +241,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const char* value).
    */
-  virtual void outString(const char* d)
+  void outString(const char* d) override
   {
     W::writeString(d, *this);
   }
@@ -249,7 +249,7 @@ protected:
   /**
    * Virtual redirection for operator<<(const Angle& value).
    */
-  virtual void outAngle(const Angle& d)
+  void outAngle(const Angle& d) override
   {
     W::writeAngle(d, *this);
   }
@@ -258,7 +258,7 @@ protected:
    * Virtual redirection for operator<<(Out& (*f)(Out&)) that writes
    * the symbol "endl";
    */
-  virtual void outEndL()
+  void outEndL() override
   {
     W::writeEndL(*this);
   }
@@ -278,7 +278,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeBool(bool d, PhysicalOutStream& stream)
+  void writeBool(bool d, PhysicalOutStream& stream) override
   {
     char c = static_cast<char>(d);
     stream.writeToStream(&c, sizeof(c));
@@ -289,7 +289,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeChar(char d, PhysicalOutStream& stream)
+  void writeChar(char d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -299,7 +299,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeSChar(signed char d, PhysicalOutStream& stream)
+  void writeSChar(signed char d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -309,7 +309,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUChar(unsigned char d, PhysicalOutStream& stream)
+  void writeUChar(unsigned char d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -319,7 +319,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeShort(short d, PhysicalOutStream& stream)
+  void writeShort(short d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -329,7 +329,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUShort(unsigned short d, PhysicalOutStream& stream)
+  void writeUShort(unsigned short d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -339,7 +339,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeInt(int d, PhysicalOutStream& stream)
+  void writeInt(int d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -349,7 +349,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUInt(unsigned int d, PhysicalOutStream& stream)
+  void writeUInt(unsigned int d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -359,7 +359,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeFloat(float d, PhysicalOutStream& stream)
+  void writeFloat(float d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -369,7 +369,7 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeDouble(double d, PhysicalOutStream& stream)
+  void writeDouble(double d, PhysicalOutStream& stream) override
   {
     stream.writeToStream(&d, sizeof(d));
   }
@@ -379,20 +379,20 @@ protected:
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeString(const char* d, PhysicalOutStream& stream);
+  void writeString(const char* d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an Angle to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeAngle(const Angle& d, PhysicalOutStream& stream);
+  void writeAngle(const Angle& d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a 'end of line' to a stream.
    * @param stream the stream to write on.
    */
-  virtual void writeEndL(PhysicalOutStream& stream) {}
+  void writeEndL(PhysicalOutStream& stream) override {}
 
   /**
    * The function writes a number of bytes into the stream.
@@ -400,7 +400,7 @@ protected:
    * @param size The number of bytes to be written.
    * @param stream the stream to write on.
    */
-  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream)
+  void writeData(const void* p, size_t size, PhysicalOutStream& stream) override
   {
     stream.writeToStream(p, size);
   }
@@ -417,96 +417,97 @@ class OutText : public StreamWriter
 private:
   /** A buffer for formatting the numeric data to a text format. */
   char buf[50];
+
 protected:
   /**
    * Writes a bool to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeBool(bool d, PhysicalOutStream& stream);
+  void writeBool(bool d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeChar(char d, PhysicalOutStream& stream);
+  void writeChar(char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a signed character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeSChar(signed char d, PhysicalOutStream& stream);
+  void writeSChar(signed char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUChar(unsigned char d, PhysicalOutStream& stream);
+  void writeUChar(unsigned char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeShort(short d, PhysicalOutStream& stream);
+  void writeShort(short d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUShort(unsigned short d, PhysicalOutStream& stream);
+  void writeUShort(unsigned short d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeInt(int d, PhysicalOutStream& stream);
+  void writeInt(int d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUInt(unsigned int d, PhysicalOutStream& stream);
+  void writeUInt(unsigned int d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a float to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeFloat(float d, PhysicalOutStream& stream);
+  void writeFloat(float d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a double to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeDouble(double d, PhysicalOutStream& stream);
+  void writeDouble(double d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a string to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeString(const char* d, PhysicalOutStream& stream);
+  void writeString(const char* d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an Angle to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeAngle(const Angle& d, PhysicalOutStream& stream);
+  void writeAngle(const Angle& d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a 'end of line' to a stream.
    * @param stream the stream to write on.
    */
-  virtual void writeEndL(PhysicalOutStream& stream);
+  void writeEndL(PhysicalOutStream& stream) override;
 
   /**
    * The function writes a number of bytes into the stream.
@@ -514,7 +515,7 @@ protected:
    * @param size The number of bytes to be written.
    * @param stream the stream to write on.
    */
-  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream);
+  void writeData(const void* p, size_t size, PhysicalOutStream& stream) override;
 };
 
 /**
@@ -531,96 +532,97 @@ class OutTextRaw : public StreamWriter
 private:
   /** A buffer for formatting the numeric data to a text format. */
   char buf[50];
+
 protected:
   /**
    * Writes a bool to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeBool(bool d, PhysicalOutStream& stream);
+  void writeBool(bool d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeChar(char d, PhysicalOutStream& stream);
+  void writeChar(char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a signed character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeSChar(signed char d, PhysicalOutStream& stream);
+  void writeSChar(signed char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned character to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUChar(unsigned char d, PhysicalOutStream& stream);
+  void writeUChar(unsigned char d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeShort(short d, PhysicalOutStream& stream);
+  void writeShort(short d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned short to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUShort(unsigned short d, PhysicalOutStream& stream);
+  void writeUShort(unsigned short d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeInt(int d, PhysicalOutStream& stream);
+  void writeInt(int d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an unsigned int to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeUInt(unsigned int d, PhysicalOutStream& stream);
+  void writeUInt(unsigned int d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a float to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeFloat(float d, PhysicalOutStream& stream);
+  void writeFloat(float d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a double to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeDouble(double d, PhysicalOutStream& stream);
+  void writeDouble(double d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a string to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeString(const char* d, PhysicalOutStream& stream);
+  void writeString(const char* d, PhysicalOutStream& stream) override;
 
   /**
    * Writes an Angle to a stream.
    * @param d the data to write.
    * @param stream the stream to write on.
    */
-  virtual void writeAngle(const Angle& d, PhysicalOutStream& stream);
+  void writeAngle(const Angle& d, PhysicalOutStream& stream) override;
 
   /**
    * Writes a 'end of line' to a stream.
    * @param stream the stream to write on.
    */
-  virtual void writeEndL(PhysicalOutStream& stream);
+  void writeEndL(PhysicalOutStream& stream) override;
 
   /**
    * The function writes a number of bytes into the stream.
@@ -628,7 +630,7 @@ protected:
    * @param size The number of bytes to be written.
    * @param stream the stream to write on.
    */
-  virtual void writeData(const void* p, size_t size, PhysicalOutStream& stream);
+  void writeData(const void* p, size_t size, PhysicalOutStream& stream) override;
 };
 
 /**
@@ -642,8 +644,29 @@ private:
   File* stream = nullptr; /**< Object representing the file. */
 
 public:
-  /** Destructor */
+  OutFile() = default;
+
+  /** No copy constructor. */
+  OutFile(const OutFile&) = delete;
+
+  /**
+   * Move copy constructor.
+   * @param other The stream the contents of which are moved to this one.
+   */
+  OutFile(OutFile&& other) : stream(other.stream) {other.stream = nullptr;}
+
+  /** Destructor. */
   ~OutFile();
+
+  /** No assignment operator. */
+  OutFile& operator=(const OutFile&) = delete;
+
+  /**
+   * Move assignment operator.
+   * @param other The stream the contents of which are moved to this one.
+   * @return This stream.
+   */
+  OutFile& operator=(OutFile&& other);
 
   /**
    * The function states whether the file actually exists.
@@ -686,7 +709,7 @@ protected:
    * @param p The address the data is located at.
    * @param size The number of bytes to be written.
    */
-  virtual void writeToStream(const void* p, size_t size);
+  void writeToStream(const void* p, size_t size) override;
 };
 
 /**
@@ -697,31 +720,73 @@ protected:
 class OutMemory : public PhysicalOutStream
 {
 private:
-  char* memory = nullptr; /**< Points to the next byte to write at. */
-  size_t length = 0; /**< The number of stored bytes */
-  void* start = nullptr; /**< Points to the first byte */
+  char* buffer = nullptr; /**< The buffer to which it is streamed. */
+  size_t reserved = 0; /**< The current size of the buffer. */
+  size_t bytes = 0; /**< The number of bytes already written. */
+  bool dynamic = false; /**< Should the buffer grow dynamically? */
 
 public:
-  /**
-   * Returns the number of written bytes
-   */
-  size_t getLength() const { return length; }
+  OutMemory() = default;
+
+  /** No copy constructor. */
+  OutMemory(const OutMemory&) = delete;
 
   /**
-   * Returns the address of the first byte
+   * Move copy constructor.
+   * @param other The stream the contents of which are moved to this one.
    */
-  void* getMemory() { return start; }
+  OutMemory(OutMemory&& other);
+
+  /**
+   * The destructor frees the memory buffer.
+   */
+  ~OutMemory() { if(dynamic) std::free(buffer); }
+
+  /** No assignment operator. */
+  OutMemory& operator=(const OutMemory&) = delete;
+
+  /**
+   * Move assignment operator.
+   * @param other The stream the contents of which are moved to this one.
+   * @return This stream.
+   */
+  OutMemory& operator=(OutMemory&& other);
+
+  /**
+   * Returns the number of written bytes.
+   */
+  size_t size() const { return bytes; }
+
+  /**
+   * Returns the address of the first byte.
+   */
+  const char* data() const { return buffer; }
+
+  /**
+   * Obtain ownership of the memory. The caller must free the memory.
+   * This stream looses access to the memory.
+   */
+  char* obtainData();
 
 protected:
   /**
-   * opens the stream.
-   * @param mem The address of the memory block into which is written.
+   * Opens the stream.
+   * @param capacity The number of bytes that are initially reserved in memory.
+   *                 If the stream grows beyond this size, reallocations of
+   *                 memory will take place.
+   * @param buffer The buffer to which will be written. If nullptr is passed,
+   *               a buffer with the defined capacity will be allocated instead.
+   *               It will automatically be freed in the end if it is not
+   *               obtained before destruction of this stream. If a buffer is
+   *               passed, it must be at least of the size of the
+   *               given capacity. It will not grow. The caller must free it
+   *               after the destruction of this stream.
    */
-  void open(void* mem)
+  void open(size_t capacity, char* buffer)
   {
-    memory = reinterpret_cast<char*>(mem);
-    start = mem;
-    length = 0;
+    reserved = capacity;
+    dynamic = !buffer;
+    this->buffer = dynamic ? reinterpret_cast<char*>(std::malloc(capacity)) : buffer;
   }
 
   /**
@@ -729,42 +794,56 @@ protected:
    * @param p The address the data is located at.
    * @param size The number of bytes to be written.
    */
-  virtual void writeToStream(const void* p, size_t size);
+  void writeToStream(const void* p, size_t size) override;
 };
 
 /**
- * @class OutSize
- *
- * A PhysicalOutStream that doesn't write any data. Instead it works as a
- * counter that determines how many bytes would be streamed into memory.
- * It can be used to determine the size of the memory block that is
- * required as the parameter for an instance of class OutMemoryStream.
+ * Special memory stream that terminates the data in memory with a zero byte.
  */
-class OutSize : public PhysicalOutStream
+class OutMemoryForText : public OutMemory
 {
-private:
-  size_t size = 0; /**< Accumulator of the required number of bytes. */
+  void addTerminatingZero();
 
 public:
   /**
-   * The function resets the counter to zero.
+   * Returns the number of bytes in the memory block.
+   * If necessary, the function also adds a zero byte to the end of the
+   * memory block. Nothing should be written the the steam after this call
+   * anymore.
+   * @return The number of bytes in the memory block, not counting a
+   *         terminating zero byte.
    */
-  void reset() {size = 0;}
+  size_t size() const
+  {
+    const_cast<OutMemoryForText*>(this)->addTerminatingZero();
+    return OutMemory::size() - 1;
+  }
 
   /**
-   * The function returns the number of bytes required to store the
-   * data written so far.
-   * @return The size of the memory block required for the data written.
+   * Returns the address of the first byte of the memory block.
+   * If necessary, the function also adds a zero byte to the end of the
+   * memory block. Nothing should be written the the steam after this call
+   * anymore.
+   * @return The address of the memory block.
    */
-  size_t getSize() const {return size;}
+  const char* data() const
+  {
+    const_cast<OutMemoryForText*>(this)->addTerminatingZero();
+    return OutMemory::data();
+  }
 
-protected:
   /**
-   * The function counts the number of bytes that should be written.
-   * @param p The address the data is located at.
-   * @param s The number of bytes to be written.
+   * Obtain ownership of the memory. The caller must free the memory.
+   * This stream looses access to the memory.
+   * If necessary, the function also adds a zero byte to the end of the
+   * memory block.
+   * @return The memory block the ownership of which is now with the caller.
    */
-  virtual void writeToStream(const void* p, size_t s) {size += s;}
+  char* obtainData()
+  {
+    addTerminatingZero();
+    return OutMemory::obtainData();
+  }
 };
 
 /**
@@ -805,7 +884,7 @@ public:
    * The function returns whether this is a binary stream.
    * @return Does it output data in binary format?
    */
-  virtual bool isBinary() const {return true;}
+  bool isBinary() const override {return true;}
 };
 
 /**
@@ -817,34 +896,28 @@ class OutBinaryMemory : public OutStream<OutMemory, OutBinary>
 {
 public:
   /**
-   * Constructor.
-   * @param mem The address of the memory block into which is written.
+   * Opens the stream.
+   * @param capacity The number of bytes that are initially reserved in memory.
+   *                 If the stream grows beyond this size, reallocations of
+   *                 memory will take place.
+   * @param buffer The buffer to which will be written. If nullptr is passed,
+   *               a buffer with the defined capacity will be allocated instead.
+   *               It will automatically be freed in the end if it is not
+   *               obtained before destruction of this stream. If a buffer is
+   *               passed, it must be at least of the size of the
+   *               given capacity. It will not grow. The caller must free it
+   *               after the destruction of this stream.
    */
-  OutBinaryMemory(void* mem)
+  OutBinaryMemory(size_t capacity = 1024, char* buffer = nullptr)
   {
-    open(mem);
+    open(capacity, buffer);
   }
 
   /**
    * The function returns whether this is a binary stream.
    * @return Does it output data in binary format?
    */
-  virtual bool isBinary() const {return true;}
-};
-
-/**
- * @class OutBinarySize
- *
- * A binary stream size counter
- */
-class OutBinarySize : public OutStream<OutSize, OutBinary>
-{
-public:
-  /**
-   * The function returns whether this is a binary stream.
-   * @return Does it output data in binary format?
-   */
-  virtual bool isBinary() const {return true;}
+  bool isBinary() const override {return true;}
 };
 
 /**
@@ -922,16 +995,25 @@ public:
  *
  * A text stream into a memory region.
  */
-class OutTextMemory : public OutStream<OutMemory, OutText>
+class OutTextMemory : public OutStream<OutMemoryForText, OutText>
 {
 public:
   /**
-   * Constructor.
-   * @param mem The address of the memory block into which is written.
+   * Opens the stream.
+   * @param capacity The number of bytes that are initially reserved in memory.
+   *                 If the stream grows beyond this size, reallocations of
+   *                 memory will take place.
+   * @param buffer The buffer to which will be written. If nullptr is passed,
+   *               a buffer with the defined capacity will be allocated instead.
+   *               It will automatically be freed in the end if it is not
+   *               obtained before destruction of this stream. If a buffer is
+   *               passed, it must be at least of the size of the
+   *               given capacity. It will not grow. The caller must free it
+   *               after the destruction of this stream.
    */
-  OutTextMemory(void* mem)
+  OutTextMemory(size_t capacity = 1024, char* buffer = nullptr)
   {
-    open(mem);
+    open(capacity, buffer);
   }
 };
 
@@ -940,32 +1022,27 @@ public:
  *
  * A text stream into a memory region.
  */
-class OutTextRawMemory : public OutStream<OutMemory, OutTextRaw>
+class OutTextRawMemory : public OutStream<OutMemoryForText, OutTextRaw>
 {
 public:
   /**
-   * Constructor.
-   * @param mem The address of the memory block into which is written.
+   * Opens the stream.
+   * @param capacity The number of bytes that are initially reserved in memory.
+   *                 If the stream grows beyond this size, reallocations of
+   *                 memory will take place.
+   * @param buffer The buffer to which will be written. If nullptr is passed,
+   *               a buffer with the defined capacity will be allocated instead.
+   *               It will automatically be freed in the end if it is not
+   *               obtained before destruction of this stream. If a buffer is
+   *               passed, it must be at least of the size of the
+   *               given capacity. It will not grow. The caller must free it
+   *               after the destruction of this stream.
    */
-  OutTextRawMemory(void* mem)
+  OutTextRawMemory(size_t capacity = 1024, char* buffer = nullptr)
   {
-    open(mem);
+    open(capacity, buffer);
   }
 };
-
-/**
- * @class OutTextSize
- *
- * A Text stream size counter
- */
-class OutTextSize : public OutStream<OutSize, OutText> {};
-
-/**
- * @class OutTextRawSize
- *
- * A Text stream size counter
- */
-class OutTextRawSize : public OutStream<OutSize, OutTextRaw> {};
 
 /**
  * @class OutMap
@@ -981,11 +1058,11 @@ class OutMap : public Out
   {
   public:
     int type; /**< The type of the entry. -2: value or record, -1: array, >= 0: array element index. */
-    const char* (*enumToString)(int); /**< A function that translates an enum to a string. */
+    const char* enumType; /**< The type of the elements as string if it is an enum. Otherwise nullptr. */
     bool hasSubEntries; /**< Has the current entry sub entries? */
 
-    Entry(int type, const char* (*enumToString)(int)) :
-      type(type), enumToString(enumToString), hasSubEntries(false)
+    Entry(int type, const char* enumType) :
+      type(type), enumType(enumType), hasSubEntries(false)
     {}
   };
   Out& stream; /**< The map that is written to. */
@@ -1004,22 +1081,25 @@ protected:
    */
   OutMap(Out& stream, bool singleLine);
 
-  /** Helper to write a value. */
-  template<class T> void out(const T& value) {stream << value;}
+  /** No assignment operator. */
+  OutMap& operator=(const OutMap&) = delete;
 
-  virtual void outBool(bool value) {out(value);}
-  virtual void outChar(char value) {out(static_cast<int>(value));}
-  virtual void outSChar(signed char value) {out(static_cast<int>(value));}
-  virtual void outUChar(unsigned char value);
-  virtual void outShort(short value) {out(value);}
-  virtual void outUShort(unsigned short value) {out(value);}
-  virtual void outInt(int value) {out(value);}
-  virtual void outUInt(unsigned int value);
-  virtual void outFloat(float value) {out(value);}
-  virtual void outDouble(double value) {out(value);}
-  virtual void outString(const char* value);
-  virtual void outAngle(const Angle& value) {out(value);};
-  virtual void outEndL() {}
+  /** Helper to write a value. */
+  template<typename T> void out(const T& value) {stream << value;}
+
+  void outBool(bool value) override {out(value);}
+  void outChar(char value) override {out(static_cast<int>(value));}
+  void outSChar(signed char value) override {out(static_cast<int>(value));}
+  void outUChar(unsigned char value) override;
+  void outShort(short value) override {out(value);}
+  void outUShort(unsigned short value) override {out(value);}
+  void outInt(int value) override {out(value);}
+  void outUInt(unsigned int value) override;
+  void outFloat(float value) override {out(value);}
+  void outDouble(double value) override {out(value);}
+  void outString(const char* value) override;
+  void outAngle(const Angle& value) override {out(value);};
+  void outEndL() override {}
 
 public:
   /**
@@ -1029,15 +1109,15 @@ public:
    *             -2: value or record,
    *             -1: array,
    *             >= 0: array element index.
-   * @param enumToString A function that translates an enum to a string.
+   * @param enumType The type of the elements as string if it is an enum. Otherwise nullptr.
    */
-  virtual void select(const char* name, int type, const char* (*enumToString)(int));
+  void select(const char* name, int type, const char* enumType) override;
 
   /** Deselects a field for writing. */
-  virtual void deselect();
+  void deselect() override;
 
   /** Writing raw data is not supported. Do not call. */
-  virtual void write(const void* p, size_t size);
+  void write(const void* p, size_t size) override;
 };
 
 /**
@@ -1078,38 +1158,36 @@ private:
 public:
   /**
    * Constructor.
-   * @param memory The block of memory that will be written to.
    * @param singleLine Output to a single line.
+   * @param capacity The number of bytes that are initially reserved in memory.
+   *                 If the stream grows beyond this size, reallocations of
+   *                 memory will take place.
+   * @param buffer The buffer to which will be written. If nullptr is passed,
+   *               a buffer with the defined capacity will be allocated instead.
+   *               It will automatically be freed in the end if it is not
+   *               obtained before destruction of this stream. If a buffer is
+   *               passed, it must be at least of the size of the
+   *               given capacity. It will not grow. The caller must free it
+   *               after the destruction of this stream.
    */
-  OutMapMemory(void* memory, bool singleLine = false);
+  OutMapMemory(bool singleLine = false, size_t capacity = 1024, char* buffer = nullptr);
 
   /**
    * Returns the number of written bytes
    */
-  size_t getLength() const {return stream.getLength();}
-};
-
-/**
- * @class OutMapSize
- *
- * A stream that determines the number of bytes required to write data in config map format.
- */
-class OutMapSize : public OutMap
-{
-private:
-  OutTextRawSize stream; /**< The stream that determines the size required. */
-
-public:
-  /**
-   * Constructor.
-   * @param singleLine Assume that output is to a single line.
-   */
-  OutMapSize(bool singleLine = false);
+  size_t size() const {return stream.size();}
 
   /**
-   * The function returns the number of bytes required to store the
-   * data written so far.
-   * @return The size of the memory block required for the data written.
+   * Returns the memory.
    */
-  size_t getSize() const {return stream.getSize();}
+  const char* data() {return stream.data();}
+
+  /**
+   * Obtain ownership of the memory. The caller must free the memory.
+   * This stream looses access to the memory.
+   * If necessary, the function also adds a zero byte to the end of the
+   * memory block.
+   * @return The memory block the ownership of which is now with the caller.
+   */
+  const char* obtainData() {return stream.obtainData();}
 };

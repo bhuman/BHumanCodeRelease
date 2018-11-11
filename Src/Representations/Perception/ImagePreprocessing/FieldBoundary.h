@@ -45,8 +45,6 @@ STREAMABLE(FieldBoundary,
    */
   int getBoundaryY(int x) const,
 
-  (InImage) boundarySpots,     ///< Spots on the boundary.
-  (InImage) convexBoundary,    ///< A convex upper hull arround the spots that schould fit best the actual boundary.
   (InField) boundaryOnField,   ///< The boundary projected to the field in relative coordinates.
   (InImage) boundaryInImage,   ///< The boundary in image coordinates.
   (bool)(false) isValid,       ///< True if a boundary could be detected.

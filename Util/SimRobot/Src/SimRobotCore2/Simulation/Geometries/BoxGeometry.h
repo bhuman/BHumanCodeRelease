@@ -25,11 +25,11 @@ private:
   * @param space A space to create the geometry in
   * @param The created geometry
   */
-  virtual dGeomID createGeometry(dSpaceID space);
+  dGeomID createGeometry(dSpaceID space) override;
 
   /**
   * Draws physical primitives of the object (including children) on the currently selected OpenGL context
   * @param flags Flags to enable or disable certain features
   */
-  virtual void drawPhysics(unsigned int flags) const;
+  void drawPhysics(unsigned int flags) const override;
 };

@@ -6,7 +6,7 @@
 #include <vector>
 #include "Platform/BHAssert.h"
 
-template <typename T>
+template<typename T>
 class History
 {
 private:

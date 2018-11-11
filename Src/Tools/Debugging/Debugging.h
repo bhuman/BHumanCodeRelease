@@ -89,15 +89,11 @@
 #define OUTPUT_WARNING(message) \
   do \
   { \
-    OUTPUT_TEXT("Warning: " << message); \
-    OutTextRawSize _size; \
-    _size << "Warning: " << message; \
-    char* _buf = new char[_size.getSize() + 1]; \
-    OutTextRawMemory _stream(_buf); \
+    if(Global::debugOutExists()) \
+      OUTPUT_TEXT("Warning: " << message); \
+    OutTextRawMemory _stream; \
     _stream << "Warning: " << message; \
-    _buf[_size.getSize()] = 0; \
-    DebugRequestTable::print(_buf); \
-    delete [] _buf; \
+    DebugRequestTable::print(_stream.data()); \
   } \
   while(false)
 #endif
@@ -111,15 +107,11 @@
 #define OUTPUT_ERROR(message) \
   do \
   { \
-    OUTPUT_TEXT("Error: " << message); \
-    OutTextRawSize _size; \
-    _size << "Error: " << message; \
-    char* _buf = new char[_size.getSize() + 1]; \
-    OutTextRawMemory _stream(_buf); \
+    if(Global::debugOutExists()) \
+      OUTPUT_TEXT("Error: " << message); \
+    OutTextRawMemory _stream; \
     _stream << "Error: " << message; \
-    _buf[_size.getSize()] = 0; \
-    DebugRequestTable::print(_buf); \
-    delete [] _buf; \
+    DebugRequestTable::print(_stream.data()); \
   } \
   while(false)
 

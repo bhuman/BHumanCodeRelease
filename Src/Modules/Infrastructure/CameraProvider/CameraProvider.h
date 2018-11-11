@@ -1,13 +1,20 @@
 /**
  * @file CameraProvider.h
- * This file declares a module that provides camera images.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ *
+ * This file declares a module that handles the communication with the two
+ * cameras. This implementation starts a separate thread to avoid blocking
+ * calls to slow down processing.
+ *
+ * @author Colin Graf
+ * @author Thomas Röfer
  */
 
 #pragma once
 
 #include "Platform/Camera.h"
-#include "Representations/Infrastructure/AutoExposureWeightTable.h"
+#include "Platform/Semaphore.h"
+#include "Platform/Thread.h"
+#include "Representations/Configuration/AutoExposureWeightTable.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraIntrinsics.h"
 #include "Representations/Infrastructure/CameraResolution.h"
@@ -22,7 +29,6 @@ class NaoCamera;
 
 MODULE(CameraProvider,
 {,
-  USES(CameraIntrinsicsNext),
   USES(CameraResolutionRequest),
   USES(AutoExposureWeightTable),
   REQUIRES(CameraSettings),
@@ -37,14 +43,11 @@ MODULE(CameraProvider,
   DEFINES_PARAMETERS(
   {,
     (unsigned)(1000) maxWaitForImage, /** Timeout in ms for waiting for new images. */
-    (unsigned)(10000) maxDelayAfterInit, /**< Maximum delay until image is received after camera was initialized. */
-    (unsigned)(4000) notOkDelay, /** How long after first camera reset to report that camera is not ok. */
   }),
 });
 
 class CameraProvider : public CameraProviderBase
 {
-private:
   static thread_local CameraProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
 
   NaoCamera* upperCamera = nullptr;
@@ -54,14 +57,38 @@ private:
   CameraInfo lowerCameraInfo;
   CameraIntrinsics cameraIntrinsics;
   CameraResolution cameraResolution;
+  volatile bool camerasOk = true;
 #ifdef CAMERA_INCLUDED
-  unsigned int upperImageReceived = 0;
-  unsigned int lowerImageReceived = 0;
-  unsigned int lastCameraReset = 0;
-  unsigned int timeWhenCamerasWereOk = 0;
   unsigned int lastImageTimeStamp = 0;
   unsigned long long lastImageTimeStampLL = 0;
 #endif
+
+  Thread thread;
+  Semaphore takeNextImage;
+  Semaphore imageTaken;
+
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param theImage The representation updated.
+   */
+  void update(Image& theImage) override;
+
+  void update(CameraInfo& cameraInfo) override;
+  void update(CameraIntrinsics& cameraIntrinsics) override {cameraIntrinsics = this->cameraIntrinsics;}
+  void update(CameraResolution& cameraResolution) override {cameraResolution = this->cameraResolution;}
+  void update(CameraStatus& cameraStatus) override;
+  void update(FrameInfo& frameInfo) override {frameInfo.time = theImage.timeStamp;}
+
+  void useImage(bool isUpper, unsigned timestamp, CameraInfo& cameraInfo, Image& image, NaoCamera* naoCam);
+
+  bool readCameraIntrinsics();
+  bool readCameraResolution();
+
+  bool processResolutionRequest();
+
+  void setupCameras();
+
+  void takeImages();
 
 public:
   CameraProvider();
@@ -77,23 +104,4 @@ public:
    * The method waits for a new image.
    */
   static void waitForFrameData();
-  void waitForFrameData2();
-
-private:
-  void update(Image& image);
-  void update(FrameInfo& frameInfo);
-  void update(CameraInfo& cameraInfo);
-  void update(CameraIntrinsics& cameraIntrinsics);
-  void update(CameraResolution& cameraResolution);
-  void update(CameraStatus& cameraStatus);
-
-  void useImage(bool isUpper, unsigned timestamp, CameraInfo& cameraInfo, Image& image, NaoCamera* naoCam,
-                CameraSettings::CameraSettingsCollection& settings, AutoExposureWeightTable& autoExposureWeightTable);
-
-  bool readCameraIntrinsics();
-  bool readCameraResolution();
-
-  bool processResolutionRequest();
-
-  void setupCameras();
 };

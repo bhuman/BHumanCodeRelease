@@ -29,8 +29,8 @@ MODULE(ColorScanlineRegionizer,
 class ColorScanlineRegionizer : public ColorScanlineRegionizerBase
 {
 private:
-  void update(ColorScanlineRegionsVertical& rolorScanlineRegionsVertical);
-  void update(ColorScanlineRegionsHorizontal& rolorScanlineRegionsHorizontal);
+  void update(ColorScanlineRegionsVertical& colorScanlineRegionsVertical) override;
+  void update(ColorScanlineRegionsHorizontal& colorScanlineRegionsHorizontal) override;
 
   void scanVertical(const ScanGrid::Line& line, const int top, std::vector<ScanlineRegion>& regions) const;
 };

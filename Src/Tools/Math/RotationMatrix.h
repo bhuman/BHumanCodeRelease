@@ -215,6 +215,8 @@ private:
   friend class RotationMatrix_getPackedAngleAxisFaulty_Test;
 
   Vector3f getPackedAngleAxisFaulty() const;
+
+  static void reg();
 };
 
 /**
@@ -225,9 +227,7 @@ private:
  */
 inline Out& operator<<(Out& stream, const RotationMatrix& rotationMatrix)
 {
-  STREAM_REGISTER_BEGIN_EXT(rotationMatrix);
   STREAM_BASE_EXT(stream, rotationMatrix, Matrix3f);
-  STREAM_REGISTER_FINISH;
   return stream;
 }
 
@@ -239,8 +239,6 @@ inline Out& operator<<(Out& stream, const RotationMatrix& rotationMatrix)
  */
 inline In& operator>>(In& stream, RotationMatrix& rotationMatrix)
 {
-  STREAM_REGISTER_BEGIN_EXT(rotationMatrix);
   STREAM_BASE_EXT(stream, rotationMatrix, Matrix3f);
-  STREAM_REGISTER_FINISH;
   return stream;
 }

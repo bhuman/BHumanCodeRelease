@@ -27,7 +27,7 @@ STREAMABLE(CameraResolution,
   (unsigned)(0) timestamp,                   /**< timestamp of the last processed CameraResolutionRequest */
 });
 
-struct CameraResolutionRequest : public CameraResolution
+STREAMABLE_WITH_BASE(CameraResolutionRequest, CameraResolution,
 {
   /**
    * Request a resolution change.
@@ -35,5 +35,5 @@ struct CameraResolutionRequest : public CameraResolution
    *
    * @return true if the request is viable.
    */
-  bool setRequest(CameraResolution::Resolutions requestedResolutionUpper, CameraResolution::Resolutions requestedResolutionLower);
-};
+  bool setRequest(CameraResolution::Resolutions requestedResolutionUpper, CameraResolution::Resolutions requestedResolutionLower),
+});

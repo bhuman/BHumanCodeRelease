@@ -36,7 +36,7 @@ namespace Type //The namespace is here to fix a VC-compiler bug
     /**
      * Provides a mapping from c++ types to type ids.
      */
-    template<class T>
+    template<typename T>
     static int getTypeId();
 
     /**
@@ -60,7 +60,7 @@ namespace Type //The namespace is here to fix a VC-compiler bug
    * This is the default implementation of getTypeId.
    * It provides an automatic mapping for all types registered in TypeDeclarations.h
    */
-  template<class T>
+  template<typename T>
   int TypeDescriptor::getTypeId()
   {
     //This will fail if T has not been defined using the Q_DECLARE_METATYPE macro.
@@ -70,22 +70,22 @@ namespace Type //The namespace is here to fix a VC-compiler bug
   /**
    * A TypeDescriptor template to create numeric types with a numeric default value.
    */
-  template <class datatype, int defaultValue>
+  template<typename datatype, int defaultValue>
   class NumericValueTypeDescriptor : public TypeDescriptor
   {
   public:
-    int getSupportedTypeId()
+    int getSupportedTypeId() override
     {
       return getTypeId<datatype>();
     }
 
-    QString toString(const QVariant& var) const
+    QString toString(const QVariant& var) const override
     {
       datatype value = var.value<datatype>();
       return QString::number(value);
     }
 
-    QVariant createDefault()
+    QVariant createDefault() override
     {
       return QVariant::fromValue<datatype>(defaultValue);
     }
@@ -122,18 +122,18 @@ namespace Type //The namespace is here to fix a VC-compiler bug
   class AngleTypeDescriptor : public TypeDescriptor
   {
   public:
-    int getSupportedTypeId()
+    int getSupportedTypeId() override
     {
       return getTypeId<AngleWithUnity>();
     }
 
-    QString toString(const QVariant& var) const
+    QString toString(const QVariant& var) const override
     {
       AngleWithUnity value = var.value<AngleWithUnity>();
       return value == SensorData::off ? "off" : QString::number(value.deg ? value.toDegrees() : value) + " " + (value.deg ? "deg" : "rad");
     }
 
-    QVariant createDefault()
+    QVariant createDefault() override
     {
       return QVariant::fromValue<AngleWithUnity>(AngleWithUnity());
     }

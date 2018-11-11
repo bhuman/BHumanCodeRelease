@@ -9,7 +9,7 @@
 
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/Enum.h"
-
+#include "Representations/Infrastructure/JointAngles.h"
 class Phase : public Streamable
 {
 public:
@@ -40,7 +40,10 @@ public:
   Vector3f odometryOffset = Vector3f::Zero();
 
 protected:
-  virtual void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };
 
 STREAMABLE(KickEngineParameters,

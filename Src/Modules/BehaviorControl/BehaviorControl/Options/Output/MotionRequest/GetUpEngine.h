@@ -6,7 +6,7 @@ option(GetUpEngine)
   {
     transition
     {
-      if(theGetUpEngineOutput.isLeavingPossible == false)
+      if(theMotionRequest.motion == MotionRequest::getUp && theMotionInfo.motion == MotionRequest::getUp)
         goto executing;
     }
     action
@@ -20,8 +20,11 @@ option(GetUpEngine)
   {
     transition
     {
+      if(theMotionRequest.motion != MotionRequest::getUp || theMotionInfo.motion != MotionRequest::getUp)
+        goto setRequest;
+
       if(theGetUpEngineOutput.isLeavingPossible == true)
-        goto requestIsExecuted;
+        goto upright;
     }
     action
     {
@@ -29,11 +32,17 @@ option(GetUpEngine)
     }
   }
 
-  target_state(requestIsExecuted)
+  target_state(upright)
   {
+    transition
+    {
+      if(state_time > 2000 && theFallDownState.state == FallDownState::fallen)
+        goto setRequest;
+    }
     action
     {
-      theMotionRequest.motion = MotionRequest::getUp;
+      theMotionRequest.motion = MotionRequest::stand;
     }
   }
+
 }

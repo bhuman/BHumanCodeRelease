@@ -51,4 +51,6 @@ public:
    * @return Is currently a file replayed?
    */
   static bool soundIsPlaying();
+  
+  static bool usbIsMounted();
 };

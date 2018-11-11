@@ -14,9 +14,6 @@
 #include "Simulation/Scene.h"
 #include "SimObjectWidget.h"
 
-OffscreenRenderer::OffscreenRenderer() :
-  mainGlWidget(0), usedMainGlWidget(false) {}
-
 OffscreenRenderer::~OffscreenRenderer()
 {
   if(mainGlWidget)
@@ -116,7 +113,7 @@ bool OffscreenRenderer::initPixelBuffer(int width, int height, bool sampleBuffer
   if(!buffer.pbuffer->isValid())
   {
     delete buffer.pbuffer;
-    buffer.pbuffer = 0;
+    buffer.pbuffer = nullptr;
     return false;
   }
 
@@ -135,7 +132,7 @@ void OffscreenRenderer::initHiddenWindow(int width, int height, Buffer& buffer)
   }
 
   const QGLFormat format(QGL::NoStencilBuffer | QGL::SingleBuffer);
-  buffer.glWidget = new QGLWidget(format, 0, mainGlWidget, Qt::WindowStaysOnTopHint);
+  buffer.glWidget = new QGLWidget(format, nullptr, mainGlWidget, Qt::WindowStaysOnTopHint);
   buffer.glWidget->setFixedSize(width, height);
   buffer.glWidget->makeCurrent();
   initContext(buffer.glWidget->isSharing());
@@ -155,7 +152,7 @@ void OffscreenRenderer::init()
   ASSERT(!mainGlWidget);
 
   const QGLFormat format(QGL::NoStencilBuffer | QGL::SingleBuffer);
-  mainGlWidget = new QGLWidget(format, 0, 0, Qt::WindowStaysOnTopHint);
+  mainGlWidget = new QGLWidget(format, nullptr, nullptr, Qt::WindowStaysOnTopHint);
   mainGlWidget->makeCurrent();
   initContext(false);
 }

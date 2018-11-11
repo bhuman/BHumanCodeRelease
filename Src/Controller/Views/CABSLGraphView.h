@@ -44,11 +44,11 @@ private:
    * Checks whether the content that will be returned from a \c generateDotFileContent call has changed
    * @return \c true When \c generateDotFileContent will return something new
    */
-  virtual bool hasChanged() { return false; }
+  bool hasChanged() override { return false; }
 
   /**
    * Returns the content of the dot graph file that will be displayed
    * @return The content of the dot graph file
    */
-  virtual QString generateDotFileContent();
+  QString generateDotFileContent() override;
 };

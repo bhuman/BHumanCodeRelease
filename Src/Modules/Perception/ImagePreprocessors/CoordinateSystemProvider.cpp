@@ -7,10 +7,10 @@
  */
 
 #include "CoordinateSystemProvider.h"
-#include "Tools/Debugging/DebugImages.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/RotationMatrix.h"
+#include "Tools/Math/Projection.h"
 
 MAKE_MODULE(CoordinateSystemProvider, perception)
 
@@ -21,9 +21,9 @@ CoordinateSystemProvider::CoordinateSystemProvider()
 
 void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSystem)
 {
-  imageCoordinateSystem.setCameraInfo(theCameraInfo);
+  imageCoordinateSystem.cameraInfo = theCameraInfo;
 
-  Geometry::Line horizon = Geometry::calculateHorizon(theCameraMatrix, theCameraInfo);
+  Geometry::Line horizon = Projection::calculateHorizon(theCameraMatrix, theCameraInfo);
   imageCoordinateSystem.origin = horizon.base;
   imageCoordinateSystem.rotation.col(0) = horizon.direction;
   imageCoordinateSystem.rotation.col(1) = Vector2f(-horizon.direction.y(), horizon.direction.x());
@@ -41,46 +41,6 @@ void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSyst
   calcScaleFactors(imageCoordinateSystem.a, imageCoordinateSystem.b, theJointSensorData.timestamp - cameraMatrixPrevTimeStamp[theCameraInfo.camera]);
   cameraMatrixPrev[theCameraInfo.camera] = theCameraMatrix;
   cameraMatrixPrevTimeStamp[theCameraInfo.camera] = theJointSensorData.timestamp;
-
-  COMPLEX_IMAGE("corrected")
-  {
-    correctedImage.setResolution(theCameraInfo.width / 2, theCameraInfo.height);
-    memset(correctedImage[0], 0, (theCameraInfo.width / 2) * theCameraInfo.height * sizeof(PixelTypes::YUYVPixel));
-    int yDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, 0).y();
-    for(int ySrc = 0; ySrc < theCameraInfo.height; ++ySrc)
-      for(int yDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).y(); yDest <= yDest2; ++yDest)
-      {
-        int xDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).x() / 2;
-        for(int xSrc = 0; xSrc < theCameraInfo.width; xSrc += 2)
-        {
-          for(int xDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(xSrc, ySrc).x() / 2; xDest <= xDest2; ++xDest)
-          {
-            correctedImage[yDest + int(theCameraInfo.opticalCenter.y() + 0.5f)][xDest + int(theCameraInfo.opticalCenter.x() + 0.5f) / 2].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
-          }
-        }
-      }
-    SEND_DEBUG_IMAGE("corrected", correctedImage);
-  }
-
-  COMPLEX_IMAGE("horizonAligned")
-  {
-    horizonAlignedImage.setResolution(theCameraInfo.width / 2, theCameraInfo.height);
-    memset(horizonAlignedImage[0], 0, (theCameraInfo.width / 2) * theCameraInfo.height * sizeof(PixelTypes::YUVPixel));
-    for(int ySrc = 0; ySrc < theCameraInfo.height; ++ySrc)
-      for(int xSrc = 0; xSrc < theCameraInfo.width; xSrc += 2)
-      {
-        Vector2f corrected(imageCoordinateSystem.toCorrected(Vector2i(xSrc, ySrc)));
-        corrected.x() -= theCameraInfo.opticalCenter.x();
-        corrected.y() -= theCameraInfo.opticalCenter.y();
-        const Vector2f& horizonAligned(imageCoordinateSystem.toHorizonAligned(corrected));
-        const Vector2i writePos = (horizonAligned + theCameraInfo.opticalCenter + Vector2f(0.5f, 0.5f)).cast<int>().array() / Eigen::Array<int, 2, 1>(2, 1);
-        if(writePos.x() > 0 && writePos.y() > 0 && writePos.x() < horizonAlignedImage.width && writePos.y() < horizonAlignedImage.height)
-        {
-          horizonAlignedImage[writePos.y()][writePos.x()].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
-        }
-      }
-    SEND_DEBUG_IMAGE("horizonAligned", horizonAlignedImage);
-  }
 }
 
 void CoordinateSystemProvider::calcScaleFactors(float& a, float& b, unsigned int abTimeDiff) const
@@ -90,7 +50,7 @@ void CoordinateSystemProvider::calcScaleFactors(float& a, float& b, unsigned int
     float timeDiff = (float) int(abTimeDiff) * 0.001f; // in seconds
     float timeDiff2 = (float) int(theFrameInfo.time - theJointSensorData.timestamp) * 0.001f; // in seconds
     a = (timeDiff2 - imageRecordingTime - imageRecordingDelay) / timeDiff;
-    b = imageRecordingTime / theImage.height / timeDiff;
+    b = imageRecordingTime / theCameraInfo.height / timeDiff;
   }
   else
     a = b = 0;

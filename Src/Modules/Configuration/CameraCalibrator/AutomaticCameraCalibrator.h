@@ -53,7 +53,7 @@ MODULE(AutomaticCameraCalibrator,
     (float)(-0.25f) lowerCameraHeadTilt,
     (float)(0.5f) headSpeed, /** speed of headmovement*/
     (float)(0.5f) headMotionWaitTime,  /** time the robot has to wait to change the headposition (in s) */
-    (unsigned)(300) minimumSampleDistance,  /** the minimum field distance of samples to eachother */
+    (unsigned)(300) minimumSampleDistance,  /** the minimum field distance of samples to each other */
     (float)(5.f) deletionThreshold,
   }),
 });
@@ -129,9 +129,9 @@ private:
      * @param measurement The i-th measurement for which the error should be computed.
      * @return The error.
      */
-    float operator()(const Parameters& params, size_t measurement) const;
+    float operator()(const Parameters& params, size_t measurement) const override;
 
-    size_t getNumOfMeasurements() const { return calibrator.samples.size(); };
+    size_t getNumOfMeasurements() const override { return calibrator.samples.size(); };
   };
   Functor2 functor;
   friend struct Functor2;
@@ -204,9 +204,9 @@ private:
   void swapCameras(CameraInfo::Camera cameraToUse);
   void abort();
 
-  void update(CameraCalibrationNext& cameraCalibrationNext);
-  void update(CameraResolutionRequest& cameraResolutionRequest);
-  void update(HeadAngleRequest& headAngleRequest);
+  void update(CameraCalibrationNext& cameraCalibrationNext) override;
+  void update(CameraResolutionRequest& cameraResolutionRequest) override;
+  void update(HeadAngleRequest& headAngleRequest) override;
 
   /**
    * Delete the sample which has the same relative to robot positions as the point transformed and has

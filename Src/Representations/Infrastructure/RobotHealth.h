@@ -31,7 +31,7 @@ STREAMABLE(MotionRobotHealth,
 STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbitraryMessageParticle<idRobotHealth>
 {
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
+  void operator>>(BHumanMessage& m) const override;
   bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
   /**
    * Configurations that can be deployed-
@@ -71,8 +71,8 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbi
   (float)(0.f)                                   cognitionFrameRate,        /**< Frames per second within process "Cognition" */
   (unsigned char)(0)                             batteryLevel,              /**< Current batteryLevel of robot battery in percent */
   (float)(0.f)                                   totalCurrent,              /**< Sum of all motor currents (as a measure for the robot's current load) */
-  ((JointSensorData) TemperatureStatus)(regular) maxJointTemperatureStatus, /**< Highest temperature status of a robot actuator */
-  ((Joints) Joint)(headYaw)                      jointWithMaxTemperature,   /**< The hottest joint. */
+  (JointSensorData::TemperatureStatus)(JointSensorData::regular) maxJointTemperatureStatus, /**< Highest temperature status of a robot actuator */
+  (Joints::Joint)(Joints::headYaw)               jointWithMaxTemperature,   /**< The hottest joint. */
   (unsigned char)(0)                             cpuTemperature,            /**< The temperature of the cpu */
   (std::array<unsigned char, 3>)                 load,                      /**< cpu load averages */
   (unsigned char)(0)                             memoryUsage,               /**< Percentage of used memory */

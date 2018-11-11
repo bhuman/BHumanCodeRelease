@@ -9,7 +9,7 @@ start() {
   ebegin "Starting bhumand"
   if [ $(whoami) = nao ]; then
     /home/nao/bin/bhumand start
-  elif [ ! -e /dev/sdb ]; then
+  else
     su -c "/home/nao/bin/bhumand start -b" - nao >/dev/null
   fi
   eend $?

@@ -21,13 +21,10 @@ void DebugHandler::communicate(bool send)
 {
   if(send && !sendData && !out.isEmpty())
   {
-    OutBinarySize size;
-    size << out;
-    sendSize = (int) size.getSize();
-    sendData = new unsigned char[sendSize];
-    ASSERT(sendData);
-    OutBinaryMemory memory(sendData);
+    sendSize = out.getStreamedSize();
+    OutBinaryMemory memory(sendSize);
     memory << out;
+    sendData = reinterpret_cast<unsigned char*>(memory.obtainData());
     out.clear();
   }
 

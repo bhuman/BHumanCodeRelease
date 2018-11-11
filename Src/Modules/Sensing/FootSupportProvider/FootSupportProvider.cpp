@@ -21,8 +21,8 @@ FootSupportProvider::FootSupportProvider()
   weights[Legs::left][FsrSensors::fr] = weights[Legs::left][FsrSensors::br] = innerWeight;
   weights[Legs::right][FsrSensors::fl] = weights[Legs::right][FsrSensors::bl] = -innerWeight;
 
-  FOREACH_ENUM((Legs) Leg, leg)
-    FOREACH_ENUM((FsrSensors) FsrSensor, sensor)
+  FOREACH_ENUM(Legs::Leg, leg)
+    FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
       highestPressure[leg][sensor] = minPressure;
 }
 
@@ -31,8 +31,8 @@ void FootSupportProvider::update(FootSupport& theFootSupport)
   float totalPressure = 0.f;
   float weightedSum = 0.f;
 
-  FOREACH_ENUM((Legs) Leg, leg)
-    FOREACH_ENUM((FsrSensors) FsrSensor, sensor)
+  FOREACH_ENUM(Legs::Leg, leg)
+    FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
     {
       float pressure = std::min(maxPressure, theFsrSensorData.pressures[leg][sensor]);
       highestPressure[leg][sensor] = std::max(highestPressure[leg][sensor], pressure);

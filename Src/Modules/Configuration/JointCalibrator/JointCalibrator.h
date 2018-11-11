@@ -99,7 +99,7 @@ private:
    * The central update method to provide the calibration
    * @param jointCalibration The jointCalibration
    */
-  void update(JointCalibration& jointCalibration);
+  void update(JointCalibration& jointCalibration) override;
 
   static void streamOffsets(const std::string representationName, const Streamable& representation);
 };

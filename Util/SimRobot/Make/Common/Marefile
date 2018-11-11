@@ -1,7 +1,7 @@
 name = "SimRobot"
 
 buildDirRoot = "../../Build"
-utilDirRoot = "../../.."
+utilDirRoot = "../../Util"
 simRobotDir = "../.."
 buildPlatformDir = {
   if (host == "Win32") {
@@ -13,6 +13,7 @@ buildPlatformDir = {
 buildDir = "$(buildPlatformDir)/$(target)/$(configuration)"
 
 configurations = {
+  Develop
   Debug
   Release
 }
@@ -39,7 +40,7 @@ defines = {
 
 if (host == "Linux") {
   cppCompiler = {
-    "env CCACHE_CPP2=yes $(utilDirRoot)/Buildchain/Linux/bin/ccache clang++ -D__extern_always_inline=inline"
+    "clang++"
   }
 }
 
@@ -93,7 +94,7 @@ qtRccSource = {
   name = "$(basename $(notdir $(file)))"
   output = "$(buildDir)/qrc_$(name)$(configuration)$(platform).cpp"
   if (host == "Win32") {
-    rcc = "$(simRobotDir)/Util/qt/Windows/bin/rcc.exe"
+    rcc = "$(utilDirRoot)/qt/Windows/bin/rcc.exe"
   } else {
     rcc = "QT_SELECT=5 rcc"
   }
@@ -107,7 +108,7 @@ qtMocSource = {
   name = "$(basename $(notdir $(file)))"
   output = "$(buildDir)/moc_$(name)$(configuration)$(platform).cpp"
   if (host == "Win32") {
-    moc = "$(simRobotDir)/Util/qt/Windows/bin/moc.exe"
+    moc = "$(utilDirRoot)/qt/Windows/bin/moc.exe"
     mocFlags = "-D_MSC_VER=1800"
   } else {
     moc = "QT_SELECT=5 moc"
@@ -121,7 +122,7 @@ qtMocSourceNew = {
   name = "$(basename $(notdir $(file)))"
   output = "$(buildDir)/moc_$(name).cpp $(buildDir)/$(name).moc"
   if (host == "Win32") {
-    moc = "$(simRobotDir)/Util/qt/Windows/bin/moc.exe"
+    moc = "$(utilDirRoot)/qt/Windows/bin/moc.exe"
     mocFlags = "-D_MSC_VER=1800"
   } else {
     moc = "QT_SELECT=5 moc"

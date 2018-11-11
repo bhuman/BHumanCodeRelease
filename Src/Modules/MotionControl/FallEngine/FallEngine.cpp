@@ -13,7 +13,10 @@ void FallEngine::update(FallEngineOutput& output)
   // when it wasn't active check if it should be activated
   if(!output.active)
   {
-    output.active = theFallDownState.state == FallDownState::falling && specialActionFall() && theMotionInfo.motion != MotionRequest::getUp && theMotionRequest.motion != MotionRequest::getUp;
+    if(theFallDownState.state == FallDownState::falling  && theMotionRequest.motion != MotionRequest::getUp && theMotionInfo.motion != MotionRequest::getUp)
+      output.active = handleSpecialCases();
+    else
+      framesSinceFirstDetection = 0;
 
     if(output.active)
     {
@@ -27,7 +30,7 @@ void FallEngine::update(FallEngineOutput& output)
 
   // leave if fallen
   else if(theFallDownState.state == FallDownState::fallen)
-    waitingForGetup = true;
+    output.waitingForGetup = true;
 
   // leave when upright again
   else if(theFallDownState.state == FallDownState::squatting ||
@@ -43,13 +46,13 @@ void FallEngine::update(FallEngineOutput& output)
       MotionUtilities::stand(jq);
       MotionUtilities::interpolate(output, 0.02f, 1., theJointRequest, theJointAngles, jq);
     }
-    waitingForGetup = true;
+    output.waitingForGetup = true;
   }
 
-  if(output.active && waitingForGetup && theMotionRequest.motion == MotionRequest::getUp)
+  if(output.active && output.waitingForGetup && theMotionRequest.motion == MotionRequest::getUp)
     output.active = false;
 
-  if(output.active && !waitingForGetup)
+  if(output.active && !output.waitingForGetup)
   {
     safeFall(output);
     safeArms(output);
@@ -58,7 +61,7 @@ void FallEngine::update(FallEngineOutput& output)
   }
   else
   {
-    waitingForGetup = false;
+    output.waitingForGetup = false;
     headYawInSafePosition = false;
     headPitchInSafePosition = false;
     shoulderInSafePosition = false;
@@ -74,24 +77,14 @@ void FallEngine::calcDirection(FallEngineOutput& output)
 void FallEngine::safeFall(FallEngineOutput& output) const
 {
   for(int i = 0; i < Joints::numOfJoints; i++)
-    output.stiffnessData.stiffnesses[i] = 30;
+    output.stiffnessData.stiffnesses[i] = 20;
 
   if(output.fallingBackwards)
   {
-    // Sit down to reduce the impact-force
-    output.angles[Joints::lKneePitch] = 180_deg;
-    output.angles[Joints::rKneePitch] = 180_deg;
-    output.angles[Joints::lHipPitch] = -90_deg;
-    output.angles[Joints::rHipPitch] = -90_deg;
-    output.angles[Joints::lHipRoll] = 0_deg;
-    output.angles[Joints::rHipRoll] = 0_deg;
-    output.angles[Joints::lAnklePitch] = -45_deg;
-    output.angles[Joints::rAnklePitch] = -45_deg;
-    output.angles[Joints::lAnkleRoll] = 0_deg;
-    output.angles[Joints::rAnkleRoll] = 0_deg;
+    MotionUtilities::sit(output);
   }
 
-  if(output.fallingForward)
+  else if(output.fallingForward)
   {
     MotionUtilities::stand(output);
   }
@@ -147,13 +140,20 @@ void FallEngine::centerHead(FallEngineOutput& output)
 
 /**  in general the fallEngine shouldn't be triggered when a special action is executed. but there
  * are some cases when it should trigger. theese are handled here
+ * it also should wait if a kick is executed
  * @return true, if the MotionInfo is about a special action where no jump is intended
  */
-bool FallEngine::specialActionFall() const
+bool FallEngine::handleSpecialCases()
 {
-  return theMotionRequest.motion != MotionRequest::specialAction ||
-         (theFrameInfo.getTimeSince(theGameInfo.timeLastPackageReceived) < noGameControllerThreshold &&
-          theMotionRequest.specialActionRequest.specialAction == SpecialActionRequest::standHigh);
+  framesSinceFirstDetection++;
+  if(theMotionRequest.motion == MotionRequest::specialAction &&
+     (theFrameInfo.getTimeSince(theGameInfo.timeLastPackageReceived) > noGameControllerThreshold ||
+      theMotionRequest.specialActionRequest.specialAction != SpecialActionRequest::standHigh))
+    return false;
+  if(theMotionRequest.motion == MotionRequest::walk && theWalkingEngineOutput.isKicking && framesSinceFirstDetection < 15)
+    return false;
+  framesSinceFirstDetection = 0;
+  return true;
 }
 
 MAKE_MODULE(FallEngine, motionControl)

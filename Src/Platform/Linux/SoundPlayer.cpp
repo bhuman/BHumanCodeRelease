@@ -25,6 +25,7 @@ SoundPlayer::~SoundPlayer()
   {
     closing = true;
     sem.post();
+    stop();
   }
 }
 
@@ -35,6 +36,7 @@ void SoundPlayer::start()
 
 void SoundPlayer::main()
 {
+  Thread::nameThread("SoundPlayer");
   while(isRunning() && !closing)
   {
     flush();

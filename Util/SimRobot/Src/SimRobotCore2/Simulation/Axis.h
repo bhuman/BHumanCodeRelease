@@ -54,5 +54,5 @@ private:
   * Registers an element as parent
   * @param element The element to register
   */
-  virtual void addParent(Element& element);
+  void addParent(Element& element) override;
 };

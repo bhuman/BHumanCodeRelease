@@ -43,7 +43,7 @@ void BodyContourProvider::add(const Pose3f& origin, const std::vector<Vector3f >
   bool valid1 = calculatePointInImage(p1, q1);
   if(valid1)
   {
-    Vector2f v = theImageCoordinateSystem.fromCorrectedApprox(q1);
+    Vector2f v = theImageCoordinateSystem.fromCorrected(q1);
     q1 = Vector2i(int(floor(v.x())), int(floor(v.y())));
   }
 
@@ -53,7 +53,7 @@ void BodyContourProvider::add(const Pose3f& origin, const std::vector<Vector3f >
     bool valid2 = calculatePointInImage(p2, q2);
     if(valid2)
     {
-      Vector2f v = theImageCoordinateSystem.fromCorrectedApprox(q2);
+      Vector2f v = theImageCoordinateSystem.fromCorrected(q2);
       q2 = Vector2i(int(floor(v.x())), int(floor(v.y())));
     }
 

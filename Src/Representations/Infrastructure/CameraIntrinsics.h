@@ -8,7 +8,6 @@
 
 #include "Tools/Math/Angle.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Module/Next.h"
 
 /**
  * This struct stores the opening angles and optical centers of both cameras.
@@ -25,5 +24,3 @@ STREAMABLE(CameraIntrinsics,
   (Angle) lowerOpeningAngleHeight,
   (Vector2f) lowerOpticalCenter,
 });
-
-using CameraIntrinsicsNext = Next<CameraIntrinsics>;

@@ -14,7 +14,7 @@ STREAMABLE(JointCalibration,
 {
   JointCalibration(),
 
-  (ENUM_INDEXED_ARRAY(Angle, (Joints) Joint)) offsets, /**< Information on the calibration of all joints. */
+  (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) offsets, /**< Information on the calibration of all joints. */
 });
 
 inline JointCalibration::JointCalibration()

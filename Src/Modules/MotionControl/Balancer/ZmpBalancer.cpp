@@ -66,8 +66,9 @@ Pose3f ZmpBalancer::calcComInStand(const JointAngles& angles)
   return comInStand;
 }
 
-void ZmpBalancer::calcJointAngles(const Pose3f& comInStand, const Pose3f& swingInSupoort, const Quaternionf& torsoRotation, JointAngles& angles)
+void ZmpBalancer::calcJointAngles(const Pose3f& comInStand, const Pose3f& swingInSupoort, const Quaternionf& torsoRotation, const JointAngles& theJointAngles, JointRequest& jointRequest)
 {
+  JointAngles tmp(theJointAngles);
   Pose3f supportAnkleInCom = (standInAnkle * comInStand).inverse();
 
   Pose3f rightAnkleCom(supportAnkleInCom);
@@ -84,13 +85,14 @@ void ZmpBalancer::calcJointAngles(const Pose3f& comInStand, const Pose3f& swingI
     //Compute Joint Angles
     leftAnkleTorso = Pose3f(comInTorso) * leftAnkleCom;
     rightAnkleTorso = Pose3f(comInTorso) * rightAnkleCom;
-    (void)InverseKinematic::calcLegJoints(leftAnkleTorso, rightAnkleTorso, angles, theRobotDimensions, rightIsSupportFoot ? 0.5f : 0.5f); //0.0f : 1.0f);
+    (void)InverseKinematic::calcLegJoints(leftAnkleTorso, rightAnkleTorso, tmp, theRobotDimensions, rightIsSupportFoot ? 0.0f : 1.f);
 
     //Apply Joint Limits
-    JointAngles cuttedAngles(angles);
+    JointAngles cuttedAngles(tmp);
     for(int j = Joints::headYaw; j < Joints::rAnkleRoll; j++)
       cuttedAngles.angles[j] = theJointLimits.limits[j].limit(cuttedAngles.angles[j]);
 
+    //Consider possible changes of swing leg after calling the balancer
     for(int j = firstSwingLegJoint; j < firstSwingLegJoint + 6; j++)
       cuttedAngles.angles[j] = theJointAngles.angles[j];
 
@@ -108,7 +110,7 @@ void ZmpBalancer::calcJointAngles(const Pose3f& comInStand, const Pose3f& swingI
   }
   leftAnkleTorso = Pose3f(comInTorso) * leftAnkleCom;
   rightAnkleTorso = Pose3f(comInTorso) * rightAnkleCom;
-  (void)InverseKinematic::calcLegJoints(leftAnkleTorso, rightAnkleTorso, angles, theRobotDimensions, rightIsSupportFoot ? 0.5f : 0.5f);
+  (void)InverseKinematic::calcLegJoints(leftAnkleTorso, rightAnkleTorso, jointRequest, theRobotDimensions, rightIsSupportFoot ? 0.0f : 1.f);
 }
 
 Pose3f ZmpBalancer::init(bool rightIsSupportFoot, const BalancingParameter& param, Balancer& representation)
@@ -275,10 +277,10 @@ bool ZmpBalancer::calcBalancedJoints(JointRequest& jointRequest, const Pose3f& s
     else if(i < nextZMPPreviewsX.size() + initialSize)
       zmpPreviewsX[i] = nextZMPPreviewsX[i - initialSize];
     else
-      zmpPreviewsX[i] = zmpPreviewsX[i - 1];
+      zmpPreviewsX[i] = zmpPreviewsX[i - 1]; // fill up with the last value
   }
 
-  initialSize = initialSize = std::max(static_cast<int>(initialZMPTrajectoryY.size()) - indexOffset, 0);
+  initialSize = std::max(static_cast<int>(initialZMPTrajectoryY.size()) - indexOffset, 0);
   for(unsigned int i = 0; i < param.previewControllerY.numOfZmpPreviews; i++)
   {
     if(i < initialSize)
@@ -333,20 +335,32 @@ bool ZmpBalancer::calcBalancedJoints(JointRequest& jointRequest, const Pose3f& s
   torsoRotation *= AngleAxisf(-param.balanceWithHip.x() *  tilt.x() * stabilizationFactor, Vector3f::UnitX());
   torsoRotation *= AngleAxisf(-param.balanceWithHip.y() *  tilt.y(), Vector3f::UnitY());
   Pose3f comInStand(torsoRotation, Vector3f(stateX(0), stateY(0), comHeight));
-  calcJointAngles(comInStand, swingInSupport, Quaternionf(torsoRotation), jointRequest);
+  calcJointAngles(comInStand, swingInSupport, Quaternionf(torsoRotation), theJointAngles, jointRequest);
 
-  //correct torso rotation
-  jointRequest.angles[sHipPitch] += Angle(0.0); //TODO use error from knee
+  //correct swing foot rotation relative to ground
+  Pose3f currentTibiaInSupport = theRobotModel.limbs[Limbs::footLeft].inverse() * theRobotModel.limbs[Limbs::tibiaRight];
+  if(rightIsSupportFoot)
+    currentTibiaInSupport = theRobotModel.limbs[Limbs::footRight].inverse() * theRobotModel.limbs[Limbs::tibiaLeft];
+
+  Pose3f requiredSwingFootInStand = swingInSupport;
+  Pose3f requiredSwingFootInSupport = requiredSwingFootInStand;// .rotateX(-tilt[0] * 0.9f).rotateY(-tilt[1] * 0.6f);
+  Pose3f requiredFootInTibia = currentTibiaInSupport.inverse() * requiredSwingFootInSupport;
+  Vector3f requiredAnglesInTibia = requiredFootInTibia.rotation.getPackedAngleAxis();
+  jointRequest.angles[swingAnkleRoll] = 0.6f * jointRequest.angles[swingAnkleRoll] + requiredAnglesInTibia[0] * 0.4f;
+  jointRequest.angles[swingAnklePitch] = 0.6f * jointRequest.angles[swingAnklePitch] + requiredAnglesInTibia[1] * 0.4f;
 
   //compensate floor slopes and calibration errors
   jointRequest.angles[sAnkleRoll] += tiltCalibration.x() * stabilizationFactor;
   jointRequest.angles[sAnklePitch] += tiltCalibration.y() * stabilizationFactor;
 
   //balance with arms
+
   jointRequest.angles[Joints::lShoulderRoll] += param.balanceWithArms.x() *  tilt.x() * stabilizationFactor;
   jointRequest.angles[Joints::rShoulderRoll] += param.balanceWithArms.x() *  tilt.x() * stabilizationFactor;
-  jointRequest.angles[Joints::lShoulderPitch] += param.balanceWithArms.y() *  tilt.y() * stabilizationFactor;
-  jointRequest.angles[Joints::rShoulderPitch] += param.balanceWithArms.y() *  tilt.y() * stabilizationFactor;
+  if(jointRequest.angles[Joints::lShoulderPitch] > 0)
+    jointRequest.angles[Joints::lShoulderPitch] = std::max(0.f, param.balanceWithArms.y() *  tilt.y() * stabilizationFactor + jointRequest.angles[Joints::lShoulderPitch]);
+  if(jointRequest.angles[Joints::rShoulderPitch] > 0)
+    jointRequest.angles[Joints::rShoulderPitch] = std::max(0.f, param.balanceWithArms.y() *  tilt.y() * stabilizationFactor + jointRequest.angles[Joints::rShoulderPitch]);
 
   jointRequest.angles[Joints::lShoulderRoll] = Rangea(8_deg, 65_deg).limit(jointRequest.angles[Joints::lShoulderRoll]);
   jointRequest.angles[Joints::rShoulderRoll] = Rangea(-65_deg, -8_deg).limit(jointRequest.angles[Joints::rShoulderRoll]);
@@ -366,8 +380,7 @@ bool ZmpBalancer::calcBalancedJoints(JointRequest& jointRequest, const Pose3f& s
   }
 
   //compensate loose Knee
-  Angle kneeDiff = lastKnee - theJointAngles.angles[sKneePitch];
-  lastKnee = jointRequest.angles[sKneePitch];
+  Angle kneeDiff = theJointRequest.angles[sKneePitch] - theJointAngles.angles[sKneePitch];
   if(initialZMPTrajectoryX.size() == 0)
     jointRequest.angles[sHipPitch] += param.weakKneeTorso * kneeDiff;
 
@@ -406,9 +419,14 @@ bool ZmpBalancer::calcBalancedJoints(JointRequest& jointRequest, const Pose3f& s
   representation.comYvel = state.com.velocity.y();
   representation.kneeDiff = kneeDiff;
 
-  //OUTPUT_TEXT("" << state.com.position.y() << "," << stateY(0) << "," << zmpPreviewsY[0] << "," << tilt.x());
-  //OUTPUT_TEXT("" << state.com.position.x() << "," << stateX(0) << "," << zmpPreviewsX[0] << "," << tilt.y());
-
+  /*/ Debug Output
+  Pose3f real = theRobotModel.soleLeft.inverse() * theRobotModel.soleRight;
+  double kmc_diff = sqrt(swingInSupport.translation.x() * swingInSupport.translation.x() + swingInSupport.translation.y() * swingInSupport.translation.y() + swingInSupport.translation.z() * swingInSupport.translation.z());
+  double real_diff = sqrt(real.translation.x() * real.translation.x() + real.translation.y() * real.translation.y() + real.translation.z() * real.translation.z());
+  bool hit = theKeyStates.pressed[KeyStates::leftFootLeft] || theKeyStates.pressed[KeyStates::leftFootRight] || theKeyStates.pressed[KeyStates::rightFootLeft] || theKeyStates.pressed[KeyStates::rightFootRight];
+  Pose3f MyComInStand = calcComInStand(theJointAngles);
+  OUTPUT_TEXT("" << swingInSupport.translation.x() << "," << swingInSupport.translation.y() << "," << swingInSupport.translation.z() << "," << real.translation.x() << "," << real.translation.y() << "," << kmc_diff << "," << real_diff << "," << real.translation.z() << "," << comInStand.translation.y() << "," << static_cast<int>(hit) << "," << state.com.position.y() << "," << initialZMPTrajectoryY[0] << "," << stateY(0) << "," << state.com.position.x());
+  //*/
   return((theFootSupport.support < -0.4 && rightIsSupportFoot) || (theFootSupport.support > 0.4 && !rightIsSupportFoot)) && initialZMPTrajectoryY.size() < 5;
 }
 
@@ -427,6 +445,8 @@ void ZmpBalancer::mirrorConstants(bool rightIsSupportFoot)
   sKneePitch = rightIsSupportFoot ? Joints::rKneePitch : Joints::lKneePitch;
   sAnkleRoll = rightIsSupportFoot ? Joints::rAnkleRoll : Joints::lAnkleRoll;
   sAnklePitch = rightIsSupportFoot ? Joints::rAnklePitch : Joints::lAnklePitch;
+  swingAnkleRoll = !rightIsSupportFoot ? Joints::rAnkleRoll : Joints::lAnkleRoll;
+  swingAnklePitch = !rightIsSupportFoot ? Joints::rAnklePitch : Joints::lAnklePitch;
   firstSupportLegJoint = rightIsSupportFoot ? Joints::firstRightLegJoint : Joints::firstLeftLegJoint;
   firstSwingLegJoint = rightIsSupportFoot ? Joints::firstLeftLegJoint : Joints::firstRightLegJoint;
 

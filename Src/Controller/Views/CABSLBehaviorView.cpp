@@ -13,10 +13,9 @@
 #include <QScrollArea>
 #include <QSettings>
 
-#include "Controller/RobotConsole.h"
-#include "Controller/RoboCupCtrl.h"
-#include "Platform/Thread.h"
 #include "CABSLBehaviorView.h"
+#include "Controller/RoboCupCtrl.h"
+#include "Controller/RobotConsole.h"
 
 class CABSLBehaviorWidget : public QWidget
 {
@@ -192,8 +191,8 @@ public:
 
 private:
   CABSLBehaviorWidget* cabslBehaviorWidget;
-  virtual QWidget* getWidget() { return this; }
-  virtual void update() { cabslBehaviorWidget->update(); }
+  QWidget* getWidget() override { return this; }
+  void update() override { cabslBehaviorWidget->update(); }
 };
 
 CABSLBehaviorView::CABSLBehaviorView(const QString& fullName, RobotConsole& console, const ActivationGraph& activationGraph, const unsigned& timeStamp) :

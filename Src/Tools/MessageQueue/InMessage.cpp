@@ -2,7 +2,7 @@
  * @file InMessage.cpp
  *
  * Implementation of class InMessageQueue, InBinaryMessage, InTextMessage,
- * InConfigMessage and InMessage.
+ * and InMessage.
  *
  * @author Martin Lötzsch
  */
@@ -54,13 +54,8 @@ std::string InTextMessage::readAll()
   return result;
 }
 
-InConfigMessage::InConfigMessage(MessageQueueBase* q)
-{
-  open(q);
-}
-
 InMessage::InMessage(MessageQueueBase& queue) :
-  queue(queue), bin(&queue), text(&queue), config(&queue)
+  queue(queue), bin(&queue), text(&queue)
 {}
 
 MessageID InMessage::getMessageID() const
@@ -81,7 +76,6 @@ int InMessage::getBytesLeft() const
 void InMessage::resetReadPosition()
 {
   queue.resetReadPosition();
-  config.reset();
   text.reset();
 }
 

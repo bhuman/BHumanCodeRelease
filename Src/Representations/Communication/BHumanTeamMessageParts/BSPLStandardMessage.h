@@ -14,14 +14,10 @@
 //THIS STRUCT IS INDENTED TO NOT USE RoboCup::SPLStandardMessage.data!
 struct BSPLStandardMessage : public RoboCup::SPLStandardMessage, public Streamable
 {
-  static_assert(SPL_STANDARD_MESSAGE_STRUCT_VERSION == 6, "Please adjust this file to the newer version.");
+  static_assert(SPL_STANDARD_MESSAGE_STRUCT_VERSION == 7, "Please adjust this file to the newer version.");
 
   BSPLStandardMessage() : RoboCup::SPLStandardMessage(), Streamable()
   {
-    for(size_t i = 0; i < 5; ++i)
-      suggestion[i] = 0;
-    intention = 0;
-
     numOfDataBytes = 0;
     // AlignedMemory::operator delete[](data); //FIXME make this correct
   }
@@ -44,5 +40,7 @@ protected:
   void serialize(In* in, Out* out);
 
 private:
+  static void reg();
+
   using RoboCup::SPLStandardMessage::data; //hide because it should not be used
 };

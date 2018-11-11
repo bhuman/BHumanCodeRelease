@@ -2,6 +2,7 @@
 
 case "$1" in
   start)
+    mount /dev/sdb1 2> /dev/null
     /home/nao/bin/bhuman -b &
     ;;
 
@@ -14,6 +15,7 @@ case "$1" in
       killall -9 bhuman 2> /dev/null
       sleep 1
     fi
+    umount /dev/sdb1 2> /dev/null
     ;;
 
   restart)

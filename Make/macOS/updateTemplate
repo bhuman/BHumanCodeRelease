@@ -7,5 +7,5 @@
 # to "generate".
 # This script can be launched from the Finder.
 
-cd `dirname $0`
+cd "$(dirname "$(which "$0")")"
 ./generate -b

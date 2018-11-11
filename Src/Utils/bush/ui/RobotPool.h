@@ -14,8 +14,8 @@ class RobotPoolDelegate : public QStyledItemDelegate
   RobotPool* robotPool;
 public:
   RobotPoolDelegate(RobotPool* pool);
-  virtual void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
-  virtual QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const;
+  void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+  QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
 class RobotPool : public QListWidget
@@ -30,10 +30,10 @@ public:
 public slots:
   void update();
 protected:
-  void mouseMoveEvent(QMouseEvent* me);
-  void dragEnterEvent(QDragEnterEvent* e);
-  void dragMoveEvent(QDragMoveEvent* e);
-  void dropEvent(QDropEvent* e);
+  void mouseMoveEvent(QMouseEvent* me) override;
+  void dragEnterEvent(QDragEnterEvent* e) override;
+  void dragMoveEvent(QDragMoveEvent* e) override;
+  void dropEvent(QDropEvent* e) override;
 
   friend class RobotPoolDelegate;
 };

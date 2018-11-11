@@ -26,10 +26,11 @@ class CognitionStateChangeListener : public CognitionStateChangeListenerBase
 {
 private:
   int lastGameState;
-  int lastSecondaryGameState;
+  int lastGamePhase;
   int lastPenalty;
+  int lastSetPlay;
 
 public:
   CognitionStateChangeListener();
-  void update(CognitionStateChanges& cognitionStateChanges);
+  void update(CognitionStateChanges& cognitionStateChanges) override;
 };

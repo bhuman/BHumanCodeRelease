@@ -19,6 +19,8 @@ RangeSelector::RangeSelector(const QString& name, ColorCalibrationWidget* parent
   setLayout(layout);
 
   slider = new QxtSpanSlider(Qt::Orientation::Horizontal, this);
+  slider->setTickPosition(QSlider::TicksBothSides);
+  slider->setTickInterval(10);
   slider->setHandleMovementMode(QxtSpanSlider::HandleMovementMode::FreeMovement);
   slider->setMinimum(min);
   slider->setMaximum(max);
@@ -85,21 +87,5 @@ void HueFieldSelector::updateColorCalibration(int value, bool isMin)
 {
   RangeSelector::updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration.fieldHue);
 
-  parent->colorCalibrationView.console.colorCalibrationChanged = true;
-}
-
-void HueSelector::updateWidgets()
-{
-  ASSERT(parent->currentColor >= FieldColors::numOfNonColors);
-
-  setEnabled(true);
-  updateSlider(parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
-}
-
-void HueSelector::updateColorCalibration(int value, bool isMin)
-{
-  ASSERT(parent->currentColor >= FieldColors::numOfNonColors);
-
-  RangeSelector::updateColorCalibration(value, isMin, parent->colorCalibrationView.console.colorCalibration[parent->currentColor]);
   parent->colorCalibrationView.console.colorCalibrationChanged = true;
 }

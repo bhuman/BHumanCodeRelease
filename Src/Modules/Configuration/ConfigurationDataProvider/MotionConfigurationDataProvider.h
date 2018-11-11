@@ -55,18 +55,18 @@ private:
   std::unique_ptr<StiffnessSettings> theStiffnessSettings;
   std::unique_ptr<WalkKicks> theWalkKicks;
 
-  void update(DamageConfigurationBody& damageConfigurationBody) {update(damageConfigurationBody, theDamageConfigurationBody);}
-  void update(DamageConfigurationHead& damageConfigurationHead) {update(damageConfigurationHead, theDamageConfigurationHead);}
-  void update(FieldDimensions& fieldDimensions) {update(fieldDimensions, theFieldDimensions);}
-  void update(GlobalOptions& globalOptions) {update(globalOptions, theGlobalOptions);}
-  void update(HeadLimits& headLimits) {update(headLimits, theHeadLimits);}
-  void update(IMUCalibration& imuCalibration) {update(imuCalibration, theIMUCalibration);}
-  void update(JointCalibration& jointCalibration) {update(jointCalibration, theJointCalibration);}
-  void update(JointLimits& jointLimits);
-  void update(MassCalibration& massCalibration) {update(massCalibration, theMassCalibration);}
-  void update(RobotDimensions& robotDimensions);
-  void update(StiffnessSettings& stiffnessSettings) {update(stiffnessSettings, theStiffnessSettings);}
-  void update(WalkKicks& walkKicks);
+  void update(DamageConfigurationBody& damageConfigurationBody) override {update(damageConfigurationBody, theDamageConfigurationBody);}
+  void update(DamageConfigurationHead& damageConfigurationHead) override {update(damageConfigurationHead, theDamageConfigurationHead);}
+  void update(FieldDimensions& fieldDimensions) override {update(fieldDimensions, theFieldDimensions);}
+  void update(GlobalOptions& globalOptions) override {update(globalOptions, theGlobalOptions);}
+  void update(HeadLimits& headLimits) override {update(headLimits, theHeadLimits);}
+  void update(IMUCalibration& imuCalibration) override {update(imuCalibration, theIMUCalibration);}
+  void update(JointCalibration& jointCalibration) override {update(jointCalibration, theJointCalibration);}
+  void update(JointLimits& jointLimits) override;
+  void update(MassCalibration& massCalibration) override {update(massCalibration, theMassCalibration);}
+  void update(RobotDimensions& robotDimensions) override;
+  void update(StiffnessSettings& stiffnessSettings) override {update(stiffnessSettings, theStiffnessSettings);}
+  void update(WalkKicks& walkKicks) override;
 
   template<typename T> void update(T& representation, std::unique_ptr<T>& theRepresentation)
   {
@@ -83,6 +83,6 @@ private:
   {
     ASSERT(!theRepresentation);
     theRepresentation = std::make_unique<T>();
-    loadModuleParameters(*theRepresentation, Streaming::demangle(typeid(T).name()).c_str(), fileName, false);
+    loadModuleParameters(*theRepresentation, TypeRegistry::demangle(typeid(T).name()).c_str(), fileName);
   }
 };

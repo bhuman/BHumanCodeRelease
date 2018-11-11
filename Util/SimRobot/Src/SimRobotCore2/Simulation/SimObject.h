@@ -12,8 +12,8 @@
 
 #include "SimRobotCore2.h"
 #include "Parser/Element.h"
-#include "Tools/Vector3.h"
-#include "Tools/Matrix3x3.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Math/RotationMatrix.h"
 
 /**
 * @class SimObject
@@ -25,15 +25,15 @@ public:
   QString fullName; /**< The path name to the object in the scene graph */
   std::string name; /**< The name of the scene graph object (without path) */
   std::list<SimObject*> children; /**< List of subordinate scene graph objects */
-  Vector3<>* translation; /**< The initial translational offset relative to the origin of the parent object */
-  Matrix3x3<>* rotation; /**< The initial rotational offset relative to the origin of the parent object */
+  Vector3f* translation; /**< The initial translational offset relative to the origin of the parent object */
+  RotationMatrix* rotation; /**< The initial rotational offset relative to the origin of the parent object */
   float transformation[16]; /**< The (updated) offset relative to the origin of the parent object as OpenGL transformation */
 
   /** Default constructor */
   SimObject();
 
   /** Destructor */
-  virtual ~SimObject();
+  ~SimObject();
 
   /** Registers this object with children, actuators and sensors at SimRobot's GUI */
   virtual void registerObjects();

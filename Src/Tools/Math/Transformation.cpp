@@ -40,7 +40,7 @@ bool Transformation::imageToRobot(const float x, const float y, const CameraMatr
                                   const CameraInfo& cameraInfo, Vector2f& relativePosition)
 {
   const float xFactor = cameraInfo.focalLengthInv;
-  const float yFactor = cameraInfo.focalLengthInv;
+  const float yFactor = cameraInfo.focalLengthHeightInv;
   const Vector3f vectorToCenter(1.f, (cameraInfo.opticalCenter.x() - x) * xFactor,
                                 (cameraInfo.opticalCenter.y() - y) * yFactor);
   const Vector3f vectorToCenterWorld = cameraMatrix.rotation * vectorToCenter;
@@ -87,7 +87,7 @@ bool Transformation::imageToRobotHorizontalPlane(const Vector2f& pointInImage, f
                                                  const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Vector2f& pointOnPlane)
 {
   const float xFactor = cameraInfo.focalLengthInv;
-  const float yFactor = cameraInfo.focalLengthInv;
+  const float yFactor = cameraInfo.focalLengthHeightInv;
   const Vector3f vectorToCenter(1.f, (cameraInfo.opticalCenter.x() - pointInImage.x()) * xFactor,
                                 (cameraInfo.opticalCenter.y() - pointInImage.y()) * yFactor);
   const Vector3f vectorToCenterWorld = cameraMatrix.rotation * vectorToCenter;
@@ -116,8 +116,8 @@ bool Transformation::robotToImage(const Vector3f& point, const CameraMatrix& cam
   if(pointInCam.x() <= 0)
     return false;
 
-  pointInCam *= cameraInfo.focalLength / pointInCam.x();
-  pointInImage = cameraInfo.opticalCenter - Vector2f(pointInCam.y(), pointInCam.z());
+  pointInCam /= pointInCam.x();
+  pointInImage = cameraInfo.opticalCenter - pointInCam.tail<2>().cwiseProduct(Vector2f(cameraInfo.focalLength, cameraInfo.focalLengthHeight));
   return pointInCam.x() > 0;
 }
 

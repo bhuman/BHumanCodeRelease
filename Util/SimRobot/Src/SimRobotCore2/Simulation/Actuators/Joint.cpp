@@ -23,14 +23,6 @@ Joint::~Joint()
     dJointDestroy(joint);
 }
 
-void Joint::assembleAppearances() const
-{
-  glPushMatrix();
-  glMultMatrixf(transformation);
-  GraphicalObject::assembleAppearances();
-  glPopMatrix();
-}
-
 void Joint::drawPhysics(unsigned int flags) const
 {
   glPushMatrix();

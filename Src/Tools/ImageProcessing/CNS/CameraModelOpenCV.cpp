@@ -156,8 +156,8 @@ void CameraModelOpenCV::distort(double& xDist, double& yDist, double x, double y
   double r2 = x * x + y * y;
   if(r2 > rMax * rMax) // signularity or not unique
   {
-    x = numeric_limits<float>::quiet_NaN();
-    y = numeric_limits<float>::quiet_NaN();
+    xDist = numeric_limits<float>::quiet_NaN();
+    yDist = numeric_limits<float>::quiet_NaN();
     return;
   }
 
@@ -174,8 +174,8 @@ void CameraModelOpenCV::distort(double& xDist, double& yDist, Eigen::Matrix2d& j
   double r2 = x * x + y * y;
   if(r2 > rMax * rMax) // signularity or not unique
   {
-    x = numeric_limits<float>::quiet_NaN();
-    y = numeric_limits<float>::quiet_NaN();
+    xDist = numeric_limits<float>::quiet_NaN();
+    yDist = numeric_limits<float>::quiet_NaN();
     return;
   }
 
@@ -205,8 +205,8 @@ void CameraModelOpenCV::undistort(double& xUndist, double& yUndist, double x, do
   double r2 = x * x + y * y;
   if(r2 > rMaxPrime * rMaxPrime) // signularity or not unique
   {
-    x = numeric_limits<float>::quiet_NaN();
-    y = numeric_limits<float>::quiet_NaN();
+    xUndist = numeric_limits<float>::quiet_NaN();
+    yUndist = numeric_limits<float>::quiet_NaN();
     return;
   }
   // Warning, this is an approximate inversion
@@ -370,7 +370,7 @@ CameraModelOpenCV CameraModelOpenCV::average(const CameraModelOpenCV& camA, cons
                            (camA.p1 + camB.p1) / 2, (camA.p2 + camB.p2) / 2);
 }
 
-istream& operator >>(istream& input, CameraModelOpenCV& c)
+istream& operator>>(istream& input, CameraModelOpenCV& c)
 {
   Eigen::Matrix4d camera2WorldHom;
   for(int i = 0; i < 4; i++)
@@ -385,7 +385,7 @@ istream& operator >>(istream& input, CameraModelOpenCV& c)
   return input;
 }
 
-ostream& operator <<(ostream& o, const CameraModelOpenCV& c)
+ostream& operator<<(ostream& o, const CameraModelOpenCV& c)
 {
   o << c.camera2World.matrix() << c.width << c.height << c.scale_x << c.scale_y << c.offset_x << c.offset_y << c.k1 << c.k2 << c.p1 << c.p2;
   return o;

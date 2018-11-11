@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Module.h"
-#include "Tools/Streams/AutoStreamable.h"
 #include <list>
 #include <set>
 #include <vector>
@@ -26,6 +25,7 @@ private:
   {
   public:
     ModuleBase* module; /**< A pointer to the module base that is able to create an instance of the module. */
+    std::vector<ModuleBase::Info> info; /**< Information about the requirements and provisions of the module. */
     Streamable* instance = nullptr; /**< A pointer to the instance of the module if it was created. Otherwise the pointer is 0. */
     bool required = false; /**< A flag that is required when determining whether a module is currently required or not. */
     bool requiredBackup; /**< Temporary backup of "required" */
@@ -34,7 +34,7 @@ private:
      * Constructor.
      * @param module A pointer to the module base that is able to create an instance of the module.
      */
-    ModuleState(ModuleBase* module) : module(module) {}
+    ModuleState(ModuleBase* module) : module(module), info(module->getModuleInfo()) {}
 
     /**
      * Comparison operator. Only uses the name for comparison.
@@ -59,8 +59,6 @@ private:
      * @param representation The name of the representation provided.
      * @param moduleState The moduleState that will give access to the module that provides the information.
      * @param update The update handler within the module.
-     * @param create The create handler for the representation.
-     * @param free The free handler for the representation.
      */
     Provider(const char* representation, ModuleState* moduleState, void (*update)(Streamable&)) :
       representation(representation), moduleState(moduleState), update(update)
@@ -167,9 +165,9 @@ private:
    * @param representation The name of the representation that is searched for.
    * @param all If false, it is only searched for representations that are provided by this module.
    *            Otherwise, it is also searched for presentations that are required.
-   * @return Information found about the representation. 0 if it was not found.
+   * @return Information found about the representation. End iterator if it was not found.
    */
-  static const ModuleBase::Info* find(const ModuleBase* module, const std::string& representation, bool all = false);
+  static std::vector<ModuleBase::Info>::const_iterator find(const ModuleState& module, const std::string& representation, bool all = false);
 
   /**
    * Adds all representations that need to be shared between processes to the

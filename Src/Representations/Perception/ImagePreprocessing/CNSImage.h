@@ -134,11 +134,9 @@ struct CNSResponse : public PixelTypes::Edge2Pixel
   }
 };
 
-struct CNSImage : public TImage<CNSResponse>
+STREAMABLE_WITH_BASE(CNSImage, TImage<CNSResponse>,
 {
-  CNSImage() : TImage<CNSResponse>(TImage<CNSResponse>::maxWidth,
-                                   TImage<CNSResponse>::maxHeight,
-                                   TImage<CNSResponse>::maxWidth * 64 * sizeof(CNSResponse))
+  CNSImage() : TImage<CNSResponse>(640, 480, 640 * 64 * sizeof(CNSResponse))
   {
     std::memset(reinterpret_cast<char*>((*this)[-64]), CNSResponse::OFFSET, width * (128 + height) * sizeof(CNSResponse));
   }
@@ -146,13 +144,13 @@ struct CNSImage : public TImage<CNSResponse>
   void draw() const
   {
     SEND_DEBUG_IMAGE("CNSImage", *this, PixelTypes::Edge2);
-  }
-};
+  },
+});
 
-struct CNSImageCompressed : public CNSImage
+STREAMABLE_WITH_BASE(CNSImageCompressed, CNSImage,
 {
   void draw() const
   {
     SEND_DEBUG_IMAGE("CNSImageCompressed", *this, PixelTypes::Edge2);
-  }
-};
+  },
+});

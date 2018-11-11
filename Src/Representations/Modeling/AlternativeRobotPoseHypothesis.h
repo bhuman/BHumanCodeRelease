@@ -19,7 +19,10 @@
 STREAMABLE(AlternativeRobotPoseHypothesis,
 {
   /** Draws this representation. */
-  void draw() const,
+  void draw() const;
+  
+  /** Verifies vality of the pose */
+  void verify() const,
 
   (Pose2f) pose,                             /** the pose in 2D (position + rotation) */
   (bool)(false) isValid,                     /** true, if the content of pose is valid */

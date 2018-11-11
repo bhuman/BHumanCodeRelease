@@ -18,7 +18,7 @@ STREAMABLE(ArmKeyFrameRequest,
   {,
     // IF U TOUCH THIS MAKE SURE U LOOKING IN THE MOTIONCOMBINATOR AND TAKE CARE TO SAVE THE ARMS CORRECTLY IN A FALLING CASE
     useDefault,  /**< No explicit arm motion, so WalkingEngine's arm angles will be used */
-    back,       /**< Move arm to the back */
+    back,        /**< Move arm to the back */
     reverse,     /**< Reverse current arm keyframe motion */
   });
 
@@ -28,5 +28,5 @@ STREAMABLE(ArmKeyFrameRequest,
     (bool)(false) fast, /**< Whether states should not be interpolated */
   }),
 
-  (ENUM_INDEXED_ARRAY(Arm, (Arms) Arm)) arms,
+  (ENUM_INDEXED_ARRAY(Arm, Arms::Arm)) arms,
 });

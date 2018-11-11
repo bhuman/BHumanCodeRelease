@@ -4,36 +4,41 @@
  * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
- * @author <a href="mailto:fthielke@tzi.de">Felix Thielke</a>
  */
 
 #pragma once
 
-#include "Representations/Infrastructure/CameraInfo.h"
 #include "TimingManager.h"
 #include "Debugging.h"
-#include "Tools/Module/Blackboard.h"
 
-/**
- * Helper function to declare a plot as a single statement.
- * @param id The id of the plot.
- * @param value The time to plot in ms.
- */
-inline void _plot(const char* id, unsigned time)
+/** A stopwatch that measures the time an instance of it lives and plots it. */
+class Stopwatch
 {
-  DEBUG_RESPONSE(id) OUTPUT(idPlot, bin, (id + 5) << static_cast<float>(time) * 0.001f);
-}
+  const char* const name; /**< The name of the plot. */
+  bool running = true; /**< Should the stopwatch still be running? */
 
-/**
- * Allows the measurement the execution time of the following block.
- * @param eventID The id of the stop watch.
- */
-#define STOPWATCH(eventID) \
-  for(bool _start = true; (_start ? Global::getTimingManager().startTiming(eventID) : (void) Global::getTimingManager().stopTiming(eventID)), _start; _start ^= true)
+public:
+  /**
+   * Start the stopwatch.
+   * @param name The name of the plot.
+   */
+  Stopwatch(const char* name) : name(name) {Global::getTimingManager().startTiming(name + 15);}
+
+  /** Stop the stopwatch.*/
+  ~Stopwatch()
+  {
+    const unsigned time = Global::getTimingManager().stopTiming(name + 15);
+    DEBUG_RESPONSE(name)
+      OUTPUT(idPlot, bin, (name + 5) << static_cast<float>(time) * 0.001f);
+  }
+
+  /**< Should the stopwatch still be running? */
+  bool isRunning() {return !(running ^= true);}
+};
 
 /**
  * Allows the measurement the execution time of the following block and plot the measurements.
- * @param eventID The id of the stop watch.
+ * @param name The name of the stopwatch.
  */
-#define STOPWATCH_WITH_PLOT(eventID) \
-  for(bool _start = true; (_start ? Global::getTimingManager().startTiming(eventID) : _plot("plot:stopwatch:" eventID, Global::getTimingManager().stopTiming(eventID))), _start; _start ^= true)
+#define STOPWATCH(name) \
+  for(Stopwatch _stopwatch("plot:stopwatch:" name); _stopwatch.isRunning();)

@@ -37,6 +37,7 @@ void SoundPlayer::start()
 
 void SoundPlayer::main()
 {
+  Thread::nameThread("SoundPlayer");
   BH_TRACE_INIT("SoundPlayer");
   unsigned i;
   for(i = 0; i < retries; ++i)
@@ -78,13 +79,14 @@ void SoundPlayer::playDirect(const std::string& basename)
     char* buf = new char[size];
     file.read(buf, size);
     int channels = *reinterpret_cast<unsigned short*>(buf + 22);
-    snd_pcm_uframes_t frames = static_cast<snd_pcm_uframes_t>(*reinterpret_cast<unsigned*>(buf + 40) / sizeof(short) / channels);
+    char* data = buf + *reinterpret_cast<unsigned*>(buf + 16) + 28;
+    snd_pcm_uframes_t frames = static_cast<snd_pcm_uframes_t>(*reinterpret_cast<unsigned*>(data - 4) / sizeof(short) / channels);
 
     const unsigned* p;
     if(channels == 1)
     {
       char* buf2 = new char[frames * 4];
-      for(short* pSrc = reinterpret_cast<short*>(buf + 44), *pEnd = pSrc + frames, *pDst = reinterpret_cast<short*>(buf2); pSrc < pEnd; ++pSrc)
+      for(short* pSrc = reinterpret_cast<short*>(data), *pEnd = pSrc + frames, *pDst = reinterpret_cast<short*>(buf2); pSrc < pEnd; ++pSrc)
       {
         *pDst++ = *pSrc;
         *pDst++ = *pSrc;
@@ -94,7 +96,7 @@ void SoundPlayer::playDirect(const std::string& basename)
       p = reinterpret_cast<unsigned*>(buf);
     }
     else
-      p = reinterpret_cast<unsigned*>(buf + 44);
+      p = reinterpret_cast<unsigned*>(data);
 
     VERIFY(!snd_pcm_prepare(handle));
     while(frames > 0)

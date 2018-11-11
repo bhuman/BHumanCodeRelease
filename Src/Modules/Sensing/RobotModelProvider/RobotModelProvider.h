@@ -32,5 +32,5 @@ class RobotModelProvider: public RobotModelProviderBase
   /** Executes this module
    * @param robotModel The data structure that is filled by this module
    */
-  void update(RobotModel& robotModel);
+  void update(RobotModel& robotModel) override;
 };

@@ -21,6 +21,7 @@ void PenaltyMarkRegionsProvider::update(PenaltyMarkRegions& thePenaltyMarkRegion
 
   thePenaltyMarkRegions.regions.clear();
   cnsRegions.clear();
+  spots.clear();
 
   if(theScanGrid.y.empty())
     return;
@@ -28,7 +29,7 @@ void PenaltyMarkRegionsProvider::update(PenaltyMarkRegions& thePenaltyMarkRegion
   Vector2f pointInImage;
   if(Transformation::robotWithCameraRotationToImage(Vector2f(maxDistanceOnField, 0), theCameraMatrix, theCameraInfo, pointInImage)
      && theColorScanlineRegionsVerticalClipped.scanlines.size() > theColorScanlineRegionsVerticalClipped.lowResStart
-        + theColorScanlineRegionsVerticalClipped.lowResStep)
+     + theColorScanlineRegionsVerticalClipped.lowResStep)
   {
     int xStep = theColorScanlineRegionsVerticalClipped.scanlines[theColorScanlineRegionsVerticalClipped.lowResStart + theColorScanlineRegionsVerticalClipped.lowResStep].x
                 - theColorScanlineRegionsVerticalClipped.scanlines[theColorScanlineRegionsVerticalClipped.lowResStart].x;
@@ -192,6 +193,7 @@ void PenaltyMarkRegionsProvider::analyseRegions(unsigned short upperBound, int x
                                    candidate.region.x.max + candidate.xExtent),
                             Rangei(candidate.region.y.min - candidate.yExtent,
                                    candidate.region.y.max + candidate.yExtent));
+    spots.emplace_back(candidate.center.cast<int>());
   }
 
   COMPLEX_DRAWING("module:PenaltyMarkRegionsProvider:mergedRegions")

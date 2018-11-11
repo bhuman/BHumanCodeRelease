@@ -25,15 +25,15 @@ class RoboCupCtrl : public SimRobot::Module, public SimRobotCore2::CollisionCall
 {
 public:
   static RoboCupCtrl* controller; /**< A pointer to the SimRobot controller. */
-  static SimRobot::Application* application; /**< The interface to the SimRobot GUI */
+  static SimRobot::Application* application; /**< The interface to the SimRobot GUI. */
   GameController gameController;
-  Settings::TeamColor firstTeamColor; /** Color of the first team */
-  Settings::TeamColor secondTeamColor; /** Color of the second team */
+  Settings::TeamColor firstTeamColor; /**< Color of the first team. */
+  Settings::TeamColor secondTeamColor; /**< Color of the second team. */
 
 protected:
   const char* robotName; /**< The name of the robot currently constructed. */
   std::list<Robot*> robots; /**< The list of all robots. */
-  int simStepLength; /**< The length of one simulation step (in ms) */
+  int simStepLength; /**< The length of one simulation step (in ms). */
   bool simTime = false; /**< Switches between simulation time mode and real time mode. */
   float delayTime = 0.f; /**< Delay simulation to reach this duration of a step. */
   int time; /**< The simulation time. */
@@ -47,7 +47,7 @@ public:
   RoboCupCtrl(SimRobot::Application& application);
 
 protected:
-  virtual ~RoboCupCtrl();
+  ~RoboCupCtrl();
 
 public:
   /**
@@ -119,12 +119,12 @@ protected:
   /**
    * The function is called to initialize the module.
    */
-  virtual bool compile();
+  bool compile() override;
 
   /**
    * The function is called in each simulation step.
    */
-  virtual void update();
+  void update() override;
 
   /**
    * The callback function.
@@ -132,7 +132,7 @@ protected:
    * @param geom1 The geometry at which the interface has been registered
    * @param geom2 The other geometry
    */
-  virtual void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2);
+  void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2) override;
 
   /**
    * Has to be called by derived class to start processes.

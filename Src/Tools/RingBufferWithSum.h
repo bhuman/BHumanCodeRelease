@@ -14,7 +14,7 @@
 
 class Angle;
 
-template <typename T, std::size_t n = 0> class RingBufferWithSum : public RingBuffer<T, n>
+template<typename T, std::size_t n = 0> class RingBufferWithSum : public RingBuffer<T, n>
 {
 private:
   T zero; /**< Sum when the buffer is empty. */

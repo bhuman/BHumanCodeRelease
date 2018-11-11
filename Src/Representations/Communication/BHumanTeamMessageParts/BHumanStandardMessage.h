@@ -7,45 +7,122 @@
  */
 
 #pragma once
+
+#include "Representations/BehaviorControl/Role.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Modeling/Obstacle.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include <stdint.h>
+
+#include <cstdint>
 
 #define BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER  "BHUM"
-#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 3 // this should be incremented with each change
+#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 0       /**< This should be incremented with each change. */
+#define BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS 6   /**< The maximum number of players per team. */
+#define BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_OBSTACLES 7 /**< The maximum number of obstacles that can be transmitted. */
+
+/*
+ * Important remarks about units:
+ *
+ * For each parameter, the respective comments describe its unit.
+ * The following units are used:
+ *  - Distances:  Millimeters (mm)
+ *  - Angles:     Radian
+ *  - Time:       Milliseconds (ms)
+ *  - Speed:      Millimeters per second (mm/s)
+ *  - Timestamp:  Milliseconds since system / software start (ms)
+ */
+
+/*
+ * Important remarks about streaming sizes:
+ * NOT all values are streamed as a whole!
+ * If a unit is not streamed in its natural range, a commentary will indicate
+ * the range as it is interpreted.
+ * The general comment pattern is "[rangeFrom..rangeTo (in precision)]".
+ *
+ * E.g.
+ *  uint32_t value0;    //-- no comment     (This will be streamed as full 4 Byte)
+ *  bool     value1;    //-- no comment     (This may be streamed as 1 Bit)
+ *  uint32_t value2;    // < [3..12]        (This will be streamed with minumum value
+ *                                                                and maximum value 12)
+ *  uint16_t value3;    // < [3..12] bla    (Same as above)
+ *  uint32_t value2;    // < [4..10 (2)]    (This will be streamed with a precision of 2, a minumum
+ *                                            value of 4 and a maximum value of 10.
+ *                                            This means after streaming it can hold 2,4,6,8 and 10)
+ *  uint32_t time1      // < [delta 0..-10] (This will be streamed in relation to the timestamp of
+ *                                            the message in range of 0 to -10.)
+ */
+
+/** The definintion of an NTP message we send - in response to a previously received request. */
+STREAMABLE(BNTPMessage,
+{,
+  (uint32_t) requestOrigination,  /**<                        The timestamp of the generation of the request. */
+  (uint32_t) requestReceipt,      /**< [delta 0..-4095]       The timestamp of the receipt of the request. */
+  (uint8_t) receiver,             /**< [#_MAX_NUM_OF_PLAYERS] The robot to which this message should be sent. */
+});
 
 STREAMABLE(BHumanStandardMessage,
 {
-  // returns the size of this struct when it is written
+  /**
+   * Returns the size of this struct when it is written.
+   * @return The size of ...
+   */
   int sizeOfBHumanMessage() const;
 
-  // Method to convert this struct for communication usage
-  // @param data point to dataspace,
-  //        THIS SHOULD BE AT LEAST AS BIG AS this->sizeOfBHumanMessage()
-  // -asserts: writing sizeOfBHMessage() bytes
+  /**
+   * Converts this struct for communication usage.
+   * @param data Pointer to dataspace,
+   *        THIS SHOULD BE AT LEAST AS BIG AS this->sizeOfBHumanMessage()
+   * -asserts: writing sizeOfBHumanMessage() bytes
+   */
   void write(void* data) const;
 
-  // Method to reads the message from data.
-  // @param data the message
-  // @return the header and the versions are convertible
+  /**
+   * Reads the message from data.
+   * @param data The message.
+   * @return Whether the header and the versions are convertible.
+   */
   bool read(const void* data);
 
-  BHumanStandardMessage()
-  {
-    const char* init = BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER;
-    for(unsigned int i = 0; i < sizeof(header); ++i)
-      header[i] = init[i];
-  },
+  /** Constructor. */
+  BHumanStandardMessage(),
 
-  (char[4]) header,
-  (uint8_t)(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION) version,
-  (uint8_t) magicNumber,
+  (char[4])  header,      /**< BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER */
+  (uint8_t)  version,     /**< BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION */
+  (uint8_t)  magicNumber, /**< The magic number. */
+  (unsigned) timestamp,   /**< Timestamp when this message has been sent (relative to the clock frame of the sending robot). */
 
-  (uint32_t)(0u) ballTimeWhenDisappearedSeenPercentage,
+  (bool)     isPenalized,             /**< The name says it all. */
+  (bool)     isUpright,               /**< The name says it all. */
+  (bool)     hasGroundContact,        /**< The name says it all. */
+  (unsigned) timeOfLastGroundContact, /**< [delta 0..-16320 (64)] The name says it all. */
 
-  (int16_t) ballLastPerceptX,
-  (int16_t) ballLastPerceptY,
-  (std::array<float, 3>) ballCovariance,
-  (float) robotPoseDeviation,
-  (std::array<float, 6>) robotPoseCovariance,
-  (uint8_t) robotPoseValidity,
+  (float)                robotPoseValidity,   /**< [0..1 (0.0039)] The validity of the RobotPose. */
+  (float)                robotPoseDeviation,  /**< The deviation of the RobotPose. */
+  (std::array<float, 6>) robotPoseCovariance, /**< The covariance matrix of the RobotPose. */
+  (unsigned)             timestampLastJumped, /**< [delta 0..-32640 (128)] The timestamp when the localization jumped. */
+
+  (unsigned)             ballTimeWhenLastSeen,    /**< The name says it all. */
+  (unsigned)             ballTimeWhenDisappeared, /**< The name says it all. */
+  (unsigned char)        ballSeenPercentage,      /**< The name says it all */
+  (Vector2f)             ballVelocity,            /**< [-32768..32767 (1)] The ball velocity .*/
+  (Vector2f)             ballLastPercept,         /**< [-32768..32767 (1)] The position where the last ball percept was. */
+  (std::array<float, 3>) ballCovariance,          /**< The covariance matrix of the ball position. */
+
+  (char)     confidenceOfLastWhistleDetection, /**< The name says it all. */
+  (unsigned) lastTimeWhistleDetected,          /**< [delta 0..-65535] The name says it all. */
+
+  /**
+   * Obstacle has the attributes covariance, center, left, right, velocity, lastSeen and type.
+   * covariance is streamed as float with the nondiagonal entries as one value.
+   * center is streamed in [-32768..32767 (1)].
+   * left is streamed in [-32768..32764 (4)].
+   * right is streamed in [-32768..32764 (4)].
+   * velocity is not streamed at all.
+   * lastSeen is streamed in [delta 0..-16320 (64)].
+   * type is streamed in [0..255].
+   */
+  (std::vector<Obstacle>) obstacles,
+
+  (bool) requestsNTPMessage,              /**< Whether this robot requests NTP replies from the others. */
+  (std::vector<BNTPMessage>) ntpMessages, /**< The NTP replies of this robot to other robots. */
 });

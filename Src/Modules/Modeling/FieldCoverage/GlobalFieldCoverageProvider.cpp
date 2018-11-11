@@ -13,9 +13,6 @@ GlobalFieldCoverageProvider::GlobalFieldCoverageProvider()
 
 void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverage)
 {
-  DECLARE_DEBUG_DRAWING("module:GlobalFieldCoverageProvider:dropInPosition", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("module:GlobalFieldCoverageProvider:ballOutPosition", "drawingOnField");
-
   if(!initDone)
     init(globalFieldCoverage);
 
@@ -45,7 +42,10 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
 
   for(size_t y = 0; y < theFieldCoverage.lines.size(); ++y)
     addLine(theFieldCoverage.lines[y]);
-  for(const auto teammate : theTeamData.teammates)
+  if(theGameInfo.competitionType == COMPETITION_TYPE_MIXEDTEAM)
+    for(size_t y = 0; y < theHulkFieldCoverage.lines.size(); ++y)
+      addLine(theHulkFieldCoverage.lines[y]);
+  for(const auto& teammate : theTeamData.teammates)
     if(!teammate.theFieldCoverage.lines.empty() && teammate.mateType == Teammate::TeamOrigin::BHumanRobot)
       addLine(teammate.theFieldCoverage.lines.back());
 
@@ -65,35 +65,11 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
 
 void GlobalFieldCoverageProvider::accountForBallDropIn(GlobalFieldCoverage& globalFieldCoverage)
 {
-  if(theTeamBallModel.isValid)
+  if(theGameInfo.state == STATE_PLAYING && theFrameInfo.getTimeSince(theTeamBallModel.timeWhenLastSeen) > 500
+     && theFrameInfo.getTimeSince(theBallDropInModel.lastTimeWhenBallWentOut) < maxTimeToBallDropIn)
   {
-    if(theFieldDimensions.isInsideField(theTeamBallModel.position))
-    {
-      lastBallPositionInsideField = theTeamBallModel.position;
-      if(theTeamBallModel.velocity.squaredNorm() < 1.f)
-        lastBallPositionLyingInsideField = theTeamBallModel.position;
-    }
-    else if(theFieldDimensions.isInsideField(lastBallPosition))
-    {
-      ballOutPosition = theTeamBallModel.position;
-      lastTimeBallWentOut = theFrameInfo.time;
-    }
-    lastBallPosition = theTeamBallModel.position;
-  }
-
-  if(theGameInfo.state == STATE_PLAYING && theFrameInfo.getTimeSince(theTeamBallModel.timeWhenLastSeen) > 500 && static_cast<int>(theGameInfo.dropInTime) * 1000 < maxTimeToBallDropIn)
-  {
-    CROSS("module:GlobalFieldCoverageProvider:ballOutPosition",
-          ballOutPosition.x(), ballOutPosition.y(), 75, 30,
-          Drawings::solidPen, ColorRGBA(255, 192, 203));
-
-    calculateDropInPosition(globalFieldCoverage);
-    CROSS("module:GlobalFieldCoverageProvider:dropInPosition",
-          globalFieldCoverage.ballDropInPosition.x(), globalFieldCoverage.ballDropInPosition.y(), 75, 30,
-          Drawings::solidPen, ColorRGBA(255, 192, 203));
-
-    const Vector2i dropInCell(static_cast<int>((globalFieldCoverage.ballDropInPosition.x() - theFieldDimensions.xPosOwnGroundline) / cellLengthX),
-                              static_cast<int>((globalFieldCoverage.ballDropInPosition.y() - theFieldDimensions.yPosRightSideline) / cellLengthY));
+    const Vector2i dropInCell(static_cast<int>((theBallDropInModel.dropInPosition.x() - theFieldDimensions.xPosOwnGroundline) / cellLengthX),
+                              static_cast<int>((theBallDropInModel.dropInPosition.y() - theFieldDimensions.yPosRightSideline) / cellLengthY));
 
     const int min = -static_cast<int>(Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline).squaredNorm()) / 1000;
 
@@ -130,28 +106,6 @@ void GlobalFieldCoverageProvider::accountForBallDropIn(GlobalFieldCoverage& glob
       }
     }
   }
-}
-
-void GlobalFieldCoverageProvider::calculateDropInPosition(GlobalFieldCoverage& globalFieldCoverage)
-{
-  const bool ownTeamKicked = theGameInfo.dropInTeam == theOwnTeamInfo.teamNumber;
-
-  globalFieldCoverage.ballDropInPosition.y() = lastBallPositionLyingInsideField.y() < 0 ? theFieldDimensions.yPosRightDropInLine : theFieldDimensions.yPosLeftDropInLine;
-  globalFieldCoverage.ballDropInPosition.x() = lastBallPositionLyingInsideField.x() + (ownTeamKicked ? -dropInPenaltyDistance : dropInPenaltyDistance);
-
-  if(theFrameInfo.getTimeSince(lastTimeBallWentOut) < maxTimeToBallDropIn)
-  {
-    globalFieldCoverage.ballDropInPosition.y() = ballOutPosition.y() < 0 ? theFieldDimensions.yPosRightDropInLine : theFieldDimensions.yPosLeftDropInLine;
-
-    if(ballOutPosition.x() > theFieldDimensions.xPosOpponentGroundline - 10.0f && ballOutPosition.x() < theFieldDimensions.xPosOpponentGroundline + 10.0f)
-      globalFieldCoverage.ballDropInPosition.x() = ownTeamKicked ? std::min(globalFieldCoverage.ballDropInPosition.x(), 0.f) : theFieldDimensions.xPosOpponentDropInLine;
-    else if(ballOutPosition.x() > theFieldDimensions.xPosOwnGroundline - 10.0f && ballOutPosition.x() < theFieldDimensions.xPosOwnGroundline + 10.0f)
-      globalFieldCoverage.ballDropInPosition.x() = ownTeamKicked ? theFieldDimensions.xPosOwnDropInLine : std::max(globalFieldCoverage.ballDropInPosition.x(), 0.f);
-    else
-      globalFieldCoverage.ballDropInPosition.x() += ownTeamKicked ? -dropInPenaltyDistance : dropInPenaltyDistance;
-  }
-
-  globalFieldCoverage.ballDropInPosition.x() = clip(globalFieldCoverage.ballDropInPosition.x(), theFieldDimensions.xPosOwnDropInLine, theFieldDimensions.xPosOpponentDropInLine);
 }
 
 void GlobalFieldCoverageProvider::setCoverageAtFieldPosition(GlobalFieldCoverage& globalFieldCoverage, const Vector2f& positionOnField, const int coverage) const

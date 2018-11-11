@@ -40,16 +40,16 @@ private:
   class LoadedModule : public QLibrary
   {
   public:
-    SimRobot::Module* module;
+    SimRobot::Module* module = nullptr;
     int flags;
-    bool compiled;
-    typedef SimRobot::Module* (*CreateModuleProc)(SimRobot::Application&);
-    CreateModuleProc createModule;
+    bool compiled = false;
+    using CreateModuleProc = SimRobot::Module* (*)(SimRobot::Application&);
+    CreateModuleProc createModule = nullptr;
 
-    LoadedModule(const QString& name, int flags) : QLibrary(name), module(0), flags(flags), compiled(false) {}
+    LoadedModule(const QString& name, int flags) : QLibrary(name), flags(flags) {}
   };
 
-  int timerId; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
+  int timerId = 0; /**< The id of the timer used to get something like an OnIdle callback function to update the simulation. */
 
   QAction* fileOpenAct;
   QAction* fileCloseAct;
@@ -63,9 +63,9 @@ private:
   QSignalMapper recentFileMapper;
   QMenu* recentFileMenu;
   QMenu* viewMenu;
-  QMenu* viewUpdateRateMenu;
+  QMenu* viewUpdateRateMenu = nullptr;
   QSignalMapper viewUpdateRateMapper;
-  QActionGroup* viewUpdateRateActionGroup;
+  QActionGroup* viewUpdateRateActionGroup = nullptr;
   QMenu* addonMenu;
   QSignalMapper addonMapper;
   QMenu* helpMenu;
@@ -81,10 +81,13 @@ private:
   QSettings layoutSettings;
   QStringList recentFiles;
 
-  bool opened, compiled, running, performStep;
-  bool layoutRestored;
-  int guiUpdateRate;
-  unsigned int lastGuiUpdate;
+  bool opened = false;
+  bool compiled = false;
+  bool running = false;
+  bool performStep = false;
+  bool layoutRestored = true;
+  int guiUpdateRate = 100;
+  unsigned int lastGuiUpdate = 0;
   QString filePath; /**< the path to the currently opened file */
 
   class RegisteredModule
@@ -102,54 +105,48 @@ private:
   QList<LoadedModule*> loadedModules;
   QHash<QString, LoadedModule*> loadedModulesByName; /**< all loaded modules associated to the currently opened file */
 
-  QDockWidget* activeDockWidget;
-  QMenu* dockWidgetFileMenu;
-  QMenu* dockWidgetEditMenu;
-  QMenu* dockWidgetUserMenu;
-  QMenu* moduleUserMenu;
+  QDockWidget* activeDockWidget = nullptr;
+  QMenu* dockWidgetFileMenu = nullptr;
+  QMenu* dockWidgetEditMenu = nullptr;
+  QMenu* dockWidgetUserMenu = nullptr;
+  QMenu* moduleUserMenu = nullptr;
 
-  SceneGraphDockWidget* sceneGraphDockWidget;
+  SceneGraphDockWidget* sceneGraphDockWidget = nullptr;
   QStringList openedObjects;
   QMap<QString, RegisteredDockWidget*> openedObjectsByName;
 
-  virtual bool registerObject(const SimRobot::Module& module, SimRobot::Object& object, const SimRobot::Object* parent, int flags);
-  virtual bool unregisterObject(const SimRobot::Object& object);
-  virtual SimRobot::Object* resolveObject(const QString& fullName, int kind);
-  virtual SimRobot::Object* resolveObject(const QVector<QString>& parts, const SimRobot::Object* parent, int kind);
-  virtual int getObjectChildCount(const SimRobot::Object& object);
-  virtual SimRobot::Object* getObjectChild(const SimRobot::Object& object, int index);
-  virtual bool addStatusLabel(const SimRobot::Module& module, SimRobot::StatusLabel* statusLabel);
-  virtual bool registerModule(const SimRobot::Module& module, const QString& displayName, const QString& name, int flags);
-  virtual bool loadModule(const QString& name);
-  virtual bool openObject(const SimRobot::Object& object);
-  virtual bool closeObject(const SimRobot::Object& object);
-  virtual bool selectObject(const SimRobot::Object& object);
-  virtual void showWarning(const QString& title, const QString& message);
-  virtual void setStatusMessage(const QString& message);
-  virtual const QString& getFilePath() const {return filePath;}
-  virtual const QString& getAppPath() const {return appPath;}
-  virtual QSettings& getSettings() {return settings;}
-  virtual QSettings& getLayoutSettings() {return layoutSettings;}
+  bool registerObject(const SimRobot::Module& module, SimRobot::Object& object, const SimRobot::Object* parent, int flags) override;
+  bool unregisterObject(const SimRobot::Object& object) override;
+  SimRobot::Object* resolveObject(const QString& fullName, int kind) override;
+  SimRobot::Object* resolveObject(const QVector<QString>& parts, const SimRobot::Object* parent, int kind) override;
+  int getObjectChildCount(const SimRobot::Object& object) override;
+  SimRobot::Object* getObjectChild(const SimRobot::Object& object, int index) override;
+  bool addStatusLabel(const SimRobot::Module& module, SimRobot::StatusLabel* statusLabel) override;
+  bool registerModule(const SimRobot::Module& module, const QString& displayName, const QString& name, int flags) override;
+  bool loadModule(const QString& name) override;
+  bool openObject(const SimRobot::Object& object) override;
+  bool closeObject(const SimRobot::Object& object) override;
+  bool selectObject(const SimRobot::Object& object) override;
+  void showWarning(const QString& title, const QString& message) override;
+  void setStatusMessage(const QString& message) override;
+  const QString& getFilePath() const override {return filePath;}
+  const QString& getAppPath() const override {return appPath;}
+  QSettings& getSettings() override {return settings;}
+  QSettings& getLayoutSettings() override {return layoutSettings;}
 
-  virtual void closeEvent(QCloseEvent* event);
-  virtual void timerEvent(QTimerEvent* event);
-  virtual void dragEnterEvent(QDragEnterEvent* event);
-  virtual void dropEvent(QDropEvent* event);
-  virtual void keyPressEvent(QKeyEvent* event);
-  virtual void keyReleaseEvent(QKeyEvent* event);
-  virtual QMenu* createPopupMenu();
+  void closeEvent(QCloseEvent* event) override;
+  void timerEvent(QTimerEvent* event) override;
+  void dragEnterEvent(QDragEnterEvent* event) override;
+  void dropEvent(QDropEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
+  void keyReleaseEvent(QKeyEvent* event) override;
+  QMenu* createPopupMenu() override;
 
   bool loadModule(const QString& name, bool manually);
   void unloadModule(const QString& name);
   bool compileModules();
   void updateViewMenu(QMenu* menu);
   void addToolBarButtonsFromMenu(QMenu* menu, QToolBar* toolBar, bool addSeparator);
-
-#ifdef FIX_MACOS_TOOLBAR_RENDERING_BUG
-  enum {toolBarNone, toolBarToggleBack, toolBarHide, toolBarShow} toolBarState = toolBarNone;
-  int toolBarTimerId = -1;
-  void resizeEvent(QResizeEvent* e);
-#endif
 
 public slots:
   void openFile(const QString& fileName);
@@ -179,12 +176,11 @@ private slots:
 
 public:
   // Provides information on whether the simulation is running or not
-  bool isSimRunning() { return running; }
+  bool isSimRunning() override { return running; }
 
 public slots:
-  void simReset();
-  void simStart();
-  void simStep();
-  void simStop();
-
+  void simReset() override;
+  void simStart() override;
+  void simStep() override;
+  void simStop() override;
 };

@@ -24,9 +24,6 @@ public:
   /** Default constructor */
   Motor() : setpoint(0), joint(0) {}
 
-  /** Destructor */
-  virtual ~Motor() = default;
-
   /**
   * Creates the physical representation of the motor
   * @param joint The jointed that is controlled by this motor

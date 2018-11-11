@@ -17,17 +17,15 @@
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
-#include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
-#include "Representations/Perception/PlayersPercepts/PlayersImagePercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Tools/Math/LeastSquares.h"
 
 #include <vector>
 
 MODULE(LinePerceptor,
 {,
-  REQUIRES(BallPercept),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(ECImage),
@@ -36,13 +34,16 @@ MODULE(LinePerceptor,
   REQUIRES(ColorScanlineRegionsVerticalClipped),
   REQUIRES(ColorScanlineRegionsHorizontal),
   REQUIRES(ImageCoordinateSystem),
-  REQUIRES(PlayersImagePercept),
+  REQUIRES(ObstaclesImagePercept),
   PROVIDES(LinesPercept),
   REQUIRES(LinesPercept),
   PROVIDES(CirclePercept),
   DEFINES_PARAMETERS(
   {,
     (int)(20) maxLineWidthDeviation,            /**< maximum deviation of line width in the image to the expected width at that position in px */
+    (int)(2) maxSkipWidth,                      /**< regions with a size of up to this many pixels can be skipped next to lines. */
+    (int)(2) maxSkipNumber,                     /**< The maximum number of neighboring regions to skip. */
+    (float)(4.f) greenAroundLineRatio,          /**< minimum green next to the line required as factor of line width. */
     (float)(600) maxDistantHorizontalLength,    /**< maximum length of distant horizontal lines in mm */
     (float)(50.f) maxLineFittingError,          /**< maximum error of fitted lines through spots on the field in mm */
     (unsigned int)(4) minSpotsPerLine,          /**< minimum number of spots per line */
@@ -57,10 +58,10 @@ MODULE(LinePerceptor,
     (unsigned int)(8) minCircleClusterSize,     /**< minimum size of a cluster to be considered a valid circle candidate */
     (bool)(false) doAdvancedWidthChecks,        /**< whether experimental advanced line width checks shall be done */
     (float)(2000.f) maxWidthCheckDistance,      /**< maximum distance of line spots in mm to be checked for the correct line width on forming candidates */
-
-    (float)(sqr(60)) sqrMaxPixelDistOf2Spots,
-    (bool)(false) useRealLines,
-    (bool)(false) doExtendLines,
+    (bool)(true) trimLines,                     /**< whether lines extended by robots shall be trimmed */
+    (float)(sqr(20.f)) maxWidthImage,           /**< maximum squared width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks */
+    (float)(2.f) mFactor,                       /**< the calculated width of a line at a spot in mm must be below the expected width multiplied by this factor to consider the spot a valid line spot */
+    (int)(5) minConsecutiveSpots,               /**< number of consecutive valid line spots found at which trimming shall be stopped */
   }),
 });
 
@@ -124,7 +125,7 @@ private:
       for(const Spot* const lineSpot : line.spots)
         fieldSpots.emplace_back(lineSpot->field);
       fieldSpots.emplace_back(spot);
-      leastSquaresCircleFit(fieldSpots, center, radius);
+      LeastSquares::fitCircle(fieldSpots, center, radius);
     }
 
     /**
@@ -171,14 +172,14 @@ private:
    *
    * @param linesPercept the LinesPercept to update
    */
-  void update(LinesPercept& linesPercept);
+  void update(LinesPercept& linesPercept) override;
 
   /**
    * Updates the CirclePercept for the current frame.
    *
    * @param circlePercept the CirclePercept to update
    */
-  void update(CirclePercept& circlePercept);
+  void update(CirclePercept& circlePercept) override;
 
   /**
    * Scans the ColorScanlineRegionsHorizontal for line candidates.
@@ -201,6 +202,14 @@ private:
    * @param linesPercept representation in which the lines to extend are stored
    */
   void extendLines(LinesPercept& linesPercept) const;
+
+  /**
+   * Checks wheter the given line is extended by robots.
+   * If this is the case, the line is trimmed accordingly.
+   *
+   * @param line the line to trim
+   */
+  void trimLine(LinesPercept::Line& line) const;
 
   /**
    * Checks whether the given points are connected by a white line.
@@ -238,6 +247,14 @@ private:
   void clusterCircleCenter(const Vector2f& center);
 
   /**
+   * Sets a flag on all lines in the LinePercept that lie on the detected center
+   * circle.
+   *
+   * @param center center of the detected circle
+   */
+  void markLinesOnCircle(const Vector2f& center);
+
+  /**
    * Checks whether the given center circle candidate is white when projected
    * into image coordinates.
    *
@@ -248,26 +265,14 @@ private:
   bool isCircleWhite(const Vector2f& center, const float radius) const;
 
   /**
-   * Checks whether the given region lies within a player in the PlayersPercept.
+   * Checks whether the given region lies within an obstacle in the ObstaclesPercept.
    *
    * @param fromX left coordinate of the region
    * @param toX right coordinate of the region
    * @param fromY upper coordinate of the region
    * @param toY lower coordinate of the region
    */
-  bool isSpotInsidePlayer(const int fromX, const int toX, const int fromY, const int toY) const;
-
-  bool isSpotInsideBall(const int fromX, const int toX, const int fromY, const int toY) const;
-
-  /**
-   * Checks whether the given region lies within the feet positions of a player in the PlayersPercept.
-   *
-   * @param fromX left coordinate of the region
-   * @param toX right coordinate of the region
-   * @param fromY upper coordinate of the region
-   * @param toY lower coordinate of the region
-   */
-  bool isSpotInsidePlayerFeet(const int fromX, const int toX, const int fromY, const int toY) const;
+  bool isSpotInsideObstacle(const int fromX, const int toX, const int fromY, const int toY) const;
 
 public:
   LinePerceptor()

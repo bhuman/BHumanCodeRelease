@@ -4,7 +4,7 @@
 
 namespace Legs
 {
-  GLOBAL_ENUM(Leg,
+  ENUM(Leg,
   {,
     left,
     right,

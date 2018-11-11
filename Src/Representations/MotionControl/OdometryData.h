@@ -14,10 +14,14 @@
  * @attention Only use differences of OdometryData at different times.
  * Position in mm
  */
-struct OdometryData : public Pose2f {};
+STREAMABLE_WITH_BASE(OdometryData, Pose2f,
+{,
+});
 
 /**
  * @struct GroundTruthOdometryData
  * Contains an observed overall movement the robot has done.
  */
-struct GroundTruthOdometryData : public OdometryData {};
+STREAMABLE_WITH_BASE(GroundTruthOdometryData, OdometryData,
+{,
+});

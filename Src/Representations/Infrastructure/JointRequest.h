@@ -3,6 +3,7 @@
 #include "JointAngles.h"
 #include "StiffnessData.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Debugging/Debugging.h"
 #include <cmath>
 
 STREAMABLE_WITH_BASE(JointRequest, JointAngles,
@@ -21,27 +22,36 @@ STREAMABLE_WITH_BASE(JointRequest, JointAngles,
   (StiffnessData) stiffnessData, /**< the stiffness for all joints */
 });
 
-struct HeadJointRequest : public JointRequest {};
-struct ArmJointRequest : public JointRequest {};
-struct LegJointRequest : public JointRequest
+STREAMABLE_WITH_BASE(HeadJointRequest, JointRequest,
+{,
+});
+
+STREAMABLE_WITH_BASE(ArmJointRequest, JointRequest,
+{,
+});
+
+STREAMABLE_WITH_BASE(LegJointRequest, JointRequest,
 {
-  LegJointRequest() : JointRequest()
+  LegJointRequest()
   {
     angles[0] = JointAngles::ignore;
     angles[1] = JointAngles::ignore;
-  };
-};
+  },
+});
 
-struct StandArmRequest : public ArmJointRequest {};
-struct StandLegRequest : public LegJointRequest {};
+STREAMABLE_WITH_BASE(StandArmRequest, ArmJointRequest,
+{,
+});
 
-struct WalkArmRequest : public ArmJointRequest {};
-struct WalkLegRequest : public LegJointRequest {};
+STREAMABLE_WITH_BASE(StandLegRequest, LegJointRequest,
+{,
+});
 
-struct NonArmeMotionEngineOutput : public JointRequest {};
+STREAMABLE_WITH_BASE(NonArmeMotionEngineOutput, JointRequest,
+{,
+});
 
-inline JointRequest::JointRequest() :
-  JointAngles()
+inline JointRequest::JointRequest()
 {
   angles.fill(off);
 }
@@ -59,8 +69,12 @@ inline Angle JointRequest::mirror(const Joints::Joint joint) const
 
 inline bool JointRequest::isValid() const
 {
-  for(const Angle& angle : angles)
-    if(!std::isfinite(angle))
-      return false;
-  return stiffnessData.isValid();
+  bool isValid = true;
+  for(unsigned i = 0; i < Joints::numOfJoints; i++)
+    if(!std::isfinite(angles[i]))
+    {
+      OUTPUT_ERROR("Joint " << TypeRegistry::getEnumName(Joints::Joint(i)) << " is invalid");
+      isValid = false;
+    }
+  return stiffnessData.isValid() && isValid;
 }

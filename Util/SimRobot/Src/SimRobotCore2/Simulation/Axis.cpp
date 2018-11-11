@@ -22,7 +22,7 @@ Axis::~Axis()
 void Axis::create()
 {
   // normalize axis
-  const float len = sqrtf(x * x + y * y + z * z);
+  const float len = std::sqrt(x * x + y * y + z * z);
   if(len == float())
     x = 1.f;
   else

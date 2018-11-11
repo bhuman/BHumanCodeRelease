@@ -295,6 +295,7 @@
 # if defined __GNUC_STDC_INLINE__ || defined __cplusplus
 #  define __extern_inline extern __inline __attribute__ ((__gnu_inline__))
 #  if __GNUC_PREREQ (4,3)
+#   undef __extern_always_inline
 #   define __extern_always_inline \
   extern __always_inline __attribute__ ((__gnu_inline__, __artificial__))
 #  else

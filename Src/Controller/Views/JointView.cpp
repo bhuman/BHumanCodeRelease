@@ -7,7 +7,6 @@
 #include "Controller/RobotConsole.h"
 
 #include "JointView.h"
-#include "Platform/Thread.h"
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/Visualization/HeaderedWidget.h"
 #include "Tools/Motion/SensorData.h"
@@ -21,8 +20,8 @@ public:
   JointHeaderedWidget(JointView& sensorView, RobotConsole& console);
 
 private:
-  virtual QWidget* getWidget() { return this; }
-  virtual void update() { jointWidget->update(); }
+  QWidget* getWidget() override { return this; }
+  void update() override { jointWidget->update(); }
 };
 
 JointWidget::JointWidget(JointView& jointView, QHeaderView* headerView, QWidget* parent) :
@@ -110,7 +109,7 @@ void JointWidget::paintEvent(QPaintEvent* event)
       jointSensorData.currents[i] == SensorData::off ? (void)strcpy(load, "off") : (void)sprintf(load, "%d mA", jointSensorData.currents[i]);
       jointSensorData.temperatures[i] == 0 ? (void)strcpy(temp, "off") : (void)sprintf(temp, "%d °C", jointSensorData.temperatures[i]);
       jointRequest.stiffnessData.stiffnesses[i] == StiffnessData::useDefault ? (void)strcpy(stiffness, "?") : (void)sprintf(stiffness, "%d %%", jointRequest.stiffnessData.stiffnesses[i]);
-      print(Joints::getName(static_cast<Joints::Joint>(i)), request, sensor, load, temp, stiffness);
+      print(TypeRegistry::getEnumName(static_cast<Joints::Joint>(i)), request, sensor, load, temp, stiffness);
     }
   }
   painter.end();

@@ -154,31 +154,6 @@ void LEDHandler::setRightEye(LEDRequest& ledRequest)
 
   switch(theBehaviorStatus.role)
   {
-    case Role::keeper:
-    case Role::attackingKeeper:
-    case Role::penaltyKeeper:
-    {
-      if(theBehaviorStatus.activity == BehaviorStatus::goToBall
-         || theBehaviorStatus.activity == BehaviorStatus::kick
-         || theBehaviorStatus.activity == BehaviorStatus::dribble)
-        setEyeColor(ledRequest, false, red, LEDRequest::on);
-      else
-        setEyeColor(ledRequest, false, blue, LEDRequest::on);
-      break;
-    }
-    case Role::defender:
-      setEyeColor(ledRequest, false, white, LEDRequest::on);
-      break;
-    case Role::striker:
-    case Role::penaltyStriker:
-      setEyeColor(ledRequest, false, red, LEDRequest::on);
-      break;
-    case Role::supporter:
-      setEyeColor(ledRequest, false, green, LEDRequest::on);
-      break;
-    case Role::bishop:
-      setEyeColor(ledRequest, false, yellow, LEDRequest::on);
-      break;
     case Role::undefined:
     case Role::none:
       break;

@@ -95,30 +95,6 @@ void UKFPose2D::generateSigmaPoints()
   sigmaPoints[6] = mean - l.col(2);
 }
 
-Matrix2f UKFPose2D::getCovOfPointInWorld(const Vector2f& pointInWorld2, float pointZInWorld,
-                                         const Pose3f& cameraMatrix, const Pose3f& inverseCameraMatrix,
-                                         const Vector2f& rotationDeviation)
-{
-  const Vector3f unscaledVectorToPoint = inverseCameraMatrix * Vector3f(pointInWorld2.x(), pointInWorld2.y(), pointZInWorld);
-  const Vector3f unscaledWorld = cameraMatrix.rotation * unscaledVectorToPoint;
-  const float h = cameraMatrix.translation.z() - pointZInWorld;
-  const float scale = h / -unscaledWorld.z();
-  const Vector2f pointInWorld(unscaledWorld.x() * scale, unscaledWorld.y() * scale);
-  const float distance = pointInWorld.norm();
-  Matrix2f rot;
-  const Vector2f cossin = pointInWorld * (1.f / distance);
-  if(distance == 0.f)
-    rot = Matrix2f::Identity();
-  else
-    rot << cossin.x(), -cossin.y(), cossin.y(), cossin.x();
-  Matrix2f cov;
-  cov << sqr(h / std::tan((distance == 0.f ? pi_2 : std::atan(h / distance)) - rotationDeviation.x()) - distance), 0.f,
-         0.f, sqr(std::tan(rotationDeviation.y()) * distance);
-  cov = rot * cov * rot.transpose();
-  Covariance::fixCovariance(cov);
-  return cov;
-}
-
 void UKFPose2D::landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vector2f& reading, const Matrix2f& readingCov)
 {
   generateSigmaPoints();

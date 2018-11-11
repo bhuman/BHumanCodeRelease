@@ -185,7 +185,7 @@ float IISC::getHorizontalImageDiameterByMiddlePointAndFieldDiameter(const float 
   if(!Transformation::imageToRobot(middle, theCameraMatrix, theCameraInfo, point))
     return -1.f;
 
-  point += point.normalized(fieldDiameter / 2.f).rotate(pi_2);
+  point += point.normalized(fieldDiameter / 2.f).rotateLeft();
 
   Vector2f newImagePoint;
   if(!Transformation::robotToImage(point, theCameraMatrix, theCameraInfo, newImagePoint))

@@ -35,10 +35,10 @@ void Compound::createPhysics()
   OpenGLTools::convertTransformation(rotation, translation, transformation);
 }
 
-void Compound::addGeometry(const Pose3<>& parentPose, Geometry& geometry, SimRobotCore2::CollisionCallback* callback)
+void Compound::addGeometry(const Pose3f& parentPose, Geometry& geometry, SimRobotCore2::CollisionCallback* callback)
 {
   // compute pose
-  Pose3<> geomPose = parentPose;
+  Pose3f geomPose = parentPose;
   if(geometry.translation)
     geomPose.translate(*geometry.translation);
   if(geometry.rotation)
@@ -51,7 +51,7 @@ void Compound::addGeometry(const Pose3<>& parentPose, Geometry& geometry, SimRob
     dGeomSetData(geom, &geometry);
 
     // set pose
-    dGeomSetPosition(geom, geomPose.translation.x, geomPose.translation.y, geomPose.translation.z);
+    dGeomSetPosition(geom, geomPose.translation.x(), geomPose.translation.y(), geomPose.translation.z());
     dMatrix3 matrix3;
     ODETools::convertMatrix(geomPose.rotation, matrix3);
     dGeomSetRotation(geom, matrix3);
@@ -66,11 +66,11 @@ void Compound::addGeometry(const Pose3<>& parentPose, Geometry& geometry, SimRob
   }
 }
 
-void Compound::assembleAppearances() const
+void Compound::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
 }
 

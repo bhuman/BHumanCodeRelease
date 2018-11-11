@@ -96,13 +96,8 @@ void JointCalibrator::setOffsets(Angle x, Angle y)
 
 void JointCalibrator::streamOffsets(const std::string representationName, const Streamable& representation)
 {
-  OutMapSize size(true);
-  size << representation;
-  char* buf = new char[size.getSize()];
-  OutMapMemory memory(buf, true);
+  OutMapMemory memory(true, 1024);
   memory << representation;
-  buf[size.getSize() - 1] = 0;
-  std::string command = "set module:JointCalibrator:" + representationName + " " + buf;
+  std::string command = "set module:JointCalibrator:" + representationName + " " + memory.data();
   OUTPUT_TEXT(command);
-  delete[] buf;
 }

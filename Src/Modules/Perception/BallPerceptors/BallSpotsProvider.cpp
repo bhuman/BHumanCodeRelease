@@ -6,13 +6,32 @@
 #include "BallSpotsProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/Math/Transformation.h"
 #include <algorithm>
+#include <cmath>
 
 void BallSpotsProvider::update(BallSpots& ballSpots)
 {
   DECLARE_DEBUG_DRAWING("module:BallSpotsProvider:scanLines", "drawingOnImage");
 
   ballSpots.ballSpots.clear();
+
+  // Add a prediction based on the previous ball model to the candidates
+  ballSpots.firstSpotIsPredicted = false;
+  Vector2f predictionInImage;
+  if (theFrameInfo.getTimeSince(theWorldModelPrediction.timeWhenBallLastSeen) < 100
+    && Transformation::robotToImage(Vector3f(theWorldModelPrediction.ballPosition.x(), theWorldModelPrediction.ballPosition.y(), theBallSpecification.radius), theCameraMatrix, theCameraInfo, predictionInImage))
+  {
+    predictionInImage = theImageCoordinateSystem.fromCorrected(predictionInImage);
+    const int x = static_cast<int>(std::round(predictionInImage.x())), y = static_cast<int>(std::round(predictionInImage.y()));
+
+    if (x >= 0 && x < theCameraInfo.width && y >= 0 && y < theCameraInfo.height)
+    {
+      ballSpots.firstSpotIsPredicted = true;
+      ballSpots.addBallSpot(x, y);
+    }
+  }
+
   searchScanLines(ballSpots);
 }
 
@@ -120,9 +139,9 @@ bool BallSpotsProvider::correctWithScanLeftAndRight(Vector2i& initialPoint, cons
 }
 
 void BallSpotsProvider::scanBallSpotOneDirection(const Vector2i& spot, int& currentLength, const int& maxLength,
-  unsigned& goodPixelCounter, unsigned& neutralPixelCounter,
-  int(*getX) (const Vector2i& spot, const int currentLength),
-  int(*getY) (const Vector2i& spot, const int currentLength)) const
+                                                 unsigned& goodPixelCounter, unsigned& neutralPixelCounter,
+                                                 int(*getX)(const Vector2i& spot, const int currentLength),
+                                                 int(*getY)(const Vector2i& spot, const int currentLength)) const
 {
   unsigned currentSkipped = 0;
   unsigned currentSkippedGreen = 0;
@@ -186,8 +205,8 @@ bool BallSpotsProvider::checkGreenAround(const Vector2i& spot, const float radiu
 {
   int useRadius = additionalRadiusForGreenCheck + static_cast<int>(radius);
   if(useRadius >= spot.x() - 1 || useRadius >= spot.y() - 1 ||
-     spot.x() + 1 + useRadius >= theECImage.colored.width ||
-     spot.y() + 1 + useRadius >= theECImage.colored.height)
+     spot.x() + 1 + useRadius >= static_cast<int>(theECImage.colored.width) ||
+     spot.y() + 1 + useRadius >= static_cast<int>(theECImage.colored.height))
     return false;
 
   int count(0);
@@ -245,10 +264,10 @@ bool BallSpotsProvider::checkGreenAround(const Vector2i& spot, const float radiu
 
 bool BallSpotsProvider::isSpotClearlyInsideARobot(const Vector2i& spot, const float estimatedRadius) const
 {
-  for(const PlayersImagePercept::PlayerInImage& player : thePlayersImagePercept.players)
-    if(spot.x() > player.x1FeetOnly && spot.x() < player.x2FeetOnly)
-      if(spot.y() < player.y2 - estimatedRadius - IISC::getImageLineDiameterByLowestPoint(spot.cast<float>(), theCameraInfo, theCameraMatrix, theFieldDimensions))
-        return true;
+  for(const ObstaclesImagePercept::Obstacle& obstacle : theObstaclesImagePercept.obstacles)
+    if(spot.x() > obstacle.left && spot.x() < obstacle.right
+       && spot.y() < obstacle.bottom - estimatedRadius - IISC::getImageLineDiameterByLowestPoint(spot.cast<float>(), theCameraInfo, theCameraMatrix, theFieldDimensions))
+      return true;
 
   return false;
 }

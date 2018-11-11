@@ -17,13 +17,13 @@ Motion::Motion() :
   theCognitionReceiver(this),
   theCognitionSender(this),
   moduleManager({ModuleBase::motionInfrastructure, ModuleBase::motionControl, ModuleBase::sensing}),
-  logger(Logger::LoggedProcess::motion)
+  logger("Motion", 'm', 100)
 {
   theDebugReceiver.setSize(500000);
-  theDebugSender.setSize(70000, 40000);
+  theDebugSender.setSize(50000, 20000);
 
   theCognitionSender.moduleManager = theCognitionReceiver.moduleManager = &moduleManager;
-
+  
   if(SystemCall::getMode() == SystemCall::physicalRobot)
     setPriority(20);
 }
@@ -59,12 +59,11 @@ bool Motion::main()
     timingManager.signalProcessStart();
     annotationManager.signalProcessStart();
 
-    STOPWATCH_WITH_PLOT("Motion") moduleManager.execute();
+    STOPWATCH("Motion") moduleManager.execute();
     NaoProvider::finishFrame();
 
     DEBUG_RESPONSE_ONCE("automated requests:DrawingManager") OUTPUT(idDrawingManager, bin, Global::getDrawingManager());
     DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D") OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D());
-    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification") OUTPUT(idStreamSpecification, bin, Global::getStreamHandler());
 
     theCognitionSender.timeStamp = Time::getCurrentSystemTime();
     theCognitionSender.send();
@@ -119,3 +118,17 @@ bool Motion::handleMessage(InMessage& message)
 }
 
 MAKE_PROCESS(Motion);
+
+#if (defined LINUX || defined MACOS)
+#include "Modules/Sensing/FallDownStateDetector/FallDownStateProvider.h"
+#include "Modules/Sensing/InertialDataProvider/InertialDataProvider.h"
+#include "Modules/MotionControl/WalkingEngine/Walk2014Generator.h"
+
+extern Module<FallDownStateProvider> theFallDownStateProviderModule;
+auto linkFallDownStateProvider = &theFallDownStateProviderModule;
+extern Module<InertialDataProvider> theInertialDataProviderModule;
+auto linkInertialDataProvider = &theInertialDataProviderModule;
+extern Module<Walk2014Generator> theWalk2014GeneratorModule;
+auto linkWalk2014Generator = &theWalk2014GeneratorModule;
+
+#endif

@@ -1,14 +1,5 @@
-#include <cstring>
-
-#ifndef WINDOWS
-#include <cxxabi.h>
-#endif
-
 #include "Streamable.h"
-#include "StreamHandler.h"
-#include "Tools/Global.h"
-
-#include <typeinfo>
+#include <cstring>
 
 void Streamable::streamOut(Out& out) const
 {
@@ -34,60 +25,28 @@ Out& operator<<(Out& out, const Streamable& streamable)
 
 namespace Streaming
 {
-  void finishRegistration()
-  {
-    Global::getStreamHandler().finishRegistration();
-  }
-
-  void startRegistration(const std::type_info& ti, bool registerWithExternalOperator)
-  {
-    Global::getStreamHandler().startRegistration(ti.name(), registerWithExternalOperator);
-  }
-
-  void registerBase()
-  {
-    Global::getStreamHandler().registerBase();
-  }
-
-  void registerWithSpecification(const char* name, const std::type_info& ti)
-  {
-    Global::getStreamHandler().registerWithSpecification(name, ti);
-  }
-
-  void registerEnum(const std::type_info& ti, const char* (*fp)(int))
-  {
-    Global::getStreamHandler().registerEnum(ti, fp);
-  }
-
-  std::string demangle(const char* name)
-  {
-#ifdef WINDOWS
-    if(!strncmp(name, "struct ", 7))
-      return name + 7;
-    else if(!strncmp(name, "class ", 6))
-      return name + 6;
-    else
-      return name;
-#else
-    char realName[1000]; // This should be big enough, so realloc is never called.
-    int status;
-    size_t length = sizeof(realName);
-    abi::__cxa_demangle(name, realName, &length, &status);
-    if(!status)
-      return realName;
-    else
-      return "UNKNOWN";
-#endif
-  }
-
-  Out& dummyStream()
-  {
-    return Global::getStreamHandler().dummyStream;
-  }
-
   const char* skipDot(const char* name)
   {
     const char* dotPos = strchr(name, '.');
     return dotPos ? dotPos + 1 : name;
   }
+
+  In& streamStaticArray(In& in, unsigned char inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, unsigned char outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, signed char inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, signed char outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, char inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, char outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, unsigned short inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, unsigned short outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, short inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, short outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, unsigned int inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, unsigned int outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, int inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, int outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, float inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, float outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
+  In& streamStaticArray(In& in, double inArray[], size_t size, const char* enumType) {return streamBasicStaticArray(in, inArray, size, enumType);}
+  Out& streamStaticArray(Out& out, double outArray[], size_t size, const char* enumType) {return streamBasicStaticArray(out, outArray, size, enumType);}
 }

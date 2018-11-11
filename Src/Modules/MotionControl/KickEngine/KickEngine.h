@@ -10,6 +10,7 @@
 #include "KickEngineParameters.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
@@ -22,6 +23,7 @@
 MODULE(KickEngine,
 {,
   USES(JointRequest),
+  REQUIRES(DamageConfigurationBody),
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
@@ -35,7 +37,6 @@ MODULE(KickEngine,
   REQUIRES(TorsoMatrix),
   PROVIDES(KickEngineOutput),
 });
-
 class KickEngine : public KickEngineBase
 {
 private:
@@ -43,11 +44,12 @@ private:
   bool compensate = false;
   bool compensated = false;
   unsigned timeSinceLastPhase = 0;
+  KickRequest lastValidKickRequest;
 
   std::vector<KickEngineParameters> params;
 
 public:
   KickEngine();
 
-  void update(KickEngineOutput& kickEngineOutput);
+  void update(KickEngineOutput& kickEngineOutput) override;
 };

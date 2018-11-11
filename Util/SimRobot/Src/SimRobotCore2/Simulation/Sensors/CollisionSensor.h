@@ -33,7 +33,7 @@ private:
     unsigned int lastCollisionStep; /**< The simulation step in which the last collision occured. */
 
     /** Update the sensor value. Is called when required. */
-    virtual void updateValue();
+    void updateValue() override;
 
     /**
     * The collision callback function.
@@ -41,10 +41,10 @@ private:
     * @param geom1 A geometry of the sensor
     * @param geom2 The other geometry
     */
-    virtual void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2);
+    void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2) override;
 
     //API
-    virtual bool getMinAndMax(float& min, float& max) const {return false;}
+    bool getMinAndMax(float& min, float& max) const override {return false;}
   } sensor;
 
   bool hasGeometries; /**< Whether there are geometries especially for this sensor */
@@ -54,7 +54,7 @@ private:
   * These are a geometry object for collision detection and/or a body,
   * if the simulation object is movable.
   */
-  virtual void createPhysics();
+  void createPhysics() override;
 
   /**
   * Registers the sensor collision callback function to a list of geometries and subordinate geometries
@@ -64,11 +64,11 @@ private:
   void registerCollisionCallback(std::list< ::PhysicalObject*>& geometries, bool setNotCollidable);
 
   /** Registers this object with children, actuators and sensors at SimRobot's GUI. */
-  virtual void registerObjects();
+  void registerObjects() override;
 
   /**
   * Draws physical primitives of the object (including children) on the currently selected OpenGL context
   * @param flags Flags to enable or disable certain features
   */
-  virtual void drawPhysics(unsigned int flags) const;
+  void drawPhysics(unsigned int flags) const override;
 };

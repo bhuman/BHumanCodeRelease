@@ -9,7 +9,6 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
-#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -21,7 +20,6 @@
 MODULE(GoalFramePerceptor,
 {,
   REQUIRES(FieldDimensions),
-  REQUIRES(GoalPostPercept),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(LinesPercept),
@@ -36,19 +34,17 @@ MODULE(GoalFramePerceptor,
     (int)(2) neededConvexBoundaryPoints,
     (float)(sqr(850.f)) squaredBigIntersectionThreshold, /**< the square of the threshold for each linesegment of a big intersection */
     (float)(sqr(200.f)) tTDistanceThreshold,
-    (float)(100.f) allowedGoalPostToLineDistance,
     (Angle)(20_deg) allowedTTAngleDivergence,
   }),
 });
 
 class GoalFramePerceptor : public GoalFramePerceptorBase
 {
-  void update(GoalFrame& goalFrame);
+  void update(GoalFrame& goalFrame) override;
 private:
   bool searchByBigT(GoalFrame& goalFrame) const;
   bool searchByBigX(GoalFrame& goalFrame) const;
   bool searchByTT(GoalFrame& goalFrame) const;
-  bool searchByGPAndLine(GoalFrame& goalFrame) const;
 
   bool calcGoalFrame(const Pose2f& prePose, const float yTranslation, GoalFrame& goalFrame) const;
 };

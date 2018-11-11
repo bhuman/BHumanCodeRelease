@@ -37,7 +37,9 @@ typedef long long __m128i __attribute__((__vector_size__(16)));
 typedef double __v2df __attribute__ ((__vector_size__ (16)));
 typedef long long __v2di __attribute__ ((__vector_size__ (16)));
 typedef short __v8hi __attribute__((__vector_size__(16)));
+typedef unsigned short __v8hu __attribute__((__vector_size__(16)));
 typedef char __v16qi __attribute__((__vector_size__(16)));
+typedef unsigned char __v16qu __attribute__((__vector_size__(16)));
 
 static __inline__ __m128d __attribute__((__always_inline__, __nodebug__))
 _mm_add_sd(__m128d __a, __m128d __b)
@@ -686,17 +688,55 @@ _mm_adds_epu16(__m128i __a, __m128i __b)
   return (__m128i)__builtin_ia32_paddusw128((__v8hi)__a, (__v8hi)__b);
 }
 
+/**
+ * Workarounds for clang-6.0.
+ */
+#if defined __clang__ && defined __has_builtin
+#ifndef __DEFAULT_FN_ATTRS
+#define __DEFAULT_FN_ATTRS
+#endif
+#if __has_builtin(__builtin_convertvector) && !__has_builtin(__builtin_ia32_pavgb128)
+static __inline__ __m128i __DEFAULT_FN_ATTRS my_mm_avg_epu8(__m128i __a, __m128i __b)
+{
+  typedef unsigned short __v16hu __attribute__((__vector_size__(32)));
+  return (__m128i)__builtin_convertvector(((__builtin_convertvector((__v16qu)__a, __v16hu) +
+                                            __builtin_convertvector((__v16qu)__b, __v16hu)) + 1)
+                                          >> 1, __v16qu);
+}
+#undef _mm_avg_epu8
+#define _mm_avg_epu8(__a, __b) my_mm_avg_epu8(__a, __b)
+#endif
+
+#if __has_builtin(__builtin_convertvector) && !__has_builtin(__builtin_ia32_pavgw128)
+static __inline__ __m128i __DEFAULT_FN_ATTRS
+my_mm_avg_epu16(__m128i __a, __m128i __b)
+{
+  typedef unsigned int __v8su __attribute__ ((__vector_size__ (32)));
+  return (__m128i)__builtin_convertvector(
+               ((__builtin_convertvector((__v8hu)__a, __v8su) +
+                 __builtin_convertvector((__v8hu)__b, __v8su)) + 1)
+                 >> 1, __v8hu);
+}
+#undef _mm_avg_epu16
+#define _mm_avg_epu16(__a, __b) my_mm_avg_epu16(__a, __b)
+#endif
+#endif
+
+#ifndef _mm_avg_epu8
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
 _mm_avg_epu8(__m128i __a, __m128i __b)
 {
   return (__m128i)__builtin_ia32_pavgb128((__v16qi)__a, (__v16qi)__b);
 }
+#endif
 
+#ifndef _mm_avg_epu16
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
 _mm_avg_epu16(__m128i __a, __m128i __b)
 {
   return (__m128i)__builtin_ia32_pavgw128((__v8hi)__a, (__v8hi)__b);
 }
+#endif
 
 static __inline__ __m128i __attribute__((__always_inline__, __nodebug__))
 _mm_madd_epi16(__m128i __a, __m128i __b)

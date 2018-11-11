@@ -29,7 +29,7 @@ unsigned Time::getRealSystemTime()
     mach_timebase_info(&info);
   const unsigned int time = unsigned(mach_absolute_time() * (info.numer / info.denom) / 1000000);
   if(!base)
-    base = time - 10000; // avoid time == 0, because it is often used as a marker
+    base = time - 100000; // avoid time == 0, because it is often used as a marker
   return time - base;
 }
 

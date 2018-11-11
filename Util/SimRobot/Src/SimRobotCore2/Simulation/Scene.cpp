@@ -11,6 +11,7 @@
 #include "Simulation/Scene.h"
 #include "Simulation/Body.h"
 #include "Simulation/Actuators/Actuator.h"
+#include "Tools/Math/Constants.h"
 
 void Scene::updateTransformations()
 {
@@ -65,9 +66,9 @@ void Scene::createGraphics(bool isShared)
     glLightfv(GL_LIGHT0 + i, GL_CONSTANT_ATTENUATION, &light.constantAttenuation);
     glLightfv(GL_LIGHT0 + i, GL_LINEAR_ATTENUATION, &light.linearAttenuation);
     glLightfv(GL_LIGHT0 + i, GL_QUADRATIC_ATTENUATION, &light.quadraticAttenuation);
-    float spotCutoff = light.spotCutoff * (180.f / float(M_PI));
+    float spotCutoff = light.spotCutoff * (180.f / pi);
     glLightfv(GL_LIGHT0 + i, GL_SPOT_CUTOFF, &spotCutoff);
-    glLightfv(GL_LIGHT0 + i, GL_SPOT_DIRECTION, &light.spotDirection.x);
+    glLightfv(GL_LIGHT0 + i, GL_SPOT_DIRECTION, light.spotDirection.data());
     glLightfv(GL_LIGHT0 + i, GL_SPOT_EXPONENT, &light.spotExponent);
     glEnable(GL_LIGHT0 + i);
   }
@@ -88,11 +89,11 @@ void Scene::createGraphics(bool isShared)
   }
 }
 
-void Scene::drawAppearances() const
+void Scene::drawAppearances(SurfaceColor color, bool drawControllerDrawings) const
 {
   for(std::list<Body*>::const_iterator iter = bodies.begin(), end = bodies.end(); iter != end; ++iter)
-    (*iter)->drawAppearances();
-  GraphicalObject::drawAppearances();
+    (*iter)->drawAppearances(color, drawControllerDrawings);
+  GraphicalObject::drawAppearances(color, drawControllerDrawings);
 }
 
 void Scene::drawPhysics(unsigned int flags) const
@@ -135,7 +136,7 @@ Texture* Scene::loadTexture(const std::string& file)
   return texture.imageData ? &texture : 0;
 }
 
-Scene::Light::Light() : constantAttenuation(1.f), linearAttenuation(0.f), quadraticAttenuation(0.f), spotCutoff(float(M_PI)), spotDirection(0.f, 0.f, -1.f), spotExponent(0.f)
+Scene::Light::Light() : constantAttenuation(1.f), linearAttenuation(0.f), quadraticAttenuation(0.f), spotCutoff(pi), spotDirection(0.f, 0.f, -1.f), spotExponent(0.f)
 {
   diffuseColor[0] = diffuseColor[1] = diffuseColor[2] = diffuseColor[3] = 1.f;
   ambientColor[0] = ambientColor[1] = ambientColor[2] = 0.f;

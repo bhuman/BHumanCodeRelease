@@ -15,10 +15,10 @@ MAKE_MODULE(FootBumperStateProvider, sensing);
 void FootBumperStateProvider::update(FootBumperState& footBumperState)
 {
   // Check, if any bumper is pressed
-  const bool leftFootLeft = !theDamageConfigurationBody.sides[Legs::left].footBumperDefect && checkContact(KeyStates::leftFootLeft, leftFootLeftDuration);
-  const bool leftFootRight = !theDamageConfigurationBody.sides[Legs::left].footBumperDefect && checkContact(KeyStates::leftFootRight, leftFootRightDuration);
-  const bool rightFootLeft = !theDamageConfigurationBody.sides[Legs::right].footBumperDefect &&  checkContact(KeyStates::rightFootLeft, rightFootLeftDuration);
-  const bool rightFootRight = !theDamageConfigurationBody.sides[Legs::right].footBumperDefect && checkContact(KeyStates::rightFootRight, rightFootRightDuration);
+  const bool leftFootLeft = !theDamageConfigurationBody.sides[Legs::left].footBumperDefect && checkContact(KeyStates::lFootLeft, leftFootLeftDuration);
+  const bool leftFootRight = !theDamageConfigurationBody.sides[Legs::left].footBumperDefect && checkContact(KeyStates::lFootRight, leftFootRightDuration);
+  const bool rightFootLeft = !theDamageConfigurationBody.sides[Legs::right].footBumperDefect &&  checkContact(KeyStates::rFootLeft, rightFootLeftDuration);
+  const bool rightFootRight = !theDamageConfigurationBody.sides[Legs::right].footBumperDefect && checkContact(KeyStates::rFootRight, rightFootRightDuration);
   const bool contactLeftFoot = leftFootLeft || leftFootRight;
   const bool contactRightFoot = rightFootLeft || rightFootRight;
   // Update statistics
@@ -86,7 +86,7 @@ void FootBumperStateProvider::update(FootBumperState& footBumperState)
   if(debug && theFrameInfo.getTimeSince(lastSoundTime) > (int)soundDelay && (footBumperState.status[Legs::left].contact || footBumperState.status[Legs::right].contact))
   {
     lastSoundTime = theFrameInfo.time;
-    SystemCall::playSound("jump.wav");
+    SystemCall::playSound("doh.wav");
   }
 
   PLOT("module:FootBumperStateProvider:sumLeft", contactBufferLeft.sum());

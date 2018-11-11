@@ -3,7 +3,7 @@
 #include "Platform/BHAssert.h"
 #include "Tools/Math/Eigen.h"
 
-template <size_t N>
+template<size_t N>
 class GaussNewtonOptimizer
 {
 public:

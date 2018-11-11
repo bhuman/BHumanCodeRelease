@@ -9,6 +9,7 @@
 #pragma once
 
 #include <list>
+#include "Platform/Thread.h"
 #include "PlatformProcess.h"
 #include "Receiver.h"
 #include "Sender.h"
@@ -37,7 +38,7 @@ protected:
   virtual void main() = 0;
 
 public:
-  virtual ~ProcessBase() = default;
+  ~ProcessBase() = default;
 
   /**
    * The function starts the process by starting the Windows thread.
@@ -80,7 +81,7 @@ public:
  * ProcessCreator contains the parts that need to be implemented as a template.
  * It will only be used by the macro MAKE_PROCESS and should never be used directly.
  */
-template<class T> class ProcessFrame : public ProcessBase
+template<typename T> class ProcessFrame : public ProcessBase
 {
 private:
   std::string name; /**< The name of the process. */
@@ -90,10 +91,12 @@ protected:
   /**
    * The main function of this Windows thread.
    */
-  virtual void main()
+  void main() override
   {
 #ifdef TARGET_SIM
-    Thread::nameThread(RoboCupCtrl::controller->getRobotName() + "." + name);  // TODO: Conditional jump or move depends on uninitialized value(s)
+    Thread::nameThread(RoboCupCtrl::controller->getRobotName() + "." + name);
+#else
+    Thread::nameThread(name);
 #endif
 
     // Call process.nextFrame if no blocking receivers are waiting
@@ -142,7 +145,7 @@ public:
    * @return If the sender was found, a pointer to it is returned.
    *         Otherwise, the function returns 0.
    */
-  virtual SenderList* lookupSender(const std::string& senderName)
+  SenderList* lookupSender(const std::string& senderName) override
   {
     return process.getFirstSender() ? process.getFirstSender()->lookup(name, senderName) : nullptr;
   }
@@ -153,7 +156,7 @@ public:
    * @return If the receiver was found, a pointer to it is returned.
    *         Otherwise, the function returns 0.
    */
-  virtual ReceiverList* lookupReceiver(const std::string& receiverName)
+  ReceiverList* lookupReceiver(const std::string& receiverName) override
   {
     return process.getFirstReceiver() ? process.getFirstReceiver()->lookup(name, receiverName) : nullptr;
   }
@@ -162,7 +165,7 @@ public:
    * The function returns the name of the process.
    * @return the name of the process.
    */
-  virtual const std::string& getName() const {return name;}
+  const std::string& getName() const override {return name;}
 
   /**
    * The function returns a pointer to the process if it has the given name.
@@ -170,7 +173,7 @@ public:
    * @return If the process has the required name, a pointer to it is
    *         returned. Otherwise, the function returns 0.
    */
-  virtual PlatformProcess* getProcess(const std::string& processName)
+  PlatformProcess* getProcess(const std::string& processName) override
   {
     if(name == processName)
       return &process;
@@ -182,7 +185,7 @@ public:
    * The function announces that the thread shall terminate.
    * It will not try to kill the thread.
    */
-  void announceStop()
+  void announceStop() override
   {
     Thread::announceStop();
     process.trigger();
@@ -217,7 +220,7 @@ public:
 /**
  * The template class instantiates creators for processes of a certain type.
  */
-template <class T> class ProcessCreator : public ProcessCreatorBase
+template<typename T> class ProcessCreator : public ProcessCreatorBase
 {
 private:
   std::string name; /**< The name of the process that will be created. */
@@ -227,7 +230,7 @@ protected:
    * The function creates a process.
    * @return A pointer to the new process.
    */
-  ProcessBase* create() const {return new T(name);}
+  ProcessBase* create() const override {return new T(name);}
 
 public:
   /**

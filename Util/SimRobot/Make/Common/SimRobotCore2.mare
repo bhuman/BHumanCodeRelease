@@ -23,46 +23,46 @@ SimRobotCore2 = cppDynamicLibrary + {
     }
     if (configuration != "Debug") {
       "QT_NO_DEBUG"
+    } else {
+      "EIGEN_INITIALIZE_MATRICES_BY_NAN"
     }
   }
 
   includePaths = {
     "$(simRobotDir)/Src/SimRobotCore2"
+    "$(simRobotDir)/Util/Eigen"
     if (platform == "Linux") {
       "$(qtinclude)"
       "$(qtinclude)/QtCore"
       "$(qtinclude)/QtGui"
       "$(qtinclude)/QtOpenGL"
       "$(qtinclude)/QtWidgets"
-      "/usr/include/libxml2"
-      "$(simRobotDir)/Util/ode/Linux/include"
+      "$(utilDirRoot)/ode/Linux/include"
     } else if (host == "Win32") {
-      "$(simRobotDir)/Util/glew/Windows/include"
-      "$(simRobotDir)/Util/libxml2/include"
-      "$(simRobotDir)/Util/ode/Windows/include"
-      "$(simRobotDir)/Util/qt/Windows/include"
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtCore"
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtGui"
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtOpenGL"
-      "$(utilDirRoot)/SimRobot/Util/qt/Windows/include/QtWidgets"
+      "$(utilDirRoot)/glew/Windows/include"
+      "$(utilDirRoot)/ode/Windows/include"
+      "$(utilDirRoot)/qt/Windows/include"
+      "$(utilDirRoot)/qt/Windows/include/QtCore"
+      "$(utilDirRoot)/qt/Windows/include/QtGui"
+      "$(utilDirRoot)/qt/Windows/include/QtOpenGL"
+      "$(utilDirRoot)/qt/Windows/include/QtWidgets"
     }
   }
 
   libPaths = {
     if (platform == "Linux") {
-      "$(simRobotDir)/Util/ode/Linux/lib"
+      "$(utilDirRoot)/ode/Linux/lib"
     } else if (host == "Win32") {
-      "$(simRobotDir)/Util/glew/Windows/lib"
-      "$(simRobotDir)/Util/libxml2/Windows/lib"
-      "$(simRobotDir)/Util/ode/Windows/lib"
-      "$(simRobotDir)/Util/qt/Windows/lib"
+      "$(utilDirRoot)/glew/Windows/lib"
+      "$(utilDirRoot)/ode/Windows/lib"
+      "$(utilDirRoot)/qt/Windows/lib"
     }
   }
 
   libs = {
     if (platform == "Linux") {
       "Qt5Core", "Qt5Gui", "Qt5OpenGL", "Qt5Widgets"
-      "rt", "pthread", "ode", "GLEW", "xml2", "GLU", "GL"
+      "rt", "pthread", "ode", "GLEW", "GLU", "GL"
     } else if (host == "Win32") {
       if (configuration == "Debug") {
         "Qt5Cored", "Qt5Guid", "Qt5OpenGLd", "Qt5Widgetsd"
@@ -71,7 +71,7 @@ SimRobotCore2 = cppDynamicLibrary + {
         "Qt5Core", "Qt5Gui", "Qt5OpenGL", "Qt5Widgets"
         "ode_double"
       }
-      "opengl32", "glu32", "glew32", "libxml2",
+      "opengl32", "glu32", "glew32",
     }
   }
 

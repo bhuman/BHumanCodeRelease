@@ -40,20 +40,41 @@ Appearance::Surface::Surface() : texture(0)
   emissionColor[3] = 1.0f;
 }
 
-void Appearance::Surface::set(bool defaultTextureSize) const
+static float colorDef[numOfSurfaceColors][4] =
+{
+  { 1,1,1,1 }, // ownColor,
+  { 1,0,0,1 }, // red,
+  { 0,0,1,1 }, // blue,
+  { 0,0.5f,0,1 }, // green,
+  { 1,1,0,1 }, // yellow,
+  { .5f,.12f,.12f,1 }, // brown,
+  { 1,.37f,.73f,1 }, // pink,
+  { .5f,0,.5f,1 },  // purple,
+  { 0 ,0 ,0.5f ,1.f}, // navy,
+  { 138.f / 255.f,43.f / 255.f,226.f / 255.f,1.f}, // blueviolet
+  {  0 , 191/ 255.f , 1 ,1.f}, // deepskyblue,
+  { 0.5f , 0.5f , 0,1.f}, // olive,
+  { 0 ,1 ,0 ,1.f}, // lime,
+  { 32.f/ 255.f ,178.f / 255.f , 170.f/ 255.f ,1.f}, // lightseagreen,
+  { 210.f / 255.f , 105.f/ 255.f , 30.f/ 255.f ,1.f}, // chocolate,
+  { 1, 165 / 255.f,0 ,1.f}, // orange,
+  { 1, 140.f / 255.f, 0 ,1.f} // darkorange,
+};
+
+void Appearance::Surface::set(SurfaceColor color, bool defaultTextureSize) const
 {
   if(hasAmbientColor)
   {
     glColorMaterial(GL_FRONT, GL_DIFFUSE);
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambientColor);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, color != ownColor ? colorDef[color] : ambientColor);
   }
   else
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-  glColor4fv(diffuseColor);
+  glColor4fv(color != ownColor ? colorDef[color] : diffuseColor);
 
-  glMaterialfv(GL_FRONT, GL_SPECULAR, specularColor);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, color != ownColor ? colorDef[color] : specularColor);
   glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-  glMaterialfv(GL_FRONT, GL_EMISSION, emissionColor);
+  glMaterialfv(GL_FRONT, GL_EMISSION, color != ownColor ? colorDef[color] : emissionColor);
 
   if(texture)
   {
@@ -128,10 +149,23 @@ void Appearance::Surface::addParent(Element& element)
   appearance->surface = this;
 }
 
-void Appearance::assembleAppearances() const
+void Appearance::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
+}
+
+void Appearance::drawAppearances(SurfaceColor color, bool drawControllerDrawings) const
+{
+  if(drawControllerDrawings)
+  {
+    glPushMatrix();
+    glMultMatrixf(transformation);
+    GraphicalObject::drawAppearances(color, drawControllerDrawings);
+    glPopMatrix();
+  }
+  else
+    GraphicalObject::drawAppearances(color, drawControllerDrawings);
 }

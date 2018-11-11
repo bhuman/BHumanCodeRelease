@@ -41,7 +41,7 @@ MODULE(PenaltyAreaPerceptor,
 
 class PenaltyAreaPerceptor : public PenaltyAreaPerceptorBase
 {
-  void update(PenaltyArea& penaltyArea);
+  void update(PenaltyArea& penaltyArea) override;
 
 private:
   unsigned lastFrameTime = 1;

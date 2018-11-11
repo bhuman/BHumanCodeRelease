@@ -80,12 +80,10 @@ IntersectionRelations::LineIntersectionRelations::LineIntersectionRelations(cons
 
 void IntersectionRelations::LineIntersectionRelations::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN
   for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
-    Streaming::streamIt(in, out, (std::string("intersections") + std::to_string(i)).data(), intersections[i], nullptr);
+    Streaming::streamIt(in, out, (std::string("intersections") + std::to_string(i)).data(), intersections[i]);
   for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
-    Streaming::streamIt(in, out, (std::string("intersectionPositions") + std::to_string(i)).data(), intersectionPositions[i], nullptr);
-  STREAM_REGISTER_FINISH
+    Streaming::streamIt(in, out, (std::string("intersectionPositions") + std::to_string(i)).data(), intersectionPositions[i]);
 }
 
 void IntersectionRelations::propagateMarkedIntersection(const MarkedIntersection& start, const FieldLineIntersections& theFieldLineIntersections,

@@ -36,8 +36,8 @@ protected:
 
 private:
   // API
-  virtual const QString& getFullName() const {return SimObject::getFullName();}
-  virtual SimRobot::Widget* createWidget() {return SimObject::createWidget();}
-  virtual const QIcon* getIcon() const {return SimObject::getIcon();}
-  virtual SimRobotCore2::Renderer* createRenderer() {return SimObject::createRenderer();}
+  const QString& getFullName() const override {return SimObject::getFullName();}
+  SimRobot::Widget* createWidget() override {return SimObject::createWidget();}
+  const QIcon* getIcon() const override {return SimObject::getIcon();}
+  SimRobotCore2::Renderer* createRenderer() override {return SimObject::createRenderer();}
 };

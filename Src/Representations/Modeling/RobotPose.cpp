@@ -7,14 +7,17 @@
 
 #include "RobotPose.h"
 #include "BallModel.h"
+#include "Platform/Time.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Math/Covariance.h"
+#include "Tools/Math/Projection.h"
 
 void RobotPose::onRead()
 {
@@ -22,14 +25,13 @@ void RobotPose::onRead()
   inversePose.invert();
 }
 
-void RobotPose::operator >> (BHumanMessage& m) const
+void RobotPose::operator>>(BHumanMessage& m) const
 {
   m.theBSPLStandardMessage.pose[0] = translation.x();
   m.theBSPLStandardMessage.pose[1] = translation.y();
   m.theBSPLStandardMessage.pose[2] = rotation;
-  m.theBSPLStandardMessage.currentPositionConfidence = static_cast<int8_t>(validity * 100);
 
-  m.theBHumanStandardMessage.robotPoseValidity = static_cast<unsigned char>(validity * 255.f);
+  m.theBHumanStandardMessage.robotPoseValidity = validity;
   m.theBHumanStandardMessage.robotPoseDeviation = deviation;
   m.theBHumanStandardMessage.robotPoseCovariance[0] = covariance(0, 0);
   m.theBHumanStandardMessage.robotPoseCovariance[1] = covariance(1, 1);
@@ -38,21 +40,23 @@ void RobotPose::operator >> (BHumanMessage& m) const
   m.theBHumanStandardMessage.robotPoseCovariance[4] = (covariance(2, 0) + covariance(0, 2)) / 2.f;
   m.theBHumanStandardMessage.robotPoseCovariance[5] = (covariance(2, 1) + covariance(1, 2)) / 2.f;
 
-  m.theBHULKsStandardMessage.timestampLastJumped = timestampLastJump;
+  m.theBHumanStandardMessage.timestampLastJumped = timestampLastJump;
 }
 
-void RobotPose::operator<< (const BHumanMessage& m)
+void RobotPose::operator<<(const BHumanMessage& m)
 {
+  const Vector2f lastTranslation = translation;
+
   translation.x() = m.theBSPLStandardMessage.pose[0];
   translation.y() = m.theBSPLStandardMessage.pose[1];
   rotation = m.theBSPLStandardMessage.pose[2];
 
   inversePose = static_cast<Pose2f>(*this).inverse();
 
-  if(m.theBHULKsStandardMessage.member == B_HUMAN_MEMBER)
+  if(m.hasBHumanParts)
   {
+    validity = m.theBHumanStandardMessage.robotPoseValidity;
     deviation = m.theBHumanStandardMessage.robotPoseDeviation;
-    validity = static_cast<float>(m.theBHumanStandardMessage.robotPoseValidity) / 255.f;
 
     covariance(0, 0) = m.theBHumanStandardMessage.robotPoseCovariance[0];
     covariance(1, 1) = m.theBHumanStandardMessage.robotPoseCovariance[1];
@@ -60,6 +64,8 @@ void RobotPose::operator<< (const BHumanMessage& m)
     covariance(1, 0) = covariance(0, 1) = m.theBHumanStandardMessage.robotPoseCovariance[3];
     covariance(2, 0) = covariance(0, 2) = m.theBHumanStandardMessage.robotPoseCovariance[4];
     covariance(2, 1) = covariance(1, 2) = m.theBHumanStandardMessage.robotPoseCovariance[5];
+
+    timestampLastJump = m.toLocalTimestamp(m.theBHumanStandardMessage.timestampLastJumped);
   }
   else
   {
@@ -72,8 +78,13 @@ void RobotPose::operator<< (const BHumanMessage& m)
 
     deviation = std::sqrt(std::max(covariance(0, 0), covariance(1, 1)));
     validity = 0.8f;
+
+    if(Blackboard::getInstance().exists("GameInfo")
+       && static_cast<const GameInfo&>(Blackboard::getInstance()["GameInfo"]).state == STATE_PLAYING
+       && !lastTranslation.isZero()
+       && (translation - lastTranslation).squaredNorm() > sqr(2000.f))
+      timestampLastJump = Time::getCurrentSystemTime() - 200;
   }
-  timestampLastJump = m.toLocalTimestamp(m.theBHULKsStandardMessage.timestampLastJumped);
 }
 
 Pose2f RobotPose::inverse() const
@@ -132,16 +143,11 @@ void RobotPose::draw() const
     ColorRGBA::black
   };
   const ColorRGBA ownTeamColorForDrawing = colors[Blackboard::getInstance().exists("OwnTeamInfo") ?
-      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK];
+                                                      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK];
 
   DEBUG_DRAWING("representation:RobotPose", "drawingOnField")
   {
-    LINE("representation:RobotPose", translation.x(), translation.y(), dirVec.x(), dirVec.y(),
-         20, Drawings::solidPen, ColorRGBA::white);
-    POLYGON("representation:RobotPose", 4, bodyPoints, 20, Drawings::solidPen,
-            ownTeamColorForDrawing, Drawings::solidBrush, ColorRGBA::white);
-    CIRCLE("representation:RobotPose", translation.x(), translation.y(), 42, 0,
-           Drawings::solidPen, ownTeamColorForDrawing, Drawings::solidBrush, ownTeamColorForDrawing);
+    ROBOT("representation:RobotPose", static_cast<Pose2f>(*this), dirVec, dirVec, 1.f, ColorRGBA::black, ColorRGBA(255, 255, 255, 128), ColorRGBA(0, 0, 0, 0));
   }
 
   DEBUG_DRAWING("representation:RobotPose:deviation", "drawingOnField")
@@ -165,10 +171,8 @@ void RobotPose::draw() const
 
   DEBUG_DRAWING("representation:RobotPose:covariance", "drawingOnField")
   {
-    float covaxis1, covaxis2, covangle;
-    Covariance::errorEllipse(covariance.topLeftCorner<2, 2>(), covaxis1, covaxis2, covangle);
-    ELLIPSE("representation:RobotPose:covariance", translation, covaxis1, covaxis2, covangle,
-            10, Drawings::solidPen, ColorRGBA(100, 100, 255, 100), Drawings::solidBrush, ColorRGBA(100, 100, 255, 100));
+    const Matrix2f cov = covariance.topLeftCorner<2,2>();
+    COVARIANCE_ELLIPSES_2D("representation:RobotPose:covariance", cov, translation);
   }
 
   DEBUG_DRAWING("representation:RobotPose:fieldOfView", "drawingOnField")
@@ -182,7 +186,7 @@ void RobotPose::draw() const
         const FieldDimensions& fieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
         const RobotPose& robotPose = *this;
         std::vector<Vector2f> p;
-        Geometry::computeFieldOfViewInFieldCoordinates(robotPose, cameraMatrix, cameraInfo, fieldDimensions, p);
+        Projection::computeFieldOfViewInFieldCoordinates(robotPose, cameraMatrix, cameraInfo, fieldDimensions, p);
         POLYGON("representation:RobotPose:fieldOfView", 4, p, 20, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, ColorRGBA(255, 255, 255, 25));
       }
     }
@@ -255,25 +259,11 @@ void GroundTruthRobotPose::draw() const
 {
   DEBUG_DRAWING("representation:GroundTruthRobotPose", "drawingOnField")
   {
-    const ColorRGBA transparentWhite(255, 255, 255, 128);
-    Vector2f bodyPoints[4] =
-    {
-      Vector2f(55, 90),
-      Vector2f(-55, 90),
-      Vector2f(-55, -90),
-      Vector2f(55, -90)
-    };
-    for(int i = 0; i < 4; i++)
-      bodyPoints[i] = *this * bodyPoints[i];
     Vector2f dirVec(200, 0);
     dirVec = *this * dirVec;
-    const ColorRGBA ownTeamColorForDrawing(0, 0, 0, 128);
-    LINE("representation:GroundTruthRobotPose", translation.x(), translation.y(), dirVec.x(), dirVec.y(),
-         20, Drawings::solidPen, transparentWhite);
-    POLYGON("representation:GroundTruthRobotPose", 4, bodyPoints, 20, Drawings::solidPen,
-            ownTeamColorForDrawing, Drawings::solidBrush, transparentWhite);
-    CIRCLE("representation:GroundTruthRobotPose", translation.x(), translation.y(), 42, 0,
-           Drawings::solidPen, ownTeamColorForDrawing, Drawings::solidBrush, ownTeamColorForDrawing);
+    const ColorRGBA ownTeamColorForDrawing(0, 0, 0);
+    ROBOT("representation:GroundTruthRobotPose", static_cast<Pose2f>(*this), dirVec, dirVec, .5f,
+          ownTeamColorForDrawing, ColorRGBA(255, 255, 255, 128), ColorRGBA(0, 0, 0, 0));
   }
 
   DECLARE_DEBUG_DRAWING("origin:GroundTruthRobotPose", "drawingOnField"); // Set the origin to the robot's ground truth position

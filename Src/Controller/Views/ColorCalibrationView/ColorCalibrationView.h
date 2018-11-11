@@ -26,9 +26,9 @@ public:
 
   ColorCalibrationView(const QString& fullName, RobotConsole& console);
 
-  virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const;
-  virtual const QIcon* getIcon() const;
+  SimRobot::Widget* createWidget() override;
+  const QString& getFullName() const override;
+  const QIcon* getIcon() const override;
 
 private:
   const QString fullName;
@@ -41,23 +41,20 @@ class ColorCalibrationWidget : public QWidget, public SimRobot::Widget
 
 public:
   ColorCalibrationView& colorCalibrationView;
-  FieldColors::Color currentColor = FieldColors::none;
-  bool expandColorMode = false;
   unsigned timeStamp = 0;
 
   ColorCalibrationWidget(ColorCalibrationView& colorCalibrationView);
-  virtual ~ColorCalibrationWidget();
-  virtual QWidget* getWidget();
-  virtual void update();
-  void updateWidgets(FieldColors::Color currentColor);
-  virtual QMenu* createUserMenu() const;
+  ~ColorCalibrationWidget();
+  QWidget* getWidget() override;
+  void update() override;
+  void updateWidgets();
+  QMenu* createUserMenu() const override;
 
   void setUndoRedo();
   void expandCurrentColor(const PixelTypes::YUYVPixel& pixel, const bool reduce);
 
 private:
   HueFieldSelector* hueField;
-  HueSelector* hue;
 
   // color class white
   ThresholdSelector* thresholdColor;
@@ -66,22 +63,15 @@ private:
   QAction* redoAction = nullptr;
   QAction* undoAction = nullptr;
 
-  History<Rangeuc> historyColors[FieldColors::numOfColors - FieldColors::numOfNonColors];
-  History<FieldColors::BasicParameters> historyBasic;
-
-  bool expandColor(const unsigned char value, int& min, int& max, const bool noWrapAround);
-  bool reduceColor(const unsigned char value, int& min, int& max, const bool boolChangeOnlyMin);
-  int calcColorValueDistance(const int a, const int b) const;
+  History<FieldColors> history;
 
 public slots:
   void currentCalibrationChanged();
-  void undoColorCalibration();
-  void redoColorCalibration();
 
 private slots:
+  void undoColorCalibration();
+  void redoColorCalibration();
   void saveColorCalibration();
-  void colorAct(int color);
-  void expandColorAct();
 
 private:
   /**

@@ -14,7 +14,7 @@ MODULE(ManualHeadMotionProvider,
   {,
     (int)(0) xImg,
     (int)(0) yImg,
-    ((CameraInfo) Camera)(lower) camera,
+    (CameraInfo::Camera)(CameraInfo::lower) camera,
   }),
 });
 
@@ -24,7 +24,7 @@ public:
   /**
    * The update method to generate the head joint angles from desired head motion.
    */
-  void update(HeadMotionRequest& headMotionRequest);
+  void update(HeadMotionRequest& headMotionRequest) override;
 
 private:
   int currentX = 0;

@@ -6,7 +6,6 @@
  * @author <a href="mailto:judy@tzi.de">Judith Müller</a>
  */
 
-#include <QTabWidget>
 #include <QMouseEvent>
 #include <QDragEnterEvent>
 #include <QDropEvent>

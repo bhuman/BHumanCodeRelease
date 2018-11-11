@@ -10,7 +10,6 @@
 void Actuator::addParent(Element& element)
 {
   ::PhysicalObject::addParent(element);
-  GraphicalObject::addParent(element);
 }
 
 const QIcon* Actuator::Port::getIcon() const

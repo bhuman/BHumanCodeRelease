@@ -83,7 +83,7 @@ private:
   /**
    * Provides the sideConfidence
    */
-  void update(SideConfidence& sideConfidence);
+  void update(SideConfidence& sideConfidence) override;
 
   void fillRepresentation(SideConfidence& sideConfidence);
 

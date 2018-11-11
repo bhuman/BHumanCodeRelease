@@ -15,7 +15,6 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
 
 #include "Representations/Modeling/Odometer.h"
 
@@ -38,7 +37,6 @@ MODULE(FieldLinesProvider,
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
 
   REQUIRES(Odometer),
 
@@ -54,7 +52,7 @@ MODULE(FieldLinesProvider,
   PROVIDES(FieldLineIntersections),
   DEFINES_PARAMETERS(
   {,
-    (float)(sqr(850.f)) squaredBigLineThreshold, /**< the square of the threshold for each linesegment of a long line; This should be a good way longer then a penaltySideLine */
+    (float)(sqr(1000.f)) squaredBigLineThreshold, /**< the square of the threshold for each linesegment of a long line; This should be a good way longer then a penaltySideLine */
     (float)(20.f) goalFrameThreshold, /**< the threshold for a perception to be in field according to the goalFrame */
     (float)(sqr(20.f)) squaredMinLenghOfACuttedLine, /**< minmal length of a cutted line */
     (int)(30) maxTimeOffset,
@@ -83,6 +81,6 @@ private:
 public:
   SpotLine* midLine;
   bool isPointInSegment(const SpotLine& line, const Vector2f& point) const;
-  void update(FieldLines& fieldLines);
-  void update(FieldLineIntersections& fieldLineIntersections);
+  void update(FieldLines& fieldLines) override;
+  void update(FieldLineIntersections& fieldLineIntersections) override;
 };

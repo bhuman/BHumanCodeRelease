@@ -3,14 +3,12 @@ call Includes/Normal
 # motion request is required by simulation
 dr representation:MotionRequest
 
-call Includes/DebugResponses
-
 # request behavior messages
 dr representation:ActivationGraph
 
-kick
 dr representation:RobotDimensions:once
 dr representation:JointLimits:once
+kick
 
 vp plot1 1000 -50 50
 vpd plot1 module:KickEngine:refy red

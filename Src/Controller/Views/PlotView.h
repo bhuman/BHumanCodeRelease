@@ -76,10 +76,10 @@ private:
    * The caller has to delete this instance. (Qt handles this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
+  SimRobot::Widget* createWidget() override;
 
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 
   friend class PlotWidget;
 };
@@ -91,7 +91,7 @@ class PlotWidget : public QWidget, public SimRobot::Widget
 public:
   PlotWidget(PlotView& plotView, PlotWidget*& plotWidget);
 
-  virtual ~PlotWidget();
+  ~PlotWidget();
 
 public slots:
   void determineMinMaxValue();
@@ -114,12 +114,12 @@ private:
 
   bool needsRepaint() const;
 
-  virtual QSize sizeHint() const { return QSize(320, 240); }
+  QSize sizeHint() const override { return QSize(320, 240); }
 
-  virtual void paintEvent(QPaintEvent* event);
+  void paintEvent(QPaintEvent* event) override;
 
-  virtual QWidget* getWidget() { return this; }
-  virtual void update();
-  virtual QMenu* createUserMenu() const;
-  virtual void paint(QPainter& painter);
+  QWidget* getWidget() override { return this; }
+  void update() override;
+  QMenu* createUserMenu() const override;
+  void paint(QPainter& painter) override;
 };

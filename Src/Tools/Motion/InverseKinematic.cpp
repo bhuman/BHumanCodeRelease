@@ -150,7 +150,7 @@ bool InverseKinematic::isPosePossible(const Pose3f& swingInSupportFoot, const Po
       return false;
 
   //recheck pose with forwardkinematic
-  ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb) limbs;
+  ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb) limbs;
   ForwardKinematic::calculateLegChain(Legs::left, jointAngles, robotDimensions, limbs);
   Pose3f target = limbs[Limbs::footLeft] += Vector3f(0.f, 0.f, -robotDimensions.footHeight);
 
@@ -159,6 +159,40 @@ bool InverseKinematic::isPosePossible(const Pose3f& swingInSupportFoot, const Po
     return false;
 
   return true;
+}
+
+bool InverseKinematic::calcBalancedLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation,
+                                             JointAngles& jointAngles, const RobotDimensions& theRobotDimensions, const MassCalibration& theMassCalibration, const JointLimits& theJointLimits, float ratio)
+{
+  Vector3f comInTorso(0.f, 0.f, 0.f);
+  Pose3f leftAnkleTorso;
+  Pose3f rightAnkleTorso;
+  for(int i = 0; ; ++i)
+  {
+    //Compute Joint Angles
+    leftAnkleTorso = Pose3f(comInTorso) * positionLeft;
+    rightAnkleTorso = Pose3f(comInTorso) * positionRight;
+    (void)calcLegJoints(leftAnkleTorso, rightAnkleTorso, jointAngles, theRobotDimensions, ratio);
+
+    JointAngles cuttedAngles(jointAngles);  //Apply Joint Limits
+    for(int j = Joints::headYaw; j < Joints::rAnkleRoll; j++)
+      cuttedAngles.angles[j] = theJointLimits.limits[j].limit(cuttedAngles.angles[j]);
+
+    //Compute Com
+    RobotModel robotModel(cuttedAngles, theRobotDimensions, theMassCalibration);
+    Vector3f delta = (robotModel.centerOfMass - comInTorso) * 1.3f;
+
+    if(i >= 7 || (std::abs(delta.x()) < 0.05f && std::abs(delta.y()) < 0.05f/* && std::abs(delta.z()) < 0.05f*/))
+    {
+      comInTorso = robotModel.centerOfMass;
+      break;
+    }
+    //Update ComInTorso
+    comInTorso += delta;
+  }
+  leftAnkleTorso = Pose3f(comInTorso) * positionLeft;
+  rightAnkleTorso = Pose3f(comInTorso) * positionRight;
+  return calcLegJoints(leftAnkleTorso, rightAnkleTorso, jointAngles, theRobotDimensions, ratio);
 }
 
 bool InverseKinematic::calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, const Quaternionf& bodyRotation,
@@ -237,7 +271,7 @@ void InverseKinematic::calcHeadJoints(const Vector3f& position, const Angle imag
                                   robotDimensions.getZOffsetNeckToCamera(lowerCamera));
   const float headJoint2CameraAngle = std::atan2(headJoint2Camera.x(), headJoint2Camera.y());
   const float cameraAngle = pi3_2 - imageTilt - (pi_2 - headJoint2CameraAngle) - robotDimensions.getTiltNeckToCamera(lowerCamera);
-  const float targetAngle = std::asin(headJoint2Camera.norm() * std::sin(cameraAngle) / headJoint2Target.norm());
+  const float targetAngle = std::asin(Rangef(-1.f, 1.f).limit(headJoint2Camera.norm() * std::sin(cameraAngle) / headJoint2Target.norm()));
   const float headJointAngle = pi - targetAngle - cameraAngle;
   panTilt.y() = std::atan2(headJoint2Target.x(), headJoint2Target.y()) - headJointAngle - headJoint2CameraAngle;
   panTilt.x() = std::atan2(position.y(), position.x());
@@ -254,8 +288,8 @@ void InverseKinematic::calcHeadJoints(const Vector3f& position, const Angle imag
 }
 
 unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const Vector3f& handPosition,
-    const RobotDimensions& robotDimensions, const JointLimits& jointLimits,
-    JointAngles& jointAngles)
+                                         const RobotDimensions& robotDimensions, const JointLimits& jointLimits,
+                                         JointAngles& jointAngles)
 {
   unsigned errCode(0);
   const unsigned indexOffset = arm == Arms::left ? 0 : Joints::firstRightArmJoint - Joints::firstLeftArmJoint;
@@ -304,7 +338,7 @@ unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Vector3f& el
 }
 
 unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Pose3f& handPose, const RobotDimensions& robotDimensions,
-    const JointLimits& jointLimits, JointAngles& jointAngles)
+                                         const JointLimits& jointLimits, JointAngles& jointAngles)
 {
   const Vector3f elbowPositon = handPose * Vector3f(-robotDimensions.handOffset.x() - robotDimensions.xOffsetElbowToWrist, 0.f, 0.f);
   return calcArmJoints(arm, elbowPositon, handPose.translation, robotDimensions, jointLimits, jointAngles);
@@ -312,7 +346,7 @@ unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Pose3f& hand
 
 //this is not correct for the normal purpose, but for pointing it is
 unsigned InverseKinematic::calcShoulderJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const RobotDimensions& robotDimensions,
-    const JointLimits& jointLimits, JointAngles& jointAngles)
+                                              const JointLimits& jointLimits, JointAngles& jointAngles)
 {
   unsigned errCode(0);
   const unsigned indexOffset = arm == Arms::left ? 0 : Joints::firstRightArmJoint - Joints::firstLeftArmJoint;

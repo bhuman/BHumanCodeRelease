@@ -28,27 +28,42 @@ void GlobalFieldCoverage::draw() const
   DECLARE_DEBUG_DRAWING("representation:GlobalFieldCoverage:coverageNumbers", "drawingOnField");
   DEBUG_DRAWING("representation:GlobalFieldCoverage:coverage", "drawingOnField")
   {
+    int minNegative = std::numeric_limits<int>::max();
     int min = std::numeric_limits<int>::max();
     int max = std::numeric_limits<int>::min();
     for(size_t i = 0; i < grid.size(); ++i)
     {
-      if(min > grid[i].coverage)
-        min = grid[i].coverage;
-      if(max < grid[i].coverage)
-        max = grid[i].coverage;
+      if(grid[i].coverage < 0)
+      {
+        if(minNegative > grid[i].coverage)
+          minNegative = grid[i].coverage;
+      }
+      else if(grid[i].coverage > 0)
+      {
+        if(min > grid[i].coverage)
+          min = grid[i].coverage;
+        if(max < grid[i].coverage)
+          max = grid[i].coverage;
+      }
     }
 
     for(size_t i = 0; i < grid.size(); ++i)
     {
       const Cell& c = grid[i];
 
-      const unsigned char alpha = static_cast<unsigned char>((1.f - (static_cast<float>(c.coverage - min) / static_cast<float>(max - min))) * 255.f);
+      ColorRGBA color;
+      if(c.coverage < 0)
+        color = ColorRGBA(0, 0, 0, static_cast<unsigned char>((1.f - (static_cast<float>(c.coverage - minNegative) / static_cast<float>(-minNegative))) * 255.f));
+      else if(c.coverage > 0)
+        color = ColorRGBA(255, 0, 0, static_cast<unsigned char>((1.f - (static_cast<float>(c.coverage - min) / static_cast<float>(max - min))) * 255.f));
+      else
+        color = ColorRGBA(0, 0, 255);
       QUADRANGLE("representation:GlobalFieldCoverage:coverage",
                  c.polygon[0].x(), c.polygon[0].y(),
                  c.polygon[1].x(), c.polygon[1].y(),
                  c.polygon[2].x(), c.polygon[2].y(),
                  c.polygon[3].x(), c.polygon[3].y(),
-                 20, Drawings::solidPen, ColorRGBA(255, 0, 0, alpha));
+                 20, Drawings::solidPen, color);
 
       DRAWTEXT("representation:GlobalFieldCoverage:coverageNumbers", c.polygon[0].x(), c.polygon[0].y(), 100, ColorRGBA(255, 255, 255, 255), c.coverage / 1000);
     }

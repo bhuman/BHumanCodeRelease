@@ -10,7 +10,6 @@
 #include "Representations/MotionControl/Balancer.h"
 #include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Representations/Sensing/FootGroundContactState.h"
 #include "Tools/Debugging/ColorRGBA.h"
 #include "Tools/Math/Angle.h"
 #include "Tools/Math/Pose2f.h"
@@ -18,6 +17,7 @@
 #include "Tools/Range.h"
 
 #include <vector>
+#include <cmath>
 
 MODULE(ZmpBalancer,
 {,
@@ -43,7 +43,7 @@ MODULE(ZmpBalancer,
 class ZmpBalancer : public ZmpBalancerBase
 {
 public:
-  void update(Balancer& stand);
+  void update(Balancer& stand) override;
   ZmpBalancer();
 
   /**
@@ -86,7 +86,7 @@ private:
   /**
    * Calculates a new set of Joint angles under consideration of a swing foot position, a torso rotation and center of mass relative to a support foot
    */
-  void calcJointAngles(const Pose3f& com, const Pose3f& swingFoot, const Quaternionf& torsoRotation, JointAngles& angles);
+  void calcJointAngles(const Pose3f& comInStand, const Pose3f& swingInSupoort, const Quaternionf& torsoRotation, const JointAngles& theJointAngles, JointRequest& jointRequest);
 
   /**
    * draw 3D Coordinate System for debugging
@@ -136,6 +136,8 @@ private:
   int sHipRoll;
   int swingHipRoll;
   int sAnkleRoll;
+  int swingAnkleRoll;
+  int swingAnklePitch;
   int sKneePitch;
   int sAnklePitch;
   int firstSupportLegJoint;

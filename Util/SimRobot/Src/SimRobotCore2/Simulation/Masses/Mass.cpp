@@ -28,7 +28,7 @@ const dMass& Mass::createMass()
           dMassRotate(&shiftedChildMass, matrix);
         }
         if(childMassDesc->translation)
-          dMassTranslate(&shiftedChildMass, childMassDesc->translation->x, childMassDesc->translation->y, childMassDesc->translation->z);
+          dMassTranslate(&shiftedChildMass, childMassDesc->translation->x(), childMassDesc->translation->y(), childMassDesc->translation->z());
         dMassAdd(&mass, &shiftedChildMass);
       }
       else

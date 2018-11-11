@@ -188,7 +188,7 @@ void MotionCombinator::applyDynamicStiffness(JointRequest& jointRequest) const
       return 1.f;
   };
 
-  FOREACH_ENUM((Joints) Joint, joint)
+  FOREACH_ENUM(Joints::Joint, joint)
     jointRequest.stiffnessData.stiffnesses[joint] = static_cast<int>(100.f * dynamicStiffnessFunction(joint));
 }
 
@@ -234,9 +234,9 @@ void MotionCombinator::estimateOdometryOffset(Vector2f& offset)
   {
     return (state * Constants::motionCycleTime).head<2>();
   };
-  odometryUKF.predict(dynamicModel, dynamicVariance.asDiagonal());
-  odometryUKF.update(0.f, pseudoMeasurement, pseudoVariance);
-  odometryUKF.update<2>(offset, realMeasurement, measurementVariance.asDiagonal());
+  odometryUKF.predict(dynamicModel, dynamicVariance.cwiseAbs2().asDiagonal());
+  odometryUKF.update(0.f, pseudoMeasurement, sqr(pseudoVariance));
+  odometryUKF.update<2>(offset, realMeasurement, measurementVariance.cwiseAbs2().asDiagonal());
 
   offset = odometryUKF.mean.head<2>() * Constants::motionCycleTime;
 }

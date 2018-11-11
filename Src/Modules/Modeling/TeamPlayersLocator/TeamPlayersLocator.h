@@ -57,7 +57,7 @@ private:
   /**
    * Provides the world representation of obstacles
    */
-  void update(TeamPlayersModel& teamPlayersModel);
+  void update(TeamPlayersModel& teamPlayersModel) override;
 
   bool isInsideOwnDetectionArea(const Vector2f& position, int robotNumber, float& distance, int lastSeen) const;
   bool isInsideOwnDetectionArea(const Vector2f& position, int robotNumber, int lastSeen) const;
@@ -69,5 +69,5 @@ private:
   void setType(Obstacle& one, const Obstacle& other) const;
 
   std::map<int, RobotPose> ownTeam;
-  std::vector<Obstacle> goalPosts;
+  std::vector<Obstacle, Eigen::aligned_allocator<Obstacle>> goalPosts;
 };

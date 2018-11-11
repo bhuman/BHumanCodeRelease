@@ -2,8 +2,7 @@
 
 set -eu
 
-scriptPath="$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")"
-baseDir="$(dirname "${scriptPath}")"
+baseDir="$(cd "$(dirname "$(which "$0")")" && pwd)"
 bhDir="$(dirname "${baseDir}")"
 includeDir="${baseDir}/Include/"
 
@@ -27,7 +26,7 @@ parseOptions() {
     if [ $# -gt 1 ] ; then
       error "Too many arguments!"
     fi
-	usage
+    usage
   fi
   robotIp=${1}
 
@@ -43,20 +42,20 @@ getNames() {
   if [ ! -f "${robotsFile}" ]; then
     fatal "The file ${robotsFile} (containing the robot names and ids) does not exist!"
   fi
-  
+
   # copy python scripts
   tmpPath="/tmp/NaoInstall"
   ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "rm -Rf ${tmpPath}" || fatal "Can't remove '${tmpPath}' on NAO"
   ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${tmpPath}" || fatal "Can't create '${tmpPath}' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getHeadId.py" nao@${robotIp}:${tmpPath}/getHeadId.py || fatal "Can't copy 'getHeadId.py' to NAO"
-  
+
   # get headId
   local headId
-  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "python /tmp/NaoInstall/getHeadId.py | grep -v '[I]'")
+  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "bash -l -c 'python /tmp/NaoInstall/getHeadId.py' | grep -vE '\[(W|I)\]'")
   if [ ${headId} == "Fail" ]; then
     fatal "Failed reading the headId!"
   fi
-  
+
   #find robotName
   grepForHeadId=$(grep ${headId} "${robotsFile}")
   numOfMatchingHeadIds=$(echo "${grepForHeadId}" | wc -l)
@@ -66,11 +65,11 @@ getNames() {
     fatal "${robotsFile} contains the headId \"${headId}\" more than once!"
   else
     robotName=$(echo "${grepForHeadId}" | sed "s%.*name[	 ]*=[	 ]*\"\([^\"]*\).*%\1%")
-	if [ ${robotName} == "" ]; then
-	  fatal "RobotName is empty"
-	fi
+    if [ ${robotName} == "" ]; then
+      fatal "RobotName is empty"
+    fi
   fi
-  
+
   robotDir="${baseDir}/Robots/${robotName}"
 
   # does the robot exist?
@@ -91,14 +90,14 @@ copyFiles() {
     message "Buggy Ethernet driver detected! Limiting bandwidth to 100 kb/s"
     rsyncOptions="${rsyncOptions} --bwlimit=100"
   fi
-  
+
   copyTo="/tmp/NaoInstall/${robotName}"
   message "Copying files to ${copyTo}"
   if [[ $(uname) == "*CYGWIN*" ]] ; then
     chmod -R 755 "${fileDir}"
     setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${fileDir}" #due to windows 8
   fi
-  
+
   ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${copyTo}" || fatal "Can't create '${copyTo}' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}"/* nao@${robotIp}:${copyTo} || fatal "Can't copy to '${copyTo}' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${robotDir}"/* nao@${robotIp}:${copyTo}/Robot/ || fatal "Can't copy to '${copyTo}/Robot' on NAO"
@@ -107,7 +106,7 @@ copyFiles() {
 
 runInstallation() {
   message "launching install process"
-  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "chmod -R 755 ${copyTo} && ${copyTo}/install" || fatal "Installation failed"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "chmod -R 755 ${copyTo} && bash -l -c '${copyTo}/install'" || fatal "Installation failed"
 }
 
 ###############################################################################

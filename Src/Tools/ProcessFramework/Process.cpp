@@ -6,14 +6,20 @@
 
 #include "Process.h"
 #include "Tools/Global.h"
+#include <asmjit/asmjit.h>
 
 bool DebugSenderBase::terminating = false;
 
 Process::Process(MessageQueue& debugIn, MessageQueue& debugOut) :
-  debugIn(debugIn), debugOut(debugOut)
+  debugIn(debugIn), debugOut(debugOut), asmjitRuntime(new asmjit::JitRuntime())
 {
   setGlobals();
   initialized = false;
+}
+
+Process::~Process()
+{
+  delete asmjitRuntime;
 }
 
 bool Process::processMain()
@@ -47,10 +53,10 @@ void Process::setGlobals()
   Global::theSettings = &settings;
   Global::theDebugRequestTable = &debugRequestTable;
   Global::theDebugDataTable = &debugDataTable;
-  Global::theStreamHandler = &streamHandler;
   Global::theDrawingManager = &drawingManager;
   Global::theDrawingManager3D = &drawingManager3D;
   Global::theTimingManager = &timingManager;
+  Global::theAsmjitRuntime = asmjitRuntime;
 
   Blackboard::setInstance(blackboard); // blackboard is NOT globally accessible
 }

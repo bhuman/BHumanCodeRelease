@@ -25,7 +25,7 @@ private:
   /** The main function, called every cycle
    * @param motionRobotHealth The data struct to be filled
    */
-  void update(MotionRobotHealth& motionRobotHealth);
+  void update(MotionRobotHealth& motionRobotHealth) override;
 
   RingBufferWithSum<unsigned, 30> timeBuffer;        /** Buffered timestamps of previous executions */
   unsigned lastExecutionTime;

@@ -35,7 +35,7 @@ class FootSupportProvider : public FootSupportProviderBase
   float weights[Legs::numOfLegs][FsrSensors::numOfFsrSensors]; /**< Weights for the individual FSRs. */
   float highestPressure[Legs::numOfLegs][FsrSensors::numOfFsrSensors]; /**< Highest pressure measured so far per FSR. */
 
-  void update(FootSupport& theFootSupport);
+  void update(FootSupport& theFootSupport) override;
 
 public:
   FootSupportProvider();

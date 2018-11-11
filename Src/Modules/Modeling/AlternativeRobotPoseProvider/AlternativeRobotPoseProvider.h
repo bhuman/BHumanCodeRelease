@@ -18,7 +18,6 @@
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/Perception/FieldFeatures/GoalFeature.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
 #include "Representations/Perception/FieldFeatures/MidCorner.h"
@@ -33,7 +32,6 @@ MODULE(AlternativeRobotPoseProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
-  REQUIRES(GoalFeature),
   REQUIRES(GoalFrame),
   REQUIRES(GroundContactState),
   REQUIRES(MidCircle),
@@ -94,7 +92,7 @@ class AlternativeRobotPoseProvider : public AlternativeRobotPoseProviderBase
   /** Computes the representation.
    * @param alternativeRobotPoseHypothesis The hypothesis
    */
-  void update(AlternativeRobotPoseHypothesis& alternativeRobotPoseHypothesis);
+  void update(AlternativeRobotPoseHypothesis& alternativeRobotPoseHypothesis) override;
 
   /** Converts and adds a feature to the ringbuffer.
    * @param ff A pointer to a field feature, e.g. PenaltyArea, MidCircle, ...

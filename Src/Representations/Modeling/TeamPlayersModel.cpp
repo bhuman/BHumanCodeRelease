@@ -32,7 +32,7 @@ void TeamPlayersModel::verify() const
     ASSERT(std::isfinite(obstacle.velocity.x()));
     ASSERT(std::isfinite(obstacle.velocity.y()));
 
-    //ASSERT((obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
+    ASSERT((obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
 
     ASSERT(std::isnormal(obstacle.covariance(0, 0)));
     ASSERT(std::isnormal(obstacle.covariance(1, 1)));
@@ -132,16 +132,9 @@ void TeamPlayersModel::draw() const
     {
       if(obstacle.type != Obstacle::teammate && obstacle.type != Obstacle::fallenTeammate)
       {
-        float xExpansion, yExpansion, rotation;
-        Covariance::errorEllipse(obstacle.covariance, xExpansion, yExpansion, rotation);
         CROSS("representation:TeamPlayersModel:oppRobots", obstacle.center.x(), obstacle.center.y(), 20, 40, Drawings::solidPen, ColorRGBA::blue);
-        ELLIPSE("representation:TeamPlayersModel:oppRobotsCovariance", obstacle.center, sqrt(3.0f) * xExpansion, sqrt(3.0f) * yExpansion, rotation,
-                10, Drawings::solidPen, ColorRGBA(100, 100, 255, 100), Drawings::solidBrush, ColorRGBA(0, 0, 255, 100));
-        ELLIPSE("representation:TeamPlayersModel:oppRobotsCovariance", obstacle.center, sqrt(2.0f) * xExpansion, sqrt(2.0f) * yExpansion, rotation,
-                10, Drawings::solidPen, ColorRGBA(150, 150, 100, 100), Drawings::solidBrush, ColorRGBA(0, 255, 0, 100));
-        ELLIPSE("representation:TeamPlayersModel:oppRobotsCovariance", obstacle.center, xExpansion, yExpansion, rotation,
-                10, Drawings::solidPen, ColorRGBA(255, 100, 100, 100), Drawings::solidBrush, ColorRGBA(255, 255, 0, 100));
         CIRCLE("representation:TeamPlayersModel:oppRobots", obstacle.center.x(), obstacle.center.y(), 600, 20, Drawings::solidPen, ColorRGBA::yellow, Drawings::noBrush, ColorRGBA());
+        COVARIANCE_ELLIPSES_2D("representation:TeamPlayersModel:oppRobotsCovariance", obstacle.covariance, obstacle.center);
       }
     }
   }

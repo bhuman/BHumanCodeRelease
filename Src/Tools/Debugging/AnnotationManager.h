@@ -14,9 +14,9 @@ class AnnotationManager
 {
 private:
   MessageQueue outData;
-  unsigned currentFrame = 0;
   unsigned annotationCounter = 0;
   unsigned lastGameState;
+  unsigned lastSetPlay;
 
   friend class Process;
 

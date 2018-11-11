@@ -12,10 +12,11 @@
 #include <QDir>
 #include <QString>
 
-#include "RoboCupCtrl.h"
-#include "Tools/Settings.h"
-#include "RobotConsole.h"
 #include "BHToolBar.h"
+#include "Statistics.h"
+#include "RoboCupCtrl.h"
+#include "RobotConsole.h"
+#include "Tools/Settings.h"
 
 class ConsoleView;
 class RemoteRobot;
@@ -32,6 +33,7 @@ public:
   bool calculateImage = true; /**< Decides whether images are calculated by the simulator. */
   unsigned calculateImageFps; /**< Declares the simulated image framerate. */
   unsigned globalNextImageTimeStamp = 0;  /**< The theoretical timestamp of the next image to be calculated shared among all robots to synchronize image calculation. */
+  Statistics statistics; /**< The Interface for statistics. */
 
 private:
   SystemCall::Mode mode; /**< The mode of the robot currently constructed. */
@@ -45,7 +47,6 @@ private:
   std::set<std::string> completion; /**< A list for command completion. */
   std::set<std::string>::const_iterator currentCompletionIndex; /** Points to the last string that was used for auto completion */
   Settings settings; /**< The current location. */
-  StreamHandler streamHandler; /**< The handler used by streams in this thread. */
   const DebugRequestTable* debugRequestTable = nullptr; /**< Points to the debug request table used for tab-completion. */
   const ModuleInfo* moduleInfo = nullptr; /**< Points to the solution info used for tab-completion. */
   const DrawingManager* drawingManager = nullptr; /**< Points to the drawing manager used for tab-completion. */
@@ -63,7 +64,7 @@ public:
   ConsoleRoboCupCtrl(SimRobot::Application& application);
 
 private:
-  virtual ~ConsoleRoboCupCtrl();
+  ~ConsoleRoboCupCtrl();
 
 public:
   /**
@@ -241,6 +242,13 @@ private:
    * @return Returns true if the parameters were correct.
    */
   bool startLogFile(In& stream);
+  
+   /**
+   * The function handles the console input for the "sml" command.
+   * @param stream The stream containing the parameters of "sml".
+   * @return Returns true if the parameters were correct.
+   */
+  bool startMultiLogFile(In& stream);
 
   /**
    * The function handles the console input for the "ci" command.
@@ -269,17 +277,17 @@ private:
   /**
    * The function is called to initialize the module.
    */
-  virtual bool compile() override;
+  bool compile() override;
 
   /**
    * The function is called to create connections to other scene graph objects from other modules.
    */
-  virtual void link() override;
+  void link() override;
 
   /**
    * The function is called from SimRobot in each simulation step.
    */
-  virtual void update() override;
+  void update() override;
 
   /**
    * The function is called from SimRobot when Shift+Ctrl+letter was pressed or released.
@@ -287,18 +295,18 @@ private:
    * above for Shift+Ctrl+A-Z.
    * @param pressed Whether the key was pressed or released.
    */
-  virtual void pressedKey(int key, bool pressed) override;
+  void pressedKey(int key, bool pressed) override;
 
   /**
    * The function is called when a movable object has been selected.
    * @param obj The object.
    */
-  virtual void selectedObject(const SimRobot::Object& obj) override;
+  void selectedObject(const SimRobot::Object& obj) override;
 
   /**
    * Create the user menu for this module.
    */
-  virtual QMenu* createUserMenu() const override { return toolBar.createUserMenu(); }
+  QMenu* createUserMenu() const override { return toolBar.createUserMenu(); }
 
   /**
    * Show dialog and replace ${}-substrings with user input.

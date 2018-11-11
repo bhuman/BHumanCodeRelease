@@ -41,7 +41,7 @@ protected:
    * @param p The address the data is located at.
    * @param size The number of bytes to be written.
    */
-  virtual void writeToStream(const void* p, size_t size);
+  void writeToStream(const void* p, size_t size) override;
 };
 
 /**
@@ -62,7 +62,7 @@ public:
    * The function returns whether this is a binary stream.
    * @return Does it output data in binary format?
    */
-  virtual bool isBinary() const {return true;}
+  bool isBinary() const override {return true;}
 };
 
 /**

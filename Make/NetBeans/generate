@@ -1,0 +1,5 @@
+#!/bin/bash
+pushd "$(dirname "$(which "$0")")" >/dev/null
+../../Util/SimRobot/Util/mare/Linux/bin/mare --netbeans
+popd >/dev/null
+

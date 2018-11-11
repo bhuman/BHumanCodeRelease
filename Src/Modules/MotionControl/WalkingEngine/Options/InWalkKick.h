@@ -17,13 +17,18 @@ option(InWalkKick)
     walkRequest = theMotionRequest.walkRequest;
 
     if(playKickSounds)
-      SystemCall::playSound((std::string(WalkKicks::getName(walkRequest.walkKickRequest.kickType))
+      SystemCall::playSound((std::string(TypeRegistry::getEnumName(walkRequest.walkKickRequest.kickType))
                              + (walkRequest.walkKickRequest.kickLeg == Legs::left ? "Left.wav" : "Right.wav")).c_str());
 
     transition
     {
       if(theWalkGenerator.t == 0)
       {
+        if(walkRequest.mode == WalkRequest::runUpMode)
+        {
+          resetController();
+          goto runUpAndKick;
+        }
         if(theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase == leftPrestepPhase)
           goto preStep;
         else if(!theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase != leftPrestepPhase)
@@ -32,13 +37,41 @@ option(InWalkKick)
       goto wait;
     }
   }
-
+  state(runUpAndKick)
+  {
+    transition
+    {
+      if(theMotionRequest.walkRequest.mode != WalkRequest::runUpMode && !isKicking)
+        goto stopRunning;
+      if(isKicking && theWalkGenerator.t == 0)
+        goto stopRunning;
+    }
+    action
+    {
+      runUp(Pose2f(walkRequest.speed.rotation * theWalkGenerator.maxSpeed.rotation,
+                   walkRequest.speed.translation.x() * theWalkGenerator.maxSpeed.translation.x(),
+                   walkRequest.speed.translation.y() * theWalkGenerator.maxSpeed.translation.y()),
+            theMotionRequest.walkRequest.target);
+    }
+  }
+  target_state(stopRunning)
+  {
+    action
+    {
+      Walking();
+    }
+  }
   state(wait)
   {
     transition
     {
       if(theWalkGenerator.t == 0)
       {
+        if(walkRequest.mode == WalkRequest::runUpMode)
+        {
+          resetController();
+          goto runUpAndKick;
+        }
         if(theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase == leftPrestepPhase)
           goto preStep;
         else if(!theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase != leftPrestepPhase)

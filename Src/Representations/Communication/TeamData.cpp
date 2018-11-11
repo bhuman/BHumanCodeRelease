@@ -13,10 +13,7 @@ bool Teammate::handleMessage(InMessage& message)
       HANDLE_PARTICLE(RobotPose);
       HANDLE_PARTICLE(BallModel);
       HANDLE_PARTICLE(ObstacleModel);
-      HANDLE_PARTICLE(BehaviorStatus);
-      HANDLE_PARTICLE(SPLStandardBehaviorStatus);
       HANDLE_PARTICLE(Whistle);
-      HANDLE_PARTICLE(TeammateRoles);
       HANDLE_PARTICLE(SideConfidence);
       HANDLE_PARTICLE(FieldCoverage);
       HANDLE_PARTICLE(RobotHealth);
@@ -50,26 +47,6 @@ void TeamData::draw() const
          Drawings::solidPen, posCol);
     // Player number
     DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y(), 100, ColorRGBA::black, teammate.number);
-    // Role
-    DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 150, 100,
-             ColorRGBA::black, Role::getName(teammate.theBehaviorStatus.role));
-
-    // Time to reach ball
-    int ttrb = teammate.theBehaviorStatus.role == Role::striker
-               ? static_cast<int>(teammate.theBehaviorStatus.timeToReachBall.timeWhenReachBallStriker)
-               : static_cast<int>(teammate.theBehaviorStatus.timeToReachBall.timeWhenReachBall);
-    if(Blackboard::getInstance().exists("FrameInfo"))
-    {
-      const FrameInfo& theFrameInfo = (const FrameInfo&) Blackboard::getInstance()["FrameInfo"];
-      ttrb = theFrameInfo.getTimeSince(ttrb);
-    }
-    DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 300, 100, ColorRGBA::black, "TTRB: " << ttrb);
-
-    //Line from Robot to WalkTarget
-    LINE("representation:TeamData", rPos.x(), rPos.y(),
-         teammate.theSPLStandardBehaviorStatus.walkingTo.x(),
-         teammate.theSPLStandardBehaviorStatus.walkingTo.y(),
-         10, Drawings::dashedPen, ColorRGBA::magenta);
 
     // Ball position
     const Vector2f ballPos = teammate.theRobotPose * teammate.theBallModel.estimate.position;

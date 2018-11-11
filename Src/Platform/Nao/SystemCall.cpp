@@ -46,3 +46,8 @@ bool SystemCall::soundIsPlaying()
 {
   return SoundPlayer::isPlaying();
 }
+
+bool SystemCall::usbIsMounted()
+{
+  return system("mount | grep \"media/usb\" >/dev/null") == 0;
+}

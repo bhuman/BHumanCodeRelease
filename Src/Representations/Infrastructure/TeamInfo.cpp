@@ -6,8 +6,10 @@
  */
 
 #include "TeamInfo.h"
+#include "Representations/Configuration/FieldDimensions.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Eigen.h"
+#include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
 #include <cstring>
 
@@ -15,7 +17,17 @@
  * The struct is a helper to be able to stream the players.
  * The global RobotInfo cannot be used, because it has an additional attribute.
  */
-struct PlayerInfo : public RoboCup::RobotInfo {};
+struct PlayerInfo : public RoboCup::RobotInfo
+{
+private:
+  static void reg()
+  {
+    PUBLISH(reg);
+    REG_CLASS(PlayerInfo);
+    REG(penalty);
+    REG(secsTillUnpenalised);
+  }
+};
 
 /**
  * Write a player info to a stream.
@@ -25,10 +37,8 @@ struct PlayerInfo : public RoboCup::RobotInfo {};
  */
 Out& operator<<(Out& stream, const PlayerInfo& playerInfo)
 {
-  STREAM_REGISTER_BEGIN_EXT(playerInfo);
   STREAM_EXT(stream, playerInfo.penalty);
   STREAM_EXT(stream, playerInfo.secsTillUnpenalised);
-  STREAM_REGISTER_FINISH;
   return stream;
 }
 
@@ -40,10 +50,8 @@ Out& operator<<(Out& stream, const PlayerInfo& playerInfo)
  */
 In& operator>>(In& stream, PlayerInfo& playerInfo)
 {
-  STREAM_REGISTER_BEGIN_EXT(playerInfo);
   STREAM_EXT(stream, playerInfo.penalty);
   STREAM_EXT(stream, playerInfo.secsTillUnpenalised);
-  STREAM_REGISTER_FINISH;
   return stream;
 }
 
@@ -52,31 +60,36 @@ TeamInfo::TeamInfo()
   memset(static_cast<RoboCup::TeamInfo*>(this), 0, sizeof(RoboCup::TeamInfo));
 }
 
+int TeamInfo::getSubstitutedPlayerNumber(int number) const
+{
+  if(number < 6)
+    return number;
+
+  for(unsigned int i = 0; i < 5; i++)
+    if(players[i].penalty == PENALTY_SUBSTITUTE)
+      return i + 1;
+
+  return number;
+}
+
 void TeamInfo::serialize(In* in, Out* out)
 {
-  PlayerInfo(&players)[5] = reinterpret_cast<PlayerInfo(&)[5]>(this->players);
-  PlayerInfo& coach = reinterpret_cast<PlayerInfo&>(this->coach);
-  char buf[sizeof(this->coachMessage) + 1];
-  strncpy(buf, (const char*) this->coachMessage, sizeof(this->coachMessage));
-  buf[sizeof(this->coachMessage)] = 0;
-  std::string coachMessage = buf;
+  PlayerInfo(&players)[MAX_NUM_PLAYERS] = reinterpret_cast<PlayerInfo(&)[MAX_NUM_PLAYERS]>(this->players);
 
-  STREAM_REGISTER_BEGIN;
   STREAM(teamNumber); // unique team number
   STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK, ...
   STREAM(score); // team's score
-  STREAM(coachMessage); // last coach message received
-  STREAM(coach); // team's coach
   STREAM(players); // the team's players
-  STREAM_REGISTER_FINISH;
+}
 
-  if(in)
-  {
-    if(coachMessage.empty())
-      this->coachMessage[0] = 0;
-    else
-      strncpy((char*) this->coachMessage, &coachMessage[0], sizeof(this->coachMessage));
-  }
+void TeamInfo::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(TeamInfo);
+  REG(teamNumber);
+  REG(teamColor);
+  REG(score);
+  REG(PlayerInfo(&)[MAX_NUM_PLAYERS], players);
 }
 
 static void drawDigit(int digit, const Vector3f& pos, float size, int teamColor)
@@ -105,13 +118,6 @@ static void drawDigit(int digit, const Vector3f& pos, float size, int teamColor)
     0x7f,
     0x5f
   };
-  const static ColorRGBA colors[] =
-  {
-    ColorRGBA::blue,
-    ColorRGBA::red,
-    ColorRGBA::yellow,
-    ColorRGBA::black
-  };
 
   digit = digits[std::abs(digit)];
   for(int i = 0; i < 7; ++i)
@@ -119,7 +125,7 @@ static void drawDigit(int digit, const Vector3f& pos, float size, int teamColor)
     {
       Vector3f from = pos - points[i] * size;
       Vector3f to = pos - points[i + 1] * size;
-      LINE3D("representation:TeamInfo", from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), 2, colors[teamColor]);
+      LINE3D("representation:TeamInfo", from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), 2, ColorRGBA::fromTeamColor(teamColor));
     }
 }
 
@@ -138,13 +144,6 @@ OwnTeamInfo::OwnTeamInfo()
   teamColor = Global::settingsExist() ? Global::getSettings().teamColor : TEAM_BLACK;
 }
 
-void OwnTeamInfo::operator >> (BHumanMessage& m) const
-{
-  m.theBHULKsStandardMessage.gameControlData.score = score;
-  for(int i = 0; i < BHULKS_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
-    m.theBHULKsStandardMessage.gameControlData.playersArePenalized[i] = players[i].penalty != PENALTY_NONE;
-}
-
 void OwnTeamInfo::draw() const
 {
   //do base struct drawing first.
@@ -152,7 +151,15 @@ void OwnTeamInfo::draw() const
 
   DEBUG_DRAWING("representation:OwnTeamInfo", "drawingOnField")
   {
-    DRAWTEXT("representation:OwnTeamInfo", -5000, -3800, 140, ColorRGBA::red, Settings::getName((Settings::TeamColor) teamColor));
+    float xPosOwnFieldBorder = -5200.f;
+    float yPosRightFieldBorder = -3700;
+    if(Blackboard::getInstance().exists("FieldDimensions"))
+    {
+      const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
+      xPosOwnFieldBorder = theFieldDimensions.xPosOwnFieldBorder;
+      yPosRightFieldBorder = theFieldDimensions.yPosRightFieldBorder;
+    }
+    DRAWTEXT("representation:OwnTeamInfo", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName((Settings::TeamColor) teamColor));
   }
 }
 

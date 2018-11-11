@@ -10,12 +10,7 @@
 int BHumanArbitraryMessage::sizeOfArbitraryMessage() const
 {
   static_assert(BHUMAN_ARBITRARY_MESSAGE_STRUCT_VERSION == 0, "This method is not adjusted for the current message version");
-
-  OutBinarySize sizeStream;
-  sizeStream << queue;
-
-  ASSERT(sizeStream.getSize() == queue.getStreamedSize());
-  return static_cast<int>(sizeof header + sizeof version + sizeStream.getSize());
+  return static_cast<int>(sizeof header + sizeof version + queue.getStreamedSize());
 }
 
 void BHumanArbitraryMessage::write(void* data)
@@ -27,7 +22,7 @@ void BHumanArbitraryMessage::write(void* data)
 
   *reinterpret_cast<uint8_t*&>(data)++ = version;
 
-  OutBinaryMemory memory(data);
+  OutBinaryMemory memory(queue.getStreamedSize(), reinterpret_cast<char*>(data));
   memory << queue;
 }
 
@@ -61,12 +56,17 @@ void BHumanArbitraryMessage::serialize(In* in, Out* out)
     queue.out.finishMessage(idRobot);
   }
 
-  STREAM_REGISTER_BEGIN;
   std::string headerRef(header, 4);
   STREAM(headerRef);// does not allow to change the header in any case, but makes it visble in a great way
   STREAM(version);
 
-  //TODO steam messageque
+  //TODO stream messageque
+}
 
-  STREAM_REGISTER_FINISH;
+void BHumanArbitraryMessage::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(BHumanArbitraryMessage);
+  REG(std::string, headerRef);
+  REG(version);
 }

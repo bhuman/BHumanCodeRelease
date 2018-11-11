@@ -12,6 +12,8 @@
 
 #ifndef NDEBUG
 
+#include <cassert>
+
 /**
 * @class Assert
 * Class with helper function for low level debugging
@@ -27,18 +29,14 @@ public:
   static void trace(const char* format, ...);
 };
 
-#ifdef MACOS
-// Prevent strange recursive include: <assert.h> is resolved by this file!
-#include <../include/assert.h>
-#else
-#include <cassert>
-#endif
 #define ASSERT(e) assert(e)
 #define VERIFY(e) ASSERT(e)
 #define TRACE(...) Assert::trace(__VA_ARGS__)
 
 #else
+
 #define ASSERT(e) ((void)0)
 #define VERIFY(e) ((void)(e))
 #define TRACE(...) ((void)0)
+
 #endif

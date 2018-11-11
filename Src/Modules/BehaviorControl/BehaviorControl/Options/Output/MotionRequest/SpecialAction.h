@@ -1,5 +1,5 @@
 /** Sets all members of the MotionRequest representation for executing a SpecialAction */
-option(SpecialAction, ((SpecialActionRequest) SpecialActionID) id, (bool)(false) mirror)
+option(SpecialAction, (SpecialActionRequest::SpecialActionID) id, (bool)(false) mirror)
 {
   /** Set the motion request. */
   initial_state(setRequest)

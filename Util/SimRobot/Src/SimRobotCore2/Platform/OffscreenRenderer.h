@@ -26,9 +26,6 @@ public:
     hiddenWindow, /**< Well..., it works at least on some systems */
   };
 
-  /** Default Constructor */
-  OffscreenRenderer();
-
   /** Destructor */
   ~OffscreenRenderer();
 
@@ -98,8 +95,8 @@ private:
     ~Buffer();
   };
 
-  QGLWidget* mainGlWidget;
-  bool usedMainGlWidget;
+  QGLWidget* mainGlWidget = nullptr;
+  bool usedMainGlWidget = false;
   std::unordered_map<unsigned int, Buffer> renderBuffers;
 
   /**

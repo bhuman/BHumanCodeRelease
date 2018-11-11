@@ -9,15 +9,11 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
-#include "Representations/BehaviorControl/Role.h"
-#include "Representations/BehaviorControl/SPLStandardBehaviorStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -45,21 +41,17 @@ MODULE(TeamMessageHandler,
   // v- using for teamout
   USES(FallDownState),
   USES(GroundContactState),
-  USES(JointAngles),
   USES(RawGameInfo),
   USES(RobotInfo),
 
   // v- directly sliding into teamout
   USES(BallModel),
-  USES(BehaviorStatus),
   USES(FieldCoverage),
   USES(FieldFeatureOverview),
   USES(ObstacleModel),
   USES(RobotHealth),
   USES(RobotPose),
   USES(SideConfidence),
-  USES(SPLStandardBehaviorStatus),
-  USES(TeammateRoles),
   USES(Whistle),
 
   PROVIDES(BHumanMessageOutputGenerator),
@@ -67,7 +59,7 @@ MODULE(TeamMessageHandler,
 
   DEFINES_PARAMETERS(
   {,
-    (int)(200) sendInterval, /**<  Time in ms between two messages that are sent to the teammates */
+    (int)(333) sendInterval, /**<  Time in ms between two messages that are sent to the teammates */
     (int)(4000) networkTimeout, /**< Time in ms after which teammates are considered as unconnected */
 
     (int)(5000) minTimeBetween2RejectSounds, /*< Time in ms after which another sound output is allowed */
@@ -91,7 +83,7 @@ private:
   // v- output stuff
   mutable unsigned timeLastSent = 0;
 
-  void update(BHumanMessageOutputGenerator& outputGenerator);
+  void update(BHumanMessageOutputGenerator& outputGenerator) override;
   void generateMessage(BHumanMessageOutputGenerator& outputGenerator) const;
   void writeMessage(BHumanMessageOutputGenerator& outputGenerator, RoboCup::SPLStandardMessage* const m) const;
 
@@ -116,7 +108,7 @@ private:
     } lastErrorCode;
   } receivedMessageContainer;
 
-  void update(TeamData& teamData);
+  void update(TeamData& teamData) override;
   void maintainBMateList(TeamData& teamData) const;
 
   unsigned timeWhenLastMimimi = 0;

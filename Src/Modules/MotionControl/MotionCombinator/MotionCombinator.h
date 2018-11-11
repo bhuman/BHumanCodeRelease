@@ -15,6 +15,7 @@
 #include "Representations/MotionControl/ArmMotionSelection.h"
 #include "Representations/MotionControl/GetUpEngineOutput.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
+#include "Representations/MotionControl/KickEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -73,9 +74,9 @@ private:
 
   UKF<3> odometryUKF = UKF<3>(Vector3f::Zero()); /**< Estimates the speed of the robot based on walking engine output and accelerometer */
 
-  void update(JointRequest& jointRequest);
-  void update(OdometryData& odometryData);
-  void update(MotionInfo& motionInfo) { motionInfo = this->motionInfo; }
+  void update(JointRequest& jointRequest) override;
+  void update(OdometryData& odometryData) override;
+  void update(MotionInfo& motionInfo) override { motionInfo = this->motionInfo; }
 
   void applyDynamicStiffness(JointRequest& jointRequest) const;
 

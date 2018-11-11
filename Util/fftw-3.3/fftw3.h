@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2003, 2007-11 Matteo Frigo
- * Copyright (c) 2003, 2007-11 Massachusetts Institute of Technology
+ * Copyright (c) 2003, 2007-14 Matteo Frigo
+ * Copyright (c) 2003, 2007-14 Massachusetts Institute of Technology
  *
  * The following statement of license applies *only* to this header file,
  * and *not* to the other files distributed with FFTW or derived therefrom:
@@ -132,8 +132,8 @@ typedef enum fftw_r2r_kind_do_not_use_me X(r2r_kind);			   \
 									   \
 typedef fftw_write_char_func_do_not_use_me X(write_char_func);		   \
 typedef fftw_read_char_func_do_not_use_me X(read_char_func);		   \
-									   \
-FFTW_EXTERN void X(execute)(const X(plan) p);				   \
+                                                                           \
+FFTW_EXTERN void X(execute)(const X(plan) p);                              \
 									   \
 FFTW_EXTERN X(plan) X(plan_dft)(int rank, const int *n,			   \
 		    C *in, C *out, int sign, unsigned flags);		   \
@@ -320,6 +320,7 @@ FFTW_EXTERN void X(set_timelimit)(double t);				   \
 FFTW_EXTERN void X(plan_with_nthreads)(int nthreads);			   \
 FFTW_EXTERN int X(init_threads)(void);					   \
 FFTW_EXTERN void X(cleanup_threads)(void);				   \
+FFTW_EXTERN void X(make_planner_thread_safe)(void);                        \
 									   \
 FFTW_EXTERN int X(export_wisdom_to_filename)(const char *filename);	   \
 FFTW_EXTERN void X(export_wisdom_to_file)(FILE *output_file);		   \
@@ -334,6 +335,7 @@ FFTW_EXTERN int X(import_wisdom)(X(read_char_func) read_char, void *data); \
 									   \
 FFTW_EXTERN void X(fprint_plan)(const X(plan) p, FILE *output_file);	   \
 FFTW_EXTERN void X(print_plan)(const X(plan) p);			   \
+FFTW_EXTERN char *X(sprint_plan)(const X(plan) p);			   \
 									   \
 FFTW_EXTERN void *X(malloc)(size_t n);					   \
 FFTW_EXTERN R *X(alloc_real)(size_t n);					   \
@@ -345,7 +347,8 @@ FFTW_EXTERN void X(flops)(const X(plan) p,				   \
 FFTW_EXTERN double X(estimate_cost)(const X(plan) p);			   \
 FFTW_EXTERN double X(cost)(const X(plan) p);				   \
 									   \
-FFTW_EXTERN const char X(version)[];					   \
+FFTW_EXTERN int X(alignment_of)(R *p);                                     \
+FFTW_EXTERN const char X(version)[];                                       \
 FFTW_EXTERN const char X(cc)[];						   \
 FFTW_EXTERN const char X(codelet_optim)[];
 
@@ -359,6 +362,7 @@ FFTW_DEFINE_API(FFTW_MANGLE_LONG_DOUBLE, long double, fftwl_complex)
 /* __float128 (quad precision) is a gcc extension on i386, x86_64, and ia64
    for gcc >= 4.6 (compiled in FFTW with --enable-quad-precision) */
 #if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) \
+ && !(defined(__ICC) || defined(__INTEL_COMPILER) || defined(__CUDACC__) || defined(__PGI)) \
  && (defined(__i386__) || defined(__x86_64__) || defined(__ia64__))
 #  if !defined(FFTW_NO_Complex) && defined(_Complex_I) && defined(complex) && defined(I)
 /* note: __float128 is a typedef, which is not supported with the _Complex
@@ -386,6 +390,7 @@ FFTW_DEFINE_API(FFTW_MANGLE_QUAD, __float128, fftwq_complex)
 #define FFTW_PRESERVE_INPUT (1U << 4) /* cancels FFTW_DESTROY_INPUT */
 #define FFTW_PATIENT (1U << 5) /* IMPATIENT is default */
 #define FFTW_ESTIMATE (1U << 6)
+#define FFTW_WISDOM_ONLY (1U << 21)
 
 /* undocumented beyond-guru flags */
 #define FFTW_ESTIMATE_PATIENT (1U << 7)
@@ -402,7 +407,6 @@ FFTW_DEFINE_API(FFTW_MANGLE_QUAD, __float128, fftwq_complex)
 #define FFTW_NO_SLOW (1U << 18)
 #define FFTW_NO_FIXED_RADIX_LARGE_N (1U << 19)
 #define FFTW_ALLOW_PRUNING (1U << 20)
-#define FFTW_WISDOM_ONLY (1U << 21)
 
 #ifdef __cplusplus
 }  /* extern "C" */

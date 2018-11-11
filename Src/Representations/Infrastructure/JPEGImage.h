@@ -92,4 +92,7 @@ private:
 
 protected:
   void serialize(In* in, Out* out);
+
+private:
+  static void reg();
 };

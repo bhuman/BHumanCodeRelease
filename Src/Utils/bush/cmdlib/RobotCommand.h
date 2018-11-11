@@ -24,7 +24,7 @@ public:
    * @param params The parameters of the command.
    * @return false if one of the called methods returned false, true otherwise.
    */
-  bool execute(Context& context, const std::vector<std::string>& params);
+  bool execute(Context& context, const std::vector<std::string>& params) override;
 
   /**
    * This method is intended to do something which has to be done before the command is
@@ -81,5 +81,5 @@ public:
       robot(robot)
   {}
 
-  virtual std::string getLabel() { return robot->name; }
+  std::string getLabel() override { return robot->name; }
 };

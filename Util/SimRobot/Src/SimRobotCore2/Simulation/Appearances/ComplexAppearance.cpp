@@ -88,7 +88,7 @@ void ComplexAppearance::createGraphics()
           Vertex u(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
           Vertex v(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
           Normal n(u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x, 1);
-          float len = sqrtf(n.x * n.x + n.y * n.y + n.z * n.z);
+          float len = std::sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
           len = len == 0 ? 1.f : 1.f / len;
           n.x *= len;
           n.y *= len;
@@ -116,7 +116,7 @@ void ComplexAppearance::createGraphics()
   Appearance::createGraphics();
 }
 
-void ComplexAppearance::assembleAppearances() const
+void ComplexAppearance::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
@@ -124,7 +124,7 @@ void ComplexAppearance::assembleAppearances() const
   size_t verticesSize = vertices->vertices.size();
   if(verticesSize > 0)
   {
-    surface->set(!texCoords);
+    surface->set(color, !texCoords);
 
     const Vertex* vertexLibrary = &vertices->vertices[0];
     const Normal* vertexNormals = &normals->normals[0];
@@ -155,6 +155,6 @@ void ComplexAppearance::assembleAppearances() const
     surface->unset(!texCoords);
   }
 
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
 }

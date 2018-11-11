@@ -1,32 +1,29 @@
 /**
-* @file SimObjectRenderer.h
-* Declaration of class SimObjectRenderer
-* @author Colin Graf
-*/
+ * @file SimObjectRenderer.h
+ * Declaration of class SimObjectRenderer
+ * @author Colin Graf
+ */
 
 #pragma once
 
 #include "SimRobotCore2.h"
-#include "Tools/Vector3.h"
+#include "Tools/Math/Eigen.h"
 
 class SimObject;
 class Body;
 
 /**
-* @class SimObjectRenderer
-* An interface for rendering scene objects on an OpenGL context
-*/
+ * @class SimObjectRenderer
+ * An interface for rendering scene objects on an OpenGL context
+ */
 class SimObjectRenderer : public SimRobotCore2::Renderer
 {
 public:
   /**
-  * Constructor
-  * @param simObject The object to render
-  */
+   * Constructor
+   * @param simObject The object to render
+   */
   SimObjectRenderer(SimObject& simObject);
-
-  /** Destructor */
-  virtual ~SimObjectRenderer() = default;
 
 private:
   SimObject& simObject;
@@ -34,9 +31,9 @@ private:
   unsigned int height;
 
   CameraMode cameraMode;
-  Vector3<> defaultCameraPos;
-  Vector3<> cameraPos;
-  Vector3<> cameraTarget;
+  Vector3f defaultCameraPos;
+  Vector3f cameraPos;
+  Vector3f cameraTarget;
   float cameraTransformation[16];
   float fovy;
   float projection[16];
@@ -50,58 +47,56 @@ private:
   bool dragging;
   DragType dragType;
   Body* dragSelection;
-  Vector3<> dragStartPos;
+  Vector3f dragStartPos;
+  Vector3f interCameraPos;
   DragAndDropPlane dragPlane;
-  Vector3<> dragPlaneVector;
+  Vector3f dragPlaneVector;
   DragAndDropMode dragMode;
   unsigned int dragStartTime;
+  int degreeSteps;
 
-  bool moving;
-  unsigned int movingLeftStartTime;
-  unsigned int movingRightStartTime;
-  unsigned int movingUpStartTime;
-  unsigned int movingDownStartTime;
-
-  void moveCamera(float x, float y);
   void updateCameraTransformation();
 
-  bool intersectRayAndPlane(const Vector3<>& point, const Vector3<>& v,
-                                       const Vector3<>& plane, const Vector3<>& n,
-                                       Vector3<>& intersection) const;
-  Vector3<> projectClick(int x, int y);
-  Body* selectObject(const Vector3<>& projectedClick);
+  bool intersectRayAndPlane(const Vector3f& point, const Vector3f& v,
+                            const Vector3f& plane, const Vector3f& n,
+                            Vector3f& intersection) const;
+  Vector3f projectClick(int x, int y) const;
+  Body* selectObject(const Vector3f& projectedClick);
+  bool intersectClickAndCoordinatePlane(int x, int y, DragAndDropPlane plane, Vector3f& point) const;
+
+  void calcDragPlaneVector();
 
 public:
   // API
-  virtual void init(bool hasSharedDisplayLists);
-  virtual void draw();
-  virtual void resize(float fovy, unsigned int width, unsigned int height);
-  virtual void getSize(unsigned int& width, unsigned int& height) const;
-  virtual void setSurfaceShadeMode(ShadeMode shadeMode) {surfaceShadeMode = shadeMode;}
-  virtual ShadeMode getSurfaceShadeMode() const {return surfaceShadeMode;}
-  virtual void setPhysicsShadeMode(ShadeMode shadeMode) {physicsShadeMode = shadeMode;}
-  virtual ShadeMode getPhysicsShadeMode() const {return physicsShadeMode;}
-  virtual void setDrawingsShadeMode(ShadeMode shadeMode) {drawingsShadeMode = shadeMode;}
-  virtual ShadeMode getDrawingsShadeMode() const {return drawingsShadeMode;}
-  virtual void zoom(float change);
-  virtual void setRenderFlags(unsigned int renderFlags) {this->renderFlags = renderFlags;}
-  virtual unsigned int getRenderFlags() const {return renderFlags;}
-  virtual void setCameraMode(CameraMode mode);
-  virtual CameraMode getCameraMode() const {return cameraMode;}
-  virtual void toggleCameraMode();
-  virtual void resetCamera();
-  virtual void fitCamera();
-  virtual int getFovY() const {return int(fovy);}
-  virtual void setDragPlane(DragAndDropPlane plane) {dragPlane = plane;}
-  virtual DragAndDropPlane getDragPlane() const {return dragPlane;}
-  virtual void setDragMode(DragAndDropMode mode) {dragMode = mode;}
-  virtual DragAndDropMode getDragMode() const {return dragMode;}
-  virtual bool startDrag(int x, int y, DragType type);
-  virtual SimRobotCore2::Object* getDragSelection();
-  virtual void setCameraMove(bool left, bool right, bool up, bool down);
-  virtual bool moveDrag(int x, int y);
-  virtual bool releaseDrag(int x, int y);
-  virtual void setCamera(const float* pos, const float* target);
-  virtual void getCamera(float* pos, float* target);
-  virtual void rotateCamera(float x, float y);
+  void init(bool hasSharedDisplayLists) override;
+  void draw() override;
+  void resize(float fovy, unsigned int width, unsigned int height) override;
+  void getSize(unsigned int& width, unsigned int& height) const override;
+  void setSurfaceShadeMode(ShadeMode shadeMode) override {surfaceShadeMode = shadeMode;}
+  ShadeMode getSurfaceShadeMode() const override {return surfaceShadeMode;}
+  void setPhysicsShadeMode(ShadeMode shadeMode) override {physicsShadeMode = shadeMode;}
+  ShadeMode getPhysicsShadeMode() const override {return physicsShadeMode;}
+  void setDrawingsShadeMode(ShadeMode shadeMode) override {drawingsShadeMode = shadeMode;}
+  ShadeMode getDrawingsShadeMode() const override {return drawingsShadeMode;}
+  void zoom(float change, float x, float y) override;
+  void setRenderFlags(unsigned int renderFlags) override {this->renderFlags = renderFlags;}
+  unsigned int getRenderFlags() const override {return renderFlags;}
+  void setCameraMode(CameraMode mode) override {};
+  CameraMode getCameraMode() const override {return cameraMode;}
+  void toggleCameraMode() override {};
+  void resetCamera() override;
+  void fitCamera() override;
+  int getFovY() const override {return int(fovy);}
+  void setDragPlane(DragAndDropPlane plane) override;
+  DragAndDropPlane getDragPlane() const override {return dragPlane;}
+  void setDragMode(DragAndDropMode mode) override {dragMode = mode;}
+  DragAndDropMode getDragMode() const override {return dragMode;}
+  bool startDrag(int x, int y, DragType type) override;
+  SimRobotCore2::Object* getDragSelection() override;
+  void setCameraMove(bool left, bool right, bool up, bool down) override {};
+  bool moveDrag(int x, int y, DragType type) override;
+  bool releaseDrag(int x, int y) override;
+  void setCamera(const float* pos, const float* target) override;
+  void getCamera(float* pos, float* target) override;
+  void rotateCamera(float x, float y) override {};
 };

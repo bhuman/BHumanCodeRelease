@@ -22,5 +22,5 @@ STREAMABLE(TeamPlayersModel,
   void verify() const;
   void draw() const,
 
-  (std::vector<Obstacle>) obstacles, /**< 'field pose' (field coordinates) and covariance of combined obstacles */
+  (std::vector<Obstacle, Eigen::aligned_allocator<Obstacle>>) obstacles, /**< 'field pose' (field coordinates) and covariance of combined obstacles */
 });

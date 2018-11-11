@@ -41,10 +41,10 @@ private:
   int flags;
   bool reallyVisible;
 
-  virtual void closeEvent(QCloseEvent* event);
-  virtual void contextMenuEvent(QContextMenuEvent* event);
-  virtual void keyPressEvent(QKeyEvent* event);
-  virtual void keyReleaseEvent(QKeyEvent* event);
+  void closeEvent(QCloseEvent* event) override;
+  void contextMenuEvent(QContextMenuEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
+  void keyReleaseEvent(QKeyEvent* event) override;
 
 private slots:
   void visibilityChanged(bool visible);

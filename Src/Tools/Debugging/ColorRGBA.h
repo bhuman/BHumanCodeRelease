@@ -21,6 +21,7 @@ public:
   static const ColorRGBA orange;
   static const ColorRGBA violet;
   static const ColorRGBA gray;
+  static const ColorRGBA brown;
 
   ColorRGBA() = default;
 
@@ -28,14 +29,10 @@ public:
     r(r), g(g), b(b), a(a)
   {}
 
-  ColorRGBA operator*(float scale) const
-  {
-    unsigned char r2 = static_cast<unsigned char>(scale * r);
-    unsigned char g2 = static_cast<unsigned char>(scale * g);
-    unsigned char b2 = static_cast<unsigned char>(scale * b);
-    unsigned char a2 = static_cast<unsigned char>(scale * a);
-    return ColorRGBA(r2, g2, b2, a2);
-  }
+  static ColorRGBA fromTeamColor(int teamColor);
+
+  ColorRGBA operator*(float scale) const;
+  ColorRGBA blend(const ColorRGBA& other) const;
 };
 
 In& operator>>(In& stream, ColorRGBA&);

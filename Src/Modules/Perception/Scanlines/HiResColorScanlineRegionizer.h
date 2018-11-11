@@ -30,7 +30,7 @@ MODULE(HiResColorScanlineRegionizer,
 class HiResColorScanlineRegionizer : public HiResColorScanlineRegionizerBase
 {
 private:
-  void update(ColorScanlineRegionsVerticalClipped& rolorScanlineRegionsVerticalClipped);
+  void update(ColorScanlineRegionsVerticalClipped& colorScanlineRegionsVerticalClipped) override;
 
   void scanVertical(const ScanGrid::Line& line, const int top, std::vector<ScanlineRegion>& regions) const;
 };

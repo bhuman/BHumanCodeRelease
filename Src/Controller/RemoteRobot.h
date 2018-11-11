@@ -44,13 +44,13 @@ public:
   /**
    * The function is called to announce the termination of the process.
    */
-  void announceStop();
+  void announceStop() override;
 
   /**
    * The function must be called to exchange data with SimRobot.
    * It sends the motor commands to SimRobot and acquires new sensor data.
    */
-  void update();
+  void update() override;
 
   /**
    * The function returns the name of the robot.
@@ -72,5 +72,5 @@ private:
   /**
    * The function is called from the framework once in every frame.
    */
-  virtual bool main();
+  bool main() override;
 };

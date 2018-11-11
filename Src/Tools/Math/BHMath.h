@@ -112,7 +112,7 @@ constexpr int sgnNeg(const T& x)
  * @param a The value.
  * @return The square of \c a.
  */
-template<class V>
+template<typename V>
 constexpr V sqr(const V& a) { return a * a; }
 
 /**
@@ -155,4 +155,25 @@ T clip(const T val, const T min, const T max)
     return max;
   else
     return val;
+}
+
+/**
+ * Maps a value to a new range
+ * The input value is clipped the specified input value range
+ * Parts of internal computation are in floating point
+ * @param val The value
+ * @param minInput The lower bound of the original value range
+ * @param maxInput The upper bound of the original value range
+ * @param minOutput The lower bound of the resulting value range
+ * @param maxOutput The upper bound of the resulting value range
+ * @return The clipped value
+ */
+template<typename T>
+T mapToRange(const T val, const T minInput, const T maxInput, const T minOutput, const T maxOutput)
+{
+  const T v = clip(val, minInput, maxInput);
+  const T sizeOfInputRange = maxInput - minInput;
+  const T sizeOfOutputRange = maxOutput - minOutput;
+  const float result = minOutput + (v - minInput) * sizeOfOutputRange / static_cast<float>(sizeOfInputRange);
+  return static_cast<T>(result);
 }

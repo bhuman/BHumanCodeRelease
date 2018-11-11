@@ -14,7 +14,7 @@ MAKE_MODULE(LegMotionCombinator, motionControl)
 void LegMotionCombinator::update(LegJointRequest& jointRequest)
 {
   const JointRequest* jointRequests[MotionRequest::numOfMotions];
-  jointRequests[MotionRequest::walk] = &theWalkLegRequest;
+  jointRequests[MotionRequest::walk] = &theWalkingEngineOutput;
   jointRequests[MotionRequest::kick] = &theKickEngineOutput;
   jointRequests[MotionRequest::specialAction] = &theSpecialActionsOutput;
   jointRequests[MotionRequest::stand] = &theStandLegRequest;
@@ -22,7 +22,27 @@ void LegMotionCombinator::update(LegJointRequest& jointRequest)
   jointRequests[MotionRequest::fall] = &theFallEngineOutput;
 
   MotionUtilities::copy(*jointRequests[theLegMotionSelection.targetMotion], jointRequest, theStiffnessSettings, Joints::firstLegJoint, Joints::rAnkleRoll);
-
+  switch(theLegMotionSelection.targetMotion)
+  {
+    case MotionRequest::walk:
+      ASSERT(jointRequests[MotionRequest::walk]->isValid());
+      break;
+    case MotionRequest::kick:
+      ASSERT(jointRequests[MotionRequest::kick]->isValid());
+      break;
+    case MotionRequest::specialAction:
+      ASSERT(jointRequests[MotionRequest::specialAction]->isValid());
+      break;
+    case MotionRequest::stand:
+      ASSERT(jointRequests[MotionRequest::stand]->isValid());
+      break;
+    case MotionRequest::getUp:
+      ASSERT(jointRequests[MotionRequest::getUp]->isValid());
+      break;
+    case MotionRequest::fall:
+      ASSERT(jointRequests[MotionRequest::fall]->isValid());
+      break;
+  }
   ASSERT(jointRequest.isValid());
 
   if(theLegMotionSelection.ratios[theLegMotionSelection.targetMotion] == 1.f)
@@ -39,6 +59,27 @@ void LegMotionCombinator::update(LegJointRequest& jointRequest)
       {
         MotionUtilities::interpolate(*jointRequests[i], *jointRequests[theLegMotionSelection.targetMotion], theLegMotionSelection.ratios[i],
                                      jointRequest, interpolateStiffness, theStiffnessSettings, lastJointAngles, Joints::firstLegJoint, Joints::rAnkleRoll);
+        switch(i)
+        {
+          case MotionRequest::walk:
+            ASSERT(jointRequests[MotionRequest::walk]->isValid());
+            break;
+          case MotionRequest::kick:
+            ASSERT(jointRequests[MotionRequest::kick]->isValid());
+            break;
+          case MotionRequest::specialAction:
+            ASSERT(jointRequests[MotionRequest::specialAction]->isValid());
+            break;
+          case MotionRequest::stand:
+            ASSERT(jointRequests[MotionRequest::stand]->isValid());
+            break;
+          case MotionRequest::getUp:
+            ASSERT(jointRequests[MotionRequest::getUp]->isValid());
+            break;
+          case MotionRequest::fall:
+            ASSERT(jointRequests[MotionRequest::fall]->isValid());
+            break;
+        }
       }
   }
 

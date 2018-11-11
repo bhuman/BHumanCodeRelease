@@ -32,10 +32,13 @@ public:
   };
 
   ProcessAnnotationInfo* currentProcess = nullptr;
+  unsigned currentFrame = 0;
 
   std::unordered_map<char, ProcessAnnotationInfo> annotationProcesses;
 
   AnnotationInfo();
+
+  void clear();
 
   bool handleMessage(InMessage& message);
 };

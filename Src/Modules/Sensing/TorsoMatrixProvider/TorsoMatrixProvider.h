@@ -41,10 +41,10 @@ private:
   /** Updates the TorsoMatrix representation.
    * @param torsoMatrix The inertia matrix representation which is updated by this module.
    */
-  void update(TorsoMatrix& torsoMatrix);
+  void update(TorsoMatrix& torsoMatrix) override;
 
   /** Updates the OdometryData representation.
    * @param odometryData The odometry data representation which is updated by this module.
    */
-  void update(OdometryData& odometryData);
+  void update(OdometryData& odometryData) override;
 };

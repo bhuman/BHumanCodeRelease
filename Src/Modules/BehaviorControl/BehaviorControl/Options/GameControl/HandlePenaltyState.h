@@ -4,7 +4,7 @@
 option(HandlePenaltyState)
 {
   /** By default, the robot is not penalized and plays soccer according to the current game state.
-  The chestbutton has to be pushed AND released to manually penalize a robot */
+     The chestbutton has to be pushed AND released to manually penalize a robot */
   initial_state(notPenalized)
   {
     transition
@@ -29,8 +29,8 @@ option(HandlePenaltyState)
     action
     {
       PlaySound("penalized.wav");
-      theHeadControlMode = HeadControl::lookForward;
       SpecialAction(SpecialActionRequest::standHigh);
+      HeadControlMode(HeadControl::lookForward);
     }
   }
 
@@ -46,7 +46,7 @@ option(HandlePenaltyState)
     action
     {
       PlaySound("notPenalized.wav");
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       Stand();
     }
   }

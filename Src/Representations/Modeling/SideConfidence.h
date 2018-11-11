@@ -19,7 +19,7 @@
 /**
  * @struct SideConfidence
  */
-STREAMABLE(SideConfidence, COMMA public BHumanMessageParticle<idSideConfidence>
+STREAMABLE(SideConfidence, COMMA public PureBHumanArbitraryMessageParticle<idSideConfidence>
 {
   ENUM(ConfidenceState,
   {,
@@ -28,11 +28,6 @@ STREAMABLE(SideConfidence, COMMA public BHumanMessageParticle<idSideConfidence>
     UNSURE,
     CONFUSED,
   }); /**< Discrete states of confidence, mapped by provider */
-
-  /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override;
-  bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
 
   void verify() const;
   /** Draw representation. */
@@ -43,30 +38,6 @@ STREAMABLE(SideConfidence, COMMA public BHumanMessageParticle<idSideConfidence>
   (ConfidenceState)(CONFIDENT) confidenceState,  /**< The state of confidence */
   (std::vector<int>) agreeMates,                 /** The robot numbers of the robots the agree with me regarding the side */
 });
-
-inline void SideConfidence::operator >> (BHumanMessage& m) const
-{
-  m.theBSPLStandardMessage.currentSideConfidence = static_cast<int8_t>(sideConfidence * 100);
-
-  m.theBHumanArbitraryMessage.queue.out.bin << *this;
-  m.theBHumanArbitraryMessage.queue.out.finishMessage(id());
-}
-
-inline void SideConfidence::operator << (const BHumanMessage& m)
-{
-  sideConfidence = static_cast<float>(m.theBSPLStandardMessage.currentSideConfidence) / 100.f;
-  mirror = false;
-  confidenceState = CONFIDENT;
-  agreeMates.clear();
-}
-
-inline bool SideConfidence::handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp)
-{
-  ASSERT(m.getMessageID() == id());
-  m.bin >> *this;
-
-  return true;
-}
 
 inline void SideConfidence::verify() const
 {

@@ -18,19 +18,20 @@ class DownloadLogsCmd : public RobotCommand
   {
   public:
     DownloadLogsTask(Context& context, Robot* robot);
-    bool execute();
+    bool execute() override;
     QString getCommand();
   };
 
 public:
   DownloadLogsCmd();
-  virtual std::string getName() const;
-  virtual std::string getDescription() const;
-  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
-  virtual Task* perRobotExecution(Context& context, Robot& robot);
-  virtual bool postExecution(Context& context, const std::vector<std::string>& params);
+  std::string getName() const override;
+  std::string getDescription() const override;
+  bool preExecution(Context& context, const std::vector<std::string>& params) override;
+  Task* perRobotExecution(Context& context, Robot& robot) override;
+  bool postExecution(Context& context, const std::vector<std::string>& params) override;
 
   QString getCommand();
+
 public:
   static DownloadLogsCmd theDownloadLogsCmd;
 };

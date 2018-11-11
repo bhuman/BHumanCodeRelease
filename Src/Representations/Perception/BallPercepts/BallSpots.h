@@ -1,6 +1,6 @@
 /**
  * @file BallSpots.h
- * Declaration of a struct that represents a spot that might be an indication of a ball.
+ * Declaration of a struct that represents spots that might be an indication of a ball.
  * @author <a href="mailto:jworch@informatik.uni-bremen.de">Jan-Hendrik Worch</a>
  * @author <a href="mailto:ingsie@informatik.uni-bremen.de">Ingo Sieverdingbeck</a>
  *
@@ -12,7 +12,7 @@
 
 /**
  * @struct BallSpots
- * A struct that represents a spot that might be an indication of a ball.
+ * A struct that represents spots that might be an indication of a ball.
  */
 STREAMABLE(BallSpots,
 {
@@ -27,17 +27,8 @@ STREAMABLE(BallSpots,
   }
 
   /** The method draws all ball spots. */
-  void draw() const
-  {
-    DEBUG_DRAWING("representation:BallSpots:image", "drawingOnImage") // Draws the ballspots to the image
-    {
-      for(const Vector2i& ballSpot : ballSpots)
-      {
-        CROSS("representation:BallSpots:image", ballSpot.x(), ballSpot.y(), 2, 3, Drawings::solidPen, ColorRGBA::orange);
-        CROSS("representation:BallSpots:image", ballSpot.x(), ballSpot.y(), 2, 0, Drawings::solidPen, ColorRGBA::black);
-      }
-    }
-  },
+  void draw() const,
 
   (std::vector<Vector2i>) ballSpots,
+  (bool) firstSpotIsPredicted, /**< true if the first ball spot is derived from the ball model */
 });

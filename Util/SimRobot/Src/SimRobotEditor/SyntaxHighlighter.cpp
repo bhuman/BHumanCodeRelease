@@ -11,105 +11,58 @@
 SyntaxHighlighter::SyntaxHighlighter(QTextDocument* parent) :
   QSyntaxHighlighter(parent)
 {
-  HighlightingRule rule;
-
-  //Taken from W3C: <http://www.w3.org/TR/REC-xml/#sec-suggested-names>
-  //These are removed: \\x10000-\\xEFFFF (we can't fit them into the \xhhhh format).
-  const QString nameStartCharList =
-      ":A-Z_a-z\\x00C0-\\x00D6\\x00D8-\\x00F6\\x00F8-\\x02FF\\x0370-\\x037D\\x037F-\\x1FFF\\x200C-\\x200D\\x2070-\\x218F\\x2C00-\\x2FEF\\x3001-\\xD7FF\\xF900-\\xFDCF\\xFDF0-\\xFFFD";
-
-  const QString nameCharList = nameStartCharList + "\\-\\.0-9\\x00B7\\x0300-\\x036F\\x203F-\\x2040";
+  const QString nameStartCharList = ":A-Z_a-z";
+  const QString nameCharList = nameStartCharList + "\\-\\.0-9";
   const QString nameStart = "[" + nameStartCharList + "]";
   const QString nameChar = "[" + nameCharList + "]";
   const QString xmlName = nameStart + "(" + nameChar + ")*";
 
-  //Processing instructions.
-  xmlProcInstStartExpression = QRegExp("<\\?");
-  xmlProcInstEndExpression = QRegExp("\\?>");
-  xmlProcInstFormat.setForeground(Qt::red);
-  xmlProcInstFormat.setFontItalic(false);
-
   //Multiline comments.
-  xmlCommentStartExpression = QRegExp("<!\\-\\-");
-  xmlCommentStartExpression.setMinimal(true);
-  xmlCommentEndExpression = QRegExp("\\-\\->");
-  xmlCommentEndExpression.setMinimal(true);
+  xmlCommentStartExpression = QRegularExpression("<!\\-\\-");
+  xmlCommentStartExpression.optimize();
+  xmlCommentEndExpression = QRegularExpression("\\-\\->");
+  xmlCommentEndExpression.optimize();
   xmlCommentFormat.setForeground(Qt::darkGreen);
   xmlCommentFormat.setFontItalic(false);
 
   //Opening tags
-  xmlOpenTagStartExpression = QRegExp("<" + xmlName);
-  xmlOpenTagStartExpression.setMinimal(false);
-  xmlOpenTagEndExpression = QRegExp(">");
-  xmlOpenTagEndExpression.setMinimal(true);
+  xmlOpenTagStartExpression = QRegularExpression("<" + xmlName);
+  xmlOpenTagStartExpression.optimize();
+  xmlOpenTagEndExpression = QRegularExpression(">");
+  xmlOpenTagEndExpression.optimize();
 
   //Closing tags: first shot, handling them as start-end pairs.
-  xmlCloseTagStartExpression = QRegExp("</" + xmlName);
-  xmlCloseTagStartExpression.setMinimal(false);
-  xmlCloseTagEndExpression = QRegExp(">");
-  xmlCloseTagEndExpression.setMinimal(true);
+  xmlCloseTagStartExpression = QRegularExpression("</" + xmlName);
+  xmlCloseTagStartExpression.optimize();
+  xmlCloseTagEndExpression = QRegularExpression(">");
+  xmlCloseTagEndExpression.optimize();
 
   xmlTagFormat.setForeground(Qt::darkBlue);
   xmlTagFormat.setFontItalic(false);
 
   //Attributes
-  xmlAttributeStartExpression = QRegExp("\\s*" + xmlName + "\\s*=\\s*((\\x0022)|(\\x0027))");
-  xmlAttributeStartExpression.setMinimal(true);
-  xmlAttributeEndExpression = QRegExp("(([^\\x0022]*\\x0022)|([^\\x0027]*\\x0027))");
-  xmlAttributeStartExpression.setMinimal(true);
+  xmlAttributeStartExpression = QRegularExpression("\\s*" + xmlName + "\\s*=\\s*\\\"");
+  xmlAttributeStartExpression.optimize();
+  xmlAttributeEndExpression = QRegularExpression("(?<!\\\\)(?:(\\\\\\\\)*)(\")");
+  xmlAttributeEndExpression.optimize();
+
   xmlAttributeFormat.setForeground(Qt::darkMagenta);
   xmlAttributeFormat.setFontItalic(false);
 
-  //Attribute values.
-  xmlAttValStartExpression = QRegExp("((\\x0022[^\\x0022]*)|(\\x0027[^\\x0027]*))");
-  xmlAttValStartExpression.setMinimal(true);
-
-  //The end expression varies depending on what's matched with the start expression (single or double quote).
-  //This regexp is actually reset repeatedly during the highlighting process.
   xmlAttValFormat.setForeground(QColor(139, 69, 19));
   xmlAttValFormat.setFontItalic(false);
-
-  //The DOCTYPE declaration.
-  xmlDoctypeStartExpression = QRegExp("<!DOCTYPE");
-  xmlDoctypeEndExpression = QRegExp(">");
-  xmlDoctypeFormat.setForeground(Qt::darkCyan);
-  xmlDoctypeFormat.setFontItalic(false);
-
-  //Next, XML entities. This is the first item we can assume not to be multiline,
-  //So this can be added to the rules. We add this to the second set of rules so
-  //that it can highlight inside attribute values.
-  xmlEntityFormat.setForeground(Qt::darkGray);
-  xmlEntityFormat.setFontItalic(true);
-  rule.pattern = QRegExp("&" + xmlName + ";");
-  rule.format = xmlEntityFormat;
-  hlRules.append(rule);
 }
 
-void SyntaxHighlighter::highlightBlock(const QString &text)
+void SyntaxHighlighter::highlightBlock(const QString& text)
 {
   //Do the main block highlighting.
   highlightSubBlock(text, 0, previousBlockState());
-
-  //Run the set of inline rules.
-  foreach (const HighlightingRule &rule, hlRules)
-    {
-      QRegExp expression(rule.pattern);
-      int index = expression.indexIn(text);
-      while(index >= 0)
-      {
-        int length = expression.matchedLength();
-        setFormat(index, length, rule.format);
-        index = expression.indexIn(text, index + length);
-      }
-    }
 }
 
-void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIndex, const int currState)
+void SyntaxHighlighter::highlightSubBlock(const QString& text, const int startIndex, const int currState)
 {
   if(startIndex >= text.length())
     return;
-  int offset, commentOffset, procInstOffset, doctypeOffset, openTagOffset, closeTagOffset;
-  int matchedLength = 0;
   int lowest = -1;
   int newState = -1;
 
@@ -120,40 +73,23 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
   {
     case (inNothing):
     {
-      //If we're not in anything, then what could be coming is either a comment, processing instruction, a doctype decl, or a tag (open or close).
-      commentOffset = xmlCommentStartExpression.indexIn(text, startIndex);
-      procInstOffset = xmlProcInstStartExpression.indexIn(text, startIndex);
-      doctypeOffset = xmlDoctypeStartExpression.indexIn(text, startIndex);
-      openTagOffset = xmlOpenTagStartExpression.indexIn(text, startIndex);
-      closeTagOffset = xmlCloseTagStartExpression.indexIn(text, startIndex);
-      if(commentOffset > lowest)
+      //If we're not in anything, then what could be coming is either a comment or a tag (open or close).
+      QRegularExpressionMatch commentMatch = xmlCommentStartExpression.match(text, startIndex);
+      QRegularExpressionMatch openTagMatch = xmlOpenTagStartExpression.match(text, startIndex);
+      QRegularExpressionMatch closeTagMatch = xmlCloseTagStartExpression.match(text, startIndex);
+      if(commentMatch.hasMatch())
       {
-        lowest = commentOffset;
+        lowest = commentMatch.capturedStart();
         newState = inComment;
-        matchedLength = xmlCommentStartExpression.matchedLength();
       }
-      if((procInstOffset > -1) && ((lowest == -1) || (procInstOffset < lowest)))
+      if(openTagMatch.hasMatch() && ((lowest == -1) || (openTagMatch.capturedStart() < lowest)))
       {
-        lowest = procInstOffset;
-        newState = inProcInst;
-        matchedLength = xmlProcInstStartExpression.matchedLength();
-      }
-      if((doctypeOffset > -1) && ((lowest == -1) || (doctypeOffset < lowest)))
-      {
-        lowest = doctypeOffset;
-        newState = inDoctypeDecl;
-        matchedLength = xmlDoctypeStartExpression.matchedLength();
-      }
-      if((openTagOffset > -1) && ((lowest == -1) || (openTagOffset < lowest)))
-      {
-        lowest = openTagOffset;
+        lowest = openTagMatch.capturedStart();
         newState = inOpenTag;
-        matchedLength = xmlOpenTagStartExpression.matchedLength();
       }
-      if((closeTagOffset > -1) && ((lowest == -1) || (closeTagOffset < lowest)))
+      if(closeTagMatch.hasMatch() && ((lowest == -1) || (closeTagMatch.capturedStart() < lowest)))
       {
         newState = inCloseTag;
-        matchedLength = xmlCloseTagStartExpression.matchedLength();
       }
       switch(newState)
       {
@@ -166,91 +102,31 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
         case inComment:
         {
           //We're into a comment.
-          setFormat(commentOffset, matchedLength, xmlCommentFormat);
+          setFormat(commentMatch.capturedStart(), commentMatch.capturedLength(), xmlCommentFormat);
           setCurrentBlockState(inComment);
-          highlightSubBlock(text, commentOffset + matchedLength, inComment);
-          break;
-        }
-        case inProcInst:
-        {
-          //We're into a processing instruction.
-          //Format the matched text
-          setFormat(procInstOffset, matchedLength, xmlProcInstFormat);
-          //Call this function again with a new offset and state.
-          setCurrentBlockState(inProcInst);
-          highlightSubBlock(text, procInstOffset + matchedLength, inProcInst);
-          break;
-        }
-        case inDoctypeDecl:
-        {
-          //We're into a document type declaration.
-          //Format the matched text
-          setFormat(doctypeOffset, matchedLength, xmlDoctypeFormat);
-          //Call this function again with a new offset and state.
-          setCurrentBlockState(inDoctypeDecl);
-          highlightSubBlock(text, doctypeOffset + matchedLength, inDoctypeDecl);
+          highlightSubBlock(text, commentMatch.capturedEnd(), inComment);
           break;
         }
         case inOpenTag:
         {
           //We're into an opening tag.
           //Format the matched text
-          setFormat(openTagOffset, matchedLength, xmlTagFormat);
+          setFormat(openTagMatch.capturedStart(), openTagMatch.capturedLength(), xmlTagFormat);
           //Call this function again with a new offset and state.
           setCurrentBlockState(inOpenTag);
-          highlightSubBlock(text, openTagOffset + matchedLength, inOpenTag);
+          highlightSubBlock(text, openTagMatch.capturedEnd(), inOpenTag);
           break;
         }
         case inCloseTag:
         {
           //We're into a closing tag.
           //Format the matched text
-          setFormat(closeTagOffset, matchedLength, xmlTagFormat);
+          setFormat(closeTagMatch.capturedStart(), closeTagMatch.capturedLength(), xmlTagFormat);
           setCurrentBlockState(inCloseTag);
           //Call this function again with a new offset and state.
-          highlightSubBlock(text, closeTagOffset + matchedLength, inCloseTag);
+          highlightSubBlock(text, closeTagMatch.capturedEnd(), inCloseTag);
           break;
         }
-      }
-      break;
-    }
-    case inProcInst:
-    {
-      //Look for the end of the processing instruction.
-      offset = xmlProcInstEndExpression.indexIn(text, startIndex);
-      matchedLength = xmlProcInstEndExpression.matchedLength();
-      if(offset > -1)
-      {
-        setFormat(startIndex, (offset + matchedLength) - startIndex, xmlProcInstFormat);
-        setCurrentBlockState(inNothing);
-        highlightSubBlock(text, offset + matchedLength, inNothing);
-      }
-      else
-      {
-        //We leave this block still inside the processing instruction,
-        //after formatting the rest of the line.
-        setFormat(startIndex, text.length() - startIndex, xmlProcInstFormat);
-        setCurrentBlockState(inProcInst);
-      }
-      break;
-    }
-    case inDoctypeDecl:
-    {
-      //Look for the end of the doctype declaration.
-      offset = xmlDoctypeEndExpression.indexIn(text, startIndex);
-      matchedLength = xmlDoctypeEndExpression.matchedLength();
-      if(offset > -1)
-      {
-        setFormat(startIndex, (offset + matchedLength) - startIndex, xmlDoctypeFormat);
-        setCurrentBlockState(inNothing);
-        highlightSubBlock(text, offset + matchedLength, inNothing);
-      }
-      else
-      {
-        //We leave this block still inside the doctype declaration,
-        //after formatting the rest of the line.
-        setFormat(startIndex, text.length() - startIndex, xmlDoctypeFormat);
-        setCurrentBlockState(inDoctypeDecl);
       }
       break;
     }
@@ -258,18 +134,16 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
     {
       //If we're in an open tag, we're looking either for the end of the open tag, or for
       //the beginning of an attribute name.
-      int openTagEndOffset = xmlOpenTagEndExpression.indexIn(text, startIndex);
-      int attStartOffset = xmlAttributeStartExpression.indexIn(text, startIndex);
-      if(attStartOffset > -1)
+      QRegularExpressionMatch openTagEndMatch = xmlOpenTagEndExpression.match(text, startIndex);
+      QRegularExpressionMatch attStartMatch = xmlAttributeStartExpression.match(text, startIndex);
+      if(attStartMatch.hasMatch())
       {
-        lowest = attStartOffset;
+        lowest = attStartMatch.capturedStart();
         newState = inAttVal;
-        matchedLength = xmlAttributeStartExpression.matchedLength();
       }
-      if((openTagEndOffset > -1) && ((lowest == -1) || (openTagEndOffset < lowest)))
+      if(openTagEndMatch.hasMatch() && ((lowest == -1) || (openTagEndMatch.capturedStart() < lowest)))
       {
         newState = inNothing;
-        matchedLength = xmlOpenTagEndExpression.matchedLength();
       }
       switch(newState)
       {
@@ -282,28 +156,17 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
         case inNothing:
         {
           //We've come to the end of the open tag.
-          setFormat(openTagEndOffset, matchedLength, xmlTagFormat);
+          setFormat(openTagEndMatch.capturedStart(), openTagEndMatch.capturedLength(), xmlTagFormat);
           setCurrentBlockState(inNothing);
-          highlightSubBlock(text, openTagEndOffset + matchedLength, inNothing);
+          highlightSubBlock(text, openTagEndMatch.capturedEnd(), inNothing);
           break;
         }
         case inAttVal:
         {
           //We've started an attribute. First format the attribute name and quote.
-          setFormat(attStartOffset, matchedLength, xmlAttributeFormat);
-          //We need to change the value of the attribute close matcher, so that
-          //it pairs correctly with the opening quote.
-          QChar quote = text.at(attStartOffset + matchedLength - 1);
-          if(quote.unicode() == 0x27)
-          {
-            xmlAttributeEndExpression = QRegExp("\\x0027");
-          }
-          else
-          {
-            xmlAttributeEndExpression = QRegExp("\\x0022");
-          }
+          setFormat(attStartMatch.capturedStart(), attStartMatch.capturedEnd(), xmlAttributeFormat);
           setCurrentBlockState(inAttVal);
-          highlightSubBlock(text, attStartOffset + matchedLength, inAttVal);
+          highlightSubBlock(text, attStartMatch.capturedEnd(), inAttVal);
           break;
         }
       }
@@ -312,15 +175,15 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
     case inAttVal:
     {
       //When we're in an attribute value, we're only looking for the closing quote.
-      offset = xmlAttributeEndExpression.indexIn(text, startIndex);
-      if(offset > -1)
+      QRegularExpressionMatch match = xmlAttributeEndExpression.match(text, startIndex);
+      if(match.hasMatch())
       {
         //Do some highlighting. First the attribute value.
-        setFormat(startIndex, offset - startIndex, xmlAttValFormat);
+        setFormat(startIndex, match.capturedStart(2) - startIndex, xmlAttValFormat);
         //Now the closing quote.
-        setFormat(offset, 1, xmlAttributeFormat);
+        setFormat(match.capturedStart(2), match.capturedLength(2), xmlAttributeFormat);
         setCurrentBlockState(inOpenTag);
-        highlightSubBlock(text, offset + 1, inOpenTag);
+        highlightSubBlock(text, match.capturedEnd(2), inOpenTag);
       }
       else
       {
@@ -332,14 +195,13 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
     }
     case inCloseTag:
     {
-      int closeTagEndOffset = xmlCloseTagEndExpression.indexIn(text, startIndex);
-      matchedLength = xmlCloseTagEndExpression.matchedLength();
-      if(closeTagEndOffset > -1)
+      QRegularExpressionMatch match = xmlCloseTagEndExpression.match(text, startIndex);
+      if(match.hasMatch())
       {
         //We've found the end of the close tag.
-        setFormat(closeTagEndOffset, matchedLength, xmlTagFormat);
+        setFormat(match.capturedStart(), match.capturedLength(), xmlTagFormat);
         setCurrentBlockState(inNothing);
-        highlightSubBlock(text, closeTagEndOffset + matchedLength, inNothing);
+        highlightSubBlock(text, match.capturedEnd(), inNothing);
       }
       else
       {
@@ -352,13 +214,12 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
     {
       //Once we're in a comment, we just have to search for the end of it. Nothing else takes precedence.
       //Look for the end of the comment.
-      offset = xmlCommentEndExpression.indexIn(text, startIndex);
-      matchedLength = xmlCommentEndExpression.matchedLength();
-      if(offset > -1)
+      QRegularExpressionMatch match = xmlCommentEndExpression.match(text, startIndex);
+      if(match.hasMatch())
       {
-        setFormat(startIndex, (offset + matchedLength) - startIndex, xmlCommentFormat);
+        setFormat(startIndex, match.capturedEnd() - startIndex, xmlCommentFormat);
         setCurrentBlockState(inNothing);
-        highlightSubBlock(text, offset + matchedLength, inNothing);
+        highlightSubBlock(text, match.capturedEnd(), inNothing);
       }
       else
       {
@@ -370,115 +231,4 @@ void SyntaxHighlighter::highlightSubBlock(const QString &text, const int startIn
       break;
     }
   }
-}
-
-void SyntaxHighlighter::setCharFormat(const int whichFormat, const QTextCharFormat &newFormat)
-{
-  QTextCharFormat *targFormat;
-  switch(whichFormat)
-  {
-    case xmlDefault:
-    {
-      targFormat = &xmlDefaultFormat;
-      break;
-    }
-    case xmlProcInst:
-    {
-      targFormat = &xmlProcInstFormat;
-      break;
-    }
-    case xmlDoctype:
-    {
-      targFormat = &xmlDoctypeFormat;
-      break;
-    }
-    case xmlComment:
-    {
-      targFormat = &xmlCommentFormat;
-      break;
-    }
-    case xmlTag:
-    {
-      targFormat = &xmlTagFormat;
-      break;
-    }
-    case xmlEntity:
-    {
-      targFormat = &xmlEntityFormat;
-      break;
-    }
-    case xmlAttribute:
-    {
-      targFormat = &xmlAttributeFormat;
-      break;
-    }
-    case xmlAttVal:
-    {
-      targFormat = &xmlAttValFormat;
-      break;
-    }
-    default:
-    {
-      return;
-    }
-  }
-
-  targFormat->setForeground(newFormat.foreground());
-  rehighlight();
-}
-
-bool SyntaxHighlighter::getCharFormat(const int whichFormat, QTextCharFormat &targFormat)
-{
-  QTextCharFormat *srcFormat;
-  switch(whichFormat)
-  {
-    case xmlDefault:
-    {
-      srcFormat = &xmlDefaultFormat;
-      break;
-    }
-    case xmlProcInst:
-    {
-      srcFormat = &xmlProcInstFormat;
-      break;
-    }
-    case xmlDoctype:
-    {
-      srcFormat = &xmlDoctypeFormat;
-      break;
-    }
-    case xmlComment:
-    {
-      srcFormat = &xmlCommentFormat;
-      break;
-    }
-    case xmlTag:
-    {
-      srcFormat = &xmlTagFormat;
-      break;
-    }
-    case xmlEntity:
-    {
-      srcFormat = &xmlEntityFormat;
-      break;
-    }
-    case xmlAttribute:
-    {
-      srcFormat = &xmlAttributeFormat;
-      break;
-    }
-    case xmlAttVal:
-    {
-      srcFormat = &xmlAttValFormat;
-      break;
-    }
-    default:
-    {
-      return false;
-    }
-  }
-
-  targFormat.setForeground(srcFormat->foreground());
-
-  return true;
 }

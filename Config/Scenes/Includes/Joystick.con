@@ -5,7 +5,6 @@
 # buttons 1+3: turn left/right
 # right stick: tilt/pan head
 # buttons 5+6: in-walk forward kick with left/right foot
-# buttons 7+8: in-walk sideward kick with left/right foot
 # buttons 9+10 -> forward kick with left/right foot
 
 js 6 -0.8 0.01 -0.32 # head tilt axis
@@ -33,20 +32,13 @@ jc press 2 jc motion 2 set representation:MotionRequest motion = specialAction; 
 jc release 2 jc press 2 jc motion 2 set representation:MotionRequest motion = specialAction; specialActionRequest = { specialAction = sitDown; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = false;
 
 # kick left
-jc press 9 set representation:MotionRequest motion = kick; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = kickForwardFast; mirror = true; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
+jc press 9 set representation:MotionRequest motion = kick; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = kickForward; mirror = true; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
 
 # kick right
-jc press 10 set representation:MotionRequest motion = kick; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = kickForwardFast; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
+jc press 10 set representation:MotionRequest motion = kick; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = kickForward; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
 
 # walk kick left
 jc press 5 set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = forward; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
 
 # walk kick right
 jc press 6 set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = forward; kickLeg = right; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
-
-
-# side kick left
-jc press 7 set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = sidewardsInner; kickLeg = right; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };
-
-# side kick right
-jc press 8 set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = sidewardsInner; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; };

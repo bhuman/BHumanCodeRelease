@@ -79,7 +79,7 @@ bool FieldCoverageProvider::isViewBlocked(const Angle angle, const float sqrDist
     if(o.sqrDistance < sqrDistance && o.angleLeft > angle && angle > o.angleRight)
       return true;
   }
-  return false;
+  return (angle.diffAbs(0) > shoulderRange && sqrDistance < squaredBallVisibilityMin);
 }
 
 void FieldCoverageProvider::init(FieldCoverage& fieldCoverage)

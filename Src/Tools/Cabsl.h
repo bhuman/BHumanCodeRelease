@@ -51,7 +51,9 @@
 #include "Tools/Math/Eigen.h" // Not used, but avoids naming conflicts
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Platform/BHAssert.h"
+#include "Tools/FunctionList.h"
 #include "Tools/Streams/OutStreams.h"
+#include "Tools/Streams/TypeRegistry.h"
 #include <unordered_map>
 #include <vector>
 
@@ -128,7 +130,8 @@ protected:
       context.addedToGraph = false; // not added to graph yet
       context.transitionExecuted = false; // no transition executed yet
       context.hasCommonTransition = false; // until one is found, it is assumed that there is no common transition
-      ++instance->depth; // increase depth counter for activation graph
+      if(instance->activationGraph)
+        ++instance->activationGraph->currentDepth; // increase depth counter for activation graph
     }
 
     /**
@@ -137,7 +140,8 @@ protected:
     ~OptionExecution()
     {
       addToActivationGraph(); // add to activation graph if it has not been already
-      --instance->depth; // decrease depth counter for activation graph
+      if(instance->activationGraph)
+        --instance->activationGraph->currentDepth; // decrease depth counter for activation graph
       context.subOptionStateType = instance->stateType; // remember the state type of the last sub option called
       instance->stateType = context.stateType; // publish the state type of this option, so the caller can grab it
       context.lastFrame = instance->_currentFrameTime; // Remember that this option was called in this frame
@@ -166,11 +170,9 @@ protected:
      */
     void addParameter(const Streamable& value) const
     {
-      char buf[10000];
-      OutMapMemory stream(buf, true);
+      OutMapMemory stream(true, 1024);
       stream << value;
-      buf[stream.getLength() - 2] = 0;
-      parameters.emplace_back(buf);
+      parameters.emplace_back(stream.data());
     }
 
     /**
@@ -181,7 +183,7 @@ protected:
     {
       if(!context.addedToGraph && instance->activationGraph)
       {
-        instance->activationGraph->graph.emplace_back(optionName, instance->depth,
+        instance->activationGraph->graph.emplace_back(optionName, instance->activationGraph->currentDepth,
                                                       context.stateName,
                                                       instance->_currentFrameTime - context.optionStart,
                                                       instance->_currentFrameTime - context.stateStart,
@@ -220,18 +222,11 @@ public:
   class OptionInfos
   {
   private:
-    static std::vector<OptionDescriptor*>* optionsByIndex; /**< All parameterless options in the sequence they were declared. */
-    static std::unordered_map<std::string, OptionDescriptor*>* optionsByName; /**< All parameterless options, indexed by their names. */
+    static std::vector<const OptionDescriptor*>* optionsByIndex; /**< All parameterless options in the sequence they were declared. */
+    static std::unordered_map<std::string, const OptionDescriptor*>* optionsByName; /**< All parameterless options, indexed by their names. */
 
   public:
     enum Option : unsigned char {none}; /**< A dummy enum for all options. */
-
-    /** The constructor prepares the collection of information if this has not been done yet. */
-    OptionInfos()
-    {
-      if(!optionsByIndex)
-        init();
-    }
 
     /** The destructor frees the global object. */
     ~OptionInfos()
@@ -250,12 +245,14 @@ public:
     {
       ASSERT(!optionsByIndex);
       ASSERT(!optionsByName);
-      optionsByIndex = new std::vector<OptionDescriptor*>;
+      optionsByIndex = new std::vector<const OptionDescriptor*>;
       optionsByIndex->reserve(maxNumOfOptions);
-      optionsByName = new std::unordered_map<std::string, OptionDescriptor*>;
-      static OptionDescriptor o("none", false, 0, 0);
-      optionsByIndex->push_back(&o);
-      (*optionsByName)[o.name] = optionsByIndex->back();
+      optionsByName = new std::unordered_map<std::string, const OptionDescriptor*>;
+      static OptionDescriptor descriptor("none", false, 0, 0);
+      optionsByIndex->push_back(&descriptor);
+      (*optionsByName)[descriptor.name] = optionsByIndex->back();
+      TypeRegistry::addEnum(typeid(Option).name());
+      TypeRegistry::addEnumConstant(typeid(Option).name(), "none");
     }
 
     /**
@@ -266,35 +263,22 @@ public:
      * cannot be called externally.
      * @param descriptor A function that can return the description of an option.
      */
-    static void add(OptionDescriptor*(*descriptor)())
+    static void add(OptionDescriptor& descriptor)
     {
       if(!optionsByIndex)
         init();
 
       ASSERT(optionsByIndex);
       ASSERT(optionsByName);
-      OptionDescriptor* o = descriptor();
-      if(!o->hasParameters) // ignore options with parameters for now
+      if(!descriptor.hasParameters // ignore options with parameters for now
+         && TypeRegistry::getEnumValue(typeid(Option).name(), descriptor.name) < 0) // only register once
       {
-        o->index = static_cast<int>(optionsByIndex->size());
-        optionsByIndex->push_back(o);
-        (*optionsByName)[o->name] = optionsByIndex->back();
+        descriptor.index = static_cast<int>(optionsByIndex->size());
+        optionsByIndex->push_back(&descriptor);
+        (*optionsByName)[descriptor.name] = optionsByIndex->back();
+        TypeRegistry::addEnumConstant(typeid(Option).name(), descriptor.name);
       }
       ASSERT(optionsByIndex->size() <= maxNumOfOptions);
-    }
-
-    /**
-     * The method returns the name of an option.
-     * It is required to make the option enum streamable.
-     * @param option The index of the option.
-     * @return The name of the option.
-     */
-    static const char* getName(Option option)
-    {
-      if(static_cast<unsigned>(option) >= optionsByIndex->size())
-        return nullptr;
-      else
-        return (*optionsByIndex)[option]->name;
     }
 
     /**
@@ -320,6 +304,9 @@ public:
      */
     static void execute(CabslBehavior* behavior, Option option)
     {
+      if(!optionsByIndex)
+        init();
+
       if(option != none && option < static_cast<int>(optionsByIndex->size()))
       {
         const OptionDescriptor& descriptor = *(*optionsByIndex)[option];
@@ -353,7 +340,6 @@ private:
   static OptionInfos collectOptions; /**< This global instantiation collects data about all options. */
   typename OptionContext::StateType stateType; /**< The state type of the last option called. */
   unsigned lastFrameTime; /**< The time stamp of the last time the behavior was executed. */
-  unsigned char depth; /**< The depth level of the current option. Used for activation graph. */
   ActivationGraph* activationGraph; /**< The activation graph for debug output. Can be zero if not set. */
 
 protected:
@@ -368,7 +354,6 @@ protected:
   Cabsl(ActivationGraph* activationGraph = nullptr) :
     stateType(OptionContext::normalState),
     lastFrameTime(0),
-    depth(0),
     activationGraph(activationGraph),
     _currentFrameTime(0)
   {
@@ -379,12 +364,16 @@ public:
   /**
    * Must be call at the beginning of each behavior execution cycle.
    * @param frameTime The current time in ms.
+   * @param clearActivationGraph Whether the activation graph should be cleared.
    */
-  void beginFrame(unsigned frameTime)
+  void beginFrame(unsigned frameTime, bool clearActivationGraph = true)
   {
     _currentFrameTime = frameTime;
-    if(activationGraph)
+    if(activationGraph && clearActivationGraph)
+    {
+      activationGraph->currentDepth = 0;
       activationGraph->graph.clear();
+    }
     _theInstance = this;
   }
 
@@ -404,13 +393,18 @@ public:
     _theInstance = nullptr;
     lastFrameTime = _currentFrameTime;
   }
+
+  /** Enforces that all options will be reset to their initial states in their next execution. */
+  void reset()
+  {
+    lastFrameTime = 0;
+  }
 };
 
 template<typename CabslBehavior> thread_local Cabsl<CabslBehavior>* Cabsl<CabslBehavior>::_theInstance;
-template<typename CabslBehavior> std::vector<typename Cabsl<CabslBehavior>::OptionDescriptor*>* Cabsl<CabslBehavior>::OptionInfos::optionsByIndex;
-template<typename CabslBehavior> std::unordered_map<std::string, typename Cabsl<CabslBehavior>::OptionDescriptor*>* Cabsl<CabslBehavior>::OptionInfos::optionsByName;
+template<typename CabslBehavior> std::vector<const typename Cabsl<CabslBehavior>::OptionDescriptor*>* Cabsl<CabslBehavior>::OptionInfos::optionsByIndex;
+template<typename CabslBehavior> std::unordered_map<std::string, const typename Cabsl<CabslBehavior>::OptionDescriptor*>* Cabsl<CabslBehavior>::OptionInfos::optionsByName;
 template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabsl<CabslBehavior>::collectOptions;
-template<typename CabslBehavior> template<void*(descriptor)()> typename Cabsl<CabslBehavior>::template OptionInfo<descriptor>::Registrator Cabsl<CabslBehavior>::OptionInfo<descriptor>::registrator;
 
 /**
  * The macro defines a state. It must be followed by a block of code that defines the state's body.
@@ -449,16 +443,16 @@ template<typename CabslBehavior> template<void*(descriptor)()> typename Cabsl<Ca
 #define _CABSL_OPTION_1(name, ...) _CABSL_OPTION_III(_STREAM_TUPLE_SIZE(__VA_ARGS__, ignore), name, __VA_ARGS__, ignore)
 
 /** Generate an attribute declaration without an initialization. */
-#define _CABSL_DECL_WITHOUT_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)_STREAM_DECL_IV seq))>::type) _STREAM_VAR(seq);
+#define _CABSL_DECL_WITHOUT_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq);
 
 /** Generate a parameter declaration with an initialization if avaliable. */
-#define _CABSL_PARAM_WITH_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)_STREAM_DECL_IV seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq),
+#define _CABSL_PARAM_WITH_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq),
 
 /** Generate a parameter declaration without an initialization. */
-#define _CABSL_PARAM_WITHOUT_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)_STREAM_DECL_IV seq))>::type) _STREAM_VAR(seq),
+#define _CABSL_PARAM_WITHOUT_INIT(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq),
 
 /** Generate a parameter declaration without an initialization (without comma). */
-#define _CABSL_PARAM_WITHOUT_INIT2(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq)_STREAM_DECL_IV seq))>::type) _STREAM_VAR(seq)
+#define _CABSL_PARAM_WITHOUT_INIT2(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq)
 
 /** Generate a variable name for the list of actual parameters of a method call. */
 #define _CABSL_VAR(seq) _STREAM_VAR(seq),
@@ -472,10 +466,8 @@ template<typename CabslBehavior> template<void*(descriptor)()> typename Cabsl<Ca
       _CABSL_DECL_WITHOUT_INIT(seq) \
       void serialize(In* in, Out* out) \
       { \
-        STREAM_REGISTER_BEGIN \
         auto _STREAM_VAR(seq) = this->_STREAM_VAR(seq); \
         _STREAM_SER(seq) \
-        STREAM_REGISTER_FINISH \
       } \
       _S(_CABSL_PARAM_WITHOUT_INIT2(seq)) : _STREAM_VAR(seq)(_STREAM_VAR(seq)) {} \
     } _s(_STREAM_VAR(seq)); \
@@ -498,17 +490,18 @@ template<typename CabslBehavior> template<void*(descriptor)()> typename Cabsl<Ca
   } \
   void _##name(_STREAM_ATTR_##n params4 const OptionExecution& _o)
 #define _CABSL_OPTION_V(name, hasParams) \
-  static void* _get##name##Descriptor() \
+  OptionContext _##name##Context; \
+  static void _reg##name##Context() \
   { \
-    static OptionDescriptor o(#name, hasParams, reinterpret_cast<void (CabslBehavior::*)(const OptionExecution&)>(&CabslBehavior::name), \
-                              reinterpret_cast<size_t>(&reinterpret_cast<CabslBehavior*>(16)->_##name##Context) - 16); \
-    return &o; \
-  } \
-  OptionInfo<&CabslBehavior::_get##name##Descriptor> _##name##Context;
+    PUBLISH(_reg##name##Context); \
+    static OptionDescriptor descriptor(#name, hasParams, reinterpret_cast<void (CabslBehavior::*)(const OptionExecution&)>(&CabslBehavior::name), \
+                                       reinterpret_cast<size_t>(&reinterpret_cast<CabslBehavior*>(16)->_##name##Context) - 16); \
+    OptionInfos::add(descriptor); \
+  }
 
 /** If a default value exists, only stream parameters that are different from it. */
 #define _CABSL_STREAM_1(seq)
-#define _CABSL_STREAM_2(seq) if(!(_STREAM_VAR(seq) == _STREAM_INIT_II seq) _STREAM_INIT_I_2_I(seq)))
+#define _CABSL_STREAM_2(seq) if(!(_STREAM_VAR(seq) == _STREAM_INIT_I_2_I(seq)))
 
 /**
  * The macro defines an initial state. It must be followed by a block of code that defines the state's body.
@@ -618,6 +611,7 @@ template<typename CabslBehavior> template<void*(descriptor)()> typename Cabsl<Ca
 #define _CABSL_HAS_PARAMS_I(params) _STREAM_TUPLE_SIZE_II params
 #endif
 #define _CABSL_HAS_PARAMS_II \
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \

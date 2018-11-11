@@ -19,7 +19,7 @@ OwnSideModelProvider::OwnSideModelProvider() :
 
 void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
 {
-  if(theGameInfo.state == STATE_SET && !theGroundContactState.contact)
+  if(theGameInfo.state == STATE_SET && theFallDownState.state == FallDownState::pickedUp)
     manuallyPlaced = true;
 
   if(theCognitionStateChanges.lastPenalty == PENALTY_NONE && theRobotInfo.penalty != PENALTY_NONE)
@@ -31,7 +31,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
   ownSideModel.returnFromGameControllerPenalty = false;
   ownSideModel.returnFromManualPenalty = false;
 
-  if(theGameInfo.secondaryState != STATE2_PENALTYSHOOT)
+  if(theGameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT)
   {
     if(theCognitionStateChanges.lastGameState == STATE_INITIAL && theGameInfo.state != STATE_INITIAL)
     {
@@ -59,7 +59,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
       {
         if(theRole.isGoalkeeper())
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;
-        else if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber)
+        else if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
           largestXPossibleAtKnownPosition = -theFieldDimensions.centerCircleRadius - awayFromLineDistance;
         else
           largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnPenaltyArea + awayFromLineDistance;
@@ -71,7 +71,7 @@ void OwnSideModelProvider::update(OwnSideModel& ownSideModel)
   else if(theCognitionStateChanges.lastGameState == STATE_SET)
   {
     distanceWalkedAtKnownPosition = theOdometer.distanceWalked;
-    if(theGameInfo.kickOffTeam == theOwnTeamInfo.teamNumber)
+    if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
       largestXPossibleAtKnownPosition = theFieldDimensions.xPosPenaltyStrikerStartPosition;
     else
       largestXPossibleAtKnownPosition = theFieldDimensions.xPosOwnGroundline;

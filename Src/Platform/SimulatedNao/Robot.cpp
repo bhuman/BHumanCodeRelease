@@ -9,12 +9,17 @@
 #include <QString>
 #include <QFileInfo>
 
+#include "Controller/ConsoleRoboCupCtrl.h"
 #include "Controller/LocalRobot.h"
 #include "Robot.h"
-#include "Controller/ConsoleRoboCupCtrl.h"
+#include "Tools/Debugging/Debugging.h"
+#include "Tools/FunctionList.h"
+#include "Tools/Streams/TypeRegistry.h"
 
 extern "C" DLL_EXPORT SimRobot::Module* createModule(SimRobot::Application& simRobot)
 {
+  FunctionList::execute();
+  //TypeRegistry::print(); // @todo Remove later
   QFileInfo info(simRobot.getFilePath());
   QString baseName = info.baseName();
   return new ConsoleRoboCupCtrl(simRobot);
@@ -70,7 +75,7 @@ SenderList* Robot::getSender(const std::string& senderName)
     if(sender)
       return sender;
   }
-  TRACE("%s not found", senderName.c_str());
+  OUTPUT_ERROR(senderName.c_str() << " not found");
   return nullptr;
 }
 
@@ -82,6 +87,6 @@ ReceiverList* Robot::getReceiver(const std::string& receiverName)
     if(receiver)
       return receiver;
   }
-  TRACE("%s not found", receiverName.c_str());
+  OUTPUT_ERROR(receiverName.c_str() << " not found");
   return nullptr;
 }

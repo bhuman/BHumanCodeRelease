@@ -9,14 +9,16 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
-#include "Representations/Perception/PlayersPercepts/PlayersImagePercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
+#include "Representations/Modeling/WorldModelPrediction.h"
 
 MODULE(BallSpotsProvider,
 {,
@@ -26,8 +28,11 @@ MODULE(BallSpotsProvider,
   REQUIRES(CameraInfo),
   REQUIRES(FieldDimensions),
   REQUIRES(ECImage),
-  REQUIRES(PlayersImagePercept),
+  REQUIRES(ImageCoordinateSystem),
+  REQUIRES(ObstaclesImagePercept),
   REQUIRES(ColorScanlineRegionsVerticalClipped),
+  REQUIRES(WorldModelPrediction),
+  REQUIRES(FrameInfo),
   PROVIDES(BallSpots),
   LOADS_PARAMETERS(
   {,
@@ -62,7 +67,7 @@ class BallSpotsProvider : public BallSpotsProviderBase
    * The main method of this module.
    * @param ballSpots The percept that is filled by this module.
    */
-  void update(BallSpots& ballSpots);
+  void update(BallSpots& ballSpots) override;
 
   /**
    * The method searches with the help of ColorScanlineRegionsVerticalClipped

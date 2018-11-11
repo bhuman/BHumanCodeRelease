@@ -4,7 +4,7 @@ void MidCornerPerceptor::update(MidCorner& midCorner)
 {
   midCorner.clear();
 
-  if(theGameInfo.secondaryState == STATE2_PENALTYSHOOT)
+  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
   {
     midCorner.isValid = false;
     return;

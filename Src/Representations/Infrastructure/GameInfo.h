@@ -8,7 +8,6 @@
 #pragma once
 
 #include "RoboCupGameControlData.h"
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 struct GameInfo : public RoboCup::RoboCupGameControlData, public Streamable
@@ -20,8 +19,6 @@ private:
 
 public:
   unsigned timeLastPackageReceived = 0;
-
-  bool isMixedTeamCompetition() const { return gameType == GAME_MIXEDTEAM_ROUNDROBIN || gameType == GAME_MIXEDTEAM_PLAYOFF; }
 
   GameInfo();
 
@@ -38,18 +35,13 @@ protected:
    * @param in The stream from which the object is read (if in != 0).
    * @param out The stream to which the object is written (if out != 0).
    */
-  virtual void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };
 
 /** The game info as sent by the GameController */
-STREAMABLE_WITH_BASE(RawGameInfo, GameInfo, COMMA public BHumanMessageParticle<idGameInfo>
-{
-  /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override,
+STREAMABLE_WITH_BASE(RawGameInfo, GameInfo,
+{,
 });
-
-namespace RoboCup
-{
-  void operator<< (RoboCupGameControlData r, const B_HULKs::OwnTeamInfo& bhOti);
-}

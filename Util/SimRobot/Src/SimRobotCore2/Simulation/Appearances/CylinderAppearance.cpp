@@ -8,12 +8,12 @@
 
 #include "Simulation/Appearances/CylinderAppearance.h"
 
-void CylinderAppearance::assembleAppearances() const
+void CylinderAppearance::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
 
-  surface->set();
+  surface->set(color);
 
   GLUquadricObj* q = gluNewQuadric();
   glTranslatef(0.f, 0.f, height * -0.5f);
@@ -28,6 +28,6 @@ void CylinderAppearance::assembleAppearances() const
 
   surface->unset();
 
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
 }

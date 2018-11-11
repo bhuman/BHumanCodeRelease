@@ -221,7 +221,6 @@ void JPEGImage::fromAiboAlignment(const unsigned char* src, unsigned char* dst) 
 
 void JPEGImage::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN;
   STREAM(width);
   STREAM(height);
 
@@ -239,5 +238,14 @@ void JPEGImage::serialize(In* in, Out* out)
   }
   else
     out->write((*this)[0], size);
-  STREAM_REGISTER_FINISH;
+}
+
+void JPEGImage::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(JPEGImage);
+  REG(width);
+  REG(height);
+  REG(timeStamp);
+  REG(size);
 }

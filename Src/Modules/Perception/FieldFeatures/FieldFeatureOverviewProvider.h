@@ -9,7 +9,6 @@
 #include "Tools/Module/Module.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
-#include "Representations/Perception/FieldFeatures/GoalFeature.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
 #include "Representations/Perception/FieldFeatures/MidCorner.h"
@@ -19,20 +18,15 @@
 MODULE(FieldFeatureOverviewProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(GoalFeature),
   REQUIRES(GoalFrame),
   REQUIRES(MidCircle),
   REQUIRES(MidCorner),
   REQUIRES(OuterCorner),
   REQUIRES(PenaltyArea),
-
   PROVIDES(FieldFeatureOverview),
-  DEFINES_PARAMETERS(
-  {,
-  }),
 });
 
 class FieldFeatureOverviewProvider : public FieldFeatureOverviewProviderBase
 {
-  void update(FieldFeatureOverview& fieldFeatureOverview);
+  void update(FieldFeatureOverview& fieldFeatureOverview) override;
 };

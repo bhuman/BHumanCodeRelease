@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "Representations/Configuration/AutoExposureWeightTable.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraSettings.h"
-#include "Representations/Infrastructure/AutoExposureWeightTable.h"
 
 /**
  * @class NaoCamera
@@ -17,20 +17,23 @@
 class NaoCamera
 {
 public:
-  unsigned int timeWaitedForLastImage = 0; /**< The time (in _milliseconds_) passed while waiting for a new image. */
-
   /**
    * Constructor.
    * @param device The name of the camera device (e.g. /dev/video0).
    * @param camera Whether this is the lower or upper camera.
-   * @param width The width of the camera image in pixels. V4L only allows certain values (e.g. 320 or 640)
-   * @param height The height of the camera image in pixels. V4L only allows certain values (e.g. 240 or 320)
-   * @param flip Whether the image should be flipped
+   * @param width The width of the camera image in pixels. V4L only allows certain values (e.g. 320 or 640).
+   * @param height The height of the camera image in pixels. V4L only allows certain values (e.g. 240 or 480).
+   * @param flip Whether the image should be flipped, i.e. rotated by 180°.
+   * @param settings The initial camera settings.
+   * @param autoExposureWeightTable The initial auto exposure weight table. The table contains 5x5 values in
+   *                                the range [0 .. 100] that weight the influence the corresponding area of
+   *                                the image (rows top to bottom, columns left to right) on the auto exposure
+   *                                computation. If the table does only contains zeros, the image will be black.
    */
   NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip,
-            const CameraSettings::CameraSettingsCollection& settings, const AutoExposureWeightTable& autoExposureWeightTable);
+            const CameraSettings::CameraSettingsCollection& settings, const Matrix5uc& autoExposureWeightTable);
 
-  virtual ~NaoCamera();
+  ~NaoCamera();
 
   void changeResolution(int width, int height);
 
@@ -48,7 +51,7 @@ public:
    * @param errorCam1 Whether an error occured on cam1
    * @param errorCam2 Whether an error occured on cam2
    */
-  static bool captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& errorCam1, bool& errorCam2);
+  static bool captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout);
 
   /**
    * Releases an image that has been captured. That way the buffer can be used to capture another image
@@ -65,7 +68,7 @@ public:
    * Whether an image has been captured.
    * @return true if there is one
    */
-  virtual bool hasImage();
+  bool hasImage();
 
   /**
    * Timestamp of the last captured image in µs.
@@ -85,9 +88,9 @@ public:
   void setFrameRate(unsigned numerator = 1, unsigned denominator = 30);
 
   CameraSettings::CameraSettingsCollection getCameraSettingsCollection() const;
-  AutoExposureWeightTable getAutoWhiteBalanceTable() const;
+  Matrix5uc getAutoExposureWeightTable() const;
 
-  void setSettings(const CameraSettings::CameraSettingsCollection& settings, const AutoExposureWeightTable& autoExposureWeightTable);
+  void setSettings(const CameraSettings::CameraSettingsCollection& settings, const Matrix5uc& autoExposureWeightTable);
 
   /**
    * Unconditional write of the camera settings

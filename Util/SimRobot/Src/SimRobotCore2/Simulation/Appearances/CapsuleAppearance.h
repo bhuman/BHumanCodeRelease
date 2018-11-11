@@ -20,5 +20,5 @@ public:
 
 private:
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (in order to create a display list) */
-  virtual void assembleAppearances() const;
+  void assembleAppearances(SurfaceColor color) const override;
 };

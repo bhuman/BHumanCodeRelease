@@ -4,25 +4,25 @@
 
 #pragma once
 
-#include "Image.h"
-#include "Tools/Streams/Streamable.h"
+#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
 
 struct ImagePatch : public Streamable
 {
 public:
   bool isReference;
-  Image::Pixel* start;
+  PixelTypes::YUYVPixel* start;
   Vector2s offset;
   unsigned short width;
   unsigned short height;
   unsigned short widthStep;
-  bool isFullsize;
 
-  ImagePatch() : isReference(false), start(nullptr), offset((short)0, (short)0), width(0), height(0), widthStep(0), isFullsize(false) {}
-  ImagePatch(const Image& image, const Vector2s& offset, const unsigned short width, const unsigned short height) : isReference(true), start(const_cast<Image::Pixel*>(&image[offset])), offset(offset), width(width), height(height * (image.isFullSize ? 2 : 1)), widthStep(static_cast<const unsigned short>(image.isFullSize ? image.width : image.widthStep)), isFullsize(image.isFullSize)
+  ImagePatch() : isReference(false), start(nullptr), offset((short)0, (short)0), width(0), height(0), widthStep(0) {}
+  ImagePatch(const TImage<PixelTypes::YUYVPixel>& image, const Vector2s& offset, const unsigned short width, const unsigned short height) : isReference(true), start(const_cast<PixelTypes::YUYVPixel*>(&image[offset])), offset(offset), width(width), height(height), widthStep(static_cast<const unsigned short>(image.width))
   {
-    ASSERT(offset.x() >= 0 && offset.x() + width <= image.width);
-    ASSERT(offset.y() >= 0 && offset.y() + height <= image.height);
+    ASSERT(offset.x() >= 0 && offset.x() + width <= static_cast<int>(image.width));
+    ASSERT(offset.y() >= 0 && offset.y() + height <= static_cast<int>(image.height));
   }
   ~ImagePatch()
   {
@@ -32,22 +32,25 @@ public:
     }
   }
 
-  inline const Image::Pixel* operator[](const size_t y) const
+  inline const PixelTypes::YUYVPixel* operator[](const size_t y) const
   {
     return start + (y * widthStep);
   }
 
 protected:
-  virtual void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };
 
 STREAMABLE(ImagePatches,
 {
 private:
-  mutable Image debugImage;
+  mutable TImage<PixelTypes::YUYVPixel> debugImage;
 public:
-  void toImage(Image& dest) const;
-  void toImage(Image& dest, unsigned color) const;
+  void toImage(TImage<PixelTypes::YUYVPixel>& dest) const;
+  void toImage(TImage<PixelTypes::YUYVPixel>& dest, PixelTypes::YUYVPixel color) const;
   void draw() const,
 
   (unsigned short) imageWidth,

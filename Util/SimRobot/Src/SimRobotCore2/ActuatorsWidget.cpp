@@ -8,7 +8,7 @@
 #include <QSlider>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QResizeEvent>
 #include <QScrollArea>
@@ -16,13 +16,14 @@
 
 #include "Simulation/Simulation.h"
 #include "Simulation/UserInput.h"
+#include "Tools/Math/Constants.h"
 #include "ActuatorsWidget.h"
 #include "CoreModule.h"
 
 static inline float toDeg(float angleInRad)
-{ return (float) (angleInRad * 180.0f / M_PI);}
+{ return angleInRad * 180.0f / pi;}
 static inline float toRad(float angleInDegree)
-{ return (float) (angleInDegree * M_PI / 180.0f);}
+{ return angleInDegree * pi / 180.0f;}
 
 SimRobot::Widget* ActuatorsObject::createWidget()
 {
@@ -40,7 +41,11 @@ public:
   ~FlowLayout();
   void addItem(QLayoutItem *item) {itemList.append(item);}
   int horizontalSpacing() const {return 0;}
+#ifdef MACOS
+  int verticalSpacing() const {return -5;}
+#else
   int verticalSpacing() const {return 0;}
+#endif
   Qt::Orientations expandingDirections() const {return Qt::Horizontal;}
   int count() const {return itemList.size();}
   QLayoutItem* itemAt(int index) const {return itemList.value(index);}
@@ -78,9 +83,8 @@ void FlowLayout::setGeometry(const QRect &rect)
 QSize FlowLayout::minimumSize() const
 {
   QSize size;
-  QLayoutItem* item;
-  foreach(item, itemList)
-    size = size.expandedTo(item->minimumSize());
+  for(QLayoutItem* item : itemList)
+    size += size.expandedTo(item->minimumSize());
 
   return size + QSize(2 * margin(), 2 * margin());
 }
@@ -91,15 +95,14 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
   int y = rect.y();
   int numOfRows = 1;
   int lineWidth = 0;
-  QLayoutItem* item;
-  foreach(item, itemList)
+  for(const QLayoutItem* item : itemList)
   {
     lineWidth = qMax(item->sizeHint().width(), lineWidth);
-    int nextY = y + item->sizeHint().height();
+    int nextY = y + item->sizeHint().height() + verticalSpacing();
     if(nextY > rect.bottom())
     {
       y = rect.y();
-      nextY = y + item->sizeHint().height();
+      nextY = y + item->sizeHint().height() + verticalSpacing();
       ++numOfRows;
     }
 
@@ -112,14 +115,14 @@ int FlowLayout::doLayout(const QRect& rect, bool testOnly) const
   // place items
   int x = rect.x();
   y = rect.y();
-  foreach(item, itemList)
+  for(QLayoutItem* item : itemList)
   {
-    int nextY = y + item->sizeHint().height();
+    int nextY = y + item->sizeHint().height() + verticalSpacing();
     if(nextY > rect.bottom())
     {
       y = rect.y();
       x = x + lineWidth;
-      nextY = y + item->sizeHint().height();
+      nextY = y + item->sizeHint().height() + verticalSpacing();
     }
 
     if(!testOnly)
@@ -139,7 +142,7 @@ ActuatorWidget::ActuatorWidget(SimRobotCore2::ActuatorPort* actuator, QWidget* p
   QLabel* label = new QLabel(nameList[nameList.size() - 2], this);
   slider = new QSlider(Qt::Horizontal, this);
   slider->setMinimumWidth(40);
-  txbValue = new QSpinBox(this);
+  txbValue = new QDoubleSpinBox(this);
   cbxSet = new QCheckBox(tr(""), this);
   btnExit = new QPushButton(tr("x"), this);
 #ifdef MACOS
@@ -165,33 +168,35 @@ ActuatorWidget::ActuatorWidget(SimRobotCore2::ActuatorPort* actuator, QWidget* p
   layout->addWidget(cbxSet);
 
   connect(slider, SIGNAL(valueChanged(int)), this, SLOT(valueChanged(int)));
-  connect(txbValue, SIGNAL(valueChanged(int)), this, SLOT(valueChanged(int)));
+  connect(txbValue, SIGNAL(valueChanged(double)), this, SLOT(valueChanged(double)));
   connect(btnExit, SIGNAL(released()), this, SIGNAL(releasedClose()));
 
   float minVal, maxVal;
+  int factor;
   actuator->getMinAndMax(minVal, maxVal);
 
   if(isAngle)
   {
     minVal = toDeg(minVal);
     maxVal = toDeg(maxVal);
+    factor = 10;
   }
   else
-  {
-    minVal *= 100;
-    maxVal *= 100;
-  }
+    factor = 1000;
 
-  slider->setRange((int)minVal, (int)maxVal);
-  slider->setValue(value);
+  slider->setRange((int)(minVal * factor), (int)(maxVal * factor));
+  slider->setValue((int)(value * factor));
 
-  txbValue->setRange((int)minVal, (int)maxVal);
+  txbValue->setRange(minVal, maxVal);
+  txbValue->setDecimals(isAngle ? 1 : 3);
+  txbValue->setSingleStep(isAngle ? 0.1 : 0.001);
   txbValue->setValue(value);
+  txbValue->setAlignment(Qt::AlignRight);
 
   // restore layout
   QSettings* settings = &CoreModule::application->getLayoutSettings();
   settings->beginGroup(actuatorName);
-  valueChanged(settings->value("Value", int(0)).toInt());
+  valueChanged(settings->value("Value", 0.0).toDouble());
   cbxSet->setChecked(settings->value("Set", true).toBool());
   settings->endGroup();
 }
@@ -211,9 +216,15 @@ ActuatorWidget::~ActuatorWidget()
 
 void ActuatorWidget::valueChanged(int value)
 {
-  txbValue->setValue(value);
-  slider->setValue(value);
-  this->value = value;
+  float factor = isAngle ? 0.1f : 0.001f;
+  txbValue->setValue(value * factor);
+  this->value = (float)value * factor;
+}
+
+void ActuatorWidget::valueChanged(double value)
+{
+  slider->setValue(int(value * (isAngle ? 10 : 1000)));
+  this->value = (float)value;
 }
 
 void ActuatorWidget::adoptActuator()
@@ -223,8 +234,6 @@ void ActuatorWidget::adoptActuator()
     float value = (float) this->value;
     if(isAngle)
       value = toRad(value);
-    else
-      value /= 100.f;
     actuator->setValue(value);
   }
   else
@@ -260,7 +269,7 @@ ActuatorsWidget::ActuatorsWidget()
   settings.beginGroup("Actuators");
   QStringList openedActuators = settings.value("OpenedActuators").toStringList();
   settings.endGroup();
-  foreach(QString actuator, openedActuators)
+  for(const QString& actuator : openedActuators)
     openActuator(actuator);
 
   scrollArea->setWidget(clientArea);
@@ -305,7 +314,7 @@ void ActuatorsWidget::openActuator(const QString& actuatorName)
 
 void ActuatorsWidget::adoptActuators()
 {
-  foreach(ActuatorWidget* widget, actuators)
+  for(ActuatorWidget* widget : actuators)
     widget->adoptActuator();
 }
 

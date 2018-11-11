@@ -151,7 +151,7 @@ bool SubpixelMaximizer::cholesky(const float A[3][3], float L[3][3])
   if(sum > 0)
   {
     // (0,0)
-    L[0][0] = sqrtf(sum);
+    L[0][0] = std::sqrt(sum);
 
     // (1,0)
     sum = A[1][0];
@@ -173,7 +173,7 @@ bool SubpixelMaximizer::cholesky(const float A[3][3], float L[3][3])
   if(sum > 0)
   {
     // (1,1)
-    L[1][1] = sqrtf(sum);
+    L[1][1] = std::sqrt(sum);
 
     // (2,1)
     sum = A[2][1] - L[1][0] * L[2][0];
@@ -194,7 +194,7 @@ bool SubpixelMaximizer::cholesky(const float A[3][3], float L[3][3])
   if(sum > 0)
   {
     // (2,2)
-    L[2][2] = sqrtf(sum);
+    L[2][2] = std::sqrt(sum);
   }
   else
     L[2][2] = 0;

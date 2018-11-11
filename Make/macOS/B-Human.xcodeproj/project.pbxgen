@@ -124,10 +124,17 @@
       );
     };
 
+    asmjit = {
+        root = ../../Util/asmjit/src;
+        includes = (
+          ../../Util/asmjit/src/**.(cpp|h),
+        );
+    };
+
     SimRobot = {
       root = ../../Util/SimRobot/Src;
       includes = (
-         ../../Util/SimRobot/Src/SimRobot/**.(cpp|h|qrc|png|icns),
+         ../../Util/SimRobot/Src/SimRobot/**.(cpp|h|mm|qrc|png|icns),
       );
       excludes = (
          ../../Util/SimRobot/Src/SimRobot/resource.h,
@@ -151,7 +158,6 @@
         ../../Src/Processes/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
-
       );
       excludes = (
         ../../Src/Platform/Linux/**,
@@ -159,11 +165,15 @@
         ../../Src/Platform/Windows/**,
         ../../Src/Tools/Precompiled/*.cpp,
 
-        ../../Src/Modules/Perception/BallPerceptors/BallPerceptor.cpp,
-        ../../Src/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp,
+        ../../Src/Modules/MotionControl/WalkingEngine/Walk2014Generator.cpp,
+        ../../Src/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp,
+        ../../Src/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp,
+        ../../Src/Representations/Sensing/RobotModel.cpp,
         ../../Src/Tools/ImageProcessing/CNS/*.cpp,
         ../../Src/Tools/ImageProcessing/InImageSizeCalculations.cpp,
+        ../../Src/Tools/Math/*.cpp,
         ../../Src/Tools/Modeling/UKFPose2D.cpp,
+        ../../Src/Tools/Motion/*.cpp,
       );
     };
 
@@ -176,6 +186,7 @@
         ../../Src/Processes/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
+        ../../Util/asmjit/src/**.cpp,
       );
       excludes = (
         ../../Src/Tools/Precompiled/*.cpp,
@@ -185,11 +196,11 @@
     SimRobot = {
       anchor = C29B8785722055ED95EF7B57;
       includes =(
-         ../../Util/SimRobot/Src/SimRobot/**.(cpp|h|qrc),
-      );
-      excludes = (
-         ../../Util/SimRobot/Src/SimRobot/resource.h,
-         ../../Util/SimRobot/Src/SimRobot/SimRobot.h,
+         ../../Util/SimRobot/Src/SimRobot/**.(cpp|mm|qrc),
+         ../../Util/SimRobot/Src/SimRobot/MainWindow.h,
+         ../../Util/SimRobot/Src/SimRobot/RegisteredDockWidget.h,
+         ../../Util/SimRobot/Src/SimRobot/SceneGraphDockWidget.h,
+         ../../Util/SimRobot/Src/SimRobot/StatusBar.h,
       );
     };
 
@@ -215,9 +226,7 @@
       includes = (
         ../../Src/Controller/**.(cpp|qrc),
         ../../Src/Controller/BHToolBar.h,
-        ../../Src/Controller/TimeCtrl.h,
-        ../../Src/Controller/Views/AnnotationView/AnnotationWidget.h,
-        ../../Src/Controller/Views/CalibrationView.h,
+        ../../Src/Controller/Views/AnnotationView.h,
         ../../Src/Controller/Views/ColorCalibrationView/ColorCalibrationView.h,
         ../../Src/Controller/Views/ColorCalibrationView/RangeSelector.h,
         ../../Src/Controller/Views/ColorCalibrationView/ThresholdSelector.h,
@@ -225,27 +234,31 @@
         ../../Src/Controller/Views/DataView/DataWidget.h,
         ../../Src/Controller/Views/DataView/PropertyEditorFactory.h,
         ../../Src/Controller/Views/DataView/PropertyManager.h,
-        ../../Src/Controller/Views/Debugging/ImageReceiver.h,
-        ../../Src/Controller/Views/Debugging/ImageSender.h,
         ../../Src/Controller/Views/DotView.h,
+        ../../Src/Controller/Views/Statistics/StatisticRobotView.h,
+        ../../Src/Controller/Views/Statistics/StatisticsPlotView.h,
         ../../Src/Controller/Views/ImageView.h,
         ../../Src/Controller/Views/JointView.h,
         ../../Src/Controller/Views/KickView/KickView.h,
         ../../Src/Controller/Views/KickView/KickViewGLWidget.h,
         ../../Src/Controller/Views/KickView/KickViewWidget.h,
         ../../Src/Controller/Views/KickView/TabWidget.h,
-        ../../Src/Controller/Views/LogPlayerControlView/LogPlayerControlWidget.h,
-        ../../Src/Controller/Views/SnapshotView/SnapshotWidget.h,
+        ../../Src/Controller/Views/LogPlayerControlView.h,
         ../../Src/Controller/Views/PlotView.h,
         ../../Src/Controller/Views/SensorView.h,
-        ../../Src/Controller/Views/TimeView/TimeWidget.h,
+        ../../Src/Controller/Views/TimeView.h,
         ../../Util/libqxt/qxtspanslider*.*,
+        ../../Util/asmjit/src/**.cpp,
 
-        ../../Src/Modules/Perception/BallPerceptors/BallPerceptor.cpp,
-        ../../Src/Modules/Perception/ImagePreprocessors/ECImageProvider.cpp,
+        ../../Src/Modules/MotionControl/WalkingEngine/Walk2014Generator.cpp,
+        ../../Src/Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp,
+        ../../Src/Modules/Sensing/InertialDataProvider/InertialDataProvider.cpp,
+        ../../Src/Representations/Sensing/RobotModel.cpp,
         ../../Src/Tools/ImageProcessing/CNS/*.cpp,
         ../../Src/Tools/ImageProcessing/InImageSizeCalculations.cpp,
+        ../../Src/Tools/Math/*.cpp,
         ../../Src/Tools/Modeling/UKFPose2D.cpp,
+        ../../Src/Tools/Motion/*.cpp,
       );
       excludes = (
         ../../Src/Controller/Platform/Windows/*.(cpp|h),
@@ -275,13 +288,16 @@
         ../../Src/Platform/File.cpp,
         ../../Src/Platform/macOS/BHAssert.cpp,
         ../../Src/Platform/macOS/File.cpp,
+        ../../Src/Platform/macOS/Memory.cpp,
         ../../Src/Platform/macOS/Semaphore.cpp,
         ../../Src/Platform/macOS/SoundPlayer.mm,
         ../../Src/Platform/macOS/SystemCall.cpp,
         ../../Src/Platform/macOS/Time.cpp,
         ../../Src/Platform/macOS/Thread.cpp,
-        ../../Src/Tools/Global.cpp,
+        ../../Src/Tools/AlignedMemory.cpp,
+        ../../Src/Tools/FunctionList.cpp,
         ../../Src/Tools/Streams/**.cpp,
+        ../../Util/SimRobot/Src/SimRobot/Helper.mm,
       );
       excludes = (
         ../../Src/Utils/bush/ui/CommandLineEdit.h,

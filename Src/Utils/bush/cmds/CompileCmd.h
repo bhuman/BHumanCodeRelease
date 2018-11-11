@@ -17,19 +17,20 @@ class CompileCmd : public CommandAdapter
                 const std::string& label,
                 const QString& command,
                 const QStringList& args);
-    bool execute();
-    void cancel();
-    void setContext(Context* context);
-    std::string getLabel();
+    bool execute() override;
+    void cancel() override;
+    void setContext(Context* context) override;
+    std::string getLabel() override;
   };
 
   CompileCmd();
-  virtual std::string getName() const;
-  virtual std::string getDescription() const;
-  virtual std::vector<std::string> complete(const std::string& cmdLine) const;
-  virtual bool execute(Context& context, const std::vector<std::string>& params);
+  std::string getName() const override;
+  std::string getDescription() const override;
+  std::vector<std::string> complete(const std::string& cmdLine) const override;
+  bool execute(Context& context, const std::vector<std::string>& params) override;
   QString getCommand();
   QStringList getParams(const QString& config, const QString& project);
+
 public:
 
   static CompileCmd theCompileCmd;

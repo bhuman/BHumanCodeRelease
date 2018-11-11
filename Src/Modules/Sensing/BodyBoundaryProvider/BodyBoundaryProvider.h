@@ -30,5 +30,5 @@ class BodyBoundaryProvider : public BodyBoundaryProviderBase
 {
   bool first = true;
 
-  void update(BodyBoundary& bodyBoundary);
+  void update(BodyBoundary& bodyBoundary) override;
 };

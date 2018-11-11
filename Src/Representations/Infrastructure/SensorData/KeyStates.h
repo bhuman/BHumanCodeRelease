@@ -27,12 +27,12 @@ STREAMABLE(KeyStates,
     rHandRight,
 
     // bumpers:
-    leftFootLeft,
-    leftFootRight,
-    rightFootLeft,
-    rightFootRight,
+    lFootLeft,
+    lFootRight,
+    rFootLeft,
+    rFootRight,
     chest,
-  })
+  });
 
   KeyStates(),
 

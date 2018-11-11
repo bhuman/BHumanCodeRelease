@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../BHumanMessage.h"
+#include "Representations/Communication/BHumanMessage.h"
 #include <functional>
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/MessageQueue/InMessage.h"
@@ -22,7 +22,7 @@ struct BHumanMessageParticle
 };
 
 template<MessageID ID>
-In& operator >> (In& in, BHumanMessageParticle<ID>& particle)
+In& operator>>(In& in, BHumanMessageParticle<ID>& particle)
 {
   return in >> dynamic_cast<Streamable&>(particle);
 }
@@ -36,7 +36,7 @@ Out& operator<<(Out& out, const BHumanMessageParticle<ID>& particle)
 template<MessageID ID>
 struct PureBHumanArbitraryMessageParticle : public BHumanMessageParticle<ID>
 {
-  void operator >> (BHumanMessage& m) const override
+  void operator>>(BHumanMessage& m) const override
   {
     m.theBHumanArbitraryMessage.queue.out.bin << *this;
     m.theBHumanArbitraryMessage.queue.out.finishMessage(this->id());

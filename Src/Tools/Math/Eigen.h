@@ -12,6 +12,10 @@
 #define WARN_UNUSED_RESULT __attribute__ ((warn_unused_result))
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#include <Eigen/StdVector>
 #include <Eigen/Dense>
 #include "Tools/Streams/Eigen.h"
 
@@ -69,6 +73,7 @@ using Matrix4x3d = Eigen::Matrix<double, 4, 3>;
 using Matrix4x3f = Eigen::Matrix<float, 4, 3>;
 using Matrix2xXd = Eigen::Matrix<double, 2, Eigen::Dynamic>;
 using Matrix2xXf = Eigen::Matrix<float, 2, Eigen::Dynamic>;
+using Matrix5f = Eigen::Matrix<float, 5, 5>;
 using Matrix6d = Eigen::Matrix<double, 6, 6>;
 using Matrix6f = Eigen::Matrix<float, 6, 6>;
 using Matrix6x2f = Eigen::Matrix<float, 6, 2>;

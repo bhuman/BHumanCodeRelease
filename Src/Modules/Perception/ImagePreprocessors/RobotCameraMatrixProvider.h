@@ -25,5 +25,5 @@ MODULE(RobotCameraMatrixProvider,
 class RobotCameraMatrixProvider: public RobotCameraMatrixProviderBase
 {
 private:
-  void update(RobotCameraMatrix& robotCameraMatrix);
+  void update(RobotCameraMatrix& robotCameraMatrix) override;
 };

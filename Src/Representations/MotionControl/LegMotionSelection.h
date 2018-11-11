@@ -31,8 +31,8 @@ STREAMABLE(LegMotionSelection,
 
   void draw(),
 
-  ((MotionRequest) Motion)(specialAction) targetMotion, /**< The motion that is the destination of the current interpolation. */
+  (MotionRequest::Motion)(MotionRequest::specialAction) targetMotion, /**< The motion that is the destination of the current interpolation. */
   (ActivationMode)(active) specialActionMode, /**< Whether and how the special action module is active. */
-  (ENUM_INDEXED_ARRAY(float, (MotionRequest) Motion)) ratios, /**< The current ratio of each motion in the final joint request. */
+  (ENUM_INDEXED_ARRAY(float, MotionRequest::Motion)) ratios, /**< The current ratio of each motion in the final joint request. */
   (SpecialActionRequest) specialActionRequest, /**< The special action request, if it is an active motion. */
 });

@@ -72,7 +72,7 @@ void RobotPool::update()
     senderName = source->getRobotName();
   }
   clear();
-  foreach(RobotView* view, robotViews)
+  for(RobotView* view : robotViews)
   {
     disconnect(view, 0, 0, 0);
     /* Set parent to parentWidget since qt seems to have problems to get the

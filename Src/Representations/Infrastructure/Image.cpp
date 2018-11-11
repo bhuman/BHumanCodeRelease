@@ -9,6 +9,9 @@
 #include "Image.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 #include "Platform/BHAssert.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/Debugging/DebugImages.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
 constexpr int Image::maxResolutionWidth;
 constexpr int Image::maxResolutionHeight;
@@ -59,6 +62,24 @@ Image& Image::operator=(const Image& other)
     memcpy((*this)[y], other[y], size);
 
   return *this;
+}
+
+void Image::fromCameraImage(const CameraImage& other)
+{
+  height = other.height / 2;
+  width = other.width;
+  widthStep = 2 * width;
+  timeStamp = other.timestamp;
+  isFullSize = true;
+
+  if(isReference)
+  {
+    // allocate full size image and keep it that way independent of resolution
+    image = new Pixel[maxResolutionHeight * maxResolutionWidth * 2];
+    isReference = false;
+  }
+
+  memcpy(image, other[0], other.width * other.height * sizeof(Pixel));
 }
 
 void Image::setImage(unsigned char* buffer)
@@ -154,7 +175,6 @@ float Image::getColorDistance(const Image::Pixel& a, const Image::Pixel& b)
 
 void Image::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN;
   STREAM(width);
   STREAM(height);
   if(isFullSize)
@@ -174,6 +194,70 @@ void Image::serialize(In* in, Out* out)
     for(int y = 0; y < height; ++y)
       in->read((*this)[y], size);
   }
-
-  STREAM_REGISTER_FINISH;
 }
+
+void Image::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(Image);
+  REG(width);
+  REG(height);
+  REG(timeStamp);
+}
+
+void SegmentedImage::draw() const
+{
+  SEND_DEBUG_IMAGE("SegmentedImage", *this, PixelTypes::RGB);
+
+  DEBUG_DRAWING("representation:SegmentedImage:image", "drawingOnImage")
+  {
+    std::vector<Pixel> objects;
+    objects.push_back(Pixel());
+    objects.back().cb = 1;
+    objects.back().y = 225;
+    objects.back().cr = 149;
+    objects.push_back(Pixel());
+    objects.back().cb = 85;
+    objects.back().y = 75;
+    objects.back().cr = 74;
+    objects.push_back(Pixel());
+    objects.back().cb = 112;
+    objects.back().y = 59;
+    objects.back().cr = 177;
+    objects.push_back(Pixel());
+    objects.back().cb = 255;
+    objects.back().y = 29;
+    objects.back().cr = 107;
+    objects.push_back(Pixel());
+    objects.back().cb = 147;
+    objects.back().y = 152;
+    objects.back().cr = 201;
+
+    for(Pixel& p : objects)
+    {
+      int xMin = width * 2;
+      int xMax = 0;
+      int yMin = height * 2;
+      int yMax = 0;
+      int counter = 0;
+      for(int y = 0; y < height * 2; y++)
+      {
+        for(int x = 0; x < width * 2; x++)
+        {
+          if(p.cb == this->getFullSizePixel(y, x).cb &&
+             p.y == this->getFullSizePixel(y, x).y &&
+             p.cr == this->getFullSizePixel(y, x).cr)
+          {
+            counter++;
+            xMin = std::min(xMin, x);
+            yMin = std::min(yMin, y);
+            xMax = std::max(xMax, x);
+            yMax = std::max(yMax, y);
+          }
+        }
+      }
+      if(counter > 50)
+        RECTANGLE("representation:SegmentedImage:image", xMin, yMin, xMax, yMax, 3, Drawings::solidPen, ColorRGBA::brown);
+    }
+  }
+};

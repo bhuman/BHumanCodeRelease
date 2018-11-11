@@ -65,9 +65,9 @@ const char* File::getBHDir()
     char* end = dir + len - 1;
     while(true)
     {
-      if(*end == '/' || *end == '\\' || *end == ':' || end == dir - 1)
+      if(end < dir || *end == '/' || *end == '\\' || *end == ':')
       {
-        if(*end == ':')
+        if(end >= dir && *end == ':')
           *(end++) = '\\';
         strcpy(end + 1, "Config");
         DWORD attr = GetFileAttributes(dir);

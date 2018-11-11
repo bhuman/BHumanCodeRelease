@@ -77,6 +77,14 @@ STREAMABLE(BodyContour,
   }
 
   /**
+   * The method returns the bottom y coordinate of a vertical line.
+   * @param x The x coordinate of the vertical line.
+   * @param yMax The maximum y coordinate that can be returned.
+   * @return The maximum y coordinate for the vertical line at x.
+   */
+  int getBottom(int x, int yMax) const {clipBottom(x, yMax); return yMax;}
+
+  /**
    * The method clips the bottom y coordinate of a vertical line.
    * @param x The x coordinate of the vertical line.
    * @param y The original y coordinate of the bottom of the vertical line.

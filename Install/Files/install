@@ -1,8 +1,20 @@
 #!/bin/bash
 
 set -eu
-export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
+export scriptPath=$(which "$0" | sed -e "s|^\.\./|`pwd`/../|" -e "s|^\./|`pwd`/|")
 export baseDir=$(dirname ${scriptPath})
+
+# Find out the operating system version running on this robot
+source /etc/lsb-release
+if [ "$DISTRIB_CODENAME" != "Murol" ]; then
+  echo -e "\033[0;31m************************************************************************************************\033[0;0m"
+  echo "B-Human can only be installed on NAO versions 4 and 5 running NaoQi OS 2.1."
+  echo "Especially not on robots running NaoQI OS 2.8."
+  echo "Do not try to remove or circumvent this check."
+  echo "We do not provide any support for porting this software to other NAO robot or NaoQI OS versions."
+  echo -e "\033[0;31m************************************************************************************************\033[0;0m"
+  exit 1
+fi
 
 if [ "$(whoami)" != "root" ]; then
   # We are still user nao
@@ -69,9 +81,25 @@ else
   cp ${baseDir}/init-bhumand /etc/init.d/bhumand
   rc-update add bhumand
 
+  # Create mountpoint for USB-Stick
+  mkdir -p /media/usb
+
+  # Add auto mount for USB-Stick
+  if ! cat /etc/fstab | grep -q '/media/usb'; then
+    echo "#USB-Stick" >> /etc/fstab
+    echo "/dev/sdb1                /media/usb               vfat         noauto,users,defaults,dmask=000,fmask=111 0    0" >> /etc/fstab
+  fi
+
   # Mount / readonly during boot
   cp ${baseDir}/readonly /etc/init.d
   rc-update add readonly boot
+
+  # Marker: 8b513957aa1ac143466f5697b3af5543
+  # Do not remove the markers, since they are used by the b-bundle script to locate the
+  # function which replaces the password for user nao.
+  cp -n /etc/shadow /etc/shadow.org
+  sed </etc/shadow.org "s%^nao:.*%nao:\$6\$yoHR/vLF\$I8DTr3sRt1XIDbB0LdWgfuBl57jQk3K7CUtnhMqS7OJ3C.NHybfH48OAqTgvEf57dMUhHOhO6cKnbnoAGSDtM.:15283:0:99999:7:::%" >/etc/shadow
+  # Marker: 8b513957aa1ac143466f5697b3af5543
 
   # Do not verify remote hostname via DNS
   if [ ! -f "/etc/ssh.conf/sshd_config" -o -z "$(grep "UseDNS no" "/etc/ssh.conf/sshd_config" 2>/dev/null)" ]; then

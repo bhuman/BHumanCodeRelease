@@ -63,10 +63,10 @@ private:
 public:
   VisualContext(QWidget* parent);
 
-  virtual void executeInContext(Console* console, TeamSelector* teamSelector, const QString& cmdLine);
+  void executeInContext(Console* console, TeamSelector* teamSelector, const QString& cmdLine);
 
 public slots:
-  virtual void doPrint(ConsolePrintTarget target, const QString& msg);
+  void doPrint(ConsolePrintTarget target, const QString& msg);
   void commandExecuted(Context* context, const QString& cmdLine);
   void commandFinished(bool status);
   void commandCanceled();

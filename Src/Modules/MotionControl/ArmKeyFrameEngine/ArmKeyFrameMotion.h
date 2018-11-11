@@ -62,6 +62,6 @@ STREAMABLE(ArmKeyFrameMotion,
     return *states.rbegin();
   },
 
-  ((ArmKeyFrameRequest) ArmKeyFrameId) id, /** Unique id of this motion. */
+  (ArmKeyFrameRequest::ArmKeyFrameId) id, /** Unique id of this motion. */
   (std::vector<ArmAngles>) states,    /** Array of states to move the arm to */
 });

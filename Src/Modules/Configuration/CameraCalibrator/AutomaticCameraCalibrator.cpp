@@ -325,9 +325,9 @@ void AutomaticCameraCalibrator::update(CameraCalibrationNext& cameraCalibrationN
 
   //Allow access to variables by other modules, required for the AutomaticCameraCalibratorHandler
   MODIFY("module:AutomaticCameraCalibrator:deletionPoint", unwantedPoint);
-  MODIFY_ENUM("module:AutomaticCameraCalibrator:deletionCurrentCamera", deletionOnCamera, CameraInfo);
+  MODIFY("module:AutomaticCameraCalibrator:deletionCurrentCamera", deletionOnCamera);
   MODIFY("module:AutomaticCameraCalibrator:insertionPoint", wantedPoint);
-  MODIFY_ENUM("module:AutomaticCameraCalibrator:insertionCurrentCamera", insertionOnCamera, CameraInfo);
+  MODIFY("module:AutomaticCameraCalibrator:insertionCurrentCamera", insertionOnCamera);
   MODIFY("module:AutomaticCameraCalibrator:setJointOffsets", setJointOffsets);
 
   processManualControls();

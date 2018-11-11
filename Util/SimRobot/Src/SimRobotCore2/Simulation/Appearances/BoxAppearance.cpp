@@ -8,12 +8,12 @@
 
 #include "Simulation/Appearances/BoxAppearance.h"
 
-void BoxAppearance::assembleAppearances() const
+void BoxAppearance::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
 
-  surface->set();
+  surface->set(color);
 
   float lx = depth * 0.5f;
   float ly = width * 0.5f;
@@ -75,6 +75,6 @@ void BoxAppearance::assembleAppearances() const
 
   surface->unset();
 
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
 }

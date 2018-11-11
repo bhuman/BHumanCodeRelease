@@ -5,6 +5,7 @@
  */
 
 #include "ScanGridProvider.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 
@@ -14,15 +15,14 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
 {
   scanGrid.y.clear();
   scanGrid.lines.clear();
-  scanGrid.yStarts.clear();
 
   if(!theCameraMatrix.isValid)
     return; // Cannot compute grid without camera matrix
 
   // Compute the furthest point away that could be part of the field given an unknown own position.
   Vector2f pointInImage;
-  const float fieldDiagional = Vector2f(theFieldDimensions.boundary.x.getSize(), theFieldDimensions.boundary.y.getSize()).norm();
-  if(!Transformation::robotWithCameraRotationToImage(Vector2f(fieldDiagional, 0), theCameraMatrix, theCameraInfo, pointInImage))
+  const float fieldDiagonal = Vector2f(theFieldDimensions.boundary.x.getSize(), theFieldDimensions.boundary.y.getSize()).norm();
+  if(!Transformation::robotWithCameraRotationToImage(Vector2f(fieldDiagonal, 0), theCameraMatrix, theCameraInfo, pointInImage))
     return; // Cannot project furthest possible point to image -> no grid in image
 
   scanGrid.fieldLimit = std::max(static_cast<int>(pointInImage.y()), -1);
@@ -46,7 +46,8 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   scanGrid.y.reserve(theCameraInfo.height);
   const float fieldStep = theFieldDimensions.fieldLinesWidth * lineWidthRatio;
   bool singleSteps = false;
-  for(int y = theCameraInfo.height - 1; y > scanGrid.fieldLimit;)
+  int y;
+  for(y = theCameraInfo.height - 1; y > scanGrid.fieldLimit;)
   {
     scanGrid.y.emplace_back(y);
     // Calc next vertical position for all scanlines.
@@ -62,6 +63,8 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
       singleSteps = y2 - 1 == y;
     }
   }
+  if(y < 0 && !scanGrid.y.empty() && scanGrid.y.back() != 0)
+    scanGrid.y.emplace_back(0);
 
   // Determine the maximum distance between scanlines at the top of the image not to miss the ball. Do not go below minStepSize.
   int minXStep = minStepSize;
@@ -74,22 +77,22 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   // Determine a max step size that fulfills maxXStep2 = minXStep * 2^n, maxXStep2 <= maxXStep.
   // Also compute lower y coordinates for the different lengths of scanlines.
   int maxXStep2 = minXStep;
-
+  std::vector<int> yStarts;
   while(maxXStep2 * 2 <= maxXStep)
   {
-    float distance = Geometry::getDistanceBySize(theCameraInfo, theBallSpecification.radius * ballWidthRatio, static_cast<float>(maxXStep2));
+    float distance = Projection::getDistanceBySize(theCameraInfo, theBallSpecification.radius * ballWidthRatio, static_cast<float>(maxXStep2));
     VERIFY(Transformation::robotWithCameraRotationToImage(Vector2f(distance, 0), theCameraMatrix, theCameraInfo, pointInImage));
-    scanGrid.yStarts.push_back(static_cast<int>(pointInImage.y() + 0.5f));
+    yStarts.push_back(static_cast<int>(pointInImage.y() + 0.5f));
     maxXStep2 *= 2;
   }
-  scanGrid.yStarts.push_back(theCameraInfo.height);
+  yStarts.push_back(theCameraInfo.height);
 
   // Determine a pattern with the different lengths of scan lines, in which the longest appears once,
   // the second longest twice, etc. The pattern starts with the longest.
   std::vector<int> yStarts2(maxXStep2 / minXStep);
-  for(size_t i = 0, step = 1; i < scanGrid.yStarts.size(); ++i, step *= 2)
+  for(size_t i = 0, step = 1; i < yStarts.size(); ++i, step *= 2)
     for(size_t j = 0; j < yStarts2.size(); j += step)
-      yStarts2[j] = scanGrid.yStarts[i];
+      yStarts2[j] = yStarts[i];
 
   // Initialize the scan states and the regions.
   const int xStart = theCameraInfo.width % (theCameraInfo.width / minXStep - 1) / 2;

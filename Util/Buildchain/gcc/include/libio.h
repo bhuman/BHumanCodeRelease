@@ -438,7 +438,7 @@ extern _IO_wint_t __woverflow (_IO_FILE *, _IO_wint_t);
 #define _IO_putc_unlocked(_ch, _fp) \
    (_IO_BE ((_fp)->_IO_write_ptr >= (_fp)->_IO_write_end, 0) \
     ? __overflow (_fp, (unsigned char) (_ch)) \
-    : (unsigned char) (*(_fp)->_IO_write_ptr++ = (_ch)))
+    : (unsigned char) (*(_fp)->_IO_write_ptr++ = (char)(_ch)))
 
 #if defined _LIBC || defined _GLIBCPP_USE_WCHAR_T
 # define _IO_getwc_unlocked(_fp) \

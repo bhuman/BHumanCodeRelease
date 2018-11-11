@@ -7,8 +7,7 @@
 #pragma once
 
 #include "Tools/Math/Eigen.h"
-#include "Tools/Streams/Streamable.h"
-#include "Representations/Infrastructure/CameraInfo.h"
+#include "CameraImage.h"
 
 /**
  * The union defines a pixel in YCbCr space.
@@ -76,7 +75,7 @@ public:
   Image(const Image& other);
 
   /** destructs an image */
-  virtual ~Image();
+  ~Image();
 
   /**
    * Assignment operator.
@@ -84,6 +83,8 @@ public:
    * @return This image.
    */
   Image& operator=(const Image& other);
+
+  void fromCameraImage(const CameraImage& other);
 
   Pixel* operator[](const int y) { return image + y * widthStep; }
   const Pixel* operator[](const int y) const { return image + y * widthStep; }
@@ -139,5 +140,13 @@ public:
   static float getColorDistance(const Image::Pixel& a, const Image::Pixel& b);
 
 protected:
-  void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };
+
+STREAMABLE_WITH_BASE(SegmentedImage, Image,
+{
+  void draw() const,
+});

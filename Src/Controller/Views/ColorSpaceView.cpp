@@ -6,9 +6,8 @@
  * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
  */
 
-#include "Controller/RobotConsole.h"
 #include "ColorSpaceView.h"
-#include "Platform/Thread.h"
+#include "Controller/RobotConsole.h"
 #include "Controller/Visualization/OpenGLMethods.h"
 #ifdef MACOS
 #include <gl.h>
@@ -53,7 +52,7 @@ void ColorSpaceView::updateDisplayLists()
                                            int(background.y() * 255) ^ 0xc0,
                                            int(background.z() * 255) ^ 0xc0);
 
-    OpenGLMethods::paintImagePixelsToOpenGLList(*image, colorModel, channel - 1, false, colorsId);
+    OpenGLMethods::paintImagePixelsToOpenGLList(console, *image, colorModel, channel - 1, false, colorsId);
     lastTimeStamp = image->timeStamp;
   }
   else

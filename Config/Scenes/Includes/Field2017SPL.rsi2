@@ -1,0 +1,463 @@
+<Simulation>
+
+  <Compound name="field">
+
+    <BoxGeometry width="8m" height="0.2m" depth="11m" color="rgb(80, 80, 80)">
+      <Translation z="-0.1m"/>
+      <Material name="fieldCarpet"/>
+    </BoxGeometry>
+    <BoxGeometry width="0.1m" height="0.3m" depth="11m" color="rgb(80, 80, 80)">
+      <Translation y="-4.05m" z="0.15m"/>
+    </BoxGeometry>
+    <BoxGeometry width="0.1m" height="0.3m" depth="11m" color="rgb(80, 80, 80)">
+      <Translation y="4.05m" z="0.15m"/>
+    </BoxGeometry>
+    <BoxGeometry width="8m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
+      <Translation x="-5.55m" z="0.15m"/>
+    </BoxGeometry>
+    <BoxGeometry width="8m" height="0.3m" depth="0.1m" color="rgb(80, 80, 80)">
+      <Translation x="5.55m" z="0.15m"/>
+    </BoxGeometry>
+
+    <ComplexAppearance ref="fieldLines" name="fieldLines1"/>
+    <ComplexAppearance ref="fieldLines" name="fieldLines2">
+      <Rotation z="180degree"/>
+    </ComplexAppearance>
+    <ComplexAppearance ref="fieldCross"/>
+    <ComplexAppearance ref="fieldGreen"/>
+
+    <Compound ref="fieldGoal" name="Goal1">
+      <Translation x="-4525mm"/>
+      <Set name="color" value="goalWhite"/>
+    </Compound>
+    <Compound ref="fieldGoal" name="Goal2">
+      <Translation x="4525mm"/>
+      <Rotation z="180degree"/>
+      <Set name="color" value="goalWhite"/>
+    </Compound>
+
+  </Compound>
+
+  <Compound name="fieldGoal">
+
+    <CylinderGeometry height="800mm" radius="50mm" name="post1">
+      <Translation y="-800mm" z="400mm"/>
+    </CylinderGeometry>
+    <CylinderGeometry height="800mm" radius="50mm" name="post2">
+      <Translation y="800mm" z="400mm"/>
+    </CylinderGeometry>
+
+    <CylinderAppearance height="850mm" radius="50mm" name="post1">
+      <Translation y="-800mm" z="425mm"/>
+      <Surface ref="$color"/>
+    </CylinderAppearance>
+    <CylinderAppearance height="850mm" radius="50mm" name="post2">
+      <Translation y="800mm" z="425mm"/>
+      <Surface ref="$color"/>
+    </CylinderAppearance>
+    <CapsuleAppearance height="1700mm" radius="50mm" name="crossbar">
+      <Rotation x="90degree"/>
+      <Translation z="850mm"/>
+      <Surface ref="$color"/>
+    </CapsuleAppearance>
+
+    <BoxAppearance depth="400mm" width="20mm" height="20mm" name="netSupport1">
+      <Surface ref="goalWhite"/>
+      <Translation x="-250mm" y="800mm" z="790mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="400mm" width="20mm" height="20mm" name="netSupport1b">
+      <Surface ref="goalWhite"/>
+      <Translation x="-250mm" y="800mm" z="10mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="20mm" width="20mm" height="760mm" name="netSupport1c">
+      <Surface ref="goalWhite"/>
+      <Translation x="-440mm" y="800mm" z="400mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="400mm" width="20mm" height="20mm" name="netSupport2">
+      <Surface ref="goalWhite"/>
+      <Translation x="-250mm" y="-800mm" z="790mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="400mm" width="20mm" height="20mm" name="netSupport2b">
+      <Surface ref="goalWhite"/>
+      <Translation x="-250mm" y="-800mm" z="10mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="20mm" width="20mm" height="760mm" name="netSupport2c">
+      <Surface ref="goalWhite"/>
+      <Translation x="-440mm" y="-800mm" z="400mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="20mm" width="1580mm" height="20mm" name="netSupportQ">
+      <Surface ref="goalWhite"/>
+      <Translation x="-440mm" y="0mm" z="790mm"/>
+    </BoxAppearance>
+    <BoxAppearance depth="20mm" width="1580mm" height="20mm" name="netSupportQb">
+      <Surface ref="goalWhite"/>
+      <Translation x="-440mm" y="0mm" z="10mm"/>
+    </BoxAppearance>
+    <ComplexAppearance ref="fieldNet"/>
+
+    <BoxGeometry width="1600mm" height="0.2m" depth="0.01m">
+      <Translation x="-450mm" z="0.1m"/>
+    </BoxGeometry>
+    <BoxGeometry width="0.01mm" height="0.2m" depth="400mm">
+      <Translation x="-250mm" y="-800mm" z="0.1m"/>
+    </BoxGeometry>
+    <BoxGeometry width="0.01mm" height="0.2m" depth="400mm">
+      <Translation x="-250mm" y="800mm" z="0.1m"/>
+    </BoxGeometry>
+
+  </Compound>
+
+  <Surface name="fieldGreen" diffuseColor="#000000" ambientColor="#279f27" diffuseTexture="../Textures/shadow_grad.png"/>
+  <Surface name="fieldNet" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/net.png"/>
+  <Surface name="fieldWhite" diffuseColor="rgb(100%, 100%, 100%)" specularColor="rgb(80%, 80%, 80%)" shininess="10" diffuseTexture="../Textures/shadow_frizzle.png"/>
+  <Surface name="goalWhite" diffuseColor="rgb(70%, 70%, 70%)" ambientColor="rgb(45%, 45%, 45%)" specularColor="rgb(40%, 40%, 40%)" shininess="30"/>
+
+  <Vertices name="fieldLines">
+# middle line
+-0.025 2.975 0
+-0.025 0.05 0
+0.025 0.05 0
+0.025 2.975 0
+
+# goal line
+4.475 3.025 0
+4.475 -3.025 0
+4.525 -3.025 0
+4.525 3.025 0
+
+# outer line left
+-4.475 3.025 0
+-4.475 2.975 0
+4.475 2.975 0
+4.475 3.025 0
+
+# keeper line left
+3.925 1.125 0
+3.925 1.075 0
+4.475 1.075 0
+4.475 1.125 0
+
+# keeper line right
+4.475 -1.125 0
+4.475 -1.075 0
+3.925 -1.075 0
+3.925 -1.125 0
+
+# keeper line front
+3.875 1.125 0
+3.875 -1.125 0
+3.925 -1.125 0
+3.925 1.125 0
+  </Vertices>
+
+  <Vertices name="fieldCross">
+# cross center line
+0.05 0.025 0
+0.05 -0.025 0
+-0.05 0.025 0
+-0.05 -0.025 0
+
+# left cross
+0.025 0.05 0
+0.025 0.025 0
+-0.025 0.05 0
+-0.025 0.025 0
+
+# right cross
+0.025 -0.05 0
+0.025 -0.025 0
+-0.025 -0.05 0
+-0.025 -0.025 0
+
+# corners
+0.05 0.05 0
+0.05 -0.05 0
+-0.05 0.05 0
+-0.05 -0.05 0
+  </Vertices>
+
+  <Vertices name="fieldCenterCircle">
+0 0.725 0
+0 0.775 0
+0.031 0.77438 0
+0.0309752 0.774381 0
+0.0315193 0.724315 0
+0.32423 0.64846 0
+0.0711164 0.721504 0
+0.542508 0.480947 0
+0.725 0 0
+0.0760104 0.771263 0
+0.075649 0.771299 0
+0.141457 0.711066 0
+0.725 0 0
+0.151155 0.760116 0
+0.14836 0.760667 0
+0.210455 0.693782 0
+0.725 0 0
+0.224935 0.74164 0
+0.216021 0.744285 0
+0.277413 0.669826 0
+0.725 0 0
+0.296615 0.715992 0
+0.277013 0.723801 0
+0.341811 0.639367 0
+0.725 0 0
+0.365311 0.683501 0
+0.330436 0.701026 0
+0.402827 0.60279 0
+0.725 0 0
+0.430522 0.644419 0
+0.376355 0.677482 0
+0.459941 0.560428 0
+0.725 0 0
+0.491677 0.599065 0
+0.415163 0.654419 0
+0.512652 0.512652 0
+0.725 0 0
+0.548008 0.548008 0
+0.447418 0.632805 0
+0.560428 0.459941 0
+0.725 0 0
+0.599065 0.491677 0
+0.473961 0.613177 0
+0.60279 0.402827 0
+0.725 0 0
+0.644419 0.430522 0
+0.495505 0.595903 0
+0.639367 0.341811 0
+0.725 0 0
+0.683501 0.365311 0
+0.512615 0.581249 0
+0.669826 0.277413 0
+0.725 0 0
+0.715992 0.296615 0
+0.525902 0.569256 0
+0.693782 0.210455 0
+0.725 0 0
+0.74164 0.224935 0
+0.535826 0.559925 0
+0.711066 0.141457 0
+0.725 0 0
+0.760116 0.151155 0
+0.54267 0.553294 0
+0.721504 0.0711164 0
+0.725 0 0
+0.771263 0.0760104 0
+0.546688 0.549325 0
+0.725 0 0
+0.725 0 0
+0.775 0 0
+0.548008 0.548008 0
+
+0 -0.725 0
+0 -0.775 0
+0.031 -0.77438 0
+0.0309752 -0.774381 0
+0.0315193 -0.724315 0
+0.32423 -0.64846 0
+0.0711164 -0.721504 0
+0.542508 -0.480947 0
+0.725 0 0
+0.0760104 -0.771263 0
+0.075649 -0.771299 0
+0.141457 -0.711066 0
+0.725 0 0
+0.151155 -0.760116 0
+0.14836 -0.760667 0
+0.210455 -0.693782 0
+0.725 0 0
+0.224935 -0.74164 0
+0.216021 -0.744285 0
+0.277413 -0.669826 0
+0.725 0 0
+0.296615 -0.715992 0
+0.277013 -0.723801 0
+0.341811 -0.639367 0
+0.725 0 0
+0.365311 -0.683501 0
+0.330436 -0.701026 0
+0.402827 -0.60279 0
+0.725 0 0
+0.430522 -0.644419 0
+0.376355 -0.677482 0
+0.459941 -0.560428 0
+0.725 0 0
+0.491677 -0.599065 0
+0.415163 -0.654419 0
+0.512652 -0.512652 0
+0.725 0 0
+0.548008 -0.548008 0
+0.447418 -0.632805 0
+0.560428 -0.459941 0
+0.725 0 0
+0.599065 -0.491677 0
+0.473961 -0.613177 0
+0.60279 -0.402827 0
+0.725 0 0
+0.644419 -0.430522 0
+0.495505 -0.595903 0
+0.639367 -0.341811 0
+0.725 0 0
+0.683501 -0.365311 0
+0.512615 -0.581249 0
+0.669826 -0.277413 0
+0.725 0 0
+0.715992 -0.296615 0
+0.525902 -0.569256 0
+0.693782 -0.210455 0
+0.725 0 0
+0.74164 -0.224935 0
+0.535826 -0.559925 0
+0.711066 -0.141457 0
+0.725 0 0
+0.760116 -0.151155 0
+0.54267 -0.553294 0
+0.721504 -0.0711164 0
+0.725 0 0
+0.771263 -0.0760104 0
+0.546688 -0.549325 0
+0.725 0 0
+0.725 0 0
+0.775 0 0
+0.548008 -0.548008 0
+  </Vertices>
+
+  <Vertices name="fieldGreen">
+-5.2 -3.7 -0.001
+5.2 -3.7 -0.001
+5.2 3.7 -0.001
+-5.2 3.7 -0.001
+  </Vertices>
+  <TexCoords name="fieldGreen">
+0 0
+0 1
+1 1
+1 0
+  </TexCoords>
+
+  <Vertices name="fieldNet">
+-0.05 -0.8 0
+-0.05 -0.8 0.8
+-0.45 -0.8 0.8
+-0.45 -0.8 0
+
+-0.05 0.8 0
+-0.05 0.8 0.8
+-0.45 0.8 0.8
+-0.45 0.8 0
+
+-0.45 -0.8 0
+-0.45 0.8 0
+-0.45 0.8 0.8
+-0.45 -0.8 0.8
+  </Vertices>
+  <TexCoords name="fieldNet">
+8 16
+8 0
+0 0
+0 16
+
+8 16
+8 0
+0 0
+0 16
+
+0 0
+32 0
+32 16
+0 16
+  </TexCoords>
+
+  <ComplexAppearance name="fieldLines">
+    <Surface ref="fieldWhite"/>
+    <Vertices ref="fieldLines"/>
+    <Quads>
+0 1 2 3
+4 5 6 7
+8 9 10 11
+12 13 14 15
+16 17 18 19
+20 21 22 23
+    </Quads>
+    <ComplexAppearance ref="fieldCross">
+      <Translation x="3.2" y="0" z="0"/>
+    </ComplexAppearance>
+    <ComplexAppearance ref="fieldCenterCircle"/>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="fieldCross">
+    <Surface ref="fieldWhite"/>
+    <Vertices ref="fieldCross"/>
+    <Quads>
+2 3 1 0
+6 7 5 4
+8 9 11 10
+    </Quads>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="fieldCenterCircle">
+    <Surface ref="fieldWhite"/>
+    <Vertices ref="fieldCenterCircle"/>
+    <Quads>
+4 2 1 0
+6 9 2 4
+11 13 9 6
+15 17 13 11
+19 21 17 15
+23 25 21 19
+27 29 25 23
+31 33 29 27
+35 37 33 31
+39 41 37 35
+43 45 41 39
+47 49 45 43
+51 53 49 47
+55 57 53 51
+59 61 57 55
+63 65 61 59
+67 69 65 63
+
+71 72 73 75
+75 73 80 77
+77 80 84 82
+82 84 88 86
+86 88 92 90
+90 92 96 94
+94 96 100 98
+98 100 104 102
+102 104 108 106
+106 108 112 110
+110 112 116 114
+114 116 120 118
+118 120 124 122
+122 124 128 126
+126 128 132 130
+130 132 136 134
+134 136 140 138
+    </Quads>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="fieldGreen">
+    <Surface ref="fieldGreen"/>
+    <Vertices ref="fieldGreen"/>
+    <TexCoords ref="fieldGreen"/>
+    <Quads>
+0 1 2 3
+    </Quads>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="fieldNet">
+    <Surface ref="fieldNet"/>
+    <Vertices ref="fieldNet"/>
+    <TexCoords ref="fieldNet"/>
+    <Quads>
+0 1 2 3
+3 2 1 0
+4 5 6 7
+7 6 5 4
+8 9 10 11
+11 10 9 8
+    </Quads>
+  </ComplexAppearance>
+
+</Simulation>

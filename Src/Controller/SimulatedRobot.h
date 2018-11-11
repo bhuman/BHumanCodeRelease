@@ -60,7 +60,7 @@ private:
   static unsigned activeCameraCount; /**< Total count of constructed cameras */
   unsigned activeCameraIndex; /**< Index of this robot in the \c activeCameras array */
 
-  JointCalibration jointCalibration; /**< The simulated robot is perfectly calibrated, but we need the signs. */
+  JointCalibration jointCalibration; /**< The simulated robot is perfectly calibrated, but this is usefull for testing calibration. */
   CameraInfo upperCameraInfo; /**< Information about the upper camera. */
   CameraInfo lowerCameraInfo; /**< Information about the lower camera. */
   CameraIntrinsics cameraIntrinsics;
@@ -121,6 +121,12 @@ public:
   void getCameraInfo(CameraInfo& cameraInfo);
 
   /**
+   * Sets the values of the JointCalibration.
+   * @param jointCalibration The joint calibration to set.
+   */
+  void setJointCalibration(const JointCalibration& jointCalibration);
+
+  /**
    * Determines the current joint angles of the simulated robot and sets new ones.
    * @param jointRequest The joint request to set.
    * @param jointAngles The determined joint angles.
@@ -128,7 +134,7 @@ public:
   void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const;
 
   /**
-   * Sets the values off all joint actuators.
+   * Sets the values of all joint actuators.
    * @param jointRequest The joint request to set.
    */
   void setJointRequest(const JointRequest& jointRequest) const;

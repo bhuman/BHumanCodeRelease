@@ -31,7 +31,7 @@ class CNSImageProvider : public CNSImageProviderBase
    * If \c doBlur is true, the source image is blurred by a 3*3 Gaussian before computing
    * the cns image.
    */
-  void update(CNSImage& cnsImage);
+  void update(CNSImage& cnsImage) override;
 
   /**
    * Computes the cns response image in an SSE2 implementation

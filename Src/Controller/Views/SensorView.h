@@ -58,9 +58,9 @@ private:
    * The caller has to delete this instance. (Qt handles this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  SimRobot::Widget* createWidget() override;
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 };
 
 class SensorWidget : public QWidget
@@ -99,7 +99,7 @@ private:
 
 public:
   SensorWidget(SensorView& sensorView, QHeaderView* headerView, QWidget* parent);
-  virtual ~SensorWidget();
+  ~SensorWidget();
 
   void update();
   void paintEvent(QPaintEvent* event);

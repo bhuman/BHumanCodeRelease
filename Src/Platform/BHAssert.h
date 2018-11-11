@@ -10,7 +10,6 @@
 #undef ASSERT
 #undef FAIL
 #undef VERIFY
-#undef TRACE
 
 #include <string>
 #include <sstream>
@@ -125,15 +124,6 @@ public:
 #define VERIFY(cond) ((void)((cond) ? 0 : (Assert::logAdd(0, __FILE__, __LINE__, "VERIFY(" #cond ") failed"), Assert::abort(), 0)))
 #else
 #define VERIFY(cond) ((void)((cond) ? 0 : (Assert::print(__FILE__, __LINE__, "VERIFY(%s) failed", #cond), Assert::abort(), 0)))
-#endif
-
-/**
- * TRACE prints a message if NDEBUG is not defined.
- */
-#ifdef NDEBUG
-#define TRACE(...) ((void)0)
-#else
-#define TRACE(...) Assert::print(__FILE__, __LINE__, __VA_ARGS__)
 #endif
 
 /**

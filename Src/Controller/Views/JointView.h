@@ -48,9 +48,9 @@ private:
    * The caller has to delete this instance. (Qt handles this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  SimRobot::Widget* createWidget() override;
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 };
 
 class JointWidget : public QWidget
@@ -83,10 +83,10 @@ private:
 
 public:
   JointWidget(JointView& jointView, QHeaderView* headerView, QWidget* parent);
-  virtual ~JointWidget();
+  ~JointWidget();
 
   void update();
-  void paintEvent(QPaintEvent* event);
+  void paintEvent(QPaintEvent* event) override;
 
 public slots:
   void forceUpdate();
@@ -94,5 +94,5 @@ public slots:
 private:
   void print(const char* name, const char* value1, const char* value2, const char* value3, const char* value4, const char* value5);
   void newSection();
-  QSize sizeHint() const { return QSize(260, 400); }
+  QSize sizeHint() const override { return QSize(260, 400); }
 };

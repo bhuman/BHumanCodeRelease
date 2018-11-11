@@ -41,7 +41,7 @@ MODULE(OuterCornerPerceptor,
 
 class OuterCornerPerceptor : public OuterCornerPerceptorBase
 {
-  void update(OuterCorner& outerCorner);
+  void update(OuterCorner& outerCorner) override;
 private:
   bool searchForLAndPA(OuterCorner& outerCorner) const;
   bool searchForBigLAndT(OuterCorner& outerCorner) const;

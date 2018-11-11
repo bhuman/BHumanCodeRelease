@@ -38,11 +38,12 @@ STREAMABLE(WalkGenerator,
   FUNCTION(void(const Pose2f& speed, const Pose2f& target, WalkMode walkMode,
                 const std::function<Pose3f(float phase)>& getKickFootOffset)) calcJoints,
 
+  (JointRequest) jointRequest, /**< The calculated joint angles. */
+  (Pose2f) odometryOffset, /**< The relative motion in this frame is returned here (in mm and radians). */
+  (Pose2f) upcomingOdometryOffset, /**< The minimum remaining odometry offset until the robot can come to a full stop. */
+  (Pose2f)(45_deg, 100.f, 100.f) maxSpeed, /**< The maximum speed possible. */
+  (Pose2f) speed, /**< The average speed during the current step in mm/s and radians/s. */
   (float)(0.f) stepDuration, /**< The expected duration of the current step (in s). */
   (float) t, /**< Current time in the walk cycle (in s). */
   (bool)(false) isLeftPhase, /**< Is the left foot swinging? */
-  (JointRequest) jointRequest, /**< The calculated joint angles. */
-  (Pose2f) odometryOffset, /**< The relative motion in this frame is returned here (in mm and radians). */
-  (Pose2f) speed, /**< The average speed during the current step in mm/s and radians/s. */
-  (Pose2f)(45_deg, 100.f, 100.f) maxSpeed, /**< The maximum speed possible. */
 });

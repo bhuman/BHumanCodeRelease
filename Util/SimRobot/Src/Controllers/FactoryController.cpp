@@ -66,7 +66,7 @@ public:
   {}
 
   /** Initialization of sensor and actuator ports, states, and positions*/
-  bool compile()
+  bool compile() override
   {
     // Get all necessary actuator and sensor objects
     SimRobotCore2::Object* rootObj = (SimRobotCore2::Object*)simRobot.resolveObject("Factory", SimRobotCore2::scene);
@@ -107,7 +107,7 @@ public:
 
 
   /** This function becomes called in every execution cycle of the simulation*/
-  void update()
+  void update() override
   {
     /** Always check for open trap doors and close them */
     bool trapDoor1State = trapDoor1Bumper->getValue().boolValue;

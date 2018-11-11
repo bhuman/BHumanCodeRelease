@@ -39,17 +39,13 @@ public:
   /** Returns a reference to the internal representation of the state's covariance matrix
    * @return A reference to the matrix
    */
-  Matrix3f& getCov()
+  const Matrix3f& getCov() const
   {
     return cov;
   };
 
   void motionUpdate(const Pose2f& odometryOffset, const Pose2f& filterProcessDeviation,
                     const Pose2f& odometryDeviation, const Vector2f& odometryRotationDeviation);
-
-  static Matrix2f getCovOfPointInWorld(const Vector2f& pointInWorld, float pointZInWorld,
-                                       const Pose3f& cameraMatrix, const Pose3f& inverseCameraMatrix,
-                                       const Vector2f& rotationDeviation);
 
 protected:
   /** Computes the 7 sigma points (in the sigmaPoints array) based on the current content of cov */

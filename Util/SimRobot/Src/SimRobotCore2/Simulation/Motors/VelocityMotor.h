@@ -34,8 +34,8 @@ private:
     Joint* joint;
 
     //API
-    virtual void updateValue();
-    virtual bool getMinAndMax(float& min, float& max) const;
+    void updateValue() override;
+    bool getMinAndMax(float& min, float& max) const override;
   } positionSensor;
 
   /**
@@ -49,23 +49,23 @@ private:
     float maxVelocity;
 
     //API
-    virtual void updateValue();
-    virtual bool getMinAndMax(float& min, float& max) const;
+    void updateValue() override;
+    bool getMinAndMax(float& min, float& max) const override;
   } velocitySensor;
 
   /**
   * Initializes the motor
   * @param joint The joint that is controlled by this motor
   */
-  virtual void create(Joint* joint);
+  void create(Joint* joint) override;
 
   /** Called before computing a simulation step to update the joint */
-  virtual void act();
+   void act() override;
 
   /** Registers this object at SimRobot's GUI */
-  virtual void registerObjects();
+  void registerObjects() override;
 
   // actuator API
-  virtual void setValue(float value);
-  virtual bool getMinAndMax(float& min, float& max) const;
+  void setValue(float value) override;
+  bool getMinAndMax(float& min, float& max) const override;
 };

@@ -11,9 +11,9 @@ option(GetUp)
     }
     action
     {
+      Activity(BehaviorStatus::gettingUp);
       //Activity(BehaviorStatus::unknown);
       //LookForward();
-      //theLibCheck.inc(LibCheck::motionRequest); // We want to use the motion of the last frame here
     }
   }
 
@@ -28,7 +28,7 @@ option(GetUp)
     action
     {
       Activity(BehaviorStatus::gettingUp);
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       GetUpEngine();
     }
   }
@@ -46,7 +46,7 @@ option(GetUp)
     action
     {
       Activity(BehaviorStatus::gettingUp);
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       Stand();
     }
   }

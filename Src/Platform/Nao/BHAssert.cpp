@@ -24,7 +24,7 @@ public:
   {
     char file[128];
     int line;
-    char message[128];
+    char message[256];
   };
 
   struct Track

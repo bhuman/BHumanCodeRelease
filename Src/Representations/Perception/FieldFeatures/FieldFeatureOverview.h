@@ -13,17 +13,16 @@
 STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle<idFieldFeatureOverview>
 {
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
+  void operator>>(BHumanMessage& m) const override;
   bool handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp) override;
 
   ENUM(Feature,
   {,
-    PenaltyArea,
-    MidCircle,
-    MidCorner,
-    OuterCorner,
-    GoalFeature,
-    GoalFrame,
+    penaltyArea,
+    midCircle,
+    midCorner,
+    outerCorner,
+    goalFrame,
   });
 
   STREAMABLE_WITH_BASE(FieldFeatureStatus, Pose2f,

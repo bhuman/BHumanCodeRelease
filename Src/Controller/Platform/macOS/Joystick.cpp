@@ -1,7 +1,7 @@
 /**
  * @file Controller/Platform/macOS/Joystick.cpp
  * Implementation of the joystick interface class.
- * This is the OSX implementation.
+ * This is the macOS implementation.
  * @author Colin Graf
  * @author Thomas Röfer
  */
@@ -157,10 +157,12 @@ bool Joystick::init()
               }
             else if(IOHIDElementGetUsagePage(elem) == kHIDPage_Button)
             {
-              CFRetain(elem);
               int button = IOHIDElementGetUsage(elem) - 1;
               if(button >= 0 && button < numOfButtons)
+              {
+                CFRetain(elem);
                 p->buttonIds[button] = elem;
+              }
             }
           }
         }

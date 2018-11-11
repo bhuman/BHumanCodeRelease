@@ -23,18 +23,16 @@ class InMessage;
 class DataWidget;
 class QtProperty;
 class QtVariantProperty;
-class StreamHandler;
 class DataWidget;
 class QEvent;
 class QWidget;
 class OutBinaryMessage;
+struct TypeInfo;
 
 /**
  * A class which can be used to display streamable data.
  *
  * The view will display any data that is given to it via handleMessage.
- * A StreamHandler is used to get the needed specification data.
- *
  */
 class DataView : public SimRobot::Object
 {
@@ -42,14 +40,14 @@ public:
   /** Creates a new DataView.
    * @param fullName The path to this view in the scene graph.
    * @param console The console object. Used to display error messages.
-   * @param repName name of the streamable data. This is used to generate get requests.
-   * @param streamHandler will be used to get the specification data while parsing.
+   * @param repName Name of the streamable data. This is used to generate get requests.
+   * @param typeInfo Is used to get the type information while parsing.
    */
-  DataView(const QString& fullName, const std::string& repName, RobotConsole& console, StreamHandler& streamHandler);
+  DataView(const QString& fullName, const std::string& repName, RobotConsole& console, const TypeInfo& typeInfo);
 
-  virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const { return theFullName; }
-  virtual const QIcon* getIcon() const { return &theIcon; }
+  SimRobot::Widget* createWidget() override;
+  const QString& getFullName() const override { return theFullName; }
+  const QIcon* getIcon() const override { return &theIcon; }
 
   const QString& getFullName() { return theFullName; }
 
@@ -102,7 +100,7 @@ private:
   const std::string theName; /**< The name of the view and the data displayed. */
   std::string type; /**< The type of the data shown. */
   DataWidget* pTheWidget = nullptr; /**< The widget which displays the properties */
-  StreamHandler& theStreamHandler;
+  const TypeInfo& typeInfo;
   PropertyManager theVariantManager; /**< responsible for the creation and destruction of QtProperties */
   bool theIgnoreUpdatesFlag; /**< If true handleMessage returns without doing anything */
   QtProperty* pTheCurrentRootNode; /** Pointer to the current root property */

@@ -2,7 +2,5 @@
 # Start the version of the bush that was compiled most recently.
 # This script can be launched from the Finder.
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname "${scriptPath}")
-cd "$basePath"
+cd "$(dirname "$(which "$0")")"
 open `ls -t ../../Build/macOS/bush/*/* | head -1 | sed "s%\(.*/\).*%\1bush.app%"`

@@ -1,8 +1,8 @@
 /**
-* @file SimObjectRenderer.cpp
-* Declaration of class SimObjectRenderer
-* @author Colin Graf
-*/
+ * @file SimObjectRenderer.cpp
+ * Declaration of class SimObjectRenderer
+ * @author Colin Graf
+ */
 
 #include "Platform/OpenGL.h"
 
@@ -12,85 +12,40 @@
 #include "Simulation/Scene.h"
 #include "Platform/System.h"
 #include "Platform/Assert.h"
+#include "Tools/Math/Constants.h"
+#include "Tools/Math/Rotation.h"
+#include "Tools/Math.h"
 #include "Tools/OpenGLTools.h"
-
-template <class V> inline V normalize(const V& data)
-{
-  const float pi = 3.1415926535897932384626433832795f;
-  const float pi2 = 2.0f * pi;
-  if(data < V(pi) && data >= -V(pi))
-    return data;
-  V ndata = data - ((int)(data / V(pi2))) * V(pi2);
-  if(ndata >= V(pi))
-    ndata -= V(pi2);
-  else if(ndata < -V(pi))
-    ndata += V(pi2);
-  return ndata;
-}
 
 SimObjectRenderer::SimObjectRenderer(SimObject& simObject) :
   simObject(simObject), width(0), height(0),
-  cameraMode(targetCam), defaultCameraPos(3.f, 6.f, 4.f), cameraPos(defaultCameraPos), fovy(40.f),
-  surfaceShadeMode(smoothShading), physicsShadeMode(noShading), drawingsShadeMode(smoothShading), renderFlags(enableLights | enableTextures | showCoordinateSystem),
-  dragging(false), dragPlane(xyPlane), dragMode(keepDynamics),
-  moving(false), movingLeftStartTime(0), movingRightStartTime(0), movingUpStartTime(0), movingDownStartTime(0)
+  cameraMode(targetCam), defaultCameraPos(3.f, 6.f, 4.f), cameraPos(defaultCameraPos), cameraTarget(Vector3f::Zero()), fovy(40.f),
+  surfaceShadeMode(smoothShading), physicsShadeMode(noShading), drawingsShadeMode(smoothShading), renderFlags(enableLights | enableTextures | enableMultisample),
+  dragging(false), dragPlane(xyPlane), dragMode(keepDynamics), degreeSteps(15)
 {
 }
 
 void SimObjectRenderer::resetCamera()
 {
   cameraPos = defaultCameraPos;
-  cameraTarget = Vector3<>();
+  cameraTarget = Vector3f::Zero();
   updateCameraTransformation();
 }
 
 void SimObjectRenderer::updateCameraTransformation()
 {
-  static const Vector3<> cameraUpVector(0.f, 0.f, 1.f);
+  static const Vector3f cameraUpVector(0.f, 0.f, 1.f);
   OpenGLTools::computeCameraTransformation(cameraPos, cameraTarget, cameraUpVector, cameraTransformation);
 }
 
 void SimObjectRenderer::init(bool hasSharedDisplayLists)
 {
-#ifdef MACOS
-  CGLContextObj ctx = CGLGetCurrentContext();
-  VERIFY(CGLEnable(ctx, kCGLCEMPEngine) == kCGLNoError);
-#endif
-
   Simulation::simulation->scene->createGraphics(hasSharedDisplayLists);
+  calcDragPlaneVector();
 }
 
 void SimObjectRenderer::draw()
 {
-  // update a moving camera
-  if(moving)
-  {
-    unsigned int now = System::getTime();
-    int x = 0;
-    int y = 0;
-    if(movingLeftStartTime)
-    {
-      x -= now - movingLeftStartTime;
-      movingLeftStartTime = now;
-    }
-    if(movingRightStartTime)
-    {
-      x += now - movingRightStartTime;
-      movingRightStartTime = now;
-    }
-    if(movingUpStartTime)
-    {
-      y -= now - movingUpStartTime;
-      movingUpStartTime = now;
-    }
-    if(movingDownStartTime)
-    {
-      y += now - movingDownStartTime;
-      movingDownStartTime = now;
-    }
-    moveCamera(float(x) * 0.001f, float(y) * 0.002f);
-  }
-
   // set flags
   if(renderFlags & enableLights)
     glEnable(GL_LIGHTING);
@@ -122,10 +77,10 @@ void SimObjectRenderer::draw()
   if(&simObject != Simulation::simulation->scene && !(renderFlags & showAsGlobalView))
   {
     const float* transformation = simObject.transformation;
-    Pose3<> pose(Matrix3x3<>(Vector3<>(transformation[0], transformation[1], transformation[2]),
-      Vector3<>(transformation[4], transformation[5], transformation[6]),
-      Vector3<>(transformation[8], transformation[9], transformation[10])),
-      Vector3<>(transformation[12], transformation[13], transformation[14]));
+    Pose3f pose((Matrix3f() << transformation[0], transformation[4], transformation[8],
+                               transformation[1], transformation[5], transformation[9],
+                               transformation[2], transformation[6], transformation[10]).finished(),
+                Vector3f(transformation[12], transformation[13], transformation[14]));
     float invTrans[16];
     OpenGLTools::convertTransformation(pose.invert(), invTrans);
     glMultMatrixf(invTrans);
@@ -135,12 +90,17 @@ void SimObjectRenderer::draw()
   if(renderFlags & showCoordinateSystem)
   {
     Simulation::simulation->scene->defaultSurface->set();
-
     glBegin(GL_LINES);
-      glNormal3f (0,0,1);
-      glColor3f(1, 0, 0); glVertex3f(0, 0, 0); glVertex3f(1, 0, 0);
-      glColor3f(0, 1, 0); glVertex3f(0, 0, 0); glVertex3f(0, 1, 0);
-      glColor3f(0, 0, 1); glVertex3f(0, 0, 0); glVertex3f(0, 0, 1);
+    glNormal3f(0, 0, 1);
+    glColor3f(1, 0, 0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(1, 0, 0);
+    glColor3f(0, 1, 0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 1, 0);
+    glColor3f(0, 0, 1);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 0, 1);
     glEnd();
 
     Simulation::simulation->scene->defaultSurface->unset();
@@ -167,7 +127,7 @@ void SimObjectRenderer::draw()
         ASSERT(false);
         break;
     }
-    graphicalObject->drawAppearances();
+    graphicalObject->drawAppearances(SurfaceColor(0), false);
 
     // check matrix stack size
 #ifdef _DEBUG
@@ -233,7 +193,7 @@ void SimObjectRenderer::draw()
     if(dragType == dragRotate || dragType == dragNormalObject)
       glMultMatrixf(dragSelection->transformation);
     else
-      glTranslatef(dragSelection->pose.translation.x, dragSelection->pose.translation.y, dragSelection->pose.translation.z);
+      glTranslatef(dragSelection->pose.translation.x(), dragSelection->pose.translation.y(), dragSelection->pose.translation.z());
 
     switch(dragPlane)
     {
@@ -249,7 +209,7 @@ void SimObjectRenderer::draw()
 
     GLUquadricObj* q = gluNewQuadric();
     glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
-    glNormal3f(0,0,1);
+    glNormal3f(0, 0, 1);
     gluDisk(q, 0.003f, 0.5f, 30, 1);
     glRotatef(180.f, 1.f, 0.f, 0.f);
     gluDisk(q, 0.003f, 0.5f, 30, 1);
@@ -262,7 +222,7 @@ void SimObjectRenderer::draw()
   }
 
   // draw controller drawings
-  if(physicalObject && drawingsShadeMode != noShading)
+  if(drawingsShadeMode != noShading)
   {
     Simulation::simulation->scene->defaultSurface->set();
 
@@ -287,12 +247,18 @@ void SimObjectRenderer::draw()
 
     if(renderFlags & (enableDrawingsTransparentOcclusion | enableDrawingsOcclusion))
     {
-      physicalObject->drawPhysics(showControllerDrawings);
+      if(physicalObject)
+        physicalObject->drawPhysics(showControllerDrawings);
+      if(graphicalObject)
+        graphicalObject->drawAppearances(SurfaceColor(0), true);
       if(renderFlags & enableDrawingsTransparentOcclusion)
       {
         glAccum(GL_LOAD, 0.5f);
         glClear(GL_DEPTH_BUFFER_BIT);
-        physicalObject->drawPhysics(showControllerDrawings);
+        if(physicalObject)
+          physicalObject->drawPhysics(showControllerDrawings);
+        if(graphicalObject)
+          graphicalObject->drawAppearances(SurfaceColor(0), true);
         glAccum(GL_ACCUM, 0.5f);
         glAccum(GL_RETURN, 1.f);
       }
@@ -300,7 +266,10 @@ void SimObjectRenderer::draw()
     else
     {
       glClear(GL_DEPTH_BUFFER_BIT);
-      physicalObject->drawPhysics(showControllerDrawings);
+      if(physicalObject)
+        physicalObject->drawPhysics(showControllerDrawings);
+      if(graphicalObject)
+        graphicalObject->drawAppearances(SurfaceColor(0), true);
     }
 
     Simulation::simulation->scene->defaultSurface->unset();
@@ -321,16 +290,18 @@ void SimObjectRenderer::resize(float fovy, unsigned int width, unsigned int heig
   this->height = height;
 
   glViewport(0, 0, width, height);
-  viewport[0] = viewport[1] = 0; viewport[2] = width; viewport[3] = height; // store viewport for gluUnProject
+  viewport[0] = viewport[1] = 0;
+  viewport[2] = width;
+  viewport[3] = height; // store viewport for gluUnProject
 
   glMatrixMode(GL_PROJECTION);
-  OpenGLTools::computePerspective(fovy * (float(M_PI) / 180.f), float(width) / float(height), 0.1f, 500.f, projection);
+  OpenGLTools::computePerspective(fovy * (pi / 180.f), float(width) / float(height), 0.1f, 500.f, projection);
   glLoadMatrixf(projection);
 
   glMatrixMode(GL_MODELVIEW);
 }
 
-Vector3<> SimObjectRenderer::projectClick(int x, int y)
+Vector3f SimObjectRenderer::projectClick(int x, int y) const
 {
   GLdouble mvmatrix[16];
   GLdouble projmatrix[16];
@@ -341,86 +312,8 @@ Vector3<> SimObjectRenderer::projectClick(int x, int y)
   }
 
   GLdouble tx, ty, tz;
-  gluUnProject((GLdouble)(x),(GLdouble)(height - y), 1.0, mvmatrix, projmatrix, viewport, &tx, &ty, &tz);
-  return Vector3<>(float(tx), float(ty), float(tz));
-}
-
-void SimObjectRenderer::rotateCamera(float x, float y)
-{
-  if(cameraMode == SimRobotCore2::Renderer::targetCam)
-  {
-    Vector3<> v = cameraPos - cameraTarget;
-    Matrix3x3<> rotateY(Vector3<>(0.f, y, 0.f));
-    Matrix3x3<> rotateZ(Vector3<>(0.f, 0.f, x));
-    Vector3<> v2(sqrtf(v.x * v.x + v.y * v.y), 0.f, v.z);
-    v2 = rotateY * v2;
-    if(v2.x < 0.001f)
-    {
-      v2.x = 0.001f;
-      v2.normalize(v.abs());
-    }
-    Vector3<> v3(v.x, v.y, 0.f);
-    v3.normalize(v2.x);
-    v3.z = v2.z;
-    v = rotateZ * v3;
-    cameraPos = cameraTarget + v;
-  }
-  else // if(cameraMode == SimRobotCore2::Renderer::freeCam)
-  {
-    Vector3<> v = cameraTarget - cameraPos;
-    Matrix3x3<> rotateY(Vector3<>(0.f, y, 0.f));
-    Matrix3x3<> rotateZ(Vector3<>(0.f, 0.f, -x));
-    Vector3<> v2(sqrtf(v.x * v.x + v.y * v.y), 0.f, v.z);
-    v2 = rotateY * v2;
-    if(v2.x < 0.001f)
-    {
-      v2.x = 0.001f;
-      v2.normalize(v.abs());
-    }
-    Vector3<> v3(v.x, v.y, 0.f);
-    v3.normalize(v2.x);
-    v3.z = v2.z;
-    v = rotateZ * v3;
-    cameraTarget = cameraPos + v;
-  }
-  updateCameraTransformation();
-}
-
-void SimObjectRenderer::moveCamera(float x, float y)
-{
-  if(cameraMode == SimRobotCore2::Renderer::targetCam)
-  {
-    if(x != 0.f)
-      rotateCamera(x, 0);
-    if(y != 0.f)
-    {
-      Vector3<> v = cameraPos - cameraTarget;
-      float len = v.abs() + y;
-      if(len < 0.0001f)
-        len = 0.0001f;
-      v.normalize(len);
-      cameraPos = cameraTarget + v;
-    }
-  }
-  else // if(cameraMode == SimRobotCore2::Renderer::FREECAM)
-  {
-    if(x != 0.f)
-    {
-      Vector3<> v = cameraTarget - cameraPos;
-      Vector3<> v2 = v ^ Vector3<>(0.f, 0.f, 1.f);
-      v2.normalize(x);
-      cameraTarget += v2;
-      cameraPos += v2;
-    }
-    if(y != 0.f)
-    {
-      Vector3<> v = cameraTarget - cameraPos;
-      v.normalize(y);
-      cameraTarget -= v;
-      cameraPos -= v;
-    }
-  }
-  updateCameraTransformation();
+  gluUnProject((GLdouble)(x), (GLdouble)(height - y), 1.0, mvmatrix, projmatrix, viewport, &tx, &ty, &tz);
+  return Vector3f(float(tx), float(ty), float(tz));
 }
 
 void SimObjectRenderer::getSize(unsigned int& width, unsigned int& height) const
@@ -429,25 +322,25 @@ void SimObjectRenderer::getSize(unsigned int& width, unsigned int& height) const
   height = this->height;
 }
 
-void SimObjectRenderer::zoom(float change)
+void SimObjectRenderer::zoom(float change, float x, float y)
 {
-  Vector3<> v = cameraPos - cameraTarget;
-  moveCamera(0.f, v.abs() * change * 0.0005f);
-}
-
-void SimObjectRenderer::setCameraMode(SimRobotCore2::Renderer::CameraMode mode)
-{
-  cameraMode = mode;
-  if(cameraMode == targetCam)
+  Vector3f v = cameraTarget - cameraPos;
+  if(x < 0 || y < 0)
   {
-    cameraTarget = Vector3<>();
-    updateCameraTransformation();
+    v.normalize(v.norm() * change * 0.0005f);
+    cameraPos -= v;
   }
-}
-
-void SimObjectRenderer::toggleCameraMode()
-{
-  setCameraMode(cameraMode == SimRobotCore2::Renderer::targetCam ? SimRobotCore2::Renderer::freeCam : SimRobotCore2::Renderer::targetCam);
+  else
+  {
+    Vector3f translationVector;
+    if(intersectClickAndCoordinatePlane(static_cast<int>(x), static_cast<int>(y), dragPlane, translationVector))
+    {
+      translationVector = translationVector - cameraPos;
+      cameraPos += translationVector * change * 0.0005f;
+      intersectRayAndPlane(cameraPos, v, cameraTarget, dragPlaneVector, cameraTarget);
+    }
+  }
+  updateCameraTransformation();
 }
 
 void SimObjectRenderer::fitCamera()
@@ -456,18 +349,24 @@ void SimObjectRenderer::fitCamera()
   if(simObject)
     simulation->fitCamera(cameraTarget, cameraPos, width, height, simObject);
   calculateUpVector();
-  */
+   */
 }
 
-bool SimObjectRenderer::intersectRayAndPlane(const Vector3<>& point, const Vector3<>& v,
-                                       const Vector3<>& plane, const Vector3<>& n,
-                                       Vector3<>& intersection) const
+void SimObjectRenderer::setDragPlane(DragAndDropPlane plane)
 {
-  Vector3<> p = plane - point;
-  float denominator = n * v;
+  dragPlane = plane;
+  calcDragPlaneVector();
+}
+
+bool SimObjectRenderer::intersectRayAndPlane(const Vector3f& point, const Vector3f& v,
+                                             const Vector3f& plane, const Vector3f& n,
+                                             Vector3f& intersection) const
+{
+  Vector3f p = plane - point;
+  float denominator = n.dot(v);
   if(denominator == 0.f)
     return false;
-  float r = n * p / denominator;
+  float r = n.dot(p) / denominator;
   if(r < 0.f)
     return false;
   intersection = v;
@@ -476,7 +375,28 @@ bool SimObjectRenderer::intersectRayAndPlane(const Vector3<>& point, const Vecto
   return true;
 }
 
-Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
+bool SimObjectRenderer::intersectClickAndCoordinatePlane(int x, int y, DragAndDropPlane plane, Vector3f& point) const
+{
+  return intersectRayAndPlane(cameraPos, projectClick(x, y) - cameraPos, cameraTarget, dragPlaneVector, point);
+}
+
+void SimObjectRenderer::calcDragPlaneVector()
+{
+  switch(dragPlane)
+  {
+    case xyPlane:
+      dragPlaneVector = Vector3f(0.f, 0.f, 1.f);
+      break;
+    case xzPlane:
+      dragPlaneVector = Vector3f(0.f, 1.f, 0.f);
+      break;
+    case yzPlane:
+      dragPlaneVector = Vector3f(1.f, 0.f, 0.f);
+      break;
+  }
+}
+
+Body* SimObjectRenderer::selectObject(const Vector3f& projectedClick)
 {
   if(&simObject != Simulation::simulation->scene)
     return nullptr;
@@ -486,9 +406,9 @@ Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
   public:
     Body* closestBody;
     float closestSqrDistance;
-    const Vector3<>& cameraPos;
+    const Vector3f& cameraPos;
 
-    Callback(const Vector3<>& cameraPos) : closestBody(0), cameraPos(cameraPos) {}
+    Callback(const Vector3f& cameraPos) : closestBody(0), cameraPos(cameraPos) {}
 
     static void staticCollisionCallback(Callback* callback, dGeomID geom1, dGeomID geom2)
     {
@@ -507,7 +427,7 @@ Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
         geom = geom1;
       }
       const dReal* pos = dGeomGetPosition(geom);
-      float sqrDistance = (Vector3<>((float) pos[0], (float) pos[1], (float) pos[2]) - callback->cameraPos).squareAbs();
+      float sqrDistance = (Vector3f((float) pos[0], (float) pos[1], (float) pos[2]) - callback->cameraPos).squaredNorm();
       if(!callback->closestBody || sqrDistance < callback->closestSqrDistance)
       {
         callback->closestBody = (Body*)dBodyGetData(bodyId);
@@ -525,8 +445,8 @@ Body* SimObjectRenderer::selectObject(const Vector3<>& projectedClick)
 
   Callback callback(cameraPos);
   dGeomID ray = dCreateRay(Simulation::simulation->staticSpace, 10000.f);
-  Vector3<> dir = projectedClick - cameraPos;
-  dGeomRaySet(ray, cameraPos.x, cameraPos.y, cameraPos.z, dir.x, dir.y, dir.z);
+  Vector3f dir = projectedClick - cameraPos;
+  dGeomRaySet(ray, cameraPos.x(), cameraPos.y(), cameraPos.z(), dir.x(), dir.y(), dir.z());
   dSpaceCollide2(ray, (dGeomID)Simulation::simulation->movableSpace, &callback, (dNearCallback*)&Callback::staticCollisionWithSpaceCallback);
   dGeomDestroy(ray);
 
@@ -545,17 +465,12 @@ bool SimObjectRenderer::startDrag(int x, int y, DragType type)
   dragSelection = 0;
   if(&simObject == Simulation::simulation->scene)
   {
-    Vector3<> projectedClick = projectClick(x, y);
+    Vector3f projectedClick = projectClick(x, y);
     dragSelection = selectObject(projectedClick);
 
     if(dragSelection)
     {
-      switch(dragPlane)
-      {
-        case xyPlane: dragPlaneVector = Vector3<>(0.f, 0.f, 1.f); break;
-        case xzPlane: dragPlaneVector = Vector3<>(0.f, 1.f, 0.f); break;
-        case yzPlane: dragPlaneVector = Vector3<>(1.f, 0.f, 0.f); break;
-      }
+      calcDragPlaneVector();
       if(type == dragRotate || type == dragNormalObject)
         dragPlaneVector = dragSelection->pose.rotation * dragPlaneVector;
       if(!intersectRayAndPlane(cameraPos, projectedClick - cameraPos, dragSelection->pose.translation, dragPlaneVector, dragStartPos))
@@ -577,8 +492,9 @@ bool SimObjectRenderer::startDrag(int x, int y, DragType type)
 
   if(!dragSelection) // camera control
   {
-    dragStartPos.x = x;
-    dragStartPos.y = y;
+    dragStartPos.x() = x;
+    dragStartPos.y() = y;
+    interCameraPos = cameraPos;
     dragging = true;
     dragType = type;
     return true;
@@ -591,90 +507,122 @@ SimRobotCore2::Object* SimObjectRenderer::getDragSelection()
   return dragSelection;
 }
 
-bool SimObjectRenderer::moveDrag(int x, int y)
+bool SimObjectRenderer::moveDrag(int x, int y, DragType type)
 {
   if(!dragging)
     return false;
 
+  dragType = type;
+
   if(!dragSelection) // camera control
   {
-    if(cameraMode == SimRobotCore2::Renderer::targetCam)
+    if(dragType == dragRotate || dragType == dragRotateWorld)
     {
-      if(dragType == dragRotate || dragType == dragRotateWorld)
+      Vector3f v = (dragType == dragRotate ? cameraPos : interCameraPos) - cameraTarget;
+      const RotationMatrix rotateY = RotationMatrix::aroundY((y - dragStartPos.y()) * -0.01f);
+      const RotationMatrix rotateZ = RotationMatrix::aroundZ((x - dragStartPos.x()) * -0.01f);
+      const float hypoLength = std::sqrt(v.x() * v.x() + v.y() * v.y());
+      Vector3f v2(hypoLength, 0.f, v.z());
+      v2 = rotateY * v2;
+      if(v2.x() < 0.001f)
       {
+        v2.x() = 0.001f;
+        v2.normalize(v.norm());
       }
-      else // if(dragType == dragNormal)
-        rotateCamera((x - dragStartPos.x) * -0.01f, (y - dragStartPos.y) * -0.01f);
+      Vector3f v3(v.x(), v.y(), 0.f);
+      v3.normalize(v2.x());
+      v3.z() = v2.z();
+      v = rotateZ * v3;
+      interCameraPos = cameraTarget + v;
+      if(dragType == dragRotate)
+        cameraPos = cameraTarget + v;
+      else
+      {
+        float angleZ = std::atan2(v.y(), v.x()) * (180.f / pi);
+        float angleY = ((pi / 2.f) - std::atan2(v.z(), hypoLength)) * (180.f / pi);
+        int zRounded = (((int)angleZ + degreeSteps / 2) / degreeSteps) * degreeSteps;
+        int yRounded = (((int)(angleY) + degreeSteps / 2) / degreeSteps) * degreeSteps;
+        angleZ = zRounded * (pi / 180.f);
+        angleY = yRounded * (pi / 180.f);
+        if(angleY == 0)
+          angleY = 0.00001f;
+        cameraPos = cameraTarget + Vector3f(std::sin(angleY) * std::cos(angleZ), std::sin(angleY) * std::sin(angleZ), std::cos(angleY)).normalize(v.norm());
+      }
     }
-    else // if(cameraMode == SimRobotCore2::Renderer::freeCam)
+    else // if(dragType == dragNormal)
     {
-      if(dragType == dragRotate || dragType == dragRotateWorld)
-      {
-      }
-      else // if(dragType == dragNormal)
-        rotateCamera((x - dragStartPos.x) * -0.001f, (y - dragStartPos.y) * -0.001f);
+      Vector3f start;
+      Vector3f end;
+      if(intersectClickAndCoordinatePlane(static_cast<int>(dragStartPos.x()), static_cast<int>(dragStartPos.y()), dragPlane, start))
+        if(intersectClickAndCoordinatePlane(x, y, dragPlane, end))
+        {
+          Vector3f translate = end - start;
+          cameraPos -= translate;
+          cameraTarget -= translate;
+        }
     }
 
-    dragStartPos.x = x;
-    dragStartPos.y = y;
+    dragStartPos.x() = x;
+    dragStartPos.y() = y;
+    updateCameraTransformation();
     return true;
   }
   else // object control
   {
     if(dragMode == applyDynamics)
       return true;
-    Vector3<> projectedClick = projectClick(x, y);
-    Vector3<> currentPos;
+    Vector3f projectedClick = projectClick(x, y);
+    Vector3f currentPos;
     if(intersectRayAndPlane(cameraPos, projectedClick - cameraPos, dragSelection->pose.translation, dragPlaneVector, currentPos))
     {
       if(dragType == dragRotate || dragType == dragRotateWorld)
       {
-        Vector3<> oldv = dragStartPos - dragSelection->pose.translation;
-        Vector3<> newv = currentPos - dragSelection->pose.translation;
+        Vector3f oldv = dragStartPos - dragSelection->pose.translation;
+        Vector3f newv = currentPos - dragSelection->pose.translation;
 
         if(dragType != dragRotateWorld)
         {
-          Matrix3x3<> invRotation = dragSelection->pose.rotation.transpose();
+          const RotationMatrix invRotation = dragSelection->pose.rotation.inverse();
           oldv = invRotation * oldv;
           newv = invRotation * newv;
         }
 
         float angle = 0.f;
         if(dragPlane == yzPlane)
-          angle = normalize(atan2f(newv.z, newv.y) - atan2f(oldv.z, oldv.y));
+          angle = normalize(std::atan2(newv.z(), newv.y()) - std::atan2(oldv.z(), oldv.y()));
         else if(dragPlane == xzPlane)
-          angle = normalize(atan2f(newv.x, newv.z) - atan2f(oldv.x, oldv.z));
+          angle = normalize(std::atan2(newv.x(), newv.z()) - std::atan2(oldv.x(), oldv.z()));
         else
-          angle = normalize(atan2f(newv.y, newv.x) - atan2f(oldv.y, oldv.x));
+          angle = normalize(std::atan2(newv.y(), newv.x()) - std::atan2(oldv.y(), oldv.x()));
 
-        Vector3<> offset = dragPlaneVector * angle;
-        Matrix3x3<> rotation(offset);
-        Vector3<> center = dragSelection->pose.translation;
+        const Vector3f offset = dragPlaneVector * angle;
+        const RotationMatrix rotation = Rotation::AngleAxis::unpack(offset);
+        Vector3f center = dragSelection->pose.translation;
         dragSelection->rotate(rotation, center);
         if(dragMode == adoptDynamics)
         {
-          unsigned int now = System::getTime();
-          float t = (now - dragStartTime) * 0.001f;
-          Vector3<> velocity = offset / t;
+          const unsigned int now = System::getTime();
+          const float t = (now - dragStartTime) * 0.001f;
+          Vector3f velocity = offset / t;
           const dReal* oldVel = dBodyGetAngularVel(dragSelection->body);
-          velocity = velocity * 0.3f + Vector3<>((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
-          dBodySetAngularVel(dragSelection->body, velocity.x, velocity.y, velocity.z);
+          velocity = velocity * 0.3f + Vector3f((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
+          dBodySetAngularVel(dragSelection->body, velocity.x(), velocity.y(), velocity.z());
           dragStartTime = now;
         }
         dragStartPos = currentPos;
       }
       else
       {
-        const Vector3<> offset = currentPos - dragStartPos;
+        const Vector3f offset = currentPos - dragStartPos;
         dragSelection->move(offset);
         if(dragMode == adoptDynamics)
         {
-          unsigned int now = System::getTime();
-          float t = (now - dragStartTime) * 0.001f;
-          Vector3<> velocity = offset / t;
+          const unsigned int now = System::getTime();
+          const float t = (now - dragStartTime) * 0.001f;
+          Vector3f velocity = offset / t;
           const dReal* oldVel = dBodyGetLinearVel(dragSelection->body);
-          velocity = velocity * 0.3f + Vector3<>((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
-          dBodySetLinearVel(dragSelection->body, velocity.x, velocity.y, velocity.z);
+          velocity = velocity * 0.3f + Vector3f((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
+          dBodySetLinearVel(dragSelection->body, velocity.x(), velocity.y(), velocity.z());
           dragStartTime = now;
         }
         dragStartPos = currentPos;
@@ -697,42 +645,42 @@ bool SimObjectRenderer::releaseDrag(int x, int y)
   else // object control
   {
     if(dragMode == adoptDynamics)
-      moveDrag(x, y);
+      moveDrag(x, y, dragType);
     else if(dragMode == applyDynamics)
     {
-      Vector3<> projectedClick = projectClick(x, y);
-      Vector3<> currentPos;
+      Vector3f projectedClick = projectClick(x, y);
+      Vector3f currentPos;
       if(intersectRayAndPlane(cameraPos, projectedClick - cameraPos, dragSelection->pose.translation, dragPlaneVector, currentPos))
       {
         if(dragType == dragRotate || dragType == dragRotateWorld)
         {
-          Vector3<> oldv = dragStartPos - dragSelection->pose.translation;
-          Vector3<> newv = currentPos - dragSelection->pose.translation;
+          Vector3f oldv = dragStartPos - dragSelection->pose.translation;
+          Vector3f newv = currentPos - dragSelection->pose.translation;
 
           if(dragType != dragRotateWorld)
           {
-            Matrix3x3<> invRotation = dragSelection->pose.rotation.transpose();
+            const RotationMatrix invRotation = dragSelection->pose.rotation.inverse();
             oldv = invRotation * oldv;
             newv = invRotation * newv;
           }
 
           float angle = 0.f;
           if(dragPlane == yzPlane)
-            angle = normalize(atan2f(newv.z, newv.y) - atan2f(oldv.z, oldv.y));
+            angle = normalize(std::atan2(newv.z(), newv.y()) - std::atan2(oldv.z(), oldv.y()));
           else if(dragPlane == xzPlane)
-            angle = normalize(atan2f(newv.x, newv.z) - atan2f(oldv.x, oldv.z));
+            angle = normalize(std::atan2(newv.x(), newv.z()) - std::atan2(oldv.x(), oldv.z()));
           else
-            angle = normalize(atan2f(newv.y, newv.x) - atan2f(oldv.y, oldv.x));
+            angle = normalize(std::atan2(newv.y(), newv.x()) - std::atan2(oldv.y(), oldv.x()));
 
-          Vector3<> offset = dragPlaneVector * angle;
-          Vector3<> torque = offset * (float) dragSelection->mass.mass * 50.f;
-          dBodyAddTorque(dragSelection->body, torque.x, torque.y, torque.z);
+          const Vector3f offset = dragPlaneVector * angle;
+          const Vector3f torque = offset * static_cast<float>(dragSelection->mass.mass) * 50.f;
+          dBodyAddTorque(dragSelection->body, torque.x(), torque.y(), torque.z());
         }
         else
         {
-          const Vector3<> offset = currentPos - dragStartPos;
-          Vector3<> force = offset * (float) dragSelection->mass.mass * 500.f;
-          dBodyAddForce(dragSelection->body, force.x, force.y, force.z);
+          const Vector3f offset = currentPos - dragStartPos;
+          const Vector3f force = offset * static_cast<float>(dragSelection->mass.mass) * 500.f;
+          dBodyAddForce(dragSelection->body, force.x(), force.y(), force.z());
         }
       }
     }
@@ -744,41 +692,20 @@ bool SimObjectRenderer::releaseDrag(int x, int y)
   }
 }
 
-void SimObjectRenderer::setCameraMove(bool left, bool right, bool up, bool down)
-{
-  if(!left)
-    movingLeftStartTime = 0;
-  else if(!movingLeftStartTime)
-    movingLeftStartTime = System::getTime();
-
-  if(!right)
-    movingRightStartTime = 0;
-  else if(!movingRightStartTime)
-    movingRightStartTime = System::getTime();
-
-  if(!up)
-    movingUpStartTime = 0;
-  else if(!movingUpStartTime)
-    movingUpStartTime = System::getTime();
-
-  if(!down)
-    movingDownStartTime = 0;
-  else if(!movingDownStartTime)
-    movingDownStartTime = System::getTime();
-
-  moving = movingLeftStartTime || movingRightStartTime || movingUpStartTime || movingDownStartTime;
-}
-
 void SimObjectRenderer::setCamera(const float* pos, const float* target)
 {
-  cameraPos = Vector3<>(pos[0], pos[1], pos[2]);
-  cameraTarget = Vector3<>(target[0], target[1], target[2]);
+  cameraPos = Vector3f(pos[0], pos[1], pos[2]);
+  cameraTarget = Vector3f(target[0], target[1], target[2]);
   updateCameraTransformation();
 }
 
 void SimObjectRenderer::getCamera(float* pos, float* target)
 {
-  pos[0] = cameraPos.x; pos[1] = cameraPos.y; pos[2] = cameraPos.z;
-  target[0] = cameraTarget.x; target[1] = cameraTarget.y; target[2] = cameraTarget.z;
+  pos[0] = cameraPos.x();
+  pos[1] = cameraPos.y();
+  pos[2] = cameraPos.z();
+  target[0] = cameraTarget.x();
+  target[1] = cameraTarget.y();
+  target[2] = cameraTarget.z();
 }
 

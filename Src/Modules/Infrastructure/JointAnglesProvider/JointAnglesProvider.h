@@ -14,5 +14,5 @@ MODULE(JointAnglesProvider,
 
 class JointAnglesProvider : public JointAnglesProviderBase
 {
-  void update(JointAngles& jointAngles);
+  void update(JointAngles& jointAngles) override;
 };

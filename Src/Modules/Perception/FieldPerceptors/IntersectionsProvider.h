@@ -26,6 +26,7 @@ MODULE(IntersectionsProvider,
   {,
     (float)(0.15f) maxAllowedIntersectionAngleDifference, /**<The angle between two intersecting lines should not differ more from 90° than this number (in rad) */
     (float)(0.8f) maxLengthUnrecognizedProportion,  /**< the length of the recognized line multiplied by this value could maximal imagine */
+    (float)(800.f) maxIntersectionGap,  /**< the maximum distance between the intersection and one end of the line (if the intersection is not on the line) */
     (float)(10.f) maxOverheadToDecleareAsEnd,  /**< the max of pixel an end can be farther away to declear as end*/
   }),
 });
@@ -33,7 +34,7 @@ MODULE(IntersectionsProvider,
 class IntersectionsProvider : public IntersectionsProviderBase
 {
 public:
-  void update(IntersectionsPercept& intersectionsPercept);
+  void update(IntersectionsPercept& intersectionsPercept) override;
 
   /**
    * Returns the distance of the closer point to target.

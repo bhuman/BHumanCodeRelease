@@ -46,10 +46,10 @@ private:
    * The caller has to delete this instance. (Qt handles this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
+  SimRobot::Widget* createWidget() override;
 
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 
   friend class ConsoleWidget;
 };
@@ -80,14 +80,14 @@ private:
   bool canUndo = false;
   bool canRedo = false;
 
-  virtual QSize sizeHint() const { return QSize(640, 240); }
+  QSize sizeHint() const override { return QSize(640, 240); }
 
-  virtual QWidget* getWidget() { return this; }
-  virtual void keyPressEvent(QKeyEvent* event);
-  virtual void contextMenuEvent(QContextMenuEvent* event);
-  virtual void focusInEvent(QFocusEvent* event);
+  QWidget* getWidget() override { return this; }
+  void keyPressEvent(QKeyEvent* event) override;
+  void contextMenuEvent(QContextMenuEvent* event) override;
+  void focusInEvent(QFocusEvent* event) override;
 
-  virtual QMenu* createEditMenu() const;
+  QMenu* createEditMenu() const override;
 
 signals:
   void pasteAvailable(bool available);

@@ -8,6 +8,7 @@
 #include "Tools/Boundary.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Module/Blackboard.h"
@@ -35,7 +36,7 @@ void CameraMatrix::draw() const
     isValid[3] = Transformation::imageToRobot(0, cameraInfo.height, *this, cameraInfo, pointOnField[3]);
 
     // calculate a line 15 pixels below the horizon in the image
-    const Geometry::Line horizon = Geometry::calculateHorizon(*this, cameraInfo);
+    const Geometry::Line horizon = Projection::calculateHorizon(*this, cameraInfo);
     Geometry::Line lineBelowHorizon;
     const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
     lineBelowHorizon.direction = horizon.direction;
@@ -96,7 +97,7 @@ void CameraMatrix::draw() const
       isValid[3] = Transformation::imageToRobot(0, cameraInfo.height, *this, cameraInfo, pointOnField[3]);
 
       // calculate a line 15 pixels below the horizon in the image
-      const Geometry::Line horizon = Geometry::calculateHorizon(*this, cameraInfo);
+      const Geometry::Line horizon = Projection::calculateHorizon(*this, cameraInfo);
       Geometry::Line lineBelowHorizon;
       const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
       lineBelowHorizon.direction = horizon.direction;
@@ -143,6 +144,16 @@ void CameraMatrix::draw() const
                yy == 0 ? 3 : 0, Drawings::solidPen, ColorRGBA::white);
     }
   } // end complex drawing
+
+  if(Blackboard::getInstance().exists("CameraInfo"))
+  {
+    const CameraInfo cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+
+    if(cameraInfo.camera == CameraInfo::upper)
+      PLOT_VEC3("representation:CameraMatrix:upper:", this->translation);
+    else
+      PLOT_VEC3("representation:CameraMatrix:lower:", this->translation);
+  }
 }
 
 void RobotCameraMatrix::draw() const
@@ -164,7 +175,7 @@ void RobotCameraMatrix::draw() const
     isValid[3] = Transformation::imageToRobot(0, cameraInfo.height, *this, cameraInfo, pointOnField[3]);
 
     // calculate a line 15 pixels below the horizon in the image
-    const Geometry::Line horizon = Geometry::calculateHorizon(*this, cameraInfo);
+    const Geometry::Line horizon = Projection::calculateHorizon(*this, cameraInfo);
     Geometry::Line lineBelowHorizon;
     const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
     lineBelowHorizon.direction = horizon.direction;
@@ -223,7 +234,7 @@ void RobotCameraMatrix::draw() const
       isValid[3] = Transformation::imageToRobot(0, cameraInfo.height, *this, cameraInfo, pointOnField[3]);
 
       // calculate a line 15 pixels below the horizon in the image
-      const Geometry::Line horizon = Geometry::calculateHorizon(*this, cameraInfo);
+      const Geometry::Line horizon = Projection::calculateHorizon(*this, cameraInfo);
       Geometry::Line lineBelowHorizon;
       const Vector2f vertLineDirection(-horizon.direction.y(), horizon.direction.x());
       lineBelowHorizon.direction = horizon.direction;

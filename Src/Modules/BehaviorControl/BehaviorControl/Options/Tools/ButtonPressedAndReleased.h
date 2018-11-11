@@ -4,7 +4,7 @@
  * @param key The button to observe.
  * @param timeOut An optional timeout in ms. The timeout is measured between state changes.
  */
-option(ButtonPressedAndReleased, ((KeyStates) Key) key, (int) releaseTimeOut, (int) successiveTimeOut)
+option(ButtonPressedAndReleased, (KeyStates::Key) key, (int) releaseTimeOut, (int) successiveTimeOut)
 {
   /** The option waits for the button to be pressed. */
   initial_state(waitingForPressInit)

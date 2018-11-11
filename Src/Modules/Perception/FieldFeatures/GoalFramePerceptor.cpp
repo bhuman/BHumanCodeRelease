@@ -9,8 +9,7 @@ void GoalFramePerceptor::update(GoalFrame& goalFrame)
 
   if(searchByBigT(goalFrame) ||
      searchByBigX(goalFrame) ||
-     searchByTT(goalFrame) ||
-     searchByGPAndLine(goalFrame))
+     searchByTT(goalFrame))
     goalFrame.isValid = goalFrame.isGroundLineValid = true;
   else
     goalFrame.isValid = false;
@@ -88,41 +87,28 @@ bool GoalFramePerceptor::searchByTT(GoalFrame& goalFrame) const
   return false;
 }
 
-bool GoalFramePerceptor::searchByGPAndLine(GoalFrame& goalFrame) const
-{
-  if(theGoalPostPercept.wasSeen)
-    for(LinesPercept::Line line : theLinesPercept.lines)
-      if(std::abs(Geometry::getDistanceToLine(line.line, theGoalPostPercept.positionOnField)) < allowedGoalPostToLineDistance)
-        if(calcGoalFrame(Pose2f(Angle(line.line.direction.angle() + 90_deg).normalize(), line.line.base), theFieldDimensions.yPosLeftGoal, goalFrame))
-          goalFrame.isGroundLineValid = true;
-
-  return false;
-}
-
 bool GoalFramePerceptor::calcGoalFrame(const Pose2f& prePose, const float yTranslation, GoalFrame& goalFrame) const
 {
   static const float borderToGroundLineDistance = theFieldDimensions.xPosOpponentFieldBorder - theFieldDimensions.xPosOpponentGroundline;
 
-  Vector2f pInField;
   const Pose2f prePoseInverse(prePose.inverse());
-  int positiv = 0, negativ = 0;
-  for(const Vector2i& p : theFieldBoundary.convexBoundary)
-    if(Transformation::imageToRobot(p, theCameraMatrix, theCameraInfo, pInField))
+  int positive = 0, negative = 0;
+  for(const Vector2f& p : theFieldBoundary.boundaryOnField)
+  {
+    Vector2f pInField = prePoseInverse * p;
+    if(std::abs(std::abs(pInField.x()) - borderToGroundLineDistance) < allowedFieldBoundaryDivergence)
     {
-      pInField = prePoseInverse * pInField;
-      if(std::abs(std::abs(pInField.x()) - borderToGroundLineDistance) < allowedFieldBoundaryDivergence)
-      {
-        if(pInField.x() > 0)
-          positiv++;
-        else
-          negativ++;
-      }
+      if(pInField.x() > 0)
+        positive++;
+      else
+        negative++;
     }
+  }
 
-  if(neededConvexBoundaryPoints > positiv && neededConvexBoundaryPoints > negativ)
+  if(neededConvexBoundaryPoints > positive && neededConvexBoundaryPoints > negative)
     return false;
 
-  const float sign = (positiv < negativ) ? -1.f : 1.f;
+  const float sign = (positive < negative) ? -1.f : 1.f;
   goalFrame = Pose2f(prePose).rotate(-pi_2 + sign * pi_2);
   goalFrame.translation = goalFrame * Vector2f(0.f, (goalFrame.inverse().translation.y() > 0.f ? 1.f : -1.f)).normalized(yTranslation);
   return true;

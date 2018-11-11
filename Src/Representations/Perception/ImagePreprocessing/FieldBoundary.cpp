@@ -4,74 +4,50 @@
 
 #include "FieldBoundary.h"
 #include "Platform/BHAssert.h"
+#include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/Modify.h"
+#include "Tools/Math/Transformation.h"
+#include "Tools/Module/Blackboard.h"
 
 void FieldBoundary::draw() const
 {
-  DEBUG_DRAWING("representation:FieldBoundary:boundarySpots", "drawingOnImage")
-    for(const Vector2i& p : boundarySpots)
-    {
-      DOT("representation:FieldBoundary:boundarySpots", p.x(), p.y(), ColorRGBA::blue, ColorRGBA::blue);
-    }
-
-  DEBUG_DRAWING("representation:FieldBoundary:convexBoundary", "drawingOnImage")
-  {
-    const Vector2i* previ = nullptr;
-    for(const Vector2i& p : convexBoundary)
-    {
-      DOT("representation:FieldBoundary:convexBoundary", p.x(), p.y(), ColorRGBA::red, ColorRGBA::red);
-      if(previ != nullptr)
-      {
-        LINE("representation:FieldBoundary:convexBoundary", p.x(), p.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::red);
-      }
-      previ = &p;
-    }
-  }
-
   DEBUG_DRAWING("representation:FieldBoundary:image", "drawingOnImage")
-    if(isValid && !boundaryInImage.empty() && !boundarySpots.empty())
+    if(isValid && Blackboard::getInstance().exists("CameraInfo"))
     {
-      const Vector2i* previ = nullptr;
-      Vector2i point;
-      if(boundaryInImage.front().x() > boundarySpots.front().x())
+      const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      Vector2i prev(0, getBoundaryY(0));
+      for(const Vector2i& point : boundaryInImage)
       {
-        point = Vector2i(boundarySpots.front().x(), getBoundaryY(boundarySpots.front().x()));
-        previ = &point;
         DOT("representation:FieldBoundary:image", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
+        LINE("representation:FieldBoundary:image", prev.x(), prev.y(), point.x(), point.y(), 1, Drawings::solidPen, ColorRGBA::orange);
+        prev = point;
       }
-      for(const Vector2i& p : boundaryInImage)
-      {
-        DOT("representation:FieldBoundary:image", p.x(), p.y(), ColorRGBA::orange, ColorRGBA::orange);
-        if(previ != nullptr)
-        {
-          LINE("representation:FieldBoundary:image", p.x(), p.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::orange);
-        }
-        previ = &p;
-      }
-      if(boundaryInImage.back().x() < boundarySpots.back().x())
-      {
-        point = Vector2i(boundarySpots.back().x(), getBoundaryY(boundarySpots.back().x()));
-        DOT("representation:FieldBoundary:image", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
-        if(previ != nullptr)
-        {
-          LINE("representation:FieldBoundary:image", point.x(), point.y(), previ->x(), previ->y(), 1, Drawings::solidPen, ColorRGBA::orange);
-        }
-      }
+      Vector2i point(cameraInfo.width, getBoundaryY(cameraInfo.width));
+      LINE("representation:FieldBoundary:image", prev.x(), prev.y(), point.x(), point.y(), 1, Drawings::solidPen, ColorRGBA::orange);
     }
 
   DEBUG_DRAWING("representation:FieldBoundary:field", "drawingOnField")
-    if(isValid)
+    if(isValid && Blackboard::getInstance().exists("CameraInfo")
+       && Blackboard::getInstance().exists("CameraMatrix")
+       && Blackboard::getInstance().exists("ImageCoordinateSystem"))
     {
-      const Vector2f* prevf = nullptr;
-      for(const Vector2f& p : boundaryOnField)
+      const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      const CameraMatrix& cameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
+      const ImageCoordinateSystem& imageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
+      Vector2f prev, last;
+      if(Transformation::imageToRobot(imageCoordinateSystem.toCorrected(Vector2i(0, getBoundaryY(0))), cameraMatrix, cameraInfo, prev)
+         && Transformation::imageToRobot(imageCoordinateSystem.toCorrected(Vector2i(cameraInfo.width, getBoundaryY(cameraInfo.width))), cameraMatrix, cameraInfo, last))
       {
-        DOT("representation:FieldBoundary:field", p.x(), p.y(), ColorRGBA::black, ColorRGBA::black);
-        if(prevf != nullptr)
+        for(const Vector2f& point : boundaryOnField)
         {
-          LINE("representation:FieldBoundary:field", p.x(), p.y(), prevf->x(), prevf->y(), 20, Drawings::solidPen, ColorRGBA::black);
+          LARGE_DOT("representation:FieldBoundary:field", point.x(), point.y(), ColorRGBA::orange, ColorRGBA::orange);
+          LINE("representation:FieldBoundary:field", prev.x(), prev.y(), point.x(), point.y(), 20, Drawings::solidPen, ColorRGBA::orange);
+          prev = point;
         }
-        prevf = &p;
+        LINE("representation:FieldBoundary:field", prev.x(), prev.y(), last.x(), last.y(), 20, Drawings::solidPen, ColorRGBA::orange);
       }
     }
 }

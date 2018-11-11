@@ -10,7 +10,7 @@
 KickRequest::KickMotionID KickRequest::getKickMotionFromName(const char* name)
 {
   FOREACH_ENUM(KickMotionID, i)
-    if(!strcmp(name, getName(i)))
+    if(!strcmp(name, TypeRegistry::getEnumName(i)))
       return i;
   return numOfKickMotionIDs;
 }

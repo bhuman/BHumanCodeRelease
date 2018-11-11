@@ -17,18 +17,18 @@
 #include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Modeling/OwnSideModel.h"
-#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Modeling/Odometer.h"
+#include "Representations/Sensing/FallDownState.h"
 
 MODULE(OwnSideModelProvider,
 {,
   REQUIRES(CognitionStateChanges),
+  REQUIRES(FallDownState),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(OwnTeamInfo),
   REQUIRES(RobotInfo),
-  REQUIRES(GroundContactState),
   REQUIRES(Odometer),
   USES(Role),
   PROVIDES(OwnSideModel),
@@ -56,7 +56,7 @@ private:
   unsigned timeWhenPenalized; /**< When was the robot penalized. */
   int gameStateWhenPenalized; /**< What was the game state when the robot was penalized? */
 
-  void update(OwnSideModel& ownSideModel);
+  void update(OwnSideModel& ownSideModel) override;
 
 public:
   OwnSideModelProvider();

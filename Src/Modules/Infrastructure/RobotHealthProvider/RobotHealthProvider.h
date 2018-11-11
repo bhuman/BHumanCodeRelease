@@ -58,5 +58,5 @@ class RobotHealthProvider : public RobotHealthProviderBase
   /** The main function, called every cycle
    * @param robotHealth The data struct to be filled
    */
-  void update(RobotHealth& robotHealth);
+  void update(RobotHealth& robotHealth) override;
 };

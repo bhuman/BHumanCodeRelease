@@ -34,11 +34,11 @@ private:
   QList<EditorObject*> editors; /**< List of subfiles and folders */
   QHash<QString, EditorObject*> foldersByName;
 
-  virtual const QString& getFullName() const {return fullName;}
-  virtual const QIcon* getIcon() const;
+  const QString& getFullName() const override {return fullName;}
+  const QIcon* getIcon() const override;
 
-  virtual SimRobotEditor::Editor* addFile(const QString& filePath, const QString& subFileRegExpPattern);
-  virtual SimRobotEditor::Editor* addFolder(const QString& name);
+  SimRobotEditor::Editor* addFile(const QString& filePath, const QString& subFileRegExpPattern) override;
+  SimRobotEditor::Editor* addFolder(const QString& name) override;
 };
 
 class FileEditorObject : public EditorObject
@@ -50,8 +50,8 @@ public:
 
   FileEditorObject(const QString& filePath, const QString& subFileRegExpPattern, bool persistent, EditorObject* parent);
 
-  virtual const QIcon* getIcon() const;
-  virtual SimRobot::Widget* createWidget();
+  const QIcon* getIcon() const override;
+  SimRobot::Widget* createWidget() override;
 };
 
 class EditorWidget : public QTextEdit, public SimRobot::Widget
@@ -69,20 +69,23 @@ private:
   bool canUndo;
   bool canRedo;
 
-  QSignalMapper openFileMapper;
+  bool useTabStop;
+  int tabStopWidth;
+
+  mutable QSignalMapper openFileMapper;
   SyntaxHighlighter* highlighter;
 
   void updateEditMenu(QMenu* menu, bool aboutToShow) const;
 
-  virtual QWidget* getWidget() {return this;}
-  virtual bool canClose();
-  virtual QMenu* createFileMenu() const;
-  virtual QMenu* createEditMenu() const;
+  QWidget* getWidget() override {return this;}
+  bool canClose() override;
+  QMenu* createFileMenu() const override;
+  QMenu* createEditMenu() const override;
 
-  virtual QSize sizeHint () const { return QSize(640, 480); }
-  virtual void contextMenuEvent(QContextMenuEvent* event);
-  virtual void focusInEvent(QFocusEvent * event);
-  virtual void keyPressEvent(QKeyEvent* event);
+  QSize sizeHint () const override { return QSize(640, 480); }
+  void contextMenuEvent(QContextMenuEvent* event) override;
+  void focusInEvent(QFocusEvent * event) override;
+  void keyPressEvent(QKeyEvent* event) override;
 
 signals:
   void pasteAvailable(bool available);

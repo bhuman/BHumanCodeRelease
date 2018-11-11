@@ -6,18 +6,19 @@
 
 #include "PropertyTreeCreator.h"
 #include "Tools/Motion/SensorData.h"
+#include "Tools/Streams/TypeRegistry.h"
 
 void PropertyTreeCreator::outUChar(unsigned char value)
 {
   Entry& e = stack.back();
-  if(e.enumToString)
+  if(e.enumType)
   {
     e.property = view.getProperty(e.path, TypeDescriptor::getEnumTypeId(), e.name.c_str(), e.parent);
     QStringList enumNames = e.property->attributeValue("enumNames").value<QStringList>();
     if(enumNames.empty())
     {
-      for(int i = 0; e.enumToString(i); ++i)
-        enumNames << e.enumToString(i);
+      for(int i = 0; TypeRegistry::getEnumName(e.enumType, i); ++i)
+        enumNames << TypeRegistry::getEnumName(e.enumType, i);
       e.property->setAttribute("enumNames", enumNames);
     }
     e.property->setValue(value);
@@ -52,7 +53,7 @@ void PropertyTreeCreator::outAngle(const Angle& value)
   e.property->setValue(QVariant::fromValue(angle));
 }
 
-void PropertyTreeCreator::select(const char* name, int type, const char* (*enumToString)(int))
+void PropertyTreeCreator::select(const char* name, int type, const char* enumType)
 {
   QtVariantProperty* parent = 0;
   std::string path;
@@ -68,7 +69,7 @@ void PropertyTreeCreator::select(const char* name, int type, const char* (*enumT
     path = e.path;
   }
 
-  stack.push_back(Entry(type, enumToString, parent, path, name));
+  stack.push_back(Entry(type, enumType, parent, path, name));
 }
 
 void PropertyTreeCreator::deselect()

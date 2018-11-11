@@ -28,9 +28,10 @@ private:
   class AccelerometerSensor : public Sensor::Port
   {
   public:
-    Body* body; /** The body were the accelerometer is mounted on */
-    float linearVelInWorld[4]; /** The linear velocity of the body where the accelerometer is mounted on */
-    float linearAcc[4]; /** The sensor reading */
+    Body* body; /**< The body where the accelerometer is mounted on. */
+    float linearVelInWorld[4]; /**< The linear velocity of the body where the accelerometer is mounted on. */
+    float linearAcc[4]; /**< The sensor reading. */
+    Pose3f offset; /**< Offset of the sensor relative to the body. */
 
     /** Default constructor */
     AccelerometerSensor()
@@ -39,18 +40,21 @@ private:
     }
 
     /** Update the sensor value. Is called when required. */
-    virtual void updateValue();
+    void updateValue() override;
 
     //API
-    virtual bool getMinAndMax(float& min, float& max) const {return false;}
+    bool getMinAndMax(float& min, float& max) const override {return false;}
   } sensor;
+
+  /** Initializes the accelerometer after all attributes have been set */
+  void createPhysics() override;
 
   /**
   * Registers an element as parent
   * @param element The element to register
   */
-  virtual void addParent(Element& element);
+  void addParent(Element& element) override;
 
   /** Registers this object with children, actuators and sensors at SimRobot's GUI */
-  virtual void registerObjects();
+  void registerObjects() override;
 };

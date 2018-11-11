@@ -18,7 +18,7 @@ CollisionSensor::CollisionSensor() : hasGeometries(false)
 
 void CollisionSensor::createPhysics()
 {
-  OpenGLTools::convertTransformation(pose, transformation);
+  OpenGLTools::convertTransformation(rotation, translation, transformation);
 
   // add geometries
   for(std::list< ::PhysicalObject*>::const_iterator iter = physicalDrawings.begin(), end = physicalDrawings.end(); iter != end; ++iter)
@@ -27,7 +27,7 @@ void CollisionSensor::createPhysics()
     if(geometry)
     {
       hasGeometries = true;
-      Pose3<> geomOffset(-parentBody->centerOfMass);
+      Pose3f geomOffset(-parentBody->centerOfMass);
       if(translation)
         geomOffset.translate(*translation);
       if(rotation)

@@ -6,7 +6,7 @@
  * assigned. Instead, nothing happens. If the function is supposed to return data, a
  * default value is returned instead, i.e. the value created by the default constructor of
  * the return type. For Eigen types, the result of Zero() is returned instead.
- * The macro also ensures that the blackboard is able to identifiy representations that
+ * The macro also ensures that the blackboard is able to identify representations that
  * contains functions. Thereby, it can reset these representations when their provider
  * changes.
  *

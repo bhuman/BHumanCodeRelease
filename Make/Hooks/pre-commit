@@ -7,7 +7,7 @@
 #
 # To enable this hook, rename this file to "pre-commit".
 
-if git rev-parse --verify HEAD >/dev/null 2>&1
+if 'GIT' rev-parse --verify HEAD >/dev/null 2>&1
 then
 	against=HEAD
 else
@@ -16,7 +16,7 @@ else
 fi
 
 # If you want to allow non-ascii filenames set this variable to true.
-allownonascii=$(git config hooks.allownonascii)
+allownonascii=$('GIT' config hooks.allownonascii)
 
 # Cross platform projects tend to avoid non-ascii filenames; prevent
 # them from being added to the repository. We exploit the fact that the
@@ -25,7 +25,7 @@ if [ "$allownonascii" != "true" ] &&
 	# Note that the use of brackets around a tr range is ok here, (it's
 	# even required, for portability to Solaris 10's /usr/bin/tr), since
 	# the square bracket bytes happen to fall in the designated range.
-	test "$(git diff --cached --name-only --diff-filter=A -z $against |
+	test "$('GIT' diff --cached --name-only --diff-filter=A -z $against |
 	  LC_ALL=C tr -d '[ -~]\0')"
 then
 	echo "Error: Attempt to add a non-ascii file name."
@@ -38,24 +38,24 @@ then
 	echo "If you know what you are doing you can disable this"
 	echo "check using:"
 	echo
-	echo "  git config hooks.allownonascii true"
+	echo "  'GIT' config hooks.allownonascii true"
 	echo
 	exit 1
 fi
 
 # If you want to forbid tab characters in files, set this variable to true.
-checkTabs=$(git config hooks.checkTabs)
+checkTabs=$('GIT' config hooks.checkTabs)
 
 if [ "$checkTabs" = "true" ]
 then
         # find changed files with tab characters (ignore files in Make
         # directories)
 	filesWithTabs=""
-	for file in "$(git diff --cached --name-only)"
+	for file in "$('GIT' diff --cached --name-only)"
 	do
 		if [ "$(echo "$file" | grep -E '^Src/.*')" -o "$(echo "$file" | grep -E '^Util/SimRobot/Src/.*')" ]
 		then
-			if [ "$(git diff --cached --inter-hunk-context=0 -- "$file" | grep -E '^\+' | LC_ALL=C tr -d -c '\t')" ]
+			if [ "$('GIT' diff --cached --inter-hunk-context=0 -- "$file" | grep -E '^\+' | LC_ALL=C tr -d -c '\t')" ]
 			then
 				filesWithTabs="$filesWithTabs $file"
 			fi
@@ -74,4 +74,4 @@ then
 fi
 
 # check if there are trailing whitespaces
-exec git diff-index --check --cached $against --
+exec 'GIT' diff-index --check --cached $against --

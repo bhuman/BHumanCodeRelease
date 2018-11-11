@@ -38,6 +38,7 @@ public:
   static bool isPlaying();
 
 private:
+  SoundPlayer();
   ~SoundPlayer();
 
   /**

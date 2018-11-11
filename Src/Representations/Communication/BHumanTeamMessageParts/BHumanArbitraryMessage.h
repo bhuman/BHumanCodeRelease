@@ -9,7 +9,7 @@
 #include "Tools/Streams/Streamable.h"
 #include "Tools/MessageQueue/MessageQueue.h"
 #include <SPLStandardMessage.h>
-#include <stdint.h>
+#include <cstdint>
 
 #pragma once
 
@@ -49,4 +49,7 @@ struct BHumanArbitraryMessage : public Streamable
 
 protected:
   void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };

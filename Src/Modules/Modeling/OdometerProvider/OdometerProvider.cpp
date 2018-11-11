@@ -38,6 +38,6 @@ void OdometerProvider::draw()
          lastOdometryData.translation.x(), theOdometryData.translation.y(), 10000, Drawings::noBrush, ColorRGBA::red);
     Matrix2f cov;
     cov << covariance(0, 0), covariance(0, 1), covariance(1, 0), covariance(1, 1);
-    COVARIANCE2D("module:OdometerProvider:draw", cov, theOdometryData.translation);
+    COVARIANCE_ELLIPSES_2D("module:OdometerProvider:draw", cov, theOdometryData.translation);
   }
 }

@@ -7,10 +7,11 @@ class HelpCmd;
 class HelpCmd : public CommandAdapter
 {
   HelpCmd();
-  virtual std::string getName() const;
-  virtual std::string getDescription() const;
-  virtual bool execute(Context& context, const std::vector<std::string>& params);
-  virtual std::vector<std::string> complete(const std::string& cmdLine) const;
+  std::string getName() const override;
+  std::string getDescription() const override;
+  bool execute(Context& context, const std::vector<std::string>& params) override;
+  std::vector<std::string> complete(const std::string& cmdLine) const override;
+
 public:
   static HelpCmd theHelpCmd;
 };

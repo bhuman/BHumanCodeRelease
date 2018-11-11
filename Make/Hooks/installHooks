@@ -1,17 +1,18 @@
 #!/bin/bash
 
-scriptname=$0
-scriptDir="`dirname $0`"
+scriptDir=$(cd "$(dirname "$(which "$0")")" && pwd)
 
 usage() {
   echo "Usage:"
-  echo "    $scriptname [-g] [-t] [-f] [repo]..."
+  echo "    $0 [-g] [-t] [-f] [-p <path>] [repo]..."
   echo ""
   echo "  -g        Do not enable generate hooks in the git config (per repo)"
   echo ""
   echo "  -t        Do not enable pre-commit hook (checkTab, per repo)"
   echo ""
   echo "  -f        Overwrite existing files"
+  echo ""
+  echo "  -p <path> Specifiy path to git executable"
   echo ""
   echo "  repo...   Repos where the hooks should be installed"
   echo "            (default: \`$scriptDir/../..\`)"
@@ -31,15 +32,27 @@ files="generate.sh post-checkout post-merge post-rewrite pre-commit"
 enableGenerate=1
 enableCheckTabs=1
 force=0
+git=git
 
-while getopts ":gtf" option
+while getopts ":gtfp:" option
 do
   case $option in
-    g)    enableGenerate=0;;
-    t)    enableCheckTabs=0;;
-    f)    force=1;;
-    *)    usage
-          exit 1;;
+    g)
+      enableGenerate=0
+      ;;
+    t)
+      enableCheckTabs=0
+      ;;
+    f)
+      force=1
+      ;;
+    p)
+      git="`tr '\\\' '/' <<<"$OPTARG"`"
+      ;;
+    :|*)
+      usage
+      exit 1
+      ;;
   esac
 done
 shift $(($OPTIND-1))
@@ -57,29 +70,43 @@ then
   printf " enableGenerate: %b\n" $enableGenerate
   printf "enableCheckTabs: %b\n" $enableCheckTabs
   printf "          force: %b\n" $force
+  printf "           path: %s\n" $git
+fi
+
+gitFromGit="$git"
+
+if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
+  git=`echo "$git" | sed 's%^\([A-Za-z]\)\:/\(.*\)%/mnt/\L\1\E/\2%'`
+fi
+
+if [ -z "`"$git" 2>/dev/null`" ]; then
+  echo "Error: '$git' not found" >&2
+  echo "  Use -p <path> to specify path to git binary" >&2
+  exit 1
 fi
 
 for d in $installDIRs
 do
   ad="$(absolute "$d")"
   echo "Install to $ad"
+  mkdir -p "$ad/.git/hooks"
   for f in $files
   do
     if [[ -e "$ad/.git/hooks/$f" && $force -ne 1 ]]
     then
-      echo "Skipping $f since it already exists"
+      echo "Warning: Skipping $f since it already exists"
       echo "  Use -f to overwrite existing files"
     else
-      cp "$scriptDir/$f" "$ad/.git/hooks/$f"
+      sed <"$scriptDir/$f" >"$ad/.git/hooks/$f" "s%'GIT'%'$gitFromGit'%g"
     fi
   done
   cd "$ad"
   if [ $enableGenerate -eq 1 ]
   then
-    git config hooks.generateProject true
+    "$git" config hooks.generateProject true
   fi
   if [ $enableCheckTabs -eq 1 ]
   then
-    git config hooks.checkTabs true
+    "$git" config hooks.checkTabs true
   fi
 done

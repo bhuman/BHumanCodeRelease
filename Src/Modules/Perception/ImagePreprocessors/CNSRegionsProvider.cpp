@@ -39,20 +39,18 @@ void CNSRegionsProvider::update(BallRegions& ballRegions)
     std::memset(searchGrid[0], 0, sizeof(searchGrid));
 
     // Add at least one search area if prediction is used
-    if(usePrediction && theWorldModelPrediction.ballIsValid)
+    if(theBallSpots.firstSpotIsPredicted)
     {
-      const Vector3f ballInRobot(theWorldModelPrediction.ballPosition.x(), theWorldModelPrediction.ballPosition.y(), theBallSpecification.radius);
-      Vector2f pointInImage;
-      if(Transformation::robotToImage(ballInRobot, theCameraMatrix, theCameraInfo, pointInImage)
-         && pointInImage.x() >= 0 && pointInImage.x() < theCameraInfo.width &&
-         pointInImage.y() >= 0 && pointInImage.y() < theCameraInfo.height)
+      if(usePrediction)
       {
-        spots.emplace_back(static_cast<int>(pointInImage.x()), static_cast<int>(pointInImage.y()));
         predicted = true;
+        spots.insert(spots.end(), theBallSpots.ballSpots.begin(), theBallSpots.ballSpots.end());
       }
+      else
+        spots.insert(spots.end(), theBallSpots.ballSpots.begin() + 1, theBallSpots.ballSpots.end());
     }
-
-    spots.insert(spots.end(), theBallSpots.ballSpots.begin(), theBallSpots.ballSpots.end());
+    else
+      spots.insert(spots.end(), theBallSpots.ballSpots.begin(), theBallSpots.ballSpots.end());
 
     for(const Vector2i& spot : spots)
     {
@@ -60,6 +58,7 @@ void CNSRegionsProvider::update(BallRegions& ballRegions)
                                    theCameraInfo, theCameraMatrix, theBallSpecification);
       CIRCLE("module:CNSRegionsProvider:expectedRadius", spot.x(), spot.y(), expectedRadius, 1, Drawings::solidPen, ColorRGBA::orange, Drawings::noBrush, ColorRGBA::orange);
 
+      if(useBallRegionsForCNSRegions)
       {
         const int radius = static_cast<int>(std::ceil(expectedRadius * (predicted ? predictedFactor : sizeFactor)));
         const Vector2i upperLeft(std::max(spot.x() - radius, 0), std::max(spot.y() - radius, 0));
@@ -98,9 +97,6 @@ void CNSRegionsProvider::update(CNSRegions& cnsRegions)
   }
   else
   {
-    if(playersFeet)
-      addPlayersFeetRegions();
-
     // Add penalty mark regions
     for(const Boundaryi& region : theCNSPenaltyMarkRegions.regions)
       for(int y = region.y.min / blockSizeY; y < region.y.max / blockSizeY; ++y)
@@ -123,48 +119,6 @@ void CNSRegionsProvider::update(CNSRegions& cnsRegions)
           cnsRegions.regions.emplace_back(Rangei(xRange.min * blockSizeX, (xRange.max + 1) * blockSizeX),
                                           Rangei(yRange.min * blockSizeY, (yRange.max + 1) * blockSizeY));
         }
-  }
-}
-
-void CNSRegionsProvider::addPlayersFeetRegions()
-{
-  for(auto& player : thePlayersImagePercept.players)
-  {
-    // Determine rectangle for search area. This code is almost dublicated from OrientationDetermination.cpp:
-    int feetMidX = (player.x1FeetOnly + player.x2FeetOnly) / 2;
-    int y = player.y2;
-
-    Vector2f pointOnField;
-    Vector2f pointInImage;
-    if(Transformation::imageToRobot(Vector2f(feetMidX, y), theCameraMatrix, theCameraInfo, pointOnField)
-       && Transformation::robotToImage(Vector3f(pointOnField[0], pointOnField[1], searchFootHeightByHeight), theCameraMatrix, theCameraInfo, pointInImage))
-    {
-      int footHeight = static_cast<int>(pointInImage.y() - y
-                                        + IISC::getImageDiameterByLowestPointAndFieldDiameter(searchFootHeightByDepth, Vector2f(feetMidX, y),
-                                            theCameraInfo, theCameraMatrix));
-      int maxRobotWidthClosedArms = static_cast<int>(IISC::getHorizontalImageDiameterByMiddlePointAndFieldDiameter(robotExpectedWidth, Vector2f(feetMidX, y), theCameraInfo, theCameraMatrix));
-
-      // define rectangle for search:
-      int feetBoxX1 = clip(feetMidX - maxRobotWidthClosedArms / 2, 0, theCameraInfo.width - 1);
-      int feetBoxY1 = clip(y + 20, 0, theCameraInfo.height - 1);
-      int feetBoxX2 = clip(feetMidX + maxRobotWidthClosedArms / 2, 0, theCameraInfo.width - 1);
-      int feetBoxY2 = clip(y - footHeight, 0, theCameraInfo.height - 1);
-
-      // clip rectangle:
-      int x1 = std::max(feetBoxX1, 0);
-      int y1 = std::max(feetBoxY2, 0);
-      int x2 = std::min(feetBoxX2, theCameraInfo.width - 1);
-      int y2 = std::min(feetBoxY1, theCameraInfo.height - 1);
-
-      RECTANGLE("module:CNSRegionsProvider:feetArea", x1, y1, x2, y2, 2, Drawings::solidPen, ColorRGBA::red);
-
-      const Rangei xRange(x1 / blockSizeX, x2 / blockSizeX + 1);
-      const Rangei yRange(y1 / blockSizeY, y2 / blockSizeY + 1);
-
-      for(int y = yRange.min; y < yRange.max; ++y)
-        for(int x = xRange.min; x < xRange.max; ++x)
-          searchGrid[y + 1][x + 1] = 1;
-    }
   }
 }
 

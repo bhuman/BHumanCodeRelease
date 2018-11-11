@@ -17,6 +17,7 @@ ThresholdSelector::ThresholdSelector(const QString& name, ColorCalibrationWidget
   slider->setMinimum(min);
   slider->setMaximum(max);
   slider->setTickPosition(QSlider::TicksBothSides);
+  slider->setTickInterval(10);
 
   lineEdit = new QLineEdit(QString::number(min), this);
   lineEdit->setFixedWidth(40);
@@ -53,42 +54,26 @@ void ThresholdSelector::lineEditChanged(QString value)
 
 void ColorSelector::updateWidgets()
 {
-  if(parent->currentColor < FieldColors::numOfNonColors)
-  {
-    setEnabled(true);
-    setTitle("Color Delimiter");
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
-  }
-  else
-    setEnabled(false);
+  setEnabled(true);
+  setTitle("Color Delimiter");
+  updateSlider(parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
 }
 
 void ColorSelector::updateColorCalibration(int value)
 {
-  if(parent->currentColor < FieldColors::numOfNonColors)
-  {
-    ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
+  ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.maxNonColorSaturation);
+  parent->colorCalibrationView.console.colorCalibrationChanged = true;
 }
 
 void BlackWhiteSelector::updateWidgets()
 {
-  if(parent->currentColor < FieldColors::numOfNonColors)
-  {
-    setEnabled(true);
-    setTitle("Black-White Delimiter");
-    updateSlider(parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
-  }
-  else
-    setEnabled(false);
+  setEnabled(true);
+  setTitle("Black-White Delimiter");
+  updateSlider(parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
 }
 
 void BlackWhiteSelector::updateColorCalibration(int value)
 {
-  if(parent->currentColor < FieldColors::numOfNonColors)
-  {
-    ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
-    parent->colorCalibrationView.console.colorCalibrationChanged = true;
-  }
+  ThresholdSelector::updateColorCalibration(value, parent->colorCalibrationView.console.colorCalibration.blackWhiteDelimiter);
+  parent->colorCalibrationView.console.colorCalibrationChanged = true;
 }

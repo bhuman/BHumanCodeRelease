@@ -10,6 +10,7 @@
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/MotionControl/GetUpEngineOutput.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/FallEngineOutput.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
@@ -25,7 +26,7 @@ MODULE(LegMotionCombinator,
   REQUIRES(SpecialActionsOutput),
   REQUIRES(StandLegRequest),
   REQUIRES(StiffnessSettings),
-  REQUIRES(WalkLegRequest),
+  REQUIRES(WalkingEngineOutput),
 
   PROVIDES(LegJointRequest),
 });
@@ -35,5 +36,5 @@ class LegMotionCombinator : public LegMotionCombinatorBase
 private:
   JointAngles lastJointAngles; /**< The measured joint angles the last time when not interpolating. */
 
-  void update(LegJointRequest& legJointRequest);
+  void update(LegJointRequest& legJointRequest) override;
 };

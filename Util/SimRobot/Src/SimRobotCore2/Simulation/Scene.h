@@ -37,7 +37,7 @@ public:
     float linearAttenuation;
     float quadraticAttenuation;
     float spotCutoff; /**< in radian */
-    Vector3<> spotDirection;
+    Vector3f spotDirection;
     float spotExponent;
 
     /** Default constructor */
@@ -47,7 +47,7 @@ public:
     * Registers an element as parent
     * @param element The element to register
     */
-    virtual void addParent(Element& element);
+    void addParent(Element& element) override;
   };
 
   std::string controller; /**< The name of the controller library. */
@@ -94,13 +94,13 @@ public:
   using GraphicalObject::createGraphics; // avoid warning
 
   /** Draws appearance primitives of the object (including children) on the currently selected OpenGL context (as fast as possible) */
-  virtual void drawAppearances() const;
+  void drawAppearances(SurfaceColor color, bool drawControllerDrawings) const override;
 
   /**
   * Draws physical primitives of the object (including children) on the currently selected OpenGL context
   * @param flags Flags to enable or disable certain features
   */
-  virtual void drawPhysics(unsigned int flags) const;
+  void drawPhysics(unsigned int flags) const override;
 
   /**
   * Loads the texture if it is not already loaded
@@ -114,15 +114,15 @@ private:
 
 private:
   // API
-  virtual const QString& getFullName() const {return SimObject::getFullName();}
-  virtual SimRobot::Widget* createWidget() {return SimObject::createWidget();}
-  virtual const QIcon* getIcon() const;
-  virtual SimRobotCore2::Renderer* createRenderer() {return SimObject::createRenderer();}
-  virtual bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing) {return ::PhysicalObject::registerDrawing(drawing);}
-  virtual bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing) {return ::PhysicalObject::unregisterDrawing(drawing);}
-  virtual SimRobotCore2::Body* getParentBody() {return ::PhysicalObject::getParentBody();}
-  virtual double getStepLength() const {return stepLength;}
-  virtual unsigned int getStep() const;
-  virtual double getTime() const;
-  virtual unsigned int getFrameRate() const;
+  const QString& getFullName() const override {return SimObject::getFullName();}
+  SimRobot::Widget* createWidget() override {return SimObject::createWidget();}
+  const QIcon* getIcon() const override;
+  SimRobotCore2::Renderer* createRenderer() override {return SimObject::createRenderer();}
+  bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::PhysicalObject::registerDrawing(drawing);}
+  bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::PhysicalObject::unregisterDrawing(drawing);}
+  SimRobotCore2::Body* getParentBody() override {return ::PhysicalObject::getParentBody();}
+  double getStepLength() const override {return stepLength;}
+  unsigned int getStep() const override;
+  double getTime() const override;
+  unsigned int getFrameRate() const override;
 };

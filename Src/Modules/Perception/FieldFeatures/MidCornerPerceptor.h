@@ -32,7 +32,7 @@ MODULE(MidCornerPerceptor,
 
 class MidCornerPerceptor : public MidCornerPerceptorBase
 {
-  void update(MidCorner& midCorner);
+  void update(MidCorner& midCorner) override;
 private:
   bool searchForBigT(MidCorner& midCorner) const;
 };

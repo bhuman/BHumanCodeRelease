@@ -128,7 +128,10 @@ QStringList CompileCmd::getParams(const QString& config, const QString& project)
   QStringList args;
   const QString makeDir(fromString(makeDirectory()));
   args << fromString(std::string(File::getBHDir())).replace("/", "\\") + "\\Make\\" + makeDir + "\\B-Human.sln";
-  args << QString("/t:" + project) << QString("/p:Configuration=" + config);
+  args << QString("/t:" + project) << QString("/p:Configuration=" + config)
+       << QString("/nologo") // Do not show MSBuild version and copyright information
+       << QString("/m")  // Use as many parallel processes as possible
+       << QString("/v:m"); // Set logging verbosity to minimal
   return args;
 }
 #elif defined MACOS

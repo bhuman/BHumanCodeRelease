@@ -1,3 +1,6 @@
+# Changing camera parameters takes time
+set parameters:CameraProvider maxWaitForImage = 2000;
+
 vid upper horizon
 mr StandArmRequest CalibrationStand
 mr StandLegRequest CalibrationStand
@@ -9,12 +12,13 @@ mr CameraCalibrationNext AutomaticCameraCalibrator
 mr CameraResolutionRequest AutomaticCameraCalibrator
 mr HeadAngleRequest AutomaticCameraCalibrator
 
-automaticCameraCalibratorInsertion lower on
-automaticCameraCalibratorInsertion upper on
-automaticCameraCalibratorDeletion lower on
-automaticCameraCalibratorDeletion upper on
+vic lower ctrl noshift set module:AutomaticCameraCalibrator:insertionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:insertionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:insertPoint
+vic upper ctrl noshift set module:AutomaticCameraCalibrator:insertionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:insertionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:insertPoint
 
-set module:AutomaticCameraCalibrator:robotPose rotation = 0; translation = {x = -725; y = 0;};
+vic lower noctrl noshift set module:AutomaticCameraCalibrator:deletionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:deletionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:deletePoint
+vic upper noctrl noshift set module:AutomaticCameraCalibrator:deletionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:deletionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:deletePoint
+
+set module:AutomaticCameraCalibrator:robotPose rotation = 0; translation = {x = -750; y = 0;};
 vid lower representation:FieldLines:image off
 vid lower representation:BodyContour off
 vid lower module:AutomaticCameraCalibrator:points

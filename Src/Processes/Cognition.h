@@ -37,22 +37,22 @@ public:
   /**
    * The method is called from the framework once in every frame.
    */
-  virtual bool main();
+  bool main() override;
 
   /**
    * The method is called directly before the first call of main().
    */
-  virtual void init();
+  void init() override;
 
   /**
    * The method is called when the process is terminated.
    */
-  virtual void terminate();
+  void terminate() override;
 
   /**
    * The function handles incoming debug messages.
    * @param message the message to handle.
    * @return Has the message been handled?
    */
-  virtual bool handleMessage(InMessage& message);
+  bool handleMessage(InMessage& message) override;
 };

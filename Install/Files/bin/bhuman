@@ -2,6 +2,7 @@
 
 FLAGS=$1
 DIR=/home/nao
+LOGDIR=/home/nao/logs
 
 usage()
 {
@@ -14,9 +15,19 @@ if [ $(whoami) != nao ]; then
   exit 1
 fi
 
-# this should fix a freaky cygwin bug
+# If USB drive is mounted, save bhumand.log there
+if [ -d /media/usb/logs ]; then
+  LOGDIR=/media/usb/logs
+fi
+
+# Make log-names unique by numbering them.
+COUNTER=$(ls $LOGDIR | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n | tail -n1)
+COUNTER=$(expr $COUNTER + 1)
+FILE=bhumand_'('$COUNTER')'.log
+
+# This should fix a freaky cygwin bug
 if [ ! -x "$DIR/Config/bhuman" ]; then
   chmod u+x "$DIR/Config/bhuman" || exit
 fi
 
-stdbuf -o0 "$DIR/Config/bhuman" -c "$DIR" -w $FLAGS 2>&1 | stdbuf -o0 awk -F '\n' '{ print strftime("%H:%M:%S" , systime()) " " $0}' | tee --append /tmp/bhumand.log
+stdbuf -o0 "$DIR/Config/bhuman" -c "$DIR" -w $FLAGS 2>&1 | stdbuf -o0 awk -F '\n' '{ print strftime("%H:%M:%S" , systime()) " " $0}' | tee --append $LOGDIR/$FILE

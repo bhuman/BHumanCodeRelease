@@ -12,14 +12,14 @@ CognitionConfigurationDataProvider::CognitionConfigurationDataProvider()
 {
   theInstance = this;
 
-  read(theCameraSettings, ("cameraSettings" + std::string(RobotInfo::getName(theRobotInfo.headVersion)) + ".cfg").c_str());
+  read(theCameraSettings, ("cameraSettings" + std::string(TypeRegistry::getEnumName(theRobotInfo.headVersion)) + ".cfg").c_str());
 
   theFieldDimensions = std::make_unique<FieldDimensions>();
   theFieldDimensions->load();
   theIntersectionRelations = std::make_unique<IntersectionRelations>(*theFieldDimensions);
 
   read(theBallSpecification);
-  read(theFieldColors, ("fieldColorsCalibration" + std::string(RobotInfo::getName(theRobotInfo.headVersion)) + ".cfg").c_str());
+  read(theFieldColors, ("fieldColorsCalibration" + std::string(TypeRegistry::getEnumName(theRobotInfo.headVersion)) + ".cfg").c_str());
   read(theCameraCalibration);
   read(theRobotDimensions);
   read(theBehaviorParameters);
@@ -50,9 +50,7 @@ void CognitionConfigurationDataProvider::update(CameraCalibration& cameraCalibra
 {
   update(cameraCalibration, theCameraCalibration);
   if(theCameraCalibrationNext.hasNext())
-  {
-    cameraCalibration = const_cast<CameraCalibrationNext&>(theCameraCalibrationNext).getNext();
-  }
+    cameraCalibration = theCameraCalibrationNext.getNext();
 }
 
 bool CognitionConfigurationDataProvider::handleMessage(InMessage& message)

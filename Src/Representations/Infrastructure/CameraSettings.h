@@ -58,7 +58,10 @@ STREAMABLE(CameraSettings,
     CameraSettingsCollection();
 
   protected:
-    virtual void serialize(In* in, Out* out);
+    void serialize(In* in, Out* out) override;
+
+  private:
+    static void reg();
   };
 
   CameraSettingsCollection& operator[](const CameraInfo::Camera camera)

@@ -777,7 +777,7 @@ void KickViewWidget::playWholeMotion()
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
     todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
     todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
-    todo << "false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << "false" << "; " << "boost = false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }
@@ -798,7 +798,7 @@ void KickViewWidget::playMotionTilActive()
     todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
     todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
     todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
-    todo << "false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    todo << "false" << "; " << "boost = false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
     commands.push_back(todo.str());
   }
 }

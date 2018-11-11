@@ -40,7 +40,7 @@ MODULE(CameraMatrixProvider,
 class CameraMatrixProvider : public CameraMatrixProviderBase
 {
 private:
-  void update(CameraMatrix& cameraMatrix);
+  void update(CameraMatrix& cameraMatrix) override;
 
   void camera2image(const Vector3f& camera, Vector2f& image) const;
   bool intersectLineWithCullPlane(const Vector3f& lineBase, const Vector3f& lineDir,

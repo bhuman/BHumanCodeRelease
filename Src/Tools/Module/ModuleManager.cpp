@@ -5,8 +5,10 @@
  */
 
 #include "ModuleManager.h"
-#include "Platform/BHAssert.h"
+#ifdef TARGET_ROBOT
 #include "Platform/Time.h"
+#endif
+
 #include <algorithm>
 #include <map>
 
@@ -33,20 +35,19 @@ void ModuleManager::destroy()
 {
   if(!providers.empty())
   {
-    char buf[100];
-    OutBinaryMemory out(buf);
+    OutBinaryMemory out(100);
     out << Configuration();
-    InBinaryMemory in(buf);
+    InBinaryMemory in(out.data());
     update(in, 0); // destruct everything
   }
 }
 
-const ModuleBase::Info* ModuleManager::find(const ModuleBase* module, const std::string& representation, bool all)
+std::vector<ModuleBase::Info>::const_iterator ModuleManager::find(const ModuleState& module, const std::string& representation, bool all)
 {
-  for(const ModuleBase::Info* i = module->info; i->representation; ++i)
+  for(auto i = module.info.cbegin(); i != module.info.cend(); ++i)
     if((i->update || all) && representation == i->representation)
       return i;
-  return nullptr;
+  return module.info.cend();
 }
 
 bool ModuleManager::calcShared(const Configuration& config)
@@ -61,8 +62,13 @@ bool ModuleManager::calcShared(const Configuration& config)
       if(representationProvider.provider == "default")
       {
         bool exists = false;
-        for(ModuleBase* i = ModuleBase::first; i && !exists; i = i->next)
-          exists = find(i, representationProvider.representation, true) != 0;
+        for(const auto& i : modules)
+          if((exists = (find(i, representationProvider.representation, true)) != i.info.cend()))
+            break;
+        if(!exists)
+          for(const auto& i : otherModules)
+            if((exists = (find(i, representationProvider.representation, true)) != i.info.cend()))
+              break;
         if(!exists)
         {
           OUTPUT_ERROR("Unknown representation " << representationProvider.representation << "!");
@@ -80,13 +86,13 @@ bool ModuleManager::calcShared(const Configuration& config)
       bool provided = false;
       if(module != modules.end())
       {
-        provided |= find(module->module, representationProvider.representation) != 0;
+        provided |= find(*module, representationProvider.representation) != module->info.cend();
         if(!calcShared(config, representationProvider.representation, *module, modules, received, false))
           return false;
       }
       if(otherModule != otherModules.end())
       {
-        provided |= find(otherModule->module, representationProvider.representation) != 0;
+        provided |= find(*otherModule, representationProvider.representation) != otherModule->info.cend();
         if(!calcShared(config, representationProvider.representation, *otherModule, otherModules, sent, true))
           return false;
       }
@@ -115,13 +121,13 @@ bool ModuleManager::calcShared(const Configuration& config, const std::string& r
       return false;
     }
 
-  for(const ModuleBase::Info* requirement = module.module->info; requirement->representation; ++requirement)
-    if(!requirement->update)
+  for(const auto& requirement : module.info)
+    if(!requirement.update)
     {
       bool provided = false;
       bool providedHere = false;
       for(const auto& providerOfRepresentation : config.representationProviders)
-        if(providerOfRepresentation.representation == requirement->representation)
+        if(providerOfRepresentation.representation == requirement.representation)
         {
           provided = true;
           if(providerOfRepresentation.provider == "default")
@@ -129,17 +135,17 @@ bool ModuleManager::calcShared(const Configuration& config, const std::string& r
           else
             for(const auto& module : modules)
               if(module == providerOfRepresentation.provider &&
-                 find(module.module, providerOfRepresentation.representation) != 0)
+                 find(module, providerOfRepresentation.representation) != module.info.cend())
                 providedHere = true;
         }
       if(!provided)
       {
         if(!silent)
-          OUTPUT_ERROR("No provider for required representation " << requirement->representation << " required by " << module.module->name);
+          OUTPUT_ERROR("No provider for required representation " << requirement.representation << " required by " << module.module->name);
         return false;
       }
-      else if(!providedHere && std::find(received.begin(), received.end(), std::string(requirement->representation)) == received.end())
-        received.push_back(requirement->representation);
+      else if(!providedHere && std::find(received.begin(), received.end(), std::string(requirement.representation)) == received.end())
+        received.push_back(requirement.representation);
     }
   return true;
 }
@@ -185,10 +191,10 @@ void ModuleManager::update(In& stream, unsigned timeStamp)
       for(auto& m : modules)
         if(rp.provider == m.module->name)
         {
-          for(const ModuleBase::Info* i = m.module->info; i->representation; ++i)
-            if(i->update && rp.representation == i->representation)
+          for(const auto& i : m.info)
+            if(i.update && rp.representation == i.representation)
             {
-              providers.push_back(Provider(i->representation, &m, i->update));
+              providers.emplace_back(i.representation, &m, i.update);
               break;
             }
           m.required = true;
@@ -246,11 +252,11 @@ bool ModuleManager::sortProviders(const std::list<std::string>& providedByDefaul
   std::list<Provider>::iterator i = providers.begin();
   while(i != providers.end())
   {
-    const ModuleBase::Info* j;
-    for(j = i->moduleState->module->info; j->representation; ++j)
-      if(!j->update && j->representation != i->representation && std::find(provided.begin(), provided.end(), j->representation) == provided.end())
+    auto j = i->moduleState->info.cbegin();
+    for(; j != i->moduleState->info.cend(); ++j)
+      if(!j->update && std::string(j->representation) != i->representation && std::find(provided.begin(), provided.end(), j->representation) == provided.end())
         break;
-    if(i->moduleState->module->info->representation && j->representation) // at least one requirement missing
+    if(j != i->moduleState->info.cend()) // at least one requirement missing
     {
       if(pushBackCount) // still one left to try
       {
@@ -333,8 +339,8 @@ void ModuleManager::execute()
            !Global::getDebugRequestTable().isActive("representation:JPEGImage") &&
            !Global::getDebugRequestTable().isActive("representation:Image")) ||
           duration > 500))
-        TRACE("TIMING: providing %s took %d ms at %d s after start",
-              p.representation, duration, timeStamp / 1000 - 10);
+        OUTPUT_ERROR("TIMING: providing " << p.representation << " took " << duration
+                     << " ms at " << timeStamp / 1000 - 100 << " s after start");
 #endif
     }
   BH_TRACE;
@@ -360,21 +366,21 @@ void ModuleManager::execute()
 
       unsigned requirementsSize = 0;
       unsigned providersSize = 0;
-      for(const ModuleBase::Info* j = m.module->info; j->representation; ++j)
-        if(j->update)
+      for(const auto& j : m.info)
+        if(j.update)
           ++providersSize;
         else
           ++requirementsSize;
 
       Global::getDebugOut().bin << static_cast<unsigned>(requirementsSize);
-      for(const ModuleBase::Info* j = m.module->info; j->representation; ++j)
-        if(!j->update)
-          Global::getDebugOut().bin << j->representation;
+      for(const auto& j : m.info)
+        if(!j.update)
+          Global::getDebugOut().bin << j.representation;
 
       Global::getDebugOut().bin << static_cast<unsigned>(providersSize);
-      for(const ModuleBase::Info* j = m.module->info; j->representation; ++j)
-        if(j->update)
-          Global::getDebugOut().bin << j->representation;
+      for(const auto& j : m.info)
+        if(j.update)
+          Global::getDebugOut().bin << j.representation;
     }
 
     Global::getDebugOut().bin << config;

@@ -47,5 +47,5 @@ private:
 
   bool checkForIllegalMotionPenalty();
 
-  void update(GameInfo& gameInfo);
+  void update(GameInfo& gameInfo) override;
 };

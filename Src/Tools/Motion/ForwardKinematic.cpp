@@ -11,7 +11,7 @@
 #include "Tools/Math/Pose3f.h"
 #include "Tools/Math/Rotation.h"
 
-void ForwardKinematic::calculateArmChain(Arms::Arm arm, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs)
+void ForwardKinematic::calculateArmChain(Arms::Arm arm, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)& limbs)
 {
   const int sign = arm == Arms::left ? 1 : -1;
   Limbs::Limb shoulderLimb = arm == Arms::left ? Limbs::shoulderLeft : Limbs::shoulderRight;
@@ -30,7 +30,7 @@ void ForwardKinematic::calculateArmChain(Arms::Arm arm, const JointAngles& joint
   wrist = (foreArm + Vector3f(robotDimensions.xOffsetElbowToWrist, 0, 0)) *= RotationMatrix::aroundX(joints.angles[shoulderJoint + 4]);
 }
 
-void ForwardKinematic::calculateLegChain(Legs::Leg leg, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs)
+void ForwardKinematic::calculateLegChain(Legs::Leg leg, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)& limbs)
 {
   const int sign = leg == Legs::left ? 1 : -1;
   Limbs::Limb pelvisLimb = leg == Legs::left ? Limbs::pelvisLeft : Limbs::pelvisRight;
@@ -51,7 +51,7 @@ void ForwardKinematic::calculateLegChain(Legs::Leg leg, const JointAngles& joint
   foot = ankle * RotationMatrix::aroundX(joints.angles[hipJoint + 5]);
 }
 
-void ForwardKinematic::calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, (Limbs) Limb)& limbs)
+void ForwardKinematic::calculateHeadChain(const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)& limbs)
 {
   limbs[Limbs::neck] = Pose3f(0.f, 0.f, robotDimensions.hipToNeckLength) *= RotationMatrix::aroundZ(joints.angles[Joints::headYaw]);
   limbs[Limbs::head] = limbs[Limbs::neck] * RotationMatrix::aroundY(joints.angles[Joints::headPitch]);

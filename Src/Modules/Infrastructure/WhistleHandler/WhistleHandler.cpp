@@ -16,7 +16,7 @@ void WhistleHandler::update(GameInfo& gameInfo)
 
   if(gameInfo.state != STATE_SET)
     overrideGameState = false;
-  else if(!overrideGameState && gameInfo.secondaryState == STATE2_NORMAL)
+  else if(!overrideGameState && gameInfo.gamePhase == GAME_PHASE_NORMAL)
     overrideGameState = checkWhistle() && checkBall();
 
   if(overrideGameState)

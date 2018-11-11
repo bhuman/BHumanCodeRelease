@@ -45,7 +45,7 @@ class BodyContourProvider: public BodyContourProviderBase
 private:
   Pose3f robotCameraMatrixInverted; /**< The inverse of the current robotCameraMatrix. */
 
-  void update(BodyContour& bodyContour);
+  void update(BodyContour& bodyContour) override;
 
   /**
    * The method projects a point in world coordinates into the image using the precomputed

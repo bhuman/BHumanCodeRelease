@@ -5,17 +5,17 @@ vi image jpeg upper
 vid all representation:FieldLines:image
 vid all representation:BallPercept:image
 vid all representation:PenaltyMarkPercept:image
-vid all representation:PlayersFieldPercept:image
-vid all representation:PlayersImagePercept:image
+vid all representation:ObstaclesImagePercept:image
+vid all representation:ObstaclesFieldPercept:image
 vid all representation:BodyContour
 vid all representation:BallSpots:image
-vid all module:BallPerceptor:candidates
-vid all module:BallPerceptor:samplePoints
 vid all horizon
 
 # Segmented views
 vi image jpeg segmented upper
 vi image jpeg segmented lower
+
+call Includes/ManualHeadMotion
 
 # 3-D image views
 v3 image jpeg lower

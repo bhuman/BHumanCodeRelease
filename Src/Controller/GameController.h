@@ -14,8 +14,9 @@
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/TeamInfo.h"
-#include "Tools/Streams/Enum.h"
 #include "Tools/Math/Pose2f.h"
+#include "Tools/Settings.h"
+#include "Tools/Streams/Enum.h"
 #include "Tools/Streams/InOut.h"
 
 class SimulatedRobot;
@@ -34,6 +35,7 @@ private:
     SimulatedRobot* simulatedRobot = nullptr;
     RobotInfo info;
     unsigned timeWhenPenalized = 0;
+    uint8_t lastPenalty = PENALTY_NONE;
     Pose2f lastPose;
     bool manuallyPlaced = false;
   };
@@ -49,6 +51,8 @@ private:
     leavingTheField,
     kickOffGoal,
     requestForPickup,
+    localGameStuck,
+    substitute,
     manual,
   });
   static const int numOfPenalties = numOfPenaltys; /**< Correct typo. */
@@ -56,7 +60,11 @@ private:
   DECLARE_SYNC;
   static const int numOfRobots = 12;
   static const int numOfFieldPlayers = numOfRobots / 2 - 2; // Keeper, Substitute
-  static const int durationOfHalf = 600;
+  static const int halfTime = 600;
+  static const int readyTime = 45;
+  static const int kickOffTime = 10;
+  static const int freeKickTime = 30;
+  static const int penaltyShotTime = 30;
   static const float footLength; /**< foot length for position check and manual placement at center circle. */
   static const float safeDistance; /**< safe distance from penalty areas for manual placement. */
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
@@ -65,14 +73,16 @@ private:
   static BallSpecification ballSpecification;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
-  unsigned timeWhenHalfStarted = 0;
+  uint8_t lastState = STATE_INITIAL;
+  unsigned timeBeforeCurrentState = 0;
   unsigned timeOfLastDropIn = 0;
   unsigned timeWhenLastRobotMoved = 0;
   unsigned timeWhenStateBegan = 0;
+  unsigned timeWhenSetPlayBegan = 0;
   Robot robots[numOfRobots];
 
   /** enum which declares the different types of balls leaving the field */
-  enum BallOut {notOut, goalBySecondTeam, goalByFirstTeam, outBySecondTeam, outByFirstTeam};
+  enum BallOut {notOut, goalBySecondTeam, goalByFirstTeam, outBySecondTeam, outByFirstTeam, goalOutBySecondTeam, goalOutByFirstTeam};
 
   friend Settings;
 
@@ -154,12 +164,57 @@ public:
    */
   void setTeamInfos(Settings::TeamColor& firstTeamColor, Settings::TeamColor& secondTeamColor);
 
-private:
+  void moveMe(int robot, Vector3f position, Vector3f rotation);
+
   /**
    * Handles the command "gc".
    * @param command The second part of the command (without "gc").
    */
   bool handleGlobalCommand(const std::string& command);
+
+private:
+
+  /**
+   * Handles commands that modify the competition phase.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleCompetitionPhaseCommand(const std::string& command);
+
+  /**
+   * Handles commands that modify the competition type.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleCompetitionTypeCommand(const std::string& command);
+
+  /**
+   * Handles commands that modify the game state.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleStateCommand(const std::string& command);
+
+  /**
+   * Handles commands that count goals.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleGoalCommand(const std::string& command);
+
+  /**
+   * Handles commands that have to do with ball out.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleOutCommand(const std::string& command);
+
+  /**
+   * Handles commands that give free kicks.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleFreeKickCommand(const std::string& command);
+
+  /**
+   * Handles commands that give kickoff.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleKickOffCommand(const std::string& command);
 
   /**
    * Handles the command "pr".
@@ -217,6 +272,12 @@ private:
    * @param poses Possible placement poses robots.
    */
   void freePenaltyArea(int minRobot, const Pose2f* poses);
+
+  /** Adds the time that has elapsed in the current state to timeBeforeCurrentState. */
+  void addTimeInCurrentState();
+
+  /** Sets all times when penalized to 0. */
+  void resetPenaltyTimes();
 
   /** Execute the manual placements decided before. */
   void executePlacement();

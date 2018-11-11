@@ -161,13 +161,13 @@ void ArmContactModelProvider::update(ArmContactModel& model)
       DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 1300, 200, ColorRGBA::black, "LEFT");
       DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 1100, 200, ColorRGBA::black, "ErrorX: " << toDegrees(errorBuffer[0].average().x()));
       DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 900, 200, ColorRGBA::black,  "ErrorY: " << toDegrees(errorBuffer[0].average().y()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 500, 200, ColorRGBA::black,  ArmContactModel::getName(model.status[Arms::left].pushDirection));
+      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 500, 200, ColorRGBA::black,  TypeRegistry::getEnumName(model.status[Arms::left].pushDirection));
       DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 300, 200, ColorRGBA::black,  "Time: " << model.status[Arms::left].timeOfLastContact);
 
       DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 1300, 200, ColorRGBA::black, "RIGHT");
       DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 1100, 200, ColorRGBA::black, "ErrorX: " << toDegrees(errorBuffer[1].average().x()));
       DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 900, 200, ColorRGBA::black,  "ErrorY: " << toDegrees(errorBuffer[1].average().y()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 500, 200, ColorRGBA::black,  ArmContactModel::getName(model.status[Arms::right].pushDirection));
+      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 500, 200, ColorRGBA::black,  TypeRegistry::getEnumName(model.status[Arms::right].pushDirection));
       DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 300, 200, ColorRGBA::black,  "Time: " << model.status[Arms::right].timeOfLastContact);
 
       if(model.status[Arms::left].contact)

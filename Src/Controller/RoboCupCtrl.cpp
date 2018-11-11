@@ -62,7 +62,7 @@ bool RoboCupCtrl::compile()
     return false;
 
   // initialize simulated time and step length
-  time = 10000 - Time::getRealSystemTime();
+  time = 100000 - Time::getRealSystemTime();
   simStepLength = int(scene->getStepLength() * 1000.f + 0.5f);
   if(simStepLength > 20)
     simStepLength = 20;
@@ -143,9 +143,8 @@ SimRobot::Object* RoboCupCtrl::addCategory(const QString& name, const SimRobot::
     Category(const QString& name, const QString& fullName, const char* icon) : name(name), fullName(fullName), icon(icon) {}
 
   private:
-    virtual const QString& getDisplayName() const { return name; }
-    virtual const QString& getFullName() const { return fullName; }
-    virtual const QIcon* getIcon() const { return &icon; }
+    const QString& getFullName() const override { return fullName; }
+    const QIcon* getIcon() const override { return &icon; }
   };
 
   SimRobot::Object* category = new Category(name, parent ? parent->getFullName() + "." + name : name, icon ? icon : ":/Icons/folder.png");

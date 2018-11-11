@@ -25,7 +25,7 @@ STREAMABLE(MassCalibration,
 
   void onRead(),
 
-  (ENUM_INDEXED_ARRAY(MassInfo, (Limbs) Limb)) masses, /**< Information on the mass distribution of all joints. */
+  (ENUM_INDEXED_ARRAY(MassInfo, Limbs::Limb)) masses, /**< Information on the mass distribution of all joints. */
 });
 
 inline void MassCalibration::onRead()

@@ -41,7 +41,7 @@ void Camera::createPhysics()
   if(rotation)
     sensor.offset.rotation = *rotation;
 
-  float aspect = tanf(angleX * 0.5f) / tanf(angleY * 0.5f);
+  float aspect = std::tan(angleX * 0.5f) / std::tan(angleY * 0.5f);
   OpenGLTools::computePerspective(angleY, aspect, 0.01f, 500.f, sensor.projection);
 }
 
@@ -94,9 +94,9 @@ void Camera::CameraSensor::updateValue()
   glShadeModel(GL_SMOOTH);
 
   // setup camera position
-  Pose3<> pose = physicalObject->pose;
+  Pose3f pose = physicalObject->pose;
   pose.conc(offset);
-  static const Matrix3x3<> cameraRotation(Vector3<>(0.f, -1.f, 0.f), Vector3<>(0.f, 0.f, 1.f), Vector3<>(-1.f, 0.f, 0.f));
+  static const RotationMatrix cameraRotation = (Matrix3f() << Vector3f(0.f, -1.f, 0.f), Vector3f(0.f, 0.f, 1.f), Vector3f(-1.f, 0.f, 0.f)).finished();
   pose.rotate(cameraRotation);
   float transformation[16];
   OpenGLTools::convertTransformation(pose.invert(), transformation);
@@ -104,7 +104,7 @@ void Camera::CameraSensor::updateValue()
 
   // draw all objects
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  Simulation::simulation->scene->drawAppearances();
+  Simulation::simulation->scene->drawAppearances(SurfaceColor::ownColor, false);
 
   // read frame buffer
   renderer.finishImageRendering(imageBuffer, imageWidth, imageHeight);
@@ -171,16 +171,16 @@ bool Camera::CameraSensor::renderCameraImages(SimRobotCore2::SensorPort** camera
       glViewport(0, currentHorizontalPos, imageWidth, imageHeight);
 
       // setup camera position
-      Pose3<> pose = sensor->physicalObject->pose;
+      Pose3f pose = sensor->physicalObject->pose;
       pose.conc(sensor->offset);
-      static const Matrix3x3<> cameraRotation(Vector3<>(0.f, -1.f, 0.f), Vector3<>(0.f, 0.f, 1.f), Vector3<>(-1.f, 0.f, 0.f));
+      static const RotationMatrix cameraRotation = (Matrix3f() << Vector3f(0.f, -1.f, 0.f), Vector3f(0.f, 0.f, 1.f), Vector3f(-1.f, 0.f, 0.f)).finished();
       pose.rotate(cameraRotation);
       float transformation[16];
       OpenGLTools::convertTransformation(pose.invert(), transformation);
       glLoadMatrixf(transformation);
 
       // draw all objects
-      Simulation::simulation->scene->drawAppearances();
+      Simulation::simulation->scene->drawAppearances(SurfaceColor::ownColor, false);
 
       sensor->data.byteArray = currentBufferPos;
       sensor->lastSimulationStep = Simulation::simulation->simulationStep;
@@ -202,30 +202,30 @@ void Camera::drawPhysics(unsigned int flags) const
 
   if(flags & SimRobotCore2::Renderer::showSensors)
   {
-    Vector3<> ml(1.f, -tanf(angleX * 0.5f), 0);
-    Vector3<> mt(1.f, 0, tanf(angleY * 0.5f));
-    Vector3<> tl(1.f, ml.y, mt.z);
-    Vector3<> tr(1.f, -ml.y, mt.z);
-    Vector3<> bl(1.f, ml.y, -mt.z);
-    Vector3<> br(1.f, -ml.y, -mt.z);
+    const Vector3f ml(1.f, -std::tan(angleX * 0.5f), 0);
+    const Vector3f mt(1.f, 0, std::tan(angleY * 0.5f));
+    const Vector3f tl(1.f, ml.y(), mt.z());
+    const Vector3f tr(1.f, -ml.y(), mt.z());
+    const Vector3f bl(1.f, ml.y(), -mt.z());
+    const Vector3f br(1.f, -ml.y(), -mt.z());
 
     glBegin(GL_LINE_LOOP);
       glColor3f(0, 0, 0.5f);
       glNormal3f (0, 0, 1.f);
-      glVertex3f(tl.x, tl.y, tl.z);
-      glVertex3f(tr.x, tr.y, tr.z);
-      glVertex3f(br.x, br.y, br.z);
-      glVertex3f(bl.x, bl.y, bl.z);
+      glVertex3f(tl.x(), tl.y(), tl.z());
+      glVertex3f(tr.x(), tr.y(), tr.z());
+      glVertex3f(br.x(), br.y(), br.z());
+      glVertex3f(bl.x(), bl.y(), bl.z());
     glEnd();
     glBegin(GL_LINE_STRIP);
-      glVertex3f(tl.x, tl.y, tl.z);
+      glVertex3f(tl.x(), tl.y(), tl.z());
       glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(tr.x, tr.y, tr.z);
+      glVertex3f(tr.x(), tr.y(), tr.z());
     glEnd();
     glBegin(GL_LINE_STRIP);
-      glVertex3f(bl.x, bl.y, bl.z);
+      glVertex3f(bl.x(), bl.y(), bl.z());
       glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(br.x, br.y, br.z);
+      glVertex3f(br.x(), br.y(), br.z());
     glEnd();
   }
 

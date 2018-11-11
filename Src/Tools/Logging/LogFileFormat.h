@@ -11,11 +11,11 @@
 
 namespace Logging
 {
-  GLOBAL_ENUM(LogFileFormat,
+  ENUM(LogFileFormat,
   {,
     logFileUncompressed,
     logFileCompressed,
     logFileMessageIDs,
-    logFileStreamSpecification,
+    logFileTypeInfo,
   });
 }

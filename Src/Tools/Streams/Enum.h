@@ -27,21 +27,6 @@
 #include "AutoStreamable.h"
 
 /**
- * @param enums A string that contains a comma-separated list of enum
- *              elements. It is allowed that an element is initialized
- *              with the value of its predecessor. Any other
- *              initializations are forbidden.
- *              "a, b, numOfLettersBeforeC, c = numOfLettersBeforeC, d"
- *              would be a legal parameter.
- * @param names An array of string pointers that will be filled with
- *              the names of the enums.
- * @param numOfEnums The number of enums in the string. Reassignments do
- *                   not count, i.e. in the example above, this
- *                   parameter had to be 4.
- */
-void enumInit(char* enums, const char** names, int numOfEnums);
-
-/**
  * Concatenate the two parameters.
  */
 #define _ENUM_JOIN(a, b) _ENUM_JOIN_I(a, b)
@@ -201,9 +186,10 @@ void enumInit(char* enums, const char** names, int numOfEnums);
 #define _ENUM_REMOVELAST_125(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, a101, a102, a103, a104, a105, a106, a107, a108, a109, a110, a111, a112, a113, a114, a115, a116, a117, a118, a119, a120, a121, a122, a123, a124, a125) a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, a100, a101, a102, a103, a104, a105, a106, a107, a108, a109, a110, a111, a112, a113, a114, a115, a116, a117, a118, a119, a120, a121, a122, a123, a124
 
 /**
- * Convert arguments to a string. Also unwraps macros before.
+ * Registers a single enumeration constant.
+ * @param constant The enumration constant.
  */
-#define _ENUM_QUOTE(...) #__VA_ARGS__
+#define _ENUM_REG(constant) TypeRegistry::addEnumConstant(_type, #constant);
 
 /**
  * Defining an enum and a function getName(<Enum>) that can return
@@ -212,7 +198,7 @@ void enumInit(char* enums, const char** names, int numOfEnums);
  * elements defined.
  *
  * WARNING: Assigning values to enum-elements is not allowed with these enums
- * since they are designed for streaming and getName(<Enum>) expects them to
+ * since they are designed for streaming and the type registry expects them to
  * have no assignments. The only exception is the assignment of a previous
  * enum-element.
  * Example:
@@ -226,61 +212,37 @@ void enumInit(char* enums, const char** names, int numOfEnums);
  *   banana,
  * });
  */
-#define ENUM(Enum, bracket, ...) _ENUM(_ENUM_TUPLE_SIZE(__VA_ARGS__), Enum, static, __VA_ARGS__)
-#define _ENUM(n, Enum, scope, ...) _ENUM_I(Enum, scope, (_ENUM_REMOVELAST_, n), __VA_ARGS__)
-#define _ENUM_I(Enum, scope, param , ...) _ENUM_II(Enum, scope, _ENUM_JOIN param (__VA_ARGS__))
-#define _ENUM_II(Enum, scope, ...) \
+#define ENUM(Enum, bracket, ...) _ENUM(_ENUM_TUPLE_SIZE(__VA_ARGS__), Enum, __VA_ARGS__)
+#define _ENUM(n, Enum, ...) _ENUM_I(n, Enum, (_ENUM_REMOVELAST_, n), __VA_ARGS__)
+#define _ENUM_I(n, Enum, param , ...) _ENUM_II(n, Enum, (_ENUM_REG, __VA_ARGS__), _ENUM_JOIN param (__VA_ARGS__))
+#define _ENUM_II(n, Enum, param, ...) \
   enum Enum : unsigned char \
   { \
     __VA_ARGS__, \
     numOf##Enum##s \
   }; \
-  inline scope const char* getName(Enum e) \
+  struct Enum##_Info \
   { \
-    static char enums[] = _ENUM_QUOTE(__VA_ARGS__); \
-    static const char* names[numOf##Enum##s]; \
-    static bool init = true; \
-    if(init) \
+    static constexpr Enum numOfElements = numOf##Enum##s; \
+    static void reg() \
     { \
-      enumInit(enums, names, numOf##Enum##s); \
-      init = false; \
+      PUBLISH(reg); \
+      const char* _type = typeid(Enum).name(); \
+      TypeRegistry::addEnum(_type); \
+      _STREAM_ATTR_##n param \
     } \
-    return e >= numOf##Enum##s ? 0 : names[e]; \
   }
 
 /**
- * Same as ENUM, but meant for declarations outside of a class. In particular, the method
- * getName is not declared static. This is important for Microsoft's compiler, because
- * addresses of static global functions cannot be used a template arguments.
- */
-#define GLOBAL_ENUM(Enum, bracket, ...) _ENUM(_ENUM_TUPLE_SIZE(__VA_ARGS__), Enum, , __VA_ARGS__)
-
-/**
- * FOREACH_ENUM([ (enum-domain) ] enum, var [ , limit ])
- * @param enum-domain Class or namespace in which the enum is defined (optional).
+ * FOREACH_ENUM(enum, var [ , limit ])
  * @param enum The enum type.
  * @param var The variable which holds the current enum value inside the loop.
- * @param limit Exclusive upper bound of the loop. Must be a value of the enum.
- *              If not specified, all enum constants are enumerated.
+ * @param limit Exclusive upper bound of the loop. If not specified, all enum
+ *              constants are enumerated.
  */
 #define FOREACH_ENUM(enum, ...) _FOREACH_ENUM_I(enum, _ENUM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
 #define _FOREACH_ENUM_I(enum, n, ...) _FOREACH_ENUM_II((_FOREACH_ENUM_, n), enum, __VA_ARGS__)
 #define _FOREACH_ENUM_II(param, ...) _ENUM_JOIN param (__VA_ARGS__)
-#define _FOREACH_ENUM_1(enum, var) \
-  for(_STREAM_DECL_I(enum))_STREAM_DECL_IV(enum))) var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(0); \
-    var < _STREAM_DECL_I(enum))_FOREACH_ENUM_NUMOFS(_FOREACH_ENUM_TYPE(enum)); \
-    var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
-#define _FOREACH_ENUM_2(enum, var, limit) \
-  for(_STREAM_DECL_I(enum))_STREAM_DECL_IV(enum))) var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(0); \
-    var < _STREAM_DECL_I(enum))limit; \
-    var = _STREAM_DECL_I(enum))_STREAM_DECL_IV(enum)))(unsigned(var) + 1))
+#define _FOREACH_ENUM_1(enum, var) _FOREACH_ENUM_2(enum, var, enum##_Info::numOfElements)
+#define _FOREACH_ENUM_2(enum, var, limit) for(enum var = enum(0); var < limit; var = enum(unsigned(var) + 1))
 
-/** Extract the enum type from the declaration. */
-#define _FOREACH_ENUM_TYPE(...) _STREAM_JOIN(_FOREACH_ENUM_TYPE_, _STREAM_SEQ_SIZE(__VA_ARGS__))(__VA_ARGS__)
-#define _FOREACH_ENUM_TYPE_0(...) __VA_ARGS__
-#define _FOREACH_ENUM_TYPE_1(...) _FOREACH_ENUM_TYPE_0(_STREAM_DROP __VA_ARGS__)
-
-/** Surround parameter by numOf ... s */
-#define _FOREACH_ENUM_NUMOFS(...) _FOREACH_ENUM_NUMOFS_I((numOf, __VA_ARGS__))
-#define _FOREACH_ENUM_NUMOFS_I(...) _FOREACH_ENUM_NUMOFS_II __VA_ARGS__
-#define _FOREACH_ENUM_NUMOFS_II(a, ...) a ## __VA_ARGS__ ## s

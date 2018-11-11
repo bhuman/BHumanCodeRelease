@@ -37,24 +37,24 @@ public:
 
   private:
     // API
-    virtual const QString& getFullName() const {return fullName;}
-    virtual const QIcon* getIcon() const;
-    virtual SimRobot::Widget* createWidget();
-    virtual const QList<int>& getDimensions() const {return dimensions;}
-    virtual const QStringList& getDescriptions() const {return descriptions;}
-    virtual const QString& getUnit() const {return unit;}
-    virtual SensorType getSensorType() const {return sensorType;}
-    virtual Data getValue();
-    virtual bool renderCameraImages(SimRobotCore2::SensorPort** cameras, unsigned int count) {return false;}
+    const QString& getFullName() const override {return fullName;}
+    const QIcon* getIcon() const override;
+    SimRobot::Widget* createWidget() override;
+    const QList<int>& getDimensions() const override {return dimensions;}
+    const QStringList& getDescriptions() const override {return descriptions;}
+    const QString& getUnit() const override {return unit;}
+    SensorType getSensorType() const override {return sensorType;}
+    Data getValue() override;
+    bool renderCameraImages(SimRobotCore2::SensorPort** cameras, unsigned int count) override {return false;}
   };
 
 private:
   // API
-  virtual const QString& getFullName() const {return SimObject::getFullName();}
-  virtual SimRobot::Widget* createWidget() {return SimObject::createWidget();}
-  virtual const QIcon* getIcon() const {return SimObject::getIcon();}
-  virtual SimRobotCore2::Renderer* createRenderer() {return SimObject::createRenderer();}
-  virtual bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing) {return ::PhysicalObject::registerDrawing(drawing);}
-  virtual bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing) {return ::PhysicalObject::unregisterDrawing(drawing);}
-  virtual SimRobotCore2::Body* getParentBody() {return ::PhysicalObject::getParentBody();}
+  const QString& getFullName() const override {return SimObject::getFullName();}
+  SimRobot::Widget* createWidget() override {return SimObject::createWidget();}
+  const QIcon* getIcon() const override {return SimObject::getIcon();}
+  SimRobotCore2::Renderer* createRenderer() override {return SimObject::createRenderer();}
+  bool registerDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::PhysicalObject::registerDrawing(drawing);}
+  bool unregisterDrawing(SimRobotCore2::Controller3DDrawing& drawing) override {return ::PhysicalObject::unregisterDrawing(drawing);}
+  SimRobotCore2::Body* getParentBody() override {return ::PhysicalObject::getParentBody();}
 };

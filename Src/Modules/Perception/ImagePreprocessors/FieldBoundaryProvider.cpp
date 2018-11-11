@@ -1,533 +1,216 @@
 /**
- * @author Alexis Tsogias
+ * @file FieldBoundaryProvider.cpp
+ *
+ * This file implements a module that estimates the field boundary using
+ * a RANSAC algorithm for a single straight line or two intersecting
+ * straight lines.
+ *
+ * @author Thomas Röfer
  */
 
 #include "FieldBoundaryProvider.h"
-#include "Platform/BHAssert.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/Geometry.h"
+#include "Tools/Math/Random.h"
 #include "Tools/Math/Transformation.h"
-
-#include <algorithm>
-
-using std::vector;
+#include <limits>
 
 MAKE_MODULE(FieldBoundaryProvider, perception)
 
-void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
+void FieldBoundaryProvider::update(FieldBoundary& theFieldBoundary)
 {
-  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:lowerCamSpots", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:lowerCamSpotsInterpolated", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:greaterPenaltyPoint", "drawingOnImage");
+  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:spots", "drawingOnImage");
 
-  // Clear vectors.
-  fieldBoundary.boundarySpots.clear();
-  fieldBoundary.convexBoundary.clear();
-  convexBoundaryCandidates.clear();
-  fieldBoundary.boundaryInImage.clear();
-  lowerCamSpotsInImage.clear();
-  lowerCamSpotsInterpol.clear();
-
+  // Only with a valid camera matrix, the field boundary can be computed.
   if(theCameraMatrix.isValid)
   {
-    if(theCameraInfo.camera == CameraInfo::Camera::upper)
-    {
-      fieldBoundary.boundaryOnField.clear();
-      if(validLowerCamSpots)
-        handleLowerCamSpots();
-    }
-    else
-    {
-      lowerCamConvexHullOnField.clear();
-      validLowerCamSpots = true;
-    }
+    // Propagate the previous field boundary to the current image.
+    if(theFieldBoundary.isValid)
+      predict(theFieldBoundary);
 
-    findBoundarySpots(fieldBoundary);
-    if(!cleanupBoundarySpots(fieldBoundary.boundarySpots))
+    // Find field boundary spots. These might also simply be the predicted ones.
+    std::vector<Spot> spots;
+    spots.reserve(theColorScanlineRegionsVertical.scanlines.size());
+    STOPWATCH("FieldBoundaryProvider:findSpots")
+      findSpots(theFieldBoundary, spots);
+
+    // If enough spots were found, compute new field boundary.
+    // Otherwise, the predicted one is used instead.
+    if(spots.size() >= minNumberOfSpots)
     {
-      if(theCameraInfo.camera == CameraInfo::Camera::lower)
-        validLowerCamSpots = false;
-      else
-      {
-        lastCamera = theCameraInfo.camera;
-        invalidateBoundary(fieldBoundary);
-        draw();
-        return;
-      }
-    }
-    else
-    {
-      calcBoundaryCandidates(fieldBoundary.boundarySpots);
-      findBestBoundary(convexBoundaryCandidates, fieldBoundary.boundarySpots, fieldBoundary.convexBoundary);
+      std::vector<Spot> model;
+      model.reserve(3);
+      STOPWATCH("FieldBoundaryProvider:calcBoundary")
+        calcBoundary(spots, model);
+
+      // Fill representation with the boundary found.
+      fillRepresentation(model, theFieldBoundary);
     }
   }
   else
+    theFieldBoundary.isValid = false;
+
+  if(!theFieldBoundary.isValid)
   {
-    lowerCamConvexHullOnField.clear();
-    invalidateBoundary(fieldBoundary);
-    lastCamera = theCameraInfo.camera;
-    draw();
-    return;
+    theFieldBoundary.boundaryInImage.clear();
+    theFieldBoundary.boundaryOnField.clear();
   }
-  bool valid = true;
-  if(theCameraInfo.camera == CameraInfo::Camera::upper)
+}
+
+void FieldBoundaryProvider::predict(FieldBoundary& fieldBoundary) const
+{
+  const Pose2f invOdometryOffset = theOdometer.odometryOffset.inverse();
+  fieldBoundary.boundaryInImage.clear();
+  std::vector<Vector2f> spotsOnField = fieldBoundary.boundaryOnField;
+  fieldBoundary.boundaryOnField.clear();
+  for(Vector2f& spotOnField : spotsOnField)
   {
-    // Project the convexBoundary to the field.
-    for(const Vector2i& p : fieldBoundary.convexBoundary)
+    Vector2f spotInImage;
+    spotOnField = invOdometryOffset * spotOnField;
+    if(Transformation::robotToImage(spotOnField, theCameraMatrix, theCameraInfo, spotInImage))
     {
-      Vector2f pField;
-      valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
-      fieldBoundary.boundaryOnField.push_back(pField);
+      fieldBoundary.boundaryInImage.emplace_back(theImageCoordinateSystem.fromCorrected(spotInImage).cast<int>());
+      fieldBoundary.boundaryOnField.emplace_back(spotOnField);
     }
-    if(!valid)
-    {
-      lastCamera = theCameraInfo.camera;
-      invalidateBoundary(fieldBoundary);
-      draw();
-      return;
-    }
-    fieldBoundary.isValid = true;
-    fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
   }
-  else if(lastCamera != theCameraInfo.camera && lastCamera != CameraInfo::Camera::numOfCameras) // Current image is lower. Last image was upper.
+  fieldBoundary.isValid = fieldBoundary.boundaryInImage.size() > 1;
+}
+
+void FieldBoundaryProvider::findSpots(const FieldBoundary& fieldBoundary, std::vector<Spot>& spots) const
+{
+  for(const ColorScanlineRegionsVertical::Scanline& scanline : theColorScanlineRegionsVertical.scanlines)
   {
-    if(validLowerCamSpots)
-    {
-      // Project the convexBoundary to the field.
-      for(const Vector2i& p : fieldBoundary.convexBoundary)
-      {
-        Vector2f pField;
-        valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
-        lowerCamConvexHullOnField.push_back(pField);
-      }
-      if(!valid)
-      {
-        lowerCamConvexHullOnField.clear();
-        validLowerCamSpots = false;
-      }
-    }
+    // Use point from previous field boundary if it is above lower or below upper image.
     if(fieldBoundary.isValid)
     {
-      // Update fieldboundary from last upper image so it is shown correctly on the lower image.
-      valid = true;
-      InImage projectedPoints;
-      projectedPoints.reserve(fieldBoundary.boundaryOnField.size());
-      for(Vector2f& point : fieldBoundary.boundaryOnField)
+      int y = fieldBoundary.getBoundaryY(scanline.x);
+      if((theCameraInfo.camera == CameraInfo::upper && y >= theCameraInfo.height)
+         || (theCameraInfo.camera == CameraInfo::lower && y < 0))
       {
-        point = theOdometer.odometryOffset.inverse() * point;
-
-        Vector2f pImg;
-        valid &= Transformation::robotToImage(point, theCameraMatrix, theCameraInfo, pImg);
-        projectedPoints.emplace_back(static_cast<int>(pImg.x() + 0.5f), static_cast<int>(pImg.y() + 0.5f));
-      }
-      if(!valid)
-      {
-        lastCamera = theCameraInfo.camera;
-        invalidateBoundary(fieldBoundary);
-        draw();
-        return;
-      }
-
-      std::sort(projectedPoints.begin(), projectedPoints.end(), [](const Vector2i& a, const Vector2i& b)
-      {
-        return a.x() < b.x() || (a.x() == b.x() && a.y() < b.y());
-      });
-      fieldBoundary.isValid = true;
-      fieldBoundary.boundaryInImage.clear();
-      getUpperConvexHull(projectedPoints, fieldBoundary.boundaryInImage);
-    }
-    else
-      invalidateBoundary(fieldBoundary);
-  }
-  else if(validLowerCamSpots) // Current image is lower. Last image was lower or this is the very first image.
-  {
-    // Project the convexBoundary to the field.
-    for(const Vector2i& p : fieldBoundary.convexBoundary)
-    {
-      Vector2f pField;
-      valid &= Transformation::imageToRobot(p.x(), p.y(), theCameraMatrix, theCameraInfo, pField);
-      lowerCamConvexHullOnField.push_back(pField);
-    }
-    if(!valid)
-    {
-      lastCamera = theCameraInfo.camera;
-      lowerCamConvexHullOnField.clear();
-      validLowerCamSpots = false;
-      invalidateBoundary(fieldBoundary);
-      draw();
-      return;
-    }
-    fieldBoundary.isValid = true;
-    fieldBoundary.boundaryOnField = lowerCamConvexHullOnField;
-    fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
-  }
-  else // Current image is lower. Last image was lower or this is the very first image. No valid lower cam spots.
-  {
-    invalidateBoundary(fieldBoundary);
-  }
-
-  lastCamera = theCameraInfo.camera;
-  draw();
-}
-
-void FieldBoundaryProvider::handleLowerCamSpots()
-{
-  InImage tmpLowerCamSpotsInImage;
-
-  for(Vector2f& p : lowerCamConvexHullOnField)
-  {
-    Vector2f pImg;
-    p = Eigen::Rotation2Df(-theOdometer.odometryOffset.rotation) * p;
-    p -= theOdometer.odometryOffset.translation;
-    if(Transformation::robotToImage(p, theCameraMatrix, theCameraInfo, pImg))
-      tmpLowerCamSpotsInImage.push_back(Vector2i(static_cast<int>(std::floor(pImg.x() + 0.5f)), static_cast<int>(std::floor(pImg.y() + 0.5f))));
-  }
-
-  std::sort(tmpLowerCamSpotsInImage.begin(), tmpLowerCamSpotsInImage.end(), [](Vector2i a, Vector2i b)
-  {
-    return a.x() < b.x() || (a.x() == b.x() && a.y() < b.y());
-  });
-
-  // Remove lower spots on the same scanline...
-  if(tmpLowerCamSpotsInImage.size() >= 2)
-  {
-    lowerCamSpotsInImage.push_back(tmpLowerCamSpotsInImage.front());
-    const Vector2i* prev = &tmpLowerCamSpotsInImage.front();
-    for(const Vector2i& current : tmpLowerCamSpotsInImage)
-    {
-      if(current.x() > prev->x())
-      {
-        lowerCamSpotsInImage.push_back(current);
-        prev = &current;
+        Vector2i spotInImage(scanline.x, y);
+        Vector2f spotOnField;
+        if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
+           && spotOnField.squaredNorm() >= sqr(minDistance))
+        {
+          spots.emplace_back(spotInImage, spotOnField);
+          CROSS("module:FieldBoundaryProvider:spots", spotInImage.x(), spotInImage.y(), 3, 1, Drawings::solidPen, ColorRGBA::red);
+          continue;
+        }
       }
     }
-  }
 
-  // Draw Spots from last frame
-  for(const Vector2i& p : lowerCamSpotsInImage)
-  {
-    DOT("module:FieldBoundaryProvider:lowerCamSpots", p.x(), p.y(), ColorRGBA::green, ColorRGBA::green);
-  }
-}
-
-void FieldBoundaryProvider::findBoundarySpots(FieldBoundary& fieldBoundary)
-{
-  const unsigned height = theCameraInfo.height;
-
-  Vector2f pointInImage;
-  const float fieldDiagional = Vector2f(theFieldDimensions.boundary.x.getSize(), theFieldDimensions.boundary.y.getSize()).norm();
-  if(!Transformation::robotWithCameraRotationToImage(Vector2f(fieldDiagional, 0), theCameraMatrix, theCameraInfo, pointInImage))
-    return;
-
-  const int highestPossiblePoint = static_cast<int>(pointInImage.y());
-
-  // find y-coordinate where a point on the field is more than nonGreenPenaltyDistance meters away
-  int yBound = findYInImageByDistance(nonGreenPenaltyDistance);
-  const int bodyContourMargin = static_cast<int>(height * 0.05);
-  int badSpots = 0;
-  unsigned lowResStep = std::max(theColorScanlineRegionsVertical.lowResStep, 1u); // Workaround for old logs
-  for(unsigned i = theColorScanlineRegionsVertical.lowResStart; i < theColorScanlineRegionsVertical.scanlines.size(); i += lowResStep)
-  {
-    const ColorScanlineRegionsVertical::Scanline& scanline = theColorScanlineRegionsVertical.scanlines[i];
-    SpotAccumulator spot = {static_cast<int>(height), static_cast<int>(height), 0, 0};
-    if(theCameraInfo.camera == CameraInfo::Camera::upper && lowerCamSpotsInImage.size() > 1 && validLowerCamSpots)
-    {
-      // TODO maybe also clip body contour
-      spot.yStart = std::max(highestPossiblePoint, clipToBoundary(lowerCamSpotsInImage, scanline.x));
-      Vector2i p(scanline.x, spot.yStart);
-      lowerCamSpotsInterpol.push_back(p);
-      DOT("module:FieldBoundaryProvider:lowerCamSpotsInterpolated", scanline.x, spot.yStart, ColorRGBA::black, ColorRGBA::black);
-      spot.score = (spot.yStart > theCameraInfo.height) ? (height - spot.yStart) : 0; // FIXME score should be normalized by jumpsize
-      spot.yMax = spot.yStart;
-    }
-    else
-    {
-      spot.yStart = height;
-      theBodyContour.clipBottom(scanline.x, spot.yStart, height);
-      if(spot.yStart < bodyContourMargin)
-        ++badSpots;
-      if(theColorScanlineRegionsVertical.scanlines.size() / lowResStep - badSpots < 3 && theCameraInfo.camera == CameraInfo::Camera::lower)
-      {
-        validLowerCamSpots = false;
-        return;
-      }
-    }
-    int penalty = nonGreenPenalty;
-    int reward = 1;
+    // Search boundary spot as the end of the most field-ish region sequence starting at the bottom.
+    int score = 0;
+    int maxScore = 0;
+    int maxUpper = theCameraInfo.height;
     for(const ScanlineRegion& region : scanline.regions)
     {
-      if(region.range.lower < yBound) // TODO review this
-        penalty = nonGreenPenaltyGreater;
-      int regionSize;
-      if(region.range.upper > spot.yStart)
-        continue;
-      else if(region.range.upper <= spot.yStart && region.range.lower + 1 > spot.yStart)
-        regionSize = (spot.yStart + 1) - region.range.upper;
-      else
-        regionSize = region.range.lower - region.range.upper;
-
-      if(region.is(FieldColors::field))
-        spot.score += reward * regionSize;
-      else
-        spot.score -= penalty * regionSize;
-
-      if(spot.maxScore <= spot.score)
+      score += (region.is(FieldColors::field) ? 1 : -1) * (region.range.lower - region.range.upper);
+      if(score >= maxScore)
       {
-        spot.maxScore = spot.score;
-        spot.yMax = region.range.upper;
+        maxScore = score;
+        maxUpper = region.range.upper;
       }
     }
-    if(theCameraInfo.camera == CameraInfo::Camera::lower)
+
+    // Add spot if it can be projected to the field.
+    Vector2i spotInImage(scanline.x, maxUpper);
+    Vector2f spotOnField;
+    if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
+       && spotOnField.squaredNorm() >= sqr(minDistance))
     {
-      int yEnd = spot.yMax + static_cast<int>(minGreenCount * 1.5);
-      const PixelTypes::ColoredPixel* pImg = &theECImage.colored[spot.yMax][scanline.x];
-      if(*pImg == FieldColors::field)
-      {
-        pImg += theECImage.colored.width;
-        int greenCount = 1;
-        for(int y = spot.yMax + 1; y < yEnd && y < theECImage.colored.height; ++y)
-        {
-          if(*pImg == FieldColors::field)
-          {
-            ++greenCount;
-          }
-          pImg += theECImage.colored.width;
-        }
-        if(greenCount >= minGreenCount) // line.yMax != line.yStart && TODO Add more stuff to prevent fuckups above shoulders
-          fieldBoundary.boundarySpots.emplace_back(scanline.x, spot.yMax);
-      }
+      spots.emplace_back(spotInImage, spotOnField);
+      CROSS("module:FieldBoundaryProvider:spots", spotInImage.x(), spotInImage.y(), 3, 1, Drawings::solidPen, ColorRGBA::orange);
+    }
+  }
+}
+
+void FieldBoundaryProvider::calcBoundary(const std::vector<Spot>& spots, std::vector<Spot>& model) const
+{
+  int minError = std::numeric_limits<int>::max();
+  const int goodEnough = static_cast<int>(maxSquaredError * spots.size() * acceptanceRatio);
+
+  for(int i = 0; i < maxNumberOfIterations && minError > goodEnough; ++i)
+  {
+    // Draw three unique samples sorted by their x-coordinate.
+    const size_t middleIndex = Random::uniformInt(static_cast<size_t>(1), spots.size() - 2);
+    const Spot& leftSpot = spots[Random::uniformInt(middleIndex - 1)];
+    const Spot& middleSpot = spots[middleIndex];
+    const Spot& rightSpot = spots[Random::uniformInt(middleIndex + 1, spots.size() - 1)];
+
+    // Construct lines, second is perpendicular to first one on the field.
+    Vector2f dirOnField = middleSpot.onField - leftSpot.onField;
+    const Geometry::Line leftOnField(leftSpot.onField, dirOnField);
+    const Geometry::Line rightOnField(rightSpot.onField, dirOnField.rotateLeft()); // Changes dirOnField!
+
+    // Compute hypothetical corner in field coordinates.
+    Vector2f inImage;
+    Spot corner;
+    if(Geometry::getIntersectionOfLines(leftOnField, rightOnField, corner.onField)
+       && Transformation::robotToImage(corner.onField, theCameraMatrix, theCameraInfo, inImage))
+    {
+      corner.inImage = theImageCoordinateSystem.fromCorrected(inImage).cast<int>();
+
+      // Corner must be right of left spot, left of the right spot, and above connecting line.
+      if(corner.inImage.x() <= leftSpot.inImage.x() || corner.inImage.x() >= rightSpot.inImage.x()
+         || corner.inImage.y() >= leftSpot.inImage.y() + (corner.inImage.x() - leftSpot.inImage.x())
+         * (rightSpot.inImage.y() - leftSpot.inImage.y()) / (rightSpot.inImage.x() - leftSpot.inImage.x()))
+        corner.inImage.x() = theCameraInfo.width; // It is not -> ignore
     }
     else
-      fieldBoundary.boundarySpots.emplace_back(scanline.x, spot.yMax);
-  }
-}
+      corner.inImage.x() = theCameraInfo.width; // Corner invalid -> ignore
 
-bool FieldBoundaryProvider::cleanupBoundarySpots(InImage& boundarySpots) const
-{
-  int height = theCameraInfo.height;
+    const Vector2i dirLeft = middleSpot.inImage - leftSpot.inImage;
+    const Vector2i dirRight = rightSpot.inImage - corner.inImage;
 
-  // remove trailing point with y == height.
-  while(boundarySpots.begin() != boundarySpots.end() && boundarySpots.back().y() == height)
-    boundarySpots.erase(boundarySpots.end() - 1);
+    size_t j = 0;
 
-  // remove leading point with y == height.
-  while(boundarySpots.begin() != boundarySpots.end() && boundarySpots.front().y() == height)
-    boundarySpots.erase(boundarySpots.begin());
-
-  // make sure that the boundary contains at least 2 points.
-  if(boundarySpots.size() < 2)
-  {
-    boundarySpots.clear();
-    boundarySpots.push_back(Vector2i(0, height));
-    boundarySpots.push_back(Vector2i(theECImage.colored.width - 1, height));
-    return false;
-  }
-  return true;
-}
-
-void FieldBoundaryProvider::calcBoundaryCandidates(InImage boundarySpots)
-{
-  const int maxIter = 20;
-
-  for(int i = 0; i < maxIter && boundarySpots.size() >= 2; ++i)
-  {
-    convexBoundaryCandidates.emplace_back();
-    InImage& boundaryCandidate = convexBoundaryCandidates.back();
-    getUpperConvexHull(boundarySpots, boundaryCandidate);
-    if(boundaryCandidate.size() >= 2)
+    // Accumulate errors in image coordinates for left line.
+    int errorLeft = 0;
+    while(j < spots.size() && spots[j].inImage.x() < corner.inImage.x() && errorLeft < minError)
     {
-      int maxDist = 0;
-      Vector2i* val;
+      const Vector2i& s = spots[j++].inImage;
+      errorLeft += effectiveError(leftSpot.inImage.y() + dirLeft.y() * (s.x() - leftSpot.inImage.x()) / dirLeft.x() - s.y());
+    }
 
-      //Length of first Line segment
-      int firstDist = std::abs((boundaryCandidate.begin() + 1)->y() - boundaryCandidate.front().y());
-      //Length of last line segment
-      int lastDist = std::abs((boundaryCandidate.end() - 2)->y() - boundaryCandidate.back().y());
+    // Accumulate errors in image coordinates, assuming both a continuing left line and a separate right line.
+    int errorRightLine = 0; // Assuming a separate line on the right.
+    int errorRightStraight = 0;// Assuming left line continues.
+    const int abortError = minError - errorLeft;
+    while(j < spots.size() && std::min(errorRightLine, errorRightStraight) < abortError)
+    {
+      const Vector2i& s = spots[j++].inImage;
+      errorRightLine += effectiveError(corner.inImage.y() + dirRight.y() * (s.x() - corner.inImage.x()) / dirRight.x() - s.y());
+      errorRightStraight += effectiveError(leftSpot.inImage.y() + dirLeft.y() * (s.x() - leftSpot.inImage.x()) / dirLeft.x() - s.y());
+    }
 
-      if(firstDist >= lastDist)
+    // Update model if it is better than the best found so far.
+    const int error = errorLeft + std::min(errorRightLine, errorRightStraight);
+    if(error < minError)
+    {
+      minError = error;
+      model.clear();
+      model.emplace_back(leftSpot);
+
+      if(errorRightLine < errorRightStraight)
       {
-        maxDist = firstDist;
-        val = &boundaryCandidate.front();
+        model.emplace_back(corner);
+        model.emplace_back(rightSpot);
       }
       else
-      {
-        maxDist = lastDist;
-        val = &boundaryCandidate.back();
-      }
-
-      // erase the point with the maximum y-distance to its neighbors
-      for(auto iter = boundaryCandidate.begin(); iter + 2 < boundaryCandidate.end(); ++iter)
-      {
-        int tmpDist = std::abs((iter + 1)->y() - iter->y()) + std::abs((iter + 2)->y() - (iter + 1)->y());
-        if(tmpDist > maxDist)
-        {
-          maxDist = tmpDist;
-          val = &*(iter + 1);
-        }
-      }
-      for(auto iter = boundarySpots.begin(); iter < boundarySpots.end(); iter++)
-      {
-        if(*iter == *val)
-        {
-          boundarySpots.erase(iter);
-          break;
-        }
-      }
-    }
-    else
-      FAIL("Unsupported number of boundary candidates (" << boundaryCandidate.size() << ").");
-  }
-}
-
-void FieldBoundaryProvider::findBestBoundary(const vector<InImage>& boundaryCandidates,
-    const InImage& boundarySpots, InImage& boundary) const
-{
-  int spotsOnLine;
-  int spotsNearLine;
-  int score;
-  int y;
-  int maxScore = 0;
-  const InImage* tmpBoundary = &boundaryCandidates.front();
-
-  for(const InImage& boundarycandidate : boundaryCandidates)
-  {
-    spotsOnLine = 0;
-    spotsNearLine = 0;
-    for(const Vector2i& point : boundarySpots)
-    {
-      y = clipToBoundary(boundarycandidate, point.x());
-      if(point.y() > y && point.y() - y < lowerBound)
-        ++spotsNearLine;
-      else if(point.y() < y && y - point.y() < upperBound)
-        ++spotsNearLine;
-
-      if(point.y() == y)
-        ++spotsOnLine;
-    }
-    score = spotsOnLine + spotsNearLine;
-    if(maxScore < score)
-    {
-      maxScore = score;
-      tmpBoundary = &boundarycandidate;
+        model.emplace_back(middleSpot);
     }
   }
-
-  boundary = *tmpBoundary;
 }
 
-inline bool FieldBoundaryProvider::isLeftOf(const Vector2i& a, const Vector2i& b, const Vector2i& c) const
+void FieldBoundaryProvider::fillRepresentation(const std::vector<Spot>& model, FieldBoundary& fieldBoundary) const
 {
-  return ((b.x() - a.x()) * (-c.y() + a.y()) - (c.x() - a.x()) * (-b.y() + a.y()) > 0);
-}
-
-void FieldBoundaryProvider::getUpperConvexHull(const InImage& boundary, InImage& hull) const
-{
-  ASSERT(boundary.size() > 1);
-
-  //Andrew's Monotone Chain Algorithm to compute the upper hull
-  const auto pmin = boundary.begin();
-  const auto pmax = boundary.end() - 1;
-  hull.push_back(*pmin);
-  for(auto pi = pmin + 1; pi != pmax + 1; pi++)
-  {
-    if(!isLeftOf((*pmin), (*pmax), (*pi)) && pi != pmax)
-      continue;
-
-    while(hull.size() > 1)
-    {
-      const auto p1 = hull.end() - 1, p2 = hull.end() - 2;
-      if(isLeftOf((*p1), (*p2), (*pi)))
-        break;
-      hull.pop_back();
-    }
-    hull.push_back(*pi);
-  }
-}
-
-int FieldBoundaryProvider::clipToBoundary(const InImage& boundary, int x) const
-{
-  ASSERT(boundary.size() >= 2);
-
-  const Vector2i* left = &boundary.front();
-  const Vector2i* right = &boundary.back();
-
-  if(x < left->x())
-    right = &(*(boundary.begin() + 1));
-  else if(x > right->x())
-    left = &(*(boundary.end() - 2));
-  else
-  {
-    for(const Vector2i& point : boundary)
-    {
-      if(point.x() == x)
-        return point.y();
-      else if(point.x() < x && point.x() > left->x())
-        left = &point;
-      else if(point.x() > x && point.x() < right->x())
-        right = &point;
-    }
-  }
-
-  float m = static_cast<float>(right->y() - left->y()) / static_cast<float>(right->x() - left->x());
-  return static_cast<int>(static_cast<float>(x - left->x()) * m) + left->y();
-}
-
-int FieldBoundaryProvider::findYInImageByDistance(int distance) const
-{
-  const Vector2f pointOnField(static_cast<float>(nonGreenPenaltyDistance), 0);
-  Vector2f pointInImage;
-  int yBound;
-  if(Transformation::robotWithCameraRotationToImage(pointOnField, theCameraMatrix, theCameraInfo, pointInImage))
-    yBound = static_cast<int>(pointInImage.y() + 0.5f);
-  else
-    yBound = theCameraInfo.height;
-  CROSS("module:FieldBoundaryProvider:greaterPenaltyPoint", theCameraInfo.width / 2, yBound,
-        5, 5, Drawings::solidPen, ColorRGBA::black);
-  return yBound;
-}
-
-void FieldBoundaryProvider::invalidateBoundary(FieldBoundary& fieldBoundary) const
-{
+  fieldBoundary.boundaryInImage.clear();
   fieldBoundary.boundaryOnField.clear();
-
-  fieldBoundary.convexBoundary.push_back(Vector2i(0, theCameraInfo.height));
-  fieldBoundary.convexBoundary.push_back(Vector2i(theCameraInfo.width - 1, theCameraInfo.height));
-
-  fieldBoundary.boundaryInImage = fieldBoundary.convexBoundary;
-
-  fieldBoundary.boundaryOnField.push_back(Vector2f(0, 1));
-  fieldBoundary.boundaryOnField.push_back(Vector2f(0, -1));
-
-  fieldBoundary.isValid = false;
-}
-
-void FieldBoundaryProvider::draw() const
-{
-  int selected = -1;
-  MODIFY("module:FieldBoundaryProvider:selectedCandidate", selected);
-
-  DEBUG_DRAWING("module:FieldBoundaryProvider:boundaryCandidates", "drawingOnImage")
+  for(const Spot& spot : model)
   {
-    int num = static_cast<int>(convexBoundaryCandidates.size());
-    float step = 255.0f / (num - 1);
-    int pos = 0;
-    for(const InImage& tmpBoundary : convexBoundaryCandidates)
-    {
-      const Vector2i* previ = nullptr;
-      unsigned char colorMod = static_cast<unsigned char>(step * pos);
-      ColorRGBA col = ColorRGBA(colorMod, colorMod, 255 - colorMod);
-      if(pos == selected || selected < 0 || selected >= num)
-      {
-        for(const Vector2i& p : tmpBoundary)
-        {
-          DOT("module:FieldBoundaryProvider:boundaryCandidates", p.x(), p.y(), col, col);
-          if(previ != nullptr)
-          {
-            LINE("module:FieldBoundaryProvider:boundaryCandidates", p.x(), p.y(), previ->x(), previ->y(), 1, Drawings::solidPen, col);
-          }
-          previ = &p;
-        }
-      }
-      pos++;
-    }
+    fieldBoundary.boundaryInImage.emplace_back(spot.inImage);
+    fieldBoundary.boundaryOnField.emplace_back(spot.onField);
   }
+  fieldBoundary.isValid = fieldBoundary.boundaryInImage.size() > 1;
 }

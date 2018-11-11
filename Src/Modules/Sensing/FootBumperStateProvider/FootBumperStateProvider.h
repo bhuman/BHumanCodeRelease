@@ -62,7 +62,7 @@ class FootBumperStateProvider : public FootBumperStateProviderBase
 
   unsigned int lastSoundTime = 0; /**< Delay between debug sounds. */
 
-  void update(FootBumperState& footBumperState);
+  void update(FootBumperState& footBumperState) override;
 
   /**
    * Checks for contact of a bumper. Additionally, if a bumper is pressed longer than the

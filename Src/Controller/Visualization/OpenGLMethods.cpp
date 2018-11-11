@@ -7,6 +7,7 @@
 
 #include "OpenGLMethods.h"
 #include <Platform/OpenGL.h>
+#include "Controller/RobotConsole.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 
 /** returns (value+offset)/scale */
@@ -73,7 +74,7 @@ union ColorChannels
   unsigned int color;
 };
 
-void OpenGLMethods::paintImagePixelsToOpenGLList(const DebugImage& image, int colorModel, int zComponent, bool polygons, int listID, int x1, int x2, int y1, int y2)
+void OpenGLMethods::paintImagePixelsToOpenGLList(RobotConsole& console, const DebugImage& image, int colorModel, int zComponent, bool polygons, int listID, int x1, int x2, int y1, int y2)
 {
   // Build a new list
   ::glNewList(listID, GL_COMPILE_AND_EXECUTE);
@@ -89,7 +90,7 @@ void OpenGLMethods::paintImagePixelsToOpenGLList(const DebugImage& image, int co
 
   {
     TImage<PixelTypes::BGRAPixel> rgbImage(image.getImageWidth(), image.height);
-    image.convertToBGRA(rgbImage[0]);
+    console.debugImageConverter.convertToBGRA(image, rgbImage[0]);
 
     ColorChannels* convertedImage;
     bool allocated = false;

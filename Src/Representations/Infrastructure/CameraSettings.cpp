@@ -36,9 +36,8 @@ void CameraSettings::CameraSettingsCollection::serialize(In* in, Out* out)
   int& sharpness = settings[CameraSettings::sharpness];
   int& whiteBalanceTemperature = settings[CameraSettings::whiteBalanceTemperature];
 
-  STREAM_REGISTER_BEGIN;
   STREAM(autoExposure);
-  STREAM(autoExposureAlgorithm, CameraSettings);
+  STREAM(autoExposureAlgorithm);
   STREAM(autoExposureBrightness);
   //STREAM(autoExposureBrightnessDark);
   STREAM(autoExposureMinVirtAnalogGain);
@@ -52,11 +51,10 @@ void CameraSettings::CameraSettingsCollection::serialize(In* in, Out* out)
   STREAM(fadeToBlack);
   STREAM(gain);
   STREAM(hue);
-  STREAM(powerLineFrequency, CameraSettings);
+  STREAM(powerLineFrequency);
   STREAM(saturation);
   STREAM(sharpness);
   STREAM(whiteBalanceTemperature);
-  STREAM_REGISTER_FINISH;
 
   if(in)
   {
@@ -74,4 +72,29 @@ void CameraSettings::CameraSettingsCollection::serialize(In* in, Out* out)
     settings[CameraSettings::powerLineFrequency] = powerLineFrequency + 1;
     //settings[CameraSettings::saturation] = FixedPoint7(saturation).getRaw();
   }
+}
+
+void CameraSettings::CameraSettingsCollection::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS(CameraSettingsCollection);
+  REG(bool, autoExposure);
+  REG(ExposureAlgorithm, autoExposureAlgorithm);
+  REG(int, autoExposureBrightness);
+  //REG(int, autoExposureBrightnessDark);
+  REG(float, autoExposureMinVirtAnalogGain);
+  REG(float, autoExposureMaxVirtAnalogGain);
+  REG(float, autoExposureMinVirtDigitalGain);
+  REG(float, autoExposureMaxVirtDigitalGain);
+  REG(float, autoExposureTargetGain);
+  REG(bool, autoWhiteBalance);
+  REG(float, contrast);
+  REG(int, exposure);
+  REG(bool, fadeToBlack);
+  REG(int, gain);
+  REG(int, hue);
+  REG(PowerLineFrequency, powerLineFrequency);
+  REG(int, saturation);
+  REG(int, sharpness);
+  REG(int, whiteBalanceTemperature);
 }

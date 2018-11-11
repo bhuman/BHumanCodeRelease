@@ -27,7 +27,7 @@ unsigned Time::getRealSystemTime()
   clock_gettime(CLOCK_MONOTONIC, &ts); // NTP might change CLOCK_REALTIME on desktop systems
   const unsigned int time = (unsigned int)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000l);
   if(!base)
-    base = time - 10000; // avoid time == 0, because it is often used as a marker
+    base = time - 100000; // avoid time == 0, because it is often used as a marker
   return time - base;
 }
 

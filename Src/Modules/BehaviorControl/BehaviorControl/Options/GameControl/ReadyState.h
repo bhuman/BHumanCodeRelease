@@ -1,4 +1,3 @@
-
 /** behavior for the ready state */
 option(ReadyState)
 {
@@ -7,7 +6,7 @@ option(ReadyState)
   {
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       Stand();
     }
   }

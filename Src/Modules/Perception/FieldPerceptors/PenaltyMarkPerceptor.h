@@ -11,9 +11,6 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraIntrinsics.h"
-#include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/CNSImage.h"
@@ -25,15 +22,12 @@
 
 MODULE(PenaltyMarkPerceptor,
 {,
-  USES(BallModel),
   REQUIRES(CameraInfo),
   REQUIRES(CameraIntrinsics),
   REQUIRES(CameraMatrix),
   REQUIRES(CNSImage),
   REQUIRES(ECImage),
   REQUIRES(FieldDimensions),
-  REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(PenaltyMarkRegions),
   PROVIDES(PenaltyMarkPercept),
@@ -60,7 +54,7 @@ class PenaltyMarkPerceptor : public PenaltyMarkPerceptorBase
   SearchSpecification spec; /**< The current search specification. */
   std::vector<Vector3d> samplePoints; /**< Points around mark center to search for white. */
 
-  void update(PenaltyMarkPercept& thePenaltyMarkPercept);
+  void update(PenaltyMarkPercept& thePenaltyMarkPercept) override;
 
   /**
    * The method updates the search space relative to the pose of the camera.

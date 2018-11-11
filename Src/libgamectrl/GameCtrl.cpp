@@ -11,9 +11,11 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-local-typedef"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 #define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
@@ -99,8 +101,8 @@ private:
   int chestButtonPressCounter; /**< Counter for pressing the chest button*/
   RoboCupGameControlData gameCtrlData; /**< The local copy of the GameController packet. */
   uint8_t previousState; /**< The game state during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint8_t previousSecondaryState; /**< The secondary game state during the previous cycle. Used to detect when LEDs have to be updated. */
-  uint8_t previousKickOffTeam; /**< The kick-off team during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousGamePhase; /**< The game phase during the previous cycle. Used to detect when LEDs have to be updated. */
+  uint8_t previousKickingTeam; /**< The kicking team during the previous cycle. Used to detect when LEDs have to be updated. */
   uint8_t previousTeamColour; /**< The team colour during the previous cycle. Used to detect when LEDs have to be updated. */
   uint8_t previousPenalty; /**< The penalty set during the previous cycle. Used to detect when LEDs have to be updated. */
   bool previousChestButtonPressed; /**< Whether the chest button was pressed during the previous cycle. */
@@ -121,11 +123,11 @@ private:
   {
     chestButtonPressCounter = 0;
     memset(&gameControllerAddress, 0, sizeof(gameControllerAddress));
-    previousState = (uint8_t) - 1;
-    previousSecondaryState = (uint8_t) - 1;
-    previousKickOffTeam = (uint8_t) - 1;
-    previousTeamColour = (uint8_t) - 1;
-    previousPenalty = (uint8_t) - 1;
+    previousState = (uint8_t) -1;
+    previousGamePhase = (uint8_t) -1;
+    previousKickingTeam = (uint8_t) -1;
+    previousTeamColour = (uint8_t) -1;
+    previousPenalty = (uint8_t) -1;
     previousChestButtonPressed = false;
     previousLeftFootButtonPressed = false;
     previousRightFootButtonPressed = false;
@@ -153,8 +155,8 @@ private:
     {
       const TeamInfo& team = gameCtrlData.teams[gameCtrlData.teams[0].teamNumber == teamNumber ? 0 : 1];
       if(gameCtrlData.state != previousState ||
-         gameCtrlData.secondaryState != previousSecondaryState ||
-         gameCtrlData.kickOffTeam != previousKickOffTeam ||
+         gameCtrlData.gamePhase != previousGamePhase ||
+         gameCtrlData.kickingTeam != previousKickingTeam ||
          team.teamColour != previousTeamColour ||
          team.players[*playerNumber - 1].penalty != previousPenalty)
       {
@@ -193,16 +195,16 @@ private:
         }
 
         if(gameCtrlData.state == STATE_INITIAL &&
-           gameCtrlData.secondaryState == STATE2_PENALTYSHOOT &&
-           gameCtrlData.kickOffTeam == team.teamNumber)
+           gameCtrlData.gamePhase == GAME_PHASE_PENALTYSHOOT &&
+           gameCtrlData.kickingTeam == team.teamNumber)
           setLED(rightFootRed, 0.f, 1.f, 0.f);
         else if(gameCtrlData.state == STATE_INITIAL &&
-                gameCtrlData.secondaryState == STATE2_PENALTYSHOOT &&
-                gameCtrlData.kickOffTeam != team.teamNumber)
+                gameCtrlData.gamePhase == GAME_PHASE_PENALTYSHOOT &&
+                gameCtrlData.kickingTeam != team.teamNumber)
           setLED(rightFootRed, 1.f, 1.0f, 0.f);
         else if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
                 gameCtrlData.state <= STATE_SET &&
-                gameCtrlData.kickOffTeam == team.teamNumber)
+                gameCtrlData.kickingTeam == team.teamNumber)
           setLED(rightFootRed, 1.f, 1.f, 1.f);
         else
           setLED(rightFootRed, 0.f, 0.f, 0.f);
@@ -229,8 +231,8 @@ private:
         proxy->setAlias(ledRequest);
 
         previousState = gameCtrlData.state;
-        previousSecondaryState = gameCtrlData.secondaryState;
-        previousKickOffTeam = gameCtrlData.kickOffTeam;
+        previousGamePhase = gameCtrlData.gamePhase;
+        previousKickingTeam = gameCtrlData.kickingTeam;
         previousTeamColour = team.teamColour;
         previousPenalty = team.players[*playerNumber - 1].penalty;
       }
@@ -289,7 +291,7 @@ private:
          gameCtrlData.teams[1].teamNumber != teamNumber)
       {
         uint8_t teamColour = (uint8_t) *defaultTeamColour;
-        if(teamColour != TEAM_BLUE && teamColour != TEAM_RED && teamColour != TEAM_YELLOW  &&
+        if(teamColour != TEAM_BLUE && teamColour != TEAM_RED && teamColour != TEAM_YELLOW &&
            teamColour != TEAM_WHITE && teamColour != TEAM_GREEN && teamColour != TEAM_ORANGE &&
            teamColour != TEAM_PURPLE && teamColour != TEAM_BROWN && teamColour != TEAM_GRAY)
           teamColour = TEAM_BLACK;
@@ -326,24 +328,17 @@ private:
         {
           if(now - whenChestButtonReleased >= CHESTBUTTON_TIMEOUT)
           {
-            if(whenChestButtonStateChanged)  // ignore first press, e.g. for getting up
+            if(whenChestButtonStateChanged && now - whenPacketWasReceived >= GAMECONTROLLER_TIMEOUT)  // ignore first press, e.g. for getting up
             {
               RobotInfo& player = team.players[*playerNumber - 1];
               if(player.penalty == PENALTY_NONE)
               {
                 player.penalty = PENALTY_MANUAL;
-                if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
-                   send(GAMECONTROLLER_RETURN_MSG_MAN_PENALISE))
-                  whenPacketWasSent = now;
               }
               else
               {
                 player.penalty = PENALTY_NONE;
-                if(now - whenPacketWasReceived < GAMECONTROLLER_TIMEOUT &&
-                   send(GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE))
-                  whenPacketWasSent = now;
-                else
-                  gameCtrlData.state = STATE_PLAYING;
+                gameCtrlData.state = STATE_PLAYING;
               }
               publish();
             }
@@ -352,7 +347,7 @@ private:
           }
         }
         previousChestButtonPressed = chestButtonPressed;
-        if(gameCtrlData.state == STATE_INITIAL)
+        if(gameCtrlData.state == STATE_INITIAL && team.players[*playerNumber - 1].penalty == PENALTY_NONE)
         {
           bool leftFootButtonPressed = *buttons[leftFootLeft] != 0.f || *buttons[leftFootRight] != 0.f;
           if(leftFootButtonPressed != previousLeftFootButtonPressed && now - whenLeftFootButtonStateChanged >= BUTTON_DELAY)
@@ -371,15 +366,15 @@ private:
           {
             if(rightFootButtonPressed)
             {
-              if(gameCtrlData.secondaryState == STATE2_NORMAL)
+              if(gameCtrlData.gamePhase == GAME_PHASE_NORMAL)
               {
-                gameCtrlData.secondaryState = STATE2_PENALTYSHOOT;
-                gameCtrlData.kickOffTeam = team.teamNumber;
+                gameCtrlData.gamePhase = GAME_PHASE_PENALTYSHOOT;
+                gameCtrlData.kickingTeam = team.teamNumber;
               }
-              else if(gameCtrlData.kickOffTeam == team.teamNumber)
-                gameCtrlData.kickOffTeam = 0;
+              else if(gameCtrlData.kickingTeam == team.teamNumber)
+                gameCtrlData.kickingTeam = 0;
               else
-                gameCtrlData.secondaryState = STATE2_NORMAL;
+                gameCtrlData.gamePhase = GAME_PHASE_NORMAL;
               publish();
             }
             previousRightFootButtonPressed = rightFootButtonPressed;
@@ -394,14 +389,13 @@ private:
 
   /**
    * Sends the return packet to the GameController.
-   * @param message The message contained in the packet (GAMECONTROLLER_RETURN_MSG_MAN_PENALISE,
-   *                GAMECONTROLLER_RETURN_MSG_MAN_UNPENALISE or GAMECONTROLLER_RETURN_MSG_ALIVE).
+   * @param message The message contained in the packet (GAMECONTROLLER_RETURN_MSG_ALIVE).
    */
   bool send(uint8_t message)
   {
     RoboCupGameControlReturnData returnPacket;
     returnPacket.team = (uint8_t) teamNumber;
-    returnPacket.player = (uint8_t) * playerNumber;
+    returnPacket.player = (uint8_t) *playerNumber;
     returnPacket.message = message;
     return !udp || udp->write((const char*) &returnPacket, sizeof(returnPacket));
   }

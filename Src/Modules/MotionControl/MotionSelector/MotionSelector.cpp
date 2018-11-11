@@ -49,7 +49,7 @@ void MotionSelector::update(LegMotionSelection& legMotionSelection)
        (lastLegMotion == MotionRequest::specialAction && theSpecialActionsOutput.isLeavingPossible) ||
        (lastLegMotion == MotionRequest::kick && theKickEngineOutput.isLeavingPossible) ||
        (lastLegMotion == MotionRequest::getUp && theGetUpEngineOutput.isLeavingPossible) ||
-       (lastLegMotion == MotionRequest::fall && !theFallEngineOutput.active))
+       (lastLegMotion == MotionRequest::fall && !theFallEngineOutput.active)) //never immediatly leave kick or get up
     {
       legMotionSelection.targetMotion = requestedLegMotion;
     }

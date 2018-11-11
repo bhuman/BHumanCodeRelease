@@ -186,13 +186,7 @@ bool MofCompiler::parseMofs()
         strcpy(motion, ff->d_name);
         if(!strcmp(motion + strlen(motion) - 4, ".mof"))
           motion[strlen(motion) - 4] = 0;
-        actMotionID = -1;
-        for(int j = 0; j < SpecialActionRequest::numOfSpecialActionIDs; ++j)
-          if(!strcmp(SpecialActionRequest::getName((SpecialActionRequest::SpecialActionID)j), motion))
-          {
-            actMotionID = j;
-            break;
-          }
+        actMotionID = TypeRegistry::getEnumValue(typeid(SpecialActionRequest::SpecialActionID).name(), std::string(motion));
 
         char s[128000];
         size_t siz = fread(s, 1, 128000, f);
@@ -225,12 +219,7 @@ bool MofCompiler::parseMofs()
                 if(!strcmp(sval[1], "=") && c == 3)
                 {
                   strcpy(motion, sval[2]);
-                  for(int j = 0; j < SpecialActionRequest::numOfSpecialActionIDs; ++j)
-                    if(!strcmp(SpecialActionRequest::getName(SpecialActionRequest::SpecialActionID(j)), motion))
-                    {
-                      actMotionID = j;
-                      break;
-                    }
+                  actMotionID = TypeRegistry::getEnumValue(typeid(SpecialActionRequest::SpecialActionID).name(), std::string(motion));
                 }
                 else
                 {
@@ -249,12 +238,7 @@ bool MofCompiler::parseMofs()
                 else if(!strcmp(sval[1], "allMotions"))
                   found = true;
                 else
-                  for(int j = 0; j < SpecialActionRequest::numOfSpecialActionIDs; ++j)
-                    if(!strcmp(SpecialActionRequest::getName(SpecialActionRequest::SpecialActionID(j)), sval[1]))
-                    {
-                      found = true;
-                      break;
-                    }
+                  found = TypeRegistry::getEnumValue(typeid(SpecialActionRequest::SpecialActionID).name(), std::string(sval[1])) >= 0;
 
                 if(!found)
                 {
@@ -476,7 +460,7 @@ bool MofCompiler::parseExternMof()
             {
               int i;
               for(i = 0; i < SpecialActionRequest::numOfSpecialActionIDs; ++i)
-                if(!strcmp(SpecialActionRequest::getName(SpecialActionRequest::SpecialActionID(i)), sval[1]))
+                if(!strcmp(TypeRegistry::getEnumName(SpecialActionRequest::SpecialActionID(i)), sval[1]))
                 {
                   found = true;
                   break;
@@ -526,7 +510,7 @@ bool MofCompiler::parseExternMof()
     if(jumpTable[i] == -1)
     {
       printf("%s/Config/mof/extern.mof(1): error: no motion net entry defined for special action %s\n",
-             File::getBHDir(), SpecialActionRequest::getName(SpecialActionRequest::SpecialActionID(i)));
+             File::getBHDir(), TypeRegistry::getEnumName(SpecialActionRequest::SpecialActionID(i)));
       return false;
     }
   return true;
@@ -578,7 +562,7 @@ bool MofCompiler::compileMofs(char* buffer, size_t size, std::vector<float>& mot
       continue;
     bool found = false;
     for(int j = 0; j < SpecialActionRequest::numOfSpecialActionIDs; ++j)
-      if(!strcmp(label_motion[i], SpecialActionRequest::getName(SpecialActionRequest::SpecialActionID(j))))
+      if(!strcmp(label_motion[i], TypeRegistry::getEnumName(SpecialActionRequest::SpecialActionID(j))))
       {
         found = true;
         break;

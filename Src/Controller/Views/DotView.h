@@ -44,19 +44,19 @@ private:
    * The caller has to delete the returned instance. (Qt will take care of this)
    * @return The widget.
    */
-  virtual SimRobot::Widget* createWidget();
+  SimRobot::Widget* createWidget() override;
 
   /**
    * Accesses path name to the object in the scene graph
    * @return The path name
    */
-  virtual const QString& getFullName() const { return fullName; }
+  const QString& getFullName() const override { return fullName; }
 
   /**
    * Accesses the icon used to list this view in the scene graph
    * @return The icon
    */
-  virtual const QIcon* getIcon() const { return &icon; }
+  const QIcon* getIcon() const override { return &icon; }
 
   friend class DotViewWidget;
 };
@@ -81,30 +81,30 @@ private:
   /**
    * saves the scroll and zoom state and destroys the widget
    */
-  virtual ~DotViewWidget();
+  ~DotViewWidget();
 
   /**
    * Returns a customized size hint that is used to compute the default size of the widget
    * @return The customized size
    */
-  virtual QSize sizeHint() const { return QSize(640, 480); }
+  QSize sizeHint() const override { return QSize(640, 480); }
 
   /**
    * Returns this widget casted to a QWidget
    * @return Teh widget
    */
-  virtual QWidget* getWidget() { return this; }
+  QWidget* getWidget() override { return this; }
 
   /**
    * Updates the displayed content of the widget
    */
-  virtual void update();
+  void update() override;
 
   /**
    * Returns a menu that will be displayed when the widget has input focus
    * @return The menu
    */
-  virtual QMenu* createUserMenu() const;
+  QMenu* createUserMenu() const override;
 
   /**
    * Loads and displays a svg from a file
@@ -152,10 +152,10 @@ private:
    */
   QString builtDotCommand(const QString& fmt, const QString& src, const QString& dest) const;
 
-  virtual bool viewportEvent(QEvent* event);
-  virtual void wheelEvent(QWheelEvent* event);
-  virtual void mouseDoubleClickEvent(QMouseEvent* event);
-  virtual void keyPressEvent(QKeyEvent* event);
+  bool viewportEvent(QEvent* event) override;
+  void wheelEvent(QWheelEvent* event) override;
+  void mouseDoubleClickEvent(QMouseEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
 
 private slots:
   /**

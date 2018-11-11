@@ -23,7 +23,7 @@ Cognition::Cognition() :
   theSPLMessageHandler(inTeamMessages, outTeamMessage),
   moduleManager({ModuleBase::cognitionInfrastructure, ModuleBase::communication,
                  ModuleBase::perception, ModuleBase::modeling, ModuleBase::behaviorControl}),
-  logger(Logger::LoggedProcess::cognition)
+  logger("Cognition", 'c', 60)
 {
   theDebugSender.setSize(5200000, 100000);
   theDebugReceiver.setSize(2800000);
@@ -73,11 +73,10 @@ bool Cognition::main()
     DECLARE_DEBUG_DRAWING("origin:Reset", "drawingOnField"); // Set the origin to the (0,0,0)
     ORIGIN("origin:Reset", 0.0f, 0.0f, 0.0f);
 
-    STOPWATCH_WITH_PLOT("Cognition") moduleManager.execute();
+    STOPWATCH("Cognition") moduleManager.execute();
 
     DEBUG_RESPONSE_ONCE("automated requests:DrawingManager") OUTPUT(idDrawingManager, bin, Global::getDrawingManager());
     DEBUG_RESPONSE_ONCE("automated requests:DrawingManager3D") OUTPUT(idDrawingManager3D, bin, Global::getDrawingManager3D());
-    DEBUG_RESPONSE_ONCE("automated requests:StreamSpecification") OUTPUT(idStreamSpecification, bin, Global::getStreamHandler());
 
     theMotionSender.timeStamp = Time::getCurrentSystemTime();
     BH_TRACE_MSG("before theMotionSender.send()");
@@ -127,9 +126,8 @@ bool Cognition::main()
     numberOfMessages = theDebugSender.getNumberOfMessages();
     OUTPUT(idProcessBegin, bin, 'c');
   }
-  else if(Global::getDebugRequestTable().pollCounter > 0 &&
-          --Global::getDebugRequestTable().pollCounter == 0)
-    OUTPUT(idDebugResponse, text, "pollingFinished");
+  else if(Global::getDebugRequestTable().pollCounter > 0)
+    ++Global::getDebugRequestTable().pollCounter;
 
   if(Blackboard::getInstance().exists("Image"))
   {
@@ -167,16 +165,3 @@ bool Cognition::handleMessage(InMessage& message)
 }
 
 MAKE_PROCESS(Cognition);
-
-// Make sure that two time consuming modules are linked from the Controller library.
-#ifdef MACOS
-
-#include "Modules/Perception/BallPerceptors/BallPerceptor.h"
-extern Module<BallPerceptor, BallPerceptorBase> theBallPerceptorModule;
-auto linkBallPerceptor = &theBallPerceptorModule;
-
-#include "Modules/Perception/ImagePreprocessors/ECImageProvider.h"
-extern Module<ECImageProvider, ECImageProviderBase> theECImageProviderModule;
-auto linkECImageProvider = &theECImageProviderModule;
-
-#endif

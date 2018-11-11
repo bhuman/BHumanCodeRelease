@@ -20,8 +20,6 @@ MODULE(CalibrationStand,
 class CalibrationStand : public CalibrationStandBase
 {
 private:
-  void update(StandArmRequest& standArmRequest);
-  void update(StandLegRequest& standLegRequest);
-
-  void drawHelplines();
+  void update(StandArmRequest& standArmRequest) override;
+  void update(StandLegRequest& standLegRequest) override;
 };

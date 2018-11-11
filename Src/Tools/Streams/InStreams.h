@@ -180,7 +180,7 @@ protected:
  *
  * Generic class for classes that do both formated and physical reading of data from streams.
  */
-template <class S, class R> class InStream : public S, public R, public In
+template<typename S, typename R> class InStream : public S, public R, public In
 {
 public:
   /**
@@ -190,7 +190,7 @@ public:
    *          "size" bytes large.
    * @param size The number of bytes to be read.
    */
-  virtual void read(void* p, size_t size)
+  void read(void* p, size_t size) override
   {
     R::readData(p, size, *this);
   }
@@ -199,7 +199,7 @@ public:
    * The function skips a number of bytes in the stream.
    * @param size The number of bytes to be skipped.
    */
-  virtual void skip(size_t size)
+  void skip(size_t size) override
   {
     R::skipData(size, *this);
   }
@@ -207,13 +207,13 @@ public:
   /**
    * Determines whether the end of file has been reached.
    */
-  virtual bool eof() const { return R::isEof(*this); }
+  bool eof() const override { return R::isEof(*this); }
 
 protected:
   /**
    * Virtual redirection for operator>>(bool& value).
    */
-  virtual void inBool(bool& d)
+  void inBool(bool& d) override
   {
     R::readBool(d, *this);
   }
@@ -221,7 +221,7 @@ protected:
   /**
    * Virtual redirection for operator>>(char& value).
    */
-  virtual void inChar(char& d)
+  void inChar(char& d) override
   {
     R::readChar(d, *this);
   }
@@ -229,7 +229,7 @@ protected:
   /**
    * Virtual redirection for operator>>(signed char& value).
    */
-  virtual void inSChar(signed char& d)
+  void inSChar(signed char& d) override
   {
     R::readSChar(d, *this);
   }
@@ -237,7 +237,7 @@ protected:
   /**
    * Virtual redirection for operator>>(unsigend char& value).
    */
-  virtual void inUChar(unsigned char& d)
+  void inUChar(unsigned char& d) override
   {
     R::readUChar(d, *this);
   }
@@ -245,7 +245,7 @@ protected:
   /**
    * Virtual redirection for operator>>(short& value).
    */
-  virtual void inShort(short& d)
+  void inShort(short& d) override
   {
     R::readShort(d, *this);
   }
@@ -253,7 +253,7 @@ protected:
   /**
    * Virtual redirection for operator>>(unsigend short& value).
    */
-  virtual void inUShort(unsigned short& d)
+  void inUShort(unsigned short& d) override
   {
     R::readUShort(d, *this);
   }
@@ -261,7 +261,7 @@ protected:
   /**
    * Virtual redirection for operator>>(int& value).
    */
-  virtual void inInt(int& d)
+  void inInt(int& d) override
   {
     R::readInt(d, *this);
   }
@@ -269,7 +269,7 @@ protected:
   /**
    * Virtual redirection for operator>>(unsigend int& value).
    */
-  virtual void inUInt(unsigned int& d)
+  void inUInt(unsigned int& d) override
   {
     R::readUInt(d, *this);
   }
@@ -277,7 +277,7 @@ protected:
   /**
    * Virtual redirection for operator>>(float& value).
    */
-  virtual void inFloat(float& d)
+  void inFloat(float& d) override
   {
     R::readFloat(d, *this);
   }
@@ -285,7 +285,7 @@ protected:
   /**
    * Virtual redirection for operator>>(double& value).
    */
-  virtual void inDouble(double& d)
+  void inDouble(double& d) override
   {
     R::readDouble(d, *this);
   }
@@ -293,7 +293,7 @@ protected:
   /**
    * Virtual redirection for operator>>(std::string& value).
    */
-  virtual void inString(std::string& d)
+  void inString(std::string& d) override
   {
     R::readString(d, *this);
   }
@@ -301,7 +301,7 @@ protected:
   /**
    * Virtual redirection for operator>>(Angle& value).
    */
-  virtual void inAngle(Angle& d)
+  void inAngle(Angle& d) override
   {
     R::readAngle(d, *this);
   }
@@ -310,7 +310,7 @@ protected:
    * Virtual redirection for operator>>(In& (*f)(In&)) that reads
    * the symbol "endl";
    */
-  virtual void inEndL()
+  void inEndL() override
   {
     R::readEndl(*this);
   }
@@ -365,77 +365,77 @@ protected:
    * @param stream The stream.
    * @return End of stream reached?
    */
-  virtual bool isEof(const PhysicalInStream& stream) const { return eof; }
+  bool isEof(const PhysicalInStream& stream) const override { return eof; }
 
   /**
    * reads a bool from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readBool(bool& d, PhysicalInStream& stream);
+  void readBool(bool& d, PhysicalInStream& stream) override;
 
   /**
    * reads a character from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readChar(char& d, PhysicalInStream& stream);
+  void readChar(char& d, PhysicalInStream& stream) override;
 
   /**
    * reads a signed character from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readSChar(signed char& d, PhysicalInStream& stream);
+  void readSChar(signed char& d, PhysicalInStream& stream) override;
 
   /**
    * reads an unsigned character from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readUChar(unsigned char& d, PhysicalInStream& stream);
+  void readUChar(unsigned char& d, PhysicalInStream& stream) override;
 
   /**
    * reads a short from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readShort(short& d, PhysicalInStream& stream);
+  void readShort(short& d, PhysicalInStream& stream) override;
 
   /**
    * reads an unsigned short from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readUShort(unsigned short& d, PhysicalInStream& stream);
+  void readUShort(unsigned short& d, PhysicalInStream& stream) override;
 
   /**
    * reads an int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readInt(int& d, PhysicalInStream& stream);
+  void readInt(int& d, PhysicalInStream& stream) override;
 
   /**
    * reads an unsigned int from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readUInt(unsigned int& d, PhysicalInStream& stream);
+  void readUInt(unsigned int& d, PhysicalInStream& stream) override;
 
   /**
    * reads a float from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readFloat(float& d, PhysicalInStream& stream);
+  void readFloat(float& d, PhysicalInStream& stream) override;
 
   /**
    * reads a double from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readDouble(double& d, PhysicalInStream& stream);
+  void readDouble(double& d, PhysicalInStream& stream) override;
 
   /**
    * The function reads a string from a stream.
@@ -445,20 +445,20 @@ protected:
    * @param d The value that is read.
    * @param stream the stream to read from
    */
-  virtual void readString(std::string& d, PhysicalInStream& stream);
+  void readString(std::string& d, PhysicalInStream& stream) override;
 
   /**
    * reads a float from a stream
    * @param d the data to read from the stream
    * @param stream the stream to read from
    */
-  virtual void readAngle(Angle& d, PhysicalInStream& stream);
+  void readAngle(Angle& d, PhysicalInStream& stream) override;
 
   /**
    * reads the 'end of line' from a stream
    * @param stream the stream to read from
    */
-  virtual void readEndl(PhysicalInStream& stream) {}
+  void readEndl(PhysicalInStream& stream) override {}
 
   /**
    * The function determines whether the current character is a whitespace.
@@ -497,7 +497,7 @@ protected:
    * @param size The number of bytes to be read.
    * @param stream The stream to read from.
    */
-  virtual void readData(void* p, size_t size, PhysicalInStream& stream);
+  void readData(void* p, size_t size, PhysicalInStream& stream) override;
 
 private:
   /**
@@ -535,17 +535,17 @@ protected:
    * The function determines whether the current character is a whitespace.
    * In this context, the start of
    */
-  virtual bool isWhitespace();
+  bool isWhitespace() override;
 
   /**
    * The function skips the whitespace.
    */
-  virtual void skipWhitespace(PhysicalInStream& stream);
+  void skipWhitespace(PhysicalInStream& stream) override;
 
   /**
    * The function reads the next character from the stream.
    */
-  virtual void nextChar(PhysicalInStream& stream);
+  void nextChar(PhysicalInStream& stream) override;
 
 private:
   /**
@@ -572,14 +572,14 @@ protected:
    * The function returns whether the end of stream has been reached.
    * @return End of stream reached?
    */
-  virtual bool isEof(const PhysicalInStream& stream) const { return stream.getEof(); }
+  bool isEof(const PhysicalInStream& stream) const override { return stream.getEof(); }
 
   /**
    * The function reads a bool from the stream.
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readBool(bool& d, PhysicalInStream& stream)
+  void readBool(bool& d, PhysicalInStream& stream) override
   {
     char c;
     stream.readFromStream(&c, sizeof(d));
@@ -591,7 +591,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readChar(char& d, PhysicalInStream& stream)
+  void readChar(char& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -601,7 +601,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readSChar(signed char& d, PhysicalInStream& stream)
+  void readSChar(signed char& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -611,7 +611,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readUChar(unsigned char& d, PhysicalInStream& stream)
+  void readUChar(unsigned char& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -621,7 +621,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readShort(short& d, PhysicalInStream& stream)
+  void readShort(short& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -631,7 +631,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readUShort(unsigned short& d, PhysicalInStream& stream)
+  void readUShort(unsigned short& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -641,7 +641,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readInt(int& d, PhysicalInStream& stream)
+  void readInt(int& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -651,7 +651,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readUInt(unsigned int& d, PhysicalInStream& stream)
+  void readUInt(unsigned int& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -661,7 +661,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readFloat(float& d, PhysicalInStream& stream)
+  void readFloat(float& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -671,7 +671,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readDouble(double& d, PhysicalInStream& stream)
+  void readDouble(double& d, PhysicalInStream& stream) override
   {
     stream.readFromStream(&d, sizeof(d));
   }
@@ -681,7 +681,7 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readString(std::string& d, PhysicalInStream& stream)
+  void readString(std::string& d, PhysicalInStream& stream) override
   {
     size_t size = 0;
     stream.readFromStream(&size, sizeof(unsigned));
@@ -695,14 +695,14 @@ protected:
    * @param d The value that is read.
    * @param stream A stream to read from.
    */
-  virtual void readAngle(Angle& d, PhysicalInStream& stream);
+  void readAngle(Angle& d, PhysicalInStream& stream) override;
 
   /**
    * The function is intended to read an endl-symbol from the stream.
    * In fact, the function does nothing.
    * @param stream A stream to read from.
    */
-  virtual void readEndl(PhysicalInStream& stream) {}
+  void readEndl(PhysicalInStream& stream) override {}
 
   /**
    * The function reads a number of bytes from a stream.
@@ -712,7 +712,7 @@ protected:
    * @param size The number of bytes to be read.
    * @param stream A stream to read from.
    */
-  virtual void readData(void* p, size_t size, PhysicalInStream& stream)
+  void readData(void* p, size_t size, PhysicalInStream& stream) override
   {
     stream.readFromStream(p, size);
   }
@@ -722,7 +722,7 @@ protected:
    * @param size The number of bytes to be skipped.
    * @param stream The stream to read from.
    */
-  virtual void skipData(size_t size, PhysicalInStream& stream)
+  void skipData(size_t size, PhysicalInStream& stream) override
   {
     stream.skipInStream(size);
   }
@@ -739,7 +739,29 @@ private:
   File* stream = nullptr; /**< Object representing the file. */
 
 public:
+  InFile() = default;
+  
+  /** No copy constructor. */
+  InFile(const InFile&) = delete;
+
+  /**
+   * Move copy constructor.
+   * @param other The stream the contents of which are moved to this one.
+   */
+  InFile(InFile&& other) : stream(other.stream) {other.stream = nullptr;}
+
+  /** Destructor. */
   ~InFile();
+
+  /** No assignment operator. */
+  InFile& operator=(const InFile&) = delete;
+
+  /**
+   * Move assignment operator.
+   * @param other The stream the contents of which are moved to this one.
+   * @return This stream.
+   */
+  InFile& operator=(InFile&& other);
 
   /**
    * The function states whether the file actually exists.
@@ -796,7 +818,7 @@ public:
    * The function states whether the stream actually exists.
    * @return Does the stream exist? This is always true for memory streams.
    */
-  virtual bool exists() const {return (memory != nullptr);}
+  bool exists() const override {return (memory != nullptr);}
 
   /**
    * The function states whether the end of the file has been reached.
@@ -804,7 +826,7 @@ public:
    * specified during the construction of the stream.
    * @return End of file reached?
    */
-  virtual bool getEof() const
+  bool getEof() const override
   {
     return memory != nullptr && memory >= end;
   }
@@ -834,13 +856,13 @@ protected:
    *          "size" bytes large.
    * @param size The number of bytes to be read.
    */
-  virtual void readFromStream(void* p, size_t size);
+  void readFromStream(void* p, size_t size) override;
 
   /**
    * The function skips a number of bytes.
    * @param size The number of bytes to be skipped.
    */
-  virtual void skipInStream(size_t size) {memory += size;}
+  void skipInStream(size_t size) override {memory += size;}
 };
 
 /**
@@ -862,7 +884,7 @@ public:
    * The function returns whether this is a binary stream.
    * @return Does it output data in binary format?
    */
-  virtual bool isBinary() const {return true;}
+  bool isBinary() const override {return true;}
 };
 
 /**
@@ -887,7 +909,7 @@ public:
    * The function returns whether this is a binary stream.
    * @return Does it output data in binary format?
    */
-  virtual bool isBinary() const {return true;}
+  bool isBinary() const override {return true;}
 };
 
 /**
@@ -997,10 +1019,10 @@ private:
     const char* key; /**< The name of the current key (used by printError()). */
     const SimpleMap::Value* value; /**< The current value in the map. */
     int type; /**< The type of the entry. -2: value or record, -1: array , >= 0: array element index. */
-    const char* (*enumToString)(int); /**< A function that translates an enum to a string. */
+    const char* enumType; /**< The type of the elements as string if it is an enum. Otherwise nullptr. */
 
-    Entry(const char* key, const SimpleMap::Value* value, int type, const char* (*enumToString)(int)) :
-      key(key), value(value), type(type), enumToString(enumToString)
+    Entry(const char* key, const SimpleMap::Value* value, int type, const char* enumType) :
+      key(key), value(value), type(type), enumType(enumType)
     {}
   };
 
@@ -1020,7 +1042,7 @@ private:
    * The entry has been selected by select() before.
    * @param value The value that is read.
    */
-  template<class T> void in(T& value)
+  template<typename T> void in(T& value)
   {
     Entry& e = stack.back();
     if(e.value)
@@ -1051,6 +1073,9 @@ protected:
       delete map;
   }
 
+  /** No assignment operator. */
+  InMap& operator=(const InMap&) = delete;
+
   /**
    * Parse the stream.
    * @param stream The stream to read from.
@@ -1061,68 +1086,68 @@ protected:
   /**
    * Virtual redirection for operator>>(bool& value).
    */
-  virtual void inBool(bool& value) {in(value);}
+  void inBool(bool& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(char& value).
    */
-  virtual void inChar(char& value);
+  void inChar(char& value) override;
 
   /**
    * Virtual redirection for operator>>(unsigend char& value).
    */
-  virtual void inSChar(signed char& value);
+  void inSChar(signed char& value) override;
 
   /**
    * Virtual redirection for operator>>(unsigend char& value).
    */
-  virtual void inUChar(unsigned char& value);
+  void inUChar(unsigned char& value) override;
 
   /**
    * Virtual redirection for operator>>(short& value).
    */
-  virtual void inShort(short& value) {in(value);}
+  void inShort(short& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(unsigend short& value).
    */
-  virtual void inUShort(unsigned short& value) {in(value);}
+  void inUShort(unsigned short& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(int& value).
    */
-  virtual void inInt(int& value);
+  void inInt(int& value) override;
 
   /**
    * Virtual redirection for operator>>(unsigend int& value).
    */
-  virtual void inUInt(unsigned int& value);
+  void inUInt(unsigned int& value) override;
 
   /**
    * Virtual redirection for operator>>(float& value).
    */
-  virtual void inFloat(float& value) {in(value);}
+  void inFloat(float& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(double& value).
    */
-  virtual void inDouble(double& value) {in(value);}
+  void inDouble(double& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(std::string& value).
    */
-  virtual void inString(std::string& value) {in(value);}
+  void inString(std::string& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(Angle& value).
    */
-  virtual void inAngle(Angle& value) {in(value);}
+  void inAngle(Angle& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(In& (*f)(In&)) that reads
    * the symbol "endl";
    */
-  virtual void inEndL() {}
+  void inEndL() override {}
 
 public:
   /**
@@ -1133,14 +1158,14 @@ public:
    *          "size" bytes large.
    * @param size The number of bytes to be read.
    */
-  virtual void read(void* p, size_t size);
+  void read(void* p, size_t size) override;
 
   /**
    * The function skips a number of bytes in a stream.
    * Not allowed for this stream!
    * @param size The number of bytes to be skipped.
    */
-  virtual void skip(size_t size);
+  void skip(size_t size) override;
 
   /**
    * Select an entry for reading.
@@ -1149,21 +1174,21 @@ public:
    *             -2: value or record,
    *             -1: array,
    *             >= 0: array element index.
-   * @param enumToString A function that translates an enum to a string.
+   * @param enumType The element type as string if it is an enum. Otherwise nullptr.
    */
-  virtual void select(const char* name, int type, const char* (*enumToString)(int));
+  void select(const char* name, int type, const char* enumType) override;
 
   /**
    * Deselects a field for reading.
    */
-  virtual void deselect();
+  void deselect() override;
 
   /**
    * Determines whether the end of file has been reached.
    * This is only the case if the file does not exist or
    * reading failed.
    */
-  virtual bool eof() const {return (const SimpleMap::Value*) *map == 0;}
+  bool eof() const override {return (const SimpleMap::Value*) *map == 0;}
 
   friend class DebugDataStreamer; // needs access to printError to report suppressable error message
 };
@@ -1190,7 +1215,7 @@ public:
    * The function states whether this stream actually exists.
    * @return Does the stream exist?
    */
-  bool exists() {return stream.exists();}
+  bool exists() const {return stream.exists();}
 };
 
 /**

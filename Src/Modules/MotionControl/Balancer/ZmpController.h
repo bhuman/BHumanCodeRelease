@@ -44,5 +44,4 @@ public:
 
 private:
   void calculateGains();
-  bool dare(const Matrix4f& A, const Vector4f& B, const Matrix4f& Q, float R, Matrix4f& K) const;
 };

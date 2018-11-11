@@ -6,6 +6,7 @@
 
 #include "NaoProvider.h"
 #include "Platform/SystemCall.h"
+#include "Platform/Thread.h"
 
 MAKE_MODULE(NaoProvider, motionInfrastructure)
 
@@ -84,7 +85,7 @@ void NaoProvider::send()
           if(clippedLastFrame[i] != theJointLimits.limits[i].max)
           {
             char tmp[64];
-            sprintf(tmp, "warning: clipped joint %s at %.03f, requested %.03f.", Joints::getName(static_cast<Joints::Joint>(i)), theJointLimits.limits[i].max.toDegrees(), theJointRequest.angles[i].toDegrees());
+            sprintf(tmp, "warning: clipped joint %s at %.03f, requested %.03f.", TypeRegistry::getEnumName(static_cast<Joints::Joint>(i)), theJointLimits.limits[i].max.toDegrees(), theJointRequest.angles[i].toDegrees());
             OUTPUT_TEXT(tmp);
             clippedLastFrame[i] = theJointLimits.limits[i].max;
           }
@@ -94,7 +95,7 @@ void NaoProvider::send()
           if(clippedLastFrame[i] != theJointLimits.limits[i].min)
           {
             char tmp[64];
-            sprintf(tmp, "warning: clipped joint %s at %.04f, requested %.03f.", Joints::getName(static_cast<Joints::Joint>(i)), theJointLimits.limits[i].min.toDegrees(), theJointRequest.angles[i].toDegrees());
+            sprintf(tmp, "warning: clipped joint %s at %.04f, requested %.03f.", TypeRegistry::getEnumName(static_cast<Joints::Joint>(i)), theJointLimits.limits[i].min.toDegrees(), theJointRequest.angles[i].toDegrees());
             OUTPUT_TEXT(tmp);
             clippedLastFrame[i] = theJointLimits.limits[i].min;
           }
@@ -156,9 +157,9 @@ void NaoProvider::update(FsrSensorData& fsrSensorData)
 {
   float* sensors = naoBody.getSensors();
 
-  FOREACH_ENUM((Legs) Leg, leg)
+  FOREACH_ENUM(Legs::Leg, leg)
   {
-    FOREACH_ENUM((FsrSensors) FsrSensor, sensor)
+    FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
       fsrSensorData.pressures[leg][sensor] = sensors[lFSRFrontLeftSensor + leg * FsrSensors::numOfFsrSensors + sensor];
     fsrSensorData.totals[leg] = sensors[lFSRTotalSensor + leg];
   }
@@ -179,6 +180,7 @@ void NaoProvider::update(InertialSensorData& inertialSensorData)
 
   inertialSensorData.angle.x() = sensors[angleXSensor];
   inertialSensorData.angle.y() = sensors[angleYSensor];
+  inertialSensorData.angle.z() = -sensors[angleZSensor];
 }
 
 void NaoProvider::update(JointSensorData& jointSensorData)

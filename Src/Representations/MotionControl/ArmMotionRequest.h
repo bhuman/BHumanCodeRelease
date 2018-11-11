@@ -24,8 +24,10 @@ STREAMABLE(ArmMotionRequest,
 
   ArmMotionRequest() { armMotion[Arms::left] = armMotion[Arms::right] = none; },
 
-  (ENUM_INDEXED_ARRAY((ArmMotionRequest) ArmRequest, (Arms) Arm)) armMotion, /**< The selected armmotion per arm */
+  (ENUM_INDEXED_ARRAY(ArmMotionRequest::ArmRequest, Arms::Arm)) armMotion, /**< The selected armmotion per arm */
   (ArmKeyFrameRequest) armKeyFrameRequest, /**< The key frame request, if it is the selected armmotion. */
 });
 
-struct ArmMotionInfo : public ArmMotionRequest {};
+STREAMABLE_WITH_BASE(ArmMotionInfo, ArmMotionRequest,
+{,
+});

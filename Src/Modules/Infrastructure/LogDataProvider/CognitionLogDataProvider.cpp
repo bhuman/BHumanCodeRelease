@@ -17,7 +17,8 @@ MAKE_MODULE(CognitionLogDataProvider, cognitionInfrastructure)
 
 CognitionLogDataProvider::CognitionLogDataProvider() :
   frameDataComplete(false),
-  lowFrameRateImage(nullptr)
+  lowFrameRateImage(nullptr),
+  thumbnail(nullptr)
 {
   theInstance = this;
 }
@@ -26,6 +27,8 @@ CognitionLogDataProvider::~CognitionLogDataProvider()
 {
   if(lowFrameRateImage)
     delete lowFrameRateImage;
+  if(thumbnail)
+    delete thumbnail;
 
   theInstance = nullptr;
 }
@@ -39,9 +42,11 @@ void CognitionLogDataProvider::update(Image& image)
     if(lowFrameRateImage)
     {
       if(lowFrameRateImage->imageUpdated)
-        lastImages[info.camera] = lowFrameRateImage->image;
+        lastImages[info.camera].fromCameraImage(lowFrameRateImage->image);
       image = lastImages[info.camera];
     }
+    else if(thumbnail)
+      thumbnail->toImage(image);
     else if(info.width / 2 != image.width || info.height / 2 != image.height)
     {
       image = Image(true, info.width / 2, info.height / 2);
@@ -59,45 +64,10 @@ void CognitionLogDataProvider::update(Image& image)
   DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(image));
 }
 
-void CognitionLogDataProvider::update(ImageCoordinateSystem& imageCoordinateSystem)
+void CognitionLogDataProvider::update(ECImage& ecImage)
 {
-  imageCoordinateSystem.setCameraInfo(theCameraInfo);
-  DECLARE_DEBUG_DRAWING("loggedHorizon", "drawingOnImage"); // displays the horizon
-  ARROW("loggedHorizon",
-        imageCoordinateSystem.origin.x(),
-        imageCoordinateSystem.origin.y(),
-        imageCoordinateSystem.origin.x() + imageCoordinateSystem.rotation(0, 0) * 50,
-        imageCoordinateSystem.origin.y() + imageCoordinateSystem.rotation(1, 0) * 50,
-        0, Drawings::solidPen, ColorRGBA(255, 0, 0));
-  ARROW("loggedHorizon",
-        imageCoordinateSystem.origin.x(),
-        imageCoordinateSystem.origin.y(),
-        imageCoordinateSystem.origin.x() + imageCoordinateSystem.rotation(0, 1) * 50,
-        imageCoordinateSystem.origin.y() + imageCoordinateSystem.rotation(1, 1) * 50,
-        0, Drawings::solidPen, ColorRGBA(255, 0, 0));
-  COMPLEX_IMAGE("corrected")
-  {
-    if(Blackboard::getInstance().exists("Image"))
-    {
-      const Image& image = (const Image&) Blackboard::getInstance()["Image"];
-      corrected.setResolution(theCameraInfo.width / 2, theCameraInfo.height);
-      memset(corrected[0], 0, (theCameraInfo.width / 2) * theCameraInfo.height * sizeof(PixelTypes::YUVPixel));
-      int yDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, 0).y();
-      for(int ySrc = 0; ySrc < theCameraInfo.height; ++ySrc)
-        for(int yDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).y(); yDest <= yDest2; ++yDest)
-        {
-          int xDest = -imageCoordinateSystem.toCorrectedCenteredNeg(0, ySrc).x() / 2;
-          for(int xSrc = 0; xSrc < theCameraInfo.width; xSrc += 2)
-          {
-            for(int xDest2 = -imageCoordinateSystem.toCorrectedCenteredNeg(xSrc, ySrc).x() / 2; xDest <= xDest2; ++xDest)
-            {
-              corrected[yDest + int(theCameraInfo.opticalCenter.y() + 0.5f)][xDest + int(theCameraInfo.opticalCenter.x() + 0.5f) / 2].color = (image[ySrc / 2] + image.width * (ySrc & 1))[xSrc / 2].color;
-            }
-          }
-        }
-      SEND_DEBUG_IMAGE("corrected", corrected);
-    }
-  }
+  if(SystemCall::getMode() == SystemCall::logfileReplay && thumbnail)
+    thumbnail->toECImage(ecImage);
 }
 
 void CognitionLogDataProvider::update(FieldColors& fieldColors)
@@ -131,6 +101,16 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
 {
   switch(message.getMessageID())
   {
+    case idCameraInfo:
+      if(handle(message) && Blackboard::getInstance().exists("ImageCoordinateSystem"))
+        ((ImageCoordinateSystem&) Blackboard::getInstance()["ImageCoordinateSystem"]).cameraInfo = ((const CameraInfo&) Blackboard::getInstance()["CameraInfo"]);
+      return true;
+
+    case idImageCoordinateSystem:
+      if(handle(message) && Blackboard::getInstance().exists("CameraInfo"))
+        ((ImageCoordinateSystem&) Blackboard::getInstance()["ImageCoordinateSystem"]).cameraInfo = ((const CameraInfo&) Blackboard::getInstance()["CameraInfo"]);
+      return true;
+
     case idFrameInfo:
       if(handle(message) && Blackboard::getInstance().exists("Image"))
         ((Image&) Blackboard::getInstance()["Image"]).timeStamp = ((const FrameInfo&) Blackboard::getInstance()["FrameInfo"]).time;
@@ -150,19 +130,26 @@ bool CognitionLogDataProvider::handleMessage2(InMessage& message)
       {
         ImagePatches imagePatches;
         message.bin >> imagePatches;
+
+        CameraImage img;
         if(fillImagePatchesBackground)
-          imagePatches.toImage((Image&) Blackboard::getInstance()["Image"], imagePatchesBackgroundColor);
+        {
+          PixelTypes::YUYVPixel color;
+          color.color = imagePatchesBackgroundColor;
+          imagePatches.toImage(img, color);
+        }
         else
-          imagePatches.toImage((Image&) Blackboard::getInstance()["Image"]);
+          imagePatches.toImage(img);
+        ((Image&)Blackboard::getInstance()["Image"]).fromCameraImage(img);
       }
       return true;
 
     case idThumbnail:
-      if(Blackboard::getInstance().exists("Image"))
+      if(Blackboard::getInstance().exists("Image") || Blackboard::getInstance().exists("ECImage"))
       {
-        Thumbnail thumbnail;
-        message.bin >> thumbnail;
-        thumbnail.toImage((Image&) Blackboard::getInstance()["Image"]);
+        if(!thumbnail)
+          thumbnail = new Thumbnail;
+        message.bin >> *thumbnail;
       }
       return true;
 

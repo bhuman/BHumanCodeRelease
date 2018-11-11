@@ -11,7 +11,7 @@
 #include "Random.h"
 #include "Eigen.h"
 
-#include <limits.h>
+#include <limits>
 
 namespace impl
 {
@@ -31,9 +31,9 @@ namespace impl
   {
   public:
     // Internal types to distinguish different things.
-    typedef Scalar MeanType;
-    typedef Scalar StdDevType;
-    typedef Scalar VarianceType;
+    using MeanType = Scalar;
+    using StdDevType = Scalar;
+    using VarianceType = Scalar;
 
     /**
      * Default constructor. Constructs the standard Gaussian with mean 0 and a variance of 1.
@@ -44,6 +44,17 @@ namespace impl
      * Parameter constructor. Please note that this takes the mean and the standard deviation and not the mean and the variance!
      */
     SingleDimGaussian(const MeanType mean, const StdDevType stddev) : theMean(mean), theStdDev(stddev), theVariance(stddev * stddev) {};
+
+    /**
+     * Copy assignment operator.
+     */
+    SingleDimGaussian& operator=(const SingleDimGaussian& other)
+    {
+      theMean = other.theMean;
+      theStdDev = other.theStdDev;
+      theVariance = other.theVariance;
+      return *this;
+    }
 
     /**
      * Copy constructor.
@@ -72,13 +83,13 @@ namespace impl
      */
     void setMean(MeanType mean) { theMean = mean; };
     void setStdDev(StdDevType stddev) { theStdDev = stddev; theVariance = stddev * stddev; };
-    void setVariance(VarianceType variance) { theStdDev = std::sqrt(theVariance); theVariance = variance; };
+    void setVariance(VarianceType variance) { theStdDev = std::sqrt(variance); theVariance = variance; };
 
   private:
     MeanType theMean;
     StdDevType theStdDev;
     VarianceType theVariance;
-    bool generate; // since we're generating two samples at once, we only need to calculate them every second time.
+    bool generate = false; // since we're generating two samples at once, we only need to calculate them every second time.
     const MeanType epsilon = std::numeric_limits<Scalar>::min();
     MeanType z0, z1;
   };
@@ -114,7 +125,7 @@ namespace impl
   template<typename Scalar>
   float SingleDimGaussian<Scalar>::pdf(const MeanType& point) const
   {
-    return 1.f / std::sqrtf(pi2 * theVariance) * std::expf(-std::powf(((point - theMean) / theStdDev), 2));
+    return 1.f / std::sqrt(pi2 * theVariance) * std::exp(-sqr(((point - theMean) / theStdDev)));
   }
 
   /**
@@ -126,8 +137,6 @@ namespace impl
   {
     mutable SingleDimGaussian<Scalar> norm;
 
-    EIGEN_EMPTY_STRUCT_CTOR(ScalarNormalDistOp)
-
     template<typename Index>
     inline const Scalar operator()(Index, Index = 0) const { return norm(); }
   };
@@ -137,13 +146,14 @@ namespace impl
    *
    * This class implements a Multivariate Gaussian Distribution. It is possible to get samples via the call operator.
    */
-  template<typename Scalar, unsigned N>
+  template<typename Scalar, int N>
   class MultivariateGaussian
   {
   public:
     // Internal types to distinguish different things.
-    typedef Eigen::Matrix<Scalar, N, 1> MeanType;
-    typedef Eigen::Matrix<Scalar, N, N> CovarianceType;
+    using MeanType = Eigen::Matrix<Scalar, N, 1>;
+    using MeansType = Eigen::Matrix<Scalar, N, Eigen::Dynamic>;
+    using CovarianceType = Eigen::Matrix<Scalar, N, N>;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     /**
@@ -162,9 +172,24 @@ namespace impl
     MultivariateGaussian(const MultivariateGaussian& other) : theMean(other.mean()), theCovariance(other.covariance()) {};
 
     /**
-     * Call operator. Returns a random sample from this distribution.
+     * Copy assignment operator.
      */
-    MeanType operator()();
+    MultivariateGaussian& operator=(const MultivariateGaussian& other)
+    {
+      theMean = other.theMean;
+      theCovariance = other.theCovariance;
+      if(other.solved)
+      {
+        transform = other.transform;
+      }
+      solved = other.solved;
+      return *this;
+    }
+
+    /**
+     * Call operator. Returns a list of random samples from this distribution.
+     */
+    MeansType operator()(const unsigned numOfSamples = 1);
 
     /**
      * Calculates the probability density of this gaussian at the given point.
@@ -202,7 +227,7 @@ namespace impl
   /**
    * Implementation of solve.
    */
-  template<typename Scalar, unsigned N>
+  template<typename Scalar, int N>
   void MultivariateGaussian<Scalar, N>::solve()
   {
     if(!solved)
@@ -224,24 +249,25 @@ namespace impl
 
   /**
    * Implementation of the call operator.
-   * Returns a single sample from this distribution.
+   * Returns a list of samples from this distribution.
    */
-  template<typename Scalar, unsigned N>
-  typename MultivariateGaussian<Scalar, N>::MeanType MultivariateGaussian<Scalar, N>::operator()()
+  template<typename Scalar, int N>
+  typename MultivariateGaussian<Scalar, N>::MeansType MultivariateGaussian<Scalar, N>::operator()(const unsigned numOfSamples)
   {
     if(!solved)
       solve();
-    return (transform * Eigen::Matrix<Scalar, N, 1>::NullaryExpr(theCovariance.rows(), 1, normal)).colwise() + theMean;
+    return (transform * MeansType::NullaryExpr(N, numOfSamples, normal)).colwise() + theMean;
   }
 
   /**
    * Implementation of the multivariate probability density function.
    */
-  template<typename Scalar, unsigned N>
+  template<typename Scalar, int N>
   float MultivariateGaussian<Scalar, N>::pdf(const MeanType& point) const
   {
     const MeanType meanDiff = point - theMean;
-    return (1.f / std::sqrtf(std::powf(pi2, N) * theCovariance.determinant())) * std::expf(-0.5f * meanDiff.transpose() * theCovariance.inverse() * meanDiff);
+    return 1.f / std::sqrt(std::pow(pi2, static_cast<float>(N)) * theCovariance.determinant())
+           * std::exp(-0.5f * meanDiff.transpose() * theCovariance.inverse() * meanDiff);
   }
 }
 

@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
+#include <iostream>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <cerrno>
@@ -21,7 +22,7 @@
 #include "Tools/Debugging/Debugging.h"
 
 NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip,
-                     const CameraSettings::CameraSettingsCollection& settings, const AutoExposureWeightTable& autoExposureWeightTable) :
+                     const CameraSettings::CameraSettingsCollection& settings, const Matrix5uc& autoExposureWeightTable) :
   camera(camera),
   WIDTH(width),
   HEIGHT(height)
@@ -55,14 +56,12 @@ NaoCamera::~NaoCamera()
   close(fd);
 }
 
-bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& errorCam1, bool& errorCam2)
+bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout)
 {
   NaoCamera* cams[2] = {&cam1, &cam2};
 
   ASSERT(cam1.currentBuf == nullptr);
   ASSERT(cam2.currentBuf == nullptr);
-
-  errorCam1 = errorCam2 = false;
 
   pollfd pollfds[2] =
   {
@@ -99,7 +98,7 @@ bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& 
       if(errno != EAGAIN)
       {
         OUTPUT_ERROR("VIDIOC_DQBUF failed: " << strerror(errno));
-        (i == 0 ? errorCam1 : errorCam2) = true;
+        return false;
       }
       else
       {
@@ -109,14 +108,14 @@ bool NaoCamera::captureNew(NaoCamera& cam1, NaoCamera& cam2, int timeout, bool& 
         if(cams[i]->first)
         {
           cams[i]->first = false;
-          printf("%s camera is working\n", CameraInfo::getName(cams[i]->camera));
+          printf("%s camera is working\n", TypeRegistry::getEnumName(cams[i]->camera));
         }
       }
     }
     else if(pollfds[i].revents)
     {
       OUTPUT_ERROR("strange poll results: " << pollfds[i].revents);
-      (i == 0 ? errorCam1 : errorCam2) = true;
+      return false;
     }
   }
 
@@ -133,22 +132,21 @@ bool NaoCamera::captureNew()
   }
   BH_TRACE;
 
-  const unsigned startPollingTimestamp = Time::getCurrentSystemTime();
   pollfd pollfd = {fd, POLLIN | POLLPRI, 0};
   int polled = poll(&pollfd, 1, 200); // Fail after missing 6 frames (200ms)
   if(polled < 0)
   {
-    OUTPUT_ERROR(CameraInfo::getName(camera) << "camera : Cannot poll. Reason: " << strerror(errno));
-    FAIL(CameraInfo::getName(camera) << "camera : Cannot poll. Reason: " << strerror(errno) << ".");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : Cannot poll. Reason: " << strerror(errno));
+    FAIL(TypeRegistry::getEnumName(camera) << "camera : Cannot poll. Reason: " << strerror(errno) << ".");
   }
   else if(polled == 0)
   {
-    OUTPUT_ERROR(CameraInfo::getName(camera) << "camera : 200 ms passed and there's still no image to read from the camera. Terminating.");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : 200 ms passed and there's still no image to read from the camera. Terminating.");
     return false;
   }
   else if(pollfd.revents & (POLLERR | POLLNVAL))
   {
-    OUTPUT_ERROR(CameraInfo::getName(camera) << "camera : Polling failed.");
+    OUTPUT_ERROR(TypeRegistry::getEnumName(camera) << "camera : Polling failed.");
     return false;
   }
   // dequeue a frame buffer (this call blocks when there is no new image available) */
@@ -156,13 +154,11 @@ bool NaoCamera::captureNew()
   BH_TRACE;
   currentBuf = buf;
   timeStamp = static_cast<unsigned long long>(currentBuf->timestamp.tv_sec) * 1000000ll + currentBuf->timestamp.tv_usec;
-  const unsigned endPollingTimestamp = Time::getCurrentSystemTime();
-  timeWaitedForLastImage = endPollingTimestamp - startPollingTimestamp;
 
   if(first)
   {
     first = false;
-    printf("%s camera is working\n", CameraInfo::getName(camera));
+    printf("%s camera is working\n", TypeRegistry::getEnumName(camera));
   }
 
   return true;
@@ -215,29 +211,29 @@ void NaoCamera::setFrameRate(unsigned numerator, unsigned denominator)
 CameraSettings::CameraSettingsCollection NaoCamera::getCameraSettingsCollection() const
 {
   CameraSettings::CameraSettingsCollection collection;
-  FOREACH_ENUM((CameraSettings) CameraSetting, setting)
+  FOREACH_ENUM(CameraSettings::CameraSetting, setting)
   {
     collection.settings[setting] = appliedSettings.settings[setting].value;
   }
   return collection;
 }
 
-AutoExposureWeightTable NaoCamera::getAutoWhiteBalanceTable() const
+Matrix5uc NaoCamera::getAutoExposureWeightTable() const
 {
-  AutoExposureWeightTable aewt;
+  Matrix5uc table;
   for(int y = 0; y < 5; ++y)
   {
     for(int x = 0; x < 5; ++x)
     {
-      aewt.table(y, x) = static_cast<uint8_t>(appliedSettings.autoExposureWeightTable[5 * y + x].value);
+      table(y, x) = static_cast<uint8_t>(appliedSettings.autoExposureWeightTable[5 * y + x].value);
     }
   }
-  return aewt;
+  return table;
 }
 
-void NaoCamera::setSettings(const CameraSettings::CameraSettingsCollection& cameraSettingCollection, const AutoExposureWeightTable& autoExposureWeightTable)
+void NaoCamera::setSettings(const CameraSettings::CameraSettingsCollection& cameraSettingCollection, const Matrix5uc& autoExposureWeightTable)
 {
-  FOREACH_ENUM((CameraSettings) CameraSetting, setting)
+  FOREACH_ENUM(CameraSettings::CameraSetting, setting)
   {
     settings.settings[setting].value = cameraSettingCollection.settings[setting];
     settings.settings[setting].enforceBounds();
@@ -247,7 +243,7 @@ void NaoCamera::setSettings(const CameraSettings::CameraSettingsCollection& came
   {
     for(int x = 0; x < 5; ++x)
     {
-      settings.autoExposureWeightTable[5 * y + x].value = autoExposureWeightTable.table(y, x);
+      settings.autoExposureWeightTable[5 * y + x].value = autoExposureWeightTable(y, x);
       settings.autoExposureWeightTable[5 * y + x].enforceBounds();
     }
   }
@@ -256,7 +252,7 @@ void NaoCamera::setSettings(const CameraSettings::CameraSettingsCollection& came
 void NaoCamera::writeCameraSettings()
 {
   const auto oldSettings = appliedSettings.settings;
-  FOREACH_ENUM((CameraSettings) CameraSetting, settingName)
+  FOREACH_ENUM(CameraSettings::CameraSetting, settingName)
   {
     V4L2Setting& currentSetting = settings.settings[settingName];
     V4L2Setting& appliedSetting = appliedSettings.settings[settingName];
@@ -282,12 +278,14 @@ void NaoCamera::writeCameraSettings()
 
     if(!setControlSetting(currentSetting))
     {
-      OUTPUT_ERROR("NaoCamera: Setting camera control " << CameraSettings::getName(settingName) << " failed for value: " << currentSetting.value);
+      std::cerr << "NaoCamera: Setting camera control " << TypeRegistry::getEnumName(settingName) << " failed for value: " << currentSetting.value;
     }
     else
     {
       appliedSetting.value = currentSetting.value;
+#ifdef _DEBUG
       assertCameraSetting(settingName);
+#endif
     }
   }
 
@@ -300,12 +298,14 @@ void NaoCamera::writeCameraSettings()
 
     if(!setControlSetting(currentTableEntry))
     {
-      OUTPUT_ERROR("NaoCamera: Setting autoExposureWeightTableEntry " << i << " failed for value: " << currentTableEntry.value);
+      std::cerr << "NaoCamera: Setting autoExposureWeightTableEntry " << i << " failed for value: " << currentTableEntry.value;
     }
     else
     {
       appliedTableEntry.value = currentTableEntry.value;
+#ifdef _DEBUG
       assertAutoExposureWeightTableEntry(i);
+#endif
     }
   }
 }
@@ -397,7 +397,7 @@ bool NaoCamera::assertCameraSetting(CameraSettings::CameraSetting setting)
       return true;
     else
     {
-      OUTPUT_ERROR("Value for command " << appliedSettings.settings[setting].command << " (" << CameraSettings::getName(setting) << ") is "
+      OUTPUT_ERROR("Value for command " << appliedSettings.settings[setting].command << " (" << TypeRegistry::getEnumName(setting) << ") is "
                    << appliedSettings.settings[setting].value << " but should be " << oldValue << ".");
     }
   }
@@ -585,7 +585,7 @@ NaoCamera::CameraSettingsCollection::CameraSettingsCollection()
 
 bool NaoCamera::CameraSettingsCollection::operator==(const CameraSettingsCollection& other) const
 {
-  FOREACH_ENUM((CameraSettings) CameraSetting, setting)
+  FOREACH_ENUM(CameraSettings::CameraSetting, setting)
   {
     if(settings[setting] != other.settings[setting])
       return false;

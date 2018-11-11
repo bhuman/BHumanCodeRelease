@@ -1,0 +1,67 @@
+#!/bin/bash
+# Copies all log files from mounted USB drives with names that
+# end with "-Human". On Windows, the name of the USB drive is
+# ignored.
+
+set -eu
+
+basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
+
+usage()
+{
+  echo "usage: $0 [-d | --just-delete]" >&2
+  echo " -d             Delete log files after copying." >&2
+  echo " --just-delete  Just delete log files." >&2
+  exit 1
+}
+
+copy=true
+delete=false
+
+if [ $# -gt 1 ]; then
+  usage
+elif [ $# = 1 ]; then
+  case $1 in
+    "")
+      ;;
+    "-d" | "/d")
+      delete=true
+      ;;
+    "--just-delete" | "/just-delete")
+      delete=true
+      copy=false
+      ;;
+    "-h" | "/h" | "/?" | "--help")
+      usage
+      ;;
+    *)
+      echo "unknown parameter: $1" >&2
+      usage
+      ;;
+  esac
+fi
+
+files=$(ls -d /mnt/*-Human/logs/* /media/*-Human/logs/* /media/$USER/*-Human/logs/* /cygdrive/*/logs/* /Volumes/*-Human/logs/* 2>/dev/null || true)
+
+if $copy; then
+  localLogPath=${basePath}/../../Config/Logs/$(date +%F-%H-%M)
+  mkdir -p "$localLogPath"
+  while read path; do
+    if [ ! -z "$path" ]; then
+      echo "Copying logs from $path..."
+      if [ ! -z "$(ls "$(dirname "$path")"/bhumand* 2>/dev/null || true)" ]; then
+        mv "$(dirname "$path")"/bhumand* "$path"
+      fi
+      cp -R "$path" "$localLogPath"
+    fi
+  done <<<"$files"
+fi
+
+if $delete; then
+  while read path; do
+    if [ ! -z "$path" ]; then
+      echo "Deleting logs from $path..."
+      rm -r "$path"
+    fi
+  done <<<"$files"
+fi

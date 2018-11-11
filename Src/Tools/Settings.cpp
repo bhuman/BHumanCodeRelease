@@ -10,6 +10,7 @@
 #endif
 #ifdef TARGET_ROBOT
 #include "Platform/Nao/NaoBody.h"
+#include "Tools/Debugging/Debugging.h"
 #include <cstdio>
 #endif
 #include "Platform/BHAssert.h"
@@ -19,7 +20,6 @@
 #include "Tools/Global.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Streams/InStreams.h"
-#include "Tools/Streams/StreamHandler.h"
 
 STREAMABLE(Robots,
 {
@@ -33,9 +33,8 @@ STREAMABLE(Robots,
   (std::vector<RobotId>) robotsIds,
 });
 
-bool Settings::recover = false;
-
 Settings Settings::settings(true);
+std::vector<std::string> Settings::scenarios = {"", ""};
 bool Settings::loaded = false;
 
 Settings::Settings(bool master)
@@ -66,6 +65,10 @@ Settings::Settings()
                 ? TeamColor(RoboCupCtrl::controller->gameController.teamInfos[0].teamColor)
                 : TeamColor(RoboCupCtrl::controller->gameController.teamInfos[1].teamColor);
     playerNumber = index % 6 + 1;
+    if(scenarios[teamNumber - 1] != "")
+    {
+      scenario = scenarios[teamNumber - 1];
+    }
   }
 
   headName = bodyName = "Nao";
@@ -108,12 +111,6 @@ Settings::Settings()
 
 bool Settings::load()
 {
-  if(!Global::theStreamHandler)
-  {
-    static StreamHandler streamHandler;
-    Global::theStreamHandler = &streamHandler;
-  }
-
 #ifdef TARGET_ROBOT
   headName = SystemCall::getHostName();
 
@@ -121,7 +118,7 @@ bool Settings::load()
   InMapFile robotsStream(bhdir + "/Config/Robots/robots.cfg");
   if(!robotsStream.exists())
   {
-    TRACE("Could not load robots.cfg");
+    OUTPUT_ERROR("Could not load robots.cfg");
     return false;
   }
   else
@@ -139,7 +136,7 @@ bool Settings::load()
     }
     if(bodyName.empty())
     {
-      TRACE("Could not find bodyName in robots.cfg! BodyId: %s", bodyId.c_str());
+      OUTPUT_ERROR("Could not find bodyName in robots.cfg! BodyId: " << bodyId.c_str());
       return false;
     }
   }
@@ -153,7 +150,7 @@ bool Settings::load()
     stream >> *this;
   else
   {
-    TRACE("Could not load settings for robot \"%s\" from settings.cfg", headName.c_str());
+    OUTPUT_ERROR("Could not load settings for robot \"" << headName.c_str() << "\" from settings.cfg");
     return false;
   }
 
@@ -164,7 +161,7 @@ bool Settings::load()
     printf("Hi, I am %s (using %ss Body).\n", headName.c_str(), bodyName.c_str());
   printf("teamNumber %d\n", teamNumber);
   printf("teamPort %d\n", teamPort);
-  printf("teamColor %s\n", getName(teamColor));
+  printf("teamColor %s\n", TypeRegistry::getEnumName(teamColor));
   printf("playerNumber %d\n", playerNumber);
   printf("location %s\n", location.c_str());
   printf("scenario %s\n", scenario.c_str());

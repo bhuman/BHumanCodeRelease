@@ -3,19 +3,18 @@
 void FieldFeatureOverviewProvider::update(FieldFeatureOverview& fieldFeatureOverview)
 {
   const FieldFeature* fieldFeatures[FieldFeatureOverview::numOfFeatures];
-  fieldFeatures[FieldFeatureOverview::GoalFeature] = &theGoalFeature;
-  fieldFeatures[FieldFeatureOverview::GoalFrame] = &theGoalFrame;
-  fieldFeatures[FieldFeatureOverview::MidCircle] = &theMidCircle;
-  fieldFeatures[FieldFeatureOverview::MidCorner] = &theMidCorner;
-  fieldFeatures[FieldFeatureOverview::OuterCorner] = &theOuterCorner;
-  fieldFeatures[FieldFeatureOverview::PenaltyArea] = &thePenaltyArea;
+  fieldFeatures[FieldFeatureOverview::goalFrame] = &theGoalFrame;
+  fieldFeatures[FieldFeatureOverview::midCircle] = &theMidCircle;
+  fieldFeatures[FieldFeatureOverview::midCorner] = &theMidCorner;
+  fieldFeatures[FieldFeatureOverview::outerCorner] = &theOuterCorner;
+  fieldFeatures[FieldFeatureOverview::penaltyArea] = &thePenaltyArea;
 
   fieldFeatureOverview.combinedStatus.isValid = false;
-  FOREACH_ENUM((FieldFeatureOverview) Feature, i)
+  FOREACH_ENUM(FieldFeatureOverview::Feature, i)
     if(((fieldFeatureOverview.statuses[i] = Pose2f(*fieldFeatures[i])).isValid = fieldFeatures[i]->isValid) && (fieldFeatureOverview.combinedStatus.isValid = true))
       fieldFeatureOverview.combinedStatus.lastSeen = fieldFeatureOverview.statuses[i].lastSeen = theFrameInfo.time;
 
-  fieldFeatureOverview.statuses[FieldFeatureOverview::OuterCorner].isRightSided = theOuterCorner.isRightCorner;
+  fieldFeatureOverview.statuses[FieldFeatureOverview::outerCorner].isRightSided = theOuterCorner.isRightCorner;
 }
 
 MAKE_MODULE(FieldFeatureOverviewProvider, perception)

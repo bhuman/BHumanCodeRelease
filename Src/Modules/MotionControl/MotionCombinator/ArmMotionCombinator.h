@@ -14,6 +14,7 @@
 #include "Representations/MotionControl/ArmMotionSelection.h"
 #include "Representations/MotionControl/GetUpEngineOutput.h"
 #include "Representations/MotionControl/KickEngineOutput.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/FallEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
@@ -31,7 +32,7 @@ MODULE(ArmMotionCombinator,
   REQUIRES(SpecialActionsOutput),
   REQUIRES(StandArmRequest),
   REQUIRES(StiffnessSettings),
-  REQUIRES(WalkArmRequest),
+  REQUIRES(WalkingEngineOutput),
 
   PROVIDES(ArmJointRequest),
   PROVIDES(ArmMotionInfo),
@@ -44,6 +45,6 @@ private:
   JointAngles lastJointAngles; /**< The measured joint angles the last time when not interpolating. */
   JointRequest lastJointRequest;
 
-  void update(ArmJointRequest& armJointRequest);
-  void update(ArmMotionInfo& armMotionInfo);
+  void update(ArmJointRequest& armJointRequest) override;
+  void update(ArmMotionInfo& armMotionInfo) override;
 };

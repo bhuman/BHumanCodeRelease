@@ -1,28 +1,33 @@
 /**
- * @file Image.h
+ * @file LowFrameRateImage.h
  *
- * Declaration of struct Image
+ * Declaration of struct LowFrameRateImage
  */
 
 #pragma once
 
 #include "Tools/Streams/Streamable.h"
-#include "Image.h"
+#include "CameraImage.h"
 
 struct LowFrameRateImage : public Streamable
 {
-  Image image;
+  CameraImage image;
   bool imageUpdated = false; /**< True if image was updated this frame */
 
 protected:
-  virtual void serialize(In* in, Out* out)
+  void serialize(In* in, Out* out) override
   {
-    STREAM_REGISTER_BEGIN;
     STREAM(imageUpdated);
     if(imageUpdated)
-    {
       STREAM(image);
-    }
-    STREAM_REGISTER_FINISH;
+  }
+
+private:
+  static void reg()
+  {
+    PUBLISH(reg);
+    REG_CLASS(LowFrameRateImage);
+    REG(imageUpdated);
+    REG(image);
   }
 };

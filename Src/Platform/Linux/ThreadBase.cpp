@@ -18,7 +18,7 @@ void Thread::stop()
   }
 }
 
-void Thread::threadStart(std::function<void()> lambda)
+void Thread::threadStart(const std::function<void()>& lambda)
 {
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0);

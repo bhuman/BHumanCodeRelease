@@ -11,6 +11,7 @@
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotInfo.h"
@@ -22,7 +23,7 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/PlayersPercepts/PlayersFieldPercept.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/FootBumperState.h"
@@ -30,15 +31,14 @@
 #include "Representations/Sensing/TorsoMatrix.h"
 #include "Tools/Module/Module.h"
 
-#include "InternalObstacle.h"
-
-#include <Eigen/StdVector>
+#include "ObstacleHypothesis.h"
 
 MODULE(ObstacleModelProvider,
 {,
   REQUIRES(ArmContactModel),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(CognitionStateChanges),
   REQUIRES(FallDownState),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
@@ -49,7 +49,7 @@ MODULE(ObstacleModelProvider,
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
   REQUIRES(OwnTeamInfo),
-  REQUIRES(PlayersFieldPercept),
+  REQUIRES(ObstaclesFieldPercept),
   REQUIRES(RobotInfo),
   REQUIRES(RobotModel),
   REQUIRES(RobotPose),
@@ -58,7 +58,7 @@ MODULE(ObstacleModelProvider,
   PROVIDES(ObstacleModel),
   LOADS_PARAMETERS(
   {,
-    (unsigned) deleteAfter,                    /**< Delete obstacles that are not seen for deleteAfter amount of milliseconds */
+    (int) deleteAfter,                         /**< Delete obstacles that are not seen for deleteAfter amount of milliseconds */
     (Vector2f) pRobotRotationDeviation,        /**< Deviation of the rotation of the robot's torso */
     (Vector2f) pRobotRotationDeviationInStand, /**< Deviation of the rotation of the robot's torso while standing */
     (float) mergeDistance,                     /**< Distance to merge obstacles */
@@ -79,21 +79,11 @@ MODULE(ObstacleModelProvider,
     (bool) useArmContactModel,
     (bool) useFootBumperState,
     (bool) useTeammatePositionForClassification,
-    (bool) ignoreJerseyLowerCam, /*HACK, please remove after RoboCup*/
-    (bool) ignoreJerseyUpperCam, /*HACK, please remove after RoboCup*/
-    (float) oKFDynamicNoise,
-    (float) oKFMeasureNoise,
-    (float) dKFDynamicNoise,
-    (float) dKFMeasureNoise,
   }),
 });
 
 class ObstacleModelProvider : public ObstacleModelProviderBase
 {
-public:
-  ObstacleModelProvider();
-
-private:
   static_assert(Obstacle::Type::fallenTeammate > Obstacle::Type::teammate, "Assumption broken");
   static_assert(Obstacle::Type::fallenOpponent > Obstacle::Type::opponent, "Assumption broken");
   static_assert(Obstacle::Type::fallenSomeRobot > Obstacle::Type::someRobot, "Assumption broken");
@@ -101,7 +91,7 @@ private:
   static_assert(Obstacle::Type::goalpost < Obstacle::Type::unknown, "Assumption broken");
 
   // functions to provide the model
-  void update(ObstacleModel& obstacleModel);
+  void update(ObstacleModel& obstacleModel) override;
   bool clearAndFinish(ObstacleModel& obstacleModel);
 
   void addArmContacts(); /**< add obstacles measured by arm contact */
@@ -111,18 +101,12 @@ private:
   void deleteObstacles(); /**< delete wrong goal posts and invalid obstacles */
   void considerTeammates(); /**< adjust 'color' of obstacles if we think we found our teammates */
   void propagateObstacles(ObstacleModel& ObstacleModel) const; /**< send valid obstacles to the representation */
-  void tryToMerge(const InternalObstacle& obstacle); /**< find matching obstacle to one measurement */
-  Matrix2f getCovOfPointInWorld(const Vector2f& pointInWorld2) const;
+  void tryToMerge(const ObstacleHypothesis& obstacle); /**< find matching obstacle to one measurement */
   void mergeOverlapping(); /**< overlapping obstacles will be merged to one obstacle */
   void shouldBeSeen(); /**< decrease seencount of obstacles that should be seen */
-  bool shadowedRobots(InternalObstacle* closer, const size_t i, const float cameraAngleLeft, const float cameraAngleRight); /**< used by shouldBeSeen() */
+  bool shadowedRobots(ObstacleHypothesis* closer, const size_t i, const float cameraAngleLeft, const float cameraAngleRight); /**< used by shouldBeSeen() */
   void setLeftRight();
 
-  //two models in, one out
-  //void fusion4D(InternalObstacle& one, const InternalObstacle& other);
-
-  //some const
-  const float maxDistOnFieldSquared = 10400.f * 10400.f + 7400.f * 7400.f; /**< field diagonal */
   //to gain const one has to use finished()
   const Matrix2f feetCov = (Matrix2f() << 900.f, 0.f, 0.f, 6400.f).finished(); /**< 30mm standard deviation and 80mm standard deviation */
   const Matrix2f armCov = (Matrix2f() << 2500.f, 0.f, 0.f, 2500.f).finished(); /**< 50mm standard deviation */
@@ -130,11 +114,6 @@ private:
   //to not spam the annotation
   bool armContact[Arms::numOfArms] = { false, false }, footContact[Legs::numOfLegs] = { false, false };
 
-  std::vector<InternalObstacle, Eigen::aligned_allocator<InternalObstacle>> iWantToBeAnObstacle; /**< List of obstacles. */
+  std::vector<ObstacleHypothesis, Eigen::aligned_allocator<ObstacleHypothesis>> obstacleHypotheses; /**< List of obstacles. */
   std::vector<bool> merged; /**< This is to merge obstacles once for every "percept" per frame */
-
-  float odometryNoiseX, odometryNoiseY;
-  float odometryRotation;
-  Vector2f odometryTranslation;
-  Matrix2f odometryJacobian;
 };

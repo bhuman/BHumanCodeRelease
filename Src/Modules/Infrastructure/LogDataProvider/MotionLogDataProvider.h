@@ -15,7 +15,10 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/TeamInfo.h"
+#include "Representations/MotionControl/GetUpEngineOutput.h"
+#include "Representations/MotionControl/GetUpEngineOutputLog.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/InertialData.h"
@@ -25,6 +28,8 @@ MODULE(MotionLogDataProvider,
 {,
   PROVIDES(FallDownState),
   PROVIDES(FrameInfo),
+  PROVIDES(GetUpEngineOutput),
+  PROVIDES(GetUpEngineOutputLog),
   PROVIDES(GroundTruthOdometryData),
   PROVIDES(InertialData),
   PROVIDES(InertialSensorData),
@@ -38,6 +43,7 @@ MODULE(MotionLogDataProvider,
   PROVIDES(OwnTeamInfo),
   PROVIDES(RawGameInfo),
   PROVIDES(RobotInfo),
+  PROVIDES(WalkingEngineOutput),
 });
 
 class MotionLogDataProvider : public MotionLogDataProviderBase, public LogDataProvider
@@ -60,6 +66,8 @@ public:
 
   void update(FallDownState&) {}
   void update(FrameInfo&) {}
+  void update(GetUpEngineOutput&) {}
+  void update(GetUpEngineOutputLog&) {}
   void update(GroundTruthOdometryData&);
   void update(InertialData&) {}
   void update(InertialSensorData&) {}
@@ -73,6 +81,7 @@ public:
   void update(OwnTeamInfo&) {}
   void update(RawGameInfo&) {}
   void update(RobotInfo&) {}
+  void update(WalkingEngineOutput&) {}
 
   /**
    * The method is called for every incoming debug message.

@@ -44,7 +44,7 @@ Joystick::~Joystick() = default;
 
 bool Joystick::init()
 {
-  ASSERT(jd == -1);
+  ASSERT(p->jd == -1);
   for(int i = 0; i < 32; ++i)
     if(!(Joystick::Private::usedJoysticks & (1 << i)))
     {
@@ -76,7 +76,7 @@ bool Joystick::update()
 
 bool Joystick::getNextEvent(unsigned int& buttonId, bool& pressed)
 {
-  ASSERT(jd != -1);
+  ASSERT(p->jd != -1);
   struct js_event e;
   ssize_t r;
   while((r = read(p->jd, &e, sizeof(struct js_event))) > 0)
@@ -117,7 +117,7 @@ float Joystick::getAxisState(unsigned int axisId) const
 
 bool Joystick::isButtonPressed(unsigned int buttonId) const
 {
-  ASSERT(jd != -1);
+  ASSERT(p->jd != -1);
   ASSERT(buttonId < numOfButtons);
   return p->buttonState[buttonId / 32] & (1 << (buttonId % 32)) ? true : false;
 }

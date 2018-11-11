@@ -24,6 +24,7 @@ public:
     V33,
     V4,
     V5,
+    V6,
   }); // need to be sorted
 
   ENUM(NaoType,
@@ -37,6 +38,7 @@ public:
     hands,
     grippyFingers,
     wristYaws,
+    zAngle,
     zGyro,
     tactileHandSensores,
     tactileHeadSensores,
@@ -53,6 +55,8 @@ public:
   RobotInfo();
 
   bool hasFeature(const RobotFeature feature) const;
+  
+  std::string getPenaltyAsString() const;
 
 protected:
   /**
@@ -60,5 +64,8 @@ protected:
    * @param in The stream from which the object is read (if in != 0).
    * @param out The stream to which the object is written (if out != 0).
    */
-  virtual void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };

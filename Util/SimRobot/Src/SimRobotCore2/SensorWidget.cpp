@@ -16,9 +16,10 @@
 #include "CoreModule.h"
 
 #include "Simulation/Simulation.h"
+#include "Tools/Math/Constants.h"
 
 static inline float toDeg(float angleInRad)
-{ return (angleInRad * 180.f / float(M_PI));}
+{ return (angleInRad * 180.f / pi);}
 
 SensorWidget::SensorWidget(SimRobotCore2::SensorPort* sensor) : pen(QColor::fromRgb(255, 0, 0)), sensor(sensor), mineData(0)
 {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Tools/Streams/StreamHandler.h"
 #include <string>
 #include <map>
 
@@ -13,11 +12,8 @@ class Framework
   static std::map<std::string, Framework*> theInstances;
 
   Framework(const std::string& processName);
-  ~Framework();
 
 public:
   static Framework* getInstance(const std::string& processName);
   static void destroy(const std::string& processName);
-
-  StreamHandler streamHandler;
 };

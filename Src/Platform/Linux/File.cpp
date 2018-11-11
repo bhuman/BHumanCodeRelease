@@ -38,7 +38,7 @@ const char* File::getBHDir()
     struct stat buff;
     while(true)
     {
-      if(*end == '/' || end == dir - 1)
+      if(end < dir || *end == '/')
       {
         strcpy(end + 1, "Config");
         if(stat(dir, &buff) == 0)

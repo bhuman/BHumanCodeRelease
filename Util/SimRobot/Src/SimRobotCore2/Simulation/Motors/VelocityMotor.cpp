@@ -39,7 +39,7 @@ void VelocityMotor::create(Joint* joint)
 
 void VelocityMotor::act()
 {
-  dJointSetHingeParam(joint->joint, dParamVel, dReal(setpoint));
+  dJointSetHingeParam(joint->joint, dParamVel, setpoint);
 }
 
 void VelocityMotor::setValue(float value)

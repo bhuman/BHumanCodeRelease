@@ -17,12 +17,9 @@
 
 #pragma once
 
+#include <unordered_map>
 #include "InOut.h"
 #include "Enum.h"
-
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 /**
  * The class is simple backend for the stream classes that work on

@@ -140,7 +140,6 @@ void Team::changePlayer(unsigned short number, unsigned short pos, Robot* robot)
 
 void Team::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN
   STREAM(name);
   STREAM(number);
   STREAM(port);
@@ -168,7 +167,6 @@ void Team::serialize(In* in, Out* out)
       if(players[i] != "_")
         addPlayer(i % MAX_PLAYERS, i / MAX_PLAYERS, *robots[players[i]]);
   }
-  STREAM_REGISTER_FINISH
 }
 
 void Team::setSelectPlayer(Robot* robot, bool select)
@@ -219,21 +217,12 @@ unsigned short Team::getPlayerNumber(const Robot& robot) const
 
 void Team::writeTeams(Out& stream, const std::vector<Team>& teams)
 {
-  STREAMABLE(S,
-  {
-    S(std::vector<Team>& teams) : teams(teams) {},
-    (std::vector<Team>&) teams,
-  }) s(const_cast<std::vector<Team>&>(teams));
-  stream << s;
+  stream << TeamsStreamer(const_cast<std::vector<Team>&>(teams));
 }
 
 void Team::readTeams(In& stream, std::vector<Team>& teams)
 {
-  STREAMABLE(S,
-  {
-    S(std::vector<Team>& teams) : teams(teams) {},
-    (std::vector<Team>&) teams,
-  }) s(teams);
+  TeamsStreamer s(teams);
   stream >> s;
   for(Team& t : teams)
     Session::getInstance().log(TRACE, "Team: Loaded team \"" + t.name + "\".");

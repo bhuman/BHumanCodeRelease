@@ -3,7 +3,7 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "Tools/Streams/Streamable.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 struct Robot;
 
@@ -11,6 +11,12 @@ class Team : public Streamable
 {
   std::vector<std::vector<Robot*>> players;
   std::map<Robot*, bool> selectedPlayers;
+
+  STREAMABLE(TeamsStreamer,
+  {
+   TeamsStreamer(std::vector<Team>& teams) : teams(teams) {},
+   (std::vector<Team>&) teams,
+  });;
 
   void init();
 

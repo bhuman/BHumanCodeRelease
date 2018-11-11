@@ -4,7 +4,7 @@ option(PlayingState)
   {
     action
     {
-      Demo();
+      Striker();
     }
   }
 }

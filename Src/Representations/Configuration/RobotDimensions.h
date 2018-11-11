@@ -40,6 +40,7 @@ STREAMABLE(RobotDimensions,
   (float) upperLegLength,           //!< Length between leg joints HipPitch and KneePitch in z-direction.
   (float) lowerLegLength,           //!< Length between leg joints KneePitch and AnklePitch in z-direction.
   (float) footHeight,               //!< Height between the sole of the foot and the foot joint AnkleRoll.
+  (float) footLength,               //!< Length from the ankle joint to the tip of the foot.
   (float) hipToNeckLength,          //!< Height offset between hip and joint headYaw.
 
   (float) xOffsetNeckToLowerCamera, //!< Forward offset between joint headPitch and lower camera.
@@ -61,6 +62,6 @@ STREAMABLE(RobotDimensions,
 
   (Vector3f) imuOffset,             //!< The offset of the imu relative to the torso coordinate frame.
 
-  (ENUM_INDEXED_ARRAY(Vector2f, (FsrSensors) FsrSensor)) leftFsrPositions, //!< The positions of the fsr on the left foot.
-  (ENUM_INDEXED_ARRAY(Vector2f, (FsrSensors) FsrSensor)) rightFsrPositions, //!< The positions of the fsr on the right foot.
+  (ENUM_INDEXED_ARRAY(Vector2f, FsrSensors::FsrSensor)) leftFsrPositions, //!< The positions of the fsr on the left foot.
+  (ENUM_INDEXED_ARRAY(Vector2f, FsrSensors::FsrSensor)) rightFsrPositions, //!< The positions of the fsr on the right foot.
 });

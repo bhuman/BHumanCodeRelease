@@ -178,6 +178,11 @@ void LocalRobot::update()
       else
         simulatedRobot.getRobotPose(robotPose);
 
+      if(jointCalibrationChanged)
+      {
+        simulatedRobot.setJointCalibration(jointCalibration);
+        jointCalibrationChanged = false;
+      }
       simulatedRobot.getOdometryData(robotPose, odometryData);
       simulatedRobot.getSensorData(fsrSensorData, inertialSensorData);
       simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);

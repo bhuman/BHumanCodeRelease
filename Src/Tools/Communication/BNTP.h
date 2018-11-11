@@ -19,7 +19,7 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 
 /**
- * @class NTPRequest
+ * @class BNTPRequest
  *
  * A package for starting a synchronization measurement
  */
@@ -99,8 +99,8 @@ class BNTP : public BHumanMessageParticle<MessageID::undefined>
 {
 public:
   /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-  void operator << (const BHumanMessage& m) override;
+  void operator>>(BHumanMessage& m) const override;
+  void operator<<(const BHumanMessage& m) override;
 
   const SynchronizationMeasurementsBuffer* operator[](unsigned number) const
   {

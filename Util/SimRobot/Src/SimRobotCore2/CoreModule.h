@@ -47,8 +47,8 @@ private:
   *   - suggest or load further modules (using \c Application::registerModule, \c Application::loadModule)
   * @return Whether an error occurred while initializing the module or not
   */
-  virtual bool compile();
+  bool compile() override;
 
   /** Called to perform another simulation step */
-  virtual void update();
+  void update() override;
 };

@@ -3,7 +3,8 @@
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
-#include "../ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "PenaltyArea.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -38,11 +39,13 @@ void PenaltyArea::draw() const
   }
   COMPLEX_DRAWING("representation:PenaltyArea:image")
   {
-    if(Blackboard::getInstance().exists("FieldDimensions") && Blackboard::getInstance().exists("CameraMatrix") && Blackboard::getInstance().exists("CameraInfo"))
+    if(Blackboard::getInstance().exists("FieldDimensions") && Blackboard::getInstance().exists("CameraMatrix")
+       && Blackboard::getInstance().exists("CameraInfo") && Blackboard::getInstance().exists("ImageCoordinateSystem"))
     {
       const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
       const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
       const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
       const float halfLength = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
       const Vector2f leftBotton = (*this) * Vector2f(-halfLength, theFieldDimensions.yPosLeftPenaltyArea);
@@ -60,6 +63,12 @@ void PenaltyArea::draw() const
          Transformation::robotToImage(rightBotton, theCameraMatrix, theCameraInfo, rightBottonInImage) &&
          Transformation::robotToImage(midMid, theCameraMatrix, theCameraInfo, midMidInImage))
       {
+        leftBottonInImage = theImageCoordinateSystem.fromCorrected(leftBottonInImage);
+        leftTopInImage = theImageCoordinateSystem.fromCorrected(leftTopInImage);
+        rightTopInImage = theImageCoordinateSystem.fromCorrected(rightTopInImage);
+        midTopInImage = theImageCoordinateSystem.fromCorrected(midTopInImage);
+        rightBottonInImage = theImageCoordinateSystem.fromCorrected(rightBottonInImage);
+        midMidInImage = theImageCoordinateSystem.fromCorrected(midMidInImage);
         LINE("representation:PenaltyArea:image", leftBottonInImage.x(), leftBottonInImage.y(), rightBottonInImage.x(), rightBottonInImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:PenaltyArea:image", rightTopInImage.x(), rightTopInImage.y(), rightBottonInImage.x(), rightBottonInImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);
         LINE("representation:PenaltyArea:image", leftBottonInImage.x(), leftBottonInImage.y(), leftTopInImage.x(), leftTopInImage.y(), 2, Drawings::solidPen, ColorRGBA::blue);

@@ -50,11 +50,11 @@ SimRobot = cppApplication + {
       }
 
       // for SimRobotCore2
-      "$(utilDirRoot)/SimRobot/Util/libxml2/Windows/bin/libxml2.dll" = copyFile
       "$(utilDirRoot)/SimRobot/Util/glew/Windows/bin/glew32.dll" = copyFile
 
       // for SimulatedNao
       "$(utilDirRoot)/fftw-3.3/Windows/libfftw3-3.dll" = copyFile
+      "$(utilDirRoot)/fftw-3.3/Windows/libfftw3f-3.dll" = copyFile
     }
   }
   qtRessourceFiles = "$(utilDirRoot)/SimRobot/Src/SimRobot/Icons/**.png"

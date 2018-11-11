@@ -190,7 +190,7 @@ bool MessageQueueBase::finishMessage(MessageID id)
         case idDebugResponse:
         case idDebugDataResponse:
         case idDebugDataChangeRequest:
-        case idStreamSpecification:
+        case idTypeInfo:
         case idModuleTable:
         case idModuleRequest:
         case idQueueFillRequest:
@@ -391,8 +391,8 @@ void MessageQueueBase::writeMessageIDs(Out& stream, MessageID numOfMessageIDs) c
   else
   {
     stream << static_cast<unsigned char>(numOfMessageIDs);
-    FOREACH_ENUM(MessageID, i)
-      stream << ::getName(i);
+    FOREACH_ENUM(MessageID, i, numOfMessageIDs)
+      stream << TypeRegistry::getEnumName(i);
   }
 }
 
@@ -408,7 +408,7 @@ void MessageQueueBase::readMessageIDMapping(In& stream)
   {
     stream >> mappedIDNames[i];
     FOREACH_ENUM(MessageID, j)
-      if(mappedIDNames[i] == ::getName(j))
+      if(mappedIDNames[i] == TypeRegistry::getEnumName(j))
       {
         mappedIDs[i] = j;
         break;

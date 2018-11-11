@@ -6,10 +6,11 @@
  * @author Martin Lötzsch
  */
 
+#include <iostream>
 #include "Debug.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Platform/Time.h"
-#include <iostream>
+#include "Tools/Streams/TypeInfo.h"
 
 Debug::Debug() :
   Process(theDebugReceiver, theDebugSender),
@@ -29,7 +30,7 @@ Debug::Debug() :
   theCognitionReceiver.setSize(5200000);
   theCognitionSender.setSize(2800000);
 
-  theMotionReceiver.setSize(70000);
+  theMotionReceiver.setSize(50000);
   theMotionSender.setSize(500000);
   if(SystemCall::getMode() == SystemCall::physicalRobot)
     setPriority(1);
@@ -37,6 +38,8 @@ Debug::Debug() :
 
 bool Debug::main()
 {
+  DEBUG_RESPONSE_ONCE("automated requests:TypeInfo") OUTPUT(idTypeInfo, bin, TypeInfo(true));
+
   // Copying messages from debug queues from cognition and motion
   switch(outQueueMode.behavior)
   {
@@ -56,7 +59,6 @@ bool Debug::main()
       }
       if(!theMotionReceiver.isEmpty())
       {
-        OUTPUT(idProcessBegin, bin, 'm');
         theMotionReceiver.moveAllMessages(theDebugSender);
       }
   }
@@ -196,7 +198,7 @@ bool Debug::handleMessage(InMessage& message)
     // messages to Cognition and Motion
     case idModuleRequest:
     case idDebugDataChangeRequest:
-    case idStreamSpecification:
+    case idTypeInfo:
       message >> theCognitionSender;
       message >> theMotionSender;
       return true;

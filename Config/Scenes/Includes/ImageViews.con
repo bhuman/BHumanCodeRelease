@@ -9,17 +9,17 @@ vid all representation:OuterCorner:image
 vid all representation:MidCircle:image
 vid all representation:MidCorner:image
 vid all representation:BallPercept:image
-vid all representation:PlayersImagePercept:image
-vid all representation:PlayersFieldPercept:image
+vid all representation:ObstaclesImagePercept:image
+vid all representation:ObstaclesFieldPercept:image
 vid all representation:GoalFrame:image
 vid all representation:BodyContour
 vid all representation:BallSpots:image
-vid all module:BallPerceptor:candidates
-vid all module:BallPerceptor:samplePoints
 
 # Segmented views
 vi image segmented upper
 vi image segmented lower
+
+call Includes/ManualHeadMotion
 
 # 3-D image views
 v3 image lower

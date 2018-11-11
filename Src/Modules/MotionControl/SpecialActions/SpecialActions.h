@@ -106,15 +106,23 @@ private:
      * @param in The stream from which the object is read
      * @param out The stream to which the object is written
      */
-    virtual void serialize(In* in, Out* out)
+    void serialize(In* in, Out* out) override
     {
-      STREAM_REGISTER_BEGIN;
-      STREAM(id, SpecialActionRequest);
+      STREAM(id);
       STREAM(type);
       if(type != none)
         STREAM(odometryOffset);
       STREAM(isMotionStable);
-      STREAM_REGISTER_FINISH;
+    }
+
+    static void reg()
+    {
+      PUBLISH(reg);
+      REG_CLASS(SpecialActionInfo);
+      REG(id);
+      REG(type);
+      REG(odometryOffset);
+      REG(isMotionStable);
     }
 
   public:
@@ -170,7 +178,7 @@ private:
    * @param message The message that can be read.
    * @return True if the message was handled.
    */
-  virtual bool handleMessage2(InMessage& message);
+  bool handleMessage2(InMessage& message);
 
   /** Get next motion node from motion net */
   bool getNextData(const SpecialActionRequest& specialActionRequest, SpecialActionsOutput& specialActionsOutput);
@@ -178,7 +186,7 @@ private:
   /** Calculates the next joint data vector by interpolating if necessary */
   void calculateJointRequest(JointRequest& jointRequest);
 
-  void update(SpecialActionsOutput& specialActionsOutput);
+  void update(SpecialActionsOutput& specialActionsOutput) override;
 
 public:
   /*

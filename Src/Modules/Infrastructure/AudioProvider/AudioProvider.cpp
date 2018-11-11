@@ -7,6 +7,7 @@
 
 #include "AudioProvider.h"
 #include "Platform/SystemCall.h"
+#include "Platform/Thread.h"
 
 MAKE_MODULE(AudioProvider, cognitionInfrastructure)
 

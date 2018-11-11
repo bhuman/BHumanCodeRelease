@@ -7,11 +7,12 @@
 
 #pragma once
 
+#include <QRegularExpression>
 #include <QSyntaxHighlighter>
-#include <QHash>
 #include <QTextCharFormat>
-#include <QVector>
-#include <QTextDocument>
+
+class QString;
+class QTextDocument;
 
 class SyntaxHighlighter: public QSyntaxHighlighter
 {
@@ -20,58 +21,25 @@ class SyntaxHighlighter: public QSyntaxHighlighter
 public:
   SyntaxHighlighter(QTextDocument* parent = nullptr);
 
-  //Enumeration for the character formats. This is used in functions which get and set them.
-  enum xmlCharFormat
-  {
-    xmlDefault,
-    xmlProcInst,
-    xmlDoctype,
-    xmlComment,
-    xmlTag,
-    xmlEntity,
-    xmlAttribute,
-    xmlAttVal
-  };
-
 protected:
-  void highlightBlock(const QString &text);
-  void highlightSubBlock(const QString &text, const int startIndex, const int currState);
-
-  void setCharFormat(const int whichFormat, const QTextCharFormat &newFormat);
-  bool getCharFormat(const int whichFormat, QTextCharFormat &targFormat);
+  void highlightBlock(const QString& text) override;
 
 private:
-  struct HighlightingRule
-  {
-      QRegExp pattern;
-      QTextCharFormat format;
-  };
-  QVector<HighlightingRule> hlRules;
+  void highlightSubBlock(const QString& text, const int startIndex, const int currState);
 
-  QRegExp xmlProcInstStartExpression;
-  QRegExp xmlProcInstEndExpression;
-  QRegExp xmlCommentStartExpression;
-  QRegExp xmlCommentEndExpression;
-  QRegExp xmlDoctypeStartExpression;
-  QRegExp xmlDoctypeEndExpression;
+  QRegularExpression xmlCommentStartExpression;
+  QRegularExpression xmlCommentEndExpression;
 
-  QRegExp xmlOpenTagStartExpression;
-  QRegExp xmlOpenTagEndExpression;
-  QRegExp xmlCloseTagStartExpression;
-  QRegExp xmlCloseTagEndExpression;
-  QRegExp xmlAttributeStartExpression;
-  QRegExp xmlAttributeEndExpression;
-  QRegExp xmlAttValStartExpression;
-  QRegExp xmlAttValEndExpression;
-
-  QRegExp xmlAttValExpression;
+  QRegularExpression xmlOpenTagStartExpression;
+  QRegularExpression xmlOpenTagEndExpression;
+  QRegularExpression xmlCloseTagStartExpression;
+  QRegularExpression xmlCloseTagEndExpression;
+  QRegularExpression xmlAttributeStartExpression;
+  QRegularExpression xmlAttributeEndExpression;
 
   QTextCharFormat xmlDefaultFormat;
-  QTextCharFormat xmlProcInstFormat;
-  QTextCharFormat xmlDoctypeFormat;
   QTextCharFormat xmlCommentFormat;
   QTextCharFormat xmlTagFormat;
-  QTextCharFormat xmlEntityFormat;
   QTextCharFormat xmlAttributeFormat;
   QTextCharFormat xmlAttValFormat;
 
@@ -80,15 +48,9 @@ private:
   enum xmlState
   {
     inNothing, //Don't know if we'll need this or not.
-    inProcInst, //starting with <? and ending with ?>
-    inDoctypeDecl, //starting with <!DOCTYPE and ending with >
     inOpenTag, //starting with < + xmlName and ending with /?>
-    inOpenTagName, //after < and before whitespace. Implies inOpenTag.
-    inAttribute, //if inOpenTag, starting with /s*xmlName/s*=/s*" and ending with ".
-    inAttName, //after < + xmlName + whitespace, and before =". Implies inOpenTag.
     inAttVal, //after =" and before ". May also use single quotes. Implies inOpenTag.
     inCloseTag, //starting with </ and ending with >.
-    inCloseTagName, //after </ and before >. Implies inCloseTag.
     inComment //starting with <!-- and ending with -->. Overrides all others.
   };
 };

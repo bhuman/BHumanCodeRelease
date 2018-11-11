@@ -69,7 +69,7 @@ private:
   /** Main function that triggers the estimation process
    * @param dummy Nothing interesting at all
    */
-  void update(DummyRepresentation& dummy);
+  void update(DummyRepresentation& dummy) override;
 
   /** If enough data has been collected by the update method, this method is called for the actual computation.
    *  The output is printed to the console window.

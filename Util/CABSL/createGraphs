@@ -1,0 +1,194 @@
+#!/bin/bash
+#
+# This script generates a number of svg files from the CABSL behavior.
+# Its main parameter is a file that directly includes all options.
+# It requires GraphViz's program 'dot' to be installed.
+#
+# Author: Thomas Röfer
+
+usage()
+{
+  echo >&2 "usage: $0 { options } <header file>"
+  echo >&2 "  options:"
+  echo >&2 "    -d <dot>  path to executable 'dot'"
+  echo >&2 "    -h        show this help"
+  echo >&2 "    -p        output pdf instead of svg"
+  exit 1
+}
+
+set -eu
+
+format=svg
+urlPath=file:
+
+# Process arguments
+dot=dot
+while [ $# -gt 0 ]; do
+  case $1 in
+    "-d")
+      shift
+      if [ $# -gt 0 ]; then
+        dot=$1
+      else
+        echo >&2 "error: parameter of '-d' missing"
+        usage
+      fi
+      ;;
+    "-h")
+      usage
+      ;;
+    "-p")
+      format=pdf
+      urlPath=file://.`pwd`/
+      ;;
+    -*)
+      echo >&2 "error: unknown option '$1'"
+      usage
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+
+# Check arguments
+dotAvailable=`which "$dot" || true`
+if [ "$#" == 0 ]; then
+  usage
+  exit 1
+elif [ ! -e "$1" ]; then
+  echo >&2 "error: input file '$1' does not exist"
+  exit 1
+elif [ -z "$dotAvailable" ]; then
+  echo >&2 "error: cannot find '$dot'"
+  exit 1
+fi
+
+# Collect the relevant information from the options
+base=`dirname "$1"`
+fileList=`grep "#include[ 	][ 	]*\"" <"$1" | sed "s%^[ 	]*#include[ 	]*\"\([^\"]*\)\".*$%$base/\1%"`
+files=`while read file; do
+  if [ -e "$file" ]; then
+    echo "$file"
+  fi
+done <<<"$fileList"`
+options=`grep -h "^[ 	]*option[ 	]*(" $files | sed "s%^[ 	]*option[ 	]*([ 	]*\([A-Za-z_][A-Za-z0-9_]*\).*$%\1%" | tr '\n' '|' | sed "s%|$%%"`
+lines=`cat $files \
+| sed "s%//.*%%" \
+| tr '\t' ' ' \
+| tr -d '\r' \
+| tr '\n' '\t' \
+| sed -e "s%/\*\([^*]*\*[^/]\)*[^*]*\*\**/%%g" \
+  -e "s%[ 	]*	%	%g" \
+| tr '\t' '\n' \
+| grep -E "^[ 	]*option[ 	]*\([ 	]*[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($options|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)" \
+| sed -E -e "s%^[ 	]*option[ 	]*\([ 	]*([A-Za-z_][A-Za-z0-9_]*).*%option \1%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])($options)[ 	]*\(.*%call \2%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])(state|initial_state|target_state|aborted_state)[ 	]*\(([A-Za-z_][A-Za-z0-9_]*).*%\2 \3%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])goto[ 	][ 	]*([A-Za-z_][A-Za-z0-9_]*).*%goto \2%"`
+
+# Generate temporary files containing all nodes and edges
+optionsTmp=/tmp/options.tmp
+rm -f "$optionsTmp"
+option=
+while read line; do
+  type=`sed "s% .*%%" <<<"$line"`
+  id=`sed "s%[^ ]* %%" <<<"$line"`
+  label=`sed -E -e "s%_%\\\\\n%g" -e "s%([a-z])([A-Z])%\1\\\\\n\2%g" <<<"$id" | tr '[:upper:]' '[:lower:]'`
+  if [ "$type" == "option" ]; then
+    option=$id
+    echo "Reading option '$option'" >&2
+    echo "  $id [label=\"$label\", URL = \"$urlPath$option.$format\"];" >>"$optionsTmp"
+    common=
+    state=
+    internalTmp=/tmp/internal_$option.tmp
+    externalTmp=/tmp/external_$option.tmp
+    rm -f "$internalTmp"
+    rm -f "$externalTmp"
+  elif [ "$type" == "call" ]; then
+    echo "$option -> $id;" >>"$optionsTmp"
+    if [ "$state" == "" ]; then
+      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "option_ [style = invis];" >>"$internalTmp"
+    else
+      echo "$state -> option_$id [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+    fi
+    echo "option_$id [shape = rectangle, label = \"$label\", URL = \"$urlPath$id.$format\"];" >>"$externalTmp"
+  elif [ "$type" == "state" ]; then
+    state=$id
+    echo " $state [shape = circle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "initial_state" ]; then
+    state=$id
+    echo "  $state [shape = Mcircle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "target_state" ]; then
+    state=$id
+    echo "$state [shape = doublecircle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "aborted_state" ]; then
+    state=$id
+    echo "$state [shape = doubleoctagon, regular = true, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "goto" ]; then
+    if [ -z "$state" ]; then
+      common=`echo "$common $id"`
+    elif [ "$state" != "$id" ]; then
+      echo "$state -> $id;" >>"$internalTmp"
+    fi
+  fi
+  if [ "$type" == "state" -o "$type" == "initial_state" -o "$type" == "target_state" -o "$type" == "aborted_state" ]; then
+    for target in $common; do
+      if [ "$state" != "$target" ]; then
+        echo "$state -> $target;" >>"$internalTmp"
+      fi
+    done
+  fi
+done <<<"$lines"
+
+# Write the main option graph
+file=`basename "${1%.*}.$format"`
+echo "Writing graph '$file'" >&2
+(
+  echo "digraph G {"
+  echo "  margin = 0;"
+  echo "  node [shape = box, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
+  echo "  edge [arrowsize=0.8];"
+  sort <"$optionsTmp" | uniq
+  rm "$optionsTmp"
+  echo "}"
+) | "$dot" -T$format >"$file"
+
+# Write graphs for all options
+options=`tr '|' '\n' <<<"$options"`
+while read option; do
+  internalTmp=/tmp/internal_$option.tmp
+  if [ -e "$internalTmp" ]; then
+    externalTmp=/tmp/external_$option.tmp
+    file=`basename "${option%.*}.$format"`
+    label=`sed -E -e "s%_% %g" -e "s%([a-z])([A-Z])%\1 \2%g" <<<"$option" | tr '[:upper:]' '[:lower:]'`
+    echo "Writing graph '$file'" >&2
+    (
+      echo "digraph G {"
+      echo "margin = 0;"
+      echo "node [style = filled, fillcolor = white, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
+      echo "ranksep = 0.4;"
+      echo "nodesep = 0.3;"
+      echo "edge [arrowsize=0.8];"
+      echo "compound = true;"
+      echo "subgraph cluster_ {"
+      echo "label = \"option '$label'\""
+      echo "labeljust = l;"
+      echo "style = filled;"
+      echo "fillcolor = \"#F4F4F4\";"
+      echo "fontname = Arial;"
+      echo "fontsize=12;"
+      echo "fontcolor = \"#005A9C\";"
+      sort <"$internalTmp" | uniq
+      rm "$internalTmp"
+      echo "}"
+      if [ -e "$externalTmp" ]; then
+        sort <"$externalTmp" | uniq
+      rm "$externalTmp"
+      fi
+      echo "}"
+    ) | "$dot" -T$format >"$file"
+  fi
+done <<<"$options"

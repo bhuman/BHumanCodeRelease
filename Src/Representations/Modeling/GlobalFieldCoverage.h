@@ -29,6 +29,4 @@ STREAMABLE(GlobalFieldCoverage,
 
   (int)(0) meanCoverage,
   (std::vector<Cell>) grid,
-
-  (Vector2f)(Vector2f::Zero()) ballDropInPosition,
 });

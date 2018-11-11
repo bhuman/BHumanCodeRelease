@@ -73,16 +73,16 @@ public:
   static void waitForFrameData();
 
 private:
-  void update(FrameInfo& frameInfo);
-  void update(FsrSensorData& fsrSensorData);
-  void update(InertialSensorData& inertialSensorData);
-  void update(JointSensorData& jointSensorData);
-  void update(KeyStates& keyStates);
-  void update(OpponentTeamInfo& opponentTeamInfo);
-  void update(OwnTeamInfo& ownTeamInfo);
-  void update(RawGameInfo& rawGameInfo);
-  void update(RobotInfo& robotInfo);
-  void update(SystemSensorData& systemSensorData);
+  void update(FrameInfo& frameInfo) override;
+  void update(FsrSensorData& fsrSensorData) override;
+  void update(InertialSensorData& inertialSensorData) override;
+  void update(JointSensorData& jointSensorData) override;
+  void update(KeyStates& keyStates) override;
+  void update(OpponentTeamInfo& opponentTeamInfo) override;
+  void update(OwnTeamInfo& ownTeamInfo) override;
+  void update(RawGameInfo& rawGameInfo) override;
+  void update(RobotInfo& robotInfo) override;
+  void update(SystemSensorData& systemSensorData) override;
 
   /** The function sends a command to the Nao. */
   void send();

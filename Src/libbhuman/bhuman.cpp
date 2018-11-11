@@ -16,9 +16,11 @@
 #pragma clang diagnostic push
 
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma clang diagnostic ignored "-Wconversion"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-local-typedef"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 #define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <alcommon/albroker.h>
@@ -163,6 +165,7 @@ static const char* sensorNames[] =
   "Device/SubDeviceList/InertialSensor/AccelerometerZ/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
   "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",
+  "Device/SubDeviceList/InertialSensor/AngleZ/Sensor/Value",
 
   // battery sensors
   "Device/SubDeviceList/Battery/Current/Sensor/Value",
@@ -435,7 +438,7 @@ private:
   /**
    * Set the eye LEDs based on the current state.
    * Shutting down -> Lower segments are red.
-   * bhuman crashed -> Whole eyes alternately flash red.
+   * bhuman crashed -> Whole eyes quickly flash red.
    * bhuman not running -> Lower segments flash blue.
    * @param actuators The actuator values a part of which will be set by this method.
    */
@@ -452,11 +455,11 @@ private:
     else if(data->state != okState)
     {
       // set the "libbhuman is active and bhuman crashed" leds
-      float blink = float(dcmTime / 500 & 1);
+      float blink = float(dcmTime / 200 & 1);
       for(int i = faceLedRedLeft0DegActuator; i <= faceLedRedLeft315DegActuator; ++i)
         actuators[i] = blink;
       for(int i = faceLedRedRight0DegActuator; i <= faceLedRedRight315DegActuator; ++i)
-        actuators[i] = 1.f - blink;
+        actuators[i] = blink;
     }
     else
     {
@@ -643,6 +646,7 @@ private:
 
       // set led
       if(!requestedStiffness)
+      {
         for(int i = 0; i < lbhNumOfLedActuatorIds; ++i)
         {
           int index = faceLedRedLeft0DegActuator + ledIndex;
@@ -654,9 +658,11 @@ private:
             ledRequest[2][0][0] = requestedActuators[index] = actuators[index];
             ledRequest[2][0][1] = dcmTime;
             proxy->set(ledRequest);
-            break;
+            if(data->state == okState) // Allow setting all LEDs only when bhuman is not running
+              break;
           }
         }
+      }
 
       // set team info
       // since this should happen very rarely, we don't use a proxy here
@@ -801,14 +807,6 @@ public:
             // get the robot name
             memory = new AL::ALMemoryProxy(pBroker);
 
-            std::string bodyId = (std::string) memory->getData("Device/DeviceList/ChestBoard/BodyId", 0);
-            strncpy(data->bodyId, bodyId.c_str(), sizeof(data->bodyId));
-            data->bodyId[15] = 0;
-
-            std::string headId = (std::string) memory->getData("RobotConfig/Head/FullHeadId", 0);
-            strncpy(data->headId, headId.c_str(), sizeof(data->headId));
-            data->headId[15] = 0;
-
             std::string headVersion = (std::string) memory->getData("RobotConfig/Head/BaseVersion", 0);
             std::string bodyVersion = (std::string) memory->getData("RobotConfig/Body/BaseVersion", 0);
 
@@ -830,6 +828,18 @@ public:
 
             fprintf(stderr, "libbhuman: headIsH25: %d\n", headIsH25);
             fprintf(stderr, "libbhuman: bodyIsH25: %d\n", bodyIsH25);
+
+            int headIdSize;
+            data->headVersion == NAOVersion::V6 ? headIdSize = 20 : headIdSize = 15;
+            std::string headId = (std::string) memory->getData("RobotConfig/Head/FullHeadId", 0);
+            std::strncpy(data->headId, headId.c_str(), headIdSize);
+            data->headId[headIdSize] = 0;
+
+            int bodyIdSize;
+            data->bodyVersion == NAOVersion::V6 ? bodyIdSize = 20 : bodyIdSize = 15;
+            std::string bodyId = (std::string) memory->getData("Device/DeviceList/ChestBoard/BodyId", 0);
+            std::strncpy(data->bodyId, bodyId.c_str(), bodyIdSize);
+            data->bodyId[bodyIdSize] = 0;
 
             // create "positionRequest" and "stiffnessRequest" alias
             proxy = new AL::DCMProxy(pBroker);
@@ -919,7 +929,9 @@ public:
   {
     if(versionString.size() == 4)
     {
-      if(versionString[1] == '5')
+      if(versionString[1] == '6')
+        version = NAOVersion::V6;
+      else if(versionString[1] == '5')
         version = NAOVersion::V5;
       else if(versionString[1] == '4')
         version = NAOVersion::V4;

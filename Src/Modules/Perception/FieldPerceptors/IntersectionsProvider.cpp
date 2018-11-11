@@ -46,8 +46,8 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
         const bool intersectionIsOnLine = isPointInSegment(theLinesPercept.lines[i], intersection);
         const bool insersectionIsOnLine2 = isPointInSegment(theLinesPercept.lines[j], intersection);
 
-        const bool intersectionGoesWithLine = (theLinesPercept.lines[i].firstField - theLinesPercept.lines[i].lastField).norm() * maxLengthUnrecognizedProportion > lineDist;
-        const bool intersectionGoesWithLine2 = (theLinesPercept.lines[j].firstField - theLinesPercept.lines[j].lastField).norm() * maxLengthUnrecognizedProportion > line2Dist;
+        const bool intersectionGoesWithLine = lineDist < std::min((theLinesPercept.lines[i].firstField - theLinesPercept.lines[i].lastField).norm() * maxLengthUnrecognizedProportion, maxIntersectionGap);
+        const bool intersectionGoesWithLine2 = line2Dist < std::min((theLinesPercept.lines[j].firstField - theLinesPercept.lines[j].lastField).norm() * maxLengthUnrecognizedProportion, maxIntersectionGap);
 
         if((!intersectionIsOnLine && !intersectionGoesWithLine) || (!insersectionIsOnLine2 && !intersectionGoesWithLine2))
           continue;
@@ -88,8 +88,9 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
           }
         }
 
-        lineIsEnd |= (lineEndCloser - intersection).squaredNorm() < sqr(2 * theFieldDimensions.fieldLinesWidth);
-        line2IsEnd |= (line2EndCloser - intersection).squaredNorm() < sqr(2 * theFieldDimensions.fieldLinesWidth);
+        // The 4 was a 2 before the RoboCup German Open 2018.
+        lineIsEnd |= (lineEndCloser - intersection).squaredNorm() < sqr(4 * theFieldDimensions.fieldLinesWidth);
+        line2IsEnd |= (line2EndCloser - intersection).squaredNorm() < sqr(4 * theFieldDimensions.fieldLinesWidth);
 
         if(lineIsEnd && line2IsEnd) // L
           addIntersection(intersectionsPercept, IntersectionsPercept::Intersection::L, intersection, lineEndFurther - intersection, line2EndFurther - intersection, i, j);
@@ -145,7 +146,7 @@ void IntersectionsProvider::addIntersection(IntersectionsPercept& intersectionsP
     Vector2f pInImg;
     if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
       DRAWTEXT("module:IntersectionsProvider:intersections", pInImg.x(), pInImg.y(), 30,
-               ColorRGBA::black, IntersectionsPercept::Intersection::getName(type));
+               ColorRGBA::black, TypeRegistry::getEnumName(type));
   }
   intersectionsPercept.intersections.emplace_back(type, intersection, dir1, dir2, line1, line2);
 }

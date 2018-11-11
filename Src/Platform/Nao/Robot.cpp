@@ -5,7 +5,6 @@
  */
 
 #include "Robot.h"
-#include "Tools/Streams/InStreams.h"
 
 Robot::Robot()
 {

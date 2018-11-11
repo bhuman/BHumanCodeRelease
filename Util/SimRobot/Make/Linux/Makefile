@@ -1,6 +1,6 @@
 MARE := ../../Util/mare/Linux/bin/mare
 CONFIG ?= Release
-QTINCLUDE = `qtchooser -qt=qt5-x86_64-linux-gnu -print-env | grep QTTOOLDIR | sed "s%QTTOOLDIR=\"\(.*\)bin\"%\1%" | sed "s/^\/usr\/lib/\/usr\/include/"`
+QTINCLUDE = `find /usr/include /usr/local/include -name qt5 -type d`
 
 .PHONY: all clean
 

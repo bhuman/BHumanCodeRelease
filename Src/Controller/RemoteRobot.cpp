@@ -50,12 +50,10 @@ bool RemoteRobot::main()
   if(!theDebugSender.isEmpty())
   {
     SYNC;
-    OutBinarySize size;
-    size << theDebugSender;
-    sendSize = (int)size.getSize();
-    sendData = new unsigned char[sendSize];
-    OutBinaryMemory stream(sendData);
+    sendSize = theDebugSender.getStreamedSize();
+    OutBinaryMemory stream(sendSize);
     stream << theDebugSender;
+    sendData = reinterpret_cast<unsigned char*>(stream.obtainData());
     // make backup
     theDebugSender.moveAllMessages(temp);
   }
@@ -105,7 +103,10 @@ void RemoteRobot::update()
 
   if(puppet)
   {
-    simulatedRobot.setJointRequest(jointRequest);
+    if(RobotConsole::jointSensorData.timestamp)
+      simulatedRobot.setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+    else
+      simulatedRobot.setJointRequest(jointRequest);
     if(moveOp != noMove)
     {
       if(moveOp == moveBoth)

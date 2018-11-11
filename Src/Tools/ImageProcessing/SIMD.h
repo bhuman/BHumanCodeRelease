@@ -23,9 +23,12 @@
 #endif
 
 /**
- * Workarounds for clang-3.7.
+ * Workarounds for several clang versions.
  */
 #if defined __clang__ && defined __has_builtin
+/**
+ * Workarounds for clang-3.7.
+ */
 #if __has_builtin(__builtin_shufflevector) && !__has_builtin(__builtin_ia32_pslldqi128)
 #undef _mm_slli_si128
 #define _mm_slli_si128(a, imm) __extension__ ({                         \
@@ -70,6 +73,27 @@
                                      ((imm)&0xF0) ? 16 : ((imm)&0xF) + 13, \
                                      ((imm)&0xF0) ? 16 : ((imm)&0xF) + 14, \
                                      ((imm)&0xF0) ? 16 : ((imm)&0xF) + 15); })
+#endif
+
+ /**
+ * Workarounds for clang-6.0.
+ */
+#if !defined _mm_avg_epu8 && __has_builtin(__builtin_convertvector) && !__has_builtin(__builtin_ia32_pavgb128)
+#ifndef __DEFAULT_FN_ATTRS
+#define __DEFAULT_FN_ATTRS
+#endif
+static __inline__ __m128i __DEFAULT_FN_ATTRS my_mm_avg_epu8(__m128i __a, __m128i __b)
+{
+  typedef unsigned short __v16hu __attribute__((__vector_size__(32)));
+  return (__m128i)__builtin_convertvector(
+    ((__builtin_convertvector((__v16qu)__a, __v16hu) +
+      __builtin_convertvector((__v16qu)__b, __v16hu)) + 1)
+    >> 1, __v16qu);
+}
+#ifdef _mm_avg_epu8
+#undef _mm_avg_epu8
+#endif
+#define _mm_avg_epu8(__a, __b) my_mm_avg_epu8(__a, __b)
 #endif
 #endif
 

@@ -75,7 +75,7 @@ public:
  * @class SampleSetProxy
  * The SampleSetProxy can be linked to instances of the class SampleSet.
  */
-template<class T> class SampleSetProxy : public SampleSetProxyBase
+template<typename T> class SampleSetProxy : public SampleSetProxyBase
 {
 public:
   /**
@@ -98,7 +98,7 @@ public:
  * a different number of samples, the size of the set can be changed
  * at runtime.
  */
-template<class T> class SampleSet
+template<typename T> class SampleSet
 {
 private:
   int num;    /**< The number of samples. */

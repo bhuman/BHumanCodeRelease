@@ -9,8 +9,8 @@
   <Material name="Wood"/>
   <Material name="Stone">
     <Friction material="Wood" value="1.0"/>
-  </Material>  
-  
+  </Material>
+
   <Scene name="Factory" controller="Factory" stepLength="0.01" color="rgb(80%, 80%, 100%)" ERP="0.2" CFM="0.0001" contactSoftERP="0.2" contactSoftCFM="0.005">
     <Light z="8m" ambientColor="rgb(50%, 50%, 50%)" diffuseColor="rgb(90%, 90%, 90%)" specularColor="rgb(100%, 100%, 100%)"/>
 
@@ -23,7 +23,7 @@
         <Translation z="-0.1"/>
       </BoxGeometry>
     </Compound>
-    
+
     <!-- The pole to which the three sensors for the block height are mounted -->
     <Compound name="Pole">
       <Translation x="0.3" y="-0.6" z="0.5"/>
@@ -44,7 +44,7 @@
         <Rotation z="180degree"/>
       </SingleDistanceSensor>
     </Compound>
-    
+
     <!-- The "machine" -->
     <Compound name="Machine">
       <BoxAppearance width="1.6" depth="0.1" height="0.05">
@@ -116,7 +116,7 @@
         <Translation y="-0.4" z="0.5"/>
         <Axis x="1.0">
           <Deflection min="-90.0degree" max="1.0degree"/>
-          <ServoMotor name ="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
+          <ServoMotor name="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
         </Axis>
         <Body name="trapDoor1">
           <Translation y="0.1"/>
@@ -134,7 +134,7 @@
         <Translation y="-0.09" z="0.5"/>
         <Axis x="1.0">
           <Deflection min="-90.0degree" max="1.0degree"/>
-          <ServoMotor name ="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
+          <ServoMotor name="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
         </Axis>
         <Body name="trapDoor2">
           <Translation y="0.1"/>
@@ -152,7 +152,7 @@
         <Translation y="0.22" z="0.5"/>
         <Axis x="1.0">
           <Deflection min="-90.0degree" max="1.0degree"/>
-          <ServoMotor name ="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
+          <ServoMotor name="td1motor" maxVelocity="60.0" maxForce="100.0" p="10"/>
         </Axis>
         <Body name="trapDoor3">
           <Translation y="0.1"/>
@@ -170,7 +170,7 @@
         <Translation y="-0.8" z="0.3"/>
         <Axis y="1.0">
           <Deflection min="0.01" max="10.4"/>
-          <ServoMotor name ="MixMotor" maxVelocity="2.0" maxForce="100.0" p="15"/>
+          <ServoMotor name="MixMotor" maxVelocity="2.0" maxForce="100.0" p="15"/>
         </Axis>
         <Body name="SlideBox">
           <Translation x="0.0" y="0.1" z="0.27"/>

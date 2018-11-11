@@ -97,10 +97,10 @@ void FieldLineIntersections::draw() const
       }
       if(transformationSuccessful)
       {
-        const Vector2f uncor1 = theImageCoordinateSystem->fromCorrectedLinearized(p1);
-        const Vector2f uncor2 = theImageCoordinateSystem->fromCorrectedLinearized(p2);
-        const Vector2f uncor3 = theImageCoordinateSystem->fromCorrectedLinearized(p3);
-        const Vector2f uncor4 = theImageCoordinateSystem->fromCorrectedLinearized(p4);
+        const Vector2f uncor1 = theImageCoordinateSystem->fromCorrected(p1);
+        const Vector2f uncor2 = theImageCoordinateSystem->fromCorrected(p2);
+        const Vector2f uncor3 = theImageCoordinateSystem->fromCorrected(p3);
+        const Vector2f uncor4 = theImageCoordinateSystem->fromCorrected(p4);
         ARROW("representation:FieldLines:image", uncor1.x(), uncor1.y(), uncor2.x(), uncor2.y(),
               3, Drawings::solidPen, ColorRGBA::red);
         ARROW("representation:FieldLines:image", uncor3.x(), uncor3.y(), uncor4.x(), uncor4.y(),
@@ -108,7 +108,7 @@ void FieldLineIntersections::draw() const
         Vector2f intersectionInImage;
         if(Transformation::robotToImage(inter->pos, *theCameraMatrix, *theCameraInfo, intersectionInImage))
         {
-          const Vector2f uncorIntersection = theImageCoordinateSystem->fromCorrectedLinearized(intersectionInImage);
+          const Vector2f uncorIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
           DRAWTEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
                    (inter->type == Intersection::L ? "L" : inter->type == Intersection::T ? "T" : "X") <<
                    (inter->additionalType == Intersection::none ? "" : inter->additionalType == Intersection::mid ? "m" : "b"));

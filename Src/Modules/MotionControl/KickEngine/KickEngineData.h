@@ -8,6 +8,7 @@
 
 #include "KickEngineParameters.h"
 #include "Platform/BHAssert.h"
+#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -51,6 +52,7 @@ private:
   Vector2f gyroErrorRight = Vector2f::Zero();
   Vector2f lastBody = Vector2f::Zero();
   Vector2f bodyError = Vector2f::Zero();
+  Pose2f lastOdometry;
   bool lElbowFront = false,
        rElbowFront = false;
 
@@ -84,13 +86,14 @@ public:
   KickRequest currentKickRequest;
   bool internalIsLeavingPossible = false;
   Vector3f positions[Phase::numOfLimbs];
-  bool getMotionIDByName(const MotionRequest& motionRequest, const std::vector<KickEngineParameters>& params);
+  bool getMotionIDByName(const KickRequest& kr, const std::vector<KickEngineParameters>& params);
   void calculateOrigins(const KickRequest& kr, const JointAngles& ja, const TorsoMatrix& to, const RobotDimensions& theRobotDimensions);
   bool checkPhaseTime(const FrameInfo& frame, const JointAngles& ja, const TorsoMatrix& torsoMatrix);
   void balanceCOM(JointRequest& joints, const RobotDimensions& rd, const MassCalibration& mc);
 
-  bool calcJoints(JointRequest& jointRequest, const RobotDimensions& rd);
-  void calcLegJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions);
+  bool calcJoints(JointRequest& jointRequest, const RobotDimensions& rd, const DamageConfigurationBody& theDamageConfigurationBody);
+  void calcOdometryOffset(KickEngineOutput& output, const RobotModel& theRobotModel);
+  void calcLegJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions, const DamageConfigurationBody& theDamageConfigurationBody);
   void simpleCalcArmJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions, const Vector3f& armPos, const Vector3f& handRotAng);
 
   void mirrorIfNecessary(JointRequest& joints);
@@ -102,13 +105,12 @@ public:
   void calcPositions();
   void setRobotModel(const RobotModel& rm);
   bool isMotionAlmostOver();
-  void setCurrentKickRequest(const MotionRequest& mr);
+  void setCurrentKickRequest(const KickRequest& kr);
   void setExecutedKickRequest(KickRequest& br);
-  void initData(const FrameInfo& frame, const MotionRequest& mr, std::vector<KickEngineParameters>& params, const JointAngles& ja, const TorsoMatrix& torsoMatrix, JointRequest& jointRequest, const RobotDimensions& rd, const MassCalibration& mc);
+  void initData(const FrameInfo& frame, const KickRequest& kr, std::vector<KickEngineParameters>& params, const JointAngles& ja, const TorsoMatrix& torsoMatrix, JointRequest& jointRequest, const RobotDimensions& rd, const MassCalibration& mc, const DamageConfigurationBody& theDamageConfigurationBody);
   void setEngineActivation(const float& ratio);
   bool activateNewMotion(const KickRequest& br, const bool& isLeavingPossible);
-  bool sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, KickEngineOutput& kickEngineOutput, const JointAngles& ja, const FrameInfo& frame);
-
+  bool sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, KickEngineOutput& kickEngineOutput, const JointRequest& theJointRequest, const FrameInfo& frame);
   //Pose3f calcDesBodyAngle(JointRequest& jointRequest, const RobotDimensions& robotDimensions, Joints::Joint joint);
 
   void transferDynPoint(Vector3f& d, const TorsoMatrix& torsoMatrix);

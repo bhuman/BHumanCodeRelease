@@ -32,15 +32,29 @@ const DebugDrawing& DebugDrawing::operator+=(const DebugDrawing& other)
 {
   int offset = usedSize;
   write(other.elements, other.usedSize);
-  int i = other.firstTip;
+
+  // logic for Spot
+  int i = other.firstSpot;
   while(i != -1)
   {
     int address = offset + i;
-    Tip& t = (Tip&) elements[address];
+    Spot& t = (Spot&)elements[address];
+    i = t.next;
+    t.next = firstSpot;
+    firstSpot = address;
+  }
+
+  // logic for Tip
+  i = other.firstTip;
+  while(i != -1)
+  {
+    int address = offset + i;
+    Tip& t = (Tip&)elements[address];
     i = t.next;
     t.next = firstTip;
     firstTip = address;
   }
+
   if(other.lastOrigin != -1)
     lastOrigin = offset + other.lastOrigin;
   return *this;
@@ -71,7 +85,28 @@ void DebugDrawing::reset()
   timeStamp = Time::getCurrentSystemTime();
   usedSize = 0;
   firstTip = -1;
+  firstSpot = -1;
   lastOrigin = -1;
+}
+
+const char* DebugDrawing::getSpot(int x, int y, const Pose2f& origin) const
+{
+  int i = firstSpot;
+  const char* action = nullptr;
+  while(i != -1)
+  {
+    const Spot& s = (const Spot&)elements[i];
+    Vector2f p1 = origin * Vector2f((float)s.x1, (float)s.y1);
+    Vector2f p2 = origin * Vector2f((float)s.x2, (float)s.y2);
+    if(p1.x() <= x && p1.y() <= y && x <= p2.x() && y <= p2.y())
+    {
+      action = (const char*)(&s + 1); //todo ist das richtig?
+      return action;
+    }
+
+    i = s.next;
+  }
+  return action;
 }
 
 const char* DebugDrawing::getTip(int& x, int& y, const Pose2f& origin) const
@@ -108,15 +143,15 @@ void DebugDrawing::updateOrigin(Pose2f& origin) const
 }
 
 void DebugDrawing::arrow(Vector2f start, Vector2f end,
-                         Drawings::PenStyle penStyle, int width, ColorRGBA color)
+                         Drawings::PenStyle penStyle, float width, ColorRGBA color)
 {
   Vector2f startToEnd((end.x() - start.x()) / 4, (end.y() - start.y()) / 4);
   Vector2f perpendicular(startToEnd.y(), -1 * startToEnd.x());
   // start to endpoint
-  line((int)start.x(), (int)start.y(), (int)(end.x()), (int)(end.y()), penStyle, width, color);
+  line(start.x(), start.y(), end.x(), end.y(), penStyle, width, color);
   // endpoint to left and right
-  line((int)(end.x()), (int)(end.y()), (int)(end.x() - startToEnd.x() + perpendicular.x()), (int)(end.y() - startToEnd.y() + perpendicular.y()), penStyle, width, color);
-  line((int)(end.x()), (int)(end.y()), (int)(end.x() - startToEnd.x() - perpendicular.x()), (int)(end.y() - startToEnd.y() - perpendicular.y()), penStyle, width, color);
+  line(end.x(), end.y(), end.x() - startToEnd.x() + perpendicular.x(), end.y() - startToEnd.y() + perpendicular.y(), penStyle, width, color);
+  line(end.x(), end.y(), end.x() - startToEnd.x() - perpendicular.x(), end.y() - startToEnd.y() - perpendicular.y(), penStyle, width, color);
 }
 
 void DebugDrawing::text(const char* text, int x, int y, int fontSize, ColorRGBA color)
@@ -129,6 +164,20 @@ void DebugDrawing::text(const char* text, int x, int y, int fontSize, ColorRGBA 
   element.size = (int)strlen(text) + 1;
   write(&element, sizeof(element));
   write(text, element.size);
+}
+
+void DebugDrawing::spot(const char* action, int x1, int y1, int x2, int y2)
+{
+  Spot element;
+  element.x1 = x1;
+  element.y1 = y1;
+  element.x2 = x2;
+  element.y2 = y2;
+  element.size = (int)strlen(action) + 1;
+  element.next = firstSpot;
+  firstSpot = usedSize;
+  write(&element, sizeof(element));
+  write(action, element.size);
 }
 
 void DebugDrawing::tip(const char* text, int x, int y, int radius)
@@ -165,7 +214,7 @@ void DebugDrawing::polygon(const Vector2i* points, int nCount, int width, Drawin
 {
   Polygon element;
   element.nCount = nCount;
-  element.width = width;
+  element.width = static_cast<float>(width);
   element.penStyle = penStyle;
   element.penColor = penColor;
   element.brushStyle = brushStyle;
@@ -229,6 +278,19 @@ void DebugDrawing::origin(int x, int y, float angle)
   write(&element, sizeof(element));
 }
 
+void DebugDrawing::robot(Pose2f p, Vector2f dirVec, Vector2f dirHeadVec, float alphaRobot, ColorRGBA colorBody, ColorRGBA colorDirVec, ColorRGBA colorDirHeadVec)
+{
+  Robot element;
+  element.p = p;
+  element.dirVec = dirVec;
+  element.dirHeadVec = dirHeadVec;
+  element.alphaRobot = alphaRobot;
+  element.colorBody = colorBody;
+  element.colorDirVec = colorDirVec;
+  element.colorDirHeadVec = colorDirHeadVec;
+  write(&element, sizeof(element));
+}
+
 bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType shapeType)
 {
   switch((Drawings::ShapeType)shapeType)
@@ -277,7 +339,6 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Ellipse newEllipse;
       char penWidth, penStyle, brushStyle;
-      ColorRGBA penColor, brushColor;
       message.bin >> newEllipse.center.x();
       message.bin >> newEllipse.center.y();
       message.bin >> newEllipse.radii.x();
@@ -298,7 +359,6 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     {
       Rectangle newRect;
       char penWidth, penStyle, brushStyle;
-      ColorRGBA penColor, brushColor;
       message.bin >> newRect.topLX;
       message.bin >> newRect.topLY;
       message.bin >> newRect.w;
@@ -364,8 +424,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
     }
     case Drawings::arrow:
     {
-      int x1, y1, x2, y2;
-      char penWidth, penStyle;
+      float x1, y1, x2, y2, penWidth;
+      char penStyle;
       ColorRGBA penColor;
       message.bin >> x1;
       message.bin >> y1;
@@ -374,7 +434,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> penWidth;
       message.bin >> penStyle;
       message.bin >> penColor;
-      this->arrow(Vector2f((float)x1, (float)y1), Vector2f((float)x2, (float)y2), (Drawings::PenStyle)penStyle, penWidth, penColor);
+      this->arrow(Vector2f(x1, y1), Vector2f(x2, y2), (Drawings::PenStyle)penStyle, penWidth, penColor);
       break;
     }
     case Drawings::dot:
@@ -435,6 +495,34 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       this->tip(text.c_str(), x, y, radius);
       break;
     }
+    case Drawings::robot:
+    {
+      Pose2f p;
+      Vector2f dirVec, dirHeadVec;
+      float alphaRobot;
+      ColorRGBA colorBody, colorDirVec, colorDirHeadVec;
+      message.bin >> p;
+      message.bin >> dirVec;
+      message.bin >> dirHeadVec;
+      message.bin >> alphaRobot;
+      message.bin >> colorBody;
+      message.bin >> colorDirVec;
+      message.bin >> colorDirHeadVec;
+      this->robot(p, dirVec, dirHeadVec, alphaRobot, colorBody, colorDirVec, colorDirHeadVec);
+      break;
+    }
+    case Drawings::spot:
+    {
+      int x1, y1, x2, y2;
+      std::string action;
+      message.bin >> x1;
+      message.bin >> y1;
+      message.bin >> x2;
+      message.bin >> y2;
+      message.bin >> action;
+      this->spot(action.c_str(), x1, y1, x2, y2);
+      break;
+    }
   }
   return true;
 }
@@ -485,6 +573,12 @@ const DebugDrawing::Element* DebugDrawing::getNext(const Element* element) const
       break;
     case ElementType::tip:
       element = (const Element*)((const char*) element + sizeof(Tip) + ((const Tip*)element)->size);
+      break;
+    case ElementType::robot:
+      element = (const Element*)((const Robot*)element + 1);
+      break;
+    case ElementType::spot:
+      element = (const Element*)((const char*)element + sizeof(Spot) + ((const Spot*)element)->size);
       break;
     default:
       ASSERT(false);

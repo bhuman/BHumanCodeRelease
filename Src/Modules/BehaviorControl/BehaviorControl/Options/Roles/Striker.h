@@ -10,7 +10,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       Stand();
     }
   }
@@ -26,7 +26,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), Pose2f(theBallModel.estimate.position.angle(), 0.f, 0.f));
     }
   }
@@ -42,7 +42,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       WalkToTarget(Pose2f(50.f, 50.f, 50.f), theBallModel.estimate.position);
     }
   }
@@ -58,7 +58,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       WalkToTarget(Pose2f(100.f, 100.f, 100.f), Pose2f(theLibCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 400.f, theBallModel.estimate.position.y()));
     }
   }
@@ -70,8 +70,8 @@ option(Striker)
       if(theLibCodeRelease.timeSinceBallWasSeen > theBehaviorParameters.ballNotSeenTimeOut)
         goto searchForBall;
       if(theLibCodeRelease.between(theBallModel.estimate.position.y(), 20.f, 50.f)
-      && theLibCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
-      && std::abs(theLibCodeRelease.angleToGoal) < 2_deg)
+         && theLibCodeRelease.between(theBallModel.estimate.position.x(), 140.f, 170.f)
+         && std::abs(theLibCodeRelease.angleToGoal) < 2_deg)
         goto kick;
     }
     action
@@ -90,7 +90,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       InWalkKick(WalkKickVariant(WalkKicks::forward, Legs::left), Pose2f(theLibCodeRelease.angleToGoal, theBallModel.estimate.position.x() - 160.f, theBallModel.estimate.position.y() - 55.f));
     }
   }
@@ -104,7 +104,7 @@ option(Striker)
     }
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       WalkAtRelativeSpeed(Pose2f(1.f, 0.f, 0.f));
     }
   }

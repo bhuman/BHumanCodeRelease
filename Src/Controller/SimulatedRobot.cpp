@@ -131,7 +131,7 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   QString position(".position");
   for(int i = 0; i < Joints::numOfJoints; ++i)
   {
-    parts[0] = QString(Joints::getName(static_cast<Joints::Joint>(i))) + position;
+    parts[0] = QString(TypeRegistry::getEnumName(static_cast<Joints::Joint>(i))) + position;
     parts[0] = QString(parts[0].left(1)).toUpper() + parts[0].mid(1);
     jointSensors[i] = reinterpret_cast<SimRobotCore2::SensorPort*>(application->resolveObject(parts, robot, SimRobotCore2::sensorPort));
     jointActuators[i] = reinterpret_cast<SimRobotCore2::ActuatorPort*>(application->resolveObject(parts, robot, SimRobotCore2::actuatorPort));
@@ -418,6 +418,12 @@ void SimulatedRobot::getAndSetJointData(const JointRequest& jointRequest, JointS
   jointSensorData.timestamp = Time::getCurrentSystemTime();
 }
 
+void SimulatedRobot::setJointCalibration(const JointCalibration& jointCalibration)
+{
+  ASSERT(robot);
+  SimulatedRobot::jointCalibration.offsets = jointCalibration.offsets;
+}
+
 void SimulatedRobot::setJointRequest(const JointRequest& jointRequest) const
 {
   ASSERT(robot);
@@ -446,13 +452,13 @@ void SimulatedRobot::getSensorData(FsrSensorData& fsrSensorData, InertialSensorD
     const SimRobot::Object* feet[Legs::numOfLegs] = {leftFoot, rightFoot};
     std::array<Vector2f, FsrSensors::numOfFsrSensors>* fsrPositions[Legs::numOfLegs] = {&robotDimensions.leftFsrPositions, &robotDimensions.rightFsrPositions};
     static constexpr float weight = 0.415f;
-    FOREACH_ENUM((Legs) Leg, leg)
+    FOREACH_ENUM(Legs::Leg, leg)
     {
       Pose3f pose;
       getPose3f(feet[leg], pose);
 
       fsrSensorData.totals[leg] = 0.f;
-      FOREACH_ENUM((FsrSensors) FsrSensor, sensor)
+      FOREACH_ENUM(FsrSensors::FsrSensor, sensor)
       {
         const Vector2f& frsPos = (*fsrPositions[leg])[sensor];
         Vector3f pos = (pose + Vector3f(frsPos.x(), frsPos.y(), -robotDimensions.footHeight)).translation;
@@ -485,9 +491,9 @@ void SimulatedRobot::getSensorData(FsrSensorData& fsrSensorData, InertialSensorD
       world2robot[0][2], world2robot[1][2], world2robot[2][2];
   inertialSensorData.angle.x() = Rotation::Aldebaran::getXAngle(rotMat);
   inertialSensorData.angle.y() = Rotation::Aldebaran::getYAngle(rotMat);
-  */
+   */
   const float axis[2] = { world2robot[1][2], -world2robot[0][2] }; // (world2robot.transpose()*[0;0;1]).cross([0;0;1])
-  const float axisLength = sqrtf(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
+  const float axisLength = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1]); // Also the sine of the angle.
   if(axisLength == 0.0f)
   {
     inertialSensorData.angle.x() = 0.0f;
@@ -563,7 +569,7 @@ bool SimulatedRobot::getPose2f(const SimRobot::Object* obj, Pose2f& Pose2f) cons
   RotationMatrix withoutZ(g, w);
   RotationMatrix zOnly = RotationMatrix(Vector3f(rot3d[0][0], rot3d[0][1], rot3d[0][2]), Vector3f(rot3d[1][0], rot3d[1][1], rot3d[1][2]), Vector3f(rot3d[2][0], rot3d[2][1], rot3d[2][2])) * withoutZ.invert();
   Pose2f.rotation = atan2(zOnly.c0.y, zOnly.c0.x);
-  */
+   */
 
   // (this is an optimized version of the code above)
   float x = rot3d[1][2], y = -rot3d[0][2];

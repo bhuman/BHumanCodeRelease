@@ -85,7 +85,7 @@ public:
    * @param processName The name of the receiver's process.
    * @param receiverName The name of the requested receiver.
    * @return If the receiver is found, a pointer to it is returned.
-   *         Otherwise, the funtion returns 0.
+   *         Otherwise, the function returns 0.
    */
   ReceiverList* lookup(const std::string& processName, const std::string& receiverName);
 };
@@ -94,13 +94,13 @@ public:
  * The class implements a receiver.
  * A receiver is an object that reads packages from another process.
  */
-template<class T> class Receiver : public ReceiverList, public T
+template<typename T> class Receiver : public ReceiverList, public T
 {
 private:
   /**
    * The function checks whether a new package has arrived.
    */
-  virtual void checkForPackage()
+  void checkForPackage() override
   {
     reading = actual;
     if(package[reading])
@@ -118,6 +118,6 @@ public:
    * @param process The process this receiver is associated with.
    */
   Receiver(PlatformProcess* process) :
-    ReceiverList(process, Streaming::demangle(typeid(T).name()))
+    ReceiverList(process, TypeRegistry::demangle(typeid(T).name()))
   {}
 };

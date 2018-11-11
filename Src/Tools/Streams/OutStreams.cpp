@@ -7,8 +7,10 @@
  * @author Martin Lötzsch
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 
 #include "OutStreams.h"
 #include "Platform/File.h"
@@ -16,6 +18,7 @@
 #include "Tools/Motion/SensorData.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Math/Angle.h"
+#include "Tools/Streams/TypeRegistry.h"
 
 void OutBinary::writeString(const char* d, PhysicalOutStream& stream)
 {
@@ -226,6 +229,15 @@ OutFile::~OutFile()
     delete stream;
 }
 
+OutFile& OutFile::operator=(OutFile&& other)
+{
+  if(stream)
+    delete stream;
+  stream = other.stream;
+  other.stream = nullptr;
+  return *this;
+}
+
 bool OutFile::exists() const
 {
   return stream != nullptr && stream->exists();
@@ -253,13 +265,67 @@ std::string OutFile::getFullName() const
   return stream->getFullName();
 }
 
+OutMemory::OutMemory(OutMemory&& other)
+: buffer(other.buffer),
+  reserved(other.reserved),
+  bytes(other.bytes),
+  dynamic(other.dynamic)
+{
+  other.buffer = nullptr;
+  other.reserved = 0;
+  other.bytes = 0;
+  other.dynamic = false;
+}
+
+OutMemory& OutMemory::operator=(OutMemory&& other)
+{
+  if(dynamic)
+    std::free(buffer);
+  buffer = other.buffer;
+  reserved = other.reserved;
+  bytes = other.bytes;
+  dynamic = other.dynamic;
+  other.buffer = nullptr;
+  other.reserved = 0;
+  other.bytes = 0;
+  other.dynamic = false;
+  return *this;
+}
+
 void OutMemory::writeToStream(const void* p, size_t size)
 {
-  if(memory != nullptr)
+  if(bytes + size > reserved)
   {
-    memcpy(memory, p, size);
-    memory += size;
-    length += size;
+    if(dynamic)
+    {
+      reserved = std::max(std::min(reserved, std::numeric_limits<size_t>::max() / 2) * 2, bytes + size);
+      buffer = reinterpret_cast<char*>(std::realloc(buffer, reserved));
+    }
+    else
+    {
+      reserved = bytes;
+      return;
+    }
+  }
+  std::memcpy(buffer + bytes, p, size);
+  bytes += size;
+}
+
+char* OutMemory::obtainData()
+{
+  char* data = buffer;
+  buffer = nullptr;
+  bytes = reserved = 0;
+  dynamic = false;
+  return data;
+}
+
+void OutMemoryForText::addTerminatingZero()
+{
+  if(!OutMemory::size() || OutMemory::data()[OutMemory::size() - 1])
+  {
+    char c = 0;
+    writeToStream(&c, sizeof(c));
   }
 }
 
@@ -278,8 +344,11 @@ void OutMap::writeLn()
 void OutMap::outUChar(unsigned char value)
 {
   Entry& e = stack.back();
-  if(e.enumToString)
-    stream << e.enumToString(value);
+  if(e.enumType)
+  {
+    const char* constant = TypeRegistry::getEnumName(e.enumType, value);
+    stream << (constant ? constant : "UNKNOWN");
+  }
   else
     stream << static_cast<unsigned>(value);
 }
@@ -316,7 +385,7 @@ void OutMap::outString(const char* value)
     stream << "\"";
 }
 
-void OutMap::select(const char* name, int type, const char* (*enumToString)(int))
+void OutMap::select(const char* name, int type, const char* enumType)
 {
   Streaming::trimName(name);
   if(!stack.empty())
@@ -356,7 +425,7 @@ void OutMap::select(const char* name, int type, const char* (*enumToString)(int)
     stream << indentation;
   }
 
-  stack.push_back(Entry(type, enumToString));
+  stack.push_back(Entry(type, enumType));
 }
 
 void OutMap::deselect()
@@ -392,6 +461,4 @@ void OutMap::write(const void* p, size_t size)
 
 OutMapFile::OutMapFile(const std::string& name, bool singleLine) : OutMap(stream, singleLine), stream(name) {}
 
-OutMapMemory::OutMapMemory(void* memory, bool singleLine) : OutMap(stream, singleLine), stream(memory) {}
-
-OutMapSize::OutMapSize(bool singleLine) : OutMap(stream, singleLine) {}
+OutMapMemory::OutMapMemory(bool singleLine, size_t capacity, char* buffer) : OutMap(stream, singleLine), stream(capacity, buffer) {}

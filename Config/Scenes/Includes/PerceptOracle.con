@@ -24,11 +24,10 @@ mr RobotHealth default
 # Switch to percept oracle or off
 mr AutoExposureWeightTable off
 mr ECImage default
-mr PlayersImagePercept OracledPerceptsProvider
-mr PlayersFieldPercept OracledPerceptsProvider
+mr ObstaclesImagePercept OracledPerceptsProvider
+mr ObstaclesFieldPercept OracledPerceptsProvider
 mr LinesPercept OracledPerceptsProvider
 mr CirclePercept OracledPerceptsProvider
-mr DebuggingOutput off
 mr BallPercept OracledPerceptsProvider
 mr FieldBoundary OracledPerceptsProvider
 mr PenaltyMarkPercept OracledPerceptsProvider
@@ -36,14 +35,15 @@ mr GoalFrame default
 mr CNSImage off
 mr CNSRegions off
 mr BallRegions off
+mr ConfirmedBallSpot off
 mr CNSPenaltyMarkRegions off
+mr PenaltyMarkSpots off
 mr PenaltyMarkRegions off
 mr BallSpots off
 mr ColorScanlineRegionsHorizontal off
 mr ColorScanlineRegionsVerticalClipped off
 mr ColorScanlineRegionsVertical default
 mr ScanGrid off
-mr BodyContour off
 mr Thumbnail off
 mr ECImage off
 mr Image default

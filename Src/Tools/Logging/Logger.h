@@ -5,7 +5,7 @@
  *
  * Logfile format:
  * logFileMessageIDs | number of message ids | streamed message id names |
- * logFileStreamSpecification | streamed StreamHandler |
+ * logFileTypeInfo | streamed TypeInfo |
  * idLogFileCompressed | size of next compressed block | compressed block | size | compressed block | etc...
  * Each block is compressed using libsnappy
  *
@@ -33,17 +33,12 @@
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Cabsl.h"
 #include "Tools/Streams/Enum.h"
+#include "Tools/Streams/OutStreams.h"
 
 class Logger : public Cabsl<Logger>
 {
 public:
-  ENUM(LoggedProcess,
-  {,
-    cognition,
-    motion,
-  });
-
-  Logger(LoggedProcess loggedProcess);
+  Logger(const std::string& processName, char processIdentifier, int framesPerSecond);
   ~Logger();
 
   /** Has to be called in each cycle. */
@@ -54,6 +49,8 @@ private:
   {,
     (bool)(false) enabled, /**< Determines whether the logger is enabled or disabled. */
     (std::string) logFilePath, /**< Where to write the log file. */
+    (bool)(false) logToUSB, /**< Determines whether logging to USB is enabled. */
+    (std::string) logUSBFilePath, /**< Where to write the log file if logging to USB is enabled. */
     (int) maxBufferSize, /**< Max size of the buffer in bytes. */
     (int) blockSize, /**< Size per frame in bytes. */
     (std::vector<std::string>) representations, /**< Contains the representations that should be logged. */
@@ -85,7 +82,7 @@ private:
 
   Parameters parameters;
   TeamList teamList; /**< The list of all teams for naming the log file after the opponent. */
-  std::string name; /**< The name of the entity this logger is part of. */
+  const std::string processName; /**< The name of the process this logger is part of. */
   int blackboardVersion = 0; /**< The blackboard version the logger is currently configured for. */
   std::vector<Loggable> loggables; /**< The representations that should be logged. */
   std::vector<MessageQueue*> buffer; /**< Ring buffer of message queues. Shared with the writer thread. */
@@ -98,8 +95,9 @@ private:
   Semaphore framesToWrite; /**< How many frames the writer thread should write? */
   volatile bool writerIdle = true; /**< Is true if the writer thread has nothing to do. */
   volatile unsigned writerIdleStart = 0; /**< The system time at which the writer thread went idle. */
-  std::vector<char> streamSpecification; /**< Streamed specification created in main thread and used in logger thread. */
-  LoggedProcess loggedProcess;
+  OutBinaryMemory typeInfo; /**< Streamed type information created in main thread and used in logger thread. */
+  const char processIdentifier; /**< The identifier of the logged process. */
+  const int framesPerSecond; /**< The (average) number of frames per second of the logged process. */
 
   /**
    * Generate a filename containing the robot's player number, its name, and the current
@@ -108,8 +106,10 @@ private:
    */
   std::string generateFilename() const;
 
-  /** Create streamed data type specification to be used in the logger thread. */
-  void createStreamSpecification();
+#ifdef TARGET_ROBOT
+  /** Create dict and parents if necessary*/
+  void _mkdir(const char* dir);
+#endif // TARGET_ROBOT
 
   /** Write all loggable representations to a buffer. */
   void logFrame();
@@ -162,8 +162,7 @@ private:
       action
       {
         logFilename = generateFilename();
-        logFrame(); // Stream all data once and theerby create stream specification for them
-        createStreamSpecification(); // Serialize stream specification
+        logFrame();
       }
     }
 

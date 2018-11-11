@@ -44,5 +44,5 @@ public:
   /**
    * The update method to generate the head joint angles from desired head motion.
    */
-  void update(HeadMotionEngineOutput& headMotionEngineOutput);
+  void update(HeadMotionEngineOutput& headMotionEngineOutput) override;
 };

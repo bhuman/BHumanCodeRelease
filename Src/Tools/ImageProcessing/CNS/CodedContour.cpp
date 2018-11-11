@@ -91,10 +91,7 @@ void Contour::postProcess(int xLo, int xHi, int yLo, int yHi, int xRef, int yRef
     }
   }
   if(deleteJ)
-  {
     j--;
-    deleteJ = false;
-  }
   resize(j);
   referenceX = xRef;
   referenceY = yRef;

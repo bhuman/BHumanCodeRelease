@@ -1,0 +1,14 @@
+#!/bin/bash
+pushd "$(dirname "$(which "$0")")" >/dev/null
+../../Util/mare/Linux/bin/mare --codelite \
+&& sed <SimRobot.project "s%\(<General[^>]*\)/>%\1 IsGUIProgram=\"yes\"/>%" >/tmp/mare.tmp \
+&& mv /tmp/mare.tmp SimRobot.project \
+&& sed <bush.project "s%\(<General[^>]*\)/>%\1 IsGUIProgram=\"yes\"/>%" >/tmp/mare.tmp \
+&& mv /tmp/mare.tmp bush.project
+QTINCLUDE=`find /usr/include /usr/local/include -name qt5 -type d`
+for i in *.project; do
+  sed <"$i" "s%/bin/mare %/bin/mare qtinclude=\"$QTINCLUDE\" %" >/tmp/generate.tmp \
+  && mv /tmp/generate.tmp "$i"
+done
+popd >/dev/null
+

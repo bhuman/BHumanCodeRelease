@@ -66,19 +66,19 @@ protected:
   /**
    * Update the display lists if required.
    */
-  virtual void updateDisplayLists();
+  void updateDisplayLists() override;
 
   /**
    * Need the display lists to be updated?
    * @return Yes or no?
    */
-  virtual bool needsUpdate() const;
+  bool needsUpdate() const override;
 
   /**
    * The function returns the view distance.
    * @return The distance from which the scene is viewed.
    */
-  virtual float getViewDistance() const { return channel ? 5.0f : 8.0f; }
+  float getViewDistance() const override { return channel ? 5.0f : 8.0f; }
 
 private:
   RobotConsole& console; /**< A reference to the console object. */

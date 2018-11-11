@@ -8,17 +8,24 @@
 #pragma once
 
 #include "RoboCupGameControlData.h"
+#include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Streams/Streamable.h"
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 
 struct TeamInfo : public RoboCup::TeamInfo, public Streamable
 {
 private:
-  using RoboCup::TeamInfo::penaltyShot; // Hide, because it is not streamed.
-  using RoboCup::TeamInfo::singleShots; // Hide, because it is not streamed.
+  using RoboCup::TeamInfo::penaltyShot;   // Hide, because it is not streamed.
+  using RoboCup::TeamInfo::singleShots;   // Hide, because it is not streamed.
 
 public:
   TeamInfo();
+
+  /**
+   * Returns the number of the player that is substituted by a given robot or its own number if it does not substitute anyone.
+   * @param number The number of the robot.
+   * @return The number of the player that is substituted or its own number if it does not substitute anyone.
+   */
+  int getSubstitutedPlayerNumber(int number) const;
 
   /** Draws the score in the scene view. */
   void draw() const;
@@ -29,20 +36,20 @@ protected:
    * @param in The stream from which the object is read (if in != 0).
    * @param out The stream to which the object is written (if out != 0).
    */
-  virtual void serialize(In* in, Out* out);
+  void serialize(In* in, Out* out) override;
+
+private:
+  static void reg();
 };
 
-STREAMABLE_WITH_BASE(OwnTeamInfo, TeamInfo, COMMA public BHumanMessageParticle<idOwnTeamInfo>
+STREAMABLE_WITH_BASE(OwnTeamInfo, TeamInfo,
 {
-  /** BHumanMessageParticle functions */
-  void operator >> (BHumanMessage& m) const override;
-
   OwnTeamInfo();
   void draw() const,
 });
 
-struct OpponentTeamInfo : public TeamInfo
+STREAMABLE_WITH_BASE(OpponentTeamInfo, TeamInfo,
 {
   OpponentTeamInfo();
-  void draw() const { TeamInfo::draw(); }
-};
+  void draw() const { TeamInfo::draw(); },
+});

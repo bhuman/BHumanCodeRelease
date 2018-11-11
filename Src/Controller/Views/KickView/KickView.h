@@ -39,9 +39,9 @@ public:
            const JointLimits& jointLimits, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
 
 private:
-  virtual SimRobot::Widget* createWidget();
-  virtual const QString& getFullName() const { return fullName; }
-  virtual const QIcon* getIcon() const { return &icon; }
+  SimRobot::Widget* createWidget() override;
+  const QString& getFullName() const override { return fullName; }
+  const QIcon* getIcon() const override { return &icon; }
 };
 
 class KickViewHeaderedWidget : public HeaderedWidget, public SimRobot::Widget
@@ -53,11 +53,11 @@ public:
 
   KickViewHeaderedWidget(KickView& kickView);
 
-  virtual QWidget* getWidget() { return this; }
-  virtual void update();
-  virtual QMenu* createFileMenu() const;
-  virtual QMenu* createEditMenu() const;
-  virtual bool canClose();
+  QWidget* getWidget() override { return this; }
+  void update() override;
+  QMenu* createFileMenu() const override;
+  QMenu* createEditMenu() const override;
+  bool canClose() override;
   void addStateToUndoList();
 
 private:

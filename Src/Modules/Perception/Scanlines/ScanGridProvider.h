@@ -33,5 +33,5 @@ MODULE(ScanGridProvider,
 
 class ScanGridProvider : public ScanGridProviderBase
 {
-  void update(ScanGrid& scanGrid);
+  void update(ScanGrid& scanGrid) override;
 };

@@ -36,9 +36,6 @@ work()
   true
 }
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname "${scriptPath}")
-currPath=$(pwd)
 keySource=../../Config/Keys/id_rsa_nao
 keyFile=/tmp/id_rsa_nao
 cp $keySource $keyFile
@@ -51,7 +48,7 @@ else
   pingoptions="-w 1 -c 1"
 fi
 
-cd "${basePath}"
+cd "$(dirname "$(which "$0")")"
 
 REMOTE=
 FORCE=
@@ -78,5 +75,3 @@ chmod 600 $keyFile
 if [ ! -z $REMOTE ]; then
   work $REMOTE $FORCE
 fi
-
-cd "${currPath}"

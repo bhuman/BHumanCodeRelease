@@ -28,6 +28,7 @@ option(HandleGameState)
   {
     action
     {
+      HeadControlMode(HeadControl::none);
       SetHeadPanTilt(0.f, 0.f, 150_deg);
       SpecialAction(SpecialActionRequest::standHigh);
     }
@@ -38,7 +39,7 @@ option(HandleGameState)
   {
     action
     {
-      theHeadControlMode = HeadControl::lookForward;
+      HeadControlMode(HeadControl::lookForward);
       Stand();
     }
   }

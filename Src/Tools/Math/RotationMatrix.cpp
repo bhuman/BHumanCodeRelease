@@ -164,3 +164,9 @@ RotationMatrix RotationMatrix::fromEulerAngles(const Vector3f rotation)
 {
   return Rotation::Euler::fromAngles(rotation);
 }
+
+void RotationMatrix::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS_WITH_BASE(RotationMatrix, Matrix3f);
+}

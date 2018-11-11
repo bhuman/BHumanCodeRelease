@@ -3,7 +3,8 @@
 # remotely connect to a NAO.
 # This script can be launched from the Finder.
 
-scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-basePath=$(dirname "${scriptPath}")
+basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
 cd "$basePath"
-open `ls -t ../../Build/macOS/SimRobot/*/* | head -1 | sed "s%\(.*/\).*%\1SimRobot.app%"` --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"
+app=$(ls -td ../../Build/macOS/SimRobot/*/SimRobot.app | head -1)
+cd "$(dirname "$app")"
+open SimRobot.app --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"

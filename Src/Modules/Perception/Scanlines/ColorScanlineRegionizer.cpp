@@ -33,7 +33,7 @@ void ColorScanlineRegionizer::update(ColorScanlineRegionsHorizontal& colorScanli
   int prevY = theECImage.colored.height + minHorizontalScanlineDistance * theECImage.colored.height / 320;
   for(const int y : theScanGrid.y)
   {
-    if(prevY - y < (int)minHorizontalScanlineDistance * theECImage.colored.height / 320)
+    if(prevY - y < static_cast<int>(minHorizontalScanlineDistance * theECImage.colored.height / 320))
     {
       continue;
     }
@@ -100,7 +100,6 @@ void ColorScanlineRegionizer::update(ColorScanlineRegionsHorizontal& colorScanli
         scanline.regions.emplace_back(x - count, x, curColor);
       else if(!scanline.regions.empty())
         scanline.regions.back().range.right += count;
-      count = 0;
     }
   }
 }

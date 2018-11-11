@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# This script generates a number of svg files from the CABSL behaviors.
+# They are stored under "Build/Documentation".
+#
+# Author: Thomas Röfer
+
+usage()
+{
+  echo >&2 "usage: $0 { options }"
+  echo >&2 "  options:"
+  echo >&2 "    -h        show this help"
+  echo >&2 "    -p        output pdf instead of svg"
+  exit 1
+}
+
+set -eu
+
+basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
+createGraphs="${basePath}/../../Util/CABSL/createGraphs"
+if [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
+  dot="${basePath}/../../Util/dot/dot.exe"
+else
+  dot="${basePath}/../../Util/dot/dot"
+fi
+pdf=
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    "-h")
+      usage
+      ;;
+    "-p")
+      pdf=-p
+      ;;
+    -*)
+      echo >&2 "error: unknown option '$1'"
+      usage
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+
+cd "${basePath}/../../Src/"
+while read line; do
+  echo "Creating graphs for ${line% *}..."
+  mkdir -p "${basePath}/../../Build/Documentation/${line% *}"
+  cd "${basePath}/../../Build/Documentation/${line% *}"
+  "$createGraphs" -d "$dot" $pdf "${basePath}/../../Src/${line##* }"
+done <<<\
+"FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp
+Logger Tools/Logging/Logger.cpp
+WalkingEngine Modules/MotionControl/WalkingEngine/WalkingEngine.h
+BehaviorControl Modules/BehaviorControl/BehaviorControl/Options.h"

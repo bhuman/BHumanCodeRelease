@@ -51,22 +51,25 @@ TimingManager::~TimingManager()
 
 void TimingManager::startTiming(const char* identifier)
 {
-  unsigned long long startTime = Time::getCurrentThreadTime();
-  if(prvt->timing.find(identifier) == prvt->timing.end())
+
+  auto timing = prvt->timing.find(identifier);
+  if(timing == prvt->timing.end())
   {
     //create new entry
     prvt->watchNames.push_back(identifier);
     prvt->idTable[identifier] = (unsigned short)prvt->idTable.size(); //NOTE: this assumes that an unsigned short will always be big big enough to count the timers...
+    timing = prvt->timing.insert(std::pair<const char*, unsigned long long>(identifier, 0)).first;
   }
-  prvt->timing[identifier] = startTime;
   prvt->dataPrepared = false;
+  timing->second = Time::getCurrentThreadTime() - timing->second; // accumulate measurements
 }
 
 unsigned TimingManager::stopTiming(const char* identifier)
 {
   const unsigned long long stopTime = Time::getCurrentThreadTime();
-  const unsigned diff = unsigned(stopTime - prvt->timing[identifier]);
-  prvt->timing[identifier] = diff;
+  auto timing = prvt->timing.find(identifier);
+  const unsigned diff = unsigned(stopTime - timing->second);
+  timing->second = diff;
   return diff;
 }
 
@@ -77,6 +80,8 @@ void TimingManager::signalProcessStart()
   prvt->processRunning = true;
   prvt->data.clear();
   prvt->dataPrepared = false;
+  for(const pair<const char* const, unsigned long long>& it : prvt->timing)
+    prvt->timing[it.first] = 0;
 }
 
 void TimingManager::signalProcessStop()
@@ -123,11 +128,10 @@ void TimingManager::prepareData()
 
   // now write the data of all watches
   out << (unsigned short)prvt->timing.size();
-  for(const pair<const char*, unsigned long long>& it : prvt->timing)
+  for(const pair<const char* const, unsigned long long>& it : prvt->timing)
   {
     out << prvt->idTable[it.first];
     out << (unsigned)it.second; // the cast is ok because the time between start and stop will never be bigger than an int...
-    prvt->timing[it.first] = 0;
   }
   out << prvt->currentProcessStartTime;
   out << prvt->frameNo;

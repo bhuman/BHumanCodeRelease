@@ -77,7 +77,7 @@ public:
    * @param processName The name of the sender's process.
    * @param senderName The name of the requested sender.
    * @return If the sender is found, a pointer to it is returned.
-   *         Otherwise, the funtion returns 0.
+   *         Otherwise, the function returns 0.
    */
   SenderList* lookup(const std::string& processName, const std::string& senderName);
 };
@@ -86,7 +86,7 @@ public:
  * The class implements a sender.
  * A sender is an object that sends packages to an queue.
  */
-template<class T> class Sender : public SenderList, public T
+template<typename T> class Sender : public SenderList, public T
 {
 protected:
   ReceiverList* receiver[RECEIVERS_MAX], /**< A list of all receivers. */
@@ -98,12 +98,12 @@ protected:
    * The function adds a receiver to this sender.
    * @param r The receiver that is attached to this sender.
    */
-  virtual void add(ReceiverList* r) {receiver[numOfReceivers++] = r;}
+  void add(ReceiverList* r) override {receiver[numOfReceivers++] = r;}
 
   /**
    * The function sends a package to all receivers that requested it.
    */
-  virtual void sendPackage()
+  void sendPackage() override
   {
     if(numOfAlreadyReceived != -1)
     {
@@ -119,13 +119,9 @@ protected:
         {
           // receiver[i] has not received its requested package yet
           const T& data = *static_cast<const T*>(this);
-          OutBinarySize size;
-          size << data;
-          void* r = (void*) new char[size.getSize()];
-          ASSERT(r);
-          OutBinaryMemory memory(r);
-          memory << data;
-          receiver[i]->setPackage(r);
+          OutBinaryMemory stream(16384);
+          stream << data;
+          receiver[i]->setPackage(stream.obtainData());
           // note that receiver[i] has received the current package
           ASSERT(numOfAlreadyReceived < RECEIVERS_MAX);
           alreadyReceived[numOfAlreadyReceived++] = receiver[i];
@@ -139,7 +135,7 @@ public:
    * @param process The process this sender is associated with.
    */
   Sender(PlatformProcess* process) :
-    SenderList(process, Streaming::demangle(typeid(T).name()))
+    SenderList(process, TypeRegistry::demangle(typeid(T).name()))
   {}
 
   /**

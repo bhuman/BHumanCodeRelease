@@ -11,6 +11,7 @@
 #endif
 
 #include <cstdarg>
+#include <cstdio>
 
 File::File(const std::string& name, const char* mode, bool tryAlternatives)
 {
@@ -58,7 +59,16 @@ void File::write(const void* p, size_t size)
 {
   //if opening failed, stream will be 0 and fwrite would crash
   ASSERT(stream != 0);
-  VERIFY(fwrite(p, 1, size, (FILE*)stream) == size);
+#ifdef NDEBUG
+  static_cast<void>(fwrite(p, 1, size, (FILE*)stream));
+#else
+  const size_t written = fwrite(p, 1, size, (FILE*)stream);
+  if(written != size)
+  {
+    perror("fwrite did not write as many bytes as requested");
+    FAIL("File::write failed!");
+  }
+#endif
 }
 
 void File::printf(const char* format, ...)

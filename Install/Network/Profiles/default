@@ -1,12 +1,1 @@
-ctrl_interface=/var/run/wpa_supplicant
-ctrl_interface_group=0
-ap_scan=1
-
-network={
-  ssid="SPL_A"
-  scan_ssid=1
-  key_mgmt=WPA-PSK
-  pairwise=TKIP CCMP
-  group=TKIP CCMP
-  psk="Nao?!Nao?!"
-}
+This will kill wpa_supplicant disabling WiFi.

@@ -14,7 +14,7 @@
       </BoxAppearance>
       <BoxGeometry width="10" depth="10" height="0.2"/>
     </Compound>
-    
+
     <Compound name="Side1">
       <Translation y="4.9" z="0.1"/>
       <BoxAppearance width="0.1" depth="10" height="0.2">
@@ -22,7 +22,7 @@
       </BoxAppearance>
       <BoxGeometry width="0.1" depth="10" height="0.2"/>
     </Compound>
-    
+
     <Compound name="Side2">
       <Translation y="-4.9" z="0.1"/>
       <BoxAppearance width="0.1" depth="10" height="0.2">
@@ -30,7 +30,7 @@
       </BoxAppearance>
       <BoxGeometry width="0.1" depth="10" height="0.2"/>
     </Compound>
-    
+
     <Compound name="Side3">
       <Translation x="4.9" z="0.1"/>
       <BoxAppearance width="10" depth="0.1" height="0.2">
@@ -38,7 +38,7 @@
       </BoxAppearance>
       <BoxGeometry width="10" depth="0.1" height="0.2"/>
     </Compound>
-    
+
     <Compound name="Side4">
       <Translation x="-4.9" z="0.1"/>
       <BoxAppearance width="10" depth="0.1" height="0.2">
@@ -46,7 +46,7 @@
       </BoxAppearance>
       <BoxGeometry width="10" depth="0.1" height="0.2"/>
     </Compound>
-    
+
     <!-- The simple vehicle, a box with four ball wheels -->
     <Body name="car">
       <Translation z="0.2"/>
@@ -116,7 +116,7 @@
         </Body>
       </Hinge>
     </Body>
- 
+
     <!-- The ball which the robot tries to get -->
     <Body name="Ball">
       <Translation x="2" z="0.5"/>

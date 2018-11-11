@@ -8,7 +8,6 @@
 #include "Tools/Streams/Streamable.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
-#include "Platform/Thread.h"
 #include <unordered_map>
 
 /** The instance of the blackboard of the current process. */

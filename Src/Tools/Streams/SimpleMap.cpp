@@ -18,6 +18,7 @@
 #include "SimpleMap.h"
 #include <stdexcept>
 #include "InStreams.h"
+#include "Platform/BHAssert.h"
 #include "Tools/Debugging/Debugging.h"
 
 SimpleMap::Literal::operator In&() const
@@ -164,7 +165,7 @@ void SimpleMap::unexpectedSymbol()
   if(symbol == literal)
     throw std::logic_error(std::string("Unexpected literal '") + string + "'");
   else
-    throw std::logic_error(std::string("Unexpected symbol '") + getName(symbol) + "'");
+    throw std::logic_error(std::string("Unexpected symbol '") + TypeRegistry::getEnumName(symbol) + "'");
 }
 
 void SimpleMap::expectSymbol(Symbol expected)
@@ -255,7 +256,11 @@ SimpleMap::SimpleMap(In& stream, const std::string& name) :
   }
   catch(const std::logic_error& e)
   {
+#ifdef TARGET_ROBOT
+    FAIL(name << "(" << row << ", " << column << "): " << e.what());
+#else
     OUTPUT_ERROR(name << "(" << row << ", " << column << "): " << e.what());
+#endif
   }
 }
 

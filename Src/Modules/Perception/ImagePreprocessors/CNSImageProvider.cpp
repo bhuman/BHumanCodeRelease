@@ -8,7 +8,6 @@
 
 #include "CNSImageProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugImages.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/ImageProcessing/AVX.h"
 #include "Tools/Math/Transformation.h"

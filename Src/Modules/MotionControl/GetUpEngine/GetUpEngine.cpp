@@ -1,16 +1,21 @@
 /*
  * @file GetUpEngine.cpp
  * @author <A href="mailto:judy@tzi.de">Judith Müller</A>
+ * @author Marvin Franke
+ * @author Philip Reichenberg
  */
+
+#include <cmath>
+#include <functional>
+#include <string>
 
 #include "GetUpEngine.h"
 #include "Platform/File.h"
 #include "Platform/SystemCall.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Tools/Debugging/Modify.h"
-#include "Tools/Debugging/Modify.h"
-#include <functional>
-#include <string>
+#include "Tools/Motion/MotionUtilities.h"
+#include "Tools/Debugging/DebugDrawings.h"
 
 using namespace std;
 
@@ -18,17 +23,28 @@ void GetUpEngine::update(GetUpEngineOutput& output)
 {
 #ifndef NDEBUG
   GetUpMotion motionToMof = GetUpMotion::stand;
-  MODIFY_ENUM_ONCE("module:GetUpEngine:generateMofOf", motionToMof, GetUpMotions); //not tested after some changes in enum location
+  MODIFY_ONCE("module:GetUpEngine:generateMofOf", motionToMof);
   if(motionToMof != GetUpMotion::stand)
     generateMofOfMotion(motionToMof);
 
   GetUpMotion mofToMotion = GetUpMotion::stand;
-  MODIFY_ENUM_ONCE("module:GetUpEngine:generateMotionFromDummyMof", mofToMotion, GetUpMotions);
+  MODIFY_ONCE("module:GetUpEngine:generateMotionFromDummyMof", mofToMotion);
   if(mofToMotion != GetUpMotion::stand)
     generateMotionOfMof(mofToMotion);
+
+  GetUpMotion motionCmpBase = GetUpMotion::stand;
+  GetUpMotion motionCmpOther = GetUpMotion::stand;
+  MODIFY("module:GetUpEngine:compareMotionBase", motionCmpBase);
+  MODIFY_ONCE("module:GetUpEngine:compareMotionOther", motionCmpOther);
+  if(motionCmpOther != GetUpMotion::stand)
+    compareMotions(motionCmpBase, motionCmpOther);
+  MODIFY("module:GetUpEngine:comparison", comparison);
 #endif
 
+  output.failBack = false;
+  output.failFront = false;
   output.odometryOffset = Pose2f();
+
   if(theLegMotionSelection.ratios[MotionRequest::getUp] > 0.f)
   {
     if(!wasActive)
@@ -70,7 +86,16 @@ void GetUpEngine::update(GetUpEngineOutput& output)
           else
             output.odometryOffset = Pose2f();
 
-          output.isLeavingPossible = true;
+          if(mofs[motionID].continueTo != motionID)
+          {
+            initVariables();
+            output.criticalTriggered = false;
+            state = working;
+            setCurrentMotion(mofs[motionID].continueTo);
+            setBaseLimbStiffness();
+          }
+          else
+            output.isLeavingPossible = true;
         }
       }
     }
@@ -98,55 +123,148 @@ void GetUpEngine::update(GetUpEngineOutput& output)
     lastNotActiveTimeStamp = theFrameInfo.time;
     lastMotionInfo = theMotionInfo; // store the last MotionInfo
   }
+  output.name = motionID;
+  output.lineCounter = lineCounter;
 }
 
-void GetUpEngine::interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target)
+void GetUpEngine::update(GetUpEngineOutputLog& output)
 {
-  for(int i = 0; i < Joints::numOfJoints; ++i)
+  output.tryCounter = theGetUpEngineOutput.tryCounter;
+  output.lineCounter = theGetUpEngineOutput.lineCounter;
+  output.name = theGetUpEngineOutput.name;
+  output.criticalTriggered = theGetUpEngineOutput.criticalTriggered;
+  output.optionalLine = theGetUpEngineOutput.optionalLine;
+  output.theBalanceFloatY = theGetUpEngineOutput.theBalanceFloatY;
+  output.theBalanceFloatX = theGetUpEngineOutput.theBalanceFloatX;
+}
+
+float GetUpEngine::addBalanceY(JointRequest& jointRequest)
+{
+  if(lineCounter < maxCounter && theInertialData.gyro.y() != 0 && mofs[motionID].lines[lineCounter].balanceWithHipAndAnkleY && std::abs(theInertialData.angle.y()) < 45_deg)
   {
-    float f = from.angles[i];
-    float t = to.angles[i];
+    //the more the robot is tilted, the stronger we want to balance
+    float ratio = std::min(std::abs(theInertialData.gyro.y()) / 10.f, 1.f);
+    constexpr float cycletime = Constants::motionCycleTime;
+    float gyroDiff((theInertialData.gyro.y() - gLastY) / cycletime);
+    gLastY = theInertialData.gyro.y();
+    //calculation with a pid controller
+    float calcVelocity(kp * gLastY - kd * gyroDiff - ki * gBufferY);
+    float balanceFloat = calcVelocity * cycletime * ratio;
+    balanceFloat = balanceFloat * 10.f;
+    //Increase balance factor if conditions are right
+    if(mofs[motionID].lines[lineCounter].increaseBalanceY)
+    {
+      if((theInertialData.angle.y().toDegrees() - balanceHipAngleY) > 0.f && theInertialData.gyro.y() > 0.f)
+      {
+        balanceFloat = balanceFloat * (1.f + (theInertialData.angle.y().toDegrees() - balanceHipAngleY) / 3.f);
+        if(balanceFloat < 0.f)
+        {
+          balanceFloat = std::fabs(balanceFloat);
+        }
+      }
+    }
+    //cap the balance value to prevent too high value
+    if(balanceFloat < 0.f)
+    {
+      balanceFloat = std::max(balanceFloat, -0.1047f);
+    }
+    else
+    {
+      balanceFloat = std::min(balanceFloat, 0.1047f);
+    }
+    jointRequest.angles[Joints::rHipPitch] += balanceFloat;
+    jointRequest.angles[Joints::lHipPitch] += balanceFloat;
+    jointRequest.angles[Joints::lAnklePitch] += balanceFloat;
+    jointRequest.angles[Joints::rAnklePitch] += balanceFloat;
+    gBufferY += gLastY;
 
-    if(t == JointAngles::ignore && f == JointAngles::ignore)
-      continue;
+    float returnFloat = 0.f;
+    if(balanceFloat != 0)
+    {
+      returnFloat = (float)(balanceFloat / 3.141) * 180.f;
+    }
+    return returnFloat;
+  }
+  //reset the values while the balancer is off
+  else
+  {
+    if(currentBalanceLine < lineCounter)
+    {
+      currentBalanceLine = lineCounter;
+      balanceHipAngleY = theInertialData.angle.y().toDegrees();
+    }
+    gLastY = 0.f;
+    gBufferY = 0.f;
+    return 0.f;
+  }
+}
 
-    if(t == JointAngles::ignore)
-      t = target.angles[i];
-    if(f == JointAngles::ignore)
-      f = target.angles[i];
+float GetUpEngine::addBalanceX(JointRequest& jointRequest)
+{
+  if(lineCounter < maxCounter && theInertialData.gyro.x() != 0 && mofs[motionID].lines[lineCounter].balanceWithHipAndAnkleX && std::abs(theInertialData.angle.x()) < 45_deg)
+  {
+    float ratio = std::min(std::abs(theInertialData.angle.x()) / 5.f, 1.f);
+    constexpr float cycletime = Constants::motionCycleTime;
+    float gyroDiff((theInertialData.gyro.x() - gLastX) / cycletime);
+    gLastX = theInertialData.gyro.x();
 
-    if(t == JointAngles::off || t == JointAngles::ignore)
-      t = theJointAngles.angles[i];
-    if(f == JointAngles::off || f == JointAngles::ignore)
-      f = theJointAngles.angles[i];
+    //calculation with a pid controller
+    float calcVelocity(kp * gLastX - kd * gyroDiff - ki * gBufferX);
+    float balanceFloat = calcVelocity * cycletime * ratio;
+    //cap the balance value to prevent too high value
+    if(balanceFloat < 0)
+    {
+      balanceFloat = std::max(balanceFloat, -0.05f);
+    }
+    else
+    {
+      balanceFloat = std::min(balanceFloat, 0.05f);
+    }
+    jointRequest.angles[Joints::rHipRoll] += balanceFloat;
+    jointRequest.angles[Joints::lHipRoll] -= balanceFloat;
+    jointRequest.angles[Joints::lAnkleRoll] += balanceFloat;
+    jointRequest.angles[Joints::rAnkleRoll] -= balanceFloat;
+    gBufferX += gLastX;
 
-    target.angles[i] = ratio * (t - f) + f;
-
-    target.stiffnessData.stiffnesses[i] = to.stiffnessData.stiffnesses[i];
+    float returnFloat = 0.f;
+    if(balanceFloat != 0)
+    {
+      returnFloat = (float)(balanceFloat / 3.141) * 180.f;
+    }
+    return returnFloat;
+  }
+  //reset the values while the balancer is off
+  else
+  {
+    gLastX = 0.f;
+    gBufferX = 0.f;
+    return 0.f;
   }
 }
 
 void GetUpEngine::pickMotion(GetUpEngineOutput& output)
 {
   initVariables();
+  output.criticalTriggered = false;
   const float& bodyAngleY = theInertialData.angle.y();
   const float& bodyAngleX = theInertialData.angle.x();
-
-  FallDownState::Direction fallDirection;
-  if(std::abs(bodyAngleX) > std::abs(bodyAngleY))
-  {
-    fallDirection = bodyAngleX > 0 ? FallDownState::right : FallDownState::left;
-  }
-  else
-  {
-    fallDirection = bodyAngleY > 0 ? FallDownState::front : FallDownState::back;
-  }
+  bool leftArmOverHead = theJointAngles.angles[Joints::lShoulderPitch] < -40_deg;
+  bool rightArmOverHead = theJointAngles.angles[Joints::rShoulderPitch] < -40_deg;
 
   switch(state)
   {
     case decideAction:
     {
-      if(bodyAngleY > 65_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+      //special handling for sitDown positions
+      if(lastMotionInfo.motion == MotionRequest::specialAction
+              && lastMotionInfo.specialActionRequest.specialAction == SpecialActionRequest::sitDown)
+      {
+        state = working;
+        setCurrentMotion(GetUpMotion::fromSitDown);
+        setBaseLimbStiffness();
+        lastMotionInfo.motion = MotionRequest::getUp; //set that we started a getUp motion in order to use normal break up motions
+      }
+      else if(bodyAngleY > 65_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
       {
         //init stand up front
         if(output.tryCounter >= static_cast<int>(theDamageConfigurationBody.getUpFront.size()))
@@ -169,8 +287,36 @@ void GetUpEngine::pickMotion(GetUpEngineOutput& output)
           setCurrentMotion(theDamageConfigurationBody.getUpBack[output.tryCounter]);
         setBaseLimbStiffness();
       }
+      else if(std::abs(bodyAngleX) > 50_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 300)
+      {
+        //init recover motion
+        if((rightArmOverHead || leftArmOverHead) && theFrameInfo.getTimeSince(recoverTimeStamp) > 3000)  // maybe check for special actions?
+        {
+          state = recover;
+          recoverTimeStamp = theFrameInfo.time;
+          setCurrentMotion(GetUpMotion::recoverFromSideAfterJump);
+        }
+        else if(theFrameInfo.getTimeSince(recoverTimeStamp) > 3000)
+        {
+          state = recover;
+          recoverTimeStamp = theFrameInfo.time;
+          setCurrentMotion(GetUpMotion::recoverFromSide);
+        }
+        // sometimes after a recover motion the robot doesn't recognize that he turned to his back or front
+        else if(bodyAngleY < 0)
+        {
+          state = working;
+          setCurrentMotion(theDamageConfigurationBody.getUpBack[output.tryCounter]);
+        }
+        else
+        {
+          state = working;
+          setCurrentMotion(theDamageConfigurationBody.getUpFront[output.tryCounter]);
+        }
+        setBaseLimbStiffness();
+      }
       //not fallen at all?
-      else if(abs(bodyAngleY) < 35_deg && abs(bodyAngleX) < 50_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
+      else if(std::abs(bodyAngleY) < 35_deg && std::abs(bodyAngleX) < 50_deg && theFrameInfo.getTimeSince(lastNotActiveTimeStamp) > 500) //near upright
       {
         //init stand
         state = pickUp;
@@ -187,17 +333,31 @@ void GetUpEngine::pickMotion(GetUpEngineOutput& output)
     }
     case breakUp:
     {
-      if((theFrameInfo.getTimeSince(breakUpTimeStamp) < 500 && output.tryCounter == 1) || theFrameInfo.getTimeSince(breakUpTimeStamp) < 1000)
+      if(bodyAngleY > 0 && (theJointAngles.angles[Joints::lElbowRoll] < -40_deg || theJointAngles.angles[Joints::rElbowRoll] > 40_deg))
+      {
+        state = recover;
+        recoverTimeStamp = theFrameInfo.time;
+        setCurrentMotion(GetUpMotion::recoverBadArms);
+        setBaseLimbStiffness();
+        lastMotionInfo.motion = MotionRequest::getUp;
+      }
+
+      else if((theFrameInfo.getTimeSince(breakUpTimeStamp) < 500 && output.tryCounter == 1) || theFrameInfo.getTimeSince(breakUpTimeStamp) < 1000)
       {
         // do nothing in order to wait if there is a distress (other robots etc.)
-        state = breakUp;
         setCurrentMotion(GetUpMotions::numOfGetUpMotions);
       }
       else
       {
         //init recover motion
         state = recover;
-        if(output.tryCounter <= 1)
+        if(std::abs(bodyAngleY) < 55_deg && std::abs(bodyAngleX) < 35_deg) //TODO check if it is possible to interpolate to sitDown position
+        {
+          setCurrentMotion(GetUpMotion::recoverAfterBadBreakUp);
+          state = working;
+          output.tryCounter -= 1;
+        }
+        else if(output.tryCounter <= 1)
           setCurrentMotion(GetUpMotion::recoverFast);
         else
           setCurrentMotion(GetUpMotion::recoverAndWait);
@@ -207,7 +367,7 @@ void GetUpEngine::pickMotion(GetUpEngineOutput& output)
     }
     case schwalbe:
     {
-      if(abs(theInertialData.angle.y()) > 35_deg) //not near upright
+      if(std::abs(theInertialData.angle.y()) > 35_deg) //not near upright
       {
         //do nothing then
         state = schwalbe;
@@ -244,49 +404,147 @@ void GetUpEngine::initVariables()
   startJoints = theJointAngles; //save the current joint angles
   internalOdometryOffset = Pose2f();
   balance = false;
+  balanceArm = false;
+  balanceArmAndLeg = false;
+  isInOptionalLine = false;
   //reset all last balancing angles
   lastUnbalanced.angles = theJointAngles.angles;
+  upperArmBorder = 10.f;
+  upperLegBorder = 2.f;
+  lowerArmBorder = -10.f;
+  lowerLegBorder = -2.f;
+  gLastY = 0.f;
+  gBufferY = 0.f;
+  gLastX = 0.f;
+  gBufferX = 0.f;
 }
 
 void GetUpEngine::setNextJoints(GetUpEngineOutput& output)
 {
   //do stuff only if we are not at the end of the movement
-  if(lineCounter < maxCounter && motionID > -1)
+  if(lineCounter < maxCounter)
   {
-    const float& time = p.mofs[motionID].lines[lineCounter].duration;
+    const float& time = mofs[motionID].lines[lineCounter].duration;
     ASSERT(time > 0);
-    ratio = (float)theFrameInfo.getTimeSince(lineStartTimeStamp) / time;
+    ratio = static_cast<float>(theFrameInfo.getTimeSince(lineStartTimeStamp) / time);
+
+    if(ratio > 1.f && checkConditions(mofs[motionID].lines[lineCounter].waitConditions, mofs[motionID].lines[lineCounter].waitConditionAnds))
+      ratio = static_cast<float>(theFrameInfo.getTimeSince(lineStartTimeStamp) / (time + mofs[motionID].lines[lineCounter].waitDuration));
     //check if we are done yet with the current line
     if(ratio > 1.f)
     {
+      //Calculate the difference of the goal angles and the reached angles
+      for(int i = 0; i < 6; ++i)
+      {
+        float leftArmLast = mofs[motionID].lines[lineCounter].leftArm[i];
+        float rightArmLast = mofs[motionID].lines[lineCounter].rightArm[i];
+        float leftLegLast = mofs[motionID].lines[lineCounter].leftLeg[i];
+        float rightLegLast = mofs[motionID].lines[lineCounter].rightLeg[i];
+
+        float leftArmDif = leftArmLast - theJointAngles.angles[Joints::lShoulderPitch + i].toDegrees();
+        float rightArmDif = rightArmLast - theJointAngles.angles[Joints::rShoulderPitch + i].toDegrees();
+        float leftLegDif = leftLegLast - theJointAngles.angles[Joints::lHipYawPitch + i].toDegrees();
+        float rightLegDif = rightLegLast - theJointAngles.angles[Joints::rHipYawPitch + i].toDegrees();
+
+        lArmDif[i] = leftArmDif;
+        rArmDif[i] = rightArmDif;
+        lLegDif[i] = leftLegDif;
+        rLegDif[i] = rightLegDif;
+
+        if(i == 5)
+        {
+          lArmDif[i] = 0.f;
+          rArmDif[i] = 0.f;
+        }
+      }
+
       lineStartTimeStamp = theFrameInfo.time;
       startJoints = lastUnbalanced;
       ratio = 0.f;
       //update stiffness
-      if(++lineCounter < maxCounter)
-        for(unsigned i = 0; i < p.mofs[motionID].lines[lineCounter].singleMotorStiffnessChange.size(); ++i)
-          targetJoints.stiffnessData.stiffnesses[p.mofs[motionID].lines[lineCounter].singleMotorStiffnessChange[i].joint] = p.mofs[motionID].lines[lineCounter].singleMotorStiffnessChange[i].s;
+      ++lineCounter;
+
+      //skip motionLines if there is a condition which is not met.
+      skipForOptionalLine();
+
+      output.optionalLine = isInOptionalLine;
+      if(lineCounter < maxCounter)
+      {
+        for(unsigned i = 0; i < mofs[motionID].lines[lineCounter].singleMotorStiffnessChange.size(); ++i)
+          targetJoints.stiffnessData.stiffnesses[mofs[motionID].lines[lineCounter].singleMotorStiffnessChange[i].joint] = mofs[motionID].lines[lineCounter].singleMotorStiffnessChange[i].s;
+      }
     }
     //are we still not at the end?
     if(lineCounter < maxCounter)
     {
-      if(!balance && lineCounter >= p.mofs[motionID].balanceStartLine && p.mofs[motionID].balanceStartLine > -1)
+      //Check if a balancer needs to be activated
+      if(!balanceArm && lineCounter >= mofs[motionID].balanceArmStartLine && mofs[motionID].balanceArmStartLine > -1 && !balance)
       {
-        theBalancer.init(mirror, p.balancingParams);
+        theBalancer.init(mirror, balancingParamsForArms);
+        balanceArm = true;
+      }
+      if(!balanceArmAndLeg && lineCounter >= mofs[motionID].balanceArmAndLegStartLine && mofs[motionID].balanceArmAndLegStartLine > -1 && !balance)
+      {
+        theBalancer.init(mirror, balancingParamsForArms);
+        balanceArmAndLeg = true;
+      }
+      if(!balance && lineCounter >= mofs[motionID].balanceStartLine && mofs[motionID].balanceStartLine > -1)
+      {
+        theBalancer.init(mirror, balancingParams);
         balance = true;
       }
       //set head joints
       for(int i = 0; i < 2; ++i)
-        targetJoints.angles[i] = Angle::fromDegrees(p.mofs[motionID].lines[lineCounter].head[i]);
-      //set arm joints
+        targetJoints.angles[i] = convertToAngleSpecialCases(mofs[motionID].lines[lineCounter].head[i]);
+      //set arm and leg joints
+      //the calculated difference values are added on top
       for(int i = 0; i < 6; ++i)
       {
-        targetJoints.angles[Joints::lShoulderPitch + i] = Angle::fromDegrees(p.mofs[motionID].lines[lineCounter].leftArm[i]);
-        targetJoints.angles[Joints::rShoulderPitch + i] = Angle::fromDegrees(p.mofs[motionID].lines[lineCounter].rightArm[i]);
-        targetJoints.angles[Joints::lHipYawPitch + i] = Angle::fromDegrees(p.mofs[motionID].lines[lineCounter].leftLeg[i]);
-        targetJoints.angles[Joints::rHipYawPitch + i] = Angle::fromDegrees(p.mofs[motionID].lines[lineCounter].rightLeg[i]);
-      }
+        //these values are needed for the correctAngleMotion method to determin, if we should add a value on top on the requested joints.
+        float leftArmNext = mofs[motionID].lines[lineCounter].leftArm[i];
+        float rightArmNext = mofs[motionID].lines[lineCounter].rightArm[i];
+        float leftLegNext = mofs[motionID].lines[lineCounter].leftLeg[i];
+        float rightLegNext = mofs[motionID].lines[lineCounter].rightLeg[i];
 
+        int lineCounterDif = lineCounter - 1;
+        if(lineCounterDif < 0 || lineCounterDif == maxCounter)
+        {
+          lineCounterDif = lineCounter;
+        }
+
+        float leftArmLast = mofs[motionID].lines[lineCounterDif].leftArm[i];
+        float rightArmLast = mofs[motionID].lines[lineCounterDif].rightArm[i];
+        float leftLegLast = mofs[motionID].lines[lineCounterDif].leftLeg[i];
+        float rightLegLast = mofs[motionID].lines[lineCounterDif].rightLeg[i];
+
+        float leftArmDif = lArmDif[i];
+        float rightArmDif = rArmDif[i];
+        float leftLegDif = lLegDif[i];
+        float rightLegDif = rLegDif[i];
+
+        //Add the full difference on top if we are at the start of the motionline.
+        //Add a fraction when we are already doing the motionLine.
+        if(ratio <= 1.f)
+        {
+          leftArmDif = leftArmDif * (1.f - ratio);
+          rightArmDif = rightArmDif * (1.f - ratio);
+          leftLegDif = leftLegDif * (1.f - ratio);
+          rightLegDif = rightLegDif * (1.f - ratio);
+        }
+        else
+        {
+          leftArmDif = 0.f;
+          rightArmDif = 0.f;
+          leftLegDif = 0.f;
+          rightLegDif = 0.f;
+        }
+
+        //correct the joint values based on the last reached joint values and then convert them into Angles.
+        targetJoints.angles[Joints::lShoulderPitch + i] = convertToAngleSpecialCases(correctAngleMotion(leftArmNext, leftArmLast, leftArmDif, true));
+        targetJoints.angles[Joints::rShoulderPitch + i] = convertToAngleSpecialCases(correctAngleMotion(rightArmNext, rightArmLast, rightArmDif, true));
+        targetJoints.angles[Joints::lHipYawPitch + i] = convertToAngleSpecialCases(correctAngleMotion(leftLegNext, leftLegLast, leftLegDif, false));
+        targetJoints.angles[Joints::rHipYawPitch + i] = convertToAngleSpecialCases(correctAngleMotion(rightLegNext, rightLegLast, rightLegDif, false));
+      }
       //mirror joints if necessary
       if(mirror)
       {
@@ -294,15 +552,87 @@ void GetUpEngine::setNextJoints(GetUpEngineOutput& output)
         mirroredJoints.mirror(targetJoints);
         targetJoints = mirroredJoints;
       }
+      bool criticalIsFalse = false;
+      if(!mofs[motionID].lines[lineCounter].critical)
+      {
+        criticalIsFalse = true;
+      }
 
-      if(p.mofs[motionID].lines[lineCounter].critical)
-        verifyUprightTorso(output);
+      //check if are in a critical line
+      if(criticalIsFalse || (mofs[motionID].lines[lineCounter].critical && verifyUprightTorso(output)))
+      {
+        //Interpolate the requested joint values
+        MotionUtilities::interpolate(startJoints, targetJoints, ratio, output, theJointAngles);
+        lastUnbalanced = output;
+
+        //check if the balancers are active
+        if(balanceArm && !balance)
+        {
+          JointRequest preBalance = output;
+          theBalancer.balanceJointRequest(output, balancingParams);
+          for(int i = 0; i < 6; ++i)
+          {
+            output.angles[Joints::lHipYawPitch + i] = preBalance.angles[Joints::lHipYawPitch + i];
+            output.angles[Joints::rHipYawPitch + i] = preBalance.angles[Joints::rHipYawPitch + i];
+          }
+        }
+        else if(balanceArmAndLeg && !balance)
+        {
+          JointRequest preBalance = output;
+          theBalancer.balanceJointRequest(output, balancingParams);
+          if(std::abs(theInertialData.angle.y()) > 35_deg)
+          {
+            for(int i = 0; i < 6; ++i)
+            {
+              output.angles[Joints::lHipYawPitch + i] = preBalance.angles[Joints::lHipYawPitch + i];
+              output.angles[Joints::rHipYawPitch + i] = preBalance.angles[Joints::rHipYawPitch + i];
+            }
+          }
+        }
+        else if(balance)
+          theBalancer.balanceJointRequest(output, balancingParams);
+
+        float balanceFloat = addBalanceY(output);
+        output.theBalanceFloatY = balanceFloat;
+
+        balanceFloat = addBalanceX(output);
+        output.theBalanceFloatX = balanceFloat;
+
+        //The balancer is not allowed to move the arms to much up.
+        if(output.angles[Joints::lShoulderRoll] > 20_deg)
+        {
+          output.angles[Joints::lShoulderRoll] = lastUnbalanced.angles[Joints::lShoulderRoll];
+        }
+        if(output.angles[Joints::rShoulderRoll] < -20_deg)
+        {
+          output.angles[Joints::rShoulderRoll] = lastUnbalanced.angles[Joints::rShoulderRoll];
+        }
+      }
+
+      //we are in a critical Line and the torso is too tilted. Set the arm joints so we dont fall on our arms.
+      else
+      {
+        output.angles[Joints::lShoulderPitch] = 20_deg;
+        output.angles[Joints::lShoulderRoll] = 30_deg;
+        output.angles[Joints::lElbowYaw] = -116_deg;
+        output.angles[Joints::lElbowRoll] = -60;
+
+        output.angles[Joints::rShoulderPitch] = 20_deg;
+        output.angles[Joints::rShoulderRoll] = -30_deg;
+        output.angles[Joints::rElbowYaw] = 116_deg;
+        output.angles[Joints::rElbowRoll] = 60;
+
+        if(theInertialData.angle.y() > 0_deg)
+        {
+          output.angles[Joints::headPitch] = -35_deg;
+        }
+        else
+        {
+          output.angles[Joints::headPitch] = 35_deg;
+        }
+      }
     }
   }
-  interpolate(startJoints, targetJoints, ratio, output);
-  lastUnbalanced = output;
-  if(balance)
-    theBalancer.balanceJointRequest(output, p.balancingParams);
 }
 
 void GetUpEngine::setStiffnessAllJoints(GetUpEngineOutput& output, int stiffness)
@@ -317,55 +647,45 @@ void GetUpEngine::setStiffnessAllJoints(GetUpEngineOutput& output, int stiffness
 
 void GetUpEngine::setBaseLimbStiffness()
 {
-  if(motionID > -1)
+  for(int i = 0; i < 2; ++i)
+    targetJoints.stiffnessData.stiffnesses[i] = mofs[motionID].baseLimbStiffness[0];
+  //set arm joints
+  for(int i = 0; i < 6; ++i)
   {
-    for(int i = 0; i < 2; ++i)
-      targetJoints.stiffnessData.stiffnesses[i] = p.mofs[motionID].baseLimbStiffness[0];
-    //set arm joints
-    for(int i = 0; i < 6; ++i)
-    {
-      targetJoints.stiffnessData.stiffnesses[Joints::lShoulderPitch + i] = p.mofs[motionID].baseLimbStiffness[1];
-      targetJoints.stiffnessData.stiffnesses[Joints::rShoulderPitch + i] = p.mofs[motionID].baseLimbStiffness[2];
-      targetJoints.stiffnessData.stiffnesses[Joints::lHipYawPitch + i] = p.mofs[motionID].baseLimbStiffness[3];
-      targetJoints.stiffnessData.stiffnesses[Joints::rHipYawPitch + i] = p.mofs[motionID].baseLimbStiffness[4];
-    }
+    targetJoints.stiffnessData.stiffnesses[Joints::lShoulderPitch + i] = mofs[motionID].baseLimbStiffness[1];
+    targetJoints.stiffnessData.stiffnesses[Joints::rShoulderPitch + i] = mofs[motionID].baseLimbStiffness[2];
+    targetJoints.stiffnessData.stiffnesses[Joints::lHipYawPitch + i] = mofs[motionID].baseLimbStiffness[3];
+    targetJoints.stiffnessData.stiffnesses[Joints::rHipYawPitch + i] = mofs[motionID].baseLimbStiffness[4];
   }
 }
 
 void GetUpEngine::setCurrentMotion(GetUpMotion current)
 {
-  motionID = -1;
-  for(int i = 0; i < GetUpMotions::numOfGetUpMotions; ++i)
-    if(p.mofs[i].name == current)
-    {
-      motionID = i;
-      break;
-    }
-  if(motionID < 0)
-  {
-    maxCounter = -1;
-    internalOdometryOffset = Pose2f();
-    return;
-  }
-  maxCounter = static_cast<int>(p.mofs[motionID].lines.size());
-  internalOdometryOffset = p.mofs[motionID].odometryOffset;
+  motionID = current;
+  maxCounter = static_cast<int>(mofs[motionID].lines.size());
+  internalOdometryOffset = mofs[motionID].odometryOffset;
 }
 
 bool GetUpEngine::verifyUprightTorso(GetUpEngineOutput& output)
 {
   //if the body is not almost upright recover or cry for help
-  if(abs(theInertialData.angle.y()) > 35_deg)
+  if(std::abs(theInertialData.angle.y()) > 35_deg)
   {
-    setStiffnessAllJoints(output, 0);
+    setStiffnessAllJoints(output, 10);
     if(SystemCall::getMode() != SystemCall::simulatedRobot)
       output.tryCounter++;
 
     if(theDamageConfigurationBody.brokenStandUp == DamageConfigurationBody::allFine)
       mirror = !mirror; //try it mirrored then
 
+    if(theInertialData.angle.y() < 0)
+      output.failBack = true;
+    else
+      output.failFront = true;
+
     state = breakUp;
     breakUpTimeStamp = theFrameInfo.time;
-
+    output.criticalTriggered = true;
     return false;
   }
 
@@ -374,114 +694,145 @@ bool GetUpEngine::verifyUprightTorso(GetUpEngineOutput& output)
 
 void GetUpEngine::generateMofOfMotion(GetUpMotion motionName)
 {
-  int motion = -1;
-  for(int i = 0; i < GetUpMotions::numOfGetUpMotions; ++i)
-    if(p.mofs[i].name == motionName)
-    {
-      motion = i;
-      break;
-    }
-  if(motion < 0)
-    return;
-
   char name[512];
   sprintf(name, "%s/Config/mof/getUpEngineDummy.mof", File::getBHDir());
-  FILE* f = fopen(name, "w"); //for simplicity discard the whole content
-  if(!f)
-    OUTPUT_ERROR("GetUpEngineDummy.mof was not found");
-  else
+  OutTextRawFile f(name, false);
+  f << "\" IF YOU HAVE CHANGED THIS FILE DO NOT COMMIT IT!" << endl;
+  f << "motion_id = getUpEngineDummy" << endl;
+  f << "label start" << endl;
+
+  // keep trac of stiffness changes, init with base stiffness
+  int internalStiffness[Joints::numOfJoints];
+
+  for(int i = 0; i < 2; ++i)
+    internalStiffness[i] = mofs[motionName].baseLimbStiffness[0];
+  //set arm joints
+  for(int i = 0; i < 6; ++i)
   {
-    fputs("\" IF YOU HAVE CHANGED THIS FILE DO NOT COMMIT IT!\n", f);
-    fputs("motion_id = getUpEngineDummy\n", f);
-    fputs("label start\n", f);
-
-    // keep trac of stiffness changes, init with base stiffness
-    int internalStiffness[Joints::numOfJoints];
-
-    auto putStiffness = [&](FILE * f)
-    {
-      char stiffness[250] = "\nstiffness";
-      for(int i = 0; i < Joints::numOfJoints; ++i)
-      {
-        strcat(stiffness, " ");
-        strcat(stiffness, std::to_string(internalStiffness[i]).c_str());
-      }
-      strcat(stiffness, " 0\n\n");
-      fputs(stiffness, f);
-    };
-
-    for(int i = 0; i < 2; ++i)
-      internalStiffness[i] = p.mofs[motion].baseLimbStiffness[0];
-    //set arm joints
-    for(int i = 0; i < 6; ++i)
-    {
-      internalStiffness[Joints::lShoulderPitch + i] = p.mofs[motion].baseLimbStiffness[1];
-      internalStiffness[Joints::rShoulderPitch + i] = p.mofs[motion].baseLimbStiffness[2];
-      internalStiffness[Joints::lHipYawPitch + i] = p.mofs[motion].baseLimbStiffness[3];
-      internalStiffness[Joints::rHipYawPitch + i] = p.mofs[motion].baseLimbStiffness[4];
-    }
-
-    putStiffness(f);
-
-    //add lines now
-    int lastLine = (int) p.mofs[motion].lines.size() - 1;
-    for(int i = 0; i < (int) p.mofs[motion].lines.size(); i++)
-    {
-      if(!p.mofs[motion].lines[i].singleMotorStiffnessChange.empty())
-      {
-        for(unsigned j = 0; j < p.mofs[motion].lines[i].singleMotorStiffnessChange.size(); ++j)
-          internalStiffness[p.mofs[motion].lines[i].singleMotorStiffnessChange[j].joint] = p.mofs[motion].lines[i].singleMotorStiffnessChange[j].s;
-
-        putStiffness(f);
-      }
-
-      if(p.mofs[motion].lines[i].critical)
-        fputs("\n\"@critical (upright check at start of interpolation to next line)\n\n", f);
-
-      if(i == p.mofs[motion].balanceStartLine - 1) //add it before the start line
-        fputs("\n\"@balanceStartLine (turn on balance at start of interpolation to next line)\n\n", f);
-
-      //add label repeat before last line
-      if(i == lastLine)
-        fputs("label repeat\n", f);
-
-      char line[250];
-      sprintf(line, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f 1 %d\n",
-              p.mofs[motion].lines[i].head[0], p.mofs[motion].lines[i].head[1],
-              p.mofs[motion].lines[i].leftArm[0], p.mofs[motion].lines[i].leftArm[1], p.mofs[motion].lines[i].leftArm[2],
-              p.mofs[motion].lines[i].leftArm[3], p.mofs[motion].lines[i].leftArm[4], p.mofs[motion].lines[i].leftArm[5],
-              p.mofs[motion].lines[i].rightArm[0], p.mofs[motion].lines[i].rightArm[1], p.mofs[motion].lines[i].rightArm[2],
-              p.mofs[motion].lines[i].rightArm[3], p.mofs[motion].lines[i].rightArm[4], p.mofs[motion].lines[i].rightArm[5],
-              p.mofs[motion].lines[i].leftLeg[0], p.mofs[motion].lines[i].leftLeg[1], p.mofs[motion].lines[i].leftLeg[2],
-              p.mofs[motion].lines[i].leftLeg[3], p.mofs[motion].lines[i].leftLeg[4], p.mofs[motion].lines[i].leftLeg[5],
-              p.mofs[motion].lines[i].rightLeg[0], p.mofs[motion].lines[i].rightLeg[1], p.mofs[motion].lines[i].rightLeg[2],
-              p.mofs[motion].lines[i].rightLeg[3], p.mofs[motion].lines[i].rightLeg[4], p.mofs[motion].lines[i].rightLeg[5],
-              (int) p.mofs[motion].lines[i].duration);
-      fputs(line, f);
-    }
-    //add odometry offset as comment
-    char odometry[100];
-    sprintf(odometry, "\n\"@odometryOffset %.2f %.2f %.2f\n", p.mofs[motion].odometryOffset.translation.x(), p.mofs[motion].odometryOffset.translation.y(), p.mofs[motion].odometryOffset.rotation.toDegrees());
-    fputs(odometry, f);
-    //add footer
-    fputs("\ntransition getUpEngineDummy getUpEngineDummy repeat\n", f);
-    fputs("transition allMotions extern start\n", f);
-    fclose(f);
+    internalStiffness[Joints::lShoulderPitch + i] = mofs[motionName].baseLimbStiffness[1];
+    internalStiffness[Joints::rShoulderPitch + i] = mofs[motionName].baseLimbStiffness[2];
+    internalStiffness[Joints::lHipYawPitch + i] = mofs[motionName].baseLimbStiffness[3];
+    internalStiffness[Joints::rHipYawPitch + i] = mofs[motionName].baseLimbStiffness[4];
   }
+
+  auto putStiffness = [&](OutTextRawFile& f)
+  {
+    f << endl << "stiffness";
+    for(int i = 0; i < Joints::numOfJoints; ++i)
+      f << " " << internalStiffness[i];
+    f << " 0" << endl << endl;
+  };
+
+  putStiffness(f);
+
+  auto putAngle = [&](OutTextRawFile& f, float angle)
+  {
+    if(angle == JointAngles::off)
+      f << "- ";
+    else if(angle == JointAngles::ignore)
+      f << "* ";
+    else
+    {
+      char formatted[10];
+      sprintf(formatted, "%.2f ", angle);
+      f << formatted;
+    }
+  };
+
+  //add lines now
+  int lastLine = (int) mofs[motionName].lines.size() - 1;
+  bool isOptionalLine = false;
+  for(int i = 0; i < (int) mofs[motionName].lines.size(); i++)
+  {
+    if(!mofs[motionName].lines[i].singleMotorStiffnessChange.empty())
+    {
+      for(unsigned j = 0; j < mofs[motionName].lines[i].singleMotorStiffnessChange.size(); ++j)
+        internalStiffness[mofs[motionName].lines[i].singleMotorStiffnessChange[j].joint] = mofs[motionName].lines[i].singleMotorStiffnessChange[j].s;
+
+      putStiffness(f);
+    }
+
+    if(isOptionalLine)
+    {
+      if(!mofs[motionName].lines[i].isPartOfPreviousOptionalLine)
+      {
+        isOptionalLine = false;
+        f << endl << "\"@endOptionalLine" << endl << endl;
+      }
+    }
+    if(mofs[motionName].lines[i].conditions.size() > 0)  // convert optionalLine and add it before the start line
+    {
+      isOptionalLine = true;
+      f << endl << "\"@optionalLine ";
+
+      f << (mofs[motionName].lines[i].isElseBlock ? "ElseBlock " : "IfBlock ");
+
+      f << (mofs[motionName].lines[i].optionalLineAnds ? "And " : "Or ");
+
+      for(int indexCondition = 0; indexCondition < (int)mofs[motionName].lines[i].conditions.size(); ++indexCondition)
+      {
+        if(mofs[motionName].lines[i].conditions[indexCondition].isNot)
+        {
+          f << "Not ";
+        }
+        else
+        {
+          f << "Is ";
+        }
+
+        f << TypeRegistry::getEnumName(mofs[motionName].lines[i].conditions[indexCondition].variable) << " ";
+
+        f << mofs[motionName].lines[i].conditions[indexCondition].lowerFloat << " ";
+        f << mofs[motionName].lines[i].conditions[indexCondition].higherFloat << " ";
+      }
+
+      f << "End " << endl << endl;
+    }
+    if(mofs[motionName].lines[i].critical)
+      f << endl << "\"@critical (upright check at start of interpolation to next line)" << endl << endl;
+    if(mofs[motionName].lines[i].balanceWithHipAndAnkleY)
+    {
+      f << endl << "\"@balanceWithHipAndAnkleY (balance with ankle and hip)" << endl << endl;
+      if(mofs[motionName].lines[i].increaseBalanceY)
+        f << endl << "\"@increaseBalanceY (increase balanceWithHipAndAnkleY)" << endl << endl;
+    }
+    if(mofs[motionName].lines[i].balanceWithHipAndAnkleX)
+      f << endl << "\"@balanceWithHipAndAnkleX (balance with ankle and hip)" << endl << endl;
+    if(mofs[motionName].lines[i].increaseBalanceX)
+      f << endl << "\"@increaseBalanceX (increase balanceWithHipAndAnkleX)" << endl << endl;
+    if(i == mofs[motionName].balanceStartLine - 1) //add it before the start line
+      f << endl << "\"@balanceStartLine (turn on balance at start of interpolation to next line)" << endl << endl;
+    if(i == mofs[motionName].balanceArmStartLine - 1) //add it before the start line
+      f << endl << "\"@balanceArmStartLine (turn on balance for only Arms at start of interpolation to next line)" << endl << endl;
+    if(i == mofs[motionName].balanceArmAndLegStartLine - 1) //add it before the start line
+      f << endl << "\"@balanceArmAndLegStartLine (turn on balance for Legs if Torso < 35_deg and for Arms at start of interpolation to next line)" << endl << endl;
+    //add label repeat before last line
+    if(i == lastLine)
+      f << "label repeat" << endl;
+
+    for(float headAngle : mofs[motionName].lines[i].head)
+      putAngle(f, headAngle);
+    for(float leftArmAngle : mofs[motionName].lines[i].leftArm)
+      putAngle(f, leftArmAngle);
+    for(float rightArmAngle : mofs[motionName].lines[i].rightArm)
+      putAngle(f, rightArmAngle);
+    for(float leftLegAngle : mofs[motionName].lines[i].leftLeg)
+      putAngle(f, leftLegAngle);
+    for(float rightLegAngle : mofs[motionName].lines[i].rightLeg)
+      putAngle(f, rightLegAngle);
+    f << 1 << " " << mofs[motionName].lines[i].duration << endl;
+  }
+  //add odometry offset as comment
+  char odometry[100];
+  sprintf(odometry, "\n\"@odometryOffset %.2f %.2f %.2f\n", mofs[motionName].odometryOffset.translation.x(), mofs[motionName].odometryOffset.translation.y(), mofs[motionName].odometryOffset.rotation.toDegrees());
+  f << odometry << endl
+    << "\"@continueTo " << TypeRegistry::getEnumName(mofs[motionName].continueTo) << endl << endl
+    << "transition getUpEngineDummy getUpEngineDummy repeat" << endl
+    << "transition allMotions extern start" << endl;
 }
 
 void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
 {
-  int motion = -1;
-  for(int i = 0; i < GetUpMotions::numOfGetUpMotions; ++i)
-    if(p.mofs[i].name == motionName)
-    {
-      motion = i;
-      break;
-    }
-  if(motion < 0)
-    return;
-
   char name[512];
   sprintf(name, "%s/Config/mof/getUpEngineDummy.mof", File::getBHDir());
   FILE* f = fopen(name, "r");
@@ -492,17 +843,34 @@ void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
     bool foundBaseStiffness(false);
 
     Mof newMotion;
-    newMotion.name = static_cast<GetUpMotion>(motionName);
     newMotion.balanceStartLine = -1;
-
+    newMotion.balanceArmStartLine = -1;
+    newMotion.balanceArmAndLegStartLine = -1;
+    newMotion.continueTo = motionName;
     int headStart(0),
         lArmStart(headStart + 2),
         rArmStart(lArmStart + 6),
         lLegStart(rArmStart + 6),
         rLegStart(lLegStart + 6);
 
+    bool partOfPreviousOptionalLine = false;
+    bool partOfPreviousOptionalLineHelp = false;//This line is true AFTER the line that started a
+    //optionalLine and if it is part of the optionalLine Block
+    bool optionalLineAndsVar = false;
+    bool isElse = false;
+    std::vector<Condition> condVec;
+
+    float maxWaitingDuration = 0.f;
+    bool dynamicWaitAnds = false;
+    std::vector<Condition> waitConditions;
+
     std::vector<StiffnessPair> singleMotorStiffnessChange;
     bool nextLineCritical(false);
+
+    bool isBalanceWithHipAndAnkleY = false;
+    bool isBalanceWithHipAndAnkleX = false;
+    bool isIncreaseBalanceY = false;
+    bool isIncreaseBalanceX = false;
 
     auto getBaseLimb = [&](int k)
     {
@@ -512,6 +880,23 @@ void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
     auto getJoint = [&](int k, MofLine& motion_line)
     {
       return (k < lArmStart) ? &motion_line.head[k] : ((k < rArmStart) ? &motion_line.leftArm[k - lArmStart] : ((k < lLegStart) ? &motion_line.rightArm[k - rArmStart] : ((k < rLegStart) ? &motion_line.leftLeg[k - lLegStart] : &motion_line.rightLeg[k - rLegStart])));
+    };
+
+    auto parseConditions = [&](char sval[Joints::numOfJoints + 3][256], vector<Condition>& target)
+    {
+      for(int iddd = 3; iddd <= 25; iddd += 4)
+      {
+        if(!strcmp(sval[iddd], "End"))
+          break;
+
+        Condition con;
+        con.isNot = !strcmp(sval[iddd], "Not");
+        con.variable = static_cast<ConditionVar>(TypeRegistry::getEnumValue(typeid(ConditionVar).name(), sval[iddd + 1]));
+        con.lowerFloat = static_cast<float>(atof(sval[iddd + 2]));
+        con.higherFloat = static_cast<float>(atof(sval[iddd + 3]));
+
+        target.push_back(con);
+      }
     };
 
     char s[128000];
@@ -537,13 +922,61 @@ void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
 
           if(!strcmp(sval[0], "\"@critical"))  //annotation of critical line as comment (since specialAction does not support it)
             nextLineCritical = true;
+          if(!strcmp(sval[0], "\"@balanceWithHipAndAnkleY"))  //annotation of critical line as comment (since specialAction does not support it)
+          {
+            isBalanceWithHipAndAnkleY = true;
+          }
+          if(!strcmp(sval[0], "\"@balanceWithHipAndAnkleX"))  //annotation of critical line as comment (since specialAction does not support it)
+          {
+            isBalanceWithHipAndAnkleX = true;
+          }
+          if(!strcmp(sval[0], "\"@increaseBalanceY"))  //annotation of critical line as comment (since specialAction does not support it)
+          {
+            isIncreaseBalanceY = true;
+          }
+          if(!strcmp(sval[0], "\"@increaseBalanceX"))  //annotation of critical line as comment (since specialAction does not support it)
+          {
+            isIncreaseBalanceX = true;
+          }
           else if(!strcmp(sval[0], "\"@balanceStartLine"))  //annotation of balanceStartLine in comment
             newMotion.balanceStartLine = (int)newMotion.lines.size() + 1; //start with next line
-          else if(!strcmp(sval[0], "\"@odometryOffset"))
+          else if(!strcmp(sval[0], "\"@balanceArmStartLine"))  //annotation of balanceArmStartLine in comment
+            newMotion.balanceArmStartLine = (int)newMotion.lines.size() + 1; //start with next line
+          else if(!strcmp(sval[0], "\"@balanceArmAndLegStartLine"))  //annotation of balanceArmAndLegStartLine in comment
+            newMotion.balanceArmAndLegStartLine = (int)newMotion.lines.size() + 1; //start with next line
+          else if(!strcmp(sval[0], "\"@odometryOffset")) //annotation of critical line as comment
           {
             newMotion.odometryOffset.translation.x() = (float)atof(sval[1]);
             newMotion.odometryOffset.translation.y() = (float)atof(sval[2]);
             newMotion.odometryOffset.rotation = Angle::fromDegrees((float) atof(sval[3]));
+          }
+          else if(!strcmp(sval[0], "\"@continueTo")) //annotation of critical line as comment
+          {
+            newMotion.continueTo = static_cast<GetUpMotions::GetUpMotion>(TypeRegistry::getEnumValue(typeid(GetUpMotions::GetUpMotion).name(), string(sval[1])));
+          }
+          if(!strcmp(sval[0], "\"@endOptionalLine"))  //annotation of critical line as comment (since specialAction does not support it)
+          {
+            partOfPreviousOptionalLine = false;
+            isElse = false;
+            optionalLineAndsVar = false;
+            condVec.clear();
+          }
+          else if(!strcmp(sval[0], "\"@optionalLine") && c > 0) //annotation of balanceArmAndLegStartLine in comment
+          {
+            partOfPreviousOptionalLine = false;
+            partOfPreviousOptionalLineHelp = true;
+
+            isElse = !strcmp(sval[1], "ElseBlock");
+            optionalLineAndsVar = !strcmp(sval[2], "And");
+
+            parseConditions(sval, condVec);
+          }
+          else if(!strcmp(sval[0], "\"@dynamicWait") && c > 0) //annotation of critical line as comment
+          {
+            waitConditions.clear();
+            maxWaitingDuration = static_cast<float>(atof(sval[1]));
+            dynamicWaitAnds = !strcmp(sval[2], "And");
+            parseConditions(sval, waitConditions);
           }
           else if(c == -1 || sval[0][0] == '"' || !strncmp(sval[0], "//", 2) || !strcmp(sval[0], "motion_id") || !strcmp(sval[0], "transition")
                   || !strcmp(sval[0], "label"))
@@ -613,10 +1046,45 @@ void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
             nextLineCritical = false;
             motion_line.singleMotorStiffnessChange = singleMotorStiffnessChange;
             singleMotorStiffnessChange.clear();
+            motion_line.conditions = condVec;
+            motion_line.optionalLineAnds = optionalLineAndsVar;
+            motion_line.isPartOfPreviousOptionalLine = partOfPreviousOptionalLine;
+            motion_line.isElseBlock = isElse;
+            motion_line.balanceWithHipAndAnkleY = isBalanceWithHipAndAnkleY;
+            motion_line.balanceWithHipAndAnkleX = isBalanceWithHipAndAnkleX;
+            motion_line.waitDuration = maxWaitingDuration;
+            motion_line.waitConditionAnds = dynamicWaitAnds;
+            motion_line.waitConditions = waitConditions;
+            if(!partOfPreviousOptionalLine && partOfPreviousOptionalLineHelp)
+            {
+              partOfPreviousOptionalLine = true;
+              partOfPreviousOptionalLineHelp = false;
+            }
+            motion_line.increaseBalanceY = isIncreaseBalanceY;
+            motion_line.increaseBalanceX = isIncreaseBalanceX;
+
+            isBalanceWithHipAndAnkleY = false;
+            isBalanceWithHipAndAnkleX = false;
+            isIncreaseBalanceY = false;
+            isIncreaseBalanceX = false;
+            isElse = false;
+            optionalLineAndsVar = false;
+            condVec.clear();
+            maxWaitingDuration = 0.f;
+            dynamicWaitAnds = false;
+            waitConditions.clear();
 
             for(int j = 0; j < Joints::numOfJoints; ++j)
             {
-              if(strcmp(sval[j], "*") && strcmp(sval[j], "-") && sscanf(sval[j], "%i", &val) == 1 && val >= -210 && val <= 210)
+              if(!strcmp(sval[j], "-"))
+              {
+                *getJoint(j, motion_line) = JointAngles::off;
+              }
+              else if(!strcmp(sval[j], "*"))
+              {
+                *getJoint(j, motion_line) = JointAngles::ignore;
+              }
+              else if(sscanf(sval[j], "%i", &val) == 1 && val >= -210 && val <= 210)
               {
                 *getJoint(j, motion_line) = (float)atof(sval[j]);
               }
@@ -673,12 +1141,177 @@ void GetUpEngine::generateMotionOfMof(GetUpMotion motionName)
       OUTPUT_ERROR(buffer);
       return;
     }
-    p.mofs[motion] = newMotion;
-    //and save it all
-    OutMapFile out("getUpEngine.cfg");
-    if(out.exists())
-      out << p;
+    mofs[motionName] = newMotion;
   }
+}
+
+Angle GetUpEngine::convertToAngleSpecialCases(float angle)
+{
+  return angle == JointAngles::off || angle == JointAngles::ignore ? static_cast<Angle>(angle) : Angle::fromDegrees(angle);
+}
+
+//The Treshold of 10 has no deeper meaning.
+//It is just a "feeling" of a threshold. I did not test any other one
+float GetUpEngine::correctAngleMotion(float nextAngle, float lastAngle, float dif, bool isArm)
+{
+  if(((nextAngle >= lastAngle && dif > 0.f) || (nextAngle <= lastAngle && dif < 0.f)) && lastAngle < 130.f && lastAngle > -130.f && nextAngle < 130.f && nextAngle > -130.f)
+  {
+    if(dif >= 0.f)
+    {
+      if(isArm)
+      {
+        return nextAngle + std::min(dif, upperArmBorder);
+      }
+      return nextAngle + std::min(dif, upperLegBorder);
+    }
+    else
+    {
+      if(isArm)
+      {
+        return nextAngle + std::max(dif, lowerArmBorder);
+      }
+      return nextAngle + std::max(dif, lowerLegBorder);
+    }
+  }
+  return nextAngle;
+}
+
+void GetUpEngine::compareMotions(GetUpMotion motionIdBase, GetUpMotion motionIdCompare)
+{
+  Mof& motionBase = mofs[motionIdBase];
+  Mof& motionCompare = mofs[motionIdCompare];
+
+  comparison = GetUpComparison();
+
+  auto angleDiff = [&](float angle1, float angle2)
+  {
+    if(angle1 == JointAngles::ignore || angle1 == JointAngles::off)
+      angle1 = angle2;
+    if(angle2 == JointAngles::ignore || angle2 == JointAngles::off)
+      angle2 = angle1;
+    return angle1 - angle2;
+  };
+
+  auto compareLinesAngles = [&](MofLine& lineBase, MofLine& lineCompare)
+  {
+    float deviation = 0;
+    for(size_t i = 0; i < 2; i++)
+    {
+      deviation += pow(angleDiff(lineBase.head[i], lineCompare.head[i]), 2);
+    }
+    for(size_t i = 0; i < 6; i++)
+    {
+      deviation += pow(angleDiff(lineBase.leftArm[i], lineCompare.leftArm[i]), 2);
+      deviation += pow(angleDiff(lineBase.rightArm[i], lineCompare.rightArm[i]), 2);
+      deviation += pow(angleDiff(lineBase.leftLeg[i], lineCompare.leftLeg[i]), 2);
+      deviation += pow(angleDiff(lineBase.rightLeg[i], lineCompare.rightLeg[i]), 2);
+    }
+    comparison.baseComparisonLines.back().lineComparisons.back().anglesDeviation = sqrt(deviation / 26);
+  };
+
+  auto compareLinesDuration = [&](MofLine& lineBase, MofLine& lineCompare)
+  {
+    comparison.baseComparisonLines.back().lineComparisons.back().durationDifference = lineBase.duration - lineCompare.duration;
+  };
+
+  auto compareLinesCritical = [&](MofLine& lineBase, MofLine& lineCompare)
+  {
+    comparison.baseComparisonLines.back().lineComparisons.back().criticalIdentical = lineBase.critical == lineCompare.critical;
+  };
+
+  auto compareLines = [&](MofLine& lineBase, MofLine& lineCompare)
+  {
+    comparison.baseComparisonLines.back().lineComparisons.push_back(GetUpComparisonLine());
+    compareLinesAngles(lineBase, lineCompare);
+    compareLinesDuration(lineBase, lineCompare);
+    compareLinesCritical(lineBase, lineCompare);
+    if(comparison.baseComparisonLines.back().lineComparisons.back().criticalIdentical && comparison.baseComparisonLines.back().lineComparisons.back().durationDifference == 0.0f && comparison.baseComparisonLines.back().lineComparisons.back().anglesDeviation == 0.0f)
+    {
+      OUTPUT_TEXT((int)(comparison.baseComparisonLines.back().startLineBase + comparison.baseComparisonLines.back().lineComparisons.size()) << " matches " << (int)(comparison.baseComparisonLines.back().startLineCompare + comparison.baseComparisonLines.back().lineComparisons.size()));
+    }
+  };
+
+  for(size_t i = 0; i < motionBase.lines.size() + motionCompare.lines.size() - 1; i++)
+  {
+    size_t startLineBase = i < motionCompare.lines.size() ? 0 : i + 1 - motionCompare.lines.size();
+    size_t startLineCompare = i < motionCompare.lines.size() ? motionCompare.lines.size() - 1 - i : 0;
+    size_t comparisons = min(motionBase.lines.size() - startLineBase, motionCompare.lines.size() - startLineCompare);
+    GetUpComparisonBaseLine baseline;
+    baseline.startLineBase = static_cast<int>(startLineBase);
+    baseline.startLineCompare = static_cast<int>(startLineCompare);
+    comparison.baseComparisonLines.push_back(baseline);
+
+    for(size_t j = 0; j < comparisons; j++)
+    {
+      compareLines(motionBase.lines[startLineBase + j], motionCompare.lines[startLineCompare + j]);
+    }
+  }
+}
+
+void GetUpEngine::skipForOptionalLine()
+{
+  bool doneSkipping = false;
+
+  while(!doneSkipping && lineCounter < maxCounter)
+  {
+    //We are not in an optionalLine yet but found one
+    if(!isInOptionalLine && mofs[motionID].lines[lineCounter].conditions.size() > 0)
+    {
+      doneSkipping = isInOptionalLine = checkConditions(mofs[motionID].lines[lineCounter].conditions, mofs[motionID].lines[lineCounter].optionalLineAnds);
+    }
+    //We were in an optionalLine and found the end
+    else if(isInOptionalLine && !mofs[motionID].lines[lineCounter].isPartOfPreviousOptionalLine)
+    {
+      //We found an optionalLine-ElseBlock
+      if(mofs[motionID].lines[lineCounter].isElseBlock)
+      {
+        doneSkipping = false;
+        isInOptionalLine = false;
+      }
+      //We found an optionalLine-IfBlock
+      else if(mofs[motionID].lines[lineCounter].conditions.size() > 0)
+        doneSkipping = isInOptionalLine = checkConditions(mofs[motionID].lines[lineCounter].conditions, mofs[motionID].lines[lineCounter].optionalLineAnds);
+      //We found the end of the optionalLine without a following else-Block or new optionalLine
+      else
+        doneSkipping = true;
+    }
+    //This case should never happen but is a failsave if a case at another place in the getUpEnginge is not correctly implemented
+    else
+      doneSkipping = isInOptionalLine || !mofs[motionID].lines[lineCounter].isPartOfPreviousOptionalLine;
+    if(!doneSkipping)
+    {
+      ++lineCounter;
+      while(lineCounter < maxCounter && mofs[motionID].lines[lineCounter].isPartOfPreviousOptionalLine)
+      {
+        ++lineCounter;
+      }
+    }
+  }
+}
+
+bool GetUpEngine::checkConditions(vector<Condition> conditions, bool useAnd)
+{
+  int conditionSize = (int) conditions.size();
+  // Needs to match the order of definition
+  float variableValues[numOfConditionVars] =
+  {
+    theInertialData.angle.y().toDegrees(),
+    theInertialData.angle.x().toDegrees(),
+    theDamageConfigurationBody.optionalLineVersionFront,
+    theDamageConfigurationBody.optionalLineVersionBack,
+  };
+  for(int i = 0; i < conditionSize; ++i)
+  {
+    bool check = variableValues[conditions[i].variable] >= conditions[i].lowerFloat && variableValues[conditions[i].variable] <= conditions[i].higherFloat;
+    if(conditions[i].isNot)
+      check = !check;
+    if(!check && useAnd)
+      return false;
+    else if(check && !useAnd)
+      return true;
+  }
+  // Conjunction true if nothing was false, disjunction false if nothing was true
+  return useAnd;
 }
 
 MAKE_MODULE(GetUpEngine, motionControl)

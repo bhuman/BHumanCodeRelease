@@ -12,6 +12,7 @@
 STREAMABLE(CognitionStateChanges,
 {,
   (int)(0) lastGameState,
-  (int)(0) lastSecondaryGameState,
+  (int)(0) lastGamePhase,
   (int)(0) lastPenalty,
+  (int)(0) lastSetPlay,
 });

@@ -16,12 +16,11 @@
 #include <QResizeEvent>
 #include <QSettings>
 
-#include "Controller/RobotConsole.h"
+#include "FieldView.h"
 #include "Controller/RoboCupCtrl.h"
+#include "Controller/RobotConsole.h"
 #include "Controller/Visualization/PaintMethods.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Platform/Thread.h"
-#include "FieldView.h"
 
 #define MAXZOOM 20.f
 #define MINZOOM 0.1f
@@ -45,7 +44,7 @@ public:
     settings.endGroup();
   }
 
-  virtual ~FieldWidget()
+  ~FieldWidget()
   {
     QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
     settings.beginGroup(fieldView.fullName);
@@ -65,14 +64,14 @@ private:
   QPoint dragStart;
   QPoint dragStartOffset;
 
-  void paintEvent(QPaintEvent* event)
+  void paintEvent(QPaintEvent* event) override
   {
     painter.begin(this);
     paint(painter);
     painter.end();
   }
 
-  virtual void paint(QPainter& painter)
+  void paint(QPainter& painter) override
   {
     const QSize& size = painter.window().size();
     int viewWidth = int(fieldDimensions.xPosOpponentFieldBorder) * 2;
@@ -92,21 +91,30 @@ private:
   void paintDrawings(QPainter& painter)
   {
     const QTransform baseTrans(painter.transform());
+    QTransform lowerTrans(painter.transform());
+    QTransform upperTrans(painter.transform());
+    QTransform motionTrans(painter.transform());
     const std::list<std::string>& drawings = fieldView.console.fieldViews[fieldView.name];
     for(const std::string& drawing : drawings)
     {
       const DebugDrawing& debugDrawingLowerCam = fieldView.console.lowerCamFieldDrawings[drawing];
+      painter.setTransform(lowerTrans);
       PaintMethods::paintDebugDrawing(painter, debugDrawingLowerCam, baseTrans);
+      lowerTrans = painter.transform();
       if(debugDrawingLowerCam.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingLowerCam.timeStamp;
 
       const DebugDrawing& debugDrawingUpperCam = fieldView.console.upperCamFieldDrawings[drawing];
+      painter.setTransform(upperTrans);
       PaintMethods::paintDebugDrawing(painter, debugDrawingUpperCam, baseTrans);
+      upperTrans = painter.transform();
       if(debugDrawingUpperCam.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingUpperCam.timeStamp;
 
       const DebugDrawing& debugDrawingMotion = fieldView.console.motionFieldDrawings[drawing];
+      painter.setTransform(motionTrans);
       PaintMethods::paintDebugDrawing(painter, debugDrawingMotion, baseTrans);
+      motionTrans = painter.transform();
       if(debugDrawingMotion.timeStamp > lastDrawingsTimeStamp)
         lastDrawingsTimeStamp = debugDrawingMotion.timeStamp;
     }
@@ -140,7 +148,7 @@ private:
     point.ry() = -point.ry();
   }
 
-  void mouseMoveEvent(QMouseEvent* event)
+  void mouseMoveEvent(QMouseEvent* event) override
   {
     QPoint pos(event->pos());
     if(dragStart.x() > 0)
@@ -161,7 +169,7 @@ private:
       &fieldView.console.upperCamFieldDrawings,
       &fieldView.console.motionFieldDrawings
     };
-    for(int i = 0; i < 3 && !text; ++i)
+    for(size_t i = 0; i < sizeof(debugDrawings) / sizeof(RobotConsole::Drawings*) && !text; ++i)
     {
       RobotConsole::Drawings& debugDrawing = *debugDrawings[i];
       Pose2f origin;
@@ -181,7 +189,7 @@ private:
       setToolTip(QString());
   }
 
-  void keyPressEvent(QKeyEvent* event)
+  void keyPressEvent(QKeyEvent* event) override
   {
     switch(event->key())
     {
@@ -233,7 +241,7 @@ private:
     }
   }
 
-  bool event(QEvent* event)
+  bool event(QEvent* event) override
   {
     if(event->type() == QEvent::Gesture)
     {
@@ -270,7 +278,7 @@ private:
     return QWidget::event(event);
   }
 
-  void wheelEvent(QWheelEvent* event)
+  void wheelEvent(QWheelEvent* event) override
   {
     QWidget::wheelEvent(event);
 
@@ -289,7 +297,7 @@ private:
 #endif
   }
 
-  void mousePressEvent(QMouseEvent* event)
+  void mousePressEvent(QMouseEvent* event) override
   {
     QWidget::mousePressEvent(event);
 
@@ -300,14 +308,14 @@ private:
     }
   }
 
-  void mouseReleaseEvent(QMouseEvent* event)
+  void mouseReleaseEvent(QMouseEvent* event) override
   {
     QWidget::mouseReleaseEvent(event);
 
     dragStart = QPoint(-1, -1);
   }
 
-  void mouseDoubleClickEvent(QMouseEvent* event)
+  void mouseDoubleClickEvent(QMouseEvent* event) override
   {
     QWidget::mouseDoubleClickEvent(event);
     zoom = 1;
@@ -315,16 +323,16 @@ private:
     QWidget::update();
   }
 
-  QSize sizeHint() const { return QSize(int(fieldDimensions.xPosOpponentFieldBorder * 0.2f), int(fieldDimensions.yPosLeftFieldBorder * 0.2f)); }
+  QSize sizeHint() const override { return QSize(int(fieldDimensions.xPosOpponentFieldBorder * 0.2f), int(fieldDimensions.yPosLeftFieldBorder * 0.2f)); }
 
-  virtual QWidget* getWidget() { return this; }
+  QWidget* getWidget() override { return this; }
 
-  void update()
+  void update() override
   {
     if(needsRepaint())
       QWidget::update();
   }
-  virtual QMenu* createUserMenu() const { return new QMenu(tr("&Field")); }
+  QMenu* createUserMenu() const override { return new QMenu(tr("&Field")); }
 
   friend class FieldView;
 };

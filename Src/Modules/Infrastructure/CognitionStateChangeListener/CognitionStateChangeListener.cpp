@@ -11,18 +11,21 @@ MAKE_MODULE(CognitionStateChangeListener, cognitionInfrastructure)
 
 CognitionStateChangeListener::CognitionStateChangeListener() :
   lastGameState(0),
-  lastSecondaryGameState(0),
-  lastPenalty(0)
+  lastGamePhase(0),
+  lastPenalty(0),
+  lastSetPlay(0)
 {
 }
 
 void CognitionStateChangeListener::update(CognitionStateChanges& cognitionStateChanges)
 {
   cognitionStateChanges.lastGameState = lastGameState;
-  cognitionStateChanges.lastSecondaryGameState = lastSecondaryGameState;
+  cognitionStateChanges.lastGamePhase = lastGamePhase;
   cognitionStateChanges.lastPenalty = lastPenalty;
+  cognitionStateChanges.lastSetPlay = lastSetPlay;
 
   lastGameState = theGameInfo.state;
-  lastSecondaryGameState = theGameInfo.secondaryState;
+  lastGamePhase = theGameInfo.gamePhase;
   lastPenalty = theRobotInfo.penalty;
+  lastSetPlay = theGameInfo.setPlay;
 }

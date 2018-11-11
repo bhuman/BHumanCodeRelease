@@ -31,14 +31,12 @@
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/Sensing/FootGroundContactState.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Debugging/DebugImages.h"
 #include "Tools/ProcessFramework/Process.h"
 
-#include "AutomaticCameraCalibratorHandlerInsertion.h"
-#include "AutomaticCameraCalibratorHandlerDeletion.h"
 #include "LogPlayer.h" // Must be included after Process.h
+#include "LogExtractor.h"
 #include "Platform/Joystick.h"
 #include "Representations/AnnotationInfo.h"
 #include "Representations/ModuleInfo.h"
@@ -48,7 +46,6 @@
 #include "Visualization/DebugDrawing3D.h"
 
 #include <QString>
-#include <fstream>
 #include <list>
 
 class ConsoleRoboCupCtrl;
@@ -70,11 +67,11 @@ private:
   class MapWriter : public MessageHandler
   {
   private:
-    StreamHandler& streamHandler;
+    const TypeInfo& typeInfo;
     Out& stream;
 
   public:
-    MapWriter(StreamHandler& streamHandler, Out& stream) : streamHandler(streamHandler), stream(stream) {}
+    MapWriter(const TypeInfo& typeInfo, Out& stream) : typeInfo(typeInfo), stream(stream) {}
 
     bool handleMessage(InMessage& message);
   };
@@ -113,6 +110,8 @@ public:
   bool colorCalibrationChanged = false; /**< Was the color calibration changed since the color table was updated? */
   unsigned colorCalibrationTimeStamp = 0; /**< The last time when the last color table was updated. */
   ColorCalibrationView* colorCalibrationView = nullptr;
+  JointCalibration jointCalibration; /**< The new joint calibration angles received from the robot code. */
+  bool jointCalibrationChanged = false; /**< Was the joint calibration changed since setting it for the local robot? */
   std::vector<ImageView*> segmentedImageViews;
   SystemCall::Mode mode; /**< Defines mode in which this process runs. */
   std::string logFile; /**< The name of the log file replayed. */
@@ -126,8 +125,9 @@ protected:
   bool logAcknowledged = true; /**< The flag is true whenever log data sent to the robot code was processed. */
   bool destructed = false; /**< A flag stating that this object has already been destructed. */
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
+  LogExtractor logExtractor; /**< The log extractor to extract things from log files. */
   MessageQueue& debugOut; /**< The outgoing debug queue. */
-  StreamHandler streamHandler; /**< Local stream handler. Note: Process::streamHandler may be accessed unsynchronized in different thread, so don't use it here. */
+  TypeInfo typeInfo; /**< Information about all data types used by the connected robot. */
   DrawingManager drawingManager;
   DrawingManager3D drawingManager3D;
   DebugRequestTable debugRequestTable;
@@ -135,7 +135,6 @@ protected:
   RobotInfo robotInfo; /**< The RobotInfo received from the robot code. */
   JointRequest jointRequest; /**< The joint angles request received from the robot code. */
   JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
-  FootGroundContactState footGroundContactState; /**< The most current footGroundContactState received from the robot code. */
   FsrSensorData fsrSensorData; /**< The most current set of fsr sensor data received from the robot code. */
   InertialSensorData inertialSensorData; /**< The most current set of inertial sensor data received from the robot code. */
   KeyStates keyStates; /**< The most current set of key states received from the robot code. */
@@ -173,6 +172,7 @@ public:
   Drawings upperCamFieldDrawings, lowerCamFieldDrawings, motionFieldDrawings; /**< Buffers for field drawings from the debug queue. */
   using Drawings3D = std::unordered_map<std::string, DebugDrawing3D>;
   Drawings3D upperCamDrawings3D, lowerCamDrawings3D, motionDrawings3D; /**< Buffers for 3d drawings from the debug queue. */
+  DebugImageConverter debugImageConverter;
 
   Images* currentImages = nullptr;
   Drawings* currentImageDrawings = nullptr;
@@ -212,6 +212,35 @@ public:
   std::map<std::string, ImageView*> actualImageViews;
 
   /**
+   * A parametrizable command to be executed after a click on an image view.
+   */
+  struct ImageViewCommand
+  {
+    struct Token
+    {
+      enum Type
+      {
+        literal,
+        placeholder
+      };
+      Token(const std::string& string) :
+        type(literal), string(string)
+      {}
+      Token(int id) :
+        type(placeholder), id(id)
+      {}
+      Type type;
+      std::string string;
+      int id;
+    };
+    std::vector<Token> tokens; /**< The tokenized command. */
+    Qt::KeyboardModifiers modifierMask = Qt::NoModifier; /**< The mask with which to bitwise-and the actually pressed modifier keys before comparing them. */
+    Qt::KeyboardModifiers modifiers = Qt::NoModifier; /**< The modifier keys that have to be pressed while clicking. */
+  };
+  /** The commands to be executed after a click per image view. */
+  std::unordered_map<std::string, std::list<ImageViewCommand>> imageViewCommands;
+
+  /**
    * A MessageHandler that parses debug responses containing representation data and forwards them to the correct representation view
    */
   class DataViewWriter : public MessageHandler
@@ -237,6 +266,7 @@ private:
   using DebugDataInfoPair = std::pair<std::string, MessageQueue*>; /**< The type of the information on a debug data entry. */
   using DebugDataInfos = std::unordered_map<std::string, DebugDataInfoPair>; /**< The type of the map debug data. */
   DebugDataInfos debugDataInfos; /** All debug data information. */
+  std::unordered_map<std::string, unsigned char> processesOfDebugData; /**< From which process was certain debug data accepted? */
 
   Images incompleteImages; /** Buffers images of this frame (created on demand). */
   Drawings incompleteImageDrawings; /**< Buffers incomplete image drawings from the debug queue. */
@@ -245,7 +275,7 @@ private:
 
   ActivationGraph activationGraph;/**< Graph of active options and states. */
   unsigned activationGraphReceived = 0; /**< When was the last activation graph received? */
-  std::fstream* logMessages = nullptr; /** The file messages from the robot are written to. */
+  Out* logMessages = nullptr; /** The file messages from the robot are written to. */
   using TimeInfos = std::unordered_map<char, TimeInfo>;
   TimeInfos timeInfos; /**< Information about the timing of modules per process. */
   Vector3f background = Vector3f(0.5f, 0.5f, 0.5f); /**< The background color of all 3-D views. */
@@ -285,8 +315,6 @@ private:
   unsigned maxPlotSize = 0; /**< The maximum number of data points to remember for plots. */
   bool kickViewSet = false; /**Indicator if there is already a KikeView, we need it just once */
   int imageSaveNumber = 0; /**< A counter for generating image file names. */
-  AutomaticCameraCalibratorHandlerInsertion automaticCameraCalibratorHandlerInsertion;
-  AutomaticCameraCalibratorHandlerDeletion automaticCameraCalibratorHandlerDeletion;
 
 public:
   char processIdentifier = 0; /** The process from which messages are currently read. */
@@ -298,7 +326,7 @@ public:
    * That function is called once before the first main(). It can be used
    * for things that can't be done in the constructor.
    */
-  virtual void init();
+  void init() override;
 
   /**
    * The function adds all views.
@@ -308,13 +336,13 @@ public:
   /**
    * The function is called for every incoming debug message.
    */
-  virtual bool handleMessage(InMessage& message);
+  bool handleMessage(InMessage& message) override;
 
   /**
    * The function is called when a console command has been entered.
    * @param line A string containing the console command.
    */
-  void handleConsole(const std::string& line);
+  void handleConsole(std::string line);
 
   /**
    * The method is called when Shift+Ctrl+letter was pressed.
@@ -368,7 +396,7 @@ protected:
    * Called by the Process (the base class) to get the
    * "debug in" message queue handled.
    */
-  virtual void handleAllMessages(MessageQueue& messageQueue);
+  void handleAllMessages(MessageQueue& messageQueue) override;
 
 private:
   /**
@@ -402,7 +430,7 @@ private:
    * @param type The type to print.
    * @param field The field with that type.
    */
-  void printType(std::string type, const char* field = "");
+  void printType(const std::string& type, const std::string& field = "");
 
   /**
    * The function handles the joystick.
@@ -414,7 +442,7 @@ private:
    * @param representation A string naming a representation
    * @return A string to the filename to the requested file
    */
-  std::string getPathForRepresentation(std::string representation);
+  std::string getPathForRepresentation(const std::string& representation);
 
   //!@name Handler for different console commands
   //!@{
@@ -425,7 +453,7 @@ private:
   bool joystickCommand(In& stream);
   bool joystickSpeeds(In& stream);
   bool joystickMaps(In& stream);
-  bool log(In& stream, bool first = true);
+  bool log(In& stream);
   bool get(In& stream, bool first, bool print);
   bool set(In& stream);
   bool penalizeRobot(In& stream);
@@ -443,6 +471,7 @@ private:
   bool kickView();
   bool viewDrawing(In& stream, RobotConsole::Views& views, const char* type);
   bool viewImage(In& stream);
+  bool viewImageCommand(In& stream);
   bool viewPlot(In& stream);
   bool viewPlotDrawing(In& stream);
   bool acceptCamera(In&);

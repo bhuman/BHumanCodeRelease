@@ -10,7 +10,7 @@
 #include "Tools/Global.h"
 #include "Tools/MessageQueue/InMessage.h"
 #include "Tools/MessageQueue/OutMessage.h"
-#include "Controller/Views/AnnotationView/AnnotationView.h"
+#include "Controller/Views/AnnotationView.h"
 
 #include <QRegExp>
 
@@ -18,6 +18,17 @@ AnnotationInfo::AnnotationInfo()
 {
   annotationProcesses['c'];
   annotationProcesses['m'];
+}
+
+void AnnotationInfo::clear()
+{
+  for(auto& annotationProcess : annotationProcesses)
+  {
+    annotationProcess.second.timeOfLastMessage = Time::getCurrentSystemTime();
+    annotationProcess.second.newAnnotations.push_back(AnnotationData());
+    annotationProcess.second.newAnnotations.back().name = "CLEAR";
+  }
+  currentFrame = 0;
 }
 
 bool AnnotationInfo::handleMessage(InMessage& message)
@@ -29,14 +40,16 @@ bool AnnotationInfo::handleMessage(InMessage& message)
     switch(current)
     {
       case 'c':
+      case 'd':
         currentProcess = &annotationProcesses['c'];
         break;
       case 'm':
         currentProcess = &annotationProcesses['m'];
         break;
       default:
-        ASSERT(false);
+        FAIL("Unexpected process id");
     }
+    ++currentFrame;
   }
   else if(message.getMessageID() == idProcessFinished)
   {
@@ -51,7 +64,10 @@ bool AnnotationInfo::handleMessage(InMessage& message)
       AnnotationData& data = currentProcess->newAnnotations.back();
 
       message.bin >> data.annotationNumber;
-      message.bin >> data.frame;
+      if(!(data.annotationNumber & 0x80000000))
+        message.bin >> data.frame; // Compatibility with old annotations
+      data.annotationNumber &= ~0x80000000;
+      data.frame = currentFrame;
       message.text >> data.name;
       data.annotation = message.text.readAll();
 

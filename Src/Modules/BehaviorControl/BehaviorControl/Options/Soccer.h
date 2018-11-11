@@ -1,5 +1,5 @@
 /** The root option that controls the behavior before the robot actually starts to play */
-option(Soccer)
+option(Root)
 {
   common_transition
   {
@@ -8,7 +8,16 @@ option(Soccer)
     theHeadControlMode = HeadControl::none;
 
     if(!theCameraStatus.ok)
-      goto sitDown;
+    {
+      if(theJointRequest.stiffnessData.stiffnesses[Joints::lHipPitch] == 0 && theJointRequest.stiffnessData.stiffnesses[Joints::rHipPitch] == 0)
+      {
+        goto playDeadDoNotRecover;
+      }
+      else
+      {
+        goto sitDown;
+      }
+    }
   }
 
   /** Initially, all robot joints are off until the chest button is pressed. */
@@ -21,15 +30,14 @@ option(Soccer)
 
       if(action_done) // chest button pressed and released
         goto standUp;
-
-      // Skip playDead state at a restart after a crash
-      else if(Global::getSettings().recover)
-        goto standUp;
     }
     action
     {
       Activity(BehaviorStatus::unknown);
       SpecialAction(SpecialActionRequest::playDead);
+#ifdef TARGET_ROBOT
+      USBCheck();
+#endif
       ButtonPressedAndReleased(KeyStates::chest, 1000, 0);
     }
   }
@@ -75,11 +83,17 @@ option(Soccer)
     {
       if(action_done) // chest button pressed and released once
         goto waitForSecondButtonPress;
+#ifndef NDEBUG
+      if(theRobotHealth.batteryLevel <= 1)
+        goto sitDown;
+#endif
     }
     action
     {
       HandlePenaltyState();
-      HeadControl();
+#ifdef TARGET_ROBOT
+      USBCheck();
+#endif
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
     }
   }
@@ -97,7 +111,6 @@ option(Soccer)
     action
     {
       HandlePenaltyState();
-      HeadControl();
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
     }
   }
@@ -114,7 +127,6 @@ option(Soccer)
     action
     {
       HandlePenaltyState();
-      HeadControl();
       ButtonPressedAndReleased(KeyStates::chest, 1000, 200);
     }
   }
@@ -147,6 +159,9 @@ option(Soccer)
     {
       Activity(BehaviorStatus::unknown);
       SpecialAction(SpecialActionRequest::playDead);
+#ifdef TARGET_ROBOT
+      USBCheck();
+#endif
       ButtonPressedAndReleased(KeyStates::chest, 1000, 0);
     }
   }

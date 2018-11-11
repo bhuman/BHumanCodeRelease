@@ -40,7 +40,7 @@ class KickViewWidget : public QWidget
 
 public:
   KickViewWidget(KickView& kickView, KickEngineParameters& parameters, KickViewHeaderedWidget* parent);
-  virtual ~KickViewWidget();
+  ~KickViewWidget();
 
   void updateEditorView();
   void fillModelWithPhaseData(int i);
@@ -128,7 +128,7 @@ private:
   Selected selectedPoint; //Infos about the actual selected Point
 
   int getString = 4;
-  int ghost = 0; //set the opacitiy of the robot model
+  int ghost = 0; //set the opacity of the robot model
 
   std::vector<std::string> commands;
 

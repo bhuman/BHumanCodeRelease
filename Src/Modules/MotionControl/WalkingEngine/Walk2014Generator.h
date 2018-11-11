@@ -38,7 +38,7 @@
  * @date 18 Jan 2014
  *
  * @author Thomas Röfer
- * @date 28 Aug 2017
+ * @date 2 Oct 2018
  */
 
 #pragma once
@@ -48,21 +48,30 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/Sensing/FootSupport.h"
+#include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Module/Module.h"
+#include "Tools/RingBufferWithSum.h"
+#include "Tools/RobotParts/Legs.h"
 
 MODULE(Walk2014Generator,
 {,
+  REQUIRES(BallModel),
   REQUIRES(FootSupport),
   REQUIRES(FrameInfo),
   REQUIRES(GlobalOptions),
   REQUIRES(InertialSensorData),
+  REQUIRES(InertialData),
   REQUIRES(JointAngles),
   USES(JointRequest),
   REQUIRES(MassCalibration),
   REQUIRES(RobotDimensions),
+  REQUIRES(RobotInfo),
+  REQUIRES(RobotModel),
   PROVIDES(WalkGenerator),
   LOADS_PARAMETERS(
   {,
@@ -79,17 +88,18 @@ MODULE(Walk2014Generator,
     (float) sidewaysWalkPeriodIncreaseFactor, /**< Additional duration when walking sideways at maximum speed (in ms). */
     (float) walkHipHeight, /**< Walk hip height above ankle joint in mm - seems to work from 200 mm to 235 mm. */
     (float) baseFootLift, /**< Base foot lift in mm. */
-    (Vector2f) footLiftIncreaseFactor, /**< Additional lifting as factors of forward and sideways speeds. */
+    (ENUM_INDEXED_ARRAY(float, Legs::Leg)) footLiftIncreaseFactorForwards, /**< Additional lifting as factor of forward speed for left and right foot. */
+    (float) footLiftIncreaseFactorSidewards, /**< Additional lifting as factor of sideways speed. */
+    (float) footLiftIncreaseFactorBackwards, /**< Additional lifting as factor of backward speed. */
     (float) footLiftFirstStepFactor, /**< Lifting of first step is changed by this factor. */
     (Rangef) supportSwitchPhaseRange, /**< In which range of the walk phase can the support foot change? */
     (int) maxWeightShiftMisses, /**< The maximum number of weight shift misses before emergency behavior. */
-    (float) emergencyStepSize, /**< The size of emergency sideways steps in m. */
+    (float) emergencyStepSize, /**< The size of emergency sideways steps in mm. */
     (float) minSlowWeightShiftRatio, /**< How much longer than expected is a slow weight shift? */
     (int) maxSlowWeightShifts, /**< How many slow weight shifts are acceptable? */
     (int) slowWaitShiftStandDelay, /**< How long to stand after slow weight shifts were detected (in ms)? */
     (float) insideTurnRatio, /**< How much of rotation is done by turning feet to the inside (0..1)? */
     (float) torsoOffset, /**< The base forward offset of the torso relative to the ankles in mm. */
-    (Pose2f) speedScale, /**< Scale requests so that the executed speeds match the requested ones. */
     (Pose2f) odometryScale, /**< Scale measured speeds so that they match the executed speeds. */
     (int) walkStiffness, /**< Joint stiffness while walking in %. */
     (Angle) armShoulderRoll, /**< Arm shoulder angle in radians. */
@@ -105,34 +115,12 @@ MODULE(Walk2014Generator,
     (int) numOfComIterations, /**< Number of iterations for matching the default COM. */
     (float) pComFactor, /**< Proportional factor for matching the default COM. */
     (float) comTiltFactor, /**< Factor between the correct torso tilt and the one actually used. */
+    (int) standStiffnessDelay, /**< The time in stand before the stiffness is lowered (in ms). */
   }),
 });
 
 class Walk2014Generator : public Walk2014GeneratorBase
 {
-  void update(WalkGenerator& generator);
-
-  /**
-   * Initializes the generator. Must be called whenever the control is returned to this module after
-   * another one was responsible for creating the motions. Must also be called once after creation.
-   */
-  void reset(WalkGenerator& generator);
-
-  /**
-   * Calculates a new set of joint angles to let the robot walk or stand. Must be called every 10 ms.
-   * @param speed The speed or step size to walk with. If everything is zero, the robot stands.
-   * @param target The target to walk to if in target mode.
-   * @param walkMode How are speed and target interpreted?
-   * @param getKickFootOffset If set, provides an offset to add to the pose of the swing foot to
-   *                          create a kick motion. It must be suited for the foot that actually is
-   *                          the swing foot.
-   */
-  void calcJoints(WalkGenerator& generator,
-                  Pose2f speed,
-                  const Pose2f& target,
-                  WalkGenerator::WalkMode walkMode,
-                  const std::function<Pose3f(float phase)>& getKickFootOffset);
-
   enum WalkState
   {
     standing,
@@ -160,8 +148,8 @@ class Walk2014Generator : public Walk2014GeneratorBase
   float switchPhase; /**< The walk phase when the support changed. */
   enum {weightDidShift, weightDidNotShift, emergencyStep} weightShiftStatus; /**< Has the weight shifted when the previous step ended? */
   unsigned timeWhenSlowWeightShiftsDetected = 0; /**< The time when slow weight shifts were detected. */
-  Angle filteredGyroX; /**< Lowpass-filtered gyro measurements around y axis (in radians/s). */
-  Angle filteredGyroY; /**< Lowpass-filtered gyro measurements around y axis (in radians/s). */
+  Angle filteredGyroX = 0_deg; /**< Lowpass-filtered gyro measurements around y axis (in radians/s). */
+  Angle filteredGyroY = 0_deg; /**< Lowpass-filtered gyro measurements around y axis (in radians/s). */
   float prevForwardL; /**< The value of "forwardL" in the previous cycle. For odometry calculation. */
   float prevForwardR; /**< The value of "forwardR" in the previous cycle. For odometry calculation. */
   Angle prevLeftL; /**< The value of "leftL" in the previous cycle. For odometry calculation. */
@@ -169,6 +157,49 @@ class Walk2014Generator : public Walk2014GeneratorBase
   Angle prevTurn; /**< The value of "turn" in the previous cycle. For odometry calculation. */
   int weightShiftMisses; /**< How often was the weight not shifted in a row? */
   int slowWeightShifts; /**< How often took the weight shift significantly longer in a row? */
+  float torsoTilt; /**< The current tilt of the torso (in radians). */
+  unsigned timeWhenStandBegan = 0; /**< The time when stand began (in ms). */
+
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param generator The representation updated.
+   */
+  void update(WalkGenerator& generator) override;
+
+  /**
+   * Initializes the generator. Must be called whenever the control is returned to this module after
+   * another one was responsible for creating the motions. Must also be called once after creation.
+   */
+  void reset(WalkGenerator& generator);
+
+  /**
+   * Calculates a new set of joint angles to let the robot walk or stand. Must be called every 10 ms.
+   * @param generator The output of this module.
+   * @param speed The speed or step size to walk with. If everything is zero, the robot stands.
+   * @param target The target to walk to if in target mode.
+   * @param walkMode How are speed and target interpreted?
+   * @param getKickFootOffset If set, provides an offset to add to the pose of the swing foot to
+   *                          create a kick motion. It must be suited for the foot that actually is
+   *                          the swing foot.
+   */
+  void calcJoints(WalkGenerator& generator,
+                  const Pose2f& speed,
+                  const Pose2f& target,
+                  WalkGenerator::WalkMode walkMode,
+                  const std::function<Pose3f(float phase)>& getKickFootOffset);
+
+  /**
+   * Calculates the parameters of the next step. Must be called when
+   * a new step starts.
+   * @param generator The output of this module.
+   * @param speed The speed or step size to walk with. If everything is zero, the robot stands.
+   * @param target The target to walk to if in target mode.
+   * @param walkMode How are speed and target interpreted?
+   */
+  void calcNextStep(WalkGenerator& generator,
+                    const Pose2f& speed,
+                    const Pose2f& target,
+                    WalkGenerator::WalkMode walkMode);
 
   /**
    * The method determines the forward, left, and lift offsets of both feet.
@@ -215,14 +246,14 @@ class Walk2014Generator : public Walk2014GeneratorBase
    * @param turn Turn speed in radians/s will be clamped im necessary.
    * @return Were the parameters actually clamped?
    */
-  bool ellipsoidClampWalk(const Pose2f& maxSpeed, float maxBackwardsSpeed, float& forward, float& left, Angle& turn) const;
+  bool ellipsoidClampWalk(const Pose2f& maxSpeed, float maxSpeedBackwards, float& forward, float& left, Angle& turn) const;
 
   /**
    * Returns values on a parabola with f(0) = f(1) = 0, f(0.5) = 1.
    * @param f A value between 0 and 1.
    * @return The value on the parabola for "f".
    */
-  float parabolicReturn(float) const; // step function with deadTimeFraction/2 delay
+  float parabolicReturn(float) const;
 
   /**
    * Returns values on a parabola with f(0) = 0, f(period) = 1.
@@ -241,5 +272,5 @@ class Walk2014Generator : public Walk2014GeneratorBase
    *                     The joint request is changed to compensate for the
    *                     effect of external arm movements.
    */
-  void compensateArmPosition(const Pose3f& leftFoot, const Pose3f& rightFoot, JointRequest& jointRequest) const;
+  void compensateArmPosition(const Pose3f& leftFoot, const Pose3f& rightFoot, JointRequest& jointRequest);
 };

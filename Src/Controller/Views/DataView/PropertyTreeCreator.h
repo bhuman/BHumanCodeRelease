@@ -24,7 +24,7 @@ class PropertyTreeCreator : public Out
   {
   public:
     int type; /**< The type of the entry. -2: value or record, -1: array, >= 0: array element index. */
-    const char* (*enumToString)(int); /**< A function that translates an enum to a string. */
+    const char* enumType; /**< A function that translates an enum to a string. */
     QtVariantProperty* parent; /**< The parent in the property tree. Can be 0 if there is none (yet). */
     QtVariantProperty* property = nullptr; /**< The current node in the property tree if already created. Otherwise 0. */
     std::string path; /**< The path to this node including its name. */
@@ -32,13 +32,13 @@ class PropertyTreeCreator : public Out
 
     /**
      * @param type The type of the entry. -2: value or record, -1: array, >= 0: array element index.
-     * @param enumToString A function that translates an enum to a string.
+     * @param enumType A function that translates an enum to a string.
      * @param parent The parent in the property tree. Can be 0 if there is none (yet).
      * @param path The path to this node including its name.
      * @param name The name of this node.
      */
-    Entry(int type, const char* (*enumToString)(int), QtVariantProperty* parent, const std::string& path, const char* name) :
-      type(type), enumToString(enumToString), parent(parent)
+    Entry(int type, const char* enumType, QtVariantProperty* parent, const std::string& path, const char* name) :
+      type(type), enumType(enumType), parent(parent)
     {
       if(type >= 0)
         this->name = std::to_string(type);
@@ -53,7 +53,7 @@ class PropertyTreeCreator : public Out
 
 protected:
   /** Helper to create a node. */
-  template<class T> void out(const T& value)
+  template<typename T> void out(const T& value)
   {
     Entry& e = stack.back();
     ASSERT(!e.property);
@@ -61,19 +61,19 @@ protected:
     e.property->setValue(value);
   }
 
-  virtual void outChar(char value) { out((int)value); }
-  virtual void outSChar(signed char value) { out((int)value); }
-  virtual void outUChar(unsigned char value);
-  virtual void outShort(short value) { out(value); }
-  virtual void outUShort(unsigned short value) { out(value); }
-  virtual void outInt(int value) { out(value); }
-  virtual void outUInt(unsigned int value);
-  virtual void outFloat(float value) { out(value); }
-  virtual void outDouble(double value) { out(value); }
-  virtual void outBool(bool value) { out(value); }
-  virtual void outString(const char* value) { out(QString(value)); }
-  virtual void outAngle(const Angle& value);
-  virtual void outEndL() {}
+  void outChar(char value) override { out((int)value); }
+  void outSChar(signed char value) override { out((int)value); }
+  void outUChar(unsigned char value) override;
+  void outShort(short value) override { out(value); }
+  void outUShort(unsigned short value) override { out(value); }
+  void outInt(int value) override { out(value); }
+  void outUInt(unsigned int value) override;
+  void outFloat(float value) override { out(value); }
+  void outDouble(double value) override { out(value); }
+  void outBool(bool value) override { out(value); }
+  void outString(const char* value) override { out(QString(value)); }
+  void outAngle(const Angle& value) override;
+  void outEndL() override {}
 
 public:
   QtVariantProperty* root = nullptr; /**< The root of the property tree. */
@@ -90,13 +90,13 @@ public:
    *             -2: value or record,
    *             -1: array,
    *             >= 0: array element index.
-   * @param enumToString A function that translates an enum to a string.
+   * @param enumType A function that translates an enum to a string.
    */
-  virtual void select(const char* name, int type, const char* (*enumToString)(int));
+  void select(const char* name, int type, const char* enumType) override;
 
   /** Deselects a field for writing. */
-  virtual void deselect();
+  void deselect() override;
 
   /** Writing raw data is not supported. Do not call. */
-  virtual void write(const void* p, size_t size) { ASSERT(false); }
+  void write(const void* p, size_t size) override { ASSERT(false); }
 };

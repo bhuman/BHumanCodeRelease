@@ -20,8 +20,8 @@ private:
   * These are a geometry object for collision detection and/or a body,
   * if the simulation object is movable.
   */
-  virtual void createPhysics();
+  void createPhysics() override;
 
   //API
-  virtual const QIcon* getIcon() const;
+  const QIcon* getIcon() const override;
 };

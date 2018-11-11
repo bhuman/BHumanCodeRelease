@@ -15,10 +15,10 @@
 #include <QEvent>
 
 DataView::DataView(const QString& fullName, const std::string& repName,
-                   RobotConsole& console, StreamHandler& streamHandler) :
+                   RobotConsole& console, const TypeInfo& typeInfo) :
   theFullName(fullName), theIcon(":/Icons/tag_green.png"),
-  theConsole(console), theName(repName), theStreamHandler(streamHandler)
-{} //FIXME destructor
+  theConsole(console), theName(repName), typeInfo(typeInfo)
+{}
 
 bool DataView::handleMessage(InMessage& msg, const std::string& type, const std::string& repName)
 {
@@ -30,7 +30,7 @@ bool DataView::handleMessage(InMessage& msg, const std::string& type, const std:
   {
     lastUpdated = Time::getRealSystemTime();
     PropertyTreeCreator creator(*this);
-    DebugDataStreamer streamer(theStreamHandler, msg.bin, type, "value");
+    DebugDataStreamer streamer(typeInfo, msg.bin, type, "value");
     creator << streamer;
     pTheCurrentRootNode = creator.root;
     this->type = type;
@@ -112,7 +112,7 @@ void DataView::set()
       tempQ.out.bin << debugRequest << char(1);
 
       PropertyTreeWriter writer(theVariantManager, pTheCurrentRootNode);
-      DebugDataStreamer streamer(theStreamHandler, tempQ.out.bin, type);
+      DebugDataStreamer streamer(typeInfo, tempQ.out.bin, type);
       writer >> streamer;
       tempQ.out.finishMessage(idDebugDataChangeRequest);
     }

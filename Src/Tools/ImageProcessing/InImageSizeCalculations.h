@@ -10,7 +10,6 @@
 
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Math/Eigen.h"
@@ -129,7 +128,7 @@ namespace IISC
    * @return false if the calculation failed
    */
   bool calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height,
-    const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions) WARN_UNUSED_RESULT;
+      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions) WARN_UNUSED_RESULT;
 
   /**
    * Calculates the in-image-vertical in-image-size of the given on-field-diameter according to the given
@@ -143,7 +142,7 @@ namespace IISC
    *     error case: -1
    */
   float getImageDiameterByLowestPointAndFieldDiameter(const float fieldDiameter, const Vector2f& start,
-    const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix);
+      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix);
 
   /**
    * Calculates the in-image-horizontal in-image-size of the given on-field-diameter according to the given
@@ -157,5 +156,5 @@ namespace IISC
    *     error case: -1
    */
   float getHorizontalImageDiameterByMiddlePointAndFieldDiameter(const float fieldDiameter, const Vector2f& middle,
-    const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix);
+      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix);
 };

@@ -39,7 +39,7 @@ MODULE(MidCirclePerceptor,
   {,
     (int)(30) maxTimeOffset,
     (float)(150) maxLineDistanceToCircleCenter,
-    (float)(500) allowedOffsetOfMidLineEndToCircleCenter,
+    (float)(-500) allowedOffsetOfMidLineEndToCircleCenter,
     (float)(300) allowedTsXVariance,
     (float)(sqr(200)) squaredMinLineLength,
   }),
@@ -47,7 +47,7 @@ MODULE(MidCirclePerceptor,
 
 class MidCirclePerceptor : public MidCirclePerceptorBase
 {
-  void update(MidCircle& midCircle);
+  void update(MidCircle& midCircle) override;
 private:
   unsigned int lastFrameTime = 1;
   CirclePercept theLastCirclePercept;

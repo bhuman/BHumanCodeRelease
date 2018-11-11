@@ -16,7 +16,6 @@
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Perception/FieldFeatures/GoalFeature.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
 #include "Representations/Perception/FieldFeatures/MidCorner.h"
@@ -25,7 +24,6 @@
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
-#include "Representations/Perception/FieldPercepts/GoalPostPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/RingBuffer.h"
@@ -99,7 +97,6 @@ private:
   const FrameInfo& theFrameInfo;
   const GameInfo& theGameInfo;
   const OwnTeamInfo& theOwnTeamInfo;
-  const GoalFeature& theGoalFeature;
   const GoalFrame& theGoalFrame;
   const FieldLineIntersections& theFieldLineIntersections;
   const FieldLines& theFieldLines;
@@ -108,7 +105,6 @@ private:
   const OuterCorner& theOuterCorner;
   const PenaltyArea& thePenaltyArea;
   const PenaltyMarkPercept& thePenaltyMarkPercept;
-  const GoalPostPercept& theGoalPostPercept;
 
   const float& lineAssociationCorridor;
   const float& longLineAssociationCorridor;
@@ -204,7 +200,6 @@ public:
                       const FrameInfo& frameInfo,
                       const GameInfo& gameInfo,
                       const OwnTeamInfo& ownTeamInfo,
-                      const GoalFeature& goalFeature,
                       const GoalFrame& goalFrame,
                       const FieldLineIntersections& fieldLineIntersections,
                       const FieldLines& fieldLines,
@@ -213,7 +208,6 @@ public:
                       const OuterCorner& outerCorner,
                       const PenaltyArea& penaltyArea,
                       const PenaltyMarkPercept& penaltyMarkPercept,
-                      const GoalPostPercept& theGoalPostPercept,
                       bool         goalFrameIsPerceivedAsLines,
                       const float& lineAssociationCorridor,
                       const float& longLineAssociationCorridor,

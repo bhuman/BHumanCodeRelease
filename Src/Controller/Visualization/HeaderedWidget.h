@@ -50,7 +50,7 @@ protected:
   QHeaderView* headerView; /**< The header view. */
   QStandardItemModel* headerItemModel; /**< A simple item model for the header view. */
 
-  virtual void resizeEvent(QResizeEvent* event);
+  void resizeEvent(QResizeEvent* event) override;
 
-  virtual QSize sizeHint() const;
+  QSize sizeHint() const override;
 };

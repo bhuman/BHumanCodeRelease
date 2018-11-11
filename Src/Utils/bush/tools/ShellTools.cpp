@@ -6,8 +6,7 @@
 
 std::string remoteCommand(const std::string& command, const std::string ip)
 {
-  std::string ticks = "\"";
-  return remoteCommandForQProcess(" " + ticks + command + " < /dev/null > /dev/null 2>&1 &" + ticks, ip);
+  return remoteCommandForQProcess(" " + command + " < /dev/null > /dev/null 2>&1 &", ip);
 }
 
 std::string remoteCommandForQProcess(const std::string& command, const std::string& ip)
@@ -17,7 +16,7 @@ std::string remoteCommandForQProcess(const std::string& command, const std::stri
 
 std::string connectCommand(const std::string& ip)
 {
-  return 
+  return
 #ifdef WINDOWS
     "cmd /c "
 #endif
@@ -37,7 +36,7 @@ std::string scpCommand(const std::string& fromFile, const std::string& fromHost,
   else
     to = toHost + ":" + enquoteString(toDir);
 
-  return 
+  return
 #ifdef WINDOWS
     "cmd /c "
 #endif

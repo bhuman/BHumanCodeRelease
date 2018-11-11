@@ -60,15 +60,28 @@ void GameInfo::draw() const
 {
   DEBUG_DRAWING3D("representation:GameInfo", "field")
   {
-    const int mins = std::abs((int)(short)secsRemaining) / 60;
-    const int secs = std::abs((int)(short)secsRemaining) % 60;
-    const ColorRGBA color = (short)secsRemaining < 0 ? ColorRGBA::red : ColorRGBA::black;
+    const int mins = std::abs(static_cast<int>(static_cast<short>(secsRemaining))) / 60;
+    const int secs = std::abs(static_cast<int>(static_cast<short>(secsRemaining))) % 60;
+    const ColorRGBA color = static_cast<short>(secsRemaining) < 0 ? ColorRGBA::red : ColorRGBA::black;
     drawDigit(mins / 10, Vector3f(-350, 3500, 1000), 200, color);
     drawDigit(mins % 10, Vector3f(-80, 3500, 1000), 200, color);
     drawDigit(secs / 10, Vector3f(280, 3500, 1000), 200, color);
     drawDigit(secs % 10, Vector3f(550, 3500, 1000), 200, color);
     LINE3D("representation:GameInfo", 0, 3500, 890, 0, 3500, 910, 3, color);
     LINE3D("representation:GameInfo", 0, 3500, 690, 0, 3500, 710, 3, color);
+
+    if(secondaryTime != 0)
+    {
+      const int secMins = std::abs(static_cast<int>(static_cast<short>(secondaryTime))) / 60;
+      const int secSecs = std::abs(static_cast<int>(static_cast<short>(secondaryTime))) % 60;
+      const ColorRGBA color = static_cast<short>(secondaryTime) < 0 ? ColorRGBA::red : ColorRGBA::blue;
+      drawDigit(secMins / 10, Vector3f(-175, 3500, 500), 100, color);
+      drawDigit(secMins % 10, Vector3f(-40, 3500, 500), 100, color);
+      drawDigit(secSecs / 10, Vector3f(140, 3500, 500), 100, color);
+      drawDigit(secSecs % 10, Vector3f(275, 3500, 500), 100, color);
+      LINE3D("representation:GameInfo", 0, 3500, 445, 0, 3500, 455, 3, color);
+      LINE3D("representation:GameInfo", 0, 3500, 345, 0, 3500, 355, 3, color);
+    }
   }
 
   DEBUG_DRAWING("representation:GameInfo", "drawingOnField")
@@ -81,7 +94,10 @@ void GameInfo::draw() const
       xPosOwnFieldBorder = theFieldDimensions.xPosOwnFieldBorder;
       yPosRightFieldBorder = theFieldDimensions.yPosRightFieldBorder;
     }
-    DRAWTEXT("representation:GameInfo", xPosOwnFieldBorder + 200,  yPosRightFieldBorder + 500, (xPosOwnFieldBorder / -5200.f) * 200, ColorRGBA::white, "Time remaining: " << (int)(secsRemaining / 60) << ":" << (secsRemaining % 60));
+    const char* sign = static_cast<short>(secsRemaining) < 0 ? "-" : "";
+    const int mins = std::abs(static_cast<int>(static_cast<short>(secsRemaining))) / 60;
+    const int secs = std::abs(static_cast<int>(static_cast<short>(secsRemaining))) % 60;
+    DRAWTEXT("representation:GameInfo", xPosOwnFieldBorder + 200,  yPosRightFieldBorder + 500, (xPosOwnFieldBorder / -5200.f) * 200, ColorRGBA::white, "Time remaining: " << sign << mins << ":" << secs);
     DRAWTEXT("representation:GameInfo", xPosOwnFieldBorder + 200,  yPosRightFieldBorder + 300, (xPosOwnFieldBorder / -5200.f) * 200, ColorRGBA::white, (firstHalf ? "First" : "Second") << " half");
     DRAWTEXT("representation:GameInfo", xPosOwnFieldBorder + 1700, yPosRightFieldBorder + 300, (xPosOwnFieldBorder / -5200.f) * 180, ColorRGBA::white, "State: " << getStateAsString());
   }
@@ -98,7 +114,17 @@ std::string GameInfo::getStateAsString() const
     case STATE_SET:
       return "Set";
     case STATE_PLAYING:
-      return "Playing";
+      switch(setPlay)
+      {
+        case SET_PLAY_NONE:
+          return "Playing";
+        case SET_PLAY_GOAL_FREE_KICK:
+          return "Goal Free Kick";
+        case SET_PLAY_PUSHING_FREE_KICK:
+          return "Pushing Free Kick";
+        default:
+          return "Unknown";
+      }
     case STATE_FINISHED:
       return "Finished";
     default:
@@ -108,59 +134,36 @@ std::string GameInfo::getStateAsString() const
 
 void GameInfo::serialize(In* in, Out* out)
 {
-  STREAM_REGISTER_BEGIN;
   STREAM(packetNumber);
-  STREAM(gameType); // type of the game (GAME_ROUNDROBIN, GAME_PLAYOFF, GAME_DROPIN)
+  STREAM(competitionPhase); // phase of the competition (COMPETITION_PHASE_ROUNDROBIN, COMPETITION_PHASE_PLAYOFF)
+  STREAM(competitionType);  // type of the competition (COMPETITION_TYPE_NORMAL, COMPETITION_TYPE_MIXEDTEAM, COMPETITION_TYPE_GENERAL_PENALTY_KICK)
+  STREAM(gamePhase); // phase of the game (GAME_PHASE_NORMAL, GAME_PHASE_PENALTYSHOOT, etc)
   STREAM(state); // STATE_READY, STATE_PLAYING, ...
+  STREAM(setPlay); // active set play (SET_PLAY_NONE, SET_PLAY_GOAL_FREE_KICK, etc)
   STREAM(firstHalf); // 1 = game in first half, 0 otherwise
-  STREAM(kickOffTeam); // team number
-  STREAM(secondaryState);  // Extra state information - (STATE2_NORMAL, STATE2_PENALTYSHOOT, etc)
+  STREAM(kickingTeam); // team number
   STREAM(dropInTeam); // team number
   STREAM(dropInTime); // number of seconds passed since the last drop in. -1 before first dropin.
   STREAM(secsRemaining); // estimate of number of seconds remaining in the half.
   STREAM(secondaryTime);
   STREAM(timeLastPackageReceived); // used to decide whether a gameController is running
-  STREAM_REGISTER_FINISH;
 }
 
-void RawGameInfo::operator >> (BHumanMessage& m) const
+void GameInfo::reg()
 {
-  m.theBHULKsStandardMessage.gameControlData.timestampWhenReceived = timeLastPackageReceived;
-
-  m.theBHULKsStandardMessage.gameControlData.packetNumber = packetNumber;
-  m.theBHULKsStandardMessage.gameControlData.gameType = gameType;
-  m.theBHULKsStandardMessage.gameControlData.state = state;
-  m.theBHULKsStandardMessage.gameControlData.firstHalf = firstHalf;
-  m.theBHULKsStandardMessage.gameControlData.kickOffTeam = kickOffTeam;
-  m.theBHULKsStandardMessage.gameControlData.secondaryState = secondaryState;
-  m.theBHULKsStandardMessage.gameControlData.dropInTeam = dropInTeam;
-  m.theBHULKsStandardMessage.gameControlData.dropInTime = dropInTime;
-  m.theBHULKsStandardMessage.gameControlData.secsRemaining = secsRemaining;
-  m.theBHULKsStandardMessage.gameControlData.secondaryTime = secondaryTime;
-}
-
-void RawGameInfo::operator<< (const BHumanMessage& m)
-{
-  timeLastPackageReceived = m.toLocalTimestamp(m.theBHULKsStandardMessage.gameControlData.timestampWhenReceived);
-  (RoboCup::RoboCupGameControlData&)(*this) << m.theBHULKsStandardMessage.gameControlData;
-}
-
-void RoboCup::operator<<(RoboCupGameControlData r, const B_HULKs::OwnTeamInfo& bhOti)
-{
-  r.packetNumber = bhOti.packetNumber;
-  r.gameType = bhOti.gameType;
-  r.state = bhOti.state;
-  r.firstHalf = bhOti.firstHalf;
-  r.kickOffTeam = bhOti.kickOffTeam;
-  r.secondaryState = bhOti.secondaryState;
-  r.dropInTeam = bhOti.dropInTeam;
-  r.dropInTime = bhOti.dropInTime;
-  r.secsRemaining = bhOti.secsRemaining;
-  r.secondaryTime = bhOti.secondaryTime;
-
-  const int ownTeamArrayPos = r.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1;
-
-  r.teams[ownTeamArrayPos].score = bhOti.score;
-  for(int i = 0; i < BHULKS_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
-    r.teams[ownTeamArrayPos].players[i].penalty = bhOti.playersArePenalized[i] ? PENALTY_MANUAL : PENALTY_NONE;
+  PUBLISH(reg);
+  REG_CLASS(GameInfo);
+  REG(packetNumber);
+  REG(competitionPhase);
+  REG(competitionType);
+  REG(gamePhase);
+  REG(state);
+  REG(setPlay);
+  REG(firstHalf);
+  REG(kickingTeam);
+  REG(dropInTeam);
+  REG(dropInTime);
+  REG(secsRemaining);
+  REG(secondaryTime);
+  REG(timeLastPackageReceived);
 }

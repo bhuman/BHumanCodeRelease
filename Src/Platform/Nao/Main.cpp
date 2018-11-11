@@ -14,6 +14,7 @@
 
 #include "Robot.h"
 #include "NaoBody.h"
+#include "Tools/FunctionList.h"
 #include "Tools/Settings.h"
 #include "libbhuman/bhuman.h"
 
@@ -36,7 +37,6 @@ static void bhumanStop()
   robot->stop();
   delete robot;
   robot = 0;
-  //fprintf(stderr, "BHuman: Stopped.\n");
 }
 
 static void sighandlerShutdown(int sig)
@@ -58,7 +58,6 @@ int main(int argc, char* argv[])
   {
     // parse command-line arguments
     bool background = false;
-    bool recover = false;
     bool watchdog = false;
     const char* bhDir = "/home/nao";
 
@@ -160,22 +159,8 @@ int main(int argc, char* argv[])
             Assert::logDump(WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
           }
 
-          // quit here?
-          if(normalExit)
-            exit(WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE);
-
-          // don't restart if the child process got killed
-          if(WIFSIGNALED(status) && WTERMSIG(status) == SIGKILL)
-            exit(EXIT_FAILURE);
-
-          // restart in release mode only
-#ifndef NDEBUG
-          exit(EXIT_FAILURE);
-#else
-          // deactivate the pre-initial state
-          recover = true;
-          usleep(2000 * 1000);
-#endif
+          // quit
+          exit(WIFEXITED(status) && normalExit ? WEXITSTATUS(status) : EXIT_FAILURE);
         }
         else
         {
@@ -193,6 +178,11 @@ int main(int argc, char* argv[])
       }
     }
 
+    BH_TRACE_INIT("main");
+
+    // Acquire static data, e.g. about types
+    FunctionList::execute();
+
     // wait for NaoQi/libbhuman
     NaoBody naoBody;
     if(!naoBody.init())
@@ -207,7 +197,6 @@ int main(int argc, char* argv[])
 
     // load first settings instance
     Settings settings;
-    settings.recover = recover;
 
     if(!settings.loadingSucceeded())
       return EXIT_FAILURE;

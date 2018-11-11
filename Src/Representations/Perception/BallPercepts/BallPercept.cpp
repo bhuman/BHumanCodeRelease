@@ -29,3 +29,16 @@ void BallPercept::draw() const
     CIRCLE("representation:BallPercept:image", positionInImage.x(), positionInImage.y(), radiusInImage, 1, // pen width
            Drawings::solidPen,  ColorRGBA::black, Drawings::solidBrush, ColorRGBA(64, 128, 255, 90));
 }
+
+void BallPercept::verify() const
+{
+  if(status == seen || status == guessed)
+  {
+    ASSERT(std::isfinite(positionInImage.x()));
+    ASSERT(std::isfinite(positionInImage.y()));
+    ASSERT(std::isfinite(positionOnField.x()));
+    ASSERT(std::isfinite(positionOnField.y()));
+    ASSERT(radiusInImage > 0.f);
+    ASSERT(radiusOnField > 0.f);
+  }
+}

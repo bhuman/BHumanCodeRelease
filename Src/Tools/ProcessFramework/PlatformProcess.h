@@ -8,14 +8,13 @@
 
 #pragma once
 
-#include "Platform/Thread.h"
-#include "Platform/SystemCall.h"
 #include "Platform/Semaphore.h"
+#include "Platform/SystemCall.h"
 
 class SenderList;
 class ReceiverList;
 class ProcessBase;
-template<class T> class ProcessFrame;
+template<typename T> class ProcessFrame;
 
 /**
  * This class is the base class for all processes.
@@ -87,5 +86,5 @@ public:
    */
   void trigger() {sem.post();}
 
-  template<class T> friend class ProcessFrame; /**< For setting processBase. */
+  template<typename T> friend class ProcessFrame; /**< For setting processBase. */
 };

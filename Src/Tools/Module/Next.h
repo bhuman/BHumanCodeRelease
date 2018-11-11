@@ -4,29 +4,21 @@
 
 template<typename T> STREAMABLE(Next,
 {
-  Next() = default;
-  Next(const Next& other) = delete;
-
-  Next& operator=(const Next& other) = delete;
-
   void setNext(const T& next)
   {
-    ++writeCounter;
+    updated = true;
     this->next = next;
   }
 
-  bool hasNext() const
+  bool hasNext() const {return updated;}
+
+  const T& getNext() const
   {
-    return writeCounter > readCounter;
+    const_cast<Next<T>*>(this)->updated = false;
+    return next;
   }
 
-  T getNext()
-  {
-    readCounter = writeCounter;
-    return next;
-  },
-
+private:,
   (T) next,
-  (unsigned)(0) readCounter,
-  (unsigned)(0) writeCounter,
+  (bool)(false) updated,
 });

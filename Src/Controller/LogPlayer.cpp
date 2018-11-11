@@ -9,21 +9,15 @@
 #include <QImage>
 #include <QFileInfo>
 #include "LogPlayer.h"
-#include "Platform/BHAssert.h"
 #include "Platform/File.h"
-#include "Platform/SystemCall.h"
-#include "Representations/Infrastructure/AudioData.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/LowFrameRateImage.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
-#include "Representations/Infrastructure/Thumbnail.h"
-#include "Representations/Perception/BallPercepts/BallSpots.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Modeling/LabelImage.h"
+#include "Tools/Debugging/DebugImages.h"
 #include "Tools/Logging/LogFileFormat.h"
 
 #include <snappy-c.h>
-#include <vector>
-#include <map>
-#include <fstream>
 
 LogPlayer::LogPlayer(MessageQueue& targetQueue) :
   targetQueue(targetQueue)
@@ -40,8 +34,9 @@ void LogPlayer::init()
   replayOffset = 0;
   state = initial;
   loop = false; //default: loop disabled
-  streamHandler = nullptr;
-  streamSpecificationReplayed = false;
+  typeInfo = nullptr;
+  typeInfoReplayed = false;
+  logfilePath = "";
 }
 
 bool LogPlayer::open(const std::string& fileName)
@@ -62,10 +57,10 @@ bool LogPlayer::open(const std::string& fileName)
       file >> magicByte;
     }
 
-    if(magicByte == Logging::logFileStreamSpecification)
+    if(magicByte == Logging::logFileTypeInfo)
     {
-      streamHandler = std::unique_ptr<StreamHandler>(new StreamHandler);
-      file >> *streamHandler;
+      typeInfo = std::unique_ptr<TypeInfo>(new TypeInfo(false));
+      file >> *typeInfo;
       file >> magicByte;
     }
 
@@ -95,16 +90,17 @@ bool LogPlayer::open(const std::string& fileName)
         }
         break;
       default:
+        logfilePath = "";
         return false; //unknown magic byte
     }
 
     stop();
     countFrames();
     createIndices();
-    logfileLoaded = true;
+    logfileMerged = false;
+    loadLabels();
     return true;
   }
-  logfileLoaded = false;
   return false;
 }
 
@@ -183,7 +179,8 @@ void LogPlayer::stepForward()
       else
         return;
     }
-    replayStreamSpecification();
+
+    replayTypeInfo();
 
     do
     {
@@ -244,295 +241,6 @@ int LogPlayer::getFrameForRemainingGCTime(int time)
   return time < 0 || time >= static_cast<int>(gcTimeIndex.size()) ? -1 : gcTimeIndex[time];
 }
 
-bool LogPlayer::save(const std::string& fileName, const StreamHandler* streamHandler)
-{
-  if(state == recording)
-    recordStop();
-
-  if(!getNumberOfMessages())
-    return false;
-
-  OutBinaryFile file(fileName);
-  if(file.exists())
-  {
-    file << Logging::logFileMessageIDs; // write magic byte to indicate message id table
-    writeMessageIDs(file);
-    if(streamHandler || this->streamHandler)
-    {
-      file << Logging::logFileStreamSpecification;
-      file << (this->streamHandler ? *this->streamHandler : *streamHandler);
-    }
-    file << Logging::logFileUncompressed; // write magic byte to indicate uncompressed log file
-    file << *this;
-    return true;
-  }
-  return false;
-}
-
-bool LogPlayer::saveImages(const bool raw, const std::string& fileName)
-{
-  int i = 0;
-  Image image;
-  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); currentMessageNumber++)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    if(queue.getMessageID() == idImage)
-      in.bin >> image;
-    else if(queue.getMessageID() == idJPEGImage)
-    {
-      JPEGImage jpegImage;
-      in.bin >> jpegImage;
-      jpegImage.toImage(image);
-    }
-    else if(queue.getMessageID() == idLowFrameRateImage)
-    {
-      LowFrameRateImage lowFrameRateImage;
-      in.bin >> lowFrameRateImage;
-      if(lowFrameRateImage.imageUpdated)
-        image = lowFrameRateImage.image;
-      else
-        continue;
-    }
-    else
-      continue;
-
-    if(!saveImage(image, fileName, i++, !raw))
-    {
-      stop();
-      return false;
-    }
-  }
-  stop();
-  return true;
-}
-
-bool LogPlayer::saveInertialSensorData()
-{
-  InertialSensorData data;
-  FrameInfo frame;
-  std::ofstream file;
-  std::string filename = "sensordata_" + logfilePath.substr(logfilePath.find_last_of('/') + 1) + ".csv";
-  file.open(filename.c_str());
-  file << "# frame index, gyro x, gyro y, gyro z, acc x, acc y, acc z, angle x, angle y";
-  file << std::endl;
-  for(currentMessageNumber = 0;
-      currentMessageNumber < getNumberOfMessages();
-      currentMessageNumber++)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    switch(queue.getMessageID())
-    {
-      case idInertialSensorData:
-        in.bin >> data;
-        continue;
-      case idFrameInfo:
-        in.bin >> frame;
-        continue;
-      case idProcessFinished:
-        file << frame.time << ",";
-        file << data.gyro.x() << ",";
-        file << data.gyro.y() << ",";
-        file << data.gyro.z() << ",";
-        file << data.acc.x() << ",";
-        file << data.acc.y() << ",";
-        file << data.acc.z() << ",";
-        file << data.angle.x() << ",";
-        file << data.angle.y() << std::endl;
-        continue;
-      default:
-        continue;
-    }
-  }
-  file.close();
-  stop();
-  return true;
-}
-
-bool LogPlayer::saveJointAngleData()
-{
-  JointAngles angles;
-  JointRequest request;
-  FrameInfo frame;
-  std::ofstream file;
-  std::string filename = "jointangledata_" + logfilePath.substr(logfilePath.find_last_of('/') + 1) + ".csv";
-  file.open(filename.c_str());
-  file << "frame index, ";
-  for(int i = 0; i < Joints::numOfJoints; i++)
-  {
-    file << "request " << i << ", angle " << i << ", " ;
-  }
-  file << std::endl;
-  for(currentMessageNumber = 0;
-      currentMessageNumber < getNumberOfMessages();
-      currentMessageNumber++)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    switch(queue.getMessageID())
-    {
-      case idFrameInfo:
-        in.bin >> frame;
-        continue;
-      case idJointAngles:
-        in.bin >> angles;
-        continue;
-      case idJointRequest:
-        in.bin >> request;
-        continue;
-      case idProcessFinished:
-        file << frame.time << ",";
-        for(int i = 0; i < Joints::numOfJoints; i++)
-        {
-          file << request.angles[i].toDegrees() << ",";
-          file << angles.angles[i].toDegrees() << ",";
-        }
-        file << std::endl;
-        continue;
-      default:
-        continue;
-    }
-  }
-  file.close();
-  stop();
-  return true;
-}
-
-bool LogPlayer::saveBallSpotImages(const std::string& fileName)
-{
-  int i = 0;
-
-  LowFrameRateImage lfrImage;
-  Image singleBallSpotImage;
-  BallSpots ballspots;
-  CameraInfo camerainfo;
-
-  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); currentMessageNumber++)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    switch(queue.getMessageID())
-    {
-      case idLowFrameRateImage:
-        in.bin >> lfrImage;
-        continue;
-      case idBallSpots:
-        in.bin >> ballspots;
-        continue;
-      case idCameraInfo:
-        in.bin >> camerainfo;
-        continue;
-      case idProcessFinished: // a frame has passed and we should've both representations loaded
-      {
-        /* BEGIN FRAME */
-        if(!lfrImage.imageUpdated) // image hasn't updated yet, so the found ballspots are useless
-          continue;
-        if(ballspots.ballSpots.empty()) // dump the frame when there aren't any ballspots
-          continue;
-
-        const std::string camera = camerainfo.camera == CameraInfo::Camera::upper ? "_upper" : "_lower";
-        const int neuralNetImageDiameter = 16; //Depends on the value from NeuralBallPerceptor
-        int oX, oY, px, py, subOriginX, subOriginY, scanRegionDimension, counter;
-        unsigned char max, min;
-        Image singleBallSpotImage;
-        singleBallSpotImage.setResolution(neuralNetImageDiameter, neuralNetImageDiameter);
-        for(auto& ballspot : ballspots.ballSpots)
-        {
-          oX = ballspot.x();
-          oY = ballspot.y();
-          scanRegionDimension = camerainfo.camera == CameraInfo::Camera::lower
-                                ? (int)((48 * oY) / 185) + neuralNetImageDiameter * 3
-                                : (int)((0.259 * oY) - 3);
-          counter = 1;
-          max = 0;
-          min = 255;
-
-          if(camerainfo.camera == CameraInfo::Camera::lower || scanRegionDimension > neuralNetImageDiameter)
-          {
-            subOriginX = oX - scanRegionDimension / 2;
-            subOriginY = oY - scanRegionDimension / 2;
-
-            for(int y = 0; y < neuralNetImageDiameter; ++y)
-            {
-              py = y * (scanRegionDimension / neuralNetImageDiameter) + subOriginY;
-              for(int x = 0; x < neuralNetImageDiameter; ++x)
-              {
-                px = x * (scanRegionDimension / neuralNetImageDiameter) + subOriginX;
-                if((px < 0 || px >= lfrImage.image.width) || (py < 0 || py >= lfrImage.image.height))
-                {
-                  singleBallSpotImage[y][x].y = 128;
-                  if(128 > max)
-                    max = 128;
-                  if(128 < min)
-                    min = 128;
-                }
-                else
-                {
-                  singleBallSpotImage[y][x].y = lfrImage.image[py][px].y;
-                  if(lfrImage.image[py][px].y > max)
-                    max = lfrImage.image[py][px].y;
-                  if(lfrImage.image[py][px].y < min)
-                    min = lfrImage.image[py][px].y;
-                }
-                counter++;
-              }
-            }
-          }
-          else
-          {
-            const int x1 = oX - neuralNetImageDiameter / 2;
-            const int y1 = oY - neuralNetImageDiameter / 2;
-
-            for(int y = 0; y < neuralNetImageDiameter; ++y)
-            {
-              py = y1 + y;
-              for(int x = 0; x < neuralNetImageDiameter; ++x)
-              {
-                px = x1 + x;
-                if((px < 0 || px >= lfrImage.image.width) || (py < 0 || py >= lfrImage.image.height))
-                {
-                  singleBallSpotImage[y][x].y = 128;
-                  if(128 > max)
-                    max = 128;
-                  if(128 < min)
-                    min = 128;
-                }
-                else
-                {
-                  singleBallSpotImage[y][x].y = lfrImage.image[py][px].y;
-                  if(lfrImage.image[py][px].y > max)
-                    max = lfrImage.image[py][px].y;
-                  if(lfrImage.image[py][px].y < min)
-                    min = lfrImage.image[py][px].y;
-                }
-                counter++;
-              }
-            }
-          }
-
-          unsigned char elem;
-          for(int y = 0; y < neuralNetImageDiameter; ++y)
-          {
-            for(int x = 0; x < neuralNetImageDiameter; ++x)
-            {
-              elem = (singleBallSpotImage[y][x].y - min) / (max - min);
-              singleBallSpotImage[y][x].y = elem <= 128 ? 0 : elem;
-            }
-          }
-          if(!saveImage(singleBallSpotImage, fileName + camera, i++, false))
-          {
-            stop();
-            return false;
-          }
-        }
-        /* END FRAME */
-      }
-      default:
-        continue;
-    }
-  }
-
-  stop();
-  return true;
-}
-
 void LogPlayer::recordStart()
 {
   state = recording;
@@ -571,7 +279,7 @@ bool LogPlayer::replay()
   {
     if(currentFrameNumber < numberOfFrames - 1)
     {
-      replayStreamSpecification();
+      replayTypeInfo();
 
       do
       {
@@ -588,25 +296,21 @@ bool LogPlayer::replay()
       ++currentFrameNumber;
       if(currentFrameNumber == numberOfFrames - 1)
       {
-        if(loop)  //restart in loop mode
+        if(loop)   //restart in loop mode
         {
           gotoFrame(0);
           play();
         }
-        else
-          stop();
       }
       return true;
     }
     else
     {
-      if(loop)  //restart in loop mode
+      if(loop)   //restart in loop mode
       {
         gotoFrame(0);
         play();
       }
-      else
-        stop();
     }
   }
   return false;
@@ -621,7 +325,6 @@ void LogPlayer::keep(const std::function<bool(InMessage&)>& filter)
   for(temp.currentMessageNumber = 0; temp.currentMessageNumber < temp.getNumberOfMessages(); ++temp.currentMessageNumber)
   {
     temp.queue.setSelectedMessageForReading(temp.currentMessageNumber);
-    temp.in.config.reset();
     temp.in.text.reset();
     if(filter(temp.in))
       temp.copyMessage(temp.currentMessageNumber, *this);
@@ -637,12 +340,12 @@ void LogPlayer::keepFrames(const std::function<bool(InMessage&)>& filter)
   LogPlayer temp((MessageQueue&)*this);
   temp.setSize(queue.getSize());
   moveAllMessages(temp);
+  temp.queue.createIndex();
   int frameStart = -1;
   bool keepFrame = false;
   for(temp.currentMessageNumber = 0; temp.currentMessageNumber < temp.getNumberOfMessages(); ++temp.currentMessageNumber)
   {
     temp.queue.setSelectedMessageForReading(temp.currentMessageNumber);
-    temp.in.config.reset();
     temp.in.text.reset();
     keepFrame |= filter(temp.in);
     if(temp.queue.getMessageID() == idProcessBegin)
@@ -713,7 +416,7 @@ void LogPlayer::statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes
 void LogPlayer::createIndices()
 {
   GameInfo gameInfo;
-  OutBinarySize gameInfoSize;
+  OutBinaryMemory gameInfoSize(256);
   gameInfoSize << gameInfo;
 
   queue.createIndex();
@@ -727,7 +430,7 @@ void LogPlayer::createIndices()
     const MessageID id = queue.getMessageID();
     if(id == idProcessBegin)
       frameIndex.push_back(i);
-    else if(id == idGameInfo && queue.getMessageSize() == static_cast<int>(gameInfoSize.getSize()))
+    else if(id == idGameInfo && queue.getMessageSize() == static_cast<int>(gameInfoSize.size()))
     {
       in.bin >> gameInfo;
       const int time = gameInfo.secsRemaining;
@@ -756,255 +459,34 @@ void LogPlayer::countFrames()
   }
 }
 
-std::string LogPlayer::expandImageFileName(const std::string& fileName, int imageNumber)
+void LogPlayer::replayTypeInfo()
 {
-  std::string name = fileName;
-  std::string ext = ".png";
-  std::string::size_type p = name.rfind('.');
-  size_t lastDirectorySeparatorIndex = (int) name.find_last_of("\\/");
-  if((int) p > (int) lastDirectorySeparatorIndex)
+  if(typeInfo && !typeInfoReplayed)
   {
-    ext = name.substr(p);
-    name = name.substr(0, p);
-  }
-
-  if(imageNumber >= 0)
-  {
-    char num[12];
-    sprintf(num, "%03d", imageNumber);
-    if(name != "" && lastDirectorySeparatorIndex != fileName.length() - 1)  // only if nonempty base name supplied
-      name += "_";
-    name += num + ext;
-  }
-  else
-    name += ext;
-
-  for(unsigned i = 0; i < name.size(); ++i)
-    if(name[i] == '\\')
-      name[i] = '/';
-  if(name[0] != '/' && (name.size() < 2 || name[1] != ':'))
-    name = File::getBHDir() + std::string("/Config/") + name;
-  return name;
-}
-
-bool LogPlayer::saveImage(const Image& image, const std::string& fileName, int imageNumber, bool YUV2RGB)
-{
-  std::string name = expandImageFileName(fileName, imageNumber);
-  const Image* r = &image;
-  if(YUV2RGB)
-  {
-    r = new Image;
-    const_cast<Image*>(r)->convertFromYCbCr422ToRGB(image);
-  }
-  QImage img(r->width, r->height, QImage::Format_RGB888);
-  for(int y = 0; y < r->height; ++y)
-  {
-    const Image::Pixel* pSrc = &(*r)[y][0];
-    unsigned char* p = img.scanLine(y);
-    unsigned char* pEnd = p + 3 * r->width;
-
-    if(YUV2RGB)
-      while(p != pEnd)
-      {
-        *p++ = pSrc->r;
-        *p++ = pSrc->g;
-        *p++ = pSrc->b;
-        ++pSrc;
-      }
-    else
-      while(p != pEnd)
-      {
-        *p++ = pSrc->y;
-        *p++ = pSrc->cb;
-        *p++ = pSrc->cr;
-        ++pSrc;
-      }
-  }
-  if(YUV2RGB)
-    delete r;
-  return img.save(name.c_str());
-}
-
-bool LogPlayer::writeTimingData(const std::string& fileName)
-{
-  stop();
-
-  std::map<unsigned short, std::string> names;/**<contains a mapping from watch id to watch name */
-  std::map<unsigned, std::map<unsigned short, unsigned>> timings;/**<Contains a map from watch id to timing for each existing frame*/
-  std::map<unsigned, unsigned> processStartTimes;/**< After parsing this contains the start time of each frame (frames may be missing) */
-  for(int currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); currentMessageNumber++)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    if(queue.getMessageID() == idStopwatch)
-    {
-      //NOTE: this parser is a slightly modified version of the on in TimeInfo
-      //first get the names
-      unsigned short nameCount;
-      in.bin >> nameCount;
-
-      for(int i = 0; i < nameCount; ++i)
-      {
-        std::string watchName;
-        unsigned short watchId;
-        in.bin >> watchId;
-        in.bin >> watchName;
-        if(names.find(watchId) == names.end()) //new name
-          names[watchId] = watchName;
-      }
-
-      //now get timing data
-      unsigned short dataCount;
-      in.bin >> dataCount;
-
-      std::map<unsigned short, unsigned> frameTiming;
-      for(int i = 0; i < dataCount; ++i)
-      {
-        unsigned short watchId;
-        unsigned time;
-        in.bin >> watchId;
-        in.bin >> time;
-
-        frameTiming[watchId] = time;
-      }
-      unsigned processStartTime;
-      in.bin >> processStartTime;
-      unsigned frameNo;
-      in.bin >> frameNo;
-
-      timings[frameNo] = frameTiming;
-      processStartTimes[frameNo] = processStartTime;
-    }
-  }
-
-  //now write the data to disk
-  OutTextRawFile file(fileName);
-  if(!file.exists())
-    return false;
-
-  std::unordered_map<unsigned short, int> columns; /**< mapping from stopwatch id to table column*/
-  const std::string sep(",");
-  //write header
-  file << "Frame" << sep << "StartTime" << sep;
-  int column = 0;
-  for(auto it = names.begin(); it != names.end(); ++it, ++column)
-  {
-    columns[it->first] = column;
-    file << it->second << sep;
-  }
-  file << endl;
-
-  //write data
-  for(auto it = processStartTimes.begin(); it != processStartTimes.end(); ++it)
-  {
-    const unsigned frameNo = it->first;
-    std::vector<long> row;
-    row.resize(column, -42); //-42 is a value that can never happen because all timings are unsigned
-    std::map<unsigned short, unsigned>& timing = timings[frameNo];
-    for(const auto& t : timing)
-    {
-      int colIndex = columns[t.first];
-      row[colIndex] = t.second;
-    }
-
-    file << frameNo << sep << it->second << sep;
-    for(long value : row)
-    {
-      //write timing data
-      if(value == -42)
-        file << "NO DATA" << sep;
-      else
-        file << value / 1000.0f << sep; // division by 1000 to convert to ms
-    }
-    file << endl;
-  }
-  return true;
-}
-
-bool LogPlayer::saveAudioFile(const std::string& fileName)
-{
-  OutBinaryFile stream(fileName);
-  if(!stream.exists())
-    return false;
-
-  int frames = 0;
-  AudioData audioData;
-  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); ++currentMessageNumber)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    if(queue.getMessageID() == idAudioData)
-    {
-      in.bin >> audioData;
-      frames += unsigned(audioData.samples.size()) / audioData.channels;
-    }
-  }
-
-  struct WAVHeader
-  {
-    char chunkId[4];
-    int chunkSize;
-    char format[4];
-    char subchunk1Id[4];
-    int subchunk1Size;
-    short audioFormat;
-    short numChannels;
-    int sampleRate;
-    int byteRate;
-    short blockAlign;
-    short bitsPerSample;
-    char subchunk2Id[4];
-    int subchunk2Size;
-  };
-
-  int length = sizeof(WAVHeader) + sizeof(short) * frames * audioData.channels;
-  WAVHeader* header = (WAVHeader*) new char[length];
-  *(unsigned*)header->chunkId = *(const unsigned*) "RIFF";
-  header->chunkSize = length - 8;
-  *(unsigned*)header->format = *(const unsigned*) "WAVE";
-
-  *(unsigned*)header->subchunk1Id = *(const unsigned*) "fmt ";
-  header->subchunk1Size = 16;
-  header->audioFormat = 1;
-  header->numChannels = (short)audioData.channels;
-  header->sampleRate = audioData.sampleRate;
-  header->byteRate = audioData.sampleRate * audioData.channels * sizeof(short);
-  header->blockAlign = short(audioData.channels * sizeof(short));
-  header->bitsPerSample = 16;
-
-  *(unsigned*)header->subchunk2Id = *(const unsigned*) "data";
-  header->subchunk2Size = frames * audioData.channels * sizeof(short);
-
-  char* p = (char*)(header + 1);
-  for(currentMessageNumber = 0; currentMessageNumber < getNumberOfMessages(); ++currentMessageNumber)
-  {
-    queue.setSelectedMessageForReading(currentMessageNumber);
-    if(queue.getMessageID() == idAudioData)
-    {
-      in.bin >> audioData;
-      memcpy(p, audioData.samples.data(), audioData.samples.size() * sizeof(short));
-      p += audioData.samples.size() * sizeof(short);
-    }
-  }
-
-  stream.write(header, length);
-  delete[] header;
-
-  stop();
-
-  return true;
-}
-
-void LogPlayer::replayStreamSpecification()
-{
-  if(streamHandler && !streamSpecificationReplayed)
-  {
-    targetQueue.out.bin << *streamHandler;
-    targetQueue.out.finishMessage(idStreamSpecification);
-    streamSpecificationReplayed = true;
+    targetQueue.out.bin << *typeInfo;
+    targetQueue.out.finishMessage(idTypeInfo);
+    typeInfoReplayed = true;
   }
 }
 
 void LogPlayer::merge()
 {
+  if(logfileMerged || logfilePath.empty())
+    return;
+
+  //parse filename and find the corresponding other logfile
+  std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
+  std::size_t prefixPos = file.find_first_of('_');
+  if(prefixPos == std::string::npos)
+    return; // File name does not follow pattern
+
+  std::string processName = file.substr(0, prefixPos);
+  if(processName != "Cognition" && processName != "Motion")
+    return; // File name does not follow pattern
+
+  std::string remainderName = file.substr(prefixPos);
+  std::string logOtherFile = logfilePath.substr(0, logfilePath.find_last_of('/') + 1) + (processName == "Motion" ? "Cognition" : "Motion") + remainderName;
+
   stop();
 
   //copy the currently loaded logfile
@@ -1014,31 +496,25 @@ void LogPlayer::merge()
   logCopy.countFrames();
   logCopy.createIndices();
 
-  //parse filename and find the corresponding other logfile
-  std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
-  std::size_t prefixPos = file.find_first_of('_');
-  std::string processName = file.substr(0, prefixPos);
-  std::string remainderName = file.substr(prefixPos);
-  std::string logOtherFile = logfilePath.substr(0, logfilePath.find_last_of('/') + 1) + (processName == "Motion" ? "Cognition" : "Motion") + remainderName;
-
   //open other logfile
   LogPlayer logOther((MessageQueue&)*this);
+  logOther.setSize(queue.getSize());
   if(!logOther.open(logOtherFile))
   {
     OUTPUT_ERROR("Could not open " << logOtherFile);
     return;
   }
 
-  //merge stream specification
+  if(static_cast<unsigned long long>(logCopy.queue.usedSize) + static_cast<unsigned long long>(logOther.queue.usedSize) > std::numeric_limits<unsigned>::max())
+    OUTPUT_WARNING("Merged log would exceed 4GB");
+
+  //merge stream specification (for compatibility with old log files)
+  if(typeInfo && logOther.typeInfo)
   {
-    OutBinarySize size;
-    size << *logOther.streamHandler;
-    char* buffer = new char[size.getSize()];
-    OutBinaryMemory out(buffer);
-    out << *logOther.streamHandler;
-    InBinaryMemory in(buffer);
-    in >> *streamHandler;
-    delete[] buffer;
+    typeInfo->primitives.insert(logOther.typeInfo->primitives.begin(), logOther.typeInfo->primitives.end());
+    typeInfo->enums.insert(logOther.typeInfo->enums.begin(), logOther.typeInfo->enums.end());
+    typeInfo->classes.insert(logOther.typeInfo->classes.begin(), logOther.typeInfo->classes.end());
+    typeInfoReplayed = false;
   }
 
   //TODO: ugly as hell -> use processidentifier stuff
@@ -1069,7 +545,6 @@ void LogPlayer::merge()
     for(lp.currentMessageNumber = 0; lp.currentMessageNumber < lp.getNumberOfMessages(); ++lp.currentMessageNumber)
     {
       lp.queue.setSelectedMessageForReading(lp.currentMessageNumber);
-      lp.in.config.reset();
       lp.in.text.reset();
       switch(lp.queue.getMessageID())
       {
@@ -1140,7 +615,135 @@ void LogPlayer::merge()
   }
   countFrames();
   createIndices();
+  logfileMerged = true;
+}
 
-  targetQueue.out.bin << *streamHandler;
-  targetQueue.out.finishMessage(idStreamSpecification);
+void LogPlayer::loadLabels()
+{
+  std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
+  std::size_t prefixPos = file.find_first_of('_');
+  std::string processName = file.substr(0, prefixPos);
+  if(processName == "Cognition")
+  {
+    ImageSet imageSet;
+
+    std::size_t found = logfilePath.find_last_of("/\\");
+    std::string logPath =  logfilePath.substr(0, found);
+
+    DIR* dir = opendir(logPath.c_str());
+    ASSERT(dir);
+    struct dirent* file = readdir(dir);
+
+    while(file != nullptr)
+    {
+      std::string name = file->d_name;
+      if(name.rfind(".lbd") == name.size() - 4)
+      {
+        InMapFile stream((logfilePath.substr(0, found) + '/' + name).c_str());
+        ASSERT(stream.exists());
+
+        stream >> imageSet;
+        break;
+      }
+      file = readdir(dir);
+    }
+    closedir(dir);
+
+    if(imageSet.labelImages.size() > 0)
+    {
+      LogPlayer cognitionLog((MessageQueue&)*this);
+      cognitionLog.setSize(queue.getSize());
+
+      moveAllMessages(cognitionLog);
+      cognitionLog.countFrames();
+      cognitionLog.createIndices();
+
+      struct FrameData
+      {
+        unsigned int time;
+        int messageStart;
+        int messageEnd;
+      };
+
+      std::vector<FrameData> cognitionData;
+      cognitionData.reserve(cognitionLog.getNumberOfMessages());
+
+      FrameInfo frameInfo;
+      JointAngles jointAngles;
+      FrameData frameData;
+
+      for(cognitionLog.currentMessageNumber = 0; cognitionLog.currentMessageNumber < cognitionLog.getNumberOfMessages(); ++cognitionLog.currentMessageNumber)
+      {
+        cognitionLog.queue.setSelectedMessageForReading(cognitionLog.currentMessageNumber);
+        cognitionLog.in.text.reset();
+        switch(cognitionLog.queue.getMessageID())
+        {
+          case idProcessBegin:
+            frameData.messageStart = cognitionLog.currentMessageNumber;
+            break;
+          case idFrameInfo:
+            cognitionLog.in.bin >> frameInfo;
+            frameData.time = frameInfo.time;
+            break;
+          case idProcessFinished:
+            frameData.messageEnd = cognitionLog.currentMessageNumber;
+            cognitionData.push_back(frameData);
+            break;
+          default:
+            break;
+        }
+      }
+
+      auto cognitionItr = cognitionData.begin();
+      const auto& cognitionEnd = cognitionData.end();
+
+      int currentIndexLogData = 0;
+      while(true)
+      {
+        if(currentIndexLogData == static_cast<int>(imageSet.labelImages.size()))
+        {
+          imageSet.labelImages.at(currentIndexLogData - 1).valid = false;
+          while(cognitionItr != cognitionEnd)
+          {
+            int i = cognitionItr->messageStart;
+            while(i < cognitionItr->messageEnd)
+            {
+              cognitionLog.copyMessage(i++, *this);
+            }
+            out.bin << imageSet.labelImages.at(currentIndexLogData - 1);
+            out.finishMessage(idLabelImage);
+            cognitionLog.copyMessage(i, *this);
+            ++cognitionItr;
+          }
+          break;
+        }
+        else
+        {
+          int i = cognitionItr->messageStart;
+          while(i < cognitionItr->messageEnd)
+          {
+            cognitionLog.copyMessage(i++, *this);
+          }
+
+          if(cognitionItr->time <= imageSet.labelImages.at(currentIndexLogData).frameTime && ((cognitionItr + 1) == cognitionEnd || (cognitionItr + 1)->time > imageSet.labelImages.at(currentIndexLogData).frameTime))
+          {
+            imageSet.labelImages.at(currentIndexLogData).valid = true;
+            out.bin << imageSet.labelImages.at(currentIndexLogData++);
+            out.finishMessage(idLabelImage);
+          }
+          else
+          {
+            int index = currentIndexLogData == 0 ? currentIndexLogData : currentIndexLogData - 1;
+            imageSet.labelImages.at(index).valid = false;
+            out.bin << imageSet.labelImages.at(index);
+            out.finishMessage(idLabelImage);
+          }
+          cognitionLog.copyMessage(i, *this);
+          ++cognitionItr;
+        }
+      }
+      countFrames();
+      createIndices();
+    }
+  }
 }

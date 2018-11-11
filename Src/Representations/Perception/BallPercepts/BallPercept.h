@@ -11,7 +11,6 @@
 
 #include "Tools/Streams/Enum.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
 #include <vector>
 
 STREAMABLE(BallPercept,
@@ -27,7 +26,10 @@ STREAMABLE(BallPercept,
   inline BallPercept(const Vector2f& positionInImage, const float radiusInImage, const Vector2f& relativePositionOnField, const float radiusOnField, const BallPercept::Status status);
 
   /** Draws the ball*/
-  void draw() const,
+  void draw() const;
+  
+  /** Verifies that the ball percept contains valid values. */
+  void verify() const,
 
   (Vector2f) positionInImage,         /**< The position of the ball in the current image */
   (float) radiusInImage,              /**< The radius of the ball in the current image */

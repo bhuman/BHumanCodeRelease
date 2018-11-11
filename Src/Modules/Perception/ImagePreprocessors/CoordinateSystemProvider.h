@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Tools/Module/Module.h"
-#include "Representations/Infrastructure/Image.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -20,7 +20,6 @@ MODULE(CoordinateSystemProvider,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(FrameInfo),
-  REQUIRES(Image), // for debugging only
   REQUIRES(JointSensorData), // for timeStamp only
   PROVIDES(ImageCoordinateSystem),
   LOADS_PARAMETERS(
@@ -35,7 +34,7 @@ class CoordinateSystemProvider : public CoordinateSystemProviderBase
   /**
    * Updates the image coordinate system provided by this module.
    */
-  void update(ImageCoordinateSystem& imageCoordinateSystem);
+  void update(ImageCoordinateSystem& imageCoordinateSystem) override;
 
   /**
    * The method calculates the scaling factors for the distored image.
@@ -47,9 +46,6 @@ class CoordinateSystemProvider : public CoordinateSystemProviderBase
   CameraMatrix cameraMatrixPrev[CameraInfo::numOfCameras];
   unsigned cameraMatrixPrevTimeStamp[CameraInfo::numOfCameras];
   Vector2f prevOffset = Vector2f::Zero();
-
-  mutable TImage<PixelTypes::YUYVPixel> correctedImage;
-  mutable TImage<PixelTypes::YUYVPixel> horizonAlignedImage;
 
 public:
   /** Initialize members. */

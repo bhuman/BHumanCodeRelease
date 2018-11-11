@@ -16,18 +16,4 @@ namespace RoboCup
 #include <RoboCupGameControlData.h>
 #include <SPLStandardMessage.h>
 #undef teamColour
-
-// This should be defined in one of the includes above
-// but it isn't so i will just leave this here
-#define DROPIN_INTENTION_DEFAULT 0
-#define DROPIN_INTENTION_KEEPER 1
-#define DROPIN_INTENTION_DEFENSIVE 2
-#define DROPIN_INTENTION_KICK 3
-#define DROPIN_INTENTION_LOST 4
-
-#define DROPIN_SUGGESTION_DEFAULT 0
-#define DROPIN_SUGGESTION_KEEPER 1
-#define DROPIN_SUGGESTION_DEFENSIVE 2
-#define DROPIN_SUGGESTION_OFFENSIVE 3
-#define DROPIN_SUGGESTION_KICK 4
 }

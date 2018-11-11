@@ -7,7 +7,7 @@
 
 namespace Joints
 {
-  GLOBAL_ENUM(Joint,
+  ENUM(Joint,
   {, //ALL ENUMS HERE MUST BE IN THE SAME ORDER LIKE THE ENUMS BELOW
     headYaw,
     headPitch,
@@ -53,7 +53,7 @@ namespace Joints
 
   using stdVectorJoint = std::vector<Joint>;
 
-  GLOBAL_ENUM(JointArmVarieties,
+  ENUM(JointArmVarieties,
   {,
     shoulderPitch,
     shoulderRoll,
@@ -63,7 +63,7 @@ namespace Joints
     hand,
   });
 
-  GLOBAL_ENUM(JointLegVarieties,
+  ENUM(JointLegVarieties,
   {,
     hipYawPitch, //< not a joint in the real nao
     hipRoll,

@@ -36,10 +36,10 @@ option(Walking)
   {
     action
     {
-      walk(Pose2f(walkRequest.speed.rotation * theWalkGenerator.maxSpeed.rotation,
-                  walkRequest.speed.translation.x() * theWalkGenerator.maxSpeed.translation.x(),
-                  walkRequest.speed.translation.y() * theWalkGenerator.maxSpeed.translation.y()),
-           walkRequest.target);
+      walkToTarget(Pose2f(walkRequest.speed.rotation * theWalkGenerator.maxSpeed.rotation,
+                          walkRequest.speed.translation.x() * theWalkGenerator.maxSpeed.translation.x(),
+                          walkRequest.speed.translation.y() * theWalkGenerator.maxSpeed.translation.y()),
+                   walkRequest.target);
     }
   }
 }

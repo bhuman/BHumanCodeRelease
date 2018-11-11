@@ -34,7 +34,7 @@ struct WarningSuppressor
 
 #define SEND_CASE(value) case WarningSuppressor::id##value: m.theBHumanArbitraryMessage.queue.out.bin << value; break
 #define SEND_CASE_ARRAY(value) case WarningSuppressor::id##value: for(size_t _i=0;_i<value.size();++_i) m.theBHumanArbitraryMessage.queue.out.bin << value[_i]; break
-void RobotHealth::operator >> (BHumanMessage& m) const
+void RobotHealth::operator>>(BHumanMessage& m) const
 {
   WarningSuppressor::RobotHealthMessageId idToSend = WarningSuppressor::idbatteryLevel;
   if(Blackboard::getInstance().exists("BHumanMessageOutputGenerator"))

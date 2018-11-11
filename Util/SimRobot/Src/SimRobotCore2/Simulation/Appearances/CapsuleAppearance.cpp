@@ -8,12 +8,12 @@
 
 #include "Simulation/Appearances/CapsuleAppearance.h"
 
-void CapsuleAppearance::assembleAppearances() const
+void CapsuleAppearance::assembleAppearances(SurfaceColor color) const
 {
   glPushMatrix();
   glMultMatrixf(transformation);
 
-  surface->set();
+  surface->set(color);
 
   GLUquadricObj* q = gluNewQuadric();
   float cylinderHeight = height - radius - radius;
@@ -26,6 +26,6 @@ void CapsuleAppearance::assembleAppearances() const
 
   surface->unset();
 
-  GraphicalObject::assembleAppearances();
+  GraphicalObject::assembleAppearances(color);
   glPopMatrix();
 }

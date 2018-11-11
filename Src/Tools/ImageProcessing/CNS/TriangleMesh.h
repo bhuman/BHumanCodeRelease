@@ -29,7 +29,7 @@ public:
     Face(): color(0) {vertex[0] = vertex[1] = vertex[2] = -1;}
     Face(int vertex0, int vertex1, int vertex2, int color = 0): color(color) {vertex[0] = vertex0; vertex[1] = vertex1; vertex[2] = vertex2;}
     Face(int vertex[3], int color = 0): color(color) {this->vertex[0] = vertex[0]; this->vertex[1] = vertex[1]; this->vertex[2] = vertex[2];}
-    bool operator == (const Face& f2) const
+    bool operator==(const Face& f2) const
     {
       return vertex[0] == f2.vertex[0] && vertex[1] == f2.vertex[1] && vertex[2] == f2.vertex[2] &&
              color == f2.color;
@@ -67,7 +67,7 @@ public:
     bool empty() const {return vertex[0] == -1 && vertex[1] == -1;}
     bool valid() const {return vertex[0] >= 0 && vertex[1] >= 0;}
     void order() {if(vertex[0] > vertex[1]) std::swap(vertex[0], vertex[1]); }
-    bool operator == (const Edge& e2) const
+    bool operator==(const Edge& e2) const
     {
       return vertex[0] == e2.vertex[0] && vertex[1] == e2.vertex[1] &&
              face[0] == e2.face[0] && face[1] == e2.face[1];
@@ -332,13 +332,13 @@ public:
   bool load(const char* filename);
 };
 
-inline std::ostream& operator << (std::ostream& o, const TriangleMesh::Edge& edge)
+inline std::ostream& operator<<(std::ostream& o, const TriangleMesh::Edge& edge)
 {
   o << "[" << edge.vertex[0] << " " << edge.vertex[1] << " " << edge.face[0] << " " << edge.face[1] << "]";
   return o;
 }
 
-inline std::ostream& operator << (std::ostream& o, const TriangleMesh::Face& face)
+inline std::ostream& operator<<(std::ostream& o, const TriangleMesh::Face& face)
 {
   o << "[" << face.vertex[0] << " " << face.vertex[1] << " " << face.vertex[2] << " " << face.color << "]";
   return o;
@@ -357,7 +357,7 @@ public:
   }
 };
 
-inline std::ostream& operator << (std::ostream& os, const TriangleMesh::EdgeList& el)
+inline std::ostream& operator<<(std::ostream& os, const TriangleMesh::EdgeList& el)
 {
   TriangleMesh::EdgeList el2(el);
   sort(el2.begin(), el2.end(), LessOnEdges());

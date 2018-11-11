@@ -27,30 +27,12 @@ STREAMABLE(ECImage,
   {
     SEND_DEBUG_IMAGE("ColoredImage", colored);
     SEND_DEBUG_IMAGE("GrayscaledImage", grayscaled);
-    SEND_DEBUG_IMAGE("Ued", ued);
-    SEND_DEBUG_IMAGE("Ved", ved);
     SEND_DEBUG_IMAGE("SaturatedImage", saturated);
     SEND_DEBUG_IMAGE("HuedImage", hued);
   },
 
   (unsigned)(0) timeStamp,
   (TImage<PixelTypes::GrayscaledPixel>) grayscaled,
-  (TImage<PixelTypes::GrayscaledPixel>) ued,
-  (TImage<PixelTypes::GrayscaledPixel>) ved,
-  (TImage<PixelTypes::ColoredPixel>) colored,
-  (TImage<PixelTypes::GrayscaledPixel>) saturated,
-  (TImage<PixelTypes::HuePixel>) hued,
-});
-
-STREAMABLE(ThumbnailCImage,
-{
-  void draw() const
-  {
-    SEND_DEBUG_IMAGE("ThumbnailColoredImage", colored);
-    SEND_DEBUG_IMAGE("ThumbnailSaturatedImage", saturated);
-    SEND_DEBUG_IMAGE("ThumbnailHuedImage", hued);
-  },
-
   (TImage<PixelTypes::ColoredPixel>) colored,
   (TImage<PixelTypes::GrayscaledPixel>) saturated,
   (TImage<PixelTypes::HuePixel>) hued,

@@ -54,32 +54,32 @@ private:
   /** One main function, might be called every cycle
    * @param ballModel The data struct to be filled
    */
-  void update(BallModel& ballModel);
+  void update(BallModel& ballModel) override;
 
   /** One main function, might be called every cycle
    * @param ballModel3D The data struct to be filled
    */
-  void update(BallModel3D& ballModel);
+  void update(BallModel3D& ballModel) override;
 
   /** One main function, might be called every cycle
    * @param groundTruthBallModel The data struct to be filled
    */
-  void update(GroundTruthBallModel& groundTruthBallModel);
+  void update(GroundTruthBallModel& groundTruthBallModel) override;
 
   /** One main function, might be called every cycle
    * @param obstacleModel The data struct to be filled
    */
-  void update(ObstacleModel& obstacleModel);
+  void update(ObstacleModel& obstacleModel) override;
 
   /** One main function, might be called every cycle
    * @param robotPose The data struct to be filled
    */
-  void update(RobotPose& robotPose);
+  void update(RobotPose& robotPose) override;
 
   /** One main function, might be called every cycle
    * @param groundTruthRobotPose The data struct to be filled
    */
-  void update(GroundTruthRobotPose& groundTruthRobotPose);
+  void update(GroundTruthRobotPose& groundTruthRobotPose) override;
 
   /** Converts ground truth player data to an obstacle
    * @param player A player

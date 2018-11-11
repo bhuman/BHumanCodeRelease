@@ -10,7 +10,7 @@
 # is installed, it is also automatically called whenever git changes
 # the working copy except for cherry-picking.
 
-cd `dirname $0`
+cd "$(dirname "$(which "$0")")"
 
 # Force Xcode to use Build directory
 SETTINGSFILE=WorkspaceSettings.xcsettings
@@ -60,7 +60,7 @@ fi
 
 # Set link for address sanitizer
 rm -f ../../Util/Buildchain/macOS/lib
-ln -s "$(dirname $(dirname $(xcrun -find clang++)))/lib" ../../Util/Buildchain/macOS/lib
+ln -s "$(dirname "$(dirname "$(xcrun -find clang++)")")/lib" ../../Util/Buildchain/macOS/lib
 
 # Link file templates
 mkdir -p ~/Library/Developer/Xcode/Templates/
@@ -96,13 +96,19 @@ fi
 
 $EXE $CFG $SRC
 
-# Activate AVX2 in project if available on this machine or filter it out of the template
+# Activate AVX2 in project if available and set macOS version or filter them out of the template
 if [ "$MSG" == "template" ]; then
-  sed <$SRC.tmp >$SRC.tmp2 "s%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%CLANG_X86_VECTOR_INSTRUCTIONS = default%" \
+  sed <$SRC.tmp >$SRC.tmp2 \
+  -e "s%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%CLANG_X86_VECTOR_INSTRUCTIONS = default%" \
+  -e "s%MACOSX_DEPLOYMENT_TARGET = .*;%MACOSX_DEPLOYMENT_TARGET = XX.XX;%" \
   && mv $SRC.tmp2 $SRC.tmp
 else
-  ( sysctl -a | grep AVX2 >/dev/null ) \
-  && sed <$SRC.tmp >$SRC.tmp2 "s%CLANG_X86_VECTOR_INSTRUCTIONS = default%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%" \
+  AVX=default
+  ( sysctl -a | grep AVX2 >/dev/null ) && AVX=avx2
+  VERSION=$(sw_vers -productVersion | sed "s%\([0-9]*\.[0-9]*\).*%\1%")
+  sed <$SRC.tmp >$SRC.tmp2 \
+  -e "s%CLANG_X86_VECTOR_INSTRUCTIONS = default%CLANG_X86_VECTOR_INSTRUCTIONS = $AVX%" \
+  -e "s%MACOSX_DEPLOYMENT_TARGET = XX.XX;%MACOSX_DEPLOYMENT_TARGET = $VERSION;%" \
   && mv $SRC.tmp2 $SRC.tmp
 fi
 

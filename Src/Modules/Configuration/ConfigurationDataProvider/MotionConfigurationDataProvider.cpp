@@ -48,10 +48,10 @@ void MotionConfigurationDataProvider::update(WalkKicks& walkKicks)
 
 void MotionConfigurationDataProvider::readWalkKicks()
 {
-  FOREACH_ENUM((WalkKicks) Type, kick)
+  FOREACH_ENUM(WalkKicks::Type, kick)
     if(kick != WalkKicks::none)
     {
-      const std::string kickName = WalkKicks::getName(kick);
+      const std::string kickName = TypeRegistry::getEnumName(kick);
       InMapFile stream("WalkKicks/" + kickName + ".cfg");
       ASSERT(stream.exists());
       stream >> theWalkKicks->kicks[kick];

@@ -36,6 +36,8 @@ MODULE(FieldCoverageProvider,
     (int)(12) numOfCellsY,
 
     (float)(2000.f) ballVisibilityRange,
+    (float)(600000.f)  squaredBallVisibilityMin,
+    (Angle)(50_deg) shoulderRange,
     (float)(200.f) obstacleRadius,
   }),
 });
@@ -45,7 +47,7 @@ class FieldCoverageProvider : public FieldCoverageProviderBase
 public:
   FieldCoverageProvider();
 
-  void update(FieldCoverage& fieldCoverage);
+  void update(FieldCoverage& fieldCoverage) override;
 
 private:
   struct InternalCell

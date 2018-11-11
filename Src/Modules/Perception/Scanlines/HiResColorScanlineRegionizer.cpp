@@ -6,12 +6,12 @@
 
 MAKE_MODULE(HiResColorScanlineRegionizer, perception)
 
-void HiResColorScanlineRegionizer::update(ColorScanlineRegionsVerticalClipped& rolorScanlineRegionsVerticalClipped)
+void HiResColorScanlineRegionizer::update(ColorScanlineRegionsVerticalClipped& colorScanlineRegionsVerticalClipped)
 {
-  rolorScanlineRegionsVerticalClipped.scanlines.clear();
-  rolorScanlineRegionsVerticalClipped.scanlines.reserve(theScanGrid.lines.size());
-  rolorScanlineRegionsVerticalClipped.lowResStart = theScanGrid.lowResStart;
-  rolorScanlineRegionsVerticalClipped.lowResStep = theScanGrid.lowResStep;
+  colorScanlineRegionsVerticalClipped.scanlines.clear();
+  colorScanlineRegionsVerticalClipped.scanlines.reserve(theScanGrid.lines.size());
+  colorScanlineRegionsVerticalClipped.lowResStart = theScanGrid.lowResStart;
+  colorScanlineRegionsVerticalClipped.lowResStep = theScanGrid.lowResStep;
 
   if(theScanGrid.lines.empty() || !theFieldBoundary.isValid)
     return;
@@ -19,17 +19,18 @@ void HiResColorScanlineRegionizer::update(ColorScanlineRegionsVerticalClipped& r
   auto loRes = theColorScanlineRegionsVertical.scanlines.cbegin();
   for(const ScanGrid::Line& line : theScanGrid.lines)
   {
-    rolorScanlineRegionsVerticalClipped.scanlines.emplace_back(static_cast<unsigned short>(line.x));
-    std::vector<ScanlineRegion>& regions = rolorScanlineRegionsVerticalClipped.scanlines.back().regions;
+    colorScanlineRegionsVerticalClipped.scanlines.emplace_back(static_cast<unsigned short>(line.x));
+    std::vector<ScanlineRegion>& regions = colorScanlineRegionsVerticalClipped.scanlines.back().regions;
 
-    const int yBoundary = std::min(std::max(0, theFieldBoundary.getBoundaryY(line.x)), theECImage.colored.height - 1);
-    if(line.x == loRes->x)
+    const int yBoundary = std::min<int>(std::max(0, theFieldBoundary.getBoundaryY(line.x)), theECImage.colored.height - 1);
+    if(loRes != theColorScanlineRegionsVertical.scanlines.cend() && line.x == loRes->x)
     {
       auto k = loRes->regions.cbegin();
-      for(; k != loRes->regions.cend() && k->range.from > yBoundary; ++k)
+      for(; k != loRes->regions.cend() && k->range.from >= yBoundary; ++k)
         regions.emplace_back(*k);
       if(k != loRes->regions.cend() && k->range.to > yBoundary)
         regions.emplace_back(yBoundary, k->range.to, k->color);
+      ++loRes;
     }
     else
     {
@@ -43,7 +44,7 @@ void HiResColorScanlineRegionizer::scanVertical(const ScanGrid::Line& line, cons
   auto y = theScanGrid.y.begin() + line.yMaxIndex;
   const auto yEnd = theScanGrid.y.end();
   const int width = theECImage.colored.width;
-  if(y != yEnd && *y > top && line.yMax - 1 > top)
+  if(y != yEnd && *y >= top && line.yMax - 1 > top)
   {
     int prevY = line.yMax - 1 > *y ? line.yMax - 1 : *y++;
     int currentY = prevY + 1;

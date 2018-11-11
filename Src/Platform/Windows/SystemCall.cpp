@@ -76,3 +76,8 @@ bool SystemCall::soundIsPlaying()
 {
   return SoundPlayer::isPlaying();
 }
+
+bool SystemCall::usbIsMounted()
+{
+  return false;
+}
