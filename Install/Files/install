@@ -94,13 +94,6 @@ else
   cp ${baseDir}/readonly /etc/init.d
   rc-update add readonly boot
 
-  # Marker: 8b513957aa1ac143466f5697b3af5543
-  # Do not remove the markers, since they are used by the b-bundle script to locate the
-  # function which replaces the password for user nao.
-  cp -n /etc/shadow /etc/shadow.org
-  sed </etc/shadow.org "s%^nao:.*%nao:\$6\$yoHR/vLF\$I8DTr3sRt1XIDbB0LdWgfuBl57jQk3K7CUtnhMqS7OJ3C.NHybfH48OAqTgvEf57dMUhHOhO6cKnbnoAGSDtM.:15283:0:99999:7:::%" >/etc/shadow
-  # Marker: 8b513957aa1ac143466f5697b3af5543
-
   # Do not verify remote hostname via DNS
   if [ ! -f "/etc/ssh.conf/sshd_config" -o -z "$(grep "UseDNS no" "/etc/ssh.conf/sshd_config" 2>/dev/null)" ]; then
     echo "UseDNS no" >> "/etc/ssh.conf/sshd_config"
