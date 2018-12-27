@@ -182,7 +182,6 @@ targets = {
 
   include "bush.mare"
   include "copyfiles.mare"
-  include "Tests.mare"
 }
 
 cppSource += {
