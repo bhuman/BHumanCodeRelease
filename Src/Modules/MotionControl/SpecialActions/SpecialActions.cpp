@@ -8,6 +8,7 @@
  */
 
 #include "SpecialActions.h"
+#include "Tools/Framework/ModuleContainer.h"
 #include "Tools/Motion/MofCompiler.h"
 
 MAKE_MODULE(SpecialActions, motionControl)
@@ -78,6 +79,7 @@ SpecialActions::SpecialActions() :
   mirror(false)
 {
   theInstance = this;
+  ModuleContainer::addMessageHandler(handleMessage);
 
   std::vector<float> motionData;
   char errorBuffer[10000];
@@ -142,7 +144,7 @@ bool SpecialActions::getNextData(const SpecialActionRequest& specialActionReques
           currentNode++;
           break;
         }
-        //no break here: if condition is true, continue with transition!
+      //no break here: if condition is true, continue with transition!
       case MotionNetNode::typeTransition:
         // follow transition
         if(currentNode == 0)  //we come from extern

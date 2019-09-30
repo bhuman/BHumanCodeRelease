@@ -1,0 +1,11 @@
+[Unit]
+Description=B-Human service
+After=lola.service
+
+[Service]
+ExecStart=/home/nao/bin/bhuman -b
+TimeoutStopSec=2s 200ms
+RestartSec=1s
+
+[Install]
+WantedBy=aldebaran.target

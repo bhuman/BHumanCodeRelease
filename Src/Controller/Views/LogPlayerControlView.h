@@ -98,6 +98,7 @@ public:
 private:
   void updatePlayPauseButton();
   void updateLoopButton();
+  QIcon loadIcon(const QString& name);
 
 private slots:
   void changeFrame(int newFrame);

@@ -20,7 +20,7 @@ std::string ShutdownCmd::getName() const
 
 std::string ShutdownCmd::getDescription() const
 {
-  return "bhumand stop && naoqid stop && halt";
+  return "Shuts down the robot.";
 }
 
 bool ShutdownCmd::preExecution(Context& context, const std::vector<std::string>& params)

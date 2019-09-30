@@ -5,54 +5,49 @@
 
 #include "WhistleHandler.h"
 
-MAKE_MODULE(WhistleHandler, motionInfrastructure)
+MAKE_MODULE(WhistleHandler, infrastructure)
 
 void WhistleHandler::update(GameInfo& gameInfo)
 {
-  gameInfo = theRawGameInfo;
-  if(gameInfo.state != lastGameState && gameInfo.state == STATE_SET)
-    timeOfLastSetState = theFrameInfo.time;
-  lastGameState = gameInfo.state;
-
-  if(gameInfo.state != STATE_SET)
-    overrideGameState = false;
-  else if(!overrideGameState && gameInfo.gamePhase == GAME_PHASE_NORMAL)
-    overrideGameState = checkWhistle() && checkBall();
-
-  if(overrideGameState)
+  if(theRawGameInfo.state == STATE_SET && theRawGameInfo.gamePhase == GAME_PHASE_NORMAL)
   {
-    if(checkForIllegalMotionPenalty())
+    if(checkForIllegalMotionPenalty() || lastGameState != STATE_SET)
     {
       timeOfLastSetState = theFrameInfo.time;
       overrideGameState = false;
     }
-    else
-    {
-      gameInfo.state = STATE_PLAYING;
-    }
+
+    if(!overrideGameState)
+      overrideGameState = checkWhistle() && checkBall();
   }
+  else
+    overrideGameState = false;
+
+  lastGameState = theRawGameInfo.state;
+
+  gameInfo = theRawGameInfo;
+  if(overrideGameState)
+    gameInfo.state = STATE_PLAYING;
 }
 
 bool WhistleHandler::checkWhistle() const
 {
   std::vector<const Whistle*> data;
-  int numOfHearingRobots = 0;
+  int numOfChannels = 0;
 
-  if(theWhistle.confidenceOfLastWhistleDetection >= 0)
+  if(theWhistle.channelsUsedForWhistleDetection > 0)
   {
-    ++numOfHearingRobots;
+    numOfChannels += theWhistle.channelsUsedForWhistleDetection;
     if(theWhistle.lastTimeWhistleDetected > timeOfLastSetState)
       data.emplace_back(&theWhistle);
   }
   for(const Teammate& teammate : theTeamData.teammates)
-  {
-    if(teammate.theWhistle.confidenceOfLastWhistleDetection >= 0)
+    if(teammate.theWhistle.channelsUsedForWhistleDetection > 0)
     {
-      ++numOfHearingRobots;
+      numOfChannels += teammate.theWhistle.channelsUsedForWhistleDetection;
       if(teammate.theWhistle.lastTimeWhistleDetected > timeOfLastSetState)
         data.emplace_back(&teammate.theWhistle);
     }
-  }
 
   std::sort(data.begin(), data.end(),
             [](const Whistle* w1, const Whistle* w2) -> bool
@@ -68,8 +63,9 @@ bool WhistleHandler::checkWhistle() const
       if(data[j]->lastTimeWhistleDetected - data[i]->lastTimeWhistleDetected > maxTimeDifference)
         break;
 
-      totalConfidence += static_cast<float>(data[j]->confidenceOfLastWhistleDetection);
-      if(totalConfidence / numOfHearingRobots > minAvgConfidence)
+      totalConfidence += data[j]->confidenceOfLastWhistleDetection
+                         * static_cast<float>(data[j]->channelsUsedForWhistleDetection);
+      if(totalConfidence / numOfChannels > minAvgConfidence)
         return true;
     }
   }

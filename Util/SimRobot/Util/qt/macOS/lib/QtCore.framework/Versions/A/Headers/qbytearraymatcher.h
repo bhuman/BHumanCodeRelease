@@ -83,6 +83,9 @@ private:
     };
 };
 
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_CLANG("-Wimplicit-int-conversion")
+
 class QStaticByteArrayMatcherBase
 {
     Q_DECL_ALIGN(16)
@@ -101,7 +104,7 @@ private:
     static Q_DECL_RELAXED_CONSTEXPR Skiptable generate(const char *pattern, uint n) Q_DECL_NOTHROW
     {
         const auto uchar_max = (std::numeric_limits<uchar>::max)();
-        uchar max = n > uchar_max ? uchar_max : static_cast<uchar>(n);
+        uchar max = n > uchar_max ? uchar_max : n;
         Skiptable table = {
             // this verbose initialization code aims to avoid some opaque error messages
             // even on powerful compilers such as GCC 5.3. Even though for GCC a loop
@@ -133,6 +136,8 @@ private:
         return table;
     }
 };
+
+QT_WARNING_POP
 
 template <uint N>
 class QStaticByteArrayMatcher : QStaticByteArrayMatcherBase

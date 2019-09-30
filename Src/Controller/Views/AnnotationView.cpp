@@ -4,6 +4,7 @@
  */
 
 #include "AnnotationView.h"
+#include "Controller/RoboCupCtrl.h"
 #include "Controller/RobotConsole.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
@@ -28,29 +29,8 @@ class NumberTableWidgetItem : public QTableWidgetItem
 
 public:
   unsigned number;
-  void setNumber(unsigned n)
-  {
-    number = n;
-    setText(QString::number(n));
-  }
-};
 
-struct Row
-{
-  NumberTableWidgetItem* timeStamp;
-  QTableWidgetItem* name;
-  QTableWidgetItem* annotation;
-
-  Row() : timeStamp(new NumberTableWidgetItem), name(new QTableWidgetItem), annotation(new QTableWidgetItem) {}
-  ~Row()
-  {
-    if(timeStamp)
-      delete timeStamp;
-    if(name)
-      delete name;
-    if(annotation)
-      delete annotation;
-  }
+  NumberTableWidgetItem(unsigned number) : QTableWidgetItem(QString::number(number)), number(number) {}
 };
 
 AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
@@ -73,7 +53,7 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   table->setSortingEnabled(true);
   table->setShowGrid(false);
 
-  if(mode == SystemCall::Mode::logfileReplay)
+  if(mode == SystemCall::Mode::logFileReplay)
     QObject::connect(table, SIGNAL(cellDoubleClicked(int, int)), this, SLOT(jumpFrame(int, int)));
 
   QVBoxLayout* layout = new QVBoxLayout(this);
@@ -115,7 +95,7 @@ AnnotationWidget::AnnotationWidget(AnnotationView& view, SystemCall::Mode mode)
   this->setLayout(layout);
   QObject::connect(filterEdit, SIGNAL(textChanged(QString)), this, SLOT(filterChanged(QString)));
   table->horizontalHeader()->restoreState(settings.value("HeaderState").toByteArray());
-  table->sortItems(settings.value("SortBy").toInt(), (Qt::SortOrder) settings.value("SortOrder").toInt());
+  table->sortItems(settings.value("SortBy").toInt(), static_cast<Qt::SortOrder>(settings.value("SortOrder").toInt()));
   filter = settings.value("Filter").toString();
   filterEdit->setText(filter);
   settings.endGroup();
@@ -132,10 +112,6 @@ AnnotationWidget::~AnnotationWidget()
   settings.setValue("StopCheckBoxState", stopCheckBox->isChecked());
   settings.setValue("UseRegExCheckBoxState", useRegExCheckBox->isChecked());
   settings.endGroup();
-
-  for(auto& i : rows)
-    if(i.second)
-      delete i.second;
 }
 
 QWidget* AnnotationWidget::getWidget()
@@ -150,10 +126,12 @@ void AnnotationWidget::update()
   timeOfLastUpdate = Time::getCurrentSystemTime();
 
   table->setUpdatesEnabled(false);
-  table->setSortingEnabled(false); //disable sorting while updating to avoid race conditions
 
   {
     SYNC_WITH(view.info);
+    if(view.info.newAnnotations.size() > 5) // Adding multiple rows is slow with sorting activated
+      table->setSortingEnabled(false);
+
     for(const AnnotationInfo::AnnotationData& data : view.info.newAnnotations)
     {
       const QString name = data.name.c_str();
@@ -161,23 +139,18 @@ void AnnotationWidget::update()
 
       if(data.name == "CLEAR")
       {
-        table->clear();
-        rows.clear();
+        table->clearContents();
+        annotationNumbers.clear();
       }
-      else if(rows.find(data.annotationNumber) == rows.end())
+      else if(annotationNumbers.find(data.annotationNumber) == annotationNumbers.end())
       {
-        Row* currentRow = new Row();
-        rows[data.annotationNumber] = currentRow;
+        annotationNumbers.insert(data.annotationNumber);
         const int rowCount = table->rowCount();
-        table->setRowCount(rowCount + 1);
         table->insertRow(rowCount);
-        table->setItem(rowCount, 0, currentRow->timeStamp);
-        table->setItem(rowCount, 1, currentRow->name);
-        table->setItem(rowCount, 2, currentRow->annotation);
-
-        currentRow->timeStamp->setNumber(data.frame);
-        currentRow->name->setText(name);
-        currentRow->annotation->setText(annotation);
+        QTableWidgetItem* item = new NumberTableWidgetItem(data.frame);
+        table->setItem(rowCount, 0, item);
+        table->setItem(item->row(), 1, new QTableWidgetItem(name));
+        table->setItem(item->row(), 2, new QTableWidgetItem(annotation));
       }
     }
     view.info.newAnnotations.clear();
@@ -242,14 +215,16 @@ void AnnotationWidget::filterChanged(const QString& newFilter)
 
 void AnnotationWidget::jumpFrame(int row, int column)
 {
-  NumberTableWidgetItem* item = (NumberTableWidgetItem*)table->item(row, 0);
+  NumberTableWidgetItem* item = static_cast<NumberTableWidgetItem*>(table->item(row, 0));
   int frame = item->number;
   view.logPlayer.gotoFrame(std::max(std::min(frame, view.logPlayer.numberOfFrames - 1), 0));
 }
 
-AnnotationView::AnnotationView(const QString& fullName, AnnotationInfo::ProcessAnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application) :
+AnnotationView::AnnotationView(const QString& fullName, AnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application) :
   fullName(fullName), icon(":/Icons/tag_green.png"), info(info), logPlayer(logPlayer), mode(mode), application(application)
-{}
+{
+  info.view = this;
+}
 
 SimRobot::Widget* AnnotationView::createWidget()
 {

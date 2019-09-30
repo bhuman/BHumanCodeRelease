@@ -1,8 +1,6 @@
 /**
- * @file GroundContactDetector.h
+ * @file GroundContactDetector.cpp
  * Implementation of a module that detects ground contact based on FSR measurements.
- * This changes the semantics of ground contact, because this module does not
- * care whether the robot is shaking heavily while there is still foot contact.
  * @author Thomas Röfer
  */
 
@@ -19,7 +17,7 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
       lastTimeWithPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithPressure) < maxTimeWithoutPressure;
     if(!groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
-      SystemCall::playSound("high.wav");
+      SystemCall::say("High");
   }
   else
   {
@@ -30,6 +28,6 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
       lastTimeWithoutPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithoutPressure) > minTimeWithPressure;
     if(groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
-      SystemCall::playSound("ground.wav");
+      SystemCall::say("Ground");
   }
 }

@@ -9,6 +9,7 @@ dr representation:JointSensorData
 
 # request behavior messages
 dr representation:ActivationGraph
+dr representation:TeamActivationGraph
 
 # JointView and SensorView need
 dr representation:JointRequest

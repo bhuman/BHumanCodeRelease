@@ -100,15 +100,12 @@ $EXE $CFG $SRC
 if [ "$MSG" == "template" ]; then
   sed <$SRC.tmp >$SRC.tmp2 \
   -e "s%CLANG_X86_VECTOR_INSTRUCTIONS = avx2%CLANG_X86_VECTOR_INSTRUCTIONS = default%" \
-  -e "s%MACOSX_DEPLOYMENT_TARGET = .*;%MACOSX_DEPLOYMENT_TARGET = XX.XX;%" \
   && mv $SRC.tmp2 $SRC.tmp
 else
   AVX=default
   ( sysctl -a | grep AVX2 >/dev/null ) && AVX=avx2
-  VERSION=$(sw_vers -productVersion | sed "s%\([0-9]*\.[0-9]*\).*%\1%")
   sed <$SRC.tmp >$SRC.tmp2 \
   -e "s%CLANG_X86_VECTOR_INSTRUCTIONS = default%CLANG_X86_VECTOR_INSTRUCTIONS = $AVX%" \
-  -e "s%MACOSX_DEPLOYMENT_TARGET = XX.XX;%MACOSX_DEPLOYMENT_TARGET = $VERSION;%" \
   && mv $SRC.tmp2 $SRC.tmp
 fi
 

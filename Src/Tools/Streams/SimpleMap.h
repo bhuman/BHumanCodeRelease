@@ -9,7 +9,15 @@
  * array ::= '[' [ ( literal | '{' record '}' ) { ',' ( literal | '{' record '}' ) } [ ',' ] ']'
  * literal ::= '"' { anychar1 } '"' | { anychar2 }
  *
- * anychar1 must escape doublequotes and backslash with a backslash
+ * It can also parse a JSON-like format, which has the following grammar:
+ *
+ * map ::= record
+ * record ::= '{' field { ',' field } [ ',' ] '}'
+ * field ::= literal ':' ( literal | record | array )
+ * array ::= '[' [ ( literal | record | array ) { ',' ( literal | record | array ) } [ ',' ] ']'
+ * literal ::= '"' { anychar1 } '"' | { anychar2 }
+ *
+ * anychar1 must escape double quotes and backslash with a backslash
  * anychar2 cannot contain whitespace and other characters used by the grammar.
  *
  * @author Thomas Röfer
@@ -47,7 +55,7 @@ public:
 
     ~Literal()
     {
-      if(stream != nullptr)
+      if(stream)
         delete stream;
     }
 
@@ -69,11 +77,12 @@ public:
   };
 
   /**
-   * Construtor. Parses the stream.
+   * Constructor. Parses the stream.
    * @param stream The stream that is parsed according to the grammar given above.
    * @param name The name of the file if the stream is a file. Used for error messages.
+   * @param jsonMode Whether the parser should be in JSON(-like) mode.
    */
-  SimpleMap(In& stream, const std::string& name = "");
+  SimpleMap(In& stream, const std::string& name = "", bool jsonMode = false);
 
   /**
    * Destructor.
@@ -99,7 +108,8 @@ private:
   int column; /**< The current column in the stream. */
   Symbol symbol; /**< The current lexicographical symbol. */
   std::string string; /**< The string if the current symbol is "literal". */
-  Value* root;  /**< The root of the syntax tree. 0 if parsing failed. */
+  Value* root; /**< The root of the syntax tree. 0 if parsing failed. */
+  const bool jsonMode; /**< Whether the parser should be in JSON(-like) mode. */
 
   void nextChar(); /**< Read the next character into "c". */
   void nextSymbol(); /**< Read the next symbol into "symbol". */

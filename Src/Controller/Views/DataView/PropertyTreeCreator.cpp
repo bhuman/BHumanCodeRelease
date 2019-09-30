@@ -35,7 +35,7 @@ void PropertyTreeCreator::outUInt(unsigned int value)
   else
   {
     e.property = view.getProperty(e.path, TypeDescriptor::getGroupType(), e.name.c_str(), e.parent);
-    while(value < (unsigned)e.property->subProperties().size())
+    while(value < static_cast<unsigned>(e.property->subProperties().size()))
       e.property->removeSubProperty(e.property->subProperties().last());
   }
 }
@@ -46,10 +46,7 @@ void PropertyTreeCreator::outAngle(const Angle& value)
   ASSERT(!e.property);
   e.property = view.getProperty(e.path, TypeDescriptor::getTypeId<AngleWithUnity>(), e.name.c_str(), e.parent);
   AngleWithUnity angle = value;
-  if(angle == SensorData::off)
-    angle.deg = false;
-  else
-    angle.deg = e.property->value().value<AngleWithUnity>().deg;
+  angle.deg = e.property->value().value<AngleWithUnity>().deg;
   e.property->setValue(QVariant::fromValue(angle));
 }
 

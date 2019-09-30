@@ -13,7 +13,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
+#include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Tools/Module/Module.h"
@@ -22,9 +22,10 @@ MODULE(FieldBoundaryProvider,
 {,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(ColorScanlineRegionsVertical),
+  REQUIRES(ColorScanLineRegionsVertical),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(Odometer),
+  REQUIRES(OtherFieldBoundary),
   PROVIDES(FieldBoundary),
   DEFINES_PARAMETERS(
   {,
@@ -62,7 +63,7 @@ class FieldBoundaryProvider : public FieldBoundaryProviderBase
   void predict(FieldBoundary& fieldBoundary) const;
 
   /**
-   * Find boundary spots in the current image (actually on vertical scanlines).
+   * Find boundary spots in the current image (actually on vertical scan lines).
    * @param fieldBoundary The previous field boundary projected to the current image.
    *                      If it is outside the current image, it might be used to
    *                      determine spots instead of searching them in the image.

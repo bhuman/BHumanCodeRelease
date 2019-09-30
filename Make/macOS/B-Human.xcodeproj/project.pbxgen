@@ -69,7 +69,7 @@
       includes = (
         ../../Src/Modules/**.(cpp|h),
         ../../Src/Platform/**.(cpp|mm|h),
-        ../../Src/Processes/**.(cpp|h),
+        ../../Src/Threads/**.(cpp|h),
         ../../Src/Representations/**.(cpp|h),
         ../../Src/Tools/**.(cpp|h),
       );
@@ -78,7 +78,7 @@
     Controller = {
       root = ../../Src;
       includes = (
-        ../../Src/Controller/**.(cpp|h|qrc|png),
+        ../../Src/Controller/**.(cpp|h|mm|qrc|png),
       );
     };
 
@@ -100,13 +100,6 @@
       root = ../../Src;
       includes = (
         ../../Src/libbhuman/bhuman.(cpp|h),
-      );
-    };
-
-    libgamectrl = {
-      root = ../../Src;
-      includes = (
-        ../../Src/libgamectrl/**.(cpp|h),
       );
     };
 
@@ -147,6 +140,16 @@
          ../../Src/Utils/bush/**.(cpp|h|qrc|png|icns),
       );
     };
+
+    Tests = {
+      root = ../../Src/Utils;
+      includes = (
+         ../../Src/Utils/Tests/**.(cpp|h|mm|plist),
+      );
+      excludes = (
+         ../../Src/Utils/Tests/Test.cpp,
+      );
+    };
   };
     
   buildFiles = {
@@ -155,7 +158,7 @@
       includes = (
         ../../Src/Modules/**.cpp,
         ../../Src/Platform/**.(cpp|mm),
-        ../../Src/Processes/**.cpp,
+        ../../Src/Threads/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
       );
@@ -178,12 +181,12 @@
     };
 
     Nao = {
-      anchor = 20B7663D123001A300F11A62;
+      anchor = 17B00D1F21567051009F9C29;
       includes = (
         ../../Src/Modules/**.cpp,
         ../../Src/Platform/*.cpp,
         ../../Src/Platform/Nao/*.cpp,
-        ../../Src/Processes/**.cpp,
+        ../../Src/Threads/**.cpp,
         ../../Src/Representations/**.cpp,
         ../../Src/Tools/**.cpp,
         ../../Util/asmjit/src/**.cpp,
@@ -224,7 +227,7 @@
     Controller = {
       anchor = 20245216120416DB00C3BCD9;
       includes = (
-        ../../Src/Controller/**.(cpp|qrc),
+        ../../Src/Controller/**.(cpp|mm|qrc),
         ../../Src/Controller/BHToolBar.h,
         ../../Src/Controller/Views/AnnotationView.h,
         ../../Src/Controller/Views/ColorCalibrationView/ColorCalibrationView.h,
@@ -235,8 +238,6 @@
         ../../Src/Controller/Views/DataView/PropertyEditorFactory.h,
         ../../Src/Controller/Views/DataView/PropertyManager.h,
         ../../Src/Controller/Views/DotView.h,
-        ../../Src/Controller/Views/Statistics/StatisticRobotView.h,
-        ../../Src/Controller/Views/Statistics/StatisticsPlotView.h,
         ../../Src/Controller/Views/ImageView.h,
         ../../Src/Controller/Views/JointView.h,
         ../../Src/Controller/Views/KickView/KickView.h,
@@ -297,11 +298,30 @@
         ../../Src/Tools/AlignedMemory.cpp,
         ../../Src/Tools/FunctionList.cpp,
         ../../Src/Tools/Streams/**.cpp,
+        ../../Src/Controller/Visualization/Helper.mm,
         ../../Util/SimRobot/Src/SimRobot/Helper.mm,
       );
       excludes = (
         ../../Src/Utils/bush/ui/CommandLineEdit.h,
         ../../Src/Utils/bush/ui/SizeManager.h,
+      );
+    };
+    Tests = {
+      anchor = 1757B02521D6A6500034C79B;
+      includes = (
+        ../../Src/Platform/macOS/*.(cpp|mm),
+        ../../Src/Platform/*.cpp,
+        ../../Src/Tools/*.cpp,
+        ../../Src/Tools/Debugging/TimingManager.cpp,
+        ../../Src/Tools/Math/Random.cpp,
+        ../../Src/Tools/Math/RotationMatrix.cpp,
+        ../../Src/Tools/MessageQueue/*.cpp,
+        ../../Src/Tools/Module/*.cpp,
+        ../../Src/Tools/Streams/*.cpp,
+        ../../Src/Utils/Tests/**.(cpp|mm),
+      );
+      excludes = (
+         ../../Src/Utils/Tests/Test.cpp,
       );
     };
   };

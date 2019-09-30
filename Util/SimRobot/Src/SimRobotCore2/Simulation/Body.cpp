@@ -281,9 +281,9 @@ void Body::enablePhysics(bool enable)
   if(rootBody->bodySpace)
   {
     if(enable)
-      dGeomEnable((dGeomID)rootBody->bodySpace);
+      dGeomEnable(reinterpret_cast<dGeomID>(rootBody->bodySpace));
     else
-      dGeomDisable((dGeomID)rootBody->bodySpace);
+      dGeomDisable(reinterpret_cast<dGeomID>(rootBody->bodySpace));
   }
 
   for(std::list<Body*>::const_iterator iter = bodyChildren.begin(), end = bodyChildren.end(); iter != end; ++iter)

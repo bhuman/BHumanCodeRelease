@@ -9,11 +9,12 @@
 
 #include "FrictionLearner.h"
 
-MAKE_MODULE(FrictionLearner, cognitionInfrastructure)
+MAKE_MODULE(FrictionLearner, infrastructure)
 
 void FrictionLearner::update(DummyRepresentation& dummy)
 {
-  if(theBallPercept.status == BallPercept::seen && theBallModel.estimate.velocity.norm() != 0.f)
+  if((theBallPercept.status == BallPercept::seen || (theBallPercept.status == BallPercept::guessed && acceptGuessedBalls))
+     && theBallModel.estimate.velocity.norm() != 0.f)
     balls.push_back(BallObservation(theBallPercept.positionOnField, theFrameInfo.time));
 
   if(balls.size() != 0 && theFrameInfo.getTimeSince(balls.back().time) > timeout)
@@ -28,7 +29,7 @@ void FrictionLearner::update(DummyRepresentation& dummy)
 
 void FrictionLearner::determineFrictionCoefficient()
 {
-  OUTPUT_TEXT("Computing ball friction coefficient! Num of percepts: " << (int)(balls.size()));
+  OUTPUT_TEXT("Computing ball friction coefficient! Num of percepts: " << static_cast<int>(balls.size()));
   Eigen::MatrixX4f A((balls.size() - offset) * 2, 4);
   Eigen::VectorXf  z((balls.size() - offset) * 2);
   unsigned int t0 = balls[0].time;

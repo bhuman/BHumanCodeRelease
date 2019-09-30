@@ -31,7 +31,11 @@ File::File(const std::string& name, const char* mode, bool tryAlternatives)
   }
   else
   {
+#ifndef TARGET_ROBOT
     stream = fopen(names.back().c_str(), mode);
+#else
+    stream = fopen64(names.back().c_str(), mode);
+#endif
     if(stream)
       fullName = names.back();
   }
@@ -40,19 +44,19 @@ File::File(const std::string& name, const char* mode, bool tryAlternatives)
 File::~File()
 {
   if(stream != 0)
-    fclose((FILE*)stream);
+    fclose(static_cast<FILE*>(stream));
 }
 
 void File::read(void* p, size_t size)
 {
   VERIFY(!eof());
-  VERIFY(fread(p, 1, size, (FILE*)stream) > 0);
+  VERIFY(fread(p, 1, size, static_cast<FILE*>(stream)) > 0);
 }
 
 char* File::readLine(char* p, size_t size)
 {
   VERIFY(!eof());
-  return fgets(p, static_cast<int>(size), (FILE*)stream);
+  return fgets(p, static_cast<int>(size), static_cast<FILE*>(stream));
 }
 
 void File::write(const void* p, size_t size)
@@ -60,9 +64,9 @@ void File::write(const void* p, size_t size)
   //if opening failed, stream will be 0 and fwrite would crash
   ASSERT(stream != 0);
 #ifdef NDEBUG
-  static_cast<void>(fwrite(p, 1, size, (FILE*)stream));
+  static_cast<void>(fwrite(p, 1, size, static_cast<FILE*>(stream)));
 #else
-  const size_t written = fwrite(p, 1, size, (FILE*)stream);
+  const size_t written = fwrite(p, 1, size, static_cast<FILE*>(stream));
   if(written != size)
   {
     perror("fwrite did not write as many bytes as requested");
@@ -75,7 +79,7 @@ void File::printf(const char* format, ...)
 {
   va_list args;
   va_start(args, format);
-  vfprintf((FILE*)stream, format, args);
+  vfprintf(static_cast<FILE*>(stream), format, args);
   va_end(args);
 }
 
@@ -88,12 +92,12 @@ bool File::eof()
     return false;
   else
   {
-    int c = fgetc((FILE*)stream);
+    int c = fgetc(static_cast<FILE*>(stream));
     if(c == EOF)
       return true;
     else
     {
-      VERIFY(ungetc(c, (FILE*)stream) != EOF);
+      VERIFY(ungetc(c, static_cast<FILE*>(stream)) != EOF);
       return false;
     }
   }
@@ -105,11 +109,11 @@ size_t File::getSize()
     return 0;
   else
   {
-    const long currentPos = ftell((FILE*)stream);
+    const long currentPos = ftell(static_cast<FILE*>(stream));
     ASSERT(currentPos >= 0);
-    VERIFY(fseek((FILE*)stream, 0, SEEK_END) == 0);
-    const long size = ftell((FILE*)stream);
-    VERIFY(fseek((FILE*)stream, currentPos, SEEK_SET) == 0);
+    VERIFY(fseek(static_cast<FILE*>(stream), 0, SEEK_END) == 0);
+    const long size = ftell(static_cast<FILE*>(stream));
+    VERIFY(fseek(static_cast<FILE*>(stream), currentPos, SEEK_SET) == 0);
     return static_cast<size_t>(size);
   }
 }

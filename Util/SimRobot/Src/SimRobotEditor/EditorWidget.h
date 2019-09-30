@@ -6,8 +6,14 @@
 
 #pragma once
 
-#include <QTextEdit>
+#include <QCheckBox>
+#include <QDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QSignalMapper>
+#include <QSpinBox>
+#include <QTextEdit>
 
 #include "SimRobotEditor.h"
 #include "SyntaxHighlighter.h"
@@ -63,6 +69,45 @@ public:
   ~EditorWidget();
 
 private:
+  class EditorSettingsDialog : public QDialog
+  {
+  public:
+    EditorSettingsDialog(QWidget* parent = 0);
+
+    QLabel* useTabStopLabel;
+    QCheckBox* useTabStopCheckBox;
+    QLabel* tabStopWidthLabel;
+    QSpinBox* tabStopWidthSpinBox;
+    QPushButton* okayPushButton;
+    QPushButton* closePushButton;
+  };
+
+  class FindAndReplaceDialog : public QDialog
+  {
+  public:
+    FindAndReplaceDialog(QWidget* parent = 0);
+
+    QLabel* findLabel;
+    QLabel* replaceLabel;
+    QLineEdit* findTextEdit;
+    QLineEdit* replaceTextEdit;
+    QCheckBox* caseCheckBox;
+    QCheckBox* wholeWordsCheckBox;
+    QCheckBox* regexCheckBox;
+    QPushButton* nextPushButton;
+    QPushButton* previousPushButton;
+    QPushButton* replacePushButton;
+    QPushButton* replaceAllPushButton;
+  };
+
+  enum FindAndReplaceAction
+  {
+    find,
+    findBackwards,
+    replace,
+    replaceAll
+  };
+
   FileEditorObject* editorObject;
 
   bool canCopy;
@@ -72,8 +117,10 @@ private:
   bool useTabStop;
   int tabStopWidth;
 
-  mutable QSignalMapper openFileMapper;
+  mutable QSignalMapper openFileMapper, findAndReplaceMapper;
   SyntaxHighlighter* highlighter;
+  EditorSettingsDialog* editorSettingsDialog;
+  FindAndReplaceDialog* findAndReplaceDialog;
 
   void updateEditMenu(QMenu* menu, bool aboutToShow) const;
 
@@ -99,5 +146,9 @@ private slots:
   void cut();
   void copy();
   void deleteText();
+  void openFindAndReplace();
+  void findAndReplace(int action);
+  void openSettings();
+  void updateSettingsFromDialog();
   void openFile(const QString& fileName);
 };

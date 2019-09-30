@@ -3,7 +3,7 @@
 ** Copyright (C) 2016 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **
-** This file is part of the QtGui module of the Qt Toolkit.
+** This file is part of the QtCore module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -43,6 +43,10 @@
 #include <QtCore/qabstractproxymodel.h>
 #include <QtCore/qregexp.h>
 
+#if QT_CONFIG(regularexpression)
+# include <QtCore/qregularexpression.h>
+#endif
+
 QT_REQUIRE_CONFIG(sortfilterproxymodel);
 
 QT_BEGIN_NAMESPACE
@@ -59,6 +63,9 @@ class Q_CORE_EXPORT QSortFilterProxyModel : public QAbstractProxyModel
 
     Q_OBJECT
     Q_PROPERTY(QRegExp filterRegExp READ filterRegExp WRITE setFilterRegExp)
+#if QT_CONFIG(regularexpression)
+    Q_PROPERTY(QRegularExpression filterRegularExpression READ filterRegularExpression WRITE setFilterRegularExpression)
+#endif
     Q_PROPERTY(int filterKeyColumn READ filterKeyColumn WRITE setFilterKeyColumn)
     Q_PROPERTY(bool dynamicSortFilter READ dynamicSortFilter WRITE setDynamicSortFilter)
     Q_PROPERTY(Qt::CaseSensitivity filterCaseSensitivity READ filterCaseSensitivity WRITE setFilterCaseSensitivity)
@@ -81,7 +88,10 @@ public:
     QItemSelection mapSelectionFromSource(const QItemSelection &sourceSelection) const override;
 
     QRegExp filterRegExp() const;
-    void setFilterRegExp(const QRegExp &regExp);
+
+#if QT_CONFIG(regularexpression)
+    QRegularExpression filterRegularExpression() const;
+#endif
 
     int filterKeyColumn() const;
     void setFilterKeyColumn(int column);
@@ -112,6 +122,11 @@ public:
 
 public Q_SLOTS:
     void setFilterRegExp(const QString &pattern);
+    void setFilterRegExp(const QRegExp &regExp);
+#if QT_CONFIG(regularexpression)
+    void setFilterRegularExpression(const QString &pattern);
+    void setFilterRegularExpression(const QRegularExpression &regularExpression);
+#endif
     void setFilterWildcard(const QString &pattern);
     void setFilterFixedString(const QString &pattern);
 #if QT_DEPRECATED_SINCE(5, 11)

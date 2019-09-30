@@ -1,18 +1,17 @@
 /**
  * @file Representations/MotionControl/WalkingEngineOutput.h
  * This file declares a struct that represents the output of modules generating motion.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once
 
 #include "Representations/MotionControl/WalkRequest.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Tools/Function.h"
 #include "Tools/Streams/AutoStreamable.h"
 
 /**
- * @struct WalkingEnigeOutput
+ * @struct WalkingEngineOutput
  * A struct that represents the output of the walking engine.
  */
 STREAMABLE_WITH_BASE(WalkingEngineOutput, JointRequest,
@@ -24,6 +23,4 @@ STREAMABLE_WITH_BASE(WalkingEngineOutput, JointRequest,
   (Pose2f) upcomingOdometryOffset, /**< The minimum remaining odometry offset until the robot can come to a full stop. */
   (bool)(true) isLeavingPossible, /**< Is leaving the motion module possible now? */
   (WalkRequest) executedWalk, /**< The walk currently executed. */
-  (bool) isKicking, /**< Wether a WalkKickGenerator kick is active. */
-  (Pose2f) lastTarget, /**< Last target in robot coordinates*/
 });

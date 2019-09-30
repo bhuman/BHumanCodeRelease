@@ -7,9 +7,9 @@ class Team;
 class QPushButton;
 class QComboBox;
 class QCheckBox;
+class QDial;
 class QLineEdit;
 class QSpinBox;
-class QSlider;
 class QLabel;
 class QGridLayout;
 class TeamSelector;
@@ -31,7 +31,7 @@ class TeamView : public QFrame
   QComboBox* cbWlanConfig;
   QComboBox* cbBuildConfig;
   QComboBox* cbDeployDevice;
-  QSlider* sVolume;
+  QDial* sVolume;
   QSpinBox* sbMagic;
   QCheckBox* cbCompile;
 

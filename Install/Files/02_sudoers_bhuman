@@ -1,0 +1,7 @@
+#allow user nao run several scripts
+nao   ALL=NOPASSWD:/sbin/shutdown
+nao   ALL=NOPASSWD:/bin/systemctl
+nao   ALL=NOPASSWD:/home/nao/bin/tobhuman
+nao   ALL=NOPASSWD:/home/nao/bin/tonaoqi
+nao   ALL=NOPASSWD:/bin/date
+nao   ALL=NOPASSWD:/sbin/hwclock

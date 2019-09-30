@@ -1,5 +1,5 @@
 /**
- * @file FieldLines.h
+ * @file FieldLines.cpp
  * Implementation of a struct that represents the fieldline percepts
  * @author jeff
  */

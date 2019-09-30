@@ -1,4 +1,10 @@
 /**
+ *
+*******************************************************************************************
+**                                                                                       **
+**  THE USE OF THIS REPRESENTATION IS DEPRICATED PLEASE USE EnhancedKeyStates INSTEAD !  **
+**                                                                (announced by Jesse)   **
+*******************************************************************************************
  * FootBumperState.h
  *
  *  Created on: Mar 14, 2012

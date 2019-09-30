@@ -3,19 +3,19 @@
  *
  * Implementation of class TcpConnection.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #include "TcpConnection.h"
 #include "Platform/BHAssert.h"
 
-void TcpConnection::connect(const char* ip, int port, Handshake handshake, int maxPackageSendSize, int maxPackageReceiveSize)
+void TcpConnection::connect(const char* ip, int port, Handshake handshake, int maxPacketSendSize, int maxPacketReceiveSize)
 {
   this->handshake = handshake;
   ack = false;
   client = false;
 
-  tcpComm = std::make_unique<TcpComm>(ip, port, maxPackageSendSize, maxPackageReceiveSize);
+  tcpComm = std::make_unique<TcpComm>(ip, port, maxPacketSendSize, maxPacketReceiveSize);
   ASSERT(tcpComm);
   if(ip)
   {
@@ -23,7 +23,7 @@ void TcpConnection::connect(const char* ip, int port, Handshake handshake, int m
       client = true;
     else
     {
-      tcpComm = std::make_unique<TcpComm>(nullptr, port, maxPackageSendSize, maxPackageReceiveSize);
+      tcpComm = std::make_unique<TcpComm>(nullptr, port, maxPacketSendSize, maxPacketReceiveSize);
       ASSERT(tcpComm);
     }
   }
@@ -39,7 +39,7 @@ bool TcpConnection::sendAndReceive(const unsigned char* dataToSend, int sendSize
   if(handshake == sender &&
      ((readSize > 0 && !sendSize) || (!connectedBefore && isConnected())))
   {
-    // we have received a package, but we don't want to send one now.
+    // we have received a packet, but we don't want to send one now.
     // so, send heartbeat instead to acknowledge that we are still alive
     sendHeartbeat();
   }
@@ -48,7 +48,7 @@ bool TcpConnection::sendAndReceive(const unsigned char* dataToSend, int sendSize
   if((handshake != receiver || ack) &&
      isConnected() && sendSize > 0)
   {
-    if(tcpComm->send((unsigned char*)&sendSize, sizeof(sendSize)) && // sends size of block
+    if(tcpComm->send(reinterpret_cast<unsigned char*>(&sendSize), sizeof(sendSize)) && // sends size of block
        tcpComm->send(dataToSend, sendSize))                           // sends data
     {
       ack = false;
@@ -64,13 +64,13 @@ bool TcpConnection::sendHeartbeat()
 {
   ASSERT(tcpComm);
   int empty = 0;
-  return tcpComm->send((unsigned char*)&empty, sizeof(empty));
+  return tcpComm->send(reinterpret_cast<unsigned char*>(&empty), sizeof(empty));
 }
 
 int TcpConnection::receive(unsigned char*& buffer)
 {
   int size;
-  if(tcpComm->receive((unsigned char*)&size, sizeof(size), false))
+  if(tcpComm->receive(reinterpret_cast<unsigned char*>(&size), sizeof(size), false))
   {
     if(size == 0)
     {
@@ -83,9 +83,9 @@ int TcpConnection::receive(unsigned char*& buffer)
       if(size > MAX_PACKAGE_SIZE)
         return -1;
 
-      buffer = new unsigned char[size]; // get buffer for complete package
+      buffer = new unsigned char[size]; // get buffer for complete packet
       ASSERT(buffer);
-      if(!tcpComm->receive(buffer, size, true)) // read complete package (wait and read size bytes)
+      if(!tcpComm->receive(buffer, size, true)) // read complete packet (wait and read size bytes)
       {
         delete[] buffer;
         return -1; // error
@@ -93,7 +93,7 @@ int TcpConnection::receive(unsigned char*& buffer)
       else
       {
         ack = true;
-        return size; // package received
+        return size; // packet received
       }
     }
   }

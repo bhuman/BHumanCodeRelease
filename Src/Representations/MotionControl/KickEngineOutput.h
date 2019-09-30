@@ -20,8 +20,5 @@ STREAMABLE_WITH_BASE(KickEngineOutput, JointRequest,
   (Pose2f) odometryOffset, /**< The body motion performed in this step. */
   (bool)(true) isLeavingPossible, /**< Is leaving the motion module possible now? */
   (bool)(true) isStable, /**< Is motion currently stable? */
-  (bool)(false) inAction, /**< Is a motion chain currently stable? */
-  (bool)(true) wasValid, /**< Is a motion chain currently stable? */
   (KickRequest) executedKickRequest, /**< The kick request that is currently in execution. */
-  (Pose3f) desiredFootPosition, /**< Which Position shoudl be reached */
 });

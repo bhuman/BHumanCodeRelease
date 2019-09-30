@@ -17,7 +17,7 @@
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
+#include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 
 MODULE(BallSpotsProvider,
@@ -30,7 +30,7 @@ MODULE(BallSpotsProvider,
   REQUIRES(ECImage),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(ObstaclesImagePercept),
-  REQUIRES(ColorScanlineRegionsVerticalClipped),
+  REQUIRES(ColorScanLineRegionsVerticalClipped),
   REQUIRES(WorldModelPrediction),
   REQUIRES(FrameInfo),
   PROVIDES(BallSpots),
@@ -53,7 +53,7 @@ MODULE(BallSpotsProvider,
     (bool)(true) allowColorNon, //< Is a non-colored pixel neutral? (if not it is bad)
     (bool)(true) blackPixelsAreNeutral, // Is a black-colored pixel neutral? (if not it is good)
 
-    (bool)(false) allowScanlineTopSpotFitting, // Is it allowed to find a spot on top of a scanline?
+    (bool)(false) allowScanLineTopSpotFitting, // Is it allowed to find a spot on top of a scanLine?
   }),
 });
 
@@ -70,7 +70,7 @@ class BallSpotsProvider : public BallSpotsProviderBase
   void update(BallSpots& ballSpots) override;
 
   /**
-   * The method searches with the help of ColorScanlineRegionsVerticalClipped
+   * The method searches with the help of ColorScanLineRegionsVerticalClipped
    * for initial ball spot and adds them to the list (ballSpot.spots) if no
    * check fails.
    *

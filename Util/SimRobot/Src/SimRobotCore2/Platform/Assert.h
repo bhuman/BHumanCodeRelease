@@ -35,8 +35,8 @@ public:
 
 #else
 
-#define ASSERT(e) ((void)0)
-#define VERIFY(e) ((void)(e))
-#define TRACE(...) ((void)0)
+#define ASSERT(e) static_cast<void>(0)
+#define VERIFY(e) static_cast<void>(e)
+#define TRACE(...) static_cast<void>(0)
 
 #endif

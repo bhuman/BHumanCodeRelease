@@ -1034,17 +1034,23 @@ for (auto _container_ = QtPrivate::qMakeForeachContainer(container); \
 #  endif
 #endif
 
-template <typename T> static inline T *qGetPtrHelper(T *ptr) { return ptr; }
-template <typename Wrapper> static inline typename Wrapper::pointer qGetPtrHelper(const Wrapper &p) { return p.data(); }
+template <typename T> inline T *qGetPtrHelper(T *ptr) { return ptr; }
+template <typename Ptr> inline auto qGetPtrHelper(const Ptr &ptr) -> decltype(ptr.operator->()) { return ptr.operator->(); }
 
+// The body must be a statement:
+#define Q_CAST_IGNORE_ALIGN(body) QT_WARNING_PUSH QT_WARNING_DISABLE_GCC("-Wcast-align") body QT_WARNING_POP
 #define Q_DECLARE_PRIVATE(Class) \
-    inline Class##Private* d_func() { return reinterpret_cast<Class##Private *>(qGetPtrHelper(d_ptr)); } \
-    inline const Class##Private* d_func() const { return reinterpret_cast<const Class##Private *>(qGetPtrHelper(d_ptr)); } \
+    inline Class##Private* d_func() \
+    { Q_CAST_IGNORE_ALIGN(return reinterpret_cast<Class##Private *>(qGetPtrHelper(d_ptr));) } \
+    inline const Class##Private* d_func() const \
+    { Q_CAST_IGNORE_ALIGN(return reinterpret_cast<const Class##Private *>(qGetPtrHelper(d_ptr));) } \
     friend class Class##Private;
 
 #define Q_DECLARE_PRIVATE_D(Dptr, Class) \
-    inline Class##Private* d_func() { return reinterpret_cast<Class##Private *>(qGetPtrHelper(Dptr)); } \
-    inline const Class##Private* d_func() const { return reinterpret_cast<const Class##Private *>(qGetPtrHelper(Dptr)); } \
+    inline Class##Private* d_func() \
+    { Q_CAST_IGNORE_ALIGN(return reinterpret_cast<Class##Private *>(qGetPtrHelper(Dptr));) } \
+    inline const Class##Private* d_func() const \
+    { Q_CAST_IGNORE_ALIGN(return reinterpret_cast<const Class##Private *>(qGetPtrHelper(Dptr));) } \
     friend class Class##Private;
 
 #define Q_DECLARE_PUBLIC(Class)                                    \
@@ -1062,7 +1068,11 @@ template <typename Wrapper> static inline typename Wrapper::pointer qGetPtrHelpe
 #define QT_TRANSLATE_NOOP3(scope, x, comment) {x, comment}
 #define QT_TRANSLATE_NOOP3_UTF8(scope, x, comment) {x, comment}
 
-#ifndef QT_NO_TRANSLATION // ### This should enclose the NOOPs above
+#ifndef QT_NO_TRANSLATION // ### Qt6: This should enclose the NOOPs above
+
+#define QT_TR_N_NOOP(x) x
+#define QT_TRANSLATE_N_NOOP(scope, x) x
+#define QT_TRANSLATE_N_NOOP3(scope, x, comment) {x, comment}
 
 // Defined in qcoreapplication.cpp
 // The better name qTrId() is reserved for an upcoming function which would

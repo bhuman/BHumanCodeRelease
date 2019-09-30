@@ -69,12 +69,8 @@
 /**
  * Determine the number of entries in a tuple.
  */
-#if defined _MSC_VER && !defined Q_MOC_RUN
-#define _STREAM_TUPLE_SIZE(...) _STREAM_JOIN(_STREAM_TUPLE_SIZE_II, (__VA_ARGS__, _STREAM_TUPLE_SIZE_III))
-#else
 #define _STREAM_TUPLE_SIZE(...) _STREAM_TUPLE_SIZE_I((__VA_ARGS__, _STREAM_TUPLE_SIZE_III))
 #define _STREAM_TUPLE_SIZE_I(params) _STREAM_TUPLE_SIZE_II params
-#endif
 #define _STREAM_TUPLE_SIZE_II( \
   a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
   a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
@@ -95,31 +91,17 @@
  * Determine whether a sequence is of the form "(a) b" or "(a)(b) c".
  * In the first case, 1 is returned, otherwise 2.
  */
-#if !defined _MSC_VER  || defined __INTELLISENSE__ || defined Q_MOC_RUN
 #define _STREAM_SEQ_SIZE(...) _STREAM_CAT(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_0 __VA_ARGS__))
 #define _STREAM_SEQ_SIZE_0(...) _STREAM_SEQ_SIZE_1
 #define _STREAM_SEQ_SIZE_1(...) _STREAM_SEQ_SIZE_2
 #define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_0 0 _STREAM_DROP(
 #define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_1 1 _STREAM_DROP(
 #define _STREAM_SEQ_SIZE_STREAM_SEQ_SIZE_2 2 _STREAM_DROP(
-#else
-#define _STREAM_SEQ_SIZE(...) _STREAM_JOIN(_STREAM_SEQ_SIZE, _STREAM_SEQ_SIZE_I(_STREAM_SEQ_SIZE_I(_STREAM_SEQ_SIZE_II(__VA_ARGS__)))))
-#define _STREAM_SEQ_SIZE_I(...) _STREAM_CAT(_STREAM_DROP, __VA_ARGS__)
-#define _STREAM_SEQ_SIZE_II(...) _STREAM_DROP __VA_ARGS__
-#define _STREAM_SEQ_SIZE_STREAM_DROP 2 _STREAM_DROP(
-#define _STREAM_SEQ_SIZE_STREAM_DROP_STREAM_DROP 1 _STREAM_DROP (
-#define _STREAM_SEQ_SIZE_STREAM_DROP_STREAM_DROP_STREAM_DROP 0 _STREAM_DROP (
-#endif
 
 /**
- * Remove surrounding parentheses from header. Ignored for Microsoft's compiler, but required
- * on Linux and macOS.
+ * Remove surrounding parentheses from header.
  */
-#if defined _MSC_VER && !defined Q_MOC_RUN
-#define _STREAM_UNWRAP
-#else
 #define _STREAM_UNWRAP(...) __VA_ARGS__
-#endif
 
 /**
  * Apply a macro to all elements of a tuple.
@@ -278,7 +260,7 @@
 /** Generate type registration code from declaration. */
 #define _STREAM_REG(seq) TypeRegistry::addAttribute(_type, typeid(decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type)).name(), #seq);
 
-/** Generate the initialisation code from the declaration if required. */
+/** Generate the initialization code from the declaration if required. */
 #define _STREAM_INIT(seq) _STREAM_JOIN(_STREAM_INIT_I_, _STREAM_SEQ_SIZE(seq))(seq)
 #define _STREAM_INIT_I_1(...)
 #define _STREAM_INIT_I_2(...) = decltype(Streaming::TypeWrapper<_STREAM_DECL_I __VA_ARGS__))>::type)(_STREAM_INIT_I_2_I(__VA_ARGS__))
@@ -321,11 +303,7 @@
  *               allowed if enclosed by parentheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#if defined _MSC_VER && !defined Q_MOC_RUN
-#define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , header, __VA_ARGS__)
-#else
 #define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , (header), __VA_ARGS__)
-#endif
 
 /**
  * Generate a streamable class that is derived from a class that is already
@@ -339,11 +317,7 @@
  *               allowed if enclosed by parentheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#if defined _MSC_VER && !defined Q_MOC_RUN
-#define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), header, __VA_ARGS__)
-#else
 #define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), (header), __VA_ARGS__)
-#endif
 
 /**
  * Use this macro to replace a comma that is not enclosed by parentheses

@@ -36,7 +36,7 @@ public:
     such that the intermediate accumulator does
     not overflow unit16.
  */
-typedef unsigned int CodedContourPoint;
+using CodedContourPoint = unsigned int;
 
 //! Special contour point indicating "there is none" or invalid
 enum {EMPTYCONTOURPOINT = 0xffffffff};
@@ -59,7 +59,7 @@ inline CodedContourPoint codeContourPoint(int x, int y, int nx, int ny)
  */
 inline double factorOfN(int n, bool doClip = false)
 {
-  double factor =  sqrt((double)(0xffff0000) / n) / CNSResponse::SCALE;
+  double factor =  sqrt(static_cast<double>(0xffff0000) / n) / CNSResponse::SCALE;
   if(doClip)
   {
     if(!(factor >= 9))
@@ -93,22 +93,22 @@ inline CodedContourPoint codeContourPointWithAngle(int x, int y, double alpha, i
 inline CodedContourPoint code(const ContourPoint& cp, int n) {return codeContourPointWithAngle(cp.x, cp.y, cp.angle, n);}
 
 //! Returns the coded x position
-inline int xOfCCP(CodedContourPoint cp) {return (signed char)(cp & 0xff);}
+inline int xOfCCP(CodedContourPoint cp) {return static_cast<signed char>(cp & 0xff);}
 
 //! Returns the coded y position
-inline int yOfCCP(CodedContourPoint cp) {return (signed char)((cp >> 8) & 0xff);}
+inline int yOfCCP(CodedContourPoint cp) {return static_cast<signed char>((cp >> 8) & 0xff);}
 
 //! Returns the coded nx normal vector component
-inline int nxOfCCP(CodedContourPoint cp) {return (signed char)(((cp >> 16) & 0xff));}
+inline int nxOfCCP(CodedContourPoint cp) {return static_cast<signed char>(((cp >> 16) & 0xff));}
 
 //! Returns the coded ny normal vector component
-inline int nyOfCCP(CodedContourPoint cp) {return (signed char)((cp >> 24));}
+inline int nyOfCCP(CodedContourPoint cp) {return static_cast<signed char>((cp >> 24));}
 
 //! Returns the coded nx and ny as one 16 bit number
-inline unsigned short nOfCCP(CodedContourPoint cp) {return (unsigned short)(cp >> 16);}
+inline unsigned short nOfCCP(CodedContourPoint cp) {return static_cast<unsigned short>(cp >> 16);}
 
 //! Returns the angle coded in nx and ny as a floating point number
-inline double angleOfCCP(CodedContourPoint cp) {return atan2((double) nyOfCCP(cp), (double) nxOfCCP(cp));}
+inline double angleOfCCP(CodedContourPoint cp) {return atan2(static_cast<double>(nyOfCCP(cp)), static_cast<double>(nxOfCCP(cp)));}
 
 //! decodes a single contour point
 inline ContourPoint decode(const CodedContourPoint& ccp)
@@ -161,7 +161,7 @@ public:
   void autoShift();
 };
 
-//! A contour is a set of contourpoints
+//! A contour is a set of contour points
 /*! The points can be ordered arbitrarily and also consist of several subcurves.
     However, the code is more efficient if they are sorted vertically.
 
@@ -205,7 +205,7 @@ inline void code(CodedContour& cct, const Contour& contour)
 inline void decode(Contour& cct, const CodedContour& contour)
 {
   cct.resize(contour.size());
-  for(int i = 0; i < (int) contour.size(); i++)
+  for(int i = 0; i < static_cast<int>(contour.size()); i++)
     cct[i] = decode(contour[i]);
   cct.mapping = contour.mapping;
   cct.referenceX = contour.referenceX;
@@ -215,9 +215,9 @@ inline void decode(Contour& cct, const CodedContour& contour)
 //! Multiplies the normal vector of \c ccp by \c factor/256.0
 inline void scaleNormalVector(CodedContourPoint& ccp, int factor)
 {
-  signed char* ccpX = (signed char*) &ccp;
-  ccpX[2] = (signed char)(((int)(ccpX[2] * factor + 128)) >> 8);
-  ccpX[3] = (signed char)(((int)(ccpX[3] * factor + 128)) >> 8);
+  signed char* ccpX = reinterpret_cast<signed char*>(&ccp);
+  ccpX[2] = static_cast<signed char>((static_cast<int>(ccpX[2] * factor + 128)) >> 8);
+  ccpX[3] = static_cast<signed char>((static_cast<int>(ccpX[3] * factor + 128)) >> 8);
 }
 
 //! Rasterizes a line from \c (x0,y0) to \c (x1,y1) and adds it to \c contour

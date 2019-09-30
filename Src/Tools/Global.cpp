@@ -1,7 +1,7 @@
 /**
  * @file Global.cpp
  * Implementation of a class that contains pointers to global data.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #include "Global.h"

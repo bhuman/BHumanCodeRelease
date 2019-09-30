@@ -16,7 +16,7 @@
 #include <QFileOpenEvent>
 
 /** The address of the main window object used by the following class. */
-static MainWindow* mainWindow;
+MainWindow* mainWindow;
 
 /**
  * A helper for opening files when they were launched from the Finder.
@@ -61,12 +61,6 @@ const char* _fromQString(const QString& string)
 }
 #endif // MACOS
 
-/**
- * Qt produces some annoying console messages on different platforms. This is a
- * helper to suppress these messages.
- */
-static void ignoreMessageOutput(QtMsgType, const QMessageLogContext&, const QString&) {}
-
 int main(int argc, char *argv[])
 {
 #ifdef WINDOWS
@@ -80,8 +74,6 @@ int main(int argc, char *argv[])
   QApplication app(argc, argv);
   MainWindow mainWindow(argc, argv);
 
-  qInstallMessageHandler(ignoreMessageOutput);
-
 #ifdef WINDOWS
   app.setStyle("fusion");
 #elif defined MACOS
@@ -91,6 +83,10 @@ int main(int argc, char *argv[])
 
   app.setApplicationName("SimRobot");
 
+#ifdef MACOS
+  mainWindow.show();
+#endif
+
   // open file from commandline
   for(int i = 1; i < argc; i++)
     if(*argv[i] != '-' && strcmp(argv[i], "YES"))
@@ -99,6 +95,9 @@ int main(int argc, char *argv[])
       break;
     }
 
+#ifndef MACOS
   mainWindow.show();
+#endif
+
   return app.exec();
 }

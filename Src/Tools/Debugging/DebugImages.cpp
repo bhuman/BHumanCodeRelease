@@ -196,9 +196,9 @@ void edge2ToBGRA(const unsigned int size, const void* const src, void* const des
   yuvToBGRA(size * 2, dest, dest);
 }
 
-void asmReturn(X86Assembler& a)
+void asmReturn(x86::Assembler& a)
 {
-#if !ASMJIT_ARCH_64BIT || ASMJIT_OS_WINDOWS
+#if ASMJIT_ARCH_X86 != 64 || defined(_WIN32)
   a.pop(a.zsi());
   a.pop(a.zdi());
 #endif
@@ -208,7 +208,7 @@ void asmReturn(X86Assembler& a)
   a.ret();
 }
 
-void rgbToBGRA(X86Assembler& a)
+void rgbToBGRA(x86::Assembler& a)
 {
   Label constants = a.newLabel();
   Label loop = a.newLabel();
@@ -217,8 +217,8 @@ void rgbToBGRA(X86Assembler& a)
 #if _supportsAVX2
   a.add(x86::edi, 31);
   a.shr(x86::edi, 5);
-  a.vbroadcasti128(x86::ymm0, X86Mem(constants, 0));
-  a.vpbroadcastd(x86::ymm1, X86Mem(constants, 16));
+  a.vbroadcasti128(x86::ymm0, x86::Mem(constants, 0));
+  a.vpbroadcastd(x86::ymm1, x86::Mem(constants, 16));
   a.bind(loop);
   a.vmovdqa(x86::ymm2, x86::ptr(a.zsi()));
   a.add(a.zsi(), 32);
@@ -231,8 +231,8 @@ void rgbToBGRA(X86Assembler& a)
 #else
   a.add(x86::edi, 15);
   a.shr(x86::edi, 4);
-  a.movdqa(x86::xmm0, X86Mem(constants, 0));
-  a.movdqa(x86::xmm1, X86Mem(constants, 16));
+  a.movdqa(x86::xmm0, x86::Mem(constants, 0));
+  a.movdqa(x86::xmm1, x86::Mem(constants, 16));
   a.bind(loop);
   a.movdqa(x86::xmm2, x86::ptr(a.zsi()));
   a.add(a.zsi(), 16);
@@ -270,7 +270,7 @@ void rgbToBGRA(X86Assembler& a)
   for(size_t i = 0; i < (_supportsAVX2 ? 1 : 4); i++) a.dint32(0xFF000000); // 1: alpha
 }
 
-void yuyvToBGRA(X86Assembler& a)
+void yuyvToBGRA(x86::Assembler& a)
 {
   Label constants = a.newLabel();
   Label loop = a.newLabel();
@@ -279,11 +279,11 @@ void yuyvToBGRA(X86Assembler& a)
 #if _supportsAVX2
   a.add(x86::edi, 31);
   a.shr(x86::edi, 5);
-  a.vbroadcasti128(x86::ymm5, X86Mem(constants, 0));
-  a.vpbroadcastw(x86::ymm6, X86Mem(constants, 16));
-  a.vpbroadcastw(x86::ymm7, X86Mem(constants, 18));
-  a.vpbroadcastd(x86::ymm8, X86Mem(constants, 20));
-  a.vpbroadcastd(x86::ymm9, X86Mem(constants, 24));
+  a.vbroadcasti128(x86::ymm5, x86::Mem(constants, 0));
+  a.vpbroadcastw(x86::ymm6, x86::Mem(constants, 16));
+  a.vpbroadcastw(x86::ymm7, x86::Mem(constants, 18));
+  a.vpbroadcastd(x86::ymm8, x86::Mem(constants, 20));
+  a.vpbroadcastd(x86::ymm9, x86::Mem(constants, 24));
   a.vpcmpeqb(x86::ymm10, x86::ymm10, x86::ymm10);
   a.bind(loop);
   a.vmovdqa(x86::ymm0, x86::ptr(a.zsi()));
@@ -311,19 +311,19 @@ void yuyvToBGRA(X86Assembler& a)
   a.vperm2i128(x86::ymm0, x86::ymm1, x86::ymm2, 2 << 4); // YMM0 is now BGRA0 BGRA1 BGRA2 BGRA3 BGRA4 BGRA5 BGRA6 BGRA7
   a.vperm2i128(x86::ymm1, x86::ymm1, x86::ymm2, 1 | (3 << 4)); // YMM1 is now BGRA8 BGRA9 BGRA10 BGRA11 BGRA12 BGRA13 BGRA14 BGRA15
   a.vmovntdq(x86::ptr(a.zdx()), x86::ymm0);
-  a.vmovntdq(X86Mem(a.zdx(), 32), x86::ymm1);
+  a.vmovntdq(x86::Mem(a.zdx(), 32), x86::ymm1);
   a.add(a.zdx(), 64);
   a.dec(x86::edi);
   a.jnz(loop);
 #else
   a.add(x86::edi, 15);
   a.shr(x86::edi, 4);
-  a.movdqa(x86::xmm5, X86Mem(constants, 0));
-  a.movdqa(x86::xmm6, X86Mem(constants, 16));
-  a.movdqa(x86::xmm7, X86Mem(constants, 16 * 2));
-#if ASMJIT_ARCH_64BIT
-  a.movdqa(x86::xmm8, X86Mem(constants, 16 * 3));
-  a.movdqa(x86::xmm9, X86Mem(constants, 16 * 4));
+  a.movdqa(x86::xmm5, x86::Mem(constants, 0));
+  a.movdqa(x86::xmm6, x86::Mem(constants, 16));
+  a.movdqa(x86::xmm7, x86::Mem(constants, 16 * 2));
+#if ASMJIT_ARCH_X86 == 64
+  a.movdqa(x86::xmm8, x86::Mem(constants, 16 * 3));
+  a.movdqa(x86::xmm9, x86::Mem(constants, 16 * 4));
   a.pcmpeqb(x86::xmm10, x86::xmm10);
 #endif
   a.bind(loop);
@@ -333,10 +333,10 @@ void yuyvToBGRA(X86Assembler& a)
   a.psrlw(x86::xmm1, 8);
   a.psubw(x86::xmm1, x86::xmm6); // XMM1 is now 16-bit UV
   a.pand(x86::xmm0, x86::xmm7); // XMM0 is now 16-bit Y
-#if ASMJIT_ARCH_64BIT
+#if ASMJIT_ARCH_X86 == 64
   a.movdqa(x86::xmm2, x86::xmm8);
 #else
-  a.movdqa(x86::xmm2, X86Mem(constants, 16 * 3));
+  a.movdqa(x86::xmm2, x86::Mem(constants, 16 * 3));
 #endif
   a.pmulhrsw(x86::xmm2, x86::xmm1);
   a.psllw(x86::xmm2, 1); // XMM2 is now 16-bit BR without luminance-shift
@@ -350,16 +350,16 @@ void yuyvToBGRA(X86Assembler& a)
   a.punpckldq(x86::xmm2, x86::xmm2);
   a.paddw(x86::xmm2, x86::xmm4); // XMM2 is now 16-bit BR0
   a.packuswb(x86::xmm2, x86::xmm3); // XMM2 is now 8-bit BR
-#if ASMJIT_ARCH_64BIT
+#if ASMJIT_ARCH_X86 == 64
   a.pmulhrsw(x86::xmm1, x86::xmm9);
 #else
-  a.pmulhrsw(x86::xmm1, X86Mem(constants, 16 * 4));
+  a.pmulhrsw(x86::xmm1, x86::Mem(constants, 16 * 4));
 #endif
   a.phaddw(x86::xmm1, x86::xmm1);
   a.pshufb(x86::xmm1, x86::xmm5);
   a.psubw(x86::xmm0, x86::xmm1); // XMM0 is now 16-bit G
   a.packuswb(x86::xmm0, x86::xmm0);
-#if ASMJIT_ARCH_64BIT
+#if ASMJIT_ARCH_X86 == 64
   a.punpcklbw(x86::xmm0, x86::xmm10); // XMM0 is now 8-bit GA
 #else
   a.pcmpeqb(x86::xmm1, x86::xmm1);
@@ -369,7 +369,7 @@ void yuyvToBGRA(X86Assembler& a)
   a.punpcklbw(x86::xmm1, x86::xmm0); // XMM1 is now 8-bit BGRA0
   a.punpckhbw(x86::xmm2, x86::xmm0); // XMM2 is now 8-bit BGRA1
   a.movntdq(x86::ptr(a.zdx()), x86::xmm1);
-  a.movntdq(X86Mem(a.zdx(), 16), x86::xmm2);
+  a.movntdq(x86::Mem(a.zdx(), 16), x86::xmm2);
   a.add(a.zdx(), 32);
   a.dec(x86::edi);
   a.jnz(loop);
@@ -421,12 +421,12 @@ DebugImageConverter::DebugImageConverter()
   converters[PixelTypes::RGB] = nullptr;
   converters[PixelTypes::BGRA] = nullptr;
   converters[PixelTypes::YUYV] = nullptr;
-  converters[PixelTypes::YUV] = (ConversionFunction)yuvToBGRA;
-  converters[PixelTypes::Colored] = (ConversionFunction)coloredToBGRA;
-  converters[PixelTypes::Grayscale] = (ConversionFunction)grayscaledToBGRA;
-  converters[PixelTypes::Hue] = (ConversionFunction)hueToBGRA;
-  converters[PixelTypes::Binary] = (ConversionFunction)binaryToBGRA;
-  converters[PixelTypes::Edge2] = (ConversionFunction)edge2ToBGRA;
+  converters[PixelTypes::YUV] = static_cast<ConversionFunction>(yuvToBGRA);
+  converters[PixelTypes::Colored] = static_cast<ConversionFunction>(coloredToBGRA);
+  converters[PixelTypes::Grayscale] = static_cast<ConversionFunction>(grayscaledToBGRA);
+  converters[PixelTypes::Hue] = reinterpret_cast<ConversionFunction>(hueToBGRA);
+  converters[PixelTypes::Binary] = static_cast<ConversionFunction>(binaryToBGRA);
+  converters[PixelTypes::Edge2] = static_cast<ConversionFunction>(edge2ToBGRA);
 }
 
 DebugImageConverter::~DebugImageConverter()
@@ -463,15 +463,15 @@ void DebugImageConverter::convertToBGRA(const DebugImage& src, void* dest)
 
       // Initialize assembler
       CodeHolder code;
-      code.init(Global::getAsmjitRuntime().getCodeInfo());
-      X86Assembler a(&code);
+      code.init(Global::getAsmjitRuntime().codeInfo());
+      x86::Assembler a(&code);
 
       // Emit Prolog
       a.push(a.zbp());
       a.mov(a.zbp(), a.zsp());
       a.push(a.zbx());
-#if ASMJIT_ARCH_64BIT
-#if ASMJIT_OS_WINDOWS
+#if ASMJIT_ARCH_X86 == 64
+#ifdef _WIN32
       // Windows64
       a.push(a.zdi());
       a.push(a.zsi());
@@ -483,9 +483,9 @@ void DebugImageConverter::convertToBGRA(const DebugImage& src, void* dest)
       // CDECL
       a.push(a.zdi());
       a.push(a.zsi());
-      a.mov(x86::edi, X86Mem(a.zbp(), 8));
-      a.mov(a.zsi(), X86Mem(a.zbp(), 12));
-      a.mov(a.zdx(), X86Mem(a.zbp(), 16));
+      a.mov(x86::edi, x86::Mem(a.zbp(), 8));
+      a.mov(a.zsi(), x86::Mem(a.zbp(), 12));
+      a.mov(a.zdx(), x86::Mem(a.zbp(), 16));
 #endif
       switch(src.type)
       {

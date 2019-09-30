@@ -48,6 +48,13 @@ private:
 
 STREAMABLE(KickEngineParameters,
 {
+  STREAMABLE(BoostAngle,
+  {,
+    (Joints::Joint) joint,
+    (Angle) angle,
+  });
+  using stdVectorBoostAngles = std::vector<BoostAngle>;
+
   int numberOfPhases = 0;
   char name[260];
 
@@ -64,6 +71,9 @@ STREAMABLE(KickEngineParameters,
 
   void onRead(),
 
+  (stdVectorBoostAngles) boostAngles, /**< Used joints for boosting. */
+
+  /**< Reference values for the limbs. */
   (Vector3f)(Vector3f::Zero()) footOrigin,
   (Vector3f)(Vector3f::Zero()) footRotOrigin,
   (Vector3f)(Vector3f::Zero()) armOrigin,
@@ -71,6 +81,7 @@ STREAMABLE(KickEngineParameters,
   (Vector2f)(Vector2f::Zero()) comOrigin,
   (Vector2f)(Vector2f::Zero()) headOrigin,
 
+  /**< PID-Controller balance parameters. */
   (float)(0.f) kpx,
   (float)(0.f) kix,
   (float)(0.f) kdx,
@@ -78,9 +89,10 @@ STREAMABLE(KickEngineParameters,
   (float)(0.f) kiy,
   (float)(0.f) kdy,
 
-  (bool)(false) loop,
-  (bool)(true)  standLeft,
-  (bool)(false) ignoreHead,
+  (bool)(false) loop, /**< Repeat the kick . */
+  (bool)(true)  standLeft, /**< Is the left foot the support foot. */
+  (bool)(false) ignoreHead, /**< Shall the head be ignored. */
+  (int)(-1) adjustKickFootPosition, /**< The keyframe number of the current kick, at which the kicking foots z- and x-translation are adjusted. */
 
-  (std::vector<Phase>) phaseParameters,
+  (std::vector<Phase>) phaseParameters, /**< The keyframes for the kick. */
 });

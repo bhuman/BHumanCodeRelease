@@ -15,7 +15,7 @@ public:
   //! The origin of the object is searched for in this volume
   CylinderRing positionSpace;
 
-  //! Discretatization in viewing direction
+  //! Discretization in viewing direction
   /*! The steps a chosen such that the object size changes by
       \c stepInPixelGlobalDiscretization pixel. This is
       is obtained by calling \c ObjectCNSStereoDetector (object2World, stepInPixelGlobalDiscretization, DIM_TRANS_VIEWING);

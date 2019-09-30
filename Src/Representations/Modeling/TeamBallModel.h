@@ -22,18 +22,8 @@ STREAMABLE(TeamBallModel,
   {,
     onlyMe,         /**< This is just my own ball model. Go, team, go ??!!? :-( */
     oneOther,       /**< The ball model of one other robot was used. */
-    multipleOthers, /**< The ball model of multiple other robots have been combined. */
+    multipleOthers, /**< The ball models of multiple other robots have been combined. */
     meAndOthers,    /**< My ball was combined which the ball model(s) of others. Teamwork! :-) */
-  });
-
-  /**
-   * @struct Considered ball
-   * Some details about a ball that has been merged
-   */
-  STREAMABLE(ConsideredBall,
-  {,
-    (Vector2f) position,          /**< The position that has been used for merging */
-    (unsigned char) playerNumber, /**< The robot that provided this ball */
   });
 
   void verify() const;
@@ -45,5 +35,5 @@ STREAMABLE(TeamBallModel,
   (unsigned)(0) timeWhenLastValid,             /**< Workaround by Andreas St. -> Tim L. suggests to remove it */
   (unsigned)(0) timeWhenLastSeen,              /**< The point of time when the ball was seen the last time by a teammate */
   (Contributors)(onlyMe) contributors,         /**< Information about which robot(s) contributed to the computation of this model */
-  (std::vector<ConsideredBall>) balls,         /**< List of all merged balls, only filled if there are multiple contributors */
+  (std::vector<Vector2f>) balls,               /**< List of all merged ball positions */
 });

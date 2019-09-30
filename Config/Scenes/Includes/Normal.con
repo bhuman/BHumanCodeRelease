@@ -11,17 +11,20 @@ dr debugDrawing3d:representation:TeamInfo
 robot all
 
 # Select modules for simulator
-mr Image CognitionLogDataProvider
-mr CameraInfo CognitionLogDataProvider
-mr FrameInfo CognitionLogDataProvider
-mr JointSensorData MotionLogDataProvider
-mr InertialSensorData MotionLogDataProvider
-mr KeyStates MotionLogDataProvider
-mr FrameInfo MotionLogDataProvider
-mr GroundTruthWorldState CognitionLogDataProvider
-mr GroundTruthRobotPose OracledWorldModelProvider
-mr GroundTruthBallModel OracledWorldModelProvider
-mr Thumbnail default
+mr CameraImage LogDataProvider Lower
+mr CameraImage LogDataProvider Upper
+mr CameraInfo LogDataProvider Lower
+mr CameraInfo LogDataProvider Upper
+mr FrameInfo LogDataProvider Lower
+mr FrameInfo LogDataProvider Upper
+mr FrameInfo LogDataProvider Motion
+mr FsrSensorData LogDataProvider Motion
+mr InertialSensorData LogDataProvider Motion
+mr JointSensorData LogDataProvider Motion
+mr KeyStates LogDataProvider Motion
+mr GroundTruthWorldState LogDataProvider Cognition
+mr GroundTruthRobotPose OracledWorldModelProvider Cognition
+mr GroundTruthBallModel OracledWorldModelProvider Cognition
 
 call Includes/DebugResponses
 call Includes/GameStates

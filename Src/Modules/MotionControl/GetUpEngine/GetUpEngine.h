@@ -1,27 +1,57 @@
 /**
  * @file GetUpEngine.h
- * A minimized motion engine for standing up.
- * @author <A href="mailto:judy@tzi.de">Judith Müller</A>
- * @author Marvin Franke
- * @author Philip Reichenberg
+ * A motion engine for standing up.
+ * TODO: change the stupid float calculations to Angles...
+ * @author <A href="mailto:s_ksfo6n@uni-bremen.de">Philip Reichenberg</A>
  */
-
 #pragma once
-#include "Representations/MotionControl/GetUpEngineOutput.h"
-#include "Representations/MotionControl/GetUpEngineOutputLog.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/LegMotionSelection.h"
+
+#include <cmath>
+#include <functional>
+#include <string>
+#include "Platform/File.h"
+#include "Platform/SystemCall.h"
+
+#include "Representations/Configuration/DamageConfiguration.h"
+#include "Representations/Configuration/GyroOffset.h"
+#include "Representations/Configuration/JointLimits.h"
+
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Configuration/DamageConfiguration.h"
-#include "Representations/Sensing/InertialData.h"
-#include "Representations/MotionControl/Balancer.h"
-#include "Representations/Configuration/GetupMotion.h"
-#include "Tools/Module/Module.h"
-#include "Tools/Streams/AutoStreamable.h"
-using GetUpMotion = GetUpMotions::GetUpMotion;
+#include "Representations/Infrastructure/SensorData/JointSensorData.h"
+#include "Representations/Infrastructure/SensorData/KeyStates.h"
 
+#include "Representations/MotionControl/HeadAngleRequest.h"
+#include "Representations/MotionControl/GetUpEngineOutput.h"
+#include "Representations/MotionControl/GetUpEngineOutputLog.h"
+#include "Representations/MotionControl/GetUpMotionPhase.h"
+#include "Representations/MotionControl/GetUpPhase.h"
+#include "Representations/MotionControl/LegMotionSelection.h"
+#include "Representations/MotionControl/MotionInfo.h"
+
+#include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/RobotModel.h"
+#include "Representations/Sensing/FilteredCurrent.h"
+
+#include "Tools/Debugging/Annotation.h"
+#include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Debugging/Modify.h"
+#include "Tools/Math/Pose2f.h"
+#include "Tools/Math/Pose3f.h"
+#include "Tools/Math/Rotation.h"
+#include "Tools/Module/Module.h"
+#include "Tools/Motion/EngineState.h"
+#include "Tools/Motion/GetUpMotion.h"
+#include "Tools/Motion/MotionUtilities.h"
+#include "Tools/RingBuffer.h"
+#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Streams/EnumIndexedArray.h"
+#include "Tools/Range.h"
+
+using GetUpMotion = GetUpMotions::GetUpMotion;
+using EngineState = EngineStates::EngineState;
+using Phase = GetUpMotionPhases::GetUpMotionPhase;
 STREAMABLE(StiffnessPair,
 {
   StiffnessPair() = default;
@@ -33,311 +63,445 @@ STREAMABLE(StiffnessPair,
 
 inline StiffnessPair::StiffnessPair(Joints::Joint joint, int s) : joint(joint), s(s) {}
 
-//If u want to add variables, then u need to add them in the methods:
-//checkConditions() for other usages
-//in the import and export methods (for the parsing)
-ENUM(ConditionVar,
+// Balance factors
+STREAMABLE(BalanceFactors,
 {,
-  InertialDataAngleY,
-  InertialDataAngleX,
-  OptionalLineFront,
-  OptionalLineBack,
+  (Vector2f)(0.f, 0.f) increaseFactorCapFront,
+  (Vector2f)(0.f, 0.f) increaseFactorCapBack,
+  (Vector2f)(0.f, 0.f) powDegreeFront,
+  (Vector2f)(0.f, 0.f) powDegreeBack,
+  (Vector2f)(0.f, 0.f) borderPIDPX,
+  (Vector2f)(0.f, 0.f) borderPIDPY,
+  (Vector2f)(0.f, 0.f) borderPIDDX,
+  (Vector2f)(0.f, 0.f) borderPIDDY,
+  (bool)(false) pidDXcontroller,
 });
 
-//The parameters for the conditions
-//these values are needed to the method checkConditions()
+// If u want to add variables, then u need to add them in the methods:
+// checkConditions for other usages
+ENUM(ConditionVar,
+{,
+  InertialDataAngleY, // Torso angle forward
+  InertialDataAngleX, // Torso angle sideways
+  FluctuationY, // Fluctuation forward
+  FluctuationX, // Fluctuation sidewards
+  BrokenLeftArm, // Left arm is stuck
+  BrokenRightArm, // Right arm is stuck
+  OptionalLineFront, // Execute Keyframe/Waitime of value corresponds to value in the damageConfiguration
+  OptionalLineBack, // Execute Keyframe/Waitime of value corresponds to value in the damageConfiguration
+  WaitTime, // Wait time of previous keyframe
+});
+
 STREAMABLE(Condition,
 {,
-  (ConditionVar) variable,
-  (float) lowerFloat,
-  (float) higherFloat,
-  (bool) isNot,
+  (ConditionVar) variable, // Condition enum
+  (float) lowerFloat, // Lower threshold
+  (float) higherFloat, // Upper threshold
+  (bool) isNot, // Negate condition
+});
+
+STREAMABLE_WITH_BASE(WaitCondition, Condition,
+{,
+  (int)(1000) maxWaitTime, // Max wait time
+});
+
+// Factor for the used joint to increase or decrease balancer value
+STREAMABLE(JointFactor,
+{,
+  (Joints::Joint) joint, // The joint used for balancing
+  (float) factor, // The factor
+});
+
+// List of joints used to balance
+STREAMABLE(BalanceOptionJoints,
+{,
+  (std::vector<JointFactor>) jointY,
+  (std::vector<JointFactor>) jointX,
+});
+
+STREAMABLE(JointPair,
+{,
+  (Joints::Joint) joint, // The joint used for compensation
+  (float) addValue, // Ratio of the joint that is stuck
+});
+
+STREAMABLE(JointCompensationParams,
+{,
+  (Joints::Joint) jointDelta, // The joint that is stuck and needs compensation
+  (bool)(false) hipPitchDifferenceCompensation, // Special case compensation, which ignores the other values
+  (float) minVal, // If minVal positive: jointDelta must have at least this difference
+  // Otherwise: Compensated joint must have this max difference to be fully compensated
+  (float) maxVal, // If minVal positive: jointDelta must have this max difference to be fully compensated
+  // Otherwise: Compensated joint must have at least this difference
+  (std::vector<JointPair>) jointPairs, // The joints used for compensation
+  (bool)(false) predictJointDif, // Predict the angle of jointDelta
+});
+
+STREAMABLE(JointCompensation,
+{,
+  (std::vector<JointCompensationParams>) jointCompensationParams, // List of joints that shall be compensated
+  (float)(0.2f) reduceFactorJointCompensation, // reduceFactor to reduce over compensating. Only used if predictJointDif = true
 });
 
 STREAMABLE(MofLine,
 {,
-  (float[2]) head,
-  (float[6]) leftArm,
-  (float[6]) rightArm,
-  (float[6]) leftLeg,
-  (float[6]) rightLeg,
-  (std::vector<StiffnessPair>) singleMotorStiffnessChange, //from this line on use for joint stiffness
-  (float) duration,
-  (bool) critical, //check for current line if torso is too tilted
-  (bool) isPartOfPreviousOptionalLine, // part of a optionalLine
-  (std::vector<Condition>) conditions,
-  (bool) optionalLineAnds, // ends the optionalLine
-  (bool) isElseBlock,
-  (bool) balanceWithHipAndAnkleY, // balance with HipPitch and AnklePitch
-  (bool) balanceWithHipAndAnkleX, // balance with HipRoll and AnkleRoll
-  (bool) increaseBalanceY, // increase balanceWithHipAndAnkleY
-  (bool) increaseBalanceX, // increase balanceWithHipAndAnkleX
-  (float) waitDuration,
-  (bool) waitConditionAnds,
-  (std::vector<Condition>) waitConditions,
+  (Phase) phase, // name of the current phase
+  (float)(0.f) duration, // duration of the current keyframe
+  (Vector2f)(0.f, 0.f) goalCom, // refrence com
+  (bool)(false) setLastCom, // shall last com be overwritting with the current com at the start of the keyframe?
+  (bool)(false) optionalLineAnds, // ands the conditions
+  (bool)(false) isElseBlock, // else block of optionale keyframes
+  (bool)(false) isPartOfPreviousOptionalLine, // part of a optionalLine
+  (bool)(false) forbidWaitBreak, // Wait time is not allowed to break up early if goal angle is not reachable
+  (std::vector<JointCompensation>) jointCompensation, // list of joints that shall be compensated. Only first entry is used. A list is used because: no compensation -> empty list -> no useless lines in the config file
+  (std::vector<WaitCondition>) waitConditions, // conditions, if a wait time shall be executed at the end of a keyframe
+  (std::vector<Condition>) conditions, // conditions of the optionale line
+  (BalanceOptionJoints) balanceWithJoints, // add the balance factor of the pid-controller on top of these joints
+  (bool) balancerActive, // how shall get balanced? (currently only one version implemented / 28.11.18
+  (std::vector<StiffnessPair>) singleMotorStiffnessChange, // from this line on use for joint stiffness
+  // Keyframe angles for the joints
+  (std::array<float, 2>)({{0.f, 0.f}}) head,
+  (std::array<float, 6>)({{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}) leftArm,
+  (std::array<float, 6>)({{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}) rightArm,
+  (std::array<float, 6>)({{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}) leftLeg,
+  (std::array<float, 6>)({{0.f, 0.f, 0.f, 0.f, 0.f, 0.f}}) rightLeg,
 });
 
 STREAMABLE(Mof,
 {,
-  (int[5]) baseLimbStiffness, //head, lArm, rArm, lLeg, rLeg
-  (std::vector<MofLine>) lines,
-  (int) balanceStartLine,
-  (int) balanceArmStartLine, //must be lower than balancerStartLine
-  (int) balanceArmAndLegStartLine, //must be lower than balancerStartLine
-  (Pose2f) odometryOffset,
-  (GetUpMotion) continueTo, // self if no motion should follow
+  (std::array<int, 5>)({{0, 0, 0, 0, 0}}) baseLimbStiffness, // Stiffness for head, lArm, rArm, lLeg, rLeg
+  (std::vector<MofLine>) lines, // The Keyframes
+  (Pose2f) odometryOffset, // OdometryOffset
+  (bool)(false) balanceOut, // Shall the motions get balanced out after finished?
+  (GetUpMotion)(GetUpMotions::doNothing) continueTo, // Self if no motion should follow
+  (Angle)(0) clipAngle, // Positive angle -> clip forwardDifAngleBreak, if negativ angle -> clip forwardDifAngleBreak.
 });
 
-STREAMABLE(GetUpComparisonLine,
+STREAMABLE(BalanceOutParams,
 {,
-  (float) anglesDeviation,
-  (bool) criticalIdentical,
-  (float) durationDifference,
-});
-
-STREAMABLE(GetUpComparisonBaseLine,
-{,
-  (std::vector<GetUpComparisonLine>) lineComparisons,
-  (int) startLineBase,
-  (int) startLineCompare,
-});
-
-STREAMABLE(GetUpComparison,
-{,
-  (std::vector<GetUpComparisonBaseLine>) baseComparisonLines,
+  (int) maxTime, // max time in balanceOut state (in ms)
+  (Angle) minFluctuation, // min fluctuation to be able to leave early
+  (Angle) minForwardAngle, //min forward Angle to be able to leave early
+  (Angle) minBackwardAngle, //min backward Angle to be able to leave early
+  (float) minPIDDValue, // min d value of pid controller
 });
 
 MODULE(GetUpEngine,
 {,
+  REQUIRES(DamageConfigurationBody),
+  USES(HeadAngleRequest),
+  REQUIRES(FilteredCurrent),
   REQUIRES(FrameInfo),
+  REQUIRES(GetUpPhase),
+  REQUIRES(GyroOffset),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
+  REQUIRES(JointSensorData),
+  REQUIRES(KeyStates),
   REQUIRES(LegMotionSelection),
-  REQUIRES(DamageConfigurationBody),
-  REQUIRES(Balancer),
+  REQUIRES(MotionRequest),
+  REQUIRES(RobotModel),
+  USES(JointLimits),
   USES(MotionInfo),
   PROVIDES(GetUpEngineOutput),
   REQUIRES(GetUpEngineOutput),
   PROVIDES(GetUpEngineOutputLog),
   LOADS_PARAMETERS(
   {,
-    (ENUM_INDEXED_ARRAY(Mof, GetUpMotions::GetUpMotion)) mofs,
-    (BalancingParameter) balancingParams,
-    (BalancingParameter) balancingParamsForArms,
-    (Vector2f) leftLIPOrigin,
+    (int) maxTryCounter, // Number of allowed get up tries
+    (int) motionSpecificRetrys, // Number of allowed retries
+    (int) motionSpecificRetrysFront, // Number of allowed retries to move the arms to the side for the front get up
+    (Angle) shoulderPitchThreshold, // Threshold to trigger retry in front get up
+    (bool) motorMalfunctionBreakUp, // Go to helpMeState if a motorMalfunction was detected once
+    (ENUM_INDEXED_ARRAY(Mof, GetUpMotions::GetUpMotion)) mofs, // The different get up motions
+    (ENUM_INDEXED_ARRAY(float, Joints::Joint)) brokenJointData, // Thresholds to detect if a joint is too far of the request
+    (ENUM_INDEXED_ARRAY(float, GetUpMotionPhases::GetUpMotionPhase)) headInterpolation, // Interpolation ratios for head angles from headJointRequest and getUpEngine. This way the head reaches the position it should have when leaving the getUpEngine
+    (Angle) minJointCompensationReduceAngleDif, // Threshold for joint compensation. Joint must change its position by this value between 2 frames to trigger a reduction in the joint compensation
+    (float) jointCompensationSimulationFactor, // Value for forcing stucked joints
+    (std::vector<GetUpMotionPhases::GetUpMotionPhase>) clipBreakUpAngle, // In these motion phases, the break angles are clipped to 0 degree for one side, depending on which get up motion is executed
+    (BalanceOutParams) balanceOutParams, // The parameters for the balanceOutMethode
+    (Vector3f) supportPolygonOffsets, // Offsets for the support polygon. x Forward, y Backward, z Sideways
   }),
 });
 
 class GetUpEngine : public GetUpEngineBase
 {
 private:
-  ENUM(EngineState,
+
+  STREAMABLE(JointRequestAngles,
   {,
-    decideAction,
-    working,
-    breakUp,
-    recover,
-    pickUp,
-    schwalbe,
+    (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) angles,
   });
 
-  EngineState state; // defines the current engine state
+  EngineStates::EngineState state; // defines the current engine state
 
-  bool wasActive, //if the engine was active in the last frame
-       balance,   //toggles balance on or off
-       balanceArm,
-       balanceArmAndLeg,
-       isInOptionalLine,
-       mirror; //toggle if motion should be mirrored
+  GetUpMotions::GetUpMotion motionID;  // the name of the current motion
 
-  int lineCounter, //the current key frame of the motion sequence
-      maxCounter, //the number of key frames of the current motion sequence
-      currentBalanceLine;
+  unsigned int lineStartTimestamp,  // timestamp when a the interpolation between key frames started
+           lastNotActiveTimestamp, // timestamp last time we were in a breakUp
+           waitTimestamp, // timestamp for wait times, to stop waittimes, that are too long
+           getUpFinishedTimStamp, // not used. can be deleted
+           helpMeTimestamp, // timestamp for last help me sound
+           breakUpTimestamp, // timestamp when break up started
+           lastPIDCom, // timestamp last time the PID values were changed
+           retryTimestamp, // retry hack, so we can retry keyframes without doing the whole motion over again
+           doBalanceOutTimestamp, // timestamp used to decide when we can shutdown the engine
+           abortWithHeadSensorTimestamp; // timestamp last time the head sensores where touched
 
-  GetUpMotions::GetUpMotion motionID;  //the name of the current motion
+  int breakCounter, // number of normal retried get up tries
+      retryTime, // Wait time befor a retry is allowed
+      lineCounter, // current keyframe
+      maxCounter, // number of keyframes of current motion
+      tryCounter, // number of tries
+      retryMotionCounter; // retry whole get up motion counter, so we do not do too many retry. Otherwise we assume a hardware failure and just try our luck.
 
-  float ratio, //0-1 interpolation state between key frame
-        upperArmBorder,//maximum positiv angle correction for the arms in the method correctAngleMotion()
-        upperLegBorder,//maximum positiv angle correction for the legs in the method correctAngleMotion()
-        lowerArmBorder,//maximum negativ angle correction for the arms in the method correctAngleMotion()
-        lowerLegBorder,//maximum negativ angle correction for the legs in the method correctAngleMotion()
-        gBufferY, //buffer to summarize gyro data
-        gLastY, // last InertialData.gyro.y() value
-        gBufferX, //buffer to summarize gyro data
-        gLastX, // last InertialData.gyro.x() value
-        kp, //pid factors
-        ki,
-        kd,
-        balanceHipAngleY;
+  JointAngles startJoints; // measured joint data when the last key frame was passed
+  JointRequest lastUnbalanced, // calculated last target joint angles without balance added
+               targetJoints,   // calculated next target joint angles without balance added
+               lineJointRequest; // joint angles from the config for the current keyframe
 
-  //The difference of the requested joint angle (from the cfg) and the actually reached joint angle
-  //the 6. value of lArmDif and rArmDif is always 0.f, because we dont use the hand joint.
-  std::vector<float> lArmDif = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                     rArmDif = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                     lLegDif = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f},
-                     rLegDif = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+  JointRequestAngles jointDif1Angles, // saved the difference of the request and reached angles with a delay
+                     jointDifPredictedAngles, // dif of set and reached joint angles
+                     lineJointRequestAngles, // current goal angles of the current keyframe
+                     lineJointRequest2Angles, // saves lineJointRequest2
+                     lastLineJointRequestAngles; // saves the lineJointRequest of the keyframe before.
 
-  MotionInfo lastMotionInfo; //saves the last MotionInfo
+  std::array<JointRequestAngles, 4> pastJointAnglesAngles; // saves the last set joint angles
 
-  unsigned int lineStartTimeStamp,  //time stamp when a the interpolation between key frames started
-           lastNotActiveTimeStamp, //time stamp of the last time the engine was not active
-           breakUpTimeStamp,  //time stamp when the last unsuccesful try was detected
-           soundTimeStamp, //time stamp to coordinate the cry for help (request for pickup)
-           recoverTimeStamp; //time stamp so the recover motion get used only once per get up motion
+  //Which joints are used for balancing from the previous keyframe
+  std::vector<Joints::Joint> jointsBalanceY,
+      jointsBalanceX;
 
-  JointAngles startJoints; //measured joint data when the last key frame was passed
-  JointRequest lastUnbalanced, //calculated last target joint angles without balance added
-               targetJoints;   //calculated next target joint angles without balance added
+  //Last 2 Gyro values
+  RingBuffer<Vector2a, 3> lastTorsoAngle;
 
-  Pose2f internalOdometryOffset; //stores the next odometry offset
+  std::array<float, Joints::numOfJoints> jointCompensationReducer; // how much is the last jointCompensation of the keyframe before already reduced? (Value between 0 and 1)
 
-  GetUpComparison comparison;
+  // TODO BackwardAngle and ForwardAngle are not Angles (!), rename them. Also Backward/ForwardBreakDif should be angles and not floats
+  // first values are saved value of the last keyframe
+  Vector2f lastBackwardCOMDif, // max backward com dif, before balancer value is increased
+           lastForwardCOMDif, // max forward com dif, before the balancer value is increaed by 100%
+           currentBackwardCOMDif, // Max com backward to increase balancer values
+           currentForwardCOMDif, // Max com forward to increase balancer values
+
+           lastGoal, // last com goal
+           goalGrowth, // how much shall com_foot_last - com_foot_current be in a ideal world?
+           currentGoal, // current keyframe com goal
+
+           comDif, // com relative to support polygon for current frame
+           oldCom, // com relative to support polygon from last frame
+           oldCom2, // com relative to support polygon from next-to-last frame
+
+           valPID_I, // current PID-Values
+           valPID_D,
+           valPID_P,
+
+           balanceValue; // output of PID-Controller
+
+  Vector2a lastForwardAngleBreakUp, // Max forward torso angle before we break up the motion
+           lastBackwardAngleBreakUp, // Max backward torso angle before we break up the motion
+           currentBackwardAngleBreakUp, // Max Torso angle backward to break get up try
+           currentForwardAngleBreakUp, // Max Torso angle forward to break get up try
+           fluctuation; // how much does the robot fluctuates right now?
+
+  float ratio, // current ratio for how much the goal joint shall be added as jointRequest
+        duration, // current keyframe duration
+        framesTillEnd, // so many frames until the current MotionLine is over
+        failedWaitCounter, // counter to break wait times early
+        pidDForward; // used for balanceOut Method. Copy of D part of the PID-Controller
+
+  // bools to check which motion shall be executed when lying on ground
+  bool fastRecover, // Bring all joints into a default position
+       specialActionCheck, // Check if the getUpEngine went active after a specialAction was executed
+       armLeftCheck, // Left arm check
+       armRightCheck, // Right arm check
+       sideCheck, // Robot is lying on the side
+       waitForFallenCheck, // Do stuff when breaking up get up motion only once
+       errorTriggered, //If an error occurred -> true. Should never be true.
+       isContinueTo, // is this a follow up motion?
+       tooManyTries, // to many get up tries
+       wasHelpMe, // was in help me
+       doBalance, // balance when the current motion finished?
+       wasRatio100Percent, // was the ratio at least one time 1.0 for the current keyframe
+       initPhase, // initial state for the celibration state
+       balancerOn, // is the balancer active. Must be a boolean, so balancer can be switched on when calibrating
+       isFirstLine, // is the first line of the motion. TODO: lineCounter == 0?
+       breakUpOn, // when calibrating the motion shall not break up
+       isMirror, // is current motion mirrored
+       isInOptionalLine, // is current keyframe a optional keyframe
+       wasInWaiting, // get up engine was in a waiting state
+       getUpMirror, // should the motion front and back be mirrored
+       didFirstGetUp, // For the first get up decide if the motion shall be mirrored or not
+       stepKeyframes, // Execute every keyframe slow and wait for request
+       isLeavingPossible, // Copy of the field in the getUpEngineOutput
+       doFastStand; // If the fallEngine detected a fall but robot did not fall, go directly into a stand motion to save time
+
+  Pose2f odometry; // current odometry
+
+  float variableValuesCompare[numOfConditionVars]; // To break up a wait time early
 
   /**
-   * Converts the given angle in degrees to radians, but doesn't change off
-   * or ignore
-   * @param angle The Angle in degrees
-   * @return The Angle in radians
-   */
+       * Converts the given angle from degrees to radians, but doesn't change off
+       * or ignore
+       * @param angle The Angle in degrees
+       * @return The Angle in radians
+       */
   Angle convertToAngleSpecialCases(float angle);
 
 public:
-
+  GetUpEngine();
   void update(GetUpEngineOutput& output) override;
   void update(GetUpEngineOutputLog& output) override;
 
-  GetUpEngine() :
-    state(decideAction),
-    wasActive(false),
-    balance(false),
-    balanceArm(false),
-    balanceArmAndLeg(false),
-    isInOptionalLine(false),
-    lineCounter(0),
-    maxCounter(-1),
-    motionID(GetUpMotion::stand),
-    upperArmBorder(10.f),
-    upperLegBorder(2.f),
-    lowerArmBorder(-10.f),
-    lowerLegBorder(-2.f),
-    gBufferY(0.f),
-    gLastY(0.f),
-    gBufferX(0.f),
-    gLastX(0.f),
-    kp(2.5f),
-    ki(0.1f),
-    kd(0.01f),
-    balanceHipAngleY(0.f),
-    lineStartTimeStamp(0),
-    lastNotActiveTimeStamp(0),
-    breakUpTimeStamp(0),
-    soundTimeStamp(0),
-    recoverTimeStamp(0),
-    internalOdometryOffset(Pose2f())
-  {
-  }
-
   /**
-   * The method initializes the next motion based on the current engine state,
-   * the FallDownState and the measured body angle.
-   * @param output the GetUpEngineOutput object for changing joint stiffness
+   * The method checks and updateds the state of the GetUpEngine.
+   * The states representate, if the Engine is working currently and for what.
    */
-  void pickMotion(GetUpEngineOutput& output);
+  void checkOwnState(GetUpEngineOutput& output);
 
   /**
-   * The method initializes the global variables such as lineCounter
+   * The method checks if all joints are working and if there is a problem.
+   * Problems are:
+   *  * if a Joint cant reach a given angle because it is to hot or broken
+   *  * a joint is to slow in reaching it given angle
+   * These checks are only done, if the current motions specificly wants to check it.
    */
-  void initVariables();
+  void calculateJointDifference(GetUpEngineOutput& output);
 
   /**
-   * The method adds a gyro feedback balance using PID control to the calculated jointRequest for Y direction
-   * @param jointRequest joint request the balance should be added to
+   * The method checks, if a recover is needed after the robot is fallen.
+   * Possible cases are:
+   *  * he is lying on the side
+   *  * he is lying on his arm
+   *  * one arm is not correct.
+   * This needs to be done to prevent that the arms are in wrong positions, because the getupmotions
+   * assume, that the robot starts in a specific position. Else the first try could fail or the arms could get damaged.
    */
-  float addBalanceY(JointRequest& jointRequest);
+  void checkRF(GetUpEngineOutput& output);
 
   /**
-   * The method adds a gyro feedback balance using PID control to the calculated jointRequest for X direction
-   * @param jointRequest joint request the balance should be added to
+   * The method checks, if the current motion shall break up.
    */
-  float addBalanceX(JointRequest& jointRequest);
+  bool isInBreakUpRange(GetUpEngineOutput& output);
 
   /**
-   * The method calculates the next JointRequest and counts the key frames up
-   * @param output the GetUpEngineOutput object for changing target joint angles
+   * The method checks, if a motion want, when in break up, to do a soft reset and restart the motion from a specific keyframe immediately.
+   */
+  bool checkMotionSpecificActions(GetUpEngineOutput& output);
+
+  /*
+   * The method checks for the motion front, if both arms did not move correctly at the start.
+   * @return true, if both arms did not move to the front
+   */
+  bool checkRetryForFront(GetUpEngineOutput& output);
+
+  /**
+   * The method calculates the current ratio for the interpolation.
+   * If the current motion line is finished, then it will set the next motion line or if the motion is finished, it will set the state to finished.
+   */
+  void isCurrentLineOver(GetUpEngineOutput& output);
+
+  /**
+   * The method initializes everything that needs to be done specifically for this Motion.
+   */
+  void initGetUpMotion(GetUpEngineOutput& output);
+
+  /*
+   * The method initializes everything that needs to be done specifically for this Motionline.
+   */
+  void initCurrentLine(GetUpEngineOutput& output);
+
+  /**
+   * Update the current values which are needed to calculated the current joints and balancer values
+   */
+  void updateLineValues(GetUpEngineOutput& output);
+
+  /**
+   * Init the values that are needed in the method pidWithCom at the start of a keyframe
+   */
+  void initBalancerValues(GetUpEngineOutput& output, bool calculateCurrentNew);
+
+  /**
+   * The method checks if the GetUpEngine still needs to wait until it can start doing stuff. Reason is, if the robot is still
+   * falling it would be a really bad idea to start a motion.
+   */
+  void waitForFallen(GetUpEngineOutput& output);
+
+  /**
+   * Fail-Save Method, to cancle the current motion if 2 of 3 head sensors are touched.
+   */
+  void doManipulateOwnState(GetUpEngineOutput& output);
+
+  /**
+   * The method does special actions if the current state is helpMeState. This needs to be done, because the robot is unable to get up.
+   */
+  void doHelpMeStuff(GetUpEngineOutput& output);
+  /**
+   * Sets the current Jointgoals for MotionLine. This is done once, everytime a new MotionLine is started.
    */
   void setNextJoints(GetUpEngineOutput& output);
 
   /**
-   * The method writes a stiffness to the output
-   * @param output the GetUpEngineOutput object the stiffness should be set to
-   * @param stiffness 0-100 percent stiffness
+   * Sets the stiffnessvalues of the Joints. Must be between 0 and 100.
    */
-  void setStiffnessAllJoints(GetUpEngineOutput& output, int stiffness);
+  void setJointStiffness(GetUpEngineOutput& output);
 
   /**
-   * The method writes the base stiffness of the current motion to the targetJoints
-   * no modification if current motion is invalid
-   * @param output the GetUpEngineOutput object the stiffness should be set to
-   */
-  void setBaseLimbStiffness();
-
-  /**
-   * The method looks up the current motion parameters and intializes maxLineCounter, internalOdometryOffset, and motionID
-   * @param current the motion to be initialized
-   */
-  void setCurrentMotion(GetUpMotion current);
-
-  /**
-   * checks if the torso is too tilted. If so, stop current motions and set all stiffness to 0.
-   */
-  bool verifyUprightTorso(GetUpEngineOutput& output);
-
-  /*
-   * This method writes a getUpMotion into getUpEngineDummy.mof for better debugging
-   * It needs to be done offline (in simulation) and than deployed to the robot since the
-   * "mof"-command (in simulation) would copy the offline file instead of using the online generated one.
-   * @param motion motion to be written into specialAction getUpEngineDummy.mof
-   */
-  void generateMofOfMotion(GetUpMotion motionName);
-
-  /*
-   * This method imports a getUpEngineDummy.mof file into this engine, use it only offline in simulation!!!
-   * use "save parameters:GetUpEngine" to write getUpEngine.cfg
-   * Settings regarding critical lines and balance have to be done manually!!!
-   * @param motion to be overwritten by specialAction getUpEngineDummy.mof
-   */
-  void generateMotionOfMof(GetUpMotion motionName);
-
-  /**
-   * Does a correction for the angles of the joints, that will be set in 2 specific cases
-   * @param lastAngle the last angle that was set
-   * @param nextAngle the next to set angle
-   * @param dif substraction of nextAngle Minus lastAngle
+   * The methods checks the enginestate finished. If the motions has the check to balance out, then the getUpEngine will balance the standing
+   * robot befor he is allowed to walk. This is done because the roboter could have some momentum left, that would cause him to
+   * fall instantly again.
    *
-   * Cases:
-   * next >= last && dif > 0 -> next + dif
-   * next > last && dif < 0 -> do no correction
-   * next <= last && dif < 0 -> next + dif
-   * next < last && dif > 0 -> do no cirrection
+   * If the check is off, then the method will do nothing
+   *
+   * If there is a connected motion (continueTo), then this motion will get set next.
    */
-  float correctAngleMotion(float nextAngle, float lastAngle, float dif, bool isArm);
+  void checkFinishedState(GetUpEngineOutput& output);
+
+  /**
+   * Checks, if the current keyframe should be skipped.
+   */
+  void checkOptionalLine(GetUpEngineOutput& output);
+
+  /**
+   * Checks the conditions, if the current keyframe should be skipped.
+   */
+  template<class C>
+  bool checkConditions(std::vector<C>& conditions, bool useAnd, GetUpEngineOutput& output);
+
+  /**
+   * The PID-Controller to balance the motion
+   */
+  void pidWithCom(GetUpEngineOutput& output);
+
+  /**
+   * Adds the calculated balancer value on top of the joints
+   */
+  void addBalanceFactor(GetUpEngineOutput& output, float factorY, float factorX, float addRatio);
+
+  /**
+   * The method calculates for joints, that shall be compensated, with which joints and how much they shall be compensated
+   */
+  void addJointCompensation(GetUpEngineOutput& output);
+
+  /**
+   * Calculates the difference of the com releative to the ground floor and support polygon middle of the robot.
+   */
+  void calculateCOMInSupportPolygon(GetUpEngineOutput& output);
+
+  JointRequest calculatedCurrentJointRequestWithoutBalance(GetUpEngineOutput& output);
+
+  /**
+   * The method updates the parameters which saves the torso angle of the last few frames and updates the prediction for the next few frames.
+   */
+  void updateSensorArray(GetUpEngineOutput& output);
+
+  /**
+   * Balance robot after finished get up motion
+   */
+  void doBalanceOut(GetUpEngineOutput& output);
 
   /*
-   * Method for comparing two GetUpMotions
-   * @param motionIdBade first motion
-   * @param motionIdCompare second motion
+   * Sets all values to default
    */
-  void compareMotions(GetUpMotion motionIdBase, GetUpMotion motionIdCompare);
-
-  /*
-   * Method to check if lines needs to be skipped because of a condition
-   */
-  void skipForOptionalLine();
-
-  /*
-   * Method to check if the conditions are met
-   * @param conditions the list of conditions
-   * @useAnd the bool if all conditions are chaned with && or ||
-   */
-  bool checkConditions(std::vector<Condition> conditions, bool useAnd);
+  void shutDownGetUpEngine(GetUpEngineOutput& output);
 };

@@ -3,62 +3,77 @@
  * This contains some functions for creating random numbers.
  *
  * @author Alexis Tsogias
+ * @author Felix Thielke
  */
 
 #pragma once
 
 #include <random>
 
-class Random
+namespace Random
 {
-public:
   /**
    * Returns true with a probability of p.
    */
-  static bool bernoulli(double p = 0.5);
+  bool bernoulli(double p = 0.5);
 
   /**
    * Returns a normally distributed value of type T with a mean and a sigma.
    * Undefined behaviour if T is not a real type.
    */
   template<typename T = float>
-  static T normal(T mean, T sigma);
+  T normal(T mean, T sigma);
 
   /**
    * Returns a normally distributed value of type T with zero mean and a sigma.
    * Undefined behaviour if T is not a real type.
    */
   template<typename T = float>
-  static T normal(T sigma = T(1)) { return normal(T(0), sigma); }
+  T normal(T sigma = T(1)) { return normal(T(0), sigma); }
 
   /**
    * Returns an uniformly distributed random floating point number in [min, max).
    */
   template<typename T = float>
-  static T uniform(T min = T(0), T max = T(1));
+  T uniform(T min = T(0), T max = T(1));
 
   /**
    * Returns an uniformly distributed random integral number in [min, max].
    */
   template<typename T = int>
-  static T uniformInt(T min, T max);
+  T uniformInt(T min, T max);
 
   /**
    * Returns an uniformly distributed random integral number in [0, max].
    */
   template<typename T = int>
-  static T uniformInt(T max = T(1)) { return uniformInt(T(0), max); }
+  T uniformInt(T max = T(1)) { return uniformInt(T(0), max); }
 
   template<typename T = float>
-  static T triangular(T mean, T sigma);
+  T triangular(T mean, T sigma);
 
   template<typename T = float>
-  static T triangular(T sigma = T(1)) { return triangular(T(0), sigma); }
+  T triangular(T sigma = T(1)) { return triangular(T(0), sigma); }
 
   template<typename T = float>
-  static T triangular(T low, T mean, T high);
+  T triangular(T low, T mean, T high);
 
-  static std::mt19937& getGenerator();
+#ifndef TARGET_ROBOT
+  std::mt19937& getGenerator();
+#else
+  class HardwareGenerator
+  {
+  public:
+    using result_type = unsigned int;
+
+    static unsigned int min();
+    static unsigned int max();
+
+    unsigned int operator()() const;
+    void discard(unsigned long long z) const;
+  };
+  HardwareGenerator& getGenerator();
+#endif
 };
 
 inline bool Random::bernoulli(double p)
@@ -68,9 +83,9 @@ inline bool Random::bernoulli(double p)
 }
 
 template<typename T>
-T Random::normal(T min, T max)
+T Random::normal(T mean, T sigma)
 {
-  std::normal_distribution<T> dist(min, max);
+  std::normal_distribution<T> dist(mean, sigma);
   return dist(getGenerator());
 }
 

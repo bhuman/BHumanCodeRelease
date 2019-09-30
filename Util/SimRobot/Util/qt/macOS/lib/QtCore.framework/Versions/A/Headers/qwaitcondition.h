@@ -46,9 +46,9 @@
 
 QT_BEGIN_NAMESPACE
 
+#if QT_CONFIG(thread)
 
-#ifndef QT_NO_THREAD
-
+class QDeadlineTimer;
 class QWaitConditionPrivate;
 class QMutex;
 class QReadWriteLock;
@@ -59,8 +59,11 @@ public:
     QWaitCondition();
     ~QWaitCondition();
 
+    // ### Qt 6: remove unsigned long overloads
     bool wait(QMutex *lockedMutex, unsigned long time = ULONG_MAX);
+    bool wait(QMutex *lockedMutex, QDeadlineTimer deadline);
     bool wait(QReadWriteLock *lockedReadWriteLock, unsigned long time = ULONG_MAX);
+    bool wait(QReadWriteLock *lockedReadWriteLock, QDeadlineTimer deadline);
 
     void wakeOne();
     void wakeAll();
@@ -94,7 +97,7 @@ public:
     void wakeAll() {}
 };
 
-#endif // QT_NO_THREAD
+#endif // QT_CONFIG(thread)
 
 QT_END_NAMESPACE
 

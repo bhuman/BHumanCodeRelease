@@ -234,9 +234,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list2;
   list2.append(makeLabel(QString("")));
   list2.append(makeLabel(QString("")));
-  list2.append(makeValue((float) 0.f));
-  list2.append(makeValue((float) 50.f));
-  list2.append(makeValue((float) - 210.f));
+  list2.append(makeValue(0.f));
+  list2.append(makeValue(50.f));
+  list2.append(makeValue(-210.f));
   footOrigin->appendRow(list2);
 
   QStandardItem* footRotOrigin = makeLabel(QString("Foot Rot Origin"));
@@ -245,9 +245,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list21;
   list21.append(makeLabel(QString("")));
   list21.append(makeLabel(QString("")));
-  list21.append(makeValue((float) 0.f));
-  list21.append(makeValue((float) 0.f));
-  list21.append(makeValue((float) 0.f));
+  list21.append(makeValue(0.f));
+  list21.append(makeValue(0.f));
+  list21.append(makeValue(0.f));
   footRotOrigin->appendRow(list21);
 
   QStandardItem* armOrigin = makeLabel(QString("Hand Origin"));
@@ -256,9 +256,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list3;
   list3.append(makeLabel(QString("")));
   list3.append(makeLabel(QString("")));
-  list3.append(makeValue((float) 0.f));
-  list3.append(makeValue((float) 100.f));
-  list3.append(makeValue((float) 30.f));
+  list3.append(makeValue(0.f));
+  list3.append(makeValue(100.f));
+  list3.append(makeValue(30.f));
   armOrigin->appendRow(list3);
 
   QStandardItem* armRotOrigin = makeLabel(QString("Hand Rot Origin"));
@@ -267,9 +267,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list31;
   list31.append(makeLabel(QString("")));
   list31.append(makeLabel(QString("")));
-  list31.append(makeValue((float) 0.f));
-  list31.append(makeValue((float) 0.f));
-  list31.append(makeValue((float) 0.f));
+  list31.append(makeValue(0.f));
+  list31.append(makeValue(0.f));
+  list31.append(makeValue(0.f));
   armRotOrigin->appendRow(list31);
 
   QStandardItem* comOrigin = makeLabel(QString("COM Origin (only for no auto COM)"));
@@ -282,8 +282,8 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list33;
   list33.append(makeLabel(QString("")));
   list33.append(makeLabel(QString("")));
-  list33.append(makeValue((float) 10.f));
-  list33.append(makeValue((float) 0.f));
+  list33.append(makeValue(10.f));
+  list33.append(makeValue(0.f));
   comOrigin->appendRow(list33);
 
   QStandardItem* headOrigin = makeLabel(QString("Head Origin"));
@@ -296,8 +296,8 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list34;
   list34.append(makeLabel(QString("")));
   list34.append(makeLabel(QString("")));
-  list34.append(makeValue((float) 0.f));
-  list34.append(makeValue((float) 0.f));
+  list34.append(makeValue(0.f));
+  list34.append(makeValue(0.f));
   headOrigin->appendRow(list34);
 
   QStandardItem* pidx = makeLabel(QString("COM Balance X"));
@@ -311,9 +311,9 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list4;
   list4.append(makeLabel(QString("")));
   list4.append(makeLabel(QString("")));
-  list4.append(makeValue((float) 0.f));
-  list4.append(makeValue((float) 0.f));
-  list4.append(makeValue((float) 0.f));
+  list4.append(makeValue(0.f));
+  list4.append(makeValue(0.f));
+  list4.append(makeValue(0.f));
   pidx->appendRow(list4);
 
   QStandardItem* pidy = makeLabel(QString("COM Balance Y"));
@@ -327,16 +327,16 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   QList <QStandardItem*> list5;
   list5.append(makeLabel(QString("")));
   list5.append(makeLabel(QString("")));
-  list5.append(makeValue((float) 0.f));
-  list5.append(makeValue((float) 0.f));
-  list5.append(makeValue((float) 0.f));
+  list5.append(makeValue(0.f));
+  list5.append(makeValue(0.f));
+  list5.append(makeValue(0.f));
   pidy->appendRow(list5);
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Loop"), (bool)0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Loop"), false));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Stand Left"), (bool)0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Stand Left"), false));
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Ignore Head"), (bool)1));
+  parentItem->appendRow(makeStringAndValueRow(QString("Ignore Head"), true));
 
   treeViewCommon->setModel(modelCommon);
   modelCommon->setColumnCount(5);
@@ -347,7 +347,7 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   modelCommon->setHeaderData(4, Qt::Horizontal, QVariant(""));
 
   treeViewCommon->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-  treeViewCommon->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+  treeViewCommon->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
   treeViewCommon->header()->setSectionResizeMode(2, QHeaderView::Stretch);
   treeViewCommon->header()->setSectionResizeMode(3, QHeaderView::Stretch);
   treeViewCommon->header()->setSectionResizeMode(4, QHeaderView::Stretch);
@@ -548,8 +548,8 @@ void KickViewWidget::removePhase()
       {
         if(phaseNumber < parameters.numberOfPhases - 1)
         {
-          float factor = (float)parameters.phaseParameters[phaseNumber].duration /
-                         (float)parameters.phaseParameters[phaseNumber + 1].duration;
+          float factor = static_cast<float>(parameters.phaseParameters[phaseNumber].duration) /
+                         static_cast<float>(parameters.phaseParameters[phaseNumber + 1].duration);
 
           parameters.phaseParameters[phaseNumber + 1].controlPoints[limb][0] =
             parameters.phaseParameters[phaseNumber].controlPoints[limb][2] -
@@ -673,8 +673,8 @@ void KickViewWidget::addPhaseAfterActual()
       //q1
       if(phaseNumber < parameters.numberOfPhases - 1)
       {
-        float factor = (float)parameters.phaseParameters[phaseNumber].duration /
-                       (float)parameters.phaseParameters[phaseNumber + 1].duration;
+        float factor = static_cast<float>(parameters.phaseParameters[phaseNumber].duration) /
+                       static_cast<float>(parameters.phaseParameters[phaseNumber + 1].duration);
 
         parameters.phaseParameters[phaseNumber + 1].controlPoints[limb][0] =
           parameters.phaseParameters[phaseNumber].controlPoints[limb][2] -
@@ -709,8 +709,8 @@ void KickViewWidget::addPhaseAfterActual()
         parameters.phaseParameters[phaseNumber - 1].controlPoints[limb][2] -
         parameters.phaseParameters[phaseNumber - 1].controlPoints[limb][1];
 
-      float factor = (float)parameters.phaseParameters[phaseNumber].duration /
-                     (float)parameters.phaseParameters[phaseNumber - 1].duration;
+      float factor = static_cast<float>(parameters.phaseParameters[phaseNumber].duration) /
+                     static_cast<float>(parameters.phaseParameters[phaseNumber - 1].duration);
 
       parameters.phaseParameters[phaseNumber].controlPoints[limb][0] *= factor;
 
@@ -821,16 +821,23 @@ void KickViewWidget::playMotion(int phase)
                                  + floatToStr(parameters.comOrigin.x()) + "; y = "
                                  + floatToStr(parameters.comOrigin.y()) + "; }; headOrigin = { x = "
                                  + floatToStr(parameters.headOrigin.x()) + "; y = "
-                                 + floatToStr(parameters.headOrigin.y()) + "; }; kpx = "
-                                 + floatToStr(parameters.kpx) + "; kix = "
-                                 + floatToStr(parameters.kix) + "; kdx = "
-                                 + floatToStr(parameters.kdx) + "; kpy = "
-                                 + floatToStr(parameters.kpy) + "; kiy = "
-                                 + floatToStr(parameters.kiy) + "; kdy = "
-                                 + floatToStr(parameters.kdy) + "; loop = "
-                                 + boolToStr(parameters.loop) + "; standLeft = "
-                                 + boolToStr(parameters.standLeft) + "; ignoreHead = "
-                                 + boolToStr(parameters.ignoreHead) + "; phaseParameters = [";
+                                 + floatToStr(parameters.headOrigin.y()) + "; }; boostAngles = [ ";
+  std::string separator = "";
+  for(const KickEngineParameters::BoostAngle& boostAngle : parameters.boostAngles)
+  {
+    setNewKickMotion += separator + "{ joint = " + TypeRegistry::getEnumName(boostAngle.joint) + "; angle = " + floatToStr(boostAngle.angle) + "; }";
+    separator = ", ";
+  }
+  setNewKickMotion += "]; kpx = " + floatToStr(parameters.kpx) + "; kix = "
+                                  + floatToStr(parameters.kix) + "; kdx = "
+                                  + floatToStr(parameters.kdx) + "; kpy = "
+                                  + floatToStr(parameters.kpy) + "; kiy = "
+                                  + floatToStr(parameters.kiy) + "; kdy = "
+                                  + floatToStr(parameters.kdy) + "; loop = "
+                                  + boolToStr(parameters.loop) + "; standLeft = "
+                                  + boolToStr(parameters.standLeft) + "; ignoreHead = "
+                                  + boolToStr(parameters.ignoreHead) + "; adjustKickFootPosition = "
+                                  + std::to_string(parameters.adjustKickFootPosition) + "; phaseParameters = [";
 
   for(int i = 0; i < phase; i++)
   {
@@ -1070,8 +1077,8 @@ void KickViewWidget::updateEditorView()
   {
     for(QStandardItemModel* itModel : phaseTab)
     {
-      deleteKids(((QStandardItemModel*)itModel)->invisibleRootItem());
-      disconnect(((QStandardItemModel*)itModel), SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updatePhaseParameters(QStandardItem*)));
+      deleteKids(static_cast<QStandardItemModel*>(itModel)->invisibleRootItem());
+      disconnect(static_cast<QStandardItemModel*>(itModel), SIGNAL(itemChanged(QStandardItem*)), this, SLOT(updatePhaseParameters(QStandardItem*)));
       delete itModel;
     }
     phaseTab.clear();
@@ -1152,7 +1159,7 @@ void KickViewWidget::addControlPoints(QStandardItem* item)
   for(int j = 0; j < 3; j++)
   {
     QStandardItem* it = new QStandardItem();
-    it->setData((double)0.0, Qt::DisplayRole);
+    it->setData(0.0, Qt::DisplayRole);
     it->setDragEnabled(false);
     it->setDropEnabled(false);
     it->setEditable(false);
@@ -1168,7 +1175,7 @@ void KickViewWidget::addControlPoints(QStandardItem* item)
     list.append(makeLabel(QString("")));
 
     for(int i = 0; i < 3; i++)
-      list.append(makeValue((double) 0.0));
+      list.append(makeValue(0.0));
 
     item->appendRow(list);
   }
@@ -1199,7 +1206,7 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
 
   QStandardItem* parentItem = model->invisibleRootItem();
 
-  parentItem->appendRow(makeStringAndValueRow(QString("Duration in ms"), (int)0));
+  parentItem->appendRow(makeStringAndValueRow(QString("Duration in ms"), 0));
 
   QStandardItem* lFoot = makeLabel(QString("Left Foot"));
   parentItem->appendRow(lFoot);
@@ -1270,7 +1277,7 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
     list.append(makeLabel(QString("")));
     for(int i = 0; i < 2; i++)
     {
-      list.append(makeValue((double) 0.0));
+      list.append(makeValue(0.0));
     }
     COMTra->appendRow(list);
   }
@@ -1288,7 +1295,7 @@ QStandardItemModel* KickViewWidget::makeNewModelWithLabels()
     list.append(makeLabel(QString("")));
     for(int i = 0; i < 2; i++)
     {
-      list.append(makeValue((double) 0.0));
+      list.append(makeValue(0.0));
     }
     HEADTra->appendRow(list);
   }
@@ -1423,7 +1430,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footOrigin.x();
         parameters.footOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1435,7 +1442,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footOrigin.y();
         parameters.footOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1447,7 +1454,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 4)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footOrigin.z();
         parameters.footOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1462,7 +1469,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footRotOrigin.x();
         parameters.footRotOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1474,7 +1481,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footRotOrigin.y();
         parameters.footRotOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1486,7 +1493,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 4)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.footRotOrigin.z();
         parameters.footRotOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1501,7 +1508,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.armOrigin.x();
         parameters.armOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1513,7 +1520,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.armOrigin.y();
         parameters.armOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1525,7 +1532,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 4)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.armOrigin.z();
         parameters.armOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1540,7 +1547,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.handRotOrigin.x();
         parameters.handRotOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1552,7 +1559,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.handRotOrigin.y();
         parameters.handRotOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1564,7 +1571,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 4)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.handRotOrigin.z();
         parameters.handRotOrigin.z() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1579,7 +1586,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.comOrigin.x();
         parameters.comOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1590,7 +1597,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.comOrigin.y();
         parameters.comOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1604,7 +1611,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     {
       if(col == 2)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.headOrigin.x();
         parameters.headOrigin.x() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1615,7 +1622,7 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
       }
       if(col == 3)
       {
-        float diff = (float)item->data(Qt::DisplayRole).toDouble();
+        float diff = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
         diff -= parameters.headOrigin.y();
         parameters.headOrigin.y() += diff;
         for(int p = 0; p < parameters.numberOfPhases; ++p)
@@ -1627,15 +1634,15 @@ void KickViewWidget::updateCommonParameters(QStandardItem* item)
     }
     if(QString("COM Balance X") == mamaItem->data(Qt::DisplayRole))
     {
-      if(col == 2) parameters.kpx = (float)item->data(Qt::DisplayRole).toDouble();
-      if(col == 3) parameters.kix = (float)item->data(Qt::DisplayRole).toDouble();
-      if(col == 4) parameters.kdx = (float)item->data(Qt::DisplayRole).toDouble();
+      if(col == 2) parameters.kpx = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
+      if(col == 3) parameters.kix = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
+      if(col == 4) parameters.kdx = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
     }
     if(QString("COM Balance Y") == mamaItem->data(Qt::DisplayRole))
     {
-      if(col == 2) parameters.kpy = (float)item->data(Qt::DisplayRole).toDouble();
-      if(col == 3) parameters.kiy = (float)item->data(Qt::DisplayRole).toDouble();
-      if(col == 4) parameters.kdy = (float)item->data(Qt::DisplayRole).toDouble();
+      if(col == 2) parameters.kpy = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
+      if(col == 3) parameters.kiy = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
+      if(col == 4) parameters.kdy = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
     }
   }
 
@@ -1694,10 +1701,10 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
       switch(col)
       {
         case 2:
-          parameters.phaseParameters[phaseNumber].comTra[row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].comTra[row].x() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 3:
-          parameters.phaseParameters[phaseNumber].comTra[row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].comTra[row].y() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
       }
     }
@@ -1707,10 +1714,10 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
       switch(col)
       {
         case 2:
-          parameters.phaseParameters[phaseNumber].headTra[row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].headTra[row].x() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 3:
-          parameters.phaseParameters[phaseNumber].headTra[row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].headTra[row].y() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
       }
     }
@@ -1720,13 +1727,13 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
       switch(col)
       {
         case 2:
-          parameters.phaseParameters[phaseNumber].odometryOffset.x() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].odometryOffset.x() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 3:
-          parameters.phaseParameters[phaseNumber].odometryOffset.y() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].odometryOffset.y() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 4:
-          parameters.phaseParameters[phaseNumber].odometryOffset.z() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].odometryOffset.z() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
       }
     }
@@ -1741,13 +1748,13 @@ void KickViewWidget::updatePhaseParameters(QStandardItem* item)
       switch(col)
       {
         case 2:
-          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].x() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].x() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 3:
-          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].y() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].y() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
         case 4:
-          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].z() = (float)item->data(Qt::DisplayRole).toDouble();
+          parameters.phaseParameters[phaseNumber].controlPoints[limb][row].z() = static_cast<float>(item->data(Qt::DisplayRole).toDouble());
           break;
       }
     }

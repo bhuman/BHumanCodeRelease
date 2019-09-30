@@ -47,7 +47,7 @@ public:
   bool isSetButtonEnabled() const;
 
 protected:
-  void itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* preceedingItem) override;
+  void itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* precedingItem) override;
 
 private:
   DataView& theView;

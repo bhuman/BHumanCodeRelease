@@ -1,0 +1,34 @@
+# label ball spots separately for upper and lower images
+sl upper "${Logfile:,../../Logs/*Cognition_*.log}"
+sl lower
+
+echo Hold Alt and left-click into green rectangle if the ball is inside.
+echo Hold Alt and left-click into red rectangle ball is not inside any green rectangle.
+echo Delete newest images from Config/Images if you clicked the wrong rectangle
+
+# configure
+robot all
+log mr
+log keep image
+robot upper
+log keep upper
+vi image Upper
+robot lower
+log keep lower
+vi image Lower
+robot all
+
+dr debug:keepAllMessages
+
+set representation:GroundContactState contact = true;
+
+# deactivate game info provided in Cognition
+mr RobotInfo default
+mr OwnTeamInfo default
+mr OpponentTeamInfo default
+mr RawGameInfo default
+mr GameInfo default
+
+vid all representation:BallSpots:image
+vid all labeling:BallSpots
+log goto 0

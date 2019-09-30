@@ -130,7 +130,7 @@ bool ObjectSegmentedImageSensor::ObjectSegmentedImageSensorPort::renderCameraIma
   int imagesOfCurrentSize = 0;
   for(unsigned int i = 0; i < count; ++i)
   {
-    ObjectSegmentedImageSensorPort* sensor = (ObjectSegmentedImageSensorPort*)cameras[i];
+    ObjectSegmentedImageSensorPort* sensor = static_cast<ObjectSegmentedImageSensorPort*>(cameras[i]);
     if(sensor && sensor->lastSimulationStep != Simulation::simulation->simulationStep &&
        sensor->camera->imageWidth == imageWidth && sensor->camera->imageHeight == imageHeight)
       ++imagesOfCurrentSize;
@@ -171,7 +171,7 @@ bool ObjectSegmentedImageSensor::ObjectSegmentedImageSensorPort::renderCameraIma
   unsigned char* currentBufferPos = imageBuffer;
   for(unsigned int i = 0; i < count; ++i)
   {
-    ObjectSegmentedImageSensorPort* sensor = (ObjectSegmentedImageSensorPort*)cameras[i];
+    ObjectSegmentedImageSensorPort* sensor = static_cast<ObjectSegmentedImageSensorPort*>(cameras[i]);
     if(sensor && sensor->lastSimulationStep != Simulation::simulation->simulationStep &&
        sensor->camera->imageWidth == imageWidth && sensor->camera->imageHeight == imageHeight)
     {

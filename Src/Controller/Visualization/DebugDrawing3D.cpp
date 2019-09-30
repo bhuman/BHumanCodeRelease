@@ -11,22 +11,22 @@
 #include <gl.h>
 #include <glu.h>
 #else
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <GL/glew.h>
 #endif
 #include "DebugDrawing3D.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 
-DebugDrawing3D::DebugDrawing3D() : timeStamp(Time::getCurrentSystemTime()) {}
+DebugDrawing3D::DebugDrawing3D() : timestamp(Time::getCurrentSystemTime()) {}
 
 const DebugDrawing3D& DebugDrawing3D::operator=(const DebugDrawing3D& other)
 {
   reset();
-  timeStamp = other.timeStamp;
+  timestamp = other.timestamp;
   drawn = other.drawn;
   flip = other.flip;
   scale = other.scale;
@@ -72,7 +72,7 @@ void DebugDrawing3D::draw()
 
 void DebugDrawing3D::draw2()
 {
-  glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT);
+  glPushAttrib(GL_ENABLE_BIT);
   glPushMatrix();
 
   if(flip)
@@ -95,10 +95,7 @@ void DebugDrawing3D::draw2()
   // Custom translation.
   glTranslatef(trans.x(), trans.y(), trans.z());
 
-  //glDisable(GL_LIGHTING);
   glEnable(GL_NORMALIZE);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Draw all lines.
   if(!lines.empty())
@@ -244,8 +241,8 @@ void DebugDrawing3D::draw2()
       glGenTextures(1, &t);
       glBindTexture(GL_TEXTURE_2D, t);
 
-      int width, height;
-      char* imageData = copyImage(*i.image, width, height);
+      unsigned int width, height;
+      char* imageData = copyImage(*i.cameraImage, width, height);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
                    0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
 
@@ -262,8 +259,8 @@ void DebugDrawing3D::draw2()
       if(i.rotation.z() != 0)
         glRotated(toDegrees(i.rotation.z()), 0, 0, 1);
       glBegin(GL_QUADS);
-      float right = (float)i.image->width / width;
-      float top = (float)i.image->height / height;
+      float right = static_cast<float>(i.cameraImage->width) / width;
+      float top = static_cast<float>(i.cameraImage->height) / height;
       glTexCoord2d(right, top);
       glVertex3d(0, -i.width / 2, i.height / 2);
       glTexCoord2d(0, top);
@@ -286,7 +283,7 @@ void DebugDrawing3D::draw2()
 
 void DebugDrawing3D::reset()
 {
-  timeStamp = Time::getCurrentSystemTime();
+  timestamp = Time::getCurrentSystemTime();
   lines.clear();
   dots.clear();
   quads.clear();
@@ -376,18 +373,18 @@ void DebugDrawing3D::partDisc(const Vector3f& v, const Vector3f& rot, float inne
   partDiscs.push_back(element);
 }
 
-void DebugDrawing3D::image(const Vector3f& v, const Vector3f& rot, float w, float h, Image* i)
+void DebugDrawing3D::image(const Vector3f& v, const Vector3f& rot, float w, float h, CameraImage* ci)
 {
   Image3D element;
   element.point = v;
   element.rotation = rot;
-  element.image = i;
+  element.cameraImage = ci;
   element.width = w;
   element.height = h;
   images.push_back(element);
 }
 
-bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType, char identifier)
+bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType shapeType)
 {
   switch((Drawings3D::ShapeType)shapeType)
   {
@@ -556,20 +553,20 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
     {
       Vector3f v, rot;
       float w, h;
-      Image* i = new Image;
+      CameraImage* ci = new CameraImage;
       message.bin >> v;
       message.bin >> rot;
       message.bin >> w;
       message.bin >> h;
-      message.bin >> *i;
-      this->image(v, rot, w, h, i);
+      message.bin >> *ci;
+      this->image(v, rot, w, h, ci);
       break;
     }
   }
   return true;
 }
 
-char* DebugDrawing3D::copyImage(const Image& srcImage, int& width, int& height) const
+char* DebugDrawing3D::copyImage(const CameraImage& srcImage, unsigned int& width, unsigned int& height) const
 {
   width = 1;
   while(width < srcImage.width)
@@ -582,11 +579,11 @@ char* DebugDrawing3D::copyImage(const Image& srcImage, int& width, int& height) 
   for(int y = srcImage.height - 1; y >= 0; y--)
   {
     unsigned char* p = reinterpret_cast<unsigned char*>(imageData + width * 3 * (srcImage.height - 1 - y));
-    const Image::Pixel* cur = &srcImage[y][0];
-    const Image::Pixel* end = cur + srcImage.width;
+    const CameraImage::PixelType* cur = &srcImage[y][0];
+    const CameraImage::PixelType* end = cur + srcImage.width;
     for(; cur < end; cur++, p += 3)
     {
-      ColorModelConversions::fromYUVToRGB(cur->y, cur->cb, cur->cr, p[0], p[1], p[2]);
+      ColorModelConversions::fromYUVToRGB(cur->y1, cur->u, cur->v, p[0], p[1], p[2]);
     }
   }
   return imageData;
@@ -594,23 +591,23 @@ char* DebugDrawing3D::copyImage(const Image& srcImage, int& width, int& height) 
 
 DebugDrawing3D::Image3D::~Image3D()
 {
-  if(image)
-    delete image;
+  if(cameraImage)
+    delete cameraImage;
 }
 
 const DebugDrawing3D::Image3D& DebugDrawing3D::Image3D::operator=(const DebugDrawing3D::Image3D& other)
 {
-  if(image)
-    delete image;
+  if(cameraImage)
+    delete cameraImage;
 
   (Element&)*this = other;
   point = other.point;
   rotation = other.rotation;
   width = other.width;
   height = other.height;
-  image = other.image;
+  cameraImage = other.cameraImage;
 
   // dirty hack: works only for the current use of this class
-  const_cast<Image3D&>(other).image = nullptr;
+  const_cast<Image3D&>(other).cameraImage = nullptr;
   return *this;
 }

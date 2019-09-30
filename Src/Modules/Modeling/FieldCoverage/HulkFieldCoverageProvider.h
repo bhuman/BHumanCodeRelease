@@ -5,20 +5,20 @@
 
 #pragma once
 
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/HulkFieldCoverage.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
-#include "Representations/Communication/TeamData.h"
 #include "Tools/Module/Module.h"
 
 MODULE(HulkFieldCoverageProvider,

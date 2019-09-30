@@ -113,9 +113,9 @@ inline void maximumUsingSSE2(int& max, int& argMax, int baseArg, const short* ac
   // First build max and argMax in 8 entry-blocks
   __m128i lMax    = cns_constMinShort;
   __m128i lArgMax = _mm_setzero_si128();
-  __m128i lIndex  = _mm_add_epi16(_mm_set1_epi16((short) baseArg), cns_constCount);
-  __m128i* accPixelEnd = (__m128i*)(accPixel + nAccPixel);
-  __m128i* p = (__m128i*) accPixel;
+  __m128i lIndex  = _mm_add_epi16(_mm_set1_epi16(static_cast<short>(baseArg)), cns_constCount);
+  __m128i* accPixelEnd = reinterpret_cast<__m128i*>(const_cast<short*>(accPixel + nAccPixel));
+  __m128i* p = reinterpret_cast<__m128i*>(const_cast<short*>(accPixel));
   while(p != accPixelEnd)
   {
     for(int unrollCtr = 0; unrollCtr < 4; unrollCtr++)
@@ -266,8 +266,8 @@ void decimateLineUsingSSE(const unsigned char* src, int w, unsigned char* ds);
 /*! The conversion is by multiplying with \c invResponseAccumulatorScale */
 ALWAYSINLINE void convertX8ResponsesToFloatUsingSSE(__m128* response, __m128i acc, __m128 invResponseAccumulatorScale)
 {
-  _mm_stream_ps((float*)response, _mm_mul_ps(_mm_cvtepi32_ps(_mm_unpacklo_epi16(acc, _mm_setzero_si128())), invResponseAccumulatorScale));
-  _mm_stream_ps((float*)(response + 1), _mm_mul_ps(_mm_cvtepi32_ps(_mm_unpackhi_epi16(acc, _mm_setzero_si128())), invResponseAccumulatorScale));
+  _mm_stream_ps(reinterpret_cast<float*>(response), _mm_mul_ps(_mm_cvtepi32_ps(_mm_unpacklo_epi16(acc, _mm_setzero_si128())), invResponseAccumulatorScale));
+  _mm_stream_ps(reinterpret_cast<float*>(response + 1), _mm_mul_ps(_mm_cvtepi32_ps(_mm_unpackhi_epi16(acc, _mm_setzero_si128())), invResponseAccumulatorScale));
 }
 
 //! Converts a 16*16 block of responses in \c acc from unsigned short into float
@@ -339,8 +339,8 @@ inline void scaleNormalUsingSSE(CodedContourPoint* ccp, int n, float factor)
   static __m128i makeNormal16s = _mm_set_epi8(15, -0x80, 14, -0x80, 11, -0x80,   10, -0x80, 7, -0x80,    6, -0x80, 3, -0x80,    2, -0x80);
   static __m128i makeNormal8s  = _mm_set_epi8(15, 13, -0x80, -0x80, 11,    9, -0x80, -0x80, 7,    5, -0x80, -0x80, 3,    1, -0x80, -0x80);
   static __m128i maskNormalOut = _mm_set_epi8(0,  0, -1, -1,  0,    0, -1, -1, 0,    0, -1, -1, 0,    0, -1, -1);
-  int factorI = (int)(factor * 0x10000);
-  __m128i factorV = _mm_set1_epi16((short) factorI);
+  int factorI = static_cast<int>(factor * 0x10000);
+  __m128i factorV = _mm_set1_epi16(static_cast<short>(factorI));
   assert(abs(factorI) < 0x8000);
   CodedContourPoint* ccpEnd = ccp + n;
   while(ccp < ccpEnd)

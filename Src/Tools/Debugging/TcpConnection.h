@@ -3,7 +3,7 @@
  *
  * Declaration of class TcpConnection.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -11,7 +11,7 @@
 #include "Tools/Communication/TcpComm.h"
 #include <memory>
 
-#define MAX_PACKAGE_SIZE 67108864 // max package size that can be received. prevent from allocating too much buffer (max ~64 MB)
+#define MAX_PACKAGE_SIZE 67108864 // max packet size that can be received. prevent from allocating too much buffer (max ~64 MB)
 
 /**
  * @class TcpConnection
@@ -45,15 +45,15 @@ public:
    *           will be opened as server.
    * @param port The port under which will be communicated.
    * @param handshake The handshake mode.
-   * @param maxPackageSendSize The maximum size of an outgoing package.
+   * @param maxPacketSendSize The maximum size of an outgoing packet.
    *                           If 0, this setting is ignored.
-   * @param maxPackageReceiveSize The maximum size of an incouming package.
+   * @param maxPacketReceiveSize The maximum size of an incoming packet.
    *                              If 0, this setting is ignored.
    */
   TcpConnection(const char* ip, int port, Handshake handshake = noHandshake,
-                int maxPackageSendSize = 0, int maxPackageReceiveSize = 0)
+                int maxPacketSendSize = 0, int maxPacketReceiveSize = 0)
   {
-    connect(ip, port, handshake, maxPackageSendSize, maxPackageReceiveSize);
+    connect(ip, port, handshake, maxPacketSendSize, maxPacketReceiveSize);
   }
 
   /**
@@ -63,17 +63,17 @@ public:
    * @param ip The ip address of the communication partner.
    * @param port The port under which will be communicated.
    * @param handshake The handshake mode.
-   * @param maxPackageSendSize The maximum size of packages to send.
-   * @param maxPackageReceiveSize The maximum size of packages to receive.
+   * @param maxPacketSendSize The maximum size of packets to send.
+   * @param maxPacketReceiveSize The maximum size of packets to receive.
    */
   void connect(const char* ip, int port, Handshake handshake = noHandshake,
-               int maxPackageSendSize = 0, int maxPackageReceiveSize = 0);
+               int maxPacketSendSize = 0, int maxPacketReceiveSize = 0);
 
   /**
    * The function sends and receives data.
    * @param dataToSend The data to be send. The function will not free the buffer.
    * @param sendSize The size of data to send. If 0, no data is sent.
-   * @param dataRead If data has been read, the parameter is initialzed with
+   * @param dataRead If data has been read, the parameter is initialized with
    *                 the address of a buffer pointing to that data. The
    *                 buffer has to be freed manually.
    * @param readSize The size of the block read. "dataRead" is only valid
@@ -108,14 +108,14 @@ public:
   int getOverallBytesReceived() const { return tcpComm ? tcpComm->getOverallBytesReceived() : 0; }
 
   /**
-   * The functions sends a heartbeart.
+   * The functions sends a heartbeat.
    * @return Was the heartbeat successfully sent?
    */
   bool sendHeartbeat();
 
 private:
   /**
-   * The function tries to receive a package.
+   * The function tries to receive a packet.
    * @param buffer A pointer that will be initialized with the address of
    *               the data received. It is valid and has to be freed only
    *               if the function returns a value larger than 0.

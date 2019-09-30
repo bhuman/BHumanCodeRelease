@@ -71,7 +71,7 @@ void SingleDistanceSensor::DistanceSensor::staticCollisionWithSpaceCallback(Sing
 {
   ASSERT(geom1 == sensor->geom);
   ASSERT(dGeomIsSpace(geom2));
-  dSpaceCollide2(geom1, geom2, sensor, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geom1, geom2, sensor, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
 }
 
 void SingleDistanceSensor::DistanceSensor::updateValue()
@@ -83,8 +83,8 @@ void SingleDistanceSensor::DistanceSensor::updateValue()
   dGeomRaySet(geom, pos.x(), pos.y(), pos.z(), dir.x(), dir.y(), dir.z());
   closestGeom = 0;
   closestSqrDistance = maxSqrDist;
-  dSpaceCollide2(geom, (dGeomID)Simulation::simulation->movableSpace, this, (dNearCallback*)&staticCollisionWithSpaceCallback);
-  dSpaceCollide2(geom, (dGeomID)Simulation::simulation->staticSpace, this, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geom, reinterpret_cast<dGeomID>(Simulation::simulation->movableSpace), this, reinterpret_cast<dNearCallback*>(&staticCollisionWithSpaceCallback));
+  dSpaceCollide2(geom, reinterpret_cast<dGeomID>(Simulation::simulation->staticSpace), this, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
   if(closestGeom)
   {
     data.floatValue = std::sqrt(closestSqrDistance);

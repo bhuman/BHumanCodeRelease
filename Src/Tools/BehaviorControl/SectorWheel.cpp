@@ -7,22 +7,21 @@
  */
 
 #include "SectorWheel.h"
-
 #include "Platform/BHAssert.h"
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
-void SectorWheel::calculate(const Vector2f& positionOnField)
+void SectorWheel::begin(const Vector2f& positionOnField)
 {
   this->positionOnField = positionOnField;
 
   wheel.clear();
   wheel.emplace_back(Rangea(-pi, pi), std::numeric_limits<float>::max(), Sector::free);
+}
 
-  addSectors();
-
+const std::list<SectorWheel::Sector>& SectorWheel::finish()
+{
   ASSERT(!wheel.empty());
   ASSERT(wheel.front().angleRange.min == -pi);
   ASSERT(wheel.back().angleRange.max == pi);
@@ -30,8 +29,8 @@ void SectorWheel::calculate(const Vector2f& positionOnField)
   {
     if(wheel.front().distance == wheel.back().distance && wheel.front().type == wheel.back().type)
     {
-      wheel.back().angleRange.max = wheel.front().angleRange.max + pi2; // TODO: this is not normalized.
-      wheel.erase(wheel.begin());
+      wheel.back().angleRange.max = wheel.front().angleRange.max;
+      wheel.pop_front();
     }
   }
 
@@ -39,6 +38,13 @@ void SectorWheel::calculate(const Vector2f& positionOnField)
   for(auto it = wheel.begin(), it2 = std::next(it); it2 != wheel.end(); ++it, ++it2)
     ASSERT(it->angleRange.max == it2->angleRange.min);
 #endif
+
+  return wheel;
+}
+
+void SectorWheel::addSector(const Vector2f& center, float width, Sector::Type type)
+{
+  return addSector(center, width, (center - positionOnField).norm(), type);
 }
 
 void SectorWheel::addSector(const Vector2f& center, float width, float distance, Sector::Type type)
@@ -48,11 +54,6 @@ void SectorWheel::addSector(const Vector2f& center, float width, float distance,
   const Angle left = direction + radius;
   const Angle right = direction - radius;
   addSector(Rangea(right, left), distance, type);
-}
-
-void SectorWheel::addSector(const Vector2f& center, float width, Sector::Type type)
-{
-  return addSector(center, width, (center - positionOnField).norm(), type);
 }
 
 void SectorWheel::addSector(const Rangea& angleRange, float distance, Sector::Type type)
@@ -110,8 +111,11 @@ void SectorWheel::addSectorNormalized(const Rangea& angleRange, float distance, 
     if(it->angleRange.min >= angleRange.max) // The current sector begins after the new one ends -> done.
       break;
 
-    if(distance > it->distance && !(contiguous = false)) // The current sector is closer than the new one -> look at next.
+    if(distance > it->distance) // The current sector is closer than the new one -> look at next.
+    {
+      contiguous = false;
       continue;
+    }
 
     // <---> below the new sector is closer than the current iterated one
     const Sector currentSector = *it;

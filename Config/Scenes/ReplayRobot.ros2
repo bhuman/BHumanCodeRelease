@@ -1,0 +1,18 @@
+<Simulation>
+
+  <Include href="Includes/NaoV6H25.rsi2"/>
+  <Include href="Includes/Field2017SPL.rsi2"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(50%, 50%, 50%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="puppets">
+      <Body ref="Nao" name="LOG">
+        <Translation z="320mm"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+  </Scene>
+</Simulation>

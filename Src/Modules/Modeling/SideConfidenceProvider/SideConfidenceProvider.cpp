@@ -1,5 +1,5 @@
 /**
- * @file SideConfidenceProvider.h
+ * @file SideConfidenceProvider.cpp
  *
  * Calculates the SideConfidence
  *
@@ -24,9 +24,12 @@ void SideConfidenceProvider::update(SideConfidence& sideConfidence)
   if(sideConfidence.mirror)
     agreemates.clear();
 
-  // If the ball was out, it enters the game at a different position, this might be confusing.
-  // Thus, all agreements become invalid, if the ball is out
-  if(theGameInfo.dropInTime <= 4) // time is in seconds since last time the ball was put in again
+  // In some set plays the ball is replaced, this might be confusing.
+  // Thus, all agreements become invalid in this case.
+  if((theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK) ||
+     (theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK))
+    timeWhenLastBallReplacingSetPlayStarted = theFrameInfo.time;
+  if(theFrameInfo.getTimeSince(timeWhenLastBallReplacingSetPlayStarted) < 4000) // time is in seconds since last time the ball was put in again
     agreemates.clear();
 
   // Only compute/update internal representation when we are actually playing.
@@ -56,7 +59,6 @@ void SideConfidenceProvider::fillRepresentation(SideConfidence& sideConfidence)
 {
   // Initialize representation
   sideConfidence.agreeMates.clear();
-  sideConfidence.sideConfidence = 1.f;
   sideConfidence.mirror = false;
   if(theOwnSideModel.stillInOwnSide)
     sideConfidence.confidenceState = SideConfidence::CONFIDENT;
@@ -64,7 +66,7 @@ void SideConfidenceProvider::fillRepresentation(SideConfidence& sideConfidence)
     sideConfidence.confidenceState = SideConfidence::ALMOST_CONFIDENT;
 
   // Goalie does not do this flipping stuff
-  if(theRole.isGoalkeeper() && deactivateGoalieFlipping && theGameInfo.state == STATE_PLAYING)
+  if(theTeamBehaviorStatus.role.isGoalkeeper && deactivateGoalieFlipping && theGameInfo.state == STATE_PLAYING)
   {
     sideConfidence.confidenceState = SideConfidence::CONFIDENT;
     return;
@@ -73,21 +75,30 @@ void SideConfidenceProvider::fillRepresentation(SideConfidence& sideConfidence)
   // Find all my dis-/agreemates:
   std::vector<int> agree;
   std::vector<int> disagree;
+  bool goalieAgrees = false, goalieDisagrees = false;
   for(auto& agreemate : agreemates)
   {
     if(agreemate.ballCompatibility == Mirror && agreemate.agreementCount > minAgreementCount)
+    {
       disagree.push_back(agreemate.number);
+      if(agreemate.isGoalkeeper)
+        goalieDisagrees = true;
+    }
     else if(agreemate.ballCompatibility == Agree && agreemate.agreementCount > minAgreementCount)
+    {
       agree.push_back(agreemate.number);
+      if(agreemate.isGoalkeeper)
+        goalieAgrees = true;
+    }
   }
 
   // Set representation:
-  if(agree.size() >= disagree.size())
+  if(goalieIsAlwaysRight ? goalieAgrees : (agree.size() >= disagree.size()))
   {
     sideConfidence.agreeMates = agree;
     return;
   }
-  if(disagree.size() >= 2 && agree.size() <= 1)
+  if(goalieIsAlwaysRight ? goalieDisagrees : (disagree.size() >= 2 && agree.size() <= 1))
   {
     sideConfidence.agreeMates.clear();
     sideConfidence.mirror = true;
@@ -192,6 +203,7 @@ void SideConfidenceProvider::addToAgreemateList(const Teammate& teammate,
   {
     Agreemate newMate;
     newMate.number = teammate.number;
+    newMate.isGoalkeeper = teammate.isGoalkeeper;
     newMate.timeOfLastAgreement = timeOfAgreement;
     newMate.ballCompatibility = ballCompatibility;
     newMate.agreementCount = 1;

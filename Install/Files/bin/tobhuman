@@ -5,4 +5,4 @@ if [ $(whoami) != root ]; then
   exit 0
 fi
 
-cp /etc/naoqi/autoload.bh /etc/naoqi/autoload.ini
+cp /opt/aldebaran/etc/naoqi/autoload.bh /opt/aldebaran/etc/naoqi/autoload.ini

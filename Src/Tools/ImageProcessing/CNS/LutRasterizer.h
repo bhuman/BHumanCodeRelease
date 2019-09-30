@@ -29,12 +29,12 @@ public:
    */
   std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > vertexWith1;
 
-  //! Center of the onbject padded with 1
+  //! Center of the object padded with 1
   /*! A point where the max distance to any vertex is smallest. */
   Eigen::Vector4f centerWith1;
 
   //! Projection of 3-D object-coordinates to 2-D image coordinates as homogenous matrix
-  typedef Eigen::Matrix<float, 3, 4> Perspective;
+  using Perspective = Eigen::Matrix<float, 3, 4>;
 
   //! List of edges that form a contour from a certain point of view in a specially coded way
   /*! Actually the list is a sequence of indices to \c
@@ -45,13 +45,13 @@ public:
       are (object.vertex[el[i]], object.vertex[el[i+1]]), for i=0..el.size()-2 and
           object.vertex[el[i]]!=NEWSTART and object.vertex[el[i+1]]!=NEWSTART
    */
-  typedef std::vector<unsigned char> VertexList;
+  using VertexList = std::vector<unsigned char>;
 
   enum {NEWSTART = 0xff};
 
   //! Look-up-table storing the contour of \c object from different viewpoints as \c VertexList objects
   /*! edgelist[indexOfViewPoint(v)] is the contour of \c object viewed from \c v as a list of vertex
-      indidces.
+      indices.
 
       Technically, the array is a regular \c spacing grid of points with dimensions \c edgeListSize[0]*
       \c edgeListSize[1] * \c edgeListSize[2] in X, Y, Z.
@@ -166,9 +166,9 @@ public:
   {
     Eigen::Vector3d index = (viewpoint - basePoint) / spacing;
     int idx[3];
-    idx[0] = (int) round(index(0));
-    idx[1] = (int) round(index(1));
-    idx[2] = (int) round(index(2));
+    idx[0] = static_cast<int>(round(index(0)));
+    idx[1] = static_cast<int>(round(index(1)));
+    idx[2] = static_cast<int>(round(index(2)));
     if(0 <= idx[0] && idx[0] < vertexListSize[0] &&
        0 <= idx[1] && idx[1] < vertexListSize[1] &&
        0 <= idx[2] && idx[2] < vertexListSize[2])

@@ -3,4 +3,5 @@
 # This script can be launched from the Finder.
 
 cd "$(dirname "$(which "$0")")"
-open `ls -t ../../Build/macOS/bush/*/* | head -1 | sed "s%\(.*/\).*%\1bush.app%"`
+app=$(ls -1dt $(find ../../Build/macOS/bush/*/bush.app) | head -1 | sed "s%/bush.app.*%/bush\.app%")
+open "$app"

@@ -6,6 +6,7 @@
  */
 
 #include <QWidget>
+#include <QBrush>
 
 /**
  * Make the window title transparent again. This was the default until macOS Sierra.

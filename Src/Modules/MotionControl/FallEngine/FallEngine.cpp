@@ -13,10 +13,8 @@ void FallEngine::update(FallEngineOutput& output)
   // when it wasn't active check if it should be activated
   if(!output.active)
   {
-    if(theFallDownState.state == FallDownState::falling  && theMotionRequest.motion != MotionRequest::getUp && theMotionInfo.motion != MotionRequest::getUp)
+    if(theFallDownState.state == FallDownState::falling && theMotionRequest.motion != MotionRequest::getUp && theMotionInfo.motion != MotionRequest::getUp)
       output.active = handleSpecialCases();
-    else
-      framesSinceFirstDetection = 0;
 
     if(output.active)
     {
@@ -44,7 +42,7 @@ void FallEngine::update(FallEngineOutput& output)
     {
       JointRequest jq;
       MotionUtilities::stand(jq);
-      MotionUtilities::interpolate(output, 0.02f, 1., theJointRequest, theJointAngles, jq);
+      MotionUtilities::interpolate(output, 0.02f, 1.f, theJointRequest, theJointAngles, jq);
     }
     output.waitingForGetup = true;
   }
@@ -77,8 +75,7 @@ void FallEngine::calcDirection(FallEngineOutput& output)
 void FallEngine::safeFall(FallEngineOutput& output) const
 {
   for(int i = 0; i < Joints::numOfJoints; i++)
-    output.stiffnessData.stiffnesses[i] = 20;
-
+    output.stiffnessData.stiffnesses[i] = 10;
   if(output.fallingBackwards)
   {
     MotionUtilities::sit(output);
@@ -98,15 +95,15 @@ void FallEngine::safeArms(FallEngineOutput& output) const
     if(theJointAngles.angles[Joints::lShoulderRoll] > 3_deg)
       output.angles[Joints::lShoulderPitch] = 90_deg;
     output.angles[Joints::lShoulderRoll] = 11_deg;
-    output.angles[Joints::lElbowYaw] = -180_deg;
+    output.angles[Joints::lElbowYaw] = 0_deg;
     output.angles[Joints::lElbowRoll] = 0_deg;
-    output.angles[Joints::lWristYaw] = -45_deg;
+    output.angles[Joints::lWristYaw] = -90_deg;
     if(theJointAngles.angles[Joints::rShoulderRoll] < -3_deg)
       output.angles[Joints::rShoulderPitch] = 90_deg;
     output.angles[Joints::rShoulderRoll] = -11_deg;
-    output.angles[Joints::rElbowYaw] = 180_deg;
+    output.angles[Joints::rElbowYaw] = 0_deg;
     output.angles[Joints::rElbowRoll] = 0_deg;
-    output.angles[Joints::rWristYaw] = 45_deg;
+    output.angles[Joints::rWristYaw] = 90_deg;
   }
 }
 
@@ -140,19 +137,14 @@ void FallEngine::centerHead(FallEngineOutput& output)
 
 /**  in general the fallEngine shouldn't be triggered when a special action is executed. but there
  * are some cases when it should trigger. theese are handled here
- * it also should wait if a kick is executed
  * @return true, if the MotionInfo is about a special action where no jump is intended
  */
 bool FallEngine::handleSpecialCases()
 {
-  framesSinceFirstDetection++;
   if(theMotionRequest.motion == MotionRequest::specialAction &&
-     (theFrameInfo.getTimeSince(theGameInfo.timeLastPackageReceived) > noGameControllerThreshold ||
+     (theFrameInfo.getTimeSince(theGameInfo.timeLastPacketReceived) > noGameControllerThreshold ||
       theMotionRequest.specialActionRequest.specialAction != SpecialActionRequest::standHigh))
     return false;
-  if(theMotionRequest.motion == MotionRequest::walk && theWalkingEngineOutput.isKicking && framesSinceFirstDetection < 15)
-    return false;
-  framesSinceFirstDetection = 0;
   return true;
 }
 

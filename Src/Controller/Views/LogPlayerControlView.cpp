@@ -82,7 +82,7 @@ class FrameSlider : public QSlider
 
 LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerControlView) :
   logPlayerControlView(logPlayerControlView),
-  playIcon(":/Icons/Player/play.png"), pauseIcon(":/Icons/Player/pause.png"),
+  playIcon(loadIcon(":/Icons/Player/play.png")), pauseIcon(loadIcon(":/Icons/Player/pause.png")),
   lastState(logPlayerControlView.logPlayer.state)
 {
   QVBoxLayout* vBoxLayout = new QVBoxLayout();
@@ -140,7 +140,7 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
   buttonsLayout->addWidget(playPauseButton);
 
   QPushButton* stopButton = new QPushButton("");
-  stopButton->setIcon(QIcon(":/Icons/Player/stop.png"));
+  stopButton->setIcon(loadIcon(":/Icons/Player/stop.png"));
   stopButton->setIconSize(QSize(23, 23));
   stopButton->setFixedSize(buttonSize, buttonSize);
   stopButton->setToolTip("Stop");
@@ -153,7 +153,7 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
   buttonsLayout->addWidget(line);
 
   QPushButton* repeatButton = new QPushButton("");
-  repeatButton->setIcon(QIcon(":/Icons/Player/repeat.png"));
+  repeatButton->setIcon(loadIcon(":/Icons/Player/repeat.png"));
   repeatButton->setIconSize(QSize(23, 23));
   repeatButton->setFixedSize(buttonSize, buttonSize);
   repeatButton->setToolTip("Repeat frame");
@@ -165,28 +165,28 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
   line->setFrameShadow(QFrame::Sunken);
   buttonsLayout->addWidget(line);
 
-  QPushButton* prevImageButton = new QPushButton(QIcon(":/Icons/Player/prevImage.png"), "");
+  QPushButton* prevImageButton = new QPushButton(loadIcon(":/Icons/Player/prevImage.png"), "");
   prevImageButton->setIconSize(QSize(23, 23));
   prevImageButton->setFixedSize(buttonSize, buttonSize);
   prevImageButton->setToolTip("Go to previous image");
   connect(prevImageButton, &QPushButton::released, [&]() { SYNC_WITH(logPlayerControlView.console); logPlayerControlView.logPlayer.stepImageBackward(); });
   buttonsLayout->addWidget(prevImageButton);
 
-  QPushButton* prevFrameButton = new QPushButton(QIcon(":/Icons/Player/prevFrame.png"), "");
+  QPushButton* prevFrameButton = new QPushButton(loadIcon(":/Icons/Player/prevFrame.png"), "");
   prevFrameButton->setIconSize(QSize(23, 23));
   prevFrameButton->setFixedSize(buttonSize, buttonSize);
   prevFrameButton->setToolTip("Go to previous frame");
   connect(prevFrameButton, &QPushButton::released, [&]() { SYNC_WITH(logPlayerControlView.console); logPlayerControlView.logPlayer.stepBackward(); });
   buttonsLayout->addWidget(prevFrameButton);
 
-  QPushButton* nextFrameButton = new QPushButton(QIcon(":/Icons/Player/nextFrame.png"), "");
+  QPushButton* nextFrameButton = new QPushButton(loadIcon(":/Icons/Player/nextFrame.png"), "");
   nextFrameButton->setIconSize(QSize(23, 23));
   nextFrameButton->setFixedSize(buttonSize, buttonSize);
   nextFrameButton->setToolTip("Go to next frame");
   connect(nextFrameButton, &QPushButton::released, [&]() { SYNC_WITH(logPlayerControlView.console); logPlayerControlView.logPlayer.stepForward(); });
   buttonsLayout->addWidget(nextFrameButton);
 
-  QPushButton* nextImageButton = new QPushButton(QIcon(":/Icons/Player/nextImage.png"), "");
+  QPushButton* nextImageButton = new QPushButton(loadIcon(":/Icons/Player/nextImage.png"), "");
   nextImageButton->setIconSize(QSize(23, 23));
   nextImageButton->setFixedSize(buttonSize, buttonSize);
   nextImageButton->setToolTip("Go to next image");
@@ -195,7 +195,7 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
 
   buttonsLayout->addSpacing(25);
 
-  loopButton = new QPushButton(QIcon(":/Icons/Player/loop.png"), "");
+  loopButton = new QPushButton(loadIcon(":/Icons/Player/loop.png"), "");
   loopButton->setIconSize(QSize(23, 23));
   loopButton->setFixedSize(buttonSize, buttonSize);
   loopButton->setCheckable(true);
@@ -320,6 +320,26 @@ void LogPlayerControlWidget::togglePlayPause()
     logPlayerControlView.logPlayer.pause();
   else
     logPlayerControlView.logPlayer.play();
+}
+
+QIcon LogPlayerControlWidget::loadIcon(const QString& name)
+{
+  QIcon icon(name);
+#ifdef MACOS
+  if(palette().background().color().lightness() < palette().foreground().color().lightness())
+  {
+    QIcon invertedIcon;
+    for(auto& size : icon.availableSizes())
+    {
+      QImage image = icon.pixmap(size).toImage();
+      image.invertPixels();
+      invertedIcon.addPixmap(QPixmap::fromImage(std::move(image)));
+    }
+    return invertedIcon;
+  }
+  else
+#endif
+    return icon;
 }
 
 SimRobot::Widget* LogPlayerControlView::createWidget()

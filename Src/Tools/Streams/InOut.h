@@ -114,7 +114,7 @@ public:
 
   /**
    * Streaming operator for classes, arrays, and enums.
-   * The sizeof expression is evaluated at compile time. It allows distiguishing
+   * The sizeof expression is evaluated at compile time. It allows distinguishing
    * between a class or array (is not automatically converted to int) and
    * an enum (can be converted to int). The implementation assumes that
    * sizeof(char) != sizeof(short).
@@ -285,7 +285,7 @@ protected:
   virtual void inSChar(signed char&) = 0;
 
   /**
-   * Virtual redirection for operator>>(unsigend char& value).
+   * Virtual redirection for operator>>(unsigned char& value).
    */
   virtual void inUChar(unsigned char&) = 0;
 
@@ -295,7 +295,7 @@ protected:
   virtual void inShort(short&) = 0;
 
   /**
-   * Virtual redirection for operator>>(unsigend short& value).
+   * Virtual redirection for operator>>(unsigned short& value).
    */
   virtual void inUShort(unsigned short&) = 0;
 
@@ -305,7 +305,7 @@ protected:
   virtual void inInt(int&) = 0;
 
   /**
-   * Virtual redirection for operator>>(unsigend int& value).
+   * Virtual redirection for operator>>(unsigned int& value).
    */
   virtual void inUInt(unsigned int&) = 0;
 
@@ -385,7 +385,7 @@ public:
 
   /**
    * Streaming operator for classes, arrays, and enums.
-   * The sizeof expression is evaluated at compile time. It allows distiguishing
+   * The sizeof expression is evaluated at compile time. It allows distinguishing
    * between a class or array (is not automatically converted to int) and
    * an enum (can be converted to int). The implementation assumes that
    * sizeof(char) != sizeof(short).
@@ -574,13 +574,13 @@ namespace EnumHelpers
       {
         unsigned char c = static_cast<unsigned char>(t); // keep old value in case streaming does nothing
         in >> c;
-        t = (T)c;
+        t = static_cast<T>(c);
       }
       else
       {
         int i = static_cast<int>(t); // keep old value in case streaming does nothing
         in >> i;
-        t = (T)i;
+        t = static_cast<T>(i);
       }
       return in;
     }

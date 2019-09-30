@@ -34,21 +34,12 @@ namespace CNS
 
   CameraModelOpenCV toCameraModelOpenCV(const CameraInfo& cameraInfo, const CameraIntrinsics& cameraIntrinsics)
   {
-    if(cameraInfo.camera == CameraInfo::lower)
-      return CameraModelOpenCV(Eigen::Isometry3d::Identity(),
-                               cameraInfo.width,
-                               cameraInfo.height,
-                               cameraInfo.width / 2.f / std::tan(cameraIntrinsics.lowerOpeningAngleWidth / 2.f),
-                               cameraInfo.height / 2.f / std::tan(cameraIntrinsics.lowerOpeningAngleHeight / 2.f),
-                               cameraInfo.width * cameraIntrinsics.lowerOpticalCenter.x(),
-                               cameraInfo.height * cameraIntrinsics.lowerOpticalCenter.y());
-    else
-      return CameraModelOpenCV(Eigen::Isometry3d::Identity(),
-                               cameraInfo.width,
-                               cameraInfo.height,
-                               cameraInfo.width / 2.f / std::tan(cameraIntrinsics.upperOpeningAngleWidth / 2.f),
-                               cameraInfo.height / 2.f / std::tan(cameraIntrinsics.upperOpeningAngleHeight / 2.f),
-                               cameraInfo.width * cameraIntrinsics.upperOpticalCenter.x(),
-                               cameraInfo.height * cameraIntrinsics.upperOpticalCenter.y());
+    return CameraModelOpenCV(Eigen::Isometry3d::Identity(),
+                             cameraInfo.width,
+                             cameraInfo.height,
+                             cameraInfo.width / 2.f / std::tan(cameraIntrinsics.cameras[cameraInfo.camera].openingAngleWidth / 2.f),
+                             cameraInfo.height / 2.f / std::tan(cameraIntrinsics.cameras[cameraInfo.camera].openingAngleHeight / 2.f),
+                             cameraInfo.width * cameraIntrinsics.cameras[cameraInfo.camera].opticalCenter.x(),
+                             cameraInfo.height * cameraIntrinsics.cameras[cameraInfo.camera].opticalCenter.y());
   }
 }

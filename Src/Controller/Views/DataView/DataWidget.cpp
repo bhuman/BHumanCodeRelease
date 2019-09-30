@@ -6,6 +6,7 @@
  */
 
 #include "DataWidget.h"
+#include "Controller/RoboCupCtrl.h"
 #include <QSettings>
 
 DataWidget::DataWidget(DataView& view, QtVariantPropertyManager& manager)
@@ -125,9 +126,9 @@ void DataWidget::unchangedPressed()
   setUnchangedButtonEnabled(false);
 }
 
-void DataWidget::itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* preceedingItem)
+void DataWidget::itemInserted(QtBrowserItem* insertedItem, QtBrowserItem* precedingItem)
 {
-  QtTreePropertyBrowser::itemInserted(insertedItem, preceedingItem);
+  QtTreePropertyBrowser::itemInserted(insertedItem, precedingItem);
   setExpanded(insertedItem, !insertedItem->parent());
 }
 

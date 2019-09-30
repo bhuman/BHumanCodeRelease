@@ -8,12 +8,12 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QDial>
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QSlider>
 #include <QToolTip>
 #include <QCursor>
 #include <QAction>
@@ -29,7 +29,7 @@ void TeamView::init()
 
     pbSave = new QPushButton(QIcon(":icons/disk.png"), "");
     pbSave->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
-    pbSave->setToolTip("Save Team Configuration");
+    pbSave->setToolTip("Save team configuration");
     settingsGrid->addWidget(pbSave);
     connect(pbSave, SIGNAL(clicked()), teamSelector, SLOT(saveTeams()));
 
@@ -45,16 +45,15 @@ void TeamView::init()
     cbColor->addItem("brown");
     cbColor->addItem("gray");
     cbColor->setCurrentIndex(cbColor->findText(fromString(team->color)));
-    settingsGrid->addWidget(new QLabel("<b>Color:</b>", cbColor));
+    cbColor->setToolTip("Select team color");
     settingsGrid->addWidget(cbColor);
     connect(cbColor, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(colorChanged(const QString&)));
 
     sbNumber = new QSpinBox(this);
     sbNumber->setRange(1, 99);
-    sbNumber->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    sbNumber->setMaximumWidth(18);
+    sbNumber->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     sbNumber->setValue(team->number);
-    settingsGrid->addWidget(new QLabel("<b>Number:</b>", sbNumber));
+    sbNumber->setToolTip("Select team number");
     settingsGrid->addWidget(sbNumber);
     connect(sbNumber, SIGNAL(valueChanged(int)), this, SLOT(numberChanged(int)));
 
@@ -63,7 +62,7 @@ void TeamView::init()
     for(size_t i = 0; i < scenarios.size(); ++i)
       cbScenario->addItem(fromString(scenarios[i]));
     cbScenario->setCurrentIndex(cbScenario->findText(fromString(team->scenario)));
-    settingsGrid->addWidget(new QLabel("<b>Scenario:</b>", cbScenario));
+    cbScenario->setToolTip("Select scenario");
     settingsGrid->addWidget(cbScenario);
     connect(cbScenario, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(scenarioChanged(const QString&)));
 
@@ -72,7 +71,7 @@ void TeamView::init()
     for(size_t i = 0; i < locations.size(); ++i)
       cbLocation->addItem(fromString(locations[i]));
     cbLocation->setCurrentIndex(cbLocation->findText(fromString(team->location)));
-    settingsGrid->addWidget(new QLabel("<b>Location:</b>", cbLocation));
+    cbLocation->setToolTip("Select location");
     settingsGrid->addWidget(cbLocation);
     connect(cbLocation, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(locationChanged(const QString&)));
 
@@ -81,7 +80,7 @@ void TeamView::init()
     for(size_t i = 0; i < configs.size(); ++i)
       cbWlanConfig->addItem(fromString(configs[i]));
     cbWlanConfig->setCurrentIndex(cbWlanConfig->findText(fromString(team->wlanConfig)));
-    settingsGrid->addWidget(new QLabel("<b>Wlan:<b/>", cbWlanConfig));
+    cbWlanConfig->setToolTip("Select wireless network");
     settingsGrid->addWidget(cbWlanConfig);
     connect(cbWlanConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(wlanConfigChanged(const QString&)));
 
@@ -90,16 +89,16 @@ void TeamView::init()
     cbBuildConfig->addItem("Release");
     cbBuildConfig->addItem("Debug");
     cbBuildConfig->setCurrentIndex(cbBuildConfig->findText(fromString(team->buildConfig)));
-    settingsGrid->addWidget(new QLabel("<b>Conf:</b>", cbBuildConfig));
+    cbBuildConfig->setToolTip("Select build configuration");
     settingsGrid->addWidget(cbBuildConfig);
     connect(cbBuildConfig, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(buildConfigChanged(const QString&)));
 
-    sVolume = new QSlider(this);
+    sVolume = new QDial(this);
     sVolume->setMinimum(0);
-    sVolume->setMaximum(100);
-    sVolume->setTickInterval(1);
-    sVolume->setValue(team->volume);
-    settingsGrid->addWidget(new QLabel("<b>Vol:</b>", sVolume));
+    sVolume->setMaximum(11);
+    sVolume->setPageStep(3);
+    sVolume->setValue((team->volume * 11 + 50) / 100);
+    sVolume->setToolTip("Set audio volume");
     settingsGrid->addWidget(sVolume);
     connect(sVolume, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(const int)));
 
@@ -107,25 +106,24 @@ void TeamView::init()
 
     cbDeployDevice = new QComboBox(this);
     cbDeployDevice->addItem("auto");
-    cbDeployDevice->addItem("lan");
-    cbDeployDevice->addItem("wlan");
+    cbDeployDevice->addItem("Ethernet");
+    cbDeployDevice->addItem("Wi-Fi");
     cbDeployDevice->setCurrentIndex(cbDeployDevice->findText(fromString(team->deployDevice)));
-    settingsGrid->addWidget(new QLabel("<b>Device:</b>", cbDeployDevice));
+    cbDeployDevice->setToolTip("Select connection to robot");
     settingsGrid->addWidget(cbDeployDevice);
     connect(cbDeployDevice, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(deployDeviceChanged(const QString&)));
 
     sbMagic = new QSpinBox(this);
     sbMagic->setRange(-1, 255);
-    sbMagic->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    sbMagic->setMaximumWidth(31);
+    sbMagic->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     sbMagic->setValue(team->magicNumber);
-    settingsGrid->addWidget(new QLabel("<b>Magic Number:</b>", sbMagic));
+    sbMagic->setToolTip("Select magic number (-1 means random)");
     settingsGrid->addWidget(sbMagic);
     connect(sbMagic, SIGNAL(valueChanged(int)), this, SLOT(magicNumberChanged(int)));
 
-    cbCompile = new QCheckBox(this);
+    cbCompile = new QCheckBox("Build", this);
     cbCompile->setChecked(team->compile);
-    settingsGrid->addWidget(new QLabel("<b>Compile?</b>", cbCompile));
+    cbCompile->setToolTip("Build before deploying?");
     settingsGrid->addWidget(cbCompile);
     connect(cbCompile, SIGNAL(toggled(bool)), this, SLOT(compileChanged(bool)));
 
@@ -167,16 +165,16 @@ void TeamView::generateRobotViews(QGridLayout* teamGrid)
   for(size_t j = 0; j < 2; ++j)
     for(size_t i = 0; i < max; ++i)
     {
-      RobotView* rv = new RobotView(teamSelector, robots[i][j], (unsigned short)(i + 1), (unsigned short) j);
+      RobotView* rv = new RobotView(teamSelector, robots[i][j], static_cast<unsigned short>(i + 1), static_cast<unsigned short>(j));
       robotViews.push_back(rv);
-      teamGrid->addWidget(rv, j > 0 ? 2 : 0, (int) i);
+      teamGrid->addWidget(rv, j > 0 ? 2 : 0, static_cast<int>(i));
     }
   QFrame* hr = new QFrame(this);
   hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
   QFormLayout* subTitle = new QFormLayout();
-  teamGrid->addLayout(subTitle, 1, 0, 1, (int) max, Qt::AlignVCenter);
+  teamGrid->addLayout(subTitle, 1, 0, 1, static_cast<int>(max), Qt::AlignVCenter);
 
-  QLabel* substitutes = new QLabel("<b>Substitutes</b> (NAOqi will not start)");
+  QLabel* substitutes = new QLabel("<b>Substitutes</b> (bhuman will not start)");
   subTitle->addRow(substitutes, hr);
   subTitle->setAlignment(hr, Qt::AlignVCenter);
 }
@@ -196,8 +194,8 @@ void TeamView::numberChanged(int number)
 {
   if(team)
   {
-    team->number = (unsigned short) number;
-    team->port = (unsigned short)(10000 + number);
+    team->number = static_cast<unsigned short>(number);
+    team->port = static_cast<unsigned short>(10000 + number);
   }
 }
 
@@ -229,8 +227,8 @@ void TeamView::volumeChanged(const int volume)
 {
   if(team)
   {
-    team->volume = static_cast<unsigned short>(volume);
-    QToolTip::showText(QCursor::pos(), QString::number(volume) + QString("%"));
+    team->volume = static_cast<unsigned short>((volume * 100 + 6) / 11);
+    QToolTip::showText(QCursor::pos(), QString::number(volume));
   }
 }
 

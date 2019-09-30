@@ -1,5 +1,5 @@
 /**
- * @file DebugRequest.h
+ * @file DebugRequest.cpp
  *
  * Implementation of a class that manages debug requests.
  * Debug requests are switches that (de)activate blocks of code at runtime.
@@ -25,7 +25,7 @@ void DebugRequestTable::addRequest(const DebugRequest& debugRequest)
 {
   if(debugRequest.name == "poll")
   {
-    pollCounter = 10;
+    pollCounter = 3;
     polled.clear();
   }
   else if(debugRequest.name == "disableAll")

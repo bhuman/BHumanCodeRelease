@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "Image.h"
+#include "CameraImage.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/Image.h"
 #include "Tools/Streams/Streamable.h"
 #include "Tools/Streams/Enum.h"
 #include "Tools/ImageProcessing/PixelTypes.h"
@@ -31,21 +31,21 @@ struct Thumbnail : public Streamable
   /**
    * A grayscale thumbnail image, downscaled by the factor given by `scale`.
    */
-  TImage<PixelTypes::GrayscaledPixel> imageY;
+  Image<PixelTypes::GrayscaledPixel> imageY;
 
   /**
    * The U and V channels of a colored thumbnail image combined into one image, downscaled by `scale * 2`.
    * Only contains valid data if `grayscale` is false.
    */
-  TImage<unsigned short> imageUV;
-  TImage<PixelTypes::YUYVPixel>* imageYUYV = nullptr;
+  Image<unsigned short> imageUV;
+  Image<PixelTypes::YUYVPixel>* imageYUYV = nullptr;
 
   unsigned int scale;
   Mode mode;
 
-  void toYUYV(TImage<PixelTypes::YUYVPixel>& dest) const;
+  void toYUYV(Image<PixelTypes::YUYVPixel>& dest) const;
   void toECImage(ECImage& dest) const;
-  void toImage(Image& dest) const;
+  void toCameraImage(CameraImage& dest) const;
 
   Thumbnail() = default;
 
@@ -61,7 +61,7 @@ struct Thumbnail : public Streamable
     COMPLEX_IMAGE("ThumbnailColored")
     {
       if(imageYUYV == nullptr)
-        imageYUYV = new TImage<PixelTypes::YUYVPixel>();
+        imageYUYV = new Image<PixelTypes::YUYVPixel>();
       toYUYV(*imageYUYV);
       SEND_DEBUG_IMAGE("ThumbnailColored", *imageYUYV);
     }

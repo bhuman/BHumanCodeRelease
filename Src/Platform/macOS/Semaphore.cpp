@@ -11,33 +11,36 @@
 #pragma clang diagnostic ignored "-Wnullability-completeness-on-arrays"
 #include <CoreServices.h>
 #undef pi
+#include <limits>
 
 Semaphore::Semaphore(unsigned value)
 {
-  VERIFY(MPCreateSemaphore(1, value, (MPSemaphoreID*) &handle) == noErr);
+  VERIFY(MPCreateSemaphore(std::numeric_limits<long>::max(), value, reinterpret_cast<MPSemaphoreID*>(&handle)) == noErr);
 }
 
 Semaphore::~Semaphore()
 {
-  VERIFY(MPDeleteSemaphore((MPSemaphoreID) handle) == noErr);
+  OSStatus status = MPDeleteSemaphore(static_cast<MPSemaphoreID>(handle));
+  static_cast<void>(status);
+  ASSERT(status == noErr || status == kMPTaskAbortedErr);
 }
 
 void Semaphore::post()
 {
-  MPSignalSemaphore((MPSemaphoreID) handle);
+  MPSignalSemaphore(static_cast<MPSemaphoreID>(handle));
 }
 
 bool Semaphore::wait()
 {
-  return MPWaitOnSemaphore((MPSemaphoreID) handle, kDurationForever) == noErr;
+  return MPWaitOnSemaphore(static_cast<MPSemaphoreID>(handle), kDurationForever) == noErr;
 }
 
 bool Semaphore::wait(unsigned timeout)
 {
-  return MPWaitOnSemaphore((MPSemaphoreID) handle, kDurationMillisecond * timeout) == noErr;
+  return MPWaitOnSemaphore(static_cast<MPSemaphoreID>(handle), kDurationMillisecond * timeout) == noErr;
 }
 
 bool Semaphore::tryWait()
 {
-  return MPWaitOnSemaphore((MPSemaphoreID) handle, kDurationImmediate) == noErr;
+  return MPWaitOnSemaphore(static_cast<MPSemaphoreID>(handle), kDurationImmediate) == noErr;
 }

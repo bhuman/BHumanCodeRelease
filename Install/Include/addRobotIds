@@ -1,0 +1,126 @@
+#!/bin/bash
+
+set -eu
+
+remoteIp=""
+headId=""
+bodyId=""
+name=""
+
+usage() {
+  echo "usage:"
+  echo "${0} [-h]"
+  echo "${0} -ids <headId> <BodyId> <name>"
+  echo "${0} -ip <remoteIp> <name>"
+  echo ""
+  echo " <name>     : Name of the robot."
+  echo " <headId>   : The id of the robots head."
+  echo " <bodyId>   : The id of the robots body."
+  echo " <remoteIp> : The id of the robots body."
+  echo ""
+  echo " -ids       : Uses the the provided ids."
+  echo " -ip        : Loads the ids from the robot with the provided ip."
+  echo " -h         : Display this help."
+  exit 1
+}
+
+parseOptions() {
+  if [ $# -eq 4 ]; then
+    if [ ${1} == "-ids" ]; then
+      headId=${2}
+      bodyId=${3}
+      name=${4}
+      return 0
+    else
+      usage
+    fi
+  elif [ $# -eq 3 ]; then
+    if [ ${1} == "-ip" ]; then
+      remoteIp=${2}
+      name=${3}
+      return 1
+    else
+      usage
+    fi
+  else
+    usage
+  fi
+}
+
+getIdsFromRobot() {
+  message "Loading ids from Robot"
+
+  # copy python scripts
+  tmpPath="/tmp/NaoInstall"
+  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "rm -Rf ${tmpPath}" || fatal "Can't remove '${tmpPath}' on NAO"
+  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "mkdir -p ${tmpPath}" || fatal "Can't create '${tmpPath}' on NAO"
+  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getBodyId.py" nao@${remoteIp}:${tmpPath}/getBodyId.py || fatal "Can't copy 'getBodyId.py' to NAO"
+
+  # get headId
+  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "cat /sys/qi/head_id 2>/dev/null || true")
+  if [ -z ${headId} ]; then
+    fatal "Failed reading the headId!"
+  fi
+  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "bash -l -c 'python /tmp/NaoInstall/getBodyId.py' | grep -vE '\[(W|I)\]'")
+  if [ ${bodyId} == "Fail" ]; then
+    fatal "Failed reading the bodyId!"
+  fi
+}
+
+addIds() {
+  if [[ $(grep "name = \"${name}\"" "${robotsFile}") ]]; then
+    fatal "The robot ${name} has already ids associated with it!"
+  elif [[ $(grep "headId = \"${headId}\"" "${robotsFile}") ]]; then
+    fatal "The headId ${headId} is already in use!"
+  elif [[ $(grep "bodyId = \"${bodyId}\"" "${robotsFile}") ]]; then
+    fatal "The bodyId ${bodyId} is already in use!"
+  else
+    line="{ name = \"${name}\"; headId = \"${headId}\"; bodyId = \"${bodyId}\"; }"
+    if [[ $(tr '\n' '|' <"${robotsFile}" | grep '\[|\]') ]]; then
+      sed "s%\[%[|  ${line}%" <"${robotsFile}" \
+      | tr '|' '\n' >/tmp/addRobotIds.tmp \
+      && mv /tmp/addRobotIds.tmp "${robotsFile}"
+    elif [[ $(tr '\n' '|' <"${robotsFile}" | grep '}|\];') ]]; then
+      tr <"${robotsFile}" '\n' '|' \
+      | sed -e "s%},*|\];%},|  ${line}|];%" -e "s%|*$%%" \
+      | tr '|' '\n' >/tmp/addRobotIds.tmp \
+      && mv /tmp/addRobotIds.tmp "${robotsFile}"
+    else
+      fatal "Could not parse ${robotsFile}"
+    fi
+  fi
+}
+
+checkFile() {
+  networkFile="${bhDir}/Config/Robots/${name}/network.cfg"
+  if [ ! -f "${networkFile}" ]; then
+    fatal "Call createRobot for ${name} first!"
+  fi
+}
+
+###############################################################################
+##                                                                           ##
+##  MAIN                                                                     ##
+##                                                                           ##
+###############################################################################
+
+if ! parseOptions "$@"; then
+  checkFile
+  copyKey ${remoteIp}
+  getIdsFromRobot
+else
+  checkFile
+fi
+
+echo ""
+echo "using:"
+echo "  name:     ${name}"
+echo "  headId:   ${headId}"
+echo "  bodyId:   ${bodyId}"
+echo ""
+
+createRobotsFile
+addIds
+
+message "Added ${name}'s ids to ${robotsFile}."
+message "Don't forget to run installRobot!"

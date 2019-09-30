@@ -8,6 +8,7 @@
  */
 
 #include "TimeView.h"
+#include "Controller/RoboCupCtrl.h"
 #include "Controller/RobotConsole.h"
 #include "Platform/Time.h"
 
@@ -72,14 +73,14 @@ TimeWidget::TimeWidget(TimeView& timeView) : timeView(timeView)
   layout->addWidget(table);
   layout->setContentsMargins(QMargins());
   this->setLayout(layout);
-  lastTimeInfoTimeStamp = Time::getCurrentSystemTime();
+  lastTimeInfoTimestamp = Time::getCurrentSystemTime();
   lastUpdate = Time::getCurrentSystemTime();
   QObject::connect(filterEdit, SIGNAL(textChanged(QString)), this, SLOT(filterChanged(QString)));
 
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(timeView.fullName);
   table->horizontalHeader()->restoreState(settings.value("HeaderState").toByteArray());
-  table->sortItems(settings.value("SortBy").toInt(), (Qt::SortOrder) settings.value("SortOrder").toInt());
+  table->sortItems(settings.value("SortBy").toInt(), static_cast<Qt::SortOrder>(settings.value("SortOrder").toInt()));
   filter = settings.value("Filter").toString();
   filterEdit->setText(filter);
   settings.endGroup();
@@ -107,7 +108,7 @@ void TimeWidget::update()
     lastUpdate = Time::getCurrentSystemTime();
 
     // if timing info is lost for more than 1s, clear timing table
-    if(timeView.console.logFile == "" && lastUpdate > lastTimeInfoTimeStamp + 1000 && table->rowCount() > 0)
+    if(timeView.console.logFile == "" && lastUpdate > lastTimeInfoTimestamp + 1000 && table->rowCount() > 0)
     {
       table->setRowCount(0);
       items.clear();
@@ -115,14 +116,14 @@ void TimeWidget::update()
       return;
     }
 
-    if(timeView.info.timeStamp == lastTimeInfoTimeStamp)
+    if(timeView.info.timestamp == lastTimeInfoTimestamp)
       return;
-    lastTimeInfoTimeStamp = timeView.info.timeStamp;
+    lastTimeInfoTimestamp = timeView.info.timestamp;
 
     float avgFrequency = -1.0;
     float minDuration = -1.0;
     float maxDuration = -1.0;
-    timeView.info.getProcessStatistics(avgFrequency, minDuration, maxDuration);
+    timeView.info.getThreadStatistics(avgFrequency, minDuration, maxDuration);
     frequency->setText(" Freq: " + QString::number(avgFrequency, 'f', 1)
                        + ", Min: " + QString::number(minDuration, 'f', 1) +
                        "ms, Max: " + QString::number(maxDuration, 'f', 1) + "ms");
@@ -157,7 +158,7 @@ void TimeWidget::update()
       float minTime = -1, maxTime = -1, avgTime = -1;
       timeView.info.getStatistics(infoPair.second, minTime, maxTime, avgTime);
       // this row timed out, remove it from the list
-      if(infoPair.second.timeStamp + 1000 < lastUpdate)
+      if(infoPair.second.timestamp + 1000 < lastUpdate)
         maxTime = 0;
       currentRow->avg->setText(QString::number(avgTime));
       currentRow->min->setText(QString::number(minTime));

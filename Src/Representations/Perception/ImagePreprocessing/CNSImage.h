@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include "Tools/ImageProcessing/PixelTypes.h"
 #include "Tools/Debugging/DebugImages.h"
-#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/Image.h"
 
 /**
  * The response of the contrast normalized Sobel (CNS) filter at a single point.
@@ -134,9 +134,9 @@ struct CNSResponse : public PixelTypes::Edge2Pixel
   }
 };
 
-STREAMABLE_WITH_BASE(CNSImage, TImage<CNSResponse>,
+STREAMABLE_WITH_BASE(CNSImage, Image<CNSResponse>,
 {
-  CNSImage() : TImage<CNSResponse>(640, 480, 640 * 64 * sizeof(CNSResponse))
+  CNSImage() : Image<CNSResponse>(640, 480, 640 * 64 * sizeof(CNSResponse))
   {
     std::memset(reinterpret_cast<char*>((*this)[-64]), CNSResponse::OFFSET, width * (128 + height) * sizeof(CNSResponse));
   }
@@ -144,13 +144,5 @@ STREAMABLE_WITH_BASE(CNSImage, TImage<CNSResponse>,
   void draw() const
   {
     SEND_DEBUG_IMAGE("CNSImage", *this, PixelTypes::Edge2);
-  },
-});
-
-STREAMABLE_WITH_BASE(CNSImageCompressed, CNSImage,
-{
-  void draw() const
-  {
-    SEND_DEBUG_IMAGE("CNSImageCompressed", *this, PixelTypes::Edge2);
   },
 });

@@ -15,9 +15,10 @@
 #include "Controller/RoboCupCtrl.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
+#include "Representations/Configuration/CameraResolutionRequest.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
-#include "Representations/Infrastructure/Image.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
@@ -60,63 +61,44 @@ void SimulatedRobot::init(SimRobot::Object* robot)
   InMapFile intrStream("cameraIntrinsics.cfg");
   VERIFY(exists = intrStream.exists());
   intrStream >> cameraIntrinsics;
+  CameraResolutionRequest cameraResolutionRequest;
   InMapFile resStream("cameraResolution.cfg");
   VERIFY(exists = resStream.exists());
-  resStream >> cameraResolution;
+  resStream >> cameraResolutionRequest;
 
   // build cameraInfo
-  switch(cameraResolution.resolutionUpper)
+  FOREACH_ENUM(CameraInfo::Camera, camera)
   {
-    case CameraResolution::Resolutions::w320h240:
-      upperCameraInfo.width = 320;
-      upperCameraInfo.height = 240;
-      break;
-    case CameraResolution::Resolutions::w640h480:
-      upperCameraInfo.width = 640;
-      upperCameraInfo.height = 480;
-      break;
-    case CameraResolution::Resolutions::w1280h960:
-      upperCameraInfo.width = 1280;
-      upperCameraInfo.height = 960;
-      break;
-    default:
-      ASSERT(false);
-      break;
-  }
-  switch(cameraResolution.resolutionLower)
-  {
-    case CameraResolution::Resolutions::w320h240:
-      lowerCameraInfo.width = 320;
-      lowerCameraInfo.height = 240;
-      break;
-    case CameraResolution::Resolutions::w640h480:
-      lowerCameraInfo.width = 640;
-      lowerCameraInfo.height = 480;
-      break;
-    case CameraResolution::Resolutions::w1280h960:
-      lowerCameraInfo.width = 1280;
-      lowerCameraInfo.height = 960;
-      break;
-    default:
-      ASSERT(false);
-      break;
-  }
+    cameraInfos[camera].camera = camera;
 
-  upperCameraInfo.camera = CameraInfo::upper;
-  lowerCameraInfo.camera = CameraInfo::lower;
-  // set opening angle
-  upperCameraInfo.openingAngleWidth = cameraIntrinsics.upperOpeningAngleWidth;
-  upperCameraInfo.openingAngleHeight = cameraIntrinsics.upperOpeningAngleHeight;
-  lowerCameraInfo.openingAngleWidth = cameraIntrinsics.lowerOpeningAngleWidth;
-  lowerCameraInfo.openingAngleHeight = cameraIntrinsics.lowerOpeningAngleHeight;
-  // set optical center
-  upperCameraInfo.opticalCenter.x() = cameraIntrinsics.upperOpticalCenter.x() * upperCameraInfo.width;
-  upperCameraInfo.opticalCenter.y() = cameraIntrinsics.upperOpticalCenter.y() * upperCameraInfo.height;
-  lowerCameraInfo.opticalCenter.x() = cameraIntrinsics.lowerOpticalCenter.x() * lowerCameraInfo.width;
-  lowerCameraInfo.opticalCenter.y() = cameraIntrinsics.lowerOpticalCenter.y() * lowerCameraInfo.height;
-  // update focal length
-  upperCameraInfo.updateFocalLength();
-  lowerCameraInfo.updateFocalLength();
+    switch(cameraResolutionRequest.resolutions[camera])
+    {
+      case CameraResolutionRequest::w320h240:
+        cameraInfos[camera].width = 320;
+        cameraInfos[camera].height = 240;
+        break;
+      case CameraResolutionRequest::w640h480:
+        cameraInfos[camera].width = 640;
+        cameraInfos[camera].height = 480;
+        break;
+      case CameraResolutionRequest::w1280h960:
+        cameraInfos[camera].width = 1280;
+        cameraInfos[camera].height = 960;
+        break;
+      default:
+        ASSERT(false);
+        break;
+    }
+
+    // set opening angle
+    cameraInfos[camera].openingAngleWidth = cameraIntrinsics.cameras[camera].openingAngleWidth;
+    cameraInfos[camera].openingAngleHeight = cameraIntrinsics.cameras[camera].openingAngleHeight;
+    // set optical center
+    cameraInfos[camera].opticalCenter.x() = cameraIntrinsics.cameras[camera].opticalCenter.x() * cameraInfos[camera].width;
+    cameraInfos[camera].opticalCenter.y() = cameraIntrinsics.cameras[camera].opticalCenter.y() * cameraInfos[camera].height;
+    // update focal length
+    cameraInfos[camera].updateFocalLength();
+  }
 
   // get feet (for pose and odometry)
   QVector<QString> parts;
@@ -222,10 +204,18 @@ void SimulatedRobot::getWorldState(GroundTruthWorldState& worldState) const
   // Get the standard ball position from the scene
   if(ball)
   {
-    Vector3f ballPosition = getPosition3D(ball);
+    GroundTruthWorldState::GroundTruthBall gtBall;
+    gtBall.position = getPosition3D(ball);
     if(firstTeam)
-      ballPosition = -ballPosition;
-    worldState.balls.push_back(ballPosition);
+      gtBall.position.head<2>() *= -1.f;
+    const unsigned currentTime = Time::getCurrentSystemTime();
+    if(lastBallTime && lastBallTime != currentTime)
+      gtBall.velocity = 1000.f * (gtBall.position - lastBallPosition) / static_cast<float>(currentTime - lastBallTime);
+    else
+      gtBall.velocity = Vector3f::Zero();
+    lastBallPosition = gtBall.position;
+    lastBallTime = currentTime;
+    worldState.balls.push_back(gtBall);
   }
 
   // Determine the robot's own pose and number
@@ -307,11 +297,11 @@ template<bool avx> inline __m_auto_i toYUYV(const __m_auto_i rgb0, const __m_aut
          );
 }
 
-template<bool srcAligned, bool destAligned, bool avx> void convertImage(const unsigned char* const src, Image& dest)
+template<bool srcAligned, bool destAligned, bool avx> void convertImage(const unsigned char* const src, CameraImage& dest)
 {
-  ASSERT((dest.width * dest.height * 12) % 96 == 0); // source data alignment
+  ASSERT((dest.width * dest.height * 6) % 96 == 0); // source data alignment
   ASSERT((dest.width * 4) % 64 == 0); // dest data alignment
-  const __m_auto_i* const pSrcEnd = reinterpret_cast<const __m_auto_i*>(src + dest.width * dest.height * 12);
+  const __m_auto_i* const pSrcEnd = reinterpret_cast<const __m_auto_i*>(src + dest.width * dest.height * 6);
 
   __m_auto_i* pDestEnd = reinterpret_cast<__m_auto_i*>(dest[dest.height]);
   const ptrdiff_t lineLength = reinterpret_cast<__m_auto_i*>(&dest[0][dest.width]) - reinterpret_cast<__m_auto_i*>(dest[0]);
@@ -347,7 +337,7 @@ template<bool srcAligned, bool destAligned, bool avx> void convertImage(const un
   }
 }
 
-void SimulatedRobot::getImage(Image& image, CameraInfo& cameraInfo)
+void SimulatedRobot::getImage(CameraImage& cameraImage, CameraInfo& cameraInfo)
 {
   ASSERT(robot);
 
@@ -355,47 +345,35 @@ void SimulatedRobot::getImage(Image& image, CameraInfo& cameraInfo)
   {
     reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->renderCameraImages(activeCameras, activeCameraCount);
 
-    ASSERT(!image.isReference);
-    if(cameraSensor == upperCameraSensor)
-    {
-      cameraInfo = upperCameraInfo;
-    }
-    else
-    {
-      cameraInfo = lowerCameraInfo;
-    }
+    ASSERT(!cameraImage.isReference());
 
-    image.setResolution(cameraInfo.width / 2, cameraInfo.height / 2, true);
+    cameraInfo = cameraInfos[cameraSensor == upperCameraSensor ? CameraInfo::upper : CameraInfo::lower];
+    cameraImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
 
     const unsigned char* const src = reinterpret_cast<SimRobotCore2::SensorPort*>(cameraSensor)->getValue().byteArray;
     if(simdAligned<_supportsAVX2>(src))
     {
-      if(simdAligned<_supportsAVX2>(image[0]))
-        convertImage<true, true, _supportsAVX2>(src, image);
+      if(simdAligned<_supportsAVX2>(cameraImage[0]))
+        convertImage<true, true, _supportsAVX2>(src, cameraImage);
       else
-        convertImage<true, false, _supportsAVX2>(src, image);
+        convertImage<true, false, _supportsAVX2>(src, cameraImage);
     }
     else
     {
-      if(simdAligned<_supportsAVX2>(image[0]))
-        convertImage<false, true, _supportsAVX2>(src, image);
+      if(simdAligned<_supportsAVX2>(cameraImage[0]))
+        convertImage<false, true, _supportsAVX2>(src, cameraImage);
       else
-        convertImage<false, false, _supportsAVX2>(src, image);
+        convertImage<false, false, _supportsAVX2>(src, cameraImage);
     }
   }
 
-  image.timeStamp = Time::getCurrentSystemTime();
+  cameraImage.timestamp = Time::getCurrentSystemTime();
 }
 
 void SimulatedRobot::getCameraInfo(CameraInfo& cameraInfo)
 {
   if(cameraSensor)
-  {
-    if(cameraSensor == upperCameraSensor)
-      cameraInfo = upperCameraInfo;
-    else
-      cameraInfo = lowerCameraInfo;
-  }
+    cameraInfo = cameraInfos[cameraSensor == upperCameraSensor ? CameraInfo::upper : CameraInfo::lower];
 }
 
 void SimulatedRobot::getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const
@@ -518,7 +496,7 @@ void SimulatedRobot::moveRobot(const Vector3f& pos, const Vector3f& rot, bool ch
     float rotation2[3][3];
     for(int i = 0; i < 3; ++i)
       for(int j = 0; j < 3; ++j)
-        rotation2[i][j] = rotation(j, i);
+        rotation2[i][j] = rotation(j, i); // Rotation of 180deg per definition (team/opponent)
     reinterpret_cast<SimRobotCore2::Body*>(robot)->move(&position.x(), rotation2);
   }
   else

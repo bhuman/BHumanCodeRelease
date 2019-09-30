@@ -115,7 +115,7 @@ void IntersectionRelations::propagateMarkedIntersection(const MarkedIntersection
       for(; distanceIndex < 4; distanceIndex++)
         if(lineIntersectionRelations.intersections[calcMLineMarker][distanceIndex] == calcCurrMarker)
           break;
-      SAFE_ASSERT(distanceIndex < 4, (void)0);
+      SAFE_ASSERT(distanceIndex < 4, static_cast<void>(0));
 
       for(unsigned i = 0; i < 4 && lineIntersectionRelations.intersections[calcMLineMarker][i] != MarkedIntersection::numOfIntersectionMarkers; i++)
         if(lineIntersectionRelations.intersections[calcMLineMarker][i] != calcCurrMarker)

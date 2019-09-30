@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import naoqi
 import sys
 from naoqi import ALProxy

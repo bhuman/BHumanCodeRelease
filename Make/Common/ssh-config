@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Installs autocomplete for ssh connections.
+# Call this without parameters to view the changes which would be written into
+# .ssh-hosts.
+# Call with "-i" to extend ~/.ssh/config with those changes to take advantage
+# of them.
+#
+# "ssh ottovon" connects to OttoVon via wireless, "ssh OttoVon" connects to OttoVon via lan.
+
+set -eu
+
+########### PARAMETERS ###########
+baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
+robotsDir="../../Install/Robots"
+sshKeySource="${baseDir}/../../Config/Keys/id_rsa_nao"
+sshKeyPath=/tmp/id_rsa_nao
+install=false
+config=~/.ssh/config
+startm="### B-HUMAN ssh config start" # start marker
+endm="### B-HUMAN ssh config end" # end marker
+
+########### FUNCTIONS ###########
+function status {
+  echo "[STATUS] $1"
+}
+
+########### MAIN ###########
+# use install mode?
+if [[ $# -ge 1 ]] ; then
+  if [[ ${1} == "-i" ]] ; then
+    install=true
+  fi
+fi
+
+# change mod of private key
+cp "${sshKeySource}" "${sshKeyPath}"
+chmod 600 "${sshKeyPath}"
+
+# create host for each robot
+hosts=""
+for robot in `ls ${robotsDir}`
+do
+  lanDir=${robotsDir}/${robot}/wired
+  wlanDir=${robotsDir}/${robot}/wireless
+
+  if [ -e ${lanDir} ]; then
+    lan=`cat ${lanDir} | grep -e "^BASE_ETH0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
+    wlan=`cat ${wlanDir} | grep -e "^BASE_WLAN0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
+
+    hosts=${hosts}"Host ${robot}\n"
+    hosts=${hosts}"  HostName ${lan}\n"
+    hosts=${hosts}"  User nao\n"
+    hosts=${hosts}"  IdentityFile \"${sshKeyPath}\"\n"
+    hosts=${hosts}"  StrictHostKeyChecking=no\n"
+    hosts=${hosts}"\n"
+
+    hosts=${hosts}"Host "`echo ${robot} | tr '[:upper:]' '[:lower:]'`"\n"
+    hosts=${hosts}"  HostName ${wlan}\n"
+    hosts=${hosts}"  User nao\n"
+    hosts=${hosts}"  IdentityFile \"${sshKeyPath}\"\n"
+    hosts=${hosts}"  StrictHostKeyChecking=no\n"
+    hosts=${hosts}"\n"
+  fi
+done
+
+if ${install} ; then
+  if [[ $(uname) == *CYGWIN* ]] ; then
+    status "installing ssh autocompletion"
+    cp ${baseDir}/ssh-hosts ~/.ssh-hosts
+
+    # do not include the ssh-hosts file more than once
+    if [[ `grep -c 'source .ssh-hosts' ~/.bashrc` == 0 ]] ; then
+      echo "source .ssh-hosts" >> ~/.bashrc
+    fi
+  fi
+
+  status "installing ssh config file"
+  mkdir -p ~/.ssh
+  # keep an existing ssh conf intact
+  echo -e ${hosts} > tempb-humanssh-conf-part
+  touch ${config}
+  if ! (grep -q "${startm}" ${config} && grep -q "${endm}" ${config}); then
+    echo -e "\n${startm}\n${endm}\n" >> ${config}
+  fi
+  touch tempb-humanssh-conf
+  sed -e "/^${startm}/,/^${endm}/{
+    /^${startm}/{
+        p
+        r tempb-humanssh-conf-part
+    }
+    /^${endm}/p
+    d
+  }" ${config} > tempb-humanssh-conf
+  rm ${config}
+  mv tempb-humanssh-conf ${config}
+  chmod 600 ${config}
+  rm tempb-humanssh-conf-part
+else
+  echo -e ${hosts}
+  echo "################################################################################"
+  echo "No changes were made. Call with \"-i\" to extend ${config} and enable autocompletion."
+  echo "################################################################################"
+fi

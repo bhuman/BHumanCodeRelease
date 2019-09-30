@@ -9,8 +9,8 @@
 
 #pragma once
 
+#include "PerceptRegistration.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Tools/Modeling/PerceptRegistration.h"
 #include "Tools/Modeling/UKFPose2D.h"
 
 /**
@@ -38,9 +38,6 @@ public:
   float getVarianceWeighting() const;
 
   void init(const Pose2f& pose, const Pose2f& defaultPoseDeviation, int number, float validity);
-
-  void prepare(const Vector2f& robotRotationDeviationInStand, const Vector2f& robotRotationDeviation,
-               const MotionInfo& motionInfo, const Pose3f& invCameraMatrix);
 
   void updateByLandmark(const RegisteredLandmark& landmark);
 

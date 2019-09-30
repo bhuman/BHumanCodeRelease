@@ -147,7 +147,7 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
       0, translationClass | rotationClass, 0},
     {"Camera", extSensorClass, &Parser::cameraElement, 0, 0,
       0, translationClass | rotationClass, 0},
-    {"CollisionSensor", intSensorClass, &Parser::collisionSensor2Element, 0, 0,
+    {"CollisionSensor", intSensorClass, &Parser::collisionSensorElement, 0, 0,
       0, translationClass | rotationClass, geometryClass},
     {"ObjectSegmentedImageSensor", extSensorClass, &Parser::objectSegmentedImageSensorElement, 0, 0,
       0, translationClass | rotationClass, 0},
@@ -767,7 +767,7 @@ Element* Parser::cameraElement()
   return camera;
 }
 
-Element* Parser::collisionSensor2Element()
+Element* Parser::collisionSensorElement()
 {
   CollisionSensor* collisionSensor = new CollisionSensor();
   collisionSensor->name = getString("name", false);

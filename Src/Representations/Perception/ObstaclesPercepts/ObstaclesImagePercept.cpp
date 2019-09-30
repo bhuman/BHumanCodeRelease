@@ -1,5 +1,5 @@
 /**
- * @file ObstaclesImagePercept.h
+ * @file ObstaclesImagePercept.cpp
  *
  * This file implements a representation that lists the obstacles that were detected in
  * the current image.

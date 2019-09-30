@@ -14,11 +14,11 @@
 
 /**
  * @struct MotionRobotHealth
- * All information collected within motion process.
+ * All information collected within motion thread.
  */
 STREAMABLE(MotionRobotHealth,
 {,
-  (float)(0) motionFrameRate, /**< Frames per second within process "Motion" */
+  (float)(0) motionFrameRate, /**< Frames per second within thread "Motion" */
   (float)(0) avgMotionTime, /**< average execution time */
   (float)(0) maxMotionTime, /**< Maximum execution time */
   (float)(0) minMotionTime, /**< Minimum execution time */
@@ -51,7 +51,7 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbi
 
   /**
    * Assigning MotionRobotHealth
-   * @param motionRobotHealth Information from the motion process
+   * @param motionRobotHealth Information from the motion thread
    */
   void operator=(const MotionRobotHealth& motionRobotHealth)
   {
@@ -68,8 +68,8 @@ STREAMABLE_WITH_BASE(RobotHealth, MotionRobotHealth, COMMA public PureBHumanArbi
     PLOT("representation:RobotHealth:totalCurrent", totalCurrent);
   },
 
-  (float)(0.f)                                   cognitionFrameRate,        /**< Frames per second within process "Cognition" */
-  (unsigned char)(0)                             batteryLevel,              /**< Current batteryLevel of robot battery in percent */
+  (float)(0.f)                                   cognitionFrameRate,        /**< Frames per second within thread "Cognition" */
+  (unsigned char)(100)                           batteryLevel,              /**< Current batteryLevel of robot battery in percent */
   (float)(0.f)                                   totalCurrent,              /**< Sum of all motor currents (as a measure for the robot's current load) */
   (JointSensorData::TemperatureStatus)(JointSensorData::regular) maxJointTemperatureStatus, /**< Highest temperature status of a robot actuator */
   (Joints::Joint)(Joints::headYaw)               jointWithMaxTemperature,   /**< The hottest joint. */

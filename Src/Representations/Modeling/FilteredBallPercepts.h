@@ -19,13 +19,13 @@
  * @struct FilteredBallPercept
  *
  * A single ball perception, similar to the BallPercept but
- * having a time stamp instead of a status and a few less elements.
+ * having a timestamp instead of a status and a few less elements.
  */
 STREAMABLE(FilteredBallPercept,
 {
   /**< Default constructor */
   FilteredBallPercept() = default;
-  
+
   /** Constructor with field initialization
    * @param posImg The ball position in the image
    * @param posFld The ball position on the field (relative to the robot)
@@ -56,7 +56,7 @@ STREAMABLE(FilteredBallPercepts,
 {
   /** Draws the estimate on the field */
   void draw() const;
-  
+
   /** Verifies that the filtered ball percepts contain valid values. */
   void verify() const;
   ,

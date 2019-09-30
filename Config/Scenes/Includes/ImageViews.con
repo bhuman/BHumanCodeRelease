@@ -1,6 +1,6 @@
 # Normal views
-vi image lower
-vi image upper
+vi image Upper
+vi image Lower
 
 vid all representation:FieldLines:image
 vid all representation:PenaltyMarkPercept:image
@@ -16,11 +16,11 @@ vid all representation:BodyContour
 vid all representation:BallSpots:image
 
 # Segmented views
-vi image segmented upper
-vi image segmented lower
+vi image segmented Upper
+vi image segmented Lower
 
 call Includes/ManualHeadMotion
 
 # 3-D image views
-v3 image lower
-v3 image upper
+v3 image Upper
+v3 image Lower

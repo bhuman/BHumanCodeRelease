@@ -5,6 +5,5 @@
 
 basePath=$(cd "$(dirname "$(which "$0")")"; pwd)
 cd "$basePath"
-app=$(ls -td ../../Build/macOS/SimRobot/*/SimRobot.app | head -1)
-cd "$(dirname "$app")"
-open SimRobot.app --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"
+app=$(ls -1dt $(find ../../Build/macOS/SimRobot/*/SimRobot.app) | head -1 | sed "s%/SimRobot\.app.*%/SimRobot.app%")
+open "$app" --args "$basePath/../../Config/Scenes/RemoteRobot.ros2"

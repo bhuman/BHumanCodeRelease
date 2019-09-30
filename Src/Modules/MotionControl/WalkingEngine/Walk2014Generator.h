@@ -43,83 +43,105 @@
 
 #pragma once
 
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/GlobalOptions.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Modeling/BallModel.h"
+#include "Representations/Infrastructure/SensorData/InertialSensorData.h"
+#include "Representations/MotionControl/Walk2014Modifier.h"
+#include "Representations/MotionControl/WalkGeneratorData.h"
 #include "Representations/MotionControl/WalkGenerator.h"
+#include "Representations/MotionControl/WalkLearner.h"
 #include "Representations/Sensing/FootSupport.h"
-#include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
 #include "Tools/RobotParts/Legs.h"
+
+STREAMABLE(Walk2014GeneratorCommon,
+{,
+  (Vector2f) maxAcceleration, /**< Maximum acceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). */
+  (Vector2f) maxDeceleration, /**< (Positive) maximum deceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). */
+  (Pose2f) slowMaxSpeed, /**< Maximum speeds in mm/s and degrees/s. Slower for demo games. */
+  (float) slowMaxSpeedBackwards, /**< Maximum backwards speed. Positive, in mm/s. Slower for demo games. */
+  (Vector2f) slowMaxAcceleration, /**< Maximum acceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). Slower for demo games. */
+  (float) walkVolumeTranslationExponent, /**< This affects the relationship between forward and sideways. */
+  (float) walkVolumeRotationExponent, /**< Higher value allows turn to be higher with a high translation. */
+  (ENUM_INDEXED_ARRAY(float, Legs::Leg)) footLiftIncreaseFactorForwards, /**< Additional lifting as factor of forward speed for left and right foot. */
+  (float) footLiftIncreaseFactorSidewards, /**< Additional lifting as factor of sideways speed. */
+  (float) footLiftIncreaseFactorBackwards, /**< Additional lifting as factor of backward speed. */
+  (float) footLiftFirstStepFactor, /**< Lifting of first step is changed by this factor. */
+  (Rangef) supportSwitchPhaseRange, /**< In which range of the walk phase can the support foot change? */
+  (int) maxWeightShiftMisses, /**< The maximum number of weight shift misses before emergency behavior. */
+  (float) emergencyStepSize, /**< The size of emergency sideways steps in mm. */
+  (float) minSlowWeightShiftRatio, /**< How much longer than expected is a slow weight shift? */
+  (int) maxSlowWeightShifts, /**< How many slow weight shifts are acceptable? */
+  (int) slowWaitShiftStandDelay, /**< How long to stand after slow weight shifts were detected (in ms)? */
+  (float) insideTurnRatio, /**< How much of rotation is done by turning feet to the inside (0..1)? */
+  (Pose2f) odometryScale, /**< Scale measured speeds so that they match the executed speeds. */
+  (int) walkStiffness, /**< Joint stiffness while walking in %. */
+  (Angle) armShoulderRoll, /**< Arm shoulder angle in radians. */
+  (float) armShoulderRollIncreaseFactor,  /**< Factor between sideways step size (in m) and additional arm roll angles. */
+  (float) armShoulderPitchFactor, /**< Factor between forward foot position (in m) and arm pitch angles. */
+  (float) comTiltForwardIncreaseFactor, /**< The factor the torso is additionally tilted based on the signed forward step size when walking forwards. */
+  (float) comTiltBackwardIncreaseFactor, /**< The factor the torso is additionally tilted based on the signed forward step size when walking backwards. */
+  (float) targetModeSpeedFactor, /**< Ratio between distance to target and speed to walk with if it cannot be reached in a single step. */
+  (int) numOfComIterations, /**< Number of iterations for matching the default COM. */
+  (float) pComFactor, /**< Proportional factor for matching the default COM. */
+  (float) comTiltFactor, /**< Factor between the correct torso tilt and the one actually used. */
+  (int) standStiffnessDelay, /**< The time in stand before the stiffness is lowered (in ms). */
+  (int) maxWeightShiftSteps, /**< So many emergency steps are allowed in a row, until the robot shall go into standing, to break the loop. */
+  (float) emergencyStepHeightFactor, /** During an emergency step, the step height is multiplied by this factor. */
+  (int) resetEmergencyStepCounter, /**< If after so many support leg switches no new emergency step was done, the WeightShiftStepsCounter shall be reseted. */
+  (Angle) fastStartStepMaxTurn, /**< Skip the starting step if the commanded turn speed is lower than this value. */
+  (float) fastStartStepMaxSoleDistance, /**< Skip the starting step if the soles of both legs are not further away than this value. After a long range kick a fast step is usually not possible.*/
+  (Rangef) fastStartStepSupportSwitchPhaseRange, /**< In which range of the walk phase can the support foot change, when doing the first step after standing? */
+  (Pose2f) thresholdStopStandTransition, /**< Threshold to be able to switch from walk state stopping to standing. */
+  (Angle) useMaxTurnSpeedForClampWalk, /**< Use this max turn speed for clipping forward and left walk values. */
+  (bool) useFootSupportSwitchPrediction, /**< Use predicted support foot switches. */
+  (Angle) turnThresholdFootSupportPrediction, /**< Use predicted support foot switches as long as the request turn speed is lower than this threshold. */
+});
 
 MODULE(Walk2014Generator,
 {,
-  REQUIRES(BallModel),
+  REQUIRES(DamageConfigurationBody),
   REQUIRES(FootSupport),
   REQUIRES(FrameInfo),
   REQUIRES(GlobalOptions),
+  REQUIRES(GroundContactState),
   REQUIRES(InertialSensorData),
-  REQUIRES(InertialData),
   REQUIRES(JointAngles),
   USES(JointRequest),
   REQUIRES(MassCalibration),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotInfo),
   REQUIRES(RobotModel),
+  REQUIRES(Walk2014Modifier),
+  REQUIRES(WalkLearner),
+  PROVIDES(WalkGeneratorData),
+  REQUIRES(WalkGeneratorData),
   PROVIDES(WalkGenerator),
   LOADS_PARAMETERS(
   {,
+    (float) sideForwardMaxSpeed, /**< Use this forward speed, when walking sideways. */
+    (float) triggerForwardBoostByThisLeftAmount, /**< Use increased forward speed when walking sideways with minimum this speed (in mm). */
     (Pose2f) maxSpeed, /**< Maximum speeds in mm/s and degrees/s. */
     (float) maxSpeedBackwards, /**< Maximum backwards speed. Positive, in mm/s. */
-    (Vector2f) maxAcceleration, /**< Maximum acceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). */
-    (Vector2f) maxDeceleration, /**< (Positive) maximum deceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). */
-    (Pose2f) slowMaxSpeed, /**< Maximum speeds in mm/s and degrees/s. Slower for demo games. */
-    (float) slowMaxSpeedBackwards, /**< Maximum backwards speed. Positive, in mm/s. Slower for demo games. */
-    (Vector2f) slowMaxAcceleration, /**< Maximum acceleration of forward and sideways speed at each leg change to ratchet up/down in (mm/s/step). Slower for demo games. */
-    (float) walkVolumeTranslationExponent, /**< This affects the relationship between forward and sideways. */
-    (float) walkVolumeRotationExponent, /**< Higher value allows turn to be higher with a high translation. */
     (float) baseWalkPeriod, /**< Duration of a single step, i.e. half of a walk cycle (in ms). */
     (float) sidewaysWalkPeriodIncreaseFactor, /**< Additional duration when walking sideways at maximum speed (in ms). */
     (float) walkHipHeight, /**< Walk hip height above ankle joint in mm - seems to work from 200 mm to 235 mm. */
     (float) baseFootLift, /**< Base foot lift in mm. */
-    (ENUM_INDEXED_ARRAY(float, Legs::Leg)) footLiftIncreaseFactorForwards, /**< Additional lifting as factor of forward speed for left and right foot. */
-    (float) footLiftIncreaseFactorSidewards, /**< Additional lifting as factor of sideways speed. */
-    (float) footLiftIncreaseFactorBackwards, /**< Additional lifting as factor of backward speed. */
-    (float) footLiftFirstStepFactor, /**< Lifting of first step is changed by this factor. */
-    (Rangef) supportSwitchPhaseRange, /**< In which range of the walk phase can the support foot change? */
-    (int) maxWeightShiftMisses, /**< The maximum number of weight shift misses before emergency behavior. */
-    (float) emergencyStepSize, /**< The size of emergency sideways steps in mm. */
-    (float) minSlowWeightShiftRatio, /**< How much longer than expected is a slow weight shift? */
-    (int) maxSlowWeightShifts, /**< How many slow weight shifts are acceptable? */
-    (int) slowWaitShiftStandDelay, /**< How long to stand after slow weight shifts were detected (in ms)? */
-    (float) insideTurnRatio, /**< How much of rotation is done by turning feet to the inside (0..1)? */
     (float) torsoOffset, /**< The base forward offset of the torso relative to the ankles in mm. */
-    (Pose2f) odometryScale, /**< Scale measured speeds so that they match the executed speeds. */
-    (int) walkStiffness, /**< Joint stiffness while walking in %. */
-    (Angle) armShoulderRoll, /**< Arm shoulder angle in radians. */
-    (float) armShoulderRollIncreaseFactor,  /**< Factor between sideways step size (in m) and additional arm roll angles. */
-    (float) armShoulderPitchFactor, /**< Factor between forward foot position (in m) and arm pitch angles. */
     (float) gyroLowPassRatio, /**< To which ratio keep old gyro measurements? */
     (float) gyroForwardBalanceFactor, /**< How much are gyro measurements added to ankle joint angles to compensate falling forwards while walking? */
     (float) gyroBackwardBalanceFactor, /**< How much are gyro measurements added to ankle joint angles to compensate falling backwards while walking? */
     (float) gyroSidewaysBalanceFactor, /**< How much are gyro measurements added to ankle joint angles to compensate falling sideways while standing? */
-    (float) comTiltForwardIncreaseFactor, /**< The factor the torso is additionally tilted based on the signed forward step size when walking forwards. */
-    (float) comTiltBackwardIncreaseFactor, /**< The factor the torso is additionally tilted based on the signed forward step size when walking backwards. */
-    (float) targetModeSpeedFactor, /**< Ratio between distance to target and speed to walk with if it cannot be reached in a single step. */
-    (int) numOfComIterations, /**< Number of iterations for matching the default COM. */
-    (float) pComFactor, /**< Proportional factor for matching the default COM. */
-    (float) comTiltFactor, /**< Factor between the correct torso tilt and the one actually used. */
-    (int) standStiffnessDelay, /**< The time in stand before the stiffness is lowered (in ms). */
   }),
 });
 
-class Walk2014Generator : public Walk2014GeneratorBase
+class Walk2014Generator : public Walk2014GeneratorBase, public Walk2014GeneratorCommon
 {
   enum WalkState
   {
@@ -157,8 +179,18 @@ class Walk2014Generator : public Walk2014GeneratorBase
   Angle prevTurn; /**< The value of "turn" in the previous cycle. For odometry calculation. */
   int weightShiftMisses; /**< How often was the weight not shifted in a row? */
   int slowWeightShifts; /**< How often took the weight shift significantly longer in a row? */
-  float torsoTilt; /**< The current tilt of the torso (in radians). */
+  Angle torsoTilt; /**< The current tilt of the torso (in radians). */
   unsigned timeWhenStandBegan = 0; /**< The time when stand began (in ms). */
+  int emergencyStepCounter; /**< How many emergency steps were done? */
+  int noEmergencyStepCounter; /**< How many steps are done without an emergency step? */
+  float footSoleDistanceAtStepStart; /**< The distance of both feet at the start of the step. */
+  bool emergencyLift = false; /**< Lift the foot higher during the current step. */
+
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param generator The representation updated.
+   */
+  void update(WalkGeneratorData& walkData) override;
 
   /**
    * This method is called when the representation provided needs to be updated.
@@ -203,7 +235,7 @@ class Walk2014Generator : public Walk2014GeneratorBase
 
   /**
    * The method determines the forward, left, and lift offsets of both feet.
-   * The method distiguishes between the swing foot and the support foot.
+   * The method distinguishes between the swing foot and the support foot.
    * @param swingFootSign A sign based on the swingFoot (1 : left is swing foot, -1 right is swing foot).
    * @param forwardSwing0 Forward offset of the current swing foot when the support changed (in m).
    * @param forwardSupport0 Forward offset of the current support foot when the support changed (in m).
@@ -224,7 +256,7 @@ class Walk2014Generator : public Walk2014GeneratorBase
    * @param isLeftSwingFoot Is the left foot the current swing foot?
    * @return The offset in mm and radians.
    */
-  Pose2f calcOdometryOffset(bool isLeftSwingFoot);
+  Pose2f calcOdometryOffset(WalkGenerator& generator, bool isLeftSwingFoot);
 
   /**
    * Return a measure for how "big" the requested motion is, i.e. the "walk volume".
@@ -238,7 +270,7 @@ class Walk2014Generator : public Walk2014GeneratorBase
 
   /**
    * Limit the requested motion to keep the steps executable. The request
-   * is clamped to the surface of an elipsoid.
+   * is clamped to the surface of an ellipsoid.
    * @param maxSpeed The maximum speeds allowed.
    * @param maxSpeedBackwards The maximum speed when walking backwards.
    * @param forward The forward speed in mm/s will be clamped im necessary.
@@ -273,4 +305,11 @@ class Walk2014Generator : public Walk2014GeneratorBase
    *                     effect of external arm movements.
    */
   void compensateArmPosition(const Pose3f& leftFoot, const Pose3f& rightFoot, JointRequest& jointRequest);
+
+  /** Register common parameters. */
+  static void reg();
+
+public:
+  /** The constructor loads the common parameters. */
+  Walk2014Generator();
 };

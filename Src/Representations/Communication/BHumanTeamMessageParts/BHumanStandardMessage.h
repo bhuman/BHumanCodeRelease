@@ -8,15 +8,13 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/Role.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Modeling/Obstacle.h"
 #include "Tools/Streams/AutoStreamable.h"
-
 #include <cstdint>
 
 #define BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER  "BHUM"
-#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 0       /**< This should be incremented with each change. */
+#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 11      /**< This should be incremented with each change. */
 #define BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS 6   /**< The maximum number of players per team. */
 #define BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_OBSTACLES 7 /**< The maximum number of obstacles that can be transmitted. */
 
@@ -108,8 +106,26 @@ STREAMABLE(BHumanStandardMessage,
   (Vector2f)             ballLastPercept,         /**< [-32768..32767 (1)] The position where the last ball percept was. */
   (std::array<float, 3>) ballCovariance,          /**< The covariance matrix of the ball position. */
 
-  (char)     confidenceOfLastWhistleDetection, /**< The name says it all. */
-  (unsigned) lastTimeWhistleDetected,          /**< [delta 0..-65535] The name says it all. */
+  (unsigned char) confidenceOfLastWhistleDetection, /**< The name says it all. */
+  (unsigned char) channelsUsedForWhistleDetection,  /**< The name says it all. */
+  (unsigned) lastTimeWhistleDetected,               /**< [delta 0..-65535] The name says it all. */
+
+  (unsigned char)                                    teamActivity,              /**< What team play the robot is doing. */
+  (unsigned)                                         timeWhenReachBall,         /**< [delta 0..524280 (8)] The estimate when this robot reaches the ball. */
+  (unsigned)                                         timeWhenReachBallStriker,  /**< [delta 0..524264 (8)] The estimate when this robot reaches the ball if it is striker. */
+  (bool[BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS]) teammateRolesIsGoalkeeper, /**< The role assignment for the whole team. */
+  (bool[BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS]) teammateRolesPlayBall,     /**< The role assignment for the whole team. */
+  (int[BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS])  teammateRolesPlayerIndex,  /**< [-1..6] The role assignment for the whole team. */
+  (int)                                              captain,                   /**< [-1..6] The captain that provided the teammate roles. */
+  (unsigned)                                         teammateRolesTimestamp,    /**< [delta 0..-8191] The timestamp when the teammate roles have been computed. */
+  (bool)                                             isGoalkeeper,              /**< Whether this robot is currently a goalkeeper. */
+  (bool)                                             playBall,                  /**< Whether this robot currently plays the ball. */
+  (int)                                              supporterIndex,            /**< [-1..6] The index of this robot in the supporter set. */
+
+  (unsigned char) activity,   /**< What the robot is doing in general. */
+  (int)           passTarget, /**< [-1..14] Which teammate this robot wants to pass to (or -1). */
+  (Vector2f)      walkingTo,  /**< [-32768..32767 (1)] Where the robot wants to walk. */
+  (Vector2f)      shootingTo, /**< [-32768..32767 (1)] Where the robot wants to kick the ball. */
 
   /**
    * Obstacle has the attributes covariance, center, left, right, velocity, lastSeen and type.
@@ -122,6 +138,9 @@ STREAMABLE(BHumanStandardMessage,
    * type is streamed in [0..255].
    */
   (std::vector<Obstacle>) obstacles,
+
+  (char) say,
+  (unsigned int) nextTeamTalk,
 
   (bool) requestsNTPMessage,              /**< Whether this robot requests NTP replies from the others. */
   (std::vector<BNTPMessage>) ntpMessages, /**< The NTP replies of this robot to other robots. */

@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include "Platform/Thread.h"
 #include "Platform/Semaphore.h"
+#include "Platform/Thread.h"
 
 #include <string>
 #include <deque>
+
+struct ISpVoice;
 
 /**
  * @class SoundPlayer
@@ -26,17 +28,26 @@ private:
   std::string filePrefix;
   bool started;
   Semaphore sem;
+  ISpVoice* pVoice = nullptr;
   volatile bool closing;
   volatile bool playing;
 
 public:
   /**
-   * Plays a sound file.
-   * If you want to play Config/Sounds/bla.wav use "play("bla.wav");"
+   * Put a filename into play sound queue.
+   * If you want to play Config/Sounds/bla.wav use play("bla.wav");
    * @param name The filename of the sound file.
-   * @return The amount of files in play sound queue.
+   * @return The amound of elements in play sound queue.
    */
   static int play(const std::string& name);
+
+  /**
+   * Put a string to be synthesized to speech into play sound queue.
+   * If you want the robot to say "Hello" use say("Hello").
+   * @param text The string to be synthesized and played
+   * @return The amount of elements in the play sound queue.
+   */
+  static int say(const std::string& text);
 
   static bool isPlaying();
 
@@ -61,4 +72,6 @@ private:
   void start();
 
   void playDirect(const std::string& name);
+
+  void sayDirect(const std::string& text);
 };

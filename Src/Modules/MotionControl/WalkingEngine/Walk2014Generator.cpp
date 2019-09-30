@@ -52,20 +52,64 @@
 #include "Walk2014Generator.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
-#include "Representations/Sensing/RobotModel.h"
 #include "Tools/Debugging/Annotation.h"
 #include "Tools/Math/Constants.h"
 #include "Tools/Math/Rotation.h"
 #include "Tools/Motion/InverseKinematic.h"
 #include "Tools/Range.h"
+#include "Tools/Streams/InStreams.h"
+#include "Tools/Debugging/DebugDrawings.h"
 #include <algorithm>
 
 MAKE_MODULE(Walk2014Generator, motionControl);
 
 static const float mmPerM = 1000.f;
 
+Walk2014Generator::Walk2014Generator()
+{
+  InMapFile stream("walk2014GeneratorCommon.cfg");
+  if(stream.exists())
+    stream >> static_cast<Walk2014GeneratorCommon&>(*this);
+}
+
+void Walk2014Generator::reg()
+{
+  PUBLISH(reg);
+  REG_CLASS_WITH_BASE(Walk2014Generator, Walk2014GeneratorCommon);
+}
+
+void Walk2014Generator::update(WalkGeneratorData& walkData)
+{
+  walkData.updateCounter = [&walkData](const bool predictedStep)
+  {
+    walkData.usedPredictedSwitch += predictedStep ? 1 : 0;
+  };
+  walkData.updateWalkValues = [&walkData](const Pose2f& speed, const Angle turn, const float forward, const Angle left)
+  {
+    walkData.speed = speed;
+    walkData.turn = turn;
+    walkData.forward = forward;
+    walkData.left = left;
+  };
+}
+
 void Walk2014Generator::update(WalkGenerator& generator)
 {
+  DECLARE_PLOT("module:Walk2014Generator:leftFootHightCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:leftFootHightDesired");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootHightCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootHightDesired");
+  DECLARE_PLOT("module:Walk2014Generator:leftFootForwardCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:leftFootForwardDesired");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootForwardCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootForwardDesired");
+  DECLARE_PLOT("module:Walk2014Generator:leftFootSideCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:leftFootSideDesired");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootSideCurrent");
+  DECLARE_PLOT("module:Walk2014Generator:rightFootSideDesired");
+
+  MODIFY("parameters:Walk2014Generator:common", static_cast<Walk2014GeneratorCommon&>(*this));
+
   // Use other parameters in demo games to take care of the robots
   if(theGlobalOptions.slowWalk)
   {
@@ -75,7 +119,9 @@ void Walk2014Generator::update(WalkGenerator& generator)
     maxSpeedBackwards = std::min(maxSpeedBackwards, slowMaxSpeedBackwards);
     maxAcceleration.x() = std::min(maxAcceleration.x(), slowMaxAcceleration.x());
     maxAcceleration.y() = std::min(maxAcceleration.y(), slowMaxAcceleration.y());
+    sideForwardMaxSpeed = slowMaxSpeed.translation.x();
   }
+  useMaxTurnSpeedForClampWalk = std::min(useMaxTurnSpeedForClampWalk, maxSpeed.rotation);
 
   generator.reset = [this, &generator]() { reset(generator); };
   generator.calcJoints =
@@ -90,6 +136,20 @@ void Walk2014Generator::update(WalkGenerator& generator)
 
   filteredGyroX = gyroLowPassRatio * filteredGyroX + (1.f - gyroLowPassRatio) * theInertialSensorData.gyro.x();
   filteredGyroY = gyroLowPassRatio * filteredGyroY + (1.f - gyroLowPassRatio) * theInertialSensorData.gyro.y();
+
+  //Decide if the gyroBalanceFactors shall be taken from the WalkLearner.
+  if(theWalk2014Modifier.numOfGyroPeaks > 0)
+  {
+    theWalkLearner.setBaseWalkParams(gyroForwardBalanceFactor, gyroBackwardBalanceFactor, generator.speed.translation.x());
+    if(theWalkLearner.newGyroBackwardBalance > 0)
+    {
+      gyroBackwardBalanceFactor = theWalkLearner.newGyroBackwardBalance;
+    }
+    if(theWalkLearner.newGyroForwardBalance > 0)
+    {
+      gyroForwardBalanceFactor = theWalkLearner.newGyroForwardBalance;
+    }
+  }
 }
 
 void Walk2014Generator::reset(WalkGenerator& generator)
@@ -102,6 +162,7 @@ void Walk2014Generator::reset(WalkGenerator& generator)
   timeWhenStandBegan = theFrameInfo.time;
   if(theRobotInfo.penalty != PENALTY_NONE && theRobotInfo.penalty != PENALTY_SPL_ILLEGAL_MOTION_IN_SET)
     filteredGyroX = filteredGyroY = 0;
+
   forward = lastForward = 0.f;
   forwardL = forwardL0 = 0.f;
   forwardR = forwardR0 = 0.f;
@@ -117,7 +178,10 @@ void Walk2014Generator::reset(WalkGenerator& generator)
   prevTurn = 0_deg;
   weightShiftMisses = 0;
   slowWeightShifts = 0;
-  torsoTilt = 0;
+  torsoTilt = 0_deg;
+  emergencyStepCounter = 0;
+  noEmergencyStepCounter = 0;
+  footSoleDistanceAtStepStart = std::fabs(theRobotModel.soleLeft.translation.y() - theRobotModel.soleRight.translation.y());
 }
 
 void Walk2014Generator::calcJoints(WalkGenerator& generator,
@@ -140,26 +204,33 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
     walkState = starting;
 
   // 5. Determine walk variables throughout the walk step phase
-  float foothL;
-  float foothR;
+  float footHL;
+  float footHR;
+  Rangef supportSwitchPhaseRangeUsed(supportSwitchPhaseRange.min, supportSwitchPhaseRange.max);
   if(walkState == standing)
   {
+    footSoleDistanceAtStepStart = std::fabs(theRobotModel.soleLeft.translation.y() - theRobotModel.soleRight.translation.y());
+    generator.forceStand = false;
+    emergencyStepCounter = 0;
+    noEmergencyStepCounter = 0;
     generator.stepDuration = generator.t = 0.f;
-    foothL = foothR = 0;
+    footHL = footHR = 0;
   }
   else
   {
     // 5.3 Calculate intra-walkphase forward, left and turn at time-step dt
     if(generator.isLeftPhase)
-      calcFootOffsets(generator, 1.f, forwardL0, forwardR0, forwardL, forwardR, leftL, leftR, foothL, foothR);
+      calcFootOffsets(generator, 1.f, forwardL0, forwardR0, forwardL, forwardR, leftL, leftR, footHL, footHR);
     else
-      calcFootOffsets(generator, -1.f, forwardR0, forwardL0, forwardR, forwardL, leftR, leftL, foothR, foothL);
+      calcFootOffsets(generator, -1.f, forwardR0, forwardL0, forwardR, forwardL, leftR, leftL, footHR, footHL);
 
     // 5.4 Special conditions when priming the walk
-    if(walkState == starting)
+    // forward check is not needed, because forward is clipped with the maxAcceleration
+    // check is used to decide, if the robot can execute a real step as a starting step
+    if(walkState == starting && (std::abs(turn) > fastStartStepMaxTurn || footSoleDistanceAtStepStart > fastStartStepMaxSoleDistance))
     {
-      foothL *= footLiftFirstStepFactor; // reduce max lift due to short duration
-      foothR *= footLiftFirstStepFactor;
+      footHL *= footLiftFirstStepFactor; // reduce max lift due to short duration
+      footHR *= footLiftFirstStepFactor;
       forwardL = forwardR = 0; // don't move on starting
       leftR = leftL = 0;
       turnRL = 0;
@@ -167,27 +238,47 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
       if(left != 0.f) // make first real step in direction of movement
         generator.isLeftPhase = left > 0;
     }
+    else if(walkState == starting)
+    {
+      weightShiftStatus = weightDidShift;
+      supportSwitchPhaseRangeUsed = Rangef(fastStartStepSupportSwitchPhaseRange.min, fastStartStepSupportSwitchPhaseRange.max);
+      if(left != 0.f) // make first real step in direction of movement
+        generator.isLeftPhase = left > 0;
+    }
   }
 
   // 8. Odometry update for localization
-  generator.odometryOffset = calcOdometryOffset(generator.isLeftPhase);
+  generator.odometryOffset = calcOdometryOffset(generator, generator.isLeftPhase);
 
   // 9.1 Foot poses
   Pose3f leftFoot = Pose3f(0, theRobotDimensions.yHipOffset, 0)
                     .rotateX(-leftL)
-                    .translate(-forwardL * mmPerM - torsoOffset, 0, -(walkHipHeight - theRobotDimensions.footHeight - foothL * mmPerM) / std::cos(leftL))
+                    .translate(-forwardL * mmPerM - torsoOffset, 0, -(walkHipHeight - theRobotDimensions.footHeight - footHL * mmPerM) / std::cos(leftL))
                     .rotateX(leftL).rotateZ(turnRL).translate(0, 0, -theRobotDimensions.footHeight);
   Pose3f rightFoot = Pose3f(0, -theRobotDimensions.yHipOffset, 0)
                      .rotateX(-leftR)
-                     .translate(-forwardR * mmPerM - torsoOffset, 0, -(walkHipHeight - theRobotDimensions.footHeight - foothR * mmPerM) / std::cos(leftR))
+                     .translate(-forwardR * mmPerM - torsoOffset, 0, -(walkHipHeight - theRobotDimensions.footHeight - footHR * mmPerM) / std::cos(leftR))
                      .rotateX(leftR).rotateZ(-turnRL).translate(0, 0, -theRobotDimensions.footHeight);
+
+  PLOT("module:Walk2014Generator:leftFootHightCurrent", theRobotModel.soleLeft.translation.z());
+  PLOT("module:Walk2014Generator:leftFootHightDesired", leftFoot.translation.z());
+  PLOT("module:Walk2014Generator:rightFootHightCurrent", theRobotModel.soleRight.translation.z());
+  PLOT("module:Walk2014Generator:rightFootHightDesired", rightFoot.translation.z());
+  PLOT("module:Walk2014Generator:leftFootForwardCurrent", theRobotModel.soleLeft.translation.x());
+  PLOT("module:Walk2014Generator:leftFootForwardDesired", leftFoot.translation.x());
+  PLOT("module:Walk2014Generator:rightFootForwardCurrent", theRobotModel.soleRight.translation.x());
+  PLOT("module:Walk2014Generator:rightFootForwardDesired", rightFoot.translation.x());
+  PLOT("module:Walk2014Generator:leftFootSideCurrent", theRobotModel.soleLeft.translation.y());
+  PLOT("module:Walk2014Generator:leftFootSideDesired", leftFoot.translation.y());
+  PLOT("module:Walk2014Generator:rightFootSideCurrent", theRobotModel.soleRight.translation.y());
+  PLOT("module:Walk2014Generator:rightFootSideDesired", rightFoot.translation.y());
 
   // 9.2 Walk kicks
   if(getKickFootOffset)
     (generator.isLeftPhase ? leftFoot : rightFoot).conc(getKickFootOffset(std::min(generator.t / generator.stepDuration, 1.f)));
 
   // 9.3 Inverse kinematics
-  VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f::Zero(), generator.jointRequest, theRobotDimensions) || SystemCall::getMode() == SystemCall::logfileReplay);
+  VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f::Zero(), generator.jointRequest, theRobotDimensions) || SystemCall::getMode() == SystemCall::logFileReplay);
 
   // 10. Set joint values and stiffness
   int stiffness = walkState == standing && theFrameInfo.getTimeSince(timeWhenStandBegan) > standStiffnessDelay ? StiffnessData::useDefault : walkStiffness;
@@ -206,6 +297,8 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
   generator.jointRequest.angles[Joints::rShoulderPitch] = 90_deg - forwardR * armShoulderPitchFactor;
   generator.jointRequest.angles[Joints::lShoulderRoll] = armShoulderRoll + std::abs(left) * armShoulderRollIncreaseFactor;
   generator.jointRequest.angles[Joints::rShoulderRoll] = -generator.jointRequest.angles[Joints::lShoulderRoll];
+  generator.jointRequest.angles[Joints::lWristYaw] = -90_deg;
+  generator.jointRequest.angles[Joints::rWristYaw] = 90_deg;
 
   // Compensate arm position's effect on COM by tilting torso
   compensateArmPosition(leftFoot, rightFoot, generator.jointRequest);
@@ -226,27 +319,45 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
   // Head can move freely
   generator.jointRequest.angles[Joints::headPitch] = generator.jointRequest.angles[Joints::headYaw] = JointAngles::ignore;
 
-  bool supportFoodSwitched = (theFootSupport.support > 0 && generator.isLeftPhase) || (theFootSupport.support < 0 && !generator.isLeftPhase);
   // 6. Changing Support Foot. Note isLeftPhase means left foot is swing foot.
   // t>0.75*T tries to avoid bounce, especially when side-stepping
   // lastZMPL*ZMPL<0.0 indicates that support foot has changed
   // t>3*T tires to get out of "stuck" situations
-  if((generator.t > supportSwitchPhaseRange.min * generator.stepDuration && supportFoodSwitched)
-     || (generator.t > supportSwitchPhaseRange.max * generator.stepDuration))
+  // a predicted foot support switch is used, if the current rotation speed is low
+  const bool predictedSwitch = std::abs(generator.speed.rotation) < turnThresholdFootSupportPrediction && theFootSupport.predictedSwitched && useFootSupportSwitchPrediction;
+  if((generator.t > supportSwitchPhaseRangeUsed.min * generator.stepDuration && theFootSupport.switched)
+     || (predictedSwitch && generator.t > fastStartStepSupportSwitchPhaseRange.min * generator.stepDuration)
+     || (generator.t > supportSwitchPhaseRangeUsed.max * generator.stepDuration))
   {
+    //if the support switch is predicted, weightShiftStatus and isLeftPhase must be set differently
+    const bool usePrediction = predictedSwitch && !theFootSupport.switched && (generator.t <= supportSwitchPhaseRangeUsed.max * generator.stepDuration);
+    theWalkGeneratorData.updateCounter(usePrediction);
     switchPhase = generator.t;
     maxFootHeight0 = maxFootHeight;
-    weightShiftStatus = generator.isLeftPhase != (theFootSupport.support < 0) ? weightDidShift : weightDidNotShift;
-    generator.isLeftPhase = theFootSupport.support < 0;
+    weightShiftStatus = usePrediction ? weightDidShift : (generator.isLeftPhase != (theFootSupport.support < 0) ? weightDidShift : weightDidNotShift);
+    generator.isLeftPhase = usePrediction ? !generator.isLeftPhase : theFootSupport.support < 0;
+
+    footSoleDistanceAtStepStart = std::fabs(theRobotModel.soleLeft.translation.y() - theRobotModel.soleRight.translation.y());
 
     if(weightShiftStatus == weightDidNotShift)
     {
       lastForward = lastLeft = 0;
-      if(++weightShiftMisses > maxWeightShiftMisses)
+      noEmergencyStepCounter = 0;
+
+      if(++weightShiftMisses > maxWeightShiftMisses && !generator.forceStand)
       {
         ANNOTATION("Walk2014Generator", "Too many weight shift misses");
         weightShiftStatus = emergencyStep;
         generator.isLeftPhase = !generator.isLeftPhase;
+
+        // Only try a single emergency step in a row
+        weightShiftMisses -= 2;
+      }
+      else if(++emergencyStepCounter > maxWeightShiftSteps)
+      {
+        emergencyStepCounter = 0;
+        generator.forceStand = true;
+        ANNOTATION("Walk2014Generator", "Emergency Stand");
       }
     }
     else
@@ -261,7 +372,15 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
         }
       }
       else
+      {
+        ++noEmergencyStepCounter;
+        if(noEmergencyStepCounter > resetEmergencyStepCounter)
+        {
+          emergencyStepCounter = 0;
+          noEmergencyStepCounter = 0;
+        }
         slowWeightShifts = 0;
+      }
     }
 
     if(walkState != standing)
@@ -269,21 +388,32 @@ void Walk2014Generator::calcJoints(WalkGenerator& generator,
       // 6.1 Recover previous "left" swing angle
       swingAngle = generator.isLeftPhase ? leftL : leftR;
 
-      // 6.2 Decide on timing of next walk step phase
-      if(walkState != walking)
-      {
-        walkState = static_cast<WalkState>((walkState + 1) & 3);
-        if(walkState == standing)
-          timeWhenStandBegan = theFrameInfo.time;
-      }
-
-      // 6.3 reset step phase time
-      generator.t = 0;
-
       // 6.4 backup values
       forwardL0 = forwardL;
       forwardR0 = forwardR;
       turnRL0 = turnRL;
+
+      // 6.2 Decide on timing of next walk step phase
+      if(walkState != walking)
+      {
+        if(walkState != stopping
+           || (walkState == stopping
+               && std::abs(turnRL) < thresholdStopStandTransition.rotation
+               && std::abs(forwardL * mmPerM) < thresholdStopStandTransition.translation.x()
+               && std::abs(swingAngle) < thresholdStopStandTransition.translation.y()
+               && !theGroundContactState.contact)
+           || (walkState == stopping && theGroundContactState.contact))
+        {
+          walkState = static_cast<WalkState>((walkState + 1) & 3);
+          if(walkState == standing)
+            timeWhenStandBegan = theFrameInfo.time;
+        }
+        else if(walkState == stopping)
+          weightShiftStatus = weightDidShift;
+      }
+
+      // 6.3 reset step phase time
+      generator.t = 0;
     }
   } // end of changing support foot
 }
@@ -296,9 +426,11 @@ void Walk2014Generator::calcNextStep(WalkGenerator& generator,
   Pose2f request = speed;
   Pose2f maxSpeed = this->maxSpeed;
   float maxSpeedBackwards = this->maxSpeedBackwards;
+  float sideForwardMaxSpeed = this->sideForwardMaxSpeed;
   Pose2f returnOffset((generator.isLeftPhase ? -turnRL0 : turnRL0) * odometryScale.rotation,
                       (generator.isLeftPhase ? -forwardR0 : -forwardL0) * mmPerM * odometryScale.translation.x(),
                       (walkHipHeight - theRobotDimensions.footHeight) * std::tan(swingAngle) * odometryScale.translation.y());
+  emergencyLift = false;
 
   if(theFrameInfo.getTimeSince(timeWhenSlowWeightShiftsDetected) <= slowWaitShiftStandDelay)
   {
@@ -310,19 +442,23 @@ void Walk2014Generator::calcNextStep(WalkGenerator& generator,
     request = Pose2f(0_deg, 0, generator.isLeftPhase ? emergencyStepSize : -emergencyStepSize);
     walkMode = WalkGenerator::stepSizeMode;
     weightShiftStatus = weightDidShift;
+    emergencyLift = true;
   }
 
   if(walkMode == WalkGenerator::targetMode)
   {
     ASSERT(speed.rotation > 0.f && speed.translation.x() > 0.f && speed.translation.y() > 0.f);
-
     maxSpeed = Pose2f(std::min(speed.rotation / odometryScale.rotation, static_cast<float>(this->maxSpeed.rotation)),
                       std::min(speed.translation.x() / odometryScale.translation.x(), this->maxSpeed.translation.x()),
                       std::min(speed.translation.y() / odometryScale.translation.y(), this->maxSpeed.translation.y()));
+    sideForwardMaxSpeed = std::min(speed.translation.x() /  odometryScale.translation.x() / this->maxSpeed.translation.x() * sideForwardMaxSpeed, this->sideForwardMaxSpeed);
     maxSpeedBackwards = std::min(speed.translation.x() / odometryScale.translation.x(), this->maxSpeedBackwards);
     // Remove the offset that will be covered just by returning the swing leg
     forward = (target.translation.x() - returnOffset.translation.x()) / odometryScale.translation.x();
     left = (target.translation.y() - returnOffset.translation.y()) / odometryScale.translation.y();
+    //Hack to make robot faster
+    if(std::fabs(left) > triggerForwardBoostByThisLeftAmount)
+      maxSpeed.translation.x() = sideForwardMaxSpeed;
     // If the leg swings in target direction, consider that the next step will move the robot the same distance again
     if(left * (generator.isLeftPhase ? 1.f : -1.f) > 0)
       left *= 0.5f;
@@ -357,6 +493,10 @@ void Walk2014Generator::calcNextStep(WalkGenerator& generator,
     left = request.translation.y() / odometryScale.translation.y();
     turn = request.rotation / odometryScale.rotation;
 
+    //Hack to make robot faster
+    //If originally in targetMode, sideForwardMaxSpeed is already clipped based on the request speed
+    if(std::fabs(left) > triggerForwardBoostByThisLeftAmount)
+      maxSpeed.translation.x() = sideForwardMaxSpeed;
     // Scale back values to try to ensure stability.
     ellipsoidClampWalk(maxSpeed, maxSpeedBackwards, forward, left, turn);
 
@@ -441,6 +581,10 @@ void Walk2014Generator::calcNextStep(WalkGenerator& generator,
   maxFootHeight = baseFootLift / mmPerM + std::abs(forward) * (forward < 0 ? footLiftIncreaseFactorBackwards :
                   (footLiftIncreaseFactorForwards[generator.isLeftPhase ? Legs::left : Legs::right]))
                   + std::abs(left) * footLiftIncreaseFactorSidewards;
+  if(emergencyLift)
+    maxFootHeight *= emergencyStepHeightFactor;
+
+  theWalkGeneratorData.updateWalkValues(generator.speed, turn, forward, left);
 }
 
 void Walk2014Generator::calcFootOffsets(WalkGenerator& generator,
@@ -469,8 +613,14 @@ void Walk2014Generator::calcFootOffsets(WalkGenerator& generator,
   footHeightSupport = maxFootHeight0 * parabolicReturn((switchPhase + generator.t) / generator.stepDuration); // return support foot to 0 if it was still lifted
 }
 
-Pose2f Walk2014Generator::calcOdometryOffset(bool isLeftSwingFoot)
+Pose2f Walk2014Generator::calcOdometryOffset(WalkGenerator& generator, bool isLeftSwingFoot)
 {
+  // When the support foot switches, the old swing foot still moves forward for a few frames
+  // (because it was commanded to do so because of the 3-4 frame delay), which causes the foot
+  // to push the robot backwards. Other solution would be to save the last 4 commanded odometry
+  // offsets and add the negative sum of them once at the start of the next walk phase.
+  if(generator.t <= 3 * Constants::motionCycleTime && weightShiftStatus == weightDidShift)
+    return Pose2f();
   // Work out incremental forward, left, and turn values for next time step
   Pose2f offset((turnRL - prevTurn) * (isLeftSwingFoot ? 1.f : -1.f) * odometryScale.rotation,
                 (isLeftSwingFoot ? forwardR - prevForwardR : forwardL - prevForwardL) * mmPerM * odometryScale.translation.x(),
@@ -507,9 +657,12 @@ bool Walk2014Generator::ellipsoidClampWalk(const Pose2f& maxSpeed, float maxSpee
     leftAmount /= factor;
     turnAmount /= factor;
   }
+  // Clip based on a lower max turn speed. This causes a stronger clipping for forward and left, but allows for fast turns.
+  // Otherwise the robot might fall more often.
+  float clampTurnAmount = std::min((turn / factor) / useMaxTurnSpeedForClampWalk, 1.f);
 
   // see if the point we are given is already inside the allowed walk params volume
-  if(calcWalkVolume(std::abs(forwardAmount), std::abs(leftAmount), std::abs(turnAmount)) > 1.f)
+  if(calcWalkVolume(std::abs(forwardAmount), std::abs(leftAmount), std::abs(clampTurnAmount)) > 1.f)
   {
     clamp = true;
     float scale = 0.5f;
@@ -520,7 +673,7 @@ bool Walk2014Generator::ellipsoidClampWalk(const Pose2f& maxSpeed, float maxSpee
     for(unsigned i = 0; i < 10; ++i)
     {
       // give priority to turn. keep it the same
-      if(calcWalkVolume(std::abs(forwardAmount) * scale, std::abs(leftAmount) * scale, std::abs(turnAmount)) > 1.f)
+      if(calcWalkVolume(std::abs(forwardAmount) * scale, std::abs(leftAmount) * scale, std::abs(clampTurnAmount)) > 1.f)
         high = scale;
       else
         low = scale;
@@ -578,7 +731,7 @@ void Walk2014Generator::compensateArmPosition(const Pose3f& leftFoot, const Pose
   for(int i = 0; i < numOfComIterations; ++i)
   {
     Quaternionf torsoRotation = Rotation::aroundY(-torsoTilt);
-    VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, torsoRotation, temp, theRobotDimensions) || SystemCall::getMode() == SystemCall::logfileReplay);
+    VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, torsoRotation, temp, theRobotDimensions) || SystemCall::getMode() == SystemCall::logFileReplay);
     ForwardKinematic::calculateLegChain(Legs::left, temp, theRobotDimensions, balanced.limbs);
     ForwardKinematic::calculateLegChain(Legs::right, temp, theRobotDimensions, balanced.limbs);
     balanced.updateCenterOfMass(theMassCalibration);
@@ -586,5 +739,5 @@ void Walk2014Generator::compensateArmPosition(const Pose3f& leftFoot, const Pose
     torsoTilt += (balancedCom.x() - withWalkGeneratorArms.centerOfMass.x()) * pComFactor;
   }
   float tiltIncrease = mmPerM * (forward >= 0 ? forward* comTiltForwardIncreaseFactor : forward * comTiltBackwardIncreaseFactor);
-  VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, tiltIncrease - torsoTilt * comTiltFactor), jointRequest, theRobotDimensions) || SystemCall::getMode() == SystemCall::logfileReplay);
+  VERIFY(InverseKinematic::calcLegJoints(leftFoot, rightFoot, Vector2f(0.f, tiltIncrease - torsoTilt * comTiltFactor), jointRequest, theRobotDimensions) || SystemCall::getMode() == SystemCall::logFileReplay);
 }

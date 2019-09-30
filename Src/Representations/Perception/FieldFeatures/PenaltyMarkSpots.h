@@ -1,7 +1,7 @@
 /**
  * @file PenaltyMarkSpots.h
  * Declaration of a struct that represents a spots that might be an indication of a PenaltyMark.
- * @author <a href="mailto:jan_fie@uni-bremen.de">Jan Fiedler</a>
+ * @author Jan Fiedler
  */
 
 #pragma once

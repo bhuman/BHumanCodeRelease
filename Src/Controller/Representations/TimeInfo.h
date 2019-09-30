@@ -3,7 +3,7 @@
  *
  * Declaration of class TimeInfo
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -15,48 +15,40 @@
 
 class InMessage;
 
-// Extended Ringbuffer with time stamp containing the last update of the timing info
-class InfoWithTimeStamp : public RingBufferWithSum<float, 100>
+// Extended Ringbuffer with timestamp containing the last update of the timing info
+class InfoWithTimestamp : public RingBufferWithSum<float, 100>
 {
 public:
-  unsigned int timeStamp = 0;
+  unsigned int timestamp = 0;
 };
 
 /**
  * @class TimeInfo
  *
  * A class to represent information about the timing of modules.
- * There should be one TimeInfo per process.
+ * There should be one TimeInfo per thread.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
  */
 class TimeInfo
 {
 public:
-  using Info = InfoWithTimeStamp;
+  using Info = InfoWithTimestamp;
   using Infos = std::unordered_map<unsigned short, Info>;
 
-  std::string processName;
+  std::string threadName;
   Infos infos;
-  unsigned int timeStamp; /**< The time stamp of the last change. */
+  unsigned int timestamp; /**< The timestamp of the last change. */
 
 private:
-  int frameNoDivisor; /**< The frame number will be devided by this value. */
   std::unordered_map<unsigned short, std::string> names;
   unsigned lastFrameNo; /**< frame number of the last received frame */
   unsigned lastStartTime; /**< The start time of the frame before this one */
-  Info processDeltas; /**< contains the deltas between the recent process start times. Is used to calculate the frequency */
+  Info threadDeltas; /**< contains the deltas between the recent thread start times. Is used to calculate the frequency */
 
 public:
-  TimeInfo() = default;
-
-  /**
-   * @param name The name of the process the timings of which are stored
-   *             in this object.
-   * @apram frameNoDivisor The frame number will be devided by this value.
-   */
-  TimeInfo(const std::string& name, int frameNoDivisor);
+  TimeInfo() {reset();}
 
   /**
    * The function handles a stop watch message.
@@ -83,7 +75,7 @@ public:
   /**
    * Returns the frequency of the process attached to this time info.
    */
-  void getProcessStatistics(float& outAvgFreq, float& outMin, float& outMax) const;
+  void getThreadStatistics(float& outAvgFreq, float& outMin, float& outMax) const;
 
   /**
    * Returns the name of the stopwatch with id watchId

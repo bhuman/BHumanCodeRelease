@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include "TImage.h"
-#include "Representations/Infrastructure/Image.h"
+#include "Image.h"
 
 namespace Sobel
 {
-  using Image1D = TImage<unsigned char>;
+  using Image1D = Image<unsigned char>;
 
   /**
    * Sobel pixels consist of signed chars for the two directions x and y.
@@ -25,7 +24,7 @@ namespace Sobel
     };
   };
 
-  using SobelImage = TImage<SobelPixel>;
+  using SobelImage = Image<SobelPixel>;
 
   /**
    * Sobel edge detection algorithm optimized with SSE.

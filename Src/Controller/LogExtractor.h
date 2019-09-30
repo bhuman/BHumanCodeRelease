@@ -3,7 +3,7 @@
  *
  * Definition of class LogExtractor
  *
- * @author <a href="mailto:jan_fie@uni-bremen.de">Jan Fiedler</a>
+ * @author Jan Fiedler
  */
 
 #pragma once
@@ -16,9 +16,7 @@
 
 class LogPlayer;
 class Out;
-class Statistics;
 class Streamable;
-struct Image;
 struct TypeInfo;
 
 /**
@@ -48,6 +46,16 @@ public:
   bool save(const std::string& fileName, const TypeInfo* typeInfo);
 
   /**
+   * Splits and saves the log in the given amount of Files
+   * @param fileName the name of the file to write
+   * @param typeInfo Type information of logged data types. Will be ignored if
+   *                      it is a nullptr or logger already has type information.
+   * @param split the number of files to split into
+   * @return returns if splitting was succesful
+   */
+  bool split(const std::string& fileName, const TypeInfo* typeInfo, const int& split);
+
+  /**
    * Writes all audio data in the log player queue to a single wav file.
    * @param fileName the name of the file to write
    * @return if the writing was successful
@@ -59,12 +67,13 @@ public:
    * @param path The path of the directory in which the images are created.
    * @param raw Save color unconverted
    * @param onlyPlaying Only save images from an upright, playing robot
+   * @param takeEachNthFrame Save each Nth frame (one set of upper and lower image is considered as one frame)
    * @return if writing all files was successful
    */
-  bool saveImages(const std::string& path, const bool raw, const bool onlyPlaying);
+  bool saveImages(const std::string& path, bool raw, bool onlyPlaying, int takeEachNthFrame);
 
   /**
-   * Writes all inertial sensor data from the log into a semicolon-seperated
+   * Writes all inertial sensor data from the log into a semicolon-separated
    * dataset file.
    * @param path The path of the file to which the data is written.
    * @return whether writing the file was successful or not
@@ -72,7 +81,7 @@ public:
   bool saveInertialSensorData(const std::string& path);
 
   /**
-   * Writes all joint angle and request data from the log into a semicolon-seperated
+   * Writes all joint angle and request data from the log into a semicolon-separated
    * dataset file.
    * @param path The path of the file to which the data is written.
    * @return whether writing the file was successful or not
@@ -80,36 +89,10 @@ public:
   bool saveJointAngleData(const std::string& path);
 
   /**
-   * Writes all walk generator data from the log into a semicolon-seperated
-   * dataset file.
-   * @param path The path of the file to which the data is written.
-   * @return whether writing the file was successful or not
-   */
-  bool saveWalkingData(const std::string& path);
-
-  /**
-   * Saves data each failed GetUpMotion:
-   * When the motion fails (line)
-   * In which direction the motion fails (fallen forwards or backwards)
-   *
-   * @param path The path of the file to which the data is written.
-   * @return whether writing the file was successful or not
-   */
-  bool saveGetUpEngineFailData(const std::string& path);
-
-  /**
    * Writes a csv with all module timings.
    * @return true if writing was successful
    */
   bool writeTimingData(const std::string& fileName);
-
-  /**
-   * Extracts data for statistics.
-   * Note: Every call re-initializes the statistics.
-   * @patam statistics The Statistics.
-   * @return true if extracting was successful
-   */
-  bool statistics(Statistics& statistics);
 
   /**
    * Saves images of ballSpots and related metadata according to imported labels
@@ -120,7 +103,6 @@ public:
    */
   bool saveLabeledBallSpots(const std::string& path);
 
-  
 private:
   /**
    * The method creates a new folder with logname in the current logfolder, replacing the prefix.
@@ -138,7 +120,7 @@ private:
    * @param noEndl If x lines are written in each fram, do not append an endl.
    *
    * @param file The file to append to.
-   * @param sep The seperator.
+   * @param sep The separator.
    * @return whether writing the file was successful or not.
    */
   bool saveCSV(const std::string& fileName, const std::function<void(Out& file, const std::string& sep)>& writeHeader, const std::map<const MessageID, Streamable*>& representations, const std::function<void(Out& file, const std::string& sep)>& writeInFile, const bool noEndl = false);
@@ -148,8 +130,8 @@ private:
    * @param representations Map with all needed Representations.
    * @param executeAction The action that is executed after each frame.
    *
-   * @param frameType Type of the frame (c/m).
+   * @param frameType Type of the frame.
    * @return whether the action was successful or not.
    */
-  bool goThroughLog(const std::map<const MessageID, Streamable*>& representations, const std::function<bool(const char frameType)>& executeAction);
+  bool goThroughLog(const std::map<const MessageID, Streamable*>& representations, const std::function<bool(const std::string& frameType)>& executeAction);
 };

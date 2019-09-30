@@ -5,6 +5,7 @@ dr representation:MotionRequest
 
 # request behavior messages
 dr representation:ActivationGraph
+dr representation:TeamActivationGraph
 
 dr representation:RobotDimensions:once
 dr representation:JointLimits:once

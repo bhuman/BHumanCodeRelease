@@ -1,6 +1,6 @@
 /**
  * The file declares a ring buffer. The type of the elements must be assignable and
- * copyable. They do not need to provide a default constuctor. The interface of the
+ * copyable. They do not need to provide a default constructor. The interface of the
  * class is similar to types of the standard template library and it also supports
  * for-each loops.
  * @author Thomas Röfer
@@ -32,6 +32,7 @@ public:
 
   public:
     iterator(RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
+    iterator& operator=(const iterator& other) {return *new(this) iterator(other.buffer, other.index);}
     T* operator->() const {return &buffer[index];}
     T& operator*() const {return buffer[index];}
     bool operator==(const iterator& other) const {return index == other.index;}
@@ -53,6 +54,7 @@ public:
 
   public:
     const_iterator(const RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
+    const_iterator& operator=(const const_iterator& other) {return *new(this) const_iterator(other.buffer, other.index);}
     const T* operator->() const {return &buffer[index];}
     const T& operator*() const {return buffer[index];}
     bool operator==(const const_iterator& other) const {return index == other.index;}

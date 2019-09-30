@@ -7,12 +7,15 @@
 // Assert::print and Assert::abort implementations are the same as on Linux
 #include "Platform/Linux/BHAssert.cpp"
 
+#include <cstdio>
+
+#ifndef NDEBUG
+
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <cstring>
-#include <cstdio>
 #include <sstream>
 #include <ctime>
 #include <cassert>
@@ -52,7 +55,7 @@ public:
   int fd;
   Data* data;
 
-  AssertFramework() : fd(-1), data((Data*)MAP_FAILED) {}
+  AssertFramework() : fd(-1), data(static_cast<Data*>(MAP_FAILED)) {}
 
   ~AssertFramework()
   {
@@ -72,7 +75,7 @@ public:
       return false;
 
     if(ftruncate(fd, sizeof(Data)) == -1 ||
-       (data = (Data*)mmap(nullptr, sizeof(Data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
+       (data = static_cast<Data*>(mmap(nullptr, sizeof(Data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0))) == MAP_FAILED)
     {
       close(fd);
       fd = -1;
@@ -118,22 +121,14 @@ void Assert::logAdd(int trackId, const char* file, int lineNum, const std::strin
   track->active = true;
 }
 
-// Get current date/time, format is YYYY-MM-DD_HH:mm:ss
-const std::string currentTimeStamp()
-{
-  time_t     now = time(0);
-  struct tm  tstruct;
-  char       buf[80];
-  tstruct = *localtime(&now);
-  strftime(buf, sizeof(buf), "%F_%T", &tstruct);
-  return buf;
-}
+#endif // NDEBUG
 
 void Assert::logDump(int termSignal)
 {
-  assertFramework.init(false);
+  FILE* fp = stderr;
 
-  FILE* fp =  stderr;
+#ifndef NDEBUG
+  assertFramework.init(false);
 
   for(int i = 0; i < int(sizeof(assertFramework.data->thread) / sizeof(*assertFramework.data->thread)); ++i)
   {
@@ -159,6 +154,7 @@ void Assert::logDump(int termSignal)
       }
     }
   }
+#endif // NDEBUG
 
   const char* termSignalNames[] =
   {
@@ -184,4 +180,6 @@ void Assert::logDump(int termSignal)
   const char* termSignalName = termSignal < 0 || termSignal >= int(sizeof(termSignalNames) / sizeof(*termSignalNames)) ? "" : termSignalNames[termSignal];
   if(*termSignalName)
     fprintf(fp, "%s\n", termSignalName);
+  else
+    fprintf(fp, "term signal %d\n", termSignal);
 }

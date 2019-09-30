@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Representations/Configuration/IMUCalibration.h"
+#include "Representations/Configuration/GyroOffset.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
@@ -10,6 +11,7 @@
 
 MODULE(InertialDataProvider,
 {,
+  USES(GyroOffset),
   USES(MotionInfo),
   REQUIRES(GroundContactState),
   REQUIRES(InertialSensorData),

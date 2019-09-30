@@ -175,6 +175,7 @@ public:
         LineHeightType = 0x1049,
         BlockNonBreakableLines = 0x1050,
         BlockTrailingHorizontalRulerWidth = 0x1060,
+        HeadingLevel = 0x1070,
 
         // character properties
         FirstFontProperty = 0x1FE0,
@@ -249,6 +250,7 @@ public:
         ImageName = 0x5000,
         ImageWidth = 0x5010,
         ImageHeight = 0x5011,
+        ImageQuality = 0x5014,
 
         // internal
         /*
@@ -624,6 +626,11 @@ public:
     inline int indent() const
     { return intProperty(BlockIndent); }
 
+    inline void setHeadingLevel(int alevel)
+    { setProperty(HeadingLevel, alevel); }
+    inline int headingLevel() const
+    { return intProperty(HeadingLevel); }
+
     inline void setLineHeight(qreal height, int heightType)
     { setProperty(LineHeight, height); setProperty(LineHeightType, heightType); }
     inline qreal lineHeight(qreal scriptLineHeight, qreal scaling) const;
@@ -748,6 +755,10 @@ public:
     inline qreal height() const
     { return doubleProperty(ImageHeight); }
 
+    inline void setQuality(int quality = 100);
+    inline int quality() const
+    { return intProperty(ImageQuality); }
+
 protected:
     explicit QTextImageFormat(const QTextFormat &format);
     friend class QTextFormat;
@@ -763,6 +774,9 @@ inline void QTextImageFormat::setWidth(qreal awidth)
 
 inline void QTextImageFormat::setHeight(qreal aheight)
 { setProperty(ImageHeight, aheight); }
+
+inline void QTextImageFormat::setQuality(int aquality)
+{ setProperty(ImageQuality, aquality); }
 
 class Q_GUI_EXPORT QTextFrameFormat : public QTextFormat
 {

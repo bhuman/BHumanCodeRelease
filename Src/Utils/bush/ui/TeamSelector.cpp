@@ -18,7 +18,7 @@ TeamSelector::TeamSelector()
 {
   static const size_t NUM_PLAYERS = 12; //due to F1..F12 keys and two rows with 1-6 players
   selectActions.reserve(NUM_PLAYERS);
-  for(int i = 0; i < (int) NUM_PLAYERS; ++i)
+  for(int i = 0; i < static_cast<int>(NUM_PLAYERS); ++i)
   {
     QAction* a = new QAction(this);
     a->setShortcut(QKeySequence(Qt::Key_F1 + i));
@@ -143,7 +143,7 @@ void TeamSelector::selectPlayer()
   if(!s)
     return;
   int number = -1;
-  for(int i = 0; i < (int) selectActions.size(); ++i)
+  for(int i = 0; i < static_cast<int>(selectActions.size()); ++i)
     if(selectActions[i] == s)
       number = i;
 

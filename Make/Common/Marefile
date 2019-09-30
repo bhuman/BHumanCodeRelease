@@ -43,6 +43,7 @@ defines = {
   } else if (host == "Win32") {
     "WINDOWS"
     "NOMINMAX"
+    "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS"
   } else if (platform == "MacOSX") {
     "MACOS"
   }
@@ -68,7 +69,7 @@ if (host == "Linux") {
 
 cppFlags = {
   if (tool == "vcxproj") {
-    "/std:c++14"
+    "/std:c++17"
     "/permissive-"
     "/W3" // warning level 3
     "/GF" // enable string pooling
@@ -80,8 +81,10 @@ cppFlags = {
       "/Ox /Ob2 /Oi /Ot /Oy /GT"
     }
     "/w44701"
+    "/experimental:preprocessor"
+    "/wd5105" // As of now (09.2019), winbase.h causes this warning ("macro expansion producing 'defined' has undefined behavior") in conjunction with the experimental (standard-compliant) preprocessor.
   } else {
-    "-std=c++14"
+    "-std=c++17"
     "-pipe"
     "-fPIC"
     "-Wall"
@@ -176,12 +179,11 @@ targets = {
   include "Controller.mare"
   include "SimulatedNao.mare"
 
-  include "libbhuman.mare"
-  include "libgamectrl.mare"
   include "Nao.mare"
 
   include "bush.mare"
   include "copyfiles.mare"
+  include "Tests.mare"
 }
 
 cppSource += {

@@ -79,6 +79,6 @@ namespace Approx
       quotient = x == 0 ? 0 : static_cast<short>(-1 * (x << 14) / y);
       offset = y > 0 ? 16384 : 49152;
     }
-    return offset + static_cast<unsigned short>(((int)(11039 - ((5695 * (int)std::abs(quotient)) >> 15)) * (int)quotient) >> 15);
+    return offset + static_cast<unsigned short>((static_cast<int>(11039 - ((5695 * static_cast<int>(std::abs(quotient))) >> 15)) * static_cast<int>(quotient)) >> 15);
   }
 }

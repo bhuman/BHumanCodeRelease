@@ -1,297 +1,270 @@
-/*
+/**
  * @file Logger.cpp
- * The file implements a class that implements an online logger that writes representations
- * in the background while the robot is playing soccer.
  *
- * @author Arne Böckmann
+ * This file implements a class that writes a subset of representations into
+ * log files. The representations can stem from multiple parallel threads.
+ * The class maintains a buffer of message queues that can be claimed by
+ * individual threads, filled with data, and given back to the logger for
+ * writing them to the log file.
+ *
  * @author Thomas Röfer
  */
 
-#include "Tools/Debugging/Stopwatch.h"
 #include "Logger.h"
-#include "LogFileFormat.h"
-#include "Platform/Time.h"
-#include "Representations/Infrastructure/TeamInfo.h"
-#include "Tools/Settings.h"
+#include "Platform/BHAssert.h"
+#include "Platform/SystemCall.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Tools/Debugging/AnnotationManager.h"
-#include "Tools/MessageQueue/MessageQueue.h"
+#include "Tools/Debugging/Debugging.h"
+#include "Tools/Debugging/TimingManager.h"
+#include "Tools/Global.h"
+#include "Tools/Logging/LoggingTools.h"
+#include "Tools/Module/Blackboard.h"
+#include "Tools/Settings.h"
 #include "Tools/Streams/TypeInfo.h"
-
-#ifdef TARGET_ROBOT
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <limits.h>
-#endif
+#include <cstring>
 #include <snappy-c.h>
 
-Logger::Logger(const std::string& processName, char processIdentifier, int framesPerSecond) :
-  processName(processName),
-  typeInfo(200000),
-  processIdentifier(processIdentifier),
-  framesPerSecond(framesPerSecond)
-{
-  InMapFile stream(std::string("logger") + processName + ".cfg");
-  if(stream.exists())
-    stream >> parameters;
-
+#undef PRINT
 #ifndef TARGET_ROBOT
-  parameters.enabled = false;
-  parameters.logFilePath = "Logs/";
+#define PRINT(message) OUTPUT_WARNING(message)
+#elif defined NDEBUG
+#include <cstdlib>
+#define PRINT(message) \
+  do \
+  { \
+    OUTPUT_ERROR(message); \
+    abort(); \
+  } \
+  while(false)
+#else
+#define PRINT(message) FAIL(message)
 #endif
 
-#ifdef TARGET_ROBOT
-  if(parameters.enabled && parameters.logToUSB)
-  {
-    if(SystemCall::usbIsMounted())
+Logger::Logger(const Configuration& config)
+  : typeInfo(200000)
+{
+  std::memset(gameInfoThreadName, 0, sizeof(gameInfoThreadName));
+  InMapFile stream("logger.cfg");
+  ASSERT(stream.exists());
+  stream >> *this;
+  if(!path.empty() && path.back() != '/')
+    path += "/";
+
+  // Report wrong logger configuration (even in the simulator).
+  // This check is only executed for the initial configuration, because on the robot that is usually the one that is used.
+  if(enabled)
+    for(const auto& rpt : representationsPerThread)
     {
-      std::string fullPath = parameters.logUSBFilePath + Global::getSettings().headName;
-      _mkdir(fullPath.c_str());
-      parameters.logFilePath = fullPath + "/";
+      for(const auto& thread : config.threads)
+        if(thread.name == rpt.thread)
+        {
+          for(const std::string& loggerRepresentation : rpt.representations)
+          {
+            for(const std::string& defaultRepresentation : config.defaultRepresentations)
+              if(loggerRepresentation == defaultRepresentation)
+              {
+                PRINT("Logger: Thread " << rpt.thread << " should not log default representation " << defaultRepresentation);
+                goto representationFound;
+              }
+
+            for(const auto& representationProvider : thread.representationProviders)
+              if(loggerRepresentation == representationProvider.representation)
+                goto representationFound;
+            PRINT("Logger: Thread " << rpt.thread << " does not contain representation " << loggerRepresentation);
+          representationFound:;
+          }
+          goto threadFound;
+        }
+      PRINT("Logger: Thread " << rpt.thread << " not found");
+    threadFound:;
+    }
+
+#ifndef TARGET_ROBOT
+  enabled = false;
+  path = "Logs/";
+#endif
+
+  if(enabled)
+  {
+    typeInfo << TypeInfo();
+    InMapFile stream("teamList.cfg");
+    if(stream.exists())
+      stream >> teamList;
+
+    buffers.resize(numOfBuffers);
+    for(MessageQueue& buffer : buffers)
+    {
+      buffer.setSize(sizeOfBuffer);
+      buffersAvailable.push(&buffer);
+    }
+
+    writerThread.setPriority(writePriority);
+    writerThread.start(this, &Logger::writer);
+  }
+}
+
+void Logger::execute(const std::string& threadName)
+{
+  if(!enabled)
+    return;
+
+  if((!*gameInfoThreadName || threadName == gameInfoThreadName)
+     && Blackboard::getInstance().exists("GameInfo") && Blackboard::getInstance().exists("OpponentTeamInfo"))
+  {
+    const GameInfo& gameInfo = static_cast<const GameInfo&>(Blackboard::getInstance()["GameInfo"]);
+    const bool loggingNow = gameInfo.state != STATE_INITIAL && gameInfo.state != STATE_FINISHED;
+    if(loggingNow && !*gameInfoThreadName)
+    {
+      std::string description = "Testing";
+      if(gameInfo.packetNumber || gameInfo.secsRemaining != 0) // Packet from GameController
+      {
+        const OpponentTeamInfo& opponentTeamInfo = static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]);
+        for(const auto& team : teamList.teams)
+          if(team.number == opponentTeamInfo.teamNumber)
+          {
+            description = team.name + "_"
+                          + (gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT ? "ShootOut"
+                             : gameInfo.firstHalf ? "1stHalf" : "2ndHalf");
+            break;
+          }
+      }
+
+      SYNC;
+      filename = path + LoggingTools::createName("", Global::getSettings().headName, Global::getSettings().bodyName,
+                                                 Global::getSettings().scenario, Global::getSettings().location,
+                                                 description, Global::getSettings().playerNumber);
+      std::strncpy(gameInfoThreadName, threadName.c_str(), sizeof(gameInfoThreadName) - 1);
+    }
+    logging = loggingNow;
+
+    if(!logging && hasLogged && buffersToWrite.empty())
+    {
+      SystemCall::say("Log file written");
+      hasLogged = false;
     }
   }
 
+  if(logging)
+  {
+    for(const RepresentationsPerThread& rpt : representationsPerThread)
+      if(rpt.thread == threadName && !rpt.representations.empty())
+      {
+        MessageQueue* buffer = nullptr;
+        {
+          SYNC;
+          if(!buffersAvailable.empty())
+          {
+            buffer = buffersAvailable.top();
+            buffersAvailable.pop();
+          }
+        }
+        if(!buffer)
+        {
+          OUTPUT_WARNING("Logger: No buffer available!");
+          return;
+        }
+
+        buffer->out.bin << threadName;
+        buffer->out.finishMessage(idFrameBegin);
+
+        for(const std::string& representation : rpt.representations)
+#ifndef NDEBUG
+          if(Blackboard::getInstance().exists(representation.c_str()))
+#endif
+          {
+            buffer->out.bin << Blackboard::getInstance()[representation.c_str()];
+            if(!buffer->out.finishMessage(static_cast<MessageID>(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + representation))))
+              OUTPUT_WARNING("Logger: Representation " << representation << " did not fit into buffer!");
+          }
+#ifndef NDEBUG
+          else
+            OUTPUT_WARNING("Logger: Representation " << representation << " does not exists!");
 #endif
 
-  if(parameters.enabled)
-  {
-    typeInfo << TypeInfo();
-    InMapFile stream2("teamList.cfg");
-    if(stream2.exists())
-      stream2 >> teamList;
-
-    buffer.reserve(parameters.maxBufferSize);
-    for(int i = 0; i < parameters.maxBufferSize; ++i)
-    {
-      buffer.push_back(new MessageQueue());
-      buffer.back()->setSize(parameters.blockSize);
-    }
-    writerThread.setPriority(parameters.writePriority);
+        Global::getAnnotationManager().getOut().copyAllMessages(*buffer);
+        Global::getTimingManager().getData().copyAllMessages(*buffer);
+        buffer->out.bin << threadName;
+        buffer->out.finishMessage(idFrameFinished);
+        {
+          SYNC;
+          buffersToWrite.push_back(buffer);
+        }
+        framesToWrite.post();
+        hasLogged = true;
+        break;
+      }
   }
 }
 
 Logger::~Logger()
 {
-  if(frameCounter)
-    framesToWrite.post();
+  writerThread.announceStop();
+  framesToWrite.post();
   writerThread.stop();
-  for(MessageQueue* m : buffer)
-    delete m;
 }
 
-void Logger::execute()
+void Logger::writer()
 {
-  if(parameters.enabled)
-  {
-    if(Blackboard::getInstance().getVersion() != blackboardVersion)
-    {
-      loggables.clear();
-      for(const std::string& representation : parameters.representations)
-        if(Blackboard::getInstance().exists(representation.c_str()))
-        {
-          FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
-            if(TypeRegistry::getEnumName(id) == "id" + representation)
-            {
-              loggables.push_back(Loggable(&Blackboard::getInstance()[representation.c_str()], id));
-              goto found;
-            }
-          OUTPUT_WARNING(processName << "Logger: " << representation << " has no message id.");
-          FAIL(processName << "Logger: " << representation << " has no message id.");
-        found:
-          ;
-        }
-        else
-        {
-          OUTPUT_WARNING(processName << "Logger: " << representation << " is not available in blackboard.");
-          FAIL(processName << "Logger: " << representation << " is not available in blackboard.");
-        }
+  Thread::nameCurrentThread("Logger");
+  BH_TRACE_INIT("Logger");
 
-      blackboardVersion = Blackboard::getInstance().getVersion();
-    }
-
-    beginFrame(Time::getCurrentSystemTime());
-    Cabsl<Logger>::execute(OptionInfos::getOption("Root"));
-    endFrame();
-  }
-}
-
-std::string Logger::generateFilename() const
-{
-  static_assert(Settings::highestValidPlayerNumber < 10, "This code does not work with player numbers >= 10.");
-  if(receivedGameControllerPacket)
-  {
-    const OpponentTeamInfo& opponentTeamInfo = static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]);
-    for(const auto& team : teamList.teams)
-      if(team.number == opponentTeamInfo.teamNumber)
-      {
-        std::string filename = team.name + "_";
-        const GameInfo& gameInfo = static_cast<const GameInfo&>(Blackboard::getInstance()["GameInfo"]);
-        filename += gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT ? "ShootOut_" :
-                    gameInfo.firstHalf ? "1stHalf_" : "2ndHalf_";
-        filename += static_cast<char>(Global::getSettings().playerNumber + '0');
-        return parameters.logFilePath + processName + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + filename;
-      }
-  }
-  return parameters.logFilePath + processName + "_" + Global::getSettings().headName + "_" + Global::getSettings().bodyName + "_" + Global::getSettings().scenario + "_" + Global::getSettings().location + "__" + "Testing_" + static_cast<char>(Global::getSettings().playerNumber + '0');
-}
-
-void Logger::logFrame()
-{
-  if(writeIndex == (readIndex + parameters.maxBufferSize - 1) % parameters.maxBufferSize)
-  {
-    // Buffer is full, can't do anything this frame
-    OUTPUT_WARNING(processName << "Logger: Writer thread too slow, discarding frame.");
-    return;
-  }
-
-  OutMessage& out = buffer[writeIndex]->out;
-
-  out.bin << processIdentifier;
-  out.finishMessage(idProcessBegin);
-
-  // Stream all representations to the queue
-  STOPWATCH("Logger")
-  {
-    for(const Loggable& loggable : loggables)
-    {
-      out.bin << *loggable.representation;
-      if(!out.finishMessage(loggable.id))
-        OUTPUT_WARNING("Logging of " << TypeRegistry::getEnumName(loggable.id) << " failed. The buffer is full.");
-    }
-
-    // Append annotations
-    Global::getAnnotationManager().getOut().copyAllMessages(*buffer[writeIndex]);
-  }
-
-  // Append timing data if any
-  MessageQueue& timingData = Global::getTimingManager().getData();
-  if(timingData.getNumberOfMessages() > 0)
-    timingData.copyAllMessages(*buffer[writeIndex]);
-  else
-    OUTPUT_WARNING(processName << "Logger: No timing data available.");
-
-  out.bin << processIdentifier;
-  out.finishMessage(idProcessFinished);
-
-  // One block is used per second.
-  if(++frameCounter == framesPerSecond)
-  {
-    // The next call to logFrame will use a new block.
-    writeIndex = (writeIndex + 1) % parameters.maxBufferSize;
-    framesToWrite.post(); // Signal to the writer thread that another block is ready
-    if(parameters.debugStatistics)
-      OUTPUT_WARNING(processName << "Logger buffer is "
-                     << ((parameters.maxBufferSize + readIndex - writeIndex) % parameters.maxBufferSize) /
-                     static_cast<float>(parameters.maxBufferSize) * 100.f
-                     << "% free.");
-    frameCounter = 0;
-  }
-}
-
-#ifdef TARGET_ROBOT
-void Logger::_mkdir(const char* dir)
-{
-  /* Copied from https://gist.github.com/JonathonReinhart/8c0d90191c38af2dcadb102c4e202950 */
-  const size_t len = strlen(dir);
-  char _path[PATH_MAX];
-  char* p;
-
-  errno = 0;
-
-  /* Copy string so its mutable */
-  if(len > sizeof(_path) - 1)
-  {
-    errno = ENAMETOOLONG;
-    return;
-  }
-  strcpy(_path, dir);
-
-  /* Iterate the string */
-  for(p = _path + 1; *p; p++)
-  {
-    if(*p == '/')
-    {
-      /* Temporarily truncate */
-      *p = '\0';
-
-      if(mkdir(_path, S_IRWXU) != 0)
-      {
-        if(errno != EEXIST)
-          return;
-      }
-
-      *p = '/';
-    }
-  }
-
-  if(mkdir(_path, S_IRWXU) != 0)
-  {
-    if(errno != EEXIST)
-      return;
-  }
-
-  return;
-}
-
-#endif
-
-void Logger::writeThread()
-{
-  Thread::nameThread(std::string("Logger") + processName);
-  BH_TRACE_INIT(processName.c_str());
-  const size_t compressedSize = snappy_max_compressed_length(parameters.blockSize + 2 * sizeof(unsigned));
+  const size_t compressedSize = snappy_max_compressed_length(sizeOfBuffer + 2 * sizeof(unsigned));
   std::vector<char> compressedBuffer(compressedSize + sizeof(unsigned)); // Also reserve 4 bytes for header
   OutBinaryFile* file = nullptr;
+  std::string completeFilename;
 
-  while(writerThread.isRunning()) // Check if we are expecting more data
-    if(framesToWrite.wait(100)) // Wait 100 ms for new data then check again if we should quit
+  while(true)
+  {
+    framesToWrite.wait();
+    if(!writerThread.isRunning()
+       || (!completeFilename.empty()
+           && SystemCall::getFreeDiskSpace(completeFilename.c_str()) < static_cast<unsigned long long>(minFreeDriveSpace) << 20))
+      break;
+
+    // This assumes that reading the front is threadsafe.
+    MessageQueue* buffer = buffersToWrite.front();
+
+    if(!file)
     {
-      writerIdle = false;
-      MessageQueue& queue = *buffer[readIndex];
-      if(queue.getNumberOfMessages() > 0)
+      // find next free log filename
+      for(int i = 0; i < 100; ++i)
       {
-        size_t size = compressedSize;
-        VERIFY(snappy_compress(queue.getStreamedData(), queue.getStreamedSize(),
-                               compressedBuffer.data() + sizeof(unsigned), &size) == SNAPPY_OK);
-        reinterpret_cast<unsigned&>(compressedBuffer[0]) = static_cast<unsigned>(size);
-        if(!file)
-        {
-          // find next free log filename
-          std::string num = "";
-          for(int i = 0; i < 100; ++i)
-          {
-            if(i)
-            {
-              char buf[6];
-              sprintf(buf, "_(%02d)", i);
-              num = buf;
-            }
-            InBinaryFile stream(logFilename + num + ".log");
-            if(!stream.exists())
-              break;
-          }
-          logFilename += num + ".log";
-
-          file = new OutBinaryFile(logFilename);
-          ASSERT(file->exists());
-          *file << Logging::logFileMessageIDs;
-          queue.writeMessageIDs(*file);
-          *file << Logging::logFileTypeInfo;
-          file->write(typeInfo.data(), typeInfo.size());
-          *file << Logging::logFileCompressed; // Write magic byte that indicates a compressed log file
-        }
-        if(SystemCall::getFreeDiskSpace(logFilename.c_str())
-           < (static_cast<unsigned long long>(parameters.minFreeSpace) << 20) + size + sizeof(unsigned))
+        completeFilename = filename + (i ? "_(" + ((i < 10 ? "0" : "") + std::to_string(i)) + ")" : "") + ".log";
+        InBinaryFile stream(completeFilename);
+        if(!stream.exists())
           break;
-        file->write(compressedBuffer.data(), size + sizeof(unsigned));
-        queue.clear();
       }
-      readIndex = (readIndex + 1) % parameters.maxBufferSize;
+
+      file = new OutBinaryFile(completeFilename);
+      if(!file->exists())
+      {
+        OUTPUT_WARNING("Logger: File " << completeFilename << " could not be created!");
+        break;
+      }
+
+      *file << LoggingTools::logFileMessageIDs;
+      buffer->writeMessageIDs(*file);
+      *file << LoggingTools::logFileTypeInfo;
+      file->write(typeInfo.data(), typeInfo.size());
+      *file << LoggingTools::logFileCompressed;
     }
-    else if(!writerIdle)
+
+    size_t size = compressedSize;
+    VERIFY(snappy_compress(buffer->getStreamedData(), buffer->getStreamedSize(),
+                           compressedBuffer.data() + sizeof(unsigned), &size) == SNAPPY_OK);
+    reinterpret_cast<unsigned&>(compressedBuffer[0]) = static_cast<unsigned>(size);
+    buffer->clear();
+
     {
-      writerIdle = true;
-      writerIdleStart = Time::getCurrentSystemTime();
+      SYNC;
+      buffersToWrite.pop_front();
+      buffersAvailable.push(buffer);
     }
+
+    file->write(compressedBuffer.data(), size + sizeof(unsigned));
+  }
 
   if(file)
     delete file;

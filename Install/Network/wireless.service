@@ -1,7 +1,7 @@
 [Unit]
 Description=B-Human WLAN network configuration
-After=dbus.service
-Before=network.target
+After=dbus.service network-pre.target
+Before=network.target multi-user.target
 Wants=network.target
 Conflicts=wpa_supplicant.service
 

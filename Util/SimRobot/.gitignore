@@ -1,6 +1,7 @@
 Build
 Make/macOS/SimRobot.xcodeproj/project.xcworkspace
 Make/macOS/SimRobot.xcodeproj/xcuserdata
+Make/LinuxCMake/cmake-build-*
 Make/LinuxCodeLite/*.project
 Make/LinuxCodeLite/*.tags
 Make/LinuxCodeLite/*.workspace*

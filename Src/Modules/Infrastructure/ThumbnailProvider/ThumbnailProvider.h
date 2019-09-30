@@ -33,13 +33,13 @@ MODULE(ThumbnailProvider,
 class ThumbnailProvider : public ThumbnailProviderBase
 {
 private:
-  TImage<PixelTypes::ColoredPixel> shrinkedColors;
+  Image<PixelTypes::ColoredPixel> shrinkedColors;
 
-  void shrinkY(const unsigned int downScales, const TImage<PixelTypes::GrayscaledPixel>& src, TImage<PixelTypes::GrayscaledPixel>& dest) const;
-  void shrinkColors(const unsigned int downScales, const TImage<PixelTypes::ColoredPixel>& src, TImage<PixelTypes::ColoredPixel>& dest) const;
-  void shrinkUV(const unsigned int downScales, const CameraImage& src, TImage<unsigned short>& dest) const;
+  void shrinkY(const unsigned int downScales, const Image<PixelTypes::GrayscaledPixel>& src, Image<PixelTypes::GrayscaledPixel>& dest) const;
+  void shrinkColors(const unsigned int downScales, const Image<PixelTypes::ColoredPixel>& src, Image<PixelTypes::ColoredPixel>& dest) const;
+  void shrinkUV(const unsigned int downScales, const CameraImage& src, Image<unsigned short>& dest) const;
 
-  void combineGrayscaleAndColors(const TImage<PixelTypes::GrayscaledPixel>& y, const TImage<PixelTypes::ColoredPixel>& c, TImage<PixelTypes::GrayscaledPixel>& dest) const;
+  void combineGrayscaleAndColors(const Image<PixelTypes::GrayscaledPixel>& y, const Image<PixelTypes::ColoredPixel>& c, Image<PixelTypes::GrayscaledPixel>& dest) const;
 
 public:
   void update(Thumbnail& thumbnail) override;

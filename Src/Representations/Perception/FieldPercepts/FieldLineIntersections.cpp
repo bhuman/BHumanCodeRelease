@@ -1,5 +1,5 @@
 /**
- * @file FieldLineIntersections.h
+ * @file FieldLineIntersections.cpp
  * Implementation of a struct that represents the fieldline intersections.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */

@@ -35,7 +35,7 @@ STREAMABLE(Obstacle,
   (Vector2f) center,                      /**< Center point of an obstacle */
   (Vector2f) left,                        /**< Left point of an obstacle */
   (Vector2f) right,                       /**< Right point of an obstacle */
-  (Vector2f)(Vector2f::Zero()) velocity,  /**< Determined via extended kalman filter (mm per ms) */
+  (Vector2f)(Vector2f::Zero()) velocity,  /**< Determined via extended Kalman filter (mm per ms) */
   (unsigned int) lastSeen,                /**< Timestamp of last measurement */
   (Type) type,                            /**< See enumeration 'Type' above */
 });

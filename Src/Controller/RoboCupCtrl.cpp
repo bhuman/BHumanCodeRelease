@@ -3,7 +3,7 @@
  *
  * This file implements the class RoboCupCtrl.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author <A href="mailto:kspiess@tzi.de">Kai Spiess</A>
  * @author Colin Graf
  */
@@ -11,46 +11,28 @@
 #include "RobotConsole.h"
 #include "RoboCupCtrl.h"
 #include "Platform/Time.h"
-#include "Platform/SimulatedNao/Robot.h"
+#include "Tools/Framework/Robot.h"
 #include "Tools/Settings.h"
 
+#include <QApplication>
 #include <QIcon>
 
 #ifdef MACOS
-#define TOLERANCE 30.f
+#include "Controller/Visualization/Helper.h"
+#define TOLERANCE static_cast<float>(3 * simStepLength)
 #else
-#define TOLERANCE 10.f
+#define TOLERANCE static_cast<float>(simStepLength)
 #endif
 
 RoboCupCtrl* RoboCupCtrl::controller = nullptr;
 SimRobot::Application* RoboCupCtrl::application = nullptr;
 
-RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application) : robotName(nullptr)
+RoboCupCtrl::RoboCupCtrl(SimRobot::Application& application)
 {
-  Thread::nameThread("Main");
+  Thread::nameCurrentThread("Main");
 
   this->controller = this;
   this->application = &application;
-
-  // Get colors of first and second team
-  // If there is no teamcolors compound, fall back to default (black, red)
-  SimRobot::Object* teamcolors(application.resolveObject("RoboCup.teamcolors", SimRobotCore2::compound));
-  if(teamcolors != nullptr)
-  {
-    const QString& fullNameFirstTeamColor = ((SimRobot::Object*)application.getObjectChild(*teamcolors, 0u))->getFullName();
-    const QString& fullNameSecondTeamColor = ((SimRobot::Object*)application.getObjectChild(*teamcolors, 1u))->getFullName();
-    const std::string baseNameFirstTeamColor = fullNameFirstTeamColor.mid(fullNameFirstTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
-    const std::string baseNameSecondTeamColor = fullNameSecondTeamColor.mid(fullNameSecondTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
-
-    firstTeamColor = parseColorFromString(baseNameFirstTeamColor);
-    secondTeamColor = parseColorFromString(baseNameSecondTeamColor);
-  }
-  else
-  {
-    firstTeamColor = Settings::TeamColor::black;
-    secondTeamColor = Settings::TeamColor::red;
-  }
-  gameController.setTeamInfos(firstTeamColor, secondTeamColor);
   Q_INIT_RESOURCE(Controller);
 }
 
@@ -61,19 +43,38 @@ bool RoboCupCtrl::compile()
   if(!scene)
     return false;
 
+  // Get colors of first and second team
+  // If there is no team colors compound, fall back to default (black, blue)
+  SimRobot::Object* teamColors(application->resolveObject("RoboCup.teamColors", SimRobotCore2::compound));
+  if(teamColors != nullptr)
+  {
+    const QString& fullNameFirstTeamColor = static_cast<SimRobot::Object*>(application->getObjectChild(*teamColors, 0u))->getFullName();
+    const QString& fullNameSecondTeamColor = static_cast<SimRobot::Object*>(application->getObjectChild(*teamColors, 1u))->getFullName();
+    const std::string baseNameFirstTeamColor = fullNameFirstTeamColor.mid(fullNameFirstTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
+    const std::string baseNameSecondTeamColor = fullNameSecondTeamColor.mid(fullNameSecondTeamColor.lastIndexOf('.') + 1).toUtf8().constData();
+
+    firstTeamColor = static_cast<Settings::TeamColor>(TypeRegistry::getEnumValue(typeid(Settings::TeamColor).name(), baseNameFirstTeamColor));
+    secondTeamColor = static_cast<Settings::TeamColor>(TypeRegistry::getEnumValue(typeid(Settings::TeamColor).name(), baseNameSecondTeamColor));
+  }
+  if(firstTeamColor == static_cast<Settings::TeamColor>(-1))
+    firstTeamColor = Settings::TeamColor::black;
+  if(secondTeamColor == static_cast<Settings::TeamColor>(-1))
+    secondTeamColor = Settings::TeamColor::blue;
+  gameController.setTeamInfos(firstTeamColor, secondTeamColor);
+
   // initialize simulated time and step length
   time = 100000 - Time::getRealSystemTime();
   simStepLength = int(scene->getStepLength() * 1000.f + 0.5f);
   if(simStepLength > 20)
     simStepLength = 20;
-  delayTime = (float)simStepLength;
+  delayTime = static_cast<float>(simStepLength);
 
   // get interfaces to simulated objects
   SimRobot::Object* group = application->resolveObject("RoboCup.robots", SimRobotCore2::compound);
 
   for(unsigned currentRobot = 0, count = application->getObjectChildCount(*group); currentRobot < count; ++currentRobot)
   {
-    SimRobot::Object* robot = (SimRobot::Object*)application->getObjectChild(*group, currentRobot);
+    SimRobot::Object* robot = static_cast<SimRobot::Object*>(application->getObjectChild(*group, currentRobot));
     const QString& fullName = robot->getFullName();
     std::string robotName = fullName.toUtf8().constData();
     this->robotName = robotName.c_str();
@@ -98,6 +99,16 @@ RoboCupCtrl::~RoboCupCtrl()
   SimulatedRobot::setBall(nullptr);
   controller = nullptr;
   application = nullptr;
+}
+
+QBrush RoboCupCtrl::getAlternateBackgroundColor() const
+{
+#ifdef MACOS
+  return getAlternateBase();
+#else
+  return QApplication::palette().alternateBase();
+#endif
+
 }
 
 void RoboCupCtrl::addView(SimRobot::Object* object, const SimRobot::Object* parent, int flags)
@@ -196,7 +207,7 @@ void RoboCupCtrl::update()
 {
   if(delayTime != 0.f)
   {
-    float t = (float)Time::getRealSystemTime();
+    float t = static_cast<float>(Time::getRealSystemTime());
     lastTime += delayTime;
     if(lastTime > t) // simulation is running faster then rt
     {
@@ -222,15 +233,15 @@ void RoboCupCtrl::collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geomet
   if(!body)
     return;
   body = body->getRootBody();
-  GameController::setLastBallContactRobot(body);
+  controller->gameController.setLastBallContactRobot(body);
 }
 
 std::string RoboCupCtrl::getRobotName() const
 {
   std::thread::id threadId = Thread::getCurrentId();
   for(const Robot* robot : robots)
-    for(const ProcessBase* process : *robot)
-      if(process->getId() == threadId)
+    for(const ThreadFrame* thread : *robot)
+      if(thread->getId() == threadId)
         return robot->getName();
   if(!this->robotName)
     return "Robot1";
@@ -244,46 +255,4 @@ unsigned RoboCupCtrl::getTime() const
     return unsigned(time);
   else
     return unsigned(Time::getRealSystemTime() + time);
-}
-
-Settings::TeamColor RoboCupCtrl::parseColorFromString(const std::string& color)
-{
-  if(color == "blue")
-  {
-    return Settings::TeamColor::blue;
-  }
-  else if(color == "red")
-  {
-    return Settings::TeamColor::red;
-  }
-  else if(color == "yellow")
-  {
-    return Settings::TeamColor::yellow;
-  }
-  else if(color == "black")
-  {
-    return Settings::TeamColor::black;
-  }
-  else if(color == "white")
-  {
-    return Settings::TeamColor::white;
-  }
-  else if(color == "orange")
-  {
-    return Settings::TeamColor::orange;
-  }
-  else if(color == "purple")
-  {
-    return Settings::TeamColor::purple;
-  }
-  else if(color == "brown")
-  {
-    return Settings::TeamColor::brown;
-  }
-  else if(color == "gray")
-  {
-    return Settings::TeamColor::gray;
-  }
-  ASSERT(false); /** This should not happen! */
-  return Settings::TeamColor::black; /** Just to suppress warnings... */
 }

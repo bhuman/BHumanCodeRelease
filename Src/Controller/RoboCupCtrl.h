@@ -3,7 +3,7 @@
  *
  * This file declares the class RoboCupCtrl.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -12,6 +12,7 @@
 #include "GameController.h"
 #include "Tools/Settings.h"
 
+#include <QBrush>
 #include <QList>
 #include <QString>
 #include <list>
@@ -27,11 +28,11 @@ public:
   static RoboCupCtrl* controller; /**< A pointer to the SimRobot controller. */
   static SimRobot::Application* application; /**< The interface to the SimRobot GUI. */
   GameController gameController;
-  Settings::TeamColor firstTeamColor; /**< Color of the first team. */
-  Settings::TeamColor secondTeamColor; /**< Color of the second team. */
+  Settings::TeamColor firstTeamColor = static_cast<Settings::TeamColor>(-1); /**< Color of the first team. */
+  Settings::TeamColor secondTeamColor = static_cast<Settings::TeamColor>(-1); /**< Color of the second team. */
 
 protected:
-  const char* robotName; /**< The name of the robot currently constructed. */
+  const char* robotName = nullptr; /**< The name of the robot currently constructed. */
   std::list<Robot*> robots; /**< The list of all robots. */
   int simStepLength; /**< The length of one simulation step (in ms). */
   bool simTime = false; /**< Switches between simulation time mode and real time mode. */
@@ -50,6 +51,14 @@ protected:
   ~RoboCupCtrl();
 
 public:
+  /**
+   * Return the alternate background color for views. It is used when
+   * view separate different rows by switching between two different
+   * background colors.
+   * @return The color.
+   */
+  QBrush getAlternateBackgroundColor() const;
+
   /**
    * Adds a scene graph object to the scene graph displayed in SimRobot
    * @param object The scene graph object to add
@@ -135,17 +144,12 @@ protected:
   void collided(SimRobotCore2::Geometry& geom1, SimRobotCore2::Geometry& geom2) override;
 
   /**
-   * Has to be called by derived class to start processes.
+   * Has to be called by derived class to start threads.
    */
   void start();
 
   /**
-   * Has to be called by derived class to stop processes.
+   * Has to be called by derived class to stop threads.
    */
   void stop();
-
-  /**
-   * Maps a std::string to a color enum from Settings.
-   */
-  Settings::TeamColor parseColorFromString(const std::string& color);
 };

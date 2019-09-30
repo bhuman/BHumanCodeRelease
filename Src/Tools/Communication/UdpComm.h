@@ -51,7 +51,7 @@ public:
   bool setBlocking(bool);
 
   /**
-   * Set multicast mode (please use multicast adresses to avoid confusion).
+   * Set multicast mode (please use multicast addresses to avoid confusion).
    */
   bool joinMulticast(const char*);
 
@@ -73,27 +73,27 @@ public:
   bool bind(const char* addr, int port);
 
   /**
-   * The function tries to read a package from a socket.
+   * The function tries to read a packet from a socket.
    * @return Number of bytes received or -1 in case of an error.
    */
   int read(char* data, int len, unsigned int& ip);
 
   /**
-   * The function tries to read a package from a socket.
+   * The function tries to read a packet from a socket.
    * @return Number of bytes received or -1 in case of an error.
    */
   int read(char* data, int len);
 
   /**
-   * The function tries to read a package from a socket.
-   * It only accepts a package from this host.
+   * The function tries to read a packet from a socket.
+   * It only accepts a packet from this host.
    * @return Number of bytes received or -1 in case of an error.
    */
   int readLocal(char* data, int len);
 
   /**
-   * The function writes a package to a socket.
-   * @return True if the package was written.
+   * The function writes a packet to a socket.
+   * @return True if the packet was written.
    */
   bool write(const char* data, const int len);
 

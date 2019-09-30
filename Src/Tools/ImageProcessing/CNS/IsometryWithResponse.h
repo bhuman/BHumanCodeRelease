@@ -4,7 +4,7 @@
 #include <Eigen/StdVector>
 
 //! Combination of an object pose and the detector response for that pose
-/*! Used to returns the findigs of \c ObjectCNSStereoDetector */
+/*! Used to returns the findings of \c ObjectCNSStereoDetector */
 class IsometryWithResponse : public Eigen::Isometry3d
 {
 public:
@@ -20,7 +20,7 @@ public:
 
 EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(IsometryWithResponse)
 
-//! A comparison operator for sorting by descding responses
+//! A comparison operator for sorting by descending responses
 class MoreOnResponse
 {
 public:

@@ -18,7 +18,7 @@ namespace PixelTypes
     YUYV,             // the format the NaoCamera supplies
     YUV,              // useful for DebugImages?
     Colored,          // format of the colored image in ECImage
-    Grayscale,        // format of the grayscaled image in ECImage
+    Grayscale,        // format of the gray-scaled image in ECImage
     Hue,              // hue channel of a YHS image
     Binary,           //
     Edge2,            //
@@ -55,8 +55,9 @@ namespace PixelTypes
       };
     };
 
-    static unsigned numPixel() { 
-      return 1; 
+    static unsigned numPixel()
+    {
+      return 1;
     }
 
     inline std::vector<unsigned char> raw() const {
@@ -85,8 +86,9 @@ namespace PixelTypes
 
     };
 
-    static unsigned numPixel() { 
-      return 2; 
+    static unsigned numPixel()
+    {
+      return 2;
     }
     inline std::vector<unsigned char> raw() const {
       return std::vector<unsigned char>{y0, u, v, y1, u, v};

@@ -256,8 +256,8 @@ void PenaltyMarkPerceptor::drawContourViaLutRasterizer(const LutRasterizer& lr, 
     double alpha = angleOfCCP(contour[i]);
     double c = cos(alpha),
            s = sin(alpha);
-    LINE("module:PenaltyMarkPerceptor:candidates", (int) round(x - 2 * s), (int) round(y + 2 * c),
-         (int) round(x + 2 * s), (int) round(y - 2 * c), 1, Drawings::solidPen, color);
+    LINE("module:PenaltyMarkPerceptor:candidates", static_cast<int>(round(x - 2 * s)), static_cast<int>(round(y + 2 * c)),
+         static_cast<int>(round(x + 2 * s)), static_cast<int>(round(y - 2 * c)), 1, Drawings::solidPen, color);
   }
 }
 

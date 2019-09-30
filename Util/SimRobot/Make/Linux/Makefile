@@ -1,6 +1,6 @@
 MARE := ../../Util/mare/Linux/bin/mare
 CONFIG ?= Release
-QTINCLUDE = `find /usr/include /usr/local/include -name qt5 -type d`
+QTINCLUDE = `for d in $(shell find /usr/include /usr/local/include -name qt5 \( -type l -or -type d \)); do [ -d $$d/QtCore ] && echo $$d; done | head -n1`
 
 .PHONY: all clean
 

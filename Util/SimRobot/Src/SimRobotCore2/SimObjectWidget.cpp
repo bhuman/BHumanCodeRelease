@@ -19,7 +19,7 @@
 #include "Simulation/Simulation.h"
 #include "Simulation/Scene.h"
 
-SimObjectWidget::SimObjectWidget(SimObject& simObject) : QGLWidget(QGLFormat(QGL::SampleBuffers | QGL::AccumBuffer), 0, Simulation::simulation->renderer.getWidget()),
+SimObjectWidget::SimObjectWidget(SimObject& simObject) : QGLWidget(QGLFormat(QGL::SampleBuffers), 0, Simulation::simulation->renderer.getWidget()),
   object(dynamic_cast<SimRobot::Object&>(simObject)), objectRenderer(simObject),
   wkey(false), akey(false), skey(false), dkey(false)
 {
@@ -73,12 +73,12 @@ SimObjectWidget::~SimObjectWidget()
   float target[3];
   objectRenderer.getCamera(pos, target);
 
-  settings->setValue("cameraPosX", (double)pos[0]);
-  settings->setValue("cameraPosY", (double)pos[1]);
-  settings->setValue("cameraPosZ", (double)pos[2]);
-  settings->setValue("cameraTargetX", (double)target[0]);
-  settings->setValue("cameraTargetY", (double)target[1]);
-  settings->setValue("cameraTargetZ", (double)target[2]);
+  settings->setValue("cameraPosX", pos[0]);
+  settings->setValue("cameraPosY", pos[1]);
+  settings->setValue("cameraPosZ", pos[2]);
+  settings->setValue("cameraTargetX", target[0]);
+  settings->setValue("cameraTargetY", target[1]);
+  settings->setValue("cameraTargetZ", target[2]);
 
   settings->endGroup();
 }
@@ -86,12 +86,6 @@ SimObjectWidget::~SimObjectWidget()
 void SimObjectWidget::initializeGL()
 {
   objectRenderer.init(isSharing());
-#ifdef FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG
-  Simulation::simulation->renderer.makeCurrent(8, 8);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glFlush();
-  makeCurrent();
-#endif
 }
 
 void SimObjectWidget::paintGL()
@@ -664,10 +658,8 @@ void SimObjectWidget::exportAsImage(int resolution)
     QGLFormat format = this->format();
     format.setDoubleBuffer(false);
     QGLWidget widget(format, 0, 0, Qt::CustomizeWindowHint);
-#ifdef MACOS
     widget.setWindowOpacity(0.f);
     widget.show();
-#endif
     widget.setMaximumSize(width / devicePixelRatio(), height / devicePixelRatio());
     widget.resize(width / devicePixelRatio(), height / devicePixelRatio());
     widget.makeCurrent();

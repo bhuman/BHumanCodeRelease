@@ -1,0 +1,71 @@
+# replay a log file.
+# you have to adjust the name of the log file.
+call Includes/replayDialog Includes/replay
+
+# simulation time on, otherwise log data may be skipped
+st on
+dt 160
+
+# all views are defined in another script
+call Includes/ImageViews
+call Includes/FieldViews1
+call Includes/FieldViews2
+
+vid upper representation:FieldBoundary:image
+vid lower representation:FieldBoundary:image
+vid upper representation:PenaltyMarkPercept:image
+vid lower representation:PenaltyMarkPercept:image
+
+vfd worldState representation:GameInfo
+vfd worldState representation:OwnTeamInfo
+
+# navigate in log file using shortcuts
+jc press 1 log pause # Shift+Crtl+A
+jc press 19 log start # Shift+Crtl+S
+jc press 4 log goto 1 # Shift+Crtl+D
+jc press 6 log repeat # Shift+Crtl+F
+jc press 25 log backward # Shift+Crtl+Y
+jc press 24 log forward # Shift+Crtl+X
+jc press 3 log backward image # Shift+Crtl+C
+jc press 22 log forward image # Shift+Crtl+V
+jc press 2 log fastBackward # Shift+Ctrl+B
+jc press 14 log fastForward # Shift+Ctrl+N
+
+set representation:GroundContactState contact = true;
+
+# deactivate game info provided in Cognition
+mr RobotInfo default
+mr OwnTeamInfo default
+mr OpponentTeamInfo default
+mr RawGameInfo default
+mr GameInfo default
+
+# configure the log data providers
+log mr
+
+# enable behavior graph
+dr representation:ActivationGraph
+dr representation:TeamActivationGraph
+
+# send joint angles to control puppet
+dr representation:JointSensorData
+
+# send more data
+dr representation:JointRequest
+dr representation:InertialSensorData
+dr representation:FsrSensorData
+dr representation:SystemSensorData
+dr representation:KeyStates
+
+echo Use keyboard to navigate the log.
+echo - Ctrl+Shift+A: Pause replay
+echo - Ctrl+Shift+S: Start/continue replaying the log
+echo - Ctrl+Shift+D: Goto first frame
+echo - Ctrl+Shift+F: Repeat current frame
+echo - Ctrl+Shift+Y: One frame backward
+echo - Ctrl+Shift+X: One frame forward
+echo - Ctrl+Shift+C: Jump to previous frame that contains an image
+echo - Ctrl+Shift+V: Jump to next frame that contains an image
+echo - Ctrl+Shift+B: Jump backward 100 frames
+echo - Ctrl+Shift+N: Jump forward 100 frames
+echo

@@ -3,7 +3,7 @@
  *
  * This file contains the LEDRequest struct.
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -90,19 +90,19 @@ STREAMABLE(LEDRequest,
     chestGreen,
     chestBlue,
     firstHeadLED,
-    headLedRearLeft0 = firstHeadLED,
-    headLedRearLeft1,
-    headLedRearLeft2,
-    headLedRearRight0,
-    headLedRearRight1,
-    headLedRearRight2,
-    headLedMiddleRight0,
-    headLedFrontRight0,
-    headLedFrontRight1,
-    headLedFrontLeft0,
-    headLedFrontLeft1,
-    headLedMiddleLeft0,
-    lastHeadLED = headLedMiddleLeft0,
+    headRearLeft0 = firstHeadLED,
+    headRearLeft1,
+    headRearLeft2,
+    headRearRight0,
+    headRearRight1,
+    headRearRight2,
+    headMiddleRight0,
+    headFrontRight0,
+    headFrontRight1,
+    headFrontLeft0,
+    headFrontLeft1,
+    headMiddleLeft0,
+    lastHeadLED = headMiddleLeft0,
     footLeftRed,
     footLeftGreen,
     footLeftBlue,
@@ -111,7 +111,7 @@ STREAMABLE(LEDRequest,
     footRightBlue,
   });
 
-  static constexpr size_t numOfHeadLEDs = LED::headLedMiddleLeft0 - LED::headLedRearLeft0 + 1;
+  static constexpr size_t numOfHeadLEDs = LED::headMiddleLeft0 - LED::headRearLeft0 + 1;
 
   ENUM(LEDState,
   {,
@@ -140,6 +140,6 @@ STREAMABLE(LEDRequest,
   {
     return !(*this == other);
   },
-  
+
   (ENUM_INDEXED_ARRAY(LEDRequest::LEDState, LED)) ledStates, /**< The intended states of the LEDs (use type State). */
 });

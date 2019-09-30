@@ -63,7 +63,7 @@ public:
   double rPrimeOfR(double r) const {return r * (1 + k1 * r * r + k2 * r * r * r * r);}
 
   //! Inverse of \c rPrimeOfR
-  /*! Uses linear interpolation on the precalculated table \c rOfRPrimeTab.
+  /*! Uses linear interpolation on the pre-calculated table \c rOfRPrimeTab.
       If \c rPrime>rPrimeMax \c Nan is returned.
    */
   double rOfRPrime(double rPrime) const {return rOfRPrime2Factor(rPrime * rPrime) * rPrime;}

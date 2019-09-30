@@ -100,7 +100,7 @@ public:
  *
  * An Interface for writing messages into a MessageQueue.
  *
- * Use the bin or text member for formated writing into a message queue.
+ * Use the bin or text member for formatted writing into a message queue.
  */
 class OutMessage
 {
@@ -154,6 +154,6 @@ public:
   /** gives the operator that copies a InMessage to another queue access to protected members */
   friend void operator>>(InMessage& message, MessageQueue& queue);
 
-  /** gives the In streaming opeator access to protected members */
+  /** gives the In streaming operator access to protected members */
   friend In& operator>>(In& stream, MessageQueue& messageQueue);
 };

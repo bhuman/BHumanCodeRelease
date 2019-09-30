@@ -5,6 +5,7 @@
 
 #include "GlobalFieldCoverage.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/BHMath.h"
 #include <limits>
 
 GlobalFieldCoverage::Cell::Cell(const int coverage, unsigned timestamp,
@@ -21,6 +22,17 @@ GlobalFieldCoverage::Cell::Cell(const int coverage, unsigned timestamp,
   const_cast<Vector2f&>(polygon[1]) = Vector2f(xMin + 25.0f, yMax - 25.0f);
   const_cast<Vector2f&>(polygon[2]) = Vector2f(xMax - 25.0f, yMax - 25.0f);
   const_cast<Vector2f&>(polygon[3]) = Vector2f(xMax - 25.0f, yMin + 25.0f);
+}
+
+unsigned GlobalFieldCoverage::timeWhenLastSeen(const Vector2f& positionOnField, const FieldDimensions& theFieldDimensions) const
+{
+  float clippedPositionX = clip(positionOnField.x(), theFieldDimensions.xPosOwnGroundline, theFieldDimensions.xPosOpponentGroundline);
+  float clippedPositionY = clip(positionOnField.y(), theFieldDimensions.yPosRightSideline, theFieldDimensions.yPosLeftSideline);
+
+  const int x = std::min(static_cast<int>((clippedPositionX - theFieldDimensions.xPosOwnGroundline) / cellLengthX), numOfCellsX - 1);
+  const int y = std::min(static_cast<int>((clippedPositionY - theFieldDimensions.yPosRightSideline) / cellLengthY), numOfCellsY - 1);
+
+  return grid[y * 18 + x].timestamp;
 }
 
 void GlobalFieldCoverage::draw() const

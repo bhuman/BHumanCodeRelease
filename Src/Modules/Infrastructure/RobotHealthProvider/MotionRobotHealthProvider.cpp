@@ -1,5 +1,5 @@
 /**
- * @file Modules/Infrastructure/MotionRobotHealthProvider.h
+ * @file Modules/Infrastructure/MotionRobotHealthProvider.cpp
  * This file implements a module that provides information about the robot's health.
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
@@ -7,11 +7,11 @@
 #include "MotionRobotHealthProvider.h"
 #include "Platform/Time.h"
 
-MAKE_MODULE(MotionRobotHealthProvider, motionInfrastructure)
+MAKE_MODULE(MotionRobotHealthProvider, infrastructure)
 
 void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
 {
-  // Compute frame rate of motion process:
+  // Compute frame rate of motion thread:
   unsigned now = Time::getCurrentSystemTime();
   if(lastExecutionTime != 0)
     timeBuffer.push_front(now - lastExecutionTime);

@@ -168,7 +168,7 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludePenal
 
   if(wrongBallSideCostFactor > 0.f)
   {
-    const Vector2f ballPosition = theRobotPose * theBallModel.estimate.position;
+    const Vector2f& ballPosition = theFieldBall.recentBallPositionOnField();
     Vector2f end = ballPosition + (ballPosition - Vector2f(theFieldDimensions.xPosOwnGoal, 0)).normalized(wrongBallSideRadius);
     barriers.emplace_back(ballPosition.x(), ballPosition.y(),end.x(), end.y(), ballRadius * pi2 * wrongBallSideCostFactor);
   }
@@ -195,7 +195,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
 {
   nodes.clear();
 
-  // Reserve ennough space that prevents any reallocation, because the addresses of entries are used.
+  // Reserve enough space that prevents any reallocation, because the addresses of entries are used.
   nodes.reserve(sqr((excludePenaltyArea ? 8 : 6) +
                     (useObstacles ? theObstacleModel.obstacles.size() : theTeamPlayersModel.obstacles.size())));
 
@@ -214,7 +214,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
   if(excludePenaltyArea)
   {
     // The nodes around the penalty area will be intersected by barriers. Therefore, they can
-    // be reached from two sides and must be clonable once.
+    // be reached from two sides and must be cloneable once.
     nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
     nodes.back().allowedClones = 1;
     nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
@@ -239,12 +239,15 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
         addObstacle(obstacle.center, getRadius(obstacle.type));
   }
 
-  // Add ball if still valid and not the target
-  const Vector2f ballPosition = theRobotPose * theBallModel.estimate.position;
-  if((theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK || theGameInfo.setPlay == SET_PLAY_PUSHING_FREE_KICK) && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
-    addObstacle(ballPosition, freeKickRadius);
-  else if((ballPosition - to.center).norm() >= 1.f)
-    addObstacle(theRobotPose * theBallModel.estimate.position, ballRadius);
+  // Add ball in playing if it is not the target
+  if(theGameInfo.state == STATE_PLAYING)
+  {
+    const Vector2f& ballPosition = theTeamBehaviorStatus.role.playBall ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
+    if(theGameInfo.setPlay != SET_PLAY_NONE && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
+      addObstacle(ballPosition, freeKickRadius);
+    else if((ballPosition - to.center).norm() >= 1.f)
+      addObstacle(ballPosition, ballRadius);
+  }
 
   if(centerCircleRadius != 0.f && theGameInfo.state == STATE_READY && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
     addObstacle(Vector2f::Zero(), centerCircleRadius);
@@ -748,7 +751,6 @@ void PathPlannerProvider::calcMotionRequest(const Pose2f& target, const Pose2f& 
     // Close to target -> start turning to final direction.
     motionRequest.walkRequest.mode = WalkRequest::targetMode;
     motionRequest.walkRequest.target = target - theRobotPose;
-    walkStraight = false;
     turnAngleIntegrator = 0.f;
   }
   else if(nextEdge && (toPoint - theRobotPose.translation).norm() <= startTurningBeforeCircleDistance)
@@ -770,17 +772,13 @@ void PathPlannerProvider::calcMotionRequest(const Pose2f& target, const Pose2f& 
   else
   {
     const Vector2f offsetToTarget = (Pose2f(toPoint) - theRobotPose).translation;
-    const float angleToTarget = std::abs(offsetToTarget.angle());
-    walkStraight &= angleToTarget < alignAgainThreshold;
-    walkStraight |= angleToTarget < alignedThreshold;
-    walkStraight &= theBehaviorParameters.enableWalkStraight;
-    const float turnAngle = walkStraight ? 0.f : offsetToTarget.angle();
+    const float turnAngle = offsetToTarget.angle();
 
     // Walk straight towards next intermediate target.
     motionRequest.walkRequest.mode = WalkRequest::relativeSpeedMode;
-    motionRequest.walkRequest.speed.translation.x() = translationFn(turnAngle) + avoidance.x();
-    motionRequest.walkRequest.speed.translation.y() = avoidance.y();
-    motionRequest.walkRequest.speed.rotation = clip(turnAngle * pFactor + turnAngleIntegrator * iFactor, -1.f, 1.f);
+    motionRequest.walkRequest.speed.translation.x() *= translationFn(turnAngle) + avoidance.x();
+    motionRequest.walkRequest.speed.translation.y() *= avoidance.y();
+    motionRequest.walkRequest.speed.rotation *= clip(turnAngle * pFactor + turnAngleIntegrator * iFactor, -1.f, 1.f);
 
     turnAngleIntegrator += turnAngle - antiWindupFactor * (motionRequest.walkRequest.speed.rotation - clip<float>(motionRequest.walkRequest.speed.rotation, -antiWindupSaturation, antiWindupSaturation));
     turnAngleIntegrator = clip(turnAngleIntegrator, -1.f, 1.f);

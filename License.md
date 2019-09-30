@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2018 B-Human.  All rights reserved.
+Copyright (c) 2019 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup

@@ -10,7 +10,7 @@ void PropertyTreeWriter::inUInt(unsigned int& value)
 {
   Entry& e = stack.back();
   if(e.type == -1) // array size
-    value = (unsigned)e.property->subProperties().size();
+    value = static_cast<unsigned>(e.property->subProperties().size());
   else
     in(value);
 }

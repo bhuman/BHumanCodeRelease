@@ -73,7 +73,7 @@ public:
   {}
 
   void updateWidgets() override;
-  
+
 private:
   void updateColorCalibration(int value) override;
 };

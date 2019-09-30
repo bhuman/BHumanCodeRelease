@@ -201,7 +201,7 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
-#ifndef QT_NO_DRAGANDDROP
+#if QT_CONFIG(draganddrop)
     void dragMoveEvent(QDragMoveEvent *event) override;
 #endif
     bool viewportEvent(QEvent *event) override;
@@ -230,9 +230,9 @@ private:
 
     Q_DECLARE_PRIVATE(QTreeView)
     Q_DISABLE_COPY(QTreeView)
-#ifndef QT_NO_ANIMATION
+#if QT_CONFIG(animation)
     Q_PRIVATE_SLOT(d_func(), void _q_endAnimatedOperation())
-#endif //QT_NO_ANIMATION
+#endif // animation
     Q_PRIVATE_SLOT(d_func(), void _q_modelAboutToBeReset())
     Q_PRIVATE_SLOT(d_func(), void _q_sortIndicatorChanged(int column, Qt::SortOrder order))
 };

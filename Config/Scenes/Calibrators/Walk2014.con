@@ -1,0 +1,68 @@
+mr WalkGenerator Walk2014Generator2 Motion
+vp GyroPlots 1000 -130 130
+vpd GyroPlots representation:InertialData:gyro:y red
+vpd GyroPlots representation:InertialData:gyro:x blue
+
+vp TorsoAnglePlots 1000 -30 30
+vpd TorsoAnglePlots representation:InertialData:angle:y red
+vpd TorsoAnglePlots representation:InertialData:angle:x blue
+
+vp LeftFootHeight 300 -240 -210
+vpd LeftFootHeight module:Walk2014Generator2:leftFootHightCurrent red
+vpd LeftFootHeight module:Walk2014Generator2:leftFootHightDesired blue
+
+vp LeftFootForward 300 -60 50
+vpd LeftFootForward module:Walk2014Generator2:leftFootForwardCurrent red
+vpd LeftFootForward module:Walk2014Generator2:leftFootForwardDesired blue
+
+vp LeftFootSide 300 -20 100
+vpd LeftFootSide module:Walk2014Generator2:leftFootSideCurrent red
+vpd LeftFootSide module:Walk2014Generator2:leftFootSideDesired blue
+
+vp RightFootHeight 300 -240 -210
+vpd RightFootHeight module:Walk2014Generator2:rightFootHightCurrent red
+vpd RightFootHeight module:Walk2014Generator2:rightFootHightDesired blue
+
+vp RightFootForward 300 -60 50
+vpd RightFootForward module:Walk2014Generator2:rightFootForwardCurrent red
+vpd RightFootForward module:Walk2014Generator2:rightFootForwardDesired blue
+
+vp RightFootSide 300 -100 20
+vpd RightFootSide module:Walk2014Generator2:rightFootSideCurrent red
+vpd RightFootSide module:Walk2014Generator2:rightFootSideDesired blue
+
+vd parameters:Walk2014Generator2
+echo save parameters:Walk2014Generator2
+echo
+echo --Stand--
+echo set representation:MotionRequest motion = stand; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Forward--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 1; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Backwards--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = -1; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Left--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = 1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Right--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 0; y = -1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Left/Forward--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 1; y = 1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Right/Forward--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = 1; y = -1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Left/Backwards--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = -1; y = 1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Right/Backwards--
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 0deg; translation = { x = -1; y = -1; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Turn Left
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = 90deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;
+echo
+echo --Turn Right
+echo set representation:MotionRequest motion = walk; specialActionRequest = { specialAction = playDead; mirror = false; }; walkRequest = { mode = relativeSpeedMode; speed = { rotation = -90deg; translation = { x = 0; y = 0; }; }; target = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkKickRequest = { kickType = none; kickLeg = left; }; }; kickRequest = { kickMotionType = none; mirror = false; armsBackFix = false; autoProceed = false; offset = { x = 0; y = 0; }; speed = 0; boost = false; dynPoints = []; }; allowStandUp = true;

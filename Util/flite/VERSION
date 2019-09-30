@@ -1,0 +1,21 @@
+This is flite version 2.1-release
+
+Download repository from https://github.com/festvox/flite/
+From root:
+
+Linux:
+./configure --with-pic
+make
+make get_voices
+
+NaoV5:
+Build in the opennao vm: Same command as Linux
+
+NaoV6:
+Build on Ubuntu 18.04 LTS. Same command as Linux, but set environment variable CFLAGS before executing ./configure with
+export CFLAGS="-march=silvermont -mtune=silvermont"
+
+Copy flite/build/<arch>/lib/{libflite, libflite_cmulex, libflite_cmu_us_slt, libflite_usenglish}.a to the corresponding install path
+
+The headers from flite/include can be copied to include
+

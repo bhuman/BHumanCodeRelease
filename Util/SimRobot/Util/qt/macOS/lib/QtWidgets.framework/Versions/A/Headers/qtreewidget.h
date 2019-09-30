@@ -82,8 +82,8 @@ public:
     inline void setSelected(bool select);
     inline bool isSelected() const;
 
-    inline void setHidden(bool hide);
-    inline bool isHidden() const;
+    void setHidden(bool hide);
+    bool isHidden() const;
 
     inline void setExpanded(bool expand);
     inline bool isExpanded() const;
@@ -339,6 +339,7 @@ Q_SIGNALS:
     void itemDoubleClicked(QTreeWidgetItem *item, int column);
     void itemActivated(QTreeWidgetItem *item, int column);
     void itemEntered(QTreeWidgetItem *item, int column);
+    // ### Qt 6: add changed roles
     void itemChanged(QTreeWidgetItem *item, int column);
     void itemExpanded(QTreeWidgetItem *item);
     void itemCollapsed(QTreeWidgetItem *item);
@@ -408,12 +409,6 @@ inline void QTreeWidgetItem::setSelected(bool aselect)
 
 inline bool QTreeWidgetItem::isSelected() const
 { return (view ? view->isItemSelected(this) : false); }
-
-inline void QTreeWidgetItem::setHidden(bool ahide)
-{ if (view) view->setItemHidden(this, ahide); }
-
-inline bool QTreeWidgetItem::isHidden() const
-{ return (view ? view->isItemHidden(this) : false); }
 
 inline void QTreeWidgetItem::setExpanded(bool aexpand)
 { if (view) view->setItemExpanded(this, aexpand); }

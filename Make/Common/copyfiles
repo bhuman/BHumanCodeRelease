@@ -11,12 +11,11 @@ usage()
   echo "    -h | --help | /h | /?  print this text"
   echo "    -l <location>          set location"
   echo "    -m <number>            set magic number for teamcomm (0-255). Set -1 for random."
-  echo "    -n                     stop NAOqi"
   echo "    -nc                    never compile"
   echo "    -nr                    do not check whether target is reachable"
   echo "    -o <port>              overwrite team port"
   echo "    -p <number>            set player number"
-  echo "    -r <n> <ip>            copy to <ip>, and set playernumber to <n> (one -r per robot)"
+  echo "    -r <n> <ip>            copy to <ip> and set playernumber to <n> (one -r per robot)"
   echo "    -s <scenario>          set scenario"
   echo "    -t <number>            set team number"
   echo "    -v <percent>           set NAO's volume"
@@ -24,7 +23,6 @@ usage()
   echo "  examples:"
   echo "    ./copyfiles Develop 192.168.5.14 -p 1"
   echo "    ./copyfiles Release -r 1 10.0.5.14 -r 3 10.0.0.2"
-  echo "  Without -n, NAOqi will be restarted if libbhuman or libgamectrl were changed."
   exit 1
 }
 
@@ -48,14 +46,9 @@ copy()
   echo "stopping bhuman"
   ssh $sshoptions nao@$REMOTE "/home/nao/bin/bhumand stop > /dev/null"
 
-  if [ ! -z $STOPNAOQI ]; then
-    echo "stopping naoqi"
-    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi stop &> /dev/null"
-  fi
-
   if [ ! -z $DELETELOGS ]; then
     echo "removing log files"
-    ssh $sshoptions nao@$REMOTE "rm -f /home/nao/logs/* /tmp/bhumand.log > /dev/null"
+    ssh $sshoptions nao@$REMOTE "rm -f /home/nao/logs/* > /dev/null"
   fi
 
   echo "updating wireless profiles"
@@ -79,27 +72,15 @@ copy()
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --exclude=/Statistics --exclude=libbhuman.so --exclude=libgamectrl.so --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/$COMPONENT/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
 
-  echo "updating libs"
-  RESULT=`rsync --chmod=u+rw,go+r,Dugo+x --stats -zce "ssh $sshoptions" ../../Build/Linux/libbhuman/$CONFIG/libbhuman.so ../../Build/Linux/libgamectrl/$CONFIG/libgamectrl.so nao@$REMOTE:/home/nao/Config`
-  if [ `echo "$RESULT" | grep -c 'transferred: 0'` != 1 -a -z "$STOPNAOQI" ]; then
-    RESTARTNAOQI=1
-  fi
-
-  if [ ! -z $RESTARTNAOQI ]; then
-    echo "restarting naoqi"
-    ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi restart &> /dev/null"
-  fi
-
-  # set volume
+  # set playback volume and reset capture value to 100%
   echo "setting volume to $VOLUME%"
-
-  #New naoqi versions use "Master", old use "PCM" as amixer SCONTROL
-  ssh $sshoptions nao@$REMOTE "amixer set Master $VOLUME% unmute &> /dev/null"
-
-  #reset capture volume to 100%
-  ssh $sshoptions nao@$REMOTE "amixer set Capture 100% unmute &> /dev/null"
+  ssh $sshoptions nao@$REMOTE "aplay -q /home/nao/Config/Sounds/empty.wav"
+  ssh $sshoptions nao@$REMOTE "amixer set PCM $VOLUME% unmute &> /dev/null"
+  ssh $sshoptions nao@$REMOTE "amixer set Digital 100% unmute &> /dev/null \
+                               || ( arecord -d 1 -f FLOAT_LE -c 2 -q >/dev/null \
+                                    && amixer set Digital 100% unmute &> /dev/null )"
 
   # set settings on robot
   if [ ! -z $SCENARIO ] || [ ! -z $LOCATION ] || [ ! -z $TEAM ] || [ ! -z $PORT ] || [ ! -z $PLAYER ] || [ ! -z $NUMBER ] || [ ! -z $MAGICNUMBER ]; then
@@ -116,13 +97,6 @@ copy()
   fi
 
   if [ ! -z $RESTART ]; then
-    if [ -z $RESTARTNAOQI ]; then
-      RESULT=`ssh $sshoptions nao@$REMOTE "/etc/init.d/naoqi status | grep started"` || true
-      if [ -z "$RESULT" ]; then
-        echo "starting naoqi"
-        ssh $sshoptions nao@$REMOTE "sudo /etc/init.d/naoqi start &> /dev/null"
-      fi
-    fi
     echo "starting bhuman"
     ssh $sshoptions nao@$REMOTE "/home/nao/bin/bhumand start > /dev/null"
   fi
@@ -134,8 +108,6 @@ set -e
 
 keySource=../../Config/Keys/id_rsa_nao
 keyFile=/tmp/id_rsa_nao
-cipher=`( ssh -Q cipher | grep "arcfour"; echo "aes128-ctr" ) | head -1`
-sshoptions="-c $cipher -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 if [[ $(uname) == *CYGWIN* ]]; then
   pingoptions="-w 1 -n 1"
 elif [ $(uname) == "Darwin" ]; then
@@ -149,7 +121,6 @@ cp $keySource $keyFile
 
 # init variables
 [ -z $CONFIG ] && CONFIG="Develop"
-COMPONENT="Nao"
 PLAYER=
 TEAM=
 NUMBER=
@@ -160,8 +131,6 @@ COMPILE=1
 CHECK=1
 NUMMULTIPLE=0
 RESTART=
-RESTARTNAOQI=
-STOPNAOQI=
 MULTIPLEDATA=
 DELETELOGS=
 VOLUME=100
@@ -215,9 +184,6 @@ while true; do
     "-b" | "/b")
       RESTART=1
       ;;
-    "-n" | "/n")
-      STOPNAOQI=1
-      ;;
     "-nr" | "/nr")
       CHECK=
       ;;
@@ -246,9 +212,6 @@ while true; do
       shift
       MAGICNUMBER=$1
       ;;
-    "Nao")
-      COMPONENT="Nao"
-      ;;
     "Release")
       CONFIG="Release"
       ;;
@@ -268,6 +231,8 @@ while true; do
   esac
   shift
 done
+
+sshoptions="-c aes128-ctr -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 if [ ! -z $SCENARIO ]; then
   if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
@@ -305,10 +270,14 @@ if [ ! -z $MAGICNUMBER ]; then
   # calculate magic number from ip if -1
   if [ $MAGICNUMBER -le -1 ]; then
     if [[ $(uname) == *CYGWIN* ]]; then
-      MAGICNUMBER=$(ipconfig | grep -e "${REMOTE%.*}" | head -n 1 | sed "s%.*\.%%")
-    else      
+      MAGICNUMBER=$(ipconfig \
+                    | grep -e "${REMOTE%.*}" \
+                    | head -n 1 \
+                    | sed "s%.*\.%%")
+    else
       MAGICNUMBER=$(ifconfig 2>/dev/null \
                     | grep -e "${REMOTE%.*}" \
+                    | head -n 1 \
                     | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
     fi
     if [ -z "$MAGICNUMBER" ]; then
@@ -325,17 +294,17 @@ chmod 600 $keyFile
 if [ ! -z $COMPILE ]; then
   if [ "`uname`" = "Darwin" ]; then
     # macOS
-    ./compile $COMPONENT $CONFIG
+    ./compile Nao $CONFIG
     [ $? -ne 0 ] && exit 1
   elif [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
     # Windows
-    echo "------ Compiling $COMPONENT ($CONFIG) ------"
-    ../../Util/SimRobot/Util/mare/Windows/bin/mare.exe ${COMPONENT} CONFIG=${CONFIG}
+    echo "------ Compiling Nao ($CONFIG) ------"
+    ../../Util/SimRobot/Util/mare/Windows/bin/mare.exe Nao CONFIG=${CONFIG}
     [ $? -ne 0 ] && exit 1
     echo "------ Successfully compiled ------"
   else
     # Linux
-    make $COMPONENT CONFIG=$CONFIG
+    make Nao CONFIG=$CONFIG
     [ $? -ne 0 ] && exit 1
   fi
 fi

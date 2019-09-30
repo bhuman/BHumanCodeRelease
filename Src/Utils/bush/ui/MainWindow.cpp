@@ -9,6 +9,7 @@
 #include <QSplitter>
 #include <QSettings>
 #include <QApplication>
+#include <QMouseEvent>
 #include <qstyleoption.h>
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/ui/MainWindow.h"
@@ -58,16 +59,18 @@ MainWindow::MainWindow()
   addToolBar(Qt::BottomToolBarArea, shortcutBar);
 #endif
   shortcutBar->addShortcut("help", "help");
-  QAction* deplayAction = shortcutBar->addShortcut("deploy", "deploy");
-  deplayAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
-  deplayAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
-  QAction* downloadLags = shortcutBar->addShortcut("download logs", "downloadLogs");
-  downloadLags->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
-  downloadLags->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
+  QAction* deployAction = shortcutBar->addShortcut("deploy", "deploy");
+  deployAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
+  deployAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
+  QAction* downloadLogs = shortcutBar->addShortcut("download logs", "downloadLogs");
+  downloadLogs->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+  downloadLogs->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
   shortcutBar->addShortcut("delete logs", "deleteLogs");
   shortcutBar->addShortcut("simulator", "sim");
   shortcutBar->addShortcut("ssh", "ssh");
+  shortcutBar->addShortcut("restart", "restart bhuman");
   shortcutBar->addShortcut("shutdown", "shutdown -s");
+  shortcutBar->addShortcut("reboot", "restart robot");
   splitter->addWidget(console);
 
   int widgetWidthResize = 1128;
@@ -79,6 +82,20 @@ MainWindow::MainWindow()
   QPoint position((desktop.width() - frameGeometry().width()) / 2, (desktop.height() - frameGeometry().height()) / 2);
   QWidget::move(position);
   readSettings();
+
+  setAcceptDrops(true);
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* e)
+{
+  if(e->source() && (e->source()->inherits("RobotView") || e->source()->inherits("RobotPool")))
+    e->acceptProposedAction();
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent* e)
+{
+  if(e->source() && (e->source()->inherits("RobotView") || e->source()->inherits("RobotPool")))
+    e->acceptProposedAction();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

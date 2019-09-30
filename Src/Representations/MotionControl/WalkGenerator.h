@@ -46,4 +46,5 @@ STREAMABLE(WalkGenerator,
   (float)(0.f) stepDuration, /**< The expected duration of the current step (in s). */
   (float) t, /**< Current time in the walk cycle (in s). */
   (bool)(false) isLeftPhase, /**< Is the left foot swinging? */
+  (bool)(false) forceStand, /**< Shall a stand be forced, to prevent that the robot is stuck in a loop of emergency steps?. */
 });

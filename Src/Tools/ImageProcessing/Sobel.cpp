@@ -1,5 +1,5 @@
 /**
- * @file   Sobel.h
+ * @file   Sobel.cpp
  *
  * @author Alexis Tsogias
  */

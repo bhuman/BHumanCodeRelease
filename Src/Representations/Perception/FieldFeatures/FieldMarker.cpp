@@ -36,7 +36,7 @@ void MarkedLine::draw() const
 
   const FieldLines::Line& line = theFieldLines->lines[lineIndex];
 
-  DEBUG_DRAWING("representation:MarkedField:field", "drawingOnField")
+  COMPLEX_DRAWING("representation:MarkedField:field")
   {
     const Drawings::PenStyle pen = Drawings::dottedPen;
     LINE("representation:MarkedField:field", line.first.x(), line.first.y(), line.last.x(), line.last.y(), 15, pen, ColorRGBA::blue);
@@ -44,8 +44,7 @@ void MarkedLine::draw() const
     CROSS("representation:MarkedField:field", line.first.x(), line.first.y(), 10, 5, pen, ColorRGBA::blue);
   }
 
-  DECLARE_DEBUG_DRAWING("representation:MarkedField:imageText", "drawingOnImage");
-  DEBUG_DRAWING("representation:MarkedField:image", "drawingOnImage")
+  COMPLEX_DRAWING("representation:MarkedField:image")
   {
     Vector2f pImg;
     if(Transformation::robotToImage(line.first, *theCameraMatrix, *theCameraInfo, pImg))
@@ -63,7 +62,6 @@ void MarkedLine::draw() const
     }
   }
 
-  DECLARE_DEBUG_DRAWING3D("representation:MarkedField", "robot");
   TRANSLATE3D("representation:MarkedField", 0, 0, -210);
   LINE3D("representation:MarkedField", line.first.x(), line.first.y(), 0, line.last.x(), line.last.y(), 0, 2, ColorRGBA::blue);
 }

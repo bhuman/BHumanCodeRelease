@@ -1,7 +1,7 @@
 /**
  * @file Tools/BNTP.h
  *
- * Representations anf functions for time synchronisation inside
+ * Representations and functions for time synchronization inside
  * the team. Implementation of parts of the Network Time Protocol.
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
@@ -15,13 +15,13 @@
 #include "Tools/MessageQueue/MessageIDs.h"
 #include "Representations/Communication/BHumanMessage.h"
 #include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 
 /**
  * @class BNTPRequest
  *
- * A package for starting a synchronization measurement
+ * A packet for starting a synchronization measurement
  */
 STREAMABLE(BNTPRequest,
 {
@@ -108,7 +108,7 @@ public:
   }
 
 private:
-  enum { MAX_NUM_OF_NTP_CLIENTS = 12, MAX_NUM_OF_NTP_PACKAGES = 12, NTP_REQUEST_INTERVAL = 2000 }; /**< Some constants for NTP snychronization. */
+  enum { MAX_NUM_OF_NTP_CLIENTS = 12, MAX_NUM_OF_NTP_PACKAGES = 12, NTP_REQUEST_INTERVAL = 2000 }; /**< Some constants for NTP synchronisation. */
 
   unsigned lastNTPRequestSent = 0; /**< The point of time when the last NTP request has been sent to the team. */
   RingBuffer<BNTPRequest, MAX_NUM_OF_NTP_PACKAGES> receivedNTPRequests; /**< The requests received in the current frame. */

@@ -18,7 +18,7 @@ option(UpdateRequest)
       {
         if(theFallDownState.state == FallDownState::staggering)
           ANNOTATION("UNSWWalkingEngine", std::string("Stand to ") + TypeRegistry::getEnumName(w.walkKickRequest.kickType) + " while staggering");
-        if(w.walkKickRequest.kickType != WalkKicks::Type::none || walkRequest.mode == WalkRequest::runUpMode)
+        if(w.walkKickRequest.kickType != WalkKicks::Type::none)
           goto inWalkKick;
         else
           goto walking;
@@ -39,7 +39,7 @@ option(UpdateRequest)
         goto noGroundContact;
       else if(theMotionRequest.motion != MotionRequest::walk && theWalkGenerator.t == 0)
         goto standing;
-      else if(w.walkKickRequest.kickType != WalkKicks::Type::none || walkRequest.mode == WalkRequest::runUpMode)
+      else if(w.walkKickRequest.kickType != WalkKicks::Type::none)
         goto inWalkKick;
     }
     action
@@ -55,7 +55,7 @@ option(UpdateRequest)
     transition
     {
       if(!theGroundContactState.contact
-         || (theFallDownState.state != FallDownState::upright && theFallDownState.state != FallDownState::staggering && !isKicking))
+         || (theFallDownState.state != FallDownState::upright && theFallDownState.state != FallDownState::staggering))
         goto noGroundContact;
       else if(action_done && theWalkGenerator.t == 0)
       {
@@ -79,7 +79,6 @@ option(UpdateRequest)
     }
     action
     {
-      theWalkGenerator.reset();
       stand();
     }
   }

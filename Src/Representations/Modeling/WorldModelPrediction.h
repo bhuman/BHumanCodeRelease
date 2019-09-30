@@ -24,7 +24,7 @@ STREAMABLE(WorldModelPrediction,
   void verify() const;
   /** Draws stuff on the field */
   void draw() const,
-  
+
   (Vector2f)(Vector2f::Zero()) ballPosition,    /*< 2D position of the ball in robot coordinates, i.e. relative to the robot on the field */
   (Vector2f)(Vector2f::Zero()) ballVelocity,    /*< 2D velocity of the ball in robot coordinates, i.e. relative to the robot on the field */
   (unsigned)(0) timeWhenBallLastSeen,           /*< as the name says */

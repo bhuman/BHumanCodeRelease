@@ -40,20 +40,42 @@ BHumanStandardMessage::BHumanStandardMessage() :
   ballSeenPercentage(0),
   ballVelocity(Vector2f::Zero()),
   ballLastPercept(Vector2f::Zero()),
-  confidenceOfLastWhistleDetection(-1),
+  confidenceOfLastWhistleDetection(0),
+  channelsUsedForWhistleDetection(0),
   lastTimeWhistleDetected(0),
+  teamActivity(0),
+  timeWhenReachBall(std::numeric_limits<unsigned>::max()),
+  timeWhenReachBallStriker(std::numeric_limits<unsigned>::max()),
+  captain(-1),
+  teammateRolesTimestamp(0),
+  isGoalkeeper(false),
+  playBall(false),
+  supporterIndex(-1),
+  activity(0),
+  passTarget(-1),
+  walkingTo(Vector2f::Zero()),
+  shootingTo(Vector2f::Zero()),
   obstacles(),
+  say(0),
+  nextTeamTalk(0),
   requestsNTPMessage(false),
   ntpMessages()
 {
   const char* init = BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER;
   for(unsigned int i = 0; i < sizeof(header); ++i)
     header[i] = init[i];
+
+  for(unsigned int i = 0; i < BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
+  {
+    teammateRolesIsGoalkeeper[i] = false;
+    teammateRolesPlayBall[i] = false;
+    teammateRolesPlayerIndex[i] = -1;
+  }
 }
 
 int BHumanStandardMessage::sizeOfBHumanMessage() const
 {
-  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 0, "This method is not adjusted for the current message version");
+  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 11, "This method is not adjusted for the current message version");
 
   return sizeof(header)
          + sizeof(version)
@@ -70,8 +92,19 @@ int BHumanStandardMessage::sizeOfBHumanMessage() const
          + 2 * 2 // ballLastPercept
          + 3 * 4 // ballCovariance
          + 1 // confidenceOfLastWhistleDetection
+         + 1 // channelsUsedForWhistleDetection
          + 2 // lastTimeWhistleDetected
+         + 1 // teamActivity
+         + 1 // activity
+         + 5 // isGoalkeeper, playBall, supporterIndex, passTarget, teammateRolesIsGoalkeeper, teammateRolesPlayBall, teammateRolesPlayerIndex
+         + 2 // timeWhenReachBall
+         + 2 // timeWhenReachBallStriker
+         + 2 * 2 // walkingTo
+         + 2 * 2 // shootingTo
+         + 2 // captain, teammateRolesTimestamp
          + 2 // number of obstacles, isPenalized, isUpright, hasGroundContact, requestsNTPMessage, NTP reply bitset
+         + 1 // say
+         + 1 // nextTeamTalk
          + static_cast<int>(obstacles.size()) * 25
          + static_cast<int>(ntpMessages.size()) * 5;
 }
@@ -80,7 +113,7 @@ int BHumanStandardMessage::sizeOfBHumanMessage() const
 
 void BHumanStandardMessage::write(void* data) const
 {
-  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 0, "This method is not adjusted for the current message version");
+  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 11, "This method is not adjusted for the current message version");
 
 #ifndef NDEBUG
   const void* const begin = data; //just for length check
@@ -113,8 +146,41 @@ void BHumanStandardMessage::write(void* data) const
     writeVal<float>(data, ballCovariance[i]);
 
   writeVal<int8_t>(data, confidenceOfLastWhistleDetection);
+  writeVal<int8_t>(data, channelsUsedForWhistleDetection);
   const uint32_t lastTimeWhistleDetectedDiff = timestamp - std::min(timestamp, lastTimeWhistleDetected);
   writeVal<uint16_t>(data, static_cast<uint16_t>(lastTimeWhistleDetectedDiff > 0xFFFEu ? 0xFFFFu : lastTimeWhistleDetectedDiff));
+
+  writeVal<uint8_t>(data, teamActivity);
+  writeVal<uint8_t>(data, activity);
+
+  static_assert(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS <= 6, "This code only works for up to six robots per team (because of array size and max player index).");
+  static_assert(Settings::lowestValidPlayerNumber >= 0, "This code only works for nonnegative player numbers.");
+  static_assert(Settings::highestValidPlayerNumber <= 14, "This code only works for player numbers up to 14.");
+  uint64_t rolePassTargetTeammateRolesContainer = 0;
+  for(unsigned int i = 0; i < BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
+  {
+    (rolePassTargetTeammateRolesContainer <<= 1) |= teammateRolesIsGoalkeeper[i] ? 1 : 0;
+    (rolePassTargetTeammateRolesContainer <<= 1) |= teammateRolesPlayBall[i] ? 1 : 0;
+    (rolePassTargetTeammateRolesContainer <<= 3) |= (teammateRolesPlayerIndex[i] < 0) ? 0x7u : std::min(teammateRolesPlayerIndex[i], 6);
+  }
+  (rolePassTargetTeammateRolesContainer <<= 1) |= isGoalkeeper ? 1 : 0;
+  (rolePassTargetTeammateRolesContainer <<= 1) |= playBall ? 1 : 0;
+  (rolePassTargetTeammateRolesContainer <<= 3) |= (supporterIndex < 0) ? 0x7u : std::min(supporterIndex, 6);
+  (rolePassTargetTeammateRolesContainer <<= 4) |= (passTarget < 0) ? 0xFu : std::min(passTarget, 14);
+  writeVal<uint8_t>(data, static_cast<uint8_t>(rolePassTargetTeammateRolesContainer));
+  writeVal<uint32_t>(data, static_cast<uint32_t>(rolePassTargetTeammateRolesContainer >> 8));
+  const uint32_t timeWhenReachBallDiff_8 = (std::max(timestamp, timeWhenReachBall) - timestamp) >> 3;
+  writeVal<uint16_t>(data, static_cast<uint16_t>(timeWhenReachBallDiff_8 > 0xFFFEu ? 0xFFFFu : timeWhenReachBallDiff_8));
+  const uint32_t timeWhenReachBallStrikerDiff_8 = (std::max(timestamp, timeWhenReachBallStriker) - timestamp) >> 3;
+  writeVal<uint16_t>(data, static_cast<uint16_t>(timeWhenReachBallStrikerDiff_8 > 0xFFFCu ? 0xFFFDu : timeWhenReachBallStrikerDiff_8));
+  writeVal<int16_t>(data, CLIP_AND_CAST_TO_INT16(walkingTo.x()));
+  writeVal<int16_t>(data, CLIP_AND_CAST_TO_INT16(walkingTo.y()));
+  writeVal<int16_t>(data, CLIP_AND_CAST_TO_INT16(shootingTo.x()));
+  writeVal<int16_t>(data, CLIP_AND_CAST_TO_INT16(shootingTo.y()));
+
+  static_assert(Settings::highestValidPlayerNumber <= 6, "This code only works for player numbers up to 6.");
+  const uint32_t teammateRolesTimestampDiff = timestamp - std::min(timestamp, teammateRolesTimestamp);
+  writeVal<uint16_t>(data, static_cast<uint16_t>(teammateRolesTimestampDiff > 0x1FFE ? 0x1FFF : teammateRolesTimestampDiff) | static_cast<uint16_t>(((captain < 0) ? 0x7 : std::min(captain, 6)) << 13));
 
   static_assert(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS == 6, "This code only works for exactly six robots per team (but can be easily adjusted).");
   uint16_t boolContainer = 0;
@@ -135,6 +201,7 @@ void BHumanStandardMessage::write(void* data) const
       {
         ntpReceivers |= 1;
         ++ntpMessagesItr;
+        ASSERT(ntpMessagesItr == ntpMessages.cend() || ntpMessagesItr->receiver > i + 1);
       }
     }
   }
@@ -152,9 +219,14 @@ void BHumanStandardMessage::write(void* data) const
     writeVal<uint16_t>(data, static_cast<uint16_t>(((CLIP_AND_CAST_TO_INT16(obstacle.left.y()) >> 2) & 0x3FFF) | ((obstacle.type & 0xC) << 12)));
     writeVal<uint16_t>(data, static_cast<uint16_t>(((CLIP_AND_CAST_TO_INT16(obstacle.right.x()) >> 2) & 0x3FFF) | ((obstacle.type & 0x30) << 10)));
     writeVal<uint16_t>(data, static_cast<uint16_t>(((CLIP_AND_CAST_TO_INT16(obstacle.right.y()) >> 2) & 0x3FFF) | ((obstacle.type & 0xC0) << 8)));
+
     const uint32_t lastSeenDiff_64 = (timestamp - std::min(timestamp, obstacle.lastSeen)) >> 6;
     writeVal<uint8_t>(data, static_cast<uint8_t>(lastSeenDiff_64 > 0xFE ? 0xFF : lastSeenDiff_64));
   }
+  writeVal<char>(data, say);
+  const uint32_t nextTeamTalk_64 = (std::max(timestamp, nextTeamTalk) - timestamp) >> 6;
+  writeVal<uint8_t>(data, static_cast<uint8_t>(nextTeamTalk_64 > 0xFE ? 0xFF : nextTeamTalk_64));
+
   for(const BNTPMessage& ntpMessage : ntpMessages)
   {
     const uint32_t requestReceiptDiffCutted = std::min(timestamp - ntpMessage.requestReceipt, 0xFFFu);
@@ -167,7 +239,7 @@ void BHumanStandardMessage::write(void* data) const
 
 bool BHumanStandardMessage::read(const void* data)
 {
-  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 0, "This method is not adjusted for the current message version");
+  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 11, "This method is not adjusted for the current message version");
 
 #ifndef NDEBUG
   const void* const begin = data; //just for length check
@@ -210,11 +282,50 @@ bool BHumanStandardMessage::read(const void* data)
     ballCovariance[i] = readVal<const float>(data);
 
   confidenceOfLastWhistleDetection = readVal<const int8_t>(data);
+  channelsUsedForWhistleDetection = readVal<const int8_t>(data);
   const uint32_t lastTimeWhistleDetectedDiff = readVal<const uint16_t>(data);
   if(lastTimeWhistleDetectedDiff > 0xFFFEu)
     lastTimeWhistleDetected = 0;
   else
     lastTimeWhistleDetected = timestamp - lastTimeWhistleDetectedDiff;
+
+  teamActivity = readVal<const uint8_t>(data);
+  activity = readVal<const uint8_t>(data);
+
+  static_assert(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS <= 6, "This code only works for up to six robots per team (because of array size and max player index).");
+  static_assert(Settings::lowestValidPlayerNumber >= 0, "This code only works for nonnegative player numbers.");
+  static_assert(Settings::highestValidPlayerNumber <= 14, "This code only works for player numbers up to 14.");
+  const uint64_t rolePassTargetTeammateRolesContainer = readVal<const uint8_t>(data) | (static_cast<uint64_t>(readVal<const uint32_t>(data)) << 8);
+  passTarget = rolePassTargetTeammateRolesContainer & 0xF;
+  if(passTarget == 15)
+    passTarget = -1;
+  supporterIndex = (rolePassTargetTeammateRolesContainer >> 4) & 0x7;
+  if(supporterIndex == 7)
+    supporterIndex = -1;
+  playBall = ((rolePassTargetTeammateRolesContainer >> 7) & 0x1) != 0;
+  isGoalkeeper = ((rolePassTargetTeammateRolesContainer >> 8) & 0x1) != 0;
+  for(unsigned int i = 0; i < BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
+  {
+    const uint8_t teammateRole = (rolePassTargetTeammateRolesContainer >> (9 + (BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS - i - 1) * 5)) & 0x1F;
+    teammateRolesPlayerIndex[i] = teammateRole & 0x7;
+    if(teammateRolesPlayerIndex[i] == 7)
+      teammateRolesPlayerIndex[i] = -1;
+    teammateRolesPlayBall[i] = (teammateRole & 0x8) != 0;
+    teammateRolesIsGoalkeeper[i] = (teammateRole & 0x10) != 0;
+  }
+  timeWhenReachBall = timestamp + (static_cast<uint32_t>(readVal<const uint16_t>(data)) << 3);
+  timeWhenReachBallStriker = timestamp + (static_cast<uint32_t>(readVal<const uint16_t>(data)) << 3);
+  walkingTo.x() = readVal<const int16_t>(data);
+  walkingTo.y() = readVal<const int16_t>(data);
+  shootingTo.x() = readVal<const int16_t>(data);
+  shootingTo.y() = readVal<const int16_t>(data);
+
+  static_assert(Settings::highestValidPlayerNumber <= 6, "This code only works for player numbers up to 6.");
+  const uint16_t captainTeammateRolesTimestamp = readVal<const uint16_t>(data);
+  captain = captainTeammateRolesTimestamp >> 13;
+  if(captain == 7)
+    captain = -1;
+  teammateRolesTimestamp = timestamp - (captainTeammateRolesTimestamp & 0x1FFF);
 
   static_assert(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS == 6, "This code only works for exactly six robots per team (but can be easily adjusted).");
   const uint16_t boolAndNTPReceiptContainer = readVal<const uint16_t>(data);
@@ -224,8 +335,8 @@ bool BHumanStandardMessage::read(const void* data)
   {
     Obstacle& o = obstacles[i];
     const float covXX = readVal<const float>(data);
-    const float covXY = readVal<const float>(data);
     const float covYY = readVal<const float>(data);
+    const float covXY = readVal<const float>(data);
     o.covariance << covXX, covXY, covXY, covYY;
 
     const int16_t centerX = readVal<const int16_t>(data);
@@ -234,12 +345,16 @@ bool BHumanStandardMessage::read(const void* data)
     const uint16_t leftY_4Type = readVal<const uint16_t>(data);
     const uint16_t rightX_4Type = readVal<const uint16_t>(data);
     const uint16_t rightY_4Type = readVal<const uint16_t>(data);
+
     o.center = Vector2f(centerX, centerY);
     o.left = Vector2f(static_cast<int16_t>(leftX_4Type << 2), static_cast<int16_t>(leftY_4Type << 2));
     o.right = Vector2f(static_cast<int16_t>(rightX_4Type << 2), static_cast<int16_t>(rightY_4Type << 2));
     o.lastSeen = timestamp - (static_cast<uint32_t>(readVal<const uint8_t>(data)) << 6);
     o.type = static_cast<Obstacle::Type>((leftX_4Type >> 14) | ((leftY_4Type >> 12) & 0x0C) | ((rightX_4Type >> 10) & 0x30) | ((rightY_4Type >> 8) & 0xC0));
   }
+  say = readVal<const char>(data);
+  nextTeamTalk = timestamp + (static_cast<uint32_t>(readVal<const uint8_t>(data)) << 6);
+
   uint16_t runner = 1 << 9;
   isPenalized = (boolAndNTPReceiptContainer & runner) != 0;
   isUpright = (boolAndNTPReceiptContainer & (runner >>= 1)) != 0;

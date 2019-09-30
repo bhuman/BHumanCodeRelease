@@ -1,5 +1,5 @@
 /**
- * @file AutomaticCameraCalibrator.h
+ * @file AutomaticCameraCalibrator.cpp
  *
  * This file implements a module that can provide an automatic camera calibration.
  *
@@ -17,7 +17,7 @@
 #include "Tools/Settings.h"
 #include <limits>
 
-MAKE_MODULE(AutomaticCameraCalibrator, cognitionInfrastructure)
+MAKE_MODULE(AutomaticCameraCalibrator, infrastructure)
 
 AutomaticCameraCalibrator::AutomaticCameraCalibrator() : functor(*this), state(Idle)
 {
@@ -42,8 +42,6 @@ void AutomaticCameraCalibrator::idle()
 void AutomaticCameraCalibrator::init()
 {
   startingCameraCalibration = theCameraCalibration;
-
-  swapCameras(startCamera);
 
   firstHeadPans.clear();
   secondHeadPans.clear();
@@ -88,7 +86,7 @@ void AutomaticCameraCalibrator::moveHead()
   }
   else if(firstHeadPans.empty() && secondHeadPans.size() == headPans.size())
   {
-    startCamera == CameraInfo::upper ? swapCameras(CameraInfo::lower) : swapCameras(CameraInfo::upper);
+    currentCamera = (startCamera == CameraInfo::upper) ? CameraInfo::lower : CameraInfo::upper;
     currentHeadPan = secondHeadPans.back();
     secondHeadPans.pop_back();
     state = WaitForCamera;
@@ -284,30 +282,23 @@ void AutomaticCameraCalibrator::listen()
 
 void AutomaticCameraCalibrator::invert(const CameraCalibration& cameraCalibration)
 {
-  Vector3a buffLowerCameraRotationCorrection = cameraCalibration.lowerCameraRotationCorrection;
-  Vector3a buffUpperCameraRotationCorrection = cameraCalibration.upperCameraRotationCorrection;
+  Vector3a buffLowerCameraRotationCorrection = cameraCalibration.cameraRotationCorrections[CameraInfo::lower];
+  Vector3a buffUpperCameraRotationCorrection = cameraCalibration.cameraRotationCorrections[CameraInfo::upper];
   Angle buffBodyRotationCorrectionX = cameraCalibration.bodyRotationCorrection.x() * -1;
   Angle buffBodyRotationCorrectionY = cameraCalibration.bodyRotationCorrection.y() * -1;
   CameraCalibration nextCalibration;
-  nextCalibration.lowerCameraRotationCorrection = buffLowerCameraRotationCorrection;
-  nextCalibration.upperCameraRotationCorrection = buffUpperCameraRotationCorrection;
+  nextCalibration.cameraRotationCorrections[CameraInfo::lower] = buffLowerCameraRotationCorrection;
+  nextCalibration.cameraRotationCorrections[CameraInfo::upper] = buffUpperCameraRotationCorrection;
   nextCalibration.bodyRotationCorrection.x() = 0;
   nextCalibration.bodyRotationCorrection.y() = 0;
   nextCameraCalibration = nextCalibration;
   JointCalibrator::setOffsets(buffBodyRotationCorrectionX, buffBodyRotationCorrectionY);
 }
 
-void AutomaticCameraCalibrator::swapCameras(CameraInfo::Camera cameraToUse)
-{
-  if(SystemCall::getMode() == SystemCall::Mode::physicalRobot)
-    nextResolution = cameraToUse == CameraInfo::upper ? NextResolution::hiResUpper : NextResolution::hiResLower;
-  currentCamera = cameraToUse;
-}
-
 void AutomaticCameraCalibrator::abort()
 {
   optimizer = nullptr;
-  swapCameras(startCamera);
+  currentCamera = startCamera;
   state = Idle;
 }
 
@@ -317,7 +308,7 @@ void AutomaticCameraCalibrator::update(CameraCalibrationNext& cameraCalibrationN
       theJointAngles.angles[Joints::headYaw],
       theJointAngles.angles[Joints::headPitch],
       theCameraCalibration,
-      theCameraInfo.camera == CameraInfo::upper);
+      theCameraInfo.camera);
   theCameraMatrix.computeCameraMatrix(theTorsoMatrix, robotCameraMatrix, theCameraCalibration);
 
   nextCameraCalibration = theCameraCalibration;
@@ -339,32 +330,9 @@ void AutomaticCameraCalibrator::update(CameraCalibrationNext& cameraCalibrationN
 
 void AutomaticCameraCalibrator::update(CameraResolutionRequest& cameraResolutionRequest)
 {
-  CameraResolution::Resolutions nextUpper, nextLower;
-  switch(nextResolution)
-  {
-    case NextResolution::none:
-      return;
-    case NextResolution::hiResUpper:
-      nextUpper = CameraResolution::Resolutions::w640h480;
-      nextLower = CameraResolution::Resolutions::w320h240;
-      break;
-    case NextResolution::hiResLower:
-      nextUpper = CameraResolution::Resolutions::w320h240;
-      nextLower = CameraResolution::Resolutions::w640h480;
-      break;
-    default:
-      FAIL("Unknown resolution.");
-      return;
-  }
-  if(theCameraResolution.resolutionUpper != nextUpper || theCameraResolution.resolutionLower != nextLower)
-  {
-    if(!cameraResolutionRequest.setRequest(nextUpper, nextLower))
-    {
-      OUTPUT_TEXT("Changing the resolution is not permitted! Calibration aborted...");
-      abort();
-    }
-  }
-  nextResolution = NextResolution::none;
+  if(SystemCall::getMode() == SystemCall::Mode::physicalRobot)
+    cameraResolutionRequest.resolutions[CameraInfo::lower] = (state == Idle) ? CameraResolutionRequest::Resolutions::w320h240
+                                                                             : CameraResolutionRequest::Resolutions::w640h480;
 }
 
 void AutomaticCameraCalibrator::update(HeadAngleRequest& headAngleRequest)
@@ -390,7 +358,7 @@ void AutomaticCameraCalibrator::deleteSample(Vector2i point, CameraInfo::Camera 
       const RobotCameraMatrix robotCameraMatrix(
         theRobotDimensions, theJointAngles.angles[Joints::headYaw],
         theJointAngles.angles[Joints::headPitch],
-        startingCameraCalibration, theCameraInfo.camera == CameraInfo::upper);
+        startingCameraCalibration, theCameraInfo.camera);
       const CameraMatrix cameraMatrix(theTorsoMatrix, robotCameraMatrix, startingCameraCalibration);
       if(Transformation::robotToImage(existingSample->pointOnField, cameraMatrix, theCameraInfo, pointInImage))
       {
@@ -504,11 +472,11 @@ void AutomaticCameraCalibrator::processManualControls()
 
 void AutomaticCameraCalibrator::draw() const
 {
-  DECLARE_DEBUG_DRAWING("module:AutomaticCameraCalibrator:drawFieldLines", "drawingOnImage");
-  DECLARE_DEBUG_DRAWING("module:AutomaticCameraCalibrator:drawSamples", "drawingOnImage");
   DEBUG_DRAWING("module:AutomaticCameraCalibrator:points", "drawingOnImage")
   {
-    // #define CIRCLE(id, center_x, center_y, radius, penWidth, penStyle, penColor, brushStyle, brushColor) ((void) 0)
+    THREAD("module:AutomaticCameraCalibrator:points", theCameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+
+    // #define CIRCLE(id, center_x, center_y, radius, penWidth, penStyle, penColor, brushStyle, brushColor) static_cast<void>(0)
     CIRCLE("module:AutomaticCameraCalibrator:drawSamples", -25, -25, 10, 2, Drawings::solidPen,
            theCameraInfo.camera == CameraInfo::upper ? ColorRGBA::blue : ColorRGBA::red,
            Drawings::solidBrush, theCameraInfo.camera == CameraInfo::upper ? ColorRGBA::blue : ColorRGBA::red);
@@ -517,12 +485,14 @@ void AutomaticCameraCalibrator::draw() const
              "Points collected: " << static_cast<unsigned>(samples.size()));
   }
 
-  COMPLEX_DRAWING("module:AutomaticCameraCalibrator:drawFieldLines") drawFieldLines();
-  COMPLEX_DRAWING("module:AutomaticCameraCalibrator:drawSamples") drawSamples();
+  DEBUG_DRAWING("module:AutomaticCameraCalibrator:drawFieldLines", "drawingOnImage") drawFieldLines();
+  DEBUG_DRAWING("module:AutomaticCameraCalibrator:drawSamples", "drawingOnImage") drawSamples();
 }
 
 void AutomaticCameraCalibrator::drawFieldLines() const
 {
+  THREAD("module:AutomaticCameraCalibrator:drawFieldLines", theCameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+
   const Pose2f robotPoseInv = currentRobotPose.inverse();
   for(FieldDimensions::LinesTable::Line lineOnField : theFieldDimensions.fieldLines.lines)
   {
@@ -541,10 +511,12 @@ void AutomaticCameraCalibrator::drawFieldLines() const
 
 void AutomaticCameraCalibrator::drawSamples() const
 {
+  THREAD("module:AutomaticCameraCalibrator:drawSamples", theCameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+
   const RobotCameraMatrix robotCameraMatrix(
     theRobotDimensions, theJointAngles.angles[Joints::headYaw],
     theJointAngles.angles[Joints::headPitch],
-    startingCameraCalibration, theCameraInfo.camera == CameraInfo::upper);
+    startingCameraCalibration, theCameraInfo.camera);
   const CameraMatrix cameraMatrix(theTorsoMatrix, robotCameraMatrix, startingCameraCalibration);
   for(const Sample& sample : samples)
   {
@@ -564,7 +536,7 @@ float AutomaticCameraCalibrator::computeError(const Sample& sample, const Camera
 {
   // build camera matrix from sample and camera calibration
   const RobotCameraMatrix robotCameraMatrix(theRobotDimensions, sample.headYaw, sample.headPitch,
-      cameraCalibration, sample.cameraInfo.camera == CameraInfo::upper);
+      cameraCalibration, sample.cameraInfo.camera);
   const CameraMatrix cameraMatrix(sample.torsoMatrix, robotCameraMatrix, cameraCalibration);
 
   float minimum = std::numeric_limits<float>::max();
@@ -632,12 +604,12 @@ float AutomaticCameraCalibrator::Functor2::operator()(const Parameters& params, 
 AutomaticCameraCalibrator::Parameters AutomaticCameraCalibrator::pack(const CameraCalibration& cameraCalibration, const Pose2f& robotPose) const
 {
   Parameters params;
-  params(lowerCameraRollCorrection) = cameraCalibration.lowerCameraRotationCorrection.x();
-  params(lowerCameraTiltCorrection) = cameraCalibration.lowerCameraRotationCorrection.y();
+  params(lowerCameraRollCorrection) = cameraCalibration.cameraRotationCorrections[CameraInfo::lower].x();
+  params(lowerCameraTiltCorrection) = cameraCalibration.cameraRotationCorrections[CameraInfo::lower].y();
   //params(lowerCameraPanCorrection) = cameraCalibration.lowerCameraRotationCorrection.z;
 
-  params(upperCameraRollCorrection) = cameraCalibration.upperCameraRotationCorrection.x();
-  params(upperCameraTiltCorrection) = cameraCalibration.upperCameraRotationCorrection.y();
+  params(upperCameraRollCorrection) = cameraCalibration.cameraRotationCorrections[CameraInfo::upper].x();
+  params(upperCameraTiltCorrection) = cameraCalibration.cameraRotationCorrections[CameraInfo::upper].y();
   //params[upperCameraPanCorrection) = cameraCalibration.upperCameraRotationCorrection.z;
 
   params(bodyRollCorrection) = cameraCalibration.bodyRotationCorrection.x();
@@ -651,12 +623,12 @@ AutomaticCameraCalibrator::Parameters AutomaticCameraCalibrator::pack(const Came
 
 void AutomaticCameraCalibrator::unpack(const Parameters& params, CameraCalibration& cameraCalibration, Pose2f& robotPose) const
 {
-  cameraCalibration.lowerCameraRotationCorrection.x() = params(lowerCameraRollCorrection);
-  cameraCalibration.lowerCameraRotationCorrection.y() = params(lowerCameraTiltCorrection);
+  cameraCalibration.cameraRotationCorrections[CameraInfo::lower].x() = params(lowerCameraRollCorrection);
+  cameraCalibration.cameraRotationCorrections[CameraInfo::lower].y() = params(lowerCameraTiltCorrection);
   //cameraCalibration.lowerCameraRotationCorrection.z = params(lowerCameraPanCorrection);
 
-  cameraCalibration.upperCameraRotationCorrection.x() = params(upperCameraRollCorrection);
-  cameraCalibration.upperCameraRotationCorrection.y() = params(upperCameraTiltCorrection);
+  cameraCalibration.cameraRotationCorrections[CameraInfo::upper].x() = params(upperCameraRollCorrection);
+  cameraCalibration.cameraRotationCorrections[CameraInfo::upper].y() = params(upperCameraTiltCorrection);
   //cameraCalibration.upperCameraRotationCorrection.z = params(upperCameraPanCorrection);
 
   cameraCalibration.bodyRotationCorrection.x() = params(bodyRollCorrection);

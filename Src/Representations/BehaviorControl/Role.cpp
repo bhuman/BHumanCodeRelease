@@ -1,43 +1,37 @@
 /**
- * @file Representations/BehaviorControl/Role.h
+ * @file Role.cpp
  *
- * Implementation of the representation of a robot's behavior role
+ * This file implements a representation of a player's role in the 2019 behavior.
  *
- * @author Tim Laue, Andreas Stolpmann
+ * @author Arne Hasselbring
  */
 
 #include "Role.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Settings.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Eigen.h"
 
-bool Role::isGoalkeeper() const
+std::string Role::getName() const
 {
-  return false;
+  if(isGoalkeeper)
+    return "keeper";
+  else if(playBall)
+    return "striker";
+  else
+    return "supporter" + std::to_string(supporterIndex);
 }
 
-void Role::draw() const
+void Role::operator>>(BHumanMessage& m) const
 {
-  DEBUG_DRAWING("representation:Role", "drawingOnField")
-  {
-    DRAWTEXT("representation:Role", -50, 250, 150, ColorRGBA::white, TypeRegistry::getEnumName(role));
-  }
+  m.theBHumanStandardMessage.isGoalkeeper = isGoalkeeper;
+  m.theBHumanStandardMessage.playBall = playBall;
+  m.theBHumanStandardMessage.supporterIndex = supporterIndex;
+}
 
-  DEBUG_DRAWING3D("representation:Role3D", "robot")
-  {
-    static const ColorRGBA colors[numOfRoleTypes] =
-    {
-      ColorRGBA::black,
-      ColorRGBA::black
-    };
+void Role::operator<<(const BHumanMessage& m)
+{
+  if(!m.hasBHumanParts)
+    return;
 
-    int pNumber = Global::getSettings().playerNumber;
-    int r(role);
-    r = r > 5 ? 5 : r;
-    float centerDigit = (pNumber > 1) ? 180.f : 120.0f;
-    ROTATE3D("representation:Role3D", 0, 0, pi_2);
-    DRAWDIGIT3D("representation:Role3D", r, Vector3f(centerDigit, 0.0f, 500.f), 80, 5, colors[role]);
-  }
+  isGoalkeeper = m.theBHumanStandardMessage.isGoalkeeper;
+  playBall = m.theBHumanStandardMessage.playBall;
+  supporterIndex = m.theBHumanStandardMessage.supporterIndex;
+  numOfActiveSupporters = -1;
 }

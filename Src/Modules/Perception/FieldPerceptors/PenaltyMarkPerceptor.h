@@ -8,9 +8,9 @@
 
 #pragma once
 
+#include "Representations/Configuration/CameraIntrinsics.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraIntrinsics.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/CNSImage.h"
@@ -36,7 +36,7 @@ MODULE(PenaltyMarkPerceptor,
     (float) maxTableRadius, /**< The maximum distance from the robot covered by the precomputed penalty mark contour table. */
     (float) minTableHeight, /**< The minimum height of the camera covered by the precomputed penalty mark contour table. */
     (float) maxTableHeight, /**< The maximum height of the camera covered by the precomputed penalty mark contour table. */
-    (float) spacing, /**< The spatial descretization of the precomputed penalty mark contour table. */
+    (float) spacing, /**< The spatial discretization of the precomputed penalty mark contour table. */
     (int) numOfRotations, /**< The number of rotations searched over a 90° range. */
     (int) refineIterations, /**< The number of refinements performed after the global search. */
     (float) refineStepSize, /**< The step size during refinement (in pixels). */

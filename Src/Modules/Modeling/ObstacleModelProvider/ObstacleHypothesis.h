@@ -7,12 +7,11 @@
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include <functional>
 
 class ObstacleModelProvider;
+struct CameraMatrix;
 
 class ObstacleHypothesis : public Obstacle
 {

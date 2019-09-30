@@ -33,7 +33,7 @@ public:
   void max(float& value, float arg[3], const signed short data[3][3][3]) const;
 
 protected:
-  //! Matrix mapping from the 27 data entries to the coefficient of the fittet quadratic function
+  //! Matrix mapping from the 27 data entries to the coefficient of the fitted quadratic function
   /*! The matrix is 10*27 extended with a 0 columns to
       10*32. Multiplied with a vector of data as in \c max, and then by \c fitMatrixScale
       the result is the list of coefficients \f$ c, b_1, b_2, b_3, a_1, \ldots, a_6 \f$
@@ -46,7 +46,7 @@ protected:
                + a1*x*x + a2*y*y + a3*z*z + a4*x*y + a5*y*z + a6*x*z
       \f].
 
-      Fittet. Each entry is represented as a signed short (16bit).
+      Fitted. Each entry is represented as a signed short (16bit).
 
       It is necessary to make a helper class out of it statically copy our fixed matrix into a properly
       scaled, 0-padded and aligned representation  */
@@ -59,12 +59,12 @@ protected:
     //! Returns a pointer to the numerical data
     /*! The result points to the row 0 col 0 and each row is aligned with 16 bytes.
       The shorts must be multiplied by \c scale to obtain the floating value that
-      is actually ment. See \c operator (i, j).
+      is actually meant. See \c operator (i, j).
      */
-    const short* operator()() const {return (const short*) data;};
+    const short* operator()() const {return reinterpret_cast<const short*>(data);};
 
     //! Logical access operator to element \c (i,j) of the represented matrix
-    float operator()(int i, int j) const {return scale * ((const short*) data)[i * PADDEDCOLS + j];}
+    float operator()(int i, int j) const {return scale * reinterpret_cast<const short*>(data)[i * PADDEDCOLS + j];}
 
     //! The short coefficient need to be multiplied with \c scale to get the exact results
     /*! This allows to do the multiplications and additions in short and
@@ -73,7 +73,7 @@ protected:
     float scale;
 
     //! Matrix format
-    /*! \c ROWS and \c COLS is the logical format. To align rows with 16 bytes boundarys
+    /*! \c ROWS and \c COLS is the logical format. To align rows with 16 bytes boundaries
       the matrix is 0-padded to have \c PADDEDCOLS columns.
      */
     enum {ROWS = 10, COLS = 27, PADDEDCOLS = 32};

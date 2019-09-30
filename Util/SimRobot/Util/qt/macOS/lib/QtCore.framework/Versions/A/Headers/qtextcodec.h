@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2018 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtCore module of the Qt Toolkit.
@@ -43,10 +43,9 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qlist.h>
 
+QT_REQUIRE_CONFIG(textcodec);
+
 QT_BEGIN_NAMESPACE
-
-
-#ifndef QT_NO_TEXTCODEC
 
 class QTextCodec;
 class QIODevice;
@@ -162,12 +161,11 @@ public:
     QString toUnicode(const QByteArray &ba);
     void toUnicode(QString *target, const char *chars, int len);
     bool hasFailure() const;
+    bool needsMoreData() const;
 private:
     const QTextCodec *c;
     QTextCodec::ConverterState state;
 };
-
-#endif // QT_NO_TEXTCODEC
 
 QT_END_NAMESPACE
 

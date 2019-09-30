@@ -123,7 +123,7 @@ bool Camera::CameraSensor::renderCameraImages(SimRobotCore2::SensorPort** camera
   int imagesOfCurrentSize = 0;
   for(unsigned int i = 0; i < count; ++i)
   {
-    CameraSensor* sensor = (CameraSensor*)cameras[i];
+    CameraSensor* sensor = static_cast<CameraSensor*>(cameras[i]);
     if(sensor && sensor->lastSimulationStep != Simulation::simulation->simulationStep &&
        sensor->camera->imageWidth == imageWidth && sensor->camera->imageHeight == imageHeight)
       ++imagesOfCurrentSize;
@@ -164,7 +164,7 @@ bool Camera::CameraSensor::renderCameraImages(SimRobotCore2::SensorPort** camera
   unsigned char* currentBufferPos = imageBuffer;
   for(unsigned int i = 0; i < count; ++i)
   {
-    CameraSensor* sensor = (CameraSensor*)cameras[i];
+    CameraSensor* sensor = static_cast<CameraSensor*>(cameras[i]);
     if(sensor && sensor->lastSimulationStep != Simulation::simulation->simulationStep &&
        sensor->camera->imageWidth == imageWidth && sensor->camera->imageHeight == imageHeight)
     {

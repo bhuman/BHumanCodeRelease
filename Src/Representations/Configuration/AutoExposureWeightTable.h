@@ -12,13 +12,16 @@
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/EnumIndexedArray.h"
 
-using Matrix5uc = Eigen::Matrix<uint8_t, 5, 5, Eigen::RowMajor>;
-
 STREAMABLE(AutoExposureWeightTable,
 {
+  static constexpr int width = 4;
+  static constexpr int height = 4;
+  static constexpr uint8_t maxWeight = 15;
+  using Table = Eigen::Matrix<uint8_t COMMA height COMMA width COMMA Eigen::RowMajor>;
+
   void draw() const;
   void verify() const,
 
-  // cells are allowed to have values from 0 to 100 (inclusive)
-  (ENUM_INDEXED_ARRAY(Matrix5uc, CameraInfo::Camera)) tables,
+  // cells are allowed to have values from 0 to maxWeight (inclusive)
+  (ENUM_INDEXED_ARRAY(Table, CameraInfo::Camera)) tables,
 });

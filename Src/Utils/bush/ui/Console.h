@@ -72,6 +72,9 @@ public:
   void fireCommand(const QString& command);
   void cancel();
 
+protected:
+  void paintEvent(QPaintEvent* event) override;
+
 protected slots:
   /** Starts a new thread which executes the entered command. */
   void returnPressed();

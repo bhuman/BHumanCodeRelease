@@ -12,10 +12,11 @@
 #include <cstdlib>
 #include <cstdio>
 #include <AppKit/NSSound.h>
+#include <AppKit/NSSpeechSynthesizer.h>
 #include "SoundPlayer.h"
 #include "Platform/File.h"
 
-@interface SoundPlayerDelegate : NSObject<NSSoundDelegate>
+@interface SoundPlayerDelegate : NSObject<NSSoundDelegate, NSSpeechSynthesizerDelegate>
 {
   bool* isPlaying;
   Semaphore* sem;
@@ -36,14 +37,27 @@
   *isPlaying = false;
   sem->post();
 }
+
+-(void)speechSynthesizer:(NSSpeechSynthesizer*) sender
+       didFinishSpeaking:(BOOL) finishedSpeaking
+{
+  if(finishedSpeaking)
+  {
+    *isPlaying = false;
+    sem->post();
+  }
+}
 @end
 
 SoundPlayer SoundPlayer::soundPlayer;
 static SoundPlayerDelegate* delegate;
+static NSSpeechSynthesizer* speechSynthesizer;
 
 SoundPlayer::SoundPlayer()
 {
   delegate = [[SoundPlayerDelegate alloc] initWithFlag:&playing andSemaphore:&sem];
+  speechSynthesizer = [[NSSpeechSynthesizer alloc] initWithVoice:@"com.apple.speech.synthesis.voice.Alex"];
+  [speechSynthesizer setDelegate:delegate];
 }
 
 SoundPlayer::~SoundPlayer()
@@ -54,6 +68,7 @@ SoundPlayer::~SoundPlayer()
     sem.post();
     stop();
   }
+  [speechSynthesizer release];
   [delegate release];
 }
 
@@ -64,7 +79,7 @@ void SoundPlayer::start()
 
 void SoundPlayer::main()
 {
-  Thread::nameThread("SoundPlayer");
+  Thread::nameCurrentThread("SoundPlayer");
   while(isRunning())
   {
     if(!playing)
@@ -86,13 +101,18 @@ void SoundPlayer::main()
 
 void SoundPlayer::playDirect(const std::string& basename)
 {
-  std::string fileName(filePrefix);
-  fileName += basename;
   @autoreleasepool
   {
-    NSSound* sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
-    [sound setDelegate:delegate];
-    playing = (bool) [sound play];
+    if(!basename.empty() && basename[0] == ':')
+      playing = [speechSynthesizer startSpeakingString:[NSString stringWithUTF8String:basename.c_str() + 1]];
+    else
+    {
+      std::string fileName(filePrefix);
+      fileName += basename;
+      NSSound* sound = [[NSSound alloc] initWithContentsOfFile:[NSString stringWithUTF8String:fileName.c_str()] byReference:NO];
+      [sound setDelegate:delegate];
+      playing = static_cast<bool>([sound play]);
+    }
   }
 }
 
@@ -100,17 +120,22 @@ int SoundPlayer::play(const std::string& name)
 {
   SYNC_WITH(soundPlayer);
   soundPlayer.queue.push_back(name.c_str()); // avoid copy-on-write
-  int queuelen = (int) soundPlayer.queue.size();
+  int queuelen = static_cast<int>(soundPlayer.queue.size());
   if(!soundPlayer.isRunning())
   {
     soundPlayer.filePrefix = File::getBHDir();
     soundPlayer.filePrefix += "/Config/Sounds/";
     soundPlayer.start();
   }
-  else
+  else if(!soundPlayer.playing)
     soundPlayer.sem.post();
 
   return queuelen;
+}
+
+int SoundPlayer::say(const std::string& text)
+{
+  return play(":" + text);
 }
 
 bool SoundPlayer::isPlaying()

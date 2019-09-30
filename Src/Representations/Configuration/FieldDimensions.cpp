@@ -12,8 +12,10 @@
 #include "Platform/BHAssert.h"
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Eigen.h"
-#include "Representations/Infrastructure/RoboCupGameControlData.h"
+#include "Representations/Communication/RoboCupGameControlData.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
 #include <algorithm>
 
@@ -96,6 +98,7 @@ Pose2f FieldDimensions::randomPoseOnCarpet() const
 
 void FieldDimensions::draw() const
 {
+  drawPolygons();
   drawLines();
   drawGoalFrame();
   drawCorners();
@@ -147,42 +150,54 @@ void FieldDimensions::drawLines() const
   }
 }
 
-void FieldDimensions::drawPolygons(int ownColor) const
+void FieldDimensions::drawPolygons() const
 {
-  DEBUG_DRAWING("field polygons", "drawingOnField")
+  if(Blackboard::getInstance().exists("OwnTeamInfo") && Blackboard::getInstance().exists("OpponentTeamInfo"))
   {
-    static const ColorRGBA colors[] =
+    const OwnTeamInfo& ownTeamInfo = static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]);
+    const OpponentTeamInfo& opponentTeamInfo = static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]);
+
+    DEBUG_DRAWING("field polygons", "drawingOnField")
     {
-      ColorRGBA(50, 120, 127),
-      ColorRGBA(127, 80, 80),
-      ColorRGBA(127, 120, 50),
-      ColorRGBA(80, 80, 80)
-    };
-    const ColorRGBA& own = colors[ownColor];
-    const ColorRGBA& opp = colors[1 ^ ownColor];
+      static const ColorRGBA colors[] =
+      {
+        ColorRGBA(50, 120, 127),
+        ColorRGBA(127, 80, 80),
+        ColorRGBA(127, 120, 50),
+        ColorRGBA(40, 40, 40),
+        ColorRGBA(180, 180, 180),
+        ColorRGBA(40, 80, 40),
+        ColorRGBA(127, 120, 0),
+        ColorRGBA(120, 20, 127),
+        ColorRGBA(127, 80, 20),
+        ColorRGBA(120, 120, 120)
+      };
+      const ColorRGBA& own = colors[ownTeamInfo.teamColor];
+      const ColorRGBA& opp = colors[opponentTeamInfo.teamColor];
 
-    Vector2f goal[4];
-    goal[0] = Vector2f(xPosOwnGroundline - fieldLinesWidth * 0.5f, yPosLeftGoal);
-    goal[1] = Vector2f(xPosOwnGroundline - fieldLinesWidth * 0.5f, yPosRightGoal);
-    goal[2] = Vector2f(xPosOwnGoal, yPosRightGoal);
-    goal[3] = Vector2f(xPosOwnGoal, yPosLeftGoal);
-    POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, own, Drawings::solidBrush, own);
+      Vector2f goal[4];
+      goal[0] = Vector2f(xPosOwnGroundline - fieldLinesWidth * 0.5f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOwnGroundline - fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[2] = Vector2f(xPosOwnGoal, yPosRightGoal);
+      goal[3] = Vector2f(xPosOwnGoal, yPosLeftGoal);
+      POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, own, Drawings::solidBrush, own);
 
-    goal[0] = Vector2f(xPosOpponentGroundline + fieldLinesWidth * 0.5f, yPosLeftGoal);
-    goal[1] = Vector2f(xPosOpponentGroundline + fieldLinesWidth * 0.5f, yPosRightGoal);
-    goal[2] = Vector2f(xPosOpponentGoal, yPosRightGoal);
-    goal[3] = Vector2f(xPosOpponentGoal, yPosLeftGoal);
-    POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, opp, Drawings::solidBrush, opp);
+      goal[0] = Vector2f(xPosOpponentGroundline + fieldLinesWidth * 0.5f, yPosLeftGoal);
+      goal[1] = Vector2f(xPosOpponentGroundline + fieldLinesWidth * 0.5f, yPosRightGoal);
+      goal[2] = Vector2f(xPosOpponentGoal, yPosRightGoal);
+      goal[3] = Vector2f(xPosOpponentGoal, yPosLeftGoal);
+      POLYGON("field polygons", 4, goal, 0, Drawings::solidPen, opp, Drawings::solidBrush, opp);
 
-    CIRCLE("field polygons", xPosOpponentGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
-           ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
-    CIRCLE("field polygons", xPosOpponentGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
-           ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
+      CIRCLE("field polygons", xPosOpponentGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
+             ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
+      CIRCLE("field polygons", xPosOpponentGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
+             ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
 
-    CIRCLE("field polygons", xPosOwnGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
-           ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
-    CIRCLE("field polygons", xPosOwnGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
-           ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
+      CIRCLE("field polygons", xPosOwnGoalPost, yPosLeftGoal, 50, 0, Drawings::solidPen,
+             ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
+      CIRCLE("field polygons", xPosOwnGoalPost, yPosRightGoal, 50, 0, Drawings::solidPen,
+             ColorRGBA::white, Drawings::solidBrush, ColorRGBA::white);
+    }
   }
 }
 

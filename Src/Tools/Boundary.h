@@ -3,7 +3,7 @@
  *
  * This file contains the template class Boundary.
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once

@@ -1,12 +1,16 @@
 #!/bin/sh
 
-FLAGS=$1
-DIR=/home/nao
-LOGDIR=/home/nao/logs
+BINARY="/home/nao/Config/bhuman"
+LOGDIR="/home/nao/logging"
+DUMPFILE="/home/nao/bhdump.log"
+BACKGROUND=false
+DEBUG=false
 
 usage()
 {
-  echo "usage: $0 [<flags>] - Starts the last deployed bhuman version."
+  echo "usage: $0 [ -b | -d ] - Starts the last deployed bhuman version."
+  echo "    -b  redirect output to logfile only"
+  echo "    -d  start bhuman in a debugger"
   exit 1
 }
 
@@ -15,19 +19,56 @@ if [ $(whoami) != nao ]; then
   exit 1
 fi
 
-# If USB drive is mounted, save bhumand.log there
+if [ $# -eq 1 ]; then
+  case $1 in
+    -b)
+      BACKGROUND=true
+      ;;
+    -d)
+      DEBUG=true
+      ;;
+    *)
+      usage
+      ;;
+  esac
+elif [ $# -ne 0 ]; then
+  usage
+fi
+
+# Remove assertion dumps from previous runs.
+rm -f "${DUMPFILE}"
+
+# This should fix a freaky cygwin bug.
+if [ ! -x "${BINARY}" ]; then
+  chmod u+x "${BINARY}" || exit 1
+fi
+# Ignore SIGINT and SIGTERM. This inherits to child processes,
+
+# but bhuman installs its own handlers, so this script will come to an end, too.
+trap "" 2 15
+
+# Log to USB drive if available.
+mount /media/usb 2>/dev/null && mkdir -p /media/usb/logs
 if [ -d /media/usb/logs ]; then
-  LOGDIR=/media/usb/logs
+  ln -sf /media/usb/logs "${LOGDIR}"
+else
+  ln -sf /home/nao/logs "${LOGDIR}"
 fi
 
 # Make log-names unique by numbering them.
-COUNTER=$(ls $LOGDIR | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n | tail -n1)
-COUNTER=$(expr $COUNTER + 1)
-FILE=bhumand_'('$COUNTER')'.log
+COUNTER=$(ls "${LOGDIR}" | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n | tail -n1)
+COUNTER=$(expr ${COUNTER} + 1)
+LOGFILE="${LOGDIR}/bhumand_(${COUNTER}).log"
+# Actually execute bhuman.
 
-# This should fix a freaky cygwin bug
-if [ ! -x "$DIR/Config/bhuman" ]; then
-  chmod u+x "$DIR/Config/bhuman" || exit
+if ${DEBUG}; then
+  gdb "${BINARY}"
+elif ${BACKGROUND}; then
+  "${BINARY}" -w 2>&1 | stdbuf -o0 awk -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
+else
+  "${BINARY}" -w 2>&1 | stdbuf -o0 awk -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
 fi
 
-stdbuf -o0 "$DIR/Config/bhuman" -c "$DIR" -w $FLAGS 2>&1 | stdbuf -o0 awk -F '\n' '{ print strftime("%H:%M:%S" , systime()) " " $0}' | tee --append $LOGDIR/$FILE
+# Remove leftovers.
+rm -f "${LOGDIR}"
+umount /media/usb 2>/dev/null

@@ -2,7 +2,7 @@
  * @file Modules/MotionControl/ArmMotionCombinator.cpp
  * This file declares a module that combines the arm motions created by the different modules.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
- * based on a module created by @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * based on a module created by @author Thomas Röfer
  */
 
 #include "ArmMotionCombinator.h"
@@ -20,7 +20,10 @@ void ArmMotionCombinator::update(ArmJointRequest& armJointRequest)
   armJointRequests[ArmMotionSelection::standArms] = &theStandArmRequest;
   armJointRequests[ArmMotionSelection::getUpArms] = &theGetUpEngineOutput;
 
+  armJointRequests[ArmMotionSelection::clearS] = &theSupersedeArmMotionEngineOutput;
   armJointRequests[ArmMotionSelection::keyFrameS] = &theArmKeyFrameEngineOutput;
+  armJointRequests[ArmMotionSelection::keyPoseS] = &theSupersedeArmMotionEngineOutput;
+  armJointRequests[ArmMotionSelection::pointAtS] = &thePointAtEngineOutput;
 
   auto combinateArmMotions = [&](Arms::Arm const arm)
   {

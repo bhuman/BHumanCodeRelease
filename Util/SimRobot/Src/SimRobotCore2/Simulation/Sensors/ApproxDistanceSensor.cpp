@@ -51,7 +51,7 @@ void ApproxDistanceSensor::registerObjects()
 
 void ApproxDistanceSensor::addParent(Element& element)
 {
-  sensor.physicalObject = dynamic_cast< ::PhysicalObject*>(&element);
+  sensor.physicalObject = dynamic_cast<::PhysicalObject*>(&element);
   ASSERT(sensor.physicalObject);
   Sensor::addParent(element);
 }
@@ -61,9 +61,9 @@ void ApproxDistanceSensor::DistanceSensor::staticCollisionCallback(ApproxDistanc
   ASSERT(geom1 == sensor->geom);
   ASSERT(!dGeomIsSpace(geom2));
 
-  Geometry* geometry = (Geometry*)dGeomGetData(geom2);
-  if((::PhysicalObject*)geometry->parentBody == sensor->physicalObject)
-    return; // avoid detecting the body on which the sensor is monted
+  Geometry* geometry = static_cast<Geometry*>(dGeomGetData(geom2));
+  if(reinterpret_cast<::PhysicalObject*>(geometry->parentBody) == sensor->physicalObject)
+    return; // avoid detecting the body on which the sensor is mounted
 
   const dReal* pos = dGeomGetPosition(geom2);
   Vector3f geomPos;
@@ -79,10 +79,10 @@ void ApproxDistanceSensor::DistanceSensor::staticCollisionCallback(ApproxDistanc
   const float halfMaxY = sensor->tanHalfAngleX * relPos.x();
   const float halfMaxZ = sensor->tanHalfAngleY * relPos.x();
   if(std::max(std::abs(relPos.y()) - geometry->outerRadius, 0.f) >= halfMaxY || std::max(std::abs(relPos.z()) - geometry->outerRadius, 0.f) >= halfMaxZ)
-    return; // the sphere that covers the geometrie does not collide with the pyramid of the distance sensor
+    return; // the sphere that covers the geometry does not collide with the pyramid of the distance sensor
 
   if(std::max(std::abs(relPos.y()) - geometry->innerRadius, 0.f) < halfMaxY && std::max(std::abs(relPos.z()) - geometry->innerRadius, 0.f) < halfMaxZ)
-    goto hit; // the sphere enclosed by the geometrie collides with the pyramid of the distance sensor
+    goto hit; // the sphere enclosed by the geometry collides with the pyramid of the distance sensor
 
   // geom2 might collide with the pyramid of the distance sensor. let us perform a hit scan along one of the pyramid's sides to find out..
   {
@@ -103,7 +103,7 @@ void ApproxDistanceSensor::DistanceSensor::staticCollisionWithSpaceCallback(Appr
 {
   ASSERT(geom1 == sensor->geom);
   ASSERT(dGeomIsSpace(geom2));
-  dSpaceCollide2(geom1, geom2, sensor, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geom1, geom2, sensor, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
 }
 
 void ApproxDistanceSensor::DistanceSensor::updateValue()
@@ -118,13 +118,13 @@ void ApproxDistanceSensor::DistanceSensor::updateValue()
   dGeomSetRotation(geom, matrix3);
   closestGeom = 0;
   closestSqrDistance = maxSqrDist;
-  dSpaceCollide2(geom, (dGeomID)Simulation::simulation->movableSpace, this, (dNearCallback*)&staticCollisionWithSpaceCallback);
-  dSpaceCollide2(geom, (dGeomID)Simulation::simulation->staticSpace, this, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geom, reinterpret_cast<dGeomID>(Simulation::simulation->movableSpace), this, reinterpret_cast<dNearCallback*>(&staticCollisionWithSpaceCallback));
+  dSpaceCollide2(geom, reinterpret_cast<dGeomID>(Simulation::simulation->staticSpace), this, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
   if(closestGeom)
   {
     const dReal* pos = dGeomGetPosition(closestGeom);
-    Geometry* geometry = (Geometry*)dGeomGetData(closestGeom);
-    data.floatValue = (Vector3f((float) pos[0], (float) pos[1], (float) pos[2]) - pose.translation).norm() - geometry->innerRadius;
+    Geometry* geometry = static_cast<Geometry*>(dGeomGetData(closestGeom));
+    data.floatValue = (Vector3f(static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])) - pose.translation).norm() - geometry->innerRadius;
     if(data.floatValue < min)
       data.floatValue = min;
   }

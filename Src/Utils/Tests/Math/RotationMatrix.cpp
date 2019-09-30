@@ -110,7 +110,6 @@ GTEST_TEST(RotationMatrix, getPackedAngleAxisFaulty)
   EXPECT_FALSE(r1.isApprox(r2));
 
   r = aa = AngleAxisf(-3.14060259f, Vector3f(-0.496929348f, 0.435349584f, 0.750687659f));
-  AngleAxisf aa3 = Rotation::AngleAxis::unpack(r.getPackedAngleAxis());
   r1 = aa * vec;
   r2 = Rotation::AngleAxis::unpack(r.getPackedAngleAxisFaulty()) * vec;
   EXPECT_FALSE(r1.isApprox(r2));
@@ -123,7 +122,6 @@ GTEST_TEST(RotationMatrix, normalize)
     const Vector3f rVec = Vector3f::Random();
     const AngleAxisf aa = AngleAxisf(Random::uniform(-pi, pi), Vector3f::Random().normalized());
     const RotationMatrix r(aa);
-    const RotationMatrix scaledR = RotationMatrix(Vector3f(Vector3f::Random()).asDiagonal()) * r;
 
     const Vector3f r1 = r * rVec;
     const Vector3f r2 = r.normalized() * rVec;
@@ -201,39 +199,34 @@ GTEST_TEST(RotationMatrix, getXAngle)
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundX(angle);
   float xAngle = r.getXAngle();
-  EXPECT_TRUE(Approx::isEqual(xAngle, angle));
+  EXPECT_FLOAT_EQ(xAngle, angle);
 
   angle = 90_deg;
   r = RotationMatrix::aroundX(angle);
   xAngle = r.getXAngle();
-  EXPECT_TRUE(Approx::isEqual(xAngle, angle));
+  EXPECT_FLOAT_EQ(xAngle, angle);
 
   angle = 180_deg;
   r = RotationMatrix::aroundX(angle);
   xAngle = r.getXAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(xAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(xAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = -180_deg;
   r = RotationMatrix::aroundX(angle);
   xAngle = r.getXAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(xAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(xAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = 360_deg;
   r = RotationMatrix::aroundX(angle);
   xAngle = r.getXAngle();
-  EXPECT_TRUE(Approx::isEqual(xAngle, Angle::normalize(angle)));
+  EXPECT_FLOAT_EQ(xAngle, Angle::normalize(angle));
 
   for(int i = 0; i < RUNS; ++i)
   {
     angle = Random::uniform() * pi;
     r = RotationMatrix::aroundX(angle);
     xAngle = r.getXAngle();
-    if(!Approx::isEqual(xAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(xAngle, angle, 1e-3f))
-          << "xAngle:\n"
-          << xAngle << "\n"
-          << "angle\n"
-          << angle << "\n";
+    EXPECT_NEAR(xAngle, angle, 1e-3f);
   }
 }
 
@@ -242,39 +235,34 @@ GTEST_TEST(RotationMatrix, getYAngle)
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundY(angle);
   float yAngle = r.getYAngle();
-  EXPECT_TRUE(Approx::isEqual(yAngle, angle));
+  EXPECT_FLOAT_EQ(yAngle, angle);
 
   angle = 90_deg;
   r = RotationMatrix::aroundY(angle);
   yAngle = r.getYAngle();
-  EXPECT_TRUE(Approx::isEqual(yAngle, angle));
+  EXPECT_FLOAT_EQ(yAngle, angle);
 
   angle = 180_deg;
   r = RotationMatrix::aroundY(angle);
   yAngle = r.getYAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(yAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(yAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = -180_deg;
   r = RotationMatrix::aroundY(angle);
   yAngle = r.getYAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(yAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(yAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = 360_deg;
   r = RotationMatrix::aroundY(angle);
   yAngle = r.getYAngle();
-  EXPECT_TRUE(Approx::isEqual(yAngle, Angle::normalize(angle)));
+  EXPECT_FLOAT_EQ(yAngle, Angle::normalize(angle));
 
   for(int i = 0; i < RUNS; ++i)
   {
     const float angle = Random::uniform() * pi;
     const RotationMatrix r = RotationMatrix::aroundY(angle);
     float yAngle = r.getYAngle();
-    if(!Approx::isEqual(yAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(yAngle, angle, 1e-3f))
-          << "yAngle:\n"
-          << yAngle << "\n"
-          << "angle\n"
-          << angle << "\n";
+    EXPECT_NEAR(yAngle, angle, 1e-3f);
   }
 }
 
@@ -283,38 +271,33 @@ GTEST_TEST(RotationMatrix, getZAngle)
   float angle = 0_deg;
   RotationMatrix r = RotationMatrix::aroundZ(angle);
   float zAngle = r.getZAngle();
-  EXPECT_TRUE(Approx::isEqual(zAngle, angle));
+  EXPECT_FLOAT_EQ(zAngle, angle);
 
   angle = 90_deg;
   r = RotationMatrix::aroundZ(angle);
   zAngle = r.getZAngle();
-  EXPECT_TRUE(Approx::isEqual(zAngle, angle));
+  EXPECT_FLOAT_EQ(zAngle, angle);
 
   angle = 180_deg;
   r = RotationMatrix::aroundZ(angle);
   zAngle = r.getZAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(zAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(zAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = -180_deg;
   r = RotationMatrix::aroundZ(angle);
   zAngle = r.getZAngle();
-  EXPECT_TRUE(Approx::isEqual(Angle::normalize(zAngle), Angle::normalize(angle)));
+  EXPECT_NEAR(0.f, Angle::normalize(zAngle - angle), 4.f * std::numeric_limits<float>::epsilon());
 
   angle = 360_deg;
   r = RotationMatrix::aroundZ(angle);
   zAngle = r.getZAngle();
-  EXPECT_TRUE(Approx::isEqual(zAngle, Angle::normalize(angle)));
+  EXPECT_FLOAT_EQ(zAngle, Angle::normalize(angle));
 
   for(int i = 0; i < RUNS; ++i)
   {
     angle = Random::uniform() * pi;
     r = RotationMatrix::aroundZ(angle);
     zAngle = r.getZAngle();
-    if(!Approx::isEqual(zAngle, angle, 1e-3f))
-      EXPECT_TRUE(Approx::isEqual(zAngle, angle, 1e-3f))
-          << "zAngle:\n"
-          << zAngle << "\n"
-          << "angle\n"
-          << angle << "\n";
+    EXPECT_NEAR(zAngle, angle, 1e-3f);
   }
 }

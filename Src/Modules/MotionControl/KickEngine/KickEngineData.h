@@ -37,11 +37,11 @@ private:
   int motionID = -1;
 
   float phase = 0.f;
-  float cycletime = 0.f;
+  float cycletime = Constants::motionCycleTime;
   float lastRatio = 0.f;
 
-  unsigned int timeStamp = 0;
-  int timeSinceTimeStamp = 0;
+  unsigned int timestamp = 0;
+  int timeSinceTimestamp = 0;
 
   Vector2f bodyAngle = Vector2f::Zero();
   Vector2f balanceSum = Vector2f::Zero();
@@ -56,7 +56,7 @@ private:
   bool lElbowFront = false,
        rElbowFront = false;
 
-  //Parameter for P, I and D for gyro PID Contol
+  //Parameter for P, I and D for gyro PID Control
   Vector2f gyroP = Vector2f(3.f, -2.5f);
   Vector2f gyroI = Vector2f::Zero();
   Vector2f gyroD = Vector2f(0.03f, 0.01f);
@@ -73,7 +73,6 @@ private:
 
   KickEngineParameters currentParameters;
 
-  RobotModel robotModel;
   RobotModel comRobotModel;
 
   JointRequest lastBalancedJointRequest;
@@ -81,8 +80,14 @@ private:
 
   bool wasActive = false;
   bool willBeLeft = false;
+  float lastXDif = 0.f;
+  float lastZDif = 0.f;
+  bool fastKickEndAdjusted = false;
+  float adjustedXValue = 0.f;
+  float adjustedZValue = 0.f;
 
 public:
+  RobotModel robotModel;
   KickRequest currentKickRequest;
   bool internalIsLeavingPossible = false;
   Vector3f positions[Phase::numOfLimbs];
@@ -100,20 +105,15 @@ public:
   void addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id, const float& ratio);
   void addDynPoint(const DynPoint& dynPoint, const TorsoMatrix& torsoMatrix);
   void ModifyData(const KickRequest& br, JointRequest& kickEngineOutput, std::vector<KickEngineParameters>& params);
-  void setCycleTime(float time);
   void calcPhaseState();
-  void calcPositions();
-  void setRobotModel(const RobotModel& rm);
-  bool isMotionAlmostOver();
-  void setCurrentKickRequest(const KickRequest& kr);
+  void calcPositions(const TorsoMatrix& torsoMatrix);
   void setExecutedKickRequest(KickRequest& br);
   void initData(const FrameInfo& frame, const KickRequest& kr, std::vector<KickEngineParameters>& params, const JointAngles& ja, const TorsoMatrix& torsoMatrix, JointRequest& jointRequest, const RobotDimensions& rd, const MassCalibration& mc, const DamageConfigurationBody& theDamageConfigurationBody);
   void setEngineActivation(const float& ratio);
   bool activateNewMotion(const KickRequest& br, const bool& isLeavingPossible);
   bool sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, KickEngineOutput& kickEngineOutput, const JointRequest& theJointRequest, const FrameInfo& frame);
-  //Pose3f calcDesBodyAngle(JointRequest& jointRequest, const RobotDimensions& robotDimensions, Joints::Joint joint);
-
-  void transferDynPoint(Vector3f& d, const TorsoMatrix& torsoMatrix);
+  void BOOST(JointRequest& jointRequest, int boostPhase);
+  bool adjustFastKickHack(const TorsoMatrix& torsoMatrix);
 
   KickEngineData()
   {

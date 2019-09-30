@@ -171,7 +171,7 @@ static std::regex matchAsterisk(" *\\(\\*[^)]*\\)");
 static std::regex matchString("std::basic_string<char,std::char_traits<char>,std::allocator<char>>");
 static std::regex matchArray("std::array<(.*),([0-9][0-9]*)>");
 static std::regex matchList("std::list<(.*),std::allocator<\\1>>");
-static std::regex matchVector("std::vector<(.*),std::allocator<\\1>>");
+static std::regex matchVector("std::vector<(.*),(std::allocator|Eigen::aligned_allocator)<\\1>>");
 
 std::string TypeRegistry::demangle(std::string type)
 {

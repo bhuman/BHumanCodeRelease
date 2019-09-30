@@ -1,0 +1,32 @@
+#!/bin/sh
+basePath=$(dirname "$(which "$0")")
+CALL=
+while true; do
+  case $1 in
+    "")
+      break;
+      ;;
+    "-target")
+      shift
+      ;;
+    "-isysroot")
+      shift
+      ;;
+    "-filelist")
+      shift
+      CALL="$CALL `cat $1`"
+      ;;
+    "-F"*)
+      ;;
+    "-Xlinker")
+      shift
+      ;;
+    "-mmacosx-version-min="*)
+      ;;
+    *)
+      CALL="$CALL $1"
+      ;;
+  esac
+  shift
+done
+${basePath}/ld --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/home/nao/sysroot/lib/ld-linux.so.2 -rpath=/home/nao/sysroot/lib ../../Util/Buildchain/V6/gcc/lib/crt1.o ../../Util/Buildchain/V6/gcc/lib/crti.o ../../Util/Buildchain/V6/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.24 --start-group ../../Util/Buildchain/V6/gcc/lib/libm-2.29.so --as-needed ../../Util/Buildchain/V6/gcc/lib/libmvec_nonshared.a ../../Util/Buildchain/V6/gcc/lib/libmvec-2.29.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libc-2.29.so ../../Util/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/gcc/lib/ld-2.29.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/crtend.o ../../Util/Buildchain/V6/gcc/lib/crtn.o

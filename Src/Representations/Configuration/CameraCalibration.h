@@ -1,20 +1,20 @@
 /**
  * @file CameraCalibration.h
  * Declaration of a struct for representing the calibration values of the camera.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Angle.h"
 #include "Tools/Module/Next.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
 STREAMABLE(CameraCalibration,
 {,
-  (Vector3a) lowerCameraRotationCorrection, //!< The correction of the lower camera rotation
-  (Vector3a) upperCameraRotationCorrection, //!< The correction of the upper camera rotation
+  (ENUM_INDEXED_ARRAY(Vector3a, CameraInfo::Camera)) cameraRotationCorrections, //!< The correction of the both camera rotations
   (Vector2a) bodyRotationCorrection, //!< The correction of the body rotation
 });
 

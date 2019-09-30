@@ -1,6 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2018 Intel Corporation.
 ** Copyright (C) 2014 Olivier Goffart <ogoffart@woboq.com>
 ** Contact: https://www.qt.io/licensing/
 **
@@ -60,6 +61,9 @@
 
 QT_BEGIN_NAMESPACE
 
+// from qcborcommon.h
+enum class QCborSimpleType : quint8;
+
 template <typename T>
 struct QMetaTypeId2;
 
@@ -85,6 +89,7 @@ inline Q_DECL_CONSTEXPR int qMetaTypeId();
     F(Float, 38, float) \
     F(SChar, 40, signed char) \
     F(Nullptr, 51, std::nullptr_t) \
+    F(QCborSimpleType, 52, QCborSimpleType) \
 
 #define QT_FOR_EACH_STATIC_PRIMITIVE_POINTER(F)\
     F(VoidStar, 31, void*) \
@@ -125,6 +130,9 @@ inline Q_DECL_CONSTEXPR int qMetaTypeId();
     F(QJsonObject, 46, QJsonObject) \
     F(QJsonArray, 47, QJsonArray) \
     F(QJsonDocument, 48, QJsonDocument) \
+    F(QCborValue, 53, QCborValue) \
+    F(QCborArray, 54, QCborArray) \
+    F(QCborMap, 55, QCborMap) \
     QT_FOR_EACH_STATIC_ITEMMODEL_CLASS(F)
 
 #define QT_FOR_EACH_STATIC_CORE_POINTER(F)\
@@ -420,7 +428,7 @@ public:
         QT_FOR_EACH_STATIC_TYPE(QT_DEFINE_METATYPE_ID)
 
         FirstCoreType = Bool,
-        LastCoreType = Nullptr,
+        LastCoreType = QCborMap,
         FirstGuiType = QFont,
         LastGuiType = QPolygonF,
         FirstWidgetsType = QSizePolicy,
@@ -450,13 +458,18 @@ public:
         Void = 43,
         Nullptr = 51,
         QVariantMap = 8, QVariantList = 9, QVariantHash = 28,
+        QCborSimpleType = 52, QCborValue = 53, QCborArray = 54, QCborMap = 55,
+
+        // Gui types
         QFont = 64, QPixmap = 65, QBrush = 66, QColor = 67, QPalette = 68,
         QIcon = 69, QImage = 70, QPolygon = 71, QRegion = 72, QBitmap = 73,
         QCursor = 74, QKeySequence = 75, QPen = 76, QTextLength = 77, QTextFormat = 78,
         QMatrix = 79, QTransform = 80, QMatrix4x4 = 81, QVector2D = 82,
         QVector3D = 83, QVector4D = 84, QQuaternion = 85, QPolygonF = 86,
+
+        // Widget types
         QSizePolicy = 121,
-        LastCoreType = Nullptr,
+        LastCoreType = QCborMap,
         LastGuiType = QPolygonF,
         User = 1024
     };
@@ -480,8 +493,12 @@ public:
     typedef void (*Deleter)(void *);
     typedef void *(*Creator)(const void *);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     typedef void (*Destructor)(void *);
-    typedef void *(*Constructor)(void *, const void *);
+    typedef void *(*Constructor)(void *, const void *); // TODO Qt6: remove me
+#endif
+    typedef void (*TypedDestructor)(int, void *);
+    typedef void *(*TypedConstructor)(int, void *, const void *);
 
     typedef void (*SaveOperator)(QDataStream &, const void *);
     typedef void (*LoadOperator)(QDataStream &, void *);
@@ -500,6 +517,12 @@ public:
                             int size,
                             QMetaType::TypeFlags flags,
                             const QMetaObject *metaObject);
+    static int registerType(const char *typeName,
+                            TypedDestructor destructor,
+                            TypedConstructor constructor,
+                            int size,
+                            QMetaType::TypeFlags flags,
+                            const QMetaObject *metaObject);
     static bool unregisterType(int type);
     static int registerNormalizedType(const QT_PREPEND_NAMESPACE(QByteArray) &normalizedTypeName, Deleter deleter,
                             Creator creator,
@@ -510,6 +533,11 @@ public:
                             const QMetaObject *metaObject);
     static int registerNormalizedType(const QT_PREPEND_NAMESPACE(QByteArray) &normalizedTypeName, Destructor destructor,
                             Constructor constructor,
+                            int size,
+                            QMetaType::TypeFlags flags,
+                            const QMetaObject *metaObject);
+    static int registerNormalizedType(const QT_PREPEND_NAMESPACE(QByteArray) &normalizedTypeName, TypedDestructor destructor,
+                            TypedConstructor constructor,
                             int size,
                             QMetaType::TypeFlags flags,
                             const QMetaObject *metaObject);
@@ -670,8 +698,8 @@ public:
 private:
     static QMetaType typeInfo(const int type);
     inline QMetaType(const ExtensionFlag extensionFlags, const QMetaTypeInterface *info,
-                     Creator creator,
-                     Deleter deleter,
+                     TypedConstructor creator,
+                     TypedDestructor deleter,
                      SaveOperator saveOp,
                      LoadOperator loadOp,
                      Constructor constructor,
@@ -718,8 +746,8 @@ public:
     static void unregisterConverterFunction(int from, int to);
 private:
 
-    Creator m_creator_unused;
-    Deleter m_deleter_unused;
+    TypedConstructor m_typedConstructor;
+    TypedDestructor m_typedDestructor;
     SaveOperator m_saveOp;
     LoadOperator m_loadOp;
     Constructor m_constructor;
@@ -1413,8 +1441,8 @@ namespace QtPrivate
         static char checkType(void (X::*)());
         static void *checkType(void (T::*)());
         enum {
-            IsRealGadget = sizeof(checkType(&T::qt_check_for_QGADGET_macro)) == sizeof(void *),
-            IsGadgetOrDerivedFrom = true
+            IsRealGadget = !IsPointerToTypeDerivedFromQObject<T*>::Value && sizeof(checkType(&T::qt_check_for_QGADGET_macro)) == sizeof(void *),
+            IsGadgetOrDerivedFrom = !IsPointerToTypeDerivedFromQObject<T*>::Value
         };
     };
 
@@ -2150,8 +2178,8 @@ QT_BEGIN_NAMESPACE
 #undef Q_DECLARE_METATYPE_TEMPLATE_SMART_POINTER_ITER
 
 inline QMetaType::QMetaType(const ExtensionFlag extensionFlags, const QMetaTypeInterface *info,
-                            Creator creator,
-                            Deleter deleter,
+                            TypedConstructor creator,
+                            TypedDestructor deleter,
                             SaveOperator saveOp,
                             LoadOperator loadOp,
                             Constructor constructor,
@@ -2160,8 +2188,8 @@ inline QMetaType::QMetaType(const ExtensionFlag extensionFlags, const QMetaTypeI
                             uint theTypeFlags,
                             int typeId,
                             const QMetaObject *_metaObject)
-    : m_creator_unused(creator)
-    , m_deleter_unused(deleter)
+    : m_typedConstructor(creator)
+    , m_typedDestructor(deleter)
     , m_saveOp(saveOp)
     , m_loadOp(loadOp)
     , m_constructor(constructor)

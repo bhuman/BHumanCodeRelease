@@ -173,7 +173,14 @@
         #include <immintrin.h>
       #else
         #include <mmintrin.h>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#endif
         #include <emmintrin.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
         #include <xmmintrin.h>
         #ifdef  EIGEN_VECTORIZE_SSE3
         #include <pmmintrin.h>

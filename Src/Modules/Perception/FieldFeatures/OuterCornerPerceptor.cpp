@@ -96,13 +96,13 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
     if(intersectionInPA.x() < 0.f)
       continue;
 
-    const static float xOffsetPA = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
+    static const float xOffsetPA = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
     if(intersectionInPA.y() < 0) //check for right corner
     {
-      const static Vector2f rightCornerInPa = Vector2f(xOffsetPA, theFieldDimensions.yPosRightSideline);
+      static const Vector2f rightCornerInPa = Vector2f(xOffsetPA, theFieldDimensions.yPosRightSideline);
       const Vector2f displacement = intersectionInPA - rightCornerInPa;
 
-      if((displacement).squaredNorm() > squaredThresholdDisOffsetToPA ||
+      if(displacement.squaredNorm() > squaredThresholdDisOffsetToPA ||
          std::abs(displacement.x()) > allowedDisplacement || std::abs(displacement.y()) > allowedDisplacement)
         continue;
 
@@ -147,10 +147,10 @@ bool OuterCornerPerceptor::searchForLAndPA(OuterCorner& outerCorner) const
     }
     else //check for left corner
     {
-      const static Vector2f leftCornerInPa = Vector2f(xOffsetPA, theFieldDimensions.yPosLeftSideline);
+      static const Vector2f leftCornerInPa = Vector2f(xOffsetPA, theFieldDimensions.yPosLeftSideline);
       const Vector2f displacement = intersectionInPA - leftCornerInPa;
 
-      if((displacement).squaredNorm() > squaredThresholdDisOffsetToPA ||
+      if(displacement.squaredNorm() > squaredThresholdDisOffsetToPA ||
          std::abs(displacement.x()) > allowedDisplacement || std::abs(displacement.y()) > allowedDisplacement)
         continue;
 
@@ -212,7 +212,7 @@ bool OuterCornerPerceptor::searchForBigLAndTL(OuterCorner& outerCorner) const
     if(intersection.type == FieldLineIntersections::Intersection::L && intersection.additionalType == FieldLineIntersections::Intersection::none)
       useNormalLIntersections.push_back(&intersection);
 
-  const static float fieldDistance = theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea;
+  static const float fieldDistance = theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea;
 
   for(const FieldLineIntersections::Intersection* intersectionBigL : useBigLIntersections)
   {
@@ -278,8 +278,8 @@ bool OuterCornerPerceptor::searchForBigLAndSmallL(OuterCorner& outerCorner) cons
     if(intersection.type == FieldLineIntersections::Intersection::L && intersection.additionalType == FieldLineIntersections::Intersection::none)
       useNormalLIntersections.push_back(&intersection);
 
-  const static float xFieldDistance = theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea;
-  const static float fieldDistance = theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea + xFieldDistance;
+  static const float xFieldDistance = theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea;
+  static const float fieldDistance = theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea + xFieldDistance;
 
   for(const FieldLineIntersections::Intersection* intersectionBigL : useBigLIntersections)
   {

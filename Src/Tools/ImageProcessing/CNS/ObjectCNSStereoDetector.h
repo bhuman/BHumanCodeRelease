@@ -29,7 +29,7 @@ class ObjectCNSStereoDetector
 {
 public:
   //! Type definition for a memory-aligned sequence of object poses and their responses
-  typedef std::vector<IsometryWithResponse, Eigen::aligned_allocator<IsometryWithResponse> > IsometryWithResponses;
+  using IsometryWithResponses = std::vector<IsometryWithResponse, Eigen::aligned_allocator<IsometryWithResponse>>;
 
   //! The object's geometry in object coordinates
   TriangleMesh object;
@@ -76,7 +76,7 @@ public:
   //! Initializes a stereo-object detector
   /*! \c object is the object to be detected, \c camera the left \c
       [0] and \c [1] right camera. \c distribution allows to normalize
-      for different contour lengthes, this is at the moment not
+      for different contour lengths, this is at the moment not
       supported. The default case is to use a sparse contour,
       i.e. only selected points along the object contour.
 
@@ -244,7 +244,7 @@ public:
   Eigen::Vector3d searchStepTranslationViewing(const Eigen::Vector3d& object2WorldTrans, double stepInPixel) const;
 
   //! Defines a search step in the 6DOF object pose
-  /*! The search step is so large that it rouhly results
+  /*! The search step is so large that it roughly results
     in a movement of \c stepInPixel on the object contour
     in the image.
 
@@ -337,7 +337,7 @@ public:
   bool subpixelRefine(float& max, float argMax[3], const signed short* response) const;
 
   //! Computes a list of orientations \c a2bList where a's Z-axis points towards \c az2b0 with up to \c delta deviation
-  /*! The set of possible Z-axes is rastered with vectors \c eps (angle) apart. Rotation around Z is not rastered,
+  /*! The set of possible Z-axes is rastered with vectors \c eps (angle) apart. Rotation around Z is not rasterized,
       so this is a 2-D raster.
    */
   static void rasteredConeOfOrientations(std::vector<Eigen::Isometry3d>& a2bList,

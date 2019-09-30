@@ -3,29 +3,28 @@
  *
  * Implementation of LocalRobot.
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  * @author <A href="mailto:kspiess@tzi.de">Kai Spiess</A>
  */
 
 #include "LocalRobot.h"
 #include "Controller/ConsoleRoboCupCtrl.h"
 #include "Platform/Time.h"
+#include "Threads/Debug.h"
 
-LocalRobot::LocalRobot() :
-  RobotConsole(theDebugReceiver, theDebugSender),
-  theDebugReceiver(this),
-  theDebugSender(this),
-  image(false), updatedSignal(1)
+LocalRobot::LocalRobot(Debug* debug) :
+  RobotConsole(connectReceiverWithRobot(debug), connectSenderWithRobot(debug)),
+  updatedSignal(1)
 {
-  mode = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getMode();
-  addViews();
+  mode = static_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller)->getMode();
+  addPerRobotViews();
 
-  if(mode == SystemCall::logfileReplay)
+  if(mode == SystemCall::logFileReplay)
   {
-    logFile = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getLogFile();
+    logFile = static_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller)->getLogFile();
     if(logPlayer.open(logFile))
     {
-      logPlayer.handleAllMessages(annotationInfos);
+      updateAnnotationsFromLog();
       logPlayer.play();
       puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
       if(puppet)
@@ -33,7 +32,7 @@ LocalRobot::LocalRobot() :
     }
     else
     {
-      ctrl->printLn("Error: Cannot open log file " + logFile);
+      printLn("Error: Cannot open log file " + logFile);
     }
   }
   else if(mode == SystemCall::simulatedRobot)
@@ -55,58 +54,67 @@ bool LocalRobot::main()
 
       if(mode == SystemCall::simulatedRobot)
       {
-        if(jointLastTimeStampSent != jointSensorData.timestamp)
+        if(jointLastTimestampSent != jointSensorData.timestamp)
         {
-          debugOut.out.bin << 'm';
-          debugOut.out.finishMessage(idProcessBegin);
-          debugOut.out.bin << jointSensorData;
-          debugOut.out.finishMessage(idJointSensorData);
-          debugOut.out.bin << fsrSensorData;
-          debugOut.out.finishMessage(idFsrSensorData);
-          debugOut.out.bin << inertialSensorData;
-          debugOut.out.finishMessage(idInertialSensorData);
-          debugOut.out.bin << odometryData;
-          debugOut.out.finishMessage(idGroundTruthOdometryData);
-          ctrl->gameController.writeGameInfo(debugOut.out.bin);
-          debugOut.out.finishMessage(idGameInfo);
-          int robot = robotName.mid(5).toInt() - 1;
-          ctrl->gameController.writeOwnTeamInfo(robot, debugOut.out.bin);
-          debugOut.out.finishMessage(idOwnTeamInfo);
-          ctrl->gameController.writeOpponentTeamInfo(robot, debugOut.out.bin);
-          debugOut.out.finishMessage(idOpponentTeamInfo);
-          ctrl->gameController.writeRobotInfo(robot, debugOut.out.bin);
-          debugOut.out.finishMessage(idRobotInfo);
-          debugOut.out.bin << 'm';
-          debugOut.out.finishMessage(idProcessFinished);
-          jointLastTimeStampSent = jointSensorData.timestamp;
+          debugSender->out.bin << "Motion";
+          debugSender->out.finishMessage(idFrameBegin);
+          debugSender->out.bin << jointSensorData;
+          debugSender->out.finishMessage(idJointSensorData);
+          debugSender->out.bin << fsrSensorData;
+          debugSender->out.finishMessage(idFsrSensorData);
+          debugSender->out.bin << inertialSensorData;
+          debugSender->out.finishMessage(idInertialSensorData);
+          debugSender->out.bin << odometryData;
+          debugSender->out.finishMessage(idGroundTruthOdometryData);
+          debugSender->out.bin << "Motion";
+          debugSender->out.finishMessage(idFrameFinished);
+          jointLastTimestampSent = jointSensorData.timestamp;
         }
 
-        if(imageLastTimeStampSent != image.timeStamp)
+        if(imageLastTimestampSent != cameraImage.timestamp)
         {
-          debugOut.out.bin << 'c';
-          debugOut.out.finishMessage(idProcessBegin);
+          std::string perception = TypeRegistry::getEnumName(cameraInfo.camera);
+          perception[0] &= ~0x20;
+          debugSender->out.bin << perception;
+          debugSender->out.finishMessage(idFrameBegin);
           if(ctrl->calculateImage)
           {
-            debugOut.out.bin << image;
-            debugOut.out.finishMessage(idImage);
+            debugSender->out.bin << cameraImage;
+            debugSender->out.finishMessage(idCameraImage);
           }
           else
           {
             FrameInfo frameInfo;
-            frameInfo.time = image.timeStamp;
-            debugOut.out.bin << frameInfo;
-            debugOut.out.finishMessage(idFrameInfo);
+            frameInfo.time = cameraImage.timestamp;
+            debugSender->out.bin << frameInfo;
+            debugSender->out.finishMessage(idFrameInfo);
           }
-          debugOut.out.bin << cameraInfo;
-          debugOut.out.finishMessage(idCameraInfo);
-          debugOut.out.bin << worldState;
-          debugOut.out.finishMessage(idGroundTruthWorldState);
-          debugOut.out.bin << 'c';
-          debugOut.out.finishMessage(idProcessFinished);
-          imageLastTimeStampSent = image.timeStamp;
+          debugSender->out.bin << cameraInfo;
+          debugSender->out.finishMessage(idCameraInfo);
+          debugSender->out.bin << worldState;
+          debugSender->out.finishMessage(idGroundTruthWorldState);
+          debugSender->out.bin << perception;
+          debugSender->out.finishMessage(idFrameFinished);
+
+          debugSender->out.bin << "Cognition";
+          debugSender->out.finishMessage(idFrameBegin);
+          ctrl->gameController.writeGameInfo(debugSender->out.bin);
+          debugSender->out.finishMessage(idGameInfo);
+          int robot = robotName.mid(5).toInt() - 1;
+          ctrl->gameController.writeOwnTeamInfo(robot, debugSender->out.bin);
+          debugSender->out.finishMessage(idOwnTeamInfo);
+          ctrl->gameController.writeOpponentTeamInfo(robot, debugSender->out.bin);
+          debugSender->out.finishMessage(idOpponentTeamInfo);
+          ctrl->gameController.writeRobotInfo(robot, debugSender->out.bin);
+          debugSender->out.finishMessage(idRobotInfo);
+          debugSender->out.bin << worldState;
+          debugSender->out.finishMessage(idGroundTruthWorldState);
+          debugSender->out.bin << "Cognition";
+          debugSender->out.finishMessage(idFrameFinished);
+          imageLastTimestampSent = cameraImage.timestamp;
         }
       }
-      theDebugSender.send(true);
+      debugSender->send(true);
     }
 
     updatedSignal.post();
@@ -124,10 +132,11 @@ void LocalRobot::update()
   {
     SYNC;
 
-    if(mode == SystemCall::logfileReplay)
+    if(mode == SystemCall::logFileReplay)
     {
-      if(logAcknowledged && logPlayer.replay())
-        logAcknowledged = false;
+      std::string threadIdentifier = logPlayer.getThreadIdentifierOfNextFrame();
+      if(threadIdentifier != "" && threadData[threadIdentifier].logAcknowledged && logPlayer.replay())
+        threadData[threadIdentifier].logAcknowledged = false;
       if(puppet)
       {
         if(RobotConsole::jointSensorData.timestamp)
@@ -152,24 +161,24 @@ void LocalRobot::update()
     if(mode == SystemCall::simulatedRobot)
     {
       unsigned now = Time::getCurrentSystemTime();
-      if(now >= nextImageTimeStamp)
+      if(now >= nextImageTimestamp)
       {
-        unsigned newNextImageTimeStamp = ctrl->globalNextImageTimeStamp;
-        if(newNextImageTimeStamp == nextImageTimeStamp)
+        unsigned newNextImageTimestamp = ctrl->globalNextImageTimestamp;
+        if(newNextImageTimestamp == nextImageTimestamp)
         {
           int imageDelay = (2000 / ctrl->calculateImageFps + 1) >> 1;
-          int duration = now - ctrl->globalNextImageTimeStamp;
-          ctrl->globalNextImageTimeStamp = (duration >= imageDelay ? now : ctrl->globalNextImageTimeStamp) + imageDelay;
-          newNextImageTimeStamp = ctrl->globalNextImageTimeStamp;
+          int duration = now - ctrl->globalNextImageTimestamp;
+          ctrl->globalNextImageTimestamp = (duration >= imageDelay ? now : ctrl->globalNextImageTimestamp) + imageDelay;
+          newNextImageTimestamp = ctrl->globalNextImageTimestamp;
         }
-        nextImageTimeStamp = newNextImageTimeStamp;
+        nextImageTimestamp = newNextImageTimestamp;
 
         if(ctrl->calculateImage)
-          simulatedRobot.getImage(image, cameraInfo);
+          simulatedRobot.getImage(cameraImage, cameraInfo);
         else
         {
           simulatedRobot.getCameraInfo(cameraInfo);
-          image.timeStamp = now;
+          cameraImage.timestamp = now;
         }
         simulatedRobot.getRobotPose(robotPose);
         simulatedRobot.getWorldState(worldState);
@@ -189,15 +198,15 @@ void LocalRobot::update()
     }
 
     QString statusText;
-    if(mode == SystemCall::logfileReplay)
+    if(mode == SystemCall::logFileReplay)
     {
       statusText = QString("replaying ") +
 #ifdef WINDOWS
-        QString::fromLatin1(logFile.c_str())
+                   QString::fromLatin1(logFile.c_str())
 #else
-        logFile.c_str()
+                   logFile.c_str()
 #endif
-        + " ";
+                   + " ";
       if(logPlayer.currentFrameNumber != -1)
       {
         char buf[33];
@@ -208,7 +217,7 @@ void LocalRobot::update()
         statusText += "finished";
     }
 
-    if(mode != SystemCall::logfileReplay && logPlayer.numberOfFrames != 0)
+    if(mode != SystemCall::logFileReplay && logPlayer.numberOfFrames != 0)
     {
       if(statusText != "")
         statusText += ", ";
@@ -230,4 +239,19 @@ void LocalRobot::update()
 
   updateSignal.post();
   trigger(); // invoke a call of main()
+}
+
+DebugReceiver<MessageQueue>* LocalRobot::connectReceiverWithRobot(Debug* debug)
+{
+  ASSERT(!debug->debugSender);
+  DebugReceiver<MessageQueue>* receiver = new DebugReceiver<MessageQueue>(this, debug->getName());
+  debug->debugSender = new DebugSender<MessageQueue>(*receiver, "LocalRobot");
+  return receiver;
+}
+
+DebugSender<MessageQueue>* LocalRobot::connectSenderWithRobot(Debug* debug) const
+{
+  ASSERT(!debug->debugReceiver);
+  debug->debugReceiver = new DebugReceiver<MessageQueue>(debug, "LocalRobot");
+  return new DebugSender<MessageQueue>(*debug->debugReceiver, debug->getName());
 }

@@ -12,14 +12,12 @@ SimulatedNao = cppDynamicLibrary + {
     "$(srcDirRoot)/Modules/**.h"
     "$(srcDirRoot)/Platform/$(OS)/*.cpp" = bhCppSource
     "$(srcDirRoot)/Platform/$(OS)/*.h"
-    "$(srcDirRoot)/Platform/SimulatedNao/*.cpp" = bhCppSource
-    "$(srcDirRoot)/Platform/SimulatedNao/*.h"
     "$(srcDirRoot)/Platform/*.cpp" = bhCppSource
     "$(srcDirRoot)/Platform/*.h"
-    "$(srcDirRoot)/Processes/**.cpp" = bhCppSource
-    "$(srcDirRoot)/Processes/**.h"
     "$(srcDirRoot)/Representations/**.cpp" = bhCppSource
     "$(srcDirRoot)/Representations/**.h"
+    "$(srcDirRoot)/Threads/**.cpp" = bhCppSource
+    "$(srcDirRoot)/Threads/**.h"
     "$(srcDirRoot)/Tools/**.cpp" = bhCppSource
     "$(srcDirRoot)/Tools/**.h"
     "$(utilDirRoot)/asmjit/src/**.cpp" = cppSource
@@ -41,13 +39,13 @@ SimulatedNao = cppDynamicLibrary + {
 
   defines += {
     "TARGET_SIM"
-    "ASMJIT_EMBED"
+    "ASMJIT_STATIC"
     "ASMJIT_BUILD_X86"
-    "ASMJIT_DISABLE_BUILDER"
-    "ASMJIT_DISABLE_COMPILER"
-    "ASMJIT_DISABLE_LOGGING"
-    "ASMJIT_DISABLE_TEXT"
-    "ASMJIT_DISABLE_VALIDATION"
+    "ASMJIT_NO_BUILDER"
+    "ASMJIT_NO_COMPILER"
+    "ASMJIT_NO_LOGGING"
+    "ASMJIT_NO_TEXT"
+    "ASMJIT_NO_INST_API"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
     }
@@ -64,13 +62,15 @@ SimulatedNao = cppDynamicLibrary + {
     "$(utilDirRoot)/SimRobot/Util/Eigen"
     "$(utilDirRoot)/GameController/include"
     "$(utilDirRoot)/fftw-3.3"
-    "$(utilDirRoot)/libjpeg/src"
+    "$(utilDirRoot)/libjpeg/include"
     "$(utilDirRoot)/libqxt"
     "$(utilDirRoot)/qtpropertybrowser"
     "$(utilDirRoot)/SimRobot/Src/SimRobot"
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
     "$(utilDirRoot)/snappy/include"
+    "$(utilDirRoot)/flite/include"
+    "$(utilDirRoot)/hdf5/include"
     "$(utilDirRoot)/asmjit/src"
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
@@ -96,14 +96,17 @@ SimulatedNao = cppDynamicLibrary + {
     "$(buildPlatformDir)/qtpropertybrowser/$(configuration)"
     "$(buildPlatformDir)/libqxt/$(configuration)"
     if (platform == "Linux") {
-      "$(utilDirRoot)/fftw-3.3/Linux64"
+      "$(utilDirRoot)/fftw-3.3/Linux"
+      "$(utilDirRoot)/hdf5/lib/Linux"
+      "$(utilDirRoot)/flite/lib/Linux"
       "$(utilDirRoot)/libjpeg/lib/Linux"
-      "$(utilDirRoot)/snappy/lib/Linux/x64"
+      "$(utilDirRoot)/snappy/lib/Linux"
     } else if (host == "Win32") {
       "$(utilDirRoot)/fftw-3.3/Windows"
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
       "$(utilDirRoot)/libjpeg/lib/Windows"
       "$(utilDirRoot)/snappy/lib/Windows"
+      "$(utilDirRoot)/hdf5/lib/Windows"
     }
   }
 
@@ -117,10 +120,11 @@ SimulatedNao = cppDynamicLibrary + {
         "Qt5Core", "Qt5Gui", "Qt5OpenGl", "Qt5Svg", "Qt5Widgets"
         "snappy"
       }
-      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg", "libfftw3-3", "libfftw3f-3"
+      "winmm", "opengl32", "glu32", "ws2_32", "libjpeg", "libfftw3-3", "libfftw3f-3", "hdf5"
     } else if (platform == "Linux") {
       "Qt5Core", "Qt5Gui", "Qt5Network", "Qt5OpenGL", "Qt5Svg", "Qt5Widgets"
-      "rt", "pthread", "GLEW", "GLU", "GL", "fftw3", "fftw3f", "jpeg", "snappy"
+      "rt", "pthread", "GLEW", "GLU", "GL", "fftw3", "fftw3f", "jpeg", "snappy", "hdf5"
+      "flite_cmu_us_slt", "flite_usenglish", "flite_cmulex", "flite", "asound"
     }
   }
 

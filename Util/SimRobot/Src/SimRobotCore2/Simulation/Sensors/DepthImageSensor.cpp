@@ -44,8 +44,8 @@ void DepthImageSensor::createPhysics()
   {
     ASSERT(imageHeight == 1);
 
-    sensor.numOfBuffers = (unsigned int) ceil(angleX / (float(M_PI) * 2.0f / 3.0f));
-    sensor.bufferWidth = (unsigned int) ceil(float(imageWidth) / float(sensor.numOfBuffers));
+    sensor.numOfBuffers = static_cast<unsigned int>(ceil(angleX / (float(M_PI) * 2.0f / 3.0f)));
+    sensor.bufferWidth = static_cast<unsigned int>(ceil(float(imageWidth) / float(sensor.numOfBuffers)));
     sensor.lut = new float*[sensor.bufferWidth];
     sensor.renderAngleX = angleX * sensor.bufferWidth / imageWidth;
 
@@ -54,19 +54,19 @@ void DepthImageSensor::createPhysics()
     float minPixelWidth(std::tan(maxAngle/(float(sensor.bufferWidth) / 2.0f)));
     float totalWidth(std::tan(maxAngle));
     float newXRes(totalWidth / minPixelWidth);
-    sensor.renderWidth = (unsigned int) ceil(newXRes) * 2;
+    sensor.renderWidth = static_cast<unsigned int>(ceil(newXRes)) * 2;
     sensor.renderBuffer = new float[sensor.renderWidth];
 
     //Compute values for LUT (sensor data -> rendering buffer)
     float firstAngle(-maxAngle);
-    float step(maxAngle / ((float) sensor.bufferWidth / 2.0f));
+    float step(maxAngle / (static_cast<float>(sensor.bufferWidth) / 2.0f));
     float currentAngle(firstAngle);
     float gToPixelFactor(newXRes / std::tan(maxAngle));
     for(unsigned int i = 0; i < sensor.bufferWidth; ++i)
     {
       float g(std::tan(currentAngle));
       g *= gToPixelFactor;
-      int gPixel((int) g + (int) sensor.renderWidth / 2);
+      int gPixel(static_cast<int>(g) + static_cast<int>(sensor.renderWidth) / 2);
       sensor.lut[i] = &sensor.renderBuffer[gPixel];
       currentAngle += step;
     }
@@ -221,7 +221,7 @@ void DepthImageSensor::drawPhysics(unsigned int flags) const
       glNormal3f (0, 0, 1.f);
 
       unsigned segments = int(18 * angleX / M_PI);
-      if(projection == perspectiveProjection && segments > 0)
+      if(projection == perspectiveProjection || segments == 0)
       {
         glVertex3f(tl.x(), tl.y(), tl.z());
         glVertex3f(tr.x(), tr.y(), tr.z());

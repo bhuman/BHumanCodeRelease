@@ -31,26 +31,26 @@ namespace ColorModelConversions
    These are taken from the possible output formats of the NAO's cameras.
    (see http://www.onsemi.com/pub_link/Collateral/MT9M114-D.PDF, page 41)
    */
-  constexpr static float yCoeffR = 0.299f; // BT 601-YUV: 0.299f; sRGB-YCbCr: 0.2126f
-  constexpr static float yCoeffG = 0.587f; // BT 601-YUV: 0.587f; sRGB-YCbCr: 0.7152f
-  constexpr static float yCoeffB = 0.114f; // BT 601-YUV: 0.114f; sRGB-YCbCr: 0.0722f
+  static constexpr float yCoeffR = 0.299f; // BT 601-YUV: 0.299f; sRGB-YCbCr: 0.2126f
+  static constexpr float yCoeffG = 0.587f; // BT 601-YUV: 0.587f; sRGB-YCbCr: 0.7152f
+  static constexpr float yCoeffB = 0.114f; // BT 601-YUV: 0.114f; sRGB-YCbCr: 0.0722f
 
-  constexpr static float uCoeff = 0.564f;  // BT 601-YUV: 0.564f; sRGB-YCbCr: 0.5389f
-  constexpr static float vCoeff = 0.713f;  // BT 601-YUV: 0.713f; sRGB-YCbCr: 0.635f
+  static constexpr float uCoeff = 0.564f;  // BT 601-YUV: 0.564f; sRGB-YCbCr: 0.5389f
+  static constexpr float vCoeff = 0.713f;  // BT 601-YUV: 0.713f; sRGB-YCbCr: 0.635f
 
-  constexpr static int scaleExponent = 16;
+  static constexpr int scaleExponent = 16;
 
-  constexpr static int scaledYCoeffR = static_cast<int>(yCoeffR * static_cast<float>(1 << scaleExponent));
-  constexpr static int scaledYCoeffG = static_cast<int>(yCoeffG * static_cast<float>(1 << scaleExponent));
-  constexpr static int scaledYCoeffB = static_cast<int>(yCoeffB * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledYCoeffR = static_cast<int>(yCoeffR * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledYCoeffG = static_cast<int>(yCoeffG * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledYCoeffB = static_cast<int>(yCoeffB * static_cast<float>(1 << scaleExponent));
 
-  constexpr static int scaledUCoeff = static_cast<int>(uCoeff * static_cast<float>(1 << scaleExponent));
-  constexpr static int scaledVCoeff = static_cast<int>(vCoeff * static_cast<float>(1 << scaleExponent));
-  constexpr static int scaledInvUCoeff = static_cast<int>(static_cast<float>(1 << scaleExponent) / uCoeff);
-  constexpr static int scaledInvVCoeff = static_cast<int>(static_cast<float>(1 << scaleExponent) / vCoeff);
+  static constexpr int scaledUCoeff = static_cast<int>(uCoeff * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledVCoeff = static_cast<int>(vCoeff * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledInvUCoeff = static_cast<int>(static_cast<float>(1 << scaleExponent) / uCoeff);
+  static constexpr int scaledInvVCoeff = static_cast<int>(static_cast<float>(1 << scaleExponent) / vCoeff);
 
-  constexpr static int scaledGCoeffU = static_cast<int>(yCoeffB / (yCoeffG* uCoeff) * static_cast<float>(1 << scaleExponent));
-  constexpr static int scaledGCoeffV = static_cast<int>(yCoeffR / (yCoeffG* vCoeff) * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledGCoeffU = static_cast<int>(yCoeffB / (yCoeffG* uCoeff) * static_cast<float>(1 << scaleExponent));
+  static constexpr int scaledGCoeffV = static_cast<int>(yCoeffR / (yCoeffG* vCoeff) * static_cast<float>(1 << scaleExponent));
 
   /**
    * Converts an YUV pixel into an RGB pixel.

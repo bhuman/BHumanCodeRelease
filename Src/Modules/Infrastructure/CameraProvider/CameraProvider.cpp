@@ -11,27 +11,34 @@
 
 #include "CameraProvider.h"
 #include "Platform/SystemCall.h"
+#include "Platform/Thread.h"
 #include "Platform/Time.h"
-#include "Representations/Infrastructure/JPEGImage.h"
+#include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
 #include "Tools/Debugging/Stopwatch.h"
 #include "Tools/Debugging/Annotation.h"
 #include <cstdio>
 
-MAKE_MODULE(CameraProvider, cognitionInfrastructure)
+MAKE_MODULE(CameraProvider, infrastructure)
 
 thread_local CameraProvider* CameraProvider::theInstance = nullptr;
+#ifdef CAMERA_INCLUDED
+Semaphore CameraProvider::performingReset = Semaphore(1);
+bool CameraProvider::resetPending = false;
+#endif
 
-CameraProvider::CameraProvider() :
-  upperCameraInfo(CameraInfo::upper), lowerCameraInfo(CameraInfo::lower)
+CameraProvider::CameraProvider()
+  : whichCamera(Thread::getCurrentThreadName() == "Upper" ?  CameraInfo::upper : CameraInfo::lower),
+    cameraInfo(whichCamera)
 {
   VERIFY(readCameraIntrinsics());
   VERIFY(readCameraResolution());
 
   theInstance = this;
-  setupCameras();
+  setupCamera();
 
 #ifdef CAMERA_INCLUDED
+  headName = Global::getSettings().headName.c_str();
   thread.start(this, &CameraProvider::takeImages);
   takeNextImage.post();
   imageTaken.wait();
@@ -45,93 +52,95 @@ CameraProvider::~CameraProvider()
   takeNextImage.post();
   thread.stop();
 
-  currentImageCamera = nullptr;
-  if(upperCamera)
-  {
-    delete upperCamera;
-    upperCamera = nullptr;
-  }
-  if(lowerCamera)
-  {
-    delete lowerCamera;
-    lowerCamera = nullptr;
-  }
+  if(camera)
+    delete camera;
 #endif
   theInstance = nullptr;
 }
 
-void CameraProvider::update(Image& theImage)
+void CameraProvider::update(CameraImage& theCameraImage)
 {
 #ifdef CAMERA_INCLUDED
-  ASSERT(!currentImageCamera);
-  if(upperCamera->hasImage() && (!lowerCamera->hasImage() || upperCamera->getTimeStamp() < lowerCamera->getTimeStamp()))
-    useImage(true, std::max(lastImageTimeStamp + 1, (unsigned)(upperCamera->getTimeStamp() / 1000) - Time::getSystemTimeBase()), upperCameraInfo, theImage, upperCamera);
-  else
-    useImage(false, std::max(lastImageTimeStamp + 1, (unsigned)(lowerCamera->getTimeStamp() / 1000) - Time::getSystemTimeBase()), lowerCameraInfo, theImage, lowerCamera);
-  ASSERT(theImage.timeStamp >= lastImageTimeStamp);
-  lastImageTimeStamp = theImage.timeStamp;
-  MODIFY("module:CameraProvider:fullSize", theImage.isFullSize);
-#else
-  theImage.timeStamp = Time::getCurrentSystemTime();
-#endif // CAMERA_INCLUDED
-  STOPWATCH("compressJPEG")
+  unsigned timestamp = static_cast<long long>(camera->getTimestamp() / 1000) > static_cast<long long>(Time::getSystemTimeBase())
+                       ? static_cast<unsigned>(camera->getTimestamp() / 1000 - Time::getSystemTimeBase()) : 100000;
+  if(camera->hasImage())
   {
-    DEBUG_RESPONSE("representation:JPEGImage") OUTPUT(idJPEGImage, bin, JPEGImage(theImage));
+    theCameraImage.setReference(cameraInfo.width / 2, cameraInfo.height, const_cast<unsigned char*>(camera->getImage()), std::max(lastImageTimestamp + 1, timestamp));
+
+    if(theCameraImage.timestamp - timestampLastRowChange > 3000)
+    {
+      timestampLastRowChange = theCameraImage.timestamp;
+      currentRow = Random::uniformInt(1, cameraInfo.height - 2);
+      rowBuffer.clear();
+    }
+    std::string res = MD5().digestMemory(reinterpret_cast<unsigned char*>(theCameraImage[currentRow]), cameraInfo.width * sizeof(CameraImage::PixelType));
+    rowBuffer.push_front(res);
+
+    int appearances = 0;
+    for(auto i = rowBuffer.begin(); i != rowBuffer.end(); ++i)
+      if(*i == res && ++appearances > 25)
+      {
+        OUTPUT_ERROR("Probaly encountered a puzzle image!");
+        camera->resetRequired = true;
+        return;
+      }
   }
+  else if(theCameraImage.isReference())
+  {
+    theCameraImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
+    theCameraImage.timestamp = std::max(lastImageTimestamp + 1, timestamp);
+  }
+
+  if(whichCamera == CameraInfo::upper)
+  {
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:doWhiteBalanceUpper") camera->doAutoWhiteBalance();
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:readCameraSettingsUpper") camera->readCameraSettings();
+  }
+  else
+  {
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:doWhiteBalanceLower") camera->doAutoWhiteBalance();
+    DEBUG_RESPONSE_ONCE("module:CameraProvider:readCameraSettingsLower") camera->readCameraSettings();
+  }
+  lastImageTimestampLL = camera->getTimestamp();
+
+  ASSERT(theCameraImage.timestamp >= lastImageTimestamp);
+  lastImageTimestamp = theCameraImage.timestamp;
+#else
+  theCameraImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
+  theCameraImage.timestamp = Time::getCurrentSystemTime();
+#endif // CAMERA_INCLUDED
+}
+
+void CameraProvider::update(JPEGImage& jpegImage)
+{
+  jpegImage = theCameraImage;
 }
 
 void CameraProvider::update(CameraInfo& cameraInfo)
 {
-  if(currentImageCamera == upperCamera)
-    cameraInfo = upperCameraInfo;
-  else
-    cameraInfo = lowerCameraInfo;
+  cameraInfo = this->cameraInfo;
 }
 
 void CameraProvider::update(CameraStatus& cameraStatus)
 {
-  if(!camerasOk)
+  if(!cameraOk)
   {
     if(cameraStatus.ok)
     {
       ANNOTATION("CameraProvider", "Could not acquire new image.");
-      SystemCall::playSound("cameraBroken.wav");
+      SystemCall::playSound("sirene.wav");
+      SystemCall::say("Camera broken");
     }
 #ifdef NDEBUG
     else if(!SystemCall::soundIsPlaying())
-      SystemCall::playSound("cameraBroken.wav");
+    {
+      SystemCall::playSound("sirene.wav");
+      SystemCall::say("Camera broken");
+    }
 #endif
   }
 
-  cameraStatus.ok = camerasOk;
-}
-
-void CameraProvider::useImage(bool isUpper, unsigned timestamp, CameraInfo& cameraInfo, Image& image, NaoCamera* naoCam)
-{
-#ifdef CAMERA_INCLUDED
-  image.setResolution(cameraInfo.width / 2, cameraInfo.height / 2, true);
-  if(naoCam->hasImage())
-    image.setImage(const_cast<unsigned char*>(naoCam->getImage()));
-  else if(image.isReference)
-  {
-    image.setImage(new Image::Pixel[Image::maxResolutionWidth * Image::maxResolutionHeight * 2]);
-    image.isReference = false;
-  }
-  image.timeStamp = timestamp;
-
-  if(isUpper)
-  {
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:doWhiteBalanceUpper") naoCam->doAutoWhiteBalance();
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:readCameraSettingsUpper") naoCam->readCameraSettings();
-  }
-  else
-  {
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:doWhiteBalanceLower") naoCam->doAutoWhiteBalance();
-    DEBUG_RESPONSE_ONCE("module:CameraProvider:readCameraSettingsLower") naoCam->readCameraSettings();
-  }
-  currentImageCamera = naoCam;
-  lastImageTimeStampLL = naoCam->getTimeStamp();
-#endif // CAMERA_INCLUDED
+  cameraStatus.ok = cameraOk;
 }
 
 bool CameraProvider::readCameraIntrinsics()
@@ -148,108 +157,56 @@ bool CameraProvider::readCameraResolution()
   InMapFile stream("cameraResolution.cfg");
   bool exist = stream.exists();
   if(exist)
-    stream >> cameraResolution;
+    stream >> cameraResolutionRequest;
   return exist;
 }
 
 bool CameraProvider::processResolutionRequest()
 {
-  if(SystemCall::getMode() != SystemCall::Mode::physicalRobot)
+  if(SystemCall::getMode() == SystemCall::Mode::physicalRobot
+     && theCameraResolutionRequest.resolutions[whichCamera] != lastResolutionRequest)
   {
-    return false;
-  }
-  if(theCameraResolutionRequest.timestamp > cameraResolution.timestamp)
-  {
-    switch(theCameraResolutionRequest.resolutionUpper)
+    lastResolutionRequest = theCameraResolutionRequest.resolutions[whichCamera];
+    switch(theCameraResolutionRequest.resolutions[whichCamera])
     {
-      case CameraResolution::Resolutions::noRequest:
-        break;
-      case CameraResolution::Resolutions::defaultRes:
-      {
-        const CameraResolution::Resolutions tmp = cameraResolution.resolutionLower;
+      case CameraResolutionRequest::noRequest:
+        return false;
+      case CameraResolutionRequest::defaultRes:
         if(!readCameraResolution())
-        {
-          cameraResolution.resolutionUpper = CameraResolution::Resolutions::w640h480;
-          cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
-        }
-        cameraResolution.resolutionLower = tmp;
-        break;
-      }
-      case CameraResolution::Resolutions::w320h240:
-      case CameraResolution::Resolutions::w640h480:
-      case CameraResolution::Resolutions::w1280h960:
-        cameraResolution.resolutionUpper = theCameraResolutionRequest.resolutionUpper;
-        cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
-        break;
+          cameraResolutionRequest.resolutions[whichCamera] = whichCamera == CameraInfo::upper
+                                                             ? CameraResolutionRequest::w640h480
+                                                             : CameraResolutionRequest::w320h240;
+        return true;
+      case CameraResolutionRequest::w320h240:
+      case CameraResolutionRequest::w640h480:
+      case CameraResolutionRequest::w1280h960:
+        cameraResolutionRequest.resolutions[whichCamera] = theCameraResolutionRequest.resolutions[whichCamera];
+        return true;
       default:
         FAIL("Unknown resolution.");
         return false;
     }
-    switch(theCameraResolutionRequest.resolutionLower)
-    {
-      case CameraResolution::Resolutions::noRequest:
-        break;
-      case CameraResolution::Resolutions::defaultRes:
-      {
-        const CameraResolution::Resolutions tmp = cameraResolution.resolutionUpper;
-        if(!readCameraResolution())
-        {
-          cameraResolution.resolutionLower = CameraResolution::Resolutions::w320h240;
-          cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
-        }
-        cameraResolution.resolutionUpper = tmp;
-        break;
-      }
-      case CameraResolution::Resolutions::w320h240:
-      case CameraResolution::Resolutions::w640h480:
-      case CameraResolution::Resolutions::w1280h960:
-        cameraResolution.resolutionLower = theCameraResolutionRequest.resolutionLower;
-        cameraResolution.timestamp = theCameraResolutionRequest.timestamp;
-        break;
-      default:
-        FAIL("Unknown resolution.");
-        return false;
-    }
-    return true;
   }
   else
     return false;
 }
 
-void CameraProvider::setupCameras()
+void CameraProvider::setupCamera()
 {
   // set resolution
-  switch(cameraResolution.resolutionUpper)
+  switch(cameraResolutionRequest.resolutions[whichCamera])
   {
-    case CameraResolution::Resolutions::w320h240:
-      upperCameraInfo.width = 320;
-      upperCameraInfo.height = 240;
+    case CameraResolutionRequest::w320h240:
+      cameraInfo.width = 320;
+      cameraInfo.height = 240;
       break;
-    case CameraResolution::Resolutions::w640h480:
-      upperCameraInfo.width = 640;
-      upperCameraInfo.height = 480;
+    case CameraResolutionRequest::w640h480:
+      cameraInfo.width = 640;
+      cameraInfo.height = 480;
       break;
-    case CameraResolution::Resolutions::w1280h960:
-      upperCameraInfo.width = 1280;
-      upperCameraInfo.height = 960;
-      break;
-    default:
-      FAIL("Unknown resolution.");
-      break;
-  }
-  switch(cameraResolution.resolutionLower)
-  {
-    case CameraResolution::Resolutions::w320h240:
-      lowerCameraInfo.width = 320;
-      lowerCameraInfo.height = 240;
-      break;
-    case CameraResolution::Resolutions::w640h480:
-      lowerCameraInfo.width = 640;
-      lowerCameraInfo.height = 480;
-      break;
-    case CameraResolution::Resolutions::w1280h960:
-      lowerCameraInfo.width = 1280;
-      lowerCameraInfo.height = 960;
+    case CameraResolutionRequest::w1280h960:
+      cameraInfo.width = 1280;
+      cameraInfo.height = 960;
       break;
     default:
       FAIL("Unknown resolution.");
@@ -257,34 +214,25 @@ void CameraProvider::setupCameras()
   }
 
   // set opening angle
-  upperCameraInfo.openingAngleWidth = cameraIntrinsics.upperOpeningAngleWidth;
-  upperCameraInfo.openingAngleHeight = cameraIntrinsics.upperOpeningAngleHeight;
-  lowerCameraInfo.openingAngleWidth = cameraIntrinsics.lowerOpeningAngleWidth;
-  lowerCameraInfo.openingAngleHeight = cameraIntrinsics.lowerOpeningAngleHeight;
-  // set optical center
-  upperCameraInfo.opticalCenter.x() = cameraIntrinsics.upperOpticalCenter.x() * upperCameraInfo.width;
-  upperCameraInfo.opticalCenter.y() = cameraIntrinsics.upperOpticalCenter.y() * upperCameraInfo.height;
-  lowerCameraInfo.opticalCenter.x() = cameraIntrinsics.lowerOpticalCenter.x() * lowerCameraInfo.width;
-  lowerCameraInfo.opticalCenter.y() = cameraIntrinsics.lowerOpticalCenter.y() * lowerCameraInfo.height;
-  // update focal length
-  upperCameraInfo.updateFocalLength();
-  lowerCameraInfo.updateFocalLength();
-#ifdef CAMERA_INCLUDED
-  currentImageCamera = nullptr;
-  if(upperCamera == nullptr)
-    upperCamera = new NaoCamera("/dev/video0", upperCameraInfo.camera, upperCameraInfo.width, upperCameraInfo.height, true,
-                                theCameraSettings.upper, theAutoExposureWeightTable.tables[CameraInfo::upper]);
-  else
-    upperCamera->changeResolution(upperCameraInfo.width, upperCameraInfo.height);
-  if(lowerCamera == nullptr)
-    lowerCamera = new NaoCamera("/dev/video1", lowerCameraInfo.camera, lowerCameraInfo.width, lowerCameraInfo.height, false,
-                                theCameraSettings.lower, theAutoExposureWeightTable.tables[CameraInfo::lower]);
-  else
-    lowerCamera->changeResolution(lowerCameraInfo.width, lowerCameraInfo.height);
+  cameraInfo.openingAngleWidth = cameraIntrinsics.cameras[whichCamera].openingAngleWidth;
+  cameraInfo.openingAngleHeight = cameraIntrinsics.cameras[whichCamera].openingAngleHeight;
 
-  ASSERT(upperCamera->getFrameRate() == lowerCamera->getFrameRate());
+  // set optical center
+  cameraInfo.opticalCenter.x() = cameraIntrinsics.cameras[whichCamera].opticalCenter.x() * cameraInfo.width;
+  cameraInfo.opticalCenter.y() = cameraIntrinsics.cameras[whichCamera].opticalCenter.y() * cameraInfo.height;
+
+  // update focal length
+  cameraInfo.updateFocalLength();
+
+#ifdef CAMERA_INCLUDED
+  ASSERT(camera == nullptr);
+  camera = new NaoCamera(whichCamera == CameraInfo::upper ?
+                         "/dev/video-top" : "/dev/video-bottom",
+                         cameraInfo.camera,
+                         cameraInfo.width, cameraInfo.height, whichCamera == CameraInfo::upper,
+                         theCameraSettings.cameras[whichCamera], theAutoExposureWeightTable.tables[whichCamera]);
 #else
-  upperCamera = lowerCamera = nullptr;
+  camera = nullptr;
 #endif
 }
 
@@ -292,7 +240,7 @@ bool CameraProvider::isFrameDataComplete()
 {
 #ifdef CAMERA_INCLUDED
   if(theInstance)
-    return theInstance->upperCamera->hasImage() || theInstance->lowerCamera->hasImage();
+    return theInstance->camera->hasImage();
   else
 #endif
     return true;
@@ -301,50 +249,75 @@ bool CameraProvider::isFrameDataComplete()
 void CameraProvider::takeImages()
 {
 #ifdef CAMERA_INCLUDED
-  BH_TRACE_INIT("CameraProvider");
-  Thread::nameThread("CameraProvider");
+  BH_TRACE_INIT(whichCamera == CameraInfo::upper ? "UpperCameraProvider" : "LowerCameraProvider");
+  Thread::nameCurrentThread("CameraProvider");
   thread.setPriority(11);
+  unsigned imageReceived = Time::getRealSystemTime();
   while(thread.isRunning())
   {
+    if(camera->resetRequired)
+      resetPending = true;
+    if(resetPending)
+    {
+      delete camera;
+      camera = nullptr;
+      performingReset.wait();
+      if(resetPending)
+      {
+        NaoCamera::resetCamera();
+        SystemCall::say(headName.c_str());
+        SystemCall::say("Camera reset");
+        resetPending = false;
+      }
+      setupCamera();
+      performingReset.post();
+      continue;
+    }
+
     takeNextImage.wait();
 
-    if(currentImageCamera)
-    {
-      currentImageCamera->releaseImage();
-      currentImageCamera = nullptr;
-    }
+    if(camera->hasImage())
+      camera->releaseImage();
 
     // update resolution
     if(processResolutionRequest())
-      setupCameras();
-
-    while(!upperCamera->hasImage() && !lowerCamera->hasImage())
     {
-      camerasOk = NaoCamera::captureNew(*upperCamera, *lowerCamera, maxWaitForImage);
+      delete camera;
+      camera = nullptr;
+      setupCamera();
+    }
 
-      if(!camerasOk)
+    while(!camera->hasImage())
+    {
+      cameraOk = camera->captureNew(maxWaitForImage);
+
+      if(!cameraOk)
       {
         BH_TRACE_MSG("Camera broken");
         break;
       }
-
-      if(upperCamera->hasImage() && upperCamera->getTimeStamp() < lastImageTimeStampLL)
-        upperCamera->releaseImage();
-      if(lowerCamera->hasImage() && lowerCamera->getTimeStamp() < lastImageTimeStampLL)
-        lowerCamera->releaseImage();
     }
 
-    if(upperCamera->hasImage() && (!lowerCamera->hasImage() || upperCamera->getTimeStamp() < lowerCamera->getTimeStamp()))
-      upperCamera->setSettings(theCameraSettings.upper, theAutoExposureWeightTable.tables[CameraInfo::upper]);
-    else
-      lowerCamera->setSettings(theCameraSettings.lower, theAutoExposureWeightTable.tables[CameraInfo::lower]);
+    if(camera->hasImage())
+      imageReceived = Time::getRealSystemTime();
+    else if(Time::getRealTimeSince(imageReceived) > resetDelay)
+    {
+      delete camera;
+      camera = new NaoCamera(whichCamera == CameraInfo::upper ?
+                             "/dev/video-top" : "/dev/video-bottom",
+                             cameraInfo.camera,
+                             cameraInfo.width, cameraInfo.height, whichCamera == CameraInfo::upper,
+                             theCameraSettings.cameras[whichCamera], theAutoExposureWeightTable.tables[whichCamera]);
+      imageReceived = Time::getRealSystemTime();
+    }
+
+    if(camera->hasImage())
+      camera->setSettings(theCameraSettings.cameras[whichCamera], theAutoExposureWeightTable.tables[whichCamera]);
 
     imageTaken.post();
 
-    if(upperCamera->hasImage() && (!lowerCamera->hasImage() || upperCamera->getTimeStamp() < lowerCamera->getTimeStamp()))
-      upperCamera->writeCameraSettings();
-    else
-      lowerCamera->writeCameraSettings();
+    if(camera->hasImage())
+      camera->writeCameraSettings();
   }
 #endif
 }

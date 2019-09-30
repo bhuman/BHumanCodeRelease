@@ -2,6 +2,7 @@
 #include "IntersectionsProvider.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Geometry.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 
 MAKE_MODULE(IntersectionsProvider, perception)
@@ -9,9 +10,24 @@ MAKE_MODULE(IntersectionsProvider, perception)
 void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
 {
   DECLARE_DEBUG_DRAWING("module:IntersectionsProvider:intersections", "drawingOnImage");
-
   intersectionsPercept.intersections.clear();
 
+  // Prepare information about ball:
+  ballIsInImageAndCanBeUsed = false;
+  if(theFrameInfo.getTimeSince(theWorldModelPrediction.timeWhenBallLastSeen) < 1000 &&
+     theWorldModelPrediction.ballPosition.norm() > minimumBallExclusionCheckDistance)
+  {
+    if(Transformation::robotToImage(theWorldModelPrediction.ballPosition, theCameraMatrix, theCameraInfo, ballPositionInImage))
+    {
+      ballIsInImageAndCanBeUsed = true;
+      ballPositionInFieldCoordinates = Transformation::robotToField(theWorldModelPrediction.robotPose, theWorldModelPrediction.ballPosition);
+      ballRadiusInImageScaled = Projection::getSizeByDistance(theCameraInfo, theBallSpecification.radius,
+                                                              theWorldModelPrediction.ballPosition.norm()) * ballRadiusInImageScale;
+
+    }
+  }
+
+  // Find pairs of lines that form intersections:
   for(unsigned i = 0; i < theLinesPercept.lines.size(); i++)
   {
     if(theLinesPercept.lines[i].belongsToCircle)
@@ -44,13 +60,21 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
         //FIXME save line length in line to speed up a bit
 
         const bool intersectionIsOnLine = isPointInSegment(theLinesPercept.lines[i], intersection);
-        const bool insersectionIsOnLine2 = isPointInSegment(theLinesPercept.lines[j], intersection);
+        const bool intersectionIsOnLine2 = isPointInSegment(theLinesPercept.lines[j], intersection);
 
         const bool intersectionGoesWithLine = lineDist < std::min((theLinesPercept.lines[i].firstField - theLinesPercept.lines[i].lastField).norm() * maxLengthUnrecognizedProportion, maxIntersectionGap);
         const bool intersectionGoesWithLine2 = line2Dist < std::min((theLinesPercept.lines[j].firstField - theLinesPercept.lines[j].lastField).norm() * maxLengthUnrecognizedProportion, maxIntersectionGap);
 
-        if((!intersectionIsOnLine && !intersectionGoesWithLine) || (!insersectionIsOnLine2 && !intersectionGoesWithLine2))
+        if((!intersectionIsOnLine && !intersectionGoesWithLine) || (!intersectionIsOnLine2 && !intersectionGoesWithLine2))
           continue;
+        if(ballIsInImageAndCanBeUsed)
+        {
+          Vector2f intersectionInImage;
+          if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, intersectionInImage))
+            if((intersectionInImage - ballPositionInImage).norm() < ballRadiusInImageScaled)
+              continue;
+        }
+
         //from here a corner is present
 
         //in the case that the intersection is on a line we must calc if the line goes through or ends in it
@@ -60,7 +84,7 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
         bool lineIsEnd(true);
         bool line2IsEnd(true);
 
-        if(intersectionIsOnLine || insersectionIsOnLine2)
+        if(intersectionIsOnLine || intersectionIsOnLine2)
         {
           auto getVector2f = [&](const Vector2i& vi)
           {
@@ -83,7 +107,7 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
             if(intersectionIsOnLine)
               lineIsEnd = maxOverheadToDecleareAsEnd >= minLength(lineImg.base - intersectionImg, getVector2f(theLinesPercept.lines[i].lastImg) - intersectionImg);
 
-            if(insersectionIsOnLine2)
+            if(intersectionIsOnLine2)
               line2IsEnd = maxOverheadToDecleareAsEnd >= minLength(line2Img.base - intersectionImg, getVector2f(theLinesPercept.lines[j].lastImg) - intersectionImg);
           }
         }

@@ -71,6 +71,7 @@ bush = cppApplication + {
       "$(qtinclude)/QtCore"
       "$(qtinclude)/QtGui"
       "$(qtinclude)/QtWidgets"
+      "$(utilDirRoot)/flite/include"
     }
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/include"
@@ -96,6 +97,7 @@ bush = cppApplication + {
     if (platform == "Linux") {
       "Qt5Concurrent", "Qt5Gui", "Qt5Core", "Qt5Widgets"
       "rt", "pthread"
+      "flite_cmu_us_slt", "flite_usenglish", "flite_cmulex", "flite", "asound"
     }
     if (host == "Win32") {
       if (configuration == "Debug") {
@@ -110,6 +112,9 @@ bush = cppApplication + {
   libPaths = {
     if (host == "Win32") {
       "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib"
+    }
+    if (platform == "Linux") {
+      "$(utilDirRoot)/flite/lib/Linux"
     }
   }
 

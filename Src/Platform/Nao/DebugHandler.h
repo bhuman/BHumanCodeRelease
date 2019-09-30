@@ -3,7 +3,7 @@
  *
  * Class for debug communication over a TCP connection
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -18,21 +18,21 @@ private:
   MessageQueue& out; /**< Outgoing debug data is stored here. */
 
   unsigned char* sendData = nullptr; /**< The data to send next. */
-  int sendSize = 0; /**< The size of the data to send next. */
+  size_t sendSize = 0; /**< The size of the data to send next. */
 
 public:
   /**
    * @param in The message queue that stores data received.
    * @param out The message queue containing data to be sent.
-   * @param maxPackageSendSize The maximum size of an outgoing package.
+   * @param maxPacketSendSize The maximum size of an outgoing packet.
    *                           If 0, this setting is ignored.
-   * @param maxPackageReceiveSize The maximum size of an incouming package.
+   * @param maxPacketReceiveSize The maximum size of an incoming packet.
    *                              If 0, this setting is ignored.
    */
-  DebugHandler(MessageQueue& in, MessageQueue& out, int maxPackageSendSize = 0, int maxPackageReceiveSize = 0);
+  DebugHandler(MessageQueue& in, MessageQueue& out, int maxPacketSendSize = 0, int maxPacketReceiveSize = 0);
 
   /**
-   * Delete buffered package if needed.
+   * Delete buffered packet if needed.
    */
   ~DebugHandler() {if(sendData) delete [] sendData;}
 

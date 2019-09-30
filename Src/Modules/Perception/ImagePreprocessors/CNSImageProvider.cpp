@@ -7,6 +7,7 @@
  */
 
 #include "CNSImageProvider.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/ImageProcessing/AVX.h"
@@ -238,7 +239,7 @@ void CNSImageProvider::cnsResponse(const unsigned char* src, int width, int heig
   __m128 scaleF = _mm_set1_ps(CNSResponse::SCALE / std::pow(2.f, 5.f - 16.f) * std::sqrt(2.f));
 
   // Buffers for intermediate values for two lines
-  alignas(16) IntermediateValues iv[2][Image::maxResolutionWidth / 8]; // always 8 Pixel in one IntermediateValues object
+  alignas(16) IntermediateValues iv[2][CameraImage::maxResolutionWidth / 8]; // always 8 Pixel in one IntermediateValues object
   ASSERT((reinterpret_cast<size_t>(cns) & 0xf) == 0);
 
   int srcY = 0; // line in the source image

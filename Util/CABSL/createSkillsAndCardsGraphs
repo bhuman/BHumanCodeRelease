@@ -1,0 +1,244 @@
+#!/bin/bash
+#
+# This script generates a number of svg files from the skills and cards.
+# Its main parameter is the root directory of the behavior. It is
+# expected to contain the subdirectories "Skills" and "Cards".
+# The script requires GraphViz's program 'dot' to be installed.
+#
+# Author: Thomas Röfer
+
+usage()
+{
+  echo >&2 "usage: $0 { options } <directory>"
+  echo >&2 "  options:"
+  echo >&2 "    -d <dot>       path to executable 'dot'"
+  echo >&2 "    -h             show this help"
+  echo >&2 "    -p             output pdf instead of svg"
+  echo >&2 "    -s <scenario>  selected scenario"
+  exit 1
+}
+
+set -eu
+
+bhDir=$(cd "$(dirname "$(which "$0")")" && pwd)/../..
+format=svg
+urlPath=file:
+scenario="$(grep -E "^[ 	]*scenario[ 	]*=" <"$bhDir/Config/settings.cfg" | sed "s%[^=]*=[ 	]*\([A-Za-z_]*\).*%\1%")"
+
+# Process arguments
+dot=dot
+while [ $# -gt 0 ]; do
+  case $1 in
+    "-d")
+      shift
+      if [ $# -gt 0 ]; then
+        dot=$1
+      else
+        echo >&2 "error: parameter of '-d' missing"
+        usage
+      fi
+      ;;
+    "-h")
+      usage
+      ;;
+    "-p")
+      format=pdf
+      urlPath="file://.$(pwd)/"
+      ;;
+    "-s")
+      shift
+      if [ $# -gt 0 ]; then
+        scenario=$1
+      else
+        echo >&2 "error: parameter of '-s' missing"
+        usage
+      fi
+      ;;
+    -*)
+      echo >&2 "error: unknown option '$1'"
+      usage
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+
+# Check arguments
+dotAvailable="$(which "$dot" || true)"
+if [ "$#" == 0 ]; then
+  usage
+  exit 1
+elif [ ! -e "$1" ]; then
+  echo >&2 "error: input file '$1' does not exist"
+  exit 1
+elif [ -z "$dotAvailable" ]; then
+  echo >&2 "error: cannot find '$dot'"
+  exit 1
+fi
+
+configPath="$bhDir/Config/Scenarios/$scenario/BehaviorControl/"
+
+# Collect the relevant information from the options
+base="$1"
+skills="$(grep -R "^[ 	]*IMPLEMENTS[ 	]*(" "$base/Skills" | sed -e 's%.*IMPLEMENTS[ 	]*([ 	]*%%' -e 's%[ 	]*).*%%' | tr '\n' '|' | sed "s%|$%%")"
+skillCalls="$(sed <<<"$skills" 's%\([A-Za-z_]*\)%the\1Skill%g')"
+cards="$(grep -R '^[ 	]*\(CARD\|TEAM_CARD\)[ 	]*(' "$base/Cards" | sed -e 's%.*CARD[ 	]*([ 	]*%%' -e 's%.*TEAM_CARD[   ]*([   ]*%%' -e 's%[ 	]*,.*%%' | tr '\n' '|' | sed "s%|$%%")"
+files="$(find "$base/Cards" "$base/Skills" \( -name "*.h" -or -name "*.cpp" \) -type f)"
+options="$(sed <<<"$cards|$skills" -e 's%^|%%' -e 's%|$%%')"
+lines="$(cat $files \
+| sed "s%//.*%%" \
+| tr '\t' ' ' \
+| tr -d '\r' \
+| tr '\n' '\t' \
+| sed -e "s%/\*\([^*]*\*[^/]\)*[^*]*\*\**/%%g" \
+  -e "s%[ 	]*	%	%g" \
+| tr '\t' '\n' \
+| grep -E "^[ 	]*option[ 	]*\([ 	]*[A-Za-z_][A-Za-z0-9_]*|(^|^.*[^A-Za-z0-9_])((($skillCalls|state|initial_state|target_state|aborted_state)[ 	]*\()|goto[ 	][ 	]*[A-Za-z_][A-Za-z0-9_]*)|^[ 	]*void[ 	]*execute\([ 	]*const[ 	]+($skills)[ 	]*&|^[ 	]*class[ 	]*($cards)|(\.|->)[ 	]*deal[ 	]*\([ 	]*[A-Za-z_][A-Za-z0-9_]*[ 	]*\)[ 	]*->[ 	]*call[ 	]*\([ 	]*\)" \
+| sed -E \
+  -e "s%^[ 	]*option[ 	]*\([ 	]*([A-Za-z_][A-Za-z0-9_]*).*%option \1%" \
+  -e "s%^[ 	]*void[ 	]+execute[ 	]*\([ 	]*const[ 	]+([A-Za-z_][A-Za-z0-9_]*).*%option \1%" \
+  -e "s%^[ 	]*class[ 	]+([A-Za-z_][A-Za-z0-9_]*).*%option \1%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])($skillCalls)[ 	]*\(.*%call \2%" \
+  -e "s%call the(.*)Skill%call \1%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])(state|initial_state|target_state|aborted_state)[ 	]*\(([A-Za-z_][A-Za-z0-9_]*).*%\2 \3%" \
+  -e "s%(^|^.*[^A-Za-z0-9_])goto[ 	][ 	]*([A-Za-z_][A-Za-z0-9_]*).*%goto \2%" \
+  -e "s%^.*(\.|->)[ 	]*deal[ 	]*\([ 	]*([A-Za-z_][A-Za-z0-9_]*).*%deal \2%" )"
+# Generate temporary files containing all nodes and edges
+optionsTmp=/tmp/options.tmp
+rm -f "$optionsTmp"
+option=
+while read line; do
+  type="$(sed "s% .*%%" <<<"$line")"
+  id="$(sed "s%[^ ]* %%" <<<"$line")"
+  label="$(sed -E -e "s%TeamCard$%%" -e "s%Card$%%" -e 's%_%\\n%g' -e 's%([a-z])([A-Z])%\1\\n\2%g' <<<"$id" | tr '[:upper:]' '[:lower:]')"
+  if [ "$type" == "option" ]; then
+    option=$id
+    echo "Reading option '$option'" >&2
+    if [ -z "$(grep -E "^($cards)$" <<<"$option")" ]; then
+      echo "  $id [shape=\"Mrecord\" label=\"$label\", URL = \"$urlPath$option.$format\"];" >>"$optionsTmp"
+    else
+      echo "  $id [label=\"$label\", URL = \"$urlPath$option.$format\"];" >>"$optionsTmp"
+    fi
+    common=
+    state=
+    internalTmp=/tmp/internal_$option.tmp
+    externalTmp=/tmp/external_$option.tmp
+    rm -f "$internalTmp"
+    rm -f "$externalTmp"
+  elif [ "$type" == "call" ]; then
+    echo "$option -> $id;" >>"$optionsTmp"
+    if [ "$state" == "" ]; then
+      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, dir = both, arrowtail = dot, color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "option_ [style = invis, shape = point, label = \"\"];" >>"$internalTmp"
+    else
+      echo "$state -> option_$id [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+    fi
+    echo "option_$id [shape = Mrecord, label = \"$label\", URL = \"$urlPath$id.$format\"];" >>"$externalTmp"
+  elif [ "$type" == "deal" ]; then
+    prefix="$(sed <<<"$option" -E -e 's%^([A-Z])[a-z0-9_].*%\1%' -e 's%(^[A-Z]+)[A-Z].*%\1%' | tr '[:upper:]' '[:lower:]')"
+    suffix="$(sed <<<"$option" -E -e 's%^[A-Z]([a-z0-9_].*)%\1%' -e 's%^[A-Z]+([A-Z].*)%\1%')"
+    config="$prefix$suffix.cfg"
+    if [ -f "$configPath/$config" ]; then
+      config="$configPath/$config"
+    elif [ -f "$configPath/../../Default/BehaviorControl/$config" ]; then
+      config="$configPath/../../Default/BehaviorControl/$config"
+    else
+      echo >&2 "error: configuration file '$configPath/$config' missing"
+      exit 1
+    fi
+    deck="$(sed <"$config" -n "/^[ ]*$id/,/}/p" | grep '^[ 	]*[A-Za-z_][A-Za-z0-9_]*[^=]*$' | sed 's%^[ ]*\([A-Za-z_][A-Za-z0-9_]*\).*%\1%')"
+    oldState="$state"
+    number=1
+    while read card; do
+      echo "/*$(printf "%03d" $number)*/ $option -> $card;" >>"$optionsTmp"
+      if [ "$state" == "" ]; then
+        state=$id
+        echo " $state [shape = hexagon, label = \"$label\"];" >>"$internalTmp"
+      fi
+      echo "/*$(printf "%03d" $number)*/ $state -> option_$card [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      label2="$(sed -E -e 's%TeamCard$%%' -e 's%Card$%%' -e 's%_%\\n%g' -e 's%([a-z])([A-Z])%\1\\n\2%g' <<<"$card" | tr '[:upper:]' '[:lower:]')"
+      echo "option_$card [shape = rectangle, label = \"$label2\", URL = \"$urlPath$card.$format\"];" >>"$externalTmp"
+      ((++number))
+    done <<<"$deck"
+    state="$oldState"
+  elif [ "$type" == "state" ]; then
+    state=$id
+    echo " $state [shape = circle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "initial_state" ]; then
+    state=$id
+    echo "  $state [shape = Mcircle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "target_state" ]; then
+    state=$id
+    echo "$state [shape = doublecircle, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "aborted_state" ]; then
+    state=$id
+    echo "$state [shape = doubleoctagon, regular = true, label = \"$label\"];" >>"$internalTmp"
+  elif [ "$type" == "goto" ]; then
+    if [ -z "$state" ]; then
+      common="$(echo "$common $id")"
+    elif [ "$state" != "$id" ]; then
+      echo "$state -> $id;" >>"$internalTmp"
+    fi
+  fi
+  if [ "$type" == "state" -o "$type" == "initial_state" -o "$type" == "target_state" -o "$type" == "aborted_state" ]; then
+    for target in $common; do
+      if [ "$state" != "$target" ]; then
+        echo "$state -> $target;" >>"$internalTmp"
+      fi
+    done
+  fi
+done <<<"$lines"
+
+# Write the main option graph
+file="$(basename "$1").$format"
+echo "Writing graph '$file'" >&2
+(
+  echo "digraph G {"
+  echo "  margin = 0;"
+  echo "  node [shape = box, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
+  echo "  edge [arrowsize=0.8];"
+  sort <"$optionsTmp" | uniq
+  rm "$optionsTmp"
+  echo "}"
+) | "$dot" -T$format >"$file"
+
+# Write graphs for all options
+options="$(tr '|' '\n' <<<"$options")"
+while read option; do
+  internalTmp=/tmp/internal_$option.tmp
+  externalTmp=/tmp/external_$option.tmp
+  file="$(basename "${option%.*}.$format")"
+  label="$(sed -E -e "s%_% %g" -e 's%([a-z])([A-Z])%\1 \2%g' <<<"$option" | tr '[:upper:]' '[:lower:]')"
+  echo "Writing graph '$file'" >&2
+  (
+    echo "digraph G {"
+    echo "margin = 0;"
+    echo "node [style = filled, fillcolor = white, fontname = Arial, fontsize = 9, fontcolor = \"#005A9C\", margin = 0.05];"
+    echo "ranksep = 0.4;"
+    echo "nodesep = 0.3;"
+    echo "edge [arrowsize=0.8];"
+    echo "compound = true;"
+    echo "subgraph cluster_ {"
+    echo "label = \"$(sed <<<"$label" -e "s%\(.*\) team card$%team card '\1'%" -e "s%\(.*\) card$%card '\1'%" -e "s%\(.*[^']\)$%skill '\1'%")\""
+    echo "labeljust = l;"
+    echo "style = filled;"
+    echo "fillcolor = \"#F4F4F4\";"
+    echo "fontname = Arial;"
+    echo "fontsize=12;"
+    echo "fontcolor = \"#005A9C\";"
+    if [ -e "$internalTmp" ]; then
+      sort <"$internalTmp" | uniq
+      rm "$internalTmp"
+    else
+      echo "state_ [style = invis];"
+    fi
+    echo "}"
+    if [ -e "$externalTmp" ]; then
+      sort <"$externalTmp" | uniq
+      rm "$externalTmp"
+    fi
+    echo "}"
+  ) | "$dot" -T$format >"$file"
+done <<<"$options"

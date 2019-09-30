@@ -2,17 +2,7 @@
 
 #include <Windows.h>
 
-const DWORD MS_VC_EXCEPTION = 0x406D1388;
-
-#pragma pack(push,8)
-typedef struct tagTHREADNAME_INFO
-{
-  DWORD dwType; // Must be 0x1000.
-  LPCSTR szName; // Pointer to name (in user addr space).
-  DWORD dwThreadID; // Thread ID (-1=caller thread).
-  DWORD dwFlags; // Reserved for future use, must be zero.
-} THREADNAME_INFO;
-#pragma pack(pop)
+thread_local Thread* Thread::instance = nullptr;
 
 void Thread::stop()
 {
@@ -40,17 +30,42 @@ void Thread::changePriority()
     SetThreadPriority(thread->native_handle(), THREAD_PRIORITY_NORMAL + priority);
 }
 
-void Thread::nameThread(const std::string& name)
+void Thread::nameCurrentThread(const std::string& name)
 {
-  THREADNAME_INFO info;
-  info.dwType = 0x1000;
-  info.szName = name.c_str();
-  info.dwThreadID = GetCurrentThreadId();
-  info.dwFlags = 0;
+  // Convert string to PCWSTR
+  const int wchars_num = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), -1, NULL, 0);
+  wchar_t* pcwstr = new wchar_t[wchars_num];
+  MultiByteToWideChar(CP_UTF8, 0, name.c_str(), -1, pcwstr, wchars_num);
 
-  __try
+  const HRESULT hr = SetThreadDescription(GetCurrentThread(), pcwstr);
+  if(FAILED(hr))
   {
-    RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+    // TODO Handle?
   }
-  __except(EXCEPTION_EXECUTE_HANDLER) {}
+  delete[] pcwstr;
+}
+
+const std::string Thread::getCurrentThreadName()
+{
+  std::string name;
+  wchar_t* pcwstr;
+  const HRESULT hr = GetThreadDescription(GetCurrentThread(), &pcwstr);
+  if(SUCCEEDED(hr))
+  {
+    // Convert PCWSTR to string
+    const int chars_num = WideCharToMultiByte(CP_UTF8, 0, pcwstr, -1, NULL, 0, NULL, NULL);
+    char* charArray = new char[chars_num + 1];
+    charArray[chars_num] = '\0';
+    WideCharToMultiByte(CP_UTF8, 0, pcwstr, -1, charArray, chars_num, NULL, NULL);
+    name = charArray;
+    delete[] charArray;
+  }
+  else
+  {
+    // TODO Handle?
+  }
+  LocalFree(pcwstr);
+
+  demangleThreadName(name);
+  return name;
 }

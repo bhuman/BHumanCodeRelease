@@ -3,7 +3,7 @@
  *
  * Implementation of class SensorView
  *
- * @author of the original sensorview <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author of the original sensorview Thomas Röfer
  * @author Jeff
  * @author Colin Graf
  */
@@ -35,10 +35,10 @@ private:
 
 SensorView::SensorView(const QString& fullName, RobotConsole& console, const FsrSensorData& fsrSensorData,
                        const InertialSensorData& inertialSensorData, const KeyStates& keyStates,
-                       const SystemSensorData& systemSensorData, const unsigned& timeStamp) :
+                       const SystemSensorData& systemSensorData, const unsigned& timestamp) :
   fullName(fullName), icon(":/Icons/tag_green.png"), console(console), fsrSensorData(fsrSensorData),
   inertialSensorData(inertialSensorData), keyStates(keyStates), systemSensorData(systemSensorData),
-  timeStamp(timeStamp)
+  timestamp(timestamp)
 {}
 
 SimRobot::Widget* SensorView::createWidget()
@@ -56,10 +56,6 @@ SensorWidget::SensorWidget(SensorView& sensorView, QHeaderView* headerView, QWid
   textOffset = fontMetrics.descent() + 1;
 
   font = QApplication::font();
-
-  const QPalette& pal(QApplication::palette());
-  altBrush = pal.alternateBase();
-  fontPen.setColor(pal.text().color());
 
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -81,10 +77,10 @@ void SensorWidget::update()
 {
   {
     SYNC_WITH(sensorView.console);
-    if(sensorView.timeStamp == lastUpdateTimeStamp)
+    if(sensorView.timestamp == lastUpdateTimestamp)
       return;
     else
-      lastUpdateTimeStamp = sensorView.timeStamp;
+      lastUpdateTimestamp = sensorView.timestamp;
   }
 
   QWidget::update();
@@ -99,8 +95,8 @@ void SensorWidget::paintEvent(QPaintEvent* event)
 {
   painter.begin(this);
   painter.setFont(font);
-  painter.setBrush(altBrush);
-  painter.setPen(fontPen);
+  painter.setBrush(RoboCupCtrl::controller->getAlternateBackgroundColor());
+  painter.setPen(QApplication::palette().text().color());
   fillBackground = false;
 
   paintRect = painter.window();
@@ -232,7 +228,7 @@ void SensorWidget::print(const QString& name, const QString& value)
   {
     painter.setPen(noPen);
     painter.drawRect(paintRect.left(), paintRectField1.top(), paintRect.width(), paintRectField1.height());
-    painter.setPen(fontPen);
+    painter.setPen(QApplication::palette().text().color());
   }
   painter.drawText(paintRectField0, Qt::TextSingleLine | Qt::AlignVCenter, name);
   painter.drawText(paintRectField1, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, value);

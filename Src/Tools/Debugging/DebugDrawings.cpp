@@ -16,21 +16,18 @@ void DrawingManager::addDrawingId(const char* name, const char* typeName)
     char id = static_cast<char>(drawings.size());
     Drawing& drawing = drawings[name];
     drawing.id = id;
-    drawing.processIdentifier = processIdentifier;
 
     std::unordered_map< const char*, char>::const_iterator i = types.find(typeName);
     if(i == types.end())
     {
       drawing.type = static_cast<char>(types.size());
       types[typeName] = drawing.type;
-      unsigned int key = static_cast<unsigned int>(processIdentifier) << 24 | static_cast<unsigned int>(drawing.type);
-      typesById[key] = typeName;
+      typesById[id] = typeName;
     }
     else
       drawing.type = i->second;
 
-    unsigned int key = static_cast<unsigned int>(processIdentifier) << 24 | static_cast<unsigned int>(id);
-    drawingsById[key] = name;
+    drawingsById[id] = name;
   }
 }
 
@@ -65,27 +62,24 @@ In& operator>>(In& stream, DrawingManager& drawingManager)
   for(int i = 0; i < size; ++i)
   {
     std::string str;
-    int id;
+    char id;
     stream >> id >> str;
     const char* name = drawingManager.getString(str);
-    unsigned int key = static_cast<unsigned int>(drawingManager.processIdentifier) << 24 | static_cast<unsigned int>(id);
-    drawingManager.types[name] = static_cast<char>(id);
-    drawingManager.typesById[key] = name;
+    drawingManager.types[name] = id;
+    drawingManager.typesById[id] = name;
   }
 
   stream >> size;
   for(int i = 0; i < size; ++i)
   {
     std::string str;
-    int id, type;
+    char id, type;
     stream >> id >> type >> str;
     const char* name = drawingManager.getString(str);
     DrawingManager::Drawing& entry = drawingManager.drawings[name];
-    entry.id = static_cast<char>(id);
-    entry.type = static_cast<char>(type);
-    entry.processIdentifier = drawingManager.processIdentifier;
-    unsigned int key = static_cast<unsigned int>(entry.processIdentifier) << 24 | static_cast<unsigned int>(entry.id);
-    drawingManager.drawingsById[key] = name;
+    entry.id = id;
+    entry.type = type;
+    drawingManager.drawingsById[id] = name;
   }
 
   return stream;
@@ -96,15 +90,15 @@ Out& operator<<(Out& stream, const DrawingManager& drawingManager)
   stream << static_cast<int>(drawingManager.types.size());
   for(std::unordered_map<const char*, char>::const_iterator iter = drawingManager.types.begin(); iter != drawingManager.types.end(); ++iter)
   {
-    stream << static_cast<int>(iter->second);
+    stream << iter->second;
     stream << iter->first;
   }
 
   stream << static_cast<int>(drawingManager.drawings.size());
   for(std::unordered_map< const char*, DrawingManager::Drawing>::const_iterator iter = drawingManager.drawings.begin(); iter != drawingManager.drawings.end(); ++iter)
   {
-    stream << static_cast<int>(iter->second.id);
-    stream << static_cast<int>(iter->second.type);
+    stream << iter->second.id;
+    stream << iter->second.type;
     stream << iter->first;
   }
 

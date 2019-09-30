@@ -73,8 +73,8 @@ KickEngine::KickEngine()
     }
     if(id == -1)
     {
-      OUTPUT_TEXT("Warning: The kick motion file for id " << TypeRegistry::getEnumName((KickRequest::KickMotionID) i) << " is missing.");
-      fprintf(stderr, "Warning: The kick motion file for id %s is missing. \n", TypeRegistry::getEnumName((KickRequest::KickMotionID) i));
+      OUTPUT_TEXT("Warning: The kick motion file for id " << TypeRegistry::getEnumName(static_cast<KickRequest::KickMotionID>(i)) << " is missing.");
+      fprintf(stderr, "Warning: The kick motion file for id %s is missing. \n", TypeRegistry::getEnumName(static_cast<KickRequest::KickMotionID>(i)));
     }
   }
 
@@ -86,24 +86,24 @@ KickEngine::KickEngine()
 
 void KickEngine::update(KickEngineOutput& kickEngineOutput)
 {
+  //Is the KickEngine activ?
   if(theLegMotionSelection.ratios[MotionRequest::kick] > 0.f)
   {
-    data.setCycleTime(Constants::motionCycleTime);
-
+    //Did the KickEngine start went active or is about to shutdown?
     if(theLegMotionSelection.ratios[MotionRequest::kick] < 1.f && !compensated)
       compensate = true;
 
     if(theMotionRequest.kickRequest.kickMotionType != KickRequest::none)
       lastValidKickRequest = theMotionRequest.kickRequest;
+    data.robotModel = theRobotModel;
 
-    data.setRobotModel(theRobotModel);
-
+    //Do we need to wait befor we can do a kick?
     if(data.sitOutTransitionDisturbance(compensate, compensated, theInertialData, kickEngineOutput, theJointRequest, theFrameInfo))
     {
       if(data.activateNewMotion(lastValidKickRequest, kickEngineOutput.isLeavingPossible) && lastValidKickRequest.kickMotionType != KickRequest::none)
       {
         data.initData(theFrameInfo, lastValidKickRequest, params, theJointAngles, theTorsoMatrix, kickEngineOutput, theRobotDimensions, theMassCalibration, theDamageConfigurationBody);
-        data.setCurrentKickRequest(lastValidKickRequest);
+        data.currentKickRequest = lastValidKickRequest;
         data.setExecutedKickRequest(kickEngineOutput.executedKickRequest);
 
         data.internalIsLeavingPossible = false;
@@ -115,26 +115,48 @@ void KickEngine::update(KickEngineOutput& kickEngineOutput)
         for(int i = Joints::lShoulderPitch; i < Joints::numOfJoints; ++i)
           kickEngineOutput.stiffnessData.stiffnesses[i] = 100;
 
+        boostState = 0;
         kickEngineOutput.isStable = true;
       }
 
+      //Is our Kick not over?
       if(data.checkPhaseTime(theFrameInfo, theJointAngles, theTorsoMatrix))
       {
         data.calcPhaseState();
-        data.calcPositions();
+        data.calcPositions(theTorsoMatrix);
         timeSinceLastPhase = theFrameInfo.time;
       }
+      //Our current kick is over
       else
       {
         kickEngineOutput.isLeavingPossible = true;
         data.internalIsLeavingPossible = true;
       }
 
+      //Is the current kick id valid, then calculate the jointRequest once for the balanceCom()
       if(data.calcJoints(kickEngineOutput, theRobotDimensions, theDamageConfigurationBody))
       {
         data.balanceCOM(kickEngineOutput, theRobotDimensions, theMassCalibration);
         data.calcJoints(kickEngineOutput, theRobotDimensions, theDamageConfigurationBody);
         data.mirrorIfNecessary(kickEngineOutput);
+
+        if(!theDamageConfigurationBody.dontBoost)
+        {
+          Pose3f real = theRobotModel.soleLeft.inverse() * theRobotModel.soleRight;
+          if(kickEngineOutput.executedKickRequest.mirror)
+            real.invert();
+          if(boostState == 0 && real.translation.x() < -30)
+            boostState = 1;
+          if(boostState == 1 && real.translation.x() > -20)
+            boostState = 2;
+          if(boostState >= 2 && boostState <= 4)
+          {
+            boostState += boostState < 4 ? 1 : 0;
+            data.BOOST(kickEngineOutput, boostState);
+            if(real.translation.x() > 80)
+              boostState = 6;
+          }
+        }
 
         data.calcOdometryOffset(kickEngineOutput, theRobotModel);
       }

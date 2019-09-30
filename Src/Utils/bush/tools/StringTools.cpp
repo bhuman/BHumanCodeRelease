@@ -1,7 +1,7 @@
 #include "Utils/bush/tools/StringTools.h"
 #include <sstream>
 
-std::vector<std::string> split(const std::string line, char separator)
+std::vector<std::string> split(const std::string& line, char separator)
 {
   std::vector<std::string> elements;
   size_t last = 0;

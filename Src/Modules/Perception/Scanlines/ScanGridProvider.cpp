@@ -29,14 +29,14 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   if(scanGrid.fieldLimit >= theCameraInfo.height)
     return; // Image is above field limit -> no grid in image
 
-  // Determine the maximum distance between scanlines at the bottom of the image not to miss the ball.
+  // Determine the maximum distance between scan lines at the bottom of the image not to miss the ball.
   Vector2f leftOnField;
   Vector2f rightOnField;
   if(!Transformation::imageToRobotWithCameraRotation(Vector2i(0, theCameraInfo.height - 1), theCameraMatrix, theCameraInfo, leftOnField) ||
      !Transformation::imageToRobotWithCameraRotation(Vector2i(theCameraInfo.width, theCameraInfo.height - 1), theCameraMatrix, theCameraInfo, rightOnField))
     return; // Cannot project lower image border to field -> no grid
 
-  const int xStepUpperBound = theCameraInfo.width / minNumOfLowResScanlines;
+  const int xStepUpperBound = theCameraInfo.width / minNumOfLowResScanLines;
   const int maxXStep = std::min(xStepUpperBound,
                                 static_cast<int>(theCameraInfo.width * theBallSpecification.radius * 2.f *
                                                  ballWidthRatio / (leftOnField - rightOnField).norm()));
@@ -50,7 +50,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   for(y = theCameraInfo.height - 1; y > scanGrid.fieldLimit;)
   {
     scanGrid.y.emplace_back(y);
-    // Calc next vertical position for all scanlines.
+    // Calc next vertical position for all scan lines.
     if(singleSteps)
       --y;
     else
@@ -66,7 +66,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   if(y < 0 && !scanGrid.y.empty() && scanGrid.y.back() != 0)
     scanGrid.y.emplace_back(0);
 
-  // Determine the maximum distance between scanlines at the top of the image not to miss the ball. Do not go below minStepSize.
+  // Determine the maximum distance between scan lines at the top of the image not to miss the ball. Do not go below minStepSize.
   int minXStep = minStepSize;
   if(Transformation::imageToRobotWithCameraRotation(Vector2i(0, 0), theCameraMatrix, theCameraInfo, leftOnField) &&
      Transformation::imageToRobotWithCameraRotation(Vector2i(theCameraInfo.width, 0), theCameraMatrix, theCameraInfo, rightOnField))
@@ -75,7 +75,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   minXStep = std::min(xStepUpperBound, minXStep);
 
   // Determine a max step size that fulfills maxXStep2 = minXStep * 2^n, maxXStep2 <= maxXStep.
-  // Also compute lower y coordinates for the different lengths of scanlines.
+  // Also compute lower y coordinates for the different lengths of scan lines.
   int maxXStep2 = minXStep;
   std::vector<int> yStarts;
   while(maxXStep2 * 2 <= maxXStep)
@@ -97,7 +97,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
   // Initialize the scan states and the regions.
   const int xStart = theCameraInfo.width % (theCameraInfo.width / minXStep - 1) / 2;
   scanGrid.lines.reserve((theCameraInfo.width - xStart) / minXStep);
-  size_t i = yStarts2.size() / 2; // Start with the second longest scanline.
+  size_t i = yStarts2.size() / 2; // Start with the second longest scan line.
   for(int x = xStart; x < theCameraInfo.width; x += minXStep)
   {
     int yMax = std::min(yStarts2[i++], theCameraInfo.height);
@@ -108,7 +108,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
     scanGrid.lines.emplace_back(x, yMax, static_cast<unsigned>(yMaxIndex));
   }
 
-  // Set low resolution scanline info
+  // Set low resolution scan line info
   scanGrid.lowResStep = maxXStep2 / minXStep;
   scanGrid.lowResStart = scanGrid.lowResStep / 2;
 }

@@ -29,7 +29,10 @@ STREAMABLE(ArmMotionSelection,
     fallArms,
 
     firstNonBodyMotion,
-    keyFrameS = firstNonBodyMotion, //assert same order as ArmMotionRequest
+    clearS = firstNonBodyMotion, //assert same order as ArmMotionRequest
+    keyFrameS,
+    keyPoseS,
+    pointAtS,
   });
 
   ArmMotionSelection()

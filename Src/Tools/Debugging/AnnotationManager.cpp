@@ -6,7 +6,7 @@
 #include "AnnotationManager.h"
 
 #include "Platform/BHAssert.h"
-#include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Communication/GameInfo.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Module/Blackboard.h"
 
@@ -18,7 +18,7 @@ AnnotationManager::AnnotationManager() : lastGameState(STATE_INITIAL), lastSetPl
   outData.setSize(100000);
 }
 
-void AnnotationManager::signalProcessStart()
+void AnnotationManager::signalThreadStart()
 {
   if(Blackboard::getInstance().exists("GameInfo"))
   {

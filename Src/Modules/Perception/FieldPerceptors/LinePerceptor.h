@@ -1,7 +1,7 @@
 /**
  * @file LinePerceptor.h
  *
- * Declares a module which detects lines and the center circle based on ColorScanlineRegions.
+ * Declares a module which detects lines and the center circle based on ColorScanLineRegions.
  *
  * @author Felix Thielke
  */
@@ -16,13 +16,14 @@
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
+#include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Tools/Math/LeastSquares.h"
 
 #include <vector>
+#include <limits>
 
 MODULE(LinePerceptor,
 {,
@@ -31,8 +32,8 @@ MODULE(LinePerceptor,
   REQUIRES(ECImage),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
-  REQUIRES(ColorScanlineRegionsVerticalClipped),
-  REQUIRES(ColorScanlineRegionsHorizontal),
+  REQUIRES(ColorScanLineRegionsVerticalClipped),
+  REQUIRES(ColorScanLineRegionsHorizontal),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(ObstaclesImagePercept),
   PROVIDES(LinesPercept),
@@ -108,7 +109,14 @@ private:
     /**
      * Recalculates n0 and d.
      */
-    void fitLine();
+    inline void fitLine()
+    {
+      LeastSquares::LineFitter fitter;
+      for(const Spot* spot : spots)
+        fitter.add(spot->field);
+
+      VERIFY(fitter.fit(n0, d));
+    }
   };
 
   /**
@@ -119,13 +127,29 @@ private:
     Vector2f center;
     float radius;
     std::vector<Vector2f> fieldSpots;
+    LeastSquares::CircleFitter fitter;
 
     inline CircleCandidate(const Candidate& line, const Vector2f& spot)
     {
       for(const Spot* const lineSpot : line.spots)
         fieldSpots.emplace_back(lineSpot->field);
       fieldSpots.emplace_back(spot);
-      LeastSquares::fitCircle(fieldSpots, center, radius);
+      fitter.add(fieldSpots);
+      if(!fitter.fit(center, radius))
+        radius = std::numeric_limits<float>::max();
+    }
+
+    /**
+     * Adds the given field spot to the candidate and refits the circle.
+     *
+     * @param spot field spot to add
+     */
+    inline void addSpot(const Vector2f& spot)
+    {
+      fieldSpots.emplace_back(spot);
+      fitter.add(spot);
+      if(!fitter.fit(center, radius))
+        radius = std::numeric_limits<float>::max();
     }
 
     /**
@@ -164,7 +188,7 @@ private:
   std::vector<std::vector<Spot>> spotsH;
   std::vector<std::vector<Spot>> spotsV;
   std::vector<Candidate> candidates;
-  std::vector<CircleCandidate> circleCandidates;
+  std::vector<CircleCandidate, Eigen::aligned_allocator<CircleCandidate>> circleCandidates;
   std::vector<CircleCluster> clusters;
 
   /**
@@ -182,18 +206,18 @@ private:
   void update(CirclePercept& circlePercept) override;
 
   /**
-   * Scans the ColorScanlineRegionsHorizontal for line candidates.
+   * Scans the ColorScanLineRegionsHorizontal for line candidates.
    *
    * @param linesPercept representation in which the found lines are stored
    */
-  template<bool advancedWidthChecks> void scanHorizontalScanlines(LinesPercept& linesPercept);
+  template<bool advancedWidthChecks> void scanHorizontalScanLines(LinesPercept& linesPercept);
 
   /**
-   * Scans the ColorScanlineRegionsVerticalClipped for line candidates.
+   * Scans the ColorScanLineRegionsVerticalClipped for line candidates.
    *
    * @param linesPercept representation in which the found lines are stored
    */
-  template<bool advancedWidthChecks> void scanVerticalScanlines(LinesPercept& linesPercept);
+  template<bool advancedWidthChecks> void scanVerticalScanLines(LinesPercept& linesPercept);
 
   /**
    * Extends all found lines by tracing white lines in the image starting at
@@ -204,7 +228,7 @@ private:
   void extendLines(LinesPercept& linesPercept) const;
 
   /**
-   * Checks wheter the given line is extended by robots.
+   * Checks whether the given line is extended by robots.
    * If this is the case, the line is trimmed accordingly.
    *
    * @param line the line to trim

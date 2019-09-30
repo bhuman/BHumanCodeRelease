@@ -3,11 +3,10 @@
  *
  * This file implements the draw method for the BallDropInModel representation.
  *
- * @author Arne Hasselbring
+ * @author Arne Hasselbring, Nicole Schrader
  */
 
 #include "BallDropInModel.h"
-
 #include "Tools/Debugging/DebugDrawings.h"
 
 void BallDropInModel::draw() const
@@ -18,9 +17,12 @@ void BallDropInModel::draw() const
           75, 30, Drawings::solidPen, ColorRGBA(255, 192, 203));
   }
 
-  DEBUG_DRAWING("representation:BallDropInModel:dropInPosition", "drawingOnField")
+  DEBUG_DRAWING("representation:BallDropInModel:dropInPositions", "drawingOnField")
   {
-    CROSS("representation:BallDropInModel:dropInPosition", dropInPosition.x(), dropInPosition.y(),
-          75, 30, Drawings::solidPen, ColorRGBA(255, 192, 203));
+    for(Vector2f position : dropInPositions)
+    {
+      CROSS("representation:BallDropInModel:dropInPositions", position.x(), position.y(),
+            75, 30, Drawings::solidPen, ColorRGBA(255, 192, 203));
+    }
   }
 }

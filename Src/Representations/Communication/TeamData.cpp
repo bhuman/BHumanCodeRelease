@@ -4,6 +4,7 @@
 
 #include "TeamData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Tools/Module/Blackboard.h"
 
 #define HANDLE_PARTICLE(particle) case id##particle: return the##particle.handleArbitraryMessage(message, [this](unsigned u){return this->toLocalTimestamp(u);})
 bool Teammate::handleMessage(InMessage& message)
@@ -13,10 +14,13 @@ bool Teammate::handleMessage(InMessage& message)
       HANDLE_PARTICLE(RobotPose);
       HANDLE_PARTICLE(BallModel);
       HANDLE_PARTICLE(ObstacleModel);
+      HANDLE_PARTICLE(BehaviorStatus);
       HANDLE_PARTICLE(Whistle);
+      HANDLE_PARTICLE(TeamBehaviorStatus);
       HANDLE_PARTICLE(SideConfidence);
       HANDLE_PARTICLE(FieldCoverage);
       HANDLE_PARTICLE(RobotHealth);
+      HANDLE_PARTICLE(TeamTalk);
     default:
       return false;
   }
@@ -47,6 +51,29 @@ void TeamData::draw() const
          Drawings::solidPen, posCol);
     // Player number
     DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y(), 100, ColorRGBA::black, teammate.number);
+
+    if(teammate.mateType == Teammate::BHumanRobot)
+    {
+      // Role
+      DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 150, 100,
+               ColorRGBA::black, teammate.theTeamBehaviorStatus.role.getName());
+
+      // Time to reach ball
+      int ttrb = teammate.theTeamBehaviorStatus.role.playBall
+                 ? static_cast<int>(teammate.theTeamBehaviorStatus.timeToReachBall.timeWhenReachBallStriker)
+                 : static_cast<int>(teammate.theTeamBehaviorStatus.timeToReachBall.timeWhenReachBall);
+      if(Blackboard::getInstance().exists("FrameInfo"))
+      {
+        const FrameInfo& theFrameInfo = static_cast<const FrameInfo&>(Blackboard::getInstance()["FrameInfo"]);
+        ttrb = theFrameInfo.getTimeSince(ttrb);
+      }
+      DRAWTEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 300, 100, ColorRGBA::black, "TTRB: " << ttrb);
+
+      //Line from Robot to WalkTarget
+      const Vector2f target = teammate.theRobotPose * teammate.theBehaviorStatus.walkingTo;
+      LINE("representation:TeamData", rPos.x(), rPos.y(), target.x(), target.y(),
+           10, Drawings::dashedPen, ColorRGBA::magenta);
+    }
 
     // Ball position
     const Vector2f ballPos = teammate.theRobotPose * teammate.theBallModel.estimate.position;

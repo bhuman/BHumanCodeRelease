@@ -41,6 +41,12 @@ STREAMABLE(RobotDimensions,
   (float) lowerLegLength,           //!< Length between leg joints KneePitch and AnklePitch in z-direction.
   (float) footHeight,               //!< Height between the sole of the foot and the foot joint AnkleRoll.
   (float) footLength,               //!< Length from the ankle joint to the tip of the foot.
+  (float) soleToFrontEdgeLength,    //!< Length from sole middle point to the front edge of the foot.
+  (float) soleToInnerEdgeLength,    //!< Length from sole middle point to the inner edge of the foot.
+  (float) soleToOuterEdgeLength,    //!< Length from sole middle point to the outer edge of the foot.
+  (float) soleToBackEdgeLength,     //!< Length from sole middle point to the back edge of the foot.
+  (Vector2f) bumperInnerEdge,       //!< Position offset for the inner foot bumper edge relativ to the sole origion (without sign)
+  (Vector2f) bumperOuterEdge,       //!< Position offset for the outer foot bumper edge relativ to the sole origion (without sign)
   (float) hipToNeckLength,          //!< Height offset between hip and joint headYaw.
 
   (float) xOffsetNeckToLowerCamera, //!< Forward offset between joint headPitch and lower camera.

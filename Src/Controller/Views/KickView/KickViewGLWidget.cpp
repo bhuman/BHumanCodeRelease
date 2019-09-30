@@ -299,9 +299,9 @@ bool KickViewGLWidget::clickControlPoint(int x, int y)
           }
           else
           {
-            cpWindow1[k] = Vector2f((1.0f / 3.0f) * (float)(k + 1), controlPoint.x());
-            cpWindow2[k] = Vector2f((1.0f / 3.0f) * (float)(k + 1), controlPoint.y());
-            cpWindow3[k] = Vector2f((1.0f / 3.0f) * (float)(k + 1), controlPoint.z());
+            cpWindow1[k] = Vector2f((1.0f / 3.0f) * static_cast<float>(k + 1), controlPoint.x());
+            cpWindow2[k] = Vector2f((1.0f / 3.0f) * static_cast<float>(k + 1), controlPoint.y());
+            cpWindow3[k] = Vector2f((1.0f / 3.0f) * static_cast<float>(k + 1), controlPoint.z());
           }
         }
         //calculate zoomfactor
@@ -399,22 +399,22 @@ void KickViewGLWidget::gluUnProjectClick(int x, int y, Vector3f& vecFar, Vector3
   glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
   GLdouble projection[16];
   glGetDoublev(GL_PROJECTION_MATRIX, projection);
-  GLfloat winX = (float)x;
-  GLfloat winY = (float)viewport[3] - (float)y;
+  GLfloat winX = static_cast<float>(x);
+  GLfloat winY = static_cast<float>(viewport[3]) - static_cast<float>(y);
 
   GLdouble tx, ty, tz;
 
   gluUnProject(winX, winY, 1.0, modelview, projection, viewport, &tx, &ty, &tz);
 
-  vecFar.x() = (float)tx;
-  vecFar.y() = (float)ty;
-  vecFar.z() = (float)tz;
+  vecFar.x() = static_cast<float>(tx);
+  vecFar.y() = static_cast<float>(ty);
+  vecFar.z() = static_cast<float>(tz);
 
   gluUnProject(winX, winY, 0.0, modelview, projection, viewport, &tx, &ty, &tz);
 
-  vecNear.x() = (float)tx;
-  vecNear.y() = (float)ty;
-  vecNear.z() = (float)tz;
+  vecNear.x() = static_cast<float>(tx);
+  vecNear.y() = static_cast<float>(ty);
+  vecNear.z() = static_cast<float>(tz);
 
   glPopMatrix();
 }
@@ -1113,7 +1113,7 @@ void KickViewGLWidget::paintGL()
     glPushMatrix();
     glLoadIdentity();
 
-    glTranslatef((float)actualX - 30, (float)(height - actualY - 30), 0.0f);
+    glTranslatef(actualX - 30.f, static_cast<float>(height) - actualY - 30.f, 0.0f);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     renderText(0.0, 0.0, 0.0, "point " + QString::number(widget.selectedPoint.pointNumber), QFont("arial", 10));
     glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
@@ -1527,8 +1527,8 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
         //p2
         if(widget.selectedPoint.phaseNumber > 0)
         {
-          float factor = (float)parameters.phaseParameters[widget.selectedPoint.phaseNumber - 1].duration /
-                         (float)parameters.phaseParameters[widget.selectedPoint.phaseNumber].duration;
+          float factor = static_cast<float>(parameters.phaseParameters[widget.selectedPoint.phaseNumber - 1].duration) /
+                         static_cast<float>(parameters.phaseParameters[widget.selectedPoint.phaseNumber].duration);
 
           parameters.phaseParameters[widget.selectedPoint.phaseNumber - 1].controlPoints[widget.selectedPoint.limb][1] =
             parameters.phaseParameters[widget.selectedPoint.phaseNumber - 1].controlPoints[widget.selectedPoint.limb][2] -
@@ -1548,8 +1548,8 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
             parameters.phaseParameters[widget.selectedPoint.phaseNumber].controlPoints[widget.selectedPoint.limb][2] -
             parameters.phaseParameters[widget.selectedPoint.phaseNumber].controlPoints[widget.selectedPoint.limb][1];
 
-          float factor = (float)parameters.phaseParameters[widget.selectedPoint.phaseNumber + 1].duration /
-                         (float)parameters.phaseParameters[widget.selectedPoint.phaseNumber].duration;
+          float factor = static_cast<float>(parameters.phaseParameters[widget.selectedPoint.phaseNumber + 1].duration) /
+                         static_cast<float>(parameters.phaseParameters[widget.selectedPoint.phaseNumber].duration);
           parameters.phaseParameters[widget.selectedPoint.phaseNumber + 1].controlPoints[widget.selectedPoint.limb][0] *= factor;
 
           parameters.phaseParameters[widget.selectedPoint.phaseNumber + 1].controlPoints[widget.selectedPoint.limb][0] +=
@@ -1698,7 +1698,7 @@ void KickViewGLWidget::setSteadyDiff()
 {
   for(int phaseNumber = 0; phaseNumber < parameters.numberOfPhases - 1; phaseNumber++)
   {
-    float factor = (float)parameters.phaseParameters[phaseNumber + 1].duration / (float)parameters.phaseParameters[phaseNumber].duration;
+    float factor = static_cast<float>(parameters.phaseParameters[phaseNumber + 1].duration) / static_cast<float>(parameters.phaseParameters[phaseNumber].duration);
 
     for(int j = 0; j < Phase::numOfLimbs; j++)
     {

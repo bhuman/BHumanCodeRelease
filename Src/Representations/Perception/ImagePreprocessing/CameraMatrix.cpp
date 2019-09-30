@@ -284,32 +284,30 @@ void RobotCameraMatrix::draw() const
   } // end complex drawing
 }
 
-RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera)
+RobotCameraMatrix::RobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, CameraInfo::Camera camera)
 {
-  computeRobotCameraMatrix(robotDimensions, headYaw, headPitch, cameraCalibration, upperCamera);
+  computeRobotCameraMatrix(robotDimensions, headYaw, headPitch, cameraCalibration, camera);
 }
 
-void RobotCameraMatrix::computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, bool upperCamera)
+void RobotCameraMatrix::computeRobotCameraMatrix(const RobotDimensions& robotDimensions, float headYaw, float headPitch, const CameraCalibration& cameraCalibration, CameraInfo::Camera camera)
 {
   *this = RobotCameraMatrix();
 
   translate(0., 0., robotDimensions.hipToNeckLength);
   rotateZ(headYaw);
   rotateY(headPitch);
-  if(upperCamera)
+  if(camera == CameraInfo::upper)
   {
     translate(robotDimensions.xOffsetNeckToUpperCamera, 0.f, robotDimensions.zOffsetNeckToUpperCamera);
-    rotateY(robotDimensions.tiltNeckToUpperCamera + cameraCalibration.upperCameraRotationCorrection.y());
-    rotateX(cameraCalibration.upperCameraRotationCorrection.x());
-    rotateZ(cameraCalibration.upperCameraRotationCorrection.z());
+    rotateY(robotDimensions.tiltNeckToUpperCamera + cameraCalibration.cameraRotationCorrections[camera].y());
   }
   else
   {
     translate(robotDimensions.xOffsetNeckToLowerCamera, 0.f, robotDimensions.zOffsetNeckToLowerCamera);
-    rotateY(robotDimensions.tiltNeckToLowerCamera + cameraCalibration.lowerCameraRotationCorrection.y());
-    rotateX(cameraCalibration.lowerCameraRotationCorrection.x());
-    rotateZ(cameraCalibration.lowerCameraRotationCorrection.z());
+    rotateY(robotDimensions.tiltNeckToLowerCamera + cameraCalibration.cameraRotationCorrections[camera].y());
   }
+  rotateX(cameraCalibration.cameraRotationCorrections[camera].x());
+  rotateZ(cameraCalibration.cameraRotationCorrections[camera].z());
 }
 
 CameraMatrix::CameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration)

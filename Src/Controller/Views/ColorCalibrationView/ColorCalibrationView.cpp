@@ -71,10 +71,10 @@ QWidget* ColorCalibrationWidget::getWidget()
 void ColorCalibrationWidget::update()
 {
   SYNC_WITH(colorCalibrationView.console);
-  if(colorCalibrationView.console.colorCalibrationTimeStamp != timeStamp)
+  if(colorCalibrationView.console.colorCalibrationTimestamp != timestamp)
   {
     updateWidgets();
-    timeStamp = colorCalibrationView.console.colorCalibrationTimeStamp;
+    timestamp = colorCalibrationView.console.colorCalibrationTimestamp;
   }
 }
 

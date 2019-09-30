@@ -165,7 +165,7 @@ void FieldLinesProvider::update(FieldLineIntersections& fieldLineIntersections)
 {
   fieldLineIntersections.intersections.clear();
 
-  if(SystemCall::getMode() == SystemCall::logfileReplay && spotLineUsage.size() != theLinesPercept.lines.size())
+  if(SystemCall::getMode() == SystemCall::logFileReplay && spotLineUsage.size() != theLinesPercept.lines.size())
     return;
   ASSERT(spotLineUsage.size() == theLinesPercept.lines.size());
   ASSERT(lineIndexTable.size() == theLinesPercept.lines.size());
@@ -211,7 +211,7 @@ void FieldLinesProvider::update(FieldLineIntersections& fieldLineIntersections)
           break;
       }
     else
-      fieldLineIntersections.intersections.back().type = (FieldLineIntersections::Intersection::IntersectionType) i.type;
+      fieldLineIntersections.intersections.back().type = static_cast<FieldLineIntersections::Intersection::IntersectionType>(i.type);
     fieldLineIntersections.intersections.back().dir1 = i.dir1.normalized();
     fieldLineIntersections.intersections.back().indexDir1 = lineIndexTable[i.line1Index];
     fieldLineIntersections.intersections.back().dir2 = i.dir2.normalized();

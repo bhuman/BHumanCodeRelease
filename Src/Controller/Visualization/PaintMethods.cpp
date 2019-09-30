@@ -69,7 +69,7 @@ void PaintMethods::paintPolygon(const DebugDrawing::Polygon& element, QPainter& 
   setPen(element, painter);
 
   // copy vector2 to QPoints
-  const int* points = (const int*)(&element + 1);
+  const int* points = reinterpret_cast<const int*>(&element + 1);
   std::vector<QPoint> qpoints;
   for(int n = element.nCount - 1; n >= 0; --n)
     qpoints.push_back(QPoint(points[2 * n], points[2 * n + 1]));
@@ -102,7 +102,7 @@ void PaintMethods::paintArc(const DebugDrawing::Arc& element, QPainter& painter)
   setPen(element, painter);
   if(element.brushStyle == Drawings::noBrush)
     painter.drawArc(element.center.x() - element.radius, element.center.y() - element.radius,
-                    2 * element.radius, 2 * element.radius, -((int)element.startAngle.toDegrees() * 16), -((int)element.spanAngle.toDegrees() * 16));
+                    2 * element.radius, 2 * element.radius, -(static_cast<int>(element.startAngle.toDegrees()) * 16), -(static_cast<int>(element.spanAngle.toDegrees()) * 16));
   else
   {
     QPainterPath path;
@@ -135,7 +135,7 @@ void PaintMethods::paintText(const DebugDrawing::Text& element, QPainter& painte
   newTrans.rotateRadians(std::atan2(trans.m21(), trans.m11()));
   newTrans.scale(sgn(trans.m11()), sgn(trans.m22()));
   painter.setTransform(newTrans);
-  painter.drawText(QPoint(), QObject::tr((const char*)(&element + 1)));
+  painter.drawText(QPoint(), QObject::tr(reinterpret_cast<const char*>(&element + 1)));
   painter.setTransform(trans);
 }
 

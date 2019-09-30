@@ -9,13 +9,13 @@
  * @author Thomas Röfer
  */
 
+#include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
-#include "Representations/Configuration/BehaviorParameters.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
-#include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamPlayersModel.h"
@@ -24,14 +24,14 @@
 
 MODULE(PathPlannerProvider,
 {,
-  REQUIRES(BallModel),
-  REQUIRES(BehaviorParameters),
+  REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   REQUIRES(OwnTeamInfo),
+  REQUIRES(TeamBehaviorStatus),
   REQUIRES(TeamPlayersModel),
   PROVIDES(PathPlanner),
   LOADS_PARAMETERS(
@@ -57,8 +57,6 @@ MODULE(PathPlannerProvider,
     (float) controlAheadAngle, /**< Put control point how far ahead on circles (in radians). */
     (float) rotationPenalty, /**< Penalty factor for rotating towards first intermediate target in mm/radian. Stabilizes path selection. */
     (float) switchPenalty, /**< Penalty for selecting a different turn direction around first obstacle in mm. */
-    (float) alignAgainThreshold, /**< Above this deviation from the desired direction, the robot turns. */
-    (float) alignedThreshold, /**< Below this deviation from the desired direction, the robot stops turning. */
     (float) pFactor, /**< Proportional feedback from turn angle to speed. */
     (float) iFactor, /**< Integral feedback from turn angle to speed. */
     (float) antiWindupFactor, /**< How much of the saturated control input to subtract from the integrated error. */
@@ -77,7 +75,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
 
   struct Node;
 
-  /** The edges of the visiblity graph. */
+  /** The edges of the visibility graph. */
   struct Edge
   {
     Node* fromNode; /**< The node from which this edge starts. */
@@ -87,7 +85,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
     Rotation fromRotation; /**< The rotation with which fromNode was surrounded. */
     Rotation toRotation;  /**< The rotation with which toNode will be surrounded. */
     float length; /**< The length of this edge. */
-    float pathLength; /**< The overall length of the path until arriving at toNode. Will be set by A* seach. */
+    float pathLength; /**< The overall length of the path until arriving at toNode. Will be set by A* search. */
 
     /**
      * Constructor.
@@ -195,7 +193,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
       : from(x1, y1), to(x2, y2), costs(costs) {}
 
     /**
-     * Does a line intesect this barrier?
+     * Does a line intersect this barrier?
      * @param p1 The first end point of the line.
      * @param p2 The second end point of the line.
      * @return Do they intersect?
@@ -238,7 +236,6 @@ class PathPlannerProvider : public PathPlannerProviderBase
   std::vector<Candidate> candidates; /**< All open edges during the A* search. */
   std::vector<Barrier> barriers; /**< Barrier lines that cannot be crossed during planning. */
   std::vector<Geometry::Line> borders; /**< The border of the field plus a tolerance. */
-  bool walkStraight = false; /**< Currently walking straight? */
   Rotation lastDir = cw; /**< Last direction selected when walking around first obstacle. */
   float turnAngleIntegrator = 0.f; /**< An integrator over the angle to the next node. Unclear which unit this has. */
   unsigned timeWhenLastPlayedSound = 0; /**< Used to limit frequency of sound playback. */
@@ -289,7 +286,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
 
   /**
    * Plan a shortest path. The result can be tracked backwards from the target node.
-   * @param from The starting node. It is implicitely assumed that this is also the first entry in the vector "nodes".
+   * @param from The starting node. It is implicitly assumed that this is also the first entry in the vector "nodes".
    * @param to The target node.
    * @param speedRatio The ratio between forward speed and turn speed.
    */
@@ -327,11 +324,11 @@ class PathPlannerProvider : public PathPlannerProviderBase
   /**
    * Add all outgoing edges of a node to that node based on the tangents to all other nodes. Do not add edges that
    * intersect with other nodes in between. This is determined using a sweepline algorithm that go through all
-   * tangents in accending angular direction and keeps track of all nodes in the current direction ordered by their
+   * tangents in ascending angular direction and keeps track of all nodes in the current direction ordered by their
    * distance. Only the tangents to the closest node in each direction are accepted as outgoing edges. The is done
    * separately for outgoing edges in clockwise and counterclockwise directions.
    * @param node The starting node of the edges that are created.
-   * @param tangents The tangents as procduced by the method "createTangents".
+   * @param tangents The tangents as produced by the method "createTangents".
    */
   void addNeighborsFromTangents(Node& node, Tangents& tangents);
 

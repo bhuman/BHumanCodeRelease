@@ -9,16 +9,18 @@ usage()
 {
   echo >&2 "usage: $0 { options }"
   echo >&2 "  options:"
-  echo >&2 "    -h        show this help"
-  echo >&2 "    -p        output pdf instead of svg"
+  echo >&2 "    -h             show this help"
+  echo >&2 "    -p             output pdf instead of svg"
+  echo >&2 "    -s <scenario>  selected scenario"
   exit 1
 }
 
 set -eu
 
 basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
-createGraphs="${basePath}/../../Util/CABSL/createGraphs"
-if [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
+scenario="$(grep -E "^[ 	]*scenario[ 	]*=" <"$basePath/../../Config/settings.cfg" | sed "s%[^=]*=[ 	]*\([A-Za-z_]*\).*%\1%")"
+
+if [[ "$OSTYPE" = "cygwin" || "$OSTYPE" = "msys" || ( -e /proc/version && ! -z "`grep Microsoft </proc/version 2>/dev/null`" ) ]]; then
   dot="${basePath}/../../Util/dot/dot.exe"
 else
   dot="${basePath}/../../Util/dot/dot"
@@ -33,6 +35,15 @@ while [ $# -gt 0 ]; do
     "-p")
       pdf=-p
       ;;
+    "-s")
+      shift
+      if [ $# -gt 0 ]; then
+        scenario=$1
+      else
+        echo >&2 "error: parameter of '-s' missing"
+        usage
+      fi
+      ;;
     -*)
       echo >&2 "error: unknown option '$1'"
       usage
@@ -44,14 +55,18 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+echo "Creating graphs for BehaviorControl..."
+mkdir -p "${basePath}/../../Build/Documentation/BehaviorControl"
+cd "${basePath}/../../Build/Documentation/BehaviorControl"
+"${basePath}/../../Util/CABSL/createSkillsAndCardsGraphs" -d "$dot" $pdf -s "$scenario" "${basePath}/../../Src/Modules/BehaviorControl/BehaviorControl"
+
 cd "${basePath}/../../Src/"
+
 while read line; do
   echo "Creating graphs for ${line% *}..."
   mkdir -p "${basePath}/../../Build/Documentation/${line% *}"
   cd "${basePath}/../../Build/Documentation/${line% *}"
-  "$createGraphs" -d "$dot" $pdf "${basePath}/../../Src/${line##* }"
+  "${basePath}/../../Util/CABSL/createGraphs" -d "$dot" $pdf "${basePath}/../../Src/${line##* }"
 done <<<\
 "FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp
-Logger Tools/Logging/Logger.cpp
-WalkingEngine Modules/MotionControl/WalkingEngine/WalkingEngine.h
-BehaviorControl Modules/BehaviorControl/BehaviorControl/Options.h"
+WalkingEngine Modules/MotionControl/WalkingEngine/WalkingEngine.h"

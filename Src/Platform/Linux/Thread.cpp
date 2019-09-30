@@ -1,7 +1,7 @@
 #include "Platform/BHAssert.h"
 #include "Platform/Thread.h"
 
-void Thread::nameThread(const std::string& name)
+void Thread::nameCurrentThread(const std::string& name)
 {
   char cname[16] = "";
   name.copy(cname, 15);

@@ -158,7 +158,7 @@ private:
   int stiffnessInterpolationCounter, /**< Cycle counter for current stiffness interpolation */
       stiffnessInterpolationLength; /**< Length of the current stiffness interpolation */
 
-  static thread_local SpecialActions* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static thread_local SpecialActions* theInstance; /**< Points to the only instance of this class in this thread or is 0 if there is none. */
   bool wasActive; /**< Was this module active in the previous frame? */
   MotionNetData motionNetData; /**< The motion data array. */
   short currentNode; /**< Current motion net node */

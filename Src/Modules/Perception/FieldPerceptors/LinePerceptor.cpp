@@ -1,7 +1,7 @@
 /**
  * @file LinePerceptor.cpp
  *
- * Implements a module which detects lines and the center circle based on ColorScanlineRegions.
+ * Implements a module which detects lines and the center circle based on ColorScanLineRegions.
  *
  * @author Felix Thielke
  */
@@ -26,13 +26,13 @@ void LinePerceptor::update(LinesPercept& linesPercept)
   circleCandidates.clear();
   if(doAdvancedWidthChecks)
   {
-    scanHorizontalScanlines<true>(linesPercept);
-    scanVerticalScanlines<true>(linesPercept);
+    scanHorizontalScanLines<true>(linesPercept);
+    scanVerticalScanLines<true>(linesPercept);
   }
   else
   {
-    scanHorizontalScanlines<false>(linesPercept);
-    scanVerticalScanlines<false>(linesPercept);
+    scanHorizontalScanLines<false>(linesPercept);
+    scanVerticalScanLines<false>(linesPercept);
   }
   extendLines(linesPercept);
 }
@@ -147,22 +147,22 @@ void LinePerceptor::markLinesOnCircle(const Vector2f& center)
   }
 }
 
-template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(LinesPercept& linesPercept)
+template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanLines(LinesPercept& linesPercept)
 {
-  spotsH.resize(theColorScanlineRegionsHorizontal.scanlines.size());
+  spotsH.resize(theColorScanLineRegionsHorizontal.scanLines.size());
   candidates.clear();
 
   if(!theFieldBoundary.isValid)
     return;
 
-  unsigned int scanlineId = 0;
-  for(const ColorScanlineRegionsHorizontal::Scanline& scanline : theColorScanlineRegionsHorizontal.scanlines)
+  unsigned int scanLineId = 0;
+  for(const ColorScanLineRegionsHorizontal::ScanLine& scanLine : theColorScanLineRegionsHorizontal.scanLines)
   {
-    spotsH[scanlineId].clear();
-    spotsH[scanlineId].reserve(128);
-    if(scanline.regions.size() > 2)
+    spotsH[scanLineId].clear();
+    spotsH[scanLineId].reserve(128);
+    if(scanLine.regions.size() > 2)
     {
-      for(auto region = scanline.regions.cbegin() + 1; region != scanline.regions.cend() - 1; ++region)
+      for(auto region = scanLine.regions.cbegin() + 1; region != scanLine.regions.cend() - 1; ++region)
       {
         if(region->color == FieldColors::white)
         {
@@ -170,20 +170,20 @@ template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(L
           auto after = region + 1;
           for(int i = 0; i < maxSkipNumber
               && before->range.right - before->range.left <= maxSkipWidth
-              && before != scanline.regions.cbegin(); ++i, --before);
+              && before != scanLine.regions.cbegin(); ++i, --before);
           for(int i = 0; i < maxSkipNumber
               && after->range.right - after->range.left <= maxSkipWidth
-              && after + 1 != scanline.regions.cend(); ++i, ++after);
+              && after + 1 != scanLine.regions.cend(); ++i, ++after);
           if(before->color == FieldColors::field &&
              after->color == FieldColors::field &&
-             !isSpotInsideObstacle(region->range.left, region->range.right, scanline.y, scanline.y))
+             !isSpotInsideObstacle(region->range.left, region->range.right, scanLine.y, scanLine.y))
           {
-            if(theFieldBoundary.getBoundaryY((region->range.left + region->range.right) / 2) > static_cast<int>(scanline.y))
+            if(theFieldBoundary.getBoundaryY((region->range.left + region->range.right) / 2) > static_cast<int>(scanLine.y))
             {
               goto hEndScan;
             }
-            spotsH[scanlineId].emplace_back(static_cast<float>((region->range.left + region->range.right) / 2), scanline.y);
-            Spot& thisSpot = spotsH[scanlineId].back();
+            spotsH[scanLineId].emplace_back(static_cast<float>((region->range.left + region->range.right) / 2), scanLine.y);
+            Spot& thisSpot = spotsH[scanLineId].back();
             Vector2f corrected(theImageCoordinateSystem.toCorrected(thisSpot.image));
             Vector2f otherImage;
             if(Transformation::imageToRobot(corrected, theCameraMatrix, theCameraInfo, thisSpot.field) &&
@@ -195,21 +195,20 @@ template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(L
                  after->range.right - after->range.left >= static_cast<int>(expectedWidth * greenAroundLineRatio))
                 goto keepHSpot;
             }
-            spotsH[scanlineId].pop_back();
+            spotsH[scanLineId].pop_back();
             continue;
 
           keepHSpot:
             CROSS("module:LinePerceptor:spots", thisSpot.image.x(), thisSpot.image.y(), 5, 1, Drawings::PenStyle::solidPen, ColorRGBA::red);
 
-            if(scanlineId > 0)
+            if(scanLineId > 0)
             {
               bool circleFitted = false, lineFitted = false;
               for(CircleCandidate& candidate : circleCandidates)
               {
                 if(candidate.getDistance(thisSpot.field) <= maxCircleFittingError)
                 {
-                  candidate.fieldSpots.emplace_back(thisSpot.field);
-                  LeastSquares::fitCircle(candidate.fieldSpots, candidate.center, candidate.radius);
+                  candidate.addSpot(thisSpot.field);
                   circleFitted = true;
                   break;
                 }
@@ -245,7 +244,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(L
               }
               if(lineFitted)
                 goto hEndAdjacentSearch;
-              for(const Spot& spot : spotsH[scanlineId - 1])
+              for(const Spot& spot : spotsH[scanLineId - 1])
               {
                 Candidate& candidate = candidates[spot.candidate];
                 if(candidate.spots.size() == 1 &&
@@ -275,7 +274,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(L
                 }
               }
             }
-            thisSpot.candidate = (unsigned int)candidates.size();
+            thisSpot.candidate = static_cast<unsigned int>(candidates.size());
             candidates.emplace_back(&thisSpot);
           hEndAdjacentSearch:
             ;
@@ -283,7 +282,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanHorizontalScanlines(L
         }
       }
     }
-    scanlineId++;
+    scanLineId++;
   }
 hEndScan:
   ;
@@ -341,17 +340,17 @@ hEndScan:
   }
 }
 
-template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(LinesPercept& linesPercept)
+template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanLines(LinesPercept& linesPercept)
 {
-  spotsV.resize(theColorScanlineRegionsVerticalClipped.scanlines.size());
+  spotsV.resize(theColorScanLineRegionsVerticalClipped.scanLines.size());
   candidates.clear();
 
-  unsigned int scanlineId = 0;
-  for(unsigned scanLineIndex = theColorScanlineRegionsVerticalClipped.lowResStart; scanLineIndex < theColorScanlineRegionsVerticalClipped.scanlines.size(); scanLineIndex += theColorScanlineRegionsVerticalClipped.lowResStep)
+  unsigned int scanLineId = 0;
+  for(unsigned scanLineIndex = theColorScanLineRegionsVerticalClipped.lowResStart; scanLineIndex < theColorScanLineRegionsVerticalClipped.scanLines.size(); scanLineIndex += theColorScanLineRegionsVerticalClipped.lowResStep)
   {
-    spotsV[scanlineId].clear();
-    spotsV[scanlineId].reserve(128);
-    const std::vector<ScanlineRegion>& regions = theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].regions;
+    spotsV[scanLineId].clear();
+    spotsV[scanLineId].reserve(128);
+    const std::vector<ScanLineRegion>& regions = theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].regions;
     if(regions.size() > 2)
     {
       for(auto region = regions.cbegin() + 1; region != regions.cend() - 1; ++region)
@@ -368,10 +367,10 @@ template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(Lin
               && after + 1 != regions.cend(); ++i, ++after);
           if(before->color == FieldColors::field &&
              after->color == FieldColors::field &&
-             !isSpotInsideObstacle(theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].x, theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].x, region->range.upper, region->range.lower))
+             !isSpotInsideObstacle(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, region->range.upper, region->range.lower))
           {
-            spotsV[scanlineId].emplace_back(theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].x, (float)(region->range.upper + region->range.lower) / 2);
-            Spot& thisSpot = spotsV[scanlineId].back();
+            spotsV[scanLineId].emplace_back(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, static_cast<float>(region->range.upper + region->range.lower) / 2.f);
+            Spot& thisSpot = spotsV[scanLineId].back();
             Vector2f corrected = theImageCoordinateSystem.toCorrected(thisSpot.image);
             Vector2f otherImage;
             if(Transformation::imageToRobot(corrected, theCameraMatrix, theCameraInfo, thisSpot.field) &&
@@ -382,21 +381,20 @@ template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(Lin
                  after->range.lower - after->range.upper >= static_cast<int>(expectedHeight * greenAroundLineRatio))
                 goto keepVSpot;
             }
-            spotsV[scanlineId].pop_back();
+            spotsV[scanLineId].pop_back();
             continue;
 
           keepVSpot:
             CROSS("module:LinePerceptor:spots", thisSpot.image.x(), thisSpot.image.y(), 5, 1, Drawings::PenStyle::solidPen, ColorRGBA::blue);
 
-            if(scanlineId > 0)
+            if(scanLineId > 0)
             {
               bool circleFitted = false, lineFitted = false;
               for(CircleCandidate& candidate : circleCandidates)
               {
                 if(candidate.getDistance(thisSpot.field) <= maxCircleFittingError)
                 {
-                  candidate.fieldSpots.emplace_back(thisSpot.field);
-                  LeastSquares::fitCircle(candidate.fieldSpots, candidate.center, candidate.radius);
+                  candidate.addSpot(thisSpot.field);
                   circleFitted = true;
                   break;
                 }
@@ -432,7 +430,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(Lin
               }
               if(lineFitted)
                 goto vEndAdjacentSearch;
-              for(const Spot& spot : spotsV[scanlineId - 1])
+              for(const Spot& spot : spotsV[scanLineId - 1])
               {
                 Candidate& candidate = candidates[spot.candidate];
                 if(candidate.spots.size() == 1 &&
@@ -462,7 +460,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(Lin
                 }
               }
             }
-            thisSpot.candidate = (unsigned int)candidates.size();
+            thisSpot.candidate = static_cast<unsigned int>(candidates.size());
             candidates.emplace_back(&thisSpot);
           vEndAdjacentSearch:
             ;
@@ -470,7 +468,7 @@ template<bool advancedWidthChecks> void LinePerceptor::scanVerticalScanlines(Lin
         }
       }
     }
-    scanlineId++;
+    scanLineId++;
   }
 
   for(const Candidate& candidate : candidates)
@@ -838,9 +836,11 @@ bool LinePerceptor::correctCircle(CircleCandidate& circle) const
     }
   }
 
-  LeastSquares::fitCircle(circle.fieldSpots, circle.center, circle.radius);
+  circle.fitter = LeastSquares::CircleFitter();
+  circle.fitter.add(circle.fieldSpots);
 
-  return getAbsoluteDeviation(circle.radius, theFieldDimensions.centerCircleRadius) <= maxCircleRadiusDeviation &&
+  return circle.fitter.fit(circle.center, circle.radius) &&
+         getAbsoluteDeviation(circle.radius, theFieldDimensions.centerCircleRadius) <= maxCircleRadiusDeviation &&
          circle.calculateError() <= maxCircleFittingError;
 }
 
@@ -876,44 +876,4 @@ bool LinePerceptor::isSpotInsideObstacle(const int fromX, const int toX, const i
       return true;
   }
   return false;
-}
-
-void LinePerceptor::Candidate::fitLine()
-{
-  ASSERT(spots.size() > 0);
-
-  // https://de.wikipedia.org/wiki/Lineare_Regression#Berechnung_der_Regressionsgeraden
-  Vector2f avg(0, 0);
-  for(const Spot* spot : spots)
-  {
-    avg += spot->field;
-  }
-  avg /= static_cast<float>(spots.size());
-
-  float SSxx = 0, SSxy = 0;
-  for(const Spot* spot : spots)
-  {
-    const float xDiff = spot->field.x() - avg.x();
-    SSxx += sqr(xDiff);
-    SSxy += xDiff * (spot->field.y() - avg.y());
-  }
-
-  if(Approx::isZero(SSxx))
-  {
-    // vertical lines cannot be fitted in a y=ax+b style equation
-    n0 << 1, 0;
-    d = avg.x();
-  }
-  else
-  {
-    const float b = SSxy / SSxx;
-    const float a = avg.y() - b * avg.x();
-
-    // https://de.wikipedia.org/wiki/Koordinatenform#Koordinatenform_einer_Geradengleichung
-    // https://de.wikipedia.org/wiki/Normalenform#Berechnung
-    // https://de.wikipedia.org/wiki/Hessesche_Normalform#Berechnung
-    const float nLengthNegInv = (float)((a >= 0 ? 1 : -1) / sqrt(sqr(b) + 1));
-    n0 << -b* nLengthNegInv, nLengthNegInv;
-    d = a * nLengthNegInv;
-  }
 }

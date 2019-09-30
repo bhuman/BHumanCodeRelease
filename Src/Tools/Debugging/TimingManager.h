@@ -7,14 +7,13 @@
 
 #pragma once
 
-class Process;
 class MessageQueue;
 
 /**
  * A class that keeps track of several stopwatches.
- * It always belongs to exactly one process and should only be created/destroyed
- * by that process.
- * There should be exactly one TimingManager per process.
+ * It always belongs to exactly one thread and should only be created/destroyed
+ * by that thread.
+ * There should be exactly one TimingManager per thread.
  */
 class TimingManager
 {
@@ -22,8 +21,13 @@ private:
   struct Pimpl;
   Pimpl* prvt;
 
-  friend class Process;
-  TimingManager(); // private so only Process can access it.
+  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
+  /**
+   * Default constructor.
+   * No other instance of this class is allowed except the one accessible via Global::getTimingManager.
+   * Therefore the constructor is private.
+   */
+  TimingManager();
   ~TimingManager();
 
 public:
@@ -35,18 +39,18 @@ public:
 
   /**
    * The TimingManager has a special stopwatch that is used to keep track
-   * of the overall process time.
-   * You should call signalProcessStart at the beginning of every process iteration.
-   * It is used to calculate the frequency of the process.
+   * of the overall thread time.
+   * You should call signalThreadStart at the beginning of every thread iteration.
+   * It is used to calculate the frequency of the thread.
    */
-  void signalProcessStart();
+  void signalThreadStart();
 
-  /** Tells the TimingManager that the current process iteration is over. */
-  void signalProcessStop();
+  /** Tells the TimingManager that the current thread iteration is over. */
+  void signalThreadStop();
 
   /**
    * Returns a message queue that contains all timing data from this frame.
-   * Call this method in between signalProcessStop() and signalProcessStart.
+   * Call this method in between signalThreadStop() and signalThreadStart.
    */
   MessageQueue& getData();
 

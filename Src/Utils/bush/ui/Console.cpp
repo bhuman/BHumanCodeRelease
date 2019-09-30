@@ -17,6 +17,9 @@
 #include "Utils/bush/ui/Console.h"
 #include "Utils/bush/ui/TeamSelector.h"
 #include "Utils/bush/ui/VisualContext.h"
+#ifdef MACOS
+#include "../Src/Controller/Visualization/Helper.h"
+#endif
 
 Icons Icons::theIcons;
 
@@ -47,6 +50,7 @@ VisualContextDecoration::VisualContextDecoration(const QString& commandLine, Vis
   button->setFlat(true);
   button->setCheckable(true);
   button->setChecked(true);
+  button->setStyleSheet("background-color: rgba(255, 255, 255, 0);");
   layout->addRow(visualContext);
   setLayout(layout);
 
@@ -163,4 +167,14 @@ void Console::fireCommand(const QString& command)
 void Console::cancel()
 {
   visualContext->cancel();
+}
+
+void Console::paintEvent(QPaintEvent* event)
+{
+#ifdef MACOS
+  QPalette p = palette();
+  p.setColor(QPalette::AlternateBase, getAlternateBase().color());
+  setPalette(p);
+#endif
+  QFrame::paintEvent(event);
 }

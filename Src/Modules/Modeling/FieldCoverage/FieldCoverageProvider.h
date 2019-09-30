@@ -1,5 +1,5 @@
 /**
- * @file FieldCoverageProvider.cpp
+ * @file FieldCoverageProvider.h
  * @author Andreas Stolpmann
  */
 

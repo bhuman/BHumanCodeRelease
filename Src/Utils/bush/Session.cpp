@@ -21,9 +21,9 @@ std::string Session::getBestIP(const Context& context, const Robot* robot)
   std::string ip;
   Team* team = context.getSelectedTeam();
 
-  if(team->deployDevice == "wlan")
+  if(team->deployDevice == "Wi-Fi")
     ip = robot->wlan;
-  else if(team->deployDevice == "lan")
+  else if(team->deployDevice == "Ethernet")
     ip = robot->lan;
   else if(team->deployDevice == "auto")
   {
@@ -71,9 +71,9 @@ bool Session::isReachable(const Context& context, const Robot* robot)
 {
   Team* team = context.getSelectedTeam();
 
-  if(team->deployDevice == "wlan")
+  if(team->deployDevice == "Wi-Fi")
     return pingAgent->getWLanPing(robot) < 2000.0;
-  else if(team->deployDevice == "lan")
+  else if(team->deployDevice == "Ethernet")
     return pingAgent->getLanPing(robot) < 2000.0;
   else
     return getBestNetwork(robot) != NONE;

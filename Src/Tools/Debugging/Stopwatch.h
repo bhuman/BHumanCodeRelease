@@ -2,7 +2,7 @@
  * @file Stopwatch.h
  * The file declares the stopwatch macros.
  * @author <a href="mailto:juengel@informatik.hu-berlin.de">Matthias Jüngel</a>
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author <a href="mailto:arneboe@tzi.de">Arne Böckmann</a>
  */
 
@@ -28,6 +28,7 @@ public:
   ~Stopwatch()
   {
     const unsigned time = Global::getTimingManager().stopTiming(name + 15);
+    static_cast<void>(time);
     DEBUG_RESPONSE(name)
       OUTPUT(idPlot, bin, (name + 5) << static_cast<float>(time) * 0.001f);
   }

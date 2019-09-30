@@ -24,7 +24,7 @@ private:
 public:
   SPLStandardMessageBuffer() :
     buffer(reinterpret_cast<RoboCup::SPLStandardMessage*>(Memory::alignedMalloc(capacity * sizeof(RoboCup::SPLStandardMessage))))
-  { static_assert(capacity, "A capacity of zero is nonsens, pls fix it!"); }
+  { static_assert(capacity, "A capacity of zero is nonsense, pls fix it!"); }
 
   ~SPLStandardMessageBuffer() { Memory::alignedFree(reinterpret_cast<char*>(buffer)); }
 

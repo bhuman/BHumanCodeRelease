@@ -11,7 +11,7 @@
     to a linear mapping of the raw responses [0..1] to negative false-alarm log-likelihoods as final
     responses. However, the linear mapping can also be used for other purposes.
 
-    Technically, the situation is more complicated as internally the raw responses are respresented
+    Technically, the situation is more complicated as internally the raw responses are represented
     as uint16 and the (rawBin) and the final as int16 (finalBin) and the scaling factors for this
     representation must allow to handle all occurring values of all contours without overall.
 
@@ -40,20 +40,20 @@ public:
       be represented.
    */
   LinearResponseMapping(double rawFloat2FinalFloatScale, double rawFloat2FinalFloatOffset, double finalFloatMin, double finalFloatMax, double clippedDenom = 0.25)
-    : clippedDenom((float) clippedDenom)
+    : clippedDenom(static_cast<float>(clippedDenom))
   {
     assert(rawFloat2FinalFloatScale >= 0); // better scores must give better scores
     // finalBin=-0x3fff --> finalFloat=finalFloatMin, finalBin=+0x3fff -> finalFloat=finalFloatMax
-    finalBin2FinalFloatScale  = float((finalFloatMax - finalFloatMin) / (FINAL_BIN_HIGH - FINAL_BIN_LOW));
-    finalBin2FinalFloatOffset = float(finalFloatMax - 0x3fff * finalBin2FinalFloatScale);
+    finalBin2FinalFloatScale  = static_cast<float>((finalFloatMax - finalFloatMin) / (FINAL_BIN_HIGH - FINAL_BIN_LOW));
+    finalBin2FinalFloatOffset = static_cast<float>(finalFloatMax - 0x3fff * finalBin2FinalFloatScale);
 
     // rawBin=0 --> finalFloat=rawFloat2FinalFloatOffset, rawBin=0xffff -> finalFloat=rawFloat2FinalFloatOffset+rawFloat2FinalFloatScale
     int hv  = int(rawFloat2FinalFloatScale / 0xffff / finalBin2FinalFloatScale * 0x10000);
     assert(-0x7fff <= hv && hv <= 0x7fff);
-    rawBin2FinalBinScale = (short) hv;
+    rawBin2FinalBinScale = static_cast<short>(hv);
     hv = int((rawFloat2FinalFloatOffset - finalBin2FinalFloatOffset) / finalBin2FinalFloatScale);
     assert(-0x7fff <= hv && hv <= 0x7fff);
-    rawBin2FinalBinOffset = (short) hv;
+    rawBin2FinalBinOffset = static_cast<short>(hv);
   }
 
   //finalBin = rawBin*rawBin2FinalBinScale/0x10000
@@ -70,11 +70,11 @@ public:
   //! A clipped points counts as much as negative evidence as \c clippedNom (<<1) points with 0 response
   float clippedDenom;
 
-  unsigned short rawFloat2RawBin(float rawFloat) const {return (unsigned short)(rawFloat * 0xffff);}
+  unsigned short rawFloat2RawBin(float rawFloat) const {return static_cast<unsigned short>(rawFloat * 0xffff);}
 
-  float rawBin2RawFloat(unsigned short rawBin) const {return rawBin / ((float)0xffff);}
+  float rawBin2RawFloat(unsigned short rawBin) const {return rawBin / static_cast<float>(0xffff);}
 
-  signed short rawBin2FinalBin(unsigned short rawBin) const {return ((((int) rawBin) * ((int) rawBin2FinalBinScale)) >> 16) + rawBin2FinalBinOffset;}
+  signed short rawBin2FinalBin(unsigned short rawBin) const {return ((static_cast<int>(rawBin) * static_cast<int>(rawBin2FinalBinScale)) >> 16) + rawBin2FinalBinOffset;}
 
   float finalBin2FinalFloat(signed short finalBin) const {return finalBin2FinalFloatScale * finalBin + finalBin2FinalFloatOffset;}
 

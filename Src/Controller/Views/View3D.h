@@ -3,7 +3,7 @@
  *
  * Declaration of class View3D
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -19,7 +19,7 @@
  *
  * The base class for all 3-D views.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 class View3D : public SimRobot::Object
 {

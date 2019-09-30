@@ -146,10 +146,13 @@ public:
   /** sets the read position to 0 so that the message can be read again */
   void resetReadPosition();
 
+  /** Reads the identifier of the thread for idFrameBegin/Finished. Converts old process letters. */
+  std::string readThreadIdentifier();
+
 protected:
   /**
    * Gives a direct read access to the message.
-   * @return The adress of the first byte of the message.
+   * @return The address of the first byte of the message.
    */
   const char* getData() const;
 

@@ -43,16 +43,10 @@ getNames() {
     fatal "The file ${robotsFile} (containing the robot names and ids) does not exist!"
   fi
 
-  # copy python scripts
-  tmpPath="/tmp/NaoInstall"
-  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "rm -Rf ${tmpPath}" || fatal "Can't remove '${tmpPath}' on NAO"
-  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${tmpPath}" || fatal "Can't create '${tmpPath}' on NAO"
-  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getHeadId.py" nao@${robotIp}:${tmpPath}/getHeadId.py || fatal "Can't copy 'getHeadId.py' to NAO"
-
   # get headId
   local headId
-  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "bash -l -c 'python /tmp/NaoInstall/getHeadId.py' | grep -vE '\[(W|I)\]'")
-  if [ ${headId} == "Fail" ]; then
+  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "cat /sys/qi/head_id 2>/dev/null || true")
+  if [ -z ${headId} ]; then
     fatal "Failed reading the headId!"
   fi
 
@@ -85,28 +79,42 @@ getNames() {
 }
 
 copyFiles() {
-  networkDriver=$(ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} lspci -k -s 02:00.0 | grep "Kernel driver in use:" | awk 'NF>1{print $NF}')
-  if [[ ${networkDriver} == "r8169" ]] ; then
-    message "Buggy Ethernet driver detected! Limiting bandwidth to 100 kb/s"
-    rsyncOptions="${rsyncOptions} --bwlimit=100"
-  fi
-
   copyTo="/tmp/NaoInstall/${robotName}"
   message "Copying files to ${copyTo}"
   if [[ $(uname) == "*CYGWIN*" ]] ; then
     chmod -R 755 "${fileDir}"
     setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${fileDir}" #due to windows 8
+    chmod -R 755 "${robotDir}"
+    setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${robotDir}" #due to windows 8
+    chmod -R 755 "${baseDir}/Network/Profiles"
+    setfacl -s d:u::rwx,d:g::r-x,d:o:r-x "${baseDir}/Network/Profiles" #due to windows 8
   fi
 
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "rm -Rf ${copyTo}" || fatal "Can't remove '${copyTo}' on NAO"
   ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "mkdir -p ${copyTo}" || fatal "Can't create '${copyTo}' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}"/* nao@${robotIp}:${copyTo} || fatal "Can't copy to '${copyTo}' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${robotDir}"/* nao@${robotIp}:${copyTo}/Robot/ || fatal "Can't copy to '${copyTo}/Robot' on NAO"
   rsync ${rsyncOptions} -e "${sshCommand}" "${baseDir}/Network/Profiles" nao@${robotIp}:${copyTo}/Robot/ || fatal "Can't copy to '${copyTo}/Robot' on NAO"
+  sysrootDir="/tmp/bhSysroot1337"
+  rm -Rf "${sysrootDir}"
+  mkdir -p "${sysrootDir}/lib"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/ld-2.29.so" "${sysrootDir}/lib/ld-linux.so.2"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libc-2.29.so" "${sysrootDir}/lib/libc.so.6"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libdl-2.29.so" "${sysrootDir}/lib/libdl.so.2"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libm-2.29.so" "${sysrootDir}/lib/libm.so.6"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libmvec-2.29.so" "${sysrootDir}/lib/libmvec.so.1"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libpthread-2.29.so" "${sysrootDir}/lib/libpthread.so.0"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/librt-2.29.so" "${sysrootDir}/lib/librt.so.1"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.24" "${sysrootDir}/lib/libstdc++.so.6"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libgcc_s.so.1" "${sysrootDir}/lib/libgcc_s.so.1"
+  cp "${bhDir}/Util/Buildchain/V6/gcc/lib/libasound.so" "${sysrootDir}/lib/libasound.so.2"
+
+  rsync ${rsyncOptions} -e "${sshCommand}" "${sysrootDir}"/* nao@${robotIp}:${copyTo}/sysroot/ || fatal "Can't copy to '${copyTo}' on NAO"
 }
 
 runInstallation() {
   message "launching install process"
-  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "chmod -R 755 ${copyTo} && bash -l -c '${copyTo}/install'" || fatal "Installation failed"
+  ssh -i "${privateKey}" ${sshOptions} nao@${robotIp} "chmod 755 ${copyTo}/install && bash -l -c '${copyTo}/install'" || fatal "Installation failed"
 }
 
 ###############################################################################

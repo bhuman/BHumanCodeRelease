@@ -8,16 +8,16 @@
 #include "RobotPose.h"
 #include "BallModel.h"
 #include "Platform/Time.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/TeamInfo.h"
+#include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Module/Blackboard.h"
 #include "Tools/Math/Covariance.h"
 #include "Tools/Math/Projection.h"
+#include "Tools/Module/Blackboard.h"
 
 void RobotPose::onRead()
 {
@@ -187,15 +187,31 @@ void RobotPose::draw() const
         const RobotPose& robotPose = *this;
         std::vector<Vector2f> p;
         Projection::computeFieldOfViewInFieldCoordinates(robotPose, cameraMatrix, cameraInfo, fieldDimensions, p);
+        THREAD("representation:RobotPose:fieldOfView", cameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
         POLYGON("representation:RobotPose:fieldOfView", 4, p, 20, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, ColorRGBA(255, 255, 255, 25));
       }
     }
   }
 
-  DECLARE_DEBUG_DRAWING("origin:RobotPose", "drawingOnField"); // Set the origin to the robot's current position
-  DECLARE_DEBUG_DRAWING("origin:RobotPoseWithoutRotation", "drawingOnField");
-  ORIGIN("origin:RobotPose", translation.x(), translation.y(), rotation);
-  ORIGIN("origin:RobotPoseWithoutRotation", translation.x(), translation.y(), 0);
+  DEBUG_DRAWING("perception:RobotPose", "drawingOnField") // Set the origin to the robot's current position
+  {
+    if(Blackboard::getInstance().exists("CameraInfo"))
+    {
+      const CameraInfo& cameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
+      THREAD("perception:RobotPose", cameraInfo.camera == CameraInfo::upper ? "Upper" : "Lower");
+    }
+    ORIGIN("perception:RobotPose", translation.x(), translation.y(), rotation);
+  }
+
+  DEBUG_DRAWING("cognition:RobotPose", "drawingOnField") // Set the origin to the robot's current position
+  {
+    ORIGIN("cognition:RobotPose", translation.x(), translation.y(), rotation);
+  }
+
+  DEBUG_DRAWING("cognition:Reset", "drawingOnField") // Set the origin to the robot's current position
+  {
+    ORIGIN("cognition:Reset", 0, 0, 0);
+  }
 
   DEBUG_DRAWING("representation:RobotPose:coverage", "drawingOnField")
   {
@@ -266,8 +282,8 @@ void GroundTruthRobotPose::draw() const
           ownTeamColorForDrawing, ColorRGBA(255, 255, 255, 128), ColorRGBA(0, 0, 0, 0));
   }
 
-  DECLARE_DEBUG_DRAWING("origin:GroundTruthRobotPose", "drawingOnField"); // Set the origin to the robot's ground truth position
-  DECLARE_DEBUG_DRAWING("origin:GroundTruthRobotPoseWithoutRotation", "drawingOnField");
-  ORIGIN("origin:GroundTruthRobotPose", translation.x(), translation.y(), rotation);
-  ORIGIN("origin:GroundTruthRobotPoseWithoutRotation", translation.x(), translation.y(), 0);
+  DEBUG_DRAWING("cognition:GroundTruthRobotPose", "drawingOnField") // Set the origin to the robot's ground truth position
+  {
+    ORIGIN("cognition:GroundTruthRobotPose", translation.x(), translation.y(), rotation);
+  }
 }

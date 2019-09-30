@@ -84,10 +84,10 @@ public:
 
     QCompleter(QObject *parent = nullptr);
     QCompleter(QAbstractItemModel *model, QObject *parent = nullptr);
-#ifndef QT_NO_STRINGLISTMODEL
+#if QT_CONFIG(stringlistmodel)
     QCompleter(const QStringList& completions, QObject *parent = nullptr);
 #endif
-    ~QCompleter();
+    ~QCompleter() override;
 
     void setWidget(QWidget *widget);
     QWidget *widget() const;

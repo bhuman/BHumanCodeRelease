@@ -30,6 +30,9 @@ SimRobot = cppApplication + {
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/platforms/qwindowsd.dll" = copyFile + {
           output = "$(buildDir)/platforms/qwindowsd.dll"
         }
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/imageformats/qjpegd.dll" = copyFile + {
+          output = "$(buildDir)/imageformats/qjpegd.dll"
+        }
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Cored.pdb" = copyFile
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Guid.pdb" = copyFile
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Svgd.pdb" = copyFile
@@ -37,6 +40,9 @@ SimRobot = cppApplication + {
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5OpenGLd.pdb" = copyFile
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/platforms/qwindowsd.pdb" = copyFile + {
           output = "$(buildDir)/platforms/qwindowsd.pdb"
+        }
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/imageformats/qjpegd.pdb" = copyFile + {
+          output = "$(buildDir)/imageformats/qjpegd.pdb"
         }
       } else {
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5Core.dll" = copyFile
@@ -46,6 +52,9 @@ SimRobot = cppApplication + {
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/lib/Qt5OpenGL.dll" = copyFile
         "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/platforms/qwindows.dll" = copyFile + {
           output = "$(buildDir)/platforms/qwindows.dll"
+        }
+        "$(utilDirRoot)/SimRobot/Util/qt/Windows/plugins/imageformats/qjpeg.dll" = copyFile + {
+          output = "$(buildDir)/imageformats/qjpeg.dll"
         }
       }
 

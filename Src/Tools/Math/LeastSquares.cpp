@@ -1,145 +1,81 @@
+/**
+ * @file LeastSquares.cpp
+ *
+ * Implements functions for fitting models to data points using linear
+ * least squares fitting.
+ *
+ * @author Felix Thielke
+ */
+
 #include "LeastSquares.h"
 #include "Tools/Math/Approx.h"
 #include "Tools/Math/BHMath.h"
-#include "Tools/Math/Deviation.h"
-#include <limits>
+#include <Eigen/Eigenvalues>
 
-void LeastSquares::fitLine(const std::vector<Vector2f>& points, Vector2f& n0, float& d)
+bool LeastSquares::LineFitter::fit(Vector2f& n0, float& d) const
 {
-  // https://de.wikipedia.org/wiki/Lineare_Regression#Berechnung_der_Regressionsgeraden
-  ASSERT(points.size() >= 2);
-  Vector2f avg(0.f, 0.f);
-  for(const Vector2f& p : points)
-  {
-    avg += p;
-  }
-  avg /= static_cast<float>(points.size());
+  // see R.Duda, P. Hart: Pattern classification and scene analysis. Wiley, 1973. pp 332-335
+  ASSERT(count >= 2);
 
-  float SSxx = 0, SSxy = 0;
-  for(const Vector2f& p : points)
-  {
-    const float xDiff = p.x() - avg.x();
-    SSxx += sqr(xDiff);
-    SSxy += xDiff * (p.y() - avg.y());
-  }
+  const auto sum = this->sum.col(0);   // (sum(x), sum(y))
+  const auto sum2 = this->sum.col(1);  // (sum(x^2), sum(y^2))
+  const float sumXY = this->sum(0, 2); // sum(xy)
+  const float nInv = 1.f / static_cast<float>(count);
 
-  if(Approx::isZero(SSxx))
-  {
-    // vertical lines cannot be fitted in a y=ax+b style equation
-    n0 << 1, 0;
-    d = avg.x();
-  }
-  else
-  {
-    const float b = SSxy / SSxx;
-    const float a = avg.y() - b * avg.x();
+  // Calculate mean, variance and covariance
+  const Vector2f mean(sum * nInv);
+  const Vector2f var(sum2 - nInv * sum.cwiseProduct(sum)); // (var_x * count, var_y * count)
+  const float covXY = sumXY - nInv * sum.x() * sum.y();    // cov_xy * count
 
-    // https://de.wikipedia.org/wiki/Koordinatenform#Koordinatenform_einer_Geradengleichung
-    // https://de.wikipedia.org/wiki/Normalenform#Berechnung
-    // https://de.wikipedia.org/wiki/Hessesche_Normalform#Berechnung
-    const float nLengthNegInv = (a >= 0.f ? 1.f : -1.f) / std::sqrt(sqr(b) + 1.f);
-    n0 << -b* nLengthNegInv, nLengthNegInv;
-    d = a * nLengthNegInv;
-  }
+  // Calculate the eigen decomposition of the covariance matrix
+  const Eigen::SelfAdjointEigenSolver<Matrix2f> solver(Eigen::SelfAdjointEigenSolver<Matrix2f>().computeDirect((Matrix2f() << var.x(), covXY, covXY, var.y()).finished()));
+  if(solver.info() != Eigen::ComputationInfo::Success)
+    return false;
+  const auto& eigenValues = solver.eigenvalues();
+
+  // n0 is the eigenvector with the smaller eigenvalue
+  n0 = solver.eigenvectors().col(eigenValues[0] < eigenValues[1] ? 0 : 1);
+  d = n0.dot(mean);
+
+  return true;
 }
 
-void LeastSquares::fitLine(const std::vector<Vector2f>::const_iterator& itBegin, const std::vector<Vector2f>::const_iterator& itEnd, Vector2f& n0, float& d)
-{
-  // https://de.wikipedia.org/wiki/Lineare_Regression#Berechnung_der_Regressionsgeraden
-  ASSERT(std::distance(itBegin, itEnd) >= 2);
-  Vector2f avg(0.f, 0.f);
-  for(auto it = itBegin; it != itEnd; ++it)
-  {
-    avg += *it;
-  }
-  avg /= static_cast<float>(std::distance(itBegin, itEnd));
-
-  float SSxx = 0, SSxy = 0;
-  for(auto it = itBegin; it != itEnd; ++it)
-  {
-    const float xDiff = it->x() - avg.x();
-    SSxx += sqr(xDiff);
-    SSxy += xDiff * (it->y() - avg.y());
-  }
-
-  if(Approx::isZero(SSxx))
-  {
-    // vertical lines cannot be fitted in a y=ax+b style equation
-    n0 << 1, 0;
-    d = avg.x();
-  }
-  else
-  {
-    const float b = SSxy / SSxx;
-    const float a = avg.y() - b * avg.x();
-
-    // https://de.wikipedia.org/wiki/Koordinatenform#Koordinatenform_einer_Geradengleichung
-    // https://de.wikipedia.org/wiki/Normalenform#Berechnung
-    // https://de.wikipedia.org/wiki/Hessesche_Normalform#Berechnung
-    const float nLengthNegInv = (a >= 0.f ? 1.f : -1.f) / std::sqrt(sqr(b) + 1.f);
-    n0 << -b* nLengthNegInv, nLengthNegInv;
-    d = a * nLengthNegInv;
-  }
-}
-
-float LeastSquares::fitLineWithError(const std::vector<Vector2f>& points, Vector2f& n0, float& d)
-{
-  fitLine(points, n0, d);
-
-  float error = 0;
-  for(const Vector2f& p : points)
-    error += getAbsoluteDeviation(n0.dot(p), d);
-
-  return error / points.size();
-}
-
-float LeastSquares::fitLineWithError(const std::vector<Vector2f>::const_iterator& itBegin, const std::vector<Vector2f>::const_iterator& itEnd, Vector2f& n0, float& d)
-{
-  fitLine(itBegin, itEnd, n0, d);
-
-  float error = 0;
-  for(auto it = itBegin; it != itEnd; ++it)
-    error += getAbsoluteDeviation(n0.dot(*it), d);
-
-  return error / std::distance(itBegin, itEnd);
-}
-
-void LeastSquares::fitCircle(const std::vector<Vector2f>& points, Vector2f& center, float& radius)
+bool LeastSquares::CircleFitter::fit(Vector2f& center, float& radius) const
 {
   // Algorithm adapted from http://www.dtcenter.org/met/users/docs/write_ups/circle_fit.pdf
-  ASSERT(points.size() >= 3);
-  Vector2f avg(0, 0);
+  ASSERT(count >= 3);
 
-  for(const Vector2f& p : points)
-  {
-    avg += p;
-  }
-  avg /= static_cast<float>(points.size());
+  const auto sum = this->sum.col(0);   // (sum(x), sum(y))
+  const auto sum2 = this->sum.col(1);  // (sum(x^2), sum(y^2))
+  const auto sum3 = this->sum.col(2);  // (sum(x^3 + x + y^2), sum(y^3 + x^2 + y))
+  const float sumXY = this->sum(0, 3); // sum(xy)
+  const float nInv = 1.f / static_cast<float>(count);
 
-  float suu = 0, suv = 0, svv = 0, c1 = 0, c2 = 0;
+  // Calculate mean, variance and covariance
+  const Vector2f mean(sum * nInv);
+  const Vector2f var(sum2 - nInv * sum.cwiseProduct(sum)); // (var_x * count, var_y * count)
+  const float covXY = sumXY - nInv * sum.x() * sum.y();    // cov_xy * count
 
-  for(const Vector2f& p : points)
-  {
-    const Vector2f normPoint(p - avg);
+  const float divisor = 2.f * (var.x() * var.y() - sqr(covXY));
+  if(Approx::isZero(divisor))
+    return false;
 
-    suu += normPoint.x() * normPoint.x();
-    suv += normPoint.x() * normPoint.y();
-    svv += normPoint.y() * normPoint.y();
-    c1 += normPoint.x() * normPoint.x() * normPoint.x() + normPoint.x() * normPoint.y() * normPoint.y();
-    c2 += normPoint.y() * normPoint.y() * normPoint.y() + normPoint.y() * normPoint.x() * normPoint.x();
-  }
-  c1 /= 2;
-  c2 /= 2;
+  const float coeff1 = 2.f * nInv * sum.squaredNorm();
+  const float coeff2 = -2.f * sumXY;
+  const Matrix2f m1((Matrix2f() <<
+                     (coeff1 - 3.f * sum2.x() - sum2.y()), coeff2,
+                     coeff2, (coeff1 - 3.f * sum2.y() - sum2.x())
+                    ).finished());
 
-  const float divisor = suu * svv - suv * suv;
-  if(divisor == 0)
-  {
-    // No solution -> no circle can be fitted
-    radius = std::numeric_limits<float>::infinity();
-    return;
-  }
-  const Vector2f c = Vector2f(svv * c1 - c2 * suv, suu * c2 - c1 * suv) / divisor;
-  center = c + avg;
+  const Matrix2f m2((Matrix2f() <<
+                     var.y(), -covXY,
+                     -covXY, var.x()
+                    ).finished());
 
-  radius = std::sqrt(c.squaredNorm() + (suu + svv) / static_cast<float>(points.size()));
+  const Vector2f c(m2 * ((sum3 + m1 * mean) / divisor));
+
+  center = c + mean;
+  radius = std::sqrt(c.squaredNorm() + nInv * var.sum());
+
+  return true;
 }

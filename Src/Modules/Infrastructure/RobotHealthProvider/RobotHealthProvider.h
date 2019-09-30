@@ -13,11 +13,6 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
-#include "Representations/Perception/BallPercepts/BallPercept.h"
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
-#ifdef TARGET_ROBOT
-#include "Platform/Nao/NaoBody.h"
-#endif
 
 MODULE(RobotHealthProvider,
 {,
@@ -51,7 +46,6 @@ class RobotHealthProvider : public RobotHealthProviderBase
   unsigned highTemperatureSince = 0;
   unsigned highCPUTemperatureSince = 0;
 #ifdef TARGET_ROBOT
-  NaoBody naoBody;
   unsigned int lastWlanCheckedTime = 0;
 #endif
 

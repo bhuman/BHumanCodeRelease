@@ -96,6 +96,7 @@ typedef void (*QImageCleanupFunction)(void*);
 
 class Q_GUI_EXPORT QImage : public QPaintDevice
 {
+    Q_GADGET
 public:
     enum InvertMode { InvertRgb, InvertRgba };
     enum Format {
@@ -124,6 +125,9 @@ public:
         Format_A2RGB30_Premultiplied,
         Format_Alpha8,
         Format_Grayscale8,
+        Format_RGBX64,
+        Format_RGBA64,
+        Format_RGBA64_Premultiplied,
 #if 0
         // reserved for future use
         Format_Grayscale16,
@@ -132,6 +136,7 @@ public:
         NImageFormats
 #endif
     };
+    Q_ENUM(Format)
 
     QImage() Q_DECL_NOEXCEPT;
     QImage(const QSize &size, Format format);
@@ -222,7 +227,11 @@ public:
     uchar *scanLine(int);
     const uchar *scanLine(int) const;
     const uchar *constScanLine(int) const;
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+    qsizetype bytesPerLine() const;
+#else
     int bytesPerLine() const;
+#endif
 
     bool valid(int x, int y) const;
     bool valid(const QPoint &pt) const;
@@ -329,7 +338,7 @@ public:
     static QPixelFormat toPixelFormat(QImage::Format format) Q_DECL_NOTHROW;
     static QImage::Format toImageFormat(QPixelFormat format) Q_DECL_NOTHROW;
 
-    // Platform spesific conversion functions
+    // Platform specific conversion functions
 #if defined(Q_OS_DARWIN) || defined(Q_QDOC)
     CGImageRef toCGImage() const Q_DECL_CF_RETURNS_RETAINED;
 #endif

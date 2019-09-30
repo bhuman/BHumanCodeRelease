@@ -10,55 +10,70 @@ dr debugDrawing3d:representation:TeamInfo
 # In case we have more than a single robot
 robot all
 
+# Fast, because we do not compute images
+ci off
+
 # Ground truth modules
-mr GroundTruthWorldState CognitionLogDataProvider
-mr GroundTruthRobotPose OracledWorldModelProvider
-mr GroundTruthBallModel OracledWorldModelProvider
+mr GroundTruthWorldState LogDataProvider Cognition
+mr GroundTruthRobotPose OracledWorldModelProvider Cognition
+mr GroundTruthBallModel OracledWorldModelProvider Cognition
 
 # Field views need ground truth and some later deactivated modules
 call Includes/FieldViews
 
-# Deactivate unused modules
-mr RobotHealth default
+# Select modules for simulator
+mr CameraInfo LogDataProvider Lower
+mr CameraInfo LogDataProvider Upper
+mr FrameInfo LogDataProvider Lower
+mr FrameInfo LogDataProvider Upper
+mr FrameInfo LogDataProvider Motion
+mr FsrSensorData LogDataProvider Motion
+mr InertialSensorData LogDataProvider Motion
+mr JointSensorData LogDataProvider Motion
+mr KeyStates LogDataProvider Motion
 
-# Switch to percept oracle or off
+# Switch to percept oracle
+mr BallPercept OracledPerceptsProvider Lower
+mr BallPercept OracledPerceptsProvider Upper
+mr CirclePercept OracledPerceptsProvider Lower
+mr CirclePercept OracledPerceptsProvider Upper
+mr FieldBoundary OracledPerceptsProvider Lower
+mr FieldBoundary OracledPerceptsProvider Upper
+mr LinesPercept OracledPerceptsProvider Lower
+mr LinesPercept OracledPerceptsProvider Upper
+mr ObstaclesFieldPercept OracledPerceptsProvider Lower
+mr ObstaclesFieldPercept OracledPerceptsProvider Upper
+mr ObstaclesImagePercept OracledPerceptsProvider Lower
+mr ObstaclesImagePercept OracledPerceptsProvider Upper
+mr PenaltyMarkPercept OracledPerceptsProvider Lower
+mr PenaltyMarkPercept OracledPerceptsProvider Upper
+
+# Representations not required anymore
 mr AutoExposureWeightTable off
-mr ECImage default
-mr ObstaclesImagePercept OracledPerceptsProvider
-mr ObstaclesFieldPercept OracledPerceptsProvider
-mr LinesPercept OracledPerceptsProvider
-mr CirclePercept OracledPerceptsProvider
-mr BallPercept OracledPerceptsProvider
-mr FieldBoundary OracledPerceptsProvider
-mr PenaltyMarkPercept OracledPerceptsProvider
-mr GoalFrame default
-mr CNSImage off
-mr CNSRegions off
 mr BallRegions off
-mr ConfirmedBallSpot off
-mr CNSPenaltyMarkRegions off
-mr PenaltyMarkSpots off
-mr PenaltyMarkRegions off
 mr BallSpots off
-mr ColorScanlineRegionsHorizontal off
-mr ColorScanlineRegionsVerticalClipped off
-mr ColorScanlineRegionsVertical default
+mr CameraImage off
+mr CameraIntrinsics off
+mr CNSImage off
+mr CNSPenaltyMarkRegions off
+mr CNSRegions off
+mr ColorScanLineRegionsHorizontal off
+mr ColorScanLineRegionsVertical off
+mr ColorScanLineRegionsVerticalClipped off
+mr ECImage off
+mr JPEGImage off
+mr ObstaclesPerceptorData off
+mr OtherFieldBoundary off
+mr OtherObstaclesPerceptorData off
+mr PenaltyMarkRegions off
+mr PenaltyMarkSpots off
 mr ScanGrid off
 mr Thumbnail off
-mr ECImage off
-mr Image default
 
-# Select modules for simulator
-mr CameraInfo CognitionLogDataProvider
-mr FrameInfo CognitionLogDataProvider
-mr JointSensorData MotionLogDataProvider
-mr InertialSensorData MotionLogDataProvider
-mr KeyStates MotionLogDataProvider
-mr FrameInfo MotionLogDataProvider
+# Representations that are still required
+mr CameraStatus default
 mr FieldFeatureOverview default
-
-# Fast, because we do not compute images
-ci off
+mr RobotHealth default
 
 call Includes/DebugResponses
 call Includes/GameStates

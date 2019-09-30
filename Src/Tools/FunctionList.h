@@ -35,15 +35,15 @@ public:
    * Creating an instance of this class adds a function to the list.
    * @tparam function The function inserted into the list.
    */
-  template<void (*const function)()> class Registrator
+  template<void (*const function)()> class Registrar
   {
     static Element element; /**< The list element actually created. */
 
   public:
     /** This constructor is required to create a dependency to "element" for the linker. */
-    Registrator()
+    Registrar()
     {
-      static_cast<void>(&Registrator::element);
+      static_cast<void>(&Registrar::element);
     }
   };
 
@@ -51,14 +51,14 @@ public:
   static void execute();
 };
 
-template<void (*const function)()> FunctionList::Element FunctionList::Registrator<function>::element = FunctionList::Element(function);
+template<void (*const function)()> FunctionList::Element FunctionList::Registrar<function>::element = FunctionList::Element(function);
 
 /**
  * Add a global/static function to the global function list to be executed at launch.
  * The function must have global linkage, i.e. it must be either a static method within
  * a class or a non-static function outside a class. While functions normally can
  * publish themselves, this does not work if they are members of template classes. In
- * that can, the PUBLISH statement must be inside a method that will definitly be
+ * that can, the PUBLISH statement must be inside a method that will definitely be
  * instantiated.
  */
-#define PUBLISH(...) {static FunctionList::Registrator<__VA_ARGS__> publish;}
+#define PUBLISH(...) {static FunctionList::Registrar<__VA_ARGS__> publish;}

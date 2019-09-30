@@ -49,3 +49,5 @@ STREAMABLE(FieldBoundary,
   (InImage) boundaryInImage,   ///< The boundary in image coordinates.
   (bool)(false) isValid,       ///< True if a boundary could be detected.
 });
+
+STREAMABLE_WITH_BASE(OtherFieldBoundary, FieldBoundary, {,});

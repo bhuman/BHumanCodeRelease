@@ -9,7 +9,7 @@ class SimCmd : public CommandAdapter
   std::string getDescription() const override;
   bool execute(Context& context, const std::vector<std::string>& params) override;
   std::string getSimulatorExecutable(const std::string& buildConfig);
-  
+
 public:
   static SimCmd theSimCmd;
 };

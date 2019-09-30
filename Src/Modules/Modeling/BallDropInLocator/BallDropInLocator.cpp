@@ -3,11 +3,10 @@
  *
  * This file implements a module that computes the position where the ball is put after it goes out.
  *
- * @author Arne Hasselbring
+ * @author Arne Hasselbring, Nicole Schrader
  */
 
 #include "BallDropInLocator.h"
-
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/BHMath.h"
 
@@ -24,13 +23,16 @@ BallDropInLocator::BallDropInLocator()
 void BallDropInLocator::update(BallDropInModel& ballDropInModel)
 {
   DECLARE_DEBUG_DRAWING("module:BallDropInLocator:ballTouchEvents", "drawingOnField");
+  DECLARE_DEBUG_DRAWING("module:BallDropInLocator:predictedOutPosition", "drawingOnField");
 
   ballDropInModel.isValid = false;
+  ballDropInModel.dropInPositions.clear();
 
   if(theGameInfo.state != STATE_PLAYING || theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
   {
     for(unsigned int i = 0; i < numOfTouchedBys; ++i)
       lastTouchEvents[i].timestamp = 0;
+    ballWasOnField = true;
     return;
   }
 
@@ -38,27 +40,37 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
   updateBall(ballDropInModel);
   updateGameControllerData(ballDropInModel);
 
-  // TODO: Check in which direction the ball was rolling.
-  const bool outLeft = (useOutPosition ? ballDropInModel.outPosition.y() : lastBallPositionLyingInsideField.y()) >= 0.f;
+  const bool outLeft = (useOutPosition ? ballDropInModel.outPosition.y() : predictedOutPosition.y()) >= 0.f;
 
-  if(ballDropInModel.isGoalFreeKickOut)
+  switch(ballDropInModel.dropInType)
   {
-    ballDropInModel.dropInPosition.x() = ownTeamTouchedLast ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark;
-    ballDropInModel.dropInPosition.y() = outLeft ? theFieldDimensions.yPosLeftPenaltyArea : theFieldDimensions.yPosRightPenaltyArea;
-
-    ballDropInModel.isValid = true;
-  }
-  else
-  {
-    Vector2f lastTouchPosition;
-    if(determineLastTouchPosition(lastTouchPosition))
-    {
-      ballDropInModel.dropInPosition.x() = lastTouchPosition.x() + (ownTeamTouchedLast ? -dropInPenaltyDistance : dropInPenaltyDistance);
-      ballDropInModel.dropInPosition.x() = clip(ballDropInModel.dropInPosition.x(), theFieldDimensions.xPosOwnDropInLine, theFieldDimensions.xPosOpponentDropInLine);
-      ballDropInModel.dropInPosition.y() = outLeft ? theFieldDimensions.yPosLeftDropInLine : theFieldDimensions.yPosRightDropInLine;
-
-      ballDropInModel.isValid = true;
-    }
+    case BallDropInModel::goalFreeKick:
+      ballDropInModel.dropInPositions.emplace_back(
+        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark,
+        outLeft ? theFieldDimensions.yPosLeftPenaltyArea : theFieldDimensions.yPosRightPenaltyArea);
+      ballDropInModel.dropInPositions.emplace_back(
+        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark,
+        outLeft ? theFieldDimensions.yPosRightPenaltyArea : theFieldDimensions.yPosLeftPenaltyArea);
+      ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK;
+      break;
+    case BallDropInModel::cornerKick:
+      ballDropInModel.dropInPositions.emplace_back(
+        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundline : theFieldDimensions.xPosOpponentGroundline,
+        outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
+      ballDropInModel.dropInPositions.emplace_back(
+        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundline : theFieldDimensions.xPosOpponentGroundline,
+        outLeft ? theFieldDimensions.yPosRightSideline : theFieldDimensions.yPosLeftSideline);
+      ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_CORNER_KICK;
+      break;
+    case BallDropInModel::kickIn:
+      ballDropInModel.dropInPositions.emplace_back(
+        clip(useOutPosition ? ballDropInModel.outPosition.x() : predictedOutPosition.x(),
+             theFieldDimensions.xPosOwnGroundline, theFieldDimensions.xPosOpponentGroundline),
+        outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
+      ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_KICK_IN;
+      break;
+    default:
+      break;
   }
 
   draw();
@@ -66,49 +78,46 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
 
 void BallDropInLocator::updateTouchPositions()
 {
-  // When entering a goal free kick, nothing should depend on old events anymore.
-  if(theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK)
+  // When entering a ball replacing free kick, nothing should depend on old events anymore.
+  if((theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK) ||
+     (theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK) ||
+     (theCognitionStateChanges.lastSetPlay != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN))
   {
     for(unsigned int i = 0; i < numOfTouchedBys; ++i)
       lastTouchEvents[i].timestamp = 0;
     return;
   }
 
-  if(theTeamBallModel.isValid)
+  if(!theTeamBallModel.isValid)
+    return;
+
+  if((theRobotPose.translation - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
   {
-    // TODO: This can be improved, e.g. by considering the trajectory of the ball and whether it has crossed the circle of some robot.
+    lastTouchEvents[ownTeam].timestamp = theFrameInfo.time;
+    lastTouchEvents[ownTeam].positionOnField = theRobotPose.translation;
+  }
 
-    // TODO: Do something sensible when multiple robots are in the ball radius at once.
-    // It probably does not matter anyway because their positions can't differ too much.
-
-    if((theRobotPose.translation - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
+  for(const auto& teammate : theTeamData.teammates)
+  {
+    if(teammate.status == Teammate::PENALIZED
+       && theOwnTeamInfo.players[teammate.number - 1].penalty != PENALTY_SPL_ILLEGAL_MOTION_IN_SET
+       && theFrameInfo.getTimeSince(teammate.timeWhenStatusChanged) > timeUntilPenalizedRobotsAreRemoved)
+      continue;
+    if((teammate.theRobotPose.translation - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
     {
       lastTouchEvents[ownTeam].timestamp = theFrameInfo.time;
-      lastTouchEvents[ownTeam].positionOnField = theRobotPose.translation;
+      lastTouchEvents[ownTeam].positionOnField = teammate.theRobotPose.translation;
     }
-
-    for(const auto& teammate : theTeamData.teammates)
-    {
-      if(teammate.status == Teammate::PENALIZED
-         && theOwnTeamInfo.players[teammate.number - 1].penalty != PENALTY_SPL_ILLEGAL_MOTION_IN_SET
-         && theFrameInfo.getTimeSince(teammate.timeWhenStatusChanged) > timeUntilPenalizedRobotsAreRemoved)
-        continue;
-      if((teammate.theRobotPose.translation - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
-      {
-        lastTouchEvents[ownTeam].timestamp = theFrameInfo.time;
-        lastTouchEvents[ownTeam].positionOnField = teammate.theRobotPose.translation;
-      }
-    }
-
-    for(const auto& obstacle : theTeamPlayersModel.obstacles)
-      if(!obstacle.isTeammate() && obstacle.type != Obstacle::goalpost
-         && (obstacle.center - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
-      {
-        const TouchedBy touchedBy = obstacle.isOpponent() ? opponentTeam : unknown;
-        lastTouchEvents[touchedBy].timestamp = theFrameInfo.time;
-        lastTouchEvents[touchedBy].positionOnField = obstacle.center;
-      }
   }
+
+  for(const auto& obstacle : theTeamPlayersModel.obstacles)
+    if(!obstacle.isTeammate() && obstacle.type != Obstacle::goalpost
+       && (obstacle.center - theTeamBallModel.position).squaredNorm() < ballTouchThresholdSquared)
+    {
+      const TouchedBy touchedBy = obstacle.isOpponent() ? opponentTeam : unknown;
+      lastTouchEvents[touchedBy].timestamp = theFrameInfo.time;
+      lastTouchEvents[touchedBy].positionOnField = obstacle.center;
+    }
 }
 
 void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
@@ -116,75 +125,81 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
   if(!theTeamBallModel.isValid)
     return;
 
-  auto isInsideCorrected = [this](const Vector2f& ballOnField) -> bool
+  auto isInsideCorrected = [this](const Vector2f& ballOnField, float addOffset) -> bool
   {
     // Yes, this is not exact in the corners :)
     // and assumes that the field is longer and wider than 2 * `offset`...
-    const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius + safetyMargin;
+    const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius + addOffset;
     return theFieldDimensions.isInsideField(Vector2f(ballOnField.x() - sgn(ballOnField.x()) * offset, ballOnField.y() - sgn(ballOnField.y()) * offset));
   };
 
-  if(isInsideCorrected(theTeamBallModel.position))
+  if(isInsideCorrected(theTeamBallModel.position, ballWasOnField ? safetyMargin : 0.f))
   {
     if(theTeamBallModel.velocity.squaredNorm() < 1.f)
+      predictedOutPosition = theTeamBallModel.position;
+    else
     {
-      lastBallPositionLyingInsideField = theTeamBallModel.position;
-      useOutPosition = false;
+      const bool movingToLeft = theTeamBallModel.velocity.y() > 0.f;
+      const bool movingToOpponent = theTeamBallModel.velocity.x() > 0.f;
+      const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius;
+      const Geometry::Line sideline(Vector2f(0.f, movingToLeft ? (theFieldDimensions.yPosLeftSideline + offset) : (theFieldDimensions.yPosRightSideline - offset)), Vector2f(1.f, 0.f));
+      const Geometry::Line groundline(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGroundline + offset) : (theFieldDimensions.xPosOwnGroundline - offset), 0.f), Vector2f(0.f, 1.f));
+      const Geometry::Line ballDirection(theTeamBallModel.position, theTeamBallModel.velocity);
+      Vector2f intersection;
+      if(Geometry::getIntersectionOfLines(ballDirection, sideline, intersection) &&
+         intersection.x() >= theFieldDimensions.xPosOwnGroundline - offset && intersection.x() <= theFieldDimensions.xPosOpponentGroundline + offset)
+        predictedOutPosition = intersection;
+      else if(Geometry::getIntersectionOfLines(ballDirection, groundline, intersection) &&
+              intersection.y() >= theFieldDimensions.yPosRightSideline - offset && intersection.y() <= theFieldDimensions.yPosLeftSideline + offset)
+        predictedOutPosition = intersection;
     }
+    useOutPosition = false;
+    ballWasOnField = true;
     ballDropInModel.lastTimeWhenBallWasOnTheField = theFrameInfo.time;
   }
-  else if(isInsideCorrected(lastBallPosition))
+  else if(ballWasOnField)
   {
     ballDropInModel.outPosition = theTeamBallModel.position;
     ballDropInModel.lastTimeWhenBallOutWasObserved = theFrameInfo.time;
-    if(theFrameInfo.getTimeSince(ballDropInModel.lastTimeWhenBallWentOut) > 3000)
+    if(theGameInfo.setPlay == SET_PLAY_NONE)
     {
-      // TODO: add "don't know" state
       ownTeamTouchedLast = lastTouchEvents[ownTeam].timestamp >= std::max(lastTouchEvents[opponentTeam].timestamp, lastTouchEvents[unknown].timestamp);
-      if(theTeamBallModel.position.x() > 0.f == ownTeamTouchedLast)
-      {
-        const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius;
-        const Geometry::Line groundLine(Vector2f(ownTeamTouchedLast ? theFieldDimensions.xPosOpponentGroundline + offset : theFieldDimensions.xPosOwnGroundline - offset, 0.f), Vector2f(1.f, 0.f));
-        const Geometry::Line ballDirection(lastBallPosition, theTeamBallModel.position - lastBallPosition);
-        Vector2f intersection;
-        ballDropInModel.isGoalFreeKickOut = Geometry::getIntersectionOfLines(groundLine, ballDirection, intersection)
-                                            && std::abs(intersection.y()) < theFieldDimensions.yPosLeftSideline;
-      }
+      if((theTeamBallModel.position.x() > 0.f == ownTeamTouchedLast) &&
+         (theTeamBallModel.position.y() < theFieldDimensions.yPosLeftSideline) &&
+         (theTeamBallModel.position.y() > theFieldDimensions.yPosRightSideline))
+        ballDropInModel.dropInType = BallDropInModel::goalFreeKick;
+      else if((theTeamBallModel.position.x() > 0.f != ownTeamTouchedLast) &&
+              (theTeamBallModel.position.y() < theFieldDimensions.yPosLeftSideline) &&
+              (theTeamBallModel.position.y() > theFieldDimensions.yPosRightSideline))
+        ballDropInModel.dropInType = BallDropInModel::cornerKick;
       else
-        ballDropInModel.isGoalFreeKickOut = false;
+        ballDropInModel.dropInType = BallDropInModel::kickIn;
     }
     useOutPosition = true;
+    ballWasOnField = false;
   }
-  lastBallPosition = theTeamBallModel.position;
 }
 
 void BallDropInLocator::updateGameControllerData(BallDropInModel& ballDropInModel)
 {
-  if(theGameInfo.dropInTime == 0 && theGameInfo.dropInTime != lastDropInTime)
-  {
-    ownTeamTouchedLast = theGameInfo.dropInTeam == theOwnTeamInfo.teamNumber;
-    ballDropInModel.isGoalFreeKickOut = false;
-    ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
-  }
-  else if(theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK)
+  if(theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK)
   {
     ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
-    ballDropInModel.isGoalFreeKickOut = true;
+    ballDropInModel.dropInType = BallDropInModel::goalFreeKick;
     ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
   }
-  lastDropInTime = theGameInfo.dropInTime;
-}
-
-bool BallDropInLocator::determineLastTouchPosition(Vector2f& lastTouchPosition) const
-{
-  const BallTouchEvent* usedEvent = &lastTouchEvents[ownTeamTouchedLast ? ownTeam : opponentTeam];
-  // If no event has been observed with a certain affiliation, the unknown event may be used.
-  if(theFrameInfo.getTimeSince(usedEvent->timestamp) > rememberEventDuration)
-    usedEvent = &lastTouchEvents[unknown];
-  // TODO: Maybe the unknown event should be used if not ownTeamKicked and it is newer than the newest opponentTeam event.
-
-  lastTouchPosition = usedEvent->positionOnField;
-  return theFrameInfo.getTimeSince(usedEvent->timestamp) <= rememberEventDuration;
+  else if(theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK)
+  {
+    ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
+    ballDropInModel.dropInType = BallDropInModel::cornerKick;
+    ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
+  }
+  else if(theCognitionStateChanges.lastSetPlay != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN)
+  {
+    ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
+    ballDropInModel.dropInType = BallDropInModel::kickIn;
+    ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
+  }
 }
 
 void BallDropInLocator::draw() const
@@ -195,13 +210,18 @@ void BallDropInLocator::draw() const
     for(unsigned int i = 0; i < numOfTouchedBys; ++i)
     {
       ColorRGBA color = i != unknown
-                      ? ColorRGBA::fromTeamColor((i == ownTeam) ? theOwnTeamInfo.teamColor : theOpponentTeamInfo.teamColor)
-                      : ColorRGBA::orange;
+                        ? ColorRGBA::fromTeamColor((i == ownTeam) ? theOwnTeamInfo.teamColor : theOpponentTeamInfo.teamColor)
+                        : ColorRGBA::orange;
       const int age = theFrameInfo.getTimeSince(lastTouchEvents[i].timestamp);
       if(age > rememberEventDuration)
         continue;
       color.a = static_cast<unsigned char>(255 - 255 * age / rememberEventDuration);
       CROSS("module:BallDropInLocator:ballTouchEvents", lastTouchEvents[i].positionOnField.x(), lastTouchEvents[i].positionOnField.y(), 75, 30, Drawings::solidPen, color);
     }
+  }
+
+  DEBUG_DRAWING("module:BallDropInLocator:predictedOutPosition", "drawingOnField")
+  {
+    CROSS("module:BallDropInLocator:predictedOutPosition", predictedOutPosition.x(), predictedOutPosition.y(), 75, 30, Drawings::solidPen, ColorRGBA::black);
   }
 }

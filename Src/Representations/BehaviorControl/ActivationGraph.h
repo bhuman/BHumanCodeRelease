@@ -1,9 +1,9 @@
 /**
- * @file ActivationGraph
+ * @file ActivationGraph.h
  *
  * The graph of executed options and states.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -55,3 +55,7 @@ inline void ActivationGraph::verify() const
 {
   ASSERT(currentDepth == 0);
 }
+
+STREAMABLE_WITH_BASE(TeamActivationGraph, ActivationGraph,
+{,
+});

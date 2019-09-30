@@ -28,6 +28,7 @@ defines = {
   } else if (host == "Win32") {
     "WINDOWS"
     "NOMINMAX"
+    "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS"
   } else if (platform == "MacOSX") {
     "MACOS"
   }
@@ -56,7 +57,7 @@ cppFlags = {
       "/Ox /Ob2 /Oi /Ot /Oy /GT"
     }
   } else {
-    "-std=c++11"
+    "-std=c++17"
     "-pipe"
     "-mssse3"
     "-fPIC"

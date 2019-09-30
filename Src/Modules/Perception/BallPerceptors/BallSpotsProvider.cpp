@@ -19,13 +19,13 @@ void BallSpotsProvider::update(BallSpots& ballSpots)
   // Add a prediction based on the previous ball model to the candidates
   ballSpots.firstSpotIsPredicted = false;
   Vector2f predictionInImage;
-  if (theFrameInfo.getTimeSince(theWorldModelPrediction.timeWhenBallLastSeen) < 100
-    && Transformation::robotToImage(Vector3f(theWorldModelPrediction.ballPosition.x(), theWorldModelPrediction.ballPosition.y(), theBallSpecification.radius), theCameraMatrix, theCameraInfo, predictionInImage))
+  if(theFrameInfo.getTimeSince(theWorldModelPrediction.timeWhenBallLastSeen) < 100
+     && Transformation::robotToImage(Vector3f(theWorldModelPrediction.ballPosition.x(), theWorldModelPrediction.ballPosition.y(), theBallSpecification.radius), theCameraMatrix, theCameraInfo, predictionInImage))
   {
     predictionInImage = theImageCoordinateSystem.fromCorrected(predictionInImage);
     const int x = static_cast<int>(std::round(predictionInImage.x())), y = static_cast<int>(std::round(predictionInImage.y()));
 
-    if (x >= 0 && x < theCameraInfo.width && y >= 0 && y < theCameraInfo.height)
+    if(x >= 0 && x < theCameraInfo.width && y >= 0 && y < theCameraInfo.height)
     {
       ballSpots.firstSpotIsPredicted = true;
       ballSpots.addBallSpot(x, y);
@@ -38,22 +38,22 @@ void BallSpotsProvider::update(BallSpots& ballSpots)
 void BallSpotsProvider::searchScanLines(BallSpots& ballSpots) const
 {
   //todo body and fieldline
-  const unsigned step = theColorScanlineRegionsVerticalClipped.lowResStep > 1 ? theColorScanlineRegionsVerticalClipped.lowResStep / 2 : 1;
-  const unsigned start = theColorScanlineRegionsVerticalClipped.lowResStart >= step ? theColorScanlineRegionsVerticalClipped.lowResStart - step : theColorScanlineRegionsVerticalClipped.lowResStart;
+  const unsigned step = theColorScanLineRegionsVerticalClipped.lowResStep > 1 ? theColorScanLineRegionsVerticalClipped.lowResStep / 2 : 1;
+  const unsigned start = theColorScanLineRegionsVerticalClipped.lowResStart >= step ? theColorScanLineRegionsVerticalClipped.lowResStart - step : theColorScanLineRegionsVerticalClipped.lowResStart;
   Geometry::Circle circle;
 
-  for(unsigned scanLineIndex = start; scanLineIndex < theColorScanlineRegionsVerticalClipped.scanlines.size(); scanLineIndex += step)
+  for(unsigned scanLineIndex = start; scanLineIndex < theColorScanLineRegionsVerticalClipped.scanLines.size(); scanLineIndex += step)
   {
     int lowestYOfCurrentArea = 0;
     int currentLengthNeeded = 0;
-    for(const ScanlineRegion& region : theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].regions)
+    for(const ScanLineRegion& region : theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].regions)
     {
       if(!region.is(FieldColors::field))
       {
         if(currentLengthNeeded == 0)
         {
           lowestYOfCurrentArea = region.range.lower;
-          currentLengthNeeded = static_cast<int>(getNeededLengthFor(theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].x, region.range.lower, circle));
+          currentLengthNeeded = static_cast<int>(getNeededLengthFor(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, region.range.lower, circle));
           if(!currentLengthNeeded)
             break;
         }
@@ -67,9 +67,9 @@ void BallSpotsProvider::searchScanLines(BallSpots& ballSpots) const
 
           if(lowestYOfCurrentArea - region.range.lower > currentLengthNeeded)
             ballSpots.ballSpots.emplace_back(circle.center.cast<int>());
-          else if(currentLengthNeeded != 0 && lowestYOfCurrentArea == theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].regions.front().range.lower &&
+          else if(currentLengthNeeded != 0 && lowestYOfCurrentArea == theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].regions.front().range.lower &&
                   (scanLineIndex - start) % step == 0 && lowestYOfCurrentArea - region.range.lower > currentLengthNeeded / 2)
-            ballSpots.ballSpots.emplace_back(theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].x, (lowestYOfCurrentArea + region.range.lower) / 2);
+            ballSpots.ballSpots.emplace_back(theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].x, (lowestYOfCurrentArea + region.range.lower) / 2);
           else
             foundSpot = false;
 
@@ -90,9 +90,9 @@ void BallSpotsProvider::searchScanLines(BallSpots& ballSpots) const
       }
     }
 
-    if(allowScanlineTopSpotFitting
+    if(allowScanLineTopSpotFitting
        && currentLengthNeeded > sqr(minRadiusOfWantedRegion)
-       && lowestYOfCurrentArea - theColorScanlineRegionsVerticalClipped.scanlines[scanLineIndex].regions.back().range.upper > std::sqrt(currentLengthNeeded)
+       && lowestYOfCurrentArea - theColorScanLineRegionsVerticalClipped.scanLines[scanLineIndex].regions.back().range.upper > std::sqrt(currentLengthNeeded)
        && !isSpotClearlyInsideARobot(circle.center.cast<int>(), circle.radius))
     {
       ballSpots.ballSpots.emplace_back(circle.center.cast<int>());

@@ -7,29 +7,29 @@
 
 #pragma once
 
+#include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/Whistle.h"
 #include "Tools/Module/Module.h"
 
 MODULE(WhistleHandler,
 {,
+  USES(TeamBallModel),
   REQUIRES(FrameInfo),
   REQUIRES(OwnTeamInfo),
   REQUIRES(RawGameInfo),
   REQUIRES(TeamData),
-  REQUIRES(TeamBallModel),
   REQUIRES(Whistle),
   PROVIDES(GameInfo),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (unsigned)(500) maxTimeDifference,
-    (bool)(false) useBallPosition,
-    (float)(300.f) maxBallToMiddleDistance,
-    (float)(48.f) minAvgConfidence,
+    (unsigned) maxTimeDifference,
+    (bool) useBallPosition,
+    (float) maxBallToMiddleDistance,
+    (float) minAvgConfidence,
   }),
 });
 

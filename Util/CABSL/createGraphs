@@ -109,7 +109,7 @@ while read line; do
   elif [ "$type" == "call" ]; then
     echo "$option -> $id;" >>"$optionsTmp"
     if [ "$state" == "" ]; then
-      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, dir = both, arrowtail = dot, color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
       echo "option_ [style = invis];" >>"$internalTmp"
     else
       echo "$state -> option_$id [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"

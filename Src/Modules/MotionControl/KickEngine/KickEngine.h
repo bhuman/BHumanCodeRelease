@@ -37,12 +37,14 @@ MODULE(KickEngine,
   REQUIRES(TorsoMatrix),
   PROVIDES(KickEngineOutput),
 });
+
 class KickEngine : public KickEngineBase
 {
 private:
   KickEngineData data;
   bool compensate = false;
   bool compensated = false;
+  int boostState = 0;
   unsigned timeSinceLastPhase = 0;
   KickRequest lastValidKickRequest;
 

@@ -1,7 +1,7 @@
 [Unit]
 Description=B-Human LAN network configuration
-After=dbus.service
-Before=network.target
+After=dbus.service network-pre.target
+Before=network.target multi-user.target
 Wants=network.target
 Conflicts=connman.service
 

@@ -21,7 +21,7 @@ class TypeRegistry
 {
 public:
   /**
-   * Add the name of an enumeration to the registory.
+   * Add the name of an enumeration to the registry.
    * Must only be called once for each enumeration type.
    * @param enumeration The name of the enumeration type.
    */
@@ -31,14 +31,14 @@ public:
    * Add a constant of an enumeration type to the registry.
    * The enumeration type must already have been registered when calling this function.
    * All enumeration constants must be registered in the sequence they are defined. In
-   * addition, their numerial values must start with 0 and continue in increments of 1.
+   * addition, their numerical values must start with 0 and continue in increments of 1.
    * @param enumeration The name of the enumeration type.
    * @param name The name of the enumeration constant.
    */
   static void addEnumConstant(const char* enumeration, const char* name);
 
   /**
-   * Add the name of a class or structure to the registory.
+   * Add the name of a class or structure to the registry.
    * Must only be called once for each class or structure.
    * @param theClass The name of the class or structure.
    */
@@ -55,7 +55,7 @@ public:
   static void addAttribute(const char* theClass, const char* type, const char* attribute);
 
   /**
-   * Determine the name of an enumuration constant from its numerical value.
+   * Determine the name of an enumeration constant from its numerical value.
    * @param enumeration The name of the enumeration type.
    * @param value The numerical value of the enumeration constant.
    * @return The name of the constant or nullptr, if index is not within the value range
@@ -64,7 +64,7 @@ public:
   static const char* getEnumName(const char* enumeration, int value);
 
   /**
-   * Determine the name of an enumuration constant from its numerical value.
+   * Determine the name of an enumeration constant from its numerical value.
    * @param value The numerical value of the enumeration constant.
    * @return The name of the constant or nullptr, if index is not within the value range
    *         of the enumeration type.

@@ -10,10 +10,10 @@
 
 #include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Platform/Time.h"
+#include "Tools/Math/Angle.h"
 
+#include <algorithm>
 #include <limits>
-
-static_assert(std::numeric_limits<char>::is_signed, "This code expects that char is signed.");
 
 STREAMABLE(Whistle, COMMA public BHumanMessageParticle<idWhistle>
 {
@@ -21,14 +21,16 @@ STREAMABLE(Whistle, COMMA public BHumanMessageParticle<idWhistle>
   void operator>>(BHumanMessage& m) const override;
   void operator<<(const BHumanMessage& m) override,
 
-  (char)(0)         confidenceOfLastWhistleDetection, /**< Confidence based on hearing capability */
-  (unsigned int)(0) lastTimeWhistleDetected,          /**< Timestamp */
+  (float)(0)         confidenceOfLastWhistleDetection, /**< Confidence based on hearing capability. */
+  (unsigned char)(0) channelsUsedForWhistleDetection,  /**< Number of channels the robot used to listen. */
+  (unsigned int)(0)  lastTimeWhistleDetected,          /**< Timestamp */
 });
 
 inline void Whistle::operator>>(BHumanMessage& m) const
 {
   m.theBHumanStandardMessage.lastTimeWhistleDetected = lastTimeWhistleDetected;
-  m.theBHumanStandardMessage.confidenceOfLastWhistleDetection = confidenceOfLastWhistleDetection < 0 ? static_cast<char>(-1) : confidenceOfLastWhistleDetection;
+  m.theBHumanStandardMessage.confidenceOfLastWhistleDetection = static_cast<unsigned char>(std::min(confidenceOfLastWhistleDetection * 100.f, 255.f));
+  m.theBHumanStandardMessage.channelsUsedForWhistleDetection = channelsUsedForWhistleDetection;
 }
 
 inline void Whistle::operator<<(const BHumanMessage& m)
@@ -36,8 +38,9 @@ inline void Whistle::operator<<(const BHumanMessage& m)
   if(m.hasBHumanParts)
   {
     lastTimeWhistleDetected = m.toLocalTimestamp(m.theBHumanStandardMessage.lastTimeWhistleDetected);
-    confidenceOfLastWhistleDetection = m.theBHumanStandardMessage.confidenceOfLastWhistleDetection;
+    confidenceOfLastWhistleDetection = m.theBHumanStandardMessage.confidenceOfLastWhistleDetection / 100.f;
+    channelsUsedForWhistleDetection = m.theBHumanStandardMessage.channelsUsedForWhistleDetection;
   }
   else
-    confidenceOfLastWhistleDetection = -1;
+    channelsUsedForWhistleDetection = 0;
 }

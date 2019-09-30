@@ -46,7 +46,7 @@ void ECImageProvider::update(ECImage& ecImage)
 
       ecFunc(theCameraInfo.width * theCameraInfo.height / 16, theCameraImage[0], ecImage.grayscaled[0], ecImage.saturated[0], ecImage.hued[0], ecImage.colored[0]);
     }
-    ecImage.timeStamp = theCameraImage.timestamp;
+    ecImage.timestamp = theCameraImage.timestamp;
   }
 }
 
@@ -58,29 +58,29 @@ void ECImageProvider::compileE()
 
   // Initialize assembler
   CodeHolder code;
-  code.init(Global::getAsmjitRuntime().getCodeInfo());
-  X86Assembler a(&code);
+  code.init(Global::getAsmjitRuntime().codeInfo());
+  x86::Assembler a(&code);
 
   // Emit prolog
-  a.enter(imm_u(0), imm_u(0));
-#if ASMJIT_ARCH_64BIT
-#if ASMJIT_OS_WINDOWS
+  a.enter(imm(0u), imm(0u));
+#if ASMJIT_ARCH_X86 == 64
+#ifdef _WIN32
   // Windows64
-  X86Gp src = a.zdx();
-  X86Gp dest = x86::r8;
+  x86::Gp src = a.zdx();
+  x86::Gp dest = x86::r8;
 #else
   // System V x64
   a.mov(a.zcx(), a.zdi());
-  X86Gp src = a.zsi();
-  X86Gp dest = a.zdx();
+  x86::Gp src = a.zsi();
+  x86::Gp dest = a.zdx();
 #endif
 #else
   // CDECL
-  X86Gp src = a.zdx();
-  X86Gp dest = a.zax();
-  a.mov(a.zcx(), X86Mem(a.zbp(), 8));
-  a.mov(src, X86Mem(a.zbp(), 12));
-  a.mov(dest, X86Mem(a.zbp(), 16));
+  x86::Gp src = a.zdx();
+  x86::Gp dest = a.zax();
+  a.mov(a.zcx(), x86::Mem(a.zbp(), 8));
+  a.mov(src, x86::Mem(a.zbp(), 12));
+  a.mov(dest, x86::Mem(a.zbp(), 16));
 #endif
 
   Label loMask16 = a.newLabel();
@@ -96,12 +96,13 @@ void ECImageProvider::compileE()
   a.pand(x86::xmm1, x86::xmm2);
   a.packuswb(x86::xmm0, x86::xmm1);
 
-  a.add(src, imm_u(16 * 2));
+  a.add(src, imm(16u * 2u));
 
   a.movdqa(x86::ptr(dest), x86::xmm0);
-  a.add(dest, imm_u(16));
+  a.add(dest, imm(16u));
 
-  a.loop(loop);
+  a.dec(a.zcx());
+  a.jnz(loop);
 
   // Emit epilog
   a.leave();
@@ -127,23 +128,23 @@ void ECImageProvider::compileEC()
 
   // Initialize assembler
   CodeHolder code;
-  code.init(Global::getAsmjitRuntime().getCodeInfo());
-  X86Assembler a(&code);
+  code.init(Global::getAsmjitRuntime().codeInfo());
+  x86::Assembler a(&code);
 
   // Define argument registers
-  X86Gp remainingSteps = x86::edi;
-  X86Gp src = a.zsi();
-  X86Gp grayscaled = a.zdx();
-  X86Gp saturated = a.zcx();
-  X86Gp hued = a.zax();
-  X86Gp colored = a.zbx();
+  x86::Gp remainingSteps = x86::edi;
+  x86::Gp src = a.zsi();
+  x86::Gp grayscaled = a.zdx();
+  x86::Gp saturated = a.zcx();
+  x86::Gp hued = a.zax();
+  x86::Gp colored = a.zbx();
 
   // Emit Prolog
   a.push(a.zbp());
   a.mov(a.zbp(), a.zsp());
   a.push(a.zbx());
-#if ASMJIT_ARCH_64BIT
-#if ASMJIT_OS_WINDOWS
+#if ASMJIT_ARCH_X86 == 64
+#ifdef _WIN32
   // Windows64
   a.push(a.zdi());
   a.push(a.zsi());
@@ -151,8 +152,8 @@ void ECImageProvider::compileEC()
   a.mov(src, a.zdx());
   a.mov(grayscaled, x86::r8);
   a.mov(saturated, x86::r9);
-  a.mov(hued, X86Mem(a.zbp(), 16 + 32));
-  a.mov(colored, X86Mem(a.zbp(), 16 + 32 + 8));
+  a.mov(hued, x86::Mem(a.zbp(), 16 + 32));
+  a.mov(colored, x86::Mem(a.zbp(), 16 + 32 + 8));
 #else
   // System V x64
   a.mov(hued, x86::r8);
@@ -162,39 +163,39 @@ void ECImageProvider::compileEC()
   // CDECL
   a.push(a.zdi());
   a.push(a.zsi());
-  a.mov(remainingSteps, X86Mem(a.zbp(), 8));
-  a.mov(src, X86Mem(a.zbp(), 12));
-  a.mov(grayscaled, X86Mem(a.zbp(), 16));
-  a.mov(saturated, X86Mem(a.zbp(), 20));
-  a.mov(hued, X86Mem(a.zbp(), 24));
-  a.mov(colored, X86Mem(a.zbp(), 28));
+  a.mov(remainingSteps, x86::Mem(a.zbp(), 8));
+  a.mov(src, x86::Mem(a.zbp(), 12));
+  a.mov(grayscaled, x86::Mem(a.zbp(), 16));
+  a.mov(saturated, x86::Mem(a.zbp(), 20));
+  a.mov(hued, x86::Mem(a.zbp(), 24));
+  a.mov(colored, x86::Mem(a.zbp(), 28));
 #endif
 
   // Define constants
   Label constants = a.newLabel();
-  X86Mem loMask16(constants, 0);
-  X86Mem c8_128(constants, 16);
-  X86Mem loMask32(constants, 16 * 2);
-  X86Mem tallyInit(constants, 16 * 3);
-  X86Mem c16_64(constants, 16 * 4);
-  X86Mem c16_128(constants, 16 * 5);
-  X86Mem c16_x8001(constants, 16 * 6);
-  X86Mem c16_5695(constants, 16 * 7);
-  X86Mem c16_11039(constants, 16 * 8);
-  X86Mem maxNonColorSaturation8(constants, 16 * 9);
-  X86Mem fieldHFrom8(constants, 16 * 10);
-  X86Mem fieldHTo8(constants, 16 * 11);
-  X86Mem blackWhiteDelimiter8(constants, 16 * 12);
-  X86Mem classWhite8(constants, 16 * 13);
-  X86Mem classField8(constants, 16 * 14);
-  X86Mem classBlack8(constants, 16 * 15);
+  x86::Mem loMask16(constants, 0);
+  x86::Mem c8_128(constants, 16);
+  x86::Mem loMask32(constants, 16 * 2);
+  x86::Mem tallyInit(constants, 16 * 3);
+  x86::Mem c16_64(constants, 16 * 4);
+  x86::Mem c16_128(constants, 16 * 5);
+  x86::Mem c16_x8001(constants, 16 * 6);
+  x86::Mem c16_5695(constants, 16 * 7);
+  x86::Mem c16_11039(constants, 16 * 8);
+  x86::Mem maxNonColorSaturation8(constants, 16 * 9);
+  x86::Mem fieldHFrom8(constants, 16 * 10);
+  x86::Mem fieldHTo8(constants, 16 * 11);
+  x86::Mem blackWhiteDelimiter8(constants, 16 * 12);
+  x86::Mem classWhite8(constants, 16 * 13);
+  x86::Mem classField8(constants, 16 * 14);
+  x86::Mem classBlack8(constants, 16 * 15);
 
   // Start of loop
   Label loop = a.newLabel();
   a.bind(loop);
   // XMM0-XMM1: Source / x64: XMM8-XMM9: Source
-  a.movdqu(x86::xmm0, X86Mem(src, 0));
-  a.movdqu(x86::xmm1, X86Mem(src, 16));
+  a.movdqu(x86::xmm0, x86::Mem(src, 0));
+  a.movdqu(x86::xmm1, x86::Mem(src, 16));
   a.add(src, 32);
 
   // Compute luminance
@@ -341,7 +342,7 @@ void ECImageProvider::compileEC()
   // Classify luminance
   a.movdqa(x86::xmm3, blackWhiteDelimiter8);
 #if !ASMJIT_ARCH_64BIT
-  a.psubusb(x86::xmm3, X86Mem(grayscaled, -16));
+  a.psubusb(x86::xmm3, x86::Mem(grayscaled, -16));
 #else
   a.psubusb(x86::xmm3, x86::xmm8);
 #endif
@@ -365,7 +366,7 @@ void ECImageProvider::compileEC()
   a.jnz(loop);
 
   // Return
-#if !ASMJIT_ARCH_64BIT || ASMJIT_OS_WINDOWS
+#if ASMJIT_ARCH_X86 != 64 || defined(_WIN32)
   a.pop(a.zsi());
   a.pop(a.zdi());
 #endif
@@ -403,7 +404,7 @@ void ECImageProvider::compileEC()
     return;
   }
 
-  auto constantsPtr = reinterpret_cast<uint8_t*>(ecFunc) + code.getLabelOffset(constants);
+  auto constantsPtr = reinterpret_cast<uint8_t*>(ecFunc) + code.labelOffset(constants);
   currentMaxNonColorSaturation = constantsPtr + 16 * 9;
   currentFieldHueMin = constantsPtr + 16 * 10;
   currentFieldHueMax = constantsPtr + 16 * 11;

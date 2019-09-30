@@ -4,15 +4,18 @@
 * @author Colin Graf
 */
 
-#include <QMenu>
-#include <QRegularExpression>
-#include <QSet>
 #include <QFileInfo>
-#include <QTextStream>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QMenu>
 #include <QMessageBox>
-#include <QSettings>
-#include <QScrollBar>
+#include <QRegularExpression>
 #include <QResizeEvent>
+#include <QScrollBar>
+#include <QSet>
+#include <QSettings>
+#include <QTextStream>
+#include <QVBoxLayout>
 
 #include "EditorModule.h"
 #include "EditorWidget.h"
@@ -147,7 +150,7 @@ SimRobot::Widget* FileEditorObject::createWidget()
 EditorWidget::EditorWidget(FileEditorObject* editorObject, const QString& fileContent) :
   editorObject(editorObject),
   canCopy(false), canUndo(false), canRedo(false),
-  highlighter(0)
+  highlighter(0), editorSettingsDialog(0), findAndReplaceDialog(0)
 {
   if(editorObject->filePath.endsWith(".ros2") || editorObject->filePath.endsWith(".rsi2"))
     highlighter = new SyntaxHighlighter(document());
@@ -338,6 +341,20 @@ void EditorWidget::updateEditMenu(QMenu* menu, bool aboutToShow) const
   action->setShortcut(QKeySequence(QKeySequence::SelectAll));
   action->setStatusTip(tr("Select the whole document"));
   connect(action, SIGNAL(triggered()), this, SLOT(selectAll()));
+
+  menu->addSeparator();
+
+  action = menu->addAction(tr("&Find and Replace"));
+  action->setShortcut(QKeySequence(QKeySequence::Find));
+  action->setStatusTip(tr("Find and replace text in the document"));
+  connect(action, SIGNAL(triggered()), this, SLOT(openFindAndReplace()));
+
+  menu->addSeparator();
+
+  action = menu->addAction(tr("Editor &Settings"));
+  action->setShortcut(QKeySequence(QKeySequence::Preferences));
+  action->setStatusTip(tr("Open the editor settings"));
+  connect(action, SIGNAL(triggered()), this, SLOT(openSettings()));
 }
 
 void EditorWidget::focusInEvent(QFocusEvent * event)
@@ -526,9 +543,190 @@ void EditorWidget::deleteText()
   insertPlainText(QString());
 }
 
+void EditorWidget::openFindAndReplace()
+{
+  if(!findAndReplaceDialog)
+  {
+    findAndReplaceDialog = new FindAndReplaceDialog(this);
+    findAndReplaceMapper.setMapping(findAndReplaceDialog->nextPushButton, find);
+    findAndReplaceMapper.setMapping(findAndReplaceDialog->previousPushButton, findBackwards);
+    findAndReplaceMapper.setMapping(findAndReplaceDialog->replacePushButton, replace);
+    findAndReplaceMapper.setMapping(findAndReplaceDialog->replaceAllPushButton, replaceAll);
+    connect(findAndReplaceDialog->nextPushButton, SIGNAL(clicked()), &findAndReplaceMapper, SLOT(map()));
+    connect(findAndReplaceDialog->previousPushButton, SIGNAL(clicked()), &findAndReplaceMapper, SLOT(map()));
+    connect(findAndReplaceDialog->replacePushButton, SIGNAL(clicked()), &findAndReplaceMapper, SLOT(map()));
+    connect(findAndReplaceDialog->replaceAllPushButton, SIGNAL(clicked()), &findAndReplaceMapper, SLOT(map()));
+    connect(&findAndReplaceMapper, SIGNAL(mapped(int)), this, SLOT(findAndReplace(int)));
+  }
+
+  findAndReplaceDialog->show();
+  findAndReplaceDialog->raise();
+  findAndReplaceDialog->activateWindow();
+}
+
+void EditorWidget::findAndReplace(int action)
+{
+  const QString& findText = findAndReplaceDialog->findTextEdit->text();
+  const QString& replaceText = findAndReplaceDialog->replaceTextEdit->text();
+  if(findText.isEmpty())
+    return;
+
+  QTextDocument::FindFlags findFlags = 0;
+  if(action == findBackwards)
+    findFlags |= QTextDocument::FindBackward;
+  if(findAndReplaceDialog->caseCheckBox->isChecked())
+    findFlags |= QTextDocument::FindCaseSensitively;
+  if(findAndReplaceDialog->wholeWordsCheckBox->isChecked())
+    findFlags |= QTextDocument::FindWholeWords;
+
+  QTextCursor cursor = textCursor(), originalCursor = cursor;
+  cursor.beginEditBlock();
+  if(action == replaceAll)
+    cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+
+  bool tryAgain = false;
+  while(true)
+  {
+    QTextCursor result;
+
+    if(findAndReplaceDialog->regexCheckBox->isChecked())
+      result = document()->find(QRegularExpression(findText), (action == findBackwards || action == replace) ? cursor.selectionStart() : cursor.selectionEnd(), findFlags);
+    else
+      result = document()->find(findText, (action == findBackwards || action == replace) ? cursor.selectionStart() : cursor.selectionEnd(), findFlags);
+
+    if(result.isNull() || !result.hasSelection())
+    {
+      if(tryAgain || action == replaceAll)
+        break;
+      cursor.movePosition(action == findBackwards ? QTextCursor::End : QTextCursor::Start, QTextCursor::MoveAnchor);
+      tryAgain = true;
+      continue;
+    }
+    else
+      tryAgain = false;
+
+    cursor = result;
+    if(action == find || action == findBackwards)
+      break;
+
+    // If in a replace command the cursor did not previously select something that should be replaced, then this behaves like a find and is done now.
+    if(action == replace && (originalCursor.selectionStart() != cursor.selectionStart() || originalCursor.selectionEnd() != cursor.selectionEnd()))
+      break;
+
+    cursor.insertText(replaceText);
+
+    if(action == replace)
+      action = find;
+  }
+  cursor.endEditBlock();
+  setTextCursor(cursor);
+}
+
+void EditorWidget::openSettings()
+{
+  if(!editorSettingsDialog)
+  {
+    editorSettingsDialog = new EditorSettingsDialog(this);
+    connect(editorSettingsDialog->okayPushButton, SIGNAL(clicked()), this, SLOT(updateSettingsFromDialog()));
+  }
+
+  editorSettingsDialog->useTabStopCheckBox->setChecked(useTabStop);
+  editorSettingsDialog->tabStopWidthSpinBox->setValue(tabStopWidth);
+
+  editorSettingsDialog->show();
+  editorSettingsDialog->raise();
+  editorSettingsDialog->activateWindow();
+}
+
+void EditorWidget::updateSettingsFromDialog()
+{
+  useTabStop = editorSettingsDialog->useTabStopCheckBox->isChecked();
+  tabStopWidth = editorSettingsDialog->tabStopWidthSpinBox->value();
+  setTabStopWidth(tabStopWidth * QFontMetrics(font()).width(' '));
+}
+
 void EditorWidget::openFile(const QString& fileName)
 {
   QString filePath = QFileInfo(editorObject->filePath).path() + "/" + fileName;
   editorObject->addEditor(filePath, editorObject->subFileRegExpPattern, false);
   EditorModule::module->openEditor(filePath);
+}
+
+EditorWidget::EditorSettingsDialog::EditorSettingsDialog(QWidget* parent) :
+  QDialog(parent)
+{
+  useTabStopLabel = new QLabel(tr("Use tab stop"));
+  useTabStopCheckBox = new QCheckBox;
+  useTabStopLabel->setBuddy(useTabStopCheckBox);
+
+  tabStopWidthLabel = new QLabel(tr("Tab stop width"));
+  tabStopWidthSpinBox = new QSpinBox;
+  tabStopWidthSpinBox->setRange(1, 16);
+  tabStopWidthLabel->setBuddy(tabStopWidthSpinBox);
+
+  okayPushButton = new QPushButton(tr("OK"));
+  closePushButton = new QPushButton(tr("Close"));
+
+  connect(okayPushButton, SIGNAL(clicked()), this, SLOT(accept()));
+  connect(closePushButton, SIGNAL(clicked()), this, SLOT(reject()));
+
+  QFormLayout* settingsLayout = new QFormLayout;
+  settingsLayout->addRow(useTabStopLabel, useTabStopCheckBox);
+  settingsLayout->addRow(tabStopWidthLabel, tabStopWidthSpinBox);
+
+  QHBoxLayout* buttonLayout = new QHBoxLayout;
+  buttonLayout->addWidget(okayPushButton);
+  buttonLayout->addWidget(closePushButton);
+
+  QVBoxLayout* mainLayout = new QVBoxLayout;
+  mainLayout->addLayout(settingsLayout);
+  mainLayout->addLayout(buttonLayout);
+
+  setLayout(mainLayout);
+  setWindowTitle(tr("Editor Settings"));
+}
+
+EditorWidget::FindAndReplaceDialog::FindAndReplaceDialog(QWidget* parent) :
+  QDialog(parent)
+{
+  findLabel = new QLabel(tr("Find"));
+  findTextEdit = new QLineEdit;
+  findLabel->setBuddy(findTextEdit);
+
+  replaceLabel = new QLabel(tr("Replace"));
+  replaceTextEdit = new QLineEdit;
+  replaceLabel->setBuddy(replaceTextEdit);
+
+  caseCheckBox = new QCheckBox(tr("Match &case"));
+  wholeWordsCheckBox = new QCheckBox(tr("&Whole words"));
+  regexCheckBox = new QCheckBox(tr("&Regular expression"));
+
+  nextPushButton = new QPushButton(tr("&Next"));
+  nextPushButton->setChecked(true);
+  previousPushButton = new QPushButton(tr("&Previous"));
+  replacePushButton = new QPushButton(tr("Replace"));
+  replaceAllPushButton = new QPushButton(tr("Replace all"));
+
+  QVBoxLayout* buttonLayout = new QVBoxLayout;
+  buttonLayout->addWidget(nextPushButton);
+  buttonLayout->addWidget(previousPushButton);
+  buttonLayout->addWidget(replacePushButton);
+  buttonLayout->addWidget(replaceAllPushButton);
+
+  QFormLayout* textLayout = new QFormLayout;
+  textLayout->addRow(findLabel, findTextEdit);
+  textLayout->addRow(replaceLabel, replaceTextEdit);
+
+  QVBoxLayout* checkboxLayout = new QVBoxLayout;
+  checkboxLayout->addLayout(textLayout);
+  checkboxLayout->addWidget(caseCheckBox);
+  checkboxLayout->addWidget(wholeWordsCheckBox);
+  checkboxLayout->addWidget(regexCheckBox);
+
+  QHBoxLayout* mainLayout = new QHBoxLayout;
+  mainLayout->addLayout(checkboxLayout);
+  mainLayout->addLayout(buttonLayout);
+
+  setLayout(mainLayout);
+  setWindowTitle(tr("Find and Replace"));
 }

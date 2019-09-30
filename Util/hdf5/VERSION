@@ -1,0 +1,15 @@
+This is hdf5 version 1.10.5.
+
+Linux/Windows/macOS:
+./configure --disable-hl --disable-shared --with-pic --with-zlib=no
+make
+make DESTDIR=<installation directory> install
+
+NaoV5/V6:
+./configure --disable-hl --disable-shared --with-zlib=no CFLAGS="-march=<atom/silvermont> -mtune=<atom/silvermont>"
+make
+make DESTDIR=<installation directory> install
+
+Since the header file H5pubconf.h differs from platform to platform, I renamed
+the respective original files to "H5pubconf<platform>.h" and created a wrapper
+file which includes the correct version.

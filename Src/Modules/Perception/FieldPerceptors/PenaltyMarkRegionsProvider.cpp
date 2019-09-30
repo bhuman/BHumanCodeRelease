@@ -28,19 +28,21 @@ void PenaltyMarkRegionsProvider::update(PenaltyMarkRegions& thePenaltyMarkRegion
 
   Vector2f pointInImage;
   if(Transformation::robotWithCameraRotationToImage(Vector2f(maxDistanceOnField, 0), theCameraMatrix, theCameraInfo, pointInImage)
-     && theColorScanlineRegionsVerticalClipped.scanlines.size() > theColorScanlineRegionsVerticalClipped.lowResStart
-     + theColorScanlineRegionsVerticalClipped.lowResStep)
+     && theColorScanLineRegionsVerticalClipped.scanLines.size() > theColorScanLineRegionsVerticalClipped.lowResStart
+     + theColorScanLineRegionsVerticalClipped.lowResStep)
   {
-    int xStep = theColorScanlineRegionsVerticalClipped.scanlines[theColorScanlineRegionsVerticalClipped.lowResStart + theColorScanlineRegionsVerticalClipped.lowResStep].x
-                - theColorScanlineRegionsVerticalClipped.scanlines[theColorScanlineRegionsVerticalClipped.lowResStart].x;
+    int xStep = theColorScanLineRegionsVerticalClipped.scanLines[theColorScanLineRegionsVerticalClipped.lowResStart + theColorScanLineRegionsVerticalClipped.lowResStep].x
+                - theColorScanLineRegionsVerticalClipped.scanLines[theColorScanLineRegionsVerticalClipped.lowResStart].x;
 
     unsigned short upperBound = static_cast<unsigned short>(std::max(0.f, pointInImage.y()));
     if(upperBound < theScanGrid.y[0])
     {
       initTables(upperBound);
-      initRegions(upperBound);
-      unionFind(xStep);
-      analyseRegions(upperBound, xStep, thePenaltyMarkRegions.regions);
+      if(initRegions(upperBound))
+      {
+        unionFind(xStep);
+        analyseRegions(upperBound, xStep, thePenaltyMarkRegions.regions);
+      }
     }
   }
 }
@@ -62,21 +64,25 @@ void PenaltyMarkRegionsProvider::initTables(unsigned short upperBound)
   }
 }
 
-void PenaltyMarkRegionsProvider::initRegions(unsigned short upperBound)
+bool PenaltyMarkRegionsProvider::initRegions(unsigned short upperBound)
 {
   regions.clear();
-  for(size_t i = theColorScanlineRegionsVerticalClipped.lowResStart;
-      i < theColorScanlineRegionsVerticalClipped.scanlines.size();
-      i += theColorScanlineRegionsVerticalClipped.lowResStep)
+  for(size_t i = theColorScanLineRegionsVerticalClipped.lowResStart;
+      i < theColorScanLineRegionsVerticalClipped.scanLines.size();
+      i += theColorScanLineRegionsVerticalClipped.lowResStep)
   {
-    auto& scanline = theColorScanlineRegionsVerticalClipped.scanlines[i];
+    auto& scanLine = theColorScanLineRegionsVerticalClipped.scanLines[i];
     bool first = true;
-    for(auto& region : scanline.regions)
+    for(auto& region : scanLine.regions)
     {
       if(!region.is(FieldColors::field) && region.range.lower > upperBound)
       {
-        if(regions.empty() || regions.back().left != scanline.x || regions.back().upper != region.range.lower)
-          regions.emplace_back(std::max(region.range.upper, upperBound), region.range.lower, scanline.x, region.is(FieldColors::white));
+        if(regions.empty() || regions.back().left != scanLine.x || regions.back().upper != region.range.lower)
+        {
+          if(regions.size() == regions.capacity())
+            return false;
+          regions.emplace_back(std::max(region.range.upper, upperBound), region.range.lower, scanLine.x, region.is(FieldColors::white));
+        }
         else
         {
           Region& r = regions.back();
@@ -92,6 +98,7 @@ void PenaltyMarkRegionsProvider::initRegions(unsigned short upperBound)
       first = false;
     }
   }
+  return true;
 }
 
 void PenaltyMarkRegionsProvider::unionFind(int xStep)
@@ -121,7 +128,7 @@ void PenaltyMarkRegionsProvider::unionFind(int xStep)
 void PenaltyMarkRegionsProvider::analyseRegions(unsigned short upperBound, int xStep, std::vector<Boundaryi>& searchRegions)
 {
   std::vector<Region*> mergedRegions;
-  regions.reserve(100);
+  mergedRegions.reserve(100);
   for(Region& region : regions)
     if(region.parent == &region)
       mergedRegions.emplace_back(&region);

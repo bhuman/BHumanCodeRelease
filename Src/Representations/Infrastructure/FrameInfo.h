@@ -1,7 +1,7 @@
 /**
  * @file FrameInfo.h
  * The file declares a struct that contains information on the current frame.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -15,17 +15,19 @@
 STREAMABLE(FrameInfo,
 {
   /**
-   * The method returns the time difference between a given time stamp and the
+   * The method returns the time difference between a given timestamp and the
    * current frame time.
-   * @param timeStamp A time stamp, usually in the past.
-   * @return The number of ms passed since the given time stamp.
+   * @param timestamp A timestamp, usually in the past.
+   * @return The number of ms passed since the given timestamp.
    */
-  int getTimeSince(unsigned timeStamp) const,
+  int getTimeSince(unsigned timestamp) const,
 
-  (unsigned)(0) time, /**< The time stamp of the data processed in the current frame in ms. */
+  (unsigned)(0) time, /**< The timestamp of the data processed in the current frame in ms. */
 });
 
-inline int FrameInfo::getTimeSince(unsigned timeStamp) const
+inline int FrameInfo::getTimeSince(unsigned timestamp) const
 {
-  return static_cast<int>(time - timeStamp);
+  return static_cast<int>(time - timestamp);
 }
+
+STREAMABLE_WITH_BASE(CognitionFrameInfo, FrameInfo, {,});

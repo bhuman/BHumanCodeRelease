@@ -25,7 +25,7 @@ protected:
   Vector3f mean = Vector3f::Zero();   /**< The estimated pose in 2D. */
   Matrix3f cov = Matrix3f::Zero();    /**< The covariance matrix of the estimate. */
   Vector3f sigmaPoints[7];            /**< Sigma points for updating the filter. */
-  Matrix3f l = Matrix3f::Zero();      /**< Last computed cholesky decomposition. */
+  Matrix3f l = Matrix3f::Zero();      /**< Last computed Cholesky decomposition. */
 
 public:
   /** Returns the internal representation of the state's mean as the commonly used Pose2f type
@@ -42,7 +42,7 @@ public:
   const Matrix3f& getCov() const
   {
     return cov;
-  };
+  }
 
   void motionUpdate(const Pose2f& odometryOffset, const Pose2f& filterProcessDeviation,
                     const Pose2f& odometryDeviation, const Vector2f& odometryRotationDeviation);

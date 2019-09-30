@@ -6,7 +6,7 @@
 
 #include <Windows.h>
 
-unsigned Time::base = 0;
+unsigned long long Time::base = 0;
 unsigned long long Time::threadTimebase = 0;
 
 unsigned Time::getCurrentSystemTime()
@@ -24,7 +24,7 @@ unsigned Time::getRealSystemTime()
   const unsigned time = timeGetTime();
   if(!base)
     base = time - 100000; // avoid time == 0, because it is often used as a marker
-  return time - base;
+  return static_cast<unsigned>(time - base);
 }
 
 unsigned long long Time::getCurrentThreadTime()

@@ -2,7 +2,7 @@
  * @file BodyContour.h
  * The file declares a struct that represents the contour of the robot's body in the image.
  * The contour can be used to exclude the robot's body from image processing.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -104,8 +104,8 @@ STREAMABLE(BodyContour,
   void clipBottom(int x, int& y, int imageHeight) const;
 
   /**
-   * The method clips the left x coordinate of a horizonal line.
-   * It only consides descending clipping lines.
+   * The method clips the left x coordinate of a horizontal line.
+   * It only considers descending clipping lines.
    * @param x The original x coordinate of the left end of the horizontal line.
    *          It will be replaced if necessary. Note that the resulting point
    *          can be outside the image!
@@ -114,8 +114,8 @@ STREAMABLE(BodyContour,
   void clipLeft(int& x, int y) const;
 
   /**
-   * The method clips the right x coordinate of a horizonal line.
-   * It only consides ascending clipping lines.
+   * The method clips the right x coordinate of a horizontal line.
+   * It only considers ascending clipping lines.
    * @param x The original x coordinate of the right end of the horizontal line.
    *          It will be replaced if necessary. Note that the resulting point
    *          can be outside the image!
@@ -130,7 +130,7 @@ STREAMABLE(BodyContour,
   int getMaxY() const;
 
   /**
-   * Returns false if the given point is inside the bodycontour, true if not
+   * Returns false if the given point is inside the body contour, true if not
    * @return
    */
   bool isValidPoint(const Vector2i& point) const;
@@ -139,5 +139,5 @@ STREAMABLE(BodyContour,
   void draw() const,
 
   (std::vector<Line>) lines, /**< The clipping lines. */
-  (Vector2i)(Vector2i::Zero()) cameraResolution, /**< Only for drawing. */
+  (Vector2i)(Vector2i::Zero()) cameraResolution, /**< For getMaxY() and drawing. */
 });

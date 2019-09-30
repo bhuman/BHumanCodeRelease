@@ -207,6 +207,7 @@ Q_SIGNALS:
     void returnPressed();
     void editingFinished();
     void selectionChanged();
+    void inputRejected();
 
 protected:
     void mousePressEvent(QMouseEvent *) override;
@@ -217,7 +218,7 @@ protected:
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;
     void paintEvent(QPaintEvent *) override;
-#ifndef QT_NO_DRAGANDDROP
+#if QT_CONFIG(draganddrop)
     void dragEnterEvent(QDragEnterEvent *) override;
     void dragMoveEvent(QDragMoveEvent *e) override;
     void dragLeaveEvent(QDragLeaveEvent *e) override;

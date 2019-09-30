@@ -4,41 +4,56 @@
  */
 
 #include "FieldFeature.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/RobotParts/Joints.h"
 #include "Tools/Math/Geometry.h"
 
 void FieldFeature::draw() const
 {
-  DECLARE_DEBUG_DRAWING("representation:FieldFeature:field", "drawingOnField");
-  if(!isValid)
-    return;
-
-  COMPLEX_DRAWING("representation:FieldFeature:field")
+  if(Blackboard::getInstance().exists("CameraInfo"))
   {
-    const RobotPoseToFF poses = getGlobalRobotPosition();
-    if(Blackboard::getInstance().exists("CameraMatrix"))
+    std::string thread = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]).camera == CameraInfo::upper ? "Upper" : "Lower";
+    DEBUG_DRAWING("representation:FieldFeature:field", "drawingOnField")
+      THREAD("representation:FieldFeature:field", thread);
+    DEBUG_DRAWING("representation:MarkedField:field", "drawingOnField")
+      THREAD("representation:MarkedField:field", thread);
+    DEBUG_DRAWING("representation:MarkedField:imageText", "drawingOnImage")
+      THREAD("representation:MarkedField:imageText", thread);
+    DEBUG_DRAWING("representation:MarkedField:image", "drawingOnImage")
+      THREAD("representation:MarkedField:image", thread);
+    DECLARE_DEBUG_DRAWING3D("representation:MarkedField", "robot");
+
+    if(!isValid)
+      return;
+
+    COMPLEX_DRAWING("representation:FieldFeature:field")
     {
-      const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
-      DRAW_ROBOT_POSE_WITH_HEAD_ROTATION("representation:FieldFeature:field", poses.pos1, ColorRGBA::blue, theCameraMatrix.rotation.getZAngle());
-      DRAW_ROBOT_POSE_WITH_HEAD_ROTATION("representation:FieldFeature:field", poses.pos2, ColorRGBA::blue, theCameraMatrix.rotation.getZAngle());
+      const RobotPoseToFF poses = getGlobalRobotPosition();
+      if(Blackboard::getInstance().exists("CameraMatrix"))
+      {
+        const CameraMatrix& theCameraMatrix = static_cast<const CameraMatrix&>(Blackboard::getInstance()["CameraMatrix"]);
+        DRAW_ROBOT_POSE_WITH_HEAD_ROTATION("representation:FieldFeature:field", poses.pos1, ColorRGBA::blue, theCameraMatrix.rotation.getZAngle());
+        DRAW_ROBOT_POSE_WITH_HEAD_ROTATION("representation:FieldFeature:field", poses.pos2, ColorRGBA::blue, theCameraMatrix.rotation.getZAngle());
+      }
+      else
+      {
+        DRAW_ROBOT_POSE("representation:FieldFeature:field", poses.pos1, ColorRGBA::blue);
+        DRAW_ROBOT_POSE("representation:FieldFeature:field", poses.pos2, ColorRGBA::blue);
+      }
     }
-    else
-    {
-      DRAW_ROBOT_POSE("representation:FieldFeature:field", poses.pos1, ColorRGBA::blue);
-      DRAW_ROBOT_POSE("representation:FieldFeature:field", poses.pos2, ColorRGBA::blue);
-    }
+
+    for(auto& markedPoint : markedPoints)
+      markedPoint.draw();
+
+    for(auto& markedLine : markedLines)
+      markedLine.draw();
+
+    for(auto& markedIntersection : markedIntersections)
+      markedIntersection.draw();
   }
-
-  for(auto& markedPoint : markedPoints)
-    markedPoint.draw();
-
-  for(auto& markedLine : markedLines)
-    markedLine.draw();
-
-  for(auto& markedIntersection : markedIntersections)
-    markedIntersection.draw();
 }
 
 void FieldFeature::clear()

@@ -6,4 +6,5 @@
 STREAMABLE(IMUCalibration,
 {,
   (AngleAxisf)(AngleAxisf::Identity()) rotation,
+  (Vector3f)(Vector3f::Zero()) gyroFactor,
 });

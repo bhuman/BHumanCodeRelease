@@ -1,7 +1,7 @@
 /**
  * @file Controller/RemoteRobot.cpp
- * Implementation of the base class of processes that communicate with a remote robot.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * Implementation of the base class of threads that communicate with a remote robot.
+ * @author Thomas Röfer
  */
 
 #include "RemoteRobot.h"
@@ -9,10 +9,7 @@
 #include "Platform/Time.h"
 
 RemoteRobot::RemoteRobot(const std::string& name, const std::string& ip) :
-  RobotConsole((setGlobals(), theDebugReceiver), theDebugSender),
-  theDebugReceiver(this),
-  theDebugSender(this),
-  name(name), ip(ip)
+  RobotConsole(nullptr, nullptr), name(name), ip(ip)
 {
   mode = SystemCall::remoteRobot;
   puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
@@ -26,16 +23,8 @@ RemoteRobot::RemoteRobot(const std::string& name, const std::string& ip) :
 
 void RemoteRobot::connect()
 {
-  Thread::nameThread(name + ".RemoteRobot.connect");
-  TcpConnection::connect(ip.c_str(), 0xA1BD, TcpConnection::sender);
-}
-
-void RemoteRobot::run()
-{
-  Thread::nameThread(name + ".RemoteRobot");
-  setGlobals();
-  while(isRunning())
-    processMain();
+  Thread::nameCurrentThread(name + ".RemoteRobot.connect");
+  TcpConnection::connect(ip.c_str(), 9999, TcpConnection::sender);
 }
 
 bool RemoteRobot::main()
@@ -46,16 +35,16 @@ bool RemoteRobot::main()
   int receivedSize = 0;
   MessageQueue temp;
 
-  // If there is something to send, prepare a package
-  if(!theDebugSender.isEmpty())
+  // If there is something to send, prepare a packet
+  if(!debugSender->isEmpty())
   {
     SYNC;
-    sendSize = theDebugSender.getStreamedSize();
+    sendSize = static_cast<int>(debugSender->getStreamedSize());
     OutBinaryMemory stream(sendSize);
-    stream << theDebugSender;
+    stream << *debugSender;
     sendData = reinterpret_cast<unsigned char*>(stream.obtainData());
     // make backup
-    theDebugSender.moveAllMessages(temp);
+    debugSender->moveAllMessages(temp);
   }
 
   // exchange data with the router
@@ -64,21 +53,21 @@ bool RemoteRobot::main()
     // sending failed, restore theDebugSender
     SYNC;
     // move all messages since cleared (if any)
-    theDebugSender.moveAllMessages(temp);
+    debugSender->moveAllMessages(temp);
     // restore
-    temp.moveAllMessages(theDebugSender);
+    temp.moveAllMessages(*debugSender);
   }
 
-  // If a package was prepared, remove it
+  // If a packet was prepared, remove it
   if(sendSize)
     delete[] sendData;
 
-  // If a package was received from the router program, add it to receiver queue
+  // If a packet was received from the router program, add it to receiver queue
   if(receivedSize > 0)
   {
     SYNC;
     InBinaryMemory stream(receivedData, receivedSize);
-    stream >> theDebugReceiver;
+    stream >> *debugReceiver;
     delete[] receivedData;
   }
 
@@ -90,8 +79,8 @@ void RemoteRobot::announceStop()
 {
   {
     SYNC;
-    debugOut.out.bin << DebugRequest("disableAll");
-    debugOut.out.finishMessage(idDebugRequest);
+    debugSender->out.bin << DebugRequest("disableAll");
+    debugSender->out.finishMessage(idDebugRequest);
   }
   Thread::sleep(1000);
   Thread::announceStop();
@@ -118,11 +107,11 @@ void RemoteRobot::update()
       moveOp = noMove;
     }
   }
-  if(Time::getTimeSince(timeStamp) >= 2000)
+  if(Time::getTimeSince(timestamp) >= 2000)
   {
     int bytes = this->getOverallBytesSent() + this->getOverallBytesReceived() - bytesTransfered;
     bytesTransfered += bytes;
-    timeStamp = Time::getCurrentSystemTime();
+    timestamp = Time::getCurrentSystemTime();
     transferSpeed = bytes / 2000.0f;
   }
 

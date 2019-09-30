@@ -184,8 +184,8 @@ ActuatorWidget::ActuatorWidget(SimRobotCore2::ActuatorPort* actuator, QWidget* p
   else
     factor = 1000;
 
-  slider->setRange((int)(minVal * factor), (int)(maxVal * factor));
-  slider->setValue((int)(value * factor));
+  slider->setRange(static_cast<int>(minVal * factor), static_cast<int>(maxVal * factor));
+  slider->setValue(static_cast<int>(value * factor));
 
   txbValue->setRange(minVal, maxVal);
   txbValue->setDecimals(isAngle ? 1 : 3);
@@ -218,20 +218,20 @@ void ActuatorWidget::valueChanged(int value)
 {
   float factor = isAngle ? 0.1f : 0.001f;
   txbValue->setValue(value * factor);
-  this->value = (float)value * factor;
+  this->value = static_cast<float>(value) * factor;
 }
 
 void ActuatorWidget::valueChanged(double value)
 {
-  slider->setValue(int(value * (isAngle ? 10 : 1000)));
-  this->value = (float)value;
+  slider->setValue(static_cast<int>(value * (isAngle ? 10 : 1000)));
+  this->value = static_cast<float>(value);
 }
 
 void ActuatorWidget::adoptActuator()
 {
   if(cbxSet->checkState() == Qt::Checked)
   {
-    float value = (float) this->value;
+    float value = static_cast<float>(this->value);
     if(isAngle)
       value = toRad(value);
     actuator->setValue(value);

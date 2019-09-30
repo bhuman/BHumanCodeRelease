@@ -11,26 +11,25 @@
 
 #include <QIcon>
 #include <QWidget>
-#include <unordered_map>
+#include <unordered_set>
 
 class AnnotationInfo;
 class AnnotationWidget;
 class RobotConsole;
 class LogPlayer;
 
-struct Row;
 class QTableWidget;
 class QCheckBox;
 
 class AnnotationView : public SimRobot::Object
 {
 public:
-  AnnotationView(const QString& fullName, AnnotationInfo::ProcessAnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application);
+  AnnotationView(const QString& fullName, AnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application);
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
   const QIcon icon; /**< The icon used for listing this view in the scene graph */
-  AnnotationInfo::ProcessAnnotationInfo& info;
+  AnnotationInfo& info;
   LogPlayer& logPlayer; /**< Used to jump to frames */
   SystemCall::Mode mode; /**< Only jump if replaying logs */
   SimRobot::Application* application;
@@ -69,7 +68,7 @@ private:
   unsigned timeOfLastUpdate;
 
   QTableWidget* table;
-  std::unordered_map<unsigned, Row*> rows;
+  std::unordered_set<unsigned> annotationNumbers;
 
   QCheckBox* stopCheckBox;
   QCheckBox* useRegExCheckBox;

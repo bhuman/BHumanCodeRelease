@@ -4,11 +4,10 @@
 #pragma once
 
 #include "Platform/BHAssert.h"
-#include "Tools/AlignedMemory.h"
 #include "Tools/Math/Eigen.h"
 
 #include "Tools/ImageProcessing/AVX.h"
-#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/Image.h"
 
 namespace ImageTransform
 {
@@ -24,7 +23,7 @@ namespace ImageTransform
   }
 
   template<typename T>
-  ALWAYSINLINE static __m128 getPixel(const TImage<T>& src, __m128 x_x_x_x_Dash, __m128 y_y_y_y_Dash, float defaultValue = 0.f)
+  ALWAYSINLINE static __m128 getPixel(const Image<T>& src, __m128 x_x_x_x_Dash, __m128 y_y_y_y_Dash, float defaultValue = 0.f)
   {
     int32_t xCoordinates[4];
     int32_t yCoordinates[4];
@@ -95,7 +94,7 @@ namespace ImageTransform
   }
 
   // writes the result of the affine transformation into dest, which has to be a buffer with a sufficient large size
-  void transform(const TImage<PixelTypes::GrayscaledPixel>& src, float* destP, unsigned int dest_width, unsigned int dest_height, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f), const float defaultValue = 0.f)
+  void transform(const Image<PixelTypes::GrayscaledPixel>& src, float* destP, unsigned int dest_width, unsigned int dest_height, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f), const float defaultValue = 0.f)
   {
     const __m128 a0 = _mm_set1_ps(inverseTransformation(0, 0));
     const __m128 a1 = _mm_set1_ps(inverseTransformation(0, 1));
@@ -142,7 +141,7 @@ namespace ImageTransform
   }
 
   // just affine right now
-  void transform(const TImage<unsigned char>& src, TImage<float>& dest, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f))
+  void transform(const Image<unsigned char>& src, Image<float>& dest, const Matrix3f& inverseTransformation, const Vector2f& relativTransformationCenter = Vector2f(0.5f, 0.5f))
   {
     const __m128 a0 = _mm_set1_ps(inverseTransformation(0, 0));
     const __m128 a1 = _mm_set1_ps(inverseTransformation(0, 1));
@@ -190,7 +189,7 @@ namespace ImageTransform
     }
   }
 
-  void transform(const TImage<float>& src, TImage<unsigned char>& dest)
+  void transform(const Image<float>& src, Image<unsigned char>& dest)
   {
     dest.setResolution(src.width, src.height);
 
@@ -214,7 +213,7 @@ namespace ImageTransform
   ////////
   // TODO opimize below
 
-  void polarTransform(const TImage<float>& src, TImage<float>& dest)
+  void polarTransform(const Image<float>& src, Image<float>& dest)
   {
     // for normal images first
     const float angelDiff = 2.f * pi / dest.width;
@@ -248,7 +247,7 @@ namespace ImageTransform
     }
   }
 
-  void logPolarTransform(const TImage<float>& src, TImage<float>& dest)
+  void logPolarTransform(const Image<float>& src, Image<float>& dest)
   {
     // for normal images first
     const float angelDiff = 2.f * pi / dest.width;
@@ -283,7 +282,7 @@ namespace ImageTransform
   }
 
   //todo make just one method
-  void halfImagePolarTransform(const TImage<float>& src, TImage<float>& dest)
+  void halfImagePolarTransform(const Image<float>& src, Image<float>& dest)
   {
     const float angelDiff = pi / dest.width;
     const float rDiff = std::min(src.height / 2.f, 1.f * src.width) / dest.height;

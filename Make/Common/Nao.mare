@@ -1,5 +1,4 @@
 Nao = cppApplication + {
-  dependencies = { "libbhuman", "libgamectrl" }
 
   // overwrite platform and c++-compiler for cross compiling
   platform = "Linux"
@@ -10,7 +9,7 @@ Nao = cppApplication + {
   } else {
     linker = "ld"
   }
-  command = "$(linker) -o $(output) --eh-frame-hdr -m elf_i386 -dynamic-linker=/lib/ld-linux.so.2 $(utilDirRoot)/Buildchain/gcc/lib/crt1.o $(utilDirRoot)/Buildchain/gcc/lib/crti.o $(utilDirRoot)/Buildchain/gcc/lib/crtbegin.o $(patsubst %,-L%,$(libPaths)) @$(writefile $(buildDir)/objects,$(input)) $(linkFlags) $(LDFLAGS) $(patsubst %,-l%,$(libs)) $(utilDirRoot)/Buildchain/gcc/lib/libstdc++.so.6.0.21 $(utilDirRoot)/Buildchain/gcc/lib/libm-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/libc-2.13.so -lc_nonshared $(utilDirRoot)/Buildchain/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/gcc/lib/ld-2.13.so $(utilDirRoot)/Buildchain/gcc/lib/crtend.o $(utilDirRoot)/Buildchain/gcc/lib/crtn.o"
+  command = "$(linker) -o $(output) --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/home/nao/sysroot/lib/ld-linux.so.2 -rpath=/home/nao/sysroot/lib $(utilDirRoot)/Buildchain/V6/gcc/lib/crt1.o $(utilDirRoot)/Buildchain/V6/gcc/lib/crti.o $(utilDirRoot)/Buildchain/V6/gcc/lib/crtbegin.o $(patsubst %,-L%,$(libPaths)) @$(writefile $(buildDir)/objects,$(input)) $(linkFlags) $(LDFLAGS) $(patsubst %,-l%,$(libs)) $(utilDirRoot)/Buildchain/V6/gcc/lib/libstdc++.so.6.0.24 --start-group $(utilDirRoot)/Buildchain/V6/gcc/lib/libm-2.29.so --as-needed $(utilDirRoot)/Buildchain/V6/gcc/lib/libmvec_nonshared.a $(utilDirRoot)/Buildchain/V6/gcc/lib/libmvec-2.29.so --no-as-needed --end-group --start-group $(utilDirRoot)/Buildchain/V6/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/V6/gcc/lib/libgcc.a --end-group --start-group $(utilDirRoot)/Buildchain/V6/gcc/lib/libc-2.29.so $(utilDirRoot)/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed $(utilDirRoot)/Buildchain/V6/gcc/lib/ld-2.29.so --no-as-needed --end-group --start-group $(utilDirRoot)/Buildchain/V6/gcc/lib/libgcc_s.so.1 $(utilDirRoot)/Buildchain/V6/gcc/lib/libgcc.a --end-group $(utilDirRoot)/Buildchain/V6/gcc/lib/crtend.o $(utilDirRoot)/Buildchain/V6/gcc/lib/crtn.o"
 
   root = "$(srcDirRoot)"
 
@@ -21,10 +20,10 @@ Nao = cppApplication + {
     "$(srcDirRoot)/Platform/Nao/*.h"
     "$(srcDirRoot)/Platform/*.cpp" = cppSource
     "$(srcDirRoot)/Platform/*.h"
-    "$(srcDirRoot)/Processes/**.cpp" = cppSource
-    "$(srcDirRoot)/Processes/**.h"
     "$(srcDirRoot)/Representations/**.cpp" = cppSource
     "$(srcDirRoot)/Representations/**.h"
+    "$(srcDirRoot)/Threads/**.cpp" = bhCppSource
+    "$(srcDirRoot)/Threads/**.h"
     "$(srcDirRoot)/Tools/**.cpp" = cppSource
     "$(srcDirRoot)/Tools/**.h"
     "$(utilDirRoot)/asmjit/src/**.cpp" = cppSource
@@ -32,13 +31,13 @@ Nao = cppApplication + {
 
   defines += {
     "TARGET_ROBOT", "__STRICT_ANSI__"
-    "ASMJIT_EMBED"
+    "ASMJIT_STATIC"
     "ASMJIT_BUILD_X86"
-    "ASMJIT_DISABLE_BUILDER"
-    "ASMJIT_DISABLE_COMPILER"
-    "ASMJIT_DISABLE_LOGGING"
-    "ASMJIT_DISABLE_TEXT"
-    "ASMJIT_DISABLE_VALIDATION"
+    "ASMJIT_NO_BUILDER"
+    "ASMJIT_NO_COMPILER"
+    "ASMJIT_NO_LOGGING"
+    "ASMJIT_NO_TEXT"
+    "ASMJIT_NO_INST_API"
     if (configuration == "Develop") { -"NDEBUG" }
   }
 
@@ -49,32 +48,41 @@ Nao = cppApplication + {
     "$(srcDirRoot)/Tools/Precompiled"
     "$(utilDirRoot)/SimRobot/Util/Eigen"
     "$(utilDirRoot)/GameController/include"
-    "$(utilDirRoot)/Buildchain/gcc/include"
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0"
-    "$(utilDirRoot)/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu"
-    "$(utilDirRoot)/Buildchain/clang/include"
     "$(utilDirRoot)/fftw-3.3"
-    "$(utilDirRoot)/libjpeg/src"
+    "$(utilDirRoot)/hdf5/include"
+    "$(utilDirRoot)/libjpeg/include"
     "$(utilDirRoot)/snappy/include"
+    "$(utilDirRoot)/flite/include"
     "$(utilDirRoot)/asmjit/src"
   }
 
+  systemIncludePaths = {
+    "$(utilDirRoot)/Buildchain/V6/gcc/include/c++/7.4.0"
+    "$(utilDirRoot)/Buildchain/V6/gcc/include/c++/7.4.0/x86_64-nao-linux-gnu"
+    "$(utilDirRoot)/Buildchain/V6/gcc/include"
+    "$(clanginclude)"
+  }
+
   libPaths = {
-    "$(utilDirRoot)/fftw-3.3/Linux32"
-    "$(utilDirRoot)/libjpeg/lib/Linux"
-    "$(utilDirRoot)/Buildchain/gcc/lib"
-    "$(utilDirRoot)/snappy/lib/Linux/x86"
+    "$(utilDirRoot)/fftw-3.3/V6"
+    "$(utilDirRoot)/hdf5/lib/V6"
+    "$(utilDirRoot)/libjpeg/lib/V6"
+    "$(utilDirRoot)/snappy/lib/V6"
+    "$(utilDirRoot)/flite/lib/V6"
+    "$(utilDirRoot)/Buildchain/V6/gcc/lib"
   }
 
   libs = {
-    "rt-2.13", "jpeg-atom", "pthread-2.13", "pthread_nonshared", "fftw3", "fftw3f", "snappy", "asound", "dl-2.13"
+    "rt-2.29", "jpeg", "pthread-2.29", "fftw3", "fftw3f", "hdf5", "snappy"
+    "flite_cmu_us_slt", "flite_usenglish", "flite_cmulex", "flite", "asound", "dl-2.29"
   }
 
   cppFlags += {
+    "$(patsubst %,-isystem%,$(systemIncludePaths))"
     "-Wconversion"
     "-Wno-sign-conversion"
-    "-nostdinc -march=atom -target i686-pc-linux-gnu"
-    "-mmmx -msse -msse2 -msse3 -mssse3"
+    "-nostdinc -nostdinc++ -march=silvermont -mtune=silvermont -target x86_64-nao-linux-gnu"
+    "-mrdrnd" // As soon as everyone uses at least clang 7.0 this can be removed since it will be default for the silvermont architecture then.
     if (host == "Win32") { "-x c++" }
     if (tool != "vcxproj") {
       "-Wno-switch" // deactivating this is a problem because of the ENUM macro, since numOf<ENUM>s is never used in switch.
@@ -84,11 +92,11 @@ Nao = cppApplication + {
     }
   }
 
-  linkFlags += "-nostdlib"
+  linkFlags += "-nostdlib -z nodefaultlib"
 
   if (tool == "vcxproj") {
-    buildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies $(target) config=$(configuration)@' | bash\""
-    reBuildCommand = "bashexec \"uname -o | sed 's@Cygwin@$(winMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@; s@GNU\/Linux@$(linuxMarePath) --ignore-dependencies rebuild $(target) config=$(configuration)@' | bash\""
+    buildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU\/Linux@$(linuxMarePath)@' | bash\""
+    reBuildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies rebuild $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU\/Linux@$(linuxMarePath)@' | bash\""
     cleanCommand = "$(winMarePath) --ignore-dependencies clean $(target) config=$(configuration)"
   }
 }

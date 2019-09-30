@@ -7,7 +7,7 @@
 #include "CognitionStateChangeListener.h"
 #include "Platform/SystemCall.h"
 
-MAKE_MODULE(CognitionStateChangeListener, cognitionInfrastructure)
+MAKE_MODULE(CognitionStateChangeListener, infrastructure)
 
 CognitionStateChangeListener::CognitionStateChangeListener() :
   lastGameState(0),

@@ -1,8 +1,8 @@
 /**
- * @file BodyContour.h
+ * @file BodyContour.cpp
  * The file implements a struct that represents the contour of the robot's body in the image.
  * The contour can be used to exclude the robot's body from image processing.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #include "BodyContour.h"

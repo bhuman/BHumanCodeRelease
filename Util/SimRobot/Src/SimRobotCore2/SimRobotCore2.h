@@ -344,7 +344,7 @@ namespace SimRobotCore2
     * @return The identifier
     */
     int getKind() const override {return appearance;}
-    
+
     /**
      * Registers controller drawings at an object in the simulation scene
      * @param drawing The drawing

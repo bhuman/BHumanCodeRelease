@@ -3,7 +3,7 @@
  *
  * Implementation of class View3D
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author Colin Graf
  */
 
@@ -53,7 +53,7 @@ private:
 
   void paintGL() override
   {
-    GLdouble aspect = height ? (GLdouble)width / (GLdouble)height : (GLdouble)width;
+    GLdouble aspect = height ? static_cast<GLdouble>(width) / static_cast<GLdouble>(height) : static_cast<GLdouble>(width);
 
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);

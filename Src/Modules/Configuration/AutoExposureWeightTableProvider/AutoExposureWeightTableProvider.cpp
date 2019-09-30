@@ -1,8 +1,8 @@
 /**
  * @file AutoExposureWeightTableProvider.cpp
  *
- * This file implements a module that detemines how different areas of a camera image should be
- * weighted when computing the auto exposure. The auto exposure weight table consists of 5x5
+ * This file implements a module that determines how different areas of a camera image should be
+ * weighted when computing the auto exposure. The auto exposure weight table consists of 4x4
  * weights for corresponding image areas. The module limits the area considered to a
  * definable distance from the robots. In addition, the robot's body is excluded. If the ball
  * is expected to be in the image, it will influence the exposure computation with a
@@ -12,30 +12,34 @@
  */
 
 #include "AutoExposureWeightTableProvider.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Boundary.h"
+#include "Tools/Global.h"
 #include "Tools/ImageProcessing/InImageSizeCalculations.h"
 #include "Tools/Math/Transformation.h"
+#include "Tools/Settings.h"
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(AutoExposureWeightTableProvider, cognitionInfrastructure)
+MAKE_MODULE(AutoExposureWeightTableProvider, infrastructure)
 
 void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExposureWeightTable)
 {
-  // Use static table or reset all weights to 0.
-  Matrix5uc table = useStaticTables ? staticTables[theCameraInfo.camera] : Matrix5uc::Zero();
-  int& nextCellToUpdate = this->nextCellToUpdate[theCameraInfo.camera];
-
+  AutoExposureWeightTable::Table& table = theAutoExposureWeightTable.tables[theCameraInfo.camera];
+  
   DEBUG_RESPONSE("module:AutoExposureWeightTableProvider:alwaysChange")
   {
-    Matrix5uc& table = theAutoExposureWeightTable.tables[theCameraInfo.camera];
-    for(int i = 0; i < maxWeightsUpdatedPerFrame; ++i)
-      table.data()[i] = (table.data()[i] + 1) % 101;
+    for(int i = 0; i < table.size(); ++i)
+      table.data()[i] = (table.data()[i] + 1) % (AutoExposureWeightTable::maxWeight + 1);
     return;
   }
 
-  if(!useStaticTables)
+  // Use static table or reset all weights to 0.
+  if(useStaticTables)
+    table = staticTables[theCameraInfo.camera];
+  else
   {
+    table = AutoExposureWeightTable::Table::Zero();
     ASSERT(theCameraInfo.width % table.cols() == 0);
     ASSERT(theCameraInfo.height % table.rows() == 0);
     const int cellWidth = static_cast<int>(theCameraInfo.width / table.cols());
@@ -82,7 +86,7 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
         if(ballArea.x.max >= 0 && ballArea.x.min < theCameraInfo.width
            && ballArea.y.max >= 0 && ballArea.y.min < theCameraInfo.height)
         {
-          // Compute ball limits in weight table coodinates.
+          // Compute ball limits in weight table coordinates.
           Boundaryi ballLimits(Rangei(std::max(static_cast<int>(ballArea.x.min), 0) / cellWidth,
                                       std::min(static_cast<int>(ballArea.x.max), theCameraInfo.width - 1) / cellWidth),
                                Rangei(std::max(static_cast<int>(ballArea.y.min), 0) / cellHeight,
@@ -104,19 +108,17 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
             int numOfBallCells = (ballLimits.x.getSize() + 1) * (ballLimits.y.getSize() + 1);
             float fieldWeightRatio = 1.f - ballWeightRatio;
             float ballWeight = std::round(numOfFieldCells * ballWeightRatio / fieldWeightRatio / numOfBallCells);
-            if(ballWeight > 100.f)
+            if(ballWeight > static_cast<float>(AutoExposureWeightTable::maxWeight))
               table.setZero(); // ballCellWeight is still 1, everything else is zero
             else
-              ballCellWeight = static_cast<unsigned char>(std::max(1, std::min(100, static_cast<int>(ballWeight))));
+              ballCellWeight = static_cast<unsigned char>(std::max(1, std::min(static_cast<int>(AutoExposureWeightTable::maxWeight),
+                                                                               static_cast<int>(ballWeight))));
           }
 
           // Fill ball area with ball weights
           for(int row = ballLimits.y.min; row <= ballLimits.y.max; ++row)
             for(int col = ballLimits.x.min; col <= ballLimits.x.max; ++col)
               table(row, col) = ballCellWeight;
-
-          // Update ball first
-          nextCellToUpdate = static_cast<int>(ballLimits.y.min * table.cols() + ballLimits.x.min);
 
           // Skip special handling of all weights being 0, because this cannot be the case anymore.
           numOfFieldCells = 1;
@@ -128,36 +130,7 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
     if(numOfFieldCells == 0)
     {
       for(int col = 0; col < table.cols(); ++col)
-        if(rows[col] >= 0)
-          table(rows[col], col) = 1;
-        else
-          table(0, col) = 1;
+        table(std::max(rows[col], 0), col) = 1;
     }
-  }
-  
-  Matrix5uc& output = theAutoExposureWeightTable.tables[theCameraInfo.camera];
-
-  // Count non-zero weights
-  int numOfNoneZeros = 0;
-  for(int i = 0; i < output.size(); ++i)
-    if(output.data()[i])
-      ++numOfNoneZeros;
-
-  // Update a maximum number of weights, but make sure that not everything is zero
-  int weightsUpdated = 0;
-  for(int i = 0; i < table.size() && (weightsUpdated < maxWeightsUpdatedPerFrame || !numOfNoneZeros); ++i)
-  {
-    unsigned char& src = table.data()[nextCellToUpdate];
-    unsigned char& dest = output.data()[nextCellToUpdate];
-    if(src != dest)
-    {
-      if(!src) // Update counter if a zero was added or removed
-        --numOfNoneZeros;
-      else if(!dest)
-        ++numOfNoneZeros;
-      dest = src;
-      ++weightsUpdated;
-    }
-    nextCellToUpdate = (nextCellToUpdate + 1) % table.size();
   }
 }

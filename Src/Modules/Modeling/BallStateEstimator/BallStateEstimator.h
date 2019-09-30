@@ -1,39 +1,34 @@
 /**
  * @file BallStateEstimator.h
  *
- * For ball tracking in the RoboCup context, two tasks need to be solved:
+ * For ball tracking in the RoboCup context, multiple tasks need to be solved:
  *   1. Filtering and clustering the detected balls (i.e. the BallPercepts) to avoid
  *      the use of any false positive, which might lead to severe problems.
- *   2. Estimating a precise position as well as a velocity based on a set of recent
- *      ball observations.
- * In previous implementations, these two tasks have been combined within one module. For more
- * clarity and more flexibility, both tasks are split into two modules now.
- * In addition, collision detection between feet and ball has been moved to a third model.
+ *   2. Detecting collisions of the ball and the robot.
+ *   3. Estimating a precise position as well as a velocity based on a set of recent
+ *      ball observations and collision information.
  *
- * This module provides a solution for task 2: State estimation.
+ * This module provides a solution for task 3: State estimation.
  *
  * The module declared in this file is based on the implementation that has been used by
  * B-Human for multiple years: estimating the ball position and velocity by maintaining
  * a set of normal Kalman filters.
+ * It is a reimplementation of the module used during RoboCup 2018.
  *
  * @author Tim Laue
  */
 
 #pragma once
 
-#include "KalmanFilterBallHypothesis.h"
+#include "BallStateEstimateFilters.h"
 #include "Representations/Configuration/BallSpecification.h"
-#include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Modeling/BallContactWithRobot.h"
+#include "Representations/Modeling/BallContactChecker.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FilteredBallPercepts.h"
-#include "Representations/Modeling/WorldModelPrediction.h"
+#include "Representations/Modeling/Odometer.h"
 #include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
@@ -42,20 +37,16 @@
 
 MODULE(BallStateEstimator,
 {,
-  REQUIRES(BallContactWithRobot),
+  REQUIRES(BallContactChecker),
   REQUIRES(BallSpecification),
   REQUIRES(BodyContour),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(FieldDimensions),
   REQUIRES(FilteredBallPercepts),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
-  REQUIRES(OdometryData),
-  REQUIRES(RobotInfo),
-  REQUIRES(WorldModelPrediction),
+  REQUIRES(Odometer),
   PROVIDES(BallModel),
   DEFINES_PARAMETERS(
   {,
@@ -67,6 +58,8 @@ MODULE(BallStateEstimator,
     (int)(250) ballDisappearedTimeout,                   /**< Threshold. For this time span, a ball can not disappear. This avoid immediate disappearance after a few false negatives */
     (int)(700) lastBallPerceptTimeout,                   /**< Threshold. Consider a previously seen ball as valid for velocity computation for this amount of milliseconds. */
     (int)(4) minNumberOfMeasurementsForRollingBalls,     /**< A internal rolling ball hypothesis can only be selected, if it incorporates at least this number of measurements. */
+    (float)(80.f) minSpeed,                              /**< Minimum ball speed. Everything below this threshold will become clipped to 0. */
+    (unsigned)(10) maxNumberOfHypotheses,                /**< Do not keep track of more hypothesis per mode than this */
   }),
 });
 
@@ -82,16 +75,20 @@ public:
   BallStateEstimator();
 
 private:
-  OdometryData lastOdometryData;                   /**< The odometry state at the last execution of this module */
-  unsigned int lastFrameTime;                      /**< The point of time at the last execution of this module */
-  KalmanFilterBallHypothesis* bestState;           /**< Pointer to the moving hypothesis that is most likely */
-  KalmanFilterBallHypothesis states[12];           /**< The list of hypotheses */
-  int numberOfStates;                              /**< The number of internall ball states that are tracked in parallel */
-  RingBufferWithSum<unsigned short, 60> seenStats; /**< Contains a 100 for time the ball was seen and 0 when it was not, used for statistics in ball model */
-  bool ballWasSeenInThisFrame;                     /**< Internal flag to keep some expressions short */
-  unsigned timeWhenBallFirstDisappeared;           /**< A point of time from which on a ball seems to have disappeared (is not seen anymore although it should be) */
-  bool ballDisappeared;                            /**< If true, the ball is currently considered as disappeared */
-  FilteredBallPercept lastBallPercept;             /**< The last seen ball. Used for velocity computation */
+  unsigned int lastFrameTime;                               /**< The point of time at the last execution of this module */
+  BallStateEstimate* bestState;                             /**< Pointer to the moving hypothesis that is most likely */
+  bool recomputeBestState;                                  /**< If true, the bestState pointer is set again. Needed, if balls are removed from a list. */
+  std::vector<StationaryBallKalmanFilter,
+              Eigen::aligned_allocator<StationaryBallKalmanFilter>>
+                                           stationaryBalls; /**< The list of hypotheses */
+  std::vector<RollingBallKalmanFilter,
+              Eigen::aligned_allocator<RollingBallKalmanFilter>>
+                                              rollingBalls; /**< The list of hypotheses */
+  RingBufferWithSum<unsigned short, 60> seenStats;          /**< Contains a 100 for time the ball was seen and 0 when it was not, used for statistics in ball model */
+  bool ballWasSeenInThisFrame;                              /**< Internal flag to keep some expressions short */
+  unsigned timeWhenBallFirstDisappeared;                    /**< A point of time from which on a ball seems to have disappeared (is not seen anymore although it should be) */
+  bool ballDisappeared;                                     /**< If true, the ball is currently considered as disappeared */
+  FilteredBallPercept lastBallPercept;                      /**< The last seen ball. Used for velocity computation */
 
   /** Initialize member variables and reset filters */
   void init();
@@ -106,9 +103,11 @@ private:
 
   void motionUpdate(BallModel& ballModel);
   void integrateCollisionWithFeet();
-  void sensorUpdate(const Vector2f& measurement, const Matrix2f& measurementCov, float ballRadius);
-  void normalizeWeights(KalmanFilterBallHypothesis*& worstStationaryState, KalmanFilterBallHypothesis*& worstMovingState);
-  void createNewStates(const Vector2f& ballPercept, const float ballPerceptRadius, const Matrix2f& ballPerceptCov, KalmanFilterBallHypothesis* worstStationaryState, KalmanFilterBallHypothesis* worstMovingState);
+  void normalizeMeasurementLikelihoods();
+  void findBestState();
+  template <typename T> void pruneBallBuffer(std::vector<T, Eigen::aligned_allocator<T>>& balls);
+
+  void createNewFilters(const Vector2f& ballPercept, const float ballPerceptRadius, const Matrix2f& ballPerceptCov);
   void plotAndDraw();
 
   /**

@@ -7,75 +7,39 @@ option(InWalkKick)
   {
     Vector3f positionOffset;
     Vector3f rotationOffset;
-    walkKickEngine.getState(std::min(theWalkGenerator.t / theWalkGenerator.stepDuration, 1.f),
-                            positionOffset, rotationOffset);
+    theWalkKickGenerator.getState(std::min(theWalkGenerator.t / theWalkGenerator.stepDuration, 1.f),
+                                  positionOffset, rotationOffset);
     return Pose3f(Rotation::AngleAxis::unpack(rotationOffset), positionOffset);
   };
 
   initial_state(init)
   {
     walkRequest = theMotionRequest.walkRequest;
-
-    if(playKickSounds)
-      SystemCall::playSound((std::string(TypeRegistry::getEnumName(walkRequest.walkKickRequest.kickType))
-                             + (walkRequest.walkKickRequest.kickLeg == Legs::left ? "Left.wav" : "Right.wav")).c_str());
+    theWalkKickGenerator.start(walkRequest.walkKickRequest);
 
     transition
     {
       if(theWalkGenerator.t == 0)
       {
-        if(walkRequest.mode == WalkRequest::runUpMode)
-        {
-          resetController();
-          goto runUpAndKick;
-        }
-        if(theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase == leftPrestepPhase)
+        if(theWalkKickGenerator.requiresPreStep && theWalkGenerator.isLeftPhase == leftPreStepPhase)
           goto preStep;
-        else if(!theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase != leftPrestepPhase)
-          goto start;
+        else if(!theWalkKickGenerator.requiresPreStep && theWalkGenerator.isLeftPhase != leftPreStepPhase)
+          goto kick;
       }
       goto wait;
     }
   }
-  state(runUpAndKick)
-  {
-    transition
-    {
-      if(theMotionRequest.walkRequest.mode != WalkRequest::runUpMode && !isKicking)
-        goto stopRunning;
-      if(isKicking && theWalkGenerator.t == 0)
-        goto stopRunning;
-    }
-    action
-    {
-      runUp(Pose2f(walkRequest.speed.rotation * theWalkGenerator.maxSpeed.rotation,
-                   walkRequest.speed.translation.x() * theWalkGenerator.maxSpeed.translation.x(),
-                   walkRequest.speed.translation.y() * theWalkGenerator.maxSpeed.translation.y()),
-            theMotionRequest.walkRequest.target);
-    }
-  }
-  target_state(stopRunning)
-  {
-    action
-    {
-      Walking();
-    }
-  }
+
   state(wait)
   {
     transition
     {
       if(theWalkGenerator.t == 0)
       {
-        if(walkRequest.mode == WalkRequest::runUpMode)
-        {
-          resetController();
-          goto runUpAndKick;
-        }
-        if(theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase == leftPrestepPhase)
+        if(theWalkKickGenerator.requiresPreStep && theWalkGenerator.isLeftPhase == leftPreStepPhase)
           goto preStep;
-        else if(!theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].requiresPrestep && theWalkGenerator.isLeftPhase != leftPrestepPhase)
-          goto start;
+        else if(!theWalkKickGenerator.requiresPreStep && theWalkGenerator.isLeftPhase != leftPreStepPhase)
+          goto kick;
       }
     }
     action
@@ -90,28 +54,12 @@ option(InWalkKick)
     transition
     {
       if(theWalkGenerator.t == 0)
-        goto start;
+        goto kick;
     }
     action
     {
-      const Pose2f& stepSize = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].preStepSize;
-      float stepSign = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].kickLeg == walkRequest.walkKickRequest.kickLeg ? 1.f : -1.f;
-      walk(Pose2f(stepSize.rotation * stepSign, stepSize.translation.x(), stepSize.translation.y() * stepSign), WalkGenerator::stepSizeMode);
-    }
-  }
-
-  state(start)
-  {
-    transition
-    {
-      goto kick;
-    }
-    action
-    {
-      walkKickEngine.start(walkRequest.walkKickRequest.kickType, walkRequest.walkKickRequest.kickLeg);
-      const Pose2f& stepSize = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].stepSize;
-      float stepSign = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].kickLeg == walkRequest.walkKickRequest.kickLeg ? 1.f : -1.f;
-      walk(Pose2f(stepSize.rotation * stepSign, stepSize.translation.x(), stepSize.translation.y() * stepSign), WalkGenerator::stepSizeMode);
+      const Pose2f& stepSize = theWalkKickGenerator.preStepSize;
+      walk(Pose2f(stepSize.rotation, stepSize.translation.x(), stepSize.translation.y()), WalkGenerator::stepSizeMode);
     }
   }
 
@@ -119,9 +67,8 @@ option(InWalkKick)
   {
     action
     {
-      const Pose2f& stepSize = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].stepSize;
-      float stepSign = theWalkKicks.kicks[walkRequest.walkKickRequest.kickType].kickLeg == walkRequest.walkKickRequest.kickLeg ? 1.f : -1.f;
-      walk(Pose2f(stepSize.rotation * stepSign, stepSize.translation.x(), stepSize.translation.y() * stepSign),
+      const Pose2f& stepSize = theWalkKickGenerator.stepSize;
+      walk(Pose2f(stepSize.rotation, stepSize.translation.x(), stepSize.translation.y()),
            WalkGenerator::stepSizeMode, getKickFootOffset);
     }
   }

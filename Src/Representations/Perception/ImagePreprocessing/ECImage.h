@@ -12,7 +12,7 @@
 #pragma once
 
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/Image.h"
 #include "Tools/ImageProcessing/PixelTypes.h"
 #include "Tools/Debugging/DebugImages.h"
 
@@ -31,9 +31,9 @@ STREAMABLE(ECImage,
     SEND_DEBUG_IMAGE("HuedImage", hued);
   },
 
-  (unsigned)(0) timeStamp,
-  (TImage<PixelTypes::GrayscaledPixel>) grayscaled,
-  (TImage<PixelTypes::ColoredPixel>) colored,
-  (TImage<PixelTypes::GrayscaledPixel>) saturated,
-  (TImage<PixelTypes::HuePixel>) hued,
+  (unsigned)(0) timestamp,
+  (Image<PixelTypes::GrayscaledPixel>) grayscaled,
+  (Image<PixelTypes::ColoredPixel>) colored,
+  (Image<PixelTypes::GrayscaledPixel>) saturated,
+  (Image<PixelTypes::HuePixel>) hued,
 });

@@ -3,7 +3,7 @@
  *
  * Declaration of class ImageView
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author Colin Graf
  */
 
@@ -25,7 +25,7 @@
 #include "Controller/RobotConsole.h"
 #include "Controller/Views/ColorCalibrationView/ColorCalibrationView.h"
 #include "Controller/Visualization/PaintMethods.h"
-#include "Representations/Infrastructure/Image.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Tools/Math/Eigen.h"
 
 class RobotConsole;
@@ -36,12 +36,12 @@ class ImageWidget;
  *
  * A class to represent a view displaying camera images and overlaid debug drawings.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 class ImageView : public SimRobot::Object
 {
 public:
-  bool upperCam; /**< Show upper cams image in this view. */
+  const std::string threadIdentifier; /**< The thread that created the images shown in this view. */
   ImageWidget* widget = nullptr; /**< The widget of this view */
 
   /**
@@ -53,7 +53,7 @@ public:
    * @param gain The intensity is multiplied with this factor.
    * @param ddScale The debug drawings are multiplied with this factor.
    */
-  ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain = 1.0f, float ddScale = 1.0f);
+  ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, const std::string& threadIdentifier, float gain = 1.0f, float ddScale = 1.0f);
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
@@ -89,11 +89,11 @@ private:
   ImageView& imageView;
   QImage* imageData = nullptr;
   void* imageDataStorage = nullptr;
-  int imageWidth = Image::maxResolutionWidth;
-  int imageHeight = Image::maxResolutionHeight;
-  unsigned int lastImageTimeStamp = 0;
-  unsigned int lastColorTableTimeStamp = 0;
-  unsigned int lastDrawingsTimeStamp = 0;
+  int imageWidth = CameraImage::maxResolutionWidth;
+  int imageHeight = CameraImage::maxResolutionHeight;
+  unsigned int lastImageTimestamp = 0;
+  unsigned int lastColorTableTimestamp = 0;
+  unsigned int lastDrawingsTimestamp = 0;
   QPainter painter;
   QPointF dragStart;
   QPointF dragStartOffset;
@@ -118,6 +118,7 @@ private:
   bool event(QEvent* event) override;
   void wheelEvent(QWheelEvent* event) override;
   void mouseDoubleClickEvent(QMouseEvent* event) override;
+  const DebugDrawing* getDrawing(const std::string& name) const;
 
   QSize sizeHint() const override { return QSize(imageWidth, imageHeight); }
 
@@ -126,9 +127,7 @@ private:
   void update() override
   {
     if(needsRepaint())
-    {
       QWidget::update();
-    }
   }
 
   QMenu* createUserMenu() const override;

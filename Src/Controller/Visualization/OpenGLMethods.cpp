@@ -13,7 +13,7 @@
 /** returns (value+offset)/scale */
 float transformCoordinates(int scale, int offset, int value)
 {
-  return (value + offset) / (float)scale;
+  return (value + offset) / static_cast<float>(scale);
 }
 
 void OpenGLMethods::paintCubeToOpenGLList(int xLow, int yLow, int zLow, int xHigh, int yHigh, int zHigh,
@@ -33,7 +33,7 @@ void OpenGLMethods::paintCubeToOpenGLList(int xLow, int yLow, int zLow, int xHig
   float zL = transformCoordinates(scale, offsetZ, zLow);
 
   glBegin(GL_LINE_LOOP);
-  glColor3ub((unsigned char)r, (unsigned char)g, (unsigned char)b);
+  glColor3ub(static_cast<unsigned char>(r), static_cast<unsigned char>(g), static_cast<unsigned char>(b));
   glVertex3d(xL, yL, zL);
   glVertex3d(xH, yL, zL);
   glVertex3d(xH, yH, zL);
@@ -89,7 +89,7 @@ void OpenGLMethods::paintImagePixelsToOpenGLList(RobotConsole& console, const De
     glBegin(GL_POINTS);
 
   {
-    TImage<PixelTypes::BGRAPixel> rgbImage(image.getImageWidth(), image.height);
+    Image<PixelTypes::BGRAPixel> rgbImage(image.getImageWidth(), image.height);
     console.debugImageConverter.convertToBGRA(image, rgbImage[0]);
 
     ColorChannels* convertedImage;

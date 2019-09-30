@@ -3,13 +3,14 @@
  *
  * Declaration of class ModuleInfo
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
 
+#include "Tools/Framework/Configuration.h"
 #include "Tools/MessageQueue/InMessage.h"
-#include "Tools/Module/ModuleManager.h"
+#include "Tools/Module/Module.h"
 #include <list>
 #include <set>
 #include <string>
@@ -20,7 +21,7 @@
  *
  * A class to represent modules and selected providers.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 class ModuleInfo
 {
@@ -31,7 +32,6 @@ public:
     ModuleBase::Category category; /**< The category of the module. */
     std::vector<std::string> requirements; /**< The requirements of this module. */
     std::vector<std::string> representations; /**< The representations provided by this module. */
-    char processIdentifier; /** The process in which this module is defined. */
 
     /**
      * Comparison operator. Only uses the module name for comparison.
@@ -41,22 +41,20 @@ public:
     bool operator==(const std::string& other) const { return name == other; }
 
     /**
-     * Comparison operator. Uses the process identifier, the category and the
-     * module name for comparison.
+     * Comparison operator. Uses the category and the module name for comparison.
      * @param other The module this one is compared to.
      * @return Is this module "smaller" that the other?
      */
     bool operator<(const Module& other) const
     {
-      return processIdentifier != other.processIdentifier ? processIdentifier < other.processIdentifier :
-             category != other.category ? category < other.category : name < other.name;
+      return category != other.category ? category < other.category : name < other.name;
     }
   };
 
   std::list<Module> modules; /**< All available modules. */
   std::set<std::string> representations; /**< All available representations. */
-  ModuleManager::Configuration config; /**< The current module configuration. */
-  unsigned timeStamp = 0; /**< The time when the module information was last changed. */
+  Configuration config; /**< The current module configuration. */
+  unsigned timestamp = 0; /**< The time when the module information was last changed. */
 
   /**
    * The method clears all tables.
@@ -66,10 +64,9 @@ public:
   /**
    * The function handles a module table message.
    * @param message The message.
-   * @param processIdentifier The identifier of the process sending the module table.
    * @return Was it a module table message?
    */
-  bool handleMessage(InMessage& message, char processIdentifier);
+  bool handleMessage(InMessage& message);
 
   /**
    * The method writes a module request to a stream.

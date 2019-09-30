@@ -15,8 +15,8 @@
 #include <map>
 #include <string>
 #include <qtvariantproperty.h>
-#include "PropertyManager.h"
 #include "Platform/Thread.h" // for SYNC
+#include "PropertyManager.h"
 
 class RobotConsole;
 class InMessage;

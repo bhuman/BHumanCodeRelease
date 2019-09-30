@@ -3,7 +3,7 @@
  *
  * Implementation of class PlotView
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author Colin Graf
  */
 
@@ -52,7 +52,7 @@ bool PlotWidget::needsRepaint() const
   SYNC_WITH(plotView.console);
 
   for(const RobotConsole::Layer& layer : plotView.console.plotViews[plotView.name])
-    if(plotView.console.plots[layer.layer].timeStamp > lastTimeStamp)
+    if(plotView.console.plots[layer.layer].timestamp > lastTimestamp)
       return true;
   return false;
 }
@@ -69,7 +69,7 @@ void PlotWidget::paintEvent(QPaintEvent* event)
 void PlotWidget::paint(QPainter& painter)
 {
   // calculate margin sizes
-  float plotSizeF = (float)plotView.plotSize;
+  float plotSizeF = static_cast<float>(plotView.plotSize);
   const float space = 3;
   float leftMargin;
   float bottomMargin;
@@ -102,8 +102,8 @@ void PlotWidget::paint(QPainter& painter)
 
   // calculate size of the plot area
   const QRect& windowRect = painter.window();
-  QRect plotRect(QPoint((int)(windowRect.x() + leftMargin), (int)(windowRect.y() + topMargin)),
-                 QPoint((int)(windowRect.right() - rightMargin), (int)(windowRect.bottom() - bottomMargin)));
+  QRect plotRect(QPoint(static_cast<int>(windowRect.x() + leftMargin), static_cast<int>(windowRect.y() + topMargin)),
+                 QPoint(static_cast<int>(windowRect.right() - rightMargin), static_cast<int>(windowRect.bottom() - bottomMargin)));
   if(!plotRect.isValid())
     return; // window too small
 
@@ -111,15 +111,15 @@ void PlotWidget::paint(QPainter& painter)
   float stepY = std::pow(10.f, std::ceil(std::log10(plotView.valueLength * 20.f / plotRect.height())));
   float stepX = std::pow(10.f, std::ceil(std::log10(plotSizeF * 25.f / plotRect.width())));
   if(stepY * plotRect.height() / plotView.valueLength >= 40.f)
-    stepY /= 2.;
+    stepY /= 2.f;
   if(stepY * plotRect.height() / plotView.valueLength >= 40.f)
-    stepY /= 2.;
+    stepY /= 2.f;
   if(stepY > std::max<>(plotView.maxValue, -plotView.minValue))
     stepY = std::max<>(plotView.maxValue, -plotView.minValue);
   if(plotRect.width() * stepX / plotSizeF >= 50.f)
-    stepX /= 2.;
+    stepX /= 2.f;
   if(plotRect.width() * stepX / plotSizeF >= 50.f)
-    stepX /= 2.;
+    stepX /= 2.f;
   if(stepX > plotSizeF)
     stepX = plotSizeF;
 
@@ -132,15 +132,15 @@ void PlotWidget::paint(QPainter& painter)
     int width2 = fontMetrics.size(Qt::TextSingleLine, buf).width();
     if(width2 > width)
       width = width2;
-    width += space * 2;
-    if(width < leftMargin)
+    width += static_cast<int>(space) * 2;
+    if(width > leftMargin)
     {
-      plotRect.setLeft((int)(plotRect.left() - (leftMargin - width)));
+      plotRect.setLeft(static_cast<int>(plotRect.left() - (leftMargin - width)));
       leftMargin = width;
     }
   }
 
-  // draw axis lables
+  // draw axis labels
   {
     char buf[32];
     painter.setPen(blackPen);
@@ -196,12 +196,14 @@ void PlotWidget::paint(QPainter& painter)
   {
     if(!plotView.yUnit.empty())
     {
-      QRect rect((int)space, (int)space, (int)(windowRect.width() - space), (int)textHeight);
+      QRect rect(static_cast<int>(space), static_cast<int>(space),
+                 static_cast<int>(windowRect.width() - space), static_cast<int>(textHeight));
       painter.drawText(rect, Qt::AlignLeft, tr(plotView.yUnit.c_str()));
     }
     if(!plotView.xUnit.empty())
     {
-      QRect rect(0, (int)(plotRect.bottom() + space), (int)(windowRect.width() - space), (int)textHeight);
+      QRect rect(0, static_cast<int>(plotRect.bottom() + space),
+                 static_cast<int>(windowRect.width() - space), static_cast<int>(textHeight));
       painter.drawText(rect, Qt::AlignRight, tr(plotView.xUnit.c_str()));
     }
   }
@@ -259,9 +261,9 @@ void PlotWidget::paint(QPainter& painter)
         painter.setPen(pen);
         painter.drawPolyline(plotView.points, static_cast<int>(numOfPoints));
       }
-      unsigned int timeStamp = plotView.console.plots[layer.layer].timeStamp;
-      if(timeStamp > lastTimeStamp)
-        lastTimeStamp = timeStamp;
+      unsigned int timestamp = plotView.console.plots[layer.layer].timestamp;
+      if(timestamp > lastTimestamp)
+        lastTimestamp = timestamp;
       if(drawLegend)
       {
         int width = fontMetrics.size(Qt::TextSingleLine, layer.description.c_str()).width();
@@ -275,9 +277,18 @@ void PlotWidget::paint(QPainter& painter)
     // draw legend
     if(drawLegend && plotList.size() > 0)
     {
-      QRect legendRect((int)(plotRect.left() + space), (int)(plotRect.top() + space), (int)(legendWidth + space * 3 + 10), (int)(space + plotList.size() * (textHeight + space)));
-      QRect rect((int)(legendRect.left() + space + 10 + space), (int)(legendRect.top() + space), (int)(legendRect.width() - (space + 10 + space)), (int)textHeight);
-      QLine line((int)(legendRect.left() + space), (int)(legendRect.top() + space + textHeight / 2 + 1), (int)(legendRect.left() + space + 10), (int)(legendRect.top() + space + textHeight / 2 + 1));
+      QRect legendRect(static_cast<int>(plotRect.left() + space),
+                       static_cast<int>(plotRect.top() + space),
+                       static_cast<int>(legendWidth + space * 3 + 10),
+                       static_cast<int>(space + plotList.size() * (textHeight + space)));
+      QRect rect(static_cast<int>(legendRect.left() + space + 10 + space),
+                 static_cast<int>(legendRect.top() + space),
+                 static_cast<int>(legendRect.width() - (space + 10 + space)),
+                 static_cast<int>(textHeight));
+      QLine line(static_cast<int>(legendRect.left() + space),
+                 static_cast<int>(legendRect.top() + space + textHeight / 2 + 1),
+                 static_cast<int>(legendRect.left() + space + 10),
+                 static_cast<int>(legendRect.top() + space + textHeight / 2 + 1));
       painter.setTransform(QTransform());
       painter.setPen(blackPen);
       painter.setBrush(QBrush(QColor(0xff, 0xff, 0xff, 0x99)));
@@ -289,8 +300,8 @@ void PlotWidget::paint(QPainter& painter)
         const ColorRGBA& color = layer.color;
         painter.setPen(QColor(color.r, color.g, color.b));
         painter.drawLine(line);
-        rect.moveTop((int)(rect.top() + textHeight + space));
-        line.translate(0, (int)(textHeight + space));
+        rect.moveTop(static_cast<int>(rect.top() + textHeight + space));
+        line.translate(0, static_cast<int>(textHeight + space));
       }
     }
   }
@@ -305,11 +316,11 @@ void PlotWidget::determineMinMaxValue()
     for(const auto& layer : plotList)
     {
       const std::list<float>& list = plotView.console.plots[layer.layer].points;
-      int numOfPoints = std::min((int)list.size(), (int)plotView.plotSize);
+      int numOfPoints = std::min(static_cast<int>(list.size()), static_cast<int>(plotView.plotSize));
       if(numOfPoints > 1)
       {
         std::list<float>::const_iterator k = list.begin();
-        for(int j = plotView.plotSize - numOfPoints; j < int(plotView.plotSize); ++j)
+        for(int j = plotView.plotSize - numOfPoints; j < static_cast<int>(plotView.plotSize); ++j)
         {
           const float& value(*(k++));
           if(started)
@@ -332,8 +343,8 @@ void PlotWidget::determineMinMaxValue()
 
   if(started)
   {
-    int precision = int(std::ceil(std::log10(plotView.maxValue - plotView.minValue))) - 1;
-    float rounder = std::pow(10.f, (float)precision);
+    int precision = static_cast<int>(std::ceil(std::log10(plotView.maxValue - plotView.minValue))) - 1;
+    float rounder = std::pow(10.f, static_cast<float>(precision));
     plotView.minValue = std::floor(plotView.minValue / rounder) * rounder;
     plotView.maxValue = std::ceil(plotView.maxValue / rounder) * rounder;
     plotView.valueLength = plotView.maxValue - plotView.minValue;
@@ -377,11 +388,11 @@ void PlotWidget::exportAsGnuplot()
   int numOfPlots = 0;
   {
     const std::list<RobotConsole::Layer>& plotList(plotView.console.plotViews[plotView.name]);
-    numOfPlots = (int)plotList.size();
+    numOfPlots = static_cast<int>(plotList.size());
     for(const RobotConsole::Layer& layer : plotList)
     {
       const std::list<float>& list = plotView.console.plots[layer.layer].points;
-      int curNumOfPoints = std::min((int)list.size(), (int)plotView.plotSize);
+      int curNumOfPoints = std::min(static_cast<int>(list.size()), static_cast<int>(plotView.plotSize));
       if(curNumOfPoints < numOfPoints)
         numOfPoints = curNumOfPoints;
     }

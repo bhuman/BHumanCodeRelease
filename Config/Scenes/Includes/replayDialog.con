@@ -1,0 +1,2 @@
+# replay a log file.
+sl LOG "${Log File:,../../Logs/*.log}"

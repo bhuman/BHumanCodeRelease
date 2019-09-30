@@ -98,7 +98,7 @@ public:
     explicit QTextStream(const QByteArray &array, QIODevice::OpenMode openMode = QIODevice::ReadOnly);
     virtual ~QTextStream();
 
-#ifndef QT_NO_TEXTCODEC
+#if QT_CONFIG(textcodec)
     void setCodec(QTextCodec *codec);
     void setCodec(const char *codecName);
     QTextCodec *codec() const;
@@ -184,6 +184,7 @@ public:
     QTextStream &operator<<(float f);
     QTextStream &operator<<(double f);
     QTextStream &operator<<(const QString &s);
+    QTextStream &operator<<(QStringView s);
     QTextStream &operator<<(QLatin1String s);
     QTextStream &operator<<(const QStringRef &s);
     QTextStream &operator<<(const QByteArray &array);

@@ -653,7 +653,7 @@ public:
    * Move copy constructor.
    * @param other The stream the contents of which are moved to this one.
    */
-  OutFile(OutFile&& other) : stream(other.stream) {other.stream = nullptr;}
+  OutFile(OutFile&& other) noexcept : stream(other.stream) {other.stream = nullptr;}
 
   /** Destructor. */
   ~OutFile();
@@ -689,7 +689,7 @@ protected:
    * @param name The name of the file to open. It will be interpreted
    *             as relative to the configuration directory. If the file
    *             does not exist, it will be created. If it already
-   *             exists, its previous contents will be discared.
+   *             exists, its previous contents will be discarded.
    */
   void open(const std::string& name);
 
@@ -700,7 +700,7 @@ protected:
    *             does not exist, it will be created. If it already
    *             exists, its previous contents will be preserved,
    *             if append = true.
-   * @param append Determines, if the file content is preserved or discared.
+   * @param append Determines, if the file content is preserved or discarded.
    */
   void open(const std::string& name, bool append);
 
@@ -740,7 +740,7 @@ public:
   /**
    * The destructor frees the memory buffer.
    */
-  ~OutMemory() { if(dynamic) std::free(buffer); }
+  ~OutMemory() { if(dynamic && buffer) std::free(buffer); }
 
   /** No assignment operator. */
   OutMemory& operator=(const OutMemory&) = delete;
@@ -1051,6 +1051,10 @@ public:
  */
 class OutMap : public Out
 {
+protected:
+  enum Mode {singleLine, multiLine, singleLineInnermost};
+
+private:
   /**
    * An entry representing the current state in the writing process.
    */
@@ -1065,27 +1069,35 @@ class OutMap : public Out
       type(type), enumType(enumType), hasSubEntries(false)
     {}
   };
-  Out& stream; /**< The map that is written to. */
-  bool singleLine; /**< Output to a single line. */
+  Out* stream; /**< The map that is currently written to. */
+  Out& target; /** The actual target stream. */
+  OutTextRawMemory buffer; /**< A buffer that will be used sometimes. */
+  Mode mode; /**< How to structure the output into lines? */
+  size_t maxCollapsedLength; /**< The maximum length of text collapsed to a single line. */
   std::vector<Entry> stack; /**< The hierarchy of values that are written. */
   std::string indentation; /**< The indentation as sequence of spaces. */
 
   /** Writes a line break or simply a space if singleLine is active. */
   void writeLn();
 
+  /** Write buffered data to the actual target stream. */
+  void flush(bool singleLine = false);
+
 protected:
   /**
    * Writes to a stream in config map format.
    * @param stream The stream that is written to.
-   * @param singleLine Output to a single line.
+   * @param mode How to structure the output into lines?
+   * @param maxCollapsedLength The maximum length of text on the
+   *        innermost level collapsed to a single line.
    */
-  OutMap(Out& stream, bool singleLine);
+  OutMap(Out& stream, Mode mode, size_t maxCollapsedLength = 80);
 
   /** No assignment operator. */
   OutMap& operator=(const OutMap&) = delete;
 
   /** Helper to write a value. */
-  template<typename T> void out(const T& value) {stream << value;}
+  template<typename T> void out(const T& value) {*stream << value;}
 
   void outBool(bool value) override {out(value);}
   void outChar(char value) override {out(static_cast<int>(value));}
@@ -1134,9 +1146,11 @@ public:
   /**
    * Constructor.
    * @param name The name of the config file to write to.
-   * @param singleLine Output to a single line.
+   * @param singleLineInnermost Output the innermost level to a single line.
+   * @param maxCollapsedLength The maximum length of text on the innermost
+   *                           level collapsed to a single line.
    */
-  OutMapFile(const std::string& name, bool singleLine = false);
+  OutMapFile(const std::string& name, bool singleLineInnermost = false, size_t maxCollapsedLength = 80);
 
   /**
    * Checks whether was successfully opened.

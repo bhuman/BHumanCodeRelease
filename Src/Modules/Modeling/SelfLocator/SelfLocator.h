@@ -8,31 +8,27 @@
 
 #pragma once
 
+#include "PerceptRegistration.h"
 #include "UKFSample.h"
-#include "Tools/Modeling/PerceptRegistration.h"
-#include "Tools/Modeling/SampleSet.h"
-#include "Tools/Module/Module.h"
-#include "Representations/BehaviorControl/Role.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/SelfLocalizationHypotheses.h"
 #include "Representations/Modeling/SideConfidence.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
@@ -40,10 +36,15 @@
 #include "Representations/Perception/FieldFeatures/OuterCorner.h"
 #include "Representations/Perception/FieldFeatures/PenaltyArea.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Sensing/FallDownState.h"
+#include "Representations/Configuration/StaticInitialPose.h"
+#include "Tools/Modeling/SampleSet.h"
+#include "Tools/Module/Module.h"
 
 MODULE(SelfLocator,
 {,
@@ -76,8 +77,9 @@ MODULE(SelfLocator,
   REQUIRES(SideConfidence),
   REQUIRES(PenaltyMarkPercept),
   REQUIRES(WorldModelPrediction),
+  REQUIRES(StaticInitialPose),
   USES(MotionRequest),
-  USES(Role),
+  USES(TeamBehaviorStatus),
   PROVIDES(RobotPose),
   PROVIDES(SelfLocalizationHypotheses),
   LOADS_PARAMETERS(
@@ -98,6 +100,7 @@ MODULE(SelfLocator,
     (float) lineAssociationCorridor,                /**< The corridor (metric distance to both sides) used for relating seen lines with field lines. */
     (float) longLineAssociationCorridor,            /**< The corridor (metric distance to both sides) used for relating long seen lines with long field lines. */
     (float) intersectionAssociationDistance,        /**< Distance threshold (metric) for associating a seen intersection and an intersection in the model */
+    (float) minimumLineLengthForAssociationToLongHorizontalLine, /**< Lines shorter than this cannot become associated to a long horizontal line that was seen in the upper camera. Only used for center line, currently. */
     (Vector2f) robotRotationDeviation,              /**< Deviation of the rotation of the robot's torso */
     (Vector2f) robotRotationDeviationInStand,       /**< Deviation of the rotation of the robot's torso when it is standing. */
     (float) validityThreshold,                      /**< if(robotPose.validity >= validityThreshold) robotPose.validity = 1.f; */
@@ -106,7 +109,6 @@ MODULE(SelfLocator,
     (float) movedAngleWeightRotationNoiseNotWalking,/**< Weighting for considering rotation when computing a sample's rotational error, special handling for situations in which the robot is not walking and odometry might not be continuous */
     (float) majorDirTransWeight,                    /**< Weighting for considering the major direction when computing a sample's translational error (major means, for instance, the movement in x direction when computing the translational error in x direction) */
     (float) minorDirTransWeight,                    /**< Weighting for considering the minor direction when computing a sample's translational error (minor means, for instance, the movement in y direction when computing the translational error in x direction) */
-    (float) v5RotationalNoiseReductionFactor,       /**< Value within [0,..1] that becomes multiplied with the rotational noise, used to reduce applied noise on robots that have a z-axis gyroscope */
     (bool) goalFrameIsPerceivedAsLines,             /**< Set to true, if the field has goals with a white frame on the floor */
     (bool) alwaysAssumeOpponentHalf,                /**< When making a short demo with one goal, the robot should always assume that this is the goal to score at.*/
     (float) baseValidityWeighting,                  /**< Each particle has at least this weight. */
@@ -127,6 +129,9 @@ MODULE(SelfLocator,
     (float) returnFromPenaltyMaxXOffset,            /**< When poses are generated after returning from a penalty, a random x offset is added to each pose. The absolute value of this offset is defined by this parameter. */
     (float) walkInYModificator,                     /**< Offset on Y axis, negative value means more inside, positive value means more outside */
     (bool) mirrorWalkInPositionsFieldPlayers,       /**< Lets field players walk in from opposite half, if true. Use for demos on small/half demo field */
+    (float) covarianceScalarLongHorizontalLine,     /**< If a line is long and horizontal, its computed covariance is multiplied by this number. Choosing a number less than 1 thus means that the confidence in this measurement is higher. */
+    (float) minLengthLongHorizontalLine,            /**< Minimum length (in millimeters) of a line to be considered as "long" */
+    (float) yDifferenceLongHorizontalLine,          /**< Maximum difference between lineStart.y and lineEnd.y in pixels */
   }),
 });
 
@@ -144,7 +149,6 @@ private:
   RegisteredPercepts registeredPercepts;     /**< Collection of percepts that have been associated with elements on the field */
   unsigned lastTimeFarFieldBorderSeen;       /**< Timestamp for checking goalie localization */
   unsigned lastTimeJumpSound;                /**< When has the last sound been played? Avoid to flood the sound player in some situations */
-  unsigned lastTimePlayingSound;             /**< When has the last playing sound been played? Avoid to flood the sound player in some situations */
   unsigned timeOfLastReturnFromPenalty;      /**< Point of time when the last penalty of this robot was over */
   unsigned lastTimeNotInStandWalkKick;       /**< Timestamp to keep track of the time during which the robot was either standing, walking, or kicking */
   bool sampleSetHasBeenResetted;             /**< Flag indicating that all samples have been replaced in the current frame */

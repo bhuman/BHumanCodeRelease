@@ -78,7 +78,7 @@ bool MidCirclePerceptor::searchCircleWithLine(MidCircle& midCircle) const
 
       const float distanceCameraLineToCircle = Geometry::getDistanceToLine(
         Geometry::Line(leftBottomCameraEdgeOnTheField, rightBottomCameraEdgeOnTheField - leftBottomCameraEdgeOnTheField), theMidCirclePosition);
-     
+
       Vector2f unused;
       if(distanceCameraLineToCircle > -theFieldDimensions.centerCircleRadius / 2
          && std::min(squaredFirstDist, squaredLastDist) < sqr(theFieldDimensions.centerCircleRadius / 2))

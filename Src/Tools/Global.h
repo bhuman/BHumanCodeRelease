@@ -1,7 +1,7 @@
 /**
  * @file Global.h
  * Declaration of a class that contains pointers to global data.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -41,14 +41,14 @@ private:
 
 public:
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the annotation manager in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the annotation manager in this thread.
    */
   static AnnotationManager& getAnnotationManager() { return *theAnnotationManager; }
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the outgoing debug message queue in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the outgoing debug message queue in this thread.
    */
   static OutMessage& getDebugOut() {return *theDebugOut;}
 
@@ -59,8 +59,8 @@ public:
   static bool debugOutExists() {return theDebugOut != nullptr;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the settings in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the settings in this thread.
    */
   static Settings& getSettings() {return *theSettings;}
 
@@ -71,42 +71,43 @@ public:
   static bool settingsExist() {return theSettings != nullptr;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the debug request table in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the debug request table in this thread.
    */
   static DebugRequestTable& getDebugRequestTable() {return *theDebugRequestTable;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the debug data table in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the debug data table in this thread.
    */
   static DebugDataTable& getDebugDataTable() {return *theDebugDataTable;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the drawing manager in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the drawing manager in this thread.
    */
   static DrawingManager& getDrawingManager() {return *theDrawingManager;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return The instance of the 3-D drawing manager in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return The instance of the 3-D drawing manager in this thread.
    */
   static DrawingManager3D& getDrawingManager3D() {return *theDrawingManager3D;}
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return the instance of the timing manager in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return the instance of the timing manager in this thread.
    */
   static TimingManager& getTimingManager() { return *theTimingManager; }
 
   /**
-   * The method returns a reference to the process wide instance.
-   * @return the instance of the asmjit runtime in this process.
+   * The method returns a reference to the thread wide instance.
+   * @return the instance of the asmjit runtime in this thread.
    */
   static asmjit::JitRuntime& getAsmjitRuntime() { return *theAsmjitRuntime; }
 
-  friend class Process; // The class Process can set these pointers.
+  friend class ThreadFrame; // The class ThreadFrame can set these pointers.
+  friend class Robot; // The class Robot can set theSettings.
   friend class ConsoleRoboCupCtrl; // The class ConsoleRoboCupCtrl can set theSettings.
   friend class RobotConsole; // The class RobotConsole can set theDebugOut.
 };

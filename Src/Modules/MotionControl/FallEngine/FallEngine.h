@@ -5,13 +5,14 @@
  */
 
 #pragma once
-#include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/FallEngineOutput.h"
-#include "Representations/MotionControl/WalkingEngineOutput.h"
-#include "Representations/Infrastructure/JointAngles.h"
+
+#include "Representations/Communication/GameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/MotionControl/FallEngineOutput.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Tools/Module/Module.h"
@@ -51,7 +52,6 @@ private:
   bool headPitchInSafePosition = false;
   bool shoulderInSafePosition = false;
   JointAngles lastJointsBeforeFall;
-  unsigned framesSinceFirstDetection = 0;
 
   bool handleSpecialCases();
 
@@ -65,6 +65,4 @@ private:
   void centerHead(FallEngineOutput& jointRequest);
 
   void calcDirection(FallEngineOutput& output);
-
-  void interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target) const;
 };

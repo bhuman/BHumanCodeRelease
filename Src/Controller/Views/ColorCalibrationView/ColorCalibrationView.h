@@ -14,7 +14,6 @@
 #include "RangeSelector.h"
 #include "ThresholdSelector.h"
 #include "History.h"
-#include "Representations/Infrastructure/Image.h"
 
 class ColorCalibrationWidget;
 
@@ -41,7 +40,7 @@ class ColorCalibrationWidget : public QWidget, public SimRobot::Widget
 
 public:
   ColorCalibrationView& colorCalibrationView;
-  unsigned timeStamp = 0;
+  unsigned timestamp = 0;
 
   ColorCalibrationWidget(ColorCalibrationView& colorCalibrationView);
   ~ColorCalibrationWidget();

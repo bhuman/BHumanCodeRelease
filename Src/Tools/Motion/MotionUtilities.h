@@ -51,5 +51,4 @@ namespace MotionUtilities
   void interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target, const JointAngles& theJointAngles);
   void stand(JointRequest& jointRequest);
   void sit(JointRequest& jointRequest);
-  void interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target);
 };

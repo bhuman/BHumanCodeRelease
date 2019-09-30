@@ -1,7 +1,7 @@
 /**
  * @file Representations/MotionControl/MotionRequest.h
  * This file declares a struct that represents the motions that can be requested from the robot.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once

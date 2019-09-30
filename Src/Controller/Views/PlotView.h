@@ -3,7 +3,7 @@
  *
  * Declaration of class PlotView
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author Colin Graf
  */
 
@@ -103,7 +103,7 @@ public slots:
 private:
   PlotView& plotView;
   PlotWidget*& plotWidget;
-  unsigned int lastTimeStamp = 0; /**< Timestamp of the last plot drawing. */
+  unsigned int lastTimestamp = 0; /**< Timestamp of the last plot drawing. */
   QPainter painter; /**< The painter used for painting the plot. */
   QPen blackPen;
   QPen grayPen;

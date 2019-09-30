@@ -27,7 +27,7 @@ namespace YHS2s
     static const __m_auto_i classWhite = _mmauto_set1_epi8(FieldColors::Color::white);
     static const __m_auto_i classField = _mmauto_set1_epi8(FieldColors::Color::field);
     static const __m_auto_i classBlack = _mmauto_set1_epi8(FieldColors::Color::black);
-    static_assert((int)FieldColors::Color::none == 0, "");
+    static_assert(static_cast<int>(FieldColors::Color::none) == 0, "");
 
     __m_auto_i classification =
       _mmauto_or_si_all(
@@ -49,8 +49,8 @@ namespace YHS2s
 
   template<bool aligned, bool avx, bool saveGrayscaled, bool saveSaturation, bool saveHue>
   void classifyByYHS2FieldColorSSE(const YUYVPixel* const srcImage, const int srcWidth, const int srcHeight, const FieldColors& theFieldColors,
-                                   TImage<PixelTypes::GrayscaledPixel>& grayscaled, TImage<ColoredPixel>& colored, TImage<HuePixel>& hued,
-                                   TImage<PixelTypes::GrayscaledPixel>& saturated)
+                                   Image<PixelTypes::GrayscaledPixel>& grayscaled, Image<ColoredPixel>& colored, Image<HuePixel>& hued,
+                                   Image<PixelTypes::GrayscaledPixel>& saturated)
   {
     ASSERT(srcWidth % 32 == 0);
 
@@ -156,7 +156,7 @@ namespace YHS2s
 
   template<bool saveGrayscaled, bool saveSaturation,  bool saveHue>
   void updateSSE(const YUYVPixel* const src, const int srcWidth, const int srcHeight, const FieldColors& theFieldColors,
-                 TImage<PixelTypes::GrayscaledPixel>& grayscaled, TImage<ColoredPixel>& colored, TImage<HuePixel>& hued, TImage<PixelTypes::GrayscaledPixel>& saturated)
+                 Image<PixelTypes::GrayscaledPixel>& grayscaled, Image<ColoredPixel>& colored, Image<HuePixel>& hued, Image<PixelTypes::GrayscaledPixel>& saturated)
   {
     if(simdAligned<_supportsAVX2>(src))
       classifyByYHS2FieldColorSSE<true, _supportsAVX2, saveGrayscaled, saveSaturation, saveHue>(src, srcWidth, srcHeight, theFieldColors, grayscaled, colored, hued, saturated);

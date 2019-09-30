@@ -18,6 +18,9 @@
 #define __AVX2__ 1
 #endif
 #else
+#ifdef __clang__
+#pragma clang system_header
+#endif
 #include <x86intrin.h>
 #define ALWAYSINLINE inline __attribute((always_inline))
 #endif
@@ -84,7 +87,7 @@
 #endif
 static __inline__ __m128i __DEFAULT_FN_ATTRS my_mm_avg_epu8(__m128i __a, __m128i __b)
 {
-  typedef unsigned short __v16hu __attribute__((__vector_size__(32)));
+  using __v16hu = unsigned short __attribute__((__vector_size__(32)));
   return (__m128i)__builtin_convertvector(
     ((__builtin_convertvector((__v16qu)__a, __v16hu) +
       __builtin_convertvector((__v16qu)__b, __v16hu)) + 1)

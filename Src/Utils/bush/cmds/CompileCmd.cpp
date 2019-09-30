@@ -120,7 +120,7 @@ bool CompileCmd::execute(Context& context, const std::vector<std::string>& param
 #ifdef WINDOWS
 QString CompileCmd::getCommand()
 {
-  return QString(getVisualStudioPath().c_str()) + "MSBuild\\15.0\\Bin\\MSBuild.exe";
+  return QString(getVisualStudioPath().c_str()) + "MSBuild\\Current\\Bin\\MSBuild.exe";
 }
 
 QStringList CompileCmd::getParams(const QString& config, const QString& project)

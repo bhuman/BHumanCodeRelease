@@ -96,7 +96,7 @@ class Q_CORE_EXPORT QDebug
         void setVerbosity(int v)
         {
             if (context.version > 1) {
-                flags &= ~(VerbosityMask << VerbosityShift);
+                flags &= ~(uint(VerbosityMask) << VerbosityShift);
                 flags |= (v & VerbosityMask) << VerbosityShift;
             }
         }
@@ -374,6 +374,19 @@ operator<<(QDebug dbg, T value)
     const QMetaObject *obj = qt_getEnumMetaObject(value);
     const char *name = qt_getEnumName(value);
     return qt_QMetaEnum_debugOperator(dbg, typename QFlags<T>::Int(value), obj, name);
+}
+
+template<typename T,
+         typename A = typename std::enable_if<std::is_enum<T>::value, void>::type,
+         typename B = typename std::enable_if<sizeof(T) <= sizeof(int), void>::type,
+         typename C = typename std::enable_if<!QtPrivate::IsQEnumHelper<T>::Value, void>::type,
+         typename D = typename std::enable_if<QtPrivate::IsQEnumHelper<QFlags<T>>::Value, void>::type>
+inline QDebug operator<<(QDebug dbg, T value)
+{
+    typedef QFlags<T> FlagsT;
+    const QMetaObject *obj = qt_getEnumMetaObject(FlagsT());
+    const char *name = qt_getEnumName(FlagsT());
+    return qt_QMetaEnum_debugOperator(dbg, typename FlagsT::Int(value), obj, name);
 }
 
 template <class T>

@@ -17,4 +17,5 @@ STREAMABLE(FootSupport,
 {,
   (float)(0.f) support, /** Unitless distribution of the support over both feet (left - right). */
   (bool)(false) switched, /** The support foot switched. */
+  (bool)(false) predictedSwitched, /** The support foot switched but predicted 3 frames earlier. */
 });

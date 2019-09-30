@@ -1,0 +1,3 @@
+<Simulation>
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012"/>
+</Simulation>

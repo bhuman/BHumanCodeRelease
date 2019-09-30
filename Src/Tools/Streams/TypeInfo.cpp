@@ -1,5 +1,5 @@
 /**
- * @file TypeInfo.h
+ * @file TypeInfo.cpp
  *
  * This file implements a class that stores type information about primitive data types,
  * enumerations, and classes/structures. In contrast to the class TypeRegistry, this
@@ -13,7 +13,7 @@
 #include "TypeRegistry.h"
 #include <regex>
 
-static const unsigned unifiedTypenames = 0x80000000;
+static const unsigned unifiedTypeNames = 0x80000000;
 
 TypeInfo::TypeInfo(bool fromTypeRegistry)
 {
@@ -88,7 +88,7 @@ bool TypeInfo::areTypesEqual(const TypeInfo& other, const std::string& thisType,
 
 Out& operator<<(Out& out, const TypeInfo& typeInfo)
 {
-  out << (static_cast<unsigned>(typeInfo.primitives.size()) | unifiedTypenames);
+  out << (static_cast<unsigned>(typeInfo.primitives.size()) | unifiedTypeNames);
   for(const std::string& primitive : typeInfo.primitives)
     out << primitive;
 
@@ -138,8 +138,8 @@ In& operator>>(In& in, TypeInfo& typeInfo)
   unsigned size;
   unsigned size2;
   in >> size;
-  bool needsTypenameUnification = (size & unifiedTypenames) == 0;
-  size &= ~unifiedTypenames;
+  bool needsTypenameUnification = (size & unifiedTypeNames) == 0;
+  size &= ~unifiedTypeNames;
   while(size-- > 0)
   {
     in >> type;

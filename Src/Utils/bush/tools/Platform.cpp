@@ -19,7 +19,7 @@ std::string bhumandDirOnRobot = "/home/nao/";
 std::string makeDirectory()
 {
 #ifdef WINDOWS
-  return "VS2017";
+  return "VS2019";
 #elif defined MACOS
   return "macOS";
 #else
@@ -71,18 +71,44 @@ std::string linuxToPlatformPath(const std::string& path)
 std::string getVisualStudioPath()
 {
 #ifdef WINDOWS
-  HKEY regKey;
-  if(ERROR_SUCCESS == RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\SxS\\VS7", 0, KEY_QUERY_VALUE, &regKey))
+  HANDLE vswhereStdoutP;
+  HANDLE vswhereStdoutC;
+
+  SECURITY_ATTRIBUTES saAttr;
+  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+  saAttr.bInheritHandle = TRUE;
+  saAttr.lpSecurityDescriptor = NULL;
+  if(!CreatePipe(&vswhereStdoutP, &vswhereStdoutC, &saAttr, 0) || !SetHandleInformation(vswhereStdoutP, HANDLE_FLAG_INHERIT, 0))
+    return "";
+
+  STARTUPINFO startInfo;
+  BOOL bSuccess = FALSE;
+  ZeroMemory(&startInfo, sizeof(STARTUPINFO));
+  startInfo.cb = sizeof(STARTUPINFO);
+  startInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+  startInfo.hStdOutput = vswhereStdoutC;
+  startInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+  startInfo.dwFlags |= STARTF_USESTDHANDLES;
+  PROCESS_INFORMATION procInfo;
+  ZeroMemory(&procInfo, sizeof(PROCESS_INFORMATION));
+
+  char cmdLine[] = "-latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath";
+  if(CreateProcess("C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe", cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &startInfo, &procInfo))
   {
-    DWORD bufSize = _MAX_PATH;
+    CloseHandle(procInfo.hProcess);
+    CloseHandle(procInfo.hThread);
+
     char buf[_MAX_PATH];
-    if(ERROR_SUCCESS == RegGetValueA(regKey, nullptr, "15.0", RRF_RT_REG_SZ, nullptr, buf, &bufSize))
+    DWORD pathLen;
+    if(ReadFile(vswhereStdoutP, buf, _MAX_PATH, &pathLen, NULL) && pathLen > 2)
     {
-      RegCloseKey(regKey);
-      return std::string(buf);
+      CloseHandle(vswhereStdoutP);
+      CloseHandle(vswhereStdoutC);
+      return std::string(buf, pathLen - 2) + "\\";
     }
-    RegCloseKey(regKey);
   }
+  CloseHandle(vswhereStdoutP);
+  CloseHandle(vswhereStdoutC);
 #endif
   return "";
 }

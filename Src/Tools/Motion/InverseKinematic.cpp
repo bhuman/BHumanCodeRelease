@@ -264,27 +264,19 @@ bool InverseKinematic::calcLegJoints(const Pose3f& positionLeft, const Pose3f& p
 }
 
 void InverseKinematic::calcHeadJoints(const Vector3f& position, const Angle imageTilt, const RobotDimensions& robotDimensions,
-                                      const bool lowerCamera, Vector2a& panTilt, const CameraCalibration& cameraCalibration)
+                                      CameraInfo::Camera camera, Vector2a& panTilt, const CameraCalibration& cameraCalibration)
 {
   const Vector2f headJoint2Target(std::sqrt(sqr(position.x()) + sqr(position.y())), position.z() - robotDimensions.hipToNeckLength);
-  const Vector2f headJoint2Camera(robotDimensions.getXOffsetNeckToCamera(lowerCamera),
-                                  robotDimensions.getZOffsetNeckToCamera(lowerCamera));
+  const Vector2f headJoint2Camera(robotDimensions.getXOffsetNeckToCamera(camera == CameraInfo::lower),
+                                  robotDimensions.getZOffsetNeckToCamera(camera == CameraInfo::lower));
   const float headJoint2CameraAngle = std::atan2(headJoint2Camera.x(), headJoint2Camera.y());
-  const float cameraAngle = pi3_2 - imageTilt - (pi_2 - headJoint2CameraAngle) - robotDimensions.getTiltNeckToCamera(lowerCamera);
+  const float cameraAngle = pi3_2 - imageTilt - (pi_2 - headJoint2CameraAngle) - robotDimensions.getTiltNeckToCamera(camera == CameraInfo::lower);
   const float targetAngle = std::asin(Rangef(-1.f, 1.f).limit(headJoint2Camera.norm() * std::sin(cameraAngle) / headJoint2Target.norm()));
   const float headJointAngle = pi - targetAngle - cameraAngle;
   panTilt.y() = std::atan2(headJoint2Target.x(), headJoint2Target.y()) - headJointAngle - headJoint2CameraAngle;
   panTilt.x() = std::atan2(position.y(), position.x());
-  if(lowerCamera)
-  {
-    panTilt.x() -= cameraCalibration.lowerCameraRotationCorrection.z();
-    panTilt.y() -= cameraCalibration.lowerCameraRotationCorrection.y();
-  }
-  else
-  {
-    panTilt.x() -= cameraCalibration.upperCameraRotationCorrection.z();
-    panTilt.y() -= cameraCalibration.upperCameraRotationCorrection.y();
-  }
+  panTilt.x() -= cameraCalibration.cameraRotationCorrections[camera].z();
+  panTilt.y() -= cameraCalibration.cameraRotationCorrections[camera].y();
 }
 
 unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Vector3f& elBowPosition, const Vector3f& handPosition,
@@ -294,7 +286,7 @@ unsigned InverseKinematic::calcArmJoints(const Arms::Arm arm, const Vector3f& el
   unsigned errCode(0);
   const unsigned indexOffset = arm == Arms::left ? 0 : Joints::firstRightArmJoint - Joints::firstLeftArmJoint;
   const float sign(arm == Arms::left ? 1.f : -1.f);
-  static const constexpr Angle smallValue(0.0001_rad);
+  static constexpr Angle smallValue(0.0001_rad);
 
   //shoulder
   const Pose3f shoulder(robotDimensions.armOffset.x(), robotDimensions.armOffset.y() * sign + robotDimensions.yOffsetElbowToShoulder * sign, robotDimensions.armOffset.z());

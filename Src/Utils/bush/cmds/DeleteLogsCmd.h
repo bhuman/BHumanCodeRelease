@@ -1,5 +1,5 @@
 /**
- * @file DeleteLogs.h
+ * @file DeleteLogsCmd.h
  * @author Andreas Stolpmann
  */
 

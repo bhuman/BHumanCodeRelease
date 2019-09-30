@@ -26,11 +26,12 @@ class DebugDataTable
 private:
   std::unordered_map<std::string, char*> table;
 
-  friend class Process; /**< A process is allowed to create the instance. */
+  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
 
   /**
-   * No other instance of this class is allowed except the one accessible via getDebugDataTable
-   * therefore the constructor is private.
+   * Default constructor.
+   * No other instance of this class is allowed except the one accessible via Global::getDebugDataTable.
+   * Therefore the constructor is private.
    */
   DebugDataTable() = default;
   DebugDataTable(const DebugDataTable&) = delete;
@@ -43,7 +44,7 @@ public:
    * respective entry in the table has been modified through RobotControl.
    */
   template<typename T> void updateObject(const char* name, T& t, bool once);
-  void processChangeRequest(InMessage& in);
+  void threadChangeRequest(InMessage& in);
 };
 
 template<typename T> void DebugDataTable::updateObject(const char* name, T& t, bool once)

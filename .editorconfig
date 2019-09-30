@@ -1,0 +1,22 @@
+# this is the top-most .editorconfig
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+
+[Src/**.{h,cpp}]
+indent_style = spaces
+indent_size = 2
+
+[Config/**.{con,ros2,rsi2,cfg}]
+indent_style = spaces
+indent_size = 2
+
+[{Marefile,*.mare}]
+indent_style = spaces
+indent_size = 2
+
+[Makefile]
+indent_style = tabs
+tab_width = 2

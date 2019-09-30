@@ -23,12 +23,10 @@ STREAMABLE(SimpleFieldDimensions,
   (float) xPosOpponentGoalPost,
   (float) xPosOpponentGroundline,
   (float) xPosOpponentPenaltyArea,
-  (float) xPosOpponentDropInLine,
   (float) xPosOpponentPenaltyMark,
   (float) xPosPenaltyStrikerStartPosition,
   (float) xPosHalfWayLine,
   (float) xPosOwnPenaltyArea,
-  (float) xPosOwnDropInLine,
   (float) xPosOwnPenaltyMark,
   (float) xPosOwnGroundline,
   (float) xPosOwnGoalPost,
@@ -37,13 +35,11 @@ STREAMABLE(SimpleFieldDimensions,
 
   (float) yPosLeftFieldBorder,
   (float) yPosLeftSideline,
-  (float) yPosLeftDropInLine,
   (float) yPosLeftPenaltyArea,
   (float) yPosLeftGoal,
   (float) yPosCenterGoal,
   (float) yPosRightGoal,
   (float) yPosRightPenaltyArea,
-  (float) yPosRightDropInLine,
   (float) yPosRightSideline,
   (float) yPosRightFieldBorder,
 
@@ -207,18 +203,17 @@ public:
    */
   void drawGoalFrame() const;
 
-  /**
-   * The method draws the field polygons.
-   * @param ownColor The color of the own team.
-   */
-  void drawPolygons(int ownColor) const;
-
 protected:
   void serialize(In* in, Out* out) override;
 
 private:
   static void reg();
-  
+
+  /**
+   * The method draws the field polygons.
+   */
+  void drawPolygons() const;
+
   /**
    * The method draws the field lines.
    */

@@ -7,7 +7,7 @@
  *
  * MODULE(MyImageProcessor,
  * {,
- *   REQUIRES(CameraImage),                         // Has to be updated before
+ *   REQUIRES(CameraImage),                   // Has to be updated before
  *   REQUIRES(CameraMatrix),                  // Has to be updated before
  *   USES(RobotPose),                         // Is used, but has not to be updated before
  *   PROVIDES(BallPercept),                   // Class provides a method to update BallPercept.
@@ -16,7 +16,6 @@
  *   {,                                       // they are loaded from a configuration file that has the same name as the module defined, but starts with lowercase letters.
  *     (float)(42.0f) focalLen,               // Has a parameter named focalLen of type float. By default it has the value 42.0f.
  *     (int)(21) resWidth,                    // All attributes are streamed and can be accessed by requesting 'parameters:MyImageProcessor'
- *     ((CameraInfo) Camera)(camera) lower,   // Use an enum as parameter that was defined in another class.
  *   }),
  * });
  *
@@ -56,12 +55,11 @@ class ModuleBase
 public:
   ENUM(Category,
   {,
-    cognitionInfrastructure,
-    communication,
+    infrastructure,
     perception,
+    communication,
     modeling,
     behaviorControl,
-    motionInfrastructure,
     sensing,
     motionControl,
   });
@@ -143,7 +141,9 @@ public:
     first = this;
   }
 
-  friend class ModuleManager; /**< The ModuleManager gathers all private data. */
+  friend class ModuleGraphCreator; /**< The ModuleGraphCreator gathers all private data. */
+  friend class ModuleGraphRunner; /**< To create new modules. */
+  friend class Debug; /**< To send the ModuleTabe. */
 };
 
 /**
@@ -152,7 +152,7 @@ public:
  * registers all requirements and representations provided by that class.
  * @param M The type of the module created.
  */
-template<typename M> class Module : public ModuleBase
+template<typename M, typename B> class Module : public ModuleBase
 {
 private:
   /**
@@ -161,7 +161,7 @@ private:
    */
   Streamable* createNew() override
   {
-    return (Streamable*) new M;
+    return static_cast<B*>(new M);
   }
 
 public:
@@ -197,8 +197,9 @@ STREAMABLE(NoParameters,
  * @param moduleName The filename is determined from the name of the module if it
  *                   is not explicitly specified.
  * @param fileName The filename used or nullptr if it should be created from the module's name.
+ * @param prefix A prefix to prepend to the filename (e.g. to force loading from a specific directory).
  */
-void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName);
+void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName, const char* prefix = nullptr);
 
 void saveModuleParameters(const Streamable& parameters, const char* moduleName, const char* fileName);
 
@@ -209,12 +210,8 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 /**
  * Determine the number of entries in a tuple.
  */
-#ifdef _MSC_VER
-#define _MODULE_TUPLE_SIZE(...) _MODULE_JOIN(_MODULE_TUPLE_SIZE_II, (__VA_ARGS__, _MODULE_TUPLE_SIZE_III))
-#else
 #define _MODULE_TUPLE_SIZE(...) _MODULE_TUPLE_SIZE_I((__VA_ARGS__, _MODULE_TUPLE_SIZE_III))
 #define _MODULE_TUPLE_SIZE_I(params) _MODULE_TUPLE_SIZE_II params
-#endif
 #define _MODULE_TUPLE_SIZE_II( \
                                a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, \
                                a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, \
@@ -309,7 +306,6 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 #define _MODULE_ATTR_76(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75)
 #define _MODULE_ATTR_77(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76)
 #define _MODULE_ATTR_78(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77)
-#define _MODULE_ATTR_78(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77)
 #define _MODULE_ATTR_79(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78)
 #define _MODULE_ATTR_80(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79)
 #define _MODULE_ATTR_81(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80)
@@ -321,8 +317,100 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 #define _MODULE_ATTR_87(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86)
 #define _MODULE_ATTR_88(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87)
 #define _MODULE_ATTR_89(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88)
-#define _MODULE_ATTR_90(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a90)
-#define _MODULE_ATTR_91(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a90) f(a91)
+#define _MODULE_ATTR_90(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a89)
+#define _MODULE_ATTR_91(f, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91) f(a1) f(a2) f(a3) f(a4) f(a5) f(a6) f(a7) f(a8) f(a9) f(a10) f(a11) f(a12) f(a13) f(a14) f(a15) f(a16) f(a17) f(a18) f(a19) f(a20) f(a21) f(a22) f(a23) f(a24) f(a25) f(a26) f(a27) f(a28) f(a29) f(a30) f(a31) f(a32) f(a33) f(a34) f(a35) f(a36) f(a37) f(a38) f(a39) f(a40) f(a41) f(a42) f(a43) f(a44) f(a45) f(a46) f(a47) f(a48) f(a49) f(a50) f(a51) f(a52) f(a53) f(a54) f(a55) f(a56) f(a57) f(a58) f(a59) f(a60) f(a61) f(a62) f(a63) f(a64) f(a65) f(a66) f(a67) f(a68) f(a69) f(a70) f(a71) f(a72) f(a73) f(a74) f(a75) f(a76) f(a77) f(a78) f(a79) f(a80) f(a81) f(a82) f(a83) f(a84) f(a85) f(a86) f(a87) f(a88) f(a89) f(a90)
+
+#define _MODULE_ATTR_LAST_1(x) x
+#define _MODULE_ATTR_LAST_2(a1, x) x
+#define _MODULE_ATTR_LAST_3(a1, a2, x) x
+#define _MODULE_ATTR_LAST_4(a1, a2, a3, x) x
+#define _MODULE_ATTR_LAST_5(a1, a2, a3, a4, x) x
+#define _MODULE_ATTR_LAST_6(a1, a2, a3, a4, a5, x) x
+#define _MODULE_ATTR_LAST_7(a1, a2, a3, a4, a5, a6, x) x
+#define _MODULE_ATTR_LAST_8(a1, a2, a3, a4, a5, a6, a7, x) x
+#define _MODULE_ATTR_LAST_9(a1, a2, a3, a4, a5, a6, a7, a8, x) x
+#define _MODULE_ATTR_LAST_10(a1, a2, a3, a4, a5, a6, a7, a8, a9, x) x
+#define _MODULE_ATTR_LAST_11(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, x) x
+#define _MODULE_ATTR_LAST_12(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, x) x
+#define _MODULE_ATTR_LAST_13(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, x) x
+#define _MODULE_ATTR_LAST_14(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, x) x
+#define _MODULE_ATTR_LAST_15(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, x) x
+#define _MODULE_ATTR_LAST_16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, x) x
+#define _MODULE_ATTR_LAST_17(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, x) x
+#define _MODULE_ATTR_LAST_18(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, x) x
+#define _MODULE_ATTR_LAST_19(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, x) x
+#define _MODULE_ATTR_LAST_20(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, x) x
+#define _MODULE_ATTR_LAST_21(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, x) x
+#define _MODULE_ATTR_LAST_22(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, x) x
+#define _MODULE_ATTR_LAST_23(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, x) x
+#define _MODULE_ATTR_LAST_24(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, x) x
+#define _MODULE_ATTR_LAST_25(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, x)  x
+#define _MODULE_ATTR_LAST_26(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, x)  x
+#define _MODULE_ATTR_LAST_27(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, x) x
+#define _MODULE_ATTR_LAST_28(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, x) x
+#define _MODULE_ATTR_LAST_29(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, x) x
+#define _MODULE_ATTR_LAST_30(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, x) x
+#define _MODULE_ATTR_LAST_31(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, x) x
+#define _MODULE_ATTR_LAST_32(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, x) x
+#define _MODULE_ATTR_LAST_33(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, x) x
+#define _MODULE_ATTR_LAST_34(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, x) x
+#define _MODULE_ATTR_LAST_35(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, x) x
+#define _MODULE_ATTR_LAST_36(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, x) x
+#define _MODULE_ATTR_LAST_37(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, x) x
+#define _MODULE_ATTR_LAST_38(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, x) x
+#define _MODULE_ATTR_LAST_39(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, x) x
+#define _MODULE_ATTR_LAST_40(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, x) x
+#define _MODULE_ATTR_LAST_41(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, x) x
+#define _MODULE_ATTR_LAST_42(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, x)  x
+#define _MODULE_ATTR_LAST_43(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, x) x
+#define _MODULE_ATTR_LAST_44(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, x) x
+#define _MODULE_ATTR_LAST_45(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, x) x
+#define _MODULE_ATTR_LAST_46(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, x) x
+#define _MODULE_ATTR_LAST_47(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, x) x
+#define _MODULE_ATTR_LAST_48(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, x) x
+#define _MODULE_ATTR_LAST_49(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, x) x
+#define _MODULE_ATTR_LAST_50(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, x) x
+#define _MODULE_ATTR_LAST_51(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, x) x
+#define _MODULE_ATTR_LAST_52(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, x) x
+#define _MODULE_ATTR_LAST_53(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, x) x
+#define _MODULE_ATTR_LAST_54(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, x) x
+#define _MODULE_ATTR_LAST_55(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, x) x
+#define _MODULE_ATTR_LAST_56(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, x) x
+#define _MODULE_ATTR_LAST_57(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, x) x
+#define _MODULE_ATTR_LAST_58(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, x) x
+#define _MODULE_ATTR_LAST_59(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, x) x
+#define _MODULE_ATTR_LAST_60(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, x)x
+#define _MODULE_ATTR_LAST_61(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, x) x
+#define _MODULE_ATTR_LAST_62(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, x) x
+#define _MODULE_ATTR_LAST_63(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, x) x
+#define _MODULE_ATTR_LAST_64(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, x) x
+#define _MODULE_ATTR_LAST_65(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, x) x
+#define _MODULE_ATTR_LAST_66(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, x) x
+#define _MODULE_ATTR_LAST_67(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, x) x
+#define _MODULE_ATTR_LAST_68(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, x) x
+#define _MODULE_ATTR_LAST_69(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, x) x
+#define _MODULE_ATTR_LAST_70(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, x) x
+#define _MODULE_ATTR_LAST_71(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, x) x
+#define _MODULE_ATTR_LAST_72(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, x) x
+#define _MODULE_ATTR_LAST_73(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, x) x
+#define _MODULE_ATTR_LAST_74(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, x) x
+#define _MODULE_ATTR_LAST_75(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, x) x
+#define _MODULE_ATTR_LAST_76(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, x) x
+#define _MODULE_ATTR_LAST_77(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, x) x
+#define _MODULE_ATTR_LAST_78(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, x) x
+#define _MODULE_ATTR_LAST_79(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, x) x
+#define _MODULE_ATTR_LAST_80(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, x) x
+#define _MODULE_ATTR_LAST_81(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, x) x
+#define _MODULE_ATTR_LAST_82(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, x) x
+#define _MODULE_ATTR_LAST_83(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, x) x
+#define _MODULE_ATTR_LAST_84(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, x) x
+#define _MODULE_ATTR_LAST_85(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, x) x
+#define _MODULE_ATTR_LAST_86(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, x) x
+#define _MODULE_ATTR_LAST_87(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, x) x
+#define _MODULE_ATTR_LAST_88(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, x) x
+#define _MODULE_ATTR_LAST_89(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, x) x
+#define _MODULE_ATTR_LAST_90(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, x) x
+#define _MODULE_ATTR_LAST_91(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, x) x
 
 /** Concatenate the two parameters. */
 #define _MODULE_JOIN(a, b) _MODULE_JOIN_I(a, b)
@@ -339,18 +427,8 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 #define _MODULE_PARAMETERS_PROVIDES_WITHOUT_MODIFY(type)
 #define _MODULE_PARAMETERS_REQUIRES(type)
 #define _MODULE_PARAMETERS_USES(type)
-#ifdef _MSC_VER
-#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _MODULE_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#define _MODULE_UNWRAP(...) __VA_ARGS__
-#define _MODULE_STREAMABLE(name, base, streamBase, header, ...) \
-  struct name : public base \
-    _MODULE_UNWRAP header; \
-  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, base, streamBase, __VA_ARGS__)
-#else
 #define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
 #define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#endif
 
 /**
  * The following macros generate the code for loading the configuration file
@@ -443,15 +521,15 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
   MessageID _id##type = ::undefined; \
   static void update##type(Streamable& module) \
   { \
-    ((BaseType&) module).modifyParameters(); \
-    if(!((BaseType&) module)._the##type) \
-      ((BaseType&) module)._the##type = &Blackboard::getInstance().alloc<type>(#type); \
-    type& r(*((BaseType&) module)._the##type); \
+    static_cast<BaseType&>(module).modifyParameters(); \
+    if(!static_cast<BaseType&>(module)._the##type) \
+      static_cast<BaseType&>(module)._the##type = &Blackboard::getInstance().alloc<type>(#type); \
+    type& r(*static_cast<BaseType&>(module)._the##type); \
     BH_TRACE; \
-    STOPWATCH(#type) ((BaseType&) module).update(r); \
+    STOPWATCH(#type) static_cast<BaseType&>(module).update(r); \
     mod \
-    if(((BaseType&) module)._id##type != ::undefined) \
-      DEBUG_RESPONSE("representation:" #type) OUTPUT(((BaseType&) module)._id##type, bin, r); \
+    if(static_cast<BaseType&>(module)._id##type != ::undefined) \
+      DEBUG_RESPONSE("representation:" #type) OUTPUT(static_cast<BaseType&>(module)._id##type, bin, r); \
   }
 
 /**
@@ -460,14 +538,14 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
  * @param n The number of entries in the third parameter.
  * @param ... The requirements, provided representations and parameter definitions.
  */
-#define _MODULE_I(name, n, ...) _MODULE_II(name, n, (_MODULE_PARAMETERS, __VA_ARGS__), (_MODULE_LOAD, __VA_ARGS__), (_MODULE_DECLARE, __VA_ARGS__), (_MODULE_FREE, __VA_ARGS__), (_MODULE_INFO, __VA_ARGS__))
+#define _MODULE_I(name, n, header, ...) _MODULE_II(name, n, header, (_MODULE_PARAMETERS, __VA_ARGS__), (_MODULE_LOAD, __VA_ARGS__), (_MODULE_DECLARE, __VA_ARGS__), (_MODULE_FREE, __VA_ARGS__), (_MODULE_INFO, __VA_ARGS__), (__VA_ARGS__))
 
 /**
  * Generates the actual code of the module's base class.
  * It create all the code and fills in data from the requirements, representations,
  * provided, and parameters defined.
  */
-#define _MODULE_II(theName, n, params, load, declare, free, info) \
+#define _MODULE_II(theName, n, header, params, load, declare, free, info, tail) \
   namespace theName##Module \
   { \
     _MODULE_ATTR_##n params \
@@ -475,7 +553,7 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
   } \
   class theName; \
   class theName##Base : public theName##Module::Parameters \
-  { \
+  _STREAM_UNWRAP header; \
   private: \
     using BaseType = theName##Base; \
     void modifyParameters() \
@@ -501,7 +579,7 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
     theName##Base(const char* fileName = nullptr) \
     { \
       static const char* moduleName = #theName; \
-      (void) moduleName; \
+      static_cast<void>(moduleName); \
       _MODULE_ATTR_##n load \
     } \
     ~theName##Base() \
@@ -510,7 +588,7 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
     } \
     theName##Base(const theName##Base&) = delete; \
     theName##Base& operator=(const theName##Base&) = delete; \
-  }
+  _MODULE_ATTR_LAST_##n tail
 
 /**
  * These two macros encapsulate the first parameter of the parameter
@@ -528,25 +606,24 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
  * @param ... The requirements, provided representations and parameter definitions.
  */
 #define MODULE(name, header, ...) \
-  _MODULE_I(name, _MODULE_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
+  _MODULE_I(name, _MODULE_TUPLE_SIZE(__VA_ARGS__), (header), __VA_ARGS__)
 
 /**
- * The macro creates a creator for the module with custom module info.
- * This macro should only be used directly in special cases when a module has
- * additional requirements that can not be listed in the module declaration.
- * @param module The name of the module that can be created.
- * @param category The category of this module.
- * @param getModuleInfo The function that returns the module info.
- */
-#define MAKE_MODULE_WITH_INFO(module, category, getModuleInfo) \
-  Module<module> the##module##Module(#module, ModuleBase::category, getModuleInfo);
-
-/**
+ * MAKE_MODULE(module, category [, getModuleInfo])
+ *
  * The macro creates a creator for the module.
  * See beginning of this file.
  * It has to be part of the implementation file.
  * @param module The name of the module that can be created.
- * @param category The category of this module.
+ * Second parameter: The category of this module.
+ * Optional third parameter: A function that provides the dependencies of the
+ * module. It is only required if the module wants do define more dependencies
+ * than already defined inside the MODULE macro. The function has to query the
+ * pre-defined dependencies from the static function getModuleInfo of the base
+ * class of the module and return an extended version of that data.
  */
-#define MAKE_MODULE(module, category) \
-  MAKE_MODULE_WITH_INFO(module, category, module##Base::getModuleInfo)
+#define MAKE_MODULE(module, ...) _MAKE_MODULE_I(module, _STREAM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
+#define _MAKE_MODULE_I(module, n, ...) _MAKE_MODULE_II((_MAKE_MODULE_, n), module, __VA_ARGS__)
+#define _MAKE_MODULE_II(param, ...) _STREAM_JOIN param (__VA_ARGS__)
+#define _MAKE_MODULE_1(module, category) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, module##Base::getModuleInfo);
+#define _MAKE_MODULE_2(module, category, getModuleInfo) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, getModuleInfo)

@@ -7,11 +7,11 @@
 
 #pragma once
 
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/TeamPlayersModel.h"
 #include "Representations/Sensing/FallDownState.h"

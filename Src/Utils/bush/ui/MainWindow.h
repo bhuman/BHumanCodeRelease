@@ -8,7 +8,10 @@ class MainWindow : public QMainWindow
 
 public:
   MainWindow();
+protected:
+  void dragEnterEvent(QDragEnterEvent* e) override;
+  void dragMoveEvent(QDragMoveEvent* e) override;
 private:
-  void closeEvent(QCloseEvent* event);
+  void closeEvent(QCloseEvent* event) override;
   void readSettings();
 };

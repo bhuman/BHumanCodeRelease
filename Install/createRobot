@@ -8,37 +8,44 @@ includeDir="${baseDir}/Include/"
 
 networkDir="${baseDir}/Network"
 profileDir="${networkDir}/Profiles"
+settingsFile="${bhDir}/Config/settings.cfg"
 
 source "${includeDir}/bhumanBase"
 
 robotName=""
-teamID=""
+teamID=$(grep <"${settingsFile}" "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%")
 robotPart=""
 deleteBeforeWrite=""
 deleteOnly=""
 profilesOnly=""
+ip=""
+head=""
+body=""
 
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} [-p] [-d] -t <teamID> -r <robotPart> <name>"
+  echo "${0} [-d] [-t <team>] -r <robot> -i <ip> <name>"
+  echo "${0} [-d] [-t <team>] -r <robot> -s <head> -b <body> <name>"
+  echo "${0} -p [-t <team>] -r <robot> <name>"
   echo "${0} -D <name>"
   echo ""
-  echo " <name>     : name of the robot"
-  echo " <teamID>   : the third part of the IPv4 address of the robot"
-  echo "              Needs to be the same on all robots of your team"
-  echo " <robotPart>: the last part of the IPv4 address of the robot"
-  echo "              Needs to be unique for the chosen teamID"
+  echo " <name> : name of the robot"
+  echo " <team> : the third number of the IPv4 address of the robot (same for all robots)"
+  echo " <robot>: the last number of the IPv4 address of the robot (different for all robots)"
+  echo " <ip>   : Retrieve serial numbers from the robot with the given ip address"
+  echo " <head> : Specify serial numbers of the robot's head"
+  echo " <body> : Specify serial numbers of the robot's body"
   echo ""
-  echo " -d         : Delete existing files for the given robot before creating new files"
-  echo " -D         : Only delete all files for the given robot"
-  echo " -p         : Only update the network profiles"
-  echo " -h         : Display this help"
+  echo " -d     : Delete existing files for the given robot before creating new files"
+  echo " -D     : Only delete all files for the given robot"
+  echo " -p     : Only update the network profiles"
+  echo " -h     : Display this help"
   exit 1
 }
 
 parseOptions() {
-  while getopts :hpt:r:Dd opt ; do
+  while getopts :hpt:r:Ddi:s:b: opt ; do
     case "$opt" in
       p)
         profilesOnly="true"
@@ -54,6 +61,15 @@ parseOptions() {
         ;;
       D)
         deleteOnly="true"
+        ;;
+      i)
+        ip="$OPTARG"
+        ;;
+      s)
+        head="$OPTARG"
+        ;;
+      b)
+        body="$OPTARG"
         ;;
       [?]|h)
         usage
@@ -79,7 +95,7 @@ parseOptions() {
       usage
     fi
   else
-    if [ -n "${teamID}" -o -n "${robotPart}" -o -z "${robotName}" -o -n "${deleteBeforeWrite}" ]; then
+    if [ -n "${robotPart}" -o -z "${robotName}" -o -n "${deleteBeforeWrite}" ]; then
       usage
     fi
     deleteBeforeWrite="true"
@@ -89,6 +105,9 @@ parseOptions() {
   debug "robotDir: " "${robotDir}"
   debug "teamID: " "${teamID}"
   debug "robotPart: " "${robotPart}"
+  debug "ip: " "${ip}"
+  debug "head: " "${head}"
+  debug "body: " "${body}"
   debug "deleteOnly: " "${deleteOnly}"
   debug "deleteBeforeWrite: " "${deleteBeforeWrite}"
 }
@@ -106,6 +125,13 @@ function checkFile()
     else
       debug "Deleting ${1}"
       rm -rf "${1}"
+      if [ -e "$robotsFile" ]; then
+        grep <"$robotsFile" -v "name *= *\"$robotName\"" \
+        | tr '\n' '|' \
+        | sed -e "s%},|]%}|]%g" -e "s%|*$%%" \
+        | tr '|' '\n' >/tmp/addRobotIds.tmp \
+        && mv /tmp/addRobotIds.tmp "${robotsFile}"
+      fi
       return 0
     fi
   else
@@ -145,14 +171,7 @@ function createProfiles()
   message "Creating network profiles"
   mkdir -p "${profileDir}"
 
-  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired" >"${robotDir}/wired" || return 1
-  chmod +x "${robotDir}/wired"
-
   sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired.service" >"${robotDir}/wired.service" || return 1
-
-  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless" >"${robotDir}/wireless" || return 1
-  chmod +x "${robotDir}/wireless"
-
   sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless.service" >"${robotDir}/wireless.service" || return 1
   return 0
 }
@@ -182,10 +201,10 @@ function createConnectDialog()
     echo -n "sc Remote \${IP address:"
     if [ ! -z "$(ls 2>/dev/null "$bhDir"/Config/Robots/*/network.cfg)" ]; then
       for ip in $(for file in "$bhDir"/Config/Robots/*/network.cfg; do grep "^lan" "$file" | sed -e 's%[^"]*"%%' -e 's%".*%%'; done | sort); do
-        echo -n ",$ip"; 
+        echo -n ",$ip";
       done
       for ip in $(for file in "$bhDir"/Config/Robots/*/network.cfg; do grep "^wlan" "$file" | sed -e 's%[^"]*"%%' -e 's%".*%%'; done | sort); do
-        echo -n ",$ip"; 
+        echo -n ",$ip";
       done
     fi
     echo "}"
@@ -224,6 +243,15 @@ else
     message "Successfully deleted all files for ${robotName}"
     createConnectDialog
   else
+    if [ -z "$ip$head$body" ]; then
+      fatal "Neither ip nor serial numbers were specified"
+    elif [ ! -z "$ip" ]; then
+      if [ ! -z "$head$body" ]; then
+        fatal "Only either ip or serial numbers can be specified"
+      fi
+    elif [ -z "$head" -o -z "$body" ]; then
+      fatal "Both serial numbers must be specified"
+    fi
     if ! createRobotDirectory; then
       error "Failed to create robot directory"
       fatal "Rerun ${0} with -d"
@@ -247,6 +275,10 @@ else
     createRobotsFile
     createConnectDialog
     message "Created needed files for robot ${robotName}"
-    message "Don't forget to run addRobotIds!"
+    if [ ! -z "$ip" ]; then
+      source "${includeDir}/addRobotIds" -ip "$ip" "$robotName"
+    else
+      source "${includeDir}/addRobotIds" -ids "$head" "$body" "$robotName"
+    fi
   fi
 fi

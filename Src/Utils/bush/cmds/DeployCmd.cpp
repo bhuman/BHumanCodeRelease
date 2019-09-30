@@ -33,14 +33,8 @@ bool DeployCmd::DeployTask::execute()
   args.push_back(QString("-nr"));
   args.push_back(buildConfig);
   args.push_back(fromString(robot->getBestIP(context())));
-  if(team->getPlayersPerNumber()[team->getPlayerNumber(*robot) - 1][1] == robot)
-  {
-    args.push_back(QString("-n"));
-  }
-  else
-  {
+  if(team->getPlayersPerNumber()[team->getPlayerNumber(*robot) - 1][0] == robot)
     args.push_back(QString("-b"));
-  }
   args.push_back(QString("-t"));
   args.push_back(QString::number(team->number));
   args.push_back(QString("-o"));
@@ -113,7 +107,12 @@ bool DeployCmd::preExecution(Context& context, const std::vector<std::string>& p
     buildConfig = fromString(params[0]);
 
   // compile and deploy if compiling was successful
-  return team->compile ? context.execute("compile " + toString(buildConfig)) : true;
+  if(team->compile)
+  {
+    if(!context.execute("compile " + toString(buildConfig)))
+      return false;
+  }
+  return true;
 }
 
 Task* DeployCmd::perRobotExecution(Context& context, Robot& robot)

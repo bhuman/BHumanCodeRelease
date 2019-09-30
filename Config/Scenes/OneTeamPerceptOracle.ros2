@@ -1,0 +1,28 @@
+<Simulation>
+
+  <Include href="Includes/NaoV6H25.rsi2"/>
+  <Include href="Includes/5vsDummies.rsi2"/>
+  <Include href="Includes/Ball2016SPL.rsi2"/>
+  <Include href="Includes/Field2017SPL.rsi2"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.012" color="rgb(65%, 65%, 70%)" ERP="0.8" CFM="0.001" contactSoftERP="0.2" contactSoftCFM="0.005">
+    <Light z="9m" ambientColor="rgb(50%, 50%, 50%)"/>
+
+    <Compound name="teamColors">
+      <Appearance name="black"/>
+      <Appearance name="blue"/>
+    </Compound>
+
+    <Compound ref="robots"/>
+    <Compound ref="extras"/>
+
+    <Compound name="balls">
+      <Body ref="ball">
+        <Translation z="1m"/>
+      </Body>
+    </Compound>
+
+    <Compound ref="field"/>
+
+  </Scene>
+</Simulation>

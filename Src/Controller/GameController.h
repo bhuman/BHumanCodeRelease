@@ -1,7 +1,7 @@
 /**
  * @file Controller/GameController.h
  * This file declares a class that simulates a console-based GameController.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -9,11 +9,11 @@
 #include <set>
 #include <SimRobotCore2.h>
 #include "Platform/Thread.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Math/Pose2f.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/Enum.h"
@@ -52,6 +52,7 @@ private:
     kickOffGoal,
     requestForPickup,
     localGameStuck,
+    illegalPositioning,
     substitute,
     manual,
   });
@@ -68,21 +69,32 @@ private:
   static const float footLength; /**< foot length for position check and manual placement at center circle. */
   static const float safeDistance; /**< safe distance from penalty areas for manual placement. */
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
-  static Pose2f lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
-  static FieldDimensions fieldDimensions;
-  static BallSpecification ballSpecification;
+  Pose2f lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
+  unsigned lastBallContactTime = 0;
+  FieldDimensions fieldDimensions;
+  BallSpecification ballSpecification;
   GameInfo gameInfo;
   TeamInfo teamInfos[2];
   uint8_t lastState = STATE_INITIAL;
   unsigned timeBeforeCurrentState = 0;
-  unsigned timeOfLastDropIn = 0;
   unsigned timeWhenLastRobotMoved = 0;
   unsigned timeWhenStateBegan = 0;
   unsigned timeWhenSetPlayBegan = 0;
   Robot robots[numOfRobots];
 
   /** enum which declares the different types of balls leaving the field */
-  enum BallOut {notOut, goalBySecondTeam, goalByFirstTeam, outBySecondTeam, outByFirstTeam, goalOutBySecondTeam, goalOutByFirstTeam};
+  enum BallOut
+  {
+    notOut,
+    goalBySecondTeam,
+    goalByFirstTeam,
+    outBySecondTeam,
+    outByFirstTeam,
+    ownGoalOutBySecondTeam,
+    ownGoalOutByFirstTeam,
+    opponentGoalOutBySecondTeam,
+    opponentGoalOutByFirstTeam
+  };
 
   friend Settings;
 
@@ -118,7 +130,7 @@ public:
    * Proclaims which robot touched the ball at last
    * @param robot The robot
    */
-  static void setLastBallContactRobot(SimRobot::Object* robot);
+  void setLastBallContactRobot(SimRobot::Object* robot);
 
   /**
    * Write the current game information to the stream provided.
@@ -162,17 +174,15 @@ public:
    * which can only be obtained using an instance of application. We are using
    * RoboCupCtrl for this.
    */
-  void setTeamInfos(Settings::TeamColor& firstTeamColor, Settings::TeamColor& secondTeamColor);
+  void setTeamInfos(Settings::TeamColor firstTeamColor, Settings::TeamColor secondTeamColor);
 
-  void moveMe(int robot, Vector3f position, Vector3f rotation);
+private:
 
   /**
    * Handles the command "gc".
    * @param command The second part of the command (without "gc").
    */
   bool handleGlobalCommand(const std::string& command);
-
-private:
 
   /**
    * Handles commands that modify the competition phase.
@@ -199,12 +209,6 @@ private:
   bool handleGoalCommand(const std::string& command);
 
   /**
-   * Handles commands that have to do with ball out.
-   * @param command The second part of the command (without "gc").
-   */
-  bool handleOutCommand(const std::string& command);
-
-  /**
    * Handles commands that give free kicks.
    * @param command The second part of the command (without "gc").
    */
@@ -217,18 +221,17 @@ private:
   bool handleKickOffCommand(const std::string& command);
 
   /**
+   * Handles commands that request manual placement.
+   * @param command The second part of the command (without "gc").
+   */
+  bool handleManualPlacementCommand(const std::string& command);
+
+  /**
    * Handles the command "pr".
    * @param robot The number of the robot that received the command.
    * @param command The second part of the command (without "pr").
    */
   bool handleRobotCommand(int robot, const std::string& command);
-
-  /**
-   * Is a robot it its own penalty area or in its own goal area?
-   * @param robot The number of the robot to check [0 ... numOfRobots-1].
-   * @return Is it?
-   */
-  bool inOwnPenaltyArea(int robot) const;
 
   /**
    * Finds a free place for a (un)penalized robot.
@@ -267,11 +270,10 @@ private:
   void placeDefensivePlayers(int minRobot);
 
   /**
-   * Remove all but one field players from the penalty area.
-   * @param minRobot The number of the first field player in the team (1 or numOfRobots/2+1).
-   * @param poses Possible placement poses robots.
+   * Checks the position of a robot at the transition from ready to set and penalizes it if its position is illegal.
+   * @param robot The number of the robot to check the position of.
    */
-  void freePenaltyArea(int minRobot, const Pose2f* poses);
+  void checkIllegalPositioning(int robot);
 
   /** Adds the time that has elapsed in the current state to timeBeforeCurrentState. */
   void addTimeInCurrentState();
@@ -283,5 +285,5 @@ private:
   void executePlacement();
 
   /** Update the ball position based on the rules. */
-  static BallOut updateBall();
+  BallOut updateBall();
 };

@@ -1,5 +1,5 @@
 /**
- * @file DeleteLogs.cpp
+ * @file DeleteLogsCmd.cpp
  * @author Andreas Stolpmann
  */
 

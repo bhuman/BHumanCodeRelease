@@ -1,7 +1,7 @@
 /**
  * @file Modules/MotionControl/MotionCombinator.cpp
  * This file implements a module that combines the motions created by the different modules.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
@@ -22,6 +22,11 @@ void MotionCombinator::update(JointRequest& jointRequest)
   MotionUtilities::copy(theLegJointRequest, jointRequest, theStiffnessSettings, Joints::firstLegJoint, Joints::rAnkleRoll);
 
   ASSERT(jointRequest.isValid());
+
+  //Clip the joint angles. This is done as a fail safe, because the NAO V6 will interpret 180_deg as -180_deg
+  FOREACH_ENUM(Joints::Joint, i)
+    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore)
+      theJointLimits.limits[i].clamp(jointRequest.angles[i]);
 
   Pose2f odometryOffset;
 
@@ -65,15 +70,12 @@ void MotionCombinator::update(JointRequest& jointRequest)
     }
   }
 
-  if(theRobotInfo.hasFeature(RobotInfo::zGyro))
-  {
-    if(theFallDownState.state == FallDownState::falling || theFallDownState.state == FallDownState::fallen)
-      odometryOffset.rotation = 0_deg; // postpone rotation change until being upright again
-    else
-      odometryOffset.rotation = Angle::normalize(Rotation::Euler::getZAngle(theInertialData.orientation3D) - odometryData.rotation);
-  }
+  applyStandHeat(jointRequest);
+
+  if(theFallDownState.state == FallDownState::falling || theFallDownState.state == FallDownState::fallen)
+    odometryOffset.rotation = 0_deg; // postpone rotation change until being upright again
   else
-    odometryOffset.rotation = Angle::normalize(odometryOffset.rotation + theFallDownState.odometryRotationOffset);
+    odometryOffset.rotation = Angle::normalize(Rotation::Euler::getZAngle(theInertialData.orientation3D) - odometryData.rotation);
 
   if(useAccFusion && theLegMotionSelection.targetMotion == MotionRequest::walk)
     estimateOdometryOffset(odometryOffset.translation);
@@ -87,54 +89,36 @@ void MotionCombinator::update(JointRequest& jointRequest)
     debugReleaseArms(jointRequest);
   applyDamageConfig(jointRequest);
 
-  float sum = 0;
-  int count = 0;
-  for(int i = Joints::lHipYawPitch; i < Joints::numOfJoints; i++)
+  // Clip joint acceleration
+  const Angle maxJointAcc = this->maxJointAcc * Constants::motionCycleTime;
+  if(jointRequest.angles[Joints::lHipYawPitch] == JointAngles::off || !jointRequest.stiffnessData.stiffnesses[Joints::lHipYawPitch])
   {
-    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore &&
-       lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
-    {
-      sum += std::abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
-      count++;
-    }
+    jointRequest.stiffnessData.stiffnesses[Joints::lHipYawPitch] = 0;
+    jointRequest.angles[Joints::lHipYawPitch] = theJointAngles.angles[Joints::lHipYawPitch];
   }
-  PLOT("module:MotionCombinator:deviations:JointRequest:legsOnly", sum / count);
-  for(int i = 0; i < Joints::lHipYawPitch; i++)
+  else if(lastHYPRequest.full() && motionInfo.motion != MotionRequest::getUp)
   {
-    if(jointRequest.angles[i] != JointAngles::off && jointRequest.angles[i] != JointAngles::ignore &&
-       lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
-    {
-      sum += std::abs(jointRequest.angles[i] - lastJointRequest.angles[i]);
-      count++;
-    }
-  }
-  PLOT("module:MotionCombinator:deviations:JointRequest:all", sum / count);
+    const float oldSpeed = lastHYPRequest.front() - lastHYPRequest.back();
+    float newSpeed = jointRequest.angles[Joints::lHipYawPitch] - lastHYPRequest.front();
 
-  sum = 0;
-  count = 0;
-  for(int i = Joints::lHipYawPitch; i < Joints::numOfJoints; i++)
-  {
-    if(lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
+    // This code only limits increasing speeds, not decreasing speeds.
+    // If the direction changes, we allow returning to speed 0 instantly.
+    if(newSpeed * oldSpeed < 0 && std::abs(oldSpeed) > maxJointAcc)
+      jointRequest.angles[Joints::lHipYawPitch] = lastHYPRequest.front();
+    // Otherwise, only if we accelerate or if the direction changes, acceleration is limited.
+    else if(std::abs(newSpeed) > std::abs(oldSpeed) || newSpeed * oldSpeed < 0)
     {
-      sum += std::abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
-      count++;
+      if(newSpeed - oldSpeed > maxJointAcc)
+        newSpeed = oldSpeed + maxJointAcc;
+      else if(newSpeed - oldSpeed < -maxJointAcc)
+        newSpeed = oldSpeed - maxJointAcc;
+      jointRequest.angles[Joints::lHipYawPitch] = lastHYPRequest.front() + newSpeed;
     }
   }
-  PLOT("module:MotionCombinator:differenceToJointData:legsOnly", sum / count);
-
-  for(int i = 0; i < Joints::lHipYawPitch; i++)
-  {
-    if(lastJointRequest.angles[i] != JointAngles::off && lastJointRequest.angles[i] != JointAngles::ignore)
-    {
-      sum += std::abs(lastJointRequest.angles[i] - theJointAngles.angles[i]);
-      count++;
-    }
-  }
-  lastJointRequest = jointRequest;
-  PLOT("module:MotionCombinator:differenceToJointData:all", sum / count);
+  lastHYPRequest.push_front(jointRequest.angles[Joints::lHipYawPitch]);
 
 #ifndef NDEBUG
-  if(!jointRequest.isValid())
+  if(!jointRequest.isValid(false))
   {
     {
       std::string logDir = "";
@@ -239,4 +223,11 @@ void MotionCombinator::estimateOdometryOffset(Vector2f& offset)
   odometryUKF.update<2>(offset, realMeasurement, measurementVariance.cwiseAbs2().asDiagonal());
 
   offset = odometryUKF.mean.head<2>() * Constants::motionCycleTime;
+}
+
+void MotionCombinator::applyStandHeat(JointRequest& jointRequest)
+{
+  if(motionInfo.motion == MotionRequest::stand || motionInfo.motion == MotionRequest::specialAction)//EnergySavingProvider already has this test. This is a fail save, in case EnergySavinProvider will change in the future
+    for(size_t i = 0; i < Joints::numOfJoints; i++)
+      jointRequest.angles[i] += theEnergySaving.offsets[i];
 }

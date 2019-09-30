@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
-		2042274C1202418600B9944D /* Deploy */ = {
+		17B00EB921567330009F9C29 /* Deploy */ = {
 			isa = PBXAggregateTarget;
-			buildConfigurationList = 20422753120241CD00B9944D /* Build configuration list for PBXAggregateTarget "Deploy" */;
+			buildConfigurationList = 17B00EBD21567330009F9C29 /* Build configuration list for PBXAggregateTarget "Deploy" */;
 			buildPhases = (
-				2042274B1202418600B9944D /* Copy Files */,
+				17B00EBC21567330009F9C29 /* Copy Files */,
 			);
 			dependencies = (
-				20C301B912304BCB0014668E /* PBXTargetDependency */,
+				17B00EC221567368009F9C29 /* PBXTargetDependency */,
 			);
 			name = Deploy;
 			productName = "Deploy to Nao";
@@ -22,13 +22,30 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		170969C32088E932003FC686 /* bhuman.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000050027039214 /* bhuman.cpp */; };
-		170969C42088E93D003FC686 /* GameCtrl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000800258715910 /* GameCtrl.cpp */; };
-		170969C52088E93F003FC686 /* UdpComm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000401393358546 /* UdpComm.cpp */; };
 		170969C62088E9AB003FC686 /* SimRobot.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000211190435617832675 /* SimRobot.icns */; };
 		170969C72088E9C2003FC686 /* SimRobotDoc.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000001685755464254793165 /* SimRobotDoc.icns */; };
 		170969C82088EA16003FC686 /* bush.icns in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 000000000003201123504625 /* bush.icns */; };
+		1723BEDD2238EB0100CC1FA9 /* librt-2.29.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEDC2238EB0100CC1FA9 /* librt-2.29.so */; };
+		1723BEDF2238EB2900CC1FA9 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEDE2238EB2900CC1FA9 /* libjpeg.a */; };
+		1723BEE12238EB5100CC1FA9 /* libpthread-2.29.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEE02238EB5000CC1FA9 /* libpthread-2.29.so */; };
+		1723BEE22238EB7C00CC1FA9 /* libasound.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 17B00EC321568853009F9C29 /* libasound.so */; };
+		1723BEE42238EB9B00CC1FA9 /* libdl-2.29.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEE32238EB9B00CC1FA9 /* libdl-2.29.so */; };
+		1723BEE62238EBD000CC1FA9 /* libfftw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEE52238EBD000CC1FA9 /* libfftw3.a */; };
+		1723BEE82238EBE400CC1FA9 /* libfftw3f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEE72238EBE400CC1FA9 /* libfftw3f.a */; };
+		1723BEEA2238EBFE00CC1FA9 /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1723BEE92238EBFD00CC1FA9 /* libsnappy.a */; };
+		173B39532160B899003FFBA0 /* QtDBus.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 173B39522160B899003FFBA0 /* QtDBus.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		173B39562160C0B9003FFBA0 /* QtDBus.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 173B39522160B899003FFBA0 /* QtDBus.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1747C56621ECFFAC005F5681 /* libqjpeg.dylib in Copy Image Format Plugins */ = {isa = PBXBuildFile; fileRef = 1747C56521ECFF95005F5681 /* libqjpeg.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1751F8092034254200DA93DA /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1751F8082034254200DA93DA /* OpenCL.framework */; };
+		1757B03521D793BF0034C79B /* libgtest.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1757B03421D793BE0034C79B /* libgtest.a */; };
+		1757B03B21D7A7380034C79B /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
+		1757B03C21D7AED10034C79B /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
+		175CE6772243D35700DF30A3 /* libhdf5.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 175CE6762243D35700DF30A3 /* libhdf5.a */; };
+		175CE6792243D81000DF30A3 /* libhdf5.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 175CE6782243D81000DF30A3 /* libhdf5.a */; };
+		17787ED422884A9D00E26327 /* libflite_usenglish.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17787ED022884A9C00E26327 /* libflite_usenglish.a */; };
+		17787ED522884A9D00E26327 /* libflite_cmu_us_slt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17787ED122884A9C00E26327 /* libflite_cmu_us_slt.a */; };
+		17787ED622884A9D00E26327 /* libflite_cmulex.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17787ED222884A9C00E26327 /* libflite_cmulex.a */; };
+		17787ED722884A9D00E26327 /* libflite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17787ED322884A9C00E26327 /* libflite.a */; };
 		17EB9A2721367E9A009D5A33 /* QtCore.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		17EB9A2821367EAC009D5A33 /* QtGui.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		17EB9A2921367EB3009D5A33 /* QtOpenGL.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -41,7 +58,6 @@
 		17EB9A3221368C89009D5A33 /* QtPrintSupport.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 17EB9A2A21367EF1009D5A33 /* QtPrintSupport.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		17EB9A3321368C92009D5A33 /* QtWidgets.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		200C742F17F76EC60081E703 /* SimulatedNao.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 200C742E17F76E940081E703 /* SimulatedNao.dylib */; };
-		201231421950B32C004B1C6C /* libdl-2.13.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 201231411950B322004B1C6C /* libdl-2.13.so */; };
 		201C9B781C2998A6005E4AAD /* QtWidgets.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		201C9B791C2998A6005E4AAD /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		201C9B7A1C2998A6005E4AAD /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
@@ -64,30 +80,26 @@
 		201C9B8F1C2998D8005E4AAD /* QtSvg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9B7F1C2998D8005E4AAD /* QtSvg.framework */; };
 		201C9BA21C29AC0D005E4AAD /* libqcocoa.dylib in Copy Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		201C9BA41C29AE2C005E4AAD /* QtConcurrent.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9BA31C29AE2C005E4AAD /* QtConcurrent.framework */; };
-		201C9BAB1C29AF90005E4AAD /* libqcocoa.dylib in Copy Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		201C9BAB1C29AF90005E4AAD /* libqcocoa.dylib in Copy Platform Plugins */ = {isa = PBXBuildFile; fileRef = 201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */; };
 		201C9BAC1C29B03A005E4AAD /* QtCore.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7C1C2998D8005E4AAD /* QtCore.framework */; };
 		201C9BAD1C29B03E005E4AAD /* QtGui.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B7D1C2998D8005E4AAD /* QtGui.framework */; };
 		201C9BAE1C29B042005E4AAD /* QtWidgets.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 201C9B771C2998A6005E4AAD /* QtWidgets.framework */; };
 		2024529F12041A9300C3BCD9 /* libController.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20245219120416DB00C3BCD9 /* libController.a */; };
 		20318598173D298000E25227 /* libqtpropertybrowser.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20318536173D0FE000E25227 /* libqtpropertybrowser.a */; };
 		203E5A8417A52FD200401CAA /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 203E5A8317A52FD200401CAA /* AppKit.framework */; };
-		20432DA2194F55500082B079 /* libasound.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 20432DA1194F55270082B079 /* libasound.so */; };
 		2048B1C71794838700553A54 /* qt.conf in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
 		2056DBA71FE5857000A6916F /* libfftw3f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2056DBA61FE5857000A6916F /* libfftw3f.a */; };
-		2056DBA91FE58D2900A6916F /* libfftw3f.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2056DBA81FE58D2900A6916F /* libfftw3f.a */; };
 		2061F22E152CA4430089659C /* Foundation.framework in Link Binary With Libraries */ = {isa = PBXBuildFile; fileRef = 2061F22D152CA4430089659C /* Foundation.framework */; };
 		20844B1F11FC73940037FA87 /* SimRobotEditor.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */; };
 		208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 208460E511FE413F0037FA87 /* libjpeg.a */; };
 		2084615711FED7420037FA87 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
 		2084637011FF64E10037FA87 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 208462A211FF5B640037FA87 /* CoreServices.framework */; };
 		208C8ACB13D9C7F300AADC1B /* SimRobotCore2.dylib in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20DD7409134E5056003FF249 /* SimRobotCore2.dylib */; };
-		2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD05175CE13100E764EF /* libsnappy.a */; };
 		2098CD08175CE16C00E764EF /* libsnappy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2098CD07175CE16C00E764EF /* libsnappy.a */; };
 		20A0EB181217F4AC0033F048 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20A0EB141217F49C0033F048 /* IOKit.framework */; };
 		20B288081966851900E08377 /* libfftw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20B288071966851900E08377 /* libfftw3.a */; };
-		20B2880A1966862000E08377 /* libfftw3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20B288091966862000E08377 /* libfftw3.a */; };
 		20BB9F221FDAD974009DCC45 /* libqmacstyle.dylib in Copy Style Plugins */ = {isa = PBXBuildFile; fileRef = 20BB9F201FDAD933009DCC45 /* libqmacstyle.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		20BB9F241FDAECBF009DCC45 /* libqmacstyle.dylib in Copy Style Plugins */ = {isa = PBXBuildFile; fileRef = 20BB9F201FDAD933009DCC45 /* libqmacstyle.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		20BB9F241FDAECBF009DCC45 /* libqmacstyle.dylib in Copy Style Plugins */ = {isa = PBXBuildFile; fileRef = 20BB9F201FDAD933009DCC45 /* libqmacstyle.dylib */; };
 		20C1154D17934BDC00961A38 /* qt.conf in Copy Bundle Resources */ = {isa = PBXBuildFile; fileRef = 20C1154C17934BDC00961A38 /* qt.conf */; };
 		20DD73EA134E4E33003FF249 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20D13C3411F0CD31007DFC5D /* OpenGL.framework */; };
 		20DD73EF134E4E33003FF249 /* libode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20844A6111FB5F1C0037FA87 /* libode.a */; };
@@ -103,6 +115,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -114,6 +128,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -125,6 +141,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -136,6 +154,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -147,6 +167,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -158,6 +180,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -169,6 +193,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -180,6 +206,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -191,6 +219,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -202,6 +232,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -213,6 +245,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -224,6 +258,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -235,6 +271,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -244,6 +282,13 @@
 /* End PBXBuildRule section */
 
 /* Begin PBXContainerItemProxy section */
+		17B00EC121567368009F9C29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 91B15E841AA80083484172DE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 17B00D1A21567051009F9C29;
+			remoteInfo = NaoV6;
+		};
 		202452B412041BD900C3BCD9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 91B15E841AA80083484172DE /* Project object */;
@@ -272,27 +317,6 @@
 			remoteGlobalIDString = 20844AF411FC6F410037FA87;
 			remoteInfo = SimRobotEditor;
 		};
-		2099D31E1868EF3F00AEF9C0 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 20C3017F12303D200014668E;
-			remoteInfo = libbhuman;
-		};
-		2099D3201868EF4600AEF9C0 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 20909CF9176BB55200A997C2;
-			remoteInfo = libgamectrl;
-		};
-		20C301B812304BCB0014668E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 91B15E841AA80083484172DE /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 20B7663F123001A300F11A62;
-			remoteInfo = Nao;
-		};
 		20DD7420134E5458003FF249 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 91B15E841AA80083484172DE /* Project object */;
@@ -303,12 +327,24 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		1747C56421ECFF67005F5681 /* Copy Image Format Plugins */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = imageformats;
+			dstSubfolderSpec = 13;
+			files = (
+				1747C56621ECFFAC005F5681 /* libqjpeg.dylib in Copy Image Format Plugins */,
+			);
+			name = "Copy Image Format Plugins";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		17EB9A2621367E88009D5A33 /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				173B39532160B899003FFBA0 /* QtDBus.framework in Copy Frameworks */,
 				17EB9A2B21367EF2009D5A33 /* QtPrintSupport.framework in Copy Frameworks */,
 				17EB9A2721367E9A009D5A33 /* QtCore.framework in Copy Frameworks */,
 				17EB9A2821367EAC009D5A33 /* QtGui.framework in Copy Frameworks */,
@@ -325,6 +361,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				173B39562160C0B9003FFBA0 /* QtDBus.framework in Copy Frameworks */,
 				17EB9A2F21368C6E009D5A33 /* QtConcurrent.framework in Copy Frameworks */,
 				17EB9A3021368C79009D5A33 /* QtCore.framework in Copy Frameworks */,
 				17EB9A3121368C7F009D5A33 /* QtGui.framework in Copy Frameworks */,
@@ -381,10 +418,28 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1723BEDC2238EB0100CC1FA9 /* librt-2.29.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "librt-2.29.so"; path = "../../Util/Buildchain/V6/gcc/lib/librt-2.29.so"; sourceTree = SOURCE_ROOT; };
+		1723BEDE2238EB2900CC1FA9 /* libjpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libjpeg.a; path = ../../Util/libjpeg/lib/V6/libjpeg.a; sourceTree = "<group>"; };
+		1723BEE02238EB5000CC1FA9 /* libpthread-2.29.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libpthread-2.29.so"; path = "../../Util/Buildchain/V6/gcc/lib/libpthread-2.29.so"; sourceTree = SOURCE_ROOT; };
+		1723BEE32238EB9B00CC1FA9 /* libdl-2.29.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libdl-2.29.so"; path = "../../Util/Buildchain/V6/gcc/lib/libdl-2.29.so"; sourceTree = SOURCE_ROOT; };
+		1723BEE52238EBD000CC1FA9 /* libfftw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3.a; path = "../../Util/fftw-3.3/V6/libfftw3.a"; sourceTree = "<group>"; };
+		1723BEE72238EBE400CC1FA9 /* libfftw3f.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3f.a; path = "../../Util/fftw-3.3/V6/libfftw3f.a"; sourceTree = "<group>"; };
+		1723BEE92238EBFD00CC1FA9 /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/V6/libsnappy.a; sourceTree = "<group>"; };
+		173B39522160B899003FFBA0 /* QtDBus.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtDBus.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtDBus.framework; sourceTree = "<group>"; };
+		1747C56521ECFF95005F5681 /* libqjpeg.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqjpeg.dylib; path = ../../Util/SimRobot/Util/qt/macOS/plugins/imageformats/libqjpeg.dylib; sourceTree = SOURCE_ROOT; };
 		1751F8082034254200DA93DA /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
+		1757B02921D6A6500034C79B /* Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1757B03421D793BE0034C79B /* libgtest.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgtest.a; path = ../../Util/gtest/lib/macOS/libgtest.a; sourceTree = "<group>"; };
+		175CE6762243D35700DF30A3 /* libhdf5.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libhdf5.a; path = ../../Util/hdf5/lib/V6/libhdf5.a; sourceTree = "<group>"; };
+		175CE6782243D81000DF30A3 /* libhdf5.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libhdf5.a; path = ../../Util/hdf5/lib/macOS/libhdf5.a; sourceTree = "<group>"; };
+		17787ED022884A9C00E26327 /* libflite_usenglish.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflite_usenglish.a; path = ../../Util/flite/lib/V6/libflite_usenglish.a; sourceTree = SOURCE_ROOT; };
+		17787ED122884A9C00E26327 /* libflite_cmu_us_slt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflite_cmu_us_slt.a; path = ../../Util/flite/lib/V6/libflite_cmu_us_slt.a; sourceTree = SOURCE_ROOT; };
+		17787ED222884A9C00E26327 /* libflite_cmulex.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflite_cmulex.a; path = ../../Util/flite/lib/V6/libflite_cmulex.a; sourceTree = SOURCE_ROOT; };
+		17787ED322884A9C00E26327 /* libflite.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libflite.a; path = ../../Util/flite/lib/V6/libflite.a; sourceTree = SOURCE_ROOT; };
+		17B00EB621567051009F9C29 /* bhuman */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bhuman; sourceTree = BUILT_PRODUCTS_DIR; };
+		17B00EC321568853009F9C29 /* libasound.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = libasound.so; path = ../../Util/Buildchain/V6/gcc/lib/libasound.so; sourceTree = SOURCE_ROOT; };
 		17EB9A2A21367EF1009D5A33 /* QtPrintSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtPrintSupport.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtPrintSupport.framework; sourceTree = SOURCE_ROOT; };
 		200C742E17F76E940081E703 /* SimulatedNao.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimulatedNao.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		201231411950B322004B1C6C /* libdl-2.13.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = "libdl-2.13.so"; path = "../../Util/Buildchain/gcc/lib/libdl-2.13.so"; sourceTree = SOURCE_ROOT; };
 		201C9B771C2998A6005E4AAD /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtWidgets.framework; sourceTree = SOURCE_ROOT; };
 		201C9B7C1C2998D8005E4AAD /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtCore.framework; sourceTree = SOURCE_ROOT; };
 		201C9B7D1C2998D8005E4AAD /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../Util/SimRobot/Util/qt/macOS/lib/QtGui.framework; sourceTree = SOURCE_ROOT; };
@@ -395,33 +450,56 @@
 		20245219120416DB00C3BCD9 /* libController.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libController.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		20318536173D0FE000E25227 /* libqtpropertybrowser.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libqtpropertybrowser.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		203E5A8317A52FD200401CAA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
-		20432DA1194F55270082B079 /* libasound.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; name = libasound.so; path = ../../Util/Buildchain/gcc/lib/libasound.so; sourceTree = SOURCE_ROOT; };
 		2044A8C112C0F80200B772CD /* libiconv.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.dylib; path = /usr/lib/libiconv.dylib; sourceTree = "<absolute>"; };
 		2044A8C212C0F80200B772CD /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = /usr/lib/libz.dylib; sourceTree = "<absolute>"; };
 		2056DBA61FE5857000A6916F /* libfftw3f.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3f.a; path = "../../Util/fftw-3.3/macOS/libfftw3f.a"; sourceTree = SOURCE_ROOT; };
-		2056DBA81FE58D2900A6916F /* libfftw3f.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3f.a; path = "../../Util/fftw-3.3/Linux32/libfftw3f.a"; sourceTree = SOURCE_ROOT; };
 		2061F22D152CA4430089659C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		20844A6111FB5F1C0037FA87 /* libode.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libode.a; path = ../../Util/SimRobot/Util/ode/macOS/lib/libode.a; sourceTree = SOURCE_ROOT; };
 		20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		208460E511FE413F0037FA87 /* libjpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libjpeg.a; path = ../../Util/libjpeg/lib/macOS/libjpeg.a; sourceTree = SOURCE_ROOT; };
 		208462A211FF5B640037FA87 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
-		20909D01176BB55200A997C2 /* libgamectrl.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libgamectrl.so; sourceTree = BUILT_PRODUCTS_DIR; };
-		2098CD05175CE13100E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/Linux/x86/libsnappy.a; sourceTree = SOURCE_ROOT; };
 		2098CD07175CE16C00E764EF /* libsnappy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsnappy.a; path = ../../Util/snappy/lib/macOS/libsnappy.a; sourceTree = SOURCE_ROOT; };
 		209C6D111200A9C2007E5C2E /* SimRobot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimRobot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		20A0EB141217F49C0033F048 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		20B288071966851900E08377 /* libfftw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3.a; path = "../../Util/fftw-3.3/macOS/libfftw3.a"; sourceTree = SOURCE_ROOT; };
-		20B288091966862000E08377 /* libfftw3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfftw3.a; path = "../../Util/fftw-3.3/Linux32/libfftw3.a"; sourceTree = SOURCE_ROOT; };
-		20B76640123001A300F11A62 /* bhuman */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bhuman; sourceTree = BUILT_PRODUCTS_DIR; };
 		20BB9F201FDAD933009DCC45 /* libqmacstyle.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libqmacstyle.dylib; path = ../../Util/SimRobot/Util/qt/macOS/plugins/styles/libqmacstyle.dylib; sourceTree = SOURCE_ROOT; };
 		20C1154C17934BDC00961A38 /* qt.conf */ = {isa = PBXFileReference; lastKnownFileType = text; name = qt.conf; path = ../../Util/SimRobot/Make/macOS/qt.conf; sourceTree = SOURCE_ROOT; };
-		20C3018012303D200014668E /* libbhuman.so */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libbhuman.so; sourceTree = BUILT_PRODUCTS_DIR; };
 		20D13C3411F0CD31007DFC5D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		20DD7409134E5056003FF249 /* SimRobotCore2.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SimRobotCore2.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		20EF87B713B3802B00508E6A /* bush.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bush.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1757B02621D6A6500034C79B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1757B03C21D7AED10034C79B /* AppKit.framework in Frameworks */,
+				1757B03B21D7A7380034C79B /* CoreServices.framework in Frameworks */,
+				1757B03521D793BF0034C79B /* libgtest.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		17B00EAC21567051009F9C29 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1723BEE22238EB7C00CC1FA9 /* libasound.so in Frameworks */,
+				1723BEE42238EB9B00CC1FA9 /* libdl-2.29.so in Frameworks */,
+				1723BEE12238EB5100CC1FA9 /* libpthread-2.29.so in Frameworks */,
+				1723BEDD2238EB0100CC1FA9 /* librt-2.29.so in Frameworks */,
+				1723BEE62238EBD000CC1FA9 /* libfftw3.a in Frameworks */,
+				1723BEE82238EBE400CC1FA9 /* libfftw3f.a in Frameworks */,
+				17787ED522884A9D00E26327 /* libflite_cmu_us_slt.a in Frameworks */,
+				17787ED422884A9D00E26327 /* libflite_usenglish.a in Frameworks */,
+				17787ED622884A9D00E26327 /* libflite_cmulex.a in Frameworks */,
+				17787ED722884A9D00E26327 /* libflite.a in Frameworks */,
+				175CE6772243D35700DF30A3 /* libhdf5.a in Frameworks */,
+				1723BEDF2238EB2900CC1FA9 /* libjpeg.a in Frameworks */,
+				1723BEEA2238EBFE00CC1FA9 /* libsnappy.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		20844AF311FC6F410037FA87 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -448,38 +526,13 @@
 				201C9B8B1C2998D8005E4AAD /* QtOpenGL.framework in Frameworks */,
 				201C9B7B1C2998A6005E4AAD /* QtWidgets.framework in Frameworks */,
 				201C9B8F1C2998D8005E4AAD /* QtSvg.framework in Frameworks */,
-				208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */,
 				2024529F12041A9300C3BCD9 /* libController.a in Frameworks */,
 				20318598173D298000E25227 /* libqtpropertybrowser.a in Frameworks */,
 				20B288081966851900E08377 /* libfftw3.a in Frameworks */,
 				2056DBA71FE5857000A6916F /* libfftw3f.a in Frameworks */,
+				175CE6792243D81000DF30A3 /* libhdf5.a in Frameworks */,
+				208460E611FE413F0037FA87 /* libjpeg.a in Frameworks */,
 				2098CD08175CE16C00E764EF /* libsnappy.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		20909CFC176BB55200A997C2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		20B7663E123001A300F11A62 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2098CD06175CE13200E764EF /* libsnappy.a in Frameworks */,
-				20432DA2194F55500082B079 /* libasound.so in Frameworks */,
-				20B2880A1966862000E08377 /* libfftw3.a in Frameworks */,
-				2056DBA91FE58D2900A6916F /* libfftw3f.a in Frameworks */,
-				201231421950B32C004B1C6C /* libdl-2.13.so in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		20C3017E12303D200014668E /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -535,8 +588,8 @@
 			children = (
 				000000000000000006123121 /* Modules */,
 				000000000000000012212325 /* Platform */,
-				000000000000000024490305 /* Processes */,
 				000000000000001568085911 /* Representations */,
+				000000000000000006125205 /* Threads */,
 				000000000000000001531461 /* Tools */,
 			);
 			name = Nao;
@@ -568,8 +621,6 @@
 			children = (
 				000000000000000048852162 /* Controller */,
 				000000000000012585777516 /* asmjit */,
-				000000000000000024497214 /* libbhuman */,
-				000000000000000097996440 /* libgamectrl */,
 				000000000000012590619184 /* qtpropertybrowser */,
 				000000000000000006132518 /* libqxt */,
 			);
@@ -579,11 +630,14 @@
 		2078CFDE1C2F528E005EF5E9 /* bin */ = {
 			isa = PBXGroup;
 			children = (
-				20432DA1194F55270082B079 /* libasound.so */,
-				201231411950B322004B1C6C /* libdl-2.13.so */,
+				17B00EC321568853009F9C29 /* libasound.so */,
+				1723BEE32238EB9B00CC1FA9 /* libdl-2.29.so */,
 				2044A8C112C0F80200B772CD /* libiconv.dylib */,
+				1723BEE02238EB5000CC1FA9 /* libpthread-2.29.so */,
+				1723BEDC2238EB0100CC1FA9 /* librt-2.29.so */,
 				2044A8C212C0F80200B772CD /* libz.dylib */,
 				201C9BA11C29ABB6005E4AAD /* libqcocoa.dylib */,
+				1747C56521ECFF95005F5681 /* libqjpeg.dylib */,
 				20BB9F201FDAD933009DCC45 /* libqmacstyle.dylib */,
 			);
 			name = bin;
@@ -593,13 +647,21 @@
 			isa = PBXGroup;
 			children = (
 				20B288071966851900E08377 /* libfftw3.a */,
+				1723BEE52238EBD000CC1FA9 /* libfftw3.a */,
 				2056DBA61FE5857000A6916F /* libfftw3f.a */,
-				20B288091966862000E08377 /* libfftw3.a */,
-				2056DBA81FE58D2900A6916F /* libfftw3f.a */,
+				1723BEE72238EBE400CC1FA9 /* libfftw3f.a */,
+				17787ED322884A9C00E26327 /* libflite.a */,
+				17787ED122884A9C00E26327 /* libflite_cmu_us_slt.a */,
+				17787ED222884A9C00E26327 /* libflite_cmulex.a */,
+				17787ED022884A9C00E26327 /* libflite_usenglish.a */,
+				1757B03421D793BE0034C79B /* libgtest.a */,
+				175CE6762243D35700DF30A3 /* libhdf5.a */,
+				175CE6782243D81000DF30A3 /* libhdf5.a */,
+				1723BEDE2238EB2900CC1FA9 /* libjpeg.a */,
 				208460E511FE413F0037FA87 /* libjpeg.a */,
 				20844A6111FB5F1C0037FA87 /* libode.a */,
 				2098CD07175CE16C00E764EF /* libsnappy.a */,
-				2098CD05175CE13100E764EF /* libsnappy.a */,
+				1723BEE92238EBFD00CC1FA9 /* libsnappy.a */,
 			);
 			name = lib;
 			sourceTree = "<group>";
@@ -610,6 +672,7 @@
 				000000000000201406895878 /* SimRobot */,
 				201A02A31D3195C60022690F /* Libs */,
 				000000000000000048848562 /* bush */,
+				000000000000000098001165 /* Tests */,
 			);
 			name = Utils;
 			sourceTree = "<group>";
@@ -617,16 +680,15 @@
 		20D139C911F0B445007DFC5D /* Target Files */ = {
 			isa = PBXGroup;
 			children = (
-				20909D01176BB55200A997C2 /* libgamectrl.so */,
-				20318536173D0FE000E25227 /* libqtpropertybrowser.a */,
-				20EF87B713B3802B00508E6A /* bush.app */,
-				20C3018012303D200014668E /* libbhuman.so */,
-				20B76640123001A300F11A62 /* bhuman */,
-				20245219120416DB00C3BCD9 /* libController.a */,
+				1757B02921D6A6500034C79B /* Tests.xctest */,
+				17B00EB621567051009F9C29 /* bhuman */,
 				209C6D111200A9C2007E5C2E /* SimRobot.app */,
 				20DD7409134E5056003FF249 /* SimRobotCore2.dylib */,
 				20844AF511FC6F410037FA87 /* SimRobotEditor.dylib */,
+				20245219120416DB00C3BCD9 /* libController.a */,
+				20318536173D0FE000E25227 /* libqtpropertybrowser.a */,
 				200C742E17F76E940081E703 /* SimulatedNao.dylib */,
+				20EF87B713B3802B00508E6A /* bush.app */,
 			);
 			name = "Target Files";
 			sourceTree = "<group>";
@@ -645,6 +707,7 @@
 				20D13C3411F0CD31007DFC5D /* OpenGL.framework */,
 				201C9BA31C29AE2C005E4AAD /* QtConcurrent.framework */,
 				201C9B7C1C2998D8005E4AAD /* QtCore.framework */,
+				173B39522160B899003FFBA0 /* QtDBus.framework */,
 				201C9B7D1C2998D8005E4AAD /* QtGui.framework */,
 				201C9B7E1C2998D8005E4AAD /* QtOpenGL.framework */,
 				17EB9A2A21367EF1009D5A33 /* QtPrintSupport.framework */,
@@ -657,6 +720,39 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1757B02821D6A6500034C79B /* Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1757B03321D6A6500034C79B /* Build configuration list for PBXNativeTarget "Tests" */;
+			buildPhases = (
+				1757B02521D6A6500034C79B /* Sources */,
+				1757B02621D6A6500034C79B /* Frameworks */,
+				1757B02721D6A6500034C79B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Tests;
+			productName = Tests;
+			productReference = 1757B02921D6A6500034C79B /* Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		17B00D1A21567051009F9C29 /* Nao */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 17B00EB221567051009F9C29 /* Build configuration list for PBXNativeTarget "Nao" */;
+			buildPhases = (
+				17B00D1F21567051009F9C29 /* Sources */,
+				17B00EAC21567051009F9C29 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Nao;
+			productName = Nao;
+			productReference = 17B00EB621567051009F9C29 /* bhuman */;
+			productType = "com.apple.product-type.tool";
+		};
 		20245218120416DB00C3BCD9 /* Controller */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2024521E1204174D00C3BCD9 /* Build configuration list for PBXNativeTarget "Controller" */;
@@ -733,56 +829,6 @@
 			productReference = 200C742E17F76E940081E703 /* SimulatedNao.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		20909CF9176BB55200A997C2 /* libgamectrl */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 20909CFD176BB55200A997C2 /* Build configuration list for PBXNativeTarget "libgamectrl" */;
-			buildPhases = (
-				20909CFA176BB55200A997C2 /* Sources */,
-				20909CFC176BB55200A997C2 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = libgamectrl;
-			productName = libbhuman;
-			productReference = 20909D01176BB55200A997C2 /* libgamectrl.so */;
-			productType = "com.apple.product-type.library.dynamic";
-		};
-		20B7663F123001A300F11A62 /* Nao */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 20B76649123001F600F11A62 /* Build configuration list for PBXNativeTarget "Nao" */;
-			buildPhases = (
-				20B7663D123001A300F11A62 /* Sources */,
-				20B7663E123001A300F11A62 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				2099D31F1868EF3F00AEF9C0 /* PBXTargetDependency */,
-				2099D3211868EF4600AEF9C0 /* PBXTargetDependency */,
-			);
-			name = Nao;
-			productName = Nao;
-			productReference = 20B76640123001A300F11A62 /* bhuman */;
-			productType = "com.apple.product-type.tool";
-		};
-		20C3017F12303D200014668E /* libbhuman */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 20C3018512303D3F0014668E /* Build configuration list for PBXNativeTarget "libbhuman" */;
-			buildPhases = (
-				20C3017D12303D200014668E /* Sources */,
-				20C3017E12303D200014668E /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = libbhuman;
-			productName = libbhuman;
-			productReference = 20C3018012303D200014668E /* libbhuman.so */;
-			productType = "com.apple.product-type.library.dynamic";
-		};
 		20DD73A1134E4E33003FF249 /* SimRobotCore2 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20DD73F6134E4E33003FF249 /* Build configuration list for PBXNativeTarget "SimRobotCore2" */;
@@ -840,6 +886,7 @@
 				17EB9A2621367E88009D5A33 /* Copy Frameworks */,
 				20C1153F17934A2700961A38 /* Copy Platform Plugins */,
 				20BB9F211FDAD957009DCC45 /* Copy Style Plugins */,
+				1747C56421ECFF67005F5681 /* Copy Image Format Plugins */,
 			);
 			buildRules = (
 				208443B911FA398B0037FA87 /* PBXBuildRule */,
@@ -861,14 +908,21 @@
 		91B15E841AA80083484172DE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1000;
+				LastUpgradeCheck = 1100;
+				TargetAttributes = {
+					1757B02821D6A6500034C79B = {
+						CreatedOnToolsVersion = 10.1;
+						TestTargetID = 299502394E013F9C280A5D16;
+					};
+				};
 			};
 			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "B-Human" */;
 			compatibilityVersion = "Xcode 9.3";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 05596AB53D8D521C69802C27 /* B-Human */;
 			productRefGroup = 05596AB53D8D521C69802C27 /* B-Human */;
@@ -876,21 +930,27 @@
 			projectRoot = ../../Src;
 			targets = (
 				299502394E013F9C280A5D16 /* SimRobot */,
-				20B7663F123001A300F11A62 /* Nao */,
-				2042274C1202418600B9944D /* Deploy */,
+				17B00D1A21567051009F9C29 /* Nao */,
+				17B00EB921567330009F9C29 /* Deploy */,
 				20DD73A1134E4E33003FF249 /* SimRobotCore2 */,
 				20844AF411FC6F410037FA87 /* SimRobotEditor */,
 				20245218120416DB00C3BCD9 /* Controller */,
 				20844F1711FE33150037FA87 /* SimulatedNao */,
-				20C3017F12303D200014668E /* libbhuman */,
-				20909CF9176BB55200A997C2 /* libgamectrl */,
 				203184E5173D0FE000E25227 /* qtpropertybrowser */,
 				20EF877313B37D7500508E6A /* bush */,
+				1757B02821D6A6500034C79B /* Tests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1757B02721D6A6500034C79B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		20EF879313B37D7500508E6A /* Copy Bundle Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -918,6 +978,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		17B00EBC21567330009F9C29 /* Copy Files */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Files";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -z \"$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)\" ]; then\n  NAME_TO_IP=cat\n  IP_TO_NAME=cat\nelse\n  NAME_TO_IP=`echo \"sed\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^lan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\1/\\2/%\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^wlan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\1/\\2/%\" | tr '[:upper:]' '[:lower:]'`\n  NAME_TO_IP=`tr '\\n' ' ' <<<\"$NAME_TO_IP\"`\n  IP_TO_NAME=`echo \"sed\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^lan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\2/\\1/%\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^wlan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\2/\\1/%\" | tr '[:upper:]' '[:lower:]'`\n  IP_TO_NAME=`tr '\\n' ' ' <<<\"$IP_TO_NAME\"`\nfi\nif [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-b\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nif [ -e ../../Config/Scenes/Includes/connect.con ]; then\n  COMMAND=\"`head -1 ../../Config/Scenes/Includes/connect.con | sed \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`\"\n  COMMAND=`$IP_TO_NAME <<<\"$COMMAND\"`\n  COMMAND=\"$COMMAND$OPTIONS\"\nelse\n  COMMAND=\"<robot>$OPTIONS\"\nfi\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `../../Util/Buildchain/macOS/bin/getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"usage:    <robot> {options}\\noptions:\\n    -a     (auto deploy these settings in future)\\n    -b     (restart bhuman)\\n    -c <team color>\\n    -d    (delete all logs)\\n    -l <location>\\n    -m <magic number>\\n    -n     (stop naoqi)\\n    -o <team port>\\n    -p <player number>\\n    -s <scenario>\\n    -t <team number>\\n    -v <volume percent>\\n    -w <wireless profile>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  NAME=`sed \"s% *\\([^ ]*\\).*%\\1%\" <<<\"$COMMAND\"`\n  IP=`$NAME_TO_IP <<<\"$NAME\"`\n  echo \"sc Remote $IP\" >../../Config/Scenes/Includes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<robot>%%\"`\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		2017E2381C402CEC001E1587 /* Unlock Keychain */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -955,7 +1030,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "security unlock-keychain -p nao B-Human_Code_Release.keychain";
+			shellScript = "security unlock-keychain -p nao B-Human_Code_Release.keychain\n";
 			showEnvVarsInLog = 0;
 		};
 		203184E6173D0FE000E25227 /* Resource Dependencies */ = {
@@ -1006,28 +1081,13 @@
 			shellScript = "for ((i=0; i < SCRIPT_INPUT_FILE_COUNT ; i++)); do\n  INPUT_FILE_PATH=`eval echo '$SCRIPT_INPUT_FILE_'$i`\n  INPUT_FILE_DIR=`dirname \"$INPUT_FILE_PATH\"`\n  INPUT_FILE_BASE=`basename \"$INPUT_FILE_PATH\" .cpp`\n  \"$QT_DIR/bin/moc\" \"$INPUT_FILE_DIR/$INPUT_FILE_BASE.cpp\" -nw -o \"$CONFIGURATION_TEMP_DIR/file1.tmp\"\n  cmp -s \"$CONFIGURATION_TEMP_DIR/file1.tmp\" \"$CONFIGURATION_TEMP_DIR/$INPUT_FILE_BASE.moc\" || mv \"$CONFIGURATION_TEMP_DIR/file1.tmp\" \"$CONFIGURATION_TEMP_DIR/$INPUT_FILE_BASE.moc\"\ndone\ntouch \"$CONFIGURATION_TEMP_DIR/cpp.moc\"\n";
 			showEnvVarsInLog = 0;
 		};
-		2042274B1202418600B9944D /* Copy Files */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Copy Files";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ -z \"$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)\" ]; then\n  NAME_TO_IP=cat\n  IP_TO_NAME=cat\nelse\n  NAME_TO_IP=`echo \"sed\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^lan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\1/\\2/%\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^wlan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\1/\\2/%\" | tr '[:upper:]' '[:lower:]'`\n  NAME_TO_IP=`tr '\\n' ' ' <<<\"$NAME_TO_IP\"`\n  IP_TO_NAME=`echo \"sed\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^lan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\2/\\1/%\"; ls ../../Config/Robots/*/network.cfg | xargs grep -H \"^wlan\" | sed \"s%.*/\\(.*\\)/.*\\\"\\(.*\\)\\\";.*%-e s/\\2/\\1/%\" | tr '[:upper:]' '[:lower:]'`\n  IP_TO_NAME=`tr '\\n' ' ' <<<\"$IP_TO_NAME\"`\nfi\nif [ -e copyfiles-options.txt ]; then\n  OPTIONS=`cat copyfiles-options.txt`\nelse\n  OPTIONS=-b\nfi\nif [ ! -z \"$OPTIONS\" ]; then\n  OPTIONS=\" $OPTIONS\"\nfi\nif [ -e ../../Config/Scenes/Includes/connect.con ]; then\n  COMMAND=\"`head -1 ../../Config/Scenes/Includes/connect.con | sed \"s%sc Remote \\([\\.0-9]*\\)%\\1%\"`\"\n  COMMAND=`$IP_TO_NAME <<<\"$COMMAND\"`\n  COMMAND=\"$COMMAND$OPTIONS\"\nelse\n  COMMAND=\"<robot>$OPTIONS\"\nfi\nif [ ! -z \"`echo \"x $OPTIONS \" | sed \"s%.* -a .*%%\"`\" ] || [ -z `../../Util/Buildchain/macOS/bin/getModKey | sed \"s%512%%\"` ]; then\n  BHDIR=$(dirname \"$(dirname \"$SRCROOT\")\")\n  COMMAND=`osascript <<-APPLESCRIPT\n    tell application \"Xcode\"\n      activate\n      display dialog \"usage:    <robot> {options}\\noptions:\\n    -a     (auto deploy these settings in future)\\n    -b     (restart bhuman)\\n    -c <team color>\\n    -d    (delete all logs)\\n    -l <location>\\n    -m <magic number>\\n    -n     (stop naoqi)\\n    -o <team port>\\n    -p <player number>\\n    -s <scenario>\\n    -t <team number>\\n    -v <volume percent>\\n    -w <wireless profile>\" with title \"Deploy\" with icon file POSIX file \"$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns\" default answer \"$COMMAND\" buttons {\"Cancel \", \"Deploy\"} default button 2\n      if button returned of result = \"Deploy\" then\n        return (text returned of result) as string\n      else\n        return \"\"\n      end if\n    end tell\n    APPLESCRIPT\n  `\nfi\nif [ ! -z \"$COMMAND\" ]; then\n  NAME=`sed \"s% *\\([^ ]*\\).*%\\1%\" <<<\"$COMMAND\"`\n  IP=`$NAME_TO_IP <<<\"$NAME\"`\n  echo \"sc Remote $IP\" >../../Config/Scenes/Includes/connect.con\n  echo \"$COMMAND\" | sed \"s% *[^ ]* *%%\" >copyfiles-options.txt\n  ../Common/copyfiles $CONFIGURATION -nc `echo \"$COMMAND\" | sed -e \"s% -a%%\" -e \"s%<robot>%%\"`\nfi\n";
-			showEnvVarsInLog = 0;
-		};
 		2046C1E71446E11F00CADD6F /* Get SimRobotCore2 Library */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-				"$(BUILD_DIR)/SimRobotCore2/$(SIMROBOT_CONFIG)/SimRobotCore2.dylib",
+				"$(BUILD_DIR)/SimRobotCore2/$(CONFIGURATION)/SimRobotCore2.dylib",
 			);
 			name = "Get SimRobotCore2 Library";
 			outputPaths = (
@@ -1035,7 +1095,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp \"$BUILD_DIR/SimRobotCore2/$SIMROBOT_CONFIG/SimRobotCore2.dylib\" \"$CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib\"\n";
+			shellScript = "cp \"$BUILD_DIR/SimRobotCore2/$CONFIGURATION/SimRobotCore2.dylib\" \"$CONFIGURATION_TEMP_DIR/SimRobotCore2.dylib\"\n";
 			showEnvVarsInLog = 0;
 		};
 		207DB5481A8297EB0012AD4E /* Get SimRobotEditor Library */ = {
@@ -1044,7 +1104,7 @@
 			files = (
 			);
 			inputPaths = (
-				"$(BUILD_DIR)/SimRobotEditor/$(SIMROBOT_CONFIG)/SimRobotEditor.dylib",
+				"$(BUILD_DIR)/SimRobotEditor/$(CONFIGURATION)/SimRobotEditor.dylib",
 			);
 			name = "Get SimRobotEditor Library";
 			outputPaths = (
@@ -1052,7 +1112,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp \"$BUILD_DIR/SimRobotEditor/$SIMROBOT_CONFIG/SimRobotEditor.dylib\" \"$CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\"\n";
+			shellScript = "cp \"$BUILD_DIR/SimRobotEditor/$CONFIGURATION/SimRobotEditor.dylib\" \"$CONFIGURATION_TEMP_DIR/SimRobotEditor.dylib\"\n";
 			showEnvVarsInLog = 0;
 		};
 		207DB54A1A8297F70012AD4E /* Get SimulatedNao Library */ = {
@@ -1155,6 +1215,20 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1757B02521D6A6500034C79B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		17B00D1F21567051009F9C29 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		20245216120416DB00C3BCD9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1183,30 +1257,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		20909CFA176BB55200A997C2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				170969C42088E93D003FC686 /* GameCtrl.cpp in Sources */,
-				170969C52088E93F003FC686 /* UdpComm.cpp in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		20B7663D123001A300F11A62 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		20C3017D12303D200014668E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				170969C32088E932003FC686 /* bhuman.cpp in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		20DD73A3134E4E33003FF249 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1231,6 +1281,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		17B00EC221567368009F9C29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 17B00D1A21567051009F9C29 /* Nao */;
+			targetProxy = 17B00EC121567368009F9C29 /* PBXContainerItemProxy */;
+		};
 		202452B512041BD900C3BCD9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 20245218120416DB00C3BCD9 /* Controller */;
@@ -1251,21 +1306,6 @@
 			target = 20844AF411FC6F410037FA87 /* SimRobotEditor */;
 			targetProxy = 20844B2311FC73AD0037FA87 /* PBXContainerItemProxy */;
 		};
-		2099D31F1868EF3F00AEF9C0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 20C3017F12303D200014668E /* libbhuman */;
-			targetProxy = 2099D31E1868EF3F00AEF9C0 /* PBXContainerItemProxy */;
-		};
-		2099D3211868EF4600AEF9C0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 20909CF9176BB55200A997C2 /* libgamectrl */;
-			targetProxy = 2099D3201868EF4600AEF9C0 /* PBXContainerItemProxy */;
-		};
-		20C301B912304BCB0014668E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 20B7663F123001A300F11A62 /* Nao */;
-			targetProxy = 20C301B812304BCB0014668E /* PBXContainerItemProxy */;
-		};
 		20DD7421134E5458003FF249 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 20DD73A1134E4E33003FF249 /* SimRobotCore2 */;
@@ -1274,9 +1314,365 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		1757B03021D6A6500034C79B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"${inherited}",
+					TARGET_TOOL,
+					GTEST_DONT_DEFINE_FAIL,
+					GTEST_DONT_DEFINE_TEST,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/gtest/include",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = $SRCROOT/../../Src/Utils/Tests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../../Util/gtest/lib/macOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.b-human.Tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+			};
+			name = Debug;
+		};
+		1757B03121D6A6500034C79B /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MACOS,
+					"CONFIGURATION=$(CONFIGURATION)",
+					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
+					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
+					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					ASMJIT_STATIC,
+					ASMJIT_BUILD_X86,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
+					TARGET_TOOL,
+					GTEST_DONT_DEFINE_FAIL,
+					GTEST_DONT_DEFINE_TEST,
+				);
+				GCC_UNROLL_LOOPS = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/gtest/include",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = $SRCROOT/../../Src/Utils/Tests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../../Util/gtest/lib/macOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.b-human.Tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+			};
+			name = Develop;
+		};
+		1757B03221D6A6500034C79B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"${inherited}",
+					TARGET_TOOL,
+					GTEST_DONT_DEFINE_FAIL,
+					GTEST_DONT_DEFINE_TEST,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/gtest/include",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					/System/Library/Frameworks/CoreServices.framework/Headers,
+				);
+				INFOPLIST_FILE = $SRCROOT/../../Src/Utils/Tests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../../Util/gtest/lib/macOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.b-human.Tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+			};
+			name = Release;
+		};
+		17B00EB321567051009F9C29 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = NO;
+				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+					_DEBUG,
+					USEPCH,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
+					ASMJIT_STATIC,
+					ASMJIT_BUILD_X86,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/asmjit/src",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					"$(SRCROOT)/../../Util/fftw-3.3",
+					"$(SRCROOT)/../../Util/flite/include",
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
+					"$(SRCROOT)/../../Util/snappy/include",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0/x86_64-nao-linux-gnu",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include",
+					"$(SRCROOT)/../../Util/Buildchain/macOS/lib/clang/**",
+				);
+				LDPLUSPLUS_x86_64 = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/link";
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/lib",
+					"$(SRCROOT)/../../Util/fftw-3.3/V6",
+					"$(SRCROOT)/../../Util/flite/lib/V6",
+					"$(SRCROOT)/../../Util/hdf5/lib/V6",
+					"$(SRCROOT)/../../Util/libjpeg/lib/V6",
+					"$(SRCROOT)/../../Util/snappy/lib/V6",
+				);
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-nostdinc",
+					"-nostdinc++",
+					"-march=silvermont",
+					"-mtune=silvermont",
+					"-mrdrnd",
+					"-target",
+					"x86_64-nao-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-nostdlib",
+					"-z",
+					nodefaultlib,
+				);
+				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+				WARNING_CFLAGS = (
+					"${inherited}",
+					"-Wno-switch",
+				);
+			};
+			name = Debug;
+		};
+		17B00EB421567051009F9C29 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+					USEPCH,
+					EIGEN_INITIALIZE_MATRICES_BY_NAN,
+					ASMJIT_STATIC,
+					ASMJIT_BUILD_X86,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/asmjit/src",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					"$(SRCROOT)/../../Util/fftw-3.3",
+					"$(SRCROOT)/../../Util/flite/include",
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
+					"$(SRCROOT)/../../Util/snappy/include",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0/x86_64-nao-linux-gnu",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include",
+					"$(SRCROOT)/../../Util/Buildchain/macOS/lib/clang/**",
+				);
+				LDPLUSPLUS_x86_64 = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/link";
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/lib",
+					"$(SRCROOT)/../../Util/fftw-3.3/V6",
+					"$(SRCROOT)/../../Util/flite/lib/V6",
+					"$(SRCROOT)/../../Util/hdf5/lib/V6",
+					"$(SRCROOT)/../../Util/libjpeg/lib/V6",
+					"$(SRCROOT)/../../Util/snappy/lib/V6",
+				);
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-nostdinc",
+					"-nostdinc++",
+					"-march=silvermont",
+					"-mtune=silvermont",
+					"-mrdrnd",
+					"-target",
+					"x86_64-nao-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-nostdlib",
+					"-z",
+					nodefaultlib,
+				);
+				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+				WARNING_CFLAGS = (
+					"${inherited}",
+					"-Wno-switch",
+				);
+			};
+			name = Develop;
+		};
+		17B00EB521567051009F9C29 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_X86_VECTOR_INSTRUCTIONS = sse4.2;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
+				GCC_CW_ASM_SYNTAX = NO;
+				GCC_ENABLE_PASCAL_STRINGS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					LINUX,
+					"CONFIGURATION=$(CONFIGURATION)",
+					TARGET_ROBOT,
+					__STRICT_ANSI__,
+					NDEBUG,
+					USEPCH,
+					ASMJIT_STATIC,
+					ASMJIT_BUILD_X86,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/asmjit/src",
+					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
+					"$(SRCROOT)/../../Util/fftw-3.3",
+					"$(SRCROOT)/../../Util/flite/include",
+					"$(SRCROOT)/../../Util/GameController/include",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
+					"$(SRCROOT)/../../Util/snappy/include",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include/c++/7.4.0/x86_64-nao-linux-gnu",
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/include",
+					"$(SRCROOT)/../../Util/Buildchain/macOS/lib/clang/**",
+				);
+				LDPLUSPLUS_x86_64 = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/link";
+				LD_DEPENDENCY_INFO_FILE = "";
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCROOT)/../../Util/Buildchain/V6/gcc/lib",
+					"$(SRCROOT)/../../Util/fftw-3.3/V6",
+					"$(SRCROOT)/../../Util/flite/lib/V6",
+					"$(SRCROOT)/../../Util/hdf5/lib/V6",
+					"$(SRCROOT)/../../Util/libjpeg/lib/V6",
+					"$(SRCROOT)/../../Util/snappy/lib/V6",
+				);
+				OTHER_CFLAGS = (
+					"-Qunused-arguments",
+					"-nostdinc",
+					"-nostdinc++",
+					"-march=silvermont",
+					"-mtune=silvermont",
+					"-mrdrnd",
+					"-target",
+					"x86_64-nao-linux-gnu",
+				);
+				OTHER_LDFLAGS = (
+					"-nostdlib",
+					"-z",
+					nodefaultlib,
+				);
+				PRODUCT_NAME = bhuman;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
+				WARNING_CFLAGS = (
+					"${inherited}",
+					"-Wno-switch",
+					"-Wno-unused",
+				);
+			};
+			name = Release;
+		};
+		17B00EBE21567330009F9C29 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		17B00EBF21567330009F9C29 /* Develop */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Develop;
+		};
+		17B00EC021567330009F9C29 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		2024521A120416DC00C3BCD9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
@@ -1299,7 +1695,7 @@
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotCore2",
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotEditor",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1320,8 +1716,8 @@
 		2024521B120416DC00C3BCD9 /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -1344,7 +1740,7 @@
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotCore2",
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotEditor",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1365,6 +1761,7 @@
 		2024521D120416DC00C3BCD9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
@@ -1387,7 +1784,7 @@
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotCore2",
 					"$(SRCROOT)/../../Util/SimRobot/Src/SimRobotEditor",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1408,6 +1805,7 @@
 		20318533173D0FE000E25227 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
@@ -1432,8 +1830,8 @@
 		20318534173D0FE000E25227 /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -1458,6 +1856,7 @@
 		20318535173D0FE000E25227 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_EXTENSION = a;
 				EXECUTABLE_PREFIX = lib;
@@ -1480,34 +1879,14 @@
 			};
 			name = Release;
 		};
-		2042274D1202418600B9944D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "Deploy to Nao";
-			};
-			name = Debug;
-		};
-		2042274E1202418600B9944D /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "Deploy to Nao";
-			};
-			name = Develop;
-		};
-		204227501202418600B9944D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "Deploy to Nao";
-			};
-			name = Release;
-		};
 		2081799B1201800A0005F60F /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
+				CODE_SIGN_IDENTITY = "";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -1515,28 +1894,27 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
-					"CONFIGURATION=$(CONFIGURATION)",
 					NDEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
-					ASMJIT_EMBED,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					ASMJIT_STATIC,
 					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = XX.XX;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = "$(SRCROOT)/../../Util/SimRobot/Util/qt/macOS";
 				SHARED_PRECOMPS_DIR = "$(OBJROOT)/PrecompiledHeaders";
-				SIMROBOT_CONFIG = Release;
 				SKIP_INSTALL = YES;
 				SYMROOT = "$(SRCROOT)/../../Build/macOS";
 				USE_HEADERMAP = NO;
@@ -1549,6 +1927,7 @@
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
 					"-Wunreachable-code",
+					"-Wno-availability",
 				);
 			};
 			name = Develop;
@@ -1556,6 +1935,7 @@
 		2081799C1201800A0005F60F /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -1583,8 +1963,8 @@
 		2081799E1201800A0005F60F /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -1607,6 +1987,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -1624,13 +2005,13 @@
 					QT_CORE_LIB,
 					TARGET_SIM,
 					EIGEN_INITIALIZE_MATRICES_BY_NAN,
-					ASMJIT_EMBED,
+					ASMJIT_STATIC,
 					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
 				);
 				GCC_UNROLL_LOOPS = NO;
 				HEADER_SEARCH_PATHS = (
@@ -1640,7 +2021,8 @@
 					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
 					"$(SRCROOT)/../../Util/fftw-3.3",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1654,12 +2036,14 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(BUILD_DIR)/Controller/$(SIMROBOT_CONFIG)",
-					"$(BUILD_DIR)/qtpropertybrowser/$(SIMROBOT_CONFIG)",
-					"../../Util/fftw-3.3/macOS",
-					../../Util/libjpeg/lib/macOS,
-					../../Util/snappy/lib/macOS,
+					"$(BUILD_DIR)/Controller/$(CONFIGURATION)",
+					"$(BUILD_DIR)/qtpropertybrowser/$(CONFIGURATION)",
+					"$(SRCROOT)/../../Util/fftw-3.3/macOS",
+					"$(SRCROOT)/../../Util/hdf5/lib/macOS",
+					"$(SRCROOT)/../../Util/libjpeg/lib/macOS",
+					"$(SRCROOT)/../../Util/snappy/lib/macOS",
 				);
+				OTHER_LDFLAGS = "-Wl,-w";
 				PRODUCT_NAME = SimulatedNao;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
 				WARNING_CFLAGS = (
@@ -1672,6 +2056,7 @@
 		20844AF611FC6F420037FA87 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1693,6 +2078,7 @@
 		20844AF711FC6F420037FA87 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1715,6 +2101,7 @@
 		20844F1911FE33150037FA87 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1725,6 +2112,7 @@
 					QT_OPENGL_LIB,
 					QT_GUI_LIB,
 					QT_CORE_LIB,
+					"CONFIGURATION=$(CONFIGURATION)",
 					TARGET_SIM,
 					EIGEN_INITIALIZE_MATRICES_BY_NAN,
 				);
@@ -1735,7 +2123,8 @@
 					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
 					"$(SRCROOT)/../../Util/fftw-3.3",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1749,12 +2138,14 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(BUILD_DIR)/Controller/$(SIMROBOT_CONFIG)",
-					"$(BUILD_DIR)/qtpropertybrowser/$(SIMROBOT_CONFIG)",
-					"../../Util/fftw-3.3/macOS",
-					../../Util/libjpeg/lib/macOS,
-					../../Util/snappy/lib/macOS,
+					"$(BUILD_DIR)/Controller/$(CONFIGURATION)",
+					"$(BUILD_DIR)/qtpropertybrowser/$(CONFIGURATION)",
+					"$(SRCROOT)/../../Util/fftw-3.3/macOS",
+					"$(SRCROOT)/../../Util/hdf5/lib/macOS",
+					"$(SRCROOT)/../../Util/libjpeg/lib/macOS",
+					"$(SRCROOT)/../../Util/snappy/lib/macOS",
 				);
+				OTHER_LDFLAGS = "-Wl,-w";
 				PRODUCT_NAME = SimulatedNao;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
 				WARNING_CFLAGS = (
@@ -1767,6 +2158,7 @@
 		20844F1A11FE33150037FA87 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1778,6 +2170,7 @@
 					QT_OPENGL_LIB,
 					QT_GUI_LIB,
 					QT_CORE_LIB,
+					"CONFIGURATION=$(CONFIGURATION)",
 					TARGET_SIM,
 				);
 				HEADER_SEARCH_PATHS = (
@@ -1787,7 +2180,8 @@
 					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
 					"$(SRCROOT)/../../Util/fftw-3.3",
 					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
+					"$(SRCROOT)/../../Util/hdf5/include",
+					"$(SRCROOT)/../../Util/libjpeg/include",
 					"$(SRCROOT)/../../Util/libqxt",
 					"$(SRCROOT)/../../Util/qtpropertybrowser",
 					"$(SRCROOT)/../../Util/snappy/include",
@@ -1801,12 +2195,14 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(BUILD_DIR)/Controller/$(SIMROBOT_CONFIG)",
-					"$(BUILD_DIR)/qtpropertybrowser/$(SIMROBOT_CONFIG)",
-					"../../Util/fftw-3.3/macOS",
-					../../Util/libjpeg/lib/macOS,
-					../../Util/snappy/lib/macOS,
+					"$(BUILD_DIR)/Controller/$(CONFIGURATION)",
+					"$(BUILD_DIR)/qtpropertybrowser/$(CONFIGURATION)",
+					"$(SRCROOT)/../../Util/fftw-3.3/macOS",
+					"$(SRCROOT)/../../Util/hdf5/lib/macOS",
+					"$(SRCROOT)/../../Util/libjpeg/lib/macOS",
+					"$(SRCROOT)/../../Util/snappy/lib/macOS",
 				);
+				OTHER_LDFLAGS = "-Wl,-w";
 				PRODUCT_NAME = SimulatedNao;
 				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
 				WARNING_CFLAGS = (
@@ -1817,530 +2213,10 @@
 			};
 			name = Release;
 		};
-		20909CFE176BB55200A997C2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = NO;
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				COPY_PHASE_STRIP = YES;
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					_DEBUG,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/gamectrl.so",
-					"-s",
-				);
-				PRODUCT_NAME = libgamectrl;
-			};
-			name = Debug;
-		};
-		20909CFF176BB55200A997C2 /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = LINUX;
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/gamectrl.so",
-					"-s",
-				);
-				PRODUCT_NAME = libgamectrl;
-			};
-			name = Develop;
-		};
-		20909D00176BB55200A997C2 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					NDEBUG,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/gamectrl.so",
-					"-s",
-				);
-				PRODUCT_NAME = libgamectrl;
-			};
-			name = Release;
-		};
-		20B76642123001A300F11A62 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = NO;
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					"CONFIGURATION=$(CONFIGURATION)",
-					TARGET_ROBOT,
-					__STRICT_ANSI__,
-					_DEBUG,
-					USEPCH,
-					EIGEN_INITIALIZE_MATRICES_BY_NAN,
-					ASMJIT_EMBED,
-					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/../../Util/asmjit/src",
-					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
-					"$(SRCROOT)/../../Util/fftw-3.3",
-					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
-					"$(SRCROOT)/../../Util/snappy/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					"$(SRCROOT)/../../Util/Buildchain/clang/include",
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					"$(SRCROOT)/../../Util/Buildchain/gcc/lib",
-					"$(SRCROOT)/../../Util/fftw-3.3/Linux32",
-					"$(SRCROOT)/../../Util/libjpeg/lib/Linux",
-					"$(SRCROOT)/../../Util/snappy/lib/Linux/x86",
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lrt-2.13",
-					"-ljpeg-atom",
-					"-lpthread-2.13",
-					"-lpthread_nonshared",
-				);
-				PRODUCT_NAME = bhuman;
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
-				WARNING_CFLAGS = (
-					"${inherited}",
-					"-Wno-switch",
-				);
-			};
-			name = Debug;
-		};
-		20B76643123001A300F11A62 /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					"CONFIGURATION=$(CONFIGURATION)",
-					TARGET_ROBOT,
-					__STRICT_ANSI__,
-					USEPCH,
-					EIGEN_INITIALIZE_MATRICES_BY_NAN,
-					ASMJIT_EMBED,
-					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/../../Util/asmjit/src",
-					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
-					"$(SRCROOT)/../../Util/fftw-3.3",
-					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
-					"$(SRCROOT)/../../Util/snappy/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					"$(SRCROOT)/../../Util/Buildchain/clang/include",
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					"$(SRCROOT)/../../Util/Buildchain/gcc/lib",
-					"$(SRCROOT)/../../Util/fftw-3.3/Linux32",
-					"$(SRCROOT)/../../Util/libjpeg/lib/Linux",
-					"$(SRCROOT)/../../Util/snappy/lib/Linux/x86",
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lrt-2.13",
-					"-ljpeg-atom",
-					"-lpthread-2.13",
-					"-lpthread_nonshared",
-				);
-				PRODUCT_NAME = bhuman;
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
-				WARNING_CFLAGS = (
-					"${inherited}",
-					"-Wno-switch",
-				);
-			};
-			name = Develop;
-		};
-		20B76645123001A300F11A62 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/Nao/$(CONFIGURATION)";
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SRCROOT)/../../Src/Tools/Precompiled/BHumanPch.cpp";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					"CONFIGURATION=$(CONFIGURATION)",
-					TARGET_ROBOT,
-					__STRICT_ANSI__,
-					NDEBUG,
-					USEPCH,
-					ASMJIT_EMBED,
-					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/../../Util/asmjit/src",
-					"$(SRCROOT)/../../Util/SimRobot/Util/Eigen",
-					"$(SRCROOT)/../../Util/fftw-3.3",
-					"$(SRCROOT)/../../Util/GameController/include",
-					"$(SRCROOT)/../../Util/libjpeg/src",
-					"$(SRCROOT)/../../Util/snappy/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"$(SRCROOT)/../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					"$(SRCROOT)/../../Util/Buildchain/clang/include",
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					"$(SRCROOT)/../../Util/Buildchain/gcc/lib",
-					"$(SRCROOT)/../../Util/fftw-3.3/Linux32",
-					"$(SRCROOT)/../../Util/libjpeg/lib/Linux",
-					"$(SRCROOT)/../../Util/snappy/lib/Linux/x86",
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lrt-2.13",
-					"-ljpeg-atom",
-					"-lpthread-2.13",
-					"-lpthread_nonshared",
-				);
-				PRODUCT_NAME = bhuman;
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../Src";
-				WARNING_CFLAGS = (
-					"${inherited}",
-					"-Wno-switch",
-					"-Wno-unused",
-				);
-			};
-			name = Release;
-		};
-		20C3018112303D200014668E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = NO;
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				COPY_PHASE_STRIP = YES;
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					_DEBUG,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
-					"-s",
-				);
-				PRODUCT_NAME = libbhuman;
-				USER_HEADER_SEARCH_PATHS = ../../Src;
-			};
-			name = Debug;
-		};
-		20C3018212303D200014668E /* Develop */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = LINUX;
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
-					"-s",
-				);
-				PRODUCT_NAME = libbhuman;
-				USER_HEADER_SEARCH_PATHS = ../../Src;
-			};
-			name = Develop;
-		};
-		20C3018412303D200014668E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_X86_VECTOR_INSTRUCTIONS = ssse3;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/../Linux/$(PRODUCT_NAME)/$(CONFIGURATION)";
-				DYLIB_COMPATIBILITY_VERSION = "";
-				DYLIB_CURRENT_VERSION = "";
-				EXECUTABLE_EXTENSION = so;
-				GCC_CW_ASM_SYNTAX = NO;
-				GCC_ENABLE_PASCAL_STRINGS = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LINUX,
-					NDEBUG,
-				);
-				GCC_USE_STANDARD_INCLUDE_SEARCHING = NO;
-				HEADER_SEARCH_PATHS = (
-					../../Util/GameController/include,
-					../../Util/alcommon/include,
-					../../Util/boost/linux,
-					../../Util/Buildchain/gcc/include,
-					"../../Util/Buildchain/gcc/include/c++/5.2.0",
-					"../../Util/Buildchain/gcc/include/c++/5.2.0/i686-pc-linux-gnu",
-					../../Util/Buildchain/clang/include,
-				);
-				LD_DEPENDENCY_INFO_FILE = "";
-				LIBRARY_SEARCH_PATHS = (
-					ink,
-					../../Util/alcommon/lib/linux,
-					../../Util/Buildchain/gcc/lib,
-				);
-				LINK_WITH_STANDARD_LIBRARIES = NO;
-				MACH_O_TYPE = mh_execute;
-				OTHER_CFLAGS = (
-					"-Qunused-arguments",
-					"-march=atom",
-					"-fPIC",
-					"-target",
-					"i686-pc-linux-gnu",
-				);
-				OTHER_LDFLAGS = (
-					"-lalcommon",
-					"-fPIC",
-					"-shared",
-					"-soname,$(CONFIGURATION_TEMP_DIR)/bhuman.so",
-					"-s",
-				);
-				PRODUCT_NAME = libbhuman;
-				USER_HEADER_SEARCH_PATHS = ../../Src;
-			};
-			name = Release;
-		};
 		20DD73F7134E4E33003FF249 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2375,8 +2251,8 @@
 		20DD73F8134E4E33003FF249 /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/Release";
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -2411,6 +2287,7 @@
 		20DD73FA134E4E33003FF249 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2446,6 +2323,7 @@
 		20EF87A113B37D7500508E6A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2472,6 +2350,7 @@
 		20EF87A213B37D7500508E6A /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2498,6 +2377,7 @@
 		20EF87A413B37D7500508E6A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2524,6 +2404,7 @@
 		7C33BA060E74328D00ACB790 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -2550,6 +2431,7 @@
 		7C33BA070E74328D00ACB790 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_IDENTITY = "B-Human Code Release";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
@@ -2580,8 +2462,9 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
+				CODE_SIGN_IDENTITY = "";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = NO;
@@ -2589,27 +2472,26 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
-					"CONFIGURATION=$(CONFIGURATION)",
 					_DEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
-					ASMJIT_EMBED,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					ASMJIT_STATIC,
 					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
 				);
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = XX.XX;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = "$(SRCROOT)/../../Util/SimRobot/Util/qt/macOS";
 				SHARED_PRECOMPS_DIR = "$(OBJROOT)/PrecompiledHeaders";
-				SIMROBOT_CONFIG = "$(CONFIGURATION)";
 				SKIP_INSTALL = YES;
 				SYMROOT = "$(SRCROOT)/../../Build/macOS";
 				USE_HEADERMAP = NO;
@@ -2622,6 +2504,7 @@
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
 					"-Wunreachable-code",
+					"-Wno-availability",
 				);
 			};
 			name = Debug;
@@ -2631,8 +2514,9 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CC = "$(SRCROOT)/../../Util/Buildchain/macOS/bin/compile";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_X86_VECTOR_INSTRUCTIONS = default;
+				CODE_SIGN_IDENTITY = "";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -2640,28 +2524,27 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MACOS,
-					"CONFIGURATION=$(CONFIGURATION)",
 					NDEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
-					ASMJIT_EMBED,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
+					ASMJIT_STATIC,
 					ASMJIT_BUILD_X86,
-					ASMJIT_DISABLE_BUILDER,
-					ASMJIT_DISABLE_COMPILER,
-					ASMJIT_DISABLE_LOGGING,
-					ASMJIT_DISABLE_TEXT,
-					ASMJIT_DISABLE_VALIDATION,
+					ASMJIT_NO_BUILDER,
+					ASMJIT_NO_COMPILER,
+					ASMJIT_NO_LOGGING,
+					ASMJIT_NO_TEXT,
+					ASMJIT_NO_INST_API,
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LDPLUSPLUS_x86_64 = "$(CC)";
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = XX.XX;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
 				QT_DIR = "$(SRCROOT)/../../Util/SimRobot/Util/qt/macOS";
 				SHARED_PRECOMPS_DIR = "$(OBJROOT)/PrecompiledHeaders";
-				SIMROBOT_CONFIG = "$(CONFIGURATION)";
 				SKIP_INSTALL = YES;
 				SYMROOT = "$(SRCROOT)/../../Build/macOS";
 				USE_HEADERMAP = NO;
@@ -2674,6 +2557,7 @@
 					"-Wno-sign-conversion",
 					"-Wno-unused-parameter",
 					"-Wunreachable-code",
+					"-Wno-availability",
 				);
 			};
 			name = Release;
@@ -2681,6 +2565,36 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1757B03321D6A6500034C79B /* Build configuration list for PBXNativeTarget "Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1757B03021D6A6500034C79B /* Debug */,
+				1757B03121D6A6500034C79B /* Develop */,
+				1757B03221D6A6500034C79B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		17B00EB221567051009F9C29 /* Build configuration list for PBXNativeTarget "Nao" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				17B00EB321567051009F9C29 /* Debug */,
+				17B00EB421567051009F9C29 /* Develop */,
+				17B00EB521567051009F9C29 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		17B00EBD21567330009F9C29 /* Build configuration list for PBXAggregateTarget "Deploy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				17B00EBE21567330009F9C29 /* Debug */,
+				17B00EBF21567330009F9C29 /* Develop */,
+				17B00EC021567330009F9C29 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		2024521E1204174D00C3BCD9 /* Build configuration list for PBXNativeTarget "Controller" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2701,16 +2615,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		20422753120241CD00B9944D /* Build configuration list for PBXAggregateTarget "Deploy" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				2042274D1202418600B9944D /* Debug */,
-				2042274E1202418600B9944D /* Develop */,
-				204227501202418600B9944D /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		20844AF911FC6F520037FA87 /* Build configuration list for PBXNativeTarget "SimRobotEditor" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2727,36 +2631,6 @@
 				20844F1911FE33150037FA87 /* Debug */,
 				208179A01201800A0005F60F /* Develop */,
 				20844F1A11FE33150037FA87 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		20909CFD176BB55200A997C2 /* Build configuration list for PBXNativeTarget "libgamectrl" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				20909CFE176BB55200A997C2 /* Debug */,
-				20909CFF176BB55200A997C2 /* Develop */,
-				20909D00176BB55200A997C2 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		20B76649123001F600F11A62 /* Build configuration list for PBXNativeTarget "Nao" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				20B76642123001A300F11A62 /* Debug */,
-				20B76643123001A300F11A62 /* Develop */,
-				20B76645123001A300F11A62 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		20C3018512303D3F0014668E /* Build configuration list for PBXNativeTarget "libbhuman" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				20C3018112303D200014668E /* Debug */,
-				20C3018212303D200014668E /* Develop */,
-				20C3018412303D200014668E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

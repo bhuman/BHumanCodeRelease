@@ -12,7 +12,7 @@
  *         either result from a normal C array or from std::array.
  *
  * '*'     The type is a dynamic array with an arbitrary number of elements. The actual
- *         number of elements will be part of the data (preceeding the elements). Such
+ *         number of elements will be part of the data (preceding the elements). Such
  *         entries can result from either std::vector or std::list.
  *
  * @todo Support representation of more complex types (std::array<std::array<int, 1>, 2>)
@@ -59,7 +59,7 @@ struct TypeInfo
   TypeInfo(bool fromTypeRegistry = true);
 
   /**
-   * Checks whether the a type for another type information is deeply equal to
+   * Checks whether a type for another type information is deeply equal to
    * a type for this type information.
    * @param other The other type information.
    * @param thisType The type name for this type information.

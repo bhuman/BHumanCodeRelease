@@ -18,7 +18,7 @@ using namespace std;
 struct TimingManager::Pimpl
 {
   /**
-   * NOTE: the hashmaps only work because the compiler uses a string table and
+   * NOTE: the hash maps only work because the compiler uses a string table and
    *       allocates only one address for all const string literals with the same value.
    *       If this ever changes you have to replace the key with std::string
    */
@@ -30,11 +30,11 @@ struct TimingManager::Pimpl
    */
   unordered_map<const char*, unsigned long long> timing;
   unordered_map<const char*, unsigned short> idTable; /**< Key: name of the stopwatch. Value: the id that is used when sending timing data over the network */
-  unsigned currentProcessStartTime = 0; /**< Timestamp of the current process iteration */
+  unsigned currentThreadStartTime = 0; /**< Timestamp of the current thread iteration */
   unsigned frameNo = 0; /**<  Number of the current frame*/
   vector<const char*> watchNames; /**< Contains the names of the stopwatches */
   MessageQueue data; /**< Contains the timing data in streamable format inbetween frames */
-  bool processRunning = false; /**< Is a process iteration running right now? */
+  bool threadRunning = false; /**< Is a thread iteration running right now? */
   bool dataPrepared = false; /**< True if data hs already been prepared this frame */
   int watchNameIndex = 0; /**< Every frame a few watch names are transmitted. This is the index of the watchname that is to be transmitted next */
 };
@@ -51,13 +51,12 @@ TimingManager::~TimingManager()
 
 void TimingManager::startTiming(const char* identifier)
 {
-
   auto timing = prvt->timing.find(identifier);
   if(timing == prvt->timing.end())
   {
     //create new entry
     prvt->watchNames.push_back(identifier);
-    prvt->idTable[identifier] = (unsigned short)prvt->idTable.size(); //NOTE: this assumes that an unsigned short will always be big big enough to count the timers...
+    prvt->idTable[identifier] = static_cast<unsigned short>(prvt->idTable.size()); //NOTE: this assumes that an unsigned short will always be big big enough to count the timers...
     timing = prvt->timing.insert(std::pair<const char*, unsigned long long>(identifier, 0)).first;
   }
   prvt->dataPrepared = false;
@@ -73,25 +72,25 @@ unsigned TimingManager::stopTiming(const char* identifier)
   return diff;
 }
 
-void TimingManager::signalProcessStart()
+void TimingManager::signalThreadStart()
 {
-  prvt->currentProcessStartTime = Time::getCurrentSystemTime();
+  prvt->currentThreadStartTime = Time::getCurrentSystemTime();
   prvt->frameNo++;
-  prvt->processRunning = true;
+  prvt->threadRunning = true;
   prvt->data.clear();
   prvt->dataPrepared = false;
   for(const pair<const char* const, unsigned long long>& it : prvt->timing)
     prvt->timing[it.first] = 0;
 }
 
-void TimingManager::signalProcessStop()
+void TimingManager::signalThreadStop()
 {
-  prvt->processRunning = false;
+  prvt->threadRunning = false;
 }
 
 MessageQueue& TimingManager::getData()
 {
-  ASSERT(!prvt->processRunning);
+  ASSERT(!prvt->threadRunning);
   if(!prvt->dataPrepared)
   {
     prepareData();
@@ -119,7 +118,7 @@ void TimingManager::prepareData()
   OutBinaryMessage& out = prvt->data.out.bin;
 
   // every frame we send 3 watch names
-  out << (unsigned short)3; //number of names to follow
+  out << static_cast<unsigned short>(3); //number of names to follow
   for(int i = 0; i < 3; ++i, prvt->watchNameIndex = (prvt->watchNameIndex + 1) % prvt->watchNames.size())
   {
     const char* watchName = prvt->watchNames[prvt->watchNameIndex];
@@ -127,13 +126,13 @@ void TimingManager::prepareData()
   }
 
   // now write the data of all watches
-  out << (unsigned short)prvt->timing.size();
+  out << static_cast<unsigned short>(prvt->timing.size());
   for(const pair<const char* const, unsigned long long>& it : prvt->timing)
   {
     out << prvt->idTable[it.first];
-    out << (unsigned)it.second; // the cast is ok because the time between start and stop will never be bigger than an int...
+    out << static_cast<unsigned>(it.second); // the cast is ok because the time between start and stop will never be bigger than an int...
   }
-  out << prvt->currentProcessStartTime;
+  out << prvt->currentThreadStartTime;
   out << prvt->frameNo;
   if(!prvt->data.out.finishMessage(idStopwatch))
     OUTPUT_WARNING("TimingManager: queue is full!!!");

@@ -8,7 +8,7 @@
 #include <ctime>
 #include <pthread.h>
 
-unsigned Time::base = 0;
+unsigned long long Time::base = 0;
 unsigned long long Time::threadTimebase = 0;
 
 unsigned Time::getCurrentSystemTime()
@@ -25,10 +25,10 @@ unsigned Time::getRealSystemTime()
 {
   timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts); // NTP might change CLOCK_REALTIME on desktop systems
-  const unsigned int time = (unsigned int)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000l);
+  const unsigned long long time = ts.tv_sec * 1000ll + ts.tv_nsec / 1000000;
   if(!base)
     base = time - 100000; // avoid time == 0, because it is often used as a marker
-  return time - base;
+  return static_cast<unsigned>(time - base);
 }
 
 unsigned long long Time::getCurrentThreadTime()

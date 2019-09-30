@@ -7,7 +7,7 @@ void LutRasterizer::create(const TriangleMesh& object, const Eigen::AlignedBox3d
 {
   setObject(object);
   allocateLut(viewpointRange, spacing);
-  for(int idx = 0; idx < (int) vertexList.size(); idx++)
+  for(int idx = 0; idx < static_cast<int>(vertexList.size()); idx++)
     computeVertexList(vertexList[idx], object, viewpointOfIndex(idx));
 }
 
@@ -17,7 +17,7 @@ void LutRasterizer::loadOrCreate(const TriangleMesh& object, const Eigen::Aligne
   allocateLut(viewpointRange, spacing);
   if(!loadVertexList(filename))
   {
-    for(int idx = 0; idx < (int) vertexList.size(); idx++)
+    for(int idx = 0; idx < static_cast<int>(vertexList.size()); idx++)
       computeVertexList(vertexList[idx], object, viewpointOfIndex(idx));
     if(filename != nullptr)
       saveVertexList(filename);
@@ -29,7 +29,7 @@ bool LutRasterizer::loadVertexList(const char* filename)
   FILE* f = fopen(filename, "rb");
   if(f == nullptr)
     return false;
-  for(int idx = 0; idx < (int) vertexList.size(); idx++)
+  for(int idx = 0; idx < static_cast<int>(vertexList.size()); idx++)
   {
     int ctr;
     fread(&ctr, sizeof(ctr), 1, f);
@@ -56,7 +56,7 @@ bool LutRasterizer::loadVertexList(const char* filename)
 void LutRasterizer::saveVertexList(const char* filename) const
 {
   FILE* f = fopen(filename, "wb");
-  for(int idx = 0; idx < (int) vertexList.size(); idx++)
+  for(int idx = 0; idx < static_cast<int>(vertexList.size()); idx++)
   {
     int ctr = static_cast<int>(vertexList[idx].size());
     fwrite(&ctr, sizeof(ctr), 1, f);
@@ -92,15 +92,15 @@ void LutRasterizer::allocateLut(const Eigen::AlignedBox3d& viewpointRange, doubl
   for(int i = 0; i < 3; i++)
   {
     basePoint[i] = min(point0X[i], point1X[i]);
-    vertexListSize[i] = (int) ceil(fabs(point1X[i] - point0X[i]) / spacing - eps + 1);
+    vertexListSize[i] = static_cast<int>(ceil(fabs(point1X[i] - point0X[i]) / spacing - eps + 1));
   }
-  vertexList.resize(vertexListSize[0]*vertexListSize[1]*vertexListSize[2]);
+  vertexList.resize(vertexListSize[0] * vertexListSize[1] * vertexListSize[2]);
 }
 
 void LutRasterizer::countVertices(vector<int>& counter, const TriangleMesh::EdgeList& el)
 {
   int n = 0;
-  for(int i = 0; i < (int) el.size(); i++)
+  for(int i = 0; i < static_cast<int>(el.size()); i++)
   {
     const TriangleMesh::Edge& e = el[i];
     assert(e.valid());
@@ -110,8 +110,8 @@ void LutRasterizer::countVertices(vector<int>& counter, const TriangleMesh::Edge
       n = e.vertex[1];
   }
   n++;
-  counter = vector<int> (n, 0);
-  for(int i = 0; i < (int) el.size(); i++)
+  counter = vector<int>(n, 0);
+  for(int i = 0; i < static_cast<int>(el.size()); i++)
   {
     const TriangleMesh::Edge& e = el[i];
     assert(e.valid());
@@ -131,12 +131,12 @@ void LutRasterizer::convertEdgeListToVertexList(LutRasterizer::VertexList& verte
     bool found = false;
     if(!vertexList.empty())     // Look for edge from el.back
     {
-      for(int i = 0; i < (int) el.size(); i++)
+      for(int i = 0; i < static_cast<int>(el.size()); i++)
         if(el[i].valid())
         {
           if(el[i].vertex[0] == vertexList.back())  // Take edge i from 0 to 1
           {
-            vertexList.push_back((unsigned char) el[i].vertex[1]);
+            vertexList.push_back(static_cast<unsigned char>(el[i].vertex[1]));
             counter[el[i].vertex[0]]--;
             counter[el[i].vertex[1]]--;
             el[i] = TriangleMesh::Edge();
@@ -145,7 +145,7 @@ void LutRasterizer::convertEdgeListToVertexList(LutRasterizer::VertexList& verte
           }
           else if(el[i].vertex[1] == vertexList.back())  // Take edge i from 1 to 0
           {
-            vertexList.push_back((unsigned char) el[i].vertex[0]);
+            vertexList.push_back(static_cast<unsigned char>(el[i].vertex[0]));
             counter[el[i].vertex[0]]--;
             counter[el[i].vertex[1]]--;
             el[i] = TriangleMesh::Edge();
@@ -156,14 +156,14 @@ void LutRasterizer::convertEdgeListToVertexList(LutRasterizer::VertexList& verte
     }
     if(!found)    // No edge found to continue, look for solo starting edge
     {
-      for(int i = 0; i < (int) el.size(); i++)
+      for(int i = 0; i < static_cast<int>(el.size()); i++)
         if(el[i].valid())
         {
           if(counter[el[i].vertex[0]] == 1)  // Start at 0
           {
             if(!vertexList.empty())
               vertexList.push_back(NEWSTART);
-            vertexList.push_back((unsigned char) el[i].vertex[0]);
+            vertexList.push_back(static_cast<unsigned char>(el[i].vertex[0]));
             found = true;
             break;
           }
@@ -171,12 +171,12 @@ void LutRasterizer::convertEdgeListToVertexList(LutRasterizer::VertexList& verte
     }
     if(!found)    // No solo edge found, simply take first edge
     {
-      for(int i = 0; i < (int) el.size(); i++)
+      for(int i = 0; i < static_cast<int>(el.size()); i++)
         if(el[i].valid())
         {
           if(!vertexList.empty())
             vertexList.push_back(NEWSTART);
-          vertexList.push_back((unsigned char) el[i].vertex[0]);
+          vertexList.push_back(static_cast<unsigned char>(el[i].vertex[0]));
           found = true;
           break;
         }
@@ -184,7 +184,7 @@ void LutRasterizer::convertEdgeListToVertexList(LutRasterizer::VertexList& verte
     if(!found)
       break;  // All edges processed
   }
-  for(int i = 0; i < (int) counter.size(); i++)
+  for(int i = 0; i < static_cast<int>(counter.size()); i++)
     assert(counter[i] == 0);
 }
 
@@ -198,7 +198,7 @@ void LutRasterizer::computeVertexList(LutRasterizer::VertexList& vertexList, con
 void LutRasterizer::convertVertexListToEdgeList(TriangleMesh::EdgeList& edgeList, LutRasterizer::VertexList& vertexList)
 {
   edgeList.clear();
-  for(int i = 0; i < (int) vertexList.size() - 1; i++)
+  for(int i = 0; i < static_cast<int>(vertexList.size()) - 1; i++)
     if(vertexList[i] != NEWSTART && vertexList[i + 1] != NEWSTART)
       edgeList.push_back(TriangleMesh::Edge(vertexList[i], vertexList[i + 1]));
 }
@@ -209,11 +209,11 @@ void LutRasterizer::setObject(const TriangleMesh& object)
   this->object = object;
   vertexList.clear();
   vertexWith1.resize(object.vertex.size());
-  for(int i = 0; i < (int) vertexWith1.size(); i++)
+  for(int i = 0; i < static_cast<int>(vertexWith1.size()); i++)
   {
-    vertexWith1[i](0) = (float) object.vertex[i](0);
-    vertexWith1[i](1) = (float) object.vertex[i](1);
-    vertexWith1[i](2) = (float) object.vertex[i](2);
+    vertexWith1[i](0) = static_cast<float>(object.vertex[i](0));
+    vertexWith1[i](1) = static_cast<float>(object.vertex[i](1));
+    vertexWith1[i](2) = static_cast<float>(object.vertex[i](2));
     vertexWith1[i](3) = 1.f;
   }
   computeCenterPoint();
@@ -225,7 +225,7 @@ void LutRasterizer::computeCenterPoint()
     centerWith1 = Eigen::Vector4f(0, 0, 0, 1);
   Eigen::Vector4f minV = vertexWith1[0];
   Eigen::Vector4f maxV = minV;
-  for(int i = 1; i < (int) vertexWith1.size(); i++)
+  for(int i = 1; i < static_cast<int>(vertexWith1.size()); i++)
     for(int j = 0; j < 3; j++)
     {
       minV(j) = min(minV(j), vertexWith1[i](j));
@@ -244,50 +244,50 @@ void LutRasterizer::computeProjection(int& idx, int& referenceX, int& referenceY
   idx = indexOfNormalizedViewpoint(object2Camera.inverse().translation());
 
   // The matrix is yet without offset
-  P0[0] = float(object2Camera(0, 0) * camera.scale_x);
-  P0[1] = float(object2Camera(0, 1) * camera.scale_x);
-  P0[2] = float(object2Camera(0, 2) * camera.scale_x);
-  P0[3] = float(object2Camera(0, 3) * camera.scale_x);
+  P0[0] = static_cast<float>(object2Camera(0, 0) * camera.scale_x);
+  P0[1] = static_cast<float>(object2Camera(0, 1) * camera.scale_x);
+  P0[2] = static_cast<float>(object2Camera(0, 2) * camera.scale_x);
+  P0[3] = static_cast<float>(object2Camera(0, 3) * camera.scale_x);
 
-  P1[0] = float(object2Camera(1, 0) * camera.scale_y);
-  P1[1] = float(object2Camera(1, 1) * camera.scale_y);
-  P1[2] = float(object2Camera(1, 2) * camera.scale_y);
-  P1[3] = float(object2Camera(1, 3) * camera.scale_y);
+  P1[0] = static_cast<float>(object2Camera(1, 0) * camera.scale_y);
+  P1[1] = static_cast<float>(object2Camera(1, 1) * camera.scale_y);
+  P1[2] = static_cast<float>(object2Camera(1, 2) * camera.scale_y);
+  P1[3] = static_cast<float>(object2Camera(1, 3) * camera.scale_y);
 
-  P2[0] = (float) object2Camera(2, 0);
-  P2[1] = (float) object2Camera(2, 1);
-  P2[2] = (float) object2Camera(2, 2);
-  P2[3] = (float) object2Camera(2, 3);
+  P2[0] = static_cast<float>(object2Camera(2, 0));
+  P2[1] = static_cast<float>(object2Camera(2, 1));
+  P2[2] = static_cast<float>(object2Camera(2, 2));
+  P2[3] = static_cast<float>(object2Camera(2, 3));
 
   float centerInImage [2];
-  if(!projectUsingSSE(centerInImage, (float*) centerWith1.data(), P0, P1, P2))
+  if(!projectUsingSSE(centerInImage, const_cast<float*>(centerWith1.data()), P0, P1, P2))
   {
     idx = -1;
     return;
   }
 
-  referenceX = (int) round(centerInImage[0] + camera.offset_x);
-  referenceY = (int) round(centerInImage[1] + camera.offset_y);
+  referenceX = static_cast<int>(round(centerInImage[0] + camera.offset_x));
+  referenceY = static_cast<int>(round(centerInImage[1] + camera.offset_y));
 
   // Modify P such that centerWith1 is mapped to (0,0)
   float origin[2];
-  origin[0] = float(camera.offset_x - referenceX);
+  origin[0] = static_cast<float>(camera.offset_x - referenceX);
   P0[0] += P2[0] * origin[0];
   P0[1] += P2[1] * origin[0];
   P0[2] += P2[2] * origin[0];
   P0[3] += P2[3] * origin[0];
 
-  origin[1] = float(camera.offset_y - referenceY);
+  origin[1] = static_cast<float>(camera.offset_y - referenceY);
   P1[0] += P2[0] * origin[1];
   P1[1] += P2[1] * origin[1];
   P1[2] += P2[2] * origin[1];
   P1[3] += P2[3] * origin[1];
 
   // Compute clipRange as an intersection
-  clipRange[0] = (float) max(0 - referenceX, -127);
-  clipRange[1] = (float) max(0 - referenceY, -127);
-  clipRange[2] = (float) min(camera.width - referenceX - 1, 127.0);
-  clipRange[3] = (float) min(camera.height - referenceY - 1, 127.0);
+  clipRange[0] = static_cast<float>(max(0 - referenceX, -127));
+  clipRange[1] = static_cast<float>(max(0 - referenceY, -127));
+  clipRange[2] = static_cast<float>(min(camera.width - referenceX - 1, 127.0));
+  clipRange[3] = static_cast<float>(min(camera.height - referenceY - 1, 127.0));
 }
 
 void LutRasterizer::rasterize(CodedContour& contour, const Eigen::Isometry3d& object2World, const CameraModelOpenCV& camera) const
@@ -309,14 +309,14 @@ void LutRasterizer::rasterize(CodedContour& contour, const Eigen::Isometry3d& ob
   alignas(16) float p[4]; // First and second point (x,y) of the current edge
   bool isNewEdge = true;
   int clippedCtr = 0;
-  for(int i = 0; i < (int) vl.size(); i++)
+  for(int i = 0; i < static_cast<int>(vl.size()); i++)
   {
     int vIdx = vl[i];
     if(vIdx != NEWSTART)
     {
       shift4Floats(p);
-      assert(0 <= vIdx && vIdx < (int) vertexWith1.size());
-      projectUsingSSE(p + 2, (float*) vertexWith1[vIdx].data(), P0, P1, P2);
+      assert(0 <= vIdx && vIdx < static_cast<int>(vertexWith1.size()));
+      projectUsingSSE(p + 2, const_cast<float*>(vertexWith1[vIdx].data()), P0, P1, P2);
       if(!isNewEdge)
       {
         CodedContourPoint ccp = code2DEdgeUsingSSE(p, clipRange);
@@ -332,10 +332,10 @@ void LutRasterizer::rasterize(CodedContour& contour, const Eigen::Isometry3d& ob
 
   // Scale the coded normal vector according to the number of points
   // This is needed so the 16bit accumulator in \c responseX8YRUsingSSE3 does not overflow
-  int factorI = (int) round(factorOfN(int((float) contour.size() + clippedCtr * contour.mapping.clippedDenom), true) * (256.0 / 127.0));
-  for(int i = 0; i < (int) contour.size(); i++)
+  int factorI = static_cast<int>(round(factorOfN(static_cast<int>(static_cast<float>(contour.size()) + clippedCtr * contour.mapping.clippedDenom), true) * (256.0 / 127.0)));
+  for(int i = 0; i < static_cast<int>(contour.size()); i++)
     scaleNormalVector(contour[i], factorI);
 
   // TODO: compute mapping
-  // This is defered to later because with sparse rasterization I am not sure how to normalize the response
+  // This is deferred to later because with sparse rasterization I am not sure how to normalize the response
 }

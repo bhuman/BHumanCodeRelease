@@ -9,7 +9,6 @@
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Perception/BallPercepts/ConfirmedBallSpot.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
@@ -18,7 +17,6 @@
 MODULE(CNSRegionsProvider,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(ConfirmedBallSpot),
   REQUIRES(BallSpots),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),

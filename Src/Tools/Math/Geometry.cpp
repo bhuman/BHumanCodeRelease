@@ -306,10 +306,10 @@ bool Geometry::isPointInsideConvexPolygon(const Vector2f polygon[], const int nu
 
 bool Geometry::isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V)
 {
-  int i, j = (int)V.size() - 1;
+  int i, j = static_cast<int>(V.size()) - 1;
   bool oddNodes = false;
 
-  for(i = 0; i < (int)V.size(); ++i)
+  for(i = 0; i < static_cast<int>(V.size()); ++i)
   {
     if((V[i].y() < point.y() && V[j].y() >= point.y()) || (V[j].y() < point.y() && V[i].y() >= point.y()))
     {

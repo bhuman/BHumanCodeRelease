@@ -82,7 +82,7 @@ namespace Covariance
     const float s = -2.f * std::log10(1.f - p);
     axis1 = 2.0f * std::sqrt(s * maxEigenValue);
     axis2 = 2.0f * std::sqrt(s * minEigenValue);
-    
+
     // Ellipse angle is the angle of the eigenvector of the larger eigen value:
     angle = 0.f;
     if(m(1,0) != 0.f) // There must be a covariance. Otherwise, the ellipse is not rotated (== axis-aligned)

@@ -14,7 +14,5 @@
 	<string>BUSH</string>
 	<key>NSHighResolutionCapable</key>
 	<string>True</string>
-	<key>NSRequiresAquaSystemAppearance</key>
-	<string>True</string>
 </dict>
 </plist>

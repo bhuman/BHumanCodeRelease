@@ -32,7 +32,8 @@ namespace NeuralNetwork
         return (127 << 23) - static_cast<int>(std::round((1 << 23) * std::log(3.f / (8.f * std::log(2.f)) + 0.5f) / std::log(2.f) - 0.5f));
       }
 
-      void apply(X86Assembler& a, const std::vector<X86Xmm>& values, const X86Xmm factor, const X86Xmm offset);
+      template<bool single = false, typename FactorType, typename OffsetType>
+      void apply(x86::Assembler& a, const std::vector<x86::Xmm>& values, const FactorType factor, const OffsetType offset);
     }
   }
 }

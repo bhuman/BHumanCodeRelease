@@ -10,12 +10,12 @@
 #include <QFileInfo>
 #include "LogPlayer.h"
 #include "Platform/File.h"
+#include "Representations/Communication/GameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/LabelImage.h"
 #include "Tools/Debugging/DebugImages.h"
-#include "Tools/Logging/LogFileFormat.h"
+#include "Tools/Logging/LoggingTools.h"
 
 #include <snappy-c.h>
 
@@ -46,30 +46,33 @@ bool LogPlayer::open(const std::string& fileName)
   if(file.exists())
   {
     init();
-    logfilePath = QFileInfo(fileName.c_str()).absoluteFilePath().toUtf8().constData();
+    logfilePath = QFileInfo((File::isAbsolute(fileName.c_str())
+                             ? fileName
+                             : File::getBHDir() + ("/Config/" + fileName)).c_str())
+                            .absoluteFilePath().toUtf8().constData();
 
     char magicByte;
     file >> magicByte;
 
-    if(magicByte == Logging::logFileMessageIDs)
+    if(magicByte == LoggingTools::logFileMessageIDs)
     {
       readMessageIDMapping(file);
       file >> magicByte;
     }
 
-    if(magicByte == Logging::logFileTypeInfo)
+    if(magicByte == LoggingTools::logFileTypeInfo)
     {
-      typeInfo = std::unique_ptr<TypeInfo>(new TypeInfo(false));
+      typeInfo = std::make_unique<TypeInfo>(false);
       file >> *typeInfo;
       file >> magicByte;
     }
 
     switch(magicByte)
     {
-      case Logging::logFileUncompressed: //regular log file
+      case LoggingTools::logFileUncompressed: //regular log file
         file >> *this;
         break;
-      case Logging::logFileCompressed: //compressed log file
+      case LoggingTools::logFileCompressed: //compressed log file
         while(!file.eof())
         {
           unsigned compressedSize;
@@ -97,7 +100,7 @@ bool LogPlayer::open(const std::string& fileName)
     stop();
     countFrames();
     createIndices();
-    logfileMerged = false;
+    upgradeFrames();
     loadLabels();
     return true;
   }
@@ -185,14 +188,12 @@ void LogPlayer::stepForward()
     do
     {
       copyMessage(++currentMessageNumber, targetQueue);
-      if(queue.getMessageID() == idImage
+      if(queue.getMessageID() == idCameraImage
          || queue.getMessageID() == idJPEGImage
-         || queue.getMessageID() == idThumbnail
-         || queue.getMessageID() == idImagePatches
-         || (queue.getMessageID() == idLowFrameRateImage && queue.getMessageSize() > 1000))
+         || queue.getMessageID() == idThumbnail)
         lastImageFrameNumber = currentFrameNumber + 1;
     }
-    while(queue.getMessageID() != idProcessFinished);
+    while(queue.getMessageID() != idFrameFinished);
 
     ++currentFrameNumber;
   }
@@ -265,7 +266,7 @@ void LogPlayer::handleMessage(InMessage& message)
   if(state == recording)
   {
     message >> *this;
-    if(message.getMessageID() == idProcessFinished)
+    if(message.getMessageID() == idFrameFinished)
     {
       numberOfMessagesWithinCompleteFrames = getNumberOfMessages();
       ++numberOfFrames;
@@ -284,14 +285,12 @@ bool LogPlayer::replay()
       do
       {
         copyMessage(++currentMessageNumber, targetQueue);
-        if(queue.getMessageID() == idImage
+        if(queue.getMessageID() == idCameraImage
            || queue.getMessageID() == idJPEGImage
-           || queue.getMessageID() == idThumbnail
-           || queue.getMessageID() == idImagePatches
-           || (queue.getMessageID() == idLowFrameRateImage && queue.getMessageSize() > 1000))
+           || queue.getMessageID() == idThumbnail)
           lastImageFrameNumber = currentFrameNumber + 1;
       }
-      while(queue.getMessageID() != idProcessFinished && currentMessageNumber < numberOfMessagesWithinCompleteFrames - 1);
+      while(queue.getMessageID() != idFrameFinished && currentMessageNumber < numberOfMessagesWithinCompleteFrames - 1);
 
       ++currentFrameNumber;
       if(currentFrameNumber == numberOfFrames - 1)
@@ -319,7 +318,7 @@ bool LogPlayer::replay()
 void LogPlayer::keep(const std::function<bool(InMessage&)>& filter)
 {
   stop();
-  LogPlayer temp((MessageQueue&)*this);
+  LogPlayer temp(static_cast<MessageQueue&>(*this));
   temp.setSize(queue.getSize());
   moveAllMessages(temp);
   for(temp.currentMessageNumber = 0; temp.currentMessageNumber < temp.getNumberOfMessages(); ++temp.currentMessageNumber)
@@ -337,7 +336,7 @@ void LogPlayer::keep(const std::function<bool(InMessage&)>& filter)
 void LogPlayer::keepFrames(const std::function<bool(InMessage&)>& filter)
 {
   stop();
-  LogPlayer temp((MessageQueue&)*this);
+  LogPlayer temp(static_cast<MessageQueue&>(*this));
   temp.setSize(queue.getSize());
   moveAllMessages(temp);
   temp.queue.createIndex();
@@ -348,12 +347,12 @@ void LogPlayer::keepFrames(const std::function<bool(InMessage&)>& filter)
     temp.queue.setSelectedMessageForReading(temp.currentMessageNumber);
     temp.in.text.reset();
     keepFrame |= filter(temp.in);
-    if(temp.queue.getMessageID() == idProcessBegin)
+    if(temp.queue.getMessageID() == idFrameBegin)
     {
       frameStart = temp.currentMessageNumber;
       keepFrame = false;
     }
-    else if(temp.queue.getMessageID() == idProcessFinished && keepFrame)
+    else if(temp.queue.getMessageID() == idFrameFinished && keepFrame)
     {
       int thisFrame = temp.currentMessageNumber;
       for(temp.currentMessageNumber = frameStart; temp.currentMessageNumber <= thisFrame; ++temp.currentMessageNumber)
@@ -367,10 +366,28 @@ void LogPlayer::keepFrames(const std::function<bool(InMessage&)>& filter)
     createIndices();
 }
 
+void LogPlayer::trim(int startFrame, int endFrame)
+{
+  stop();
+  LogPlayer temp(static_cast<MessageQueue&>(*this));
+  temp.setSize(queue.getSize());
+  moveAllMessages(temp);
+  temp.queue.createIndex();
+
+  for(int i = frameIndex[startFrame]; i < frameIndex[endFrame]; i++)
+  {
+    temp.copyMessage(i, *this);
+  }
+
+  countFrames();
+  if(!frameIndex.empty())
+    createIndices();
+}
+
 void LogPlayer::keep(const std::vector<int>& messageNumbers)
 {
   stop();
-  LogPlayer temp((MessageQueue&)*this);
+  LogPlayer temp(static_cast<MessageQueue&>(*this));
   temp.setSize(queue.getSize());
   moveAllMessages(temp);
 
@@ -384,25 +401,29 @@ void LogPlayer::keep(const std::vector<int>& messageNumbers)
     createIndices();
 }
 
-void LogPlayer::statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes, char processIdentifier)
+void LogPlayer::statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes,
+                           const std::string& threadIdentifier, bool init)
 {
-  FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
-    frequencies[id] = 0;
-  if(sizes)
+  if(init)
+  {
     FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
-      sizes[id] = 0;
+      frequencies[id] = 0;
+    if(sizes)
+      FOREACH_ENUM(MessageID, id, numOfDataMessageIDs)
+        sizes[id] = 0;
+  }
 
   if(getNumberOfMessages() > 0)
   {
     int current = queue.getSelectedMessageForReading();
-    char currentProcess = 0;
+    std::string currentThread;
     for(int i = 0; i < getNumberOfMessages(); ++i)
     {
       queue.setSelectedMessageForReading(i);
       ASSERT(queue.getMessageID() < numOfDataMessageIDs);
-      if(queue.getMessageID() == idProcessBegin)
-        currentProcess = queue.getData()[0];
-      if(!processIdentifier || processIdentifier == currentProcess)
+      if(queue.getMessageID() == idFrameBegin)
+        currentThread = in.readThreadIdentifier();
+      if(threadIdentifier.empty() || threadIdentifier == currentThread)
       {
         ++frequencies[queue.getMessageID()];
         if(sizes)
@@ -428,7 +449,7 @@ void LogPlayer::createIndices()
   {
     queue.setSelectedMessageForReading(i);
     const MessageID id = queue.getMessageID();
-    if(id == idProcessBegin)
+    if(id == idFrameBegin)
       frameIndex.push_back(i);
     else if(id == idGameInfo && queue.getMessageSize() == static_cast<int>(gameInfoSize.size()))
     {
@@ -439,7 +460,7 @@ void LogPlayer::createIndices()
         gcTimeIndex[time] = frame;
       }
     }
-    else if(id == idProcessFinished)
+    else if(id == idFrameFinished)
       ++frame;
   }
 }
@@ -451,7 +472,7 @@ void LogPlayer::countFrames()
   {
     queue.setSelectedMessageForReading(i);
 
-    if(queue.getMessageID() == idProcessFinished)
+    if(queue.getMessageID() == idFrameFinished)
     {
       ++numberOfFrames;
       numberOfMessagesWithinCompleteFrames = i + 1;
@@ -469,161 +490,12 @@ void LogPlayer::replayTypeInfo()
   }
 }
 
-void LogPlayer::merge()
-{
-  if(logfileMerged || logfilePath.empty())
-    return;
-
-  //parse filename and find the corresponding other logfile
-  std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
-  std::size_t prefixPos = file.find_first_of('_');
-  if(prefixPos == std::string::npos)
-    return; // File name does not follow pattern
-
-  std::string processName = file.substr(0, prefixPos);
-  if(processName != "Cognition" && processName != "Motion")
-    return; // File name does not follow pattern
-
-  std::string remainderName = file.substr(prefixPos);
-  std::string logOtherFile = logfilePath.substr(0, logfilePath.find_last_of('/') + 1) + (processName == "Motion" ? "Cognition" : "Motion") + remainderName;
-
-  stop();
-
-  //copy the currently loaded logfile
-  LogPlayer logCopy((MessageQueue&)*this);
-  logCopy.setSize(queue.getSize());
-  moveAllMessages(logCopy);
-  logCopy.countFrames();
-  logCopy.createIndices();
-
-  //open other logfile
-  LogPlayer logOther((MessageQueue&)*this);
-  logOther.setSize(queue.getSize());
-  if(!logOther.open(logOtherFile))
-  {
-    OUTPUT_ERROR("Could not open " << logOtherFile);
-    return;
-  }
-
-  if(static_cast<unsigned long long>(logCopy.queue.usedSize) + static_cast<unsigned long long>(logOther.queue.usedSize) > std::numeric_limits<unsigned>::max())
-    OUTPUT_WARNING("Merged log would exceed 4GB");
-
-  //merge stream specification (for compatibility with old log files)
-  if(typeInfo && logOther.typeInfo)
-  {
-    typeInfo->primitives.insert(logOther.typeInfo->primitives.begin(), logOther.typeInfo->primitives.end());
-    typeInfo->enums.insert(logOther.typeInfo->enums.begin(), logOther.typeInfo->enums.end());
-    typeInfo->classes.insert(logOther.typeInfo->classes.begin(), logOther.typeInfo->classes.end());
-    typeInfoReplayed = false;
-  }
-
-  //TODO: ugly as hell -> use processidentifier stuff
-  LogPlayer& motionLog = processName == "Motion" ? logCopy : logOther;
-  LogPlayer& cognitionLog = processName == "Motion" ? logOther : logCopy;
-
-  //Intermediate representation of messages
-  struct FrameData
-  {
-    unsigned int time;
-    int messageStart;
-    int messageEnd;
-  };
-
-  std::vector<FrameData> cognitionData;
-  std::vector<FrameData> motionData;
-  motionData.reserve(motionLog.getNumberOfMessages());
-  cognitionData.reserve(cognitionLog.getNumberOfMessages());
-
-  FrameInfo frameInfo;
-  JointAngles jointAngles;
-  FrameData frameData;
-  for(int i = 0; i < 2; ++i)
-  {
-    bool isMotionLog = i == 0;
-    LogPlayer& lp = isMotionLog ? motionLog : cognitionLog;
-    std::vector<FrameData>& fd = isMotionLog ? motionData : cognitionData;
-    for(lp.currentMessageNumber = 0; lp.currentMessageNumber < lp.getNumberOfMessages(); ++lp.currentMessageNumber)
-    {
-      lp.queue.setSelectedMessageForReading(lp.currentMessageNumber);
-      lp.in.text.reset();
-      switch(lp.queue.getMessageID())
-      {
-        case idProcessBegin:
-          frameData.messageStart = lp.currentMessageNumber;
-          break;
-        case idJointAngles:
-          lp.in.bin >> jointAngles;
-          frameData.time = jointAngles.timestamp;
-          break;
-        case idFrameInfo:
-          if(isMotionLog)
-            break;
-          lp.in.bin >> frameInfo;
-          frameData.time = frameInfo.time;
-          break;
-        case idProcessFinished:
-          frameData.messageEnd = lp.currentMessageNumber;
-          fd.push_back(frameData);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-
-  auto motionItr = motionData.begin();
-  const auto& motionEnd = motionData.end();
-
-  auto cognitionItr = cognitionData.begin();
-  const auto& cognitionEnd = cognitionData.end();
-
-  while(true)
-  {
-    if(motionItr == motionEnd)
-    {
-      while(cognitionItr != cognitionEnd)
-      {
-        for(int i = cognitionItr->messageStart; i <= cognitionItr->messageEnd; ++i)
-          cognitionLog.copyMessage(i, *this);
-        ++cognitionItr;
-      }
-      break;
-    }
-    if(cognitionItr == cognitionEnd)
-    {
-      while(motionItr != motionEnd)
-      {
-        for(int i = motionItr->messageStart; i <= motionItr->messageEnd; ++i)
-          motionLog.copyMessage(i, *this);
-        ++motionItr;
-      }
-      break;
-    }
-
-    if(motionItr->time < cognitionItr->time)
-    {
-      for(int i = motionItr->messageStart; i <= motionItr->messageEnd; ++i)
-        motionLog.copyMessage(i, *this);
-      ++motionItr;
-    }
-    else
-    {
-      for(int i = cognitionItr->messageStart; i <= cognitionItr->messageEnd; ++i)
-        cognitionLog.copyMessage(i, *this);
-      ++cognitionItr;
-    }
-  }
-  countFrames();
-  createIndices();
-  logfileMerged = true;
-}
-
 void LogPlayer::loadLabels()
 {
   std::string file = logfilePath.substr(logfilePath.find_last_of('/') + 1);
-  std::size_t prefixPos = file.find_first_of('_');
-  std::string processName = file.substr(0, prefixPos);
-  if(processName == "Cognition")
+  std::string threadName;
+  LoggingTools::parseName(file, &threadName, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+  if(threadName == "Upper")
   {
     ImageSet imageSet;
 
@@ -637,7 +509,7 @@ void LogPlayer::loadLabels()
     while(file != nullptr)
     {
       std::string name = file->d_name;
-      if(name.rfind(".lbd") == name.size() - 4)
+      if(name.size() >= 4 && name.rfind(".lbd") == name.size() - 4)
       {
         InMapFile stream((logfilePath.substr(0, found) + '/' + name).c_str());
         ASSERT(stream.exists());
@@ -651,7 +523,7 @@ void LogPlayer::loadLabels()
 
     if(imageSet.labelImages.size() > 0)
     {
-      LogPlayer cognitionLog((MessageQueue&)*this);
+      LogPlayer cognitionLog(static_cast<MessageQueue&>(*this));
       cognitionLog.setSize(queue.getSize());
 
       moveAllMessages(cognitionLog);
@@ -678,14 +550,14 @@ void LogPlayer::loadLabels()
         cognitionLog.in.text.reset();
         switch(cognitionLog.queue.getMessageID())
         {
-          case idProcessBegin:
+          case idFrameBegin:
             frameData.messageStart = cognitionLog.currentMessageNumber;
             break;
           case idFrameInfo:
             cognitionLog.in.bin >> frameInfo;
             frameData.time = frameInfo.time;
             break;
-          case idProcessFinished:
+          case idFrameFinished:
             frameData.messageEnd = cognitionLog.currentMessageNumber;
             cognitionData.push_back(frameData);
             break;
@@ -744,6 +616,64 @@ void LogPlayer::loadLabels()
       }
       countFrames();
       createIndices();
+    }
+  }
+}
+
+std::string LogPlayer::getThreadIdentifierOfNextFrame()
+{
+  if(currentMessageNumber < queue.numberOfMessages - 1)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber + 1);
+    if(queue.getMessageID() == idFrameBegin)
+      return in.readThreadIdentifier();
+  }
+  if(currentMessageNumber >= 0 && currentMessageNumber < queue.numberOfMessages)
+  {
+    queue.setSelectedMessageForReading(currentMessageNumber);
+    if(queue.getMessageID() == idFrameFinished)
+      return in.readThreadIdentifier();
+  }
+  return "";
+}
+
+void LogPlayer::upgradeFrames()
+{
+  int beginOfFrame = -1;
+  bool rename = false;
+  for(int i = 0; i < getNumberOfMessages(); ++i)
+  {
+    queue.setSelectedMessageForReading(i);
+    switch(in.getMessageID())
+    {
+      case idFrameBegin:
+        beginOfFrame = in.readThreadIdentifier() == "Upper" ? i : -1;
+        rename = false;
+        break;
+      case idCameraInfo:
+        if(beginOfFrame != -1)
+        {
+          CameraInfo cameraInfo;
+          in.bin >> cameraInfo;
+          rename = cameraInfo.camera == CameraInfo::lower;
+        }
+        break;
+      case idFrameFinished:
+        if(rename)
+        {
+          if(queue.getData()[0] == 'c')
+          {
+            const_cast<char&>(queue.getData()[0]) = 'd';
+            queue.setSelectedMessageForReading(beginOfFrame);
+            const_cast<char&>(queue.getData()[0]) = 'd';
+          }
+          else
+          {
+            patchMessage(i, 0, "Lower");
+            patchMessage(beginOfFrame, 0, "Lower");
+          }
+        }
+      default: ;
     }
   }
 }

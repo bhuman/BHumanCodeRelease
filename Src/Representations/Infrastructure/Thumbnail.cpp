@@ -1,5 +1,5 @@
 /**
- * @file Thumbnail.h
+ * @file Thumbnail.cpp
  *
  * Contains functionality for the thumbnail image.
  *
@@ -9,7 +9,7 @@
 #include "Thumbnail.h"
 #include "Tools/ImageProcessing/SIMD.h"
 
-void Thumbnail::toYUYV(TImage<PixelTypes::YUYVPixel>& dest) const
+void Thumbnail::toYUYV(Image<PixelTypes::YUYVPixel>& dest) const
 {
   dest.setResolution(imageY.width / 2, imageY.height);
 
@@ -163,9 +163,9 @@ void Thumbnail::toECImage(ECImage& dest) const
   }
 }
 
-void Thumbnail::toImage(Image& dest) const
+void Thumbnail::toCameraImage(CameraImage& dest) const
 {
-  dest.setResolution(imageY.width * scale / 2, imageY.height * scale / 2, true);
+  dest.setResolution(imageY.width * scale / 2, imageY.height * scale);
 
   // Expand horizontally
   if(mode == grayscale)

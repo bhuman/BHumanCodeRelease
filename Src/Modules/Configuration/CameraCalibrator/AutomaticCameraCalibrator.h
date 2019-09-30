@@ -9,10 +9,10 @@
 #pragma once
 
 #include "Representations/Configuration/CameraCalibration.h"
+#include "Representations/Configuration/CameraResolutionRequest.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraResolution.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
@@ -30,10 +30,9 @@ MODULE(AutomaticCameraCalibrator,
 {,
   REQUIRES(CameraCalibration),
   REQUIRES(CameraInfo),
-  REQUIRES(CameraResolution),
   REQUIRES(FieldDimensions),
-  REQUIRES(LinesPercept),
   REQUIRES(JointAngles),
+  REQUIRES(LinesPercept),
   REQUIRES(RobotDimensions),
   REQUIRES(TorsoMatrix),
   REQUIRES(RobotPose),
@@ -156,7 +155,6 @@ private:
   RingBufferWithSum<float, 5> headPositionPanBuffer;
   RingBufferWithSum<float, 5> headPositionTiltBuffer;
   unsigned int waitTill = 0; //For timing
-  enum class NextResolution {none, hiResUpper, hiResLower} nextResolution = NextResolution::none;
 
   // accumulation variables
   unsigned accumulationTimestamp;
@@ -201,7 +199,6 @@ private:
    */
   void invert(const CameraCalibration& cameraCalibration);
 
-  void swapCameras(CameraInfo::Camera cameraToUse);
   void abort();
 
   void update(CameraCalibrationNext& cameraCalibrationNext) override;

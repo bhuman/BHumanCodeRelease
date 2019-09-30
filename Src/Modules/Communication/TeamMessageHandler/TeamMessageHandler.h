@@ -9,11 +9,14 @@
 
 #pragma once
 
+#include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/TeamInfo.h"
+#include "Representations/Infrastructure/TeamTalk.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -34,35 +37,37 @@ MODULE(TeamMessageHandler,
   // v- using for calculations
   REQUIRES(FrameInfo),
   REQUIRES(MotionInfo),
-  REQUIRES(GameInfo),
   USES(OwnTeamInfo),
   USES(MotionRequest),
 
   // v- using for teamout
-  USES(FallDownState),
-  USES(GroundContactState),
+  REQUIRES(FallDownState),
+  REQUIRES(GroundContactState),
   USES(RawGameInfo),
   USES(RobotInfo),
 
   // v- directly sliding into teamout
   USES(BallModel),
+  USES(BehaviorStatus),
   USES(FieldCoverage),
-  USES(FieldFeatureOverview),
+  REQUIRES(FieldFeatureOverview),
   USES(ObstacleModel),
   USES(RobotHealth),
   USES(RobotPose),
   USES(SideConfidence),
+  USES(TeamBehaviorStatus),
+  USES(TeamTalk),
   USES(Whistle),
 
   PROVIDES(BHumanMessageOutputGenerator),
   PROVIDES(TeamData),
 
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (int)(333) sendInterval, /**<  Time in ms between two messages that are sent to the teammates */
-    (int)(4000) networkTimeout, /**< Time in ms after which teammates are considered as unconnected */
-
-    (int)(5000) minTimeBetween2RejectSounds, /*< Time in ms after which another sound output is allowed */
+    (int) sendInterval, /**<  Time in ms between two messages that are sent to the teammates */
+    (int) networkTimeout, /**< Time in ms after which teammates are considered as unconnected */
+    (int) minTimeBetween2RejectSounds, /**< Time in ms after which another sound output is allowed */
+    (bool) sendMirroredRobotPose, /**< Whether to send the robot pose mirrored (useful for one vs one demos such that keeper and striker can share their ball positions). */
   }),
 });
 

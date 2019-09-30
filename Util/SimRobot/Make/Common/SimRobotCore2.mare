@@ -77,7 +77,6 @@ SimRobotCore2 = cppDynamicLibrary + {
 
   cppFlags += {
     if (tool == "vcxproj") {
-      "/wd4503"
       if (configuration != "Debug") {
         "/GL /GS-"
       }

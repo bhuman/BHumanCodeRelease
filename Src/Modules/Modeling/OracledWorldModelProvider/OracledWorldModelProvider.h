@@ -15,6 +15,7 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
+#include "Representations/Modeling/TeamBallModel.h"
 
 MODULE(OracledWorldModelProvider,
 {,
@@ -27,6 +28,7 @@ MODULE(OracledWorldModelProvider,
   PROVIDES(ObstacleModel),
   PROVIDES(RobotPose),
   PROVIDES(GroundTruthRobotPose),
+  PROVIDES(TeamBallModel),
   LOADS_PARAMETERS(
   {,
     (Pose2f) robotPoseOffset, /**< Offset that will be added to the robot pose. Useful for testing */
@@ -67,6 +69,11 @@ private:
   void update(GroundTruthBallModel& groundTruthBallModel) override;
 
   /** One main function, might be called every cycle
+   * @param teamBallModel The data struct to be filled
+   */
+  void update(TeamBallModel& teamBallModel) override;
+
+  /** One main function, might be called every cycle
    * @param obstacleModel The data struct to be filled
    */
   void update(ObstacleModel& obstacleModel) override;
@@ -90,8 +97,6 @@ private:
 
   unsigned int lastBallModelComputation;  /*< Time of last ball model computation*/
   unsigned int lastRobotPoseComputation;  /*< Time of last robot pose computation*/
-  Vector2f     lastBallPosition = Vector2f::Zero(); /*< The ball position after the last computation*/
-  Vector3f     lastBallPosition3D = Vector3f::Zero(); /*< The ball position after the last computation*/
   BallModel    theBallModel;              /*< The current ball model*/
   RobotPose    theRobotPose;              /*< The current robot pose*/
 };

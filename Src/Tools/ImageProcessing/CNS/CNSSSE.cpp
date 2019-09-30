@@ -122,7 +122,7 @@ void responseX8Y8RUsingSSE3(const CNSResponse* __restrict srcPixel, int srcOfs,
   }
 
   //cns_copyAccumulator ((unsigned short*) responseBin, (unsigned short*) accPixelCopy, 8*8);
-  scaleOffsetUsingSSE(accPixelCopy, (signed short*) responseBin, 8 * 8, contour.mapping.rawBin2FinalBinScale, contour.mapping.rawBin2FinalBinOffset);
+  scaleOffsetUsingSSE(accPixelCopy, static_cast<signed short*>(responseBin), 8 * 8, contour.mapping.rawBin2FinalBinScale, contour.mapping.rawBin2FinalBinOffset);
 }
 
 void responseX16Y16RUsingSSE3(const CNSResponse* __restrict srcPixel, int srcOfs,
@@ -504,5 +504,5 @@ void responseX16Y16RUsingSSE3(const CNSResponse* __restrict srcPixel, int srcOfs
   }
 
   //cns_copyAccumulator ((unsigned short*) responseBin, (unsigned short*) accPixelCopy, 16*16);
-  scaleOffsetUsingSSE(accPixelCopy, (signed short*) responseBin, 16 * 16, contour.mapping.rawBin2FinalBinScale, contour.mapping.rawBin2FinalBinOffset);
+  scaleOffsetUsingSSE(accPixelCopy, static_cast<signed short*>(responseBin), 16 * 16, contour.mapping.rawBin2FinalBinScale, contour.mapping.rawBin2FinalBinOffset);
 }

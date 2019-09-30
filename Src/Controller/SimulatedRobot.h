@@ -8,20 +8,20 @@
 #pragma once
 
 #include <SimRobotCore2.h>
+#include "Representations/Configuration/CameraIntrinsics.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraIntrinsics.h"
-#include "Representations/Infrastructure/CameraResolution.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/RobotParts/Joints.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Pose3f.h"
+#include "Tools/Streams/EnumIndexedArray.h"
 
-struct GroundTruthWorldState;
-struct Image;
+struct CameraImage;
 struct FsrSensorData;
+struct GroundTruthWorldState;
 struct InertialSensorData;
 struct JointRequest;
 struct OdometryData;
@@ -43,6 +43,8 @@ private:
   static SimRobot::Object* ball; /**< The simulated ball. */
   std::vector<SimRobot::Object*> firstTeamRobots; /**< The simulated robots in the first team(excluding this robot). */
   std::vector<SimRobot::Object*> secondTeamRobots; /**< The simulated robots in the second team (excluding this robot). */
+  mutable Vector3f lastBallPosition; /**< The ball position at the time when \c getWorldState was called last */
+  mutable unsigned lastBallTime = 0; /**< The simulated time when \c getWorldState was called last */
 
   SimRobot::Object* jointSensors[Joints::numOfJoints]; /**< The handles to the sensor ports of the joints. */
   SimRobot::Object* jointActuators[Joints::numOfJoints]; /**< The handles to the actuator ports of the joints. */
@@ -61,10 +63,8 @@ private:
   unsigned activeCameraIndex; /**< Index of this robot in the \c activeCameras array */
 
   JointCalibration jointCalibration; /**< The simulated robot is perfectly calibrated, but this is usefull for testing calibration. */
-  CameraInfo upperCameraInfo; /**< Information about the upper camera. */
-  CameraInfo lowerCameraInfo; /**< Information about the lower camera. */
+  ENUM_INDEXED_ARRAY(CameraInfo, CameraInfo::Camera) cameraInfos; /**< Information about the upper camera. */
   CameraIntrinsics cameraIntrinsics;
-  CameraResolution cameraResolution;
   RobotDimensions robotDimensions;
 
 public:
@@ -109,10 +109,10 @@ public:
 
   /**
    * Determines the camera image of the simulated robot.
-   * @param image The determined image.
+   * @param cameraImage The determined image.
    * @param cameraInfo The information about the camera that took the image.
    */
-  void getImage(Image& image, CameraInfo& cameraInfo);
+  void getImage(CameraImage& cameraImage, CameraInfo& cameraInfo);
 
   /**
    * Determines the camera information (in case no images are generated) of the simulated robot.

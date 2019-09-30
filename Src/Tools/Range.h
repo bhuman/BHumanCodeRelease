@@ -3,7 +3,7 @@
  *
  * The file defines a template class to represent ranges.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once

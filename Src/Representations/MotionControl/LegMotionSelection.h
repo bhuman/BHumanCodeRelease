@@ -1,7 +1,7 @@
 /**
  * @file Representations/MotionControl/LegMotionSelection.h
  * This file declares a struct that represents the motions actually selected based on the constraints given.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once

@@ -10,12 +10,13 @@
  */
 
 #include "ObstaclesFieldPercept.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
+#include "Tools/Modeling/Obstacle.h"
 #include "Tools/Module/Blackboard.h"
 #include <cmath>
 

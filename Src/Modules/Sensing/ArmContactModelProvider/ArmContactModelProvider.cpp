@@ -1,5 +1,5 @@
 /**
- * @file ArmContactModelProvider.h
+ * @file ArmContactModelProvider.cpp
  *
  * Implementation of class ArmContactModelProvider.
  * @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>

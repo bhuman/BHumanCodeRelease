@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Representations/Infrastructure/RoboCupGameControlData.h"
+#include "Representations/Communication/RoboCupGameControlData.h"
 #include "Tools/Streams/Streamable.h"
 
 //THIS STRUCT IS INDENTED TO NOT USE RoboCup::SPLStandardMessage.data!

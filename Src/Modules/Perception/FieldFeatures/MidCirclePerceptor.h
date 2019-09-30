@@ -6,20 +6,20 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Representations/Communication/GameInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/Odometer.h"
-#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
-#include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldFeatures/FieldRelations.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
+#include "Representations/Perception/FieldPercepts/CirclePercept.h"
+#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Math/BHMath.h"
+#include "Tools/Module/Module.h"
 
 MODULE(MidCirclePerceptor,
 {,
@@ -28,7 +28,7 @@ MODULE(MidCirclePerceptor,
   REQUIRES(FieldLineIntersections),
   REQUIRES(IntersectionRelations),
   REQUIRES(FieldLines),
-  REQUIRES(GameInfo),
+  USES(GameInfo),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(CirclePercept),

@@ -16,7 +16,7 @@
 #include "Representations/Perception/FieldFeatures/PenaltyMarkSpots.h"
 #include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Representations/Perception/ImagePreprocessing/ColorScanlineRegions.h"
+#include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Perception/ImagePreprocessing/ScanGrid.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Module/Module.h"
@@ -25,7 +25,7 @@ MODULE(PenaltyMarkRegionsProvider,
 {,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(ColorScanlineRegionsVerticalClipped),
+  REQUIRES(ColorScanLineRegionsVerticalClipped),
   REQUIRES(FieldDimensions),
   REQUIRES(ScanGrid),
   REQUIRES(PenaltyMarkRegions),
@@ -105,14 +105,17 @@ class PenaltyMarkRegionsProvider : public PenaltyMarkRegionsProviderBase
   void initTables(unsigned short upperBound);
 
   /**
-   * Initializes the scanlines containing the non-green regions.
+   * Initializes the scan lines containing the non-green regions.
    * @param upperBound The smallest y coordinate that can be expected.
+   * @return Could the regions be initialized? This method returns false
+   *         if there would be too many regions. In that case, the image
+   *         is probably very noisy.
    */
-  void initRegions(unsigned short upperBound);
+  bool initRegions(unsigned short upperBound);
 
   /**
    * Merges all neighboring regions.
-   * @param xStep The distance between neigboring low-res scanlines.
+   * @param xStep The distance between neighboring low-res scan lines.
    */
   void unionFind(int xStep);
 
@@ -120,8 +123,8 @@ class PenaltyMarkRegionsProvider : public PenaltyMarkRegionsProviderBase
    * Analyses the merged regions finding candidates for penalty marks.
    * This method also updates the cnsRegion member.
    * @param upperBound The smallest y coordinate that can be expected.
-   * @param xStep The distance between neigboring low-res scanlines.
-   * @param searchRegions The regions that should be seached for the center of a penalty mark.
+   * @param xStep The distance between neighboring low-res scan lines.
+   * @param searchRegions The regions that should be searched for the center of a penalty mark.
    */
   void analyseRegions(unsigned short upperBound, int xStep, std::vector<Boundaryi>& searchRegions);
 

@@ -3,7 +3,7 @@
 class Time
 {
 private:
-  static unsigned base; /**< An offset used to convert the time to the time provided by this class. */
+  static unsigned long long base; /**< An offset used to convert the time to the time provided by this class. */
   static unsigned long long threadTimebase; /**< An offset used to convert the thread time to the time provided by this class. */
 
 public:
@@ -14,7 +14,7 @@ public:
   static unsigned getRealSystemTime();
 
   /** returns an offset used to convert the time to the time provided by this class. */
-  static unsigned getSystemTimeBase();
+  static unsigned long long getSystemTimeBase();
 
   /**
    * The function returns the thread cpu time of the calling thread in microseconds.
@@ -29,7 +29,7 @@ public:
   static int getRealTimeSince(unsigned aTime);
 };
 
-inline unsigned Time::getSystemTimeBase()
+inline unsigned long long Time::getSystemTimeBase()
 {
   if(!base)
     (void)getRealSystemTime();

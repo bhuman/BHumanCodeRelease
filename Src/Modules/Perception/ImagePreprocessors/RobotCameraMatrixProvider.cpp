@@ -11,5 +11,5 @@ MAKE_MODULE(RobotCameraMatrixProvider, perception);
 
 void RobotCameraMatrixProvider::update(RobotCameraMatrix& robotCameraMatrix)
 {
-  robotCameraMatrix.computeRobotCameraMatrix(theRobotDimensions, theJointAngles.angles[Joints::headYaw], theJointAngles.angles[Joints::headPitch], theCameraCalibration, theCameraInfo.camera == CameraInfo::upper);
+  robotCameraMatrix.computeRobotCameraMatrix(theRobotDimensions, theJointAngles.angles[Joints::headYaw], theJointAngles.angles[Joints::headPitch], theCameraCalibration, theCameraInfo.camera);
 }

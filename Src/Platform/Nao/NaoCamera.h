@@ -7,8 +7,11 @@
 #pragma once
 
 #include "Representations/Configuration/AutoExposureWeightTable.h"
+#include "Representations/Configuration/CameraSettings.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraSettings.h"
+
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 
 /**
  * @class NaoCamera
@@ -17,6 +20,8 @@
 class NaoCamera
 {
 public:
+  bool resetRequired = false;
+
   /**
    * Constructor.
    * @param device The name of the camera device (e.g. /dev/video0).
@@ -31,7 +36,8 @@ public:
    *                                computation. If the table does only contains zeros, the image will be black.
    */
   NaoCamera(const char* device, CameraInfo::Camera camera, int width, int height, bool flip,
-            const CameraSettings::CameraSettingsCollection& settings, const Matrix5uc& autoExposureWeightTable);
+            const CameraSettings::Collection& settings,
+            const AutoExposureWeightTable::Table& autoExposureWeightTable);
 
   ~NaoCamera();
 
@@ -39,9 +45,10 @@ public:
 
   /**
    * The method blocks till a new image arrives.
+   * @param timeout The maximum waiting time
    * @return true (except a not manageable exception occurs)
    */
-  bool captureNew();
+  bool captureNew(int timeout);
 
   /**
    * The method blocks till one of the given cameras returns an image.
@@ -74,7 +81,7 @@ public:
    * Timestamp of the last captured image in µs.
    * @return The timestamp.
    */
-  unsigned long long getTimeStamp() const;
+  unsigned long long getTimestamp() const;
 
   /**
    * Returns the frame rate used by the camera
@@ -85,12 +92,12 @@ public:
   /**
    * Set frame rate in frames per 10 seconds.
    */
-  void setFrameRate(unsigned numerator = 1, unsigned denominator = 30);
+  bool setFrameRate(unsigned numerator = 1, unsigned denominator = 30);
 
-  CameraSettings::CameraSettingsCollection getCameraSettingsCollection() const;
-  Matrix5uc getAutoExposureWeightTable() const;
+  CameraSettings::Collection getCameraSettingsCollection() const;
+  AutoExposureWeightTable::Table getAutoExposureWeightTable() const;
 
-  void setSettings(const CameraSettings::CameraSettingsCollection& settings, const Matrix5uc& autoExposureWeightTable);
+  void setSettings(const CameraSettings::Collection& settings, const AutoExposureWeightTable::Table& autoExposureWeightTable);
 
   /**
    * Unconditional write of the camera settings
@@ -101,6 +108,31 @@ public:
 
   void doAutoWhiteBalance();
 
+  /**
+   * Set a camera register.
+   * @param address The address of the register.
+   * @param value The value to set. Although the command could set two bytes,
+   *              actual tests showed that only a single byte is set.
+   * @return Was the call successful?
+   */
+  bool setRegister(unsigned short address, unsigned short value) const;
+
+  /**
+   * Get the current value of a register.
+   * @param address The address of the register.
+   * @param value The value returned. Although the command could return two bytes,
+   *              actual tests showed that only a single byte is read.
+   * @return Could the register be read?
+   */
+  bool getRegister(unsigned short address, unsigned short& value) const;
+
+  static void resetCamera();
+  static bool getI2CDeviceNumber(int& i2cDeviceNumber);
+  static bool openI2CDevice(int i2cDeviceNumber, int& fileDescriptor);
+  static bool i2cReadWriteAccess(int fileDescriptor, unsigned char readWrite, unsigned char command, unsigned char size, i2c_smbus_data& data);
+  static bool i2cWriteBlockData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, std::vector<unsigned char> data);
+  static bool i2cReadByteData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, unsigned char& res);
+
 private:
   class V4L2Setting
   {
@@ -108,10 +140,11 @@ private:
     int command = 0;
     int value = 0;
 
-    CameraSettings::CameraSetting notChangableWhile = CameraSettings::numOfCameraSettings;
+    CameraSettings::Collection::CameraSetting notChangableWhile = CameraSettings::Collection::numOfCameraSettings;
+    int invert = true;
 
     V4L2Setting() = default;
-    V4L2Setting(int command, int value, int min, int max, CameraSettings::CameraSetting notChangableWhile = CameraSettings::numOfCameraSettings);
+    V4L2Setting(int command, int value, int min, int max, CameraSettings::Collection::CameraSetting notChangableWhile = CameraSettings::Collection::numOfCameraSettings, int invert = 0);
 
     bool operator==(const V4L2Setting& other) const;
     bool operator!=(const V4L2Setting& other) const;
@@ -126,8 +159,8 @@ private:
 
   struct CameraSettingsCollection
   {
-    std::array<V4L2Setting, CameraSettings::numOfCameraSettings> settings;
-    static const constexpr size_t sizeOfAutoExposureWeightTable = 25;
+    std::array<V4L2Setting, CameraSettings::Collection::numOfCameraSettings> settings;
+    static constexpr size_t sizeOfAutoExposureWeightTable = AutoExposureWeightTable::width * AutoExposureWeightTable::height;
     std::array<V4L2Setting, sizeOfAutoExposureWeightTable> autoExposureWeightTable;
 
     CameraSettingsCollection();
@@ -140,7 +173,6 @@ private:
   {
     V4L2Setting verticalFlip;
     V4L2Setting horizontalFlip;
-    V4L2Setting doAutoWhiteBallance;
 
     CameraSettingsSpecial();
   };
@@ -150,7 +182,7 @@ private:
   CameraSettingsCollection appliedSettings; /**< The camera settings that are known to be applied. */
   CameraSettingsSpecial specialSettings; /**< Special settings that are only set */
 
-  static const constexpr unsigned frameBufferCount = 3; /**< Amount of available frame buffers. */
+  static constexpr unsigned frameBufferCount = 3; /**< Amount of available frame buffers. */
 
   unsigned WIDTH; /**< The width of the yuv 422 image */
   unsigned HEIGHT; /**< The height of the yuv 422 image */
@@ -160,11 +192,11 @@ private:
   struct v4l2_buffer* buf = nullptr; /**< Reusable parameter struct for some ioctl calls. */
   struct v4l2_buffer* currentBuf = nullptr; /**< The last dequeued frame buffer. */
   bool first = true; /**< First image grabbed? */
-  unsigned long long timeStamp = 0; /**< Timestamp of the last captured image in microseconds. */
+  unsigned long long timestamp = 0; /**< Timestamp of the last captured image in microseconds. */
 
-  void checkSettingsAvailability();
+  bool checkSettingsAvailability();
 
-  void checkV4L2Setting(V4L2Setting& setting) const;
+  bool checkV4L2Setting(V4L2Setting& setting) const;
 
   /**
    * Requests the value of a camera control setting from camera.
@@ -181,15 +213,46 @@ private:
    */
   bool setControlSetting(V4L2Setting& setting);
 
-  bool assertCameraSetting(CameraSettings::CameraSetting setting);
-  bool assertAutoExposureWeightTableEntry(size_t entry);
+  bool assertCameraSetting(CameraSettings::Collection::CameraSetting setting);
 
-  void setImageFormat();
+  bool setImageFormat();
 
-  void mapBuffers();
+  bool mapBuffers();
   void unmapBuffers();
-  void queueBuffers();
+  bool queueBuffers();
 
-  void startCapturing();
-  void stopCapturing();
+  bool startCapturing();
+  bool stopCapturing();
+
+  /**
+   * Query a UVC control.
+   * @param set Set value (instead of reading it)?
+   * @param control The number of the control.
+   * @param value Address of the value to set or get.
+   * @param size Size of the value to set or get in bytes.
+   * @return Did the call succeed?
+   */
+  bool queryXU(bool set, unsigned char control, void* value, unsigned short size) const;
+
+  /**
+   * Set a UVC control.
+   * @param control The number of the control to set.
+   * @param value The value to set.
+   * @return Did the call succeed?
+   */
+  template<typename T> bool setXU(unsigned char control, const T& value) const
+  {
+    return queryXU(true, control, const_cast<T*>(&value), static_cast<unsigned short>(sizeof(T)));
+  }
+
+  /**
+   * Get a UVC control.
+   * @param control The number of the control to get.
+   * @param value The value that is filled with the result.
+   * @return Did the call succeed?
+   */
+  template<typename T> bool getXU(unsigned char control, const T& value) const
+  {
+    return queryXU(false, control, const_cast<T*>(&value), static_cast<unsigned short>(sizeof(T)));
+  }
 };

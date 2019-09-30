@@ -1,5 +1,5 @@
 /**
- * @file AnnotationInfo.cpp
+ * @file AnnotationInfo.h
  * @author Andreas Stolpmann
  */
 
@@ -12,9 +12,8 @@
 
 class AnnotationView;
 
-class AnnotationInfo : public MessageHandler
+class AnnotationInfo
 {
-public:
   struct AnnotationData
   {
     unsigned annotationNumber;
@@ -23,22 +22,15 @@ public:
     std::string annotation;
   };
 
-  struct ProcessAnnotationInfo
-  {
-    DECLARE_SYNC;
-    std::vector<AnnotationData> newAnnotations;
-    unsigned timeOfLastMessage = 0;
-    const AnnotationView* view = nullptr;
-  };
+  DECLARE_SYNC;
+  std::vector<AnnotationData> newAnnotations;
+  unsigned timeOfLastMessage = 0;
+  const AnnotationView* view = nullptr;
 
-  ProcessAnnotationInfo* currentProcess = nullptr;
-  unsigned currentFrame = 0;
-
-  std::unordered_map<char, ProcessAnnotationInfo> annotationProcesses;
-
-  AnnotationInfo();
-
+public:
   void clear();
+  void addMessage(InMessage& message, unsigned currentFrame);
 
-  bool handleMessage(InMessage& message);
+  friend class AnnotationView;
+  friend class AnnotationWidget;
 };

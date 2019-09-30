@@ -49,12 +49,11 @@
 			<true/>
 			<key>Values</key>
 			<array>
-				<string>cognitionInfrastructure</string>
-				<string>communication</string>
+				<string>infrastructure</string>
 				<string>perception</string>
+				<string>communication</string>
 				<string>modeling</string>
 				<string>behaviorControl</string>
-				<string>motionInfrastructure</string>
 				<string>sensing</string>
 				<string>motionControl</string>
 			</array>

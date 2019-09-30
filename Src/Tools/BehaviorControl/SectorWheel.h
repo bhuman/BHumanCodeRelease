@@ -42,42 +42,34 @@ public:
    * Calculates the wheel for a given center position (e.g. hypothetical ball position).
    * @param positionOnField The center position.
    */
-  void calculate(const Vector2f& positionOnField);
+  void begin(const Vector2f& positionOnField);
 
   /**
-   * Returns the wheel.
-   * @return The wheel.
+   * Post-processes and returns the calculated wheel.
+   * @return The resulting wheel.
    */
-  const std::list<Sector>& getWheel() const
-  {
-    return wheel;
-  }
-
-  /**
-   * Returns the center of the wheel.
-   * @return The center of the wheel.
-   */
-  const Vector2f& getPositionOnField() const
-  {
-    return positionOnField;
-  }
-
-protected:
-  /** Adds the sectors to the wheel (is defined by derived class). */
-  virtual void addSectors() = 0;
+  const std::list<Sector>& finish();
 
   /**
    * Adds a sector to the wheel.
    *
    * This is only a wrapper around the other addSector method.
-   * @param center The position of the object (relative to the wheel center).
+   * @param center The position of the object (in the same coordinate system as the wheel center).
+   * @param width The width of the object.
+   * @param type The type of the new sector.
+   */
+  void addSector(const Vector2f& center, float width, Sector::Type type);
+
+  /**
+   * Adds a sector to the wheel.
+   *
+   * This is only a wrapper around the other addSector method.
+   * @param center The position of the object (in the same coordinate system as the wheel center).
    * @param width The width of the object.
    * @param distance The distance of the new sector.
    * @param type The type of the new sector.
    */
-
   void addSector(const Vector2f& center, float width, float distance, Sector::Type type);
-  void addSector(const Vector2f& center, float width, Sector::Type type);
 
   /**
    * Adds a sector to the wheel.
@@ -114,14 +106,31 @@ inline SectorWheel::Sector::Sector(const Rangea& angleRange, float distance, Typ
  * Draws a sector wheel as a field drawing.
  * @param id A drawing id.
  * @param wheel The wheel to draw.
+ * @param position The position to draw the wheel at.
  */
-#define DRAW_SECTOR_WHEEL(id, wheel) \
+#define DRAW_SECTOR_WHEEL(id, wheel, position) \
   DEBUG_DRAWING(id, "drawingOnField") \
   { \
-    for(const auto& sector : wheel.getWheel()) \
+    for(const auto& sector : wheel) \
     { \
-      ColorRGBA color = sector.type == SectorWheel::Sector::free ? ColorRGBA(0, 0, 255, 128) : ColorRGBA::red; \
-      ARC(id, wheel.getPositionOnField().x(), wheel.getPositionOnField().y(), std::min(sector.distance, 12000.f), \
-          sector.angleRange.min, sector.angleRange.max - sector.angleRange.min, 0, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, color); \
+      ColorRGBA color; \
+      switch (sector.type) \
+      { \
+        case SectorWheel::Sector::free: \
+          color = ColorRGBA(0, 255, 0, 125); \
+          break; \
+        case SectorWheel::Sector::obstacle: \
+          color = ColorRGBA(255, 0, 0, 125); \
+          break; \
+        case SectorWheel::Sector::goal: \
+          color = ColorRGBA(0, 0, 255, 125); \
+          break; \
+        case SectorWheel::Sector::erased: \
+          color = ColorRGBA(128, 128, 128, 125); \
+          break; \
+      } \
+      const Angle angleSpan = sector.angleRange.max - sector.angleRange.min + (sector.angleRange.max < sector.angleRange.min ? pi2 : 0); \
+      ARC(id, position.x(), position.y(), std::min(sector.distance, 12000.f), \
+          sector.angleRange.min, angleSpan, 0, Drawings::noPen, ColorRGBA(), Drawings::solidBrush, color); \
     } \
   }

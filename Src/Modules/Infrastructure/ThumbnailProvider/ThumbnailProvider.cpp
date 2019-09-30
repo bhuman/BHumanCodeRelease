@@ -11,7 +11,7 @@
 
 #include <array>
 
-MAKE_MODULE(ThumbnailProvider, cognitionInfrastructure)
+MAKE_MODULE(ThumbnailProvider, infrastructure)
 
 void ThumbnailProvider::update(Thumbnail& thumbnail)
 {
@@ -41,7 +41,7 @@ void ThumbnailProvider::update(Thumbnail& thumbnail)
     shrinkUV(downScales, theCameraImage, thumbnail.imageUV);
 }
 
-void ThumbnailProvider::shrinkY(const unsigned int downScales, const TImage<PixelTypes::GrayscaledPixel>& src, TImage<PixelTypes::GrayscaledPixel>& dest) const
+void ThumbnailProvider::shrinkY(const unsigned int downScales, const Image<PixelTypes::GrayscaledPixel>& src, Image<PixelTypes::GrayscaledPixel>& dest) const
 {
   dest.setResolution(src.width, src.height);
   dest.setResolution(src.width >> downScales, src.height >> downScales);
@@ -240,7 +240,7 @@ void ThumbnailProvider::shrinkY(const unsigned int downScales, const TImage<Pixe
   }
 }
 
-void ThumbnailProvider::shrinkColors(const unsigned int downScales, const TImage<PixelTypes::ColoredPixel>& src, TImage<PixelTypes::ColoredPixel>& dest) const
+void ThumbnailProvider::shrinkColors(const unsigned int downScales, const Image<PixelTypes::ColoredPixel>& src, Image<PixelTypes::ColoredPixel>& dest) const
 {
   dest.setResolution(src.width >> downScales, src.height >> downScales);
 
@@ -272,7 +272,7 @@ void ThumbnailProvider::shrinkColors(const unsigned int downScales, const TImage
   }
 }
 
-void ThumbnailProvider::shrinkUV(const unsigned int downScales, const CameraImage& src, TImage<unsigned short>& dest) const
+void ThumbnailProvider::shrinkUV(const unsigned int downScales, const CameraImage& src, Image<unsigned short>& dest) const
 {
   dest.setResolution(src.width, src.height);
   dest.setResolution(src.width >> downScales, src.height >> (downScales + 1));
@@ -629,7 +629,7 @@ void ThumbnailProvider::shrinkUV(const unsigned int downScales, const CameraImag
   }
 }
 
-void ThumbnailProvider::combineGrayscaleAndColors(const TImage<PixelTypes::GrayscaledPixel>& y, const TImage<PixelTypes::ColoredPixel>& c, TImage<PixelTypes::GrayscaledPixel>& dest) const
+void ThumbnailProvider::combineGrayscaleAndColors(const Image<PixelTypes::GrayscaledPixel>& y, const Image<PixelTypes::ColoredPixel>& c, Image<PixelTypes::GrayscaledPixel>& dest) const
 {
   const __m128i* pY = reinterpret_cast<const __m128i*>(y[0]);
   const __m128i* pC = reinterpret_cast<const __m128i*>(c[0]);

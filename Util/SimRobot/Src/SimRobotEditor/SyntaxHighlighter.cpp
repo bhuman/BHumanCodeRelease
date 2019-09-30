@@ -71,7 +71,7 @@ void SyntaxHighlighter::highlightSubBlock(const QString& text, const int startIn
     effectiveState = inNothing;
   switch(effectiveState)
   {
-    case (inNothing):
+    case inNothing:
     {
       //If we're not in anything, then what could be coming is either a comment or a tag (open or close).
       QRegularExpressionMatch commentMatch = xmlCommentStartExpression.match(text, startIndex);

@@ -1,0 +1,92 @@
+Tests = cppApplication + {
+  folder = "Utils"
+  root = { "$(srcDirRoot)/Utils", "$(srcDirRoot)" }
+
+  files = {
+    "$(srcDirRoot)/Platform/$(OS)/*.cpp" = cppSource
+    "$(srcDirRoot)/Platform/$(OS)/*.h"
+    "$(srcDirRoot)/Platform/*.cpp" = cppSource
+    "$(srcDirRoot)/Platform/*.h"
+    "$(srcDirRoot)/Utils/Tests/**.cpp" = cppSource
+    "$(srcDirRoot)/Utils/Tests/**.h"
+    "$(srcDirRoot)/Tools/*.cpp" = cppSource
+    "$(srcDirRoot)/Tools/*.h"
+    "$(srcDirRoot)/Tools/Debugging/TimingManager.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Debugging/TimingManager.h"
+    "$(srcDirRoot)/Tools/Math/Random.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Math/Random.h"
+    "$(srcDirRoot)/Tools/Math/RotationMatrix.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Math/RotationMatrix.h"
+    "$(srcDirRoot)/Tools/MessageQueue/*.cpp" = cppSource
+    "$(srcDirRoot)/Tools/MessageQueue/*.h"
+    "$(srcDirRoot)/Tools/Module/*.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Module/*.h"
+    "$(srcDirRoot)/Tools/Streams/*.cpp" = cppSource
+    "$(srcDirRoot)/Tools/Streams/*.h"
+  }
+
+  defines += {
+    "TARGET_TOOL"
+    "IS_TESTED"
+    "GTEST_DONT_DEFINE_FAIL"
+    "GTEST_DONT_DEFINE_TEST"
+    if (tool == "vcxproj") {
+        "_CRT_SECURE_NO_WARNINGS"
+        // suppress warning STL4002: The non-Standard std::tr1 namespace and TR1-only machinery are deprecated and will be REMOVED
+        "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING"
+    }
+    if (configuration == "Develop") {
+      -"NDEBUG"
+    }
+  }
+
+  includePaths = {
+    "$(srcDirRoot)"
+    "$(utilDirRoot)/SimRobot/Util/Eigen"
+    "$(utilDirRoot)/GameController/include"
+    "$(utilDirRoot)/gtest/include"
+    "$(utilDirRoot)/snappy/include"
+    if (host == "Win32") {
+      "$(utilDirRoot)/Buildchain/Windows/include"
+    }
+  }
+
+  libs = {
+    if (host == "Win32") {
+      "ws2_32"
+      "winmm"
+    }
+    if (configuration == "Debug") {
+      "gtestd"
+      "snappyd"
+    } else {
+      "gtest"
+      "snappy"
+    }
+    if (platform == "Linux") {
+      "pthread"
+    }
+  }
+
+  libPaths = {
+    if (platform == "Linux") {
+      "$(utilDirRoot)/snappy/lib/Linux/x64"
+      "$(utilDirRoot)/gtest/lib/Linux"
+    } else if (host == "Win32") {
+      "$(utilDirRoot)/gtest/lib/Windows"
+      "$(utilDirRoot)/snappy/lib/Windows"
+    }
+  }
+
+  linkFlags += {
+    if (tool == "vcxproj") {
+      -"/SUBSYSTEM:WINDOWS"
+      "/SUBSYSTEM:CONSOLE"
+    }
+  }
+
+  visualizers = {
+    "$(utilDirRoot)/Buildchain/Windows/Visualizers/Angle.natvis"
+    "$(utilDirRoot)/SimRobot/Util/Eigen/debug/msvc/eigen.natvis"
+  }
+}

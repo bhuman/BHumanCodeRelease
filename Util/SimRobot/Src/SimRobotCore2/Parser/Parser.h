@@ -34,8 +34,8 @@ public:
   bool parse(const std::string& fileName, std::list<std::string>& errors);
 
 private:
-  typedef Element* (Parser::*StartElementProc)();
-  typedef void (Parser::*TextProc)(std::string& text, Location location);
+  using StartElementProc = Element* (Parser::*)();
+  using TextProc = void (Parser::*)(std::string& text, Location location);
 
   /** Some flags to describe properties of an element class */
   enum ElementFlags
@@ -269,7 +269,7 @@ private:
   Element* gyroscopeElement();
   Element* accelerometerElement();
   Element* cameraElement();
-  Element* collisionSensor2Element();
+  Element* collisionSensorElement();
   Element* objectSegmentedImageSensorElement();
   Element* singleDistanceSensorElement();
   Element* approxDistanceSensorElement();

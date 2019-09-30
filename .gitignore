@@ -1,5 +1,6 @@
 .*
 !.gitignore
+!.editorconfig
 *~
 \#*\#
 .\#
@@ -15,14 +16,18 @@ GTAGS
 tags
 Thumbs.db
 Build
+Config/Images
 Config/Logs
 Config/Scenes/Includes/connect.con
 Config/Scenes/Includes/replay.con
+Config/SimulatedImageSave/*
+Config/Statistics
 Make/Hooks/gitpath
 Make/Linux/compile_commands.json
 Make/Linux/Nao-objects.tmp
 Make/Linux/libbhuman-objects.tmp
 Make/Linux/libgamectrl-objects.tmp
+Make/LinuxCMake/cmake-build-*
 Make/LinuxCodeLite/*.project
 Make/LinuxCodeLite/*.tags
 Make/LinuxCodeLite/*.workspace*
@@ -31,6 +36,7 @@ Make/VS20*/.vs
 Make/VS20*/*.sln
 Make/VS20*/*.vcxproj
 Make/VS20*/*.vcxproj.filters
+Make/VS20*/*.vcxproj.user
 Make/macOS/B-Human.xcodeproj/project.pbxproj
 Make/macOS/B-Human.xcodeproj/project.xcworkspace
 Make/macOS/B-Human.xcodeproj/xcuserdata
@@ -43,7 +49,4 @@ Util/GameController/logs/
 Util/GameController/logs_teamcomm/
 Util/Proto/*.class
 Util/Proto/*.ctxt
-Util/SimRobot/Make/VS20*/.vs
-Util/SimRobot/Make/VS20*/*.sln
-Util/SimRobot/Make/VS20*/*.vcxproj
-Util/SimRobot/Make/VS20*/*.vcxproj.filters
+Util/WSL

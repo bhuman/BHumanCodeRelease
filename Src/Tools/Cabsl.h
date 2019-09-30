@@ -43,7 +43,7 @@
  * #define INTELLISENSE_PREFIX Class::
  * #endif
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -88,7 +88,7 @@ protected:
 
     int state; /**< The state currently selected. This is actually the line number in which the state was declared. */
     const char* stateName; /**< The name of the state (for activation graph). */
-    unsigned lastFrame = 1; /**< The time stamp of the last frame in which this option was executed. */
+    unsigned lastFrame = 1; /**< The timestamp of the last frame in which this option was executed. */
     unsigned optionStart; /**< The time when the option started to run (for option_time). */
     unsigned stateStart; /**< The time when the current state started to run (for state_time). */
     StateType stateType; /**< The type of the current state in this option. */
@@ -257,7 +257,7 @@ public:
 
     /**
      * The method adds information about an option to the collections.
-     * It will be call from the constuctors of static objects created for each
+     * It will be call from the constructors of static objects created for each
      * option.
      * Note that options with parameters will be ignored, because they currently
      * cannot be called externally.
@@ -325,26 +325,26 @@ protected:
   {
   private:
     /** A helper structure to register information about the option. */
-    struct Registrator
+    struct Registrar
     {
-      Registrator() {OptionInfos::add(reinterpret_cast<OptionDescriptor*(*)()>(descriptor));}
+      Registrar() {OptionInfos::add(reinterpret_cast<OptionDescriptor*(*)()>(descriptor));}
     };
-    static Registrator registrator; /**< The instance that registers the information about the option through construction. */
+    static Registrar registrar; /**< The instance that registers the information about the option through construction. */
 
   public:
     /** A dummy constructor that enforces linkage of the static member. */
-    OptionInfo() {static_cast<void>(&registrator);}
+    OptionInfo() {static_cast<void>(&registrar);}
   };
 
 private:
   static OptionInfos collectOptions; /**< This global instantiation collects data about all options. */
   typename OptionContext::StateType stateType; /**< The state type of the last option called. */
-  unsigned lastFrameTime; /**< The time stamp of the last time the behavior was executed. */
+  unsigned lastFrameTime; /**< The timestamp of the last time the behavior was executed. */
   ActivationGraph* activationGraph; /**< The activation graph for debug output. Can be zero if not set. */
 
 protected:
   static thread_local Cabsl* _theInstance; /**< The instance of this behavior used. */
-  unsigned _currentFrameTime; /**< The time stamp of the last time the behavior was executed. */
+  unsigned _currentFrameTime; /**< The timestamp of the last time the behavior was executed. */
 
   /**
    * Constructor.
@@ -429,7 +429,7 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
 /**
  * The macro defines an option. It must be followed by a block of code that defines the option's body
  * The option gets an additional parameter that manages its context. If the option has parameters,
- * two methods are generated. The first one adds the parameters to the execution enviornment and calls
+ * two methods are generated. The first one adds the parameters to the execution environment and calls
  * the second one.
  * @param ... The name of the option and an arbitrary number of parameters. They can include default
  *            parameters at the end. Their syntax is described at the beginning of this file.
@@ -604,12 +604,8 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
 #endif
 
 /** Check whether an option has parameters. */
-#ifdef _MSC_VER
-#define _CABSL_HAS_PARAMS(...) _STREAM_JOIN(_STREAM_TUPLE_SIZE_II, (__VA_ARGS__, _CABSL_HAS_PARAMS_II))
-#else
 #define _CABSL_HAS_PARAMS(...) _CABSL_HAS_PARAMS_I((__VA_ARGS__, _CABSL_HAS_PARAMS_II))
 #define _CABSL_HAS_PARAMS_I(params) _STREAM_TUPLE_SIZE_II params
-#endif
 #define _CABSL_HAS_PARAMS_II \
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, \

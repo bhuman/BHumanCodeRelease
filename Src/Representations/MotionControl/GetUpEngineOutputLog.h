@@ -1,26 +1,49 @@
 /**
  * @file Representations/MotionControl/GetUpEngineOutputLog.h
  * @author Philip Reichenberg
- * This representation has all information that will be logged from the representation getUpEngineOutput.h
  */
 
 #pragma once
 
-#include "Representations/Configuration/GetupMotion.h"
-#include "Representations/Infrastructure/JointRequest.h"
 #include "Tools/Math/Pose2f.h"
+#include "Tools/Motion/EngineState.h"
+#include "Tools/Motion/GetUpMotion.h"
+
+//First Vector value is x, second is y
+STREAMABLE(MotionLineInfoLog,
+{,
+  (Vector2f)(0.f, 0.f) comDif,
+  (Vector2f)(0.f, 0.f) balanceValue,
+});
+
+STREAMABLE(CurrentLineInfoLog,
+{,
+  (float)(0.f) ratio,
+  (EngineStates::EngineState) state,
+  (GetUpMotions::GetUpMotion) name,
+  (int)(0) lineCounter,
+  (int)(0) maxCounter,
+  (float)(0.f) framesTillEnd,
+  (bool)(false) isMirror,
+  (bool)(false) isInOptionalLine,
+});
 
 /**
- * @struct KickEngineOutput
- * A struct that represents the output of the walking engine.
+ * This Representation saves all important Values of GetUpEngineOutput
  */
 STREAMABLE(GetUpEngineOutputLog,
-{,
-  (int)(0) tryCounter,            /**< the number of unsuccessful tries */
-  (int)(0) lineCounter,
-  (GetUpMotions::GetUpMotion) name,
-  (bool)(false) criticalTriggered,
-  (bool)(false) optionalLine,
-  (float)(0.f) theBalanceFloatY,
-  (float)(0.f) theBalanceFloatX,
+{
+  void draw(),
+       (bool)(true) isLeavingPossible, /**< Is leaving the motion module possible now? */
+       (Pose2f) odometryOffset,
+       (int)(0) tryCounter,            /**< the number of unsuccessful tries */
+       (CurrentLineInfoLog) currentLine,
+       (MotionLineInfoLog) lineInfo,
+       (bool)(false) recoverArmLeftDone,
+       (bool)(false) recoverArmRightDone,
+       (bool)(false) recoverSideDone,
+       (bool)(false) failBack,
+       (bool)(false) failFront,
+       (bool)(false) errorTriggered,
+       (int)(0) waitTime,
 });

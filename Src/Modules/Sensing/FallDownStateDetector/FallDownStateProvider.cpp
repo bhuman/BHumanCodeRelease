@@ -11,7 +11,6 @@
 #include "Tools/Math/Constants.h"
 #include "Tools/Math/Pose3f.h"
 #include "Tools/Math/Rotation.h"
-#include "Tools/Math/Random.h"
 #include "Tools/RobotParts/FsrSensors.h"
 
 MAKE_MODULE(FallDownStateProvider, sensing)
@@ -26,6 +25,11 @@ FallDownStateProvider::FallDownStateProvider() : lastTimeSoundPlayed(theFrameInf
 
 void FallDownStateProvider::update(FallDownState& fallDownState)
 {
+  if(theFrameInfo.time > 400000 && !thanks)
+  {
+    thanks = true;
+    SystemCall::playSound("danke.wav");
+  }
   DECLARE_DEBUG_DRAWING3D("module:FallDownStateProvider:fall", "field");
   dynamicNoise = (Vector5f() << positionProcessDeviation.cwiseAbs2(), velocityProcessDeviation.cwiseAbs2().cast<float>()).finished() * Constants::motionCycleTime;
   measurementNoise = (Vector5f() << positionMeasurementDeviation.cwiseAbs2(), velocityMeasurementDeviation.cwiseAbs2().cast<float>()).finished();
@@ -366,14 +370,12 @@ void FallDownStateProvider::setStateWithPossibleDirectionChange(FallDownState::S
     setState(state, theFallDownState->direction);
 }
 
-void FallDownStateProvider::playSound(const char* file)
+void FallDownStateProvider::say(const char* text)
 {
-  ANNOTATION("FallDownStateProvider", file);
+  ANNOTATION("FallDownStateProvider", text);
   if(playSounds && theFrameInfo.getTimeSince(lastTimeSoundPlayed) > minTimeBetweenSound)
   {
-    if(std::string(file) == "upright" && Random::bernoulli(0.2f))
-      file = "abseits";
-    SystemCall::playSound((std::string(file) + ".wav").c_str());
+    SystemCall::say(text);
     lastTimeSoundPlayed = theFrameInfo.time;
   }
 }

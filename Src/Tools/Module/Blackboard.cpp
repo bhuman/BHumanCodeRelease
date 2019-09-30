@@ -1,6 +1,6 @@
 /**
  * The file implements a class that represents the blackboard containing all
- * representations used in a process.
+ * representations used in a thread.
  * @author Thomas Röfer
  */
 
@@ -10,7 +10,7 @@
 #include "Platform/SystemCall.h"
 #include <unordered_map>
 
-/** The instance of the blackboard of the current process. */
+/** The instance of the blackboard of the current thread. */
 static thread_local Blackboard* theInstance = nullptr;
 
 /** The actual type of the map for all entries. */

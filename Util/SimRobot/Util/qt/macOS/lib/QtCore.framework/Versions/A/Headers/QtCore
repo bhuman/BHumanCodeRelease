@@ -2,7 +2,9 @@
 #define QT_QTCORE_MODULE_H
 #include <QtCore/QtCoreDepends>
 #include "qglobal.h"
+#if QT_CONFIG(animation)
 #include "qabstractanimation.h"
+#endif
 #include "qabstracteventdispatcher.h"
 #if QT_CONFIG(itemmodel)
 #include "qabstractitemmodel.h"
@@ -18,7 +20,9 @@
 #include "qabstracttransition.h"
 #endif
 #include "qalgorithms.h"
+#if QT_CONFIG(animation)
 #include "qanimationgroup.h"
+#endif
 #include "qarraydata.h"
 #include "qarraydataops.h"
 #include "qarraydatapointer.h"
@@ -30,6 +34,11 @@
 #include "qbytearraylist.h"
 #include "qbytearraymatcher.h"
 #include "qcache.h"
+#include "qcborarray.h"
+#include "qcborcommon.h"
+#include "qcbormap.h"
+#include "qcborstream.h"
+#include "qcborvalue.h"
 #include "qchar.h"
 #include "qcollator.h"
 #if QT_CONFIG(commandlineparser)
@@ -65,7 +74,9 @@
 #include "qfiledevice.h"
 #include "qfileinfo.h"
 #include "qfileselector.h"
+#if QT_CONFIG(filesystemwatcher)
 #include "qfilesystemwatcher.h"
+#endif
 #if QT_CONFIG(statemachine)
 #include "qfinalstate.h"
 #endif
@@ -119,8 +130,12 @@
 #include "qmetaobject.h"
 #include "qmetatype.h"
 #include "qmimedata.h"
+#if QT_CONFIG(mimetype)
 #include "qmimedatabase.h"
+#endif
+#if QT_CONFIG(mimetype)
 #include "qmimetype.h"
+#endif
 #include "qmutex.h"
 #include "qnamespace.h"
 #include "qnumeric.h"
@@ -129,8 +144,12 @@
 #include "qobjectdefs.h"
 #include "qoperatingsystemversion.h"
 #include "qpair.h"
+#if QT_CONFIG(animation)
 #include "qparallelanimationgroup.h"
+#endif
+#if QT_CONFIG(animation)
 #include "qpauseanimation.h"
+#endif
 #include "qplugin.h"
 #include "qpluginloader.h"
 #include "qpoint.h"
@@ -139,7 +158,9 @@
 #include "qprocess.h"
 #endif
 #include "qprocessordetection.h"
+#if QT_CONFIG(animation)
 #include "qpropertyanimation.h"
+#endif
 #include "qqueue.h"
 #include "qrandom.h"
 #include "qreadwritelock.h"
@@ -157,10 +178,17 @@
 #include "qsavefile.h"
 #include "qscopedpointer.h"
 #include "qscopedvaluerollback.h"
+#include "qscopeguard.h"
+#if QT_CONFIG(thread)
 #include "qsemaphore.h"
+#endif
+#if QT_CONFIG(animation)
 #include "qsequentialanimationgroup.h"
+#endif
 #include "qset.h"
+#if QT_CONFIG(settings)
 #include "qsettings.h"
+#endif
 #include "qshareddata.h"
 #include "qsharedmemory.h"
 #include "qsharedpointer.h"
@@ -198,10 +226,14 @@
 #include "qtemporarydir.h"
 #include "qtemporaryfile.h"
 #include "qtextboundaryfinder.h"
+#if QT_CONFIG(textcodec)
 #include "qtextcodec.h"
+#endif
 #include "qtextstream.h"
 #include "qthread.h"
+#if QT_CONFIG(thread)
 #include "qthreadpool.h"
+#endif
 #include "qthreadstorage.h"
 #include "qtimeline.h"
 #include "qtimer.h"
@@ -215,7 +247,9 @@
 #include "qurlquery.h"
 #include "quuid.h"
 #include "qvariant.h"
+#if QT_CONFIG(animation)
 #include "qvariantanimation.h"
+#endif
 #include "qvarlengtharray.h"
 #include "qvector.h"
 #include "qversionnumber.h"

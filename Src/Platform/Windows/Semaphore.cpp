@@ -23,20 +23,20 @@ Semaphore::~Semaphore()
 
 void Semaphore::post()
 {
-  VERIFY(ReleaseSemaphore((HANDLE)handle, 1, 0));
+  VERIFY(ReleaseSemaphore(static_cast<HANDLE>(handle), 1, 0));
 }
 
 bool Semaphore::wait()
 {
-  return WaitForSingleObject((HANDLE)handle, INFINITE) == WAIT_OBJECT_0;
+  return WaitForSingleObject(static_cast<HANDLE>(handle), INFINITE) == WAIT_OBJECT_0;
 }
 
 bool Semaphore::wait(unsigned timeout)
 {
-  return WaitForSingleObject((HANDLE)handle, timeout) == WAIT_OBJECT_0;
+  return WaitForSingleObject(static_cast<HANDLE>(handle), timeout) == WAIT_OBJECT_0;
 }
 
 bool Semaphore::tryWait()
 {
-  return WaitForSingleObject((HANDLE)handle, 0) == WAIT_OBJECT_0;
+  return WaitForSingleObject(static_cast<HANDLE>(handle), 0) == WAIT_OBJECT_0;
 }

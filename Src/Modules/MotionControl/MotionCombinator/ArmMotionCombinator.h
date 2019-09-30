@@ -2,7 +2,7 @@
  * @file Modules/MotionControl/ArmMotionCombinator.h
  * This file declares a module that combines the arm motions created by the different modules.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
- * based on a module created by @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * based on a module created by @author Thomas Röfer
  */
 
 #pragma once
@@ -17,7 +17,9 @@
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/FallEngineOutput.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
+#include "Representations/MotionControl/PointAtEngineOutput.h"
 #include "Representations/MotionControl/SpecialActionsOutput.h"
+#include "Representations/MotionControl/SupersedeArmMotionEngineOutput.h"
 #include "Tools/Module/Module.h"
 
 MODULE(ArmMotionCombinator,
@@ -29,9 +31,11 @@ MODULE(ArmMotionCombinator,
   REQUIRES(KickEngineOutput),
   REQUIRES(FallEngineOutput),
   REQUIRES(LegMotionSelection),
+  REQUIRES(PointAtEngineOutput),
   REQUIRES(SpecialActionsOutput),
   REQUIRES(StandArmRequest),
   REQUIRES(StiffnessSettings),
+  REQUIRES(SupersedeArmMotionEngineOutput),
   REQUIRES(WalkingEngineOutput),
 
   PROVIDES(ArmJointRequest),

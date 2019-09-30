@@ -3,7 +3,7 @@
  *
  * This file declares the class ConsoleRoboCupCtrl.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -13,7 +13,6 @@
 #include <QString>
 
 #include "BHToolBar.h"
-#include "Statistics.h"
 #include "RoboCupCtrl.h"
 #include "RobotConsole.h"
 #include "Tools/Settings.h"
@@ -32,8 +31,7 @@ public:
   std::unordered_map<std::string, std::string> representationToFile;
   bool calculateImage = true; /**< Decides whether images are calculated by the simulator. */
   unsigned calculateImageFps; /**< Declares the simulated image framerate. */
-  unsigned globalNextImageTimeStamp = 0;  /**< The theoretical timestamp of the next image to be calculated shared among all robots to synchronize image calculation. */
-  Statistics statistics; /**< The Interface for statistics. */
+  unsigned globalNextImageTimestamp = 0;  /**< The theoretical timestamp of the next image to be calculated shared among all robots to synchronize image calculation. */
 
 private:
   SystemCall::Mode mode; /**< The mode of the robot currently constructed. */
@@ -49,8 +47,7 @@ private:
   Settings settings; /**< The current location. */
   const DebugRequestTable* debugRequestTable = nullptr; /**< Points to the debug request table used for tab-completion. */
   const ModuleInfo* moduleInfo = nullptr; /**< Points to the solution info used for tab-completion. */
-  const DrawingManager* drawingManager = nullptr; /**< Points to the drawing manager used for tab-completion. */
-  const DrawingManager3D* drawingManager3D = nullptr; /**< Points to the drawing manager used for tab-completion. */
+  const std::unordered_map<std::string, RobotConsole::ThreadData>* threadData = nullptr; /**< Thread data used for tab-completion. */
   const RobotConsole::Views* imageViews = nullptr; /**< Points to the map of image views used for tab-completion. */
   const RobotConsole::Views* fieldViews = nullptr; /**< Points to the map of field views used for tab-completion. */
   const RobotConsole::PlotViews* plotViews = nullptr; /**< Points to the map of plot views used for tab-completion. */
@@ -68,8 +65,8 @@ private:
 
 public:
   /**
-   * The function returns the mode in which the current robot process runs.
-   * @return The mode for the current process.
+   * The function returns the mode in which the current robot runs.
+   * @return The mode for the current robot.
    */
   SystemCall::Mode getMode() const;
 
@@ -169,16 +166,10 @@ public:
   void setModuleInfo(const ModuleInfo& moduleInfo) { this->moduleInfo = &moduleInfo; }
 
   /**
-   * The function sets the drawing manager used by the command completion.
-   * @param drawingManager The new drawing manager.
+   * The function sets the thread data used by the command completion.
+   * @param threadData The new thread data.
    */
-  void setDrawingManager(const DrawingManager& drawingManager) { this->drawingManager = &drawingManager; }
-
-  /**
-   * The function sets the drawing manager 3D used by the command completion.
-   * @param drawingManager3D The new drawing manager.
-   */
-  void setDrawingManager3D(const DrawingManager3D& drawingManager3D) { this->drawingManager3D = &drawingManager3D; }
+  void setThreadData(const std::unordered_map<std::string, RobotConsole::ThreadData>& threadData) { this->threadData = &threadData; }
 
   /**
    * The function sets the map of image views used by the command completion.
@@ -242,8 +233,8 @@ private:
    * @return Returns true if the parameters were correct.
    */
   bool startLogFile(In& stream);
-  
-   /**
+
+  /**
    * The function handles the console input for the "sml" command.
    * @param stream The stream containing the parameters of "sml".
    * @return Returns true if the parameters were correct.
@@ -271,8 +262,9 @@ private:
    * The function adds the tab-completion entries for a command followed by a file name.
    * @param command The command.
    * @param pattern The pattern for the files following the command. The pattern may include a path.
+   * @param removeExtension Remove the extensions of the file names.
    */
-  void addCompletionFiles(const std::string& command, const std::string& pattern);
+  void addCompletionFiles(const std::string& command, const std::string& pattern, bool removeExtension = true);
 
   /**
    * The function is called to initialize the module.

@@ -1,0 +1,11 @@
+mr IMUCalibration IMUCalibrator Motion
+
+mr StandArmRequest CalibrationStand Motion
+mr StandLegRequest CalibrationStand Motion
+set module:CalibrationStand:jointCalibrationMode true;
+mr WalkingEngineOutput default
+set representation:FilteredCurrent currents = { headYaw = 1; headPitch = 1; lShoulderPitch = 1; lShoulderRoll = 1; lElbowYaw = 1; lElbowRoll = 1; lWristYaw = 1; lHand = 1; rShoulderPitch = 1; rShoulderRoll = 1; rElbowYaw = 1; rElbowRoll = 1; rWristYaw = 1; rHand = 1; lHipYawPitch = 1; lHipRoll = 1; lHipPitch = 1; lKneePitch = 1; lAnklePitch = 1; lAnkleRoll = 1; rHipYawPitch = 1; rHipRoll = 1; rHipPitch = 1; rKneePitch = 1; rAnklePitch = 1; rAnkleRoll = 1; }; isValid = false; legMotorMalfunction = false;
+
+echo dr module:IMUCalibrator:standingUp
+echo dr module:IMUCalibrator:lyingDown
+echo save representation:IMUCalibration

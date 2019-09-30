@@ -235,10 +235,10 @@ double CameraModelOpenCV::rOfRPrime2Factor(double rPrime2) const
 {
   assert(rPrime2 >= 0);
   double lambda = rPrime2 / rPrime2Step;
-  int rIndex = (int) floor(lambda);
+  int rIndex = static_cast<int>(floor(lambda));
   lambda -= rIndex;
   assert(0 <= lambda && lambda <= 1);
-  if(rIndex + 1 >= (int) rOfRPrime2FactorTab.size())
+  if(rIndex + 1 >= static_cast<int>(rOfRPrime2FactorTab.size()))
     return numeric_limits<float>::quiet_NaN();
   return (1 - lambda) * rOfRPrime2FactorTab[rIndex] + lambda * rOfRPrime2FactorTab[rIndex + 1];
 }

@@ -105,9 +105,9 @@ void Simulation::doSimulationStep()
 
   collisions = contactPoints = 0;
 
-  dSpaceCollide2((dGeomID)staticSpace, (dGeomID)movableSpace, this, (dNearCallback*)&staticCollisionWithSpaceCallback);
+  dSpaceCollide2(reinterpret_cast<dGeomID>(staticSpace), reinterpret_cast<dGeomID>(movableSpace), this, reinterpret_cast<dNearCallback*>(&staticCollisionWithSpaceCallback));
   if(scene->detectBodyCollisions)
-    dSpaceCollide(movableSpace, this, (dNearCallback*)&staticCollisionSpaceWithSpaceCallback);
+    dSpaceCollide(movableSpace, this, reinterpret_cast<dNearCallback*>(&staticCollisionSpaceWithSpaceCallback));
 
   if(scene->useQuickSolver && (simulationStep % scene->quickSolverSkip) == 0)
     dWorldQuickStep(physicalWorld, scene->stepLength);
@@ -122,14 +122,14 @@ void Simulation::staticCollisionWithSpaceCallback(Simulation* simulation, dGeomI
 {
   ASSERT(!dGeomIsSpace(geomId1));
   ASSERT(dGeomIsSpace(geomId2));
-  dSpaceCollide2(geomId1, geomId2, simulation, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geomId1, geomId2, simulation, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
 }
 
 void Simulation::staticCollisionSpaceWithSpaceCallback(Simulation* simulation, dGeomID geomId1, dGeomID geomId2)
 {
   ASSERT(dGeomIsSpace(geomId1));
   ASSERT(dGeomIsSpace(geomId2));
-  dSpaceCollide2(geomId1, geomId2, simulation, (dNearCallback*)&staticCollisionCallback);
+  dSpaceCollide2(geomId1, geomId2, simulation, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
 }
 
 void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1, dGeomID geomId2)
@@ -143,8 +143,8 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
     dBodyID bodyId2 = dGeomGetBody(geomId2);
     ASSERT(bodyId1 || bodyId2);
 
-    Body* body1 = bodyId1 ? (Body*)dBodyGetData(bodyId1) : 0;
-    Body* body2 = bodyId2 ? (Body*)dBodyGetData(bodyId2) : 0;
+    Body* body1 = bodyId1 ? static_cast<Body*>(dBodyGetData(bodyId1)) : 0;
+    Body* body2 = bodyId2 ? static_cast<Body*>(dBodyGetData(bodyId2)) : 0;
     ASSERT(!body1 || !body2 || body1->rootBody != body2->rootBody);
   }
 #endif
@@ -154,8 +154,8 @@ void Simulation::staticCollisionCallback(Simulation* simulation, dGeomID geomId1
   if(collisions <= 0)
     return;
 
-  Geometry* geometry1 = (Geometry*)dGeomGetData(geomId1);
-  Geometry* geometry2 = (Geometry*)dGeomGetData(geomId2);
+  Geometry* geometry1 = static_cast<Geometry*>(dGeomGetData(geomId1));
+  Geometry* geometry2 = static_cast<Geometry*>(dGeomGetData(geomId2));
 
   if(geometry1->collisionCallbacks && !geometry2->immaterial)
   {

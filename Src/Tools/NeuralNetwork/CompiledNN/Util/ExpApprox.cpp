@@ -17,15 +17,30 @@ namespace NeuralNetwork
   {
     namespace ExpApprox
     {
-      void apply(X86Assembler& a, const std::vector<X86Xmm>& values, const X86Xmm factor, const X86Xmm offset)
+      template<bool single, typename FactorType, typename OffsetType>
+      void apply(x86::Assembler& a, const std::vector<x86::Xmm>& values, const FactorType factor, const OffsetType offset)
       {
-        for(const X86Xmm& value : values)
-          a.mulps(value, factor);
-        for(const X86Xmm& value : values)
+        for(const x86::Xmm& value : values)
+        {
+          if(single)
+            a.mulss(value, factor);
+          else
+            a.mulps(value, factor);
+        }
+        for(const x86::Xmm& value : values)
           a.cvtps2dq(value, value);        // evil floating point bit level hacking
-        for(const X86Xmm& value : values)
+        for(const x86::Xmm& value : values)
           a.paddd(value, offset);          // what the fuck?
       }
+
+      template void apply<false>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Xmm factor, const x86::Xmm offset);
+      template void apply<true>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Xmm factor, const x86::Xmm offset);
+      template void apply<false>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Mem factor, const x86::Xmm offset);
+      template void apply<true>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Mem factor, const x86::Xmm offset);
+      template void apply<false>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Xmm factor, const x86::Mem offset);
+      template void apply<true>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Xmm factor, const x86::Mem offset);
+      template void apply<false>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Mem factor, const x86::Mem offset);
+      template void apply<true>(x86::Assembler& a, const std::vector<x86::Xmm>& values, const x86::Mem factor, const x86::Mem offset);
     }
   }
 }

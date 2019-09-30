@@ -1,37 +1,31 @@
 /**
- * @file Representations/BehaviorControl/Role.h
+ * @file Role.h
  *
- * Declaration of the representation of a robot's behavior role
+ * This file declares a representation of a player's role in the 2019 behavior.
  *
- * @author Tim Laue, Andreas Stolpmann
+ * @author Arne Hasselbring
  */
 
 #pragma once
 
-#include "RoleCheck.h"
+#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include <string>
 
-/**
- * @struct Role
- * Representation of a robot's behavior role
- */
-STREAMABLE(Role,
+STREAMABLE(Role, COMMA public BHumanMessageParticle<undefined>
 {
-  /** The different roles */
-  ENUM(RoleType,
-  {,
-    undefined,
-    none,
-  });
+  /**
+   * Returns a human readable description of this role.
+   * @return A description of the role.
+   */
+  std::string getName() const;
 
-  bool isGoalkeeper() const;
+  /** BHumanMessageParticle functions */
+  void operator>>(BHumanMessage& m) const override;
+  void operator<<(const BHumanMessage& m) override,
 
-  CHECK_OSCILLATION(role, RoleType, undefined, "Role", 5000)
-  /** Draws the current role next to the robot on the field view (in local robot coordinates) */
-  void draw() const,
-
-  /** Instance of role */
-  (RoleType)(undefined) role,
-  (RoleType)(undefined) lastRole,
+  (bool)(false) isGoalkeeper, /**< Whether I shall be the goalkeeper. */
+  (bool)(true) playBall, /**< Whether I shall play the ball. */
+  (int)(-1) supporterIndex, /**< My index in the supporter set (equivalent to the number of supporters behind me). */
+  (int)(0) numOfActiveSupporters, /**< The number of not penalized supporters (i.e. robots that have a supporterIndex >= 0). */
 });

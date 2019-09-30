@@ -31,3 +31,5 @@ STREAMABLE(ObstacleModel, COMMA public BHumanMessageParticle<idObstacleModel>
 
   (std::vector<Obstacle>) obstacles, /**< List of obstacles (position relative to own pose) */
 });
+
+STREAMABLE_WITH_BASE(ObstacleModel2, ObstacleModel, {,});

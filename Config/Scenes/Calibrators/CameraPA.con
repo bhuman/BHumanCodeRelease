@@ -1,0 +1,34 @@
+# Changing camera parameters takes time
+set parameters:CameraProvider maxWaitForImage = 2000; resetDelay = 4000;
+set parameters:PenaltyMarkPerceptor maxTableRadius = 2000; minTableHeight = 300; maxTableHeight = 600; spacing = 25; numOfRotations = 4; refineIterations = 3; refineStepSize = 2; minResponse = 0.3; maxNonWhiteRatio = 0.1; greenCheckRadiusRatios = [ 2, 2.5 ]; numberOfGreenChecks = 40; minAroundGreenRatio = 0.9; 
+set parameters:CNSRegionsProvider dontUseUpperImageButWholeLower = false; useBallRegionsForCNSRegions = false; usePrediction = true; sizeFactor = 1.7; predictedFactor = 1.3; blockSizeX = 32; blockSizeY = 32; searchFootHeightByHeight = 60; searchFootHeightByDepth = 60; robotExpectedWidth = 320; 
+set representation:FilteredCurrent currents = { headYaw = 1; headPitch = 1; lShoulderPitch = 1; lShoulderRoll = 1; lElbowYaw = 1; lElbowRoll = 1; lWristYaw = 1; lHand = 1; rShoulderPitch = 1; rShoulderRoll = 1; rElbowYaw = 1; rElbowRoll = 1; rWristYaw = 1; rHand = 1; lHipYawPitch = 1; lHipRoll = 1; lHipPitch = 1; lKneePitch = 1; lAnklePitch = 1; lAnkleRoll = 1; rHipYawPitch = 1; rHipRoll = 1; rHipPitch = 1; rKneePitch = 1; rAnklePitch = 1; rAnkleRoll = 1; }; isValid = false; legMotorMalfunction = false;
+set representation:HeadAngleRequest unchanged
+
+vid off
+vid all horizon
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+
+mr WalkingEngineOutput default
+mr CameraCalibration default
+mr BallPercept default
+mr ObstaclesFieldPercept default
+mr ObstaclesImagePercept default
+mr CameraCalibration ConfigurationDataProvider Cognition
+mr CameraCalibrationNext AutomaticCameraCalibratorPA Cognition
+mr HeadAngleRequest AutomaticCameraCalibratorPA Cognition
+mr CameraResolutionRequest AutomaticCameraCalibratorPA Cognition
+mr LEDRequest AutomaticCameraCalibratorPA Cognition
+
+vd parameters:AutomaticCameraCalibratorPA
+vd representation:CameraCalibration 
+
+echo
+echo dr module:AutomaticCameraCalibratorPA:start
+echo dr module:AutomaticCameraCalibratorPA:allowNextSample
+echo dr module:AutomaticCameraCalibratorPA:converg
+echo dr module:AutomaticCameraCalibratorPA:abort
+echo save representation:CameraCalibration
+echo mr HeadAngleRequest CameraControlEngine Cognition
+echo

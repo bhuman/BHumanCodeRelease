@@ -59,7 +59,7 @@ class JointWidget : public QWidget
 
 private:
   JointView& jointView;
-  unsigned lastUpdateTimeStamp = 0; /**< Timestamp of the last painted joint angles. */
+  unsigned lastUpdateTimestamp = 0; /**< Timestamp of the last painted joint angles. */
 
   QHeaderView* headerView;
 
@@ -68,8 +68,6 @@ private:
   int textOffset;
 
   QFont font;
-  QBrush altBrush;
-  QPen fontPen;
   QPen noPen;
   bool fillBackground;
 

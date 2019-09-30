@@ -12,8 +12,10 @@ find lib -name "*_debug" | xargs rm
 
 for i in lib/*/Versions/5; do
   cd $(dirname $i)
-  mv 5 A
-  ln -sf A Current
-  ln -s A 5
+  if [ ! -e A ]; then
+    mv 5 A
+    ln -sf A Current
+    ln -s A 5
+  fi
   cd ../../..
 done

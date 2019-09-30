@@ -45,7 +45,7 @@ void BSPLStandardMessage::serialize(In* in, Out* out)
   static_assert(SPL_STANDARD_MESSAGE_STRUCT_VERSION == 7, "Please adjust this file to the newer version.");
 
   std::string headerRef(header, sizeof(header));
-  STREAM(headerRef);// does not allow to change the header in any case, but makes it visble in a greate way
+  STREAM(headerRef);// does not allow to change the header in any case, but makes it visible in a great way
   STREAM(version);
   STREAM(playerNum);
   STREAM(teamNum);

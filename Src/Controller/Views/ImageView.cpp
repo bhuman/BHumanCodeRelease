@@ -3,7 +3,7 @@
  *
  * Implementation of class ImageView
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author Colin Graf
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  * @author Felix Thielke
@@ -18,12 +18,7 @@
 #include <QSettings>
 #include <QSignalMapper>
 #include <QMenu>
-#include <QProcess>
-#include <QTemporaryFile>
-#include <QMessageBox>
 #include <QFileDialog>
-#include <QThread>
-#include <QElapsedTimer>
 #include <QDir>
 #include <sstream>
 #include <iostream>
@@ -33,15 +28,13 @@
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/Visualization/PaintMethods.h"
-#include "Representations/Infrastructure/Image.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
 #include "Tools/ImageProcessing/YHS2SimpleConversion.h"
-#include "Tools/Math/Approx.h"
 
 #include "Tools/Math/Eigen.h"
 
-ImageView::ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, bool upperCam, float gain, float ddScale) :
-  upperCam(upperCam), fullName(fullName), icon(":/Icons/tag_green.png"), console(console),
+ImageView::ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, const std::string& threadIdentifier, float gain, float ddScale) :
+  threadIdentifier(threadIdentifier), fullName(fullName), icon(":/Icons/tag_green.png"), console(console),
   background(background), name(name), segmented(segmented),
   gain(gain), ddScale(ddScale)
 {}
@@ -62,7 +55,7 @@ ImageWidget::ImageWidget(ImageView& imageView) :
 
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(imageView.fullName);
-  zoom = (float)settings.value("Zoom", 1.).toDouble();
+  zoom = static_cast<float>(settings.value("Zoom", 1.).toDouble());
   offset = settings.value("Offset", QPointF()).toPoint();
   settings.endGroup();
 }
@@ -71,7 +64,7 @@ ImageWidget::~ImageWidget()
 {
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
   settings.beginGroup(imageView.fullName);
-  settings.setValue("Zoom", (double)zoom);
+  settings.setValue("Zoom", static_cast<double>(zoom));
   settings.setValue("Offset", offset);
   settings.endGroup();
 
@@ -95,7 +88,7 @@ void ImageWidget::paint(QPainter& painter)
   SYNC_WITH(imageView.console);
 
   const DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
+  RobotConsole::Images& currentImages = imageView.console.threadData[imageView.threadIdentifier].images;
   RobotConsole::Images::const_iterator i = currentImages.find(imageView.background);
 
   if(i != currentImages.end())
@@ -111,19 +104,19 @@ void ImageWidget::paint(QPainter& painter)
   }
 
   const QSize& size = painter.window().size();
-  float xScale = float(size.width()) / float(imageWidth);
-  float yScale = float(size.height()) / float(imageHeight);
+  const float xScale = float(size.width()) / float(imageWidth);
+  const float yScale = float(size.height()) / float(imageHeight);
   scale = xScale < yScale ? xScale : yScale;
   scale *= zoom;
-  float imageXOffset = (float(size.width()) - float(imageWidth) * scale) * 0.5f + float(offset.x()) * scale;
-  float imageYOffset = (float(size.height()) - float(imageHeight) * scale) * 0.5f + float(offset.y()) * scale;
+  const float imageXOffset = (float(size.width()) - float(imageWidth) * scale) * 0.5f + float(offset.x()) * scale;
+  const float imageYOffset = (float(size.height()) - float(imageHeight) * scale) * 0.5f + float(offset.y()) * scale;
 
   painter.setTransform(QTransform(scale, 0, 0, scale, imageXOffset, imageYOffset));
 
   if(image)
     paintImage(painter, *image);
   else
-    lastImageTimeStamp = 0;
+    lastImageTimestamp = 0;
 
   paintDrawings(painter);
 }
@@ -135,21 +128,12 @@ void ImageWidget::paintDrawings(QPainter& painter)
   const std::list<std::string>& drawings = imageView.console.imageViews[imageView.name];
   for(const std::string& drawing : drawings)
   {
-    auto& camDrawings = imageView.upperCam ? imageView.console.upperCamImageDrawings : imageView.console.lowerCamImageDrawings;
-    auto debugDrawing = camDrawings.find(drawing);
-    if(debugDrawing != camDrawings.end())
+    const DebugDrawing* debugDrawing = getDrawing(drawing);
+    if(debugDrawing)
     {
-      PaintMethods::paintDebugDrawing(painter, debugDrawing->second, baseTrans);
-      if(debugDrawing->second.timeStamp > lastDrawingsTimeStamp)
-        lastDrawingsTimeStamp = debugDrawing->second.timeStamp;
-    }
-    auto& motinoDrawings = imageView.console.motionImageDrawings;
-    debugDrawing = motinoDrawings.find(drawing);
-    if(debugDrawing != motinoDrawings.end())
-    {
-      PaintMethods::paintDebugDrawing(painter, debugDrawing->second, baseTrans);
-      if(debugDrawing->second.timeStamp > lastDrawingsTimeStamp)
-        lastDrawingsTimeStamp = debugDrawing->second.timeStamp;
+      PaintMethods::paintDebugDrawing(painter, *debugDrawing, baseTrans);
+      if(debugDrawing->timestamp > lastDrawingsTimestamp)
+        lastDrawingsTimestamp = debugDrawing->timestamp;
     }
   }
   painter.setTransform(baseTrans);
@@ -177,13 +161,13 @@ void ImageWidget::copyImage(const DebugImage& srcImage)
 
   if(imageView.gain != 1.f)
   {
-    unsigned* p = (unsigned*)imageData->scanLine(0);
+    unsigned* p = reinterpret_cast<unsigned*>(imageData->scanLine(0));
     float gain = imageView.gain;
     for(unsigned* pEnd = p + width * height; p < pEnd; ++p)
     {
-      int r = (int)(gain * (float)((*p >> 16) & 0xff));
-      int g = (int)(gain * (float)((*p >> 8) & 0xff));
-      int b = (int)(gain * (float)((*p) & 0xff));
+      int r = static_cast<int>(gain * static_cast<float>((*p >> 16) & 0xff));
+      int g = static_cast<int>(gain * static_cast<float>((*p >> 8) & 0xff));
+      int b = static_cast<int>(gain * static_cast<float>((*p) & 0xff));
 
       *p = (r < 0 ? 0 : r > 255 ? 255 : r) << 16 |
            (g < 0 ? 0 : g > 255 ? 255 : g) << 8 |
@@ -215,9 +199,9 @@ void ImageWidget::segmentImage(const DebugImage& srcImage)
   if(srcImage.type != PixelTypes::YUYV)
     return;
 
-  TImage<PixelTypes::ColoredPixel> colored(srcImage.width * 2, srcImage.height);
-  TImage<PixelTypes::GrayscaledPixel> grayPixel(0, 0);
-  TImage<PixelTypes::HuePixel> huePixel(0, 0);
+  Image<PixelTypes::ColoredPixel> colored(srcImage.width * 2, srcImage.height);
+  Image<PixelTypes::GrayscaledPixel> grayPixel(0, 0);
+  Image<PixelTypes::HuePixel> huePixel(0, 0);
   YHS2s::updateSSE<false, false, false>(srcImage.getView<PixelTypes::YUYVPixel>()[0], srcImage.width, srcImage.height, imageView.console.colorCalibration, grayPixel, colored, huePixel, grayPixel);
 
   imageView.console.debugImageConverter.convertToBGRA(DebugImage(colored), imageData->scanLine(0));
@@ -225,7 +209,7 @@ void ImageWidget::segmentImage(const DebugImage& srcImage)
 
 void ImageWidget::paintImage(QPainter& painter, const DebugImage& srcImage)
 {
-  if(srcImage.timeStamp != lastImageTimeStamp || imageView.segmented)
+  if(srcImage.timestamp != lastImageTimestamp || imageView.segmented)
   {
     if(srcImage.getImageWidth() > 1 && srcImage.height > 1)
     {
@@ -235,9 +219,9 @@ void ImageWidget::paintImage(QPainter& painter, const DebugImage& srcImage)
         copyImage(srcImage);
     }
 
-    lastImageTimeStamp = srcImage.timeStamp;
+    lastImageTimestamp = srcImage.timestamp;
     if(imageView.segmented)
-      lastColorTableTimeStamp = imageView.console.colorCalibrationTimeStamp;
+      lastColorTableTimestamp = imageView.console.colorCalibrationTimestamp;
   }
   else if(!imageData || imageWidth != imageData->width() || imageHeight != imageData->height())
   {
@@ -254,7 +238,7 @@ bool ImageWidget::needsRepaint() const
 {
   SYNC_WITH(imageView.console);
   DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
+  RobotConsole::Images& currentImages = imageView.console.threadData[imageView.threadIdentifier].images;
   RobotConsole::Images::const_iterator j = currentImages.find(imageView.background);
   if(j != currentImages.end())
     image = j->second.image;
@@ -264,26 +248,26 @@ bool ImageWidget::needsRepaint() const
     const std::list<std::string>& drawings(imageView.console.imageViews[imageView.name]);
     for(const std::string& drawing : drawings)
     {
-      const DebugDrawing& debugDrawing(imageView.upperCam ? imageView.console.upperCamImageDrawings[drawing] : imageView.console.lowerCamImageDrawings[drawing]);
-      if(debugDrawing.timeStamp > lastDrawingsTimeStamp)
+      const DebugDrawing* debugDrawing = getDrawing(drawing);
+      if(debugDrawing && debugDrawing->timestamp > lastDrawingsTimestamp)
         return true;
     }
-    return lastImageTimeStamp != 0;
+    return lastImageTimestamp != 0;
   }
   else
-    return image->timeStamp != lastImageTimeStamp ||
-           (imageView.segmented && imageView.console.colorCalibrationTimeStamp != lastColorTableTimeStamp);
+    return image->timestamp != lastImageTimestamp ||
+           (imageView.segmented && imageView.console.colorCalibrationTimestamp != lastColorTableTimestamp);
 }
 
 void ImageWidget::window2viewport(QPointF& point)
 {
   const QSize& size(this->size());
-  float xScale = float(size.width()) / float(imageWidth);
-  float yScale = float(size.height()) / float(imageHeight);
+  const float xScale = float(size.width()) / float(imageWidth);
+  const float yScale = float(size.height()) / float(imageHeight);
   float scale = xScale < yScale ? xScale : yScale;
   scale *= zoom;
-  float xOffset = (float(size.width()) - float(imageWidth) * scale) * 0.5f + float(offset.x()) * scale;
-  float yOffset = (float(size.height()) - float(imageHeight) * scale) * 0.5f + float(offset.y()) * scale;
+  const float xOffset = (float(size.width()) - float(imageWidth) * scale) * 0.5f + float(offset.x()) * scale;
+  const float yOffset = (float(size.height()) - float(imageHeight) * scale) * 0.5f + float(offset.y()) * scale;
   point = QPointF((point.x() - xOffset) / scale, (point.y() - yOffset) / scale);
 }
 
@@ -304,7 +288,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
   window2viewport(pos);
 
   DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
+  RobotConsole::Images& currentImages = imageView.console.threadData[imageView.threadIdentifier].images;
   RobotConsole::Images::const_iterator i = currentImages.find(imageView.background);
   if(i != currentImages.end())
     image = i->second.image;
@@ -315,15 +299,18 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
   Pose2f origin;
   for(const std::string& drawing : drawings)
   {
-    const DebugDrawing& debugDrawing(imageView.upperCam ? imageView.console.upperCamImageDrawings[drawing] : imageView.console.lowerCamImageDrawings[drawing]);
-    debugDrawing.updateOrigin(origin);
-    int x = static_cast<int>(pos.x());
-    int y = static_cast<int>(pos.y());
-    text = debugDrawing.getTip(x, y, origin);
-    pos.setX(x);
-    pos.setY(y);
-    if(text)
-      break;
+    const DebugDrawing* debugDrawing = getDrawing(drawing);
+    if(debugDrawing)
+    {
+      debugDrawing->updateOrigin(origin);
+      int x = static_cast<int>(pos.x());
+      int y = static_cast<int>(pos.y());
+      text = debugDrawing->getTip(x, y, origin);
+      pos.setX(x);
+      pos.setY(y);
+      if(text)
+        break;
+    }
   }
 
   if(text)
@@ -385,7 +372,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
         }
         break;
       case PixelTypes::Hue:
-        sprintf(tooltip, "Hue=%d", (int)image->getView<PixelTypes::HuePixel>()[static_cast<int>(pos.ry())][static_cast<int>(pos.rx())]);
+        sprintf(tooltip, "Hue=%d", static_cast<int>(image->getView<PixelTypes::HuePixel>()[static_cast<int>(pos.ry())][static_cast<int>(pos.rx())]));
         break;
       case PixelTypes::Edge2:
       {
@@ -436,11 +423,14 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* event)
     Pose2f origin;
     for(const std::string& drawing : drawings)
     {
-      const DebugDrawing& debugDrawing(imageView.upperCam ? imageView.console.upperCamImageDrawings[drawing] : imageView.console.lowerCamImageDrawings[drawing]);
-      debugDrawing.updateOrigin(origin);
-      action = debugDrawing.getSpot(static_cast<int>(pos.x()), static_cast<int>(pos.y()), origin);
-      if(action)
-        break;
+      const DebugDrawing* debugDrawing = getDrawing(drawing);
+      if(debugDrawing)
+      {
+        debugDrawing->updateOrigin(origin);
+        action = debugDrawing->getSpot(static_cast<int>(pos.x()), static_cast<int>(pos.y()), origin);
+        if(action)
+          break;
+      }
     }
     if(action)
       imageView.console.handleConsole(action);
@@ -466,7 +456,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* event)
             else if(token.id == 2)
               ss << v.y();
             else if(token.id == 3)
-              ss << (imageView.upperCam ? "upper" : "lower");
+              ss << (static_cast<char>(imageView.threadIdentifier[0] | 0x20) + imageView.threadIdentifier.substr(1));
             break;
         }
       }
@@ -538,7 +528,7 @@ bool ImageWidget::event(QEvent* event)
 #ifdef FIX_MACOS_PINCH_SCALE_RELATIVE_BUG
       pinch->setLastScaleFactor(1.f);
 #endif
-      zoom *= pinch->scaleFactor() / pinch->lastScaleFactor();
+      zoom *= static_cast<float>(pinch->scaleFactor() / pinch->lastScaleFactor());
       if(zoom > ZOOM_MAX_VALUE)
         zoom = ZOOM_MAX_VALUE;
       else if(zoom < ZOOM_MIN_VALUE)
@@ -561,7 +551,7 @@ void ImageWidget::wheelEvent(QWheelEvent* event)
   QPointF beforeZoom = mousePos;
   window2viewport(beforeZoom);
 
-  zoom += zoom * 0.1 * event->delta() / 120;
+  zoom += zoom * 0.1f * event->delta() / 120.f;
   if(zoom > ZOOM_MAX_VALUE)
     zoom = ZOOM_MAX_VALUE;
   else if(zoom < ZOOM_MIN_VALUE)
@@ -617,7 +607,7 @@ void ImageWidget::saveImg()
   SYNC_WITH(imageView.console);
 
   const DebugImage* image = nullptr;
-  RobotConsole::Images& currentImages = imageView.upperCam ? imageView.console.upperCamImages : imageView.console.lowerCamImages;
+  RobotConsole::Images& currentImages = imageView.console.threadData[imageView.threadIdentifier].images;
   RobotConsole::Images::const_iterator i = currentImages.find(imageView.background);
 
   if(i != currentImages.end())
@@ -634,4 +624,23 @@ void ImageWidget::saveImg()
     paintDrawings(painter);
     pixmap.save(fileName, "PNG");
   }
+}
+
+const DebugDrawing* ImageWidget::getDrawing(const std::string& name) const
+{
+  // First search for the thread belonging to this view
+  auto& data = imageView.console.threadData[imageView.threadIdentifier];
+  auto debugDrawing = data.imageDrawings.find(name);
+  if(debugDrawing != data.imageDrawings.end())
+    return &debugDrawing->second;
+
+  // If no drawing was found, try other threads
+  for(auto& pair : imageView.console.threadData)
+    if(pair.first != "Lower" && pair.first != "Upper")
+    {
+      auto debugDrawing = pair.second.imageDrawings.find(name);
+      if(debugDrawing != pair.second.imageDrawings.end())
+        return &debugDrawing->second;
+    }
+  return nullptr;
 }

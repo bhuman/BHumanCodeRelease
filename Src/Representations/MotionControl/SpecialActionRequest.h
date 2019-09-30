@@ -20,7 +20,6 @@ STREAMABLE(SpecialActionRequest,
   {,
     playDead,
     sitDown,
-    stand,
     standHigh,
     standHighLookUp,
     getUpEngineDummy, //used for debugging motion of getUpEngine

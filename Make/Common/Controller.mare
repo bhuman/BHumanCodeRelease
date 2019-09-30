@@ -51,8 +51,6 @@ Controller = cppStaticLibrary + {
     "$(srcDirRoot)/Controller/Views/DataView/PropertyEditorFactory.h"
     "$(srcDirRoot)/Controller/Views/DataView/PropertyManager.h"
     "$(srcDirRoot)/Controller/Views/DotView.h"
-    "$(srcDirRoot)/Controller/Views/Statistics/StatisticRobotView.h"
-    "$(srcDirRoot)/Controller/Views/Statistics/StatisticsPlotView.h"
     "$(srcDirRoot)/Controller/Views/ImageView.h"
     "$(srcDirRoot)/Controller/Views/JointView.h"
     "$(srcDirRoot)/Controller/Views/KickView/KickView.h"
@@ -69,13 +67,13 @@ Controller = cppStaticLibrary + {
   defines += {
     "QXT_STATIC"
     "TARGET_SIM"
-    "ASMJIT_EMBED"
+    "ASMJIT_STATIC"
     "ASMJIT_BUILD_X86"
-    "ASMJIT_DISABLE_BUILDER"
-    "ASMJIT_DISABLE_COMPILER"
-    "ASMJIT_DISABLE_LOGGING"
-    "ASMJIT_DISABLE_TEXT"
-    "ASMJIT_DISABLE_VALIDATION"
+    "ASMJIT_NO_BUILDER"
+    "ASMJIT_NO_COMPILER"
+    "ASMJIT_NO_LOGGING"
+    "ASMJIT_NO_TEXT"
+    "ASMJIT_NO_INST_API"
     if (host == "Win32") {
       "_CRT_SECURE_NO_DEPRECATE"
     }
@@ -91,7 +89,7 @@ Controller = cppStaticLibrary + {
     "$(utilDirRoot)/SimRobot/Src/SimRobotCore2"
     "$(utilDirRoot)/SimRobot/Src/SimRobotEditor"
     "$(utilDirRoot)/GameController/include"
-    "$(utilDirRoot)/libjpeg/src"
+    "$(utilDirRoot)/libjpeg/include"
     "$(utilDirRoot)/libqxt"
     "$(utilDirRoot)/qtpropertybrowser"
     "$(utilDirRoot)/snappy/include"
@@ -120,7 +118,6 @@ Controller = cppStaticLibrary + {
   cppFlags += {
     if (tool == "vcxproj") {
       "/Zm200"
-      "/wd4503"
       if (avx2 == "true" ) {
         "/arch:AVX2"
       } else {

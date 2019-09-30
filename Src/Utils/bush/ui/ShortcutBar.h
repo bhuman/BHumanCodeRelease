@@ -16,6 +16,7 @@ public:
   ShortcutBar(Console* console);
   QAction* addShortcut(const QString& name,
                        const QString& command);
+
 private slots:
   void actionTriggered();
 };

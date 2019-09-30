@@ -14,12 +14,6 @@
 class Directory
 {
 public:
-
-  /**
-   * Default constructor.
-   */
-  Directory();
-
   /**
    * Destructor.
    */
@@ -42,7 +36,7 @@ public:
 
 private:
 
-  void* dp; /**< Directory descriptor. */
+  void* dp = nullptr; /**< Directory descriptor. */
   std::string dirname; /**< The name of the directory. */
   std::string filepattern; /**< The pattern for file name matching (e.g. "*.dll"). */
 };

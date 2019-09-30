@@ -3,7 +3,7 @@
  * The file implements a model that states that the robot cannot have left its own
  * side since the last kick-off and how far it can have gotten along the field.
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once

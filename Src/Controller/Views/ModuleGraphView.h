@@ -1,7 +1,7 @@
 /**
  * @file Controller/Views/ModuleGraphView.h
- * Declaration of a class to represent a view displaying the module layout of the process.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * Declaration of a class to represent a view displaying the module layout of the thread.
+ * @author Thomas Röfer
  * @author Colin Graf
  */
 
@@ -15,7 +15,7 @@
 class RobotConsole;
 
 /**
- * A class to represent a view displaying the module layout of the process.
+ * A class to represent a view displaying the module layout of the thread.
  */
 class ModuleGraphViewObject : public DotViewObject
 {
@@ -23,17 +23,16 @@ public:
   /**
    * @param fullName The path to this view in the scene graph
    * @param console The console object.
-   * @param processIdentifier The identifier of the process the modules of which are displayed.
    * @param category The category of the modules of this view. If numOfCategories, show all categories.
    */
-  ModuleGraphViewObject(const QString& fullName, RobotConsole& console, char processIdentifier,
-                        ModuleBase::Category category = static_cast<ModuleBase::Category>(ModuleBase::numOfCategories));
+  ModuleGraphViewObject(const QString& fullName, RobotConsole& console,
+                        std::unordered_set<ModuleBase::Category> categories = {static_cast<ModuleBase::Category>(ModuleBase::numOfCategories)});
 
 private:
   RobotConsole& console; /**< A reference to the console object. */
-  char processIdentifier; /**< The name of the view. */
-  ModuleBase::Category category; /**< The category of the modules of this view. If numOfCategories, show all categories. */
-  unsigned lastModulInfoTimeStamp = 0; /**< Module Info timestamp when the image was created. */
+  std::string threadIdentifier; /**< The name of the view. */
+  std::unordered_set<ModuleBase::Category> categories; /**< The category of the modules of this view. If numOfCategories, show all categories. */
+  unsigned lastModulInfoTimestamp = 0; /**< Module Info timestamp when the image was created. */
 
   /**
    * The method replaces all ' ' by '_'.

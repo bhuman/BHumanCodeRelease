@@ -8,12 +8,13 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/Role.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Representations/Infrastructure/CognitionStateChanges.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/OwnSideModel.h"
@@ -39,7 +40,8 @@ MODULE(SideConfidenceProvider,
   REQUIRES(GameInfo),
   REQUIRES(RobotInfo),
   REQUIRES(WorldModelPrediction),
-  USES(Role),
+  USES(TeamBehaviorStatus),
+  REQUIRES(CognitionStateChanges),
   PROVIDES(SideConfidence),
   LOADS_PARAMETERS(
   {,
@@ -50,6 +52,7 @@ MODULE(SideConfidenceProvider,
     (int)   agreementTimeout,              /**< Time after which an agreement is removed from the list, if it has not been updated */
     (float) maxBallAgreementDistance,      /**< Between balls that are considerered to be "the same" should not be a distance larger than this */
     (bool)  deactivateGoalieFlipping,      /**< If true, goalie does not set the mirror flag */
+    (bool)  goalieIsAlwaysRight,           /**< If true, (dis)agreement of the goalie is always used to decide the confidence */
     (int)   minAgreementCount,             /**< Minimum number of required agreements for considering an agreemate */
     (int)   jumpRemovalTimeout,            /**< If a teammate has jumped recently (or I have jumped), agreements become deleted */
   }),
@@ -72,6 +75,7 @@ private:
   struct Agreemate
   {
     int number;
+    bool isGoalkeeper;
     unsigned timeOfLastAgreement;
     TeammateBallCompatibility ballCompatibility;
     int agreementCount;
@@ -79,6 +83,8 @@ private:
   };
 
   std::vector<Agreemate> agreemates;
+
+  unsigned timeWhenLastBallReplacingSetPlayStarted = 0; /** The last timestamp when a set play started in which a ball is replaced. */
 
   /**
    * Provides the sideConfidence

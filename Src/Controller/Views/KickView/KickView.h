@@ -65,8 +65,6 @@ private:
   QString fileName;
   std::vector<KickEngineParameters> undo, redo;
 
-  void writeParametersToFile(const std::string& name);
-
 signals:
   void undoAvailable(bool available);
   void redoAvailable(bool available);

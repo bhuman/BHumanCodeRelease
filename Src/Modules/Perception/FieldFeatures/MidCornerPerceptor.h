@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Representations/Communication/GameInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldFeatures/FieldRelations.h"
 #include "Representations/Perception/FieldFeatures/MidCorner.h"
+#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
+#include "Tools/Module/Module.h"
 
 MODULE(MidCornerPerceptor,
 {,
@@ -20,7 +20,7 @@ MODULE(MidCornerPerceptor,
   REQUIRES(IntersectionRelations),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLines),
-  REQUIRES(GameInfo),
+  USES(GameInfo),
   PROVIDES(MidCorner),
   DEFINES_PARAMETERS(
   {,

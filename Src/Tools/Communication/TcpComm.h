@@ -3,7 +3,7 @@
  *
  * Declaration of class TcpComm.
  *
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -33,9 +33,9 @@ private:
   sockaddr_in address; /**< The socket address. */
   int overallBytesSent = 0; /**< The overall number of bytes sent so far. */
   int overallBytesReceived = 0; /**< The overall number of bytes received so far. */
-  int maxPackageSendSize; /**< The maximum size of an outgoing package. If 0, this setting is ignored. */
-  int maxPackageReceiveSize; /**< The maximum size of an incoming package. If 0, this setting is ignored. */
-  bool wasConnected = false; /**< Whether a tranfer connection was established or not */
+  int maxPacketSendSize; /**< The maximum size of an outgoing packet. If 0, this setting is ignored. */
+  int maxPacketReceiveSize; /**< The maximum size of an incoming packet. If 0, this setting is ignored. */
+  bool wasConnected = false; /**< Whether a transfer connection was established or not */
 
   /**
    * The method checks whether the connection is available.
@@ -55,12 +55,12 @@ public:
    * @param ip The ip address of the communication partner. If 0, the port
    *           will be opened as server.
    * @param port The port over which will be communicated.
-   * @param maxPackageSendSize The maximum size of an outgoing package.
+   * @param maxPacketSendSize The maximum size of an outgoing packet.
    *                           If 0, this setting is ignored.
-   * @param maxPackageReceiveSize The maximum size of an incouming package.
+   * @param maxPacketReceiveSize The maximum size of an incoming packet.
    *                              If 0, this setting is ignored.
    */
-  TcpComm(const char* ip, int port, int maxPackageSendSize = 0, int maxPackageReceiveSize = 0);
+  TcpComm(const char* ip, int port, int maxPacketSendSize = 0, int maxPacketReceiveSize = 0);
 
   ~TcpComm();
 

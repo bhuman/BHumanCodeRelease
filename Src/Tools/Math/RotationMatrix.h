@@ -205,7 +205,7 @@ public:
    * Creates a RotationMatrix rotatied around the z, y and x components of the Vector3 (in this order!).
    * Equivalent to fromRotationZ(rotation.z).rotateY(rotation.y).rotateX(rotation.x);
    */
-  static RotationMatrix fromEulerAngles(const Vector3f rotation);
+  static RotationMatrix fromEulerAngles(const Vector3f& rotation);
 
 private:
   // The following is a hack in order to keep the kicks from the Kickengine working...

@@ -1,9 +1,9 @@
-#include "Platform/Thread.h"
 #include "Platform/BHAssert.h"
+#include "Platform/Thread.h"
 
 #include <pthread.h>
 
-static DECLARE_SYNC;
+thread_local Thread* Thread::instance = nullptr;
 
 void Thread::stop()
 {
@@ -26,6 +26,15 @@ void Thread::threadStart(const std::function<void()>& lambda)
   SYNC;
   running = false;
   terminated.post();
+}
+
+const std::string Thread::getCurrentThreadName()
+{
+  char cname[16];
+  VERIFY(!pthread_getname_np(pthread_self(), cname, 16));
+  std::string name(cname);
+  demangleThreadName(name);
+  return name;
 }
 
 void Thread::changePriority()

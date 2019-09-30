@@ -35,8 +35,8 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
     else
       hip2Target = theTorsoMatrix.inverse() * theHeadMotionRequest.target;
 
-    calculatePanTiltAngles(hip2Target, false, panTiltUpperCam);
-    calculatePanTiltAngles(hip2Target, true, panTiltLowerCam);
+    calculatePanTiltAngles(hip2Target, CameraInfo::upper, panTiltUpperCam);
+    calculatePanTiltAngles(hip2Target, CameraInfo::lower, panTiltLowerCam);
 
     if(theHeadMotionRequest.cameraControlMode == HeadMotionRequest::autoCamera)
       panTiltLowerCam.y() = defaultTilt;
@@ -56,8 +56,8 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
   Rangea tiltBoundUpperCam = theHeadLimits.getTiltBound(panTiltUpperCam.x());
   Rangea tiltBoundLowerCam = theHeadLimits.getTiltBound(panTiltLowerCam.x());
 
-  adjustTiltBoundToShoulder(panTiltUpperCam.x(), false, tiltBoundUpperCam);
-  adjustTiltBoundToShoulder(panTiltLowerCam.x(), true, tiltBoundLowerCam);
+  adjustTiltBoundToShoulder(panTiltUpperCam.x(), CameraInfo::upper, tiltBoundUpperCam);
+  adjustTiltBoundToShoulder(panTiltLowerCam.x(), CameraInfo::lower, tiltBoundLowerCam);
 
   bool lowerCam = false;
   headAngleRequest.pan = panTiltUpperCam.x(); // Pan is the same for both cams
@@ -115,21 +115,21 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
   headAngleRequest.stopAndGoMode = theHeadMotionRequest.stopAndGoMode;
 }
 
-void CameraControlEngine::calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2a& panTilt) const
+void CameraControlEngine::calculatePanTiltAngles(const Vector3f& hip2Target, CameraInfo::Camera camera, Vector2a& panTilt) const
 {
-  InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, lowerCamera, panTilt, theCameraCalibration);
+  InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, camera, panTilt, theCameraCalibration);
 }
 
-void CameraControlEngine::adjustTiltBoundToShoulder(const Angle pan, const bool lowerCamera, Range<Angle>& tiltBound) const
+void CameraControlEngine::adjustTiltBoundToShoulder(const Angle pan, CameraInfo::Camera camera, Range<Angle>& tiltBound) const
 {
   Limbs::Limb shoulder = pan > 0_deg ? Limbs::shoulderLeft : Limbs::shoulderRight;
   const Vector3f& shoulderVector = theRobotModel.limbs[shoulder].translation;
-  RobotCameraMatrix rcm(theRobotDimensions, pan, 0.0f, theCameraCalibration, !lowerCamera);
+  RobotCameraMatrix rcm(theRobotDimensions, pan, 0.0f, theCameraCalibration, camera);
   Vector3f intersection = Vector3f::Zero();
   if(theHeadLimits.intersectionWithShoulderEdge(rcm, shoulderVector, intersection))
   {
     Vector2a intersectionPanTilt;
-    calculatePanTiltAngles(intersection, lowerCamera, intersectionPanTilt);
+    calculatePanTiltAngles(intersection, camera, intersectionPanTilt);
     if(intersectionPanTilt.y() < tiltBound.max) // if(tilt smaller than upper bound)
       tiltBound.max = intersectionPanTilt.y();
   }

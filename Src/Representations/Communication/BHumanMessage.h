@@ -12,6 +12,7 @@
 #include "BHumanTeamMessageParts/BSPLStandardMessage.h"
 #include "BHumanTeamMessageParts/BHumanStandardMessage.h"
 #include "BHumanTeamMessageParts/BHumanArbitraryMessage.h"
+#include "BHumanTeamMessageParts/MixedTeamHeader.h"
 
 /**
  * A representation of SPLStandardMessage a B-Human robot would send.
@@ -21,6 +22,7 @@ STREAMABLE(BHumanMessage,
   virtual unsigned toLocalTimestamp(unsigned remoteTimestamp) const { return 0u; },
 
   (BSPLStandardMessage) theBSPLStandardMessage,
+  (MixedTeamHeader) theMixedTeamHeader,
   (BHumanStandardMessage) theBHumanStandardMessage,
   (BHumanArbitraryMessage) theBHumanArbitraryMessage,
   (bool)(false) hasBHumanParts,

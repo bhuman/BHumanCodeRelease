@@ -1,14 +1,19 @@
 /**
  * @file FieldCoverage.h
- * @author Andreas Stolpmann
+ *
+ * Declaration to send information about the field coverage.
+ *
+ * @author Nicole Schrader
  */
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Eigen.h"
-#include <vector>
 #include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Representations/Infrastructure/FrameInfo.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Module/Blackboard.h"
+#include "Tools/Streams/AutoStreamable.h"
+#include <vector>
 
 STREAMABLE(FieldCoverage, COMMA public BHumanMessageParticle<idFieldCoverage>
 {
@@ -23,6 +28,5 @@ STREAMABLE(FieldCoverage, COMMA public BHumanMessageParticle<idFieldCoverage>
     (std::vector<unsigned>)() timestamps,
   }),
 
-  (int)(0) lineToSendNext,
-  (std::vector<GridLine>) lines,
+  (std::array<GridLine, 12>) lines,
 });

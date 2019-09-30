@@ -1,7 +1,7 @@
 /**
  * @file Tools/BNTP.cpp
  *
- * Representations and functions for time synchronisation inside
+ * Representations and functions for time synchronization inside
  * the team. Implementation of parts of the Network Time Protocol.
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
@@ -37,15 +37,25 @@ void BNTP::operator<<(const BHumanMessage& m)
 {
   ASSERT(m.hasBHumanParts);
 
-  const unsigned receiveTimeStamp = Time::getCurrentSystemTime();
+  const unsigned receiveTimestamp = Time::getCurrentSystemTime();
 
   if(m.theBHumanStandardMessage.requestsNTPMessage)
   {
-    BNTPRequest ntpRequest;
-    ntpRequest.sender = m.theBSPLStandardMessage.playerNum;
-    ntpRequest.origination = m.theBHumanStandardMessage.timestamp;
-    ntpRequest.receipt = receiveTimeStamp;
-    receivedNTPRequests.push_front(ntpRequest);
+    auto oldMessage = std::find_if(receivedNTPRequests.begin(), receivedNTPRequests.end(), [&m](const BNTPRequest& request){ return request.sender == m.theBSPLStandardMessage.playerNum; });
+    BNTPRequest* ntpRequest = nullptr;
+    if(oldMessage == receivedNTPRequests.end())
+    {
+      receivedNTPRequests.push_front(BNTPRequest());
+      ntpRequest = &receivedNTPRequests.front();
+    }
+    else if(oldMessage->origination < m.theBHumanStandardMessage.timestamp)
+      ntpRequest = &(*oldMessage);
+    if(ntpRequest)
+    {
+      ntpRequest->sender = m.theBSPLStandardMessage.playerNum;
+      ntpRequest->origination = m.theBHumanStandardMessage.timestamp;
+      ntpRequest->receipt = receiveTimestamp;
+    }
   }
 
   for(auto itr = m.theBHumanStandardMessage.ntpMessages.cbegin(); itr != m.theBHumanStandardMessage.ntpMessages.cend(); ++itr)
@@ -54,8 +64,8 @@ void BNTP::operator<<(const BHumanMessage& m)
     if(itr->receiver == theRobotInfo.number)
     {
       SynchronizationMeasurementsBuffer::SynchronizationMeasurement t;
-      t.roundTrip = int(receiveTimeStamp - itr->requestOrigination) - int(m.theBHumanStandardMessage.timestamp - itr->requestReceipt);
-      t.offset = int(itr->requestReceipt - itr->requestOrigination + m.theBHumanStandardMessage.timestamp - receiveTimeStamp) / 2;
+      t.roundTrip = int(receiveTimestamp - itr->requestOrigination) - int(m.theBHumanStandardMessage.timestamp - itr->requestReceipt);
+      t.offset = int(itr->requestReceipt - itr->requestOrigination + m.theBHumanStandardMessage.timestamp - receiveTimestamp) / 2;
       timeSyncBuffers[m.theBSPLStandardMessage.playerNum].add(t);
     }
   }

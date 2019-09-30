@@ -1,16 +1,19 @@
 # Changing camera parameters takes time
-set parameters:CameraProvider maxWaitForImage = 2000;
+set parameters:CameraProvider maxWaitForImage = 2000; resetDelay = 4000;
 
 vid upper horizon
-mr StandArmRequest CalibrationStand
-mr StandLegRequest CalibrationStand
+set representation:FilteredCurrent currents = { headYaw = 1; headPitch = 1; lShoulderPitch = 1; lShoulderRoll = 1; lElbowYaw = 1; lElbowRoll = 1; lWristYaw = 1; lHand = 1; rShoulderPitch = 1; rShoulderRoll = 1; rElbowYaw = 1; rElbowRoll = 1; rWristYaw = 1; rHand = 1; lHipYawPitch = 1; lHipRoll = 1; lHipPitch = 1; lKneePitch = 1; lAnklePitch = 1; lAnkleRoll = 1; rHipYawPitch = 1; rHipRoll = 1; rHipPitch = 1; rKneePitch = 1; rAnklePitch = 1; rAnkleRoll = 1; }; isValid = false; legMotorMalfunction = false;
+mr StandArmRequest CalibrationStand Motion
+mr StandLegRequest CalibrationStand Motion
 mr WalkingEngineOutput default
 set representation:HeadAngleRequest unchanged
 
-mr CameraCalibration CognitionConfigurationDataProvider
-mr CameraCalibrationNext AutomaticCameraCalibrator
-mr CameraResolutionRequest AutomaticCameraCalibrator
-mr HeadAngleRequest AutomaticCameraCalibrator
+mr CameraCalibration default
+mr CameraCalibration ConfigurationDataProvider Cognition
+mr CameraCalibrationNext AutomaticCameraCalibrator Cognition
+mr CameraResolutionRequest AutomaticCameraCalibrator Cognition
+mr HeadAngleRequest default
+mr HeadAngleRequest AutomaticCameraCalibrator Cognition
 
 vic lower ctrl noshift set module:AutomaticCameraCalibrator:insertionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:insertionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:insertPoint
 vic upper ctrl noshift set module:AutomaticCameraCalibrator:insertionCurrentCamera $3 \n set module:AutomaticCameraCalibrator:insertionPoint x = $1; y = $2; \n dr module:AutomaticCameraCalibrator:insertPoint
@@ -45,7 +48,4 @@ echo dr module:AutomaticCameraCalibrator:stop
 echo dr module:AutomaticCameraCalibrator:optimize
 echo save representation:CameraCalibration
 echo set representation:HeadAngleRequest unchanged
-echo
-echo Please check whether the body contour aligns with the feet in the lower image at a head pitch angle of 0.38 rad.
-echo Otherwise, calibrate the head angles!
 echo

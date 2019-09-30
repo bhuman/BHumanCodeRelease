@@ -14,7 +14,7 @@
 /**
  * Allows for the continuous modification of an object implementing a complete streaming
  * operator with macros from Tools/Streams/Streamable.h (or scalar).
- * @param id An identifier string of the object. Separate hirarchy levels by a single
+ * @param id An identifier string of the object. Separate hierarchy levels by a single
  *     colon ':', i.e. "cognition:ball percept". The value must be a string constant.
  * @param object The object to be modified.
  */
@@ -23,7 +23,7 @@
 /**
  * Allows for the one-time modification of an object implementing a complete streaming
  * operator with macros from Tools/Streams/Streamable.h (or scalar).
- * @param id An identifier string of the object. Separate hirarchy levels by a single
+ * @param id An identifier string of the object. Separate hierarchy levels by a single
  *     colon ':', i.e. "cognition:ball percept". The value must be a string constant.
  * @param object The object to be modified.
  */
@@ -41,7 +41,7 @@
 
 #else
 
-#define MODIFY(id, object) ((void) 0)
-#define MODIFY_ONCE(id, object) ((void) 0)
+#define MODIFY(id, object) static_cast<void>(0)
+#define MODIFY_ONCE(id, object) static_cast<void>(0)
 
 #endif

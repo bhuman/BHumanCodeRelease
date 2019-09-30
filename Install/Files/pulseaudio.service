@@ -1,0 +1,9 @@
+[Unit]
+Description=Sound Service
+Before=naoqi.service
+
+[Service]
+Type=simple
+ExecStart=/bin/true
+Restart=on-failure
+Slice=naoqi.slice

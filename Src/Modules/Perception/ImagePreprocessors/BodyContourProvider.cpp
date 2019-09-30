@@ -1,8 +1,8 @@
 /**
- * @file BodyContourProvider.h
+ * @file BodyContourProvider.cpp
  * This file implements a module that provides the contour of the robot's body in the image.
  * The contour can be used to exclude the robot's body from image processing.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #include "BodyContourProvider.h"
@@ -34,31 +34,21 @@ void BodyContourProvider::update(BodyContour& bodyContour)
   add(theRobotModel.limbs[Limbs::footRight], foot, -1, bodyContour);
 }
 
-void BodyContourProvider::add(const Pose3f& origin, const std::vector<Vector3f >& c, float sign,
+void BodyContourProvider::add(const Pose3f& origin, const std::vector<Vector3f>& c, float sign,
                               BodyContour& bodyContour)
 {
   Vector2i q1,
            q2;
   Vector3f p1 = origin * Vector3f(c[0].x(), c[0].y() * sign, c[0].z());
   bool valid1 = calculatePointInImage(p1, q1);
-  if(valid1)
-  {
-    Vector2f v = theImageCoordinateSystem.fromCorrected(q1);
-    q1 = Vector2i(int(floor(v.x())), int(floor(v.y())));
-  }
 
   for(unsigned i = 1; i < c.size(); ++i)
   {
     Vector3f p2 = origin * Vector3f(c[i].x(), c[i].y() * sign, c[i].z());
     bool valid2 = calculatePointInImage(p2, q2);
-    if(valid2)
-    {
-      Vector2f v = theImageCoordinateSystem.fromCorrected(q2);
-      q2 = Vector2i(int(floor(v.x())), int(floor(v.y())));
-    }
 
     if(valid1 && valid2 &&
-       (q1.y() < theCameraInfo.height || q2.y() < theCameraInfo.height) && // TODO: "Conditional jump or move depends on uninitialised value(s)"
+       (q1.y() < theCameraInfo.height || q2.y() < theCameraInfo.height) &&
        (q1.x() >= 0 || q2.x() >= 0) &&
        (q1.x() < theCameraInfo.width || q2.x() < theCameraInfo.width))
       bodyContour.lines.push_back(BodyContour::Line(q1, q2));
@@ -79,11 +69,11 @@ bool BodyContourProvider::calculatePointInImage(const Vector3f& pointInWorld, Ve
   Vector3f pointInCamera(robotCameraMatrixInverted * pointInWorld);
   if(pointInCamera.x() > 1.0f)
   {
-    pointInCamera *= theCameraInfo.focalLength / pointInCamera.x();
-    const Vector2f resultFloat(theCameraInfo.opticalCenter - Vector2f(pointInCamera.y(), pointInCamera.z()));
-    pointInImage.x() = (int)(resultFloat.x() + 0.5f);
-    pointInImage.y() = (int)(resultFloat.y() + 0.5f);
-    return true;
+    pointInCamera /= pointInCamera.x();
+    Vector2f corrected(theCameraInfo.opticalCenter - pointInCamera.tail<2>().cwiseProduct(Vector2f(theCameraInfo.focalLength, theCameraInfo.focalLengthHeight)));
+    pointInImage = theImageCoordinateSystem.fromCorrectedRobot(corrected).cast<int>();
+    return (pointInImage.x() >= 0 || corrected.x() < theCameraInfo.height)
+           && (pointInImage.x() < theCameraInfo.height || corrected.x() >= 0);
   }
   else
     return false;

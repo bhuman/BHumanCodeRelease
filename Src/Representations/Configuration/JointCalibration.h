@@ -1,7 +1,7 @@
 /**
  * @file JointCalibration.h
  * Declaration of a struct for representing the calibration values of joints.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once

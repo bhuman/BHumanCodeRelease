@@ -183,7 +183,7 @@ bool TeamPlayersLocator::isInsideOwnDetectionArea(const Vector2f& position, int 
 {
   //obstacles behind the robot are okay
   Vector2f point = ownTeam.at(robotNumber).inversePose * position;
-  distance = (point).squaredNorm();
+  distance = point.squaredNorm();
   return (theFrameInfo.getTimeSince(lastSeen) < obstacleAgeThreshold || point.x() > -2.f * Obstacle::getRobotDepth())
          && distance <= sqr(selfDetectionOnlyRadius);
 }

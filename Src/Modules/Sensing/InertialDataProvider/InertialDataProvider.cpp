@@ -3,6 +3,7 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Rotation.h"
+#include "Tools/Math/Eigen.h"
 
 #include <cmath>
 #include <sstream>
@@ -27,7 +28,10 @@ Vector3f InertialDataProvider::State::operator-(const State& other) const
 
 void InertialDataProvider::update(InertialData& inertialData)
 {
-  if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot)
+  bool ignoreAccUpdate = false;
+  MODIFY("module:InertialDataProvider:ignoreAccUpdate", ignoreAccUpdate);
+
+  if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.gyroIsStuck)
   {
     // This reinitializes the filter after a sudden orientation change in the simulation, e.g. when rotating the robot via commands
     if((lastRawAngle - theInertialSensorData.angle.head<2>()).norm() > pi / 3.f)
@@ -36,18 +40,28 @@ void InertialDataProvider::update(InertialData& inertialData)
       Rotation::splitOffZRotation(ukf.mean.orientation, zRot);
       ukf.init(State(zRot), Matrix3f::Zero());
     }
+    //This reinitializes the filter after the real robot lost the connection to its sensory (V6 head flex problem)
+    if(theGyroOffset.gyroIsStuck)
+    {
+      Quaternionf rot = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
+      ukf.init(State(rot), Matrix3f::Zero());
+    }
     lastRawAngle = theInertialSensorData.angle.head<2>();
   }
 
   const Quaternionf rotation(theIMUCalibration.rotation);
   inertialData.acc = rotation * theInertialSensorData.acc;
   inertialData.gyro = (rotation * theInertialSensorData.gyro.cast<float>()).cast<Angle>();
+  inertialData.gyro.x() *= theIMUCalibration.gyroFactor.x();
+  inertialData.gyro.y() *= theIMUCalibration.gyroFactor.y();
+  inertialData.gyro.z() *= theIMUCalibration.gyroFactor.z();
 
-  filterAcc(inertialData);
+  if(!ignoreAccUpdate)
+    filterAcc(inertialData);
 
   processGyroscope(inertialData.gyro);
 
-  if(theInertialSensorData.acc != lastAccelerometerMeasurement || !hadAccelerometerMeasurement)
+  if(!ignoreAccUpdate && (theInertialSensorData.acc != lastAccelerometerMeasurement || !hadAccelerometerMeasurement))
   {
     processAccelerometer(inertialData.acc);
     lastAccelerometerMeasurement = theInertialSensorData.acc;
@@ -69,7 +83,7 @@ void InertialDataProvider::update(InertialData& inertialData)
 
   inertialData.orientation2D = Rotation::removeZRotation(ukf.mean.orientation);
   inertialData.orientation3D = ukf.mean.orientation;
-  inertialData.angle << Rotation::AngleAxis::pack(AngleAxisf(inertialData.orientation2D)).head<2>().cast<Angle>() , 0_deg;
+  inertialData.angle << Rotation::AngleAxis::pack(AngleAxisf(inertialData.orientation2D)).head<2>().cast<Angle>(), 0_deg;
 
   const Vector3a angleAxisVec = Rotation::AngleAxis::pack(AngleAxisf(ukf.mean.orientation)).cast<Angle>();
   PLOT("module:InertialDataProvider:internalOrientation:x", angleAxisVec.x().toDegrees());
@@ -129,7 +143,7 @@ void InertialDataProvider::processGyroscope(const Vector3a& gyro)
 
 void InertialDataProvider::filterAcc(InertialData& id)
 {
-  auto dynamicModel = [](Vector3f& state){};
+  auto dynamicModel = [](Vector3f& state) {};
   auto measurementModel = [&](const Vector3f& state)
   {
     return state;

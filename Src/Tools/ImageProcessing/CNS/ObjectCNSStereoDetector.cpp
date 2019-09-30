@@ -29,8 +29,8 @@ void ObjectCNSStereoDetector::setSearchSpecification(const SearchSpecification& 
 void ObjectCNSStereoDetector::renderSearchSpace(Contour& ct, const CameraModelOpenCV& renderCamera, int onlyEvery) const
 {
   ct.clear();
-  assert(((int) camera.width) % spec.blockX == 0);
-  assert(((int) camera.height) % spec.blockY == 0);
+  assert(static_cast<int>(camera.width) % spec.blockX == 0);
+  assert(static_cast<int>(camera.height) % spec.blockY == 0);
   for(int y = 0; y < camera.height; y += onlyEvery * spec.blockY)
     for(int x = 0; x < camera.width; x += onlyEvery * spec.blockY)
       renderBlockAllPoses(ct, x, y, renderCamera, onlyEvery);
@@ -44,17 +44,17 @@ void ObjectCNSStereoDetector::search(IsometryWithResponses& object2WorldList,
   //cnsRight.assertBuffer(spec.blockY);
   IsometryWithResponses oldObject2WorldList = object2WorldList;
   object2WorldList.clear();
-  assert(((int) camera.width) % spec.blockX == 0);
-  assert(((int) camera.height) % spec.blockY == 0);
+  assert(static_cast<int>(camera.width) % spec.blockX == 0);
+  assert(static_cast<int>(camera.height) % spec.blockY == 0);
 
   if(xLo < 0)
     xLo = 0;
   if(xHi > camera.width - 1)
-    xHi = (int) camera.width - 1;
+    xHi = static_cast<int>(camera.width) - 1;
   if(yLo < 0)
     yLo = 0;
   if(yHi > camera.height - 1)
-    yHi = (int) camera.height - 1;
+    yHi = static_cast<int>(camera.height) - 1;
 
   // Global search
   assert((xHi - xLo + 1) % spec.blockX == 0);
@@ -68,7 +68,7 @@ void ObjectCNSStereoDetector::search(IsometryWithResponses& object2WorldList,
   // Refinement
   // TODO: Eliminate duplicates
   if(spec.nRefineIterations > 0)
-    for(int i = 0; i < (int) object2WorldList.size(); i++)
+    for(int i = 0; i < static_cast<int>(object2WorldList.size()); i++)
       refine(cns, object2WorldList[i], spec.nRefineIterations);
   if(!spec.refineExisting)
     object2WorldList.insert(object2WorldList.end(), oldObject2WorldList.begin(), oldObject2WorldList.end());
@@ -93,7 +93,7 @@ void ObjectCNSStereoDetector::renderBlockAllPoses(Contour& ct,
   {
     assert((object2WorldTranslation - p).dot(v) >= (minLambda - 1E-3)*v.squaredNorm());
 
-    for(int i = 0; i < (int) spec.object2WorldOrientation.size(); i++)
+    for(int i = 0; i < static_cast<int>(spec.object2WorldOrientation.size()); i++)
     {
       Eigen::Isometry3d object2World(spec.object2WorldOrientation[i]);
       object2World.translation() = object2WorldTranslation;
@@ -123,7 +123,7 @@ void ObjectCNSStereoDetector::searchBlockAllPoses(IsometryWithResponses& object2
   {
     assert((object2WorldTranslation - p).dot(v) >= (minLambda - 1E-3)*v.squaredNorm());
 
-    for(int i = 0; i < (int) spec.object2WorldOrientation.size(); i++)
+    for(int i = 0; i < static_cast<int>(spec.object2WorldOrientation.size()); i++)
     {
       Eigen::Isometry3d object2World(spec.object2WorldOrientation[i]);
       object2World.translation() = object2WorldTranslation;
@@ -148,7 +148,7 @@ void ObjectCNSStereoDetector::renderBlockFixedPose(Contour& ct,
   lr.rasterize(ctThis, object2WorldTry, renderCamera);
   Contour ctThis2;
   decode(ctThis2, ctThis);
-  for(int i = 0; i < (int) ctThis2.size(); i++)
+  for(int i = 0; i < static_cast<int>(ctThis2.size()); i++)
   {
     ct.push_back(ctThis2[i]);
     ct.back().x += ctThis2.referenceX - ct.referenceX;
@@ -162,7 +162,7 @@ bool ObjectCNSStereoDetector::searchBlockFixedPose(IsometryWithResponse& object2
 {
   int maxVal = 0, argMaxX = 0, argMaxY = 0;
   responseXYMax(maxVal, argMaxX, argMaxY, cns, object2WorldTry, spec.blockX, spec.blockY);
-  double maxF = LinearResponseMapping().finalBin2FinalFloat((short) maxVal);
+  double maxF = LinearResponseMapping().finalBin2FinalFloat(static_cast<short>(maxVal));
 
   if(maxF > object2World.response)
   {
@@ -292,7 +292,7 @@ bool ObjectCNSStereoDetector::subpixelMaximum(float& max, float argMax[3], const
   maximumUsingSSE2(maxI, argMaxI, 0, &response[0][0][0], 3 * 16 * 16);
   assert(maxI >= -0x7fff);
   // Subpixelinterpolate max
-  max         = (float) maxI;
+  max         = static_cast<float>(maxI);
   argMaxI2[0] = (argMaxI & 0xf);
   argMaxI2[1] = ((argMaxI >> 4) & 0xf);
   argMaxI2[2] = (argMaxI >> 8);
@@ -308,10 +308,10 @@ bool ObjectCNSStereoDetector::subpixelMaximum(float& max, float argMax[3], const
   }
   else
   {
-    max = (float) maxI;
-    argMax[0] = (float) argMaxI2[0];
-    argMax[1] = (float) argMaxI2[1];
-    argMax[2] = (float) argMaxI2[2];
+    max = static_cast<float>(maxI);
+    argMax[0] = static_cast<float>(argMaxI2[0]);
+    argMax[1] = static_cast<float>(argMaxI2[1]);
+    argMax[2] = static_cast<float>(argMaxI2[2]);
     isSubpixel = false;
   }
 
@@ -351,9 +351,9 @@ bool ObjectCNSStereoDetector::refine1DimensionFromResponses(signed short respons
   bool isSubpixel = subpixelMaximum(maxF, argMaxF, response);
 
   updateWithXYand1Dimension(object2World, argMaxF[0] - 8, argMaxF[1] - 8, (argMaxF[2] - 1)*stepInPixel, dimension);
-  object2World.response = std::max(0.f, LinearResponseMapping().finalBin2FinalFloat((short) maxF));
+  object2World.response = std::max(0.f, LinearResponseMapping().finalBin2FinalFloat(static_cast<short>(maxF)));
   // TODO: use a conversion derived from \c distribution
-  // This is defered to later because with sparse rasterization I am not sure how to normalize the response
+  // This is deferred to later because with sparse rasterization I am not sure how to normalize the response
 
   return isSubpixel;
 }
@@ -432,7 +432,7 @@ void ObjectCNSStereoDetector::rasteredConeOfOrientations(std::vector<Eigen::Isom
   Eigen::Isometry3d a2b0 = fromTo(Eigen::Vector3d::UnitZ(), az2b0);
   a2bList.clear();
 
-  int n = (int) ceil(delta / eps);
+  int n = static_cast<int>(ceil(delta / eps));
   for(int i = -n; i <= n; i++)
     for(int j = -n; j <= n; j++)
       if(i * i + j * j < (n + 1) * (n + 1))
@@ -448,11 +448,11 @@ void ObjectCNSStereoDetector::addToList(IsometryWithResponses& list, const Isome
   int idx = static_cast<int>(list.size() - 1);
   while(idx >= 0 && list[idx].response < newEntry.response) idx--;
   list.insert(list.begin() + (idx + 1), newEntry);
-  if((int) list.size() > maxLength)
+  if(static_cast<int>(list.size()) > maxLength)
     list.pop_back();
 #ifndef NDEBUG
-  for(int i = 0; i < (int) list.size() - 1; i++)
+  for(int i = 0; i < static_cast<int>(list.size()) - 1; i++)
     assert(list[i].response >= list[i + 1].response);
-  assert((int) list.size() <= maxLength);
+  assert(static_cast<int>(list.size()) <= maxLength);
 #endif
 }

@@ -11,7 +11,7 @@
 
 /**
  * @struct MotionInfo
- * The executed motion request and additional information about the motions which are executed by the Motion process.
+ * The executed motion request and additional information about the motions which are executed by the Motion thread.
  */
 STREAMABLE_WITH_BASE(MotionInfo, MotionRequest,
 {
@@ -22,16 +22,16 @@ STREAMABLE_WITH_BASE(MotionInfo, MotionRequest,
   {
     return motion == MotionRequest::stand ||
            (motion == MotionRequest::specialAction &&
-            (specialActionRequest.specialAction == SpecialActionRequest::stand || specialActionRequest.specialAction == SpecialActionRequest::standHigh));
+            specialActionRequest.specialAction == SpecialActionRequest::standHigh);
   }
-  
+
   /** Helper method to avoid long and faulty expressions in some modules
    * @return true, if the MotionInfo is about a motion that performs a kick
    */
   bool isKicking() const
   {
     return motion == MotionRequest::kick ||
-          (motion == MotionRequest::walk && walkRequest.walkKickRequest.kickType != WalkKicks::none);
+           (motion == MotionRequest::walk && walkRequest.walkKickRequest.kickType != WalkKicks::none);
   }
 
   void draw() const

@@ -9,6 +9,7 @@
 
 #include "InMessage.h"
 #include "MessageQueue.h"
+#include "Platform/BHAssert.h"
 
 bool InMessageQueue::exists() const
 {
@@ -82,4 +83,30 @@ void InMessage::resetReadPosition()
 const char* InMessage::getData() const
 {
   return queue.getData();
+}
+
+std::string InMessage::readThreadIdentifier()
+{
+  ASSERT(getMessageID() == idFrameBegin || getMessageID() == idFrameFinished);
+  std::string threadIdentifier;
+  if(queue.getMessageSize() == 1)
+  {
+    char c;
+    bin >> c;
+    switch(c)
+    {
+      case 'c':
+        threadIdentifier = "Upper";
+        break;
+      case 'd':
+        threadIdentifier = "Lower";
+        break;
+      case 'm':
+        threadIdentifier = "Motion";
+        break;
+    }
+  }
+  else
+    bin >> threadIdentifier;
+  return threadIdentifier;
 }

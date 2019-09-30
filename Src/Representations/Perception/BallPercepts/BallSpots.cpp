@@ -1,5 +1,5 @@
 /**
- * @file BallSpots.h
+ * @file BallSpots.cpp
  * Declaration of a struct that represents spots that might be an indication of a ball.
  * @author <a href="mailto:jworch@informatik.uni-bremen.de">Jan-Hendrik Worch</a>
  * @author <a href="mailto:ingsie@informatik.uni-bremen.de">Ingo Sieverdingbeck</a>
@@ -66,7 +66,7 @@ void BallSpots::draw() const
         // The actual drawing commands
         RECTANGLE("labeling:BallSpots", spot.x.min, spot.y.min, spot.x.max - 1, spot.y.max - 1, 1, Drawings::solidPen, ColorRGBA::green);
         SPOT("labeling:BallSpots", spot.x.min, spot.y.min, spot.x.max, spot.y.max, action.str()
-             << (SystemCall::getMode() == SystemCall::logfileReplay ? "\nlog forward image" : ""));
+             << (SystemCall::getMode() == SystemCall::logFileReplay ? "\nlog forward image" : ""));
       }
 
       // A separate drawing outside the upper right corner if no spot is the ball
@@ -77,7 +77,7 @@ void BallSpots::draw() const
                << (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower");
       RECTANGLE("labeling:BallSpots", theCameraInfo.width, 0, theCameraInfo.width * 11 / 10 - 1, theCameraInfo.width / 10 - 1, 1, Drawings::solidPen, ColorRGBA::red);
       SPOT("labeling:BallSpots", theCameraInfo.width, 0, theCameraInfo.width * 11 / 10, theCameraInfo.width / 10, action.str().c_str() + 1
-           << (SystemCall::getMode() == SystemCall::logfileReplay ? "\nlog forward image" : ""));
+           << (SystemCall::getMode() == SystemCall::logFileReplay ? "\nlog forward image" : ""));
     }
   }
 }

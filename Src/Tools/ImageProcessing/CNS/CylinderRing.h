@@ -26,13 +26,13 @@ public:
   CylinderRing() : cylinder2World(Eigen::Isometry3d::Identity()), rLow(0), rHigh(0),
     zLow(std::numeric_limits<double>::infinity()), zHigh(-std::numeric_limits<double>::infinity()) {};
 
-  //! CylinderRing componentwise defined
+  //! CylinderRing component-wise defined
   CylinderRing(const Eigen::Isometry3d& cylinder2World, double rLow, double rHigh, double zLow, double zHigh)
     : cylinder2World(cylinder2World), rLow(rLow), rHigh(rHigh), zLow(zLow), zHigh(zHigh)
   {}
 
   //! Returns whether \c p is in the cylinder ring
-  /*! This is the formal definition of the cylinderring volume. */
+  /*! This is the formal definition of the cylinder ring volume. */
   bool isInside(const Eigen::Vector3d& p) const
   {
     Eigen::Vector3d pCylinder = cylinder2World.inverse() * p;
@@ -40,7 +40,7 @@ public:
     return zLow <= pCylinder(2) && pCylinder(2) <= zHigh && r2 <= rHigh * rHigh && rLow * rLow <= r2;
   }
 
-  //! Returns the interval of lambda for which \c p+lambda*v is inside the cylinderring
+  //! Returns the interval of lambda for which \c p+lambda*v is inside the cylinder ring
   /*! \c p+lambda*v is interpreted as a ray, i.e. \c lambda>0. Sometimes the intersection
       can consist of two parts, in that case the interval-union of both is returned.
 

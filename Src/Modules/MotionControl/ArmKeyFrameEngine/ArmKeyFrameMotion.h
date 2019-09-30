@@ -5,7 +5,12 @@
  * a configuration file.
  * @author <a href="mailto:simont@tzi.de">Simon Taddiken</a>
  */
+
 #pragma once
+
+#include "Platform/BHAssert.h"
+#include "Representations/MotionControl/ArmKeyFrameRequest.h"
+#include "Tools/Math/Angle.h"
 
 STREAMABLE(ArmKeyFrameMotion,
 {

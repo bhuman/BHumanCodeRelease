@@ -37,6 +37,12 @@ option(Root)
     {
       UpdateRequest();
 
+      if(theWalkGenerator.forceStand)
+      {
+        speed = Pose2f();
+        walkMode = WalkGenerator::speedMode;
+      }
+
       bool stepStarted = theWalkGenerator.t == 0;
       theWalkGenerator.calcJoints(speed, target, walkMode, getKickFootOffset);
       jointRequest = theWalkGenerator.jointRequest;

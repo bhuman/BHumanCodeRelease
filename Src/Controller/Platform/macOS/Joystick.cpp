@@ -40,6 +40,15 @@ public:
    * @param context Address of the collection the value is added to.
    */
   static void copyCallBack(const void* value, void* context);
+
+  /**
+   * The function is a helper.
+   * It is called to create a dictionary to filter for certain devices.
+   * @param page The page value.
+   * @param usage The usage value.
+   * @return The dictionary requiring that both input values are met.
+   */
+  static CFDictionaryRef copyDevicesMask(const unsigned& page, const unsigned& usage);
 };
 
 const void* Joystick::Private::hidManager = nullptr;
@@ -63,23 +72,23 @@ Joystick::Private::~Private()
   {
     for(int i = 0; i < numOfAxes; ++i)
       if(axisIds[i])
-        CFRelease((IOHIDElementRef) axisIds[i]);
+        CFRelease(static_cast<IOHIDElementRef>(const_cast<void*>(axisIds[i])));
 
     for(int i = 0; i < numOfButtons; ++i)
       if(buttonIds[i])
-        CFRelease((IOHIDElementRef) buttonIds[i]);
+        CFRelease(static_cast<IOHIDElementRef>(const_cast<void*>(buttonIds[i])));
 
     if(hatId)
-      CFRelease((IOHIDElementRef) hatId);
+      CFRelease(static_cast<IOHIDElementRef>(const_cast<void*>(hatId)));
 
-    CFRelease((IOHIDDeviceRef) deviceId);
+    CFRelease(static_cast<IOHIDDeviceRef>(const_cast<void*>(deviceId)));
     --usedJoysticks;
   }
 
   if(hidManager && !usedJoysticks)
   {
-    IOHIDManagerClose((IOHIDManagerRef) hidManager, kIOHIDOptionsTypeNone);
-    CFRelease((IOHIDManagerRef) hidManager);
+    IOHIDManagerClose(static_cast<IOHIDManagerRef>(const_cast<void*>(hidManager)), kIOHIDOptionsTypeNone);
+    CFRelease(static_cast<IOHIDManagerRef>(const_cast<void*>(hidManager)));
     hidManager = nullptr;
   }
 }
@@ -93,87 +102,92 @@ bool Joystick::init()
   if(!p->hidManager)
   {
     VERIFY(p->hidManager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone));
-    IOHIDManagerSetDeviceMatching((IOHIDManagerRef) p->hidManager, 0);
-    IOHIDManagerOpen((IOHIDManagerRef) p->hidManager, kIOHIDOptionsTypeNone);
+    CFDictionaryRef maskArray[2];
+    maskArray[0] = Joystick::Private::copyDevicesMask(kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
+    maskArray[1] = Joystick::Private::copyDevicesMask(kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
+    CFArrayRef mask = CFArrayCreate(NULL, (const void**)maskArray, 2, NULL);
+    IOHIDManagerSetDeviceMatchingMultiple(static_cast<IOHIDManagerRef>(const_cast<void*>(p->hidManager)), mask);
+    CFRelease(mask);
+    CFRelease(maskArray[0]);
+    CFRelease(maskArray[1]);
+    IOHIDManagerOpen(static_cast<IOHIDManagerRef>(const_cast<void*>(p->hidManager)), kIOHIDOptionsTypeNone);
     p->nextDevice = 0;
   }
 
-  CFSetRef copyOfDevices = IOHIDManagerCopyDevices((IOHIDManagerRef) p->hidManager);
-  CFMutableArrayRef devArray = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-  CFSetApplyFunction(copyOfDevices, Joystick::Private::copyCallBack, (void*) devArray);
-  CFRelease(copyOfDevices);
-
-  while(!p->deviceId && p->nextDevice < (unsigned) CFArrayGetCount(devArray))
+  CFSetRef copyOfDevices = IOHIDManagerCopyDevices(static_cast<IOHIDManagerRef>(const_cast<void*>(p->hidManager)));
+  if(copyOfDevices)
   {
-    p->deviceId = CFArrayGetValueAtIndex(devArray, p->nextDevice++);
-    if(p->deviceId)
-    {
-      CFArrayRef elemAry = IOHIDDeviceCopyMatchingElements((IOHIDDeviceRef) p->deviceId, 0, 0);
-      bool isJoystick = false;
-      for(int i = 0; !isJoystick && i < (int) CFArrayGetCount(elemAry); ++i)
-      {
-        IOHIDElementRef elem = (IOHIDElementRef) CFArrayGetValueAtIndex(elemAry, i);
-        isJoystick = IOHIDElementGetUsagePage(elem) == kHIDPage_GenericDesktop &&
-                     (IOHIDElementGetUsage(elem) == kHIDUsage_GD_Joystick ||
-                      IOHIDElementGetUsage(elem) == kHIDUsage_GD_GamePad);
-      }
-      if(isJoystick)
-      {
-        CFRetain((IOHIDDeviceRef) p->deviceId);
-        ++(p->usedJoysticks);
-        for(int i = 0; i < (int) CFArrayGetCount(elemAry); ++i)
-        {
-          IOHIDElementRef elem = (IOHIDElementRef) CFArrayGetValueAtIndex(elemAry, i);
-          IOHIDElementType elemType = IOHIDElementGetType(elem);
+    CFMutableArrayRef devArray = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    CFSetApplyFunction(copyOfDevices, Joystick::Private::copyCallBack, static_cast<void*>(devArray));
+    CFRelease(copyOfDevices);
 
-          if(elemType == kIOHIDElementTypeInput_Misc ||
-             elemType == kIOHIDElementTypeInput_Button ||
-             elemType == kIOHIDElementTypeInput_Axis ||
-             elemType == kIOHIDElementTypeInput_ScanCodes)
+    while(!p->deviceId && p->nextDevice < static_cast<unsigned>(CFArrayGetCount(devArray)))
+    {
+      p->deviceId = CFArrayGetValueAtIndex(devArray, p->nextDevice++);
+      if(p->deviceId)
+      {
+        CFArrayRef elemAry = IOHIDDeviceCopyMatchingElements(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)), nullptr, kIOHIDOptionsTypeNone);
+        if(elemAry)
+        {
+          if(CFArrayGetCount(elemAry))
           {
-            if(IOHIDElementGetUsagePage(elem) == kHIDPage_GenericDesktop)
-              switch(IOHIDElementGetUsage(elem))
-              {
-                case kHIDUsage_GD_X:
-                case kHIDUsage_GD_Y:
-                case kHIDUsage_GD_Z:
-                case kHIDUsage_GD_Rx:
-                case kHIDUsage_GD_Ry:
-                case kHIDUsage_GD_Rz:
-                {
-                  CFRetain(elem);
-                  int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
-                  p->axisIds[axis] = elem;
-                  p->axisMin[axis] = (int) IOHIDElementGetLogicalMin(elem);
-                  p->axisMax[axis] = (int) IOHIDElementGetLogicalMax(elem);
-                  break;
-                }
-                case kHIDUsage_GD_Hatswitch:
-                  CFRetain(elem);
-                  p->hatId = elem;
-                  p->axisMin[6] = p->axisMin[7] = -1;
-                  p->axisMax[6] = p->axisMax[7] = 1;
-                  break;
-              }
-            else if(IOHIDElementGetUsagePage(elem) == kHIDPage_Button)
+            CFRetain(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)));
+            ++(p->usedJoysticks);
+            for(int i = 0; i < static_cast<int>(CFArrayGetCount(elemAry)); ++i)
             {
-              int button = IOHIDElementGetUsage(elem) - 1;
-              if(button >= 0 && button < numOfButtons)
+              IOHIDElementRef elem = static_cast<IOHIDElementRef>(const_cast<void*>(CFArrayGetValueAtIndex(elemAry, i)));
+              IOHIDElementType elemType = IOHIDElementGetType(elem);
+
+              if(elemType == kIOHIDElementTypeInput_Misc ||
+                 elemType == kIOHIDElementTypeInput_Button ||
+                 elemType == kIOHIDElementTypeInput_Axis ||
+                 elemType == kIOHIDElementTypeInput_ScanCodes)
               {
-                CFRetain(elem);
-                p->buttonIds[button] = elem;
+                if(IOHIDElementGetUsagePage(elem) == kHIDPage_GenericDesktop)
+                  switch(IOHIDElementGetUsage(elem))
+                  {
+                    case kHIDUsage_GD_X:
+                    case kHIDUsage_GD_Y:
+                    case kHIDUsage_GD_Z:
+                    case kHIDUsage_GD_Rx:
+                    case kHIDUsage_GD_Ry:
+                    case kHIDUsage_GD_Rz:
+                    {
+                      CFRetain(elem);
+                      int axis = IOHIDElementGetUsage(elem) - kHIDUsage_GD_X;
+                      p->axisIds[axis] = elem;
+                      p->axisMin[axis] = static_cast<int>(IOHIDElementGetLogicalMin(elem));
+                      p->axisMax[axis] = static_cast<int>(IOHIDElementGetLogicalMax(elem));
+                      break;
+                    }
+                    case kHIDUsage_GD_Hatswitch:
+                      CFRetain(elem);
+                      p->hatId = elem;
+                      p->axisMin[6] = p->axisMin[7] = -1;
+                      p->axisMax[6] = p->axisMax[7] = 1;
+                      break;
+                  }
+                else if(IOHIDElementGetUsagePage(elem) == kHIDPage_Button)
+                {
+                  int button = IOHIDElementGetUsage(elem) - 1;
+                  if(button >= 0 && button < numOfButtons)
+                  {
+                    CFRetain(elem);
+                    p->buttonIds[button] = elem;
+                  }
+                }
               }
             }
           }
+          else
+            p->deviceId = 0;
+          CFRelease(elemAry);
         }
       }
-      else
-        p->deviceId = 0;
-      CFRelease(elemAry);
     }
-  }
 
-  CFRelease(devArray);
+    CFRelease(devArray);
+  }
 
   return p->deviceId != 0;
 }
@@ -188,15 +202,17 @@ bool Joystick::update()
   for(int i = 0; i < numOfAxes; ++i)
     if(p->axisIds[i])
     {
-      IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->axisIds[i], &valueRef);
-      p->axisState[i] = (int) IOHIDValueGetIntegerValue(valueRef);
+      IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                          static_cast<IOHIDElementRef>(const_cast<void*>(p->axisIds[i])), &valueRef);
+      p->axisState[i] = static_cast<int>(IOHIDValueGetIntegerValue(valueRef));
     }
 
   unsigned newState = 0;
   for(int i = 0; i < numOfButtons; ++i)
     if(p->buttonIds[i])
     {
-      IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->buttonIds[i], &valueRef);
+      IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                          static_cast<IOHIDElementRef>(const_cast<void*>(p->buttonIds[i])), &valueRef);
       newState |= IOHIDValueGetIntegerValue(valueRef) ? 1 << i : 0;
     }
   p->buttonEvents[0] |= p->buttonState[0] ^ newState;
@@ -204,8 +220,9 @@ bool Joystick::update()
 
   if(p->hatId)
   {
-    IOHIDDeviceGetValue((IOHIDDeviceRef) p->deviceId, (IOHIDElementRef) p->hatId, &valueRef);
-    int dir = (int) IOHIDValueGetIntegerValue(valueRef);
+    IOHIDDeviceGetValue(static_cast<IOHIDDeviceRef>(const_cast<void*>(p->deviceId)),
+                        static_cast<IOHIDElementRef>(const_cast<void*>(p->hatId)), &valueRef);
+    int dir = static_cast<int>(IOHIDValueGetIntegerValue(valueRef));
     newState = !(dir & 8) ? 1 << dir : 0;
     p->buttonEvents[1] |= p->buttonState[1] ^ newState;
     p->buttonState[1] = newState;
@@ -275,5 +292,22 @@ bool Joystick::isButtonPressed(unsigned int buttonId) const
 
 void Joystick::Private::copyCallBack(const void* value, void* context)
 {
-  CFArrayAppendValue((CFMutableArrayRef) context, value);
+  CFArrayAppendValue(static_cast<CFMutableArrayRef>(context), value);
+}
+
+CFDictionaryRef Joystick::Private::copyDevicesMask(const unsigned& page, const unsigned& usage)
+{
+  CFMutableDictionaryRef dictionary = CFDictionaryCreateMutable(kCFAllocatorDefault, 2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+  // Add the page value.
+  CFNumberRef value = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
+  CFDictionarySetValue(dictionary, CFSTR(kIOHIDDeviceUsagePageKey), value);
+  CFRelease(value);
+
+  // Add the usage value (which is only valid if page value exists).
+  value = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &usage);
+  CFDictionarySetValue(dictionary, CFSTR(kIOHIDDeviceUsageKey), value);
+  CFRelease(value);
+
+  return dictionary;
 }

@@ -136,7 +136,8 @@ public:
     Spot() : Element(ElementType::spot) {}
   };
 
-  unsigned timeStamp; /**< The time when this drawing was created. */
+  unsigned timestamp; /**< The time when this drawing was created. */
+  std::string threadIdentifier; /**< The thread this drawing belongs to. */
 
   DebugDrawing();
   DebugDrawing(const DebugDrawing& other);
@@ -285,7 +286,7 @@ public:
    */
   const Element* getFirst() const
   {
-    return usedSize > 0 ? (const Element*)elements : 0;
+    return usedSize > 0 ? reinterpret_cast<const Element*>(elements) : 0;
   }
 
   /**

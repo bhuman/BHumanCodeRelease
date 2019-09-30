@@ -45,9 +45,6 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
     nextLineToCalculate = (nextLineToCalculate + 1) % numOfCellsY;
   }
 
-  if(theBHumanMessageOutputGenerator.sendThisFrame)
-    fieldCoverage.lineToSendNext = (fieldCoverage.lineToSendNext + 1) % fieldCoverage.lines.size();
-
   draw();
 }
 
@@ -90,7 +87,6 @@ void FieldCoverageProvider::init(FieldCoverage& fieldCoverage)
   const float cellLengthY = theFieldDimensions.yPosLeftSideline * 2 / numOfCellsY;
   const unsigned time = std::max(10000u, theFrameInfo.time);
 
-  fieldCoverage.lines.resize(numOfCellsY);
   for(size_t y = 0; y < fieldCoverage.lines.size(); ++y)
   {
     fieldCoverage.lines[y].y = static_cast<int>(y);

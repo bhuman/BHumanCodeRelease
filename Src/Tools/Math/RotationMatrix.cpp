@@ -160,7 +160,7 @@ RotationMatrix RotationMatrix::fromEulerAngles(const float x, const float y, con
   return Rotation::Euler::fromAngles(x, y, z);
 }
 
-RotationMatrix RotationMatrix::fromEulerAngles(const Vector3f rotation)
+RotationMatrix RotationMatrix::fromEulerAngles(const Vector3f& rotation)
 {
   return Rotation::Euler::fromAngles(rotation);
 }

@@ -3,7 +3,7 @@
  *
  * The file contains the definition of the class SampleSet and SampleSetProxy.
  *
- * @author <A href=mailto:roefer@tzi.de>Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -82,18 +82,18 @@ public:
    * Constant access operator.
    * @param index The index of the sample to access.
    */
-  const T& operator[](int index) const {return *(const T*)(data + index * sizeOfEntries);}
+  const T& operator[](int index) const {return *reinterpret_cast<const T*>(data + index * sizeOfEntries);}
 
   /**
    * Constant access to the second set (old set after swapping).
    * @param index The index of the sample to access.
    */
-  const T& getSampleFromOldSet(int index) const {return *(const T*)(dataOld + index * sizeOfEntries);}
+  const T& getSampleFromOldSet(int index) const {return *reinterpret_cast<const T*>(dataOld + index * sizeOfEntries);}
 };
 
 /**
  * @class SampleSet
- * A container for samples. Two independant sets are maintained.
+ * A container for samples. Two independent sets are maintained.
  * As the sample set can be used by different modules that require
  * a different number of samples, the size of the set can be changed
  * at runtime.
@@ -126,7 +126,7 @@ public:
    */
   void link(SampleSetProxyBase& sampleSetProxy) const
   {
-    sampleSetProxy.link((const char*)current, (const char*)other, num, sizeof(T));
+    sampleSetProxy.link(static_cast<const char*>(current), static_cast<const char*>(other), num, sizeof(T));
   }
 
   /**

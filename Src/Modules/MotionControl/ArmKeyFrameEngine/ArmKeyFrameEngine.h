@@ -1,20 +1,20 @@
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/ArmMotionSelection.h"
-#include "Representations/Infrastructure/JointAngles.h"
-#include "Representations/Infrastructure/RobotInfo.h"
-#include "Representations/Infrastructure/StiffnessData.h"
 #include "ArmKeyFrameMotion.h"
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/StiffnessData.h"
+#include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
+#include "Representations/MotionControl/ArmMotionSelection.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Tools/Module/Module.h"
 
 MODULE(ArmKeyFrameEngine,
 {,
   USES(MotionInfo),
   REQUIRES(ArmMotionSelection),
-  REQUIRES(RobotInfo),
   REQUIRES(JointAngles),
+  REQUIRES(RobotInfo),
   REQUIRES(StiffnessSettings),
   PROVIDES(ArmKeyFrameEngineOutput),
   LOADS_PARAMETERS(

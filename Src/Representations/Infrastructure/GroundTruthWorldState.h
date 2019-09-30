@@ -1,5 +1,5 @@
 /**
- * @file GroundTruthWorldModel.h
+ * @file GroundTruthWorldState.h
  *
  * The file declares a struct that contains the state of the world in the current simulation szene.
  *
@@ -18,6 +18,11 @@
  */
 STREAMABLE(GroundTruthWorldState,
 {
+  STREAMABLE(GroundTruthBall,
+  {,
+    (Vector3f) position,
+    (Vector3f) velocity,
+  });
   STREAMABLE(GroundTruthPlayer,
   {,
     (int) number,
@@ -27,6 +32,6 @@ STREAMABLE(GroundTruthWorldState,
 
   (std::vector<GroundTruthPlayer>) firstTeamPlayers,
   (std::vector<GroundTruthPlayer>) secondTeamPlayers,
-  (std::vector<Vector3f>) balls,
+  (std::vector<GroundTruthBall>) balls,
   (Pose2f) ownPose,
 });

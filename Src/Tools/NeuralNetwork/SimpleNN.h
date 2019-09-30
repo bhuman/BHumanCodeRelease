@@ -10,28 +10,33 @@
 
 #include "Tensor.h"
 #include "Model.h"
+#include <functional>
 #include <string>
+#include <vector>
 
 namespace NeuralNetwork
 {
   namespace SimpleNN
   {
-    /**
-     * Applies the net described by the given specification on the given tensor
-     * and returns the result. The input tensor may be modified in the process.
-     */
-    void apply(Tensor3& input, Tensor3& output, const Model& specification);
+    using NodeCallback = std::function<void(const Node&, const std::vector<const TensorXf*>&, const std::vector<TensorXf*>&)>;
 
     /**
-     * Applies a net consisting of only the given layer on the given tensor and
+     * Applies the net described by the given specification on the given tensors
+     * and returns the result. The input tensors may be modified in the process.
+     * Optionally, a callback is called after execution of each node.
+     */
+    void apply(std::vector<TensorXf>& input, std::vector<TensorXf>& output, const Model& specification, const NodeCallback& nodeCallback = NodeCallback());
+
+    /**
+     * Applies a net consisting of only the given node on the given tensors and
      * returns the result.
      */
-    void apply(const Tensor3& input, Tensor3& output, const Layer& layer);
+    void apply(const std::vector<TensorXf>& input, std::vector<TensorXf>& output, const Node& node);
 
     /**
-     * Applies the net from the given file on the given tensor and returns the
-     * result. The input tensor may be modified in the process.
+     * Applies the net from the given file on the given tensors and returns the
+     * result. The input tensors may be modified in the process.
      */
-    inline void apply(Tensor3& input, Tensor3& output, const std::string& filename) { return apply(input, output, Model(filename)); }
+    inline void apply(std::vector<TensorXf>& input, std::vector<TensorXf>& output, const std::string& filename) { return apply(input, output, Model(filename)); }
   };
 }

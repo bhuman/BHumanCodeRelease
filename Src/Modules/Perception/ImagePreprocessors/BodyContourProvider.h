@@ -2,7 +2,7 @@
  * @file BodyContourProvider.h
  * This file declares a module that provides the contour of the robot's body in the image.
  * The contour can be used to exclude the robot's body from image processing.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -65,5 +65,5 @@ private:
    *             body parts for right body parts.
    * @param bodyContour The 2-D contour in image coordinates the 3-D contour is added to.
    */
-  void add(const Pose3f& origin, const std::vector<Vector3f >& c, float sign, BodyContour& bodyContour);
+  void add(const Pose3f& origin, const std::vector<Vector3f>& c, float sign, BodyContour& bodyContour);
 };

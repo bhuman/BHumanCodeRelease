@@ -135,15 +135,15 @@ void MotionUtilities::stand(JointRequest& output)
   output.angles[Joints::lElbowYaw] = 0_deg;
   output.angles[Joints::lElbowRoll] = 0_deg;
   output.angles[Joints::rElbowRoll] = 0_deg;
-  output.angles[Joints::rWristYaw] = 0_deg;
-  output.angles[Joints::lWristYaw] = 0_deg;
+  output.angles[Joints::rWristYaw] = 90_deg;
+  output.angles[Joints::lWristYaw] = -90_deg;
 }
 
 void MotionUtilities::sit(JointRequest& output)
 {
   // Sit down to reduce the impact-force
-  output.angles[Joints::lKneePitch] = 180_deg;
-  output.angles[Joints::rKneePitch] = 180_deg;
+  output.angles[Joints::lKneePitch] = 123_deg;
+  output.angles[Joints::rKneePitch] = 123_deg;
   output.angles[Joints::lHipPitch] = -90_deg;
   output.angles[Joints::rHipPitch] = -90_deg;
   output.angles[Joints::lHipRoll] = 0_deg;

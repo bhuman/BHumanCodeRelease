@@ -5,3 +5,4 @@ vfd worldState goalFrame
 vfd worldState fieldPolygons
 vfd worldState representation:RobotPose
 vfd worldState representation:RobotPose:fieldOfView
+vfd worldState representation:FieldBall:global

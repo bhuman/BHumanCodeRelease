@@ -9,8 +9,8 @@ cd "$(dirname "$(which "$0")")"
 set -eu
 read -p 'Cable or WLAN (C/w): ' MODE
 TEAM=`grep <../../Config/settings.cfg "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%"`
-WIRED=`grep BASE_ETH0_IP= ../../Install/Network/wired | sed "s/[^=]*=.\([^%]*\).*/\1/"`
-WLAN=`grep BASE_WLAN0_IP= ../../Install/Network/wireless | sed "s/[^=]*=.\([^%]*\).*/\1/"`
+WIRED=`grep "%teamID%" ../../Install/Network/wired.service | sed "s/.*eth0 *\([^%]*\).*/\1/"`
+WLAN=`grep "%teamID%" ../../Install/Network/wireless.service | sed "s/.*eth0 *\([^%]*\).*/\1/"`
 if [ "$MODE" == "w" ]; then
   SUBNET=$WLAN$TEAM.
 else

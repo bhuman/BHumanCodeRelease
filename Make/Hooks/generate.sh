@@ -20,16 +20,16 @@ if [ "$('GIT' config hooks.generateProject)" = "true" ]
 then
   case "$OSTYPE" in
     "cygwin"|"msys")
-      if [ -f "${scriptPath}/../../Make/VS2017/generate.cmd" ]; then
-        pushd "${scriptPath}/../../Make/VS2017" >/dev/null
+      if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
+        pushd "${scriptPath}/../../Make/VS2019" >/dev/null
         ./generate
         popd >/dev/null
       fi
       ;;
     linux*)
       if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
-        if [ -f "${scriptPath}/../../Make/VS2017/generate.cmd" ]; then
-          pushd "${scriptPath}/../../Make/VS2017" >/dev/null
+        if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
+          pushd "${scriptPath}/../../Make/VS2019" >/dev/null
           ./generate
           popd >/dev/null
         fi

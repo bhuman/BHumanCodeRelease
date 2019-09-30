@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1000"
+   LastUpgradeVersion = "1100"
    version = "1.8">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2042274C1202418600B9944D"
+               BlueprintIdentifier = "17B00EB921567330009F9C29"
                BuildableName = "Deploy"
                BlueprintName = "Deploy"
                ReferencedContainer = "container:B-Human.xcodeproj">
@@ -27,19 +27,17 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.GDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
-      <Testables>
-      </Testables>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2042274C1202418600B9944D"
+            BlueprintIdentifier = "17B00EB921567330009F9C29"
             BuildableName = "Deploy"
             BlueprintName = "Deploy"
             ReferencedContainer = "container:B-Human.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <Testables>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Release"
@@ -56,14 +54,12 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2042274C1202418600B9944D"
+            BlueprintIdentifier = "17B00EB921567330009F9C29"
             BuildableName = "Deploy"
             BlueprintName = "Deploy"
             ReferencedContainer = "container:B-Human.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <AdditionalOptions>
-      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       displayScaleIsEnabled = "NO"
@@ -76,7 +72,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2042274C1202418600B9944D"
+            BlueprintIdentifier = "17B00EB921567330009F9C29"
             BuildableName = "Deploy"
             BlueprintName = "Deploy"
             ReferencedContainer = "container:B-Human.xcodeproj">

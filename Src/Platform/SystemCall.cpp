@@ -35,14 +35,14 @@ const char* SystemCall::getHostAddr()
   if(!hostaddr)
   {
     static char buf[100];
-    hostent* hostAddr = (hostent*)gethostbyname(getHostName());
+    hostent* hostAddr = static_cast<hostent*>(gethostbyname(getHostName()));
     if(hostAddr && *hostAddr->h_addr_list)
-      strcpy(buf, inet_ntoa(*(in_addr*)*hostAddr->h_addr_list));
+      strcpy(buf, inet_ntoa(*reinterpret_cast<in_addr*>(*hostAddr->h_addr_list)));
     else
     {
-      hostAddr = (hostent*)gethostbyname((std::string(getHostName()) + ".local").c_str());
+      hostAddr = static_cast<hostent*>(gethostbyname((std::string(getHostName()) + ".local").c_str()));
       if(hostAddr && *hostAddr->h_addr_list)
-        strcpy(buf, inet_ntoa(*(in_addr*)*hostAddr->h_addr_list));
+        strcpy(buf, inet_ntoa(*reinterpret_cast<in_addr*>(*hostAddr->h_addr_list)));
       else
         strcpy(buf, "127.0.0.1");
     }

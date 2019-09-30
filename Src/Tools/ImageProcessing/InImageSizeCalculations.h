@@ -59,7 +59,7 @@ namespace IISC
                                           const Angle greenEdge = 60_deg);
 
   /**
-   * Calcuates where a ball in-image would be, assuming the given start point is the lowest middle point of the ball that could be seen.
+   * Calculates where a ball in-image would be, assuming the given start point is the lowest middle point of the ball that could be seen.
    *
    * @param start, point in image
    * @param circle, result of the calculation (in-image/pixel)
@@ -69,12 +69,12 @@ namespace IISC
    * @param greenEdge (optional) The greenEdge of the ball (a line at the ball given by an angle offset to the point of ball-ground-intersection: we assume that the part of the ball under this line is not well visible in the image, because of low light conditions and reflecting ground/green)
    * @return false if the calculation failed
    */
-  bool calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle,
+  [[nodiscard]] bool calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry::Circle& circle,
       const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification,
-      const Angle greenEdge = 60_deg) WARN_UNUSED_RESULT;
+      const Angle greenEdge = 60_deg);
 
   /**
-   * Calculates the in-image-vetical size of an in-image-horizontal line with the given
+   * Calculates the in-image-vertical size of an in-image-horizontal line with the given
    * image point that is used as the lowest visible point.
    *
    * @param start, point in image (lowest visible line point)
@@ -120,15 +120,15 @@ namespace IISC
    * image point that is used as the lowest middle point that is seen.
    *
    * @param center, the in image lowest center point of the PM that is seen
-   * @param length, the calcuated in-image-horizontal-size (in pixel) of the PM in case of true
-   * @param height, the calcuated in-image-vertical-size (in pixel) of the PM in case of true
+   * @param length, the calculated in-image-horizontal-size (in pixel) of the PM in case of true
+   * @param height, the calculated in-image-vertical-size (in pixel) of the PM in case of true
    * @param theCameraInfo
    * @param theCameraMatrix
    * @param theFieldDimensions
    * @return false if the calculation failed
    */
-  bool calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height,
-      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions) WARN_UNUSED_RESULT;
+  [[nodiscard]] bool calculateImagePenaltyMeasurementsByCenter(const Vector2f& center, float& length, float& height,
+      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions);
 
   /**
    * Calculates the in-image-vertical in-image-size of the given on-field-diameter according to the given

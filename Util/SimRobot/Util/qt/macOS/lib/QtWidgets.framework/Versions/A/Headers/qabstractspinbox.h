@@ -127,6 +127,13 @@ public:
     virtual void fixup(QString &input) const;
 
     virtual void stepBy(int steps);
+
+    enum StepType {
+        DefaultStepType,
+        AdaptiveDecimalStepType
+    };
+    Q_ENUM(StepType)
+
 public Q_SLOTS:
     void stepUp();
     void stepDown();

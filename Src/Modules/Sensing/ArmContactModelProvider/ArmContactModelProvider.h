@@ -17,12 +17,12 @@
 
 #pragma once
 
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/ArmMotionSelection.h"
 #include "Representations/MotionControl/MotionInfo.h"
@@ -31,12 +31,12 @@
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Tools/RingBuffer.h"
-#include "Tools/RingBufferWithSum.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Pose2f.h"
 #include "Tools/Math/Pose3f.h"
 #include "Tools/Module/Module.h"
+#include "Tools/RingBuffer.h"
+#include "Tools/RingBufferWithSum.h"
 
 /** maximum numbers of frames to buffer */
 #define FRAME_BUFFER_SIZE 5

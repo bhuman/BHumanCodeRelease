@@ -65,7 +65,7 @@ void InText::readString(std::string& value, PhysicalInStream& stream)
 void InText::readData(void* p, size_t size, PhysicalInStream& stream)
 {
   for(size_t i = 0; i < size; ++i)
-    readChar(*((char*&)p)++, stream);
+    readChar(*reinterpret_cast<char*&>(p)++, stream);
 }
 
 bool InText::isWhitespace()

@@ -11,8 +11,12 @@ void FieldFeatureOverviewProvider::update(FieldFeatureOverview& fieldFeatureOver
 
   fieldFeatureOverview.combinedStatus.isValid = false;
   FOREACH_ENUM(FieldFeatureOverview::Feature, i)
-    if(((fieldFeatureOverview.statuses[i] = Pose2f(*fieldFeatures[i])).isValid = fieldFeatures[i]->isValid) && (fieldFeatureOverview.combinedStatus.isValid = true))
+    if((fieldFeatureOverview.statuses[i].isValid = fieldFeatures[i]->isValid) && (fieldFeatureOverview.combinedStatus.isValid = true))
+    {
+      // This does not overwrite isValid.
+      fieldFeatureOverview.statuses[i] = Pose2f(*fieldFeatures[i]);
       fieldFeatureOverview.combinedStatus.lastSeen = fieldFeatureOverview.statuses[i].lastSeen = theFrameInfo.time;
+    }
 
   fieldFeatureOverview.statuses[FieldFeatureOverview::outerCorner].isRightSided = theOuterCorner.isRightCorner;
 }

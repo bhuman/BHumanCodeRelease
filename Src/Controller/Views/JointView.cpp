@@ -35,10 +35,6 @@ JointWidget::JointWidget(JointView& jointView, QHeaderView* headerView, QWidget*
 
   font = QApplication::font();
 
-  const QPalette& pal(QApplication::palette());
-  altBrush = pal.alternateBase();
-  fontPen.setColor(pal.text().color());
-
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QSettings& settings = RoboCupCtrl::application->getLayoutSettings();
@@ -59,9 +55,9 @@ void JointWidget::update()
 {
   {
     SYNC_WITH(jointView.console);
-    if(jointView.jointSensorData.timestamp == lastUpdateTimeStamp)
+    if(jointView.jointSensorData.timestamp == lastUpdateTimestamp)
       return;
-    lastUpdateTimeStamp = jointView.jointSensorData.timestamp;
+    lastUpdateTimestamp = jointView.jointSensorData.timestamp;
   }
 
   QWidget::update();
@@ -76,8 +72,8 @@ void JointWidget::paintEvent(QPaintEvent* event)
 {
   painter.begin(this);
   painter.setFont(font);
-  painter.setBrush(altBrush);
-  painter.setPen(fontPen);
+  painter.setBrush(RoboCupCtrl::controller->getAlternateBackgroundColor());
+  painter.setPen(QApplication::palette().text().color());
   fillBackground = false;
 
   paintRect = painter.window();
@@ -98,17 +94,17 @@ void JointWidget::paintEvent(QPaintEvent* event)
         newSection();
       if(i == Joints::lHand || i == Joints::rHand)
       {
-        jointRequest.angles[i] == JointAngles::off ? (void)strcpy(request, "off") : (void)sprintf(request, "%.1f %%", static_cast<float>(jointRequest.angles[i] * 100));
-        jointSensorData.angles[i] == JointAngles::off ? (void)strcpy(sensor, "?") : (void)sprintf(sensor, "%.1f %%", static_cast<float>(jointSensorData.angles[i] * 100));
+        jointRequest.angles[i] == JointAngles::off ? static_cast<void>(strcpy(request, "off")) : static_cast<void>(sprintf(request, "%.1f %%", static_cast<float>(jointRequest.angles[i] * 100)));
+        jointSensorData.angles[i] == JointAngles::off ? static_cast<void>(strcpy(sensor, "?")) : static_cast<void>(sprintf(sensor, "%.1f %%", static_cast<float>(jointSensorData.angles[i] * 100)));
       }
       else
       {
-        jointRequest.angles[i] == JointAngles::off ? (void)strcpy(request, "off") : (void)sprintf(request, "%.1f°", jointRequest.angles[i].toDegrees());
-        jointSensorData.angles[i] == JointAngles::off ? (void)strcpy(sensor, "?") : (void)sprintf(sensor, "%.1f°", jointSensorData.angles[i].toDegrees());
+        jointRequest.angles[i] == JointAngles::off ? static_cast<void>(strcpy(request, "off")) : static_cast<void>(sprintf(request, "%.1f°", jointRequest.angles[i].toDegrees()));
+        jointSensorData.angles[i] == JointAngles::off ? static_cast<void>(strcpy(sensor, "?")) : static_cast<void>(sprintf(sensor, "%.1f°", jointSensorData.angles[i].toDegrees()));
       }
-      jointSensorData.currents[i] == SensorData::off ? (void)strcpy(load, "off") : (void)sprintf(load, "%d mA", jointSensorData.currents[i]);
-      jointSensorData.temperatures[i] == 0 ? (void)strcpy(temp, "off") : (void)sprintf(temp, "%d °C", jointSensorData.temperatures[i]);
-      jointRequest.stiffnessData.stiffnesses[i] == StiffnessData::useDefault ? (void)strcpy(stiffness, "?") : (void)sprintf(stiffness, "%d %%", jointRequest.stiffnessData.stiffnesses[i]);
+      jointSensorData.currents[i] == SensorData::off ? static_cast<void>(strcpy(load, "off")) : static_cast<void>(sprintf(load, "%d mA", jointSensorData.currents[i]));
+      jointSensorData.temperatures[i] == 0 ? static_cast<void>(strcpy(temp, "off")) : static_cast<void>(sprintf(temp, "%d °C", jointSensorData.temperatures[i]));
+      jointRequest.stiffnessData.stiffnesses[i] == StiffnessData::useDefault ? static_cast<void>(strcpy(stiffness, "?")) : static_cast<void>(sprintf(stiffness, "%d %%", jointRequest.stiffnessData.stiffnesses[i]));
       print(TypeRegistry::getEnumName(static_cast<Joints::Joint>(i)), request, sensor, load, temp, stiffness);
     }
   }
@@ -122,7 +118,7 @@ void JointWidget::print(const char* name, const char* value1, const char* value2
   {
     painter.setPen(noPen);
     painter.drawRect(paintRect.left(), paintRectField1.top(), paintRect.width(), paintRectField1.height());
-    painter.setPen(fontPen);
+    painter.setPen(QApplication::palette().text().color());
   }
   painter.drawText(paintRectField0, Qt::TextSingleLine | Qt::AlignVCenter, tr(name));
   painter.drawText(paintRectField1, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value1));

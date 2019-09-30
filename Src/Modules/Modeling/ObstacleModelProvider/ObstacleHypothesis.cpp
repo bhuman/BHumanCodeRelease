@@ -4,16 +4,12 @@
  */
 
 #include "ObstacleHypothesis.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Angle.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Covariance.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Obstacle.h"
 #include <algorithm>
-#include <limits>
-#include <set>
 
 using namespace impl;
 
@@ -84,8 +80,8 @@ void ObstacleHypothesis::measurement(const ObstacleHypothesis& measurement, cons
   Matrix2f K = CXZ * CZZ.inverse();
   Vector2f muX;
   muX << center;
-  muX.noalias() += K * (measurement.center - center);
-  covariance -= K * covariance;
+  muX.noalias() += K* (measurement.center - center);
+  covariance -= K* covariance;
 
   center << muX(0), muX(1);
 
@@ -174,7 +170,7 @@ bool ObstacleHypothesis::isInImage(Vector2f& centerInImage, const CameraInfo& th
 }
 
 //use the boundary spots to make sure the absence of an obstacle (boundary spots are at the edge from green to garbage)
-//the center of an obstacle is probably on a green scanline, so use the width of an obstacle and check if there are more
+//the center of an obstacle is probably on a green scan line, so use the width of an obstacle and check if there are more
 //points below the resulting line (obstacle left to right)
 bool ObstacleHypothesis::fieldBoundaryFurtherAsObstacle(const Vector2f& centerInImage, const unsigned notSeenThreshold,
                                                         const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix,

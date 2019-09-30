@@ -7,7 +7,7 @@
 # buttons 5+6: in-walk forward kick with left/right foot
 # buttons 9+10 -> forward kick with left/right foot
 
-js 6 -0.8 0.01 -0.32 # head tilt axis
+js 6 0.8 0.01 0.32 # head tilt axis
 js 3 1.7 0.01 # head pan axis
 
 js 2 1 0.01 # walk x axis

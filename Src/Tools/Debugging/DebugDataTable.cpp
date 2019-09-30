@@ -18,7 +18,7 @@ DebugDataTable::~DebugDataTable()
     delete[] iter->second;
 }
 
-void DebugDataTable::processChangeRequest(InMessage& in)
+void DebugDataTable::threadChangeRequest(InMessage& in)
 {
   std::string name;
   char change;

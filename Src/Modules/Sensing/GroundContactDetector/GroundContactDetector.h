@@ -1,8 +1,6 @@
 /**
  * @file GroundContactDetector.h
  * Declaration of a module that detects ground contact based on FSR measurements.
- * This changes the semantics of ground contact, because this module does not
- * care whether the robot is shaking heavily while there is still foot contact.
  * @author Thomas Röfer
  */
 

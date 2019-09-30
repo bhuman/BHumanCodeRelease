@@ -1,0 +1,21 @@
+# Adds a view to debug robot modeling
+vf robotModel
+vfd robotModel fieldLines
+vfd robotModel goalFrame
+#vfd robotModel fieldPolygons
+vfd robotModel representation:RobotPose
+vfd robotModel representation:RobotPose:fieldOfView
+vfd robotModel representation:FieldBall:global
+
+# ground truth view layers
+vfd robotModel representation:GroundTruthRobotPose
+
+# view relativ to origin
+vfd robotModel cognition:Reset
+vfd robotModel module:ObstacleModelProvider:maxDistance
+
+# views relative to robot
+# from now, relative to estimated robot pose
+vfd robotModel cognition:RobotPose
+vfd robotModel representation:ObstacleModel:circle
+#vfd robotModel representation:ObstacleModel:rectangle

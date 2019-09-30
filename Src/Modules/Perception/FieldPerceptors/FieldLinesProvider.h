@@ -5,32 +5,23 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Tools/Math/Eigen.h"
-#include <vector>
-
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-
 #include "Representations/Modeling/Odometer.h"
-
+#include "Representations/Perception/FieldFeatures/GoalFrame.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
+#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
-
-#include "Representations/Perception/FieldFeatures/GoalFrame.h"
-
-#include "Representations/Perception/FieldPercepts/FieldLines.h"
-#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Module/Module.h"
 
 MODULE(FieldLinesProvider,
 {,
-  USES(RobotPose),
-
   REQUIRES(BallSpecification),
   REQUIRES(FieldDimensions),
 

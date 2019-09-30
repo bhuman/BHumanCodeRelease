@@ -5,7 +5,7 @@ using namespace std;
 TriangleMesh::TriangleMesh(const std::vector<float>& vertices, const std::vector<int>& indices, bool isRotationalSymmetricZ, int extraColors) :
   isRotationalSymmetricZ(isRotationalSymmetricZ)
 {
-  extraColors += 1 - (int) vertices.size() / 3;
+  extraColors += 1 - static_cast<int>(vertices.size()) / 3;
   int currentColor = 0;
   for(unsigned i = 0; i < indices.size(); i += indices[i] < 0 ? 1 : 3)
   {
@@ -33,7 +33,7 @@ TriangleMesh::TriangleMesh(const std::vector<float>& vertices, const std::vector
 void TriangleMesh::computeContour(vector<Edge>& contourEdge, const Eigen::Vector3d& pointOfView) const
 {
   contourEdge.clear();
-  for(int i = 0; i < (int) edge.size(); i++)
+  for(int i = 0; i < static_cast<int>(edge.size()); i++)
   {
     const Edge& e = edge[i];
     const Face& face0 = face[e.face[0]];
@@ -54,14 +54,14 @@ void TriangleMesh::computeFrom(const vector<ExplicitFace>& face, bool isRotation
 {
   clear();
   this->isRotationalSymmetricZ = isRotationalSymmetricZ;
-  for(int i = 0; i < (int) face.size(); i++)
+  for(int i = 0; i < static_cast<int>(face.size()); i++)
     add(face[i], eps);
 }
 
 int TriangleMesh::indexOfVertex(const Eigen::Vector3d& v, double eps) const
 {
   double eps2 = eps * eps;
-  for(int i = 0; i < (int) vertex.size(); i++)
+  for(int i = 0; i < static_cast<int>(vertex.size()); i++)
     if((v - vertex[i]).squaredNorm() <= eps2)
       return i;
   return -1;
@@ -101,7 +101,7 @@ void TriangleMesh::addTriangleMesh(const TriangleMesh& other)
 
 int TriangleMesh::addEdge(int vertex0, int vertex1, int face)
 {
-  for(int i = 0; i < (int) edge.size(); i++)
+  for(int i = 0; i < static_cast<int>(edge.size()); i++)
   {
     Edge& e = edge[i];
     if(e.vertex[0] == vertex0 && e.vertex[1] == vertex1) // found the edge already
@@ -224,21 +224,21 @@ bool TriangleMesh::save(const char* filename) const
   if(fprintf(f, "isRotationalSymmetric= %d\n", isRotationalSymmetric) == 0)
     return false;
 
-  for(int i = 0; i < (int) vertex.size(); i++)
+  for(int i = 0; i < static_cast<int>(vertex.size()); i++)
     if(fprintf(f, "vertex+= %d %15.10e %15.10e %15.10e\n", i, vertex[i][0], vertex[i][1], vertex[i][2]) == 0)
       return false;
 
   if(fprintf(f, "\n") == 0)
     return false;
 
-  for(int i = 0; i < (int) edge.size(); i++)
+  for(int i = 0; i < static_cast<int>(edge.size()); i++)
     if(fprintf(f, "edge+= %d %d %d %d %d\n", i, edge[i].vertex[0], edge[i].vertex[1], edge[i].face[0], edge[i].face[1]) == 0)
       return false;
 
   if(fprintf(f, "\n") == 0)
     return false;
 
-  for(int i = 0; i < (int) face.size(); i++)
+  for(int i = 0; i < static_cast<int>(face.size()); i++)
     if(fprintf(f, "face+= %d %d %d %d %d\n", i, face[i].vertex[0], face[i].vertex[1], face[i].vertex[2], face[i].color) == 0)
       return false;
 
@@ -271,30 +271,30 @@ bool TriangleMesh::load(const char* filename)
     }
     else if(sscanf(s, "isRotationalSymmetricZ= %d", &tmp) == 1)
     {
-      isRotationalSymmetricZ  = (bool) tmp;
+      isRotationalSymmetricZ = static_cast<bool>(tmp);
     }
     else if(sscanf(s, "isRotationalSymmetric= %d", &tmp) == 1)
     {
-      isRotationalSymmetric  = (bool) tmp;
+      isRotationalSymmetric = static_cast<bool>(tmp);
     }
     else if(sscanf(s, "vertex+=%d %lf %lf %lf", &idx, &p[0], &p[1], &p[2]) == 4)
     {
       assert(idx >= 0);
-      if(idx >= (int) vertex.size())
+      if(idx >= static_cast<int>(vertex.size()))
         vertex.resize(idx + 1);
       vertex[idx] = p;
     }
     else if(sscanf(s, "edge+=%d %d %d %d %d", &idx, &e.vertex[0], &e.vertex[1], &e.face[0], &e.face[1]) == 5)
     {
       assert(idx >= 0);
-      if(idx >= (int) edge.size())
+      if(idx >= static_cast<int>(edge.size()))
         edge.resize(idx + 1);
       edge[idx] = e;
     }
     else if(sscanf(s, "face+=%d %d %d %d %d", &idx, &fc.vertex[0], &fc.vertex[1], &fc.vertex[2], &fc.color) == 5)
     {
       assert(idx >= 0);
-      if(idx >= (int) face.size())
+      if(idx >= static_cast<int>(face.size()))
         face.resize(idx + 1);
       face[idx] = fc;
     }
@@ -318,24 +318,24 @@ bool TriangleMesh::load(const char* filename)
 
 bool TriangleMesh::indicesValid() const
 {
-  for(int i = 0; i < (int) edge.size(); i++)
+  for(int i = 0; i < static_cast<int>(edge.size()); i++)
   {
-    if(edge[i].vertex[0] < 0 || edge[i].vertex[0] >= (int) vertex.size())
+    if(edge[i].vertex[0] < 0 || edge[i].vertex[0] >= static_cast<int>(vertex.size()))
       return false;
-    if(edge[i].vertex[1] < 0 || edge[i].vertex[1] >= (int) vertex.size())
+    if(edge[i].vertex[1] < 0 || edge[i].vertex[1] >= static_cast<int>(vertex.size()))
       return false;
-    if(edge[i].face  [0] < 0 || edge[i].face  [0] >= (int) face.size())
+    if(edge[i].face  [0] < 0 || edge[i].face  [0] >= static_cast<int>(face.size()))
       return false;
-    if(edge[i].face  [1] < 0 || edge[i].face  [1] >= (int) face.size())
+    if(edge[i].face  [1] < 0 || edge[i].face  [1] >= static_cast<int>(face.size()))
       return false;
   }
-  for(int i = 0; i < (int) face.size(); i++)
+  for(int i = 0; i < static_cast<int>(face.size()); i++)
   {
-    if(face[i].vertex[0] < 0 || face[i].vertex[0] >= (int) vertex.size())
+    if(face[i].vertex[0] < 0 || face[i].vertex[0] >= static_cast<int>(vertex.size()))
       return false;
-    if(face[i].vertex[1] < 0 || face[i].vertex[1] >= (int) vertex.size())
+    if(face[i].vertex[1] < 0 || face[i].vertex[1] >= static_cast<int>(vertex.size()))
       return false;
-    if(face[i].vertex[2] < 0 || face[i].vertex[2] >= (int) vertex.size())
+    if(face[i].vertex[2] < 0 || face[i].vertex[2] >= static_cast<int>(vertex.size()))
       return false;
   }
   return true;
@@ -343,7 +343,7 @@ bool TriangleMesh::indicesValid() const
 
 bool TriangleMesh::isComplete() const
 {
-  for(int i = 0; i < (int) edge.size(); i++)
+  for(int i = 0; i < static_cast<int>(edge.size()); i++)
   {
     if(edge[i].face[0] < 0 || edge[i].face[1] < 0)
     {

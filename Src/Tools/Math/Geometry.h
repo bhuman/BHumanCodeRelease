@@ -123,8 +123,8 @@ namespace Geometry
    */
   int getIntersectionOfLineAndCircle(const Line& line, const Circle& circle, Vector2f& firstIntersection, Vector2f& secondIntersection);
   bool checkIntersectionOfLines(const Vector2f& l1p1, const Vector2f& l1p2, const Vector2f& l2p1, const Vector2f& l2p2);
-  bool getIntersectionOfLines(const Line& line1, const Line& line2, Vector2f& intersection) WARN_UNUSED_RESULT;
-  bool getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, float& intersection) WARN_UNUSED_RESULT;
+  [[nodiscard]] bool getIntersectionOfLines(const Line& line1, const Line& line2, Vector2f& intersection);
+  [[nodiscard]] bool getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, float& intersection);
 
   float getDistanceToLine(const Line& line, const Vector2f& point);
   float getDistanceToEdge(const Line& line, const Vector2f& point);
@@ -132,13 +132,13 @@ namespace Geometry
   float distance(const Vector2f& point1, const Vector2f& point2);
   float distance(const Vector2i& point1, const Vector2i& point2);
 
-  bool isPointInsideRectangle(const Vector2f& bottomLeftCorner, const Vector2f& topRightCorner, const Vector2f& point) WARN_UNUSED_RESULT;
-  bool isPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, const Vector2i& point) WARN_UNUSED_RESULT;
-  bool isPointInsideRectangle2(const Vector2f& corner1, const Vector2f& corner2, const Vector2f& point);
-  bool isPointInsideConvexPolygon(const Vector2f polygon[], const int numberOfPoints, const Vector2f& point) WARN_UNUSED_RESULT;
-  bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V) WARN_UNUSED_RESULT;
-  bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2i& point) WARN_UNUSED_RESULT;
-  bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2f& point) WARN_UNUSED_RESULT;
+  [[nodiscard]] bool isPointInsideRectangle(const Vector2f& bottomLeftCorner, const Vector2f& topRightCorner, const Vector2f& point);
+  [[nodiscard]] bool isPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, const Vector2i& point);
+  [[nodiscard]] bool isPointInsideRectangle2(const Vector2f& corner1, const Vector2f& corner2, const Vector2f& point);
+  [[nodiscard]] bool isPointInsideConvexPolygon(const Vector2f polygon[], const int numberOfPoints, const Vector2f& point);
+  [[nodiscard]] bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V);
+  [[nodiscard]] bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2i& point);
+  [[nodiscard]] bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2f& point);
 
   /**
    * Clips a line with a rectangle
@@ -149,10 +149,10 @@ namespace Geometry
    * @param point2 The end point of the resulting line
    * @return states whether clipping was necessary (and done)
    */
-  bool getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLeft, const Vector2i& topRight,
-      const Geometry::Line& line, Vector2i& point1, Vector2i& point2) WARN_UNUSED_RESULT;
-  bool getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLeft, const Vector2f& topRight,
-      const Geometry::Line& line, Vector2f& point1, Vector2f& point2) WARN_UNUSED_RESULT;
+  [[nodiscard]] bool getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLeft, const Vector2i& topRight,
+                                                             const Geometry::Line& line, Vector2i& point1, Vector2i& point2);
+  [[nodiscard]] bool getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLeft, const Vector2f& topRight,
+                                                             const Geometry::Line& line, Vector2f& point1, Vector2f& point2);
 
   /**
    * Clips a line with the Cohen-Sutherland-Algorithm
@@ -163,8 +163,8 @@ namespace Geometry
    * @return states whether line exists after clipping
    * @see http://de.wikipedia.org/wiki/Algorithmus_von_Cohen-Sutherland
    */
-  bool clipLineWithRectangleCohenSutherland(const Vector2i& bottomLeft, const Vector2i& topRight,
-      Vector2i& point1, Vector2i& point2) WARN_UNUSED_RESULT;
+   [[nodiscard]] bool clipLineWithRectangleCohenSutherland(const Vector2i& bottomLeft, const Vector2i& topRight,
+                                                           Vector2i& point1, Vector2i& point2);
 
   /**
    * @param x1, y2, x2, y2, x3, y3 Points of the triangle

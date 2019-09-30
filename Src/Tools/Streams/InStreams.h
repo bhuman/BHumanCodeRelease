@@ -17,7 +17,7 @@ class File;
  * @class PhysicalInStream
  *
  * The base class for physical in streams. Derivates of PhysicalInStream only handle the
- * reading of data from a medium, not of formating data.
+ * reading of data from a medium, not of formatting data.
  */
 class PhysicalInStream
 {
@@ -54,7 +54,7 @@ public:
 /**
  * @class StreamReader
  *
- * Generic class for formated reading of data to be used in streams.
+ * Generic class for formatted reading of data to be used in streams.
  * The physical reading is then done by PhysicalOutStream derivates.
  */
 class StreamReader
@@ -178,7 +178,7 @@ protected:
 /**
  * @class InStream
  *
- * Generic class for classes that do both formated and physical reading of data from streams.
+ * Generic class for classes that do both formatted and physical reading of data from streams.
  */
 template<typename S, typename R> class InStream : public S, public R, public In
 {
@@ -235,7 +235,7 @@ protected:
   }
 
   /**
-   * Virtual redirection for operator>>(unsigend char& value).
+   * Virtual redirection for operator>>(unsigned char& value).
    */
   void inUChar(unsigned char& d) override
   {
@@ -251,7 +251,7 @@ protected:
   }
 
   /**
-   * Virtual redirection for operator>>(unsigend short& value).
+   * Virtual redirection for operator>>(unsigned short& value).
    */
   void inUShort(unsigned short& d) override
   {
@@ -267,7 +267,7 @@ protected:
   }
 
   /**
-   * Virtual redirection for operator>>(unsigend int& value).
+   * Virtual redirection for operator>>(unsigned int& value).
    */
   void inUInt(unsigned int& d) override
   {
@@ -319,7 +319,7 @@ protected:
 /**
  * @class InText
  *
- * Formated reading of text data to be used in streams.
+ * Formatted reading of text data to be used in streams.
  * The physical reading is done by PhysicalInStream derivates.
  */
 class InText : public StreamReader
@@ -562,7 +562,7 @@ private:
 /**
  * @class InBinary
  *
- * Formated reading of binary data to be used in streams.
+ * Formatted reading of binary data to be used in streams.
  * The physical reading is done by PhysicalInStream derivates.
  */
 class InBinary : public StreamReader
@@ -740,7 +740,7 @@ private:
 
 public:
   InFile() = default;
-  
+
   /** No copy constructor. */
   InFile(const InFile&) = delete;
 
@@ -748,7 +748,7 @@ public:
    * Move copy constructor.
    * @param other The stream the contents of which are moved to this one.
    */
-  InFile(InFile&& other) : stream(other.stream) {other.stream = nullptr;}
+  InFile(InFile&& other) noexcept : stream(other.stream) {other.stream = nullptr;}
 
   /** Destructor. */
   ~InFile();
@@ -956,7 +956,7 @@ public:
 /**
  * @class InConfigFile
  *
- * A config-file-style-formated text stream from a file.
+ * A config-file-style-formatted text stream from a file.
  */
 class InConfigFile : public InStream<InFile, InConfig>
 {
@@ -980,7 +980,7 @@ public:
 /**
  * @class InConfigMemory
  *
- * A config-file-style-formated text stream from a memory region.
+ * A config-file-style-formatted text stream from a memory region.
  */
 class InConfigMemory : public InStream<InMemory, InConfig>
 {
@@ -1094,12 +1094,12 @@ protected:
   void inChar(char& value) override;
 
   /**
-   * Virtual redirection for operator>>(unsigend char& value).
+   * Virtual redirection for operator>>(unsigned char& value).
    */
   void inSChar(signed char& value) override;
 
   /**
-   * Virtual redirection for operator>>(unsigend char& value).
+   * Virtual redirection for operator>>(unsigned char& value).
    */
   void inUChar(unsigned char& value) override;
 
@@ -1109,7 +1109,7 @@ protected:
   void inShort(short& value) override {in(value);}
 
   /**
-   * Virtual redirection for operator>>(unsigend short& value).
+   * Virtual redirection for operator>>(unsigned short& value).
    */
   void inUShort(unsigned short& value) override {in(value);}
 
@@ -1119,7 +1119,7 @@ protected:
   void inInt(int& value) override;
 
   /**
-   * Virtual redirection for operator>>(unsigend int& value).
+   * Virtual redirection for operator>>(unsigned int& value).
    */
   void inUInt(unsigned int& value) override;
 
@@ -1190,7 +1190,7 @@ public:
    */
   bool eof() const override {return (const SimpleMap::Value*) *map == 0;}
 
-  friend class DebugDataStreamer; // needs access to printError to report suppressable error message
+  friend class DebugDataStreamer; // needs access to printError to report suppressible error message
 };
 
 /**

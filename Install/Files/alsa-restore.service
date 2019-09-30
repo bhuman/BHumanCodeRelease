@@ -1,0 +1,12 @@
+[Unit]
+Description=Save/Restore ALSA State
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/sbin/alsactl restore
+ExecStop=-/usr/sbin/alsactl store
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

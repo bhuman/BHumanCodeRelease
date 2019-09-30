@@ -1,6 +1,6 @@
 /**
  * The file declares a class that represents the blackboard containing all
- * representations used in a process.
+ * representations used in a thread.
  * The file will be included by all modules and therefore avoids including
  * headers by itself.
  * @author Thomas Röfer
@@ -29,7 +29,7 @@ private:
   struct Entry
   {
     std::unique_ptr<Streamable> data; /**< The representation. */
-    int counter = 0; /**< How many modules requested its existance? */
+    int counter = 0; /**< How many modules requested its existence? */
     std::function<void(Streamable*)> reset;
   };
 
@@ -38,12 +38,12 @@ private:
   int version = 0; /**< A version that is increased with each configuration change. */
 
   /**
-   * Set the blackboard instance of a process.
-   * Only Process::setGlobals calls this method.
-   * @param instance The blackboard of this process.
+   * Set the blackboard instance of a thread.
+   * Only Thread::setGlobals calls this method.
+   * @param instance The blackboard of this thread.
    */
   static void setInstance(Blackboard& instance);
-  friend class Process;
+  friend class ThreadFrame; /**< A thread is allowed to set the instance. */
 
   /**
    * Retrieve the blackboard entry for the name of a representation.
@@ -57,13 +57,13 @@ private:
 public:
   /**
    * The default constructor creates the blackboard and sets it as
-   * the instance of this process.
+   * the instance of this thread.
    */
   Blackboard();
 
   /**
    * The destructor frees the blackboard and resets the instance of
-   * this process.
+   * this thread.
    */
   ~Blackboard();
 
@@ -90,10 +90,10 @@ public:
       entry.data = std::make_unique<T>();
       if(HasSerialize::test(dynamic_cast<T*>(&*entry.data)))
         entry.reset = [](Streamable* data)
-        {
-          dynamic_cast<T*>(data)->~T();
-          new (dynamic_cast<T*>(data)) T();
-        };
+      {
+        dynamic_cast<T*>(data)->~T();
+        new(dynamic_cast<T*>(data)) T();
+      };
       else
         entry.reset = [](Streamable* data) {};
       ++version;
@@ -135,8 +135,8 @@ public:
   int getVersion() const {return version;}
 
   /**
-   * Access the blackboard of this process.
-   * @return The instance that belongs to this process.
+   * Access the blackboard of this thread.
+   * @return The instance that belongs to this thread.
    */
   static Blackboard& getInstance();
 };

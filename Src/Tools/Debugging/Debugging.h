@@ -47,9 +47,9 @@
 #define DEBUG_RESPONSE(id) if(false)
 #define DEBUG_RESPONSE_ONCE(id) if(false)
 #define DEBUG_RESPONSE_NOT(id) if(true)
-#define DECLARE_DEBUG_RESPONSE(id) ((void) 0)
-#define OUTPUT(type, format, expression) ((void) 0)
-#define OUTPUT_TEXT(expression) ((void) 0)
+#define DECLARE_DEBUG_RESPONSE(id) static_cast<void>(0)
+#define OUTPUT(type, format, expression) static_cast<void>(0)
+#define OUTPUT_TEXT(expression) static_cast<void>(0)
 #else
 /**
  * A macro for sending debug messages.
@@ -60,7 +60,7 @@
  *
  * Examples:
  * <pre>
- * OUTPUT(idImage, bin, *pMyImage);
+ * OUTPUT(idCameraImage, bin, *pMyCameraImage);
  * OUTPUT_TEXT("MyObject:myFunction() invoked");
  * OUTPUT_TEXT("i: " << i << ", j:" << j);
  * </pre>
@@ -84,7 +84,7 @@
  * @param message A message streamable as text.
  */
 #ifdef NDEBUG
-#define OUTPUT_WARNING(message) ((void) 0)
+#define OUTPUT_WARNING(message) static_cast<void>(0)
 #else
 #define OUTPUT_WARNING(message) \
   do \

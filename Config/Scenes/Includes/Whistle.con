@@ -1,0 +1,23 @@
+dr annotation
+
+set representation:RawGameInfo packetNumber = 0; competitionPhase = 0; competitionType = 0; gamePhase = 0; state = 2; setPlay = 0; firstHalf = 1; kickingTeam = 1; dropInTeam = 0; dropInTime = 0; secsRemaining = 600; secondaryTime = 0; timeLastPacketReceived = 0;
+set representation:GameInfo packetNumber = 0; competitionPhase = 0; competitionType = 0; gamePhase = 0; state = 2; setPlay = 0; firstHalf = 1; kickingTeam = 1; dropInTeam = 0; dropInTime = 0; secsRemaining = 600; secondaryTime = 0; timeLastPacketReceived = 0;
+
+vp correlation 100 0 2
+vpd correlation module:WhistleRecognizer:correlation0 red
+vpd correlation module:WhistleRecognizer:correlation1 green
+vpd correlation module:WhistleRecognizer:correlation2 blue
+vpd correlation module:WhistleRecognizer:correlation3 orange
+vpd correlation module:WhistleRecognizer:correlation4 cyan
+vpd correlation module:WhistleRecognizer:correlation5 magenta
+
+vp samples 600 -1 1
+vpd samples module:WhistleRecognizer:samples0 red
+vpd samples module:WhistleRecognizer:samples1 green
+vpd samples module:WhistleRecognizer:samples2 blue
+vpd samples module:WhistleRecognizer:samples3 orange
+
+echo set module:WhistleRecognizer:select newWhistle
+echo dr module:WhistleRecognizer:record
+get parameters:WhistleRecognizer
+vi module:WhistleRecognizer:spectra Cognition spectra

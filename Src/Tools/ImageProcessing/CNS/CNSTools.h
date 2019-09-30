@@ -8,8 +8,8 @@
  */
 
 #pragma once
+#include "Representations/Configuration/CameraIntrinsics.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraIntrinsics.h"
 #include "Tools/ImageProcessing/CNS/CameraModelOpenCV.h"
 #include "Tools/Math/Pose3f.h"
 

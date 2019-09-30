@@ -25,12 +25,14 @@ void FieldBoundaryProvider::update(FieldBoundary& theFieldBoundary)
   if(theCameraMatrix.isValid)
   {
     // Propagate the previous field boundary to the current image.
-    if(theFieldBoundary.isValid)
+    if(theOtherFieldBoundary.isValid)
       predict(theFieldBoundary);
+    else
+      theFieldBoundary.isValid = false;
 
     // Find field boundary spots. These might also simply be the predicted ones.
     std::vector<Spot> spots;
-    spots.reserve(theColorScanlineRegionsVertical.scanlines.size());
+    spots.reserve(theColorScanLineRegionsVertical.scanLines.size());
     STOPWATCH("FieldBoundaryProvider:findSpots")
       findSpots(theFieldBoundary, spots);
 
@@ -61,9 +63,8 @@ void FieldBoundaryProvider::predict(FieldBoundary& fieldBoundary) const
 {
   const Pose2f invOdometryOffset = theOdometer.odometryOffset.inverse();
   fieldBoundary.boundaryInImage.clear();
-  std::vector<Vector2f> spotsOnField = fieldBoundary.boundaryOnField;
   fieldBoundary.boundaryOnField.clear();
-  for(Vector2f& spotOnField : spotsOnField)
+  for(Vector2f spotOnField : theOtherFieldBoundary.boundaryOnField)
   {
     Vector2f spotInImage;
     spotOnField = invOdometryOffset * spotOnField;
@@ -78,16 +79,16 @@ void FieldBoundaryProvider::predict(FieldBoundary& fieldBoundary) const
 
 void FieldBoundaryProvider::findSpots(const FieldBoundary& fieldBoundary, std::vector<Spot>& spots) const
 {
-  for(const ColorScanlineRegionsVertical::Scanline& scanline : theColorScanlineRegionsVertical.scanlines)
+  for(const ColorScanLineRegionsVertical::ScanLine& scanLine : theColorScanLineRegionsVertical.scanLines)
   {
     // Use point from previous field boundary if it is above lower or below upper image.
     if(fieldBoundary.isValid)
     {
-      int y = fieldBoundary.getBoundaryY(scanline.x);
+      int y = fieldBoundary.getBoundaryY(scanLine.x);
       if((theCameraInfo.camera == CameraInfo::upper && y >= theCameraInfo.height)
          || (theCameraInfo.camera == CameraInfo::lower && y < 0))
       {
-        Vector2i spotInImage(scanline.x, y);
+        Vector2i spotInImage(scanLine.x, y);
         Vector2f spotOnField;
         if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
            && spotOnField.squaredNorm() >= sqr(minDistance))
@@ -103,7 +104,7 @@ void FieldBoundaryProvider::findSpots(const FieldBoundary& fieldBoundary, std::v
     int score = 0;
     int maxScore = 0;
     int maxUpper = theCameraInfo.height;
-    for(const ScanlineRegion& region : scanline.regions)
+    for(const ScanLineRegion& region : scanLine.regions)
     {
       score += (region.is(FieldColors::field) ? 1 : -1) * (region.range.lower - region.range.upper);
       if(score >= maxScore)
@@ -114,7 +115,7 @@ void FieldBoundaryProvider::findSpots(const FieldBoundary& fieldBoundary, std::v
     }
 
     // Add spot if it can be projected to the field.
-    Vector2i spotInImage(scanline.x, maxUpper);
+    Vector2i spotInImage(scanLine.x, maxUpper);
     Vector2f spotOnField;
     if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
        && spotOnField.squaredNorm() >= sqr(minDistance))

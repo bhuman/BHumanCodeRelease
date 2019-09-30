@@ -83,7 +83,9 @@ private:
     Q_CORE_EXPORT static const quint32 shifttable[];
 
     friend bool qIsNull(qfloat16 f) Q_DECL_NOTHROW;
+#if !defined(QT_NO_FLOAT16_OPERATORS)
     friend qfloat16 operator-(qfloat16 a) Q_DECL_NOTHROW;
+#endif
 };
 
 Q_DECLARE_TYPEINFO(qfloat16, Q_PRIMITIVE_TYPE);
@@ -123,9 +125,12 @@ Q_REQUIRED_RESULT inline bool qIsNull(qfloat16 f) Q_DECL_NOTHROW
 inline int qIntCast(qfloat16 f) Q_DECL_NOTHROW
 { return int(static_cast<float>(f)); }
 
+#ifndef Q_QDOC
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_CLANG("-Wc99-extensions")
 QT_WARNING_DISABLE_GCC("-Wold-style-cast")
+QT_WARNING_DISABLE_CLANG("-Wimplicit-int-conversion")
+
 inline qfloat16::qfloat16(float f) Q_DECL_NOTHROW
 {
 #if defined(QT_COMPILER_SUPPORTS_F16C) && defined(__F16C__)
@@ -162,7 +167,9 @@ inline qfloat16::operator float() const Q_DECL_NOTHROW
     return f;
 #endif
 }
+#endif
 
+#if !defined(QT_NO_FLOAT16_OPERATORS)
 inline qfloat16 operator-(qfloat16 a) Q_DECL_NOTHROW
 {
     qfloat16 f;
@@ -244,6 +251,7 @@ QF16_MAKE_BOOL_OP_INT(!=)
 #undef QF16_MAKE_BOOL_OP_INT
 
 QT_WARNING_POP
+#endif // QT_NO_FLOAT16_OPERATORS
 
 /*!
   \internal

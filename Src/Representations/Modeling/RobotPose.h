@@ -3,7 +3,7 @@
  *
  * The file contains the definition of the struct RobotPose.
  *
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once

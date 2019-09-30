@@ -7,9 +7,10 @@
 #pragma once
 
 #include "Representations/Communication/BHumanMessage.h"
-#include <functional>
-#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Streams/Streamable.h"
 #include "Tools/MessageQueue/InMessage.h"
+#include "Tools/MessageQueue/MessageIDs.h"
+#include <functional>
 
 template<MessageID ID>
 struct BHumanMessageParticle

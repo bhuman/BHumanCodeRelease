@@ -30,8 +30,8 @@ MODULE(ECImageProvider,
 class ECImageProvider : public ECImageProviderBase
 {
 private:
-  typedef void(*EcFunc)(unsigned int, const void*, void*, void*, void*, void*);
-  typedef void(*EFunc)(unsigned int, const void*, void*);
+  using EcFunc = void (*)(unsigned int, const void*, void*, void*, void*, void*);
+  using EFunc = void (*)(unsigned int, const void*, void*);
   uint8_t* currentMaxNonColorSaturation = nullptr;
   uint8_t* currentBlackWhiteDelimiter = nullptr;
   uint8_t* currentFieldHueMin = nullptr;

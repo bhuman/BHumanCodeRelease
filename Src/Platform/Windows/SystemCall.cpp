@@ -14,7 +14,7 @@ SystemCall::Mode SystemCall::getMode()
 #ifdef TARGET_SIM
   if(RoboCupCtrl::controller)
   {
-    static thread_local SystemCall::Mode mode = ((ConsoleRoboCupCtrl*)RoboCupCtrl::controller)->getMode();
+    static thread_local SystemCall::Mode mode = static_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller)->getMode();
     return mode;
   }
   else
@@ -70,6 +70,11 @@ unsigned long long SystemCall::getFreeDiskSpace(const char* path)
 int SystemCall::playSound(const char* name)
 {
   return SoundPlayer::play(name);
+}
+
+int SystemCall::say(const char* text)
+{
+  return SoundPlayer::say(text);
 }
 
 bool SystemCall::soundIsPlaying()

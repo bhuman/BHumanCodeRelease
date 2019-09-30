@@ -33,6 +33,12 @@
 template<typename Elem, typename Enum, typename EnumInfo>
 class EnumIndexedArray : public std::array<Elem, EnumInfo::numOfElements>, public Streamable
 {
+public:
+  template<typename... Args>
+  EnumIndexedArray(Args&&... args) :
+    std::array<Elem, EnumInfo::numOfElements>({{std::forward<Args>(args)...}})
+  {}
+
 protected:
   void serialize(In* in, Out* out)
   {

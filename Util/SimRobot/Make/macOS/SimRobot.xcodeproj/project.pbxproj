@@ -49,13 +49,14 @@
 		073867700897697342152836 /* CapsuleGeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 050174027797418703480838 /* CapsuleGeometry.cpp */; };
 		109375686430765369258920 /* Scene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 000006675828747372762998 /* Scene.cpp */; };
 		109375686480868965221102 /* SimRobotEditor.qrc in Sources */ = {isa = PBXBuildFile; fileRef = 000003349793753978856217 /* SimRobotEditor.qrc */; };
+		173B39552160BDAD003FFBA0 /* QtDBus.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 173B39542160BDAD003FFBA0 /* QtDBus.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		1789459B207E2A17004E9D19 /* ObjectSegmentedImageSensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1789459A207E2A17004E9D19 /* ObjectSegmentedImageSensor.cpp */; };
-		17EB9A3521368E37009D5A33 /* QtCore.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BAF1C29BC55005E4AAD /* QtCore.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		17EB9A3621368E3E009D5A33 /* QtGui.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB11C29BC55005E4AAD /* QtGui.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		17EB9A3721368E43009D5A33 /* QtOpenGL.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		17EB9A3821368E4D009D5A33 /* QtPrintSupport.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB31C29BC55005E4AAD /* QtPrintSupport.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		17EB9A3921368E52009D5A33 /* QtSvg.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB41C29BC55005E4AAD /* QtSvg.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		17EB9A3A21368E56009D5A33 /* QtWidgets.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB51C29BC55005E4AAD /* QtWidgets.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		17EB9A3521368E37009D5A33 /* QtCore.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BAF1C29BC55005E4AAD /* QtCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17EB9A3621368E3E009D5A33 /* QtGui.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB11C29BC55005E4AAD /* QtGui.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17EB9A3721368E43009D5A33 /* QtOpenGL.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17EB9A3821368E4D009D5A33 /* QtPrintSupport.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB31C29BC55005E4AAD /* QtPrintSupport.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17EB9A3921368E52009D5A33 /* QtSvg.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB41C29BC55005E4AAD /* QtSvg.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17EB9A3A21368E56009D5A33 /* QtWidgets.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 201C9BB51C29BC55005E4AAD /* QtWidgets.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		17EB9A442136902E009D5A33 /* RotationMatrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 17EB9A402136902E009D5A33 /* RotationMatrix.cpp */; };
 		182648985348693483333552 /* CylinderAppearance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 802784478342817346257890 /* CylinderAppearance.cpp */; };
 		200213358292236118362054 /* Sensor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 003430218269017665925370 /* Sensor.cpp */; };
@@ -127,6 +128,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -138,6 +141,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -149,6 +154,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -160,6 +167,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -171,6 +180,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -182,6 +193,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -193,6 +206,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.h";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/moc_$(INPUT_FILE_BASE).cpp",
@@ -204,6 +219,8 @@
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.qrc";
 			fileType = pattern.proxy;
+			inputFiles = (
+			);
 			isEditable = 1;
 			outputFiles = (
 				"$(CONFIGURATION_TEMP_DIR)/qrc_$(INPUT_FILE_BASE).cpp",
@@ -250,6 +267,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				173B39552160BDAD003FFBA0 /* QtDBus.framework in Copy Frameworks */,
 				17EB9A3521368E37009D5A33 /* QtCore.framework in Copy Frameworks */,
 				17EB9A3621368E3E009D5A33 /* QtGui.framework in Copy Frameworks */,
 				17EB9A3721368E43009D5A33 /* QtOpenGL.framework in Copy Frameworks */,
@@ -420,6 +438,7 @@
 		054883492296083704723806 /* Actuator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Actuator.cpp; path = ../../Src/SimRobotCore2/Simulation/Actuators/Actuator.cpp; sourceTree = SOURCE_ROOT; };
 		109375686430764110526306 /* Geometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Geometry.cpp; path = ../../Src/SimRobotCore2/Simulation/Geometries/Geometry.cpp; sourceTree = SOURCE_ROOT; };
 		109375686430765617432170 /* Accelerometer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Accelerometer.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/Accelerometer.h; sourceTree = SOURCE_ROOT; };
+		173B39542160BDAD003FFBA0 /* QtDBus.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtDBus.framework; path = ../../Util/qt/macOS/lib/QtDBus.framework; sourceTree = "<group>"; };
 		17894599207E2A17004E9D19 /* ObjectSegmentedImageSensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ObjectSegmentedImageSensor.h; path = ../../Src/SimRobotCore2/Simulation/Sensors/ObjectSegmentedImageSensor.h; sourceTree = SOURCE_ROOT; };
 		1789459A207E2A17004E9D19 /* ObjectSegmentedImageSensor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ObjectSegmentedImageSensor.cpp; path = ../../Src/SimRobotCore2/Simulation/Sensors/ObjectSegmentedImageSensor.cpp; sourceTree = SOURCE_ROOT; };
 		17EB9A3C2136902E009D5A33 /* Pose3f.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pose3f.h; path = ../../Src/SimRobotCore2/Tools/Math/Pose3f.h; sourceTree = SOURCE_ROOT; };
@@ -915,6 +934,7 @@
 				2061F22D152CA4430089659C /* Foundation.framework */,
 				20BE6B371795DBB10096D6E4 /* OpenGL.framework */,
 				201C9BAF1C29BC55005E4AAD /* QtCore.framework */,
+				173B39542160BDAD003FFBA0 /* QtDBus.framework */,
 				201C9BB11C29BC55005E4AAD /* QtGui.framework */,
 				201C9BB21C29BC55005E4AAD /* QtOpenGL.framework */,
 				201C9BB31C29BC55005E4AAD /* QtPrintSupport.framework */,
@@ -1038,14 +1058,15 @@
 		91B15E841AA80083484172DE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1000;
+				LastUpgradeCheck = 1100;
 			};
 			buildConfigurationList = 2A951308CDB28F104D0A4BD2 /* Build configuration list for PBXProject "SimRobot" */;
 			compatibilityVersion = "Xcode 9.3";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 05596AB53D8D521C69802C27 /* B-Human */;
 			productRefGroup = 05596AB53D8D521C69802C27 /* B-Human */;
@@ -1369,6 +1390,7 @@
 		20844AF611FC6F420037FA87 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1390,6 +1412,7 @@
 		20844AF711FC6F420037FA87 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1412,6 +1435,7 @@
 		20844F1911FE33150037FA87 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1433,6 +1457,7 @@
 		20844F1A11FE33150037FA87 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1456,10 +1481,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1467,13 +1492,14 @@
 					MACOS,
 					NDEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				QT_DIR = "$(SRCROOT)/../../Util/qt/macOS";
 				SKIP_INSTALL = YES;
 				USE_HEADERMAP = NO;
@@ -1493,7 +1519,9 @@
 		20A362F31A6BD27400C666CA /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -1518,6 +1546,7 @@
 		20A362F41A6BD27400C666CA /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
@@ -1554,6 +1583,7 @@
 		20A362F51A6BD27400C666CA /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1576,6 +1606,7 @@
 		20A362F71A6BD27400C666CA /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -1601,6 +1632,7 @@
 		20A362F81A6BD27400C666CA /* Develop */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -1626,6 +1658,7 @@
 		20BE6B2D1795D83A0096D6E4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1647,6 +1680,7 @@
 		20BE6B2E1795D83A0096D6E4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1669,6 +1703,7 @@
 		20DD73F7134E4E33003FF249 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
@@ -1704,6 +1739,7 @@
 		20DD73FA134E4E33003FF249 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
@@ -1740,7 +1776,9 @@
 		7C33BA060E74328D00ACB790 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -1764,7 +1802,9 @@
 		7C33BA070E74328D00ACB790 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = $QT_DIR/lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -1791,12 +1831,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
 				COPY_PHASE_STRIP = NO;
-				ENABLE_TESTABILITY = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1804,13 +1842,13 @@
 					MACOS,
 					_DEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 				);
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				ONLY_ACTIVE_ARCH = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				QT_DIR = "$(SRCROOT)/../../Util/qt/macOS";
 				SKIP_INSTALL = YES;
 				USE_HEADERMAP = NO;
@@ -1831,10 +1869,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/macOS/$(PRODUCT_NAME)/$(CONFIGURATION)";
 				CONFIGURATION_TEMP_DIR = "$(CONFIGURATION_BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1842,13 +1880,14 @@
 					MACOS,
 					NDEBUG,
 					FIX_MACOS_DOCKED_WIDGETS_DRAG_BUG,
-					FIX_MACOS_BROKEN_TEXTURES_ON_NVIDIA_BUG,
 					FIX_MACOS_PINCH_SCALE_RELATIVE_BUG,
 					FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG,
+					FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG,
 				);
 				GCC_UNROLL_LOOPS = YES;
 				LD_MAP_FILE_PATH = "$(CONFIGURATION_TEMP_DIR)/LinkMap.txt";
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				QT_DIR = "$(SRCROOT)/../../Util/qt/macOS";
 				SKIP_INSTALL = YES;
 				USE_HEADERMAP = NO;

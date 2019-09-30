@@ -1,13 +1,18 @@
-#include <QCloseEvent>
-#include <QMenu>
 #include <QApplication>
 #include <QClipboard>
-#include <QSvgGenerator>
+#include <QCloseEvent>
+#include <QColor>
 #include <QFileDialog>
+#include <QMenu>
 #include <QPainter>
+#include <QSvgGenerator>
 
 #include "RegisteredDockWidget.h"
 #include "MainWindow.h"
+
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+extern MainWindow* mainWindow;
+#endif
 
 RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* parent) :
   QDockWidget(parent), fullName(fullName), module(0), object(0), widget(0), flags(0), reallyVisible(false)
@@ -24,7 +29,18 @@ RegisteredDockWidget::RegisteredDockWidget(const QString& fullName, QWidget* par
 void RegisteredDockWidget::setWidget(SimRobot::Widget* widget, const SimRobot::Module* module, SimRobot::Object* object, int flags)
 {
   if(widget)
-    QDockWidget::setWidget(widget->getWidget());
+  {
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DISAPPEAR_WHEN_DOCKED_BUG
+    if(isFloating() && widget->getWidget()->inherits("QGLWidget"))
+    {
+      setFloating(false);
+      QDockWidget::setWidget(widget->getWidget());
+      setFloating(true);
+    }
+    else
+#endif
+      QDockWidget::setWidget(widget->getWidget());
+  }
   else
     QDockWidget::setWidget(nullptr);
   if(this->widget)
@@ -117,7 +133,17 @@ void RegisteredDockWidget::closeEvent(QCloseEvent* event)
     return;
   }
 
-  QDockWidget::closeEvent(event);
+#ifdef FIX_MACOS_UNDOCKED_WIDGETS_DURING_CLOSE_BUG
+  if(isFloating() && widget && widget->getWidget()->inherits("QGLWidget"))
+  {
+    mainWindow->setUpdatesEnabled(false);
+    setFloating(false);
+    QDockWidget::closeEvent(event);
+    mainWindow->setUpdatesEnabled(true);
+  }
+  else
+#endif
+    QDockWidget::closeEvent(event);
 
   emit closedObject(fullName);
 }
@@ -183,7 +209,7 @@ void RegisteredDockWidget::visibilityChanged(bool visible)
 void RegisteredDockWidget::copy()
 {
   QApplication::clipboard()->clear();
-  QApplication::clipboard()->setPixmap(QPixmap::grabWidget(QDockWidget::widget()));
+  QApplication::clipboard()->setPixmap(QDockWidget::widget()->grab());
 }
 
 void RegisteredDockWidget::exportAsSvg()
@@ -225,6 +251,7 @@ void RegisteredDockWidget::exportAsPng()
   settings.setValue("ExportDirectory", QFileInfo(fileName).dir().path());
 
   QPixmap pixmap(widget->getWidget()->size());
+  pixmap.fill(QColor(0, 0, 0, 0));
   widget->getWidget()->render(&pixmap);
   pixmap.save(fileName, "PNG");
 }

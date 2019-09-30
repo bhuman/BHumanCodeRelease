@@ -245,32 +245,31 @@ void SimObjectRenderer::draw()
         break;
     }
 
-    if(renderFlags & (enableDrawingsTransparentOcclusion | enableDrawingsOcclusion))
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+    glBlendColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    if(renderFlags & enableDrawingsTransparentOcclusion)
     {
       if(physicalObject)
         physicalObject->drawPhysics(showControllerDrawings);
       if(graphicalObject)
         graphicalObject->drawAppearances(SurfaceColor(0), true);
-      if(renderFlags & enableDrawingsTransparentOcclusion)
-      {
-        glAccum(GL_LOAD, 0.5f);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        if(physicalObject)
-          physicalObject->drawPhysics(showControllerDrawings);
-        if(graphicalObject)
-          graphicalObject->drawAppearances(SurfaceColor(0), true);
-        glAccum(GL_ACCUM, 0.5f);
-        glAccum(GL_RETURN, 1.f);
-      }
     }
-    else
-    {
+
+    if((renderFlags & enableDrawingsTransparentOcclusion)
+       || !(renderFlags & enableDrawingsOcclusion))
       glClear(GL_DEPTH_BUFFER_BIT);
-      if(physicalObject)
-        physicalObject->drawPhysics(showControllerDrawings);
-      if(graphicalObject)
-        graphicalObject->drawAppearances(SurfaceColor(0), true);
-    }
+
+    if(renderFlags & enableDrawingsTransparentOcclusion)
+      glBlendColor(0.5f, 0.5f, 0.5f, 0.5f);
+
+    if(physicalObject)
+      physicalObject->drawPhysics(showControllerDrawings);
+    if(graphicalObject)
+      graphicalObject->drawAppearances(SurfaceColor(0), true);
+
+    glDisable(GL_BLEND);
 
     Simulation::simulation->scene->defaultSurface->unset();
 
@@ -307,13 +306,13 @@ Vector3f SimObjectRenderer::projectClick(int x, int y) const
   GLdouble projmatrix[16];
   for(int i = 0; i < 16; ++i)
   {
-    mvmatrix[i] = (GLdouble) cameraTransformation[i];
-    projmatrix[i] = (GLdouble) projection[i];
+    mvmatrix[i] = static_cast<GLdouble>(cameraTransformation[i]);
+    projmatrix[i] = static_cast<GLdouble>(projection[i]);
   }
 
   GLdouble tx, ty, tz;
-  gluUnProject((GLdouble)(x), (GLdouble)(height - y), 1.0, mvmatrix, projmatrix, viewport, &tx, &ty, &tz);
-  return Vector3f(float(tx), float(ty), float(tz));
+  gluUnProject(static_cast<GLdouble>(x), static_cast<GLdouble>(height - y), 1.0, mvmatrix, projmatrix, viewport, &tx, &ty, &tz);
+  return Vector3f(static_cast<float>(tx), static_cast<float>(ty), static_cast<float>(tz));
 }
 
 void SimObjectRenderer::getSize(unsigned int& width, unsigned int& height) const
@@ -427,10 +426,10 @@ Body* SimObjectRenderer::selectObject(const Vector3f& projectedClick)
         geom = geom1;
       }
       const dReal* pos = dGeomGetPosition(geom);
-      float sqrDistance = (Vector3f((float) pos[0], (float) pos[1], (float) pos[2]) - callback->cameraPos).squaredNorm();
+      float sqrDistance = (Vector3f(static_cast<float>(pos[0]), static_cast<float>(pos[1]), static_cast<float>(pos[2])) - callback->cameraPos).squaredNorm();
       if(!callback->closestBody || sqrDistance < callback->closestSqrDistance)
       {
-        callback->closestBody = (Body*)dBodyGetData(bodyId);
+        callback->closestBody = static_cast<Body*>(dBodyGetData(bodyId));
         callback->closestSqrDistance = sqrDistance;
       }
     }
@@ -439,7 +438,7 @@ Body* SimObjectRenderer::selectObject(const Vector3f& projectedClick)
     {
       ASSERT(!dGeomIsSpace(geom1));
       ASSERT(dGeomIsSpace(geom2));
-      dSpaceCollide2(geom1, geom2, callback, (dNearCallback*)&staticCollisionCallback);
+      dSpaceCollide2(geom1, geom2, callback, reinterpret_cast<dNearCallback*>(&staticCollisionCallback));
     }
   };
 
@@ -447,7 +446,7 @@ Body* SimObjectRenderer::selectObject(const Vector3f& projectedClick)
   dGeomID ray = dCreateRay(Simulation::simulation->staticSpace, 10000.f);
   Vector3f dir = projectedClick - cameraPos;
   dGeomRaySet(ray, cameraPos.x(), cameraPos.y(), cameraPos.z(), dir.x(), dir.y(), dir.z());
-  dSpaceCollide2(ray, (dGeomID)Simulation::simulation->movableSpace, &callback, (dNearCallback*)&Callback::staticCollisionWithSpaceCallback);
+  dSpaceCollide2(ray, reinterpret_cast<dGeomID>(Simulation::simulation->movableSpace), &callback, reinterpret_cast<dNearCallback*>(&Callback::staticCollisionWithSpaceCallback));
   dGeomDestroy(ray);
 
   if(!callback.closestBody)
@@ -540,8 +539,8 @@ bool SimObjectRenderer::moveDrag(int x, int y, DragType type)
       {
         float angleZ = std::atan2(v.y(), v.x()) * (180.f / pi);
         float angleY = ((pi / 2.f) - std::atan2(v.z(), hypoLength)) * (180.f / pi);
-        int zRounded = (((int)angleZ + degreeSteps / 2) / degreeSteps) * degreeSteps;
-        int yRounded = (((int)(angleY) + degreeSteps / 2) / degreeSteps) * degreeSteps;
+        int zRounded = ((static_cast<int>(angleZ) + degreeSteps / 2) / degreeSteps) * degreeSteps;
+        int yRounded = ((static_cast<int>(angleY) + degreeSteps / 2) / degreeSteps) * degreeSteps;
         angleZ = zRounded * (pi / 180.f);
         angleY = yRounded * (pi / 180.f);
         if(angleY == 0)
@@ -602,10 +601,10 @@ bool SimObjectRenderer::moveDrag(int x, int y, DragType type)
         if(dragMode == adoptDynamics)
         {
           const unsigned int now = System::getTime();
-          const float t = (now - dragStartTime) * 0.001f;
+          const float t = std::max(1U, now - dragStartTime) * 0.001f;
           Vector3f velocity = offset / t;
           const dReal* oldVel = dBodyGetAngularVel(dragSelection->body);
-          velocity = velocity * 0.3f + Vector3f((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
+          velocity = velocity * 0.3f + Vector3f(static_cast<float>(oldVel[0]), static_cast<float>(oldVel[1]), static_cast<float>(oldVel[2])) * 0.7f;
           dBodySetAngularVel(dragSelection->body, velocity.x(), velocity.y(), velocity.z());
           dragStartTime = now;
         }
@@ -618,10 +617,10 @@ bool SimObjectRenderer::moveDrag(int x, int y, DragType type)
         if(dragMode == adoptDynamics)
         {
           const unsigned int now = System::getTime();
-          const float t = (now - dragStartTime) * 0.001f;
+          const float t = std::max(1U, now - dragStartTime) * 0.001f;
           Vector3f velocity = offset / t;
           const dReal* oldVel = dBodyGetLinearVel(dragSelection->body);
-          velocity = velocity * 0.3f + Vector3f((float) oldVel[0], (float) oldVel[1], (float) oldVel[2]) * 0.7f;
+          velocity = velocity * 0.3f + Vector3f(static_cast<float>(oldVel[0]), static_cast<float>(oldVel[1]), static_cast<float>(oldVel[2])) * 0.7f;
           dBodySetLinearVel(dragSelection->body, velocity.x(), velocity.y(), velocity.z());
           dragStartTime = now;
         }
@@ -708,4 +707,3 @@ void SimObjectRenderer::getCamera(float* pos, float* target)
   target[1] = cameraTarget.y();
   target[2] = cameraTarget.z();
 }
-

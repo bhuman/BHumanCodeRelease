@@ -53,7 +53,7 @@ void EditorModule::openEditor(const QString& filePath)
 
 bool EditorModule::compile()
 {
-  Q_ASSERT((void*)this == (void*)((SimRobotEditor::Editor*)this));
+  Q_ASSERT(static_cast<void*>(this) == static_cast<void*>(static_cast<SimRobotEditor::Editor*>(this)));
 
   application->registerObject(*this, *this, 0, SimRobot::Flag::windowless);
 

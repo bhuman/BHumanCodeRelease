@@ -3,47 +3,43 @@
  *
  * Implementation of class LogExtractor
  *
- * @author <a href="mailto:jan_fie@uni-bremen.de">Jan Fiedler</a>
+ * @author Jan Fiedler
  */
 
 #include "LogExtractor.h"
 #include "LogPlayer.h"
 #include "Platform/File.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/AudioData.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/GameInfo.h"
-#include "Representations/Infrastructure/Image.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Representations/Infrastructure/LowFrameRateImage.h"
+#include "Representations/Infrastructure/JPEGImage.h"
 #include "Representations/Infrastructure/RobotHealth.h"
-#include "Representations/Infrastructure/RobotInfo.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/LabelImage.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/MotionControl/GetUpEngineOutput.h"
-#include "Representations/MotionControl/GetUpEngineOutputLog.h"
-#include "Representations/MotionControl/MotionRequest.h"
-#include "Representations/MotionControl/MotionInfo.h"
-#include "Representations/MotionControl/WalkGenerator.h"
-#include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
+#include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Statistics.h"
-#include "Tools/Logging/LogFileFormat.h"
-#include "Tools/Math/Transformation.h"
-#include "Tools/NeuralNetwork/NNUtilities.h"
-#include "Tools/Streams/TypeInfo.h"
 #include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/ImageProcessing/PatchUtilities.h"
+#include "Tools/Logging/LoggingTools.h"
+#include "Tools/Math/Transformation.h"
+#include "Tools/Motion/SensorData.h"
+#include "Tools/Streams/TypeInfo.h"
 #include <QImage>
 #include <QDir>
-#include "Representations/Infrastructure/JPEGImage.h" // Must be last include
+#include <type_traits>
 
 /**
  * Example syntax:
@@ -76,26 +72,67 @@ bool LogExtractor::save(const std::string& fileName, const TypeInfo* typeInfo)
   if(!logPlayer.getNumberOfMessages())
     return false;
 
+  size_t index = fileName.find_last_of("\\/");
+  if(index != std::string::npos)
+    createNewFolder(fileName.substr(0, index));
+  
   OutBinaryFile file(fileName);
   if(file.exists())
   {
-    file << Logging::logFileMessageIDs; // write magic byte to indicate message id table
+    file << LoggingTools::logFileMessageIDs; // write magic byte to indicate message id table
     logPlayer.writeMessageIDs(file);
     if(typeInfo || logPlayer.typeInfo)
     {
-      file << Logging::logFileTypeInfo;
+      file << LoggingTools::logFileTypeInfo;
       file << (logPlayer.typeInfo ? *logPlayer.typeInfo : *typeInfo);
     }
-    file << Logging::logFileUncompressed; // write magic byte to indicate uncompressed log file
+    file << LoggingTools::logFileUncompressed; // write magic byte to indicate uncompressed log file
     file << logPlayer;
     logPlayer.logfilePath = File::isAbsolute(fileName.c_str()) ? fileName : std::string(File::getBHDir()) + "/Config/" + fileName;
     return true;
   }
+
   return false;
+}
+
+bool LogExtractor::split(const std::string& fileName, const TypeInfo* typeInfo, const int& split)
+{
+  int numberOfMessagesToWrite = static_cast<int>(std::ceil(logPlayer.getNumberOfMessages() / split));
+  for(int i = 0; i < split; ++i)
+  {
+    std::string newFileName = fileName;
+    newFileName.insert(fileName.find('.'), "_part_" + std::to_string(i));
+    OutBinaryFile file(newFileName);
+    if(file.exists())
+    {
+      file << LoggingTools::logFileMessageIDs;
+      logPlayer.writeMessageIDs(file);
+      if(typeInfo || logPlayer.typeInfo)
+      {
+        file << LoggingTools::logFileTypeInfo;
+        file << (logPlayer.typeInfo ? *logPlayer.typeInfo : *typeInfo);
+      }
+
+      file << LoggingTools::logFileUncompressed;
+      MessageQueue newQueue;
+      newQueue.setSize(logPlayer.getSize());
+      for(int j = 0; j < numberOfMessagesToWrite; j++)
+      {
+        if(i * numberOfMessagesToWrite + j > logPlayer.getNumberOfMessages()) break;
+
+        logPlayer.copyMessage(i * numberOfMessagesToWrite + j, newQueue);
+      }
+      file << newQueue;
+    }
+    else return false;
+  }
+  return true;
 }
 
 bool LogExtractor::saveAudioFile(const std::string& fileName)
 {
+  logPlayer.stop();
+
   OutBinaryFile stream(fileName);
   if(!stream.exists())
     return false;
@@ -129,100 +166,179 @@ bool LogExtractor::saveAudioFile(const std::string& fileName)
     int subchunk2Size;
   };
 
-  int length = sizeof(WAVHeader) + sizeof(short) * frames * audioData.channels;
-  WAVHeader* header = (WAVHeader*) new char[length];
-  *(unsigned*)header->chunkId = *(const unsigned*) "RIFF";
+  int length = sizeof(WAVHeader) + sizeof(AudioData::Sample) * frames * audioData.channels;
+  WAVHeader* header = reinterpret_cast<WAVHeader*>(new char[length]);
+  *reinterpret_cast<unsigned*>(header->chunkId) = *reinterpret_cast<const unsigned*>("RIFF");
   header->chunkSize = length - 8;
-  *(unsigned*)header->format = *(const unsigned*) "WAVE";
+  *reinterpret_cast<unsigned*>(header->format) = *reinterpret_cast<const unsigned*>("WAVE");
 
-  *(unsigned*)header->subchunk1Id = *(const unsigned*) "fmt ";
+  *reinterpret_cast<unsigned*>(header->subchunk1Id) = *reinterpret_cast<const unsigned*>("fmt ");
   header->subchunk1Size = 16;
-  header->audioFormat = 1;
-  header->numChannels = (short)audioData.channels;
+  static_assert(std::is_same<AudioData::Sample, short>::value
+                || std::is_same<AudioData::Sample, float>::value, "Wrong audio sample type");
+  header->audioFormat = std::is_same<AudioData::Sample, short>::value ? 1 : 3;
+  header->numChannels = static_cast<short>(audioData.channels);
   header->sampleRate = audioData.sampleRate;
-  header->byteRate = audioData.sampleRate * audioData.channels * sizeof(short);
-  header->blockAlign = short(audioData.channels * sizeof(short));
-  header->bitsPerSample = 16;
+  header->byteRate = audioData.sampleRate * audioData.channels * sizeof(AudioData::Sample);
+  header->blockAlign = short(audioData.channels * sizeof(AudioData::Sample));
+  header->bitsPerSample = short(sizeof(AudioData::Sample) * 8);
 
-  *(unsigned*)header->subchunk2Id = *(const unsigned*) "data";
-  header->subchunk2Size = frames * audioData.channels * sizeof(short);
+  *reinterpret_cast<unsigned*>(header->subchunk2Id) = *reinterpret_cast<const unsigned*>("data");
+  header->subchunk2Size = frames * audioData.channels * sizeof(AudioData::Sample);
 
-  char* p = (char*)(header + 1);
+  char* p = reinterpret_cast<char*>(header + 1);
   for(int currentMessageNumber = 0; currentMessageNumber < logPlayer.getNumberOfMessages(); ++currentMessageNumber)
   {
     logPlayer.queue.setSelectedMessageForReading(currentMessageNumber);
     if(logPlayer.queue.getMessageID() == idAudioData)
     {
       logPlayer.in.bin >> audioData;
-      memcpy(p, audioData.samples.data(), audioData.samples.size() * sizeof(short));
-      p += audioData.samples.size() * sizeof(short);
+      memcpy(p, audioData.samples.data(), audioData.samples.size() * sizeof(AudioData::Sample));
+      p += audioData.samples.size() * sizeof(AudioData::Sample);
     }
   }
 
   stream.write(header, length);
   delete[] header;
 
-  logPlayer.stop();
-
   return true;
 }
 
-bool LogExtractor::saveImages(const std::string& path, const bool raw, const bool onlyPlaying)
+bool LogExtractor::saveImages(const std::string& path, const bool raw, const bool onlyPlaying, const int takeEachNthFrame = 1)
 {
+  class CRCLut : public std::array<unsigned int, 256>
+  {
+  public:
+    CRCLut() : std::array<unsigned int, 256>()
+    {
+      for(unsigned int n = 0; n < 256; n++)
+      {
+        unsigned int c = n;
+        for(unsigned int k = 0; k < 8; k++)
+        {
+          if(c & 1)
+            c = 0xedb88320L ^ (c >> 1);
+          else
+            c = c >> 1;
+        }
+        (*this)[n] = c;
+      }
+    }
+  };
+
+  class CRC
+  {
+  private:
+    unsigned int crc;
+  public:
+    CRC() : crc(0xffffffff) {}
+    CRC(const unsigned int initialCrc) : crc(initialCrc) {}
+
+    CRC update(const CRCLut& lut, const void* data, const size_t size) const
+    {
+      const unsigned char* dataPtr = reinterpret_cast<const unsigned char*>(data);
+      unsigned int crc = this->crc;
+
+      for(size_t i = 0; i < size; i++)
+        crc = lut[(crc ^ dataPtr[i]) & 0xff] ^ (crc >> 8);
+
+      return CRC(crc);
+    }
+
+    unsigned int finish() const
+    {
+      return crc ^ 0xffffffff;
+    }
+  };
+
   logPlayer.stop();
   DECLARE_REPRESENTATIONS_AND_MAP(
   {,
     CameraInfo,
+    CameraMatrix,
     FrameInfo,
+    ImageCoordinateSystem,
 
     // To find valid images
     FallDownState,
     GameInfo,
-    Image,
+    CameraImage,
     JPEGImage,
-    LowFrameRateImage,
     RobotInfo,
   });
 
   const std::string& folderPath = createNewFolder(path);
 
+  const CRCLut crcLut;
+
+  int skippedImageCount = 0;
+
   // Use DECLARE_REPRESENTATIONS_AND_MAP as soon as the hack is no longer needed
   return goThroughLog(
-    representations,
-    [&](const char frameType)
+           representations,
+           [&](const std::string& frameType)
+  {
+    if(onlyPlaying &&
+       (theGameInfo.state != STATE_PLAYING // isStateValid
+        || theRobotInfo.penalty != PENALTY_NONE // isNotPenalized
+        || (theFallDownState.state != FallDownState::upright
+            && theFallDownState.state != FallDownState::staggering)/*isStanding*/))
+      return true;
+
+    if(theJPEGImage.timestamp)
     {
-      if(onlyPlaying &&
-         (theGameInfo.state != STATE_PLAYING // isStateValid
-          || theRobotInfo.penalty != PENALTY_NONE // isNotPenalized
-          || (theFallDownState.state != FallDownState::upright
-              && theFallDownState.state != FallDownState::staggering)/*isStanding*/))
+      theJPEGImage.toCameraImage(theCameraImage); // Assume that CameraImage and JPEGImage are not logged at the same time.
+      theJPEGImage.timestamp = 0;
+    }
+
+    CameraImage* imageToExport = nullptr;
+
+    if(theCameraImage.timestamp)
+      imageToExport = &theCameraImage;
+
+    if(imageToExport)
+    {
+      // Frame skipping: only count frames if they are from the upper camera so
+      // that always a pair of lower and upper frames is saved
+      if(theCameraInfo.camera == CameraInfo::upper && ++skippedImageCount == takeEachNthFrame)
+        skippedImageCount = 0;
+      if(skippedImageCount != 0)
         return true;
 
-      if(theJPEGImage.timeStamp)
-      {
-        theJPEGImage.toImage(theImage); // Assume that Image and JPEGImage are nor logged at the same time.
-        theJPEGImage.timeStamp = 0;
-      }
+      // Open PNG file
+      const std::string filename = CameraImage::expandImageFileName(folderPath + (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower"), imageToExport->timestamp);
+      QFile qfile(filename.c_str());
+      qfile.open(QIODevice::WriteOnly);
 
-      if(theImage.timeStamp)
-      {
-        CameraImage cameraImage;
-        cameraImage.setReference(theImage.width, theImage.height * 2, const_cast<Image::Pixel*>(theImage[0]), theImage.timeStamp);
-        cameraImage.exportImage(folderPath + (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower"),
-                                theImage.timeStamp, raw ? YUYVImage::raw : YUYVImage::rgb);
-        theImage.timeStamp = 0;
-      }
+      // Write image
+      imageToExport->exportImage(qfile, raw ? YUYVImage::raw : YUYVImage::rgb);
+      imageToExport->timestamp = 0;
 
-      if(theLowFrameRateImage.imageUpdated) // gotNewImage
-      {
-        theLowFrameRateImage.image.exportImage(folderPath + (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower"),
-                                               theLowFrameRateImage.image.timestamp, raw ? YUYVImage::raw : YUYVImage::rgb);
-        theLowFrameRateImage.imageUpdated = false;
-      }
+      // Remove IEND chunk
+      qfile.resize(qfile.size() - 12);
 
-      return true;
+      // Write metadata
+      OutBinaryMemory metaData;
+      metaData << theCameraInfo;
+      metaData << theCameraMatrix;
+      metaData << theImageCoordinateSystem;
+      const unsigned int size = static_cast<unsigned int>(metaData.size());
+      for(size_t i = 0; i < 4; i++)
+        qfile.putChar(reinterpret_cast<const char*>(&size)[3 - i]);
+      qfile.write("bhMn");
+      qfile.write(metaData.data(), metaData.size());
+      const unsigned int crc = CRC().update(crcLut, "bhMn", 4).update(crcLut, metaData.data(), metaData.size()).finish();
+      for(size_t i = 0; i < 4; i++)
+        qfile.putChar(reinterpret_cast<const char*>(&crc)[3 - i]);
+
+      // Write IEND chunk
+      const std::array<char, 12> endChunk{ 0, 0, 0, 0, 'I', 'E', 'N', 'D', char(0xae), char(0x42), char(0x60), char(0x82) };
+      qfile.write(endChunk.data(), endChunk.size());
+      qfile.close();
     }
-  );
+
+    return true;
+  });
 }
 
 bool LogExtractor::saveInertialSensorData(const std::string& path)
@@ -234,24 +350,23 @@ bool LogExtractor::saveInertialSensorData(const std::string& path)
   });
 
   return saveCSV(path,
-    [](Out& file, const std::string& sep)
-    {
-      file << "# frame index" << sep << "gyro x" << sep << "gyro y" << sep << "gyro z" << sep << "acc x" << sep << "acc y" << sep << "acc z" << sep << "angle x" << sep << "angle y";
-    },
-    representations,
-    [&](Out& file, const std::string& sep)
-    {
-      file << theFrameInfo.time << sep
-           << static_cast<float>(theInertialSensorData.gyro.x()) << sep
-           << static_cast<float>(theInertialSensorData.gyro.y()) << sep
-           << static_cast<float>(theInertialSensorData.gyro.z()) << sep
-           << theInertialSensorData.acc.x() << sep
-           << theInertialSensorData.acc.y() << sep
-           << theInertialSensorData.acc.z() << sep
-           << static_cast<float>(theInertialSensorData.angle.x()) << sep
-           << static_cast<float>(theInertialSensorData.angle.y());
-    }
-  );
+                 [](Out& file, const std::string& sep)
+  {
+    file << "# frame index" << sep << "gyro x" << sep << "gyro y" << sep << "gyro z" << sep << "acc x" << sep << "acc y" << sep << "acc z" << sep << "angle x" << sep << "angle y";
+  },
+  representations,
+  [&](Out& file, const std::string& sep)
+  {
+    file << theFrameInfo.time << sep
+         << static_cast<float>(theInertialSensorData.gyro.x()) << sep
+         << static_cast<float>(theInertialSensorData.gyro.y()) << sep
+         << static_cast<float>(theInertialSensorData.gyro.z()) << sep
+         << theInertialSensorData.acc.x() << sep
+         << theInertialSensorData.acc.y() << sep
+         << theInertialSensorData.acc.z() << sep
+         << static_cast<float>(theInertialSensorData.angle.x()) << sep
+         << static_cast<float>(theInertialSensorData.angle.y());
+  });
 }
 
 bool LogExtractor::saveJointAngleData(const std::string& path)
@@ -264,76 +379,23 @@ bool LogExtractor::saveJointAngleData(const std::string& path)
   });
 
   return saveCSV(path,
-    [](Out& file, const std::string& sep)
+                 [](Out& file, const std::string& sep)
+  {
+    file << "frame index";
+    for(int i = 0; i < Joints::numOfJoints; i++)
     {
-      file << "frame index";
-      for(int i = 0; i < Joints::numOfJoints; i++)
-      {
-        file << sep << "request " << i << sep << "angle " << i;
-      }
-    },
-    representations,
-    [&](Out& file, const std::string& sep)
-    {
-      file << theFrameInfo.time;
-      for(int i = 0; i < Joints::numOfJoints; i++)
-      {
-        file << sep << theJointRequest.angles[i].toDegrees() << sep << theJointAngles.angles[i].toDegrees();
-      }
+      file << sep << "request " << i << sep << "angle " << i;
     }
-  );
-}
-
-bool LogExtractor::saveWalkingData(const std::string& path)
-{
-  DECLARE_REPRESENTATIONS_AND_MAP(
-  {,
-    FrameInfo,
-    WalkGenerator,
-  });
-
-  return saveCSV(path,
-    [](Out& file, const std::string& sep)
+  },
+  representations,
+  [&](Out& file, const std::string& sep)
+  {
+    file << theFrameInfo.time;
+    for(int i = 0; i < Joints::numOfJoints; i++)
     {
-      file << "frame index" << sep << "isLeftPhase" << sep << "stepDuration" << sep << "time";
-    },
-    representations,
-    [&](Out& file, const std::string& sep)
-    {
-      file << theFrameInfo.time << sep
-           << theWalkGenerator.isLeftPhase << sep
-           << theWalkGenerator.stepDuration << sep
-           << theWalkGenerator.t << sep;
+      file << sep << theJointRequest.angles[i].toDegrees() << sep << theJointAngles.angles[i].toDegrees();
     }
-  );
-}
-
-bool LogExtractor::saveGetUpEngineFailData(const std::string& path)
-{
-  DECLARE_REPRESENTATIONS_AND_MAP(
-  {,
-    FrameInfo,
-    GetUpEngineOutput,
   });
-
-  return saveCSV(path,
-    [](Out& file, const std::string& sep)
-    {
-      file << "frame index" << sep << "name" << sep << "line" << sep << "direction";
-    },
-    representations,
-    [&](Out& file, const std::string& sep)
-    {
-      if(theGetUpEngineOutput.failFront || theGetUpEngineOutput.failBack)
-      {
-        file << theFrameInfo.time << sep
-             << TypeRegistry::getEnumName(theGetUpEngineOutput.name) << sep
-             << theGetUpEngineOutput.lineCounter << sep
-             << (theGetUpEngineOutput.failFront ? "Front" : "Back") << endl;
-      }
-    },
-    true
-  );
 }
 
 bool LogExtractor::writeTimingData(const std::string& fileName)
@@ -342,7 +404,7 @@ bool LogExtractor::writeTimingData(const std::string& fileName)
 
   std::map<unsigned short, std::string> names;/**<contains a mapping from watch id to watch name */
   std::map<unsigned, std::map<unsigned short, unsigned>> timings;/**<Contains a map from watch id to timing for each existing frame*/
-  std::map<unsigned, unsigned> processStartTimes;/**< After parsing this contains the start time of each frame (frames may be missing) */
+  std::map<unsigned, unsigned> threadStartTimes;/**< After parsing this contains the start time of each frame (frames may be missing) */
   for(int currentMessageNumber = 0; currentMessageNumber < logPlayer.getNumberOfMessages(); currentMessageNumber++)
   {
     logPlayer.queue.setSelectedMessageForReading(currentMessageNumber);
@@ -377,13 +439,13 @@ bool LogExtractor::writeTimingData(const std::string& fileName)
 
         frameTiming[watchId] = time;
       }
-      unsigned processStartTime;
-      logPlayer.in.bin >> processStartTime;
+      unsigned threadStartTime;
+      logPlayer.in.bin >> threadStartTime;
       unsigned frameNo;
       logPlayer.in.bin >> frameNo;
 
       timings[frameNo] = frameTiming;
-      processStartTimes[frameNo] = processStartTime;
+      threadStartTimes[frameNo] = threadStartTime;
     }
   }
 
@@ -405,7 +467,7 @@ bool LogExtractor::writeTimingData(const std::string& fileName)
   file << endl;
 
   //write data
-  for(auto it = processStartTimes.begin(); it != processStartTimes.end(); ++it)
+  for(auto it = threadStartTimes.begin(); it != threadStartTimes.end(); ++it)
   {
     const unsigned frameNo = it->first;
     std::vector<long> row;
@@ -431,46 +493,6 @@ bool LogExtractor::writeTimingData(const std::string& fileName)
   return true;
 }
 
-bool LogExtractor::statistics(Statistics& statistics)
-{
-  logPlayer.stop();
-
-  const size_t fileNameIndex = logPlayer.logfilePath.find_last_of('/') + 1;
-  const QStringList logInfo(QString(logPlayer.logfilePath.substr(fileNameIndex, logPlayer.logfilePath.find_last_of('.') - fileNameIndex).c_str()).split('_'));
-
-  statistics.initialize();
-  // SYNC Different Robots but not same Robot in same Half with more than 1 Log
-  const size_t robotIndex = statistics.getRobotIndex((logInfo.at(1) + (logInfo.size() > 8 ? '_' + logInfo.at(7) : "")).toStdString());
-
-  DECLARE_REPRESENTATIONS_AND_MAP(
-  {,
-    BallModel,
-    BallPercept,
-    FallDownState,
-    FrameInfo,
-    GameInfo,
-    GetUpEngineOutputLog,
-    JointSensorData,
-    KeyStates,
-    MotionRequest,
-    RobotHealth,
-    RobotInfo,
-    RobotPose,
-    TeamData,
-  });
-
-  const bool result = goThroughLog(
-    representations,
-    [&](const char frameType)
-    {
-      statistics.updateLogFrame(frameType, robotIndex, Statistic::Representations(theBallModel, theBallPercept, theFallDownState, theFrameInfo, theGameInfo, theGetUpEngineOutputLog, theJointSensorData, theKeyStates, theMotionRequest, theRobotHealth, theRobotInfo, theRobotPose, theTeamData));
-      return true;
-    }
-  );
-  statistics.viewRobot(robotIndex);
-  return result;
-}
-
 bool LogExtractor::saveLabeledBallSpots(const std::string& path)
 {
   DECLARE_REPRESENTATIONS_AND_MAP(
@@ -479,107 +501,108 @@ bool LogExtractor::saveLabeledBallSpots(const std::string& path)
     CameraInfo,
     CameraMatrix,
     LabelImage,
-    LowFrameRateImage,
+    JPEGImage,
   });
   BallSpecification ballSpecification;
 
   int imageNumber = 0;
-  const std::string& folderPath = createNewFolder(path.substr(0, path.rfind(".")) + "/");
+                    const std::string& folderPath = createNewFolder(path.substr(0, path.rfind(".")) + "/");
 
-  return saveCSV(path,
-    [](Out& file, const std::string& sep)
+                    return saveCSV(path,
+                                   [](Out& file, const std::string& sep)
+  {
+    file << "# imagenumber" << sep << "frametime" << sep << "camera" << sep << "ball" << sep << "blurred" << sep << "hidden" << sep << "penaltyMark" << sep << "blurred" << sep << "hidden" << sep << "footFront" << sep << "blurred" << sep << "hidden" << sep << "counter footFront" << sep << "footBack" << sep << "blurred" << sep << "hidden" << sep << "counter footBack" << sep << "x image" << sep << "y image" << sep << "x field" << sep << "y field" << sep << "estimated distance";
+  },
+  representations,
+  [&](Out& file, const std::string& sep)
+  {
+    if(theLabelImage.valid)
     {
-      file << "# imagenumber" << sep << "frametime" << sep << "camera" << sep << "ball" << sep << "blurred" << sep << "hidden" << sep << "penaltyMark" << sep << "blurred" << sep << "hidden" << sep << "footFront" << sep << "blurred" << sep << "hidden" << sep << "counter footFront" << sep << "footBack" << sep << "blurred" << sep << "hidden" << sep << "counter footBack" << sep << "x image" << sep << "y image" << sep << "x field" << sep << "y field" << sep << "estimated distance";
-    },
-    representations,
-    [&](Out& file, const std::string& sep)
-    {
-      if(theLabelImage.valid)
+      for(const Vector2i& ballSpot : theBallSpots.ballSpots)
       {
-        for(const Vector2i& ballSpot : theBallSpots.ballSpots)
+        std::stringstream ss;
+        GrayscaledImage dest;
+        bool foundIgnoreAnnotation = false;
+        std::vector< std::vector<int> > labels = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 1, 1, 0 }, { 0, 1, 1, 0 } };
+
+        ss << folderPath << imageNumber;
+
+        const float diameter = IISC::getImageBallRadiusByCenter(ballSpot.cast<float>(), theCameraInfo, theCameraMatrix, ballSpecification) * 3.5f;
+        std::vector<LabelImage::Annotation> annotations = theLabelImage.getLabels(ballSpot, Vector2i(diameter, diameter));
+        for(const auto& annotation : annotations)
         {
-          std::stringstream ss;
-          GrayscaledImage dest;
-          bool foundIgnoreAnnotation = false;
-          std::vector< std::vector<int> > labels = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 1, 1, 0 }, { 0, 1, 1, 0 } };
-
-          ss << folderPath << imageNumber;
-
-          const float diameter = IISC::getImageBallRadiusByCenter(ballSpot.cast<float>(), theCameraInfo, theCameraMatrix, ballSpecification) * 3.5f;
-          std::vector<Annotation> annotations = theLabelImage.getLabels(ballSpot, Vector2i(diameter, diameter));
-          for(const Annotation& annotation : annotations)
+          if(annotation.ignore)
           {
-            if(annotation.ignore)
+            foundIgnoreAnnotation = true;
+            break;
+          }
+          switch(annotation.labelType)
+          {
+            case LabelImage::Annotation::Ball:
             {
-              foundIgnoreAnnotation = true;
+              labels.at(0) = { 1, annotation.blurred, annotation.hidden };
+              ss << "_ball";
               break;
             }
-            switch(annotation.labelType)
+            case LabelImage::Annotation::PenaltyMark:
             {
-              case Annotation::Ball:
-              {
-                labels.at(0) = { 1, annotation.blurred, annotation.hidden };
-                ss << "_ball";
-                break;
-              }
-              case Annotation::PenaltyMark:
-              {
-                labels.at(1) = { 1, annotation.blurred, annotation.hidden };
-                ss << "_penaltyMark";
-                break;
-              }
-              case Annotation::FootFront:
-              {
-                labels.at(2) = { 1, std::min(static_cast<int>(annotation.blurred), labels.at(2).at(1)), std::min(static_cast<int>(annotation.hidden), labels.at(2).at(2)), labels.at(2).at(3) + 1 };
-                ss << "_footFront";
-                break;
-              }
-              case Annotation::FootBack:
-              {
-                labels.at(3) = { 1, std::min(static_cast<int>(annotation.blurred), labels.at(3).at(1)), std::min(static_cast<int>(annotation.hidden), labels.at(3).at(2)), labels.at(3).at(3) + 1 };
-                ss << "_footBack";
-                break;
-              }
-              default:
-                continue;
+              labels.at(1) = { 1, annotation.blurred, annotation.hidden };
+              ss << "_penaltyMark";
+              break;
             }
-          }
-          bool foundMatchingAnnotation = labels.at(0).at(0) || labels.at(1).at(0) || labels.at(2).at(0) || labels.at(3).at(0);
-          if(!foundIgnoreAnnotation || foundMatchingAnnotation)
-          {
-            Vector2f ballSpotOnField;
-            if(!Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), ballSpecification.radius, theCameraMatrix, theCameraInfo, ballSpotOnField))
+            case LabelImage::Annotation::FootFront:
+            {
+              labels.at(2) = { 1, std::min(static_cast<int>(annotation.blurred), labels.at(2).at(1)), std::min(static_cast<int>(annotation.hidden), labels.at(2).at(2)), labels.at(2).at(3) + 1 };
+              ss << "_footFront";
+              break;
+            }
+            case LabelImage::Annotation::FootBack:
+            {
+              labels.at(3) = { 1, std::min(static_cast<int>(annotation.blurred), labels.at(3).at(1)), std::min(static_cast<int>(annotation.hidden), labels.at(3).at(2)), labels.at(3).at(3) + 1 };
+              ss << "_footBack";
+              break;
+            }
+            default:
               continue;
-            NNUtilities::extractPatch(ballSpot, Vector2i(diameter, diameter), Vector2i(32, 32), theLowFrameRateImage.image.getGrayscaled(), dest);
-            dest.exportImage(ss.str(), theLabelImage.frameTime, GrayscaledImage::grayscale);
-            file << imageNumber << sep
-                 << theLabelImage.frameTime << sep
-                 << theCameraInfo.camera << sep
-                 << labels.at(0).at(0) << sep << labels.at(0).at(1) << sep << labels.at(0).at(2) << sep
-                 << labels.at(1).at(0) << sep << labels.at(1).at(1) << sep << labels.at(1).at(2) << sep
-                 << labels.at(2).at(0) << sep << labels.at(2).at(1) << sep << labels.at(2).at(2) << sep << labels.at(2).at(3) << sep
-                 << labels.at(3).at(0) << sep << labels.at(3).at(1) << sep << labels.at(3).at(2) << sep << labels.at(3).at(3) << sep
-                 << ballSpot.x() << sep << ballSpot.y() << sep
-                 << static_cast<int>(ballSpotOnField.x()) << sep << static_cast<int>(ballSpotOnField.y()) << sep;
-            Vector2f relativePoint;
-            if(foundMatchingAnnotation && Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), 0.f, theCameraMatrix, theCameraInfo, relativePoint))
-              file << relativePoint.norm();
-            else
-              file << -1;
-            file << endl;
-            imageNumber++;
           }
         }
+        bool foundMatchingAnnotation = labels.at(0).at(0) || labels.at(1).at(0) || labels.at(2).at(0) || labels.at(3).at(0);
+        if(!foundIgnoreAnnotation || foundMatchingAnnotation)
+        {
+          Vector2f ballSpotOnField;
+          if(!Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), ballSpecification.radius, theCameraMatrix, theCameraInfo, ballSpotOnField))
+            continue;
+          CameraImage cameraImage;
+          theJPEGImage.toCameraImage(cameraImage);
+          PatchUtilities::extractPatch(ballSpot, Vector2i(diameter, diameter), Vector2i(32, 32), cameraImage.getGrayscaled(), dest);
+          dest.exportImage(ss.str(), theLabelImage.frameTime, GrayscaledImage::grayscale);
+          file << imageNumber << sep
+               << theLabelImage.frameTime << sep
+               << theCameraInfo.camera << sep
+               << labels.at(0).at(0) << sep << labels.at(0).at(1) << sep << labels.at(0).at(2) << sep
+               << labels.at(1).at(0) << sep << labels.at(1).at(1) << sep << labels.at(1).at(2) << sep
+               << labels.at(2).at(0) << sep << labels.at(2).at(1) << sep << labels.at(2).at(2) << sep << labels.at(2).at(3) << sep
+               << labels.at(3).at(0) << sep << labels.at(3).at(1) << sep << labels.at(3).at(2) << sep << labels.at(3).at(3) << sep
+               << ballSpot.x() << sep << ballSpot.y() << sep
+               << static_cast<int>(ballSpotOnField.x()) << sep << static_cast<int>(ballSpotOnField.y()) << sep;
+          Vector2f relativePoint;
+          if(foundMatchingAnnotation && Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), 0.f, theCameraMatrix, theCameraInfo, relativePoint))
+            file << relativePoint.norm();
+          else
+            file << -1;
+          file << endl;
+          imageNumber++;
+        }
       }
-      return true;
-    },
-    true
-  );
+    }
+    return true;
+  },
+  true);
 }
 
-std::string LogExtractor::createNewFolder(const std::string& path) const
+std::string LogExtractor::createNewFolder(const std::string& prefix) const
 {
-  std::string folderPath = File::isAbsolute(path.c_str()) ? path : std::string(File::getBHDir()) + "/Config/" + path;
+  std::string folderPath = File::isAbsolute(prefix.c_str()) ? prefix : std::string(File::getBHDir()) + "/Config/" + prefix;
   QDir().mkpath(folderPath.c_str());
   return folderPath;
 }
@@ -596,22 +619,23 @@ bool LogExtractor::saveCSV(const std::string& fileName, const std::function<void
   file << endl;
 
   const bool finished = goThroughLog(
-    representations,
-    [&writeInFile, &noEndl, &file, &sep](const char frameType)
-    {
-      writeInFile(file, sep);
-      if(!noEndl)
-        file << endl;
-      return true;
-    }
-  );
+                          representations,
+                          [&writeInFile, &noEndl, &file, &sep](const std::string& frameType)
+  {
+    writeInFile(file, sep);
+    if(!noEndl)
+      file << endl;
+    return true;
+  }
+                        );
   OUTPUT_TEXT("File was created successfully: " << name);
   return finished;
 }
 
-bool LogExtractor::goThroughLog(const std::map<const MessageID, Streamable*>& representations, const std::function<bool(const char frameType)>& executeAction)
+bool LogExtractor::goThroughLog(const std::map<const MessageID, Streamable*>& representations, const std::function<bool(const std::string& frameType)>& executeAction)
 {
-  char frameType = 'a';
+  std::string frameType;
+  bool filled = false;
   for(int currentMessageNumber = 0; currentMessageNumber < logPlayer.getNumberOfMessages(); currentMessageNumber++)
   {
     logPlayer.queue.setSelectedMessageForReading(currentMessageNumber);
@@ -622,10 +646,14 @@ bool LogExtractor::goThroughLog(const std::map<const MessageID, Streamable*>& re
     {
       // Does not convert logs automatically now, can be found in LogDataProvider
       logPlayer.in.bin >> *(repr->second);
+      filled = true;
     }
-    else if(message == idProcessBegin)
-      logPlayer.in.bin >> frameType;
-    else if(message == idProcessFinished)
+    else if(message == idFrameBegin)
+    {
+      frameType = logPlayer.in.readThreadIdentifier();
+      filled = false;
+    }
+    else if(message == idFrameFinished && filled)
     {
       if(!executeAction(frameType))
         return false;

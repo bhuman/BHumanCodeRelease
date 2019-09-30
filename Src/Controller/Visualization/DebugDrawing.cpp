@@ -15,7 +15,7 @@
 
 DebugDrawing::DebugDrawing()
 {
-  timeStamp = Time::getCurrentSystemTime();
+  timestamp = Time::getCurrentSystemTime();
   usedSize = reservedSize = 0;
   elements = 0;
 }
@@ -23,7 +23,8 @@ DebugDrawing::DebugDrawing()
 const DebugDrawing& DebugDrawing::operator=(const DebugDrawing& other)
 {
   reset();
-  timeStamp = other.timeStamp;
+  timestamp = other.timestamp;
+  threadIdentifier = other.threadIdentifier;
   *this += other;
   return *this;
 }
@@ -38,7 +39,7 @@ const DebugDrawing& DebugDrawing::operator+=(const DebugDrawing& other)
   while(i != -1)
   {
     int address = offset + i;
-    Spot& t = (Spot&)elements[address];
+    Spot& t = reinterpret_cast<Spot&>(elements[address]);
     i = t.next;
     t.next = firstSpot;
     firstSpot = address;
@@ -49,7 +50,7 @@ const DebugDrawing& DebugDrawing::operator+=(const DebugDrawing& other)
   while(i != -1)
   {
     int address = offset + i;
-    Tip& t = (Tip&)elements[address];
+    Tip& t = reinterpret_cast<Tip&>(elements[address]);
     i = t.next;
     t.next = firstTip;
     firstTip = address;
@@ -82,7 +83,7 @@ DebugDrawing::~DebugDrawing()
 
 void DebugDrawing::reset()
 {
-  timeStamp = Time::getCurrentSystemTime();
+  timestamp = Time::getCurrentSystemTime();
   usedSize = 0;
   firstTip = -1;
   firstSpot = -1;
@@ -95,12 +96,12 @@ const char* DebugDrawing::getSpot(int x, int y, const Pose2f& origin) const
   const char* action = nullptr;
   while(i != -1)
   {
-    const Spot& s = (const Spot&)elements[i];
-    Vector2f p1 = origin * Vector2f((float)s.x1, (float)s.y1);
-    Vector2f p2 = origin * Vector2f((float)s.x2, (float)s.y2);
+    const Spot& s = reinterpret_cast<const Spot&>(elements[i]);
+    Vector2f p1 = origin * Vector2f(static_cast<float>(s.x1), static_cast<float>(s.y1));
+    Vector2f p2 = origin * Vector2f(static_cast<float>(s.x2), static_cast<float>(s.y2));
     if(p1.x() <= x && p1.y() <= y && x <= p2.x() && y <= p2.y())
     {
-      action = (const char*)(&s + 1); //todo ist das richtig?
+      action = reinterpret_cast<const char*>(&s + 1);
       return action;
     }
 
@@ -116,15 +117,15 @@ const char* DebugDrawing::getTip(int& x, int& y, const Pose2f& origin) const
   const char* text = nullptr;
   while(i != -1)
   {
-    const Tip& t = (const Tip&) elements[i];
-    Vector2f point = origin * Vector2f((float)t.x, (float)t.y);
-    float diff2 = (Vector2f((float)x, (float) y) - point).squaredNorm();
+    const Tip& t = reinterpret_cast<const Tip&>(elements[i]);
+    Vector2f point = origin * Vector2f(static_cast<float>(t.x), static_cast<float>(t.y));
+    float diff2 = (Vector2f(static_cast<float>(x), static_cast<float>(y)) - point).squaredNorm();
     if(diff2 <= t.radius * t.radius && diff2 < minDiff2)
     {
       minDiff2 = diff2;
       x = t.x;
       y = t.y;
-      text = (const char*)(&t + 1);
+      text = reinterpret_cast<const char*>(&t + 1);
     }
     i = t.next;
   }
@@ -135,9 +136,9 @@ void DebugDrawing::updateOrigin(Pose2f& origin) const
 {
   if(lastOrigin != -1)
   {
-    const Origin& o = (const Origin&) elements[lastOrigin];
-    origin.translation.x() = (float)o.translation.x();
-    origin.translation.y() = (float)o.translation.y();
+    const Origin& o = reinterpret_cast<const Origin&>(elements[lastOrigin]);
+    origin.translation.x() = static_cast<float>(o.translation.x());
+    origin.translation.y() = static_cast<float>(o.translation.y());
     origin.rotation = o.angle;
   }
 }
@@ -161,7 +162,7 @@ void DebugDrawing::text(const char* text, int x, int y, int fontSize, ColorRGBA 
   element.y = y;
   element.fontSize = fontSize;
   element.penColor = color;
-  element.size = (int)strlen(text) + 1;
+  element.size = static_cast<int>(strlen(text)) + 1;
   write(&element, sizeof(element));
   write(text, element.size);
 }
@@ -173,7 +174,7 @@ void DebugDrawing::spot(const char* action, int x1, int y1, int x2, int y2)
   element.y1 = y1;
   element.x2 = x2;
   element.y2 = y2;
-  element.size = (int)strlen(action) + 1;
+  element.size = static_cast<int>(strlen(action)) + 1;
   element.next = firstSpot;
   firstSpot = usedSize;
   write(&element, sizeof(element));
@@ -186,7 +187,7 @@ void DebugDrawing::tip(const char* text, int x, int y, int radius)
   element.x = x;
   element.y = y;
   element.radius = radius;
-  element.size = (int)strlen(text) + 1;
+  element.size = static_cast<int>(strlen(text)) + 1;
   element.next = firstTip;
   firstTip = usedSize;
   write(&element, sizeof(element));
@@ -293,7 +294,7 @@ void DebugDrawing::robot(Pose2f p, Vector2f dirVec, Vector2f dirHeadVec, float a
 
 bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType shapeType)
 {
-  switch((Drawings::ShapeType)shapeType)
+  switch(static_cast<Drawings::ShapeType>(shapeType))
   {
     case Drawings::circle:
     {
@@ -308,8 +309,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> brushStyle;
       message.bin >> newCircle.brushColor;
       newCircle.width = penWidth;
-      newCircle.penStyle = (Drawings::PenStyle)penStyle;
-      newCircle.brushStyle = (Drawings::BrushStyle)brushStyle;
+      newCircle.penStyle = static_cast<Drawings::PenStyle>(penStyle);
+      newCircle.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
       newCircle.radii.y() = newCircle.radii.x();
       newCircle.rotation = 0.0f;
       write(&newCircle, sizeof(newCircle));
@@ -330,8 +331,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> brushStyle;
       message.bin >> newArc.brushColor;
       newArc.width = penWidth;
-      newArc.penStyle = (Drawings::PenStyle)penStyle;
-      newArc.brushStyle = (Drawings::BrushStyle)brushStyle;
+      newArc.penStyle = static_cast<Drawings::PenStyle>(penStyle);
+      newArc.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
       write(&newArc, sizeof(newArc));
       break;
     }
@@ -350,8 +351,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> brushStyle;
       message.bin >> newEllipse.brushColor;
       newEllipse.width = penWidth;
-      newEllipse.penStyle = (Drawings::PenStyle)penStyle;
-      newEllipse.brushStyle = (Drawings::BrushStyle)brushStyle;
+      newEllipse.penStyle = static_cast<Drawings::PenStyle>(penStyle);
+      newEllipse.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
       write(&newEllipse, sizeof(newEllipse));
       break;
     }
@@ -370,8 +371,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> brushStyle;
       message.bin >> newRect.brushColor;
       newRect.width = penWidth;
-      newRect.penStyle = (Drawings::PenStyle)penStyle;
-      newRect.brushStyle = (Drawings::BrushStyle)brushStyle;
+      newRect.penStyle = static_cast<Drawings::PenStyle>(penStyle);
+      newRect.brushStyle = static_cast<Drawings::BrushStyle>(brushStyle);
       write(&newRect, sizeof(newRect));
       break;
     }
@@ -392,8 +393,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> brushStyle;
       message.bin >> brushColor;
       this->polygon(points, numberOfPoints, penWidth,
-                    (Drawings::PenStyle) penStyle, penColor,
-                    (Drawings::BrushStyle) brushStyle, brushColor);
+                    static_cast<Drawings::PenStyle>(penStyle), penColor,
+                    static_cast<Drawings::BrushStyle>(brushStyle), brushColor);
       delete[] points;
       break;
     }
@@ -409,7 +410,7 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> penWidth;
       message.bin >> penStyle;
       message.bin >> penColor;
-      this->line(x1, y1, x2, y2, (Drawings::PenStyle)penStyle, penWidth, penColor);
+      this->line(x1, y1, x2, y2, static_cast<Drawings::PenStyle>(penStyle), penWidth, penColor);
       break;
     }
     case Drawings::origin:
@@ -434,7 +435,8 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       message.bin >> penWidth;
       message.bin >> penStyle;
       message.bin >> penColor;
-      this->arrow(Vector2f(x1, y1), Vector2f(x2, y2), (Drawings::PenStyle)penStyle, penWidth, penColor);
+      this->arrow(Vector2f(x1, y1), Vector2f(x2, y2),
+                  static_cast<Drawings::PenStyle>(penStyle), penWidth, penColor);
       break;
     }
     case Drawings::dot:
@@ -523,6 +525,11 @@ bool DebugDrawing::addShapeFromQueue(InMessage& message, Drawings::ShapeType sha
       this->spot(action.c_str(), x1, y1, x2, y2);
       break;
     }
+    case Drawings::thread:
+    {
+      message.bin >> threadIdentifier;
+      break;
+    }
   }
   return true;
 }
@@ -535,7 +542,7 @@ void DebugDrawing::reserve(int size)
       reservedSize = 1024;
     while(usedSize + size > reservedSize)
       reservedSize *= 2;
-    elements = (char*)realloc(elements, reservedSize);
+    elements = static_cast<char*>(realloc(elements, reservedSize));
   }
 }
 
@@ -551,37 +558,37 @@ const DebugDrawing::Element* DebugDrawing::getNext(const Element* element) const
   switch(element->type)
   {
     case ElementType::arc:
-      element = (const Element*)((const Arc*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Arc*>(element) + 1);
       break;
     case ElementType::ellipse:
-      element = (const Element*)((const Ellipse*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Ellipse*>(element) + 1);
       break;
     case ElementType::line:
-      element = (const Element*)((const Line*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Line*>(element) + 1);
       break;
     case ElementType::origin:
-      element = (const Element*)((const Origin*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Origin*>(element) + 1);
       break;
     case ElementType::polygon:
-      element = (const Element*)((const int*)((const Polygon*)element + 1) + ((const Polygon*)element)->nCount * 2);
+      element = reinterpret_cast<const Element*>(reinterpret_cast<const int*>(static_cast<const Polygon*>(element) + 1) + static_cast<const Polygon*>(element)->nCount * 2);
       break;
     case ElementType::rectangle:
-      element = (const Element*)((const Rectangle*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Rectangle*>(element) + 1);
       break;
     case ElementType::text:
-      element = (const Element*)((const char*)element + sizeof(Text) + ((const Text*)element)->size);
+      element = reinterpret_cast<const Element*>(reinterpret_cast<const char*>(element) + sizeof(Text) + static_cast<const Text*>(element)->size);
       break;
     case ElementType::tip:
-      element = (const Element*)((const char*) element + sizeof(Tip) + ((const Tip*)element)->size);
+      element = reinterpret_cast<const Element*>(reinterpret_cast<const char*>(element) + sizeof(Tip) + static_cast<const Tip*>(element)->size);
       break;
     case ElementType::robot:
-      element = (const Element*)((const Robot*)element + 1);
+      element = static_cast<const Element*>(static_cast<const Robot*>(element) + 1);
       break;
     case ElementType::spot:
-      element = (const Element*)((const char*)element + sizeof(Spot) + ((const Spot*)element)->size);
+      element = reinterpret_cast<const Element*>(reinterpret_cast<const char*>(element) + sizeof(Spot) + static_cast<const Spot*>(element)->size);
       break;
     default:
       ASSERT(false);
   }
-  return (const char*)element - elements < usedSize ? element : 0;
+  return reinterpret_cast<const char*>(element) - elements < usedSize ? element : 0;
 }

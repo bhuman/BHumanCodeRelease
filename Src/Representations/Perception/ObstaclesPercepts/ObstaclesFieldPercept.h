@@ -37,7 +37,7 @@ STREAMABLE(ObstaclesFieldPercept,
 
   /** Draws this percept. */
   void draw() const;
-  
+
   /** Checks whether all coordiantes are finite. */
   void verify() const,
 

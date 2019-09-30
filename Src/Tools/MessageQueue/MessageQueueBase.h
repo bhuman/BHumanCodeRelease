@@ -2,7 +2,7 @@
  * @file MessageQueueBase.h
  * Declaration of the class that performs the memory management for the class MessageQueue.
  * @author Martin Lötzsch
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -28,15 +28,15 @@ private:
   static constexpr int headerSize = 4; /**< The size of the header of each message in bytes. */
   static constexpr int queueHeaderSize = 2 * sizeof(unsigned); /**< The size of the header in a streamed queue. */
   char* buf = nullptr; /**< The buffer on that the queue works. */
-  unsigned* messageIndex = 0; /**< An index of the beginnings of all messages. */
+  size_t* messageIndex = 0; /**< An index of the beginnings of all messages. */
   unsigned char numOfMappedIDs = 0; /**< The number of ids in the translation table. If 0, there is no table. */
   MessageID* mappedIDs = nullptr; /**< The mapping of internal ids to external ids. */
   std::string* mappedIDNames = nullptr; /**< The names of the internal ids. */
-  unsigned selectedMessageForReadingPosition = 0; /**< The position of the message that is selected for reading. */
-  unsigned reserveForInfrastructure = 0; /**< Non-infrastructure messages will be rejected if less than this number of bytes is free. */
-  unsigned maximumSize = 0; /**< The maximum queue size (in bytes). */
-  unsigned reservedSize = 0; /**< The queue size reserved (in bytes). */
-  unsigned usedSize = 0; /** The queue size used (in bytes). It is also the position where the next message starts. */
+  size_t selectedMessageForReadingPosition = 0; /**< The position of the message that is selected for reading. */
+  size_t reserveForInfrastructure = 0; /**< Non-infrastructure messages will be rejected if less than this number of bytes is free. */
+  size_t maximumSize = 0; /**< The maximum queue size (in bytes). */
+  size_t reservedSize = 0; /**< The queue size reserved (in bytes). */
+  size_t usedSize = 0; /** The queue size used (in bytes). It is also the position where the next message starts. */
   unsigned writePosition = 0; /**< The current size of the next message. */
   bool writingOfLastMessageFailed = false; /**< If true, then the writing of the last message failed because there was not enough space. */
   int readPosition = 0; /**< The position up to where a message is already read. */
@@ -57,12 +57,12 @@ public:
    * @param reserveForInfrastructure Non-infrastructure messages will be rejected if
    *                                 less than this number of bytes is free.
    */
-  void setSize(unsigned size, unsigned reserveForInfrastructure);
+  void setSize(size_t size, size_t reserveForInfrastructure);
 
   /**
    * Returns the (maximum) size of the queue.
    */
-  unsigned getSize() const {return maximumSize;}
+  size_t getSize() const {return maximumSize;}
 
   /**
    * The method removes all messages from the queue.
@@ -125,7 +125,7 @@ public:
    * The method returns the message size of the currently selected message for reading.
    * @return The size in bytes.
    */
-  int getMessageSize() const {return (*(int*)(buf + selectedMessageForReadingPosition + 1)) & 0xffffff;}
+  int getMessageSize() const {return (*reinterpret_cast<int*>(buf + selectedMessageForReadingPosition + 1)) & 0xffffff;}
 
   /**
    * The method returns the number of bytes not read yet in the current message.

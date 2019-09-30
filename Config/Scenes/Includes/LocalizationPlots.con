@@ -1,0 +1,13 @@
+vp SelfLocatorSampleHandling 1000 0 12
+vpd SelfLocatorSampleHandling module:SelfLocator:missingSamples red
+vpd SelfLocatorSampleHandling module:SelfLocator:sampleReplacements blue
+vpd SelfLocatorSampleHandling module:SelfLocator:sampleResetting black
+
+vp SampleWeightings 1000 0 1
+vpd SampleWeightings module:SelfLocator:minWeighting red
+vpd SampleWeightings module:SelfLocator:maxWeighting blue
+vpd SampleWeightings module:SelfLocator:averageWeighting black
+
+vp BallHypotheses 1000 -1 15
+vpd BallHypotheses module:BallStateEstimator:stationaryHypotheses blue
+vpd BallHypotheses module:BallStateEstimator:movingHypotheses red

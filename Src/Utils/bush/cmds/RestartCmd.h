@@ -7,9 +7,7 @@ class ProcessRunner;
 
 enum RestartType
 {
-  BHUMAND, NAOQID, ROBOT, SINGLE_COMMANDS,
-  BHUMAND_AND_NAOQID, COMBINED_COMMANDS,
-  NO_RESTART
+  BHUMAND, ROBOT, NO_RESTART
 };
 
 class RestartCmd : public RobotCommand

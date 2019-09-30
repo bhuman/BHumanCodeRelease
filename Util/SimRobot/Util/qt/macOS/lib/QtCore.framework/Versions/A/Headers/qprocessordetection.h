@@ -57,7 +57,7 @@
     optional and usually dependent on how the compiler was invoked. Variants
     that are a superset of another should have a define for the superset.
 
-    In addition to the procesor family, variants, and revisions, we also set
+    In addition to the processor family, variants, and revisions, we also set
     Q_BYTE_ORDER appropriately for the target processor. For bi-endian
     processors, we try to auto-detect the byte order using the __BIG_ENDIAN__,
     __LITTLE_ENDIAN__, or __BYTE_ORDER__ preprocessor macros.
@@ -94,8 +94,8 @@
     ARM is bi-endian, detect using __ARMEL__ or __ARMEB__, falling back to
     auto-detection implemented below.
 */
-#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(__aarch64__) || defined(__ARM64__)
-#  if defined(__aarch64__) || defined(__ARM64__)
+#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(_M_ARM) || defined(_M_ARM64) || defined(__aarch64__) || defined(__ARM64__)
+#  if defined(__aarch64__) || defined(__ARM64__) || defined(_M_ARM64)
 #    define Q_PROCESSOR_ARM_64
 #    define Q_PROCESSOR_WORDSIZE 8
 #  else
@@ -110,7 +110,8 @@
 #  elif defined(__ARM64_ARCH_8__) \
       || defined(__aarch64__) \
       || defined(__ARMv8__) \
-      || defined(__ARMv8_A__)
+      || defined(__ARMv8_A__) \
+      || defined(_M_ARM64)
 #    define Q_PROCESSOR_ARM 8
 #  elif defined(__ARM_ARCH_7__) \
       || defined(__ARM_ARCH_7A__) \
@@ -148,7 +149,7 @@
 #  else
 #    error "ARM architecture too old"
 #  endif
-#  if defined(__ARMEL__)
+#  if defined(__ARMEL__) || defined(_M_ARM64)
 #    define Q_BYTE_ORDER Q_LITTLE_ENDIAN
 #  elif defined(__ARMEB__)
 #    define Q_BYTE_ORDER Q_BIG_ENDIAN
@@ -320,6 +321,12 @@
 #  endif
 #  define Q_BYTE_ORDER Q_BIG_ENDIAN
 
+// -- Web Assembly --
+#elif defined(__EMSCRIPTEN__)
+#  define Q_PROCESSOR_WASM
+#  define Q_PROCESSOR_X86 6   // enables SIMD support
+#  define Q_BYTE_ORDER Q_LITTLE_ENDIAN
+#  define Q_PROCESSOR_WORDSIZE 8
 #endif
 
 /*

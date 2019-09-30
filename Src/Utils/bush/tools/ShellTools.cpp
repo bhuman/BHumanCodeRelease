@@ -3,15 +3,27 @@
 #include "Utils/bush/tools/Platform.h"
 #include "Platform/File.h"
 #include "Filesystem.h"
+#include <regex>
 
-std::string remoteCommand(const std::string& command, const std::string ip)
+static std::string escapeCmdString(const std::string& string)
 {
-  return remoteCommandForQProcess(" " + command + " < /dev/null > /dev/null 2>&1 &", ip);
+#ifdef WINDOWS
+  static std::regex regex("[\\^\\&\\|\\<\\>]");
+  return std::regex_replace(string, regex, "^$&");
+#else
+  return string;
+#endif
+}
+
+std::string remoteCommand(const std::string& command, const std::string& ip)
+{
+  return remoteCommandForQProcess(command + " </dev/null >/dev/null 2>&1 &", ip);
 }
 
 std::string remoteCommandForQProcess(const std::string& command, const std::string& ip)
 {
-  return connectCommand(ip + " " + command);
+  // The triple quote is converted to a single quote by Qt.
+  return connectCommand(ip + " \"\"\"" + escapeCmdString(command) + "\"\"\"");
 }
 
 std::string connectCommand(const std::string& ip)

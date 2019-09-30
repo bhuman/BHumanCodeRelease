@@ -20,7 +20,7 @@
 class BallLocatorTools
 {
 public:
-  static float getUnscaledProbabilityAt(const Vector2f& mean, const Matrix2f& cov, const Vector2f& pos)
+  static float getLikelihoodOfPosition(const Vector2f& mean, const Matrix2f& cov, const Vector2f& pos)
   {
     Vector2f diff = pos - mean;
     float exponent = diff.dot(cov.inverse() * diff);
@@ -28,7 +28,7 @@ public:
     return std::max(p, 0.01f /*0.0000001f*/);
   }
 
-  static float getProbabilityAtMean(const Matrix2f& cov)
+  static float getLikelihoodOfMean(const Matrix2f& cov)
   {
     return 1.f / std::max((pi2 * std::sqrt(std::max(cov.determinant(), 0.f))), 0.0000001f);
   }

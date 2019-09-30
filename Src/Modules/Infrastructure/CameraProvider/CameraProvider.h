@@ -15,52 +15,60 @@
 #include "Platform/Semaphore.h"
 #include "Platform/Thread.h"
 #include "Representations/Configuration/AutoExposureWeightTable.h"
+#include "Representations/Configuration/CameraIntrinsics.h"
+#include "Representations/Configuration/CameraResolutionRequest.h"
+#include "Representations/Configuration/CameraSettings.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/CameraIntrinsics.h"
-#include "Representations/Infrastructure/CameraResolution.h"
-#include "Representations/Infrastructure/CameraSettings.h"
 #include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/Image.h"
-#include "Representations/Infrastructure/RobotInfo.h"
+#include "Representations/Infrastructure/JPEGImage.h"
 #include "Tools/Module/Module.h"
+
+#include "Tools/Math/Random.h"
+#include "Tools/Md5.h"
+#include "Tools/RingBuffer.h"
 
 class NaoCamera;
 
 MODULE(CameraProvider,
 {,
-  USES(CameraResolutionRequest),
   USES(AutoExposureWeightTable),
+  REQUIRES(CameraResolutionRequest),
   REQUIRES(CameraSettings),
-  REQUIRES(Image),
-  REQUIRES(RobotInfo),
-  PROVIDES_WITHOUT_MODIFY(Image),
+  REQUIRES(CameraImage),
+  PROVIDES_WITHOUT_MODIFY(CameraImage),
   PROVIDES(FrameInfo),
   PROVIDES(CameraInfo),
   PROVIDES(CameraIntrinsics),
-  PROVIDES(CameraResolution),
   PROVIDES(CameraStatus),
+  PROVIDES_WITHOUT_MODIFY(JPEGImage),
   DEFINES_PARAMETERS(
   {,
     (unsigned)(1000) maxWaitForImage, /** Timeout in ms for waiting for new images. */
+    (int)(2000) resetDelay, /** Timeout in ms for resetting camera without image. */
   }),
 });
 
 class CameraProvider : public CameraProviderBase
 {
-  static thread_local CameraProvider* theInstance; /**< Points to the only instance of this class in this process or is 0 if there is none. */
+  static thread_local CameraProvider* theInstance; /**< Points to the only instance of this class in this thread or is 0 if there is none. */
 
-  NaoCamera* upperCamera = nullptr;
-  NaoCamera* lowerCamera = nullptr;
-  NaoCamera* currentImageCamera = nullptr;
-  CameraInfo upperCameraInfo;
-  CameraInfo lowerCameraInfo;
+  CameraInfo::Camera whichCamera;
+  NaoCamera* camera = nullptr;
+  CameraInfo cameraInfo;
   CameraIntrinsics cameraIntrinsics;
-  CameraResolution cameraResolution;
-  volatile bool camerasOk = true;
+  CameraResolutionRequest cameraResolutionRequest;
+  CameraResolutionRequest::Resolutions lastResolutionRequest = CameraResolutionRequest::noRequest;
+  volatile bool cameraOk = true;
 #ifdef CAMERA_INCLUDED
-  unsigned int lastImageTimeStamp = 0;
-  unsigned long long lastImageTimeStampLL = 0;
+  static Semaphore performingReset;
+  static bool resetPending;
+  RingBuffer<std::string, 120> rowBuffer;
+  unsigned int currentRow = 0, timestampLastRowChange = 0;
+  std::string headName;
+  unsigned int lastImageTimestamp = 0;
+  unsigned long long lastImageTimestampLL = 0;
 #endif
 
   Thread thread;
@@ -69,24 +77,22 @@ class CameraProvider : public CameraProviderBase
 
   /**
    * This method is called when the representation provided needs to be updated.
-   * @param theImage The representation updated.
+   * @param theCameraImage The representation updated.
    */
-  void update(Image& theImage) override;
+  void update(CameraImage& theCameraImage) override;
 
   void update(CameraInfo& cameraInfo) override;
   void update(CameraIntrinsics& cameraIntrinsics) override {cameraIntrinsics = this->cameraIntrinsics;}
-  void update(CameraResolution& cameraResolution) override {cameraResolution = this->cameraResolution;}
   void update(CameraStatus& cameraStatus) override;
-  void update(FrameInfo& frameInfo) override {frameInfo.time = theImage.timeStamp;}
-
-  void useImage(bool isUpper, unsigned timestamp, CameraInfo& cameraInfo, Image& image, NaoCamera* naoCam);
+  void update(FrameInfo& frameInfo) override {frameInfo.time = theCameraImage.timestamp;}
+  void update(JPEGImage& jpegImage) override;
 
   bool readCameraIntrinsics();
   bool readCameraResolution();
 
   bool processResolutionRequest();
 
-  void setupCameras();
+  void setupCamera();
 
   void takeImages();
 

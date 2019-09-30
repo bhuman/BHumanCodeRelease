@@ -1,35 +1,41 @@
 /**
  * @file CameraImage.h
  *
- * Declares a representation that allows for using the CameraImage as a TImage<YUYVPixel>.
+ * Declares a representation that allows for using the CameraImage as a Image<YUYVPixel>.
  *
  * @author Felix Thielke
  */
 
 #pragma once
 
-#include "Tools/ImageProcessing/TImage.h"
+#include "Tools/ImageProcessing/Image.h"
 #include "Tools/ImageProcessing/PixelTypes.h"
 
-struct CameraImage : public TImage<PixelTypes::YUYVPixel>
+struct CameraImage : public Image<PixelTypes::YUYVPixel>
 {
 private:
-  bool isReference;
+  bool reference = false;
 
 public:
-  unsigned int timestamp;
+  unsigned int timestamp = 0;
 
-  CameraImage() : isReference(false), timestamp(0) {}
+  static constexpr unsigned int maxResolutionWidth = 640;
+  static constexpr unsigned int maxResolutionHeight = 480;
+
+  bool isReference() const
+  {
+    return reference;
+  }
 
   void setResolution(const unsigned int width, const unsigned int height, const unsigned int padding = 0) override
   {
-    TImage::setResolution(width, height, padding);
-    isReference = false;
+    Image::setResolution(width, height, padding);
+    reference = false;
   }
 
   void setReference(const unsigned int width, const unsigned int height, void* data, const unsigned int timestamp = 0)
   {
-    isReference = true;
+    reference = true;
 
     this->width = width;
     this->height = height;
@@ -37,7 +43,10 @@ public:
     image = reinterpret_cast<PixelType*>(data);
   }
 
-  unsigned char getY(const size_t x, const size_t y) const { return (*this)(x / 2, y).y(x); }
+  unsigned char getY(const size_t x, const size_t y) const
+  {
+    return *(reinterpret_cast<const unsigned char*>(image) + y * width * 4 + x * 2);
+  }
   unsigned char getU(const size_t x, const size_t y) const { return (*this)(x / 2, y).u; }
   unsigned char getV(const size_t x, const size_t y) const { return (*this)(x / 2, y).v; }
   PixelTypes::YUVPixel getYUV(const size_t x, const size_t y) const
@@ -50,13 +59,13 @@ public:
     return yuv;
   }
 
-  GrayscaledImage getGrayscaled() const 
+  GrayscaledImage getGrayscaled() const
   {
     GrayscaledImage ret(width * 2, height);
     unsigned char* dest = ret[0];
     const PixelTypes::YUYVPixel* src = (*this)[0];
-    for (unsigned y = 0; y < width; y++)
-      for (unsigned x = 0; x < height; x++) 
+    for(unsigned y = 0; y < width; y++)
+      for(unsigned x = 0; x < height; x++)
       {
         *dest++ = src->y0;
         *dest++ = src->y1;

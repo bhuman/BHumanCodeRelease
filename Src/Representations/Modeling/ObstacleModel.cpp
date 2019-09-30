@@ -1,7 +1,7 @@
 #include "ObstacleModel.h"
 #include "Platform/SystemCall.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Infrastructure/TeamInfo.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Approx.h"
@@ -26,6 +26,8 @@ void ObstacleModel::operator<<(const BHumanMessage& m)
     return;
 
   obstacles = m.theBHumanStandardMessage.obstacles;
+  for(Obstacle& obstacle : obstacles)
+    obstacle.lastSeen = m.toLocalTimestamp(obstacle.lastSeen);
 }
 
 void ObstacleModel::verify() const
@@ -62,7 +64,6 @@ void ObstacleModel::draw() const
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:centerCross", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:leftRight", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:circle", "drawingOnField");
-  DECLARE_DEBUG_DRAWING("representation:ObstacleModel:orientation", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:covariance", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:velocity", "drawingOnField");
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:fallen", "drawingOnField");
@@ -99,7 +100,7 @@ void ObstacleModel::draw() const
       case Obstacle::fallenSomeRobot:
       case Obstacle::someRobot:
       {
-        color = ColorRGBA(200,200,200);
+        color = ColorRGBA(200, 200, 200); // gray
         break;
       }
       default:
@@ -131,8 +132,6 @@ void ObstacleModel::draw() const
             center.x() + 2 * obstacle.velocity.x(), center.y() + 2 * obstacle.velocity.y(), 10, Drawings::solidPen, ColorRGBA::black);
 
     if(obstacle.type >= Obstacle::fallenSomeRobot)
-    {
       DRAWTEXT("representation:ObstacleModel:fallen", center.x(), center.y(), 100, color, "FALLEN");
-    }
   }
 }

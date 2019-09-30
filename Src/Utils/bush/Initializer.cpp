@@ -1,7 +1,6 @@
 #include "Utils/bush/Initializer.h"
 #include "Utils/bush/agents/PingAgent.h"
 #include "Utils/bush/agents/StatusAgent.h"
-#include "Utils/bush/bhwrapper/Framework.h"
 #include "Utils/bush/cmdlib/ProcessRunner.h"
 #include "Utils/bush/models/Robot.h"
 #include "Utils/bush/models/Team.h"
@@ -13,12 +12,14 @@
 #include <cstdlib>
 
 #include <QApplication>
+#include "Tools/FunctionList.h"
 #include "Utils/bush/ui/MainWindow.h"
 
 Initializer::Initializer(int& argc, char** argv) : logLevel(WARN), app(0)
 {
   log(TRACE, "Initializer: Initialization started.");
 
+  FunctionList::execute();
 #ifdef WINDOWS
   ProcessRunner r("taskkill /F /IM ping.exe");
 #else // Linux, MACOS
@@ -33,7 +34,6 @@ Initializer::Initializer(int& argc, char** argv) : logLevel(WARN), app(0)
   log(TRACE, "Initializer: changing working directory to...");
   goToConfigDirectory(argv[0]);
 
-  Framework::getInstance("Initializer");
   app = new QApplication(argc, argv);
 #ifdef MACOS
   app->setStyle("macintosh");
@@ -76,8 +76,8 @@ Initializer::~Initializer()
 {
   log(TRACE, "Initializer: Shutdown started.");
 
-  mainWindow->deleteLater();
-  app->deleteLater();
+  delete mainWindow;
+  delete app;
   log(TRACE, "Initializer: Deleted GUI.");
 
   Session::getInstance().console = 0;
@@ -86,8 +86,6 @@ Initializer::~Initializer()
   delete Session::getInstance().pingAgent;
   Session::getInstance().pingAgent = 0;
   log(TRACE, "Initializer: Removed ping angent.");
-
-  Framework::destroy("Initializer");
 
   log(TRACE, "Initializer: Finished shutdown.");
 }

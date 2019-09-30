@@ -636,7 +636,7 @@ protected:
     virtual void actionEvent(QActionEvent *event);
 #endif
 
-#ifndef QT_NO_DRAGANDDROP
+#if QT_CONFIG(draganddrop)
     virtual void dragEnterEvent(QDragEnterEvent *event);
     virtual void dragMoveEvent(QDragMoveEvent *event);
     virtual void dragLeaveEvent(QDragLeaveEvent *event);
@@ -714,6 +714,7 @@ private:
     friend class QWidgetWindow;
     friend class QAccessibleWidget;
     friend class QAccessibleTable;
+    friend class QAccessibleTabButton;
 #ifndef QT_NO_GESTURES
     friend class QGestureManager;
     friend class QWinNativePanGestureRecognizer;

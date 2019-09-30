@@ -10,7 +10,7 @@
 * attributes := { whitespace } { whitespace attribute { whitespace } }
 * attribute := name { whitespace } '=' { whitespace } string
 * elements := { whitespace } { element { whitespace } | data }
-* name := ( letter | '_' | ':' ) { ( letter | digit | '.' | '-' | '_' | ':' }
+* name := ( letter | '_' | ':' ) { ( letter | digit | '.' | '-' | '_' | ':' ) }
 * string := '"' { stringchar } '"'
 *
 * whitespace := ' ' | '\n' | '\r' | '\t'
@@ -321,6 +321,8 @@ bool Reader::readString(Location& location)
     else
       tmpString += nonCharTokenToString(token);
   }
+  if(!wroteLocation)
+    location = this->location;
   return true;
 }
 

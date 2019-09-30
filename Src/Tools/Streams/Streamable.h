@@ -41,18 +41,14 @@
 #define _REG_JOIN_II(res) res
 
 /** Determine the number of entries in a tuple. */
-#if defined _MSC_VER && !defined Q_MOC_RUN
-#define _REG_TUPLE_SIZE(...) _REG_JOIN(_REG_TUPLE_SIZE_II, (__VA_ARGS__, _REG_TUPLE_SIZE_III))
-#else
 #define _REG_TUPLE_SIZE(...) _REG_TUPLE_SIZE_I((__VA_ARGS__, _REG_TUPLE_SIZE_III))
 #define _REG_TUPLE_SIZE_I(params) _REG_TUPLE_SIZE_II params
-#endif
 #define _REG_TUPLE_SIZE_II(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ...) a10
 #define _REG_TUPLE_SIZE_III 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 
 /**
- * Register an attibute.
- * Optionally, the attribute can be preceeded by a type.
+ * Register an attribute.
+ * Optionally, the attribute can be preceded by a type.
  */
 #define REG(...) _REG_I(_REG_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
 #define _REG_I(n, ...) _REG_II(n, (__VA_ARGS__))
@@ -222,7 +218,7 @@ namespace Streaming
 
   template<typename E, size_t N> struct Streamer<E[N]>
   {
-    typedef E S[N];
+    using S = E[N];
     static void stream(In* in, Out* out, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
@@ -244,12 +240,12 @@ namespace Streaming
   // This one is used by MSC
   template<typename E, size_t N> struct Streamer<const E[N]>
   {
-    typedef const E S[N];
+    using S = const E[N];
     static void stream(In* in, Out* out, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
       out->select(name, -1);
-      streamStaticArray(*out, (E*)s, N * sizeof(E), enumType);
+      streamStaticArray(*out, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
       out->deselect();
     }
   };
@@ -257,20 +253,20 @@ namespace Streaming
   // This one is used by clang
   template<typename E, size_t N> struct Streamer<E(*)[N]>
   {
-    typedef E(*S)[N];
+    using S = E (*)[N];
     static void stream(In* in, Out* out, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
       if(in)
       {
         in->select(name, -1);
-        streamStaticArray(*in, (E*)s, N * sizeof(E), enumType);
+        streamStaticArray(*in, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
         in->deselect();
       }
       else
       {
         out->select(name, -1);
-        streamStaticArray(*out, (E*)s, N * sizeof(E), enumType);
+        streamStaticArray(*out, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
         out->deselect();
       }
     }

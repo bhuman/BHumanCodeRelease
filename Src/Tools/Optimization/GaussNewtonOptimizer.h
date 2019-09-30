@@ -2,6 +2,7 @@
 
 #include "Platform/BHAssert.h"
 #include "Tools/Math/Eigen.h"
+#include <Eigen/Cholesky>
 
 template<size_t N>
 class GaussNewtonOptimizer
@@ -58,7 +59,8 @@ float GaussNewtonOptimizer<N>::iterate(Vector& params, const Vector& epsilon)
     r(i) = functor(params, i);
 
   const JacobianTransposed Jt = J.transpose();
-  const Vector s = (Jt * J).inverse() * Jt * r;
+  const Eigen::LDLT<Eigen::Matrix<float, N, N>> JtJdecomposed(Jt * J);
+  const Vector s = JtJdecomposed.solve(Jt * r);
 
   params -= s;
 

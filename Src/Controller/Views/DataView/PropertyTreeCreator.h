@@ -61,8 +61,8 @@ protected:
     e.property->setValue(value);
   }
 
-  void outChar(char value) override { out((int)value); }
-  void outSChar(signed char value) override { out((int)value); }
+  void outChar(char value) override { out(static_cast<int>(value)); }
+  void outSChar(signed char value) override { out(static_cast<int>(value)); }
   void outUChar(unsigned char value) override;
   void outShort(short value) override { out(value); }
   void outUShort(unsigned short value) override { out(value); }

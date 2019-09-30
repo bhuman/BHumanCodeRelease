@@ -8,7 +8,10 @@
 #pragma once
 
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/BehaviorControl/BehaviorStatus.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
 #include "Representations/Infrastructure/RobotHealth.h"
+#include "Representations/Infrastructure/TeamTalk.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -52,13 +55,16 @@ STREAMABLE(Teammate, COMMA public MessageHandler
   {,
     otherTeamRobot,
     BHumanRobot,
-  }),
+  });
+
+  FieldCoverage theFieldCoverage, /**< Do not log this huge representation! */
 
   (int)(-1) number,
   (TeamOrigin) mateType,
   (bool)(false) isGoalkeeper,
   (bool)(true) isPenalized,
   (bool)(true) isUpright,
+  (unsigned)(0) timeWhenLastPacketSent,
   (unsigned)(0) timeWhenLastPacketReceived,
   (unsigned)(0) timeOfLastGroundContact,
   (bool)(true) hasGroundContact,
@@ -68,11 +74,13 @@ STREAMABLE(Teammate, COMMA public MessageHandler
   (RobotPose) theRobotPose,
   (BallModel) theBallModel,
   (ObstacleModel) theObstacleModel,
+  (BehaviorStatus) theBehaviorStatus,
   (Whistle) theWhistle,
-  (FieldCoverage) theFieldCoverage,
+  (TeamBehaviorStatus) theTeamBehaviorStatus,
   (SideConfidence) theSideConfidence,
 
   (RobotHealth) theRobotHealth,
+  (TeamTalk) theTeamTalk,
 });
 
 /**

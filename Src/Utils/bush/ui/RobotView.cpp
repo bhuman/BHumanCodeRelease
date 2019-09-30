@@ -19,6 +19,9 @@
 #include "Utils/bush/tools/StringTools.h"
 #include "Utils/bush/Session.h"
 #include "Utils/bush/ui/SizeManager.h"
+#ifdef MACOS
+#include "../Src/Controller/Visualization/Helper.h"
+#endif
 
 void RobotView::init()
 {
@@ -57,7 +60,7 @@ void RobotView::init()
 
   QLabel* powerLabel = new QLabel("<font size=2><b>Power</b></font>", statusWidget);
   powerBar = new QProgressBar(this);
-  powerBar->setMaximumSize(sizeManager.statusBarWidth, (int)(sizeManager.statusBarHeight * 0.8));
+  powerBar->setMaximumSize(sizeManager.statusBarWidth, static_cast<int>(sizeManager.statusBarHeight * 0.8));
   powerBar->setRange(0, 100);
   powerBar->setValue(0);
   powerBar->setAlignment(Qt::AlignCenter);
@@ -194,14 +197,22 @@ void RobotView::setPings(ENetwork network, std::map<std::string, double>* pings)
   if(pings)
     value = static_cast<int>((*pings)[robot->name]);
 
+  QString sheet;
   if(value >= 2000)
-    bar->setStyleSheet("QLabel { background-color : #e6e6e6; border: 1px solid silver; }");
+#ifdef MACOS
+    sheet = "QLabel { background-color : " + getAlternateBase().color().name(QColor::HexArgb) + "; border: 1px solid silver; }";
+#else
+    sheet = "QLabel { background-color : #e6e6e6; border: 1px solid silver; }";
+#endif
   else if(value >= 500)
-    bar->setStyleSheet("QLabel { background-color : red; border: 1px solid silver; }");
+    sheet = "QLabel { background-color : red; border: 1px solid silver; color : black; }";
   else if(value >= 250)
-    bar->setStyleSheet("QLabel { background-color : yellow; border: 1px solid silver; }");
+    sheet = "QLabel { background-color : yellow; border: 1px solid silver; color : black; }";
   else
-    bar->setStyleSheet("QLabel { background-color : lime; border: 1px solid silver; }");
+    sheet = "QLabel { background-color : lime; border: 1px solid silver; color : black; }";
+
+  if(sheet != bar->styleSheet())
+    bar->setStyleSheet(sheet);
 
   if(value < 2000)
     bar->setText(QString::number(value) + " ms");
@@ -221,10 +232,22 @@ void RobotView::setPower(std::map<std::string, Power>* power)
 
   powerBar->setValue(value);
 
-  if(charging)
-    powerBar->setStyleSheet("QProgressBar::chunk { background-color: lime; }");
-  else
-    powerBar->setStyleSheet("QProgressBar::chunk { background-color: red; }");
+#ifdef MACOS
+  QString sheet = "QProgressBar::chunk { background-color: lime; } QProgressBar { background-color : "
+                  + getAlternateBase().color().name(QColor::HexArgb) + "; border: 1px solid silver; }";
+#else
+  QString sheet = "QProgressBar::chunk { background-color: lime; } QProgressBar { background-color : "
+                  "#e6e6e6; border: 1px solid silver; }";
+#endif
+  if(power && (*power)[robot->name].isValid())
+  {
+    if(charging)
+      sheet = "QProgressBar::chunk { background-color: lime; } QProgressBar { color: black; }";
+    else
+      sheet = "QProgressBar::chunk { background-color: red; } QProgressBar { color: black; }";
+  }
+  if(sheet != powerBar->styleSheet())
+    powerBar->setStyleSheet(sheet);
 }
 
 void RobotView::setLogs(std::map<std::string, int>* logs)
@@ -293,6 +316,7 @@ void RobotView::setSelected(bool selected)
   if(robot)
   {
     teamSelector->getSelectedTeam()->setSelectPlayer(robot, selected);
-    cPlayerNumber->setEnabled(selected);
+    if(cPlayerNumber)
+      cPlayerNumber->setEnabled(selected);
   }
 }

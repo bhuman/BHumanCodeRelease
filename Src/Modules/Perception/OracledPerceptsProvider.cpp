@@ -1,7 +1,7 @@
 /**
- * @file Modules/Infrastructure/OracledPerceptsProvider.h
+ * @file Modules/Infrastructure/OracledPerceptsProvider.cpp
  *
- * This file implements a module that provides precepts based on simulated data.
+ * This file implements a module that provides percepts based on simulated data.
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
@@ -16,7 +16,7 @@
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Obstacle.h"
 
-MAKE_MODULE(OracledPerceptsProvider, cognitionInfrastructure)
+MAKE_MODULE(OracledPerceptsProvider, infrastructure)
 
 OracledPerceptsProvider::OracledPerceptsProvider()
 {
@@ -161,7 +161,7 @@ void OracledPerceptsProvider::update(BallPercept& ballPercept)
 
 void OracledPerceptsProvider::trueBallPercept(BallPercept& ballPercept)
 {
-  const Vector2f ballOnField = theGroundTruthWorldState.balls[0].topRows<2>();
+  const Vector2f ballOnField = theGroundTruthWorldState.balls[0].position.head<2>();
   Vector2f ballOffset = theGroundTruthWorldState.ownPose.inverse() * ballOnField;
   if(ballOffset.norm() > ballMaxVisibleDistance || isPointBehindObstacle(ballOnField))
     return;
@@ -666,7 +666,7 @@ bool OracledPerceptsProvider::partOfLineIsVisible(const std::pair<Vector2f, Vect
 void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2f& p) const
 {
   p.x() += Random::normal(standardDeviation);
-  p.y() += Random::normal(standardDeviation); 
+  p.y() += Random::normal(standardDeviation);
 }
 
 void OracledPerceptsProvider::applyNoise(float standardDeviation, Vector2i& p) const

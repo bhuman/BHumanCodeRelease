@@ -1,16 +1,19 @@
 /**
  * @file ImageCoordinateSystem.cpp
  * Implementation of a struct that provides transformations on image coordinates.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author <a href="mailto:oberlies@sim.tu-darmstadt.de">Tobias Oberlies</a>
  */
 
 #include "ImageCoordinateSystem.h"
+#include "Representations/Infrastructure/CameraImage.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugImages.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/ImageProcessing/Image.h"
 #include "Tools/Module/Blackboard.h"
 
-Vector2f ImageCoordinateSystem::fromCorrected(const Vector2f& correctedCoords) const
+Vector2f ImageCoordinateSystem::fromCorrected(const Vector2f& correctedCoords, const Vector2f& offset) const
 {
   float y = correctedCoords.y();
 
@@ -47,10 +50,10 @@ void ImageCoordinateSystem::draw() const
 
   COMPLEX_IMAGE("corrected")
   {
-    if(Blackboard::getInstance().exists("Image"))
+    if(Blackboard::getInstance().exists("CameraImage"))
     {
-      TImage<PixelTypes::YUYVPixel> correctedImage;
-      const Image& theImage = static_cast<const Image&>(Blackboard::getInstance()["Image"]);
+      Image<PixelTypes::YUYVPixel> correctedImage;
+      const CameraImage& theCameraImage = static_cast<const CameraImage&>(Blackboard::getInstance()["CameraImage"]);
 
       correctedImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
       memset(correctedImage[0], 0, (cameraInfo.width / 2) * cameraInfo.height * sizeof(PixelTypes::YUYVPixel));
@@ -63,7 +66,7 @@ void ImageCoordinateSystem::draw() const
             for(int xSrc = 0; xSrc < cameraInfo.width; xSrc += 2)
               for(int xDest2 = static_cast<int>(toCorrected(Vector2i(xSrc, ySrc)).x()) / 2; xDest <= xDest2; ++xDest)
                 if(xDest >= 0 && xDest < static_cast<int>(cameraInfo.width / 2))
-                  correctedImage[yDest][xDest].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
+                  correctedImage[yDest][xDest].color = theCameraImage[ySrc][xSrc / 2].color;
           }
       SEND_DEBUG_IMAGE("corrected", correctedImage);
     }
@@ -71,10 +74,10 @@ void ImageCoordinateSystem::draw() const
 
   COMPLEX_IMAGE("horizonAligned")
   {
-    if(Blackboard::getInstance().exists("Image"))
+    if(Blackboard::getInstance().exists("CameraImage"))
     {
-      TImage<PixelTypes::YUYVPixel> horizonAlignedImage;
-      const Image& theImage = static_cast<const Image&>(Blackboard::getInstance()["Image"]);
+      Image<PixelTypes::YUYVPixel> horizonAlignedImage;
+      const CameraImage& theCameraImage = static_cast<const CameraImage&>(Blackboard::getInstance()["CameraImage"]);
 
       horizonAlignedImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
       memset(horizonAlignedImage[0], 0, (cameraInfo.width / 2) * cameraInfo.height * sizeof(PixelTypes::YUVPixel));
@@ -88,7 +91,7 @@ void ImageCoordinateSystem::draw() const
           const Vector2i writePos = (horizonAligned + cameraInfo.opticalCenter + Vector2f(0.5f, 0.5f)).cast<int>().array() / Eigen::Array<int, 2, 1>(2, 1);
           if(writePos.x() > 0 && writePos.y() > 0 && writePos.x() < static_cast<int>(horizonAlignedImage.width) && writePos.y() < static_cast<int>(horizonAlignedImage.height))
           {
-            horizonAlignedImage[writePos.y()][writePos.x()].color = (theImage[ySrc / 2] + theImage.width * (ySrc & 1))[xSrc / 2].color;
+            horizonAlignedImage[writePos.y()][writePos.x()].color = theCameraImage[ySrc][xSrc / 2].color;
           }
         }
       SEND_DEBUG_IMAGE("horizonAligned", horizonAlignedImage);

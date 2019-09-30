@@ -4,9 +4,9 @@
 #include <Eigen/Geometry>
 #include <vector>
 
-//! A 3-D object in surface respresentation decomposed into a set of triangles
+//! A 3-D object in surface representation decomposed into a set of triangles
 /*! The representations maintains a face, edge and vertex list with the
-    faces and edges refering to vertices by index.
+    faces and edges referring to vertices by index.
  */
 class TriangleMesh
 {
@@ -84,7 +84,7 @@ public:
     ExplicitEdge(const Eigen::Vector3d vertex[2]) {this->vertex[0] = vertex[0]; this->vertex[1] = vertex[1];}
   };
 
-  typedef std::vector<TriangleMesh::Edge> EdgeList;
+  using EdgeList = std::vector<TriangleMesh::Edge>;
 
   //! Empty mesh
   TriangleMesh() : isRotationalSymmetricZ(false) {}
@@ -92,7 +92,7 @@ public:
   //! See \c computeFrom
   TriangleMesh(const std::vector<ExplicitFace>& face, bool isRotationalSymmetricZ = false, double eps = 0) {computeFrom(face, isRotationalSymmetricZ, eps);}
 
-  //! Creates a trianglemesh from a set of vertices and a set of indices into the vertex set.
+  //! Creates a triangle mesh from a set of vertices and a set of indices into the vertex set.
   /*! Three \c indices in a row define one triangle. Three entries in a row form one vertex in
    \c vertices. Entries of \c indices are multiplied by three to address the first coordinate
    of the corresponding vertex in \c vertices.
@@ -133,7 +133,7 @@ public:
     EdgeList implicitEdge;
     computeContour(implicitEdge, pointOfView);
     edge.resize(implicitEdge.size());
-    for(int i = 0; i < (int) implicitEdge.size(); i++)
+    for(int i = 0; i < static_cast<int>(implicitEdge.size()); i++)
       edge[i] = explicitEdge(implicitEdge[i]);
   }
 
@@ -147,7 +147,7 @@ public:
   Eigen::Vector3d& vertexOfIndex(int index)
   {
     static Eigen::Vector3d emptyVertex;
-    if(0 <= index && index < (int) vertex.size())
+    if(0 <= index && index < static_cast<int>(vertex.size()))
       return vertex[index];
     else
       return emptyVertex;
@@ -157,7 +157,7 @@ public:
   const Eigen::Vector3d& vertexOfIndex(int index) const
   {
     static Eigen::Vector3d emptyVertex;
-    if(0 <= index && index < (int) vertex.size())
+    if(0 <= index && index < static_cast<int>(vertex.size()))
       return vertex[index];
     else
       return emptyVertex;
@@ -196,7 +196,7 @@ public:
   //! Add a face to the list of faces (with edges and vertices)
   /*! The routine identifies, whether the vertices of \c face
       are already part of the vertex list (tolerance \c eps).
-      If this is the case it uses the exististing indices.
+      If this is the case it uses the existing indices.
    */
   void add(const ExplicitFace& newFace, double eps = 0);
 
@@ -222,20 +222,20 @@ public:
     return (p1 - p0).cross(p2 - p0);
   }
 
-  //! Returns, wether from \c pointOfView \c faceIdx is visible
+  //! Returns, whether from \c pointOfView \c faceIdx is visible
   /*! At the moment, occlusion is ignored. The function just returns
       whether \c pointOfView is on the \c outside of \c faceIdx.
       If \c faceIdx is <0, \c false is returned.
    */
   bool isFaceVisible(int faceIdx, const Eigen::Vector3d& pointOfView) const
   {
-    if(0 <= faceIdx && faceIdx < (int) face.size())
+    if(0 <= faceIdx && faceIdx < static_cast<int>(face.size()))
       return isFaceVisible(face[faceIdx], pointOfView);
     else
       return false;
   }
 
-  //! Returns, wether from \c pointOfView the outside of \c face is visible
+  //! Returns, whether from \c pointOfView the outside of \c face is visible
   /*! At the moment, occlusion is ignored.
    */
   bool isFaceVisible(const Face& face, const Eigen::Vector3d& pointOfView) const
@@ -266,12 +266,12 @@ public:
   void computeMiddleAndRadius()
   {
     Eigen::Vector3d sum(0, 0, 0);
-    for(int i = 0; i < (int) vertex.size(); i++)
+    for(int i = 0; i < static_cast<int>(vertex.size()); i++)
       sum += vertex[i];
     middle = sum / static_cast<double>(vertex.size());
 
     radius  = 0;
-    for(int i = 0; i < (int) vertex.size(); i++)
+    for(int i = 0; i < static_cast<int>(vertex.size()); i++)
       radius = std::max(radius, (middle - vertex[i]).norm());
   }
 
@@ -299,7 +299,7 @@ public:
   bool isRotationalSymmetricZ;
   bool isRotationalSymmetric = false;
 
-  //! Computes a trianglemesh approximation of a cylinder
+  //! Computes a triangle mesh approximation of a cylinder
   /*! The cylinders axis is Z, \c radius given, the top and bottom planes are Z=zBottom and Z=zTop.
       (\c zBottom<zTop).
       The approximation uses \c nCircular points along each circle and nAxial
@@ -362,7 +362,7 @@ inline std::ostream& operator<<(std::ostream& os, const TriangleMesh::EdgeList& 
   TriangleMesh::EdgeList el2(el);
   sort(el2.begin(), el2.end(), LessOnEdges());
   os << "{";
-  for(int i = 0; i < (int) el2.size(); i++)
+  for(int i = 0; i < static_cast<int>(el2.size()); i++)
   {
     if(i > 0)
       os << ", ";

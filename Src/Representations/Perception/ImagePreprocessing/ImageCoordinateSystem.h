@@ -1,19 +1,16 @@
 /**
  * @file ImageCoordinateSystem.h
  * Declaration of a struct that provides transformations on image coordinates.
- * @author <a href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</a>
+ * @author Thomas Röfer
  * @author <a href="mailto:oberlies@sim.tu-darmstadt.de">Tobias Oberlies</a>
  */
 
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/Image.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/ImageProcessing/TImage.h"
 #include "Tools/Math/BHMath.h"
-#include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 /**
  * @struct ImageCoordinateSystem
@@ -21,6 +18,31 @@
  */
 STREAMABLE(ImageCoordinateSystem,
 {
+private:
+  /**
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated with a given camera offset.
+   * No clipping is done.
+   * @param imageCoords The point in image coordinates.
+   * @param offset The angular offset between the last camera poses.
+   * @return The corrected point.
+   */
+  Vector2f toCorrected(const Vector2f& imageCoords, const Vector2f& offset) const
+  {
+    const float factor = a + imageCoords.y() * b;
+    return Vector2f(cameraInfo.opticalCenter.x() - std::tan(std::atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength,
+                    cameraInfo.opticalCenter.y() + std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLengthHeight) - factor * offset.y()) * cameraInfo.focalLengthHeight);
+  }
+
+  /**
+   * Inverse of toCorrected with a given camera offset.
+   *
+   * @param correctedCoords The corrected point in image coordinates.
+   * @param offset The angular offset between the last camera poses.
+   * @return The original point.
+   */
+  Vector2f fromCorrected(const Vector2f& correctedCoords, const Vector2f& offset) const;
+
 public:
   CameraInfo cameraInfo; /**< A copy of the camera information that is required for the methods to work. Isn't logged. */
 
@@ -78,9 +100,7 @@ public:
    */
   Vector2f toCorrected(const Vector2f& imageCoords) const
   {
-    const float factor = a + imageCoords.y() * b;
-    return Vector2f(cameraInfo.opticalCenter.x() - std::tan(std::atan((cameraInfo.opticalCenter.x() - imageCoords.x()) / cameraInfo.focalLength) - factor * offset.x()) * cameraInfo.focalLength,
-                    cameraInfo.opticalCenter.y() + std::tan(std::atan((imageCoords.y() - cameraInfo.opticalCenter.y()) / cameraInfo.focalLengthHeight) - factor * offset.y()) * cameraInfo.focalLengthHeight);
+    return toCorrected(imageCoords, offset);
   }
 
   /**
@@ -101,7 +121,10 @@ public:
    * @param correctedCoords The corrected point in image coordinates.
    * @return The original point.
    */
-  Vector2f fromCorrected(const Vector2f& correctedCoords) const;
+  Vector2f fromCorrected(const Vector2f& correctedCoords) const
+  {
+    return fromCorrected(correctedCoords, offset);
+  }
 
   /**
    * Inverse of toCorrected.
@@ -112,6 +135,52 @@ public:
   Vector2f fromCorrected(const Vector2i& correctedCoords) const
   {
     return fromCorrected(Vector2f(correctedCoords.cast<float>()));
+  }
+
+  /**
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated for points that are static relative to the robot torso.
+   * No clipping is done.
+   * @param imageCoords The point in image coordinates.
+   * @return The corrected point.
+   */
+  Vector2f toCorrectedRobot(const Vector2f& imageCoords) const
+  {
+    return toCorrected(imageCoords, robotOffset);
+  }
+
+  /**
+   * Corrects image coordinates so that the distortion resulting from the rolling
+   * shutter is compensated for points that are static relative to the robot torso.
+   * No clipping is done.
+   * @param imageCoords The point in image coordinates.
+   * @return The corrected point.
+   */
+  Vector2f toCorrectedRobot(const Vector2i& imageCoords) const
+  {
+    return toCorrectedRobot(Vector2f(imageCoords.cast<float>()));
+  }
+
+  /**
+   * Inverse of toCorrectedRobot.
+   *
+   * @param correctedCoords The corrected point in image coordinates.
+   * @return The original point.
+   */
+  Vector2f fromCorrectedRobot(const Vector2f& correctedCoords) const
+  {
+    return fromCorrected(correctedCoords, robotOffset);
+  }
+
+  /**
+   * Inverse of toCorrectedRobot.
+   *
+   * @param correctedCoords The corrected point in image coordinates.
+   * @return The original point.
+   */
+  Vector2f fromCorrectedRobot(const Vector2i& correctedCoords) const
+  {
+    return fromCorrectedRobot(Vector2f(correctedCoords.cast<float>()));
   }
 
   /**
@@ -133,6 +202,7 @@ public:
   (Matrix2f) invRotation, /**< The rotation from the image coordinates to the horizon-aligned coordinates. */
   (Vector2f) origin, /**< The origin of the horizon in image coordinates. */
   (Vector2f) offset, /**< The offset of the previous image to the current one. */
+  (Vector2f) robotOffset, /**< The offset of the previous image to the current one in robot (torso) coordinates. */
   (float)(0) a, /**< Constant part of equation to motion distortion. */
   (float)(0) b, /**< Linear part of equation to motion distortion. */
 });

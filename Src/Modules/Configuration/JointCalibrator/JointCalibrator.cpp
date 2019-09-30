@@ -9,7 +9,7 @@
 #include "Tools/Motion/InverseKinematic.h"
 #include "Representations/Sensing/RobotModel.h"
 
-MAKE_MODULE(JointCalibrator, motionInfrastructure)
+MAKE_MODULE(JointCalibrator, infrastructure)
 
 void JointCalibrator::update(JointCalibration& jointCalibration)
 {

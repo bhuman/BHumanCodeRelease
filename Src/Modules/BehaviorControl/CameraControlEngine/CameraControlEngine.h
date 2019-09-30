@@ -13,6 +13,7 @@
 #include "Tools/Math/Eigen.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/HeadLimits.h"
+#include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
@@ -46,6 +47,6 @@ private:
 
   void update(HeadAngleRequest& headAngleRequest) override;
 
-  void calculatePanTiltAngles(const Vector3f& hip2Target, bool lowerCamera, Vector2a& panTilt) const;
-  void adjustTiltBoundToShoulder(Angle pan, bool lowerCamera, Rangea& tiltBound) const;
+  void calculatePanTiltAngles(const Vector3f& hip2Target, CameraInfo::Camera camera, Vector2a& panTilt) const;
+  void adjustTiltBoundToShoulder(Angle pan, CameraInfo::Camera camera, Rangea& tiltBound) const;
 };

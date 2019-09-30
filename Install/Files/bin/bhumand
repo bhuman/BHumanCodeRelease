@@ -1,34 +1,8 @@
 #!/bin/sh
 
-case "$1" in
-  start)
-    mount /dev/sdb1 2> /dev/null
-    /home/nao/bin/bhuman -b &
-    ;;
+if [ $# -ne 1 ]; then
+  echo "usage: $0 ( start | stop | restart ) - Starts/stops/restarts the bhuman service."
+  exit 1
+fi
 
-  stop)
-    killall bhuman 2> /dev/null
-    sleep 2
-    if [ ! -z "`pgrep '^bhuman$'`" ]; then
-      echo `pgrep '^bhuman$'`
-      echo "killing bhuman"
-      killall -9 bhuman 2> /dev/null
-      sleep 1
-    fi
-    umount /dev/sdb1 2> /dev/null
-    ;;
-
-  restart)
-    $0 stop
-    $0 start
-    ;;
-
-  *)
-    echo "Usage: $0 {start|stop|restart}"
-    exit 1
-    ;;
-
-esac
-
-exit 0
-
+exec systemctl --user "$1" bhuman.service

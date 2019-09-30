@@ -43,9 +43,6 @@ RobotPool::RobotPool(TeamSelector* teamSelector)
     robotViews(),
     toBeDeletedLater(0)
 {
-  QPalette palette = teamSelector->palette();
-  palette.setColor(QPalette::Base, palette.color(QPalette::Background));
-  setPalette(palette);
   setItemDelegate(new RobotPoolDelegate(this));
   setDefaultDropAction(Qt::MoveAction);
   setDragDropMode(QAbstractItemView::DragDrop);
@@ -149,4 +146,12 @@ void RobotPool::dropEvent(QDropEvent* e)
   }
   else // enable move inside the list
     QListWidget::dropEvent(e);
+}
+
+void RobotPool::paintEvent(QPaintEvent* e)
+{
+  QPalette palette = teamSelector->palette();
+  palette.setColor(QPalette::Base, palette.color(QPalette::Background));
+  setPalette(palette);
+  QListWidget::paintEvent(e);
 }

@@ -3,14 +3,18 @@ call Includes/Fast
 # field views
 vf worldState
 vfd worldState fieldLines
+vfd worldState goalFrame
 vfd worldState fieldPolygons
 vfd worldState representation:RobotPose
+vfd worldState representation:FieldBall:global
 
 # views relative to robot
-vfd worldState origin:RobotPose
+vfd worldState cognition:RobotPose
+vfd worldState representation:BallModel:endPosition
 vfd worldState representation:BallModel
 vfd worldState representation:MotionRequest
 vfd worldState representation:ObstacleModel:rectangle
+vfd worldState representation:FieldBall:relative
 
 # press any key to activate the joystick
 jc press 1 call Includes/Joystick

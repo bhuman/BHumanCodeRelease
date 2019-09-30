@@ -1,7 +1,7 @@
 /**
  * @file Representations/MotionControl/HeadMotionRequest.h
  * This file declares a struct that represents the requested head motion.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  */
 
 #pragma once
@@ -38,10 +38,4 @@ STREAMABLE(HeadMotionRequest,
   (Angle)(1) speed,         /**< Maximum joint speed to reach target angles in radians/s. */
   (Vector3f) target,        /**< Look at target relative to the robot. */
   (bool)(false) stopAndGoMode, /**< The Head will slow down and stop every HeadMotionEngine.stopAndGoModeFrequenzy milliseconds */
-});
-
-STREAMABLE(TeamHeadControlState,
-{,
-  (bool)(false) checksBall,
-  (bool)(false) usesActiveVision,
 });

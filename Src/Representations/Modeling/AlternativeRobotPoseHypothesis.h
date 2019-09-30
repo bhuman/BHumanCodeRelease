@@ -20,7 +20,7 @@ STREAMABLE(AlternativeRobotPoseHypothesis,
 {
   /** Draws this representation. */
   void draw() const;
-  
+
   /** Verifies vality of the pose */
   void verify() const,
 

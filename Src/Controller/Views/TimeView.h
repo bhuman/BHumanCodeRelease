@@ -78,7 +78,7 @@ private:
   QLabel* frequency;
   TimeView& timeView;
   QTableWidget* table; /**< The table that displays the timings */
-  unsigned lastTimeInfoTimeStamp = 0;
+  unsigned lastTimeInfoTimestamp = 0;
   std::unordered_map<unsigned short, Row*> items;
   unsigned lastUpdate; /**< time of the last update. Used to manage update rate */
   QString filter; /**< the current filter that has been entered */

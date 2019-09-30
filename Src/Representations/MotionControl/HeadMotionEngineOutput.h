@@ -1,5 +1,5 @@
 /**
- * @file Representations/MotionControl/HeadJointRequest.h
+ * @file Representations/MotionControl/HeadMotionEngineOutput.h
  * This file declares a struct that represents the requested head joint angles.
  * @author <A href="mailto:allli@informatik.uni-bremen.de">Alexander Härtl</A>
  */

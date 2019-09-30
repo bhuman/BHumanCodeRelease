@@ -33,10 +33,10 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 {
   // Do some test stuff:
   // doSomeTestStuff();
-  
+
   // Reset percept:
   filteredBallPercepts.percepts.clear();
-  
+
   // Remove elements that are too old from buffers:
   while(bufferedSeenBalls.size() != 0)
   {
@@ -52,64 +52,68 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
     else
       break;
   }
-  
+
   // Odometry update for buffered ball percepts:
   const Pose2f odometryOffset = theOdometer.odometryOffset.inverse();
   for(size_t i=0; i<bufferedSeenBalls.size(); i++)
     bufferedSeenBalls[i].positionOnField = odometryOffset * bufferedSeenBalls[i].positionOnField;
   for(size_t i=0; i<bufferedBalls.size(); i++)
     bufferedBalls[i].positionOnField = odometryOffset * bufferedBalls[i].positionOnField;
-  
+
   // Update other internal stuff
-  if(theMotionInfo.isKicking() && theBallContactWithRobot.timeOfLastContact > timeWhenLastKickWasExecuted)
+  if(theMotionInfo.isKicking()) //&& theBallContactWithRobot.timeOfLastContact > timeWhenLastKickWasExecuted)
     timeWhenLastKickWasExecuted = theFrameInfo.time;
-  
-  // Do some basic checks
+
+  // Do some first checks
   if(theBallPercept.status == BallPercept::notSeen)
     return;
-  if(perceptCanBeExcludedByLocalization() || perceptIsAtImageBorderAndCloseToTeammate())
+  if(perceptCanBeExcludedByLocalization() ||
+     perceptIsAtImageBorderAndCloseToTeammate() ||
+     perceptIsInsideTeammateAndCanBeExcludedByTeamBall() ||
+     (disableBallInOtherHalfForTesting && perceptIsInOtherHalf()))
     return;
-  
+
   // If we have reached this part of the code, the ball percept contains information
   // that might be useful and that can be used for some computations.
   const Matrix2f ballPerceptCov = Measurements::positionToCovarianceMatrixInRobotCoordinates(
                                     theBallPercept.positionOnField, 0.f, theCameraMatrix,
                                     theCameraMatrix.inverse(), robotRotationDeviation);
-  
+
   const FilteredBallPercept fbp(theBallPercept.positionInImage, theBallPercept.positionOnField,
                                 ballPerceptCov, theBallPercept.radiusOnField, theFrameInfo.time);
   bufferedBalls.push_front(fbp);
 
   // Analyze new percept
   if(theBallPercept.status == BallPercept::seen ||  // The ball was seen and the perceptor seems to be quite sure.
+     (theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theTeamBehaviorStatus.role.isGoalkeeper && theBallPercept.status != BallPercept::notSeen) || // A penalty keeper accepts everything ;-)
      currentlyPerceivedGuessedBallIsCloseToPreviouslyPerceivedSeenBalls() || // There have been quite good perceptions close to the currently - not so good - one.
      robotRecentlyKickedAndThereAreGuessedBallsRollingAway() || // After a kick, a sequence of badly perceived balls should be observerable
      perceptsAreOnALineThatIsCompatibleToARollingBall()) // We can accept bad percepts if they appear to form a line
   {
     bool ballCanBeUsed = true;
-    // Seen balls need further check (guessed ones already had to pass some other checks
+    // Seen balls need further check (guessed ones already had to pass some other checks)
     if(theBallPercept.status == BallPercept::seen)
       ballCanBeUsed = verifySeenBall();
-    
+
     // Add a new entry for the list of seen balls:
     if(theBallPercept.status == BallPercept::seen)
       bufferedSeenBalls.push_front(fbp);
-    
+
     if(!ballCanBeUsed)
       return;
-    
+
     // If we saw a ball in the lower camera recently, we ignore far away balls in the upper camera for a while.
     // However, these balls are still buffered.
     if(theCameraInfo.camera == CameraInfo::upper &&
        theFrameInfo.getTimeSince(timeBallWasBeenSeenInLowerCameraImage) < farBallIgnoreTimeout &&
        theBallPercept.positionOnField.norm() > farBallIgnoreDistance)
       return;
-    
+
     if(theBallPercept.status == BallPercept::seen)
       filteredBallPercepts.percepts.push_back(bufferedSeenBalls[0]);
     else //if(theBallPercept.status == BallPercept::guessed)
       filteredBallPercepts.percepts.push_back(bufferedBalls[0]);
-    
+
     // Check, if there is a buffered ball that has not been sent yet.
     // This can still be done with delay, as it might allow the state estimator to compute a velocity
     for(int i = static_cast<int>(bufferedSeenBalls.size()) - 1; i >= 1; i--)
@@ -120,7 +124,7 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
         break;
       }
     }
-    
+
     // Save point of time of last percept transmission
     timeOfLastFilteredPercept = theFrameInfo.time;
 
@@ -153,6 +157,42 @@ bool BallPerceptFilter::perceptCanBeExcludedByLocalization()
   return false;
 }
 
+bool BallPerceptFilter::perceptIsInsideTeammateAndCanBeExcludedByTeamBall()
+{
+  const Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
+  for(auto const& teammate : theTeamData.teammates)
+  {
+    // Teammate is on the pitch ...
+    if(teammate.status == Teammate::PLAYING || teammate.status == Teammate::FALLEN)
+    {
+      // ... and the ball is seen close to its position estimate ...
+      if((teammate.theRobotPose.translation - ballOnField).norm() < robotBanRadius)
+      {
+        // .. and the teammate has not seen the ball recently or does not see the ball in its vicinity ...
+        if(theFrameInfo.getTimeSince(teammate.theBallModel.timeWhenLastSeen) > 2000 ||
+           teammate.theBallModel.estimate.position.norm() > robotBanRadius)
+        {
+          // ... then we can finally check, if the ball has been seen by multiple teammates at a
+          // completely different place!
+          if(theTeamBallModel.isValid && theFrameInfo.getTimeSince(theTeamBallModel.timeWhenLastSeen) < 2000 &&
+             (theTeamBallModel.contributors == TeamBallModel::multipleOthers || theTeamBallModel.contributors == TeamBallModel::meAndOthers) &&
+             (theTeamBallModel.position - ballOnField).norm() > 1500)
+          {
+            // Only annotate seen balls to avoid spamming with information about guessed ones (which appear very often ...):
+            if(theBallPercept.status == BallPercept::seen)
+            {
+              ANNOTATION("BallPerceptFilter", "Excluded Hackbaellchen!");
+              //OUTPUT_TEXT("BallPerceptFilter : Excluded Hackbaellchen!");
+            }
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 bool BallPerceptFilter::perceptIsAtImageBorderAndCloseToTeammate()
 {
   if(!banBallsInRobotsAtImageBorder)
@@ -160,7 +200,7 @@ bool BallPerceptFilter::perceptIsAtImageBorderAndCloseToTeammate()
   const int x = static_cast<int>(theBallPercept.positionInImage.x());
   const int y = static_cast<int>(theBallPercept.positionInImage.y());
   const int r = static_cast<int>(theBallPercept.radiusInImage) + ballBorderAdditionalPixelThreshold;
-  
+
   if(x + r > theCameraInfo.width || x - r < 0 || y - r < 0)
   {
     // Ok, ball seems to be at the image border, now check, if there
@@ -181,8 +221,26 @@ bool BallPerceptFilter::perceptIsAtImageBorderAndCloseToTeammate()
   return false;
 }
 
+bool BallPerceptFilter::perceptIsInOtherHalf()
+{
+  const Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
+  // Check, if the x componentes of both field coordinates have the same sign:
+  if(sgn(ballOnField.x()) == sgn(theWorldModelPrediction.robotPose.translation.x()))
+    return false;
+  // In case of different signs, it is sufficient, if robot or ball is close to the center line:
+  if(ballOnField.norm() <= toleranceForDisablingBallInOtherHalf ||
+     theWorldModelPrediction.robotPose.translation.norm() <= toleranceForDisablingBallInOtherHalf)
+    return false;
+  // If both conditions are not true, the ball seems to be clearly inside the other half of the field:
+  return true;
+}
+
 bool BallPerceptFilter::verifySeenBall()
 {
+  // Override for keeper in penalty shootout:
+  // All balls can be used!
+  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theTeamBehaviorStatus.role.isGoalkeeper)
+    return true;
   // Otherwise check distance to other seen balls:
   float verificationDistance = requiredPerceptionDistanceNear;
   unsigned verificationCount = requiredPerceptionCountNear;
@@ -268,7 +326,7 @@ bool BallPerceptFilter::robotRecentlyKickedAndThereAreGuessedBallsRollingAway()
    else
      return false;
  }
- ANNOTATION("BallPerceptFilter", "Found a sequence of " << lastIndex + 1 << "balls with an increasing distance after a kick!");
+ ANNOTATION("BallPerceptFilter", "Found a sequence of " << lastIndex + 1 << " balls with an increasing distance after a kick!");
  return true;
 }
 
@@ -342,7 +400,7 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
   Vector2f x;
   x = (A.transpose() * A).inverse() * A.transpose() * z;
   //OUTPUT_TEXT("Result:  v=(" << x(0) << "," << x(1) << ")");
-  
+
   // Compute residuals and print error on console:
   Eigen::VectorXf residuals = A*x - z;
   float meanError = residuals.norm() / std::sqrt(static_cast<float>(indexOfOldestObservation));
@@ -352,7 +410,7 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
   float timeSpan = (bufferedBalls[0].timeWhenSeen - bufferedBalls[indexOfOldestObservation].timeWhenSeen) / 1000.f;
   BallPhysics::propagateBallPositionAndVelocity(startPosition,startVelocity, timeSpan, theBallSpecification.friction);
   endVelocity = startVelocity;
-  
+
   // Return error:
   return meanError * 1000.f; // in mm
 }

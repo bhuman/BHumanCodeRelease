@@ -1,7 +1,7 @@
 /**
  * @file Modules/MotionControl/MotionSelector.h
  * This file declares a module that is responsible for controlling the motion.
- * @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * @author Thomas Röfer
  * @author <A href="mailto:allli@tzi.de">Alexander Härtl</A>
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
@@ -21,6 +21,7 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/LegMotionSelection.h"
+#include "Representations/MotionControl/ClearArmEngineOutput.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Tools/Streams/EnumIndexedArray.h"
 
@@ -32,7 +33,9 @@ MODULE(MotionSelector,
   USES(WalkingEngineOutput),
   USES(KickEngineOutput),
   USES(GetUpEngineOutput),
+  USES(ClearArmEngineOutput),
   USES(MotionInfo),
+  REQUIRES(CognitionFrameInfo),
   REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
   REQUIRES(MotionRequest),
@@ -45,6 +48,8 @@ MODULE(MotionSelector,
   LOADS_PARAMETERS(
   {,
     (int) playDeadDelay,
+    (int) emergencySitDownDelay,
+    (int) interpolationAfterGetUp,
     (ENUM_INDEXED_ARRAY(int, MotionRequest::Motion)) interpolationTimes,
     (ENUM_INDEXED_ARRAY(int, ArmMotionSelection::ArmMotion)) armInterPolationTimes,
   }),
@@ -54,17 +59,8 @@ class MotionSelector : public MotionSelectorBase
 {
 public:
   MotionSelector();
-  ~MotionSelector() { theInstance = nullptr; }
-
-  /**
-   * Can be used to overwrite all other motion requests with a stand request.
-   * Must be called again in every frame a stand is desired.
-   */
-  static void sitDown();
 
 private:
-  static thread_local MotionSelector* theInstance; /**< The only instance of this module. */
-
   bool forceSitDown = false;
   MotionRequest::Motion lastLegMotion = MotionRequest::specialAction;
   MotionRequest::Motion prevLegMotion = MotionRequest::specialAction;

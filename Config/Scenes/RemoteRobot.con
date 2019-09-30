@@ -14,4 +14,4 @@ jc press 2 call Includes/Joystick
 jc press 3 call Includes/Joystick
 jc press 4 call Includes/Joystick
 
-echo dr representation:JPEGImage off
+echo mr JPEGImage off

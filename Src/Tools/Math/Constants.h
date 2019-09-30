@@ -25,7 +25,7 @@ namespace Constants
   constexpr float pi3_4 = pi * 0.75f;
   ///@}
 
-  constexpr float motionCycleTime = 1.f / 100.f;
+  constexpr float motionCycleTime = 0.012f;
 };
 
 using Constants::pi;

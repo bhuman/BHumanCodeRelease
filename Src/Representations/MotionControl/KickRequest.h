@@ -1,5 +1,5 @@
 /**
- * @file Representations/MotionControl/kickRequest.h
+ * @file Representations/MotionControl/KickRequest.h
  * @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
  */
 

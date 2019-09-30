@@ -1,5 +1,5 @@
 /**
- * @file WorldModelPredictor.h
+ * @file WorldModelPredictor.cpp
  *
  * This file implements a class that predicts the current state of data computed by modeling modules in the previous frame.
  * All positions receive odometry updates. If the ball was rolling, a dynamic update is performed, too.
@@ -16,7 +16,7 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
 {
   // Predict robot pose:
   worldModelPrediction.robotPose = theRobotPose + theOdometer.odometryOffset;
-  
+
   // Update kick time, if ball speed increased and ball was near
   if((theBallModel.estimate.velocity.norm() > ballSpeedAtLastExecution) &&
      theBallModel.estimate.position.norm() < 400.f)
@@ -31,7 +31,7 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
     lastUsedBallModel = theBallModel;
     lastUsedBallModelOdometry = odometryOfLastFrame;
   }
-  
+
   // Physics update of rolling ball
   unsigned int referenceTime = std::max(lastUsedBallModel.timeWhenLastSeen, timeWhenLastKicked);
   float deltaTime = static_cast<float>(theFrameInfo.time - referenceTime) / 1000.f;

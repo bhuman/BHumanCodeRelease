@@ -73,6 +73,7 @@ private:
   FallDownState* theFallDownState; /** Pointer to the fall down state updated.*/
   FallDownState::Direction direction; /** The fall direction. Always computed, even if not falling. */
   float torsoAboveGround; /**< The distance of the torso above the ground (in mm). */
+  bool thanks = false;
 
   UKF<5> ukf = UKF<5>(Vector5f::Zero()); // The statevector of the ukf is composed of: com, velocity;
   Vector5f dynamicNoise;
@@ -154,9 +155,9 @@ private:
 
   /**
    * Plays a sound of a given name if playback is activated.
-   * @param file The name of the sound file. ".wav" will be appended automatically.
+   * @param file The text to be pronounced by the robot.
    */
-  void playSound(const char* file);
+  void say(const char* text);
 
   /**
    * The root option sets the fall down states for undefined, upright, and
@@ -193,7 +194,7 @@ private:
           goto uprightToPickedUp;
         else if(toSquatting)
         {
-          playSound("squatting");
+          say("squatting");
           goto squatting;
         }
       }
@@ -217,7 +218,7 @@ private:
           goto upright;
         else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
         {
-          playSound("pickedUp");
+          say("Picked up");
           goto pickedUp;
         }
       }
@@ -250,17 +251,17 @@ private:
       {
         if(falling)
         {
-          playSound("falling");
+          say("Falling");
           goto fall;
         }
         else if(toUpright && stable)
         {
-          playSound("upright");
+          say("Upright");
           goto upright;
         }
         else if(toSquatting && stable)
         {
-          playSound("squatting");
+          say("Squatting");
           goto squatting;
         }
         else
@@ -280,12 +281,12 @@ private:
       {
         if(toUpright && stable)
         {
-          playSound("upright");
+          say("Upright");
           goto upright;
         }
         else if(toSquatting && stable)
         {
-          playSound("squatting");
+          say("Squatting");
           goto squatting;
         }
       }
@@ -301,12 +302,12 @@ private:
       {
         if(falling)
         {
-          playSound("falling");
-          goto preFall;
+          say("Falling");
+          goto fall;
         }
         else if(toUpright)
         {
-          playSound("upright");
+          say("Upright");
           goto upright;
         }
         else if(!theGroundContactState.contact)
@@ -324,14 +325,14 @@ private:
       {
         if(falling)
         {
-          playSound("falling");
-          goto preFall;
+          say("Falling");
+          goto fall;
         }
         else if(theGroundContactState.contact)
           goto squatting;
         else if(state_time >= minTimeWithoutGroundContactToAssumePickup)
         {
-          playSound("pickedUp");
+          say("Picked up");
           goto pickedUp;
         }
       }
@@ -371,7 +372,7 @@ private:
           goto fallingWithoutOdometryUpdate;
         else if(stable)
         {
-          playSound("fallen");
+          say("Fallen");
           goto fallen;
         }
       }

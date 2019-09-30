@@ -16,7 +16,7 @@ STREAMABLE(StiffnessData,
    * @param joint The joint the mirror of which is returned.
    * @return The output stiffness of the mirrored joint.
    */
-  int mirror(const Joints::Joint joint) const;
+  int mirror(const Joints::Joint& joint) const;
 
   /** Initializes this instance with the mirrored values of other  */
   void mirror(const StiffnessData& other);
@@ -25,7 +25,7 @@ STREAMABLE(StiffnessData,
   void resetToDefault();
 
   /** Checks wheather all stiffnesses are in the rangel [0, 100] or have the value useDefault. */
-  bool isValid() const,
+  bool isValid(bool allowUseDefault = true) const,
 
   (ENUM_INDEXED_ARRAY(int, Joints::Joint)) stiffnesses, /**< The custom stiffnesses for each joint (in %). Range: [0, 100]. */
 });
@@ -39,7 +39,7 @@ inline StiffnessData::StiffnessData()
   resetToDefault();
 }
 
-inline int StiffnessData::mirror(const Joints::Joint joint) const
+inline int StiffnessData::mirror(const Joints::Joint& joint) const
 {
   switch(joint)
   {
@@ -87,11 +87,11 @@ inline void StiffnessData::resetToDefault()
   stiffnesses.fill(useDefault);
 };
 
-inline bool StiffnessData::isValid() const
+inline bool StiffnessData::isValid(bool allowUseDefault) const
 {
   bool isValid = true;
   for(unsigned i = 0; i < Joints::numOfJoints; i++)
-    if(stiffnesses[i] > 100 || (stiffnesses[i] < 0 && stiffnesses[i] != useDefault))
+    if(stiffnesses[i] > 100 || (stiffnesses[i] < 0 && ((stiffnesses[i] != useDefault) || !allowUseDefault)))
     {
       OUTPUT_ERROR("Stiffness from Joint " << TypeRegistry::getEnumName(Joints::Joint(i)) << " is invalid");
       isValid = false;

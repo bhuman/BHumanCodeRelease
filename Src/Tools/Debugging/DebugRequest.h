@@ -41,6 +41,7 @@ inline DebugRequest::DebugRequest(const std::string& name, bool enable)
  */
 class DebugRequestTable
 {
+private:
   std::vector<char> enabled; /**< Are requests enabled or disabled? */
   std::unordered_map<const char*, size_t> fastIndex; /**< Maps char pointers to entries of vector "enabled". */
   std::unordered_map<std::string, size_t> slowIndex; /**< Maps strings to entries of vector "enabled". */
@@ -104,8 +105,8 @@ public:
   static void print(const char* message);
 
   friend class ConsoleRoboCupCtrl;
-  friend class Process;
   friend class RobotConsole;
+  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
 };
 
 inline bool DebugRequestTable::isActive(const char* name)

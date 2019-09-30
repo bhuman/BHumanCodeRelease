@@ -10,7 +10,7 @@ class ExitCmd : public CommandAdapter
   std::string getName() const override;
   std::string getDescription() const override;
   bool execute(Context& context, const std::vector<std::string>& params) override;
-  
+
 public:
   static ExitCmd theExitCmd;
 };

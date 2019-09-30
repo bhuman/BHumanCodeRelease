@@ -2,7 +2,7 @@
  * @file Modules/MotionControl/LegMotionCombinator.h
  * This file declares a module that combines the leg motions created by the different modules.
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
- * based on a module created by @author <A href="mailto:Thomas.Roefer@dfki.de">Thomas Röfer</A>
+ * based on a module created by @author Thomas Röfer
  */
 
 #pragma once

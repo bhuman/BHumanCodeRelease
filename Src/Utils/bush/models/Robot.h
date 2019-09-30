@@ -3,6 +3,7 @@
 #include <climits>
 #include <map>
 #include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Streams/Enum.h"
 
 class Context;
 class Session;

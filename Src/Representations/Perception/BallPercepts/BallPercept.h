@@ -27,7 +27,7 @@ STREAMABLE(BallPercept,
 
   /** Draws the ball*/
   void draw() const;
-  
+
   /** Verifies that the ball percept contains valid values. */
   void verify() const,
 

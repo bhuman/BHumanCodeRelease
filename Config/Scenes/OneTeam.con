@@ -1,0 +1,6 @@
+call Includes/Normal
+
+# all views are defined in another script
+call Includes/Views
+
+dr debugDrawing3d:representation:RobotPose
