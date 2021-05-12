@@ -228,7 +228,7 @@ ODE_PURE_INLINE dReal dCalcVectorDot3_44 (const dReal *a, const dReal *b) { retu
 /*
  * cross product, set res = a x b. _dCalcVectorCross3 means that elements of `res', `a'
  * and `b' are spaced step_res, step_a and step_b indexes apart respectively.
- * dCalcVectorCross3() means dCross3111. 
+ * dCalcVectorCross3() means dCross3111.
  */
 
 ODE_PURE_INLINE void _dCalcVectorCross3(dReal *res, const dReal *a, const dReal *b, unsigned step_res, unsigned step_a, unsigned step_b)
@@ -346,8 +346,8 @@ ODE_PURE_INLINE void dMultiplyHelper1_133(dReal *res, const dReal *a, const dRea
   res[0] = res_0; res[1] = res_1; res[2] = res_2;
 }
 
-/* 
-Note: NEVER call any of these functions/macros with the same variable for A and C, 
+/*
+Note: NEVER call any of these functions/macros with the same variable for A and C,
 it is not equivalent to A*=B.
 */
 
@@ -453,30 +453,30 @@ ODE_PURE_INLINE dReal dCalcMatrix3Det( const dReal* mat )
 }
 
 /**
-  Closed form matrix inversion, copied from 
+  Closed form matrix inversion, copied from
   collision_util.h for use in the stepper.
 
-  Returns the determinant.  
+  Returns the determinant.
   returns 0 and does nothing
   if the matrix is singular.
 */
 ODE_PURE_INLINE dReal dInvertMatrix3(dReal *dst, const dReal *ma)
 {
-    dReal det;  
+    dReal det;
     dReal detRecip;
 
     det = dCalcMatrix3Det( ma );
-    
 
-    /* Setting an arbitrary non-zero threshold 
-       for the determinant doesn't do anyone 
+
+    /* Setting an arbitrary non-zero threshold
+       for the determinant doesn't do anyone
        any favors.  The condition number is the
-       important thing.  If all the eigen-values 
-       of the matrix are small, so is the 
+       important thing.  If all the eigen-values
+       of the matrix are small, so is the
        determinant, but it can still be well
-       conditioned.  
+       conditioned.
        A single extremely large eigen-value could
-       push the determinant over threshold, but 
+       push the determinant over threshold, but
        produce a very unstable result if the other
        eigen-values are small.  So we just say that
        the determinant must be non-zero and trust the
@@ -487,7 +487,7 @@ ODE_PURE_INLINE dReal dInvertMatrix3(dReal *dst, const dReal *ma)
         return 0;
     }
 
-    detRecip = dRecip(det);    
+    detRecip = dRecip(det);
 
     dst[0] =  ( ma[5]*ma[10] - ma[6]*ma[9]  ) * detRecip;
     dst[1] =  ( ma[9]*ma[2]  - ma[1]*ma[10] ) * detRecip;

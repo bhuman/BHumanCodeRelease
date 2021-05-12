@@ -132,8 +132,8 @@
 
 
 
-/* 
-Note: NEVER call any of these functions/macros with the same variable for A and C, 
+/*
+Note: NEVER call any of these functions/macros with the same variable for A and C,
 it is not equivalent to A*=B.
 */
 

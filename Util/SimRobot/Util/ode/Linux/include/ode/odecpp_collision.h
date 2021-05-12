@@ -80,7 +80,7 @@ public:
     { dGeomSetRotation (_id,R); }
   const dReal * getRotation() const
     { return dGeomGetRotation (_id); }
-    
+
   void setQuaternion (const dQuaternion quat)
     { dGeomSetQuaternion (_id,quat); }
   void getQuaternion (dQuaternion quat) const
@@ -107,7 +107,7 @@ public:
     { dGeomDisable (_id); }
   int isEnabled()
     { return dGeomIsEnabled (_id); }
-  
+
   void getRelPointPos (dReal px, dReal py, dReal pz, dVector3 result) const
     { dGeomGetRelPointPos (_id, px, py, pz, result); }
   void getRelPointPos (const dVector3 p, dVector3 result) const
@@ -127,7 +127,7 @@ public:
     { dGeomVectorFromWorld (_id, px, py, pz, result); }
   void vectorFromWorld (const dVector3 p, dVector3 result) const
     { vectorFromWorld (p[0], p[1], p[2], result); }
-  
+
   void collide2 (dGeomID g, void *data, dNearCallback *callback)
     { dSpaceCollide2 (_id,g,data,callback); }
 };
@@ -379,18 +379,50 @@ public:
   void get (dVector3 start, dVector3 dir)
     { dGeomRayGet (_id, start, dir); }
 
+#ifdef WIN32
+#pragma warning( push )
+#pragma warning( disable : 4996 )
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+  ODE_API_DEPRECATED
   void setParams (int firstContact, int backfaceCull)
     { dGeomRaySetParams (_id, firstContact, backfaceCull); }
+
+  ODE_API_DEPRECATED
   void getParams (int *firstContact, int *backfaceCull)
     { dGeomRayGetParams (_id, firstContact, backfaceCull); }
+#ifdef WIN32
+#pragma warning( pop )
+#else
+#pragma GCC diagnostic pop
+#endif
+  void setBackfaceCull (int backfaceCull)
+    { dGeomRaySetBackfaceCull (_id, backfaceCull); }
+  int getBackfaceCull()
+    { return dGeomRayGetBackfaceCull (_id); }
+
+  void setFirstContact (int firstContact)
+    { dGeomRaySetFirstContact (_id, firstContact); }
+  int getFirstContact()
+    { return dGeomRayGetFirstContact (_id); }
+
   void setClosestHit (int closestHit)
     { dGeomRaySetClosestHit (_id, closestHit); }
   int getClosestHit()
     { return dGeomRayGetClosestHit (_id); }
 };
 
+#ifdef WIN32
+#pragma warning( push )
+#pragma warning( disable : 4996 )
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
-class dGeomTransform : public dGeom {
+class ODE_API_DEPRECATED dGeomTransform : public dGeom {
   // intentionally undefined, don't use these
   dGeomTransform (dGeomTransform &);
   void operator= (dGeomTransform &);
@@ -422,6 +454,12 @@ public:
   int getInfo()
     { return dGeomTransformGetInfo (_id); }
 };
+
+#ifdef WIN32
+#pragma warning( pop )
+#else
+#pragma GCC diagnostic pop
+#endif
 
 //}
 

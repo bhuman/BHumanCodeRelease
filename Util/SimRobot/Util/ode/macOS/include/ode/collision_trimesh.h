@@ -45,7 +45,7 @@ struct dxTriMeshData;
 typedef struct dxTriMeshData* dTriMeshDataID;
 
 
-typedef enum 
+typedef enum
 {
     dMTV__MIN,
 
@@ -68,7 +68,7 @@ ODE_API void dGeomTriMeshDataDestroy(dTriMeshDataID g);
 /*
  * The values of data_id that can be used with dGeomTriMeshDataSet/dGeomTriMeshDataGet
  */
-enum 
+enum
 {
     dTRIMESHDATA__MIN,
 
@@ -86,7 +86,7 @@ enum
 /*
  * The flags of the dTRIMESHDATA_USE_FLAGS data elements
  */
-enum 
+enum
 {
     dMESHDATAUSE_EDGE1      = 0x01,
     dMESHDATAUSE_EDGE2      = 0x02,
@@ -102,12 +102,12 @@ enum
  */
 ODE_API void dGeomTriMeshDataSet(dTriMeshDataID g, int data_id, void *in_data);
 ODE_API void *dGeomTriMeshDataGet(dTriMeshDataID g, int data_id);
-ODE_API void *dGeomTriMeshDataGet2(dTriMeshDataID g, int data_id, size_t *pout_size/*=NULL*/);
+ODE_API void *dGeomTriMeshDataGet2(dTriMeshDataID g, int data_id, dsizeint *pout_size/*=NULL*/);
 
 
 
 /**
- * We need to set the last transform after each time step for 
+ * We need to set the last transform after each time step for
  * accurate collision response. These functions get and set that transform.
  * It is stored per geom instance, rather than per dTriMeshDataID.
  */
@@ -118,22 +118,22 @@ ODE_API const dReal* dGeomTriMeshGetLastTransform( dGeomID g );
  * Build a TriMesh data object with single precision vertex data.
  */
 ODE_API void dGeomTriMeshDataBuildSingle(dTriMeshDataID g,
-                                 const void* Vertices, int VertexStride, int VertexCount, 
+                                 const void* Vertices, int VertexStride, int VertexCount,
                                  const void* Indices, int IndexCount, int TriStride);
 /* same again with a normals array (used as trimesh-trimesh optimization) */
 ODE_API void dGeomTriMeshDataBuildSingle1(dTriMeshDataID g,
-                                  const void* Vertices, int VertexStride, int VertexCount, 
+                                  const void* Vertices, int VertexStride, int VertexCount,
                                   const void* Indices, int IndexCount, int TriStride,
                                   const void* Normals);
 /*
 * Build a TriMesh data object with double precision vertex data.
 */
-ODE_API void dGeomTriMeshDataBuildDouble(dTriMeshDataID g, 
-                                 const void* Vertices,  int VertexStride, int VertexCount, 
+ODE_API void dGeomTriMeshDataBuildDouble(dTriMeshDataID g,
+                                 const void* Vertices,  int VertexStride, int VertexCount,
                                  const void* Indices, int IndexCount, int TriStride);
 /* same again with a normals array (used as trimesh-trimesh optimization) */
-ODE_API void dGeomTriMeshDataBuildDouble1(dTriMeshDataID g, 
-                                  const void* Vertices,  int VertexStride, int VertexCount, 
+ODE_API void dGeomTriMeshDataBuildDouble1(dTriMeshDataID g,
+                                  const void* Vertices,  int VertexStride, int VertexCount,
                                   const void* Indices, int IndexCount, int TriStride,
                                   const void* Normals);
 
@@ -159,14 +159,14 @@ enum
 
     dTRIDATAPREPROCESS_BUILD_CONCAVE_EDGES = dTRIDATAPREPROCESS_BUILD__MIN, // Used to optimize OPCODE trimesh-capsule collisions; allocates 1 byte per triangle; no extra data associated
     dTRIDATAPREPROCESS_BUILD_FACE_ANGLES,   // Used to aid trimesh-convex collisions; memory requirements depend on extra data
-    
+
     dTRIDATAPREPROCESS_BUILD__MAX,
 };
 
 /*
  * Data preprocessing extra values for dTRIDATAPREPROCESS_BUILD_FACE_ANGLES.
  */
-enum 
+enum
 {
     dTRIDATAPREPROCESS_FACE_ANGLES_EXTRA__MIN,
 
@@ -186,8 +186,8 @@ enum
  * buildRequestFlags is a bitmask of 1U << dTRIDATAPREPROCESS_BUILD_...
  * It is allowed to call the function multiple times provided the bitmasks are different each time.
  *
- * requestExtraData is an optional pointer to array of extra parameters per bitmask bits 
- * (only the elements indexed by positions of raised bits are examined; 
+ * requestExtraData is an optional pointer to array of extra parameters per bitmask bits
+ * (only the elements indexed by positions of raised bits are examined;
  * defaults are assumed if the pointer is NULL)
  *
  * The function returns a boolean status the only failure reason being insufficient memory.
@@ -202,7 +202,7 @@ ODE_API int dGeomTriMeshDataPreprocess(dTriMeshDataID g);
 
 
 /*
- * Get and set the internal preprocessed trimesh data buffer (see the enumerated type above), for loading and saving 
+ * Get and set the internal preprocessed trimesh data buffer (see the enumerated type above), for loading and saving
  * These functions are deprecated. Use dGeomTriMeshDataSet/dGeomTriMeshDataGet2 with dTRIMESHDATA_USE_FLAGS instead.
  */
 ODE_API_DEPRECATED ODE_API void dGeomTriMeshDataGetBuffer(dTriMeshDataID g, unsigned char** buf, int* bufLen);
@@ -238,8 +238,8 @@ ODE_API dTriRayCallback* dGeomTriMeshGetRayCallback(dGeomID g);
 /*
  * Triangle merging callback.
  * Allows the user to generate a fake triangle index for a new contact generated
- * from merging of two other contacts. That index could later be used by the 
- * user to determine attributes of original triangles used as sources for a 
+ * from merging of two other contacts. That index could later be used by the
+ * user to determine attributes of original triangles used as sources for a
  * merged contact.
  */
 typedef int dTriTriMergeCallback(dGeomID TriMesh, int FirstTriangleIndex, int SecondTriangleIndex);

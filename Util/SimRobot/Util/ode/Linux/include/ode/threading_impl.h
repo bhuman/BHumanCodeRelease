@@ -47,6 +47,34 @@ typedef struct dxThreadingThreadPool *dThreadingThreadPoolID;
 
 
 /**
+ * @brief Allocates built-in self-threaded threading implementation object.
+ *
+ * A self-threaded implementation is a type of implementation that performs 
+ * processing of posted calls by means of caller thread itself. This type of 
+ * implementation does not need thread pool to serve it.
+ * 
+ * Note that since May 9th, 2017 (rev. #2066) the Self-Threaded implementation 
+ * returns 0 rather than 1 as available thread count to distinguish from 
+ * thread pools with just one thread in them.
+ *
+ * The processing is arranged in a way to prevent call stack depth growth 
+ * as more and more nested calls are posted.
+ *
+ * Note that it is not necessary to create and assign a self-threaded 
+ * implementation to a world, as there is a global one used by default 
+ * if no implementation is explicitly assigned. You should only assign 
+ * each world an individual threading implementation instance if simulations 
+ * need to be run in parallel in multiple threads for the worlds.
+ *
+ * @returns ID of object allocated or NULL on failure
+ * 
+ * @ingroup threading
+ * @see dThreadingAllocateMultiThreadedImplementation
+ * @see dThreadingFreeImplementation
+ */
+ODE_API dThreadingImplementationID dThreadingAllocateSelfThreadedImplementation();
+
+/**
  * @brief Allocates built-in multi-threaded threading implementation object.
  *
  * A multi-threaded implementation is a type of implementation that has to be 
@@ -193,7 +221,7 @@ ODE_API void dExternalThreadingServeMultiThreadedImplementation(dThreadingImplem
  * @see dThreadingFreeThreadPool
  */
 ODE_API dThreadingThreadPoolID dThreadingAllocateThreadPool(unsigned thread_count, 
-  size_t stack_size, unsigned int ode_data_allocate_flags, void *reserved/*=NULL*/);
+  dsizeint stack_size, unsigned int ode_data_allocate_flags, void *reserved/*=NULL*/);
 
 /**
  * @brief Commands an instance of built-in thread pool to serve a built-in multi-threaded 

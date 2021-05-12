@@ -54,12 +54,7 @@ ODE_API int dRandInt (int n);
 ODE_API dReal dRandReal(void);
 
 /* print out a matrix */
-#ifdef __cplusplus
-ODE_API void dPrintMatrix (const dReal *A, int n, int m, const char *fmt = "%10.4f ",
-		   FILE *f=stdout);
-#else
 ODE_API void dPrintMatrix (const dReal *A, int n, int m, const char *fmt, FILE *f);
-#endif
 
 /* make a random vector with entries between +/- range. A has n elements. */
 ODE_API void dMakeRandomVector (dReal *A, int n, dReal range);
@@ -81,5 +76,11 @@ ODE_API dReal dMaxDifferenceLowerTriangle (const dReal *A, const dReal *B, int n
 #ifdef __cplusplus
 }
 #endif
+
+
+#ifdef __cplusplus
+static inline void dPrintMatrix (const dReal *A, int n, int m, const char *fmt="%10.4f ") { dPrintMatrix(A, n, m, fmt, stdout); }
+#endif
+
 
 #endif

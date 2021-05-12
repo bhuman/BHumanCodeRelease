@@ -32,9 +32,9 @@ extern "C" {
 #endif
 
 /* function types to allocate and free memory */
-typedef void * dAllocFunction (size_t size);
-typedef void * dReallocFunction (void *ptr, size_t oldsize, size_t newsize);
-typedef void dFreeFunction (void *ptr, size_t size);
+typedef void * dAllocFunction (dsizeint size);
+typedef void * dReallocFunction (void *ptr, dsizeint oldsize, dsizeint newsize);
+typedef void dFreeFunction (void *ptr, dsizeint size);
 
 /* set new memory management functions. if fn is 0, the default handlers are
  * used. */
@@ -48,9 +48,9 @@ ODE_API dReallocFunction *dGetReallocHandler (void);
 ODE_API dFreeFunction *dGetFreeHandler (void);
 
 /* allocate and free memory. */
-ODE_API void * dAlloc (size_t size);
-ODE_API void * dRealloc (void *ptr, size_t oldsize, size_t newsize);
-ODE_API void dFree (void *ptr, size_t size);
+ODE_API void * dAlloc (dsizeint size);
+ODE_API void * dRealloc (void *ptr, dsizeint oldsize, dsizeint newsize);
+ODE_API void dFree (void *ptr, dsizeint size);
 
 #ifdef __cplusplus
 }

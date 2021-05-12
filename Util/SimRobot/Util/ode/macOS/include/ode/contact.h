@@ -38,10 +38,10 @@ enum {
   dContactSoftERP = 0x008,      /**< Don't use global erp for penetration reduction */
   dContactSoftCFM = 0x010,      /**< Don't use global cfm for penetration constraint */
   dContactMotion1 = 0x020,      /**< Use a non-zero target velocity for the constraint */
-  dContactMotion2 = 0x040, 
-  dContactMotionN = 0x080, 
+  dContactMotion2 = 0x040,
+  dContactMotionN = 0x080,
   dContactSlip1	  = 0x100,      /**< Force-dependent slip. */
-  dContactSlip2	  = 0x200, 
+  dContactSlip2	  = 0x200,
   dContactRolling = 0x400,      /**< Rolling/Angular friction */
 
   dContactApprox0   = 0x0000,
@@ -74,13 +74,13 @@ typedef struct dSurfaceParameters {
 /**
  * @brief Describe the contact point between two geoms.
  *
- * If two bodies touch, or if a body touches a static feature in its 
- * environment, the contact is represented by one or more "contact 
+ * If two bodies touch, or if a body touches a static feature in its
+ * environment, the contact is represented by one or more "contact
  * points", described by dContactGeom.
  *
- * The convention is that if body 1 is moved along the normal vector by 
- * a distance depth (or equivalently if body 2 is moved the same distance 
- * in the opposite direction) then the contact depth will be reduced to 
+ * The convention is that if body 1 is moved along the normal vector by
+ * a distance depth (or equivalently if body 2 is moved the same distance
+ * in the opposite direction) then the contact depth will be reduced to
  * zero. This means that the normal vector points "in" to body 1.
  *
  * @ingroup collide

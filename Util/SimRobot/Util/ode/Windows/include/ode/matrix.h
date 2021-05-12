@@ -129,9 +129,15 @@ ODE_API void dSolveL1 (const dReal *L, dReal *b, int n, int nskip);
 ODE_API void dSolveL1T (const dReal *L, dReal *b, int n, int nskip);
 
 
-/* in matlab syntax: a(1:n) = a(1:n) .* d(1:n) */
+/* in matlab syntax: a(1:n) = a(1:n) .* d(1:n) 
+ */
 
-ODE_API void dVectorScale (dReal *a, const dReal *d, int n);
+ODE_API void dScaleVector (dReal *a, const dReal *d, int n);
+
+/* The function is an alias for @c dScaleVector.
+ * It has been deprecated because of a wrong naming schema used.
+ */
+ODE_API_DEPRECATED ODE_API void dVectorScale (dReal *a, const dReal *d, int n);
 
 
 /* given `L', a n*n lower triangular matrix with ones on the diagonal,

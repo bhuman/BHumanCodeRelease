@@ -129,9 +129,15 @@ ODE_API void dSolveL1 (const dReal *L, dReal *b, int n, int nskip);
 ODE_API void dSolveL1T (const dReal *L, dReal *b, int n, int nskip);
 
 
-/* in matlab syntax: a(1:n) = a(1:n) .* d(1:n) */
+/* in matlab syntax: a(1:n) = a(1:n) .* d(1:n)
+ */
 
-ODE_API void dVectorScale (dReal *a, const dReal *d, int n);
+ODE_API void dScaleVector (dReal *a, const dReal *d, int n);
+
+/* The function is an alias for @c dScaleVector.
+ * It has been deprecated because of a wrong naming schema used.
+ */
+ODE_API_DEPRECATED ODE_API void dVectorScale (dReal *a, const dReal *d, int n);
 
 
 /* given `L', a n*n lower triangular matrix with ones on the diagonal,
@@ -154,7 +160,7 @@ ODE_API void dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int ns
  *   - d has size n. d contains the reciprocal diagonal elements of D.
  *   - a has size n.
  * the result is written into L, except that the left column of L and d[0]
- * are not actually modified. see ldltaddTL.m for further comments. 
+ * are not actually modified. see ldltaddTL.m for further comments.
  */
 ODE_API void dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip);
 

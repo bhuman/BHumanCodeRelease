@@ -40,9 +40,9 @@ protected:
 	dWorldSimpleIDContainer(): _id(0) {}
 	~dWorldSimpleIDContainer() { destroy(); }
 
-	void destroy() { 
+	void destroy() {
 		if (_id) {
-			dWorldDestroy(_id); 
+			dWorldDestroy(_id);
 			_id = 0;
 		}
 	}
@@ -103,7 +103,7 @@ public:
   dReal getQuickStepW() const
     { return dWorldGetQuickStepW (get_id()); }
 
-  void  setAutoDisableLinearThreshold (dReal threshold) 
+  void  setAutoDisableLinearThreshold (dReal threshold)
     { dWorldSetAutoDisableLinearThreshold (get_id(), threshold); }
   dReal getAutoDisableLinearThreshold() const
     { return dWorldGetAutoDisableLinearThreshold (get_id()); }
@@ -153,7 +153,7 @@ public:
   dReal getContactSurfaceLayer() const
     { return dWorldGetContactSurfaceLayer (get_id()); }
 
-  void impulseToForce (dReal stepsize, dReal ix, dReal iy, dReal iz, 
+  void impulseToForce (dReal stepsize, dReal ix, dReal iy, dReal iz,
 		       dVector3 force)
     { dWorldImpulseToForce (get_id(), stepsize, ix, iy, iz, force); }
 };
@@ -166,9 +166,9 @@ protected:
 	dBodySimpleIDContainer(): _id(0) {}
 	~dBodySimpleIDContainer() { destroy(); }
 
-	void destroy() { 
+	void destroy() {
 		if (_id) {
-			dBodyDestroy(_id); 
+			dBodyDestroy(_id);
 			_id = 0;
 		}
 	}
@@ -271,25 +271,25 @@ public:
   void addRelTorque (const dVector3 t)
     { addRelTorque (t[0], t[1], t[2]); }
 
-  void addForceAtPos (dReal fx, dReal fy, dReal fz, 
+  void addForceAtPos (dReal fx, dReal fy, dReal fz,
 		      dReal px, dReal py, dReal pz)
     { dBodyAddForceAtPos (get_id(), fx, fy, fz, px, py, pz); }
   void addForceAtPos (const dVector3 f, const dVector3 p)
     { addForceAtPos (f[0], f[1], f[2], p[0], p[1], p[2]); }
 
-  void addForceAtRelPos (dReal fx, dReal fy, dReal fz, 
+  void addForceAtRelPos (dReal fx, dReal fy, dReal fz,
                          dReal px, dReal py, dReal pz)
     { dBodyAddForceAtRelPos (get_id(), fx, fy, fz, px, py, pz); }
   void addForceAtRelPos (const dVector3 f, const dVector3 p)
     { addForceAtRelPos (f[0], f[1], f[2], p[0], p[1], p[2]); }
 
-  void addRelForceAtPos (dReal fx, dReal fy, dReal fz, 
+  void addRelForceAtPos (dReal fx, dReal fy, dReal fz,
 			 dReal px, dReal py, dReal pz)
     { dBodyAddRelForceAtPos (get_id(), fx, fy, fz, px, py, pz); }
   void addRelForceAtPos (const dVector3 f, const dVector3 p)
     { addRelForceAtPos (f[0], f[1], f[2], p[0], p[1], p[2]); }
 
-  void addRelForceAtRelPos (dReal fx, dReal fy, dReal fz, 
+  void addRelForceAtRelPos (dReal fx, dReal fy, dReal fz,
 			    dReal px, dReal py, dReal pz)
     { dBodyAddRelForceAtRelPos (get_id(), fx, fy, fz, px, py, pz); }
   void addRelForceAtRelPos (const dVector3 f, const dVector3 p)
@@ -378,7 +378,7 @@ public:
   bool isConnectedTo (dBodyID body) const
     { return dAreConnected (get_id(), body) != 0; }
 
-  void  setAutoDisableLinearThreshold (dReal threshold) 
+  void  setAutoDisableLinearThreshold (dReal threshold)
     { dBodySetAutoDisableLinearThreshold (get_id(), threshold); }
   dReal getAutoDisableLinearThreshold() const
     { return dBodyGetAutoDisableLinearThreshold (get_id()); }
@@ -440,9 +440,9 @@ protected:
 	dJointGroupSimpleIDContainer(): _id(0) {}
 	~dJointGroupSimpleIDContainer() { destroy(); }
 
-	void destroy() { 
+	void destroy() {
 		if (_id) {
-			dJointGroupDestroy(_id); 
+			dJointGroupDestroy(_id);
 			_id = 0;
 		}
 	}
@@ -468,7 +468,7 @@ protected:
 public:
   dJointGroupTemplate ()
     { set_id(dJointGroupCreate(0)); }
-  
+
   void create () {
     destroy();
     set_id(dJointGroupCreate(0));
@@ -493,9 +493,9 @@ protected:
 	dJointSimpleIDContainer(): _id(0) {}
 	~dJointSimpleIDContainer() { destroy(); }
 
-	void destroy() { 
+	void destroy() {
 		if (_id) {
-			dJointDestroy (_id); 
+			dJointDestroy (_id);
 			_id = 0;
 		}
 	}
@@ -639,7 +639,7 @@ public:
   }
   void create (dWorldTemplate<dWorldTemplateBase>& world, dJointGroupID group=0)
     { create(world.id(), group); }
-  
+
   void setAnchor (dReal x, dReal y, dReal z)
     { dJointSetHingeAnchor (get_id(), x, y, z); }
   void setAnchor (const dVector3 a)
@@ -780,7 +780,7 @@ public:
   virtual dReal getParam (int parameter) const
     { return dJointGetUniversalParam (get_id(), parameter); }
   // TODO: expose params through methods
-  
+
   void getAngles(dReal *angle1, dReal *angle2) const
     { dJointGetUniversalAngles (get_id(), angle1, angle2); }
 
@@ -841,7 +841,7 @@ public:
     { dVector3 a = { x, y, z }; dJointSetHinge2Axes (get_id(), NULL, a); }
   ODE_API_DEPRECATED void setAxis2 (const dVector3 a)
     { dJointSetHinge2Axes (get_id(), NULL, a); }
-    
+
   void getAnchor (dVector3 result) const
     { dJointGetHinge2Anchor (get_id(), result); }
   void getAnchor2 (dVector3 result) const
@@ -1154,7 +1154,7 @@ public:
     destroy();
     set_id(dJointCreateContact(world, group, contact));
   }
-  
+
   void create (dWorldTemplate<dWorldTemplateBase>& world, dJointGroupID group, dContact *contact)
     { create(world.id(), group, contact); }
 };

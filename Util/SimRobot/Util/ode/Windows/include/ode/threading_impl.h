@@ -53,6 +53,10 @@ typedef struct dxThreadingThreadPool *dThreadingThreadPoolID;
  * processing of posted calls by means of caller thread itself. This type of 
  * implementation does not need thread pool to serve it.
  * 
+ * Note that since May 9th, 2017 (rev. #2066) the Self-Threaded implementation 
+ * returns 0 rather than 1 as available thread count to distinguish from 
+ * thread pools with just one thread in them.
+ *
  * The processing is arranged in a way to prevent call stack depth growth 
  * as more and more nested calls are posted.
  *
@@ -217,7 +221,7 @@ ODE_API void dExternalThreadingServeMultiThreadedImplementation(dThreadingImplem
  * @see dThreadingFreeThreadPool
  */
 ODE_API dThreadingThreadPoolID dThreadingAllocateThreadPool(unsigned thread_count, 
-  size_t stack_size, unsigned int ode_data_allocate_flags, void *reserved/*=NULL*/);
+  dsizeint stack_size, unsigned int ode_data_allocate_flags, void *reserved/*=NULL*/);
 
 /**
  * @brief Commands an instance of built-in thread pool to serve a built-in multi-threaded 

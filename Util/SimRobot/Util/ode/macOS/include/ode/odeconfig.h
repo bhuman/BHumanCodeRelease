@@ -45,8 +45,8 @@
 #if defined(_MSC_VER) || (defined(__GNUC__) && defined(_WIN32))
   #if defined(ODE_DLL)
     #define ODE_API __declspec(dllexport)
-  #elif !defined(ODE_LIB)
-    #define ODE_DLL_API __declspec(dllimport)
+  #else
+    #define ODE_API
   #endif
 #endif
 
@@ -80,8 +80,11 @@
 #endif // #if !defined(__GNUC__)
 
 
-/* Well-defined common data types...need to define for 64 bit systems */
-#if defined(__aarch64__)
+/* Well-defined common data types...need to be defined for 64 bit systems */
+#if defined(__aarch64__) || defined(__alpha__) || defined(__ppc64__) \
+    || defined(__s390__) || defined(__s390x__) || defined(__zarch__) \
+    || defined(__mips__) || defined(__powerpc64__) || defined(__riscv) \
+    || (defined(__sparc__) && defined(__arch64__))
     #include <stdint.h>
     typedef int64_t         dint64;
     typedef uint64_t        duint64;
@@ -97,14 +100,19 @@
     typedef ptrdiff_t       ddiffint;
     typedef size_t          dsizeint;
 
-#elif defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)
+#elif (defined(_M_IA64) || defined(__ia64__) || defined(_M_AMD64) || defined(__x86_64__)) && !defined(__ILP32__) && !defined(_ILP32)
   #define X86_64_SYSTEM   1
 #if defined(_MSC_VER)
   typedef __int64         dint64;
   typedef unsigned __int64 duint64;
 #else
+#if defined(_LP64) || defined(__LP64__)
+typedef long              dint64;
+typedef unsigned long     duint64;
+#else
   typedef long long       dint64;
   typedef unsigned long long duint64;
+#endif
 #endif
   typedef int             dint32;
   typedef unsigned int    duint32;
@@ -176,7 +184,7 @@
   union _dNaNUnion
   {
       _dNaNUnion(): m_ui(0x7FC00000) {}
-      duint32 m_ui; 
+      duint32 m_ui;
       float m_f;
   };
   #define dNaN (_dNaNUnion().m_f)

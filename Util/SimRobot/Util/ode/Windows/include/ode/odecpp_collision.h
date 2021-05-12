@@ -379,7 +379,7 @@ public:
   void get (dVector3 start, dVector3 dir)
     { dGeomRayGet (_id, start, dir); }
 
-#ifdef _WIN32
+#ifdef WIN32
 #pragma warning( push )
 #pragma warning( disable : 4996 )
 #else
@@ -393,7 +393,7 @@ public:
   ODE_API_DEPRECATED
   void getParams (int *firstContact, int *backfaceCull)
     { dGeomRayGetParams (_id, firstContact, backfaceCull); }
-#ifdef _WIN32
+#ifdef WIN32
 #pragma warning( pop )
 #else
 #pragma GCC diagnostic pop
@@ -414,7 +414,7 @@ public:
     { return dGeomRayGetClosestHit (_id); }
 };
 
-#ifdef _WIN32
+#ifdef WIN32
 #pragma warning( push )
 #pragma warning( disable : 4996 )
 #else
@@ -455,7 +455,7 @@ public:
     { return dGeomTransformGetInfo (_id); }
 };
 
-#ifdef _WIN32
+#ifdef WIN32
 #pragma warning( pop )
 #else
 #pragma GCC diagnostic pop

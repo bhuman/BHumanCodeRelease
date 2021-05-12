@@ -66,10 +66,10 @@ SimRobotCore2 = cppDynamicLibrary + {
     } else if (host == "Win32") {
       if (configuration == "Debug") {
         "Qt5Cored", "Qt5Guid", "Qt5OpenGLd", "Qt5Widgetsd"
-        "ode_doubled"
+        "ode_doublesd"
       } else {
         "Qt5Core", "Qt5Gui", "Qt5OpenGL", "Qt5Widgets"
-        "ode_double"
+        "ode_doubles"
       }
       "opengl32", "glu32", "glew32",
     }

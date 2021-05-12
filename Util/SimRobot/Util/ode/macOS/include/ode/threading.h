@@ -4,7 +4,7 @@
  * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
  *                                                                       *
  * Threading support header file.                                        *
- * Copyright (C) 2011-2012 Oleh Derevenko. All rights reserved.          *
+ * Copyright (C) 2011-2019 Oleh Derevenko. All rights reserved.          *
  * e-mail: odar@eleks.com (change all "a" to "e")                        *
  *                                                                       *
  * This library is free software; you can redistribute it and/or         *
@@ -48,6 +48,11 @@ typedef struct dxThreadingImplementation *dThreadingImplementationID;
 typedef unsigned dmutexindex_t;
 struct dxMutexGroup;
 typedef struct dxMutexGroup *dMutexGroupID;
+
+
+#define dTHREADING_THREAD_COUNT_UNLIMITED       0U
+
+
 
 /**
  * @brief Allocates a group of muteces.
@@ -103,7 +108,7 @@ typedef void dMutexGroupMutexLockFunction (dThreadingImplementationID impl, dMut
 /**
  * @brief Attempts to lock a mutex in a group of muteces.
  *
- * The function is to lock the requested mutex if it is unoccupied or 
+ * The function is to lock the requested mutex if it is unoccupied or
  * immediately return failure if mutex is already locked by other thread.
  *
  * Note: Mutex provided may not support recursive locking. Calling this function
@@ -145,10 +150,10 @@ typedef struct dxCallReleasee *dCallReleaseeID;
 struct dxCallWait;
 typedef struct dxCallWait *dCallWaitID;
 
-typedef size_t ddependencycount_t;
-typedef ptrdiff_t ddependencychange_t;
-typedef size_t dcallindex_t;
-typedef int dThreadedCallFunction(void *call_context, dcallindex_t instance_index, 
+typedef dsizeint ddependencycount_t;
+typedef ddiffint ddependencychange_t;
+typedef dsizeint dcallindex_t;
+typedef int dThreadedCallFunction(void *call_context, dcallindex_t instance_index,
   dCallReleaseeID this_releasee);
 
 typedef struct dxThreadedWaitTime
@@ -208,14 +213,14 @@ typedef void dThreadedCallWaitFreeFunction(dThreadingImplementationID impl, dCal
  *
  * A @a out_summary_fault variable can be provided for call to accumulate any
  * possible faults from its execution and execution of any possible sub-calls.
- * This variable gets result that @a call_func returns. Also, if dependent calls 
- * are executed after the call already exits, the variable is also going to be 
+ * This variable gets result that @a call_func returns. Also, if dependent calls
+ * are executed after the call already exits, the variable is also going to be
  * updated with results of all those calls before control is released to master.
  *
- * @a out_post_releasee parameter receives a value of @c dCallReleaseeID that can 
- * later be used for @a dependent_releasee while scheduling sub-calls to make 
- * current call depend on them. The value is only returned if @a dependencies_count 
- * is not zero (i.e. if any dependencies are expected at all). The call is not going 
+ * @a out_post_releasee parameter receives a value of @c dCallReleaseeID that can
+ * later be used for @a dependent_releasee while scheduling sub-calls to make
+ * current call depend on them. The value is only returned if @a dependencies_count
+ * is not zero (i.e. if any dependencies are expected at all). The call is not going
  * to start until all its dependencies complete.
  *
  * In case if number of dependencies is unknown in advance 1 can be passed on call
@@ -223,30 +228,30 @@ typedef void dThreadedCallWaitFreeFunction(dThreadingImplementationID impl, dCal
  * add one more extra dependencies before scheduling each subcall. And then, after
  * all sub-calls had been scheduled, @c dThreadedCallDependenciesCountAlterFunction
  * can be used again to subtract initial extra dependency from total number.
- * Adding one dependency in advance is necessary to obtain releasee ID and to make 
+ * Adding one dependency in advance is necessary to obtain releasee ID and to make
  * sure the call will not start and will not terminate before all sub-calls are scheduled.
  *
- * Extra dependencies can also be added from the call itself after it has already 
- * been started (with parameter received in @c dThreadedCallFunction). 
- * In that case those dependencies will start immediately or after call returns 
+ * Extra dependencies can also be added from the call itself after it has already
+ * been started (with parameter received in @c dThreadedCallFunction).
+ * In that case those dependencies will start immediately or after call returns
  * but the call's master will not be released/notified until all additional
- * dependencies complete. This can be used to schedule sub-calls from a call and 
+ * dependencies complete. This can be used to schedule sub-calls from a call and
  * then pass own job to another sub-call dependent on those initial sub-calls.
  *
- * By using @ call_wait it is possible to assign a Wait ID that can later 
+ * By using @ call_wait it is possible to assign a Wait ID that can later
  * be passed into @c dThreadedCallWaitFunction to wait for call completion.
  *
  * If @a call_name is available (and it should!) the string must remain valid until
  * after call completion. In most cases this should be a static string literal.
- * 
+ *
  * Since the function is an analogue of normal method call it is not supposed to fail.
- * Any complications with resource allocation on call scheduling should be 
+ * Any complications with resource allocation on call scheduling should be
  * anticipated, avoided and worked around by implementation.
  *
  * @param impl Threading implementation ID
- * @param out_summary_fault Optional pointer to variable to be set to 1 if function 
+ * @param out_summary_fault Optional pointer to variable to be set to 1 if function
  *        call (or any sub-call) fails internally, or 0 if all calls return success
- * @param out_post_releasee Optional pointer to variable to receive releasee ID 
+ * @param out_post_releasee Optional pointer to variable to receive releasee ID
  *        associated with the call
  * @param dependencies_count Number of dependencies that are going to reference
  *        this call as dependent releasee
@@ -262,10 +267,10 @@ typedef void dThreadedCallWaitFreeFunction(dThreadingImplementationID impl, dCal
  * @see dThreadedCallDependenciesCountAlterFunction
  * @see dThreadingImplResourcesForCallsPreallocateFunction
  */
-typedef void dThreadedCallPostFunction(dThreadingImplementationID impl, int *out_summary_fault/*=NULL*/, 
-  dCallReleaseeID *out_post_releasee/*=NULL*/, ddependencycount_t dependencies_count, dCallReleaseeID dependent_releasee/*=NULL*/, 
-  dCallWaitID call_wait/*=NULL*/, 
-  dThreadedCallFunction *call_func, void *call_context, dcallindex_t instance_index, 
+typedef void dThreadedCallPostFunction(dThreadingImplementationID impl, int *out_summary_fault/*=NULL*/,
+  dCallReleaseeID *out_post_releasee/*=NULL*/, ddependencycount_t dependencies_count, dCallReleaseeID dependent_releasee/*=NULL*/,
+  dCallWaitID call_wait/*=NULL*/,
+  dThreadedCallFunction *call_func, void *call_context, dcallindex_t instance_index,
   const char *call_name/*=NULL*/);
 
 /**
@@ -274,9 +279,9 @@ typedef void dThreadedCallPostFunction(dThreadingImplementationID impl, int *out
  *
  * Extra dependencies can be added to a call if exact number of sub-calls is
  * not known in advance at the moment the call is scheduled. Also, some dependencies
- * can be removed if sub-calls were planned but then dropped. 
+ * can be removed if sub-calls were planned but then dropped.
  *
- * In case if total dependency count of a call reaches zero by result of invoking 
+ * In case if total dependency count of a call reaches zero by result of invoking
  * this function, the call is free to start executing immediately.
  *
  * After the call execution had been started, any additional dependencies can only
@@ -289,7 +294,7 @@ typedef void dThreadedCallPostFunction(dThreadingImplementationID impl, int *out
  * @ingroup threading
  * @see dThreadedCallPostFunction
  */
-typedef void dThreadedCallDependenciesCountAlterFunction(dThreadingImplementationID impl, dCallReleaseeID target_releasee, 
+typedef void dThreadedCallDependenciesCountAlterFunction(dThreadingImplementationID impl, dCallReleaseeID target_releasee,
   ddependencychange_t dependencies_count_change);
 
 /**
@@ -299,8 +304,8 @@ typedef void dThreadedCallDependenciesCountAlterFunction(dThreadingImplementatio
  * timeout elapses.
  *
  * IT IS ILLEGAL TO INVOKE THIS FUNCTION FROM WITHIN A THREADED CALL!
- * This is because doing so will block a physical thread and will require 
- * increasing worker thread count to avoid starvation. Use call dependencies 
+ * This is because doing so will block a physical thread and will require
+ * increasing worker thread count to avoid starvation. Use call dependencies
  * if it is necessary make sure sub-calls have been completed instead!
  *
  * If @a timeout_time_ptr is NULL, the function waits without time limit. If @a timeout_time_ptr
@@ -308,9 +313,9 @@ typedef void dThreadedCallDependenciesCountAlterFunction(dThreadingImplementatio
  *
  * If @a wait_name is available (and it should!) the string must remain valid for
  * the duration of wait. In most cases this should be a static string literal.
- * 
- * Function is not expected to return failures caused by system call faults as 
- * those are hardly ever possible to be handled in this case anyway. In event of 
+ *
+ * Function is not expected to return failures caused by system call faults as
+ * those are hardly ever possible to be handled in this case anyway. In event of
  * system call fault the function is supposed to terminate application.
  *
  * @param impl Threading implementation ID
@@ -324,8 +329,8 @@ typedef void dThreadedCallDependenciesCountAlterFunction(dThreadingImplementatio
  * @ingroup threading
  * @see dThreadedCallPostFunction
  */
-typedef void dThreadedCallWaitFunction(dThreadingImplementationID impl, int *out_wait_status/*=NULL*/, 
-  dCallWaitID call_wait, const dThreadedWaitTime *timeout_time_ptr/*=NULL*/, 
+typedef void dThreadedCallWaitFunction(dThreadingImplementationID impl, int *out_wait_status/*=NULL*/,
+  dCallWaitID call_wait, const dThreadedWaitTime *timeout_time_ptr/*=NULL*/,
   const char *wait_name/*=NULL*/);
 
 /**
@@ -343,11 +348,11 @@ typedef unsigned dThreadingImplThreadCountRetrieveFunction(dThreadingImplementat
  *
  * The function is intended to make sure enough resources is preallocated for the
  * implementation to be able to handle posted calls. Then @c max_simultaneous_calls_estimate
- * is an estimate of how many posted calls can potentially be active or scheduled 
- * at the same time. The value is usually derived from the way the calls are posted 
+ * is an estimate of how many posted calls can potentially be active or scheduled
+ * at the same time. The value is usually derived from the way the calls are posted
  * in library code and dependencies between them.
- * 
- * @warning While working on an implementation be prepared that the estimate provided 
+ *
+ * @warning While working on an implementation be prepared that the estimate provided
  * yet rarely but theoretically can be exceeded due to unpredictability of thread execution.
  *
  * This function is normally going to be invoked by library each time it is entered
@@ -360,7 +365,7 @@ typedef unsigned dThreadingImplThreadCountRetrieveFunction(dThreadingImplementat
  * @ingroup threading
  * @see dThreadedCallPostFunction
  */
-typedef int dThreadingImplResourcesForCallsPreallocateFunction(dThreadingImplementationID impl, 
+typedef int dThreadingImplResourcesForCallsPreallocateFunction(dThreadingImplementationID impl,
   ddependencycount_t max_simultaneous_calls_estimate);
 
 
@@ -370,7 +375,7 @@ typedef int dThreadingImplResourcesForCallsPreallocateFunction(dThreadingImpleme
 typedef struct dxThreadingFunctionsInfo
 {
   unsigned struct_size;
-  
+
   dMutexGroupAllocFunction *alloc_mutex_group;
   dMutexGroupFreeFunction *free_mutex_group;
   dMutexGroupMutexLockFunction *lock_group_mutex;
@@ -385,13 +390,13 @@ typedef struct dxThreadingFunctionsInfo
   dThreadedCallWaitFunction *wait_call;
 
   dThreadingImplThreadCountRetrieveFunction *retrieve_thread_count;
-  dThreadingImplResourcesForCallsPreallocateFunction *preallocate_resources_for_calls; 
+  dThreadingImplResourcesForCallsPreallocateFunction *preallocate_resources_for_calls;
 
-  /* 
+  /*
    * Beware of Jon Watte's anger if you dare to uncomment this!
    * May cryptic text below be you a warning!
-   * Стародавні легенди розказують, що кожного сміливця, хто наважиться порушити табу 
-   * і відкрити заборонений код, спіткає страшне прокляття і він відразу почне робити 
+   * Стародавні легенди розказують, що кожного сміливця, хто наважиться порушити табу
+   * і відкрити заборонений код, спіткає страшне прокляття і він відразу почне робити
    * одні лиш помилки.
    *
    * dMutexGroupMutexTryLockFunction *trylock_group_mutex;

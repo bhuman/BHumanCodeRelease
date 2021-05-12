@@ -102,7 +102,7 @@ enum
  */
 ODE_API void dGeomTriMeshDataSet(dTriMeshDataID g, int data_id, void *in_data);
 ODE_API void *dGeomTriMeshDataGet(dTriMeshDataID g, int data_id);
-ODE_API void *dGeomTriMeshDataGet2(dTriMeshDataID g, int data_id, size_t *pout_size/*=NULL*/);
+ODE_API void *dGeomTriMeshDataGet2(dTriMeshDataID g, int data_id, dsizeint *pout_size/*=NULL*/);
 
 
 

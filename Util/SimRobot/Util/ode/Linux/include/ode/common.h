@@ -88,15 +88,191 @@ typedef duint32 dTriIndex;
 /* round an integer up to a multiple of 4, except that 0 and 1 are unmodified
  * (used to compute matrix leading dimensions)
  */
-#define dPAD(a) (((a) > 1) ? ((((a)-1)|3)+1) : (a))
+#define dPAD(a) (((a) > 1) ? (((a) + 3) & (int)(~3)) : (a))
+
+typedef enum {
+    dSA__MIN,
+
+    dSA_X = dSA__MIN,
+    dSA_Y,
+    dSA_Z,
+
+    dSA__MAX,
+} dSpaceAxis;
+
+typedef enum {
+    dMD__MIN,
+
+    dMD_LINEAR = dMD__MIN,
+    dMD_ANGULAR,
+
+    dMD__MAX,
+} dMotionDynamics;
+
+typedef enum {
+    dDA__MIN,
+
+    dDA__L_MIN = dDA__MIN + dMD_LINEAR * dSA__MAX,
+
+    dDA_LX = dDA__L_MIN + dSA_X,
+    dDA_LY = dDA__L_MIN + dSA_Y,
+    dDA_LZ = dDA__L_MIN + dSA_Z,
+
+    dDA__L_MAX = dDA__L_MIN + dSA__MAX,
+
+    dDA__A_MIN = dDA__MIN + dMD_ANGULAR * dSA__MAX,
+
+    dDA_AX = dDA__A_MIN + dSA_X,
+    dDA_AY = dDA__A_MIN + dSA_Y,
+    dDA_AZ = dDA__A_MIN + dSA_Z,
+
+    dDA__A_MAX = dDA__A_MIN + dSA__MAX,
+
+    dDA__MAX = dDA__MIN + dMD__MAX * dSA__MAX,
+} dDynamicsAxis;
+
+typedef enum {
+    dV3E__MIN,
+
+    dV3E__AXES_MIN = dV3E__MIN,
+
+    dV3E_X = dV3E__AXES_MIN + dSA_X,
+    dV3E_Y = dV3E__AXES_MIN + dSA_Y,
+    dV3E_Z = dV3E__AXES_MIN + dSA_Z,
+
+    dV3E__AXES_MAX = dV3E__AXES_MIN + dSA__MAX,
+
+    dV3E_PAD = dV3E__AXES_MAX,
+
+    dV3E__MAX,
+
+    dV3E__AXES_COUNT = dV3E__AXES_MAX - dV3E__AXES_MIN,
+} dVec3Element;
+
+typedef enum {
+    dV4E__MIN,
+
+    dV4E_X = dV4E__MIN + dSA_X,
+    dV4E_Y = dV4E__MIN + dSA_Y,
+    dV4E_Z = dV4E__MIN + dSA_Z,
+    dV4E_O = dV4E__MIN + dSA__MAX,
+
+    dV4E__MAX,
+} dVec4Element;
+
+typedef enum {
+    dM3E__MIN,
+
+    dM3E__X_MIN = dM3E__MIN + dSA_X * dV3E__MAX,
+    
+    dM3E__X_AXES_MIN = dM3E__X_MIN + dV3E__AXES_MIN,
+
+    dM3E_XX = dM3E__X_MIN + dV3E_X,
+    dM3E_XY = dM3E__X_MIN + dV3E_Y,
+    dM3E_XZ = dM3E__X_MIN + dV3E_Z,
+
+    dM3E__X_AXES_MAX = dM3E__X_MIN + dV3E__AXES_MAX,
+
+    dM3E_XPAD = dM3E__X_MIN + dV3E_PAD,
+
+    dM3E__X_MAX = dM3E__X_MIN + dV3E__MAX,
+
+    dM3E__Y_MIN = dM3E__MIN + dSA_Y * dV3E__MAX,
+
+    dM3E__Y_AXES_MIN = dM3E__Y_MIN + dV3E__AXES_MIN,
+
+    dM3E_YX = dM3E__Y_MIN + dV3E_X,
+    dM3E_YY = dM3E__Y_MIN + dV3E_Y,
+    dM3E_YZ = dM3E__Y_MIN + dV3E_Z,
+
+    dM3E__Y_AXES_MAX = dM3E__Y_MIN + dV3E__AXES_MAX,
+
+    dM3E_YPAD = dM3E__Y_MIN + dV3E_PAD,
+
+    dM3E__Y_MAX = dM3E__Y_MIN + dV3E__MAX,
+
+    dM3E__Z_MIN = dM3E__MIN + dSA_Z * dV3E__MAX,
+
+    dM3E__Z_AXES_MIN = dM3E__Z_MIN + dV3E__AXES_MIN,
+
+    dM3E_ZX = dM3E__Z_MIN + dV3E_X,
+    dM3E_ZY = dM3E__Z_MIN + dV3E_Y,
+    dM3E_ZZ = dM3E__Z_MIN + dV3E_Z,
+
+    dM3E__Z_AXES_MAX = dM3E__Z_MIN + dV3E__AXES_MAX,
+
+    dM3E_ZPAD = dM3E__Z_MIN + dV3E_PAD,
+
+    dM3E__Z_MAX = dM3E__Z_MIN + dV3E__MAX,
+
+    dM3E__MAX = dM3E__MIN + dSA__MAX * dV3E__MAX,
+} dMat3Element;
+
+typedef enum {
+    dM4E__MIN,
+
+    dM4E__X_MIN = dM4E__MIN + dV4E_X * dV4E__MAX,
+
+    dM4E_XX = dM4E__X_MIN + dV4E_X,
+    dM4E_XY = dM4E__X_MIN + dV4E_Y,
+    dM4E_XZ = dM4E__X_MIN + dV4E_Z,
+    dM4E_XO = dM4E__X_MIN + dV4E_O,
+
+    dM4E__X_MAX = dM4E__X_MIN + dV4E__MAX,
+
+    dM4E__Y_MIN = dM4E__MIN + dV4E_Y * dV4E__MAX,
+
+    dM4E_YX = dM4E__Y_MIN + dV4E_X,
+    dM4E_YY = dM4E__Y_MIN + dV4E_Y,
+    dM4E_YZ = dM4E__Y_MIN + dV4E_Z,
+    dM4E_YO = dM4E__Y_MIN + dV4E_O,
+
+    dM4E__Y_MAX = dM4E__Y_MIN + dV4E__MAX,
+
+    dM4E__Z_MIN = dM4E__MIN + dV4E_Z * dV4E__MAX,
+
+    dM4E_ZX = dM4E__Z_MIN + dV4E_X,
+    dM4E_ZY = dM4E__Z_MIN + dV4E_Y,
+    dM4E_ZZ = dM4E__Z_MIN + dV4E_Z,
+    dM4E_ZO = dM4E__Z_MIN + dV4E_O,
+
+    dM4E__Z_MAX = dM4E__Z_MIN + dV4E__MAX,
+
+    dM4E__O_MIN = dM4E__MIN + dV4E_O * dV4E__MAX,
+
+    dM4E_OX = dM4E__O_MIN + dV4E_X,
+    dM4E_OY = dM4E__O_MIN + dV4E_Y,
+    dM4E_OZ = dM4E__O_MIN + dV4E_Z,
+    dM4E_OO = dM4E__O_MIN + dV4E_O,
+
+    dM4E__O_MAX = dM4E__O_MIN + dV4E__MAX,
+
+    dM4E__MAX = dM4E__MIN + dV4E__MAX * dV4E__MAX,
+} dMat4Element;
+
+typedef enum {
+    dQUE__MIN,
+
+    dQUE_R = dQUE__MIN,
+
+    dQUE__AXIS_MIN,
+
+    dQUE_I = dQUE__AXIS_MIN + dSA_X,
+    dQUE_J = dQUE__AXIS_MIN + dSA_Y,
+    dQUE_K = dQUE__AXIS_MIN + dSA_Z,
+
+    dQUE__AXIS_MAX = dQUE__AXIS_MIN + dSA__MAX,
+
+    dQUE__MAX = dQUE__AXIS_MAX,
+} dQuatElement;
 
 /* these types are mainly just used in headers */
-typedef dReal dVector3[4];
-typedef dReal dVector4[4];
-typedef dReal dMatrix3[4*3];
-typedef dReal dMatrix4[4*4];
-typedef dReal dMatrix6[8*6];
-typedef dReal dQuaternion[4];
+typedef dReal dVector3[dV3E__MAX];
+typedef dReal dVector4[dV4E__MAX];
+typedef dReal dMatrix3[dM3E__MAX];
+typedef dReal dMatrix4[dM4E__MAX];
+typedef dReal dMatrix6[(dMD__MAX * dV3E__MAX) * (dMD__MAX * dSA__MAX)];
+typedef dReal dQuaternion[dQUE__MAX];
 
 
 /* precision dependent scalar math functions */
@@ -111,6 +287,7 @@ typedef dReal dQuaternion[4];
 #define dCos(x) (cosf(x))				/* cosine */
 #define dFabs(x) (fabsf(x))			/* absolute value */
 #define dAtan2(y,x) (atan2f(y,x))		/* arc tangent with 2 args */
+#define dAsin(x) (asinf(x))
 #define dAcos(x) (acosf(x))
 #define dFMod(a,b) (fmodf(a,b))		/* modulo */
 #define dFloor(x) floorf(x)			/* floor */
@@ -147,6 +324,7 @@ typedef dReal dQuaternion[4];
 #define dCos(x) cos(x)
 #define dFabs(x) fabs(x)
 #define dAtan2(y,x) atan2((y),(x))
+#define dAsin(x) asin(x)
 #define dAcos(x) acos(x)
 #define dFMod(a,b) (fmod((a),(b)))
 #define dFloor(x) floor(x)
@@ -168,17 +346,19 @@ typedef dReal dQuaternion[4];
 #error You must #define dSINGLE or dDOUBLE
 #endif
 
+ODE_PURE_INLINE dReal dMin(dReal x, dReal y) { return x <= y ? x : y; }
+ODE_PURE_INLINE dReal dMax(dReal x, dReal y) { return x <= y ? y : x; }
+
 
 /* internal object types (all prefixed with `dx') */
 
-struct dxWorld;		/* dynamics world */
-struct dxSpace;		/* collision space */
-struct dxBody;		/* rigid body (dynamics object) */
-struct dxGeom;		/* geometry (collision object) */
-struct dxJoint;
-struct dxJointNode;
-struct dxJointGroup;
-struct dxWorldProcessThreadingManager;
+struct dxWorld;     /* dynamics world */
+struct dxSpace;     /* collision space */
+struct dxBody;      /* rigid body (dynamics object) */
+struct dxGeom;      /* geometry (collision object) */
+struct dxJoint;     /* joint */
+struct dxJointGroup;/* joint group */
+
 
 typedef struct dxWorld *dWorldID;
 typedef struct dxSpace *dSpaceID;
@@ -186,7 +366,7 @@ typedef struct dxBody *dBodyID;
 typedef struct dxGeom *dGeomID;
 typedef struct dxJoint *dJointID;
 typedef struct dxJointGroup *dJointGroupID;
-typedef struct dxWorldProcessThreadingManager *dWorldStepThreadingManagerID;
+
 
 /* error numbers */
 
@@ -363,11 +543,12 @@ dGeomID dGeomGetBodyNext (dGeomID);
  * ODE_EXT_trimesh
  * ODE_EXT_opcode
  * ODE_EXT_gimpact
- * ODE_EXT_malloc_not_alloca
- * ODE_EXT_gyroscopic
  * ODE_OPC_16bit_indices
  * ODE_OPC_new_collider
-*/
+ * ODE_EXT_mt_collisions
+ * ODE_EXT_threading
+ * ODE_THR_builtin_impl
+ */
 ODE_API const char* dGetConfiguration (void);
 
 /**

@@ -45,8 +45,8 @@
 #if defined(_MSC_VER) || (defined(__GNUC__) && defined(_WIN32))
   #if defined(ODE_DLL)
     #define ODE_API __declspec(dllexport)
-  #elif !defined(ODE_LIB)
-    #define ODE_DLL_API __declspec(dllimport)
+  #else
+    #define ODE_API
   #endif
 #endif
 
@@ -103,8 +103,13 @@
   typedef __int64         dint64;
   typedef unsigned __int64 duint64;
 #else
+#if defined(_LP64)
+typedef long              dint64;
+typedef unsigned long     duint64;
+#else
   typedef long long       dint64;
   typedef unsigned long long duint64;
+#endif
 #endif
   typedef int             dint32;
   typedef unsigned int    duint32;

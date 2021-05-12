@@ -963,16 +963,18 @@ ODE_API dReal dGeomSpherePointDepth (dGeomID sphere, dReal x, dReal y, dReal z);
 
 /*--> Convex Functions*/
 ODE_API dGeomID dCreateConvex (dSpaceID space,
-			       dReal *_planes,
+			       const dReal *_planes,
 			       unsigned int _planecount,
-			       dReal *_points,
-			       unsigned int _pointcount,unsigned int *_polygons);
+			       const dReal *_points,
+			       unsigned int _pointcount,
+                   const unsigned int *_polygons);
 
 ODE_API void dGeomSetConvex (dGeomID g,
-			     dReal *_planes,
+			     const dReal *_planes,
 			     unsigned int _count,
-			     dReal *_points,
-			     unsigned int _pointcount,unsigned int *_polygons);
+			     const dReal *_points,
+			     unsigned int _pointcount,
+                 const unsigned int *_polygons);
 /*<-- Convex Functions*/
 
 /**
@@ -1073,20 +1075,24 @@ ODE_API void dGeomRayGet (dGeomID ray, dVector3 start, dVector3 dir);
  * These flags are currently only noticed by the trimesh collider, because
  * they can make a major differences there.
  */
-ODE_API void dGeomRaySetParams (dGeomID g, int FirstContact, int BackfaceCull);
-ODE_API void dGeomRayGetParams (dGeomID g, int *FirstContact, int *BackfaceCull);
+ODE_API_DEPRECATED ODE_API void dGeomRaySetParams (dGeomID g, int FirstContact, int BackfaceCull);
+ODE_API_DEPRECATED ODE_API void dGeomRayGetParams (dGeomID g, int *FirstContact, int *BackfaceCull);
+ODE_API void dGeomRaySetFirstContact (dGeomID g, int firstContact);
+ODE_API int dGeomRayGetFirstContact (dGeomID g);
+ODE_API void dGeomRaySetBackfaceCull (dGeomID g, int backfaceCull);
+ODE_API int dGeomRayGetBackfaceCull (dGeomID g);
 ODE_API void dGeomRaySetClosestHit (dGeomID g, int closestHit);
 ODE_API int dGeomRayGetClosestHit (dGeomID g);
 
 #include "collision_trimesh.h"
 
-ODE_API dGeomID dCreateGeomTransform (dSpaceID space);
-ODE_API void dGeomTransformSetGeom (dGeomID g, dGeomID obj);
-ODE_API dGeomID dGeomTransformGetGeom (dGeomID g);
-ODE_API void dGeomTransformSetCleanup (dGeomID g, int mode);
-ODE_API int dGeomTransformGetCleanup (dGeomID g);
-ODE_API void dGeomTransformSetInfo (dGeomID g, int mode);
-ODE_API int dGeomTransformGetInfo (dGeomID g);
+ODE_API_DEPRECATED ODE_API dGeomID dCreateGeomTransform (dSpaceID space);
+ODE_API_DEPRECATED ODE_API void dGeomTransformSetGeom (dGeomID g, dGeomID obj);
+ODE_API_DEPRECATED ODE_API dGeomID dGeomTransformGetGeom (dGeomID g);
+ODE_API_DEPRECATED ODE_API void dGeomTransformSetCleanup (dGeomID g, int mode);
+ODE_API_DEPRECATED ODE_API int dGeomTransformGetCleanup (dGeomID g);
+ODE_API_DEPRECATED ODE_API void dGeomTransformSetInfo (dGeomID g, int mode);
+ODE_API_DEPRECATED ODE_API int dGeomTransformGetInfo (dGeomID g);
 
 
 /* ************************************************************************ */
