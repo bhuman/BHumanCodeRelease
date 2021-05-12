@@ -95,8 +95,8 @@ Nao = cppApplication + {
   linkFlags += "-nostdlib -z nodefaultlib"
 
   if (tool == "vcxproj") {
-    buildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU\/Linux@$(linuxMarePath)@' | bash\""
-    reBuildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies rebuild $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU\/Linux@$(linuxMarePath)@' | bash\""
+    buildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU/Linux@$(linuxMarePath)@' | bash\""
+    reBuildCommand = "bashexec \"echo \\\"`uname -o` --ignore-dependencies rebuild $(target) config=$(configuration) clanginclude=\\\\\\\"`for d in %24(clang++ -c -v -E - </dev/null 2>&1 | sed -n -e '/here:/,/^End/{/here:/d; /^End/d; p}'); do [ -f $$d/xmmintrin.h ] && echo $$d; done | head -n1`\\\\\\\"\\\" | sed 's@^Cygwin@$(winMarePath)@; s@^GNU/Linux@$(linuxMarePath)@' | bash\""
     cleanCommand = "$(winMarePath) --ignore-dependencies clean $(target) config=$(configuration)"
   }
 }
