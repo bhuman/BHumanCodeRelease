@@ -50,7 +50,7 @@ are met:
 
 5. For each B-Human code release from which parts are used in a
    RoboCup competition, the usage shall be announced in the SPL
-   mailing list (currently robocup-nao@cc.gatech.edu) one month
+   mailing list (currently robocup-nao@lists.robocup.org) one month
    before the first competition in which you are using it. The
    announcement shall name which parts of this code are used.
    It shall also contain a description of the own contribution
