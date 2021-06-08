@@ -375,20 +375,27 @@ void ConsoleRoboCupCtrl::executeConsoleCommand(std::string command, RobotConsole
     stream >> objectID >> robotTranslationCmd.x() >> robotTranslationCmd.y() >> robotTranslationCmd.z();
     Vector3f robotRotationCmd;
     Matrix3f robotRotation;
+    bool robotRotationSet = false;
     if(!stream.eof())
     {
       stream >> robotRotationCmd.x() >> robotRotationCmd.y() >> robotRotationCmd.z();
       robotRotation = RotationMatrix::fromEulerAngles(robotRotationCmd * 1_deg);
+      robotRotationSet = true;
     }
     SimRobot::Object* robot = application->resolveObject(QString::fromStdString(objectID));
     if(robot)
     {
-      float robotRotationConverted[3][3];
-      for(int i = 0; i < 3; ++i)
-        for(int j = 0; j < 3; ++j)
-          robotRotationConverted[i][j] = robotRotation(i, j);
-      Vector3f translationmm = robotTranslationCmd * 0.001f;
-      reinterpret_cast<SimRobotCore2::Body*>(robot)->move(&translationmm.x(), robotRotationConverted);
+      const Vector3f translationmm = robotTranslationCmd * 0.001f;
+      if(robotRotationSet)
+      {
+        float robotRotationConverted[3][3];
+        for(int i = 0; i < 3; ++i)
+          for(int j = 0; j < 3; ++j)
+            robotRotationConverted[i][j] = robotRotation(i, j);
+        reinterpret_cast<SimRobotCore2::Body*>(robot)->move(translationmm.data(), robotRotationConverted);
+      }
+      else
+        reinterpret_cast<SimRobotCore2::Body*>(robot)->move(translationmm.data());
     }
   }
   else if(buffer == "sc")
