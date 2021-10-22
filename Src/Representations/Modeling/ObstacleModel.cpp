@@ -5,7 +5,6 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Approx.h"
-#include "Tools/Math/Random.h"
 #include "Tools/Modeling/Obstacle.h"
 #include "Tools/Module/Blackboard.h"
 
@@ -13,26 +12,17 @@ void ObstacleModel::operator>>(BHumanMessage& m) const
 {
   std::sort(const_cast<std::vector<Obstacle>&>(obstacles).begin(), const_cast<std::vector<Obstacle>&>(obstacles).end(), [](const Obstacle& a, const Obstacle& b) {return a.center.squaredNorm() < b.center.squaredNorm(); });
 
-  const int numOfObstacles = std::min(BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_OBSTACLES, static_cast<int>(obstacles.size()));
-  m.theBHumanStandardMessage.obstacles.resize(numOfObstacles);
-  for(int i = 0; i < numOfObstacles; ++i)
-    m.theBHumanStandardMessage.obstacles[i] = obstacles[i];
+  Streaming::streamIt(*m.theBHumanStandardMessage.out, "theObstacleModel",  *this);
 }
 
 void ObstacleModel::operator<<(const BHumanMessage& m)
 {
-  obstacles.clear();
-  if(!m.hasBHumanParts)
-    return;
-
-  obstacles = m.theBHumanStandardMessage.obstacles;
-  for(Obstacle& obstacle : obstacles)
-    obstacle.lastSeen = m.toLocalTimestamp(obstacle.lastSeen);
+  Streaming::streamIt(*m.theBHumanStandardMessage.in, "theObstacleModel",  *this);
 }
 
 void ObstacleModel::verify() const
 {
-#ifndef NDEBUG
+  DECLARE_DEBUG_RESPONSE("representation:ObstacleModel:verify");
   for(const auto& obstacle : obstacles)
   {
     ASSERT(std::isfinite(obstacle.center.x()));
@@ -47,7 +37,9 @@ void ObstacleModel::verify() const
     ASSERT(std::isfinite(obstacle.velocity.x()));
     ASSERT(std::isfinite(obstacle.velocity.y()));
 
-    ASSERT(SystemCall::getMode() == SystemCall::physicalRobot || (obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f));
+    DEBUG_RESPONSE("representation:ObstacleModel:verify")
+      if((obstacle.left - obstacle.right).squaredNorm() < sqr(2000.f))
+        OUTPUT_WARNING("Obstacle too big!");
 
     ASSERT(std::isnormal(obstacle.covariance(0, 0)));
     ASSERT(std::isnormal(obstacle.covariance(1, 1)));
@@ -55,7 +47,6 @@ void ObstacleModel::verify() const
     ASSERT(std::isfinite(obstacle.covariance(1, 0)));
     ASSERT(Approx::isEqual(obstacle.covariance(0, 1), obstacle.covariance(1, 0), 1e-20f));
   }
-#endif
 }
 
 void ObstacleModel::draw() const
@@ -132,6 +123,6 @@ void ObstacleModel::draw() const
             center.x() + 2 * obstacle.velocity.x(), center.y() + 2 * obstacle.velocity.y(), 10, Drawings::solidPen, ColorRGBA::black);
 
     if(obstacle.type >= Obstacle::fallenSomeRobot)
-      DRAWTEXT("representation:ObstacleModel:fallen", center.x(), center.y(), 100, color, "FALLEN");
+      DRAW_TEXT("representation:ObstacleModel:fallen", center.x(), center.y(), 100, color, "FALLEN");
   }
 }

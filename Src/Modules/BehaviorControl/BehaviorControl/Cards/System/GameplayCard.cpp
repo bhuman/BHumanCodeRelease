@@ -6,6 +6,9 @@
  * @author Arne Hasselbring
  */
 
+#include "Representations/BehaviorControl/Skills.h"
+#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamInfo.h"
 #include "Tools/BehaviorControl/Framework/Card/Card.h"
@@ -13,8 +16,15 @@
 
 CARD(GameplayCard,
 {,
+  CALLS(ArmContact),
+  CALLS(ArmObstacleAvoidance),
+  CALLS(CountDownHalfTime),
+  CALLS(TeamCountdown),
+  REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(OwnTeamInfo),
+  REQUIRES(OpponentTeamInfo),
+  REQUIRES(TeamBehaviorStatus),
   LOADS_PARAMETERS(
   {,
     (DeckOfCards<CardRegistry>) ownKickoff,
@@ -22,6 +32,8 @@ CARD(GameplayCard,
     (DeckOfCards<CardRegistry>) ownFreeKick,
     (DeckOfCards<CardRegistry>) opponentFreeKick,
     (DeckOfCards<CardRegistry>) normalPlay,
+    (DeckOfCards<CardRegistry>) ownPenaltyKick,
+    (DeckOfCards<CardRegistry>) opponentPenaltyKick,
   }),
 });
 
@@ -39,40 +51,89 @@ class GameplayCard : public GameplayCardBase
 
   void execute() override
   {
+    theArmContactSkill();
+    if(!theTeamBehaviorStatus.role.isGoalkeeper())
+      theArmObstacleAvoidanceSkill();
     if(theGameInfo.state == STATE_READY)
     {
-      if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
+      if(theGameInfo.setPlay == SET_PLAY_PENALTY_KICK)
       {
-        dealer.deal(ownKickoff)->call();
-        setState("ownKickoff");
+        if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
+        {
+          dealer.deal(ownPenaltyKick)->call();
+          setState("ownPenaltyKick");
+        }
+        else
+        {
+          dealer.deal(opponentPenaltyKick)->call();
+          setState("opponentPenaltyKick");
+        }
       }
       else
       {
-        dealer.deal(opponentKickoff)->call();
-        setState("opponentKickoff");
+        if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
+        {
+          dealer.deal(ownKickoff)->call();
+          setState("ownKickoff");
+        }
+        else
+        {
+          dealer.deal(opponentKickoff)->call();
+          setState("opponentKickoff");
+        }
       }
     }
     else
     {
       ASSERT(theGameInfo.state == STATE_PLAYING);
+      #ifdef TARGET_ROBOT
+        const int stateTime = theFrameInfo.time - _context.stateStart;
+      #endif
+
       if(theGameInfo.setPlay != SET_PLAY_NONE)
       {
         if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
         {
-          dealer.deal(ownFreeKick)->call();
-          setState("ownFreeKick");
+          if(theGameInfo.setPlay == SET_PLAY_PENALTY_KICK)
+          {
+            dealer.deal(ownPenaltyKick)->call();
+            setState("ownPenaltyKick");
+          }
+          else
+          {
+            dealer.deal(ownFreeKick)->call();
+            setState("ownFreeKick");
+          }
         }
         else
         {
-          dealer.deal(opponentFreeKick)->call();
-          setState("opponentFreeKick");
+          if(theGameInfo.setPlay == SET_PLAY_PENALTY_KICK)
+          {
+            dealer.deal(opponentPenaltyKick)->call();
+            setState("opponentPenaltyKick");
+          }
+          else
+          {
+            dealer.deal(opponentFreeKick)->call();
+            setState("opponentFreeKick");
+          }
         }
       }
       else
       {
         dealer.deal(normalPlay)->call();
         setState("normalPlay");
+
+        #ifdef TARGET_ROBOT
+          if(stateTime <= 11000)
+            theTeamCountdownSkill(stateTime);
+        #endif
       }
+
+      #ifdef TARGET_ROBOT
+        if(theOpponentTeamInfo.teamNumber > 0 && stateTime > 11000)
+          theCountDownHalfTimeSkill();
+      #endif
     }
   }
 

@@ -42,6 +42,20 @@ const std::list<SectorWheel::Sector>& SectorWheel::finish()
   return wheel;
 }
 
+const std::list<SectorWheel::Sector>& SectorWheel::finishWithoutCircleClosure()
+{
+  ASSERT(!wheel.empty());
+  ASSERT(wheel.front().angleRange.min == -pi);
+  ASSERT(wheel.back().angleRange.max == pi);
+
+#ifndef NDEBUG
+  for(auto it = wheel.begin(), it2 = std::next(it); it2 != wheel.end(); ++it, ++it2)
+    ASSERT(it->angleRange.max == it2->angleRange.min);
+#endif
+
+  return wheel;
+}
+
 void SectorWheel::addSector(const Vector2f& center, float width, Sector::Type type)
 {
   return addSector(center, width, (center - positionOnField).norm(), type);

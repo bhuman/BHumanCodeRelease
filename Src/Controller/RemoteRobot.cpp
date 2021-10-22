@@ -6,15 +6,19 @@
 
 #include "RemoteRobot.h"
 #include "ConsoleRoboCupCtrl.h"
+#include "SimulatedRobot3D.h"
 #include "Platform/Time.h"
 
-RemoteRobot::RemoteRobot(const std::string& name, const std::string& ip) :
-  RobotConsole(nullptr, nullptr), name(name), ip(ip)
+RemoteRobot::RemoteRobot(const std::string& robotName, const std::string& ip) :
+  RobotConsole(Settings("Nao", "Nao"), robotName, nullptr, nullptr), ip(ip)
 {
   mode = SystemCall::remoteRobot;
-  puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
-  if(puppet)
-    simulatedRobot.init(puppet);
+  if(!RoboCupCtrl::controller->is2D)
+  {
+    puppet = static_cast<SimRobotCore2::Body*>(RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body));
+    if(puppet)
+      simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
+  }
 
   // try to connect for one second
   Thread::start(this, &RemoteRobot::connect);
@@ -23,7 +27,7 @@ RemoteRobot::RemoteRobot(const std::string& name, const std::string& ip) :
 
 void RemoteRobot::connect()
 {
-  Thread::nameCurrentThread(name + ".RemoteRobot.connect");
+  Thread::nameCurrentThread(robotName + ".RemoteRobot.connect");
   TcpConnection::connect(ip.c_str(), 9999, TcpConnection::sender);
 }
 
@@ -93,31 +97,31 @@ void RemoteRobot::update()
   if(puppet)
   {
     if(RobotConsole::jointSensorData.timestamp)
-      simulatedRobot.setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+      simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
     else
-      simulatedRobot.setJointRequest(jointRequest);
+      simulatedRobot->setJointRequest(jointRequest);
     if(moveOp != noMove)
     {
       if(moveOp == moveBoth)
-        simulatedRobot.moveRobot(movePos, moveRot * 1_deg, true);
+        simulatedRobot->moveRobot(movePos, moveRot * 1_deg, true);
       else if(moveOp == movePosition)
-        simulatedRobot.moveRobot(movePos, Vector3f::Zero(), false);
+        simulatedRobot->moveRobot(movePos, Vector3f::Zero(), false);
       else if(moveOp == moveBallPosition)
-        simulatedRobot.moveBall(movePos);
+        simulatedRobot->moveBall(movePos);
       moveOp = noMove;
     }
   }
   if(Time::getTimeSince(timestamp) >= 2000)
   {
-    int bytes = this->getOverallBytesSent() + this->getOverallBytesReceived() - bytesTransfered;
-    bytesTransfered += bytes;
+    int bytes = this->getOverallBytesSent() + this->getOverallBytesReceived() - bytesTransferred;
+    bytesTransferred += bytes;
     timestamp = Time::getCurrentSystemTime();
     transferSpeed = bytes / 2000.0f;
   }
 
   char buf[33];
   sprintf(buf, "%.1lf kb/s", transferSpeed);
-  QString statusText = robotName.mid(robotName.lastIndexOf(".") + 1).toUtf8().constData() +
+  QString statusText = QString::fromStdString(robotName) +
                        (isConnected() ? QString(": connected to ") + QString::fromStdString(ip) + ", " + buf
                         : QString(": connection lost from ") + QString::fromStdString(ip));
 

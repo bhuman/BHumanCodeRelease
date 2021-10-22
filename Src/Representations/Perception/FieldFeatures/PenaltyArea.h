@@ -10,7 +10,7 @@
 
 /**
  * @struct PenaltyArea
- * It defines a the pose of the penalty area in relative field coordinates to the robot.
+ * It defines the pose of the penalty area in relative field coordinates to the robot.
  * The penalty area pose: position => middle of the area; rotation => looking in direction of goal
  */
 STREAMABLE_WITH_BASE(PenaltyArea, FieldFeature,

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesPerceptorData.h"
@@ -16,11 +17,14 @@
 
 STREAMABLE_WITH_BASE(LowerFieldBoundary, FieldBoundary, {,});
 STREAMABLE_WITH_BASE(LowerObstaclesPerceptorData, ObstaclesPerceptorData, {,});
+STREAMABLE_WITH_BASE(LowerGoalPostsPercept, GoalPostsPercept, {,});
 
 MODULE(LowerProvider,
 {,
   REQUIRES(LowerFieldBoundary),
   PROVIDES(OtherFieldBoundary),
+  REQUIRES(LowerGoalPostsPercept),
+  PROVIDES(OtherGoalPostsPercept),
   REQUIRES(LowerObstaclesPerceptorData),
   PROVIDES(OtherObstaclesPerceptorData),
 });
@@ -32,6 +36,12 @@ class LowerProvider : public LowerProviderBase
    * @param theOtherFieldBoundary The representation updated.
    */
   void update(OtherFieldBoundary& theOtherFieldBoundary) override;
+
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param theOtherGoalPostPercept The representation updated.
+   */
+  void update(OtherGoalPostsPercept& theOtherGoalPostsPercept) override;
 
   /**
    * This method is called when the representation provided needs to be updated.

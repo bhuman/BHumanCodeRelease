@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Tools/Math/Angle.h"
+
 namespace SensorData
 {
-  enum {off = 10000}; /**< Special value that indicates that a sensor is turned off. */ // TODO: change to constexpr
+  constexpr Angle off = 10000.f; /**< Special value that indicates that a sensor is turned off. */
 }

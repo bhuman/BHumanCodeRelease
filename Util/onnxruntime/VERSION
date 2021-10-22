@@ -1,0 +1,11 @@
+ONNX runtime 1.8.1+ (master)
+
+HEAD during checkout: 5369821ad67ef41ec0be733417203eaf046592c8
+
+git clone --recursive https://github.com/Microsoft/onnxruntime
+cd onnxruntime
+
+macOSarm64
+----------
+python3 -m pip install --user flatbuffers
+./build.sh --config Release --build_apple_framework --arm64 --parallel

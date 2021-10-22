@@ -7,6 +7,7 @@
 #include "RobotHealthProvider.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
+#include "Tools/Debugging/Annotation.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
 
@@ -29,14 +30,15 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   lastExecutionTime = now;
 
   std::string wavName = Global::getSettings().headName.c_str();
+  wavName.append(".wav");
 
   // read cpu and mainboard temperature
-  robotHealth.cpuTemperature = static_cast<unsigned char>(theSystemSensorData.cpuTemperature);
+  robotHealth.cpuTemperature = theSystemSensorData.cpuTemperature == SensorData::off ? 0 : static_cast<unsigned char>(theSystemSensorData.cpuTemperature);
   if(robotHealth.cpuTemperature > cpuHeat && theFrameInfo.getTimeSince(highCPUTemperatureSince) / 1000 > 20)
   {
     highCPUTemperatureSince = theFrameInfo.time;
     if(enableName)
-      SystemCall::say(wavName.c_str());
+      SystemCall::playSound(wavName.c_str());
     SystemCall::say("CPU temperature at exclamation mark");
   }
 #ifdef TARGET_ROBOT
@@ -46,6 +48,13 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     robotHealth.wlan = access("/sys/class/net/wlan0", F_OK) == 0;
   }
 #endif
+
+  // MotionRobotHealthProvider filters over 30 entries. If one motion frame was dropped then check 31 frames later again
+  if(theFrameInfo.getTimeSince(lastMotionFrameDropTimestamp) > 31.f * Constants::motionCycleTime * 1000.f && robotHealth.maxMotionTime > 1.5f * Constants::motionCycleTime * 1000.f)
+  {
+    lastMotionFrameDropTimestamp = theFrameInfo.time;
+    ANNOTATION("RobotHealthProvider", "Motionframe Missing: " << robotHealth.maxMotionTime);
+  }
 
   if(theFrameInfo.getTimeSince(lastRelaxedHealthComputation) > 5000)
   {
@@ -76,9 +85,9 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
       if(batteryVoltageFalling && theFrameInfo.getTimeSince(startBatteryLow) > 1000)
       {
         if(enableName)
-          SystemCall::say(wavName.c_str());
+          SystemCall::playSound(wavName.c_str());
         SystemCall::say("Low battery");
-        //next warning in 90 seconds
+        // next warning in 90 seconds
         startBatteryLow = theFrameInfo.time + 30000;
         batteryVoltageFalling = false;
       }
@@ -86,14 +95,14 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     else if(startBatteryLow < theFrameInfo.time)
       startBatteryLow = theFrameInfo.time;
     lastBatteryLevel = robotHealth.batteryLevel;
-    //temperature status warning
+    // temperature status warning
     robotHealth.maxJointTemperatureStatus = *std::max_element(theJointSensorData.status.begin(), theJointSensorData.status.end());
     if(robotHealth.maxJointTemperatureStatus > JointSensorData::regular)
     {
       if(theFrameInfo.getTimeSince(highTemperatureSince) > 1000)
       {
         if(enableName)
-          SystemCall::say(wavName.c_str());
+          SystemCall::playSound(wavName.c_str());
 
         unsigned timeToNextScream = timeBetweenHeatScreams;
         if(robotHealth.maxJointTemperatureStatus >= JointSensorData::TemperatureStatus::criticallyHot)
@@ -122,4 +131,4 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
   }
 }
 
-MAKE_MODULE(RobotHealthProvider, infrastructure)
+MAKE_MODULE(RobotHealthProvider, infrastructure);

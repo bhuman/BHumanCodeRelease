@@ -12,7 +12,11 @@
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Communication/TeamInfo.h"
-#include "Representations/Configuration/FieldColors.h"
+#include "Representations/Configuration/CameraCalibration.h"
+#include "Representations/Configuration/FootOffset.h"
+#include "Representations/Configuration/FootSoleRotationCalibration.h"
+#include "Representations/Configuration/IMUCalibration.h"
+#include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/AudioData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
@@ -31,16 +35,16 @@
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/SelfLocalizationHypotheses.h"
-#include "Representations/Modeling/SideConfidence.h"
+#include "Representations/Modeling/SideInformation.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Representations/Modeling/TeamPlayersModel.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Representations/MotionControl/GetUpEngineOutputLog.h"
+#include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Representations/MotionControl/WalkGeneratorData.h"
+#include "Representations/MotionControl/WalkStepData.h"
 #include "Representations/MotionControl/WalkingEngineOutput.h"
 #include "Representations/MotionControl/WalkLearner.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
@@ -58,6 +62,7 @@
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Sensing/FallDownState.h"
+#include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Tools/ImageProcessing/Image.h"
@@ -82,33 +87,38 @@ MODULE(LogDataProvider,
   PROVIDES_WITHOUT_MODIFY(CameraImage),
   PROVIDES(ActivationGraph),
   PROVIDES(AlternativeRobotPoseHypothesis),
+  PROVIDES(ArmMotionRequest),
   PROVIDES(AudioData),
   PROVIDES(BallModel),
   PROVIDES(BallPercept),
   PROVIDES(BallSpots),
   PROVIDES(BehaviorStatus),
   PROVIDES(BodyContour),
+  PROVIDES(CameraCalibration),
   PROVIDES(CameraInfo),
   PROVIDES(CameraMatrix),
   PROVIDES(CirclePercept),
   PROVIDES(ECImage),
   PROVIDES(FallDownState),
   PROVIDES(FieldBoundary),
-  PROVIDES(FieldColors),
   PROVIDES(FieldLines),
+  PROVIDES(FootOffset),
+  PROVIDES(FootSoleRotationCalibration),
+  PROVIDES(FootSupport),
   PROVIDES(FrameInfo),
   PROVIDES(FsrSensorData),
   PROVIDES(GameInfo),
-  PROVIDES(GetUpEngineOutputLog),
   PROVIDES(GroundContactState),
   PROVIDES(GroundTruthOdometryData),
   PROVIDES(GroundTruthRobotPose),
   PROVIDES(GroundTruthWorldState),
   PROVIDES(ImageCoordinateSystem),
+  PROVIDES(IMUCalibration),
   PROVIDES(InertialData),
   PROVIDES(InertialSensorData),
   PROVIDES(IntersectionsPercept),
   PROVIDES(JointAngles),
+  PROVIDES(JointCalibration),
   PROVIDES(JointRequest),
   PROVIDES(JointSensorData),
   PROVIDES(KeyStates),
@@ -129,11 +139,11 @@ MODULE(LogDataProvider,
   PROVIDES(RobotInfo),
   PROVIDES(RobotPose),
   PROVIDES(SelfLocalizationHypotheses),
-  PROVIDES(SideConfidence),
+  PROVIDES(SideInformation),
   PROVIDES(TeamBallModel),
   PROVIDES(TeamData),
   PROVIDES(TeamPlayersModel),
-  PROVIDES(WalkGeneratorData),
+  PROVIDES(WalkStepData),
   PROVIDES(WalkingEngineOutput),
   PROVIDES(WalkLearner),
   PROVIDES(Whistle),
@@ -153,7 +163,6 @@ private:
 
   std::array<State, numOfDataMessageIDs> states; /**< Should the corresponding message ids be replayed? */
   TypeInfo* logTypeInfo = nullptr; /**< The specifications of all the types from the log file. */
-  const TypeInfo currentTypeInfo; /**< The specifications of the types in this executable. */
   bool frameDataComplete; /**< Were all messages of the current frame received? */
   Thumbnail* thumbnail; /**< This will be allocated when a thumbnail was received. */
   OdometryData lastOdometryData; /** The last odometry data that was provided. Used for computing offset. */
@@ -162,31 +171,36 @@ private:
   // No-op update stubs
   void update(ActivationGraph&) override {}
   void update(AlternativeRobotPoseHypothesis&) override {}
+  void update(ArmMotionRequest&) override {}
   void update(AudioData&) override {}
   void update(BallModel&) override {}
   void update(BallPercept&) override {}
   void update(BallSpots&) override {}
   void update(BehaviorStatus&) override {}
   void update(BodyContour&) override {}
-  void update(CameraInfo& cameraInfo) override {}
-  void update(CameraMatrix& cameraMatrix) override {}
+  void update(CameraCalibration&) override {}
+  void update(CameraInfo&) override {}
+  void update(CameraMatrix&) override {}
   void update(CirclePercept&) override {}
   void update(FallDownState&) override {}
   void update(FieldBoundary&) override {}
-  void update(FieldColors&) override;
   void update(FieldLines&) override {}
+  void update(FootOffset&) override {}
+  void update(FootSoleRotationCalibration&) override {}
+  void update(FootSupport&) override {}
   void update(FrameInfo&) override {}
   void update(FsrSensorData&) override {}
   void update(GameInfo&) override {}
-  void update(GetUpEngineOutputLog&) override {}
   void update(GroundContactState&) override {}
   void update(GroundTruthRobotPose&) override {}
   void update(GroundTruthWorldState&) override {}
-  void update(ImageCoordinateSystem& imageCoordinateSystem) override {}
+  void update(ImageCoordinateSystem&) override {}
+  void update(IMUCalibration&) override {}
   void update(InertialData&) override {}
   void update(InertialSensorData&) override {}
   void update(IntersectionsPercept&) override {}
   void update(JointAngles&) override {}
+  void update(JointCalibration&) override {}
   void update(JointRequest&) override {}
   void update(JointSensorData&) override {}
   void update(KeyStates&) override {}
@@ -207,11 +221,11 @@ private:
   void update(RobotInfo&) override {}
   void update(RobotPose&) override {}
   void update(SelfLocalizationHypotheses&) override {}
-  void update(SideConfidence&) override {}
+  void update(SideInformation&) override {}
   void update(TeamBallModel&) override {}
   void update(TeamData&) override {}
   void update(TeamPlayersModel&) override {}
-  void update(WalkGeneratorData&) override {}
+  void update(WalkStepData&) override {}
   void update(WalkingEngineOutput&) override {}
   void update(WalkLearner&) override {}
   void update(Whistle&) override {}

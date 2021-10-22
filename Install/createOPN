@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# image format
+# version numbers are sequences of 4 16-bit big endian numbers
+# | offset      | length       | contents                                   |
+# | 0x0000      | 8            | "ALDIMAGE"                                 | *
+# | 0x0008      | 16           | flags (partially overwritten by flasher)   |   +
+# | 0x0018      | 32           | SHA256 sum (of next 4040 bytes)            | * +
+# | 0x0038      | 32           | SHA256 sum (of the archive)                |
+# | 0x0058      | 8            | archive size in bytes (BE)                 |
+# | 0x0060      | 8            | installer size in bytes (BE)               | * +
+# | 0x0068      | 32           | SHA256 sum (of the installer)              | * +
+# | 0x0088      | 32           | SHA256 sum (of the compressed image)       |   +
+# | 0x00A8      | 8            | free                                       |
+# | 0x00B0      | 8            | raw image size in bytes (BE)               |
+# | 0x00B8      | 8            | compressed image size in bytes (BE)        |
+# | 0x00C0      | 8            | OS version number (a.b.c.d)                | * +
+# | 0x00C8      | 3896         | zeros                                      |
+# | 0x1000      | 0x100000     | installer script                           | *
+# | 0x101000    | ............ | compressed root image                      |   +
+# | ........... | ............ | home archive                               |   +
+# * is used by the init script in the EFI partition of the NAO, so it can't be changed
+# + is used by the bundled installer
+
+# This script is based on something published by the Nao Devils.
+# Thanks!
+
+set -euo pipefail
+
+baseDir="$(cd "$(dirname "$(which "$0")")" && pwd)"
+bhDir="$(dirname "${baseDir}")"
+includeDir="${baseDir}/Include"
+
+source "${includeDir}/bhumanBase"
+
+rootImage="${baseDir}/root.ext3"
+homeArchive="${baseDir}/home.tar.gz"
+installer="${baseDir}/Files/install.sh"
+opnImage="${baseDir}/image.opn"
+haltAfterUpgrade=true
+
+usage() {
+  echo "usage:"
+  echo "${0} [-r <root image>] [-H <home archive>] [-i <installer>] [-o <opn image>] [-b]"
+  echo "${0} -h"
+  echo ""
+  echo " -r <root image>  : set path to the root image"
+  echo " -H <home archive>: set path to the home archive"
+  echo " -i <installer>   : set path to the installer"
+  echo " -o <opn image>   : set path to the OPN image"
+  echo " -b               : start bhuman after flashing"
+  echo ""
+  echo " -h               : Display this help"
+  exit 1
+}
+
+parseOptions() {
+  while getopts hr:H:i:o:b opt; do
+    case "$opt" in
+      r)
+        rootImage="${OPTARG%.gz}"
+        ;;
+      H)
+        homeArchive="${OPTARG}"
+        ;;
+      i)
+        installer="${OPTARG}"
+        ;;
+      o)
+        opnImage="${OPTARG}"
+        ;;
+      b)
+        haltAfterUpgrade=false
+        ;;
+      [?]|h)
+        usage
+        ;;
+    esac
+  done
+}
+
+# Options for macOS and Linux.
+if [ $(uname) == "Darwin" ]; then
+  PATH=$PATH:$bhDir/Util/Buildchain/macOS/bin
+  statopt="-f %z"
+else
+  statopt="-c %s"
+fi
+
+checkApp "dd"
+checkApp "pigz"
+checkApp "sha256sum"
+checkApp "stat"
+checkApp "xxd"
+
+parseOptions "$@"
+
+compressedRootImage="${rootImage}.gz"
+
+[ -f "${rootImage}" -o -f "${compressedRootImage}" ] || fatal "${rootImage}[.gz] does not exist. Did you run the script to create the root image?"
+[ -f "${homeArchive}" ] || fatal "${homeArchive} does not exist. Did you run the script to create the home archive?"
+[ -f "${installer}" ] || fatal "${installer} does not exist."
+
+# Compress root image.
+if [ -f "${rootImage}" -a "${rootImage}" -nt "${compressedRootImage}" ]; then
+  pigz -kf9 "${rootImage}"
+  echo "Compressed root image."
+fi
+
+blockSize1k=1024
+blockSize=4096
+headerSize=4096
+
+flagsBinary='\x00'
+if ${haltAfterUpgrade}; then
+  flagsBinary='\x10'
+fi
+versionBinary='\x00\x02\x00\x08\x00\x05\x00\x0B'
+
+
+# The installer gets a fixed size.
+installerSize=1048576
+installerSizeIn1kBlocks=$((${installerSize} / ${blockSize1k}))
+
+# Pad compressed root image to 4k blocks and calculate sizes.
+compressedRootImageSize=$(stat ${statopt} "${compressedRootImage}")
+compressedRootImageBlocks=$((${compressedRootImageSize} / ${blockSize}))
+compressedRootImageSizeRemainder=$((${compressedRootImageSize} % ${blockSize}))
+if [ ${compressedRootImageSizeRemainder} -gt 0 ]; then
+  compressedRootImageBlocks=$((${compressedRootImageBlocks} + 1))
+  dd if=/dev/zero of="${compressedRootImage}" bs=1 count=$((${blockSize} - ${compressedRootImageSizeRemainder})) seek=${compressedRootImageSize} conv=notrunc 2>/dev/null
+fi
+compressedRootImageSize=$((${compressedRootImageBlocks} * ${blockSize}))
+compressedRootImageSizeIn1kBlocks=$((${compressedRootImageSize} / ${blockSize1k}))
+if [ -f "${rootImage}" ]; then
+  rootImageSize=$(stat ${statopt} "${rootImage}")
+else
+  if [ "${compressedRootImage}" -nt "${rootImage}.size" ]; then
+    pigz -cdkq "${compressedRootImage}" | wc -c >"${rootImage}.size" || true
+  fi
+  rootImageSize=$(cat "${rootImage}.size")
+fi
+rootImageSizeIn1kBlocks=$((${rootImageSize} / ${blockSize1k}))
+
+# Pad home archive to 4k blocks and calculate sizes.
+homeArchiveSize=$(stat ${statopt} "${homeArchive}")
+homeArchiveBlocks=$((${homeArchiveSize} / ${blockSize}))
+homeArchiveSizeRemainder=$((${homeArchiveSize} % ${blockSize}))
+if [ ${homeArchiveSizeRemainder} -gt 0 ]; then
+  homeArchiveBlocks=$((${homeArchiveBlocks} + 1))
+  dd if=/dev/zero of="${homeArchive}" bs=1 count=$((${blockSize} - ${homeArchiveSizeRemainder})) seek=${homeArchiveSize} conv=notrunc 2>/dev/null
+fi
+homeArchiveSize=$((${homeArchiveBlocks} * ${blockSize}))
+homeArchiveSizeIn1kBlocks=$((${homeArchiveSize} / ${blockSize1k}))
+
+
+# Calculate offsets of the compressed root image and the home archive.
+installerOffset=${headerSize}
+compressedRootImageOffset=$((${installerOffset} + ${installerSize}))
+homeArchiveOffset=$((${compressedRootImageOffset} + ${compressedRootImageSize}))
+
+
+# Generate header template.
+headerMagic="ALDIMAGE"
+echo "${headerMagic}" | dd of="${opnImage}" bs=8 2>/dev/null
+printf "%b" "${flagsBinary}" | dd of="${opnImage}" seek=1 bs=8 conv=notrunc 2>/dev/null
+printf "%016x" ${homeArchiveSize} | xxd -r -p | dd of="${opnImage}" seek=11 bs=8 conv=notrunc 2>/dev/null
+printf "%016x" ${installerSize} | xxd -r -p | dd of="${opnImage}" seek=12 bs=8 conv=notrunc 2>/dev/null
+printf "%016x" ${rootImageSize} | xxd -r -p | dd of="${opnImage}" seek=22 bs=8 conv=notrunc 2>/dev/null
+printf "%016x" ${compressedRootImageSize} | xxd -r -p | dd of="${opnImage}" seek=23 bs=8 conv=notrunc 2>/dev/null
+printf "%b" "${versionBinary}" | dd of="${opnImage}" seek=24 bs=8 conv=notrunc 2>/dev/null
+
+
+# Append installer, compressed root image and home archive to the image.
+sed -e "s#^INSTALLER_SIZE=\".*\"#INSTALLER_SIZE=\"$installerSizeIn1kBlocks\"#" \
+    -e "s#^IMAGE_CMP_SIZE=\".*\"#IMAGE_CMP_SIZE=\"$compressedRootImageSizeIn1kBlocks\"#" \
+    -e "s#^IMAGE_RAW_SIZE=\".*\"#IMAGE_RAW_SIZE=\"$rootImageSizeIn1kBlocks\"#" \
+    -e "s#^ARCHIVE_CMP_SIZE=\".*\"#ARCHIVE_CMP_SIZE=\"$homeArchiveSizeIn1kBlocks\"#" "${installer}" | \
+    dd of="${opnImage}" seek=$((${installerOffset} / ${blockSize})) count=$((${installerSize} / ${blockSize})) bs=${blockSize} conv=notrunc 2>/dev/null
+dd if="${compressedRootImage}" of="${opnImage}" seek=$((${compressedRootImageOffset} / ${blockSize})) bs=${blockSize} conv=notrunc 2>/dev/null
+dd if="${homeArchive}" of="${opnImage}" seek=$((${homeArchiveOffset} / ${blockSize})) bs=${blockSize} conv=notrunc 2>/dev/null
+
+
+# Insert SHA256 checksums.
+installerChecksum=$(dd if="${opnImage}" skip=$((${installerOffset} / ${blockSize})) bs=${blockSize} count=$((${installerSize} / ${blockSize})) 2>/dev/null | sha256sum | cut -f1 -d\ )
+echo ${installerChecksum} | xxd -r -p | dd of="${opnImage}" seek=13 bs=8 conv=notrunc 2>/dev/null
+
+compressedRootImageChecksum=$(dd if="${opnImage}" skip=$((${compressedRootImageOffset} / ${blockSize})) bs=${blockSize} count=$((${compressedRootImageSize} / ${blockSize})) 2>/dev/null | sha256sum | cut -f1 -d\ )
+echo ${compressedRootImageChecksum} | xxd -r -p | dd of="${opnImage}" seek=17 bs=8 conv=notrunc 2>/dev/null
+
+homeArchiveChecksum=$(dd if="${opnImage}" skip=$((${homeArchiveOffset} / ${blockSize})) bs=${blockSize} count=$((${homeArchiveSize} / ${blockSize})) 2>/dev/null | sha256sum | cut -f1 -d\ )
+echo ${homeArchiveChecksum} | xxd -r -p | dd of="${opnImage}" seek=7 bs=8 conv=notrunc 2>/dev/null
+
+headerChecksum=$(dd if="${opnImage}" skip=7 bs=8 count=505 2>/dev/null | sha256sum | cut -f1 -d\ )
+echo ${headerChecksum} | xxd -r -p | dd of="${opnImage}" seek=3 bs=8 conv=notrunc 2>/dev/null
+
+echo "Created OPN image."

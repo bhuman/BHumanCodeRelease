@@ -1,4 +1,4 @@
-/* Copyright (C) 1997-2019 Free Software Foundation, Inc.
+/* Copyright (C) 1997-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _NETINET_IGMP_H
 #define	_NETINET_IGMP_H 1
@@ -86,6 +86,7 @@ struct igmp {
 
 #define IGMP_MTRACE_RESP		0x1e	/* traceroute resp.(to sender)*/
 #define IGMP_MTRACE			0x1f	/* mcast traceroute messages  */
+#define IGMP_MRDISC_ADV			0x30	/* From RFC4286.  */
 
 #define IGMP_MAX_HOST_REPORT_DELAY	10	/* max delay for response to     */
 						/*  query (in seconds) according */

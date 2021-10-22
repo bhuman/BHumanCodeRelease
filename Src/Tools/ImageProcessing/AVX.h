@@ -53,10 +53,12 @@ template<bool avx> ALWAYSINLINE bool simdAligned(const void* x) { return avx ? a
   template<int imm> static ALWAYSINLINE __m256i name (const __m256i a, const __m256i b){return name256 (a, b, imm);}
 #endif
 
+#ifndef __arm64__
 ALWAYSINLINE __m128i _mm_slli_epi8(const __m128i& a, int imm)
 {
   return _mm_and_si128(_mm_slli_epi16(a, imm), _mm_set1_epi8(static_cast<unsigned char>(0xFF << imm)));
 }
+#endif
 ALWAYSINLINE __m128i _mm_srli_epi8(const __m128i a, int imm)
 {
   return _mm_and_si128(_mm_srli_epi16(a, imm), _mm_set1_epi8(0xFF >> imm));
@@ -103,7 +105,7 @@ template<> ALWAYSINLINE __m128i _mmauto_setr128_epi8<>(const char a0, const char
   return _mm_setr_epi8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
 }
 template<typename T> static ALWAYSINLINE T _mmauto_set_as_posible_epi8(const char a0, const char a1, const char a2, const char a3, const char a4, const char a5, const char a6, const char a7, const char a8, const char a9, const char a10, const char a11, const char a12, const char a13, const char a14, const char a15, const char a16, const char a17, const char a18, const char a19, const char a20, const char a21, const char a22, const char a23, const char a24, const char a25, const char a26, const char a27, const char a28, const char a29, const char a30, const char a31);
-template<> ALWAYSINLINE __m128i _mmauto_set_as_posible_epi8<>(const char a0, const char a1, const char a2, const char a3, const char a4, const char a5, const char a6, const char a7, const char a8, const char a9, const char a10, const char a11, const char a12, const char a13, const char a14, const char a15, const char a16, const char a17, const char a18, const char a19, const char a20, const char a21, const char a22, const char a23, const char a24, const char a25, const char a26, const char a27, const char a28, const char a29, const char a30, const char a31)
+template<> ALWAYSINLINE __m128i _mmauto_set_as_posible_epi8<>(const char a0, const char a1, const char a2, const char a3, const char a4, const char a5, const char a6, const char a7, const char a8, const char a9, const char a10, const char a11, const char a12, const char a13, const char a14, const char a15, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char, const char)
 {
   return _mm_set_epi8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
 }
@@ -132,7 +134,9 @@ DEFINE_FUNCTIONI_MI(_mmauto_srli_si_all, _mm_srli_si128, _mm256_srli_si256)
 #define _mmauto_srli_si_all(a, i) _mmauto_srli_si_all<i>(a) /** ATTENTION: THIS BEHAVES DIFFERENTLY ON 128 AND 256 */
 DEFINE_FUNCTIONI_MI(_mmauto_srli_epi8, _mm_srli_epi8, _mm256_srli_epi8)
 #define _mmauto_srli_epi8(a, i) _mmauto_srli_epi8<i>(a)
+#ifndef __arm64__
 DEFINE_FUNCTIONI_MI(_mmauto_slli_epi8, _mm_slli_epi8, _mm256_slli_epi8)
+#endif
 #define _mmauto_slli_epi8(a, i) _mmauto_slli_epi8<i>(a)
 DEFINE_FUNCTIONI_MI(_mmauto_srli_epi16, _mm_srli_epi16, _mm256_srli_epi16)
 #define _mmauto_srli_epi16(a, i) _mmauto_srli_epi16<i>(a)

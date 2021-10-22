@@ -5,11 +5,15 @@ Linux/Windows/macOS:
 make
 make DESTDIR=<installation directory> install
 
-NaoV5/V6:
-./configure --disable-hl --disable-shared --with-zlib=no CFLAGS="-march=<atom/silvermont> -mtune=<atom/silvermont>"
+NaoV6:
+CFLAGS="-march=silvermont -mtune=silvermont -O2" ./configure --disable-hl --disable-shared --with-zlib=no
 make
 make DESTDIR=<installation directory> install
 
 Since the header file H5pubconf.h differs from platform to platform, I renamed
 the respective original files to "H5pubconf<platform>.h" and created a wrapper
 file which includes the correct version.
+
+The following line may have to be added to "src/H5Odeprec.c":
+
+#include "H5CXprivate.h"

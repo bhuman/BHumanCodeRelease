@@ -12,6 +12,7 @@
 
 #include <array>
 #include <list>
+#include <optional>
 #include <vector>
 #include "InOut.h"
 #include "TypeRegistry.h"
@@ -65,14 +66,26 @@
 #define _REG_II_10(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) _REG_III(a9, a0, a1, a2, a3, a4, a5, a6, a7, a8)
 #define _REG_III(attribute, ...) TypeRegistry::addAttribute(_type, typeid(__VA_ARGS__).name(), #attribute)
 
+/**
+ * Registers an enumeration type. The constants must be registered afterwards.
+ */
 #define REG_ENUM(...) \
   const char* _type = typeid(__VA_ARGS__).name(); \
   TypeRegistry::addEnum(_type)
 
+/**
+ * Registers a single enumeration constant for the type that was registered before.
+ * @param constant The enumeration constant.
+ */
 #define REG_CONSTANT(constant) TypeRegistry::addEnumConstant(_type, #constant)
 
 #define STREAM_BASE(s) \
-  this->s::serialize(in, out);
+  Out* _out = dynamic_cast<Out*>(&stream); \
+  In* _in = dynamic_cast<In*>(&stream); \
+  if(_in) \
+    const_cast<Streaming::RemoveConst<decltype(this)>::type>(this)->s::read(*_in); \
+  else \
+    s::write(*_out);
 
 #define STREAM_BASE_EXT(stream, s, type) \
   type& _base(const_cast<type&>(static_cast<const type&>(s))); \
@@ -85,35 +98,37 @@
 
 /**
  * Registration and streaming of a member.
- * @param The attribute to be registered and streamed.
+ * @param s The attribute to be streamed.
  */
-#define STREAM(s) Streaming::streamIt(in, out, #s, s);
+#define STREAM(s) Streaming::streamIt(stream, #s, s);
 
 /**
  * Registration and streaming of a member in an external streaming operator
  * (<< or >>).
  * @param stream Reference to the stream, that should be streamed to.
- * @param s The attribute to be registered and streamed.
+ * @param s The attribute to be streamed.
  */
-#define STREAM_EXT(stream, s) Streaming::streamIt(stream, #s, s);
+#define STREAM_EXT(stream, s) Streaming::streamItExt(stream, #s, s);
+
+class Streamable;
+In& operator>>(In& in, Streamable& streamable);
+Out& operator<<(Out& out, const Streamable& streamable);
 
 /**
  * Base class for all classes using the STREAM macros for streaming instances.
  */
 class Streamable : public AlignedMemory
 {
+  friend In& operator>>(In&, Streamable&);
+  friend Out& operator<<(Out&, const Streamable&);
+
 protected:
-  virtual void serialize(In*, Out*) = 0;
+  virtual void read(In&) = 0;
+  virtual void write(Out&) const = 0;
 
 public:
   virtual ~Streamable() = default;
-  void streamOut(Out&) const;
-  void streamIn(In&);
 };
-
-In& operator>>(In& in, Streamable& streamable);
-
-Out& operator<<(Out& out, const Streamable& streamable);
 
 // Helpers
 
@@ -198,42 +213,41 @@ namespace Streaming
 
   template<typename S> struct Streamer
   {
-    static void stream(In* in, Out* out, const char* name, S& s)
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<S>::value ? typeid(S).name() : nullptr;
-      if(in)
-      {
-        in->select(name, -2, enumType);
-        *in >> s;
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -2, enumType);
-        *out << s;
-        out->deselect();
-      }
+      stream.select(name, -2, enumType);
+      stream >> s;
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<S>::value ? typeid(S).name() : nullptr;
+      stream.select(name, -2, enumType);
+      stream << s;
+      stream.deselect();
     }
   };
 
   template<typename E, size_t N> struct Streamer<E[N]>
   {
     using S = E[N];
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      if(in)
-      {
-        in->select(name, -1);
-        streamStaticArray(*in, s, sizeof(s), enumType);
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -1);
-        streamStaticArray(*out, s, sizeof(s), enumType);
-        out->deselect();
-      }
+      stream.select(name, -1);
+      streamStaticArray(stream, s, sizeof(s), enumType);
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      streamStaticArray(stream, s, sizeof(s), enumType);
+      stream.deselect();
     }
   };
 
@@ -241,12 +255,13 @@ namespace Streaming
   template<typename E, size_t N> struct Streamer<const E[N]>
   {
     using S = const E[N];
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void write(Out& stream, const char* name, const S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      out->select(name, -1);
-      streamStaticArray(*out, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
-      out->deselect();
+      stream.select(name, -1);
+      streamStaticArray(stream, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
+      stream.deselect();
     }
   };
 
@@ -254,135 +269,172 @@ namespace Streaming
   template<typename E, size_t N> struct Streamer<E(*)[N]>
   {
     using S = E (*)[N];
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      if(in)
-      {
-        in->select(name, -1);
-        streamStaticArray(*in, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -1);
-        streamStaticArray(*out, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
-        out->deselect();
-      }
+      stream.select(name, -1);
+      streamStaticArray(stream, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      streamStaticArray(stream, reinterpret_cast<E*>(s), N * sizeof(E), enumType);
+      stream.deselect();
     }
   };
 
   template<typename E, typename A> struct Streamer<std::vector<E, A>>
   {
     using S = std::vector<E, A>;
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      if(in)
-      {
-        in->select(name, -1);
-        unsigned size;
-        *in >> size;
-        s.resize(size);
-        if(!s.empty())
-          streamStaticArray(*in, &s[0], s.size() * sizeof(E), enumType);
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -1);
-        *out << static_cast<unsigned>(s.size());
-        if(!s.empty())
-          streamStaticArray(*out, &s[0], s.size() * sizeof(E), enumType);
-        out->deselect();
-      }
+      stream.select(name, -1);
+      unsigned size;
+      stream >> size;
+      s.resize(size);
+      if(!s.empty())
+        streamStaticArray(stream, &s[0], s.size() * sizeof(E), enumType);
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      stream << static_cast<unsigned>(s.size());
+      if(!s.empty())
+        streamStaticArray(stream, &s[0], s.size() * sizeof(E), enumType);
+      stream.deselect();
     }
   };
 
   template<typename E, typename A> struct Streamer<std::list<E, A>>
   {
     using S = std::list<E, A>;
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      if(in)
+      stream.select(name, -1);
+      unsigned size;
+      stream >> size;
+      s.resize(size);
+      int i = 0;
+      for(E& elem : s)
       {
-        in->select(name, -1);
-        unsigned size;
-        *in >> size;
-        s.resize(size);
-        int i = 0;
-        for(E& elem : s)
-        {
-          in->select(0, i, enumType);
-          *in >> elem;
-          in->deselect();
-          i++;
-        }
-        in->deselect();
+        stream.select(0, i, enumType);
+        stream >> elem;
+        stream.deselect();
+        ++i;
       }
-      else
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      stream << static_cast<unsigned>(s.size());
+      int i = 0;
+      for(const E& elem : s)
       {
-        out->select(name, -1);
-        *out << static_cast<unsigned>(s.size());
-        int i = 0;
-        for(const E& elem : s)
-        {
-          out->select(0, i, enumType);
-          *out << elem;
-          out->deselect();
-          i++;
-        }
-        out->deselect();
+        stream.select(0, i, enumType);
+        stream << elem;
+        stream.deselect();
+        ++i;
       }
+      stream.deselect();
     }
   };
 
   template<typename E, size_t n> struct Streamer<std::array<E, n>>
   {
     using S = std::array<E, n>;
-    static void stream(In* in, Out* out, const char* name, S& s)
+
+    static void read(In& stream, const char* name, S& s)
     {
       const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
-      if(in)
-      {
-        in->select(name, -1);
-        streamStaticArray(*in, s.data(), n * sizeof(E), enumType);
-        in->deselect();
-      }
-      else
-      {
-        out->select(name, -1);
-        streamStaticArray(*out, s.data(), n * sizeof(E), enumType);
-        out->deselect();
-      }
+      stream.select(name, -1);
+      streamStaticArray(stream, s.data(), n * sizeof(E), enumType);
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      streamStaticArray(stream, s.data(), n * sizeof(E), enumType);
+      stream.deselect();
     }
   };
 
-  /**
-   * The following three functions are helpers for streaming data. (in == nullptr) != (out == nullptr).
-   * @param S The type of the variable to be streamed.
-   * @param in The stream to read from.
-   * @param out The stream to write to.
-   * @param name The name of the variable to be streamed.
-   * @param s The variable to be streamed.
-   * This is the version for using inside of serialize methods.
-   */
-  template<typename S> void streamIt(In* in, Out* out, const char* name, S& s)
+  template<typename E> struct Streamer<std::optional<E>>
   {
-    Streamer<S>::stream(in, out, name, s);
+    using S = std::optional<E>;
+
+    static void read(In& stream, const char* name, S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      unsigned size;
+      stream >> size;
+      if(size)
+      {
+        E elem;
+        stream.select(0, 0, enumType);
+        stream >> elem;
+        s.emplace(elem);
+        stream.deselect();
+      }
+      else
+        s.reset();
+      stream.deselect();
+    }
+
+    static void write(Out& stream, const char* name, const S& s)
+    {
+      const char* enumType = std::is_enum<E>::value ? typeid(E).name() : nullptr;
+      stream.select(name, -1);
+      stream << static_cast<unsigned>(s.has_value());
+
+      if(s.has_value())
+      {
+        stream.select(0, 0, enumType);
+        stream << s.value();
+        stream.deselect();
+      }
+      stream.deselect();
+    }
+  };
+
+  /** Read variable from a stream. */
+  template<typename S> void streamIt(In& stream, const char* name, S& s)
+  {
+    Streamer<S>::read(stream, name, s);
+  }
+
+  /** Write variable to a stream. */
+  template<typename S> void streamIt(Out& stream, const char* name, const S& s)
+  {
+    Streamer<S>::write(stream, name, const_cast<S&>(s));
   }
 
   /** This is the version for using inside operator>>. */
-  template<typename S> void streamIt(In& in, const char* name, S& s)
+  template<typename S> void streamItExt(In& stream, const char* name, S& s)
   {
-    Streamer<S>::stream(&in, nullptr, skipDot(name), s);
+    streamIt(stream, skipDot(name), s);
   }
 
   /** This is the version for using inside operator<<. */
-  template<typename S> void streamIt(Out& out, const char* name, const S& s)
+  template<typename S> void streamItExt(Out& stream, const char* name, const S& s)
   {
-    Streamer<S>::stream(nullptr, &out, skipDot(name), const_cast<S&>(s));
+    streamIt(stream, skipDot(name), s);
   }
 
   /**
@@ -392,4 +444,11 @@ namespace Streaming
    * decltype(Streaming::TypeWrapper<myType>::type) myVar;
    */
   template<typename T> struct TypeWrapper {static T type;};
+
+  /**
+   * Removes the const qualifier from a type.
+   * @param T The type const is removed from.
+   */
+  template<typename T> struct RemoveConst {typedef T type;};
+  template<typename T> struct RemoveConst<const T*> {typedef T* type;};
 }

@@ -23,16 +23,14 @@ class WalkAtRelativeSpeedImpl : public WalkAtRelativeSpeedImplBase
 {
   void execute(const WalkAtRelativeSpeed& p) override
   {
-    theMotionRequest.motion = MotionRequest::walk;
-    theMotionRequest.walkRequest.mode = WalkRequest::relativeSpeedMode;
-    theMotionRequest.walkRequest.speed = p.speed;
-    theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
+    theMotionRequest.motion = MotionRequest::walkAtRelativeSpeed;
+    theMotionRequest.walkSpeed = p.speed;
     theLibCheck.inc(LibCheck::motionRequest);
   }
 
   bool isDone(const WalkAtRelativeSpeed&) const override
   {
-    return theMotionInfo.motion == MotionRequest::walk;
+    return theMotionInfo.executedPhase == MotionPhase::walk;
   }
 };
 

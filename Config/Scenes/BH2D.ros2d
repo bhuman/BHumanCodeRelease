@@ -1,0 +1,22 @@
+<Simulation>
+
+  <Include href="Includes/2D.rsi2d"/>
+
+  <Scene name="RoboCup" controller="SimulatedNao" stepLength="0.01666666s" background="Textures/field.svg">
+    <Compound ref="field"/>
+
+    <Compound name="robots">
+      <Body ref="player" name="robot3">
+        <Set name="playerColor" value="rgb(0,0,0)"/>
+        <Translation x="0.9"/>
+        <Rotation angle="180degree"/>
+      </Body>
+    </Compound>
+
+    <Compound name="extras"/>
+
+    <Compound name="balls">
+      <Body ref="ball"/>
+    </Compound>
+  </Scene>
+</Simulation>

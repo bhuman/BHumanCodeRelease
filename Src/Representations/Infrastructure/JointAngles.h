@@ -6,13 +6,11 @@
 #include "Tools/Streams/EnumIndexedArray.h"
 #include "Platform/BHAssert.h"
 
-#include <array>
-
 STREAMABLE(JointAngles,
 {
 public:
-  enum {off = SensorData::off}; /**< Special value that indicates that the joint is turned off. */ // TODO replace with constexpr
-  enum {ignore = 20000}; /**< Special angle for not overwriting the previous setting. */ // TODO replace with constexpr
+  static constexpr Angle off = SensorData::off; /**< Special value that indicates that the joint is turned off. */
+  static constexpr Angle ignore = 20000.f; /**< Special angle for not overwriting the previous setting. */
 
   JointAngles();
 

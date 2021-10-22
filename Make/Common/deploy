@@ -1,0 +1,368 @@
+#!/bin/bash
+# copies a bhuman distribution to a robot
+
+usage()
+{
+  echo "usage: deploy [Release|Develop|Debug] [<ipaddress>|(-r <playernumber> <ipaddress>)*] {options}"
+  echo "  options:"
+  echo "    -b                     restart bhuman"
+  echo "    -c <team color>        set team color to blue, red, yellow, black, white, orange, purple, brown, or gray"
+  echo "    -d                     delete logs or add timestamp to image"
+  echo "    -h | --help | /h | /?  print this text"
+  echo "    -i                     create image instead of deploying"
+  echo "    -l <location>          set location"
+  echo "    -m <magic number>      set magic number for teamcomm (0-255). Set -1 for random."
+  echo "    -nc                    never compile"
+  echo "    -nr                    do not check whether target is reachable"
+  echo "    -o <team port>         overwrite team port"
+  echo "    -p <player number>     set player number"
+  echo "    -r <n> <ip>            copy to <ip> and set playernumber to <n> (one -r per robot)"
+  echo "    -s <scenario>          set scenario"
+  echo "    -t <team number>       set team number"
+  echo "    -u                     check for a USB drive before starting bhuman (only when creating an image)"
+  echo "    -v <volume percent>    set NAO's volume"
+  echo "    -w <wireless profile>  set wireless profile"
+  echo "  examples:"
+  echo "    ./deploy Develop 192.168.5.14 -p 1"
+  echo "    ./deploy Release -r 1 10.0.5.14 -r 3 10.0.0.2"
+  echo "    ./deploy Release -i -nc -v 50 -w SPL_A"
+  exit 1
+}
+
+settingsReplacements()
+{
+  local SEDFLAGS=""
+  [ ! -z $SCENARIO ] && SEDFLAGS="$SEDFLAGS -e 's/scenario =.*/scenario = $SCENARIO;/'"
+  [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location =.*/location = $LOCATION;/'"
+  [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $TEAM;/'"
+  [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber =.*/playerNumber = $PLAYER;/'"
+  [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $NUMBER;/'"
+  [ ! -z $PORT ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort =.*/teamPort = $PORT;/'"
+  [ ! -z $MAGICNUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber =.*/magicNumber = $MAGICNUMBER;/'"
+  echo "$SEDFLAGS"
+}
+
+copy()
+{
+  REMOTE=`$RESOLVE <<<"$1"`
+  PLAYER=$2
+
+  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 6 )) ); then
+    echo "error: player number is $PLAYER!" >&2
+    exit 1
+  fi
+
+  if [ ! -z $CHECK ]; then
+    if [ `ping ${pingoptions} $REMOTE >/dev/null && echo 1 || echo 0` = "0" ]; then
+      echo "$REMOTE not reachable" >&2
+      exit 1
+    fi
+  fi
+
+  echo "stopping bhuman"
+  ssh $sshoptions nao@$REMOTE "systemctl --user stop bhuman.service > /dev/null"
+
+  if [ ! -z $DELETELOGS ]; then
+    echo "removing log files"
+    ssh $sshoptions nao@$REMOTE "rm -f /home/nao/logs/* > /dev/null"
+  fi
+
+  echo "updating wireless profiles"
+  rsync --del --exclude=.* --exclude=default --chmod=u+rw,go+r,Dugo+x -zrce "ssh $sshoptions" ../../Install/Profiles/. nao@$REMOTE:/home/nao/Profiles
+  #check if PROFILE is existent
+  if [ -n "$PROFILE" ]; then
+    if [ ! -r "../../Install/Profiles/$PROFILE" ]; then
+      echo "wireless profile \"$PROFILE\" is not existent, that profile is not activated" >&2
+    else
+      RESULT=`ssh $sshoptions nao@$REMOTE "/home/nao/bin/setprofile $PROFILE"`
+      if [ -n "$RESULT" ]; then
+        if [ "$PROFILE" == "NONE" ] || [ `echo $RESULT | grep -i -c 'no process found'` -eq "1" ]; then
+          RESULT=""
+        fi
+      fi
+      if [ ! -z "$RESULT" ]; then
+        echo "$RESULT" | grep -v usage >&2
+        exit 1
+      fi
+    fi
+  fi
+
+  echo "updating bhuman"
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
+
+  # set playback volume and reset capture value to 75%
+  echo "setting volume to $VOLUME%"
+  CAPTURE_VOLUME=75
+  echo "setting capture volume to $CAPTURE_VOLUME%"
+  ssh $sshoptions nao@$REMOTE "/home/nao/bin/setvolume $VOLUME $CAPTURE_VOLUME"
+
+  # set settings on robot
+  SEDFLAGS="$(settingsReplacements)"
+  if [ ! -z "$SEDFLAGS" ]; then
+    echo "updating settings"
+    ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS < /home/nao/Config/settings.cfg > /home/nao/Config/settingsTEMP.cfg && mv /home/nao/Config/settingsTEMP.cfg /home/nao/Config/settings.cfg"
+  fi
+
+  if [ ! -z $RESTART ]; then
+    echo "starting bhuman"
+    ssh $sshoptions nao@$REMOTE "systemctl --user start bhuman.service > /dev/null"
+  fi
+
+  true
+}
+
+set -e
+
+keySource=../../Install/Keys/id_rsa_nao
+keyFile=/tmp/id_rsa_nao
+if [ $(uname) == "Darwin" ]; then
+  pingoptions="-t 1 -c 1"
+else
+  pingoptions="-w 1 -c 1"
+fi
+
+cd "$(dirname "$(which "$0")")"
+cp -n $keySource $keyFile || true
+
+# init variables
+[ -z $CONFIG ] && CONFIG="Develop"
+PLAYER=
+TEAM=
+NUMBER=
+SCENARIO=
+LOCATION=
+REMOTE=
+COMPILE=1
+CHECK=1
+NUMMULTIPLE=0
+RESTART=
+MULTIPLEDATA=
+DELETELOGS=
+VOLUME=100
+PROFILE=
+PORT=
+MAGICNUMBER=
+REQUIREUSB=
+IMAGE=
+if [ -z "$(ls 2>/dev/null ../../Config/Robots/*/network.cfg)" ]; then
+  RESOLVE=cat
+else
+  RESOLVE=`echo "sed"; ls ../../Config/Robots/*/network.cfg | xargs grep -H "^lan" | sed "s%.*/\(.*\)/.*\"\(.*\)\";.*%-e s/\1/\2/%"; ls ../../Config/Robots/*/network.cfg | xargs grep -H "^wlan" | sed "s%.*/\(.*\)/.*\"\(.*\)\";.*%-e s/\1/\2/%" | tr '[:upper:]' '[:lower:]'`
+  RESOLVE=`tr '\n' ' ' <<<"$RESOLVE"`
+fi
+
+# parse options
+[[ $# -eq 0 ]] && usage
+while true; do
+  case $1 in
+    "")
+      break
+      ;;
+    "-p" | "/p")
+      shift
+      PLAYER=$1
+      ;;
+    "-s" | "/s")
+      shift
+      SCENARIO=$1
+      ;;
+    "-l" | "/l")
+      shift
+      LOCATION=$1
+      ;;
+    "-c" | "/c")
+      shift
+      TEAM=$1
+      ;;
+    "-t" | "/t")
+      shift
+      NUMBER=$1
+      if [ -z $PORT ]; then
+        PORT=`printf "100%02d" $NUMBER`
+      fi
+      ;;
+    "-o" | "/o")
+      shift
+      PORT=$1
+      ;;
+    "-nc" | "/nc")
+      COMPILE=
+      ;;
+    "-b" | "/b")
+      RESTART=1
+      ;;
+    "-nr" | "/nr")
+      CHECK=
+      ;;
+    "-d" | "/d")
+      DELETELOGS=1
+      ;;
+    "-h" | "/h" | "/?" | "--help")
+      usage
+      ;;
+    "-r" | "/r")
+      shift
+      MULTIPLEDATA[$NUMMULTIPLE]=$1
+      shift
+      MULTIPLEDATA[$NUMMULTIPLE + 1]=$1
+      let "NUMMULTIPLE+=2"
+      ;;
+    "-u" | "/u")
+      REQUIREUSB=1
+      ;;
+    "-v" | "/v")
+      shift
+      VOLUME=$1
+      ;;
+    "-w" | "/w")
+      shift
+      PROFILE=$1
+      ;;
+    "-m" | "/m")
+      shift
+      MAGICNUMBER=$1
+      ;;
+    "-i" | "/i")
+      IMAGE=1
+      ;;
+    "Release")
+      CONFIG="Release"
+      ;;
+    "Develop")
+      CONFIG="Develop"
+      ;;
+    "Debug")
+      CONFIG="Debug"
+      ;;
+    -*)
+      echo "unknown parameter: $1" >&2
+      usage
+      ;;
+    *)
+      REMOTE=$1
+      ;;
+  esac
+  shift
+done
+
+if [ ! -z "$IMAGE" -a \( ! -z "$REMOTE$MULTIPLEDATA" -o -z "$CHECK" \) ]; then
+  echo >&2 "Option -i cannot be combined with a remote ip or -r or -nr."
+  exit 1
+elif [ -z "$IMAGE" -a ! -z "$REQUIREUSB" ]; then
+  echo >&2 "Option -u can only be combined with -i."
+  exit 1
+fi
+
+sshoptions="-c aes128-ctr -i $keyFile -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet"
+
+if [ ! -z $SCENARIO ]; then
+  if [ "$(ls ../../Config/Scenarios/ | grep ${SCENARIO})" == "" ]; then
+    if [ "$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})" != "" ]; then
+      echo "Scenario $SCENARIO is not present" >&2
+      SCENARIO="$(ls ../../Config/Scenarios/ | grep -i ${SCENARIO})"
+      echo "Did you mean $SCENARIO?"
+      echo "Now using $SCENARIO"
+    else
+      echo "Scenario \"$SCENARIO\" is not present" >&2
+      exit 1
+    fi
+  fi
+fi
+
+if [ ! -z $LOCATION ]; then
+  if [ "$(ls ../../Config/Locations/ | grep ${LOCATION})" == "" ]; then
+    if [ "$(ls ../../Config/Locations/ | grep -i ${LOCATION})" != "" ]; then
+      echo "Location $LOCATION is not present" >&2
+      LOCATION="$(ls ../../Config/Locations/ | grep -i ${LOCATION})"
+      echo "Did you mean $LOCATION?"
+      echo "Now using $LOCATION"
+    else
+      echo "Location \"$LOCATION\" is not present" >&2
+      exit 1
+    fi
+  fi
+fi
+
+# check if magic number is too big
+if [ ! -z $MAGICNUMBER ]; then
+  if [ $MAGICNUMBER -gt 255 ]; then
+    MAGICNUMBER=255
+  fi
+  # calculate magic number from ip if -1
+  if [ $MAGICNUMBER -le -1 ]; then
+    MAGICNUMBER=$(ifconfig 2>/dev/null \
+                  | grep -e "${REMOTE%.*}" \
+                  | head -n 1 \
+                  | sed "s%.*\.\([0-9]*\)  *netmask.*%\1%")
+    if [ -z "$MAGICNUMBER" ]; then
+      echo "error: cannot generate magic number (set one other than -1)."
+      exit 1
+    fi
+  fi
+  echo "setting magic number to $MAGICNUMBER"
+fi
+
+#key may only be accessed by the owner. Otherwise ssh will complain
+chmod 600 $keyFile
+
+if [ ! -z $COMPILE ]; then
+  if [ "`uname`" = "Darwin" ]; then
+    # macOS
+    ./compile Nao $CONFIG
+    [ $? -ne 0 ] && exit 1
+  else
+    # Linux (either native or WSL)
+    echo "------ Compiling Nao ($CONFIG) ------"
+    cmake --build ../../Build/Linux/CMake/$CONFIG --target Nao --config $CONFIG
+    [ $? -ne 0 ] && exit 1
+    echo "------ Successfully compiled ------"
+  fi
+fi
+
+if [ ! -z $IMAGE ]; then # write an opn image
+  IMAGEPATH="$(pwd)/../../Build/Image/$CONFIG"
+  mkdir -p "$IMAGEPATH"
+  PROFILEOPT=
+  if [ ! -z $PROFILE ]; then
+    PROFILEOPT="-w $PROFILE";
+  fi
+  RESTARTOPT=
+  if [ ! -z $RESTART ]; then
+    RESTARTOPT="-b";
+  fi
+  USBOPT=
+  if [ ! -z $REQUIREUSB ]; then
+    USBOPT="-u";
+  fi
+  DATE=
+  if [ ! -z $DELETELOGS ]; then
+    DATE="$(date +"_%Y-%m-%d_%H-%M")"
+  fi
+
+  SEDFLAGS="$(settingsReplacements)"
+  if [ ! -z "$SEDFLAGS" ]; then
+    cp ../../Config/settings.cfg /tmp/deploy_settings.cfg
+    trap "mv /tmp/deploy_settings.cfg ../../Config/settings.cfg" EXIT
+    bash -c "sed $SEDFLAGS </tmp/deploy_settings.cfg >../../Config/settings.cfg"
+  fi
+
+  echo "y" | ../../Install/createHomeArchive $USBOPT -c $CONFIG -v $VOLUME $PROFILEOPT -H "$IMAGEPATH/home.tar.gz" \
+  && ../../Install/createOPN -H "$IMAGEPATH/home.tar.gz" -o "$IMAGEPATH/bhuman$DATE.opn" $RESTARTOPT
+
+  if [ -f /tmp/deploy_settings.cfg ]; then
+    mv /tmp/deploy_settings.cfg ../../Config/settings.cfg
+    trap - EXIT
+  fi
+elif [ ! -z $REMOTE ]; then # deploy to a single robot
+  copy $REMOTE $PLAYER
+else # try to deploy to multiple targets
+  if [ "$NUMMULTIPLE" -ne 0 ]; then
+    for ((i=0; i < NUMMULTIPLE; i+=2))
+    do
+      copy ${MULTIPLEDATA[i+1]} ${MULTIPLEDATA[i]} | sed "s%^%[${MULTIPLEDATA[i+1]}] %" &
+    done
+    wait
+  else
+    exit 1
+  fi
+fi

@@ -1,20 +1,31 @@
 #!/bin/sh
 
-export baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
+PROFILES="/home/nao/Profiles"
 
 usage()
 {
-  echo "usage: $0 <profile> - Sets the wpa_supplicant network profile."
+  echo "usage: $0 <profile> - Sets the wireless network profile."
   exit 1
 }
 
-if ! [ $# -eq 1 ]; then
+if [ $# -ne 1 ]; then
   usage
 fi
 
-if [ ! -e "$baseDir/../Profiles/$1" ]; then
+if [ ! -e "${PROFILES}/$1" ]; then
   echo "Profile '$1' does not exist."
   usage
 fi
 
-cmp -s "$baseDir/../Profiles/$1" "$baseDir/../Profiles/default" || ( cp "$baseDir/../Profiles/$1" "$baseDir/../Profiles/default" && sudo systemctl restart wireless 2>&1 | grep -v "you are stopping" | ( grep -v ipv6 || true ) )
+if [ $(id -u) -ne 0 ]; then
+  exec sudo $0 "$1"
+fi
+
+if [ -s "${PROFILES}/$1" ]; then
+  sed -e "s/^/        /" "${PROFILES}/$1" >/etc/netplan/default.yaml.profile
+  cat /etc/netplan/default.yaml.base /etc/netplan/default.yaml.wifi /etc/netplan/default.yaml.profile >/etc/netplan/default.yaml.staging
+else
+  cp /etc/netplan/default.yaml.base /etc/netplan/default.yaml.staging
+fi
+
+cmp -s /etc/netplan/default.yaml.staging /etc/netplan/default.yaml || ( mv /etc/netplan/default.yaml.staging /etc/netplan/default.yaml && netplan apply )

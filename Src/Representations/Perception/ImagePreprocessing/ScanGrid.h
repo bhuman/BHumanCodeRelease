@@ -22,7 +22,7 @@ STREAMABLE(ScanGrid,
   void draw() const,
 
   (std::vector<int>) y, /**< All possible y coordinates of pixels to be scanned. */
-  (std::vector<Line>) lines, /**< Decription of all scanLines. */
+  (std::vector<Line>) lines, /**< Description of all scanLines. */
   (int)(0) fieldLimit, /**< Upper bound for all scanLines (exclusive). */
   (unsigned)(0) lowResStart, /**< First index of low res grid. */
   (unsigned)(1) lowResStep, /**< Steps between low res grid lines. */

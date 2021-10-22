@@ -1,56 +1,60 @@
 /**
  * @file MotionInfo.h
  *
- * Description of currently executed motion
+ * This file declares a struct that represents the status of the motion for the behavior.
+ *
+ * @author Arne Hasselbring
  */
 
 #pragma once
 
-#include "MotionRequest.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Representations/Configuration/KickInfo.h"
+#include "Representations/MotionControl/KeyframeMotionRequest.h"
+#include "Tools/Math/BHMath.h"
+#include "Tools/Motion/MotionPhase.h"
+#include "Tools/Streams/AutoStreamable.h"
 
-/**
- * @struct MotionInfo
- * The executed motion request and additional information about the motions which are executed by the Motion thread.
- */
-STREAMABLE_WITH_BASE(MotionInfo, MotionRequest,
+STREAMABLE(MotionInfo,
 {
-  /** Helper method to avoid long and faulty expressions in many modules
-   * @return true, if the MotionInfo is about a motion that equals standing
-   */
-  bool isStanding() const
+  bool isMotion(MotionPhase::Type motion) const
   {
-    return motion == MotionRequest::stand ||
-           (motion == MotionRequest::specialAction &&
-            specialActionRequest.specialAction == SpecialActionRequest::standHigh);
+    return executedPhase == motion;
   }
 
-  /** Helper method to avoid long and faulty expressions in some modules
-   * @return true, if the MotionInfo is about a motion that performs a kick
-   */
+  bool isMotion(unsigned mask) const
+  {
+    return (bit(executedPhase) & mask) != 0;
+  }
+
   bool isKicking() const
   {
-    return motion == MotionRequest::kick ||
-           (motion == MotionRequest::walk && walkRequest.walkKickRequest.kickType != WalkKicks::none);
+    return executedPhase == MotionPhase::kick || (executedPhase == MotionPhase::walk && isWalkPhaseInWalkKick);
   }
 
-  void draw() const
+  bool isKeyframeMotion(KeyframeMotionRequest::KeyframeMotionID motion) const
   {
-    DEBUG_DRAWING3D("representation:MotionInfo:upcomingOdometryOffset", "robot")
-    {
-      LINE3D("representation:MotionInfo:upcomingOdometryOffset", 0, 0, -210,
-             upcomingOdometryOffset.translation.x(), upcomingOdometryOffset.translation.y(), -210, 2, ColorRGBA::red);
-      Vector2f dir = Vector2f(50.f, 0.f);
-      LINE3D("representation:MotionInfo:upcomingOdometryOffset",
-             upcomingOdometryOffset.translation.x(), upcomingOdometryOffset.translation.y(), -210,
-             upcomingOdometryOffset.translation.x() + dir.x(), upcomingOdometryOffset.translation.y() + dir.y(), -210, 2, ColorRGBA::blue);
-      dir.rotate(upcomingOdometryOffset.rotation);
-      LINE3D("representation:MotionInfo:upcomingOdometryOffset",
-             upcomingOdometryOffset.translation.x(), upcomingOdometryOffset.translation.y(), -210,
-             upcomingOdometryOffset.translation.x() + dir.x(), upcomingOdometryOffset.translation.y() + dir.y(), -210, 2, ColorRGBA::blue);
-    }
+    return executedPhase == MotionPhase::keyframeMotion && executedKeyframeMotion.keyframeMotion == motion;
+  }
+
+  bool isKeyframeMotion(KeyframeMotionRequest::KeyframeMotionID motion, bool mirror) const
+  {
+    return executedPhase == MotionPhase::keyframeMotion && executedKeyframeMotion.keyframeMotion == motion && executedKeyframeMotion.mirror == mirror;
   },
 
-  (bool)(false) isMotionStable, /**< If true, the motion is stable, leading to a valid torso / camera matrix. */
-  (Pose2f) upcomingOdometryOffset, /**< The minimum remaining odometry offset until the robot can come to a full stop. */
+  (MotionPhase::Type)(MotionPhase::playDead) executedPhase, /**< The type of the phase currently being executed. */
+  (bool)(false) isMotionStable, /**< Whether the current motion is considered to be stable .*/
+
+  // walk phase
+  (Pose2f) speed, /**< The current speed at which the robot is walking */
+  (bool)(false) isWalkPhaseInWalkKick, /**< Whether the current walk phase is an in walk kick. */
+
+  // kick or walk-kick phase
+  (unsigned)(0) lastKickTimestamp, /**< The timestamp of the most recently finished kick. */
+  (KickInfo::KickType)(KickInfo::numOfKickTypes) lastKickType, /**< The most recently executed kick type. */
+
+  // get up phase
+  (unsigned)(0) getUpTryCounter, /**< The number of consecutive get up phases before this one. */
+
+  // keyframe motion phase
+  (KeyframeMotionRequest) executedKeyframeMotion, /**< The specific type of keyframe motion. */
 });

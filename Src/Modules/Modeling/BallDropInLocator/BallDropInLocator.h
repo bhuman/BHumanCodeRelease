@@ -13,7 +13,7 @@
 #include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/CognitionStateChanges.h"
+#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallDropInModel.h"
 #include "Representations/Modeling/TeamBallModel.h"
@@ -25,7 +25,7 @@
 MODULE(BallDropInLocator,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(CognitionStateChanges),
+  REQUIRES(ExtendedGameInfo),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
@@ -42,6 +42,7 @@ MODULE(BallDropInLocator,
     (int)(15000) rememberEventDuration, /**< The maximum duration to use events before favoring the hypothesis that the relevant touch has not been seen. */
     (int)(3000) timeUntilPenalizedRobotsAreRemoved, /**< The time after which it can be assumed that penalized robots have been removed (referee parameter). */
     (float)(50.f) safetyMargin, /**< A safety margin that is added for the decision that a ball is out. */
+    (int)(4000) useOutPositionTimeout, /**< If the GameController has not started a set play within this time after observing the ball leaving the field, \c useOutPosition is reset. */
   }),
 });
 

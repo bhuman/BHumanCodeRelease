@@ -179,16 +179,6 @@ float Projection::getSizeByDistance(const CameraInfo& cameraInfo, float sizeInRe
   return sizeInReality / distance * xFactor;
 }
 
-void Projection::calculateAnglesForPoint(const Vector2f& point, const CameraMatrix& cameraMatrix,
-                                         const CameraInfo& cameraInfo, Vector2f& angles)
-{
-  const float factor = cameraInfo.focalLength;
-  const Vector3f vectorToPoint(factor, cameraInfo.opticalCenter.x() - point.x(), cameraInfo.opticalCenter.y() - point.y());
-  const Vector3f vectorToPointWorld = cameraMatrix.rotation * vectorToPoint;
-  angles.x() = std::atan2(vectorToPointWorld.y(), vectorToPointWorld.x());
-  angles.y() = std::atan2(vectorToPointWorld.z(), std::sqrt(sqr(vectorToPointWorld.x()) + sqr(vectorToPointWorld.y())));
-}
-
 bool Projection::calculatePointByAngles(const Vector2f& angles, const CameraMatrix& cameraMatrix,
                                         const CameraInfo& cameraInfo, Vector2f& point)
 {

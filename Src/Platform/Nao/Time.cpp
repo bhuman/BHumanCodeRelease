@@ -1,15 +1,6 @@
 #include "Platform/Time.h"
 #include "Platform/BHAssert.h"
-
-#include <ctime>
-
-unsigned long long Time::base = 0;
-unsigned long long Time::threadTimebase = 0;
-
-unsigned Time::getCurrentSystemTime()
-{
-  return getRealSystemTime();
-}
+#include <time.h>
 
 unsigned Time::getRealSystemTime()
 {

@@ -40,12 +40,20 @@ public:
   {}
 
 protected:
-  void serialize(In* in, Out* out)
+  void read(In& stream) override
   {
     PUBLISH(EnumInfo::reg);
     PUBLISH(reg);
     for(int i = 0; i < EnumInfo::numOfElements; ++i)
-      Streaming::streamIt(in, out, TypeRegistry::getEnumName(static_cast<Enum>(i)), (*this)[i]);
+      Streaming::streamIt(stream, TypeRegistry::getEnumName(static_cast<Enum>(i)), (*this)[i]);
+  }
+
+  void write(Out& stream) const override
+  {
+    PUBLISH(EnumInfo::reg);
+    PUBLISH(reg);
+    for(int i = 0; i < EnumInfo::numOfElements; ++i)
+      Streaming::streamIt(stream, TypeRegistry::getEnumName(static_cast<Enum>(i)), (*this)[i]);
   }
 
 private:

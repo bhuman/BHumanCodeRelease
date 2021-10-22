@@ -135,7 +135,7 @@ public:
    * @param category The category of this module.
    * @param getModuleInfo The function that returns the module info.
    */
-  ModuleBase(const char* name, Category category, std::vector<Info> (*getModuleInfo)()) :
+  ModuleBase(const char* name, Category category, std::vector<Info> (*getModuleInfo)()) noexcept :
     next(first), name(name), category(category), getModuleInfo(getModuleInfo)
   {
     first = this;
@@ -179,7 +179,7 @@ public:
    * @param category The category of this module.
    * @param getModuleInfo The function that returns the module info.
    */
-  Module(const char* name, Category category, std::vector<ModuleBase::Info> (*getModuleInfo)()) :
+  Module(const char* name, Category category, std::vector<ModuleBase::Info> (*getModuleInfo)()) noexcept :
     ModuleBase(name, category, getModuleInfo)
   {}
 };
@@ -200,8 +200,6 @@ STREAMABLE(NoParameters,
  * @param prefix A prefix to prepend to the filename (e.g. to force loading from a specific directory).
  */
 void loadModuleParameters(Streamable& parameters, const char* moduleName, const char* fileName, const char* prefix = nullptr);
-
-void saveModuleParameters(const Streamable& parameters, const char* moduleName, const char* fileName);
 
 // Some of the following macros can also be found in AutoStreamable.h with different names.
 // However, separate versions are required here, because the preprocessor only expands each
@@ -427,8 +425,8 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 #define _MODULE_PARAMETERS_PROVIDES_WITHOUT_MODIFY(type)
 #define _MODULE_PARAMETERS_REQUIRES(type)
 #define _MODULE_PARAMETERS_USES(type)
-#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
+#define _MODULE_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
+#define _MODULE_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
 
 /**
  * The following macros generate the code for loading the configuration file
@@ -578,6 +576,7 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
     using Parameters = theName##Module::Parameters; \
     theName##Base(const char* fileName = nullptr) \
     { \
+      static_cast<void>(fileName); \
       static const char* moduleName = #theName; \
       static_cast<void>(moduleName); \
       _MODULE_ATTR_##n load \
@@ -625,5 +624,5 @@ void saveModuleParameters(const Streamable& parameters, const char* moduleName, 
 #define MAKE_MODULE(module, ...) _MAKE_MODULE_I(module, _STREAM_TUPLE_SIZE(__VA_ARGS__), __VA_ARGS__)
 #define _MAKE_MODULE_I(module, n, ...) _MAKE_MODULE_II((_MAKE_MODULE_, n), module, __VA_ARGS__)
 #define _MAKE_MODULE_II(param, ...) _STREAM_JOIN param (__VA_ARGS__)
-#define _MAKE_MODULE_1(module, category) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, module##Base::getModuleInfo);
+#define _MAKE_MODULE_1(module, category) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, module##Base::getModuleInfo)
 #define _MAKE_MODULE_2(module, category, getModuleInfo) Module<module, module##Base> the##module##Module(#module, ModuleBase::category, getModuleInfo)

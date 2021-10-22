@@ -3,7 +3,6 @@
  * Declares the namespace Geometry
  *
  * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
- * @author <a href="mailto:walter.nistico@uni-dortmund.de">Walter Nistico</a>
  */
 
 #pragma once
@@ -12,10 +11,8 @@
 #include "Tools/Streams/Streamable.h"
 #include "Tools/Math/Eigen.h"
 
-struct RobotPose;
-
 /**
- * The namespace Geometry contanins representations for geometric objects and methods
+ * The namespace Geometry contains representations for geometric objects and methods
  * for calculations with such objects.
  */
 namespace Geometry
@@ -32,6 +29,20 @@ namespace Geometry
 
   inline Circle::Circle(const Vector2f& c, float r) :
     center(c), radius(r)
+  {}
+
+  /** Defines a rectangle by two points */
+  STREAMABLE(Rect,
+  {
+    Rect() = default;
+    Rect(const Vector2f& a, const Vector2f& b),
+
+    (Vector2f)(Vector2f::Zero()) a,
+    (Vector2f)(Vector2f::Zero()) b,
+  });
+
+  inline Rect::Rect(const Vector2f& a, const Vector2f& b) :
+    a(a), b(b)
   {}
 
   /** Defines a line by two vectors*/
@@ -86,15 +97,6 @@ namespace Geometry
     void calculatePixels(const int x1, const int y1, const int x2, const int y2, const int stepSize);
   };
 
-  struct LineSegment3D
-  {
-    Vector3f P0;
-    Vector3f P1;
-
-    LineSegment3D() = default;
-    LineSegment3D(Vector3f a, Vector3f b) : P0(a), P1(b) {};
-  };
-
   /**
    * Calculates the angle between a pose and a position
    * @param from The base pose.
@@ -125,6 +127,7 @@ namespace Geometry
   bool checkIntersectionOfLines(const Vector2f& l1p1, const Vector2f& l1p2, const Vector2f& l2p1, const Vector2f& l2p2);
   [[nodiscard]] bool getIntersectionOfLines(const Line& line1, const Line& line2, Vector2f& intersection);
   [[nodiscard]] bool getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, float& intersection);
+  [[nodiscard]] bool getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection);
 
   float getDistanceToLine(const Line& line, const Vector2f& point);
   float getDistanceToEdge(const Line& line, const Vector2f& point);
@@ -135,6 +138,7 @@ namespace Geometry
   [[nodiscard]] bool isPointInsideRectangle(const Vector2f& bottomLeftCorner, const Vector2f& topRightCorner, const Vector2f& point);
   [[nodiscard]] bool isPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, const Vector2i& point);
   [[nodiscard]] bool isPointInsideRectangle2(const Vector2f& corner1, const Vector2f& corner2, const Vector2f& point);
+  [[nodiscard]] bool isPointInsideRectangle(const Rect& rect, const Vector2f& point);
   [[nodiscard]] bool isPointInsideConvexPolygon(const Vector2f polygon[], const int numberOfPoints, const Vector2f& point);
   [[nodiscard]] bool isPointInsidePolygon(const Vector3f& point, const std::vector<Vector3f>& V);
   [[nodiscard]] bool clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const Vector2i& topRightCorner, Vector2i& point);
@@ -154,30 +158,14 @@ namespace Geometry
   [[nodiscard]] bool getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLeft, const Vector2f& topRight,
                                                              const Geometry::Line& line, Vector2f& point1, Vector2f& point2);
 
-  /**
-   * Clips a line with the Cohen-Sutherland-Algorithm
-   * @param bottomLeft The bottom left corner of the rectangle
-   * @param topRight The top right corner of the rectangle
-   * @param point1 The starting point of the line
-   * @param point2 The end point of the line
-   * @return states whether line exists after clipping
-   * @see http://de.wikipedia.org/wiki/Algorithmus_von_Cohen-Sutherland
-   */
-   [[nodiscard]] bool clipLineWithRectangleCohenSutherland(const Vector2i& bottomLeft, const Vector2i& topRight,
-                                                           Vector2i& point1, Vector2i& point2);
-
-  /**
-   * @param x1, y2, x2, y2, x3, y3 Points of the triangle
-   * @param px, py the point that will be tested
-   * @return true if (px, py) is inside the triangle defined by (x1, y1, x2, y2, x3, y3)
-   */
-  bool isPointInsideTriangle(const float x1, const float y1, const float x2, const float y2,
-                             const float x3, const float y3, const float px, const float py);
-
-  /**
-   * Computes the distance between two line segments in 3-dimensional space
-   */
-  float distance(const LineSegment3D& segment1, const LineSegment3D& segment2, LineSegment3D& connectionSegment);
-
   bool isPointLeftOfLine(const Vector2f& start, const Vector2f& end, const Vector2f& point);
+
+  /**
+   * Computes the projection of a point on a line
+   * @param base The base point of the line
+   * @param dir The direction vector of the line (has to be normalized to length 1)
+   * @param point The point that is projected
+   * @return A point on the line
+   */
+  Vector2f getOrthogonalProjectionOfPointOnLine(const Vector2f& base, const Vector2f& dir, const Vector2f& point);
 };

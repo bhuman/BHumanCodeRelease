@@ -20,7 +20,6 @@
 class Assert
 {
 public:
-#ifndef NDEBUG
   /**
    * Prints a formated message to stdout
    * @param file The name of the current file (__FILE__)
@@ -34,10 +33,8 @@ public:
    * Aborts the execution of the program
    */
   static void abort();
-#endif // NDEBUG
 
 #ifdef TARGET_ROBOT
-#ifndef NDEBUG
   /**
    * Initializes some log message ring buffers associated to the current thread
    * @param name The name of the current thread
@@ -53,14 +50,13 @@ public:
    * @param message The message to be added
    */
   static void logAdd(int track, const char* file, int line, const std::string& message);
-#endif // NDEBUG
 
   /**
-   * Dumps the content of the log message ring buffers to stderr or /home/nao/logs
-   * @param toStderr Whether to dump the content to stderr or /home/nao/logs
+   * Dumps the content of the log message ring buffers to stderr or /home/nao/bhdump.log
+   * @param toStderr Whether to dump the content to stderr or /home/nao/bhdump.log
    * @param termSignal A signal that was emitted to terminate the bhuman process
    */
-  static void logDump(int termSignal);
+  static void logDump(bool toStderr, int termSignal);
 #endif // TARGET_ROBOT
 };
 

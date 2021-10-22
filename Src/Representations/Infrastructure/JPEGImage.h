@@ -45,7 +45,17 @@ public:
   unsigned timestamp = 0; /**< The timestamp of this image. */
 
 protected:
-  void serialize(In* in, Out* out);
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override;
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override;
 
 private:
   static void reg();

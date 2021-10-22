@@ -1,7 +1,7 @@
 /**
  * @file SoundFileTester.h
  *
- * This file declares a module that plays sound files
+ * This file declares a module that plays sound files.
  *
  * @author Tim Laue
  */

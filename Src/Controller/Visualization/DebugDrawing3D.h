@@ -74,7 +74,7 @@ public:
     float innerRadius;
     float outerRadius;
     float startAngle;
-    float sweeptAngle;
+    float sweptAngle;
   };
 
   struct Image3D : public Element
@@ -154,12 +154,12 @@ public:
   void sphere(const Vector3f& v, float radius, ColorRGBA color);
 
   /**
-   * Adds an ellypsoid to the debug drawing.
-   * @param pose Pose of the ellypsoid.
-   * @param radii Radii of the ellypsoid.
-   * @param color The color of the ellypsoid.
+   * Adds an ellipsoid to the debug drawing.
+   * @param pose Pose of the ellipsoid.
+   * @param radii Radii of the ellipsoid.
+   * @param color The color of the ellipsoid.
    */
-  void ellypsoid(const Pose3f& pose, const Vector3f& radii, ColorRGBA color);
+  void ellipsoid(const Pose3f& pose, const Vector3f& radii, ColorRGBA color);
 
   /**
    * Adds a cylinder to the debug drawing.

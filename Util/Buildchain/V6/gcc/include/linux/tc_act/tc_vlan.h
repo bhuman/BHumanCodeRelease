@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
 /*
  * Copyright (c) 2014 Jiri Pirko <jiri@resnulli.us>
  *
@@ -12,10 +13,9 @@
 
 #include <linux/pkt_cls.h>
 
-#define TCA_ACT_VLAN 12
-
 #define TCA_VLAN_ACT_POP	1
 #define TCA_VLAN_ACT_PUSH	2
+#define TCA_VLAN_ACT_MODIFY	3
 
 struct tc_vlan {
 	tc_gen;
@@ -28,6 +28,8 @@ enum {
 	TCA_VLAN_PARMS,
 	TCA_VLAN_PUSH_VLAN_ID,
 	TCA_VLAN_PUSH_VLAN_PROTOCOL,
+	TCA_VLAN_PAD,
+	TCA_VLAN_PUSH_VLAN_PRIORITY,
 	__TCA_VLAN_MAX,
 };
 #define TCA_VLAN_MAX (__TCA_VLAN_MAX - 1)

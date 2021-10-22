@@ -98,5 +98,5 @@ public:
   void deselect() override;
 
   /** Writing raw data is not supported. Do not call. */
-  void write(const void* p, size_t size) override { ASSERT(false); }
+  void write(const void*, size_t) override { ASSERT(false); }
 };

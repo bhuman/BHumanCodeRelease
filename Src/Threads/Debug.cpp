@@ -10,11 +10,14 @@
 #include "Debug.h"
 #include "Platform/Time.h"
 #include "Tools/Debugging/Debugging.h"
+#include "Tools/Streams/TypeInfo.h"
 
-Debug::Debug(const Configuration& config) :
+Debug::Debug(const Settings& settings, const std::string& robotName, const Configuration& config) :
 #ifdef TARGET_ROBOT
-  ThreadFrame(nullptr, nullptr), // Initializes the MessageQueues used from the DebugHandler.
+  ThreadFrame(settings, robotName, nullptr, nullptr), // Initializes the MessageQueues used from the DebugHandler.
   debugHandler(*debugReceiver, *debugSender, MAX_PACKAGE_SEND_SIZE, 0),
+#else
+  ThreadFrame(settings, robotName),
 #endif
   config(config)
 {
@@ -71,7 +74,7 @@ bool Debug::main()
   for(Receiver<MessageQueue>& receiver : receivers)
     receiver.checkForPacket();
 
-  DEBUG_RESPONSE_ONCE("automated requests:TypeInfo") OUTPUT(idTypeInfo, bin, moduleGraphCreator->typeInfo);
+  DEBUG_RESPONSE_ONCE("automated requests:TypeInfo") OUTPUT(idTypeInfo, bin, *TypeInfo::current);
 
   DEBUG_RESPONSE_ONCE("automated requests:ModuleTable")
   {
@@ -107,6 +110,38 @@ bool Debug::main()
     Global::getDebugOut().finishMessage(idModuleTable);
   }
 
+  DEBUG_RESPONSE_ONCE("moduleGraph:moduleOrder")
+  {
+    // Shows the execution order of all threads.
+    std::string text;
+    for(std::size_t i = 0; i < moduleGraphCreator->config.threads.size(); i++)
+    {
+      text.append(moduleGraphCreator->config.threads[i].name + ":");
+      for(const ModuleGraphCreator::Provider& provider : moduleGraphCreator->providers[i])
+        text.append(std::string("\n  ") + provider.representation + ":" + provider.moduleBase->name);
+      text.append("\n");
+    }
+    OUTPUT_TEXT(text);
+  }
+
+  DEBUG_RESPONSE_ONCE("moduleGraph:dataExchanged")
+  {
+    // Shows which representations which threads receives.
+    std::string text;
+    for(std::size_t i = 0; i < moduleGraphCreator->config.threads.size(); i++)
+    {
+      text.append(moduleGraphCreator->config.threads[i].name + " receives from:");
+      for(std::size_t j = 0; j < moduleGraphCreator->received[i].size(); j++)
+      {
+        text.append("\n  " + moduleGraphCreator->config.threads[j].name + ":");
+        for(const std::string& rep : moduleGraphCreator->received[i][j])
+          text.append("\n    " + rep);
+      }
+      text.append("\n");
+    }
+    OUTPUT_TEXT(text);
+  }
+
   // Move the messages from other threads' debug queues to the outgoing queue
   for(Receiver<MessageQueue>& receiver : receivers)
   {
@@ -119,7 +154,7 @@ bool Debug::main()
     debugSender->removeRepetitions();
 
   // Send messages to the threads
-#ifdef TARGET_SIM
+#ifndef TARGET_ROBOT
   for(DebugSender<MessageQueue>& sender : senders)
     sender.send(true);
   debugSender->send(true);
@@ -132,7 +167,7 @@ bool Debug::main()
   printf("Stopping Debug\n");
   announceStop();
 #endif // NDEBUG
-#endif // TARGET_SIM
+#endif // !TARGET_ROBOT
 
   return true;
 }
@@ -143,17 +178,6 @@ bool Debug::handleMessage(InMessage& message)
   {
     case idText: // loop back to GUI
       message >> *debugSender;
-      return true;
-
-    // messages to Cognition
-    case idColorCalibration:
-      message >> *senderMap["Lower"];
-      message >> *senderMap["Upper"];
-      return true;
-
-    // messages to Motion
-    case idMotionNet:
-      message >> *senderMap["Motion"];
       return true;
 
     case idModuleRequest:
@@ -195,6 +219,11 @@ bool Debug::handleMessage(InMessage& message)
 
     default:
       message >> *senderMap[threadIdentifier];
+      DEBUG_RESPONSE("legacy")
+      {
+        if((threadIdentifier == "Upper" || threadIdentifier == "Lower"))
+          message >> *senderMap["Cognition"];
+      }
       return true;
   }
 }

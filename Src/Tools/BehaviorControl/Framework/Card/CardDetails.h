@@ -122,8 +122,8 @@ public:
    * @param name The name of the card that can be created by this instance.
    * @param getModuleInfo The function that returns the info.
    */
-  CardCreator(const char* name, CardCreatorBase::Info (*getCardInfo)()) :
-      CardCreatorList<Instance>(name, getCardInfo)
+  CardCreator(const char* name, CardCreatorBase::Info (*getCardInfo)()) noexcept :
+    CardCreatorList<Instance>(name, getCardInfo)
   {}
 
 private:
@@ -141,8 +141,8 @@ private:
 #define _CARD_PARAMETERS_REQUIRES(type)
 #define _CARD_PARAMETERS_USES(type)
 #define _CARD_PARAMETERS_CALLS(type)
-#define _CARD_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#define _CARD_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
+#define _CARD_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
+#define _CARD_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
 
 #define _CARD_LOAD(x) _MODULE_JOIN(_CARD_LOAD_, x)
 #define _CARD_LOAD_REQUIRES(type)
@@ -227,6 +227,7 @@ private:
     theName##Base(const char* fileName = nullptr) : \
       cardType(#theName) \
     { \
+      static_cast<void>(fileName); \
       static const char* cardName = #theName; \
       static_cast<void>(cardName); \
       _MODULE_ATTR_##n load \
@@ -261,4 +262,4 @@ private:
  * @param card The name of the card that can be created.
  */
 #define _MAKE_CARD(instance, card) \
-  CardCreator<instance, card> the##card##Card(#card, card##Base::getCardInfo);
+  CardCreator<instance, card> the##card##Card(#card, card##Base::getCardInfo)

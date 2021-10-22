@@ -9,7 +9,7 @@
 
 #include "OdometerProvider.h"
 
-MAKE_MODULE(OdometerProvider, modeling)
+MAKE_MODULE(OdometerProvider, modeling);
 
 void OdometerProvider::update(Odometer& odometer)
 {

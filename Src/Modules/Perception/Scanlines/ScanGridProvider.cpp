@@ -9,7 +9,7 @@
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 
-MAKE_MODULE(ScanGridProvider, perception)
+MAKE_MODULE(ScanGridProvider, perception);
 
 void ScanGridProvider::update(ScanGrid& scanGrid)
 {
@@ -59,7 +59,7 @@ void ScanGridProvider::update(ScanGrid& scanGrid)
       if(!Transformation::robotWithCameraRotationToImage(pointOnField, theCameraMatrix, theCameraInfo, pointInImage))
         break;
       const int y2 = y;
-      y = std::min(y2 - 1, static_cast<int>(pointInImage.y() + 0.5));
+      y = std::min(y2 - 1, static_cast<int>(pointInImage.y() + 0.5f));
       singleSteps = y2 - 1 == y;
     }
   }

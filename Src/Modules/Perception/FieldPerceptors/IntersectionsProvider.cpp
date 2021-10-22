@@ -4,8 +4,19 @@
 #include "Tools/Math/Geometry.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
+#include <cmath>
 
-MAKE_MODULE(IntersectionsProvider, perception)
+MAKE_MODULE(IntersectionsProvider, perception);
+
+IntersectionsProvider::IntersectionsProvider()
+{
+  if(std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosLeftGoalArea) > theFieldDimensions.fieldLinesWidth)
+    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosLeftGoalArea) * 0.7f);
+  if(std::abs(theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea) > theFieldDimensions.fieldLinesWidth)
+    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea) * 0.7f);
+  if(std::abs(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea) > theFieldDimensions.fieldLinesWidth)
+    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea) * 0.7f);
+}
 
 void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
 {
@@ -169,7 +180,7 @@ void IntersectionsProvider::addIntersection(IntersectionsPercept& intersectionsP
   {
     Vector2f pInImg;
     if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
-      DRAWTEXT("module:IntersectionsProvider:intersections", pInImg.x(), pInImg.y(), 30,
+      DRAW_TEXT("module:IntersectionsProvider:intersections", pInImg.x(), pInImg.y(), 30,
                ColorRGBA::black, TypeRegistry::getEnumName(type));
   }
   intersectionsPercept.intersections.emplace_back(type, intersection, dir1, dir2, line1, line2);

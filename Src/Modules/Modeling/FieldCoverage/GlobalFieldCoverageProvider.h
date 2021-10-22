@@ -8,12 +8,11 @@
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/CognitionStateChanges.h"
+#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FieldCoverage.h"
 #include "Representations/Modeling/GlobalFieldCoverage.h"
-#include "Representations/Modeling/HulkFieldCoverage.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
 #include "Tools/Module/Module.h"
@@ -21,9 +20,8 @@
 MODULE(GlobalFieldCoverageProvider,
 {,
   REQUIRES(BallModel),
-  REQUIRES(CognitionStateChanges),
+  REQUIRES(ExtendedGameInfo),
   REQUIRES(FieldCoverage),
-  REQUIRES(HulkFieldCoverage),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),

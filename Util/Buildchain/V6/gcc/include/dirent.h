@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2019 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  *	POSIX Standard: 5.1.2 Directory Operations	<dirent.h>
@@ -86,8 +86,8 @@ typedef __ino64_t ino64_t;
 # ifdef _DIRENT_HAVE_D_RECLEN
 #  define _D_ALLOC_NAMLEN(d) (((char *) (d) + (d)->d_reclen) - &(d)->d_name[0])
 # else
-#  define _D_ALLOC_NAMLEN(d) (sizeof (d)->d_name > 1 ? sizeof (d)->d_name : \
-			      _D_EXACT_NAMLEN (d) + 1)
+#  define _D_ALLOC_NAMLEN(d) (sizeof (d)->d_name > 1 ? sizeof (d)->d_name \
+			      : _D_EXACT_NAMLEN (d) + 1)
 # endif
 #endif
 
@@ -400,5 +400,7 @@ extern int versionsort64 (const struct dirent64 **__e1,
 #endif /* Use GNU.  */
 
 __END_DECLS
+
+#include <bits/dirent_ext.h>
 
 #endif /* dirent.h  */

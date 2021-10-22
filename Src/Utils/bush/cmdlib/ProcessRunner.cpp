@@ -83,11 +83,6 @@ void ProcessRunner::run()
 {
   if(!process)
     process = new QProcess();
-#ifdef WINDOWS
-  QProcessEnvironment env = env.systemEnvironment();
-  env.insert("CYGWIN", "nodosfilewarning");
-  process->setProcessEnvironment(env);
-#endif
 
   connect(process, SIGNAL(readyReadStandardError()), this, SLOT(updateError()), Qt::DirectConnection);
   connect(process, SIGNAL(readyReadStandardOutput()), this, SLOT(updateText()), Qt::DirectConnection);

@@ -10,145 +10,157 @@
 
 #include "BallPerceptor.h"
 #include "Platform/File.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/Modify.h"
 #include "Tools/Debugging/Stopwatch.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/Global.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/NeuralNetwork/SimpleNN.h"
 
-MAKE_MODULE(BallPerceptor, perception)
+MAKE_MODULE(BallPerceptor, perception);
 
-BallPerceptor::BallPerceptor() { compile(); }
+BallPerceptor::BallPerceptor() :
+  encoder(&Global::getAsmjitRuntime()),
+  classifier(&Global::getAsmjitRuntime()),
+  corrector(&Global::getAsmjitRuntime())
+{
+  compile();
+}
 
 void BallPerceptor::update(BallPercept& theBallPercept)
 {
-  MODIFY("module:BallPerceptor:stats", stats);
-
   DECLARE_DEBUG_DRAWING("module:BallPerceptor:spots", "drawingOnImage");
-  theBallPercept.status = BallPercept::notSeen;
-
-  if(theLabelImage.valid && theLabelImage.hasLabel(LabelImage::Annotation::Ball))
-    stats.total++;
 
   DEBUG_RESPONSE_ONCE("module:BallPerceptor:compile")
     compile();
 
+  theBallPercept.status = BallPercept::notSeen;
+
   if(!encoder.valid() || !classifier.valid() || !corrector.valid())
     return;
 
-  // AnyPlaceDemo handling
-  const std::vector<Vector2i>& ballSpots = theDemoConfirmedBallSpots.positionsInImage.empty() ? theBallSpots.ballSpots
-                                                                                              : theDemoConfirmedBallSpots.positionsInImage;
+  const std::vector<Vector2i>& ballSpots = theBallSpots.ballSpots;
   if(ballSpots.empty())
     return;
 
-  probs.resize(ballSpots.size());
-  int maxIdx;
-  float max = 0.f;
-
-  std::vector<Vector2f> ballPosition;
-  std::vector<float> radius;
-  ballPosition.resize(ballSpots.size());
-  radius.resize(ballSpots.size());
-
-  for(unsigned int i =  0; i < ballSpots.size(); i++)
+  float prob, bestProb = guessedThreshold;
+  Vector2f ballPosition, bestBallPosition;
+  float radius, bestRadius;
+  for(std::size_t i = 0; i < ballSpots.size(); ++i)
   {
-    float prob = apply(ballSpots[i], i, Vector2f(0, 0), ballPosition, radius);
-    probs[i] = prob;
+    prob = apply(ballSpots[i], ballPosition, radius);
 
-    std::stringstream ss;
-    ss << i << ": " << static_cast<int>(probs[i] * 100) << "\n";
-    DRAWTEXT("module:BallPerceptor:spots", ballSpots[i].x(), ballSpots[i].y(), 15, ColorRGBA::red, ss.str());
-
-#ifdef TARGET_ROBOT
-    if(probs[i] >= ensureThreshold)
+    COMPLEX_DRAWING("module:BallPerceptor:spots")
     {
-      theBallPercept.positionInImage = ballPosition[i];
-      theBallPercept.radiusInImage = radius[i];
-      if(!Transformation::imageToRobotHorizontalPlane(theImageCoordinateSystem.toCorrected(ballPosition[i]), theBallSpecification.radius, theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
-        continue;
-      theBallPercept.status = BallPercept::seen;
-      return;
+      std::stringstream ss;
+      ss << i << ": " << static_cast<int>(prob * 100);
+      DRAW_TEXT("module:BallPerceptor:spots", ballSpots[i].x(), ballSpots[i].y(), 15, ColorRGBA::red, ss.str());
     }
-#endif
+
+    if(prob > bestProb)
+    {
+      bestProb = prob;
+      bestBallPosition = ballPosition;
+      bestRadius = radius;
+      if(SystemCall::getMode() == SystemCall::physicalRobot && prob >= ensureThreshold)
+        break;
+    }
   }
 
-  max = probs.maxCoeff(&maxIdx);
-
-  if(max > guessedThreshold)
+  if(bestProb > guessedThreshold)
   {
-    //float estimatedRadius = IISC::getImageBallRadiusByCenter(ballPosition[maxIdx], theCameraInfo, theCameraMatrix, theBallSpecification);
-
-    theBallPercept.positionInImage = ballPosition[maxIdx];
-    theBallPercept.radiusInImage = radius[maxIdx];
-    if(!Transformation::imageToRobotHorizontalPlane(theImageCoordinateSystem.toCorrected(ballPosition[maxIdx]), theBallSpecification.radius, theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
+    theBallPercept.positionInImage = bestBallPosition;
+    theBallPercept.radiusInImage = bestRadius;
+    if(Transformation::imageToRobotHorizontalPlane(theImageCoordinateSystem.toCorrected(bestBallPosition), theBallSpecification.radius, theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
+    {
+      theBallPercept.status = bestProb >= acceptThreshold ? BallPercept::seen : BallPercept::guessed;
       return;
-    theBallPercept.status = max >= acceptThreshold ? BallPercept::seen : BallPercept::guessed;
+    }
+  }
+
+  // Special ball handling for penalty goal keeper
+  if((theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT || (theGameInfo.setPlay == SET_PLAY_PENALTY_KICK && theTeamBehaviorStatus.role.isGoalkeeper()))
+      && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber && theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
+  {
+    Vector2f inImageLowPoint;
+    Vector2f inImageUpPoint;
+    if(Transformation::robotToImage(theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalArea + 350.f, 0.f), theCameraMatrix, theCameraInfo, inImageLowPoint)
+       && Transformation::robotToImage(theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f), theCameraMatrix, theCameraInfo, inImageUpPoint))
+    {
+      const int lowerY = std::min(static_cast<int>(inImageLowPoint.y()), theCameraInfo.height);
+      const int upperY = std::max(static_cast<int>(inImageUpPoint.y()), 0);
+
+      std::vector<Vector2i> sortedBallSpots = theBallSpots.ballSpots;
+      std::sort(sortedBallSpots.begin(), sortedBallSpots.end(), [&](const Vector2i& a, const Vector2i& b) {return a.y() > b.y(); });
+
+      for(const Vector2i& spot : sortedBallSpots)
+        if(spot.y() < lowerY && spot.y() > upperY)
+        {
+          theBallPercept.positionInImage = spot.cast<float>();
+          if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(theBallPercept.positionInImage), theCameraMatrix, theCameraInfo, theBallPercept.positionOnField))
+            theBallPercept.status = BallPercept::seen;
+
+          theBallPercept.radiusInImage = 30.f;
+        }
+    }
   }
 }
 
-// No ball is detected if this function is optimized
-#ifdef WINDOWS
-#pragma optimize("", off)
-#endif
-
-float BallPerceptor::apply(const Vector2i& ballSpot, int i, const Vector2f& offset, std::vector<Vector2f>& ballPosition, std::vector<float>& predRadius)
+float BallPerceptor::apply(const Vector2i& ballSpot, Vector2f& ballPosition, float& predRadius)
 {
   Vector2f relativePoint;
-  if(!Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), theBallSpecification.radius, theCameraMatrix, theCameraInfo, relativePoint))
-    return 0.f;
+  Geometry::Circle ball;
+  if(!(Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), theBallSpecification.radius, theCameraMatrix, theCameraInfo, relativePoint)
+       && Projection::calculateBallInImage(relativePoint, theCameraMatrix, theCameraInfo, theBallSpecification.radius, ball)))
+    return -1.f;
 
-  float radius = IISC::getImageBallRadiusByCenter(ballSpot.cast<float>(), theCameraInfo, theCameraMatrix, theBallSpecification);
-  int ballArea = static_cast<int>(radius * ballAreaFactor);
+  int ballArea = static_cast<int>(ball.radius * ballAreaFactor);
   ballArea += 4 - (ballArea % 4);
 
-  Vector2i ballSpot_ = ballSpot - (offset.cast<float>().array() * radius).matrix().cast<int>();
+  RECTANGLE("module:BallPerceptor:spots", static_cast<int>(ballSpot.x() - ballArea / 2), static_cast<int>(ballSpot.y() - ballArea / 2), static_cast<int>(ballSpot.x() + ballArea / 2), static_cast<int>(ballSpot.y() + ballArea / 2), 2, Drawings::PenStyle::solidPen, ColorRGBA::black);
+
   STOPWATCH("module:BallPerceptor:getImageSection")
     if(useFloat)
     {
-      PatchUtilities::extractPatch(ballSpot_, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, encoder.input(0).data(), extractionMode);
+      PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, encoder.input(0).data(), extractionMode);
       if(useContrastNormalization)
         PatchUtilities::normalizeContrast(encoder.input(0).data(), Vector2i(patchSize, patchSize), contrastNormalizationPercent);
     }
     else
     {
-      PatchUtilities::extractPatch(ballSpot_, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, reinterpret_cast<unsigned char*>(encoder.input(0).data()), extractionMode);
+      PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, reinterpret_cast<unsigned char*>(encoder.input(0).data()), extractionMode);
       if(useContrastNormalization)
         PatchUtilities::normalizeContrast(reinterpret_cast<unsigned char*>(encoder.input(0).data()), Vector2i(patchSize, patchSize), contrastNormalizationPercent);
     }
-  float stepSize = static_cast<float>(ballArea) / static_cast<float>(patchSize);
+  const float stepSize = static_cast<float>(ballArea) / static_cast<float>(patchSize);
 
   // encode patch
   encoder.apply();
-  corrector.input(0) = encoder.output(0);
-  classifier.input(0) = encoder.output(0);
 
   // classify
+  classifier.input(0) = encoder.output(0);
   classifier.apply();
-  float pred = classifier.output(0)[0];
+  const float pred = classifier.output(0)[0];
 
   // predict ball position if poss for ball is high enough
   if(pred > guessedThreshold)
   {
+    corrector.input(0) = encoder.output(0);
     corrector.apply();
-    ballPosition[i][0] = (corrector.output(0)[0] - patchSize / 2) * stepSize + ballSpot[0];
-    ballPosition[i][1] = (corrector.output(0)[1] - patchSize / 2) * stepSize + ballSpot[1];
-    predRadius[i] = corrector.output(0)[2] * stepSize;
+    ballPosition.x() = (corrector.output(0)[0] - patchSize / 2) * stepSize + ballSpot.x();
+    ballPosition.y() = (corrector.output(0)[1] - patchSize / 2) * stepSize + ballSpot.y();
+    predRadius = corrector.output(0)[2] * stepSize;
   }
 
   return pred;
 }
 
-#ifdef WINDOWS
-#pragma optimize("", on)
-#endif
-
 void BallPerceptor::compile()
 {
-  encModel = std::make_unique<NeuralNetwork::Model>("NeuralNets/BallPerceptor/" + encoderName);
-  clModel = std::make_unique<NeuralNetwork::Model>("NeuralNets/BallPerceptor/" + classifierName);
-  corModel = std::make_unique<NeuralNetwork::Model>("NeuralNets/BallPerceptor/" + correctorName);
+  const std::string baseDir = std::string(File::getBHDir()) + "/Config/NeuralNets/BallPerceptor/";
+  encModel = std::make_unique<NeuralNetwork::Model>(baseDir + encoderName);
+  clModel = std::make_unique<NeuralNetwork::Model>(baseDir + classifierName);
+  corModel = std::make_unique<NeuralNetwork::Model>(baseDir + correctorName);
 
   if(!useFloat)
     encModel->setInputUInt8(0);

@@ -1,6 +1,7 @@
 [Unit]
 Description=B-Human service
-After=lola.service
+After=lola.service alsa-kludge.service dev-video\x2dtop.device dev-video\x2dbottom.device
+Requires=lola.service alsa-kludge.service dev-video\x2dtop.device dev-video\x2dbottom.device
 
 [Service]
 ExecStart=/home/nao/bin/bhuman -b
@@ -8,4 +9,4 @@ TimeoutStopSec=2s 200ms
 RestartSec=1s
 
 [Install]
-WantedBy=aldebaran.target
+WantedBy=default.target

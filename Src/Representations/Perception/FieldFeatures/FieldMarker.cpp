@@ -56,7 +56,7 @@ void MarkedLine::draw() const
         const Vector2f lineInImageDirection = endInImage - startInImage;
         const Vector2f offSet = Vector2f(5.f, -10.f);
         const Vector2f textPosition = startInImage + 0.5f * lineInImageDirection + offSet;
-        DRAWTEXT("representation:MarkedField:imageText", textPosition.x(), textPosition.y(), 8, ColorRGBA::blue, "Marked with:" << marker);
+        DRAW_TEXT("representation:MarkedField:imageText", textPosition.x(), textPosition.y(), 8, ColorRGBA::blue, "Marked with:" << marker);
         LINE("representation:MarkedField:image", startInImage.x(), startInImage.y(), endInImage.x(), endInImage.y(), 3, Drawings::dottedPen, ColorRGBA::blue);
       }
     }
@@ -174,7 +174,7 @@ void MarkedIntersection::draw() const
       if(Transformation::robotToImage(intersection.pos, *theCameraMatrix, *theCameraInfo, intersectionInImage))
       {
         const Vector2f uncorIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
-        DRAWTEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
+        DRAW_TEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
                  (intersection.type == FieldLineIntersections::Intersection::L ? "L" : intersection.type == FieldLineIntersections::Intersection::T ? "T" : "X") <<
                  (intersection.additionalType == FieldLineIntersections::Intersection::none ? "" : intersection.additionalType == FieldLineIntersections::Intersection::mid ? "m" : "b"));
       }

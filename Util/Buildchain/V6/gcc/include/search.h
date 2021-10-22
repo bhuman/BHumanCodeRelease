@@ -1,5 +1,5 @@
 /* Declarations for System V style searching functions.
-   Copyright (C) 1995-2019 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _SEARCH_H
 #define	_SEARCH_H 1
@@ -150,6 +150,13 @@ typedef void (*__action_fn_t) (const void *__nodep, VISIT __value,
 extern void twalk (const void *__root, __action_fn_t __action);
 
 #ifdef __USE_GNU
+/* Like twalk, but pass down a closure parameter instead of the
+   level.  */
+extern void twalk_r (const void *__root,
+		     void (*) (const void *__nodep, VISIT __value,
+			       void *__closure),
+		     void *__closure);
+
 /* Callback type for function to free a tree node.  If the keys are atomic
    data this function should do nothing.  */
 typedef void (*__free_fn_t) (void *__nodep);

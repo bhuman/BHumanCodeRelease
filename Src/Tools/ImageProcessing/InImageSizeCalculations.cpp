@@ -9,67 +9,6 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 
-float IISC::getImageBallRadiusByCenter(const Vector2f& center, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification)
-{
-  Vector2f centerPoint;
-  if(!Transformation::imageToRobotHorizontalPlane(center, theBallSpecification.radius, theCameraMatix, theCameraInfo, centerPoint))
-    return -1.f;
-
-  const Vector2f slightlyRightPoint(center.x() + 1.f, center.y());
-  Vector2f slightlyRightField;
-  if(!Transformation::imageToRobotHorizontalPlane(slightlyRightPoint, theBallSpecification.radius, theCameraMatix, theCameraInfo, slightlyRightField))
-    return -1.f;
-
-  const Vector3f centerPoint3f(centerPoint.x(), centerPoint.y(), theBallSpecification.radius);
-  const Vector3f cameraPointVector(centerPoint3f - theCameraMatix.translation);
-  const Vector3f slightlyRightField3f(slightlyRightField.x(), slightlyRightField.y(), theBallSpecification.radius);
-  const Vector3f rightVector(slightlyRightField3f - centerPoint3f);
-
-  const Vector3f dir(cameraPointVector.cross(rightVector));
-
-  const Vector3f newPoint(centerPoint3f + dir.normalized(theBallSpecification.radius));
-
-  Vector2f newPointInImage;
-  if(!Transformation::robotToImage(newPoint, theCameraMatix, theCameraInfo, newPointInImage))
-    return -1.f;
-
-  return (center - newPointInImage).norm();
-}
-
-float IISC::getImageBallRadiusByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification)
-{
-  Vector2f startPoint;
-  if(!Transformation::imageToRobot(start, theCameraMatix, theCameraInfo, startPoint))
-    return -1.f;
-
-  const Vector2f slightlyRightPoint(start.x() + 1.f, start.y());
-  Vector2f slightlyRightField;
-  if(!Transformation::imageToRobot(slightlyRightPoint, theCameraMatix, theCameraInfo, slightlyRightField))
-    return -1.f;
-
-  const Vector3f centerPoint3f(startPoint.x(), startPoint.y(), theBallSpecification.radius);
-  const Vector3f cameraPointVector(centerPoint3f - theCameraMatix.translation);
-  const Vector3f slightlyRightField3f(slightlyRightField.x(), slightlyRightField.y(), theBallSpecification.radius);
-  const Vector3f rightVector(slightlyRightField3f - centerPoint3f);
-
-  const Vector3f dir(rightVector.cross(cameraPointVector));
-
-  const Vector3f ballRayIntersectionOffset(-dir.normalized(theBallSpecification.radius) - Vector3f(0.f, 0.f, -theBallSpecification.radius));
-
-  Vector2f ballPointByStart;
-  if(!Transformation::imageToRobotHorizontalPlane(start, ballRayIntersectionOffset.z(), theCameraMatix, theCameraInfo, ballPointByStart))
-    return -1.f;
-
-  const Vector3f ballPointByStart3f(ballPointByStart.x(), ballPointByStart.y(), ballRayIntersectionOffset.z());
-  const Vector3f highesVisibleBallPoint(ballPointByStart3f + dir.normalized(2.f * theBallSpecification.radius));
-
-  Vector2f highesImagePoint;
-  if(!Transformation::robotToImage(highesVisibleBallPoint, theCameraMatix, theCameraInfo, highesImagePoint))
-    return -1.f;
-
-  return (start - highesImagePoint).norm() / 2.f;
-}
-
 float IISC::calcBallVisibilityInImageByCenter(const Vector2f& center, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification, const Angle greenEdge)
 {
   Vector2f centerPoint;
@@ -145,11 +84,6 @@ bool IISC::calcPossibleVisibleBallByLowestPoint(const Vector2f& start, Geometry:
 float IISC::getImageLineDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const FieldDimensions& theFieldDimensions)
 {
   return getImageDiameterByLowestPointAndFieldDiameter(theFieldDimensions.fieldLinesWidth, start, theCameraInfo, theCameraMatix);
-}
-
-float IISC::getImageGoalPostFootWidthDiameterByFootMiddlePoint(const Vector2f& midlle, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)
-{
-  return getHorizontalImageDiameterByMiddlePointAndFieldDiameter(theFieldDimensions.goalPostRadius * 2.f, midlle, theCameraInfo, theCameraMatrix);
 }
 
 float IISC::getImagePenaltyMarkDiameterByLowestPoint(const Vector2f& start, const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions)

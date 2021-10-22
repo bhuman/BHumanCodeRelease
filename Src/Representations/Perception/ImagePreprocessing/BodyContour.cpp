@@ -16,7 +16,7 @@ BodyContour::Line::Line(const Vector2i& p1, const Vector2i& p2) :
 void BodyContour::clipBottom(int x, int& y) const
 {
   int yIntersection;
-  for(std::vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+  for(auto i = lines.cbegin(); i != lines.cend(); ++i)
     if(i->yAt(x, yIntersection) && yIntersection < y)
       y = yIntersection;
 }
@@ -35,7 +35,7 @@ void BodyContour::clipBottom(int x, int& y, int imageHeight) const
 void BodyContour::clipLeft(int& x, int y) const
 {
   int xIntersection;
-  for(std::vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+  for(auto i = lines.cbegin(); i != lines.cend(); ++i)
     if(i->p1.y() > i->p2.y())
     {
       if(i->xAt(y, xIntersection) && xIntersection > x)
@@ -48,7 +48,7 @@ void BodyContour::clipLeft(int& x, int y) const
 void BodyContour::clipRight(int& x, int y) const
 {
   int xIntersection;
-  for(std::vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+  for(auto i = lines.cbegin(); i != lines.cend(); ++i)
     if(i->p1.y() < i->p2.y())
     {
       if(i->xAt(y, xIntersection) && xIntersection < x)
@@ -58,13 +58,53 @@ void BodyContour::clipRight(int& x, int y) const
     }
 }
 
+int BodyContour::getLeftEdge(int y, int imageWidth) const
+{
+  int x = imageWidth;
+  int xIntersection;
+  for(const auto& line : lines)
+  {
+    if(line.p1.y() > line.p2.y())
+    {
+      if(line.xAt(y, xIntersection) && xIntersection < x && xIntersection > 0)
+        x = xIntersection;
+      else if(line.p1.y() <= y && line.p1.x() < x && line.p1.x() > 0) // below a segment, clip anyway
+        x = line.p1.x();
+    }
+  }
+  return x;
+}
+
+int BodyContour::getRightEdge(int y, int imageWidth) const
+{
+  int x = 0;
+  int xIntersection;
+  for(const auto& line : lines)
+  {
+    if(line.p1.y() < line.p2.y())
+    {
+      if(line.xAt(y, xIntersection) && xIntersection > x && xIntersection < imageWidth)
+        x = xIntersection;
+      else if(line.p2.y() <= y && line.p2.x() > x && line.p2.x() < imageWidth) // below a segment, clip anyway
+        x = line.p2.x();
+    }
+  }
+  return x;
+}
+
 void BodyContour::draw() const
 {
   DEBUG_DRAWING("representation:BodyContour", "drawingOnImage")
   {
-    for(std::vector<Line>::const_iterator i = lines.begin(); i != lines.end(); ++i)
-      LINE("representation:BodyContour", i->p1.x(), i->p1.y(), i->p2.x(), i->p2.y(), 1,
-           Drawings::solidPen, ColorRGBA(255, 0, 255));
+    for(const auto& line : lines)
+    {
+      if(line.p1.y() > line.p2.y())
+        LINE("representation:BodyContour", line.p1.x(), line.p1.y(), line.p2.x(), line.p2.y(), 2,
+             Drawings::solidPen, ColorRGBA(222, 12, 127));
+      else
+        LINE("representation:BodyContour", line.p1.x(), line.p1.y(), line.p2.x(), line.p2.y(), 2,
+             Drawings::solidPen, ColorRGBA(127, 12, 222));
+    }
 
     for(int x = 0; x < cameraResolution.x(); x += 10)
     {

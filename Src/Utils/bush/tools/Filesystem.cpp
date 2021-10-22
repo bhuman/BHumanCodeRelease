@@ -19,7 +19,7 @@
 std::vector<std::string> Filesystem::getWlanConfigs(const std::string& prefix)
 {
   return getEntries(std::string(File::getBHDir())
-                    + "/Install/Network/Profiles/" + prefix, true, false);
+                    + "/Install/Profiles/" + prefix, true, false);
 }
 
 std::vector<std::string> Filesystem::getLocations(const std::string& prefix)
@@ -41,7 +41,7 @@ std::vector<std::string> Filesystem::getProjects(const std::string& prefix)
                     + "/Make/" + makeDirectory() + "/" + prefix, true, false, ".vcxproj", false);
 #else
   return getEntries(std::string(File::getBHDir())
-                    + "/Make/Linux/" + prefix, true, false, ".make", false);
+                    + "/Make/CMake/" + prefix, true, false, ".cmake", false);
 #endif
 }
 

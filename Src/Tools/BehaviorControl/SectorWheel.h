@@ -23,10 +23,11 @@ public:
   {
     ENUM(Type,
     {,
-      free, /**< The sector is free. */
+      free,     /**< The sector is free. */
       obstacle, /**< There is an obstacle. */
-      goal, /**< This is the goal. */
-      erased, /**< This sector is currently not minded. */
+      teammate, /**< This is a teammate. */
+      goal,     /**< This is the goal. */
+      erased,   /**< This sector is currently not minded. */
     });
     Sector() = default;
     Sector(const Rangea& angleRange, float distance, Type type),
@@ -49,6 +50,13 @@ public:
    * @return The resulting wheel.
    */
   const std::list<Sector>& finish();
+
+  /**
+   * Post-processes and returns the calculated wheel.
+   * Does not reunite Sectors that go over -pi/pi border.
+   * @return The resulting wheel.
+   */
+  const std::list<Sector>& finishWithoutCircleClosure();
 
   /**
    * Adds a sector to the wheel.
@@ -118,6 +126,9 @@ inline SectorWheel::Sector::Sector(const Rangea& angleRange, float distance, Typ
       { \
         case SectorWheel::Sector::free: \
           color = ColorRGBA(0, 255, 0, 125); \
+          break; \
+        case SectorWheel::Sector::teammate: \
+          color = ColorRGBA(255, 255, 0, 125); \
           break; \
         case SectorWheel::Sector::obstacle: \
           color = ColorRGBA(255, 0, 0, 125); \

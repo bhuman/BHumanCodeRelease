@@ -21,17 +21,19 @@ STREAMABLE(SimpleFieldDimensions,
   (float) xPosOpponentFieldBorder,
   (float) xPosOpponentGoal,
   (float) xPosOpponentGoalPost,
-  (float) xPosOpponentGroundline,
+  (float) xPosOpponentGroundLine,
   (float) xPosOpponentPenaltyArea,
   (float) xPosOpponentPenaltyMark,
   (float) xPosPenaltyStrikerStartPosition,
   (float) xPosHalfWayLine,
   (float) xPosOwnPenaltyArea,
   (float) xPosOwnPenaltyMark,
-  (float) xPosOwnGroundline,
+  (float) xPosOwnGroundLine,
   (float) xPosOwnGoalPost,
   (float) xPosOwnGoal,
   (float) xPosOwnFieldBorder,
+  (float) xPosOpponentGoalArea,
+  (float) xPosOwnGoalArea,
 
   (float) yPosLeftFieldBorder,
   (float) yPosLeftSideline,
@@ -42,6 +44,8 @@ STREAMABLE(SimpleFieldDimensions,
   (float) yPosRightPenaltyArea,
   (float) yPosRightSideline,
   (float) yPosRightFieldBorder,
+  (float) yPosLeftGoalArea,
+  (float) yPosRightGoalArea,
 
   //other dimensions
   (float) fieldLinesWidth,
@@ -86,12 +90,6 @@ struct FieldDimensions : public SimpleFieldDimensions
     void push(const Vector2f& s, const Vector2f& e, bool isPartOfCircle = false);
     void pushCircle(const Vector2f& center, float radius, int numOfSegments);
 
-    /**
-     * The function returns the distance between a point and the closest point on a line of a certain type in a certain direction.
-     * @param pose The reference point and direction.
-     * @return The distance. It is -1 if no line of that type exists in the certain direction.
-     */
-    float getDistance(const Pose2f& pose) const;
   };
 
   /**
@@ -109,7 +107,7 @@ struct FieldDimensions : public SimpleFieldDimensions
     lCorner180,
     lCorner270,
   });
-  enum { numOfCornerClasses = numOfCornerClasss }; // extra, because numOfCornerClasss isn't so nice
+  static const int numOfCornerClasses = numOfCornerClasss; // extra, because numOfCornerClasss isn't so nice
 
 private:
   LinesTable straightFieldLines; /**< The field lines as read from the stream. */
@@ -159,7 +157,15 @@ public:
    */
   bool isInsideField(const Vector2f& p) const
   {
-    return p.x() <= xPosOpponentGroundline && p.x() >= xPosOwnGroundline && p.y() <= yPosLeftSideline && p.y() >= yPosRightSideline;
+    return p.x() <= xPosOpponentGroundLine && p.x() >= xPosOwnGroundLine && p.y() <= yPosLeftSideline && p.y() >= yPosRightSideline;
+  }
+
+  /**
+  * Returns true when p is inside the own half.
+  */
+  bool isInsideOwnHalf(const Vector2f& p) const
+  {
+    return p.x() <= xPosHalfWayLine && p.x() >= xPosOwnGroundLine && p.y() <= yPosLeftSideline && p.y() >= yPosRightSideline;
   }
 
   /**
@@ -170,10 +176,10 @@ public:
   float clipToField(Vector2f& v) const
   {
     const Vector2f old = v;
-    if(v.x() > xPosOpponentGroundline)
-      v.x() = xPosOpponentGroundline;
-    else if(v.x() < xPosOwnGroundline)
-      v.x() = xPosOwnGroundline;
+    if(v.x() > xPosOpponentGroundLine)
+      v.x() = xPosOpponentGroundLine;
+    else if(v.x() < xPosOwnGroundLine)
+      v.x() = xPosOwnGroundLine;
     if(v.y() > yPosLeftSideline)
       v.y() = yPosLeftSideline;
     else if(v.y() < yPosRightSideline)
@@ -204,7 +210,17 @@ public:
   void drawGoalFrame() const;
 
 protected:
-  void serialize(In* in, Out* out) override;
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override;
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override;
 
 private:
   static void reg();

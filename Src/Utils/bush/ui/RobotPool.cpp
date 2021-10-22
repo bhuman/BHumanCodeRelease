@@ -31,7 +31,7 @@ void RobotPoolDelegate::paint(QPainter* painter,
   painter->restore();
 }
 
-QSize RobotPoolDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+QSize RobotPoolDelegate::sizeHint(const QStyleOptionViewItem&, const QModelIndex& index) const
 {
   RobotView* robotView = robotPool->robotViews[index.data().toString()];
   return robotView->sizeHint();

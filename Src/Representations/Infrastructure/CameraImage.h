@@ -19,8 +19,8 @@ private:
 public:
   unsigned int timestamp = 0;
 
-  static constexpr unsigned int maxResolutionWidth = 640;
-  static constexpr unsigned int maxResolutionHeight = 480;
+  static constexpr unsigned int maxResolutionWidth = 1280;
+  static constexpr unsigned int maxResolutionHeight = 960;
 
   bool isReference() const
   {
@@ -75,25 +75,36 @@ public:
   }
 
 protected:
-  void serialize(In* in, Out* out) override
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override
   {
     STREAM(width);
     STREAM(height);
     STREAM(timestamp);
 
-    if(in && timestamp & (1 << 31))
+    if(timestamp & (1 << 31))
     {
       height *= 2;
       timestamp &= ~(1 << 31);
     }
 
-    if(out)
-      out->write(image, width * height * sizeof(PixelType));
-    else
-    {
-      setResolution(width, height, 0);
-      in->read(image, width * height * sizeof(PixelType));
-    }
+    setResolution(width, height, 0);
+    stream.read(image, width * height * sizeof(PixelType));
+  }
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override
+  {
+    STREAM(width);
+    STREAM(height);
+    STREAM(timestamp);
+    stream.write(image, width * height * sizeof(PixelType));
   }
 
 private:

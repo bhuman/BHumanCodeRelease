@@ -6,27 +6,26 @@
 
 #pragma once
 
+#include "Tools/Communication/BHumanTeamMessageParts/BSPLStandardMessage.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanStandardMessage.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanArbitraryMessage.h"
 #include "Tools/Function.h"
 #include "Tools/Streams/AutoStreamable.h"
-
-#include "BHumanTeamMessageParts/BSPLStandardMessage.h"
-#include "BHumanTeamMessageParts/BHumanStandardMessage.h"
-#include "BHumanTeamMessageParts/BHumanArbitraryMessage.h"
-#include "BHumanTeamMessageParts/MixedTeamHeader.h"
 
 /**
  * A representation of SPLStandardMessage a B-Human robot would send.
  */
 STREAMABLE(BHumanMessage,
 {
-  virtual unsigned toLocalTimestamp(unsigned remoteTimestamp) const { return 0u; },
+  virtual unsigned toLocalTimestamp(unsigned remoteTimestamp) const,
 
+  (unsigned) timestamp,
   (BSPLStandardMessage) theBSPLStandardMessage,
-  (MixedTeamHeader) theMixedTeamHeader,
   (BHumanStandardMessage) theBHumanStandardMessage,
   (BHumanArbitraryMessage) theBHumanArbitraryMessage,
-  (bool)(false) hasBHumanParts,
 });
+
+inline unsigned BHumanMessage::toLocalTimestamp(unsigned) const { return 0u; }
 
 /**
  * A struct that can generate the BHumanMessage,

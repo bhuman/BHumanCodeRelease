@@ -21,9 +21,8 @@ MessageQueueBase::MessageQueueBase()
   maximumSize(0x4000000), // 64 MB
   reservedSize(16384)
 {
-  buf = static_cast<char*>(malloc(reservedSize + queueHeaderSize));
+  buf = static_cast<char*>(malloc(reservedSize));
   ASSERT(buf);
-  buf += queueHeaderSize;
 #else
 {
 #endif
@@ -33,7 +32,7 @@ MessageQueueBase::~MessageQueueBase()
 {
   freeIndex();
   if(buf)
-    free(buf - queueHeaderSize);
+    free(buf);
   if(mappedIDs)
   {
     delete[] mappedIDs;
@@ -44,20 +43,18 @@ MessageQueueBase::~MessageQueueBase()
 void MessageQueueBase::setSize(size_t size, size_t reserveForInfrastructure)
 {
   this->reserveForInfrastructure = reserveForInfrastructure;
-  size = std::min(std::numeric_limits<size_t>::max() - queueHeaderSize, size);
 #ifdef TARGET_ROBOT
   ASSERT(!buf);
-  buf = static_cast<char*>(malloc(size + queueHeaderSize));
+  buf = static_cast<char*>(malloc(size));
   ASSERT(buf);
-  buf += queueHeaderSize;
 #else
   ASSERT(size >= usedSize);
   if(size < reservedSize)
   {
-    char* newBuf = static_cast<char*>(realloc(buf - queueHeaderSize, size + queueHeaderSize));
+    char* newBuf = static_cast<char*>(realloc(buf, size));
     if(newBuf)
     {
-      buf = newBuf + queueHeaderSize;
+      buf = newBuf;
       reservedSize = size;
     }
   }
@@ -145,10 +142,10 @@ char* MessageQueueBase::reserve(size_t size)
       r = maximumSize;
     if(r > reservedSize)
     {
-      char* newBuf = static_cast<char*>(realloc(buf - queueHeaderSize, r + queueHeaderSize));
+      char* newBuf = static_cast<char*>(realloc(buf, r));
       if(newBuf)
       {
-        buf = newBuf + queueHeaderSize;
+        buf = newBuf;
         reservedSize = r;
       }
       else
@@ -201,7 +198,6 @@ bool MessageQueueBase::finishMessage(MessageID id)
         case idDrawingManager3D:
         case idConsole:
         case idRobotname:
-        case idFieldColors:
         case idAudioData: // continuous data stream required
           break; // accept
         default:
@@ -304,7 +300,7 @@ void MessageQueueBase::removeRepetitions()
         break;
 
       default:
-        if(getMessageID() < numOfDataMessageIDs && getMessageID() != idFieldColors) // data only from latest frame
+        if(getMessageID() < numOfDataMessageIDs) // data only from latest frame
           copy = messagesPerType[idFrameFinished] == 1;
         else // only the latest other messages
           copy = --messagesPerType[getMessageID()] == 0;

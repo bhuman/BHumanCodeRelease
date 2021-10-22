@@ -26,10 +26,10 @@ GlobalFieldCoverage::Cell::Cell(const int coverage, unsigned timestamp,
 
 unsigned GlobalFieldCoverage::timeWhenLastSeen(const Vector2f& positionOnField, const FieldDimensions& theFieldDimensions) const
 {
-  float clippedPositionX = clip(positionOnField.x(), theFieldDimensions.xPosOwnGroundline, theFieldDimensions.xPosOpponentGroundline);
+  float clippedPositionX = clip(positionOnField.x(), theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.xPosOpponentGroundLine);
   float clippedPositionY = clip(positionOnField.y(), theFieldDimensions.yPosRightSideline, theFieldDimensions.yPosLeftSideline);
 
-  const int x = std::min(static_cast<int>((clippedPositionX - theFieldDimensions.xPosOwnGroundline) / cellLengthX), numOfCellsX - 1);
+  const int x = std::min(static_cast<int>((clippedPositionX - theFieldDimensions.xPosOwnGroundLine) / cellLengthX), numOfCellsX - 1);
   const int y = std::min(static_cast<int>((clippedPositionY - theFieldDimensions.yPosRightSideline) / cellLengthY), numOfCellsY - 1);
 
   return grid[y * 18 + x].timestamp;
@@ -77,7 +77,7 @@ void GlobalFieldCoverage::draw() const
                  c.polygon[3].x(), c.polygon[3].y(),
                  20, Drawings::solidPen, color);
 
-      DRAWTEXT("representation:GlobalFieldCoverage:coverageNumbers", c.polygon[0].x(), c.polygon[0].y(), 100, ColorRGBA(255, 255, 255, 255), c.coverage / 1000);
+      DRAW_TEXT("representation:GlobalFieldCoverage:coverageNumbers", c.polygon[0].x(), c.polygon[0].y(), 100, ColorRGBA(255, 255, 255, 255), c.coverage / 1000);
     }
   }
 }

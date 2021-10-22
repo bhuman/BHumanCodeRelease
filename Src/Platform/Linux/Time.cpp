@@ -1,25 +1,7 @@
 #include "Platform/Time.h"
 #include "Platform/BHAssert.h"
-
-#ifdef TARGET_SIM
-#include "Controller/RoboCupCtrl.h"
-#endif
-
-#include <ctime>
 #include <pthread.h>
-
-unsigned long long Time::base = 0;
-unsigned long long Time::threadTimebase = 0;
-
-unsigned Time::getCurrentSystemTime()
-{
-#ifdef TARGET_SIM
-  if(RoboCupCtrl::controller)
-    return RoboCupCtrl::controller->getTime();
-  else
-#endif
-    return getRealSystemTime();
-}
+#include <time.h>
 
 unsigned Time::getRealSystemTime()
 {

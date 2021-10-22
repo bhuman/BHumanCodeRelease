@@ -14,10 +14,6 @@ void InertialData::draw()
   PLOT("representation:InertialData:angle:x", angle.x().toDegrees());
   PLOT("representation:InertialData:angle:y", angle.y().toDegrees());
 
-  PLOT("representation:InertialData:filteredAcc:x", filteredAcc.x());
-  PLOT("representation:InertialData:filteredAcc:y", filteredAcc.y());
-  PLOT("representation:InertialData:filteredAcc:z", filteredAcc.z());
-
   const Vector3a orientation2DVec = Rotation::AngleAxis::pack(AngleAxisf(orientation2D)).cast<Angle>();
   PLOT("representation:InertialData:orientation2D:x", orientation2DVec.x().toDegrees());
   PLOT("representation:InertialData:orientation2D:y", orientation2DVec.y().toDegrees());

@@ -13,7 +13,6 @@
 
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Perception/FieldFeatures/PenaltyMarkSpots.h"
 #include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
@@ -30,7 +29,6 @@ MODULE(PenaltyMarkRegionsProvider,
   REQUIRES(ScanGrid),
   REQUIRES(PenaltyMarkRegions),
   PROVIDES(PenaltyMarkRegions),
-  PROVIDES(PenaltyMarkSpots),
   PROVIDES(CNSPenaltyMarkRegions),
   DEFINES_PARAMETERS(
   {,
@@ -92,11 +90,9 @@ class PenaltyMarkRegionsProvider : public PenaltyMarkRegionsProviderBase
   std::vector<Region> regions; /**< The regions of non-green pixels (left to right, bottom to bottom). */
   std::vector<unsigned short> extendedLower; /**< A table that maps y coordinates to y coordinates with region extension. */
   std::vector<Boundaryi> cnsRegions; /**< The CNS regions that will be provided. */
-  std::vector<Vector2i> spots; /**< The spots that will be provided. */
 
   void update(PenaltyMarkRegions& thePenaltyMarkRegions) override;
   void update(CNSPenaltyMarkRegions& theCNSPenaltyMarkRegions) override {theCNSPenaltyMarkRegions.regions = cnsRegions;}
-  void update(PenaltyMarkSpots& thePenaltyMarkSpots) override {thePenaltyMarkSpots.spots = spots;}
 
   /**
    * Initializes the extendedLower table.

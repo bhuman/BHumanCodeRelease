@@ -11,9 +11,11 @@
 
 #include "TypeInfo.h"
 #include "TypeRegistry.h"
+#include "Platform/Thread.h"
 #include <regex>
 
 static const unsigned unifiedTypeNames = 0x80000000;
+std::unique_ptr<TypeInfo> TypeInfo::current;
 
 TypeInfo::TypeInfo(bool fromTypeRegistry)
 {
@@ -93,7 +95,7 @@ Out& operator<<(Out& out, const TypeInfo& typeInfo)
     out << primitive;
 
   out << static_cast<unsigned>(typeInfo.classes.size());
-  for(const std::pair<std::string, std::vector<TypeInfo::Attribute>>& theClass : typeInfo.classes)
+  for(const auto& theClass : typeInfo.classes)
   {
     out << theClass.first << static_cast<unsigned>(theClass.second.size());
     for(const TypeInfo::Attribute& attribute : theClass.second)
@@ -101,7 +103,7 @@ Out& operator<<(Out& out, const TypeInfo& typeInfo)
   }
 
   out << static_cast<unsigned>(typeInfo.enums.size());
-  for(const std::pair<std::string, std::vector<std::string>>& theEnum : typeInfo.enums)
+  for(const auto& theEnum : typeInfo.enums)
   {
     out << theEnum.first << static_cast<unsigned>(theEnum.second.size());
     for(const std::string& constant : theEnum.second)
@@ -181,4 +183,12 @@ In& operator>>(In& in, TypeInfo& typeInfo)
   }
 
   return in;
+}
+
+void TypeInfo::initCurrent()
+{
+  static DECLARE_SYNC;
+  SYNC;
+  if(!current)
+    current = std::make_unique<TypeInfo>(true);
 }

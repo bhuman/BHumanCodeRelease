@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
@@ -21,6 +22,7 @@
 
 MODULE(FallDownStateProvider,
 {,
+  REQUIRES(FootOffset),
   REQUIRES(FrameInfo),
   REQUIRES(FsrSensorData),
   REQUIRES(GroundContactState),
@@ -33,8 +35,8 @@ MODULE(FallDownStateProvider,
   {,
     (Angle)(10_deg) maxGyroToRegainStableState,
     (Angle)(100_deg) maxVelForPrediction,
-    (bool)(false) useInertiaData,
-    (bool)(true) playSounds,
+    (bool)(true) useInertiaData,
+    (bool)(false) playSounds,
     (float)(.9f) velocityDiscountFactor,
     (float)(0.1f) forwardingTime,
     (float)(0.5f) minNormalizedFallVectorScalar,
@@ -73,7 +75,7 @@ private:
   FallDownState* theFallDownState; /** Pointer to the fall down state updated.*/
   FallDownState::Direction direction; /** The fall direction. Always computed, even if not falling. */
   float torsoAboveGround; /**< The distance of the torso above the ground (in mm). */
-  bool thanks = false;
+  float footShapeToeX; /**< The foot toe x position (in mm). */
 
   UKF<5> ukf = UKF<5>(Vector5f::Zero()); // The statevector of the ukf is composed of: com, velocity;
   Vector5f dynamicNoise;

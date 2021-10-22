@@ -66,9 +66,6 @@
  */
 template<typename T> class Cabsl
 {
-private:
-  static const size_t maxNumOfOptions = 500; /**< The maximum number of options. Increase if necessary. */
-
 protected:
   using CabslBehavior = T; /**< This type allows to access the derived class by name. */
 
@@ -88,7 +85,7 @@ protected:
 
     int state; /**< The state currently selected. This is actually the line number in which the state was declared. */
     const char* stateName; /**< The name of the state (for activation graph). */
-    unsigned lastFrame = 1; /**< The timestamp of the last frame in which this option was executed. */
+    unsigned lastFrame = 2; /**< The timestamp of the last frame in which this option was executed. */
     unsigned optionStart; /**< The time when the option started to run (for option_time). */
     unsigned stateStart; /**< The time when the current state started to run (for state_time). */
     StateType stateType; /**< The type of the current state in this option. */
@@ -246,18 +243,17 @@ public:
       ASSERT(!optionsByIndex);
       ASSERT(!optionsByName);
       optionsByIndex = new std::vector<const OptionDescriptor*>;
-      optionsByIndex->reserve(maxNumOfOptions);
       optionsByName = new std::unordered_map<std::string, const OptionDescriptor*>;
       static OptionDescriptor descriptor("none", false, 0, 0);
       optionsByIndex->push_back(&descriptor);
-      (*optionsByName)[descriptor.name] = optionsByIndex->back();
+      (*optionsByName)[descriptor.name] = &descriptor;
       TypeRegistry::addEnum(typeid(Option).name());
       TypeRegistry::addEnumConstant(typeid(Option).name(), "none");
     }
 
     /**
      * The method adds information about an option to the collections.
-     * It will be call from the constructors of static objects created for each
+     * It will be called from the constructors of static objects created for each
      * option.
      * Note that options with parameters will be ignored, because they currently
      * cannot be called externally.
@@ -275,10 +271,9 @@ public:
       {
         descriptor.index = static_cast<int>(optionsByIndex->size());
         optionsByIndex->push_back(&descriptor);
-        (*optionsByName)[descriptor.name] = optionsByIndex->back();
+        (*optionsByName)[descriptor.name] = &descriptor;
         TypeRegistry::addEnumConstant(typeid(Option).name(), descriptor.name);
       }
-      ASSERT(optionsByIndex->size() <= maxNumOfOptions);
     }
 
     /**
@@ -316,26 +311,6 @@ public:
     }
   };
 
-protected:
-  /**
-   * A template class for collecting information about an option.
-   * @tparam descriptor A function that can return the description of the option.
-   */
-  template<void*(*descriptor)()> class OptionInfo : public OptionContext
-  {
-  private:
-    /** A helper structure to register information about the option. */
-    struct Registrar
-    {
-      Registrar() {OptionInfos::add(reinterpret_cast<OptionDescriptor*(*)()>(descriptor));}
-    };
-    static Registrar registrar; /**< The instance that registers the information about the option through construction. */
-
-  public:
-    /** A dummy constructor that enforces linkage of the static member. */
-    OptionInfo() {static_cast<void>(&registrar);}
-  };
-
 private:
   static OptionInfos collectOptions; /**< This global instantiation collects data about all options. */
   typename OptionContext::StateType stateType; /**< The state type of the last option called. */
@@ -368,7 +343,7 @@ public:
    */
   void beginFrame(unsigned frameTime, bool clearActivationGraph = true)
   {
-    _currentFrameTime = frameTime;
+    _currentFrameTime = std::max(frameTime, lastFrameTime + 1);
     if(activationGraph && clearActivationGraph)
     {
       activationGraph->currentDepth = 0;
@@ -464,7 +439,12 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
     struct _S : public Streamable \
     { \
       _CABSL_DECL_WITHOUT_INIT(seq) \
-      void serialize(In* in, Out* out) \
+      void read(In& stream) override \
+      { \
+        auto _STREAM_VAR(seq) = this->_STREAM_VAR(seq); \
+        _STREAM_SER(seq) \
+      } \
+      void write(Out& stream) \
       { \
         auto _STREAM_VAR(seq) = this->_STREAM_VAR(seq); \
         _STREAM_SER(seq) \

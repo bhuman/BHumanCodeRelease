@@ -1,0 +1,8 @@
+/dev/root                                               /               auto    rw,noatime,data=ordered                     1 0
+/dev/disk/by-uuid/66666666-6666-6666-6666-666666666666  /media/internal auto    rw,noatime,noexec,nosuid,nodev,data=ordered 0 0
+/dev/disk/by-uuid/66666666-1120-1120-1120-666666666666  /home           auto    rw,noatime,nosuid,nodev,data=ordered        0 0
+/dev/sda1                                               /media/usb      auto    rw,noatime,noexec,nosuid,nodev,noauto,users 0 0
+proc                                                    /proc           proc    defaults                                    0 0
+devpts                                                  /dev/pts        devpts  mode=0620,gid=5                             0 0
+tmpfs                                                   /run            tmpfs   mode=0755,nodev,nosuid,strictatime          0 0
+tmpfs                                                   /var/volatile   tmpfs   defaults                                    0 0

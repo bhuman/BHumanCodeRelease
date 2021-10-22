@@ -10,9 +10,11 @@
 #include "Platform/File.h"
 #include "Tools/ImageProcessing/CNS/CNSTools.h"
 #include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/Math/Constants.h"
 #include "Tools/Math/Transformation.h"
+#include "Tools/Debugging/Debugging.h"
 
-MAKE_MODULE(PenaltyMarkPerceptor, perception)
+MAKE_MODULE(PenaltyMarkPerceptor, perception);
 
 PenaltyMarkPerceptor::PenaltyMarkPerceptor()
 {
@@ -65,12 +67,10 @@ PenaltyMarkPerceptor::PenaltyMarkPerceptor()
   samplePoints =
   {
     Vector3d(0.5 * -inner, -0.75 * outer, 0), Vector3d(0.5 * inner, -0.75 * outer, 0),
-    Vector3d(0.5 * -inner, -0.25 * outer, 0), Vector3d(0.5 * inner, -0.25 * outer, 0),
     Vector3d(0.75 * -outer, -0.5 * inner, 0), Vector3d(0.75 * outer, -0.5 * inner, 0),
+    Vector3d(0.5 * -inner,  -0.5 * inner, 0), Vector3d(0.5 * inner,  -0.5 * inner, 0),
+    Vector3d(0.5 * -inner,  0.5 * inner, 0), Vector3d(0.5 * inner,  0.5 * inner, 0),
     Vector3d(0.75 * -outer,  0.5 * inner, 0), Vector3d(0.75 * outer,  0.5 * inner, 0),
-    Vector3d(0.25 * -outer, -0.5 * inner, 0), Vector3d(0.25 * outer, -0.5 * inner, 0),
-    Vector3d(0.25 * -outer,  0.5 * inner, 0), Vector3d(0.25 * outer,  0.5 * inner, 0),
-    Vector3d(0.5 * -inner,  0.25 * outer, 0), Vector3d(0.5 * inner,  0.25 * outer, 0),
     Vector3d(0.5 * -inner,  0.75 * outer, 0), Vector3d(0.5 * inner,  0.75 * outer, 0),
   };
 }
@@ -81,7 +81,24 @@ void PenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPercept)
   DECLARE_DEBUG_DRAWING("module:PenaltyMarkPerceptor:candidates", "drawingOnImage");
 
   thePenaltyMarkPercept.wasSeen = false;
-  detector.setCamera(CNS::toCameraModelOpenCV(theCameraInfo, theCameraIntrinsics));
+  detector.setCamera(CNS::toCameraModelOpenCV(theCameraInfo));
+
+  // Special handling for penalty shootout: the penalty mark is where the ball is.
+  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
+  {
+    if(theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) < 2000
+       && theBallModel.estimate.position.squaredNorm() < sqr(700))
+    {
+      thePenaltyMarkPercept.positionOnField = theBallModel.estimate.position;
+
+      Vector2f inImage;
+      if(Transformation::robotToImage(thePenaltyMarkPercept.positionOnField, theCameraMatrix, theCameraInfo, inImage))
+        thePenaltyMarkPercept.positionInImage = inImage.cast<int>();
+
+      thePenaltyMarkPercept.wasSeen = true;
+      return;
+    }
+  }
 
   if(theCameraMatrix.isValid)
   {
@@ -120,15 +137,21 @@ void PenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPercept)
     std::sort(objects.begin(), objects.end(), MoreOnResponse());
     for(const IsometryWithResponse& object : objects)
     {
-      int nonWhitePoints = 0;
       double x, y;
+      int luminanceAverage = 0, saturationAverage = 0;
+      IsGreen isGreen = [&](int x, int y)
+      {
+        return theRelativeFieldColors.isFieldNearWhite(theECImage.grayscaled[y][x], theECImage.saturated[y][x],
+                                                       static_cast<unsigned char>(luminanceAverage), static_cast<unsigned char>(saturationAverage));
+      };
       for(const Vector3d& samplePoint : samplePoints)
       {
         detector.camera.camera2Image(object * samplePoint, x, y);
-        if(theECImage.colored[static_cast<int>(y)][static_cast<int>(x)] != FieldColors::white
-           && ++nonWhitePoints > maxNonWhiteRatio * samplePoints.size())
-          goto nextObject;
+        luminanceAverage += theECImage.grayscaled[static_cast<int>(y)][static_cast<int>(x)];
+        saturationAverage += theECImage.saturated[static_cast<int>(y)][static_cast<int>(x)];
       }
+      luminanceAverage /= static_cast<int>(samplePoints.size());
+      saturationAverage /= static_cast<int>(samplePoints.size());
 
       detector.camera.camera2Image(Vector3d(object(0, 3), object(1, 3), object(2, 3)), x, y);
       thePenaltyMarkPercept.positionInImage = Vector2i(static_cast<int>(x), static_cast<int>(y));
@@ -137,11 +160,12 @@ void PenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPercept)
       if(IISC::calculateImagePenaltyMeasurementsByCenter(Vector2f(static_cast<float>(x), static_cast<float>(y)),
                                                          expectedWidth, expectedHeight, theCameraInfo, theCameraMatrix,
                                                          theFieldDimensions)
-         && countGreen(thePenaltyMarkPercept.positionInImage, expectedWidth / 2.f, expectedHeight / expectedWidth)
-         >= numberOfGreenChecks * greenCheckRadiusRatios.size() * minAroundGreenRatio
+         && static_cast<float>(countGreen(thePenaltyMarkPercept.positionInImage, expectedWidth / 2.f, expectedHeight / expectedWidth, isGreen))
+            >= static_cast<float>(numberOfGreenChecks * greenCheckRadiusRatios.size()) * minAroundGreenRatio
          && Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(Vector2f(static_cast<float>(x), static_cast<float>(y))),
                                          theCameraMatrix, theCameraInfo, thePenaltyMarkPercept.positionOnField)
-         && thePenaltyMarkPercept.positionOnField.norm() <= maxTableRadius)
+         && thePenaltyMarkPercept.positionOnField.norm() <= maxTableRadius
+         && !isPointNearLine(thePenaltyMarkPercept.positionOnField))
       {
         Matrix4d imageInCamera;
         imageInCamera << 0,  0,  1, 0,
@@ -154,12 +178,21 @@ void PenaltyMarkPerceptor::update(PenaltyMarkPercept& thePenaltyMarkPercept)
         thePenaltyMarkPercept.wasSeen = true;
         break;
       }
-    nextObject:
-      ;
     }
   }
 
   draw();
+}
+
+bool PenaltyMarkPerceptor::isPointNearLine(const Vector2f& point) const
+{
+  for(const LinesPercept::Line& line : theLinesPercept.lines)
+  {
+    const Geometry::Line lineOnField(line.firstField, line.lastField - line.firstField);
+    if(std::abs(Geometry::getDistanceToEdge(lineOnField, point)) < minDistanceToLine)
+      return true;
+  }
+  return false;
 }
 
 void PenaltyMarkPerceptor::updateSearchSpace()
@@ -180,28 +213,27 @@ void PenaltyMarkPerceptor::updateSearchSpace()
   Vector3f up = theCameraMatrix.rotation.inverse() * Vector3f::UnitZ();
   for(int i = 0; i < numOfRotations; ++i)
     spec.object2WorldOrientation.push_back(fromTo(Vector3d::UnitZ(), Vector3d(-up.y(), -up.z(), up.x()))
-                                           * Eigen::Isometry3d(Eigen::AngleAxisd(90_deg * i / numOfRotations, Vector3d::UnitZ())));
+                                           * Eigen::Isometry3d(Eigen::AngleAxisd(90_deg * static_cast<float>(i) / static_cast<float>(numOfRotations), Vector3d::UnitZ())));
 }
 
-int PenaltyMarkPerceptor::countGreen(const Vector2i& center, float radius, float yRatio) const
+int PenaltyMarkPerceptor::countGreen(const Vector2i& center, float radius, float yRatio, const IsGreen& isGreen) const
 {
   int greenCount = 0;
   for(float radiusRatio : greenCheckRadiusRatios)
-    greenCount += countGreenAtRadius(center, radius * radiusRatio, yRatio);
+    greenCount += countGreenAtRadius(center, radius * radiusRatio, yRatio, isGreen);
   return greenCount;
 }
 
-int PenaltyMarkPerceptor::countGreenAtRadius(const Vector2i& center, float radius, float yRatio) const
+int PenaltyMarkPerceptor::countGreenAtRadius(const Vector2i& center, float radius, float yRatio, const IsGreen& isGreen) const
 {
   std::function<bool(int, int)> isInside;
-  if(center.x() - radius > 0 && center.x() + radius + 1 < theECImage.colored.width &&
-     center.y() - radius > 0 && center.y() + radius + 1 < theECImage.colored.height)
+  if(static_cast<float>(center.x()) - radius > 0 && static_cast<float>(center.x()) + radius + 1 < static_cast<float>(theCameraInfo.width) &&
+     static_cast<float>(center.y()) - radius > 0 && static_cast<float>(center.y()) + radius + 1 < static_cast<float>(theCameraInfo.height))
     isInside = [&](int, int) -> bool {return true;};
   else
     isInside = [&](int x, int y) -> bool
   {
-    return x >= 0 && x < static_cast<int>(theECImage.colored.width) &&
-    y >= 0 && y < static_cast<int>(theECImage.colored.height);
+    return x >= 0 && x < theCameraInfo.width && y >= 0 && y < theCameraInfo.height;
   };
   const float epsilon = pi2 / static_cast<float>(numberOfGreenChecks);
   float dx = -radius;
@@ -213,8 +245,7 @@ int PenaltyMarkPerceptor::countGreenAtRadius(const Vector2i& center, float radiu
     int y = center.y() + static_cast<int>(std::round(dy * yRatio));
     if(isInside(x, y))
     {
-      const FieldColors::Color color = theECImage.colored[y][x];
-      if(color == FieldColors::field)
+      if(isGreen(x, y))
       {
         ++greenCount;
         DOT("module:PenaltyMarkPerceptor:around", x, y, ColorRGBA::green, ColorRGBA::green);
@@ -227,6 +258,7 @@ int PenaltyMarkPerceptor::countGreenAtRadius(const Vector2i& center, float radiu
   }
   return greenCount;
 }
+
 
 void PenaltyMarkPerceptor::draw()
 {
@@ -287,7 +319,7 @@ void PenaltyMarkPerceptor::drawCylinderRing(const CylinderRing& cylinderRing, co
   for(int i = 0; i < 4; ++i)
   {
     ColorRGBA& color = colors[i];
-    for(double alpha = 0; alpha < 2 * M_PI; alpha += 0.02)
+    for(double alpha = 0; alpha < 2 * pi; alpha += 0.02)
     {
       double x, y;
       if(camera.world2ImageClipped(cylinderRing.sampleEdgePoint(alpha, i), x, y))

@@ -1,0 +1,93 @@
+dr debugDrawing3d:module:WalkStepAdjustment:balance
+dr debugDrawing3d:module:WalkStepAdjustment:footMid
+dr module:WalkingEngine:feetPositions
+
+vp balancer 100 -50 50
+vpd balancer module:WalkStepAdjustment:Data:leftAdjustment blue
+vpd balancer module:WalkStepAdjustment:Data:rightAdjustment red
+
+vp GyroPlots 1000 -130 130
+vpd GyroPlots representation:InertialData:gyro:y red
+vpd GyroPlots representation:InertialData:gyro:x blue
+
+vp TorsoAnglePlots 1000 -30 30
+vpd TorsoAnglePlots representation:InertialData:angle:y red
+vpd TorsoAnglePlots representation:InertialData:angle:x blue
+
+vp LeftFootHeight 300 -240 -210
+vpd LeftFootHeight module:WalkingEngine:leftFootHightCurrent red
+vpd LeftFootHeight module:WalkingEngine:leftFootHightDesired blue
+
+vp LeftFootForward 300 -90 50
+vpd LeftFootForward module:WalkingEngine:leftFootForwardCurrent red
+vpd LeftFootForward module:WalkingEngine:leftFootForwardDesired blue
+
+vp LeftFootSide 300 -20 100
+vpd LeftFootSide module:WalkingEngine:leftFootSideCurrent red
+vpd LeftFootSide module:WalkingEngine:leftFootSideDesired blue
+
+vp RightFootHeight 300 -240 -210
+vpd RightFootHeight module:WalkingEngine:rightFootHightCurrent red
+vpd RightFootHeight module:WalkingEngine:rightFootHightDesired blue
+
+vp RightFootForward 300 -90 50
+vpd RightFootForward module:WalkingEngine:rightFootForwardCurrent red
+vpd RightFootForward module:WalkingEngine:rightFootForwardDesired blue
+
+vp RightFootSide 300 -100 20
+vpd RightFootSide module:WalkingEngine:rightFootSideCurrent red
+vpd RightFootSide module:WalkingEngine:rightFootSideDesired blue
+
+vp armCompensation 100 -50 50
+vpd armCompensation module:WalkingEngine:armCompensation
+
+vp hipBalancing 100 -5 5
+vpd hipBalancing module:WalkingEngine:Data:hipBalancing
+
+vp leftKneeAdjustment 100 -15 15
+vpd leftKneeAdjustment module:WalkingEngine:Data:leftKneeAdjustment
+
+vp rightKneeAdjustment 100 -15 15
+vpd rightKneeAdjustment module:WalkingEngine:Data:rightKneeAdjustment
+
+vp kneeHipBalance 100 -15 15
+vpd kneeHipBalance module:WalkingEngine:Data:kneeHipBalance
+
+vp supportSoleRotation 100 -15 15
+vpd supportSoleRotation module:WalkingEngine:Data:supportSoleRotationY
+
+vd parameters:WalkingEngine
+echo save parameters:WalkingEngine
+echo
+echo --Stand--
+echo set representation:MotionRequest motion = stand; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Forward--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 1; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Backwards--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = -1; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Left--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 0; y = 1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Right--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 0; y = -1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Left/Forward--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 1; y = 1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Right/Forward--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = 1; y = -1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Left/Backwards--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = -1; y = 1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Right/Backwards--
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 0deg; translation = { x = -1; y = -1; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Turn Left
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = 1; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;
+echo
+echo --Turn Right
+echo set representation:MotionRequest motion = walkAtRelativeSpeed; standHigh = false; walkSpeed = { rotation = -1; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = decideAutomatic; mirror = false; }; odometryData = { rotation = 0deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 0; y = 0; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = 0;

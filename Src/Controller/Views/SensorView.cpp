@@ -91,7 +91,7 @@ void SensorWidget::forceUpdate()
   QWidget::update();
 }
 
-void SensorWidget::paintEvent(QPaintEvent* event)
+void SensorWidget::paintEvent(QPaintEvent*)
 {
   painter.begin(this);
   painter.setFont(font);
@@ -230,8 +230,8 @@ void SensorWidget::print(const QString& name, const QString& value)
     painter.drawRect(paintRect.left(), paintRectField1.top(), paintRect.width(), paintRectField1.height());
     painter.setPen(QApplication::palette().text().color());
   }
-  painter.drawText(paintRectField0, Qt::TextSingleLine | Qt::AlignVCenter, name);
-  painter.drawText(paintRectField1, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, value);
+  painter.drawText(paintRectField0, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter), name);
+  painter.drawText(paintRectField1, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), value);
   paintRectField0.moveTop(paintRectField0.top() + lineSpacing);
   paintRectField1.moveTop(paintRectField1.top() + lineSpacing);
 

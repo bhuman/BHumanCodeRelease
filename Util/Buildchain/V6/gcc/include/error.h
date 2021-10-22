@@ -1,5 +1,5 @@
 /* Declaration for error-reporting function
-   Copyright (C) 1995-2019 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _ERROR_H
 #define _ERROR_H 1
@@ -47,9 +47,15 @@ extern unsigned int error_message_count;
    variable controls whether this mode is selected or not.  */
 extern int error_one_per_line;
 
-
-#if defined __extern_always_inline && defined __va_arg_pack
-# include <bits/error.h>
+#ifdef __LDBL_COMPAT
+# include <bits/error-ldbl.h>
+#else
+/* Do not inline error and error_at_line when long double has the same
+   size of double, because that would invalidate the redirections to the
+   compatibility functions.  */
+# if defined __extern_always_inline && defined __va_arg_pack
+#  include <bits/error.h>
+# endif
 #endif
 
 __END_DECLS

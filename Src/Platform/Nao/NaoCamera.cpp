@@ -39,9 +39,10 @@ NaoCamera::NaoCamera(const char* device, CameraInfo::Camera camera, int width, i
     specialSettings.verticalFlip.value = flip ? 1 : 0;
     setControlSetting(specialSettings.verticalFlip);
     setSettings(settings, autoExposureWeightTable);
+    resetRequired = !startCapturing();
     writeCameraSettings();
     readCameraSettings();
-    resetRequired = !startCapturing();
+    toggleAutoWhiteBalance();
   }
   if(resetRequired)
     OUTPUT_ERROR("Setting up NaoCamera failed!");
@@ -236,8 +237,8 @@ void NaoCamera::resetCamera()
 {
   BH_TRACE_MSG("reset camera");
   usleep(100000);
-  int i2cDeviceNumber = -1, fileDescriptor = -1;
-  if(getI2CDeviceNumber(i2cDeviceNumber) && openI2CDevice(i2cDeviceNumber, fileDescriptor))
+  int fileDescriptor = -1;
+  if(openI2CDevice(fileDescriptor))
   {
     unsigned char config;
     if(i2cReadByteData(fileDescriptor, 0x41, 0x3, config) && (config & 0xc) != 0)
@@ -252,23 +253,9 @@ void NaoCamera::resetCamera()
   sleep(2);
 }
 
-bool NaoCamera::getI2CDeviceNumber(int& i2cDeviceNumber)
+bool NaoCamera::openI2CDevice(int& fileDescriptor)
 {
-  char result[4096];
-  long length = ::readlink("/dev/i2c-head", result, sizeof(result)-1);
-  if(length >= 0)
-  {
-    result[length] = '\0';
-    unsigned long pos = std::string(result).find_last_of('-');
-    i2cDeviceNumber = std::atoi(std::string(result).substr(pos+1).c_str());
-    return true;
-  }
-  return false;
-}
-
-bool NaoCamera::openI2CDevice(int i2cDeviceNumber, int& fileDescriptor)
-{
-  return (fileDescriptor = open(("/dev/i2c-" + std::to_string(i2cDeviceNumber)).c_str(), O_RDWR | O_NONBLOCK)) >= 0;
+  return (fileDescriptor = open("/dev/i2c-head", O_RDWR | O_NONBLOCK)) >= 0;
 }
 
 bool NaoCamera::i2cReadWriteAccess(int fileDescriptor, unsigned char readWrite, unsigned char command, unsigned char size, i2c_smbus_data& data)
@@ -449,6 +436,15 @@ void NaoCamera::doAutoWhiteBalance()
     appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance].value = 0;
     setControlSetting(appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance]);
   }
+}
+
+void NaoCamera::toggleAutoWhiteBalance()
+{
+  appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance].value = (settings.settings[CameraSettings::Collection::autoWhiteBalance].value + 1) % 2;
+  setControlSetting(appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance]);
+  usleep(40000);
+  appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance].value = (settings.settings[CameraSettings::Collection::autoWhiteBalance].value + 1) % 2;
+  setControlSetting(appliedSettings.settings[CameraSettings::Collection::autoWhiteBalance]);
 }
 
 bool NaoCamera::checkSettingsAvailability()
@@ -732,8 +728,7 @@ NaoCamera::CameraSettingsCollection::CameraSettingsCollection()
   settings[CameraSettings::Collection::autoExposure] = V4L2Setting(V4L2_CID_EXPOSURE_AUTO, -1000, 0, 3);
   settings[CameraSettings::Collection::autoExposureBrightness] = V4L2Setting(V4L2_CID_BRIGHTNESS, -1000, -255, 255);
   settings[CameraSettings::Collection::exposure] = V4L2Setting(V4L2_CID_EXPOSURE_ABSOLUTE, -1000, 0, 1048575, CameraSettings::Collection::autoExposure, 1);
-  settings[CameraSettings::Collection::gain] = V4L2Setting(V4L2_CID_GAIN, -1000, 0, 1023,
-      CameraSettings::Collection::autoExposure, 1);
+  settings[CameraSettings::Collection::gain] = V4L2Setting(V4L2_CID_GAIN, -1000, 0, 1023, CameraSettings::Collection::autoExposure, 1);
   settings[CameraSettings::Collection::autoWhiteBalance] = V4L2Setting(V4L2_CID_AUTO_WHITE_BALANCE, -1000, 0, 1);
   settings[CameraSettings::Collection::autoFocus] = V4L2Setting(V4L2_CID_FOCUS_AUTO, -1000, 0, 1);
   settings[CameraSettings::Collection::focus] = V4L2Setting(V4L2_CID_FOCUS_ABSOLUTE, -1000, 0, 250, CameraSettings::Collection::autoFocus);

@@ -19,24 +19,21 @@ class InMessage;
 /**
  * @class DebugDataTable
  *
- * A singleton class that maintains the debug data table.
+ * A class that maintains the debug data table.
  */
-class DebugDataTable
+class DebugDataTable final
 {
 private:
   std::unordered_map<std::string, char*> table;
 
-  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
-
+public:
   /**
    * Default constructor.
-   * No other instance of this class is allowed except the one accessible via Global::getDebugDataTable.
-   * Therefore the constructor is private.
    */
   DebugDataTable() = default;
+
   DebugDataTable(const DebugDataTable&) = delete;
 
-public:
   ~DebugDataTable();
 
   /**
@@ -44,7 +41,7 @@ public:
    * respective entry in the table has been modified through RobotControl.
    */
   template<typename T> void updateObject(const char* name, T& t, bool once);
-  void threadChangeRequest(InMessage& in);
+  void processChangeRequest(InMessage& in);
 };
 
 template<typename T> void DebugDataTable::updateObject(const char* name, T& t, bool once)

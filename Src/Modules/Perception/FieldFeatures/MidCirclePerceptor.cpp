@@ -39,7 +39,7 @@ bool MidCirclePerceptor::searchCircleWithLine(MidCircle& midCircle) const
       ))
     return false;
 
-  const Vector2f theMidCirclePosition = theCirclePercept.wasSeen ? theCirclePercept.pos : theOdometer.odometryOffset * theLastCirclePercept.pos;
+  const Vector2f theMidCirclePosition = theCirclePercept.wasSeen ? theCirclePercept.pos : theOdometer.odometryOffset.inverse() * theLastCirclePercept.pos;
 
   // sorting lines (or rather line access) from long to short
   std::vector<int> sortedLinePointers;
@@ -142,4 +142,4 @@ bool MidCirclePerceptor::searchWithSXAndT(MidCircle& midCircle) const
   return false;
 }
 
-MAKE_MODULE(MidCirclePerceptor, perception)
+MAKE_MODULE(MidCirclePerceptor, perception);

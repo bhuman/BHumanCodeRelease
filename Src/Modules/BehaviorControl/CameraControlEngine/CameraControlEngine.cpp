@@ -20,12 +20,25 @@ void CameraControlEngine::update(HeadAngleRequest& headAngleRequest)
   Vector2a panTiltUpperCam;
   Vector2a panTiltLowerCam;
 
+  if(theHeadMotionRequest.mode == HeadMotionRequest::calibrationMode)
+  {
+    // Pass the given angles without further checking.
+    headAngleRequest.pan = theHeadMotionRequest.pan;
+    headAngleRequest.tilt = theHeadMotionRequest.tilt;
+    headAngleRequest.speed = theHeadMotionRequest.speed;
+    // Do not clip angles in the HeadMotionEngine & MotionEngine.
+    headAngleRequest.disableClippingAndInterpolation = true;
+    return;
+  }
+  else
+    headAngleRequest.disableClippingAndInterpolation = false;
+
   if(theHeadMotionRequest.mode == HeadMotionRequest::panTiltMode)
   {
     panTiltUpperCam.x() = theHeadMotionRequest.pan;
-    panTiltUpperCam.y() = theHeadMotionRequest.tilt + theRobotDimensions.getTiltNeckToCamera(false);
+    panTiltUpperCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(false);
     panTiltLowerCam.x() = theHeadMotionRequest.pan;
-    panTiltLowerCam.y() = theHeadMotionRequest.tilt + theRobotDimensions.getTiltNeckToCamera(true);
+    panTiltLowerCam.y() = theHeadMotionRequest.tilt - theRobotDimensions.getTiltNeckToCamera(true);
   }
   else
   {

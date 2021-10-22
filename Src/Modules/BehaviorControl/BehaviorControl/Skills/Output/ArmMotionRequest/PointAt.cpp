@@ -35,7 +35,7 @@ class PointAtImpl : public PointAtImplBase
     }
   }
 
-  void reset(const PointAt& p) override
+  void reset(const PointAt&) override
   {
     threshold = 0.f;
   }
@@ -45,7 +45,7 @@ class PointAtImpl : public PointAtImplBase
     setRequest(p.localPoint, p.arm);
   }
 
-  void reset(const PointAtWithArm&) override {} // To avoid a stupid clang warning (-Woverloaded-virtual)
+  using Skills::PointAtWithArmSkill::Implementation::reset;
 
   void setRequest(const Vector3f& localPoint, Arms::Arm arm)
   {

@@ -1,0 +1,23 @@
+vp pid 2000 -100 100
+vpd pid module:KeyframeMotionEngine:pid:com red
+vpd pid module:KeyframeMotionEngine:pid:borderF brown
+vpd pid module:KeyframeMotionEngine:pid:borderB blue
+echo vd representation:KeyframeMotionEngineOutput
+
+set module:KeyframeMotionEngine:setCalibrationPhase ErrorPhase
+set representation:MotionRequest motion = playDead; standHigh = true; walkSpeed = { rotation = 0deg; translation = { x = 0; y = 0; }; }; walkTarget = { rotation = 0deg; translation = { x = 0; y = 0; }; }; keepTargetRotation = false; obstacleAvoidance = { avoidance = { x = 0; y = 0; }; path = []; }; targetDirection = 0deg; directionPrecision = { min = 0deg; max = 0deg; }; kickType = forwardFastLeft; kickPower = 0; alignPrecisely = false; preStepAllowed = true; turnKickAllowed = true; keyframeMotionRequest = { keyframeMotion = sitDown; mirror = false; }; odometryData = { rotation = -0.0445516deg; translation = { x = 0; y = 0; }; }; ballEstimate = { position = { x = 1002.49; y = 0.98042; }; velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 110535; ballTimeWhenLastSeen = 110535;
+
+dr module:KeyframeMotionEngine:calibrate
+
+echo
+echo ---- Set the Phase that you want to calibrate
+echo set module:KeyframeMotionEngine:setCalibrationPhase ErrorPhase
+
+echo ---- Start the calibration
+echo dr module:KeyframeMotionEngine:calibrate
+
+echo ---- Toggle Balancer
+echo set module:KeyframeMotionEngine:setBalancerOn true
+
+echo ---- Save
+echo save representation:GetUpPhase

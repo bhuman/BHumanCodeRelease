@@ -1,42 +1,39 @@
 /**
  * @file WalkKickGenerator.h
  *
- * This file declares a representation that generates walk kicks (should be used from a walking engine).
+ * This file declares a representation that generates walk kicks.
  *
- * @author Alexis Tsogias
- * @author Arne Hasselbring
+ * @author Philip Reichenberg
  */
 
 #pragma once
 
+#include "Representations/Configuration/KickInfo.h"
+#include "Representations/MotionControl/WalkGenerator.h"
 #include "Tools/Function.h"
-#include "Tools/Math/Pose2f.h"
+#include "Tools/Motion/WalkKickType.h"
+#include "Tools/Motion/MotionPhase.h"
 #include "Tools/RobotParts/Legs.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Streams/Enum.h"
-#include "Tools/Streams/EnumIndexedArray.h"
-
-namespace WalkKicks
-{
-  ENUM(Type,
-  {,
-    none,
-    forward,
-  });
-}
+#include <memory>
 
 STREAMABLE(WalkKickVariant,
 {
   WalkKickVariant() = default;
-  WalkKickVariant(WalkKicks::Type kickType, Legs::Leg kickLeg);
+  WalkKickVariant(KickInfo::KickType kickType, WalkKicks::Type walkKickType, Legs::Leg kickLeg, float power, Angle direction);
 
   bool operator==(const WalkKickVariant& other) const,
 
-  (WalkKicks::Type)(WalkKicks::none) kickType,
+  (KickInfo::KickType)(KickInfo::walkForwardsLeft) kickType,
+  (WalkKicks::Type)(WalkKicks::none) walkKickType,
   (Legs::Leg)(Legs::left) kickLeg,
+  (float)(1.f) power,
+  (Angle)(0_deg) direction,
+  (float)(0.f) kickInterpolation, // interpolation factor between forward and turn kick
 });
 
-inline WalkKickVariant::WalkKickVariant(WalkKicks::Type kickType, Legs::Leg kickLeg) : kickType(kickType), kickLeg(kickLeg) {}
+inline WalkKickVariant::WalkKickVariant(KickInfo::KickType kickType, WalkKicks::Type walkKickType, Legs::Leg kickLeg, float power, Angle direction) : kickType(kickType), walkKickType(walkKickType), kickLeg(kickLeg), power(power), direction(direction) {}
 
 inline bool WalkKickVariant::operator==(const WalkKickVariant& other) const
 {
@@ -45,20 +42,8 @@ inline bool WalkKickVariant::operator==(const WalkKickVariant& other) const
 
 STREAMABLE(WalkKickGenerator,
 {
-  /**
-   * Starts an in walk kick and sets the other members of this representation.
-   * @param walkKickVariant The walk kick variant to execute.
-   */
-  FUNCTION(void(const WalkKickVariant& walkKickVariant)) start;
-  /**
-   * Calculates the swing foot offset during the kick step.
-   * @param phase The phase in the kick step (0: beginning of the kick, 1: end of the kick).
-   * @param position The translation offset of the swing foot.
-   * @param rotation The rotation offset of the swing foot (axis angles?).
-   */
-  FUNCTION(void(float phase, Vector3f& position, Vector3f& rotation)) getState,
-
-  (bool) requiresPreStep, /**< Whether the kick that has been started last requires a pre step. */
-  (Pose2f) preStepSize, /**< The pre step size of the kick that has been started last. */
-  (Pose2f) stepSize, /**< The step size of the kick that has been started last. */
+  FUNCTION(bool(const WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const Rangea& precisionRange, const bool alignPrecisely, const bool preStepAllowed, const bool turnKickAllowed, const float kickPoseShiftY)) canStart; /**< Checks whether the specified kick can start in the upcoming phase. */
+  FUNCTION(std::unique_ptr<MotionPhase>(const WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const Rangea& precisionRange, const bool playSound, const float kickPoseShiftY)) createPhase; /**< Creates a phase to execute the specified kick. */
+  FUNCTION(Pose2f(const bool isLeftPhase, const Angle direction)) getVShapeWalkStep;
+  FUNCTION(void(const Pose2f& step)) drawStep,
 });

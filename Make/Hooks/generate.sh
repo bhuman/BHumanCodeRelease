@@ -16,28 +16,28 @@ execute() {
   fi
 }
 
-if [ "$('GIT' config hooks.generateProject)" = "true" ]
+if [ "$('git' config hooks.generateProject)" = "true" ]
 then
   case "$OSTYPE" in
-    "cygwin"|"msys")
+    "msys") # Git for Windows
       if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
         pushd "${scriptPath}/../../Make/VS2019" >/dev/null
-        ./generate
+        wsl ./generate # wsl beacuse with bash an msys bash is used
         popd >/dev/null
       fi
       ;;
     linux*)
-      if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
+      if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then # WSL
         if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
           pushd "${scriptPath}/../../Make/VS2019" >/dev/null
           ./generate
           popd >/dev/null
         fi
-      else
-        execute "${scriptPath}/../../Make/LinuxCodeLite/generate"
+      else # Linux
+        touch "${scriptPath}/../../Make/Linux/CMakeLists.txt"
       fi
       ;;
-    darwin*)
+    darwin*) # macOS
       execute "${scriptPath}/../../Make/macOS/generate"
       ;;
     *)

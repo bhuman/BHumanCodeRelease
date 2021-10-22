@@ -21,7 +21,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -112,7 +112,7 @@ typedef struct _snd_timer_tread {
 /** global timer - system */
 #define SND_TIMER_GLOBAL_SYSTEM 0
 /** global timer - RTC */
-#define SND_TIMER_GLOBAL_RTC 	1
+#define SND_TIMER_GLOBAL_RTC	1	/* Obsoleted, due to enough legacy. */
 /** global timer - HPET */
 #define SND_TIMER_GLOBAL_HPET	2
 /** global timer - HRTIMER */

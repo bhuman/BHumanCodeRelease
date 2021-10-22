@@ -1,10 +1,17 @@
 #pragma once
 
 #include "Representations/Configuration/IMUCalibration.h"
-#include "Representations/Configuration/GyroOffset.h"
+#include "Representations/Configuration/FootOffset.h"
+#include "Representations/Configuration/FootSoleRotationCalibration.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/Sensing/FootSupport.h"
 #include "Representations/Sensing/GroundContactState.h"
+#include "Representations/Sensing/GyroState.h"
+#include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/RobotModel.h"
 #include "Tools/Math/UnscentedKalmanFilter.h"
 #include "Tools/Module/Module.h"
 #include "Tools/RingBufferWithSum.h"
@@ -13,18 +20,32 @@ MODULE(InertialDataProvider,
 {,
   USES(GyroOffset),
   USES(MotionInfo),
+  USES(FootOffset),
+  REQUIRES(FootSupport),
+  REQUIRES(FootSoleRotationCalibration),
+  REQUIRES(FrameInfo),
   REQUIRES(GroundContactState),
+  REQUIRES(GyroState),
   REQUIRES(InertialSensorData),
   REQUIRES(IMUCalibration),
+  REQUIRES(MotionRequest),
+  REQUIRES(RobotModel),
   PROVIDES(InertialData),
-  DEFINES_PARAMETERS(
+  LOADS_PARAMETERS(
   {,
-    (Vector3a)(Vector3a::Constant(0.03_deg)) gyroDeviation, // Noise of the gyro in °/s / sqrt(Hz).
-    (Vector3f)(10.f, 10.f, 10.f) accDeviation,
-    (Vector3f)(30.f, 30.f, 30.f) accDeviationWhileWalking,
-    (Vector3f)(10.f, 10.f, 10.f) accDeviationFactor,
-    (Vector3f)(3.f, 3.f, 3.f) accDynamicFilterDeviation,
-    (float)(0.1f) maxMeanSquaredDeviation,
+    (Vector3a) gyroDeviation, // Noise of the gyro in °/s / sqrt(Hz). Needs to be multiplicated with the square root of the frequency the imu provides new data.
+    (Vector3f) accDeviation,
+    (Vector3f) accDeviationWhileWalking,
+    (Vector3f) accDeviationWhileStanding,
+    (Vector3f) accDeviationFactor,
+    (float) maxMeanSquaredDeviation,
+
+    // Parameters for the filter stabilization with the foot plane
+    (int) maxTimeSinceForwardAndBackwardPressure,
+    (unsigned) minTimeForLastSupportSwitch,
+    (unsigned) maxTimeForLastSupportSwitch,
+    (float) minGroundContactPointsDistance,
+    (Angle) maxAllowedFeetPlaneXRotation,
   }),
 });
 
@@ -47,20 +68,17 @@ private:
 
   UKFM<State> ukf = UKFM<State>(State());
 
-  UKF<3> filteredAccUKF = UKF<3>(Vector3f::Zero());
-
   Vector2a lastRawAngle = Vector2a::Zero();
   Vector3f lastAccelerometerMeasurement = Vector3f::Zero();
   bool hadAccelerometerMeasurement = false;
 
   RingBufferWithSum<float, 50> accelerometerLengths;
   float gravity = Constants::g_1000;
+  bool hadXAccUpdate = false;
 
   void update(InertialData& inertialData) override;
 
-  void processAccelerometer(const Vector3f& acc);
+  void processAccelerometer(const Vector3f& acc, const bool isAccBasedOnGroundContactPoints, const bool isAccXMeasured);
 
   void processGyroscope(const Vector3a& gyro);
-
-  void filterAcc(InertialData& id);
 };

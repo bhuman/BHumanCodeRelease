@@ -392,7 +392,7 @@ protected:
    * Writes a 'end of line' to a stream.
    * @param stream the stream to write on.
    */
-  void writeEndL(PhysicalOutStream& stream) override {}
+  void writeEndL(PhysicalOutStream& stream) override;
 
   /**
    * The function writes a number of bytes into the stream.
@@ -405,6 +405,8 @@ protected:
     stream.writeToStream(p, size);
   }
 };
+
+inline void OutBinary::writeEndL(PhysicalOutStream&) {}
 
 /**
  * @class OutText
@@ -675,13 +677,10 @@ public:
   virtual bool exists() const;
 
   /**
-   * The function returns the full path of the file.
-   * @return The full path name actually used or the file searched for
-   *         if it was not found. If the file was opened, the path can
-   *         still be relative to the current directory if the B-Human
-   *         directory was specified this way.
+   * The function gives access to the underlying File object.
+   * @return The address of the File object or nullptr if it does not exist.
    */
-  std::string getFullName() const;
+  File* getFile() {return stream;}
 
 protected:
   /**

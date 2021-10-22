@@ -14,6 +14,7 @@ bool RobotCommand::execute(Context& context, const std::vector<std::string>& par
   if(!preExecution(context, params))
     return false;
 
+  bool status = true;
   for(std::vector<Robot*>::const_iterator robot = selectedRobots.begin();
       robot != selectedRobots.end(); robot++)
   {
@@ -28,8 +29,7 @@ bool RobotCommand::execute(Context& context, const std::vector<std::string>& par
     if(task)
       context.executeDetached(task);
   }
-  context.waitForChildren();
-  status &= context.getStatus();
+  status &= context.waitForChildren();
 
-  return postExecution(context, params);
+  return status & postExecution(context, params);
 }

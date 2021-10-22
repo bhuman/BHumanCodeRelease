@@ -17,32 +17,6 @@
 namespace IISC
 {
   /**
-   * Calculates the in-image-radius of the ball, assuming the given point is the in-image center of the ball.
-   *
-   * @param center, point on image
-   * @param theCameraInfo
-   * @param theCameraMatrix
-   * @param theBallSpecification
-   * @return the in-image-radius of the ball in pixel
-   *      error case: -1
-   */
-  float getImageBallRadiusByCenter(const Vector2f& center,
-                                   const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification);
-
-  /**
-   * Calculates the in-image-radius of the ball that is directly above the given start point.
-   *
-   * @param start, point on image
-   * @param theCameraInfo
-   * @param theCameraMatrix
-   * @param theBallSpecification
-   * @return the in-image-radius of the ball in pixel
-   *      error case: -1
-   */
-  float getImageBallRadiusByLowestPoint(const Vector2f& start,
-                                        const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatix, const BallSpecification& theBallSpecification);
-
-  /**
    * Calculates how much of the ball "is seen" (in percent) of the theoretical in-image-vertical size of the ball
    * according to the given greenEdge and assuming the given center is the in-image center of the ball.
    *
@@ -86,20 +60,6 @@ namespace IISC
    */
   float getImageLineDiameterByLowestPoint(const Vector2f& start,
                                           const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions);
-
-  /**
-   * calculates the in-image-horizontal size of the goal post according to the given
-   * image point that is used as the lowest, middle point that is seen.
-   *
-   * @param middle, point in image (lowest, middle seen point of the goal post)
-   * @param theCameraInfo
-   * @param theCameraMatrix
-   * @param theFieldDimensions
-   * @return the in-image-size in pixel
-   *     error case: -1
-   */
-  float getImageGoalPostFootWidthDiameterByFootMiddlePoint(const Vector2f& midlle,
-      const CameraInfo& theCameraInfo, const CameraMatrix& theCameraMatrix, const FieldDimensions& theFieldDimensions);
 
   /**
    * Calculates the in-image-vertical size of the penalty mark according to the given

@@ -40,32 +40,35 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
   updateBall(ballDropInModel);
   updateGameControllerData(ballDropInModel);
 
+  if(useOutPosition && theGameInfo.setPlay == SET_PLAY_NONE && theFrameInfo.getTimeSince(ballDropInModel.lastTimeWhenBallOutWasObserved) > useOutPositionTimeout)
+    useOutPosition = false;
+
   const bool outLeft = (useOutPosition ? ballDropInModel.outPosition.y() : predictedOutPosition.y()) >= 0.f;
 
   switch(ballDropInModel.dropInType)
   {
-    case BallDropInModel::goalFreeKick:
+    case BallDropInModel::goalKick:
       ballDropInModel.dropInPositions.emplace_back(
-        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark,
-        outLeft ? theFieldDimensions.yPosLeftPenaltyArea : theFieldDimensions.yPosRightPenaltyArea);
+        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentGoalArea : theFieldDimensions.xPosOwnGoalArea,
+        outLeft ? theFieldDimensions.yPosLeftGoalArea : theFieldDimensions.yPosRightGoalArea);
       ballDropInModel.dropInPositions.emplace_back(
-        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentPenaltyMark : theFieldDimensions.xPosOwnPenaltyMark,
-        outLeft ? theFieldDimensions.yPosRightPenaltyArea : theFieldDimensions.yPosLeftPenaltyArea);
-      ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK;
+        ownTeamTouchedLast ? theFieldDimensions.xPosOpponentGoalArea : theFieldDimensions.xPosOwnGoalArea,
+        outLeft ? theFieldDimensions.yPosRightGoalArea : theFieldDimensions.yPosLeftGoalArea);
+      ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_GOAL_KICK;
       break;
     case BallDropInModel::cornerKick:
       ballDropInModel.dropInPositions.emplace_back(
-        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundline : theFieldDimensions.xPosOpponentGroundline,
+        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundLine : theFieldDimensions.xPosOpponentGroundLine,
         outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
       ballDropInModel.dropInPositions.emplace_back(
-        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundline : theFieldDimensions.xPosOpponentGroundline,
+        ownTeamTouchedLast ? theFieldDimensions.xPosOwnGroundLine : theFieldDimensions.xPosOpponentGroundLine,
         outLeft ? theFieldDimensions.yPosRightSideline : theFieldDimensions.yPosLeftSideline);
       ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_CORNER_KICK;
       break;
     case BallDropInModel::kickIn:
       ballDropInModel.dropInPositions.emplace_back(
         clip(useOutPosition ? ballDropInModel.outPosition.x() : predictedOutPosition.x(),
-             theFieldDimensions.xPosOwnGroundline, theFieldDimensions.xPosOpponentGroundline),
+             theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.xPosOpponentGroundLine),
         outLeft ? theFieldDimensions.yPosLeftSideline : theFieldDimensions.yPosRightSideline);
       ballDropInModel.isValid = useOutPosition || theGameInfo.setPlay == SET_PLAY_KICK_IN;
       break;
@@ -79,9 +82,9 @@ void BallDropInLocator::update(BallDropInModel& ballDropInModel)
 void BallDropInLocator::updateTouchPositions()
 {
   // When entering a ball replacing free kick, nothing should depend on old events anymore.
-  if((theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK) ||
-     (theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK) ||
-     (theCognitionStateChanges.lastSetPlay != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN))
+  if((theExtendedGameInfo.setPlayLastFrame != SET_PLAY_GOAL_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_KICK) ||
+     (theExtendedGameInfo.setPlayLastFrame != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK) ||
+     (theExtendedGameInfo.setPlayLastFrame != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN))
   {
     for(unsigned int i = 0; i < numOfTouchedBys; ++i)
       lastTouchEvents[i].timestamp = 0;
@@ -143,13 +146,13 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
       const bool movingToOpponent = theTeamBallModel.velocity.x() > 0.f;
       const float offset = theFieldDimensions.fieldLinesWidth * 0.5f + theBallSpecification.radius;
       const Geometry::Line sideline(Vector2f(0.f, movingToLeft ? (theFieldDimensions.yPosLeftSideline + offset) : (theFieldDimensions.yPosRightSideline - offset)), Vector2f(1.f, 0.f));
-      const Geometry::Line groundline(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGroundline + offset) : (theFieldDimensions.xPosOwnGroundline - offset), 0.f), Vector2f(0.f, 1.f));
+      const Geometry::Line groundLine(Vector2f(movingToOpponent ? (theFieldDimensions.xPosOpponentGroundLine + offset) : (theFieldDimensions.xPosOwnGroundLine - offset), 0.f), Vector2f(0.f, 1.f));
       const Geometry::Line ballDirection(theTeamBallModel.position, theTeamBallModel.velocity);
       Vector2f intersection;
       if(Geometry::getIntersectionOfLines(ballDirection, sideline, intersection) &&
-         intersection.x() >= theFieldDimensions.xPosOwnGroundline - offset && intersection.x() <= theFieldDimensions.xPosOpponentGroundline + offset)
+         intersection.x() >= theFieldDimensions.xPosOwnGroundLine - offset && intersection.x() <= theFieldDimensions.xPosOpponentGroundLine + offset)
         predictedOutPosition = intersection;
-      else if(Geometry::getIntersectionOfLines(ballDirection, groundline, intersection) &&
+      else if(Geometry::getIntersectionOfLines(ballDirection, groundLine, intersection) &&
               intersection.y() >= theFieldDimensions.yPosRightSideline - offset && intersection.y() <= theFieldDimensions.yPosLeftSideline + offset)
         predictedOutPosition = intersection;
     }
@@ -167,7 +170,7 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
       if((theTeamBallModel.position.x() > 0.f == ownTeamTouchedLast) &&
          (theTeamBallModel.position.y() < theFieldDimensions.yPosLeftSideline) &&
          (theTeamBallModel.position.y() > theFieldDimensions.yPosRightSideline))
-        ballDropInModel.dropInType = BallDropInModel::goalFreeKick;
+        ballDropInModel.dropInType = BallDropInModel::goalKick;
       else if((theTeamBallModel.position.x() > 0.f != ownTeamTouchedLast) &&
               (theTeamBallModel.position.y() < theFieldDimensions.yPosLeftSideline) &&
               (theTeamBallModel.position.y() > theFieldDimensions.yPosRightSideline))
@@ -182,19 +185,19 @@ void BallDropInLocator::updateBall(BallDropInModel& ballDropInModel)
 
 void BallDropInLocator::updateGameControllerData(BallDropInModel& ballDropInModel)
 {
-  if(theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK)
+  if(theExtendedGameInfo.setPlayLastFrame != SET_PLAY_GOAL_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_KICK)
   {
     ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
-    ballDropInModel.dropInType = BallDropInModel::goalFreeKick;
+    ballDropInModel.dropInType = BallDropInModel::goalKick;
     ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
   }
-  else if(theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK)
+  else if(theExtendedGameInfo.setPlayLastFrame != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK)
   {
     ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
     ballDropInModel.dropInType = BallDropInModel::cornerKick;
     ballDropInModel.lastTimeWhenBallWentOut = theFrameInfo.time;
   }
-  else if(theCognitionStateChanges.lastSetPlay != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN)
+  else if(theExtendedGameInfo.setPlayLastFrame != SET_PLAY_KICK_IN && theGameInfo.setPlay == SET_PLAY_KICK_IN)
   {
     ownTeamTouchedLast = theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber;
     ballDropInModel.dropInType = BallDropInModel::kickIn;

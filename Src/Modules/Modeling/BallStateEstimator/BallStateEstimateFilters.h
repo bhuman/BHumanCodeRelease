@@ -76,19 +76,19 @@ public:
    * Every instance of a filter has to implement this function for getting the ball estimate position
    * @return The position of the ball (on the field, relative to the robot)
    */
-  const virtual Vector2f getPosition() = 0;
+  const virtual Vector2f getPosition() const = 0;
 
   /**
    * Every instance of a filter has to implement this function for getting the ball estimate position uncertainty
    * @return The filter covariance reading the position estimate
    */
-  const virtual Matrix2f getPositionCovariance() = 0;
+  const virtual Matrix2f getPositionCovariance() const = 0;
 
   /**
    * Every instance of a filter can implement this function for getting the ball estimate velocity
    * @return The velocity of the ball (on the field, relative to the robot), (0,0) by default
    */
-  const virtual Vector2f getVelocity() { return Vector2f::Zero(); }
+  const virtual Vector2f getVelocity() const { return Vector2f::Zero(); }
 };
 
 /**
@@ -104,12 +104,12 @@ public:
   /** Returns the mean of the internal estimate
     * @return Yes, exactly.
     */
-  const Vector2f getPosition(){ return x; }
+  const Vector2f getPosition() const { return x; }
 
   /** Returns the covariance of the internal estimate
    * @return Yes, exactly.
    */
-  const Matrix2f getPositionCovariance() { return P; }
+  const Matrix2f getPositionCovariance() const { return P; }
 
   /** Moves hypothesis and updates mean and covariance accordingly */
   void motionUpdate(const Vector4f& squaredProcessCov,
@@ -195,17 +195,17 @@ public:
   /** Returns the upper part of the mean of the internal estimate
    * @return Yes, exactly.
    */
-  const Vector2f getPosition() { return x.topRows(2); }
+  const Vector2f getPosition() const { return x.topRows(2); }
 
   /** Returns the covariance of the internal estimate
    * @return Yes, exactly.
    */
-  const Matrix2f getPositionCovariance() { return P.topLeftCorner(2,2); }
+  const Matrix2f getPositionCovariance() const { return P.topLeftCorner(2,2); }
 
   /** Returns the lower part of the mean of the internal estimate
    * @return Yes, exactly.
    */
-  const Vector2f getVelocity() { return x.bottomRows(2); }
+  const Vector2f getVelocity() const { return x.bottomRows(2); }
 
   /** Moves hypothesis and updates mean and covariance accordingly */
   void motionUpdate(const Matrix4f& movingA, const Matrix4f& movingATransposed,

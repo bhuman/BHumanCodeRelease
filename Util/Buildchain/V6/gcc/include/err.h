@@ -1,5 +1,5 @@
 /* 4.4BSD utility functions for error messages.
-   Copyright (C) 1995-2019 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_ERR_H
 #define	_ERR_H	1
@@ -51,6 +51,10 @@ extern void errx (int __status, const char *__format, ...)
      __attribute__ ((__noreturn__, __format__ (__printf__, 2, 3)));
 extern void verrx (int __status, const char *, __gnuc_va_list)
      __attribute__ ((__noreturn__, __format__ (__printf__, 2, 0)));
+
+#ifdef __LDBL_COMPAT
+# include <bits/err-ldbl.h>
+#endif
 
 __END_DECLS
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#if !defined LINUX || defined USEPCH
 #include "Tools/Math/Eigen.h"
 
 #include "Tools/Boundary.h"
@@ -15,4 +14,3 @@
 #include <algorithm>
 #include <list>
 #include <sstream>
-#endif

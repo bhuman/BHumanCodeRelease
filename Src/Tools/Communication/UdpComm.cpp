@@ -321,7 +321,7 @@ std::string UdpComm::getWifiBroadcastAddress()
   ifaddrs* ifa = nullptr;
 
   //determine ip address
-  getifaddrs(&ifAddrStruct);
+  VERIFY(!getifaddrs(&ifAddrStruct));
   for(ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
   {
     // manpage getifaddrs    // check it is IP4
@@ -337,35 +337,13 @@ std::string UdpComm::getWifiBroadcastAddress()
         in_addr bcast_addr;
         bcast_addr.s_addr = bcastAddr;
 
-        inet_ntop(AF_INET, &bcast_addr, addressBuffer, INET_ADDRSTRLEN);
+        VERIFY(inet_ntop(AF_INET, &bcast_addr, addressBuffer, INET_ADDRSTRLEN) == addressBuffer);
         wifiAddress = std::string(&addressBuffer[0]);
         break;
       }
     }
   }
+  freeifaddrs(ifAddrStruct);
 #endif
   return wifiAddress;
-}
-
-unsigned char UdpComm::getLastByteOfIP()
-{
-#ifdef TARGET_ROBOT
-  ifaddrs* ifAddrStruct = nullptr;
-  ifaddrs* ifa = nullptr;
-
-  getifaddrs(&ifAddrStruct);
-  for(ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
-  {
-    if(ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET)
-    {
-      std::string interfaceName(ifa->ifa_name);
-      if(interfaceName.find("wlan") != std::string::npos)
-      {
-        in_addr_t addr = reinterpret_cast<sockaddr_in*>(ifa->ifa_addr)->sin_addr.s_addr;
-        return static_cast<unsigned char>(addr >> 24); // Because NetworkByteOrder
-      }
-    }
-  }
-#endif
-  return 255;
 }

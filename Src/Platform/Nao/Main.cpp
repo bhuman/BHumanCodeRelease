@@ -32,17 +32,17 @@ static bool run = true;
 static pthread_t mainThread;
 static bool shutdownNAO = false;
 
-static void bhumanStart(const std::string& name)
+static void bhumanStart(const Settings& settings)
 {
-  fprintf(stderr, "BHuman: Start.\n");
+  fprintf(stderr, "B-Human: Start.\n");
 
-  robot = new Robot(name);
+  robot = new Robot(settings, std::string());
   robot->start();
 }
 
 static void bhumanStop()
 {
-  fprintf(stderr, "BHuman: Stop.\n");
+  fprintf(stderr, "B-Human: Stop.\n");
   robot->announceStop();
   robot->stop();
   delete robot;
@@ -64,7 +64,7 @@ static void sighandlerShutdown(int sig)
   }
 }
 
-static void sighandlerRedirect(int sig)
+static void sighandlerRedirect(int)
 {
   run = false;
 }
@@ -159,8 +159,8 @@ static void sitDown(bool ok)
                    },
 
                    // Ignore ints and strings
-                   [](const std::string& key, const unsigned char*) {},
-                   [](const std::string& key, const unsigned char* p, size_t size) {});
+                   [](const std::string&, const unsigned char*) {},
+                   [](const std::string&, const unsigned char*, size_t) {});
 
     // If sitting down is required, interpolate from start angles to target angles
     if(sitDownRequired)
@@ -238,7 +238,8 @@ static std::string getBodyName(const std::string& bodyId)
         bodyName = robot.name;
         return bodyName;
       }
-    fprintf(stderr, "Could not find bodyName in robots.cfg! BodyId: %s\n", bodyId.c_str());
+    fprintf(stderr, "Could not find bodyName in robots.cfg! BodyId: %s\nAssuming \"Default\".\n", bodyId.c_str());
+    bodyName = "Default";
   }
   return bodyName;
 }
@@ -286,73 +287,40 @@ int main(int argc, char* argv[])
     {
       for(;;)
       {
-        // create pipe for logging
-        int stdoutPipe[2];
-        int stderrPipe[2];
-        bool pipeReady = true;
-
-        if(pipe(stdoutPipe) == -1 || pipe(stderrPipe) == -1)
-        {
-          fprintf(stderr, "B-Human: Error while creating pipes for logging. All logs will be printed on console only! \n");
-          pipeReady = false;
-        }
-
         bhumanPid = fork();
         if(bhumanPid == -1)
           exit(EXIT_FAILURE);
-        if(bhumanPid != 0)
-        {
-          int status;
-          signal(SIGTERM, sighandlerRedirect);
-          signal(SIGINT, sighandlerRedirect);
-          if(waitpid(bhumanPid, &status, 0) != bhumanPid)
-          {
-            exit(EXIT_FAILURE);
-          }
-          signal(SIGTERM, SIG_DFL);
-          signal(SIGINT, SIG_DFL);
-
-          if(pipeReady)
-          {
-            // close unused write end
-            close(stdoutPipe[1]);
-            close(stderrPipe[1]);
-
-            dup2(STDOUT_FILENO, stdoutPipe[0]); // redirect out-pipe to stdout
-            dup2(STDERR_FILENO, stderrPipe[0]); // redirect err-pipe to stderr
-          }
-
-          // detect requested or normal exit
-          bool normalExit = !run || (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
-
-          // dump trace and assert trace
-          if(!normalExit)
-          {
-            // Wait 100 ms before attempting to sitdown. Otherwise, LoLA might send an invalid packet.
-            usleep(100000);
-
-            // Acquire static data, e.g. about types, because sitDown needs Joints::Joint
-            FunctionList::execute();
-            sitDown(false);
-            Assert::logDump(WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
-          }
-
-          // quit
-          exit(WIFEXITED(status) && normalExit ? WEXITSTATUS(status) : EXIT_FAILURE);
-        }
-        else
-        {
-          if(pipeReady)
-          {
-            // close unused read end
-            close(stdoutPipe[0]);
-            close(stderrPipe[0]);
-
-            dup2(STDOUT_FILENO, stdoutPipe[1]); // redirect stdout to out-pipe
-            dup2(STDERR_FILENO, stderrPipe[1]); // redirect stderr to err-pipe
-          }
+        else if(bhumanPid == 0)
           break;
+
+        int status;
+        signal(SIGTERM, sighandlerRedirect);
+        signal(SIGINT, sighandlerRedirect);
+        if(waitpid(bhumanPid, &status, 0) != bhumanPid)
+        {
+          exit(EXIT_FAILURE);
         }
+        signal(SIGTERM, SIG_DFL);
+        signal(SIGINT, SIG_DFL);
+
+        // detect requested or normal exit
+        bool normalExit = !run || (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
+
+        // dump trace and assert trace
+        if(!normalExit)
+        {
+          // Wait 100 ms before attempting to sitdown. Otherwise, LoLA might send an invalid packet.
+          usleep(100000);
+
+          sitDown(false);
+
+          // Dump to file first, because writing to stderr may fail for various reasons.
+          Assert::logDump(false, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
+          Assert::logDump(true, WIFSIGNALED(status) ? int(WTERMSIG(status)) : 0);
+        }
+
+        // quit
+        exit(WIFEXITED(status) && normalExit ? WEXITSTATUS(status) : EXIT_FAILURE);
       }
     }
 
@@ -361,32 +329,30 @@ int main(int argc, char* argv[])
     // Acquire static data, e.g. about types
     FunctionList::execute();
 
-    // load first settings instance
-    Settings::loaded = Settings::settings.load();
-    Settings::settings.headName = SystemCall::getHostName();
-    Settings::settings.bodyName = getBodyName(getBodyId());
-
-    if(!Settings::loaded || Settings::settings.bodyName.empty())
+    Settings settings(SystemCall::getHostName(), getBodyName(getBodyId()));
+    if(settings.playerNumber < 0 || settings.bodyName.empty())
       return EXIT_FAILURE;
 
     // print status information
-    if(Settings::settings.headName == Settings::settings.bodyName)
-      printf("Hi, I am %s.\n", Settings::settings.headName.c_str());
+    if(settings.headName == settings.bodyName)
+      printf("Hi, I am %s.\n", settings.headName.c_str());
     else
-      printf("Hi, I am %s (using %s's body).\n", Settings::settings.headName.c_str(), Settings::settings.bodyName.c_str());
-    printf("teamNumber %d\n", Settings::settings.teamNumber);
-    printf("teamPort %d\n", Settings::settings.teamPort);
-    printf("teamColor %s\n", TypeRegistry::getEnumName(Settings::settings.teamColor));
-    printf("playerNumber %d\n", Settings::settings.playerNumber);
-    printf("location %s\n", Settings::settings.location.c_str());
-    printf("scenario %s\n", Settings::settings.scenario.c_str());
-    printf("magicNumber %d\n", Settings::settings.magicNumber);
+      printf("Hi, I am %s (using %s's body).\n", settings.headName.c_str(), settings.bodyName.c_str());
+    printf("teamNumber %d\n", settings.teamNumber);
+    printf("teamPort %d\n", settings.teamPort);
+    printf("teamColor %s\n", TypeRegistry::getEnumName(settings.teamColor));
+    printf("playerNumber %d\n", settings.playerNumber);
+    printf("location %s\n", settings.location.c_str());
+    printf("scenario %s\n", settings.scenario.c_str());
+    printf("magicNumber %d\n", settings.magicNumber);
 
-    // register signal handler for strg+c and termination signal
+    // register signal handler for ctrl+c and termination signal
     signal(SIGTERM, sighandlerShutdown);
     signal(SIGINT, sighandlerShutdown);
 
-    bhumanStart(Settings::settings.headName);
+    bhumanStart(settings);
+
+    // settings go out of scope here, but everything that needs it later makes a copy.
   }
 
   while(run)
@@ -395,7 +361,7 @@ int main(int argc, char* argv[])
   bhumanStop();
   sitDown(true);
   if(shutdownNAO)
-    static_cast<void>(!system("/home/nao/bin/halt &"));
+    static_cast<void>(!system("sudo systemctl poweroff &"));
 
   return EXIT_SUCCESS;
 }

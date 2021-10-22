@@ -362,7 +362,7 @@ bool KickViewGLWidget::clickControlPoint(int x, int y)
             win1 = width - 20.f - width / 3.0f + cpWindow1[k].x() * mini_window_width;
             win2 = mini_window_height * 2.f + 55.0f - (cpWindow2[k].y() - yRange.min) * scaleFactorY;
             localDist = std::sqrt((x - win1) * (x - win1) + (y - win2) * (y - win2));
-            if(localDist < 10.0)
+            if(localDist < 10.0f)
             {
               widget.selectedPoint.pointNumber = k;
               moveViewOfViewDragYP = true;
@@ -391,7 +391,7 @@ void KickViewGLWidget::gluUnProjectClick(int x, int y, Vector3f& vecFar, Vector3
   glPushMatrix();
   setMatrix(kickView.robot->getPosition(), originRot);
   glTranslatef(0.f, 0.f, -0.085f);
-  glScaled(0.001, 0.001, 0.001);
+  glScalef(0.001f, 0.001f, 0.001f);
 
   GLint viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
@@ -531,7 +531,7 @@ void KickViewGLWidget::drawBezierCurves(const int& phaseNumber)
                           RotationMatrix::aroundZ(cubePoint[i][j].z()) *
                           RotationMatrix::aroundY(cubePoint[i][j].y()) *
                           RotationMatrix::aroundX(cubePoint[i][j].x()) *
-                          Vector3f(-kickView.robotDimensions.lowerArmLength, 0., 0.);
+                          Vector3f(-kickView.robotDimensions.lowerArmLength, 0.f, 0.f);
       }
 
       if(i == Phase::numOfPoints - 1)
@@ -638,26 +638,26 @@ void KickViewGLWidget::drawBezierCurves(const int& phaseNumber)
 
     // draw left footRotation
     const Vector3f lDrawPos = RotationMatrix::aroundZ(positions[Phase::leftFootRot].z()) *
-                              RotationMatrix::aroundX(positions[Phase::leftFootRot].x()) * Vector3f(0., 150., 0.);
+                              RotationMatrix::aroundX(positions[Phase::leftFootRot].x()) * Vector3f(0.f, 150.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].x() + lDrawPos.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].y() + lDrawPos.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].z() + lDrawPos.z());
 
     const Vector3f lDrawPos2 = RotationMatrix::aroundZ(positions[Phase::leftFootRot].z()) *
-                               RotationMatrix::aroundY(positions[Phase::leftFootRot].y()) * Vector3f(150., 0., 0.);
+                               RotationMatrix::aroundY(positions[Phase::leftFootRot].y()) * Vector3f(150.f, 0.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].x() + lDrawPos2.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].y() + lDrawPos2.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftFootTra].z() + lDrawPos2.z());
 
     //draw right footRotation
     const Vector3f rDrawPos = RotationMatrix::aroundZ(positions[Phase::rightFootRot].z()) *
-                              RotationMatrix::aroundX(positions[Phase::rightFootRot].x()) * Vector3f(0., -150., 0.);
+                              RotationMatrix::aroundX(positions[Phase::rightFootRot].x()) * Vector3f(0.f, -150.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].x() + rDrawPos.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].y() + rDrawPos.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].z() + rDrawPos.z());
 
     const Vector3f rDrawPos2 = RotationMatrix::aroundZ(positions[Phase::rightFootRot].z()) *
-                               RotationMatrix::aroundY(positions[Phase::rightFootRot].y()) * Vector3f(150., 0., 0.);
+                               RotationMatrix::aroundY(positions[Phase::rightFootRot].y()) * Vector3f(150.f, 0.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].x() + rDrawPos2.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].y() + rDrawPos2.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightFootTra].z() + rDrawPos2.z());
@@ -682,7 +682,7 @@ void KickViewGLWidget::drawBezierCurves(const int& phaseNumber)
     const Vector3f lHDrawPos = RotationMatrix::aroundZ(positions[Phase::leftHandRot].z()) *
                                RotationMatrix::aroundY(positions[Phase::leftHandRot].y()) *
                                RotationMatrix::aroundX(positions[Phase::leftHandRot].x()) *
-                               Vector3f(-kickView.robotDimensions.lowerArmLength, 0., 0.);
+                               Vector3f(-kickView.robotDimensions.lowerArmLength, 0.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::leftArmTra].x() + lHDrawPos.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftArmTra].y() + lHDrawPos.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::leftArmTra].z() + lHDrawPos.z());
@@ -697,7 +697,7 @@ void KickViewGLWidget::drawBezierCurves(const int& phaseNumber)
     const Vector3f rHDrawPos = RotationMatrix::aroundZ(positions[Phase::rightHandRot].z()) *
                                RotationMatrix::aroundY(positions[Phase::rightHandRot].y()) *
                                RotationMatrix::aroundX(positions[Phase::rightHandRot].x()) *
-                               Vector3f(-kickView.robotDimensions.lowerArmLength, 0., 0.);
+                               Vector3f(-kickView.robotDimensions.lowerArmLength, 0.f, 0.f);
     glVertex3f(cubePoint[Phase::numOfPoints - 1][Phase::rightArmTra].x() + rHDrawPos.x(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightArmTra].y() + rHDrawPos.y(),
                cubePoint[Phase::numOfPoints - 1][Phase::rightArmTra].z() + rHDrawPos.z());
@@ -755,7 +755,7 @@ void KickViewGLWidget::drawArrow(const Vector3f& point, const Vector3f& rotation
   GLUquadric* quadric = gluNewQuadric();
   gluQuadricDrawStyle(quadric, GLU_FILL);
   gluCylinder(quadric, 0., 10., 15., 15., 15.);
-  glTranslated(0., 0., 15.);
+  glTranslatef(0.f, 0.f, 15.f);
   gluDisk(quadric, 0., 10., 15., 15.);
   gluDeleteQuadric(quadric);
   glPopMatrix();
@@ -823,27 +823,6 @@ void KickViewGLWidget::paintGL()
     }
   }
 
-  if(kickView.motionRequest.motion == MotionRequest::kick && widget.lastMotion != MotionRequest::kick)
-  {
-    for(int i = 0; i < Phase::numOfLimbs; i++)
-      reachedPositions[i].clear();
-  }
-  widget.lastMotion = kickView.motionRequest.motion;
-
-  if(kickView.motionRequest.motion == MotionRequest::kick && widget.reachedDraw)
-  {
-    Vector3f positions[Phase::numOfLimbs];
-
-    positions[Phase::leftFootTra] = KickViewMath::calculateFootPos(kickView.jointAngles, Joints::lHipYawPitch, kickView.robotDimensions).translation;
-    positions[Phase::rightFootTra] = KickViewMath::calculateFootPos(kickView.jointAngles, Joints::rHipYawPitch, kickView.robotDimensions).translation;
-
-    positions[Phase::leftArmTra] = KickViewMath::calculateHandPos(kickView.jointAngles, Joints::lShoulderPitch, kickView.robotDimensions).translation;
-    positions[Phase::rightArmTra] = KickViewMath::calculateHandPos(kickView.jointAngles, Joints::rShoulderPitch, kickView.robotDimensions).translation;
-
-    for(int i = 0; i < Phase::numOfLimbs; i++)
-      reachedPositions[i].push_back(positions[i]);
-  }
-
   //  Snap the Camera to Object
   Vector3f cameraPos, targetPos;
   renderer.getCamera(cameraPos.data(), targetPos.data());
@@ -883,28 +862,7 @@ void KickViewGLWidget::paintGL()
   glPushMatrix();
   setMatrix(kickView.robot->getPosition(), originRot);
   glTranslatef(0.f, 0.f, -0.085f);
-  glScaled(0.001, 0.001, 0.001);
-
-  if(widget.reachedDraw)
-  {
-    float ps;
-    glGetFloatv(GL_POINT_SIZE, &ps);
-    glPointSize(4);
-    glColor4f(1.f, 0.f, 1.f, 1.f);
-    glBegin(GL_POINTS);
-    for(int i = 0; i < Phase::numOfLimbs; i++)
-    {
-      if(!reachedPositions[i].empty())
-      {
-        for(unsigned int j = 0; j < reachedPositions[i].size(); ++j)
-        {
-          glVertex3d(reachedPositions[i][j].x(), reachedPositions[i][j].y(), reachedPositions[i][j].z());
-        }
-      }
-    }
-    glEnd();
-    glPointSize(ps);
-  }
+  glScalef(0.001f, 0.001f, 0.001f);
   if(widget.phaseDrawings)
     drawPhases();
   glPopMatrix();
@@ -1161,9 +1119,9 @@ void KickViewGLWidget::draw2dCurves(float minA, float minB, float maxA, float ma
 
   float tickA = std::floor(maxA - minA) / 10.0f;
   glLineWidth(1);
-  for(float w = std::ceil(minA / tickA) * tickA; w <= maxA + 0.01; w += tickA)
+  for(float w = std::ceil(minA / tickA) * tickA; w <= maxA + 0.01f; w += tickA)
   {
-    if(std::abs(w) > 0.001)  //don't draw zeroline twice
+    if(std::abs(w) > 0.001f)  //don't draw zeroline twice
     {
       glBegin(GL_LINES);
       glVertex2f(w + transA, minB + transB);
@@ -1186,10 +1144,10 @@ void KickViewGLWidget::draw2dCurves(float minA, float minB, float maxA, float ma
     renderText(minA + transA - 30.0f / scaleFactorA, transB, 0.0, QString::number(0), QFont("arial", 8));
   }
 
-  glLineWidth(1);
-  for(float h = std::ceil(minB / tickB) * tickB; h <= maxB + 0.01; h += tickB)
+  glLineWidth(1.f);
+  for(float h = std::ceil(minB / tickB) * tickB; h <= maxB + 0.01f; h += tickB)
   {
-    if(std::abs(h) > 0.001)  //don't draw zeroline twice
+    if(std::abs(h) > 0.001f)  //don't draw zeroline twice
     {
       glBegin(GL_LINES);
       glVertex2f(minA + transA, h + transB);
@@ -1200,8 +1158,8 @@ void KickViewGLWidget::draw2dCurves(float minA, float minB, float maxA, float ma
   }
 
   //draw controlPoints
-  glColor4f(1.0, 1.0, 1.0, 1.0);
-  glPointSize(10);
+  glColor4f(1.f, 1.f, 1.f, 1.f);
+  glPointSize(10.f);
   for(unsigned int k = 0; k < cp.size(); k++)
   {
     glBegin(GL_POINTS);
@@ -1358,85 +1316,9 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
     if(!moveViewOfViewDragXY && !moveViewOfViewDragXZ && !moveViewOfViewDragYZ && !moveViewOfViewDragXP && !moveViewOfViewDragYP && !moveViewOfViewDragZP)
     {
       p = parameters.phaseParameters[widget.selectedPoint.phaseNumber].controlPoints[widget.selectedPoint.limb][widget.selectedPoint.pointNumber];
-
-      /* This is not supported at this time
-      if(widget.selectedPoint.limb == Phase::leftFootRot)
-      {
-        if(widget.selectedPoint.xzRot)
-        {
-          Vector3f drawPos(0.f,150.f, 0.f);
-          drawPos.rotateX(p.x());
-          drawPos.rotateZ(p.z());
-          p = Vector3f(parameters.footOrigin.x() + drawPos.x(),parameters.footOrigin.y() + drawPos.y(), parameters.footOrigin.z() + drawPos.z());
-        }
-        else
-        {
-          Vector3f drawPos2(150.f, 0.f, 0.f);
-          drawPos2.rotateY(p.y());
-          drawPos2.rotateZ(p.z());
-          p = Vector3f(parameters.footOrigin.x() + drawPos2.x(), parameters.footOrigin.y() + drawPos2.y(), parameters.footOrigin.z() + drawPos2.z());
-        }
-      }
-
-      if(widget.selectedPoint.limb == Phase::rightFootRot)
-      {
-        if(widget.selectedPoint.xzRot)
-        {
-          Vector3f drawPos(0.f, -150.f, 0.f);
-          drawPos.rotateX(p.x());
-          drawPos.rotateZ(p.z());
-          p = Vector3f(parameters.footOrigin.x() + drawPos.x(), -parameters.footOrigin.y() + drawPos.y(), parameters.footOrigin.z() +drawPos.z());
-        }
-        else
-        {
-          Vector3f drawPos2(150.f, 0.f, 0.f);
-          drawPos2.rotateY(p.y());
-          drawPos2.rotateZ(p.z());
-          p = Vector3f(parameters.footOrigin.x() + drawPos2.x(), -parameters.footOrigin.y() + drawPos2.y(), parameters.footOrigin.z() + drawPos2.z());
-        }
-      }*/
-
       const Vector3f position = p;
-      if(KickViewMath::intersectRayAndPlane(vecNear, vecFar, position,
-                                            widget.dragPlane, planeIntersection))
-      {
+      if(KickViewMath::intersectRayAndPlane(vecNear, vecFar, position, widget.dragPlane, planeIntersection))
         translationVec = planeIntersection - position;
-        //this is buggy
-        /* if(widget.selectedPoint.limb == Phase::leftFootRot)
-         {
-           if(widget.selectedPoint.xzRot)
-           {
-             double temp = -sin((translationVec.x/150.));
-             translationVec.x() = sin((translationVec.z/150.));
-             translationVec.y() = 0.;
-             translationVec.z() = temp;
-           }
-           else
-           {
-             double temp = sin((translationVec.y/150.));
-             translationVec.x() = 0.;
-             translationVec.y() = -sin((translationVec.z/150.));
-             translationVec.z() = temp;
-           }
-         }
-         if(widget.selectedPoint.limb == Phase::rightFootRot)
-         {
-           if(widget.selectedPoint.xzRot)
-           {
-             double temp = -sin((translationVec.x/-150.));
-             translationVec.x() = sin((translationVec.z/-150.));
-             translationVec.y() = 0.;
-             translationVec.z() = temp;
-           }
-           else
-           {
-             double temp = sin((translationVec.y/150.));
-             translationVec.x() = 0.;
-             translationVec.y() = -sin((translationVec.z/150.));
-             translationVec.z() = temp;
-           }
-         }*/
-      }
     }
     else
     {
@@ -1471,36 +1353,36 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
       if(moveViewOfViewDragXY)
       {
         windowVec = Vector3f(((event->x() * devicePixelRatio() - (width - 20.f - width / 3.0f)) / scaleFactorX) + xRange.min,
-                             ((event->y() * devicePixelRatio() - mini_window_height - 20.0f) / -scaleFactorY) + yRange.min, 0.0);
+                             ((event->y() * devicePixelRatio() - mini_window_height - 20.0f) / -scaleFactorY) + yRange.min, 0.f);
         p.z() = 0.f;
       }
       if(moveViewOfViewDragXZ)
       {
         windowVec = Vector3f(((event->x() * devicePixelRatio() - (width - 20.f - width / 3.0f)) / scaleFactorX) + xRange.min,
-                             0.0, ((event->y() * devicePixelRatio() - mini_window_height * 2 - 55.0f) / -scaleFactorZ) + zRange.min);
+                             0.f, ((event->y() * devicePixelRatio() - mini_window_height * 2 - 55.0f) / -scaleFactorZ) + zRange.min);
         p.y() = 0.f;
       }
       if(moveViewOfViewDragYZ)
       {
-        windowVec = Vector3f(0.0, ((event->x() * devicePixelRatio() - (width - 20.f - width / 3.0f)) / scaleFactorY1) + yRange.min,
+        windowVec = Vector3f(0.f, ((event->x() * devicePixelRatio() - (width - 20.f - width / 3.0f)) / scaleFactorY1) + yRange.min,
                              ((event->y() * devicePixelRatio() - mini_window_height * 3 - 90.0f) / -scaleFactorZ) + zRange.min);
         p.x() = 0.f;
       }
       if(moveViewOfViewDragXP)
       {
-        windowVec = Vector3f(((event->y() * devicePixelRatio() - mini_window_height - 20.0f) / -scaleFactorX1) + xRange.min, 0.0, 0.0);
+        windowVec = Vector3f(((event->y() * devicePixelRatio() - mini_window_height - 20.0f) / -scaleFactorX1) + xRange.min, 0.f, 0.f);
         p.y() = 0.f;
         p.z() = 0.f;
       }
       if(moveViewOfViewDragYP)
       {
-        windowVec = Vector3f(0.0, ((event->y() * devicePixelRatio() - mini_window_height * 2 - 55.0f) / -scaleFactorY) + yRange.min, 0.0);
+        windowVec = Vector3f(0.f, ((event->y() * devicePixelRatio() - mini_window_height * 2 - 55.0f) / -scaleFactorY) + yRange.min, 0.f);
         p.x() = 0.f;
         p.z() = 0.f;
       }
       if(moveViewOfViewDragZP)
       {
-        windowVec = Vector3f(0.0, 0.0, ((event->y() * devicePixelRatio() - mini_window_height * 3 - 90.0f) / -scaleFactorZ) + zRange.min);
+        windowVec = Vector3f(0.f, 0.f, ((event->y() * devicePixelRatio() - mini_window_height * 3 - 90.0f) / -scaleFactorZ) + zRange.min);
         p.y() = 0.f;
         p.x() = 0.f;
       }
@@ -1570,8 +1452,6 @@ void KickViewGLWidget::mouseMoveEvent(QMouseEvent* event)
     if(widget.selectedPoint.phaseNumber > -1)
       widget.fillModelWithPhaseData(widget.selectedPoint.phaseNumber);
     event->accept();
-    if(widget.followMode)
-      widget.playMotion(widget.tabber->currentIndex());
     update();
   }
   else
@@ -1665,7 +1545,7 @@ void KickViewGLWidget::showPlane()
 
   glPushMatrix();
   setMatrix(kickView.robot->getPosition(), originRot);
-  glScaled(0.001, 0.001, 0.001);
+  glScalef(0.001f, 0.001f, 0.001f);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
   glColor4f(0.f, 0.5f, 0.12f, 0.6f);

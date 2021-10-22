@@ -51,8 +51,8 @@ private:
   {,
     (std::vector<float>) thighPoints,
     (std::vector<int>) thighIndex,
-    (std::vector<float>) shinePoints,
-    (std::vector<int>) shineIndex,
+    (std::vector<float>) shinPoints,
+    (std::vector<int>) shinIndex,
     (std::vector<float>) footPoints,
     (std::vector<int>) footIndex,
   });

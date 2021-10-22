@@ -10,6 +10,7 @@
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
+#include "Tools/Settings.h"
 
 REGISTER_EXECUTION_UNIT(Cognition)
 
@@ -18,7 +19,7 @@ thread_local bool Cognition::isUpper = false;
 Cognition::Cognition()
 : theSPLMessageHandler(inTeamMessages, outTeamMessage)
 {
-#ifdef TARGET_SIM
+#ifndef TARGET_ROBOT
   theSPLMessageHandler.startLocal(Global::getSettings().teamPort, static_cast<unsigned>(Global::getSettings().playerNumber));
 #else
   std::string bcastAddr = UdpComm::getWifiBroadcastAddress();
@@ -37,7 +38,7 @@ Cognition::~Cognition()
 bool Cognition::beforeFrame()
 {
   // read from team comm udp socket
-  static_cast<void>(theSPLMessageHandler.receive());
+  theSPLMessageHandler.receive();
 
   const FrameInfo* lowerFrameInfo = Blackboard::getInstance().exists("LowerFrameInfo")
                                     ? static_cast<FrameInfo*>(const_cast<Streamable*>(&Blackboard::getInstance()["LowerFrameInfo"]))

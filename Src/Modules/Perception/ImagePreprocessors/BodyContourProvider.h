@@ -65,5 +65,5 @@ private:
    *             body parts for right body parts.
    * @param bodyContour The 2-D contour in image coordinates the 3-D contour is added to.
    */
-  void add(const Pose3f& origin, const std::vector<Vector3f>& c, float sign, BodyContour& bodyContour);
+  void add(const Pose3f& origin, const std::vector<Vector3f>& c, float sign, BodyContour& bodyContour) const;
 };

@@ -302,7 +302,7 @@ private:
   char* elements; /**< Contains all elements of this debug drawing */
   int firstTip = -1; /**< The index of the first tip. */
   int lastOrigin = -1; /** The index of the last origin. */
-  int firstSpot = -1; /**< The index of the last origin. */
+  int firstSpot = -1; /**< The index of the first spot. */
 
   /**
    * The function reserves enough space in the element buffer to store a new element.

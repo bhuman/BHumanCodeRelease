@@ -38,43 +38,18 @@ namespace Drawings
   };
 };
 
-/**
- * Singleton drawing manager class
- */
 class DrawingManager
 {
 public:
-  class Drawing
+  struct Drawing
   {
-  public:
     char id;
     char type;
   };
 
-  std::unordered_map<const char*, Drawing> drawings;
-
-private:
-  std::unordered_map<std::string, const char*> strings;
-  std::unordered_map<const char*, char> types;
-
-  std::unordered_map<char, const char*> drawingsById;
-  std::unordered_map<char, const char*> typesById;
-
-  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
-  friend class RobotConsole;
-  friend class DrawingManager3D;
-  friend In& operator>>(In& stream, DrawingManager&);
-  friend Out& operator<<(Out& stream, const DrawingManager&);
-
-  /**
-   * Default constructor.
-   * No other instance of this class is allowed except the one accessible via Global::getDrawingManager.
-   * Therefore the constructor is private.
-   */
+  /** Constructor. */
   DrawingManager() = default;
   DrawingManager(const DrawingManager&) = delete;
-
-public:
   void clear();
   void addDrawingId(const char* name, const char* typeName);
   char getDrawingId(const char* name) const;
@@ -82,8 +57,20 @@ public:
   const char* getDrawingName(char id) const;
   const char* getString(const std::string& string);
 
+  std::unordered_map<const char*, Drawing> drawings;
+
 private:
   const char* getTypeName(char id) const;
+
+  std::unordered_map<std::string, const char*> strings;
+  std::unordered_map<const char*, char> types;
+
+  std::unordered_map<char, const char*> drawingsById;
+  std::unordered_map<char, const char*> typesById;
+
+  friend class DrawingManager3D;
+  friend In& operator>>(In& stream, DrawingManager&);
+  friend Out& operator<<(Out& stream, const DrawingManager&);
 };
 
 In& operator>>(In& stream, DrawingManager&);
@@ -521,7 +508,7 @@ inline const char* DrawingManager::getTypeName(char id) const
  * @param color The color of the text
  * @param txt The text (streaming is possible)
  */
-#define DRAWTEXT(id, x, y, fontSize, color, txt) \
+#define DRAW_TEXT(id, x, y, fontSize, color, txt) \
   do \
     COMPLEX_DRAWING(id) \
     { \
@@ -818,7 +805,7 @@ inline const char* DrawingManager::getTypeName(char id) const
 #define RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor) static_cast<void>(0)
 #define FILLED_RECTANGLE(id, x1, y1, x2, y2, penWidth, penStyle, penColor, brushStyle, brushColor) static_cast<void>(0)
 #define CROSS(id, x, y, size, penWidth, penStyle, penColor) static_cast<void>(0)
-#define DRAWTEXT(id, x, y, fontSize, color, txt) static_cast<void>(0)
+#define DRAW_TEXT(id, x, y, fontSize, color, txt) static_cast<void>(0)
 #define SPOT(id, x1, y1, x2, y2, action) static_cast<void>(0)
 #define TIP(id, x, y, radius, text) static_cast<void>(0)
 #define THREAD(id, threadName) static_cast<void>(0)

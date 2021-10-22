@@ -2,271 +2,303 @@
  * @file ArmContactModelProvider.cpp
  *
  * Implementation of class ArmContactModelProvider.
- * @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>
- * @author <a href="mailto:simont@informatik.uni-bremen.de">Simon Taddiken</a>
- * @author <a href="mailto:arneboe@informatik.uni-bremen.de">Arne Böckmann</a>
+ * @author <a href="mailto:lrust@uni-bremen.de">Lukas Rust</a>
  */
 
 #include "ArmContactModelProvider.h"
 #include "Platform/SystemCall.h"
+#include "Tools/Debugging/Annotation.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/Constants.h"
 #include <algorithm>
-
-/** Scale factor for debug drawings */
-#define SCALE 20
+#include <cmath>
 
 MAKE_MODULE(ArmContactModelProvider, sensing);
 
-void ArmContactModelProvider::checkArm(bool left, float factor)
+void ArmContactModelProvider::decideArmMovementDone(ArmContactModel& model)
 {
-  Vector2f retVal;
-  /* Calculate arm diffs */
-  struct ArmAngles angles = angleBuffer[frameDelay];
-  retVal.x() = left
-               ? angles.leftX - theJointAngles.angles[Joints::lShoulderPitch]
-               : angles.rightX - theJointAngles.angles[Joints::rShoulderPitch];
-  retVal.y() = left
-               ? theJointAngles.angles[Joints::lShoulderRoll] - angles.leftY
-               :  angles.rightY - theJointAngles.angles[Joints::rShoulderRoll];
-  retVal *= factor;
-
-  if(left)
+  for(int arm = 0; arm < 2; arm++)
   {
-    ARROW("module:ArmContactModelProvider:armContact", 0, 0, -(toDegrees(retVal.y()) * SCALE), toDegrees(retVal.x()) * SCALE, 20, Drawings::solidPen, ColorRGBA::blue);
-    errorBuffer[0].push_front(retVal);
+    bool change = model.status[arm].armOnBack != armOnBackLastFrame[arm];
+    if(change || model.status[arm].armOnBack)
+      adjustingHandCounter[arm] = 1;
+    if(adjustingHandCounter[arm] < 150 && adjustingHandCounter[arm] > 0)
+    {
+      adjustingHand[arm] = true;
+      adjustingHandCounter[arm]++;
+    }
+    if(adjustingHandCounter[arm] >= 150)
+    {
+      adjustingHand[arm] = false;
+      adjustingHandCounter[arm] = 0;
+    }
+    armOnBackLastFrame[arm] = model.status[arm].armOnBack;
+  }
+}
+Vector3f ArmContactModelProvider::calculateActualHandPosition(bool left)
+{
+  RobotModel actual(theJointAngles, theRobotDimensions, theMassCalibration);
+  if(left)
+    return actual.limbs[Limbs::wristLeft].translation;
+  else
+    return actual.limbs[Limbs::wristRight].translation;
+}
+
+Vector2f ArmContactModelProvider::calcXOffsets(bool armOnBack)
+{
+  Vector2f result;
+  if(armOnBack)
+  {
+    result[0] = -3.f;
+    result[1] = -3.f;
   }
   else
   {
-    ARROW("module:ArmContactModelProvider:armContact", 0, 0, (toDegrees(retVal.y()) * SCALE), toDegrees(retVal.x()) * SCALE, 20, Drawings::solidPen, ColorRGBA::blue);
-    errorBuffer[1].push_front(retVal);
+    result[0] = 0.f;
+    result[1] = 0.f;
+  }
+  return result;
+}
+
+Vector2f ArmContactModelProvider::calcYOffsets(bool armOnBack)
+{
+  Vector2f result;
+  bool moving = std::abs(theMotionInfo.speed.translation.x()) > 0.03 ||
+                std::abs(theMotionInfo.speed.translation.y()) > 0.03 ||
+                std::abs(theMotionInfo.speed.rotation) >= 1_deg;
+  if(!armOnBack && !moving)
+  {
+    result[0] = 3.f;
+    result[1] = -3.f;
+  }
+  if(!armOnBack && moving)
+  {
+    result[0] = 1.5f;
+    result[1] = -1.5f;
+  }
+  if(armOnBack)
+  {
+    result[0] = -3.f;
+    result[1] = 3.f;
+  }
+  return result;
+}
+
+void ArmContactModelProvider::determinePushDirection(ArmContactModel& model)
+{
+  for(int arm = 0; arm < 2; arm++)
+  {
+    float xErrorThreshold;
+    float yErrorThreshold;
+    calcWalkDirectionFactor();
+    if(model.status[arm].armOnBack)
+    {
+      xErrorThreshold = xErrorThresholdBase;
+      yErrorThreshold = yErrorThresholdBase;
+    }
+    else
+    {
+      xErrorThreshold = xErrorThresholdBase + xErrorThresholdExtension * directionFactor.x();
+      yErrorThreshold = yErrorThresholdBase + yErrorThresholdExtension * directionFactor.y();
+    }
+    model.status[arm].directionMap[ArmContactModel::backward] = dimmedError[arm].x() < -xErrorThreshold;
+    model.status[arm].directionMap[ArmContactModel::forward] = dimmedError[arm].x() > xErrorThreshold;
+    model.status[arm].directionMap[ArmContactModel::left] = dimmedError[arm].y() > yErrorThreshold;
+    model.status[arm].directionMap[ArmContactModel::right] = dimmedError[arm].y() < -yErrorThreshold;
+
+    if(model.status[arm].directionMap[ArmContactModel::backward] || model.status[arm].directionMap[ArmContactModel::forward] || model.status[arm].directionMap[ArmContactModel::left] || model.status[arm].directionMap[ArmContactModel::right])
+    {
+      model.status[arm].duration++;
+      if(model.status[arm].duration >= minimalContactDuration)
+      {
+        if(!model.status[arm].contact && SystemCall::getMode() == SystemCall::physicalRobot && theFrameInfo.getTimeSince(lastArmSoundTimestamp) > soundWaitTime)
+        {
+          //SystemCall::playSound("arm.wav");
+          ANNOTATION("ArmContactModelProvider", "Arm Contact");
+          lastArmSoundTimestamp = theFrameInfo.time;
+        }
+        model.status[arm].contact = true;
+      }
+      if(std::abs(dimmedError[arm].x()) > std::abs(dimmedError[arm].y()))
+        model.status[arm].pushDirection = dimmedError[arm].x() < 0.f ? ArmContactModel::backward : ArmContactModel::forward;
+      else
+        model.status[arm].pushDirection = dimmedError[arm].y() < 0.f ? ArmContactModel::left : ArmContactModel::right;
+    }
+    else
+    {
+      model.status[arm].duration = 0;
+      model.status[arm].contact = false;
+      model.status[arm].pushDirection = ArmContactModel::none;
+    }
   }
 }
 
-void ArmContactModelProvider::resetAll(ArmContactModel& model)
+void ArmContactModelProvider::calculateForce()
 {
-  model.status[Arms::left].contact = false;
-  model.status[Arms::right].contact = false;
-  angleBuffer.clear();
-  for(int i = 0; i < 2; ++i)
-    errorBuffer[i].clear();
+  Vector2f actualLeftHand = ArmContactModelProvider::calculateActualHandPosition(true).topRows(2);
+  Vector2f requestedLeftHand = angleBuffer[0][frameDelay].topRows(2);
+  Vector2f actualRightHand = ArmContactModelProvider::calculateActualHandPosition(false).topRows(2);
+  Vector2f requestedRightHand = angleBuffer[1][frameDelay].topRows(2);
+
+  Vector2f leftError;
+  Vector2f rightError;
+  leftError = actualLeftHand - requestedLeftHand;
+  rightError = actualRightHand - requestedRightHand;
+  errorBuffer[0].push_front(leftError);
+  errorBuffer[1].push_front(rightError);
+}
+
+Vector3f ArmContactModelProvider::calculateRequestedHandPosition(bool left)
+{
+  RobotModel requested(theJointRequest, theRobotDimensions, theMassCalibration);
+  if(left)
+    return requested.limbs[Limbs::wristLeft].translation;
+  else
+    return requested.limbs[Limbs::wristRight].translation;
 }
 
 void ArmContactModelProvider::update(ArmContactModel& model)
 {
-  DECLARE_PLOT("module:ArmContactModelProvider:errorLeftX");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorRightX");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorLeftY");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorRightY");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorDurationLeft");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorDurationRight");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorYThreshold");
-  DECLARE_PLOT("module:ArmContactModelProvider:errorXThreshold");
-  DECLARE_PLOT("module:ArmContactModelProvider:contactLeft");
-  DECLARE_PLOT("module:ArmContactModelProvider:contactRight");
+  DECLARE_PLOT("module:ArmContactModelProvider:armErrorXLeft");
+  DECLARE_PLOT("module:ArmContactModelProvider:armErrorXRight");
+  DECLARE_PLOT("module:ArmContactModelProvider:armErrorYLeft");
+  DECLARE_PLOT("module:ArmContactModelProvider:armErrorYRight");
+  DECLARE_PLOT("module:ArmContactModelProvider:requestedSpeedX");
+  DECLARE_PLOT("module:ArmContactModelProvider:requestedSpeedY");
+  DECLARE_PLOT("module:ArmContactModelProvider:speedFactorX");
+  DECLARE_PLOT("module:ArmContactModelProvider:speedFactorY");
+  DECLARE_DEBUG_DRAWING("module:ArmContactModelProvider:leanedArmContact", "drawingOnField");
 
-  DECLARE_DEBUG_DRAWING("module:ArmContactModelProvider:armContact", "drawingOnField");
-
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 200, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 400, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 600, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 800, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 1000, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-  CIRCLE("module:ArmContactModelProvider:armContact", 0, 0, 1200, 30, Drawings::solidPen, ColorRGBA::blue, Drawings::noPen, ColorRGBA::blue);
-
-  // If in INITIAL or FINISHED, or we are penalized, we reset all buffered errors and detect no arm contacts
-  if(theGameInfo.state == STATE_INITIAL || theGameInfo.state == STATE_FINISHED ||
+  if(theGameInfo.state == STATE_INITIAL ||
+     theGameInfo.state == STATE_FINISHED ||
      theFallDownState.state == FallDownState::falling ||
      theFallDownState.state == FallDownState::fallen ||
-     theMotionInfo.motion == MotionRequest::getUp ||
-     theMotionInfo.motion == MotionRequest::specialAction ||
-     theMotionInfo.motion == MotionRequest::kick ||
+     (theMotionInfo.executedPhase != MotionPhase::stand && theMotionInfo.executedPhase != MotionPhase::walk) ||
      !theGroundContactState.contact ||
-     (theRobotInfo.penalty != PENALTY_NONE && !detectWhilePenalized))
+     theRobotInfo.penalty != PENALTY_NONE)
   {
-    resetAll(model);
+    reset(model);
     return;
   }
-  // clear on game state changes
-  if(lastGameState != theGameInfo.state)
-    resetAll(model);
-  lastGameState = theGameInfo.state;
+  model.status[0].armOnBack = theArmMotionRequest.armKeyFrameRequest.arms[Arms::left].motion == ArmKeyFrameRequest::ArmKeyFrameId::back && theArmMotionRequest.armMotion[Arms::left] == ArmMotionRequest::ArmRequest::keyFrame;
+  model.status[1].armOnBack = theArmMotionRequest.armKeyFrameRequest.arms[Arms::right].motion == ArmKeyFrameRequest::ArmKeyFrameId::back && theArmMotionRequest.armMotion[Arms::right] == ArmMotionRequest::ArmRequest::keyFrame;
 
-  prepare(model);
-  /* Buffer arm angles */
-  angleBuffer.push_front(ArmAngles(theJointRequest.angles[Joints::lShoulderPitch], theJointRequest.angles[Joints::lShoulderRoll], theJointRequest.angles[Joints::rShoulderPitch], theJointRequest.angles[Joints::rShoulderRoll]));
+  angleBuffer[0].push_front(calculateRequestedHandPosition(true));
+  angleBuffer[1].push_front(calculateRequestedHandPosition(false));
 
-  Pose2f odometryOffset = theOdometryData - lastOdometry;
-  lastOdometry = theOdometryData;
-
-  /* Check for arm contact */
-  // motion types to take into account: stand, walk (if the robot is upright)
-  if((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
-     (theFallDownState.state == FallDownState::upright || theFallDownState.state == FallDownState::staggering) &&
-     angleBuffer.full())
+  // Make sure the buffer is filled
+  if(theFrameInfo.getTimeSince(lastInActiveTimestamp) > frameDelay * Constants::motionCycleTime * 1000.f)
   {
-    //TODO change representation to use arrays instead of contactLeft/contactRight etc.
-    bool* contact[2] = { &model.status[Arms::left].contact, &model.status[Arms::right].contact };
-    ArmContactModel::PushDirection* push[2] = { &model.status[Arms::left].pushDirection,  &model.status[Arms::right].pushDirection };
-    ArmContactModel::PushDirection* lastPush[2] = { &model.status[Arms::left].lastPushDirection,  &model.status[Arms::right].lastPushDirection };
-    unsigned* contactTime[2] = { &model.status[Arms::left].timeOfLastContact, &model.status[Arms::right].timeOfLastContact };
-    unsigned* duration[2] = { &model.status[Arms::left].duration, &model.status[Arms::right].duration };
+    calculateForce();
+    decideArmMovementDone(model);
+    updateError(model);
+    determinePushDirection(model);
+  }
 
-    for(int i = 0; i < 2; i++)
+  CROSS("module:ArmContactModelProvider:leanedArmContact", calculateActualHandPosition(true).x() + theRobotPose.translation.x(), calculateActualHandPosition(true).y() + theRobotPose.translation.y(), 20, 20, Drawings::solidPen, ColorRGBA::green);
+  CROSS("module:ArmContactModelProvider:leanedArmContact", calculateRequestedHandPosition(true).x() + theRobotPose.translation.x(), calculateRequestedHandPosition(true).y() + theRobotPose.translation.y(), 20, 20, Drawings::solidPen, ColorRGBA::red);
+  PLOT("module:ArmContactModelProvider:armErrorXLeft", dimmedError[0].x());
+  PLOT("module:ArmContactModelProvider:armErrorXRight", dimmedError[1].x());
+  PLOT("module:ArmContactModelProvider:armErrorYLeft", dimmedError[0].y());
+  PLOT("module:ArmContactModelProvider:armErrorYRight", dimmedError[1].y());
+  PLOT("module:ArmContactModelProvider:requestedSpeedX", handSpeed[1].x());
+  PLOT("module:ArmContactModelProvider:requestedSpeedY", handSpeed[1].y());
+  PLOT("module:ArmContactModelProvider:speedFactorX", speedFactor.x());
+  PLOT("module:ArmContactModelProvider:speedFactorY", speedFactor.y());
+}
+
+void ArmContactModelProvider::updateError(ArmContactModel& model)
+{
+  for(int arm = 0; arm < 2; arm++)
+  {
+    xOffsets = calcXOffsets(model.status[arm].armOnBack);
+    yOffsets = calcYOffsets(model.status[arm].armOnBack);
+    calcCorrectionFactor(arm == 0);
+    dimmedError[arm].x() = (errorBuffer[arm].average().x() + xOffsets[arm]) * speedFactor.x();
+    dimmedError[arm].y() = (errorBuffer[arm].average().y() + yOffsets[arm]) * speedFactor.y();
+    if(adjustingHand[arm])
     {
-      if(theDamageConfigurationBody.sides[i].armContactDefect)
-        continue;
-
-      float factor = calculateCorrectionFactor(theRobotModel.limbs[i ? Limbs::foreArmLeft : Limbs::foreArmRight], odometryOffset, lastHandPos[i]);
-      bool valid = !movingLastFrame[i] && theFrameInfo.getTimeSince(lastMovement[i]) > waitAfterMovement;
-
-      if(valid)
-        checkArm((i == 0), factor);
-
-      Vector2f avg = errorBuffer[i].average();
-      bool x = std::abs(avg.x()) > errorXThreshold && valid;
-      bool y = std::abs(avg.y()) > errorYThreshold && valid;
-
-      *contact[i] = (x || y) && errorBuffer[i].full();
-      if(*contact[i])
-      {
-        *contactTime[i] = theFrameInfo.time;
-        (*duration[i])++;
-      }
-      else
-        *duration[i] = 0;
-
-      *contact[i] &= *duration[i] < malfunctionThreshold;
-      *push[i] = getDirection((i == 0), x, y, avg);
-
-      if(*push[i] != ArmContactModel::NONE)
-        *lastPush[i] = *push[i];
-    }
-
-    PLOT("module:ArmContactModelProvider:errorLeftX",         toDegrees(errorBuffer[0].average().x()));
-    PLOT("module:ArmContactModelProvider:errorRightX",        toDegrees(errorBuffer[1].average().x()));
-    PLOT("module:ArmContactModelProvider:errorLeftY",         toDegrees(errorBuffer[0].average().y()));
-    PLOT("module:ArmContactModelProvider:errorRightY",        toDegrees(errorBuffer[1].average().y()));
-    PLOT("module:ArmContactModelProvider:errorDurationLeft",  model.status[Arms::left].duration);
-    PLOT("module:ArmContactModelProvider:errorDurationRight", model.status[Arms::right].duration);
-    PLOT("module:ArmContactModelProvider:errorYThreshold",    errorYThreshold.toDegrees());
-    PLOT("module:ArmContactModelProvider:errorXThreshold",    errorXThreshold.toDegrees());
-    PLOT("module:ArmContactModelProvider:contactLeft",        model.status[Arms::left].contact ? 10.0 : 0.0);
-    PLOT("module:ArmContactModelProvider:contactRight",       model.status[Arms::right].contact ? 10.0 : 0.0);
-
-    ARROW("module:ArmContactModelProvider:armContact", 0, 0, -(toDegrees(errorBuffer[0].average().y()) * SCALE), toDegrees(errorBuffer[0].average().x()) * SCALE, 20, Drawings::solidPen, ColorRGBA::green);
-    ARROW("module:ArmContactModelProvider:armContact", 0, 0, toDegrees(errorBuffer[1].average().y()) * SCALE, toDegrees(errorBuffer[1].average().x()) * SCALE, 20, Drawings::solidPen, ColorRGBA::red);
-
-    COMPLEX_DRAWING("module:ArmContactModelProvider:armContact")
-    {
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 1300, 200, ColorRGBA::black, "LEFT");
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 1100, 200, ColorRGBA::black, "ErrorX: " << toDegrees(errorBuffer[0].average().x()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 900, 200, ColorRGBA::black,  "ErrorY: " << toDegrees(errorBuffer[0].average().y()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 500, 200, ColorRGBA::black,  TypeRegistry::getEnumName(model.status[Arms::left].pushDirection));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", -2300, 300, 200, ColorRGBA::black,  "Time: " << model.status[Arms::left].timeOfLastContact);
-
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 1300, 200, ColorRGBA::black, "RIGHT");
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 1100, 200, ColorRGBA::black, "ErrorX: " << toDegrees(errorBuffer[1].average().x()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 900, 200, ColorRGBA::black,  "ErrorY: " << toDegrees(errorBuffer[1].average().y()));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 500, 200, ColorRGBA::black,  TypeRegistry::getEnumName(model.status[Arms::right].pushDirection));
-      DRAWTEXT("module:ArmContactModelProvider:armContact", 1300, 300, 200, ColorRGBA::black,  "Time: " << model.status[Arms::right].timeOfLastContact);
-
-      if(model.status[Arms::left].contact)
-        CROSS("module:ArmContactModelProvider:armContact", -2000, 0, 100, 20, Drawings::solidPen, ColorRGBA::red);
-
-      if(model.status[Arms::right].contact)
-        CROSS("module:ArmContactModelProvider:armContact", 2000, 0, 100, 20, Drawings::solidPen, ColorRGBA::red);
-    }
-
-    if(debugMode && theFrameInfo.getTimeSince(lastSoundTime) > soundDelay &&
-       (model.status[Arms::left].contact || model.status[Arms::right].contact))
-    {
-      lastSoundTime = theFrameInfo.time;
-      if(SystemCall::getMode() == SystemCall::physicalRobot)
-        SystemCall::playSound("arm.wav");
+      dimmedError[arm].x() = 0.f;
+      dimmedError[arm].y() = 0.f;
     }
   }
 }
 
-ArmContactModel::PushDirection ArmContactModelProvider::getDirection(bool left, bool contactX, bool contactY, Vector2f error)
+void ArmContactModelProvider::reset(ArmContactModel& model)
 {
-  // for the left arm, y directions are mirrored!
-  if(left)
-    error.y() *= -1;
+  for(size_t i = 0; i < errorBufferSize; i++)
+  {
+    errorBuffer[0].push_front(Vector2f(0.f, 0.f));
+    errorBuffer[1].push_front(Vector2f(0.f, 0.f));
+    angleBuffer[0].push_front(Vector3f(0.f, 0.f, 0.f));
+    angleBuffer[1].push_front(Vector3f(0.f, 0.f, 0.f));
+  }
+  lastHandPosRequested[0] = Vector2f(0.f, 0.f);
+  lastHandPosRequested[1] = Vector2f(0.f, 0.f);
+  model.status[0].contact = false;
+  model.status[0].duration = 0;
+  model.status[0].pushDirection = ArmContactModel::none;
+  model.status[0].directionMap[ArmContactModel::forward] = false;
+  model.status[0].directionMap[ArmContactModel::backward] = false;
+  model.status[0].directionMap[ArmContactModel::left] = false;
+  model.status[0].directionMap[ArmContactModel::right] = false;
+  model.status[0].timeOfLastContact = 0;
+  model.status[1].contact = false;
+  model.status[1].duration = 0;
+  model.status[1].pushDirection = ArmContactModel::none;
+  model.status[1].directionMap[ArmContactModel::forward] = false;
+  model.status[1].directionMap[ArmContactModel::backward] = false;
+  model.status[1].directionMap[ArmContactModel::left] = false;
+  model.status[1].directionMap[ArmContactModel::right] = false;
+  model.status[1].timeOfLastContact = 0;
+  lastInActiveTimestamp = theFrameInfo.time;
+}
 
-  ArmContactModel::PushDirection result = ArmContactModel::NONE;
-  if(contactX && contactY)
+void ArmContactModelProvider::calcCorrectionFactor(bool left)
+{
+  int arm;
+  if(left)
   {
-    if(error.x() > 0.0 && error.y() < 0.0f)
-    {
-      result = ArmContactModel::NW;
-    }
-    else if(error.x() > 0.0 && error.y() > 0.0)
-    {
-      result = ArmContactModel::NE;
-    }
-    if(error.x() < 0.0 && error.y() < 0.0f)
-    {
-      result = ArmContactModel::SW;
-    }
-    else if(error.x() < 0.0 && error.y() > 0.0)
-    {
-      result = ArmContactModel::SE;
-    }
-  }
-  else if(contactX)
-  {
-    if(error.x() < 0.0)
-    {
-      result = ArmContactModel::S;
-    }
-    else
-    {
-      result = ArmContactModel::N;
-    }
-  }
-  else if(contactY)
-  {
-    if(error.y() < 0.0)
-    {
-      result = ArmContactModel::W;
-    }
-    else
-    {
-      result = ArmContactModel::E;
-    }
+    arm = 0;
+    handPosRequested[arm] = flattenSpeed(angleBuffer[0]);
   }
   else
   {
-    result = ArmContactModel::NONE;
+    arm = 1;
+    handPosRequested[arm] = flattenSpeed(angleBuffer[1]);
   }
 
-  return result;
+  Vector2f handSpeedRequested = (handPosRequested[arm] - lastHandPosRequested[arm]) / Constants::motionCycleTime;
+  if(handSpeedRequested.x() <= 500.f)
+    speedFactor.x() = std::pow(0.85f, std::abs(handSpeedRequested.x()) / 40.f);
+  if(handSpeedRequested.y() <= 45.f)
+    speedFactor.y() = std::pow(0.94f, std::abs(handSpeedRequested.y()) / 19.f); //0.58^ (speed/10)
+
+  if(std::abs(handSpeedRequested.x()) > 500.f)
+    speedFactor.x() = 0.f;
+  if(std::abs(handSpeedRequested.y()) > 200.f)
+    speedFactor.y() = 0.f;
+
+  lastHandPosRequested[arm] = handPosRequested[arm];
+  handSpeed[arm] = handSpeedRequested;
 }
 
-float ArmContactModelProvider::calculateCorrectionFactor(const Pose3f& foreArm, const Pose2f& odometryOffset, Vector2f& lastArmPos)
+Vector2f ArmContactModelProvider::flattenSpeed(RingBuffer<Vector3f, frameBufferSize>& angleBuffer)
 {
-  const Vector3f& handPos3D = foreArm.translation;
-  Vector2f handPos = handPos3D.topRows(2);
-  Vector2f handSpeed = (odometryOffset + Pose2f(handPos) - Pose2f(lastArmPos)).translation / Constants::motionCycleTime;
-  float factor = std::max(0.f, 1.f - handSpeed.norm() / speedBasedErrorReduction);
-  lastArmPos = handPos;
-  return factor;
+  return (angleBuffer[frameDelay - 2].topRows(2) + angleBuffer[frameDelay - 1].topRows(2) + angleBuffer[frameDelay].topRows(2) + angleBuffer[frameDelay + 1].topRows(2) + angleBuffer[frameDelay + 2].topRows(2)) / 5.f;
 }
 
-void ArmContactModelProvider::prepare(ArmContactModel& model)
+void ArmContactModelProvider::calcWalkDirectionFactor()
 {
-  bool* contact[2] = {&model.status[Arms::left].contact, &model.status[Arms::right].contact};
-  for(int i = 0; i < 2; i++)
+  float total = std::abs(theMotionInfo.speed.translation.x()) + std::abs(theMotionInfo.speed.translation.y());
+  if(total == 0.f)
   {
-    const bool armIsMoving = theArmMotionSelection.targetArmMotion[i] >= ArmMotionSelection::firstNonBodyMotion || theArmMotionInfo.armMotion[i] != ArmMotionRequest::none;
-    if(armIsMoving)
-      lastMovement[i] = theFrameInfo.time;
-    // check if any arm just finished moving, if so reset its error buffer
-    if(movingLastFrame[i] && !armIsMoving)
-    {
-      *contact[i] = false;
-      errorBuffer[i].clear();
-    }
-    movingLastFrame[i] = armIsMoving;
+    directionFactor.x() = 0.f;
+    directionFactor.y() = 0.f;
+  }
+  else
+  {
+    directionFactor.x() = sinf(abs(theMotionInfo.speed.translation.x()) / total * pi_2);
+    directionFactor.y() = sinf(abs(theMotionInfo.speed.translation.y()) / total * pi_2);
   }
 }

@@ -93,11 +93,6 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
   singleDraw->setCheckable(true);
   singleDraw->setChecked(kickViewWidget->getSingleDrawing());
 
-  QAction* reachedDraw = new QAction(tr("Display Reached Positions"), menu);
-  reachedDraw->setStatusTip(tr("Draws the reached positions into the 3D view"));
-  reachedDraw->setCheckable(true);
-  reachedDraw->setChecked(kickViewWidget->getReachedDrawing());
-
   QAction* showEditor = new QAction(tr("Display Editor View"), menu);
   showEditor->setStatusTip(tr("Shows the editor view"));
   showEditor->setCheckable(true);
@@ -131,23 +126,16 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
                           && !kickViewWidget->getVelocity()
                           && !kickViewWidget->getAccel());
 
-  QAction* followMode = new QAction(tr("Enable Follow Mode"), menu);
-  followMode->setStatusTip(tr("The robot will react to changes directly"));
-  followMode->setCheckable(true);
-  followMode->setChecked(kickViewWidget->getFollowMode());
-
   connect(undoAct, SIGNAL(triggered()), this, SLOT(undoChanges()));
   connect(redoAct, SIGNAL(triggered()), this, SLOT(redoChanges()));
 
   connect(singleDraw, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setSingleDrawing(bool)));
-  connect(reachedDraw, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setReachedDrawing(bool)));
   connect(show3D, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setDrawings(bool)));
   connect(showEditor, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setEditor(bool)));
   connect(show1D, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setTra1d(bool)));
   connect(show2D, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setTra2d(bool)));
   connect(showVelo, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setVelocity(bool)));
   connect(showAccel, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setAccel(bool)));
-  connect(followMode, SIGNAL(toggled(bool)), kickViewWidget, SLOT(setFollowMode(bool)));
 
   QActionGroup* showing = new QActionGroup(menu);
   showing->addAction(show1D);
@@ -161,7 +149,6 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
   menu->addSeparator();
   menu->addAction(show3D);
   menu->addAction(singleDraw);
-  menu->addAction(reachedDraw);
   menu->addAction(showEditor);
   menu->addSeparator();
   menu->addAction(noExtraView);
@@ -170,7 +157,6 @@ QMenu* KickViewHeaderedWidget::createEditMenu() const
   menu->addAction(showVelo);
   menu->addAction(showAccel);
   menu->addSeparator();
-  menu->addAction(followMode);
 
   return menu;
 }
@@ -359,10 +345,10 @@ void KickViewHeaderedWidget::redoChanges()
     emit redoAvailable(false);
 }
 
-KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
+KickView::KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, const FrameInfo& frameInfo,
                    const JointLimits& jointLimits, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot) :
-  fullName(fullName), console(console), motionRequest(motionRequest), jointAngles(jointAngles),
-  jointLimits(jointLimits), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
+  fullName(fullName), console(console), frameInfo(frameInfo), jointAngles(jointAngles), jointLimits(jointLimits),
+  motionRequest(motionRequest), robotDimensions(robotDimensions), motionRequestCommand(mr), robot(robot)
 {}
 
 SimRobot::Widget* KickView::createWidget()

@@ -27,7 +27,7 @@ private:
    */
   void update(MotionRobotHealth& motionRobotHealth) override;
 
-  RingBufferWithSum<unsigned, 30> timeBuffer;        /** Buffered timestamps of previous executions */
+  RingBufferWithSum<unsigned, 30> timeBuffer; /**< Buffered timestamps of previous executions */
   unsigned lastExecutionTime;
 
 public:

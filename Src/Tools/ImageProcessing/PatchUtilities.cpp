@@ -5,12 +5,11 @@
  */
 
 #include "PatchUtilities.h"
-#include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/ImageProcessing/ImageTransform.h"
 #include <iostream>
 #include <cmath>
 
-Matrix3f PatchUtilities::calcInverseTransformation(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const Angle rotation)
+Matrix3f PatchUtilities::calcInverseTransformation(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize)
 {
   const Vector2i upperLeft = (center.array() - inSize.array() / 2).matrix();
   const Vector2f transformationFactor = (inSize.cast<float>().array() / outSize.cast<float>().array()).matrix();
@@ -23,16 +22,16 @@ Matrix3f PatchUtilities::calcInverseTransformation(const Vector2i& center, const
   inverseTransformation(1, 0) = 0;// transformationFactor.y() * sin;
   inverseTransformation(1, 1) = transformationFactor.y();// *cos;
 
-  inverseTransformation(0, 2) = upperLeft.x();// +outSize.x() * (1 - cos + sin) / 2 * transformationFactor.x();
-  inverseTransformation(1, 2) = upperLeft.y();// +outSize.y() * (1 - sin - cos) / 2 * transformationFactor.y();
+  inverseTransformation(0, 2) = static_cast<float>(upperLeft.x());// +outSize.x() * (1 - cos + sin) / 2 * transformationFactor.x();
+  inverseTransformation(1, 2) = static_cast<float>(upperLeft.y());// +outSize.y() * (1 - sin - cos) / 2 * transformationFactor.y();
   return inverseTransformation;
 }
 
 
 template<typename OutType>
-void PatchUtilities::getInterpolatedImageSection(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* output, const Angle rotation)
+void PatchUtilities::getInterpolatedImageSection(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, OutType* output)
 {
-  Matrix3f inverseTransformation = calcInverseTransformation(center, inSize, outSize, rotation);
+  Matrix3f inverseTransformation = calcInverseTransformation(center, inSize, outSize);
 
   if(std::is_same<OutType, float>::value)
     ImageTransform::transform(src, reinterpret_cast<float*>(output), outSize.x(), outSize.y(), inverseTransformation, Vector2f(0.f, 0.f), 128.f);
@@ -53,7 +52,7 @@ void PatchUtilities::getImageSection(const Vector2i& center, const Vector2i& inS
 
   // Calculate Y offset and steps
   int ySteps = outSize.y();
-  float yImage = upperLeft.y();
+  float yImage = static_cast<float>(upperLeft.y());
   int yPatchOffset = 0;
   if(yImage < 0.f)
   {
@@ -68,7 +67,7 @@ void PatchUtilities::getImageSection(const Vector2i& center, const Vector2i& inS
 
   // Calculate X offset and steps
   int xSteps = outSize.x();
-  float xImageOffset = upperLeft.x();
+  float xImageOffset = static_cast<float>(upperLeft.x());
   int xPatchOffset = 0;
   if(xImageOffset < 0.f)
   {
@@ -177,8 +176,6 @@ void PatchUtilities::getImageSection(const Vector2i& center, const Vector2i& inS
       }
     }
   }
-
-  RECTANGLE("module:NNBallPerceptor:spots", upperLeft.x(), upperLeft.y(), static_cast<int>(upperLeft.x() + inSize.x()), static_cast<int>(upperLeft.y() + inSize.y()), 2, Drawings::PenStyle::solidPen, ColorRGBA::black);
 }
 
 void PatchUtilities::normalizeContrast(GrayscaledImage& output, const float percent)
@@ -230,3 +227,24 @@ void PatchUtilities::extractPatch(const Vector2i& center, const Vector2i& inSize
 
 template void PatchUtilities::extractPatch<float>(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, float* dest, const ExtractionMode mode);
 template void PatchUtilities::extractPatch<unsigned char>(const Vector2i& center, const Vector2i& inSize, const Vector2i& outSize, const GrayscaledImage& src, unsigned char* dest, const ExtractionMode mode);
+
+template<typename OutType, bool grayscale>
+void PatchUtilities::extractInput(const CameraImage& cameraImage, const Vector2i& patchSize, OutType* input)
+{
+  const unsigned int yStep = cameraImage.height / patchSize(1);
+  const unsigned int xStep = cameraImage.width / patchSize(0);
+  for(unsigned int i = yStep / 2; i < cameraImage.height; i += yStep)
+    for(unsigned int j = xStep / 2; j < cameraImage.width; j += xStep)
+    {
+      if constexpr(grayscale)
+        *(input++) = cameraImage[i][j].y0;
+      else
+      {
+        *input++ = cameraImage[i][j].y0;
+        *input++ = cameraImage[i][j].u;
+        *input++ = cameraImage[i][j].v;
+      }
+    }
+}
+template void PatchUtilities::extractInput<std::uint8_t, true>(const CameraImage& cameraImage, const Vector2i& patchSize, std::uint8_t* input);
+template void PatchUtilities::extractInput<std::uint8_t, false>(const CameraImage& cameraImage, const Vector2i& patchSize, std::uint8_t* input);

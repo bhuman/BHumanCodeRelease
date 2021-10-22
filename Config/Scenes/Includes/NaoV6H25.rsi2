@@ -75,11 +75,11 @@
               <Translation z="55mm"/>
             </SphereGeometry>
 
-            <Camera name="CameraTop" imageWidth="640" imageHeight="480" angleX="0.9826" angleY="0.76271">
+            <Camera name="CameraTop" imageWidth="640" imageHeight="480" angleX="54.7degree" angleY="42.5degree">
               <Translation x="0.05871" z="0.06364"/>
               <Rotation y="1.2degree"/>
             </Camera>
-            <Camera name="CameraBottom" imageWidth="320" imageHeight="240" angleX="0.9826" angleY="0.76271">
+            <Camera name="CameraBottom" imageWidth="320" imageHeight="240" angleX="54.7degree" angleY="42.5degree">
               <Translation x="0.05071" z="0.01774"/>
               <Rotation y="39.7degree"/>
             </Camera>

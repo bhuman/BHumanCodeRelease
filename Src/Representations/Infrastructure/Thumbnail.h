@@ -25,7 +25,6 @@ struct Thumbnail : public Streamable
   {,
     yuv,
     grayscale,
-    grayscaleWithColorClasses,
   });
 
   /**
@@ -68,7 +67,24 @@ struct Thumbnail : public Streamable
   };
 
 protected:
-  void serialize(In* in, Out* out) override
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override
+  {
+    STREAM(mode);
+    STREAM(scale);
+    STREAM(imageY);
+    if(mode == yuv)
+      STREAM(imageUV);
+  }
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override
   {
     STREAM(mode);
     STREAM(scale);

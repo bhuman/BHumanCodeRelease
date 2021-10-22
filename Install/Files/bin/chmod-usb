@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ $(id -u) -ne 0 ]; then
+  exec sudo $0
+fi
+
+chmod -R 777 /media/usb

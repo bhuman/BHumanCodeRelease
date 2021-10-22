@@ -59,7 +59,7 @@ public:
     textOffset = me.descent() + 1;
   }
 
-  void paintEvent(QPaintEvent* event)
+  void paintEvent(QPaintEvent*)
   {
     painter.begin(this);
     painter.setFont(font);
@@ -126,7 +126,7 @@ private:
     }
     if(bold)
       painter.setFont(boldFont);
-    painter.drawText(paintRectField0, Qt::TextSingleLine | Qt::AlignVCenter, name.c_str());
+    painter.drawText(paintRectField0, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter), name.c_str());
     if(bold)
       painter.setFont(font);
 

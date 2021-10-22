@@ -17,9 +17,6 @@
 #include "Utils/bush/ui/ShortcutBar.h"
 #include "Utils/bush/ui/TeamSelector.h"
 #include "Utils/bush/ui/SizeManager.h"
-#ifdef MACOS
-#include "../Util/SimRobot/Src/SimRobot/Helper.h"
-#endif
 
 MainWindow::MainWindow()
 {
@@ -51,7 +48,6 @@ MainWindow::MainWindow()
 
   ShortcutBar* shortcutBar = new ShortcutBar(console);
 #ifdef MACOS
-  setWindowTitleTransparent(this);
   setUnifiedTitleAndToolBarOnMac(true);
   addToolBar(Qt::TopToolBarArea, shortcutBar);
   shortcutBar->setMovable(false);
@@ -60,17 +56,17 @@ MainWindow::MainWindow()
 #endif
   shortcutBar->addShortcut("help", "help");
   QAction* deployAction = shortcutBar->addShortcut("deploy", "deploy");
-  deployAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
+  deployAction->setShortcut(QKeySequence(static_cast<int>(Qt::CTRL) + static_cast<int>(Qt::Key_D)));
   deployAction->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
   QAction* downloadLogs = shortcutBar->addShortcut("download logs", "downloadLogs");
-  downloadLogs->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+  downloadLogs->setShortcut(QKeySequence(static_cast<int>(Qt::CTRL) + static_cast<int>(Qt::Key_L)));
   downloadLogs->setShortcutContext(Qt::ShortcutContext::ApplicationShortcut);
   shortcutBar->addShortcut("delete logs", "deleteLogs");
   shortcutBar->addShortcut("simulator", "sim");
   shortcutBar->addShortcut("ssh", "ssh");
   shortcutBar->addShortcut("restart", "restart bhuman");
   shortcutBar->addShortcut("shutdown", "shutdown -s");
-  shortcutBar->addShortcut("reboot", "restart robot");
+  shortcutBar->addShortcut("reboot", "restart robot -s");
   splitter->addWidget(console);
 
   int widgetWidthResize = 1128;

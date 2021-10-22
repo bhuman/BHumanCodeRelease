@@ -19,11 +19,14 @@ namespace EngineStates
     breakUp,
     waiting,
     decideAction,
+    waitForRequest,
     recoverFallen,
     working,
+    workingAction,
     finished,
     finishedRecover,
     balanceOut,
+    calibrationState,
     retryState,
   });
 

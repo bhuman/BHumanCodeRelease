@@ -16,7 +16,7 @@
 
 #define GOALPOST Obstacle::goalpost
 
-MAKE_MODULE(TeamPlayersLocator, modeling)
+MAKE_MODULE(TeamPlayersLocator, modeling);
 
 TeamPlayersLocator::TeamPlayersLocator()
 {
@@ -49,7 +49,7 @@ void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
   {
     if(teammate.status == Teammate::PLAYING)
     {
-      if(teammate.theRobotPose.deviation < teammatePoseDeviation)
+      if(teammate.theRobotPose.getTranslationalStandardDeviation() < teammatePoseDeviation)
       {
         ownTeam[teammate.number] = teammate.theRobotPose; //position of teammates
       }
@@ -81,7 +81,7 @@ void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
   {
     for(auto const& teammate : theTeamData.teammates)
     {
-      if(teammate.status == Teammate::PLAYING && teammate.theRobotPose.deviation < teammatePoseDeviation)
+      if(teammate.status == Teammate::PLAYING && teammate.theRobotPose.getTranslationalStandardDeviation() < teammatePoseDeviation)
       {
         for(const auto& obstacle : teammate.theObstacleModel.obstacles)
         {
@@ -151,7 +151,7 @@ void TeamPlayersLocator::update(TeamPlayersModel& teamPlayersModel)
             continue;
 
           // by Jesse: if an obstacle is observed by the robot itself i don't want to alter that position observation
-          //           if an obstacle is "save" obseved by an other robot i don't want to alter it with an 'other'-obstacle, too.
+          //           if an obstacle is "save" observed by an other robot i don't want to alter it with an 'other'-obstacle, too.
           if(!(obstacle < endOwnObstacleMarker || (obstacle < obstacleSizeBeforeOthers && otherObstacle >= obstacleSizeBeforeOthers)))
             Obstacle::fusion2D(obstacles[obstacle], obstacles[otherObstacle]);
 

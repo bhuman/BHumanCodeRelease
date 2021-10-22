@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include "Tools/Function.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/Enum.h"
 #include "Tools/Streams/AutoStreamable.h"
@@ -48,26 +49,22 @@ STREAMABLE(KickRequest,
 {
   ENUM(KickMotionID,
   {,
-    kickForward,
+    kickForwardFast,
+    kickForwardFastLong,
+    otherSideKick,
+    stopBallStart,
+    stopBallEnd,
+    kickForwardAndUp,
     // kicks up to here are loaded by the KickEngine
     newKick,
     none,
   });
 
-  static KickMotionID getKickMotionFromName(const char* name),
+  static KickMotionID getKickMotionFromName(const char* name);
+
+  FUNCTION(std::vector<DynPoint>(const int phaseNumber)) calcDynPoints,
 
   (KickMotionID)(none) kickMotionType,
   (bool)(false) mirror,
   (bool)(false) armsBackFix,
-  (bool)(false) autoProceed,
-  (bool)(false) boost,
-  (std::vector<DynPoint>) dynPoints,
 });
-
-STREAMABLE(Continuation,
-{,
-  (KickRequest::KickMotionID)(KickRequest::none) kickType,
-  (bool)(false) mirror,
-});
-
-using stdVectorContinuation = std::vector<Continuation>;

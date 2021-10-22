@@ -1,3 +1,4 @@
+#include "Platform/SystemCall.h"
 #include "Utils/bush/Initializer.h"
 #include <QApplication>
 
@@ -26,3 +27,8 @@ const char* _fromQString(const QString& string)
   return buffer;
 }
 #endif // MACOS
+
+SystemCall::Mode SystemCall::getMode()
+{
+  return simulatedRobot;
+}

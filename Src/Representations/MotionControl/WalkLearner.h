@@ -6,7 +6,6 @@
 
 #include "Tools/Function.h"
 #include "Representations/MotionControl/WalkGenerator.h"
-#include "Representations/MotionControl/Walk2014Modifier.h"
 #pragma once
 STREAMABLE(WalkLearner,
 {

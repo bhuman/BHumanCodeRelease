@@ -6,6 +6,7 @@
 #include "CameraInfo.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/RotationMatrix.h"
+#include "Tools/Debugging/ColorRGBA.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 
 void CameraInfo::updateFocalLength()

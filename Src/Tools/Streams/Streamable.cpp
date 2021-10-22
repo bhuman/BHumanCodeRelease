@@ -1,25 +1,15 @@
 #include "Streamable.h"
 #include <cstring>
 
-void Streamable::streamOut(Out& out) const
-{
-  const_cast<Streamable*>(this)->serialize(nullptr, &out);
-}
-
-void Streamable::streamIn(In& in)
-{
-  serialize(&in, nullptr);
-}
-
 In& operator>>(In& in, Streamable& streamable)
 {
-  streamable.streamIn(in);
+  streamable.read(in);
   return in;
 }
 
 Out& operator<<(Out& out, const Streamable& streamable)
 {
-  streamable.streamOut(out);
+  streamable.write(out);
   return out;
 }
 

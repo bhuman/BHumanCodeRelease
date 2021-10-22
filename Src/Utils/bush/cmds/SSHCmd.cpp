@@ -25,7 +25,7 @@ std::string SSHCmd::getDescription() const
   return "Executes a command via ssh or opens a ssh session.";
 }
 
-bool SSHCmd::preExecution(Context& context, const std::vector<std::string>& params)
+bool SSHCmd::preExecution(Context&, const std::vector<std::string>& params)
 {
   if(!params.empty())
   {

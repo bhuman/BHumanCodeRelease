@@ -43,7 +43,6 @@ MODULE(WhistleRecognizer,
     (float) minVolume, /**< The minimum volume that must be reached for accepting a whistle [0..1). */
     (float) minCorrelation, /**< The ratio between the selfCorrelation and the current correlation that is accepted ]0..1]. */
     (int) minAnnotationDelay, /**< The minimum time between annotations announcing a detected whistle. */
-    (bool) detectInPlaying, /**< Detect whistles in PLAYING state instead of SET state. */
   }),
 });
 
@@ -58,6 +57,7 @@ class WhistleRecognizer : public WhistleRecognizerBase
 
   std::vector<Signature> signatures; /**< All whistle signatures. */
   std::vector<RingBuffer<AudioData::Sample>> buffers; /**< Sample buffers for all channels. */
+  bool soundWasPlaying = false; /**< Was sound played back recently? */
   bool hasRecorded = false; /**< Was audio recorded in the previous cycle? */
   int samplesRequired = 0; /** The number of new samples required. */
   size_t sampleIndex = 0; /** Index of next sample to process for subsampling. */

@@ -8,9 +8,9 @@
 
 #pragma once
 
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Math/Pose2f.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 
 /**
  * @struct RobotPose
@@ -18,6 +18,14 @@
  */
 STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRobotPose>
 {
+  /** Different states of robot pose estimate quality */
+  ENUM(LocalizationQuality,
+  {,
+    superb,   /**< Everything is cool! The internal model ist unimodal and all deviations are low. */
+    okay,     /**< Could be better. The model is still somewhat unimodal but at least one deviation is quite high or the validity is low. Rough estimate might be correct but not precise. */
+    poor,     /**< Nope. Do not do any serious stuff, if this is the current state. There seem to be multiple quite different hypotheses about the current pose or some deviations are REALLY high. We do not have any clue about the current pose, actually. */
+  });
+
   /** BHumanMessageParticle functions */
   void operator>>(BHumanMessage& m) const override;
   void operator<<(const BHumanMessage& m) override;
@@ -42,14 +50,43 @@ STREAMABLE_WITH_BASE(RobotPose, Pose2f, COMMA public BHumanMessageParticle<idRob
   /** Draws the robot pose in the color of the team to the field view. */
   void draw() const;
 
-  enum { unknownDeviation = 100000 };
-  Pose2f inversePose,
+  /**
+   * Computes the standard deviation given the covariance matrix.
+   * The unit is the same as for the pose: mm
+   * Please note that both dimensions of the translation are considered and only
+   * the higher deviation is returned. An alternative would be a combination like
+   * return sqrt(c(0,0) + c(1,1));
+   * @return A standard deviation as described above.
+   */
+  float getTranslationalStandardDeviation() const
+  {
+    return std::sqrt(std::max(covariance(0, 0), covariance(1, 1)));;
+  }
 
-  (float)(0) validity,                            /**< The validity of the robot pose. (0 = invalid, 1 = perfect) */
-  (unsigned)(0) timeOfLastConsideredFieldFeature, /**< Additional information about how good this pose might be */
-  (float)(unknownDeviation) deviation,            /**< The deviation of the robot pose. */
+  /**
+   * Computes the standard deviation on the field's x-axis given the covariance matrix.
+   * The unit is the same as for the pose: mm
+   * @return A standard deviation as described above.
+   */
+  float getXAxisStandardDeviation() const
+  {
+    return std::sqrt(covariance(0, 0));
+  }
+
+  /**
+   * Computes the standard deviation on the field's y-axis given the covariance matrix.
+   * The unit is the same as for the pose: mm
+   * @return A standard deviation as described above.
+   */
+  float getYAxisStandardDeviation() const
+  {
+    return std::sqrt(covariance(1, 1));
+  }
+
+  Pose2f inversePose,                             /**< The inverted robot pose. Precomputed as it is needed often. */
+  (LocalizationQuality)(superb) quality,          /**< Indicates how good the pose estimate seems to be (must not be true). */
   (Matrix3f)(Matrix3f::Identity()) covariance,    /**< The covariance matrix of the estimated robot pose. */
-  (unsigned)(0) timestampLastJump,                /**< Timestamp of last "big change" (jump) notificaion */
+  (unsigned)(0) timestampLastJump,                /**< Timestamp of last "big change" (jump) notification */
 });
 
 /**

@@ -21,7 +21,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -35,7 +35,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <endian.h>

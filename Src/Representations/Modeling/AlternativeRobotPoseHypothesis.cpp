@@ -20,7 +20,7 @@ void AlternativeRobotPoseHypothesis::draw() const
       DRAW_ROBOT_POSE("representation:AlternativeRobotPoseHypothesis", pose, ColorRGBA(0, 0, 0));
       CIRCLE("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y(),
              500, 40, Drawings::solidPen, col, Drawings::noBrush, col);
-      DRAWTEXT("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y() + 700, 200,
+      DRAW_TEXT("representation:AlternativeRobotPoseHypothesis", pose.translation.x(), pose.translation.y() + 700, 200,
                ColorRGBA(0, 0, 0), numOfContributingObservations);
     }
   }

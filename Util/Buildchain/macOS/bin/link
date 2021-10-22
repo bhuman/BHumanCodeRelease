@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 basePath=$(dirname "$(which "$0")")
 CALL=
+LIBLIST=
 while true; do
   case $1 in
     "")
@@ -14,19 +15,49 @@ while true; do
       ;;
     "-filelist")
       shift
-      CALL="$CALL `cat $1`"
+      FILELIST="$1"
+      CALL="$CALL $(sed <"$FILELIST" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
+      ;;
+    /*.a)
+      LIBLIST="$LIBLIST$1|"
+      CALL="$CALL '$1'"
+      ;;
+    "-o")
+      OUTPUT="$2"
+      CALL="$CALL '-o'"
       ;;
     "-F"*)
       ;;
     "-Xlinker")
       shift
+      if [ "$1" == "-dependency_info" ]; then
+        shift
+        shift
+        INFO="$1"
+      fi
       ;;
     "-mmacosx-version-min="*)
       ;;
+    "-Wl,-search_paths_first")
+      ;;
+    "-Wl,-headerpad_max_install_names")
+      ;;
     *)
-      CALL="$CALL $1"
+      CALL="$CALL '$1'"
       ;;
   esac
   shift
 done
-${basePath}/ld --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/home/nao/sysroot/lib/ld-linux.so.2 -rpath=/home/nao/sysroot/lib ../../Util/Buildchain/V6/gcc/lib/crt1.o ../../Util/Buildchain/V6/gcc/lib/crti.o ../../Util/Buildchain/V6/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.24 --start-group ../../Util/Buildchain/V6/gcc/lib/libm-2.29.so --as-needed ../../Util/Buildchain/V6/gcc/lib/libmvec_nonshared.a ../../Util/Buildchain/V6/gcc/lib/libmvec-2.29.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libc-2.29.so ../../Util/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/gcc/lib/ld-2.29.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/crtend.o ../../Util/Buildchain/V6/gcc/lib/crtn.o
+
+if [ ! -z "$INFO" ]; then
+  (
+    echo ""
+    echo "cctools-973.0.1"
+    sed <"$FILELIST" 's%^%|%' | tr '|' $'\x10'
+    echo -n "$LIBLIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
+    echo -n $'\x40'
+    echo "$OUTPUT"
+  ) | tr '\n' '\0' >"$INFO"
+fi
+
+bash -c "\"${basePath}/ld.lld\" -nostdlib --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/lib64/ld-linux-x86-64.so.2 ../../Util/Buildchain/V6/gcc/lib/crt1.o ../../Util/Buildchain/V6/gcc/lib/crti.o ../../Util/Buildchain/V6/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.28 --start-group ../../Util/Buildchain/V6/gcc/lib/libm-2.31.so --as-needed ../../Util/Buildchain/V6/gcc/lib/libmvec-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a --start-group ../../Util/Buildchain/V6/gcc/lib/libc-2.31.so ../../Util/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/gcc/lib/ld-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a ../../Util/Buildchain/V6/gcc/lib/crtend.o ../../Util/Buildchain/V6/gcc/lib/crtn.o"

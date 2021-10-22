@@ -130,10 +130,10 @@ while read line; do
   elif [ "$type" == "call" ]; then
     echo "$option -> $id;" >>"$optionsTmp"
     if [ "$state" == "" ]; then
-      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, dir = both, arrowtail = dot, color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "option_ -> option_$id [ltail = cluster_, sametail = dummy, dir = both, arrowtail = dot, color = \"#808080\", style = dashed minlen = 2];" >>"$externalTmp"
       echo "option_ [style = invis, shape = point, label = \"\"];" >>"$internalTmp"
     else
-      echo "$state -> option_$id [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "$state -> option_$id [color = \"#808080\", style = dashed minlen = 2];" >>"$externalTmp"
     fi
     echo "option_$id [shape = Mrecord, label = \"$label\", URL = \"$urlPath$id.$format\"];" >>"$externalTmp"
   elif [ "$type" == "deal" ]; then
@@ -157,7 +157,7 @@ while read line; do
         state=$id
         echo " $state [shape = hexagon, label = \"$label\"];" >>"$internalTmp"
       fi
-      echo "/*$(printf "%03d" $number)*/ $state -> option_$card [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
+      echo "/*$(printf "%03d" $number)*/ $state -> option_$card [color = \"#808080\", style = dashed minlen = 2];" >>"$externalTmp"
       label2="$(sed -E -e 's%TeamCard$%%' -e 's%Card$%%' -e 's%_%\\n%g' -e 's%([a-z])([A-Z])%\1\\n\2%g' <<<"$card" | tr '[:upper:]' '[:lower:]')"
       echo "option_$card [shape = rectangle, label = \"$label2\", URL = \"$urlPath$card.$format\"];" >>"$externalTmp"
       ((++number))

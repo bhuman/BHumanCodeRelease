@@ -14,16 +14,12 @@
 #endif
 #include <cstring>
 
-MAKE_MODULE(GameDataProvider, communication)
+MAKE_MODULE(GameDataProvider, communication);
 
 GameDataProvider::GameDataProvider()
 {
   // Initialize GameController packet
-  memset(&gameCtrlData, 0, sizeof(gameCtrlData));
-  gameCtrlData.teams[0].teamNumber = static_cast<uint8_t>(Global::getSettings().teamNumber);
-  gameCtrlData.teams[0].teamColor = static_cast<uint8_t>(Global::getSettings().teamColor);
-  gameCtrlData.teams[1].teamColor = gameCtrlData.teams[0].teamColor ^ 1; // we don't know better
-  gameCtrlData.playersPerTeam = static_cast<uint8_t>(Global::getSettings().playerNumber); // we don't know better
+  resetGameCtrlData();
 
   // Initialize socket
   VERIFY(socket.setBlocking(false));
@@ -32,19 +28,62 @@ GameDataProvider::GameDataProvider()
 
 void GameDataProvider::update(RobotInfo& theRobotInfo)
 {
-  if(receive())
-    whenPacketWasReceived = theFrameInfo.time;
+  if(!(gameCtrlData.gamePhase != GAME_PHASE_PENALTYSHOOT && gameCtrlData.state == STATE_FINISHED))
+    whenStateNotFinished = theFrameInfo.time;
 
-  if(theFrameInfo.getTimeSince(whenPacketWasReceived) < gameControllerTimeout
-     && theFrameInfo.getTimeSince(whenPacketWasSent) >= aliveDelay
-     && sendAliveMessage())
+  ignoreChestButton = false;
+  switch(mode)
+  {
+    case RobotInfo::unstiff:
+      if(theEnhancedKeyStates.hitStreak[KeyStates::chest] == 1)
+      {
+        mode = RobotInfo::active;
+        ignoreChestButton = true;
+      }
+      break;
+    case RobotInfo::active:
+      if((theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > unstiffHeadButtonPressDuration &&
+          theEnhancedKeyStates.pressedDuration[KeyStates::headMiddle] > unstiffHeadButtonPressDuration &&
+          theEnhancedKeyStates.pressedDuration[KeyStates::headRear] > unstiffHeadButtonPressDuration) ||
+         theFrameInfo.getTimeSince(whenStateNotFinished) > unstiffFinishedDuration)
+      {
+        resetGameCtrlData();
+        mode = RobotInfo::unstiff;
+      }
+      else if(gameCtrlData.state == STATE_INITIAL &&
+              gameCtrlData.teams[gameCtrlData.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1].players[Global::getSettings().playerNumber - 1].penalty == PENALTY_NONE &&
+              theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > calibrationHeadButtonPressDuration &&
+              theEnhancedKeyStates.isPressedFor(KeyStates::chest, 1000u))
+      {
+        resetGameCtrlData();
+        gameCtrlData.state = STATE_PLAYING;
+        mode = RobotInfo::calibration;
+      }
+      break;
+    case RobotInfo::calibration:
+      if((theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > unstiffHeadButtonPressDuration &&
+          theEnhancedKeyStates.pressedDuration[KeyStates::headMiddle] > unstiffHeadButtonPressDuration &&
+          theEnhancedKeyStates.pressedDuration[KeyStates::headRear] > unstiffHeadButtonPressDuration) ||
+         theBehaviorStatus.activity == BehaviorStatus::calibrationFinished)
+      {
+        resetGameCtrlData();
+        mode = RobotInfo::unstiff;
+      }
+      break;
+  }
+
+  receive(mode == RobotInfo::active);
+
+
+  if(theFrameInfo.getTimeSince(whenPacketWasReceived) >= gameControllerTimeout)
+    handleButtons();
+  else if(theFrameInfo.getTimeSince(whenPacketWasSent) >= aliveDelay && sendAliveMessage())
     whenPacketWasSent = theFrameInfo.time;
-
-  handleButtons();
 
   const RoboCup::TeamInfo& team = gameCtrlData.teams[gameCtrlData.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1];
   static_cast<RoboCup::RobotInfo&>(theRobotInfo) = team.players[Global::getSettings().playerNumber - 1];
   theRobotInfo.number = Global::getSettings().playerNumber;
+  theRobotInfo.mode = mode;
 
   DEBUG_RESPONSE_ONCE("module:GameDataProvider:robotInfo")
     OUTPUT(idRobotInfo, bin, theRobotInfo);
@@ -63,14 +102,11 @@ void GameDataProvider::update(OpponentTeamInfo& theOpponentTeamInfo)
 void GameDataProvider::update(RawGameInfo& theRawGameInfo)
 {
   std::memcpy(static_cast<RoboCup::RoboCupGameControlData*>(&theRawGameInfo), &gameCtrlData, sizeof(gameCtrlData));
-  theRawGameInfo.timeLastPacketReceived = whenPacketWasReceived;
-  if(Global::getSettings().teamNumber >= 90)
-    theRawGameInfo.competitionType = COMPETITION_TYPE_MIXEDTEAM;
+  theRawGameInfo.timeLastPacketReceived = whenGameCtrlDataWasSet;
 }
 
-bool GameDataProvider::receive()
+void GameDataProvider::receive(bool setGameCtrlData)
 {
-  bool received = false;
   int size;
   RoboCup::RoboCupGameControlData buffer;
   unsigned from;
@@ -82,22 +118,25 @@ bool GameDataProvider::receive()
        (buffer.teams[0].teamNumber == Global::getSettings().teamNumber ||
         buffer.teams[1].teamNumber == Global::getSettings().teamNumber))
     {
-      gameCtrlData = buffer;
+      if(setGameCtrlData)
+      {
+        gameCtrlData = buffer;
+        whenGameCtrlDataWasSet = theFrameInfo.time;
+      }
 #ifdef TARGET_ROBOT
       unsigned ip = htonl(from);
       socket.setTarget(inet_ntoa(reinterpret_cast<in_addr&>(ip)), GAMECONTROLLER_RETURN_PORT);
 #endif
-      received = true;
+      whenPacketWasReceived = theFrameInfo.time;
     }
   }
-  return received;
 }
 
 bool GameDataProvider::sendAliveMessage()
 {
   RoboCup::RoboCupGameControlReturnData returnPacket;
-  returnPacket.team = (uint8_t) Global::getSettings().teamNumber;
-  returnPacket.player = (uint8_t) Global::getSettings().playerNumber;
+  returnPacket.team = static_cast<std::uint8_t>(Global::getSettings().teamNumber);
+  returnPacket.player = static_cast<std::uint8_t>(Global::getSettings().playerNumber);
   returnPacket.message = GAMECONTROLLER_RETURN_MSG_ALIVE;
   return socket.write(reinterpret_cast<char*>(&returnPacket), sizeof(returnPacket));
 }
@@ -105,75 +144,50 @@ bool GameDataProvider::sendAliveMessage()
 void GameDataProvider::handleButtons()
 {
   RoboCup::TeamInfo& team = gameCtrlData.teams[gameCtrlData.teams[0].teamNumber == Global::getSettings().teamNumber ? 0 : 1];
+  RoboCup::RobotInfo& player = team.players[Global::getSettings().playerNumber - 1];
 
-  bool chestButtonPressed = theKeyStates.pressed[KeyStates::chest];
-  bool chestButtonReleased = previousChestButtonPressed && !chestButtonPressed;
-
-  if(!previousChestButtonPressed && chestButtonPressed)
-    whenChestButtonPressed = theFrameInfo.time;
-
-  if(chestButtonReleased && theFrameInfo.getTimeSince(whenChestButtonStateChanged) >= buttonDelay)
+  if(mode == RobotInfo::active && !ignoreChestButton && theEnhancedKeyStates.hitStreak[KeyStates::chest] == 1)
   {
-    whenChestButtonReleased = theFrameInfo.time;
-    chestButtonPressCounter = (chestButtonPressCounter + 1) % 3; // ignore triple press of a button, e.g. for sitting down
-    if(chestButtonPressCounter == 0)
-      whenChestButtonStateChanged = 0; // reset last chest button state change to ignore the next press
+    if(player.penalty == PENALTY_NONE)
+      player.penalty = PENALTY_MANUAL;
+    else
+    {
+      player.penalty = PENALTY_NONE;
+      gameCtrlData.state = STATE_PLAYING;
+    }
   }
 
-  if(chestButtonPressCounter > 0
-     && theFrameInfo.getTimeSince(whenChestButtonStateChanged) >= buttonDelay
-     && theFrameInfo.getTimeSince(whenChestButtonPressed) < chestButtonPressDuration)
+  if(gameCtrlData.state == STATE_INITIAL && player.penalty == PENALTY_NONE)
   {
-    if(theFrameInfo.getTimeSince(whenChestButtonReleased) >= chestButtonTimeout)
+    if(theEnhancedKeyStates.hitStreak[KeyStates::lFootLeft] == 1)
+      team.teamColor = (team.teamColor + 1) % (TEAM_GRAY + 1); // cycle between TEAM_BLUE .. TEAM_GRAY
+
+    if(theEnhancedKeyStates.hitStreak[KeyStates::rFootRight] == 1)
     {
-      if(whenChestButtonStateChanged && theFrameInfo.getTimeSince(whenPacketWasReceived) >= gameControllerTimeout)  // ignore first press, e.g. for getting up
+      if(gameCtrlData.gamePhase == GAME_PHASE_NORMAL)
       {
-        RoboCup::RobotInfo& player = team.players[Global::getSettings().playerNumber - 1];
-        if(player.penalty == PENALTY_NONE)
-          player.penalty = PENALTY_MANUAL;
-        else
-        {
-          player.penalty = PENALTY_NONE;
-          gameCtrlData.state = STATE_PLAYING;
-        }
+        gameCtrlData.gamePhase = GAME_PHASE_PENALTYSHOOT;
+        gameCtrlData.kickingTeam = team.teamNumber;
+        SystemCall::say("Penalty striker");
       }
-      whenChestButtonStateChanged = theFrameInfo.time;
-      chestButtonPressCounter = 0;
-    }
-  }
-
-  previousChestButtonPressed = chestButtonPressed;
-
-  if(gameCtrlData.state == STATE_INITIAL && team.players[Global::getSettings().playerNumber - 1].penalty == PENALTY_NONE)
-  {
-    bool leftFootButtonPressed = theKeyStates.pressed[KeyStates::lFootLeft] != 0.f || theKeyStates.pressed[KeyStates::lFootRight] != 0.f;
-    if(leftFootButtonPressed != previousLeftFootButtonPressed
-       && theFrameInfo.getTimeSince(whenLeftFootButtonStateChanged) >= buttonDelay)
-    {
-      if(leftFootButtonPressed)
-        team.teamColor = (team.teamColor + 1) % (TEAM_GRAY + 1); // cycle between TEAM_BLUE .. TEAM_GRAY
-      previousLeftFootButtonPressed = leftFootButtonPressed;
-      whenLeftFootButtonStateChanged = theFrameInfo.time;
-    }
-
-    bool rightFootButtonPressed = theKeyStates.pressed[KeyStates::rFootLeft] != 0.f || theKeyStates.pressed[KeyStates::rFootRight] != 0.f;
-    if(rightFootButtonPressed != previousRightFootButtonPressed
-       && theFrameInfo.getTimeSince(whenRightFootButtonStateChanged) >= buttonDelay)
-    {
-      if(rightFootButtonPressed)
+      else if(gameCtrlData.kickingTeam == team.teamNumber)
       {
-        if(gameCtrlData.gamePhase == GAME_PHASE_NORMAL)
-        {
-          gameCtrlData.gamePhase = GAME_PHASE_PENALTYSHOOT;
-          gameCtrlData.kickingTeam = team.teamNumber;
-        }
-        else if(gameCtrlData.kickingTeam == team.teamNumber)
-          gameCtrlData.kickingTeam = 0;
-        else
-          gameCtrlData.gamePhase = GAME_PHASE_NORMAL;
+        gameCtrlData.kickingTeam = 0;
+        SystemCall::say("Penalty keeper");
       }
-      previousRightFootButtonPressed = rightFootButtonPressed;
-      whenRightFootButtonStateChanged = theFrameInfo.time;
+      else
+        gameCtrlData.gamePhase = GAME_PHASE_NORMAL;
     }
   }
+}
+
+void GameDataProvider::resetGameCtrlData()
+{
+  std::memset(&gameCtrlData, 0, sizeof(gameCtrlData));
+  gameCtrlData.teams[0].teamNumber = static_cast<uint8_t>(Global::getSettings().teamNumber);
+  gameCtrlData.teams[0].teamColor = static_cast<uint8_t>(Global::getSettings().teamColor);
+  gameCtrlData.teams[1].teamColor = gameCtrlData.teams[0].teamColor ^ 1; // we don't know better
+  gameCtrlData.playersPerTeam = static_cast<uint8_t>(Global::getSettings().playerNumber); // we don't know better
+  gameCtrlData.firstHalf = 1;
+  whenGameCtrlDataWasSet = 0;
 }

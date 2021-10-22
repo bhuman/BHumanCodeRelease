@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Streams/AutoStreamable.h"

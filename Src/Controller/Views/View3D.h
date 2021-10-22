@@ -55,7 +55,7 @@ protected:
    * The function returns the view distance.
    * @return The distance from which the scene is viewed.
    */
-  virtual float getViewDistance() const { return 8.0; }
+  virtual float getViewDistance() const { return 8.f; }
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */

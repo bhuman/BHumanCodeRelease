@@ -24,10 +24,10 @@ MODULE(RobotHealthProvider,
   PROVIDES(RobotHealth),
   LOADS_PARAMETERS(
   {,
-    (char) batteryLow,                    /**< The voltage below which the robot gives low battery warnings. */
+    (char) batteryLow, /**< The voltage below which the robot gives low battery warnings. */
     (int) cpuHeat,
     (unsigned) timeBetweenHeatScreams,
-    (bool) enableName,                    /**< The robots mentions its name when complaining, if true */
+    (bool) enableName, /**< The robots mentions its name when complaining, if true */
   }),
 });
 
@@ -45,6 +45,7 @@ class RobotHealthProvider : public RobotHealthProviderBase
   bool batteryVoltageFalling = false;
   unsigned highTemperatureSince = 0;
   unsigned highCPUTemperatureSince = 0;
+  unsigned lastMotionFrameDropTimestamp = 0;
 #ifdef TARGET_ROBOT
   unsigned int lastWlanCheckedTime = 0;
 #endif

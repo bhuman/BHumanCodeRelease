@@ -1,18 +1,17 @@
 /**
  * @file ArmContactModelProvider.h
  *
- * This module detects whether the robot touches a potential obstacle with an arm.
- * This is done with comparing the current arm position and the position where the arm should be.
+ * This module detects whether the robot touches a potential obstacle with an arm, even while the arm is put on the
+ * back of the robot during challenges or other situations.
+ * This is done by comparing the current arm position and the position where the arm should be.
  * The difference of those values is then stored into a buffer for each arm and if that buffer represents
  * an error large enough, a positive arm contact for that arm is reported.
  *
- * If the robot fell down, all error buffers are resetted. Additionally, arm contact may only be reported
+ * If the robot fell down, all error buffers are reset. Additionally, arm contact may only be reported
  * if the robot is standing or walking and not penalized.
  *
  * Declaration of class ArmContactModelProvider.
- * @author <a href="mailto:fynn@informatik.uni-bremen.de">Fynn Feldpausch</a>
- * @author <a href="mailto:simont@informatik.uni-bremen.de">Simon Taddiken</a>
- * @author <a href="mailto:arneboe@informatik.uni-bremen.de">Arne Böckmann</a>
+ * @author <a href="mailto:lrust@uni-bremen.de">Lukas Rust</a>
  */
 
 #pragma once
@@ -23,53 +22,52 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
+#include "Representations/MotionControl/ArmKeyFrameRequest.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Representations/MotionControl/ArmMotionSelection.h"
+#include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Sensing/ArmContactModel.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/RobotModel.h"
+#include "Representations/Modeling/RobotPose.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Math/Pose2f.h"
 #include "Tools/Math/Pose3f.h"
 #include "Tools/Module/Module.h"
 #include "Tools/RingBuffer.h"
 #include "Tools/RingBufferWithSum.h"
-
-/** maximum numbers of frames to buffer */
-#define FRAME_BUFFER_SIZE 5
-
-/** number of angle differences to buffer */
-#define ERROR_BUFFER_SIZE 100
+#include "Tools/Streams/EnumIndexedArray.h"
 
 MODULE(ArmContactModelProvider,
 {,
+  REQUIRES(ArmMotionRequest),
   REQUIRES(FallDownState),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(GroundContactState),
   REQUIRES(JointAngles),
+  REQUIRES(MassCalibration),
+  REQUIRES(RobotDimensions),
   REQUIRES(RobotInfo),
   REQUIRES(RobotModel),
+  REQUIRES(RobotPose),
   REQUIRES(DamageConfigurationBody),
   USES(ArmMotionInfo),
-  USES(ArmMotionSelection),
   USES(JointRequest),
   USES(MotionInfo),
   USES(OdometryData),
   PROVIDES(ArmContactModel),
-  LOADS_PARAMETERS(
+  DEFINES_PARAMETERS(
   {,
-    (Angle) errorXThreshold,           /**< Maximum divergence of arm angleX (in degrees) that is not treated as an obstacle detection */
-    (Angle) errorYThreshold,           /**< Maximum divergence of arm angleY (in degrees) that is not treated as an obstacle detection */
-    (unsigned) malfunctionThreshold,   /**< Duration of contact in frames after a contact is ignored */
-    (unsigned) frameDelay,             /**< The size of the delay in frames */
-    (bool) debugMode,                  /**< Enable debug mode */
-    (float) speedBasedErrorReduction,  /**< At this translational hand speed, the angular error will be ignored (in mm/s). */
-    (int) waitAfterMovement,           /**< wait this amount of time (in ms) after ARME moved an arm before contact can be detected again */
-    (bool) detectWhilePenalized,
+    (int)(4) frameDelay, //Delay with which the hand positions shpould be accessed
+    (unsigned int)(4) minimalContactDuration,
+    (float)(13.f) yErrorThresholdBase, //Minimal yErrorThreshold. The y threshold base cant never be less than this!
+    (float)(11.f) xErrorThresholdBase, //Minimal xErrorThreshold. The x threshold base cant never be less than this!
+    (float)(3.f) yErrorThresholdExtension, //The y threshold extension which is added when the robot is moving in -y or y direction, this means left or right.
+    (float)(3.f) xErrorThresholdExtension, //The x threshold extension which is added when the robot is moving in -x or x direction, this means back or forward.
+    (int)(2000) soundWaitTime, //Play the arm sound only once in this time frame.
   }),
 });
 
@@ -79,74 +77,114 @@ MODULE(ArmContactModelProvider,
  */
 class ArmContactModelProvider: public ArmContactModelProviderBase
 {
-  struct ArmAngles
-  {
-    float leftX,  /**< X angle of left arm */
-          leftY,  /**< Y angle of left arm */
-          rightX, /**< X angle of right arm */
-          rightY; /**< Y angle of right arm */
-
-    ArmAngles() = default;
-    ArmAngles(float leftX, float leftY, float rightX, float rightY) : leftX(leftX), leftY(leftY), rightX(rightX), rightY(rightY) {};
-  };
-
-  RingBuffer<ArmAngles, FRAME_BUFFER_SIZE> angleBuffer; /**< Buffered arm angles to eliminate delay */
   /**
-   * Error vector:
-   * y-Component: error of shoulder roll
-   * x-Component: error of shoulder pitch
+   * Buffer to store multiple hand positions.
+   * This is necessary to eliminate flatten the handspeed with flattenSpeed()
    */
-  RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE> errorBuffer[2];     /**< Buffered error over ERROR_BUFFER_SIZE frames */
-  bool movingLastFrame[2] = {false, false};                          /**< Whether left (0) and right (1) arm was moving last frame */
-  unsigned lastMovement[2] = {0, 0};                                 /**< time of last left (0) and right (1) arm movement */
-  Vector2f lastHandPos [2] = { Vector2f::Zero(), Vector2f::Zero() }; /**< Last 2-D position of the left (0) and right (1) hand */
-  Pose2f lastOdometry;                                               /**< Odometry inthe previous frame. */
-  const int soundDelay = 1000;                                       /**< Length of debug sound */
-  unsigned int lastSoundTime = 0;                                    /**< Time of last debug sound */
-  int lastGameState = STATE_INITIAL;                                /**< Game state in previous frame. */
+  static constexpr int frameBufferSize = 5;
+  static constexpr int errorBufferSize = 100;
 
-  /**
-   * Resets the arm contact model to default values and clears the error buffers.
-   * @param armContactModel The model to reset.
-   */
-  void resetAll(ArmContactModel& armContactModel);
+  //Timestamp when the arm sound was played last.
+  unsigned int lastArmSoundTimestamp = 0;
 
-  /** Fills the error buffers with differences of current and requested
-   * joint angles
-   * @param left Check the left or the right arm for collisions?
-   * @param factor A factor used to reduce the error entered into the buffer.
-   */
-  void checkArm(bool left, float factor);
+  //Buffer of the requested hand positions
+  RingBuffer<Vector3f, frameBufferSize> angleBuffer[2];
 
-  /** Executes this module.
-   * @param ArmContactModel The data structure that is filled by this module.
-   */
-  void update(ArmContactModel& armContactModel) override;
+  //Resets the wholeRepresentation (ArmContactModel) when the robot is in a state in which this Module shouldnt regularly run.
+  void reset(ArmContactModel& model);
+
+  //Map of the push directions and wether there is a push in this direction right now or not
+  ENUM_INDEXED_ARRAY(bool, ArmContactModel::PushDirection) directionMap;
+
+  //Compares the dimmed error Value with the thresholds and decides if there is a push in a certain direction
+  void determinePushDirection(ArmContactModel& model);
+
+  //The buffer for the UNdimmed errors calculated by the subtracting the actual and requested hand position
+  RingBufferWithSum<Vector2f, errorBufferSize> errorBuffer[2];
+
+  void update(ArmContactModel& model);
+
+  //Building a RobotModel with the actual joint angles the robot is sensing right now with the limbs angle encoders and returning the hand position. German: Ist-Wert der Arme.
+  Vector3f calculateActualHandPosition(bool left);
+
+  //Building a RobotModel with the requested joint angles. Those are the positions which the robot desires to reach, not were they are right now! Returns the requested hand position. German: Soll-Wert
+  Vector3f calculateRequestedHandPosition(bool left);
+
+  //Calculates the difference between actual and requested hand position. Fills the errorBuffer with UNdimmed error values.
+  void calculateForce();
+
+  //Was the keyFrameMotion to put the arms on the back active last frame? 0 is left 1 is right arm.
+  bool armOnBackLastFrame[2];
+
+  //How many frames ago the robot started to ove his hands on the back or from the back to there "normal" positions? 0 is left 1 is right.
+  int adjustingHandCounter[2];
 
   /**
-   * Calculates the angular speed of the robots hands.
-   * @param foreArm The arm which hand should be checked.
-   * @param odometryOffset current odometry offset.
-   * @param The speed of the hand calculated in the previous frame. This will be updated at the end of this method.
+   * Is the robot currently adjusting his hands to his back or not?
+   * When this is true, the errors are ignored in this frame because the arms move to fast during this phase and would cause false positives for arm contacts.
    */
-  float calculateCorrectionFactor(const Pose3f& foreArm, const Pose2f& odometryOffset, Vector2f& lastArmPos);
+  bool adjustingHand[2];
 
-  /** Dertemines the push direction for an arm. That is, the direction in which the specified arm is being
-   * pushed. That means that the obstacle causing the contact is located on the opposite direction of
-   * the push direction.
-   * The directions are given as compass directions with NORTH being the direction in which the robot
-   * currently looks.
-   *
-   * @param left Check the left arm (true) or the right (false)
-   * @param Is error.x above the x-axis threshold?
-   * @param Is error.y above the y-axis threshold?
-   * @param Current error vector.
-   * @return The direction in which the specified arm is being pushed.
+  //The dimmed errors sensed right now. Calculated by multiplying the errorBuffer values with the speed Factor
+  Vector2f dimmedError[2];
+
+  /**
+   * Offsets added to the undimmed error.
+   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certains statuses.
    */
-  ArmContactModel::PushDirection getDirection(bool left, bool contactX, bool contactY, Vector2f error);
+  Vector2f yOffsets;
 
-  void prepare(ArmContactModel& model);
+  /**
+   * Offsets added to the undimmed error.
+   * These are useful because the robots angles are usually a little bit lose and fall into certain direction predictably in certains statuses.
+   */
+  Vector2f xOffsets;
 
+  /**
+   * Current speed of the REQUESTED positions, not the actual positions. used to calculate the speed Factor.
+   * This is useful, because when the arms should move move quite fast, there is a natural error because of the control latency.
+   * So when the speed is high the error should be reduced to enable minimal thresholds.
+   */
+  Vector2f handSpeed[2];
+
+  //Storage for the requested hand positions
+  Vector2f handPosRequested[2];
+
+  //Storage of the hand Position last frame, necessary to calculate the speed of the hand positions;
+  Vector2f lastHandPosRequested[2];
+
+  //The factor to dim the errors regarding the requested speed of the arms.
+  Vector2f speedFactor;
+
+  //Time stamp when the ArmContactModelProvider was last inaktive.
+  unsigned int lastInActiveTimestamp = 0;
+
+  /**
+   * Range [0,1]. represents how much of the Threshold extension should be added to the base values depending on the walk direction of the robot.
+   * For example, when the robot is moving forward, the y error threshold should be minimal,
+   * because the speed in this direction is very low and the errors therefore very precise
+   * If the robot is moving sideways the factor for the threshold extension is nearly 0, because the speed in the x direction is very low.
+   */
+  Vector2f directionFactor;
+  void updateError(ArmContactModel& model);
+
+  //Calculates the speedFactor regarding the speed of the requested hand Positions
+  void calcCorrectionFactor(bool left);
+
+  //Calculates the y Offsets
+  Vector2f calcYOffsets(bool armOnBack);
+
+  //Calculates the xOffsets
+  Vector2f calcXOffsets(bool armOnBack);
+
+  //Calculates the average requested position of the arms of the last five frames to eliminate stray.
+  Vector2f flattenSpeed(RingBuffer<Vector3f, frameBufferSize>& angleBuffer);
+
+  //Decides wether the robot is currently moving his arms to the back or away. During this time the errors should be ignored.
+  void decideArmMovementDone(ArmContactModel& model);
+
+  //Calculates the walkDirection factor with the information from theMotionInfo.speed.
+  void calcWalkDirectionFactor();
 public:
-  ArmContactModelProvider() : errorBuffer{ RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE>(Vector2f::Zero()), RingBufferWithSum<Vector2f, ERROR_BUFFER_SIZE>(Vector2f::Zero()) } {};
+  ArmContactModelProvider() : errorBuffer{ RingBufferWithSum<Vector2f, errorBufferSize>(Vector2f::Zero()), RingBufferWithSum<Vector2f, errorBufferSize>(Vector2f::Zero()) } {};
 };

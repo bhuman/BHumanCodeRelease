@@ -1,0 +1,34 @@
+# Example to use this feature. This example should still result in a successful get up try (most of the time)
+
+echo Set A Joint Failur Behavior. The Example Values Should Work, But You Can Set Your Own
+echo BUT Test It In The Simulation First
+echo -- Set Start Keyframe
+echo set module:KeyframeMotionEngine:setLineCounterFailureStart 5
+echo -- Set Start Ratio Of Start Keyframe
+echo set module:KeyframeMotionEngine:setRatioFailureStart 0.32
+echo -- Set End Keyframe
+echo set module:KeyframeMotionEngine:setLineCounterFailureEnd 6
+echo -- Set End Ratio Of End Keyframe
+echo set module:KeyframeMotionEngine:setRatioFailureEnd 0.95
+echo -- Set Keyframe Motion
+echo set module:KeyframeMotionEngine:setMotionIDFailure fromSplit
+echo -- Set Joint Which Should Freeze
+echo set module:KeyframeMotionEngine:setJointFailure lHipYawPitch
+echo -- Add Joint Failure Behavior
+echo dr module:KeyframeMotionEngine:addMotionFailure
+
+echo set module:KeyframeMotionEngine:setLineCounterFailureStart 1
+echo set module:KeyframeMotionEngine:setRatioFailureStart 0.9
+echo set module:KeyframeMotionEngine:setLineCounterFailureEnd 6
+echo set module:KeyframeMotionEngine:setRatioFailureEnd 0.95
+echo set module:KeyframeMotionEngine:setMotionIDFailure fromSplit
+echo set module:KeyframeMotionEngine:setJointFailure lHipRoll
+echo dr module:KeyframeMotionEngine:addMotionFailure
+
+echo set module:KeyframeMotionEngine:setLineCounterFailureStart 4
+echo set module:KeyframeMotionEngine:setRatioFailureStart 0.67
+echo set module:KeyframeMotionEngine:setLineCounterFailureEnd 6
+echo set module:KeyframeMotionEngine:setRatioFailureEnd 0.95
+echo set module:KeyframeMotionEngine:setMotionIDFailure fromSplit
+echo set module:KeyframeMotionEngine:setJointFailure rHipRoll
+echo dr module:KeyframeMotionEngine:addMotionFailure

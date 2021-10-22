@@ -14,9 +14,9 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
   if(!initDone)
     init(globalFieldCoverage);
 
-  if(theCognitionStateChanges.lastGameState != STATE_SET && theGameInfo.state == STATE_SET)
+  if(theExtendedGameInfo.gameStateLastFrame != STATE_SET && theGameInfo.state == STATE_SET)
   {
-    const int min = -static_cast<int>(Vector2f(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline).squaredNorm()) / 1000;
+    const int min = -static_cast<int>(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline).squaredNorm()) / 1000;
     for(size_t i = 0; i < globalFieldCoverage.grid.size(); ++i)
     {
       globalFieldCoverage.grid[i].timestamp = theFrameInfo.time;
@@ -40,13 +40,9 @@ void GlobalFieldCoverageProvider::update(GlobalFieldCoverage& globalFieldCoverag
 
   for(size_t y = 0; y < theFieldCoverage.lines.size(); ++y)
     addLine(theFieldCoverage.lines[y]);
-  if(theGameInfo.competitionType == COMPETITION_TYPE_MIXEDTEAM)
-    for(size_t y = 0; y < theHulkFieldCoverage.lines.size(); ++y)
-      addLine(theHulkFieldCoverage.lines[y]);
   for(const auto& teammate : theTeamData.teammates)
-    if(teammate.mateType == Teammate::TeamOrigin::BHumanRobot)
-      for(size_t y = 0; y < teammate.theFieldCoverage.lines.size(); ++y)
-        addLine(teammate.theFieldCoverage.lines[y]);
+    for(size_t y = 0; y < teammate.theFieldCoverage.lines.size(); ++y)
+      addLine(teammate.theFieldCoverage.lines[y]);
 
   if(theTeamBallModel.isValid)
     setCoverageAtFieldPosition(globalFieldCoverage, theTeamBallModel.position, 0);
@@ -66,7 +62,7 @@ void GlobalFieldCoverageProvider::setCoverageAtFieldPosition(GlobalFieldCoverage
   {
     ASSERT(std::isfinite(positionOnField.x()));
     ASSERT(std::isfinite(positionOnField.y()));
-    const int x = std::min(static_cast<int>((positionOnField.x() - theFieldDimensions.xPosOwnGroundline) / globalFieldCoverage.cellLengthX), globalFieldCoverage.numOfCellsX - 1);
+    const int x = std::min(static_cast<int>((positionOnField.x() - theFieldDimensions.xPosOwnGroundLine) / globalFieldCoverage.cellLengthX), globalFieldCoverage.numOfCellsX - 1);
     const int y = std::min(static_cast<int>((positionOnField.y() - theFieldDimensions.yPosRightSideline) / globalFieldCoverage.cellLengthY), globalFieldCoverage.numOfCellsY - 1);
 
     globalFieldCoverage.grid[y * globalFieldCoverage.numOfCellsX + x].timestamp = theFrameInfo.time;
@@ -78,10 +74,10 @@ void GlobalFieldCoverageProvider::init(GlobalFieldCoverage& globalFieldCoverage)
 {
   initDone = true;
 
-  globalFieldCoverage.cellLengthX = theFieldDimensions.xPosOpponentGroundline * 2 / globalFieldCoverage.numOfCellsX;
+  globalFieldCoverage.cellLengthX = theFieldDimensions.xPosOpponentGroundLine * 2 / globalFieldCoverage.numOfCellsX;
   globalFieldCoverage.cellLengthY = theFieldDimensions.yPosLeftSideline * 2 / globalFieldCoverage.numOfCellsY;
 
-  float positionOnFieldX = theFieldDimensions.xPosOwnGroundline + globalFieldCoverage.cellLengthX / 2.f;
+  float positionOnFieldX = theFieldDimensions.xPosOwnGroundLine + globalFieldCoverage.cellLengthX / 2.f;
   float positionOnFieldY = theFieldDimensions.yPosRightSideline + globalFieldCoverage.cellLengthY / 2.f;
   const unsigned time = std::max(10000u, theFrameInfo.time);
 
@@ -93,7 +89,7 @@ void GlobalFieldCoverageProvider::init(GlobalFieldCoverage& globalFieldCoverage)
       globalFieldCoverage.grid.emplace_back(time, time, positionOnFieldX, positionOnFieldY, globalFieldCoverage.cellLengthX, globalFieldCoverage.cellLengthY);
       positionOnFieldX += globalFieldCoverage.cellLengthX;
     }
-    positionOnFieldX = theFieldDimensions.xPosOwnGroundline + globalFieldCoverage.cellLengthX / 2.f;
+    positionOnFieldX = theFieldDimensions.xPosOwnGroundLine + globalFieldCoverage.cellLengthX / 2.f;
     positionOnFieldY += globalFieldCoverage.cellLengthY;
   }
 }

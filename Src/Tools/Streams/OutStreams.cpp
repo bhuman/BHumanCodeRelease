@@ -260,12 +260,6 @@ void OutFile::writeToStream(const void* p, size_t size)
     stream->write(p, size);
 }
 
-std::string OutFile::getFullName() const
-{
-  ASSERT(stream);
-  return stream->getFullName();
-}
-
 OutMemory::OutMemory(OutMemory&& other)
 : buffer(other.buffer),
   reserved(other.reserved),
@@ -490,7 +484,7 @@ void OutMap::deselect()
   stack.pop_back();
 }
 
-void OutMap::write(const void* p, size_t size)
+void OutMap::write(const void*, size_t)
 {
   FAIL("Unsupported operation.");
 }

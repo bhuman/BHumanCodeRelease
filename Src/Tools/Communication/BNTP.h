@@ -1,5 +1,5 @@
 /**
- * @file Tools/BNTP.h
+ * @file Tools/Communication/BNTP.h
  *
  * Representations and functions for time synchronization inside
  * the team. Implementation of parts of the Network Time Protocol.
@@ -10,90 +10,81 @@
 
 #pragma once
 
-#include "Tools/RingBuffer.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/MessageQueue/MessageIDs.h"
-#include "Representations/Communication/BHumanMessage.h"
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Representations/Communication/RobotInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/MessageQueue/MessageIDs.h"
+#include "Tools/Settings.h"
 
 /**
- * @class BNTPRequest
+ * @struct BNTPRequest
  *
- * A packet for starting a synchronization measurement
+ * A struct that represents received NTP requests.
  */
-STREAMABLE(BNTPRequest,
+struct BNTPRequest
 {
-  /**
-   * The timestamp of the generation of this message.
-   * Should be set as late as possible before transmitting to WLAN
-   */
-  unsigned origination;
-
-  /**
-   * The timestamp of the receipt of a request by another robot.
-   * Is not set (and transmitted) by the requesting robot. The receiving
-   * robot sets this timestamp as early as possible after receiving from WLAN
-   */
-  unsigned receipt;
-
-  BNTPRequest() = default;
-
-  /**
-   * @param sender The robot, which sent the request
-   */
-  BNTPRequest(unsigned char sender) : sender(sender) {},
-
-  (unsigned char) sender, ///< The robot, which sent the request (the only attribute streamed)
-});
+  unsigned origination = 0; ///< The remote timestamp of the generation of this message.
+  unsigned receipt = 0; ///< The local timestamp of the receipt of this message.
+};
 
 /**
  * @class SynchronizationMeasurementsBuffer
  *
- * A class for buffering the last synchronization measurements.
- * The currently best time offset is the element with the smallest
- * round trip time.
+ * A class for keeping a valid synchronization measurement.
  */
-class BNTP;
 class SynchronizationMeasurementsBuffer
 {
-public:
-  /**
-   * @class SynchronizationMeasurement
-   *
-   * A small datatype describing a measurement of
-   * the time offset between two robots
-   */
-  struct SynchronizationMeasurement
-  {
-    int offset = 0;///< Offset of the time of another robot relative to the own time.
-    int roundTrip = 0;///< The time, the two NTP messages have been in the WLAN.
-  };
-
 private:
-  enum { MAX_NUMBER_OF_MEASUREMENTS = 6 }; ///< Constant for internal buffer size
-  RingBuffer<SynchronizationMeasurement, MAX_NUMBER_OF_MEASUREMENTS> buffer; ///< A buffer for the last measurements
+  int offset = 0; ///< Offset of the time of another robot relative to the own time.
+  unsigned roundTrip = 0; ///< The time the two NTP messages have been in the WLAN.
+  unsigned timestamp = 0; ///< The time when this measurement has been made.
 
-  int bestOffset = 0; ///< The time offset in this buffer with shortest round trip time
-
-  friend BNTP;
-  /**
-   * Adds a new measurement to the ring buffer
-   * @param s The measurement
-   */
-  void add(const SynchronizationMeasurement& s);
+  static constexpr unsigned int clockDriftDivider = 5000; ///< The time it takes at least to accumulate a clock error of 1ms on a robot clock.
+  static constexpr unsigned int maxPacketDelay = 2000; ///< The maximum time a packet can spend in the WLAN.
 
 public:
+  /**
+   * Adds a new measurement to the buffer.
+   * @param newOffset The measured clock offset.
+   * @param newRoundTrip The associated round trip time.
+   * @param receiveTimestamp The timestamp when the measurement has been completed.
+   */
+  void update(int newOffset, unsigned newRoundTrip, unsigned receiveTimestamp);
+
+  /**
+   * Checks whether a message is compatible with the current synchronization data and otherwise invalidates the buffer.
+   * @param sendTimestamp The (remote) time when the message has been sent.
+   * @param receiveTimestamp The (local) time when the message has been received.
+   */
+  void validate(unsigned sendTimestamp, unsigned receiveTimestamp);
+
+  /**
+   * Checks whether the time offset is valid.
+   * @return Whether ...
+   */
+  bool isValid() const
+  {
+#ifdef TARGET_ROBOT
+    return timestamp != 0;
+#else
+    return true;
+#endif
+  }
+
   inline unsigned getRemoteTimeInLocalTime(unsigned remoteTime) const
   {
-    return static_cast<unsigned>(std::max(0, static_cast<int>(remoteTime) - bestOffset));
+#ifdef TARGET_ROBOT
+    return remoteTime ? static_cast<unsigned>(std::max(0, static_cast<int>(remoteTime) - offset)) : 0u;
+#else
+    return remoteTime;
+#endif
   }
 };
 
 /**
- * @class NTP
- * Implementantion of the Network Time Protocol.
+ * @class BNTP
+ *
+ * Implementation of the Network Time Protocol.
  */
 class BNTP : public BHumanMessageParticle<MessageID::undefined>
 {
@@ -104,16 +95,16 @@ public:
 
   const SynchronizationMeasurementsBuffer* operator[](unsigned number) const
   {
-    return number <= MAX_NUM_OF_NTP_CLIENTS ? &timeSyncBuffers[number] : 0;
+    return number >= Settings::lowestValidPlayerNumber && number <= Settings::highestValidPlayerNumber ?
+           &timeSyncBuffers[number - Settings::lowestValidPlayerNumber] : nullptr;
   }
 
 private:
-  enum { MAX_NUM_OF_NTP_CLIENTS = 12, MAX_NUM_OF_NTP_PACKAGES = 12, NTP_REQUEST_INTERVAL = 2000 }; /**< Some constants for NTP synchronisation. */
+  static constexpr int ntpRequestInterval = 10000; /**< Request an NTP message every $ ms. */
 
   unsigned lastNTPRequestSent = 0; /**< The point of time when the last NTP request has been sent to the team. */
-  RingBuffer<BNTPRequest, MAX_NUM_OF_NTP_PACKAGES> receivedNTPRequests; /**< The requests received in the current frame. */
-
-  SynchronizationMeasurementsBuffer timeSyncBuffers[MAX_NUM_OF_NTP_CLIENTS]; /**< A buffer which contains synchronization data for all other robots. */
+  std::unordered_map<std::uint8_t, BNTPRequest> receivedNTPRequests; /**< The most recently received NTP request per robot. */
+  SynchronizationMeasurementsBuffer timeSyncBuffers[Settings::highestValidPlayerNumber - Settings::lowestValidPlayerNumber + 1]; /**< A buffer which contains synchronization data for all other robots. */
 
   const FrameInfo& theFrameInfo;
   const RobotInfo& theRobotInfo;
@@ -121,7 +112,8 @@ private:
 public:
   /**
    * Constructor.
-   * @param localId The number this robot is identified with.
+   * @param theFrameInfo Contains the current time.
+   * @param theRobotInfo Contains the player number.
    */
   BNTP(const FrameInfo& theFrameInfo, const RobotInfo& theRobotInfo) : theFrameInfo(theFrameInfo), theRobotInfo(theRobotInfo) {}
 };

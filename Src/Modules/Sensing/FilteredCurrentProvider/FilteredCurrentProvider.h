@@ -9,7 +9,7 @@
 
 #include "Platform/SystemCall.h"
 #include "Representations/Communication/RobotInfo.h"
-#include "Representations/Configuration/GyroOffset.h"
+#include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"

@@ -25,6 +25,7 @@ mr KeyStates LogDataProvider Motion
 mr GroundTruthWorldState LogDataProvider Cognition
 mr GroundTruthRobotPose OracledWorldModelProvider Cognition
 mr GroundTruthBallModel OracledWorldModelProvider Cognition
+mr JPEGImage off
 
-call Includes/DebugResponses
 call Includes/GameStates
+call Includes/DebugResponses

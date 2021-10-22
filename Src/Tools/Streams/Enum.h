@@ -185,7 +185,7 @@
  * Registers a single enumeration constant.
  * @param constant The enumeration constant.
  */
-#define _ENUM_REG(constant) TypeRegistry::addEnumConstant(_type, #constant);
+#define _ENUM_REG(constant) REG_CONSTANT(constant);
 
 /**
  * Defining an enum and a function getName(<Enum>) that can return
@@ -223,8 +223,7 @@
     static void reg() \
     { \
       PUBLISH(reg); \
-      const char* _type = typeid(Enum).name(); \
-      TypeRegistry::addEnum(_type); \
+      REG_ENUM(Enum); \
       _STREAM_ATTR_##n param \
     } \
   }
@@ -240,5 +239,5 @@
 #define _FOREACH_ENUM_I(enum, n, ...) _FOREACH_ENUM_II((_FOREACH_ENUM_, n), enum, __VA_ARGS__)
 #define _FOREACH_ENUM_II(param, ...) _ENUM_JOIN param (__VA_ARGS__)
 #define _FOREACH_ENUM_1(enum, var) _FOREACH_ENUM_2(enum, var, enum##_Info::numOfElements)
-#define _FOREACH_ENUM_2(enum, var, limit) for(enum var = enum(0); var < limit; var = enum(unsigned(var) + 1))
+#define _FOREACH_ENUM_2(enum, var, limit) for(auto var = enum(0); var < limit; var = enum(unsigned(var) + 1))
 

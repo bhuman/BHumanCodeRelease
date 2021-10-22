@@ -59,8 +59,8 @@ private:
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-    glLineWidth(1.5); // required
-    glPointSize(2.5);
+    glLineWidth(1.5f); // required
+    glPointSize(2.5f);
     glPolygonMode(GL_FRONT, GL_LINE);
     glPolygonMode(GL_BACK, GL_LINE);
     glShadeModel(GL_SMOOTH);
@@ -79,9 +79,9 @@ private:
     glLoadIdentity();
     gluPerspective(25, aspect, 1, 100);
 
-    glTranslated(0.0f, 0.0f, -view3D.getViewDistance());
-    glRotated(rotation.x(), 1.0f, 0.0f, 0.0f);
-    glRotated(rotation.y(), 0.0f, 0.0f, 1.0f);
+    glTranslatef(0.0f, 0.0f, -view3D.getViewDistance());
+    glRotated(rotation.x(), 1.0, 0.0, 0.0);
+    glRotated(rotation.y(), 0.0, 0.0, 1.0);
 
     glCallList(View3D::cubeId);
     glCallList(View3D::colorsId);

@@ -25,11 +25,12 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
 #ifndef __ALSA_PCM_PLUGIN_H
+#define __ALSA_PCM_PLUGIN_H
 
 /**
  * \defgroup PCM_Plugins PCM Plugins
@@ -39,7 +40,7 @@
  */
   
 #define SND_PCM_PLUGIN_RATE_MIN 4000	/**< minimal rate for the rate plugin */
-#define SND_PCM_PLUGIN_RATE_MAX 192000	/**< maximal rate for the rate plugin */
+#define SND_PCM_PLUGIN_RATE_MAX 768000	/**< maximal rate for the rate plugin */
 
 /* ROUTE_FLOAT should be set to 0 for machines without FP unit - like iPAQ */
 #ifdef HAVE_SOFT_FLOAT

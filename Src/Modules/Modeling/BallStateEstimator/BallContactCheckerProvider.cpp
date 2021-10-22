@@ -14,7 +14,7 @@
 #include "Tools/Modeling/BallLocatorTools.h"
 
 
-MAKE_MODULE(BallContactCheckerProvider, modeling)
+MAKE_MODULE(BallContactCheckerProvider, modeling);
 
 
 BallContactCheckerProvider::BallContactCheckerProvider()

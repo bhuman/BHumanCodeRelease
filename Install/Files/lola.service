@@ -1,0 +1,15 @@
+[Unit]
+Description=Aldebaran LoLA
+After=hal.service
+Requires=hal.service
+Before=bhuman.service
+
+[Service]
+Type=simple
+LimitRTPRIO=36
+Restart=on-failure
+ExecStart=/opt/aldebaran/bin/lola
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

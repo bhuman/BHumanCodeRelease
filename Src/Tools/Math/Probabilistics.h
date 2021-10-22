@@ -1,7 +1,7 @@
 /**
  * @file Math/Probabilistics.h
  *
- * This contains some probabilistic functions
+ * This file contains some probabilistic functions
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
  */
@@ -40,7 +40,7 @@ inline float gaussianProbability(float x, float s)
  * @param a  The lower bound of the interval
  * @param b  The upper bound of the interval
  */
-inline float probabiltyOfInterval(float mu, float s, float a, float b)
+inline float probabilityOfInterval(float mu, float s, float a, float b)
 {
   const float pa = std::erf((a - mu) / (sqrt2 * s));
   const float pb = std::erf((b - mu) / (sqrt2 * s));

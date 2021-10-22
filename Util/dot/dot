@@ -1,8 +1,11 @@
 #!/bin/bash
-if [ "`uname`" = "Darwin" ]; then
-  export scriptPath=$(echo $0 | sed "s|^\.\./|`pwd`/../|" | sed "s|^\./|`pwd`/|")
-  export baseDir=$(dirname "${scriptPath}")
-  export GVBINDIR=$baseDir/macOS
+if [ "$(uname)" = "Darwin" ]; then
+  baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
+  if [ "$(uname -m)" = arm64 ]; then
+    export GVBINDIR=$baseDir/macOSarm64
+  else
+    export GVBINDIR=$baseDir/macOS
+  fi
   "$GVBINDIR/dot" $@
 else 
   export PATH=$PATH:/usr/local/bin

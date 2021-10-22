@@ -13,7 +13,6 @@ STREAMABLE(LinesPercept,
 {
   STREAMABLE(Line,
   {
-    std::vector<int> spotInImgHeights; /**<The height of each spot in the image (only needed for validation) */
     Line() = default;
     Line(const Vector2f& base, const Vector2f& direction) : line(base, direction) {},
 

@@ -6,7 +6,7 @@
  * map ::= record
  * record ::= field ';' { field ';' }
  * field ::= literal '=' ( literal | '{' record '}' | array )
- * array ::= '[' [ ( literal | '{' record '}' ) { ',' ( literal | '{' record '}' ) } [ ',' ] ']'
+ * array ::= '[' [ ( literal | '{' record '}' ) { ',' ( literal | '{' record '}' ) } [ ',' ] ] ']'
  * literal ::= '"' { anychar1 } '"' | { anychar2 }
  *
  * It can also parse a JSON-like format, which has the following grammar:
@@ -14,40 +14,30 @@
  * map ::= record
  * record ::= '{' field { ',' field } [ ',' ] '}'
  * field ::= literal ':' ( literal | record | array )
- * array ::= '[' [ ( literal | record | array ) { ',' ( literal | record | array ) } [ ',' ] ']'
+ * array ::= '[' [ ( literal | record | array ) { ',' ( literal | record | array ) } [ ',' ] ] ']'
  * literal ::= '"' { anychar1 } '"' | { anychar2 }
  *
  * anychar1 must escape double quotes and backslash with a backslash
- * anychar2 cannot contains whitespace and other characters used by the grammar.
+ * anychar2 cannot contain characters used by the grammar.
  *
  * @author Thomas Röfer
  */
 
 #include "SimpleMap.h"
 #include <stdexcept>
-#include "InStreams.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Debugging/Debugging.h"
 
-SimpleMap::Literal::operator In&() const
-{
-  if(!stream)
-    stream = new InTextMemory(literal.c_str(), literal.size());
-  else
-    *(InTextMemory*)stream = InTextMemory(literal.c_str(), literal.size());
-  return *stream;
-}
-
 SimpleMap::Record::~Record()
 {
-  for(std::unordered_map<std::string, Value*>::const_iterator i = begin(); i != end(); ++i)
-    delete i->second;
+  for(const auto& i : *this)
+    delete i.second;
 }
 
 SimpleMap::Array::~Array()
 {
-  for(std::vector<Value*>::const_iterator i = begin(); i != end(); ++i)
-    delete *i;
+  for(auto i : *this)
+    delete i;
 }
 
 void SimpleMap::nextChar()
@@ -76,7 +66,7 @@ void SimpleMap::nextSymbol()
   for(;;)
   {
     // Skip whitespace
-    while(c && isspace(c))
+    while(c && std::isspace(c))
       nextChar();
 
     string = "";
@@ -140,7 +130,7 @@ void SimpleMap::nextSymbol()
             nextChar();
           }
           if(!c)
-            throw new std::logic_error("Unexpected EOF in comment");
+            throw std::logic_error("Unexpected EOF in comment");
           nextChar();
           continue; // jump back to skipping whitespace
         }
@@ -154,14 +144,16 @@ void SimpleMap::nextSymbol()
           continue; // jump back to skipping whitespace
         }
         string = "/";
-        // no break;
+        [[fallthrough]];
 
       default:
-        while(c && !isspace(c) && c != '=' && c != ',' && c != ';' && c != ']' && c != '}')
+        while(c && c != '=' && c != ',' && c != ';' && c != ']' && c != '}')
         {
           string += c;
           nextChar();
         }
+        while(!string.empty() && std::isspace(string.back()))
+          string.pop_back();
         symbol = literal;
         return; // skip nextChar
     }
@@ -190,7 +182,7 @@ SimpleMap::Record* SimpleMap::parseRecord()
 {
   if(jsonMode)
     nextSymbol();
-  Record* r = new Record;
+  auto* r = new Record;
   try
   {
     while(symbol == literal)
@@ -242,7 +234,7 @@ SimpleMap::Record* SimpleMap::parseRecord()
 SimpleMap::Array* SimpleMap::parseArray()
 {
   nextSymbol();
-  Array* a = new Array();
+  auto* a = new Array();
   try
   {
     while(symbol == literal || symbol == lBrace || (jsonMode && symbol == lBracket))
@@ -276,7 +268,7 @@ SimpleMap::Array* SimpleMap::parseArray()
 }
 
 SimpleMap::SimpleMap(In& stream, const std::string& name, bool jsonMode) :
-  stream(stream), c(0), row(1), column(0), root(0), jsonMode(jsonMode)
+  stream(stream), jsonMode(jsonMode)
 {
   try
   {
@@ -298,6 +290,5 @@ SimpleMap::SimpleMap(In& stream, const std::string& name, bool jsonMode) :
 
 SimpleMap::~SimpleMap()
 {
-  if(root)
-    delete root;
+  delete root;
 }

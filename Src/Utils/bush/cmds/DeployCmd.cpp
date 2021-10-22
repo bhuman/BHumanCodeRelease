@@ -28,7 +28,7 @@ bool DeployCmd::DeployTask::execute()
    */
   QString command = DeployCmd::getCommand();
 
-  QStringList args = QStringList();
+  QStringList args;
   args.push_back(QString("-nc"));
   args.push_back(QString("-nr"));
   args.push_back(buildConfig);
@@ -80,7 +80,7 @@ std::string DeployCmd::getName() const
 
 std::string DeployCmd::getDescription() const
 {
-  return "Deploys code to selected robots. (Uses the copyfiles script)";
+  return "Deploys code to selected robots. (Uses the deploy script)";
 }
 
 std::vector<std::string> DeployCmd::complete(const std::string& cmdLine) const
@@ -123,11 +123,11 @@ Task* DeployCmd::perRobotExecution(Context& context, Robot& robot)
 #ifdef WINDOWS
 QString DeployCmd::getCommand()
 {
-  return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/copyfiles.cmd");
+  return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/deploy.cmd");
 }
 #else
 QString DeployCmd::getCommand()
 {
-  return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/copyfiles");
+  return fromString(std::string(File::getBHDir()) + "/Make/" + makeDirectory() + "/deploy");
 }
 #endif

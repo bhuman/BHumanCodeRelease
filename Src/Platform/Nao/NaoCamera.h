@@ -108,6 +108,9 @@ public:
 
   void doAutoWhiteBalance();
 
+  void toggleAutoWhiteBalance();
+
+
   /**
    * Set a camera register.
    * @param address The address of the register.
@@ -127,8 +130,7 @@ public:
   bool getRegister(unsigned short address, unsigned short& value) const;
 
   static void resetCamera();
-  static bool getI2CDeviceNumber(int& i2cDeviceNumber);
-  static bool openI2CDevice(int i2cDeviceNumber, int& fileDescriptor);
+  static bool openI2CDevice(int& fileDescriptor);
   static bool i2cReadWriteAccess(int fileDescriptor, unsigned char readWrite, unsigned char command, unsigned char size, i2c_smbus_data& data);
   static bool i2cWriteBlockData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, std::vector<unsigned char> data);
   static bool i2cReadByteData(int fileDescriptor, unsigned char deviceAddress, unsigned char dataAddress, unsigned char& res);

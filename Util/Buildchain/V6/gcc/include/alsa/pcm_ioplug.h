@@ -24,7 +24,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -65,6 +65,8 @@ typedef snd_pcm_ioplug_callback snd_pcm_ioplug_callback_t;
  */
 #define SND_PCM_IOPLUG_FLAG_LISTED	(1<<0)		/**< list up this PCM */
 #define SND_PCM_IOPLUG_FLAG_MONOTONIC	(1<<1)		/**< monotonic timestamps */
+/** hw pointer wrap around at boundary instead of buffer_size */
+#define SND_PCM_IOPLUG_FLAG_BOUNDARY_WA	(1<<2)
 
 /*
  * Protocol version
@@ -103,7 +105,7 @@ struct snd_pcm_ioplug {
 	 */
 	void *private_data;
 	/**
-	 * PCM handle filled by #snd_pcm_extplug_create()
+	 * PCM handle filled by #snd_pcm_ioplug_create()
 	 */
 	snd_pcm_t *pcm;
 
@@ -124,19 +126,22 @@ struct snd_pcm_ioplug {
 /** Callback table of ioplug */
 struct snd_pcm_ioplug_callback {
 	/**
-	 * start the PCM; required
+	 * start the PCM; required, called inside mutex lock
 	 */
 	int (*start)(snd_pcm_ioplug_t *io);
 	/**
-	 * stop the PCM; required
+	 * stop the PCM; required, called inside mutex lock
 	 */
 	int (*stop)(snd_pcm_ioplug_t *io);
 	/**
-	 * get the current DMA position; required
+	 * get the current DMA position; required, called inside mutex lock
+	 * \return buffer position up to buffer_size or
+	 * when #SND_PCM_IOPLUG_FLAG_BOUNDARY_WA flag is set up to boundary or
+	 * a negative error code for Xrun
 	 */
 	snd_pcm_sframes_t (*pointer)(snd_pcm_ioplug_t *io);
 	/**
-	 * transfer the data; optional
+	 * transfer the data; optional, called inside mutex lock
 	 */
 	snd_pcm_sframes_t (*transfer)(snd_pcm_ioplug_t *io,
 				      const snd_pcm_channel_area_t *areas,
@@ -167,7 +172,7 @@ struct snd_pcm_ioplug_callback {
 	 */
 	int (*drain)(snd_pcm_ioplug_t *io);
 	/**
-	 * toggle pause; optional
+	 * toggle pause; optional, called inside mutex lock
 	 */
 	int (*pause)(snd_pcm_ioplug_t *io, int enable);
 	/**
@@ -228,6 +233,14 @@ int snd_pcm_ioplug_set_param_list(snd_pcm_ioplug_t *io, int type, unsigned int n
 
 /* change PCM status */
 int snd_pcm_ioplug_set_state(snd_pcm_ioplug_t *ioplug, snd_pcm_state_t state);
+
+/* calucalte the available frames */
+snd_pcm_uframes_t snd_pcm_ioplug_avail(const snd_pcm_ioplug_t * const ioplug,
+				       const snd_pcm_uframes_t hw_ptr,
+				       const snd_pcm_uframes_t appl_ptr);
+snd_pcm_uframes_t snd_pcm_ioplug_hw_avail(const snd_pcm_ioplug_t * const ioplug,
+					  const snd_pcm_uframes_t hw_ptr,
+					  const snd_pcm_uframes_t appl_ptr);
 
 /** \} */
 

@@ -55,7 +55,7 @@ FieldWidget::~FieldWidget()
   settings.endGroup();
 }
 
-void FieldWidget::paintEvent(QPaintEvent* event)
+void FieldWidget::paintEvent(QPaintEvent*)
 {
   painter.begin(this);
   paint(painter);

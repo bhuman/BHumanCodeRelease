@@ -1,0 +1,393 @@
+#!/bin/bash
+
+# This script is based on something published by the Nao Devils.
+# Thanks!
+
+set -euo pipefail
+
+baseDir="$(cd "$(dirname "$(which "$0")")" && pwd)"
+bhDir="$(dirname "${baseDir}")"
+includeDir="${baseDir}/Include"
+
+source "${includeDir}/bhumanBase"
+
+rootDir="/tmp/b-human-root"
+naoOPN=""
+naoImage="/tmp/nao-image.ext3"
+naoImageDir="/tmp/nao-image-dir"
+rootImage="${baseDir}/root.ext3"
+
+usage() {
+  echo "usage:"
+  echo "${0} [-r <root image>] <SBR image>"
+  echo "${0} -h"
+  echo ""
+  echo " <root image>: path to the root image (.ext3)"
+  echo " <SBR image> : path to an original SoftBank Robotics .opn (including HAL and LoLA)"
+  echo ""
+  echo " -h          : Display this help"
+  exit 1
+}
+
+parseOptions() {
+  while getopts hr: opt; do
+    case "$opt" in
+      r)
+        rootImage="${OPTARG}"
+        ;;
+      [?]|h)
+        usage
+        ;;
+    esac
+  done
+
+  shift $(($OPTIND - 1))
+
+  if [ $# -ne 1 ]; then
+    error "Bad number of arguments."
+    usage
+  fi
+
+  naoOPN="${1}"
+  if [ ! $(dd if="${naoOPN}" skip=96 bs=1 count=8 status=none | xxd -p) = "0000000000100000" ]; then
+    fatal "Invalid SoftBank image."
+  fi
+}
+
+checkRoot
+
+checkApp "chroot"
+checkApp "debootstrap"
+checkApp "dd"
+checkApp "gunzip"
+checkApp "mke2fs"
+checkApp "mount"
+checkApp "patchelf"
+checkApp "sed"
+checkApp "umount"
+checkApp "xxd"
+
+parseOptions "$@"
+
+if [ -e "${rootDir}" ]; then
+  echo "${rootDir} exists already (from a previous run). Do you want to remove it? [y|n]"
+  read answer
+  if [ "${answer}" = "y" ] || [ "${answer}" = "yes" ]; then
+    echo "Removing old directory."
+    rm -rf "${rootDir}"
+  else
+    echo "Not creating an image."
+    exit 1
+  fi
+fi
+
+# Install a minimal Ubuntu.
+mkdir -p "${rootDir}"
+debootstrap --variant=minbase --arch=amd64 focal "${rootDir}" http://archive.ubuntu.com/ubuntu
+
+# Adjust sources.
+cat >"${rootDir}/etc/apt/sources.list" <<EOF
+deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu focal-backports main restricted universe multiverse
+EOF
+
+mount -o bind /dev "${rootDir}/dev"
+mount -o bind /dev/pts "${rootDir}/dev/pts"
+mount -t sysfs /sys "${rootDir}/sys"
+mount -t proc /proc "${rootDir}/proc"
+LANG=C chroot "${rootDir}" /bin/bash <<EOF
+set -eu
+
+apt-get update
+apt-get dist-upgrade
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y alsa beignet-opencl-icd gdb htop i2c-tools libusb-1.0-0 ocl-icd-libopencl1 openssh-server pciutils rsync ubuntu-minimal vim wpasupplicant
+
+# wpa_supplicant does not need to run by itself, it will be started by netplan if necessary.
+systemctl disable wpa_supplicant.service
+
+addgroup --system nao --gid 1001
+addgroup hal --gid 99
+addgroup usb --gid 85
+addgroup rt --gid 113
+useradd -s /bin/bash -g nao -G tty,uucp,audio,video,plugdev,systemd-journal,syslog,hal,usb,rt,sudo,render -u 1001 -M nao
+echo "nao:nao" | chpasswd
+echo "root:root" | chpasswd
+
+mkdir -p /media/internal /media/usb
+chown nao:nao /media/internal /media/usb
+
+mkdir -p /var/lib/systemd/linger
+touch /var/lib/systemd/linger/nao
+EOF
+umount "${rootDir}/proc"
+umount "${rootDir}/sys"
+umount "${rootDir}/dev/pts"
+umount "${rootDir}/dev"
+
+# Set the hostname (placeholder).
+echo "HOSTNAME_PLACEHOLDER" >"${rootDir}/etc/hostname"
+sed -e "s/^127\.0\.0\.1\W.*/127.0.0.1\tlocalhost HOSTNAME_PLACEHOLDER/" -i "${rootDir}/etc/hosts"
+
+# On first boot, the ext2 file system on the home partition should be turned into ext3 and get its proper UUID.
+# This is because the busybox tools in the DFU initrd can't create an ext3 file system.
+cat >"${rootDir}/etc/systemd/system/tune-home-fs.service" <<EOF
+[Unit]
+Description=Add journal to home partition
+After=dev-disk-by\x2dpartuuid-66666666\x2d1120\x2d1120\x2d1120\x2d666666666666.device
+Requires=dev-disk-by\x2dpartuuid-66666666\x2d1120\x2d1120\x2d1120\x2d666666666666.device
+Before=home.mount
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/tune2fs -U 66666666-1120-1120-1120-666666666666 -L B-Human-data -j /dev/disk/by-partuuid/66666666-1120-1120-1120-666666666666
+ExecStartPost=/bin/systemctl disable tune-home-fs.service
+
+[Install]
+WantedBy=sysinit.target
+EOF
+ln -s ../tune-home-fs.service "${rootDir}/etc/systemd/system/sysinit.target.wants/tune-home-fs.service"
+
+# Copy kernel and modules (firmware comes from the original image below).
+tar -xf "${baseDir}/Files/kernel.tar.bz2" -C "${rootDir}"
+tar -xf "${baseDir}/Files/modules.tar.bz2" -C "${rootDir}/lib"
+
+# Configure modules that are loaded on boot.
+echo "cgosdrv" >"${rootDir}/etc/modules-load.d/cgosdrv.conf"
+echo "fuse" >"${rootDir}/etc/modules-load.d/fuse.conf"
+echo "sbre-usb-i2c" >"${rootDir}/etc/modules-load.d/sbre-usb-i2c.conf"
+echo "sbre-dfuse" >>"${rootDir}/etc/modules-load.d/sbre-usb-i2c.conf"
+echo "cgos-sbr" >"${rootDir}/etc/modules-load.d/cgos-sbr.conf"
+echo "options snd-hda-intel enable_msi=1 position_fix=1 probe_mask=0x101" >"${rootDir}/etc/modprobe.d/snd-hda-intel.conf"
+
+# Add some configuration files.
+cp "${baseDir}/Files/99-nao.rules" "${rootDir}/etc/udev/rules.d"
+cp "${baseDir}/Files/fstab" "${rootDir}/etc/fstab"
+cp "${baseDir}/Files/sudoers_bhuman" "${rootDir}/etc/sudoers.d"
+cat >>"${rootDir}/etc/security/limits.conf" <<EOF
+@rt            -       rtprio          65
+@rt            -       nice            -10
+@rt            -       memlock         40000
+EOF
+cat >"${rootDir}/etc/tmpfiles.d/00-create-volatile.conf" <<EOF
+d       /var/volatile/log 1777  - - -
+d       /var/volatile/tmp 1777  - - -
+L+      /var/log          1777  - - - volatile/log
+L+      /var/tmp          1777  - - - volatile/tmp
+EOF
+
+# Prepare netplan config (the installer finishes it).
+cp "${baseDir}/Files/default.yaml.base" "${baseDir}/Files/default.yaml.wifi" "${rootDir}/etc/netplan"
+touch "${rootDir}/etc/netplan/default.yaml.profile"
+
+# Install some scripts and executables.
+mkdir -p "${rootDir}/opt/bhuman/libexec"
+mkdir -p "${rootDir}/opt/aldebaran/libexec"
+cp "${baseDir}/Files/chest-harakiri" "${rootDir}/opt/bhuman/libexec"
+cp "${baseDir}/Files/flash-cx3" "${rootDir}/opt/aldebaran/libexec"
+cp "${baseDir}/Files/reset-cameras.sh" "${rootDir}/opt/aldebaran/libexec"
+cp "${baseDir}/Files/harakiri" "${rootDir}/lib/systemd/system-shutdown"
+
+rm "${rootDir}/etc/systemd/system/multi-user.target.wants/ondemand.service"
+
+# Copy HAL, LoLA and other blobs from an original image.
+if [ ! -e "${naoImage}" ]; then
+  trap "rm -f ${naoImage}" EXIT
+fi
+dd if="${naoOPN}" skip=257 bs=4096 status=none | gunzip -c >"${naoImage}"
+mkdir -p "${naoImageDir}"
+mount -o loop,ro -t ext3 "${naoImage}" "${naoImageDir}"
+mkdir -p \
+  "${rootDir}/lib/firmware" \
+  "${rootDir}/opt/aldebaran/bin" \
+  "${rootDir}/opt/aldebaran/etc" \
+  "${rootDir}/opt/aldebaran/firmware" \
+  "${rootDir}/opt/aldebaran/lib" \
+  "${rootDir}/opt/aldebaran/share"
+cp \
+  "${naoImageDir}/opt/aldebaran/bin/hal" \
+  "${naoImageDir}/opt/aldebaran/bin/lola" \
+  "${rootDir}/opt/aldebaran/bin"
+cp -r "${naoImageDir}/opt/aldebaran/etc/hal" "${rootDir}/opt/aldebaran/etc"
+cp -r "${naoImageDir}/opt/aldebaran/share/lola" "${rootDir}/opt/aldebaran/share"
+cp -aL \
+  "${naoImageDir}/lib/ld-linux.so.2" \
+  "${naoImageDir}/lib/libc.so.6" \
+  "${naoImageDir}/lib/libcap.so.2" \
+  "${naoImageDir}/lib/libdl.so.2" \
+  "${naoImageDir}/lib/libgcc_s.so.1" \
+  "${naoImageDir}/lib/libm.so.6" \
+  "${naoImageDir}/lib/libpthread.so.0" \
+  "${naoImageDir}/lib/libresolv.so.2" \
+  "${naoImageDir}/lib/librt.so.1" \
+  "${naoImageDir}/lib/libsystemd.so.0" \
+  "${naoImageDir}/lib/libusb-1.0.so.0" \
+  "${naoImageDir}/lib/libz.so.1" \
+  "${naoImageDir}/opt/aldebaran/lib/libactuationdefinitions.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libactuationdetail.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libactuationservice.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalcommon.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalerror.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalextractor.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalfan.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalmath.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalmathinternal.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalmodelutils.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalproxies.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalserial.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalthread.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalvalue.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalvalueutils.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libalvision.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libanimation.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libappearance.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libbn-common.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libbn-rt.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libbn-usb.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libcartesianposture.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libexplorer.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libgroundcollision.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libhal_common.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libhal_core.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libhalsync.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libio_headi2c.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libio_headusb.so" \
+  "${naoImageDir}/opt/aldebaran/lib/liblabeling.so" \
+  "${naoImageDir}/opt/aldebaran/lib/liblola_qi_api.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmatchwifisignature.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmetrical.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmotionservices.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmpc-walkgen.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmpc-walkgen_qpsolver_qpoases_double.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libmpc-walkgen_qpsolver_qpoases_float.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnao-modules.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnao_devices.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnao_running.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnaospecialsimulation_running.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnavcommon.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libnavigation.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libpeople.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_actuatorifnostiffness.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_addnaodevicesspecialsimulation.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_calibration.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_clientsync.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_dcmlost.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_diagnosis.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_fsrtotalcenterofpression.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_grideye.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_initdevices.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_initmotorboard.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_initnaodevices.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_iocommunication.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_ledifnodcm.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_maxcurrent.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_memberidentification.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_motortemperature.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_naoavailabledevice.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_preferences.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_simulation.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_simulation_fill_attributes.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libplugin_testrobotversion.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libposture.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libposturegraph.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libposturemanager.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libqi.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libqpOASESfloat.so" \
+  "${naoImageDir}/opt/aldebaran/lib/librealmover.so" \
+  "${naoImageDir}/opt/aldebaran/lib/librealodometer.so" \
+  "${naoImageDir}/opt/aldebaran/lib/librobot.so" \
+  "${naoImageDir}/opt/aldebaran/lib/librobot_devices.so" \
+  "${naoImageDir}/opt/aldebaran/lib/librobotposture.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libtopological.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libtouch.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libtouchdefinitions.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libtouchservice.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libvisiongetter.so" \
+  "${naoImageDir}/opt/aldebaran/lib/libwifilocalization.so" \
+  "${naoImageDir}/opt/aldebaran/lib/naoqi/librobotmodel.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/libcpp_common.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/librosbag_storage.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/libroscpp_serialization.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/libroslz4.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/librostime.so" \
+  "${naoImageDir}/opt/ros/indigo/lib/libtf2.so" \
+  "${naoImageDir}/usr/lib/libboost_chrono.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_filesystem.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_locale.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_program_options.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_regex.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_serialization.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_system.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libboost_thread.so.1.59.0" \
+  "${naoImageDir}/usr/lib/libbz2.so.1" \
+  "${naoImageDir}/usr/lib/libcgos.so" \
+  "${naoImageDir}/usr/lib/libconsole_bridge.so" \
+  "${naoImageDir}/usr/lib/libcrypto.so.1.0.0" \
+  "${naoImageDir}/usr/lib/libffi.so.6" \
+  "${naoImageDir}/usr/lib/libg2o_core.so.1" \
+  "${naoImageDir}/usr/lib/libg2o_csparse_extension.so.1" \
+  "${naoImageDir}/usr/lib/libg2o_ext_csparse.so.1" \
+  "${naoImageDir}/usr/lib/libg2o_stuff.so.1" \
+  "${naoImageDir}/usr/lib/libgio-2.0.so.0" \
+  "${naoImageDir}/usr/lib/libglib-2.0.so.0" \
+  "${naoImageDir}/usr/lib/libgmodule-2.0.so.0" \
+  "${naoImageDir}/usr/lib/libgobject-2.0.so.0" \
+  "${naoImageDir}/usr/lib/libicudata.so.56" \
+  "${naoImageDir}/usr/lib/libicui18n.so.56" \
+  "${naoImageDir}/usr/lib/libicuuc.so.56" \
+  "${naoImageDir}/usr/lib/libjpeg.so.62" \
+  "${naoImageDir}/usr/lib/liblz4.so.1" \
+  "${naoImageDir}/usr/lib/liblzma.so.5" \
+  "${naoImageDir}/usr/lib/libmsgpackc.so.2" \
+  "${naoImageDir}/usr/lib/liboctomap.so.1.6" \
+  "${naoImageDir}/usr/lib/liboctomath.so.1.6" \
+  "${naoImageDir}/usr/lib/libopencv_calib3d.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_core.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_features2d.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_flann.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_highgui.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_imgcodecs.so.3.1" \
+  "${naoImageDir}/usr/lib/libopencv_imgproc.so.3.1" \
+  "${naoImageDir}/usr/lib/liborocos-bfl.so" \
+  "${naoImageDir}/usr/lib/libpcre.so.1" \
+  "${naoImageDir}/usr/lib/libpng16.so.16" \
+  "${naoImageDir}/usr/lib/libsqlite3.so.0" \
+  "${naoImageDir}/usr/lib/libssl.so.1.0.0" \
+  "${naoImageDir}/usr/lib/libstdc++.so.6" \
+  "${naoImageDir}/usr/lib/libtbb.so.2" \
+  "${naoImageDir}/usr/lib/libtbbmalloc.so.2" \
+  "${naoImageDir}/usr/lib/libtbbmalloc_proxy.so.2" \
+  "${naoImageDir}/usr/lib/libtiff.so.5" \
+  "${naoImageDir}/usr/lib/libtinyxml.so.2.6.2" \
+  "${naoImageDir}/usr/lib/libwebp.so.6" \
+  "${naoImageDir}/usr/lib/libwebsockets.so.10" \
+  "${naoImageDir}/usr/lib/libxml2.so.2" \
+  "${rootDir}/opt/aldebaran/lib"
+cp \
+  "${naoImageDir}/usr/share/firmware/CX3RDK_OV5640_USB2.img" \
+  "${naoImageDir}/usr/share/firmware/CX3RDK_OV5640_USB3.img" \
+  "${rootDir}/opt/aldebaran/firmware"
+cp -r \
+  "${naoImageDir}/lib/firmware/ar3k" \
+  "${naoImageDir}/lib/firmware/ath3k-1.fw" \
+  "${naoImageDir}/lib/firmware/LICENCE.atheros_firmware" \
+  "${naoImageDir}/lib/firmware/LICENSE.QualcommAtheros_ar3k" \
+  "${naoImageDir}/lib/firmware/sbre-usb-i2c.dfuse" \
+  "${rootDir}/lib/firmware"
+umount "${naoImageDir}"
+
+# Adjust dynamic linker paths for HAL and LoLA.
+patchelf --set-interpreter /opt/aldebaran/lib/ld-linux.so.2 "${rootDir}/opt/aldebaran/bin/hal"
+patchelf --set-interpreter /opt/aldebaran/lib/ld-linux.so.2 "${rootDir}/opt/aldebaran/bin/lola"
+
+# Clean up.
+rm -r "${rootDir}/var/lib/apt/lists"/* "${rootDir}/var/log"/* "${rootDir}/var/cache"/*
+
+mke2fs -q -F -U 42424242-1120-1120-1120-424242424242 -L "B-Human-system" -b 4096 -t ext3 -d "${rootDir}" "${rootImage}" 999168
+
+rm -rf "${rootDir}"
+
+echo "Created root image."

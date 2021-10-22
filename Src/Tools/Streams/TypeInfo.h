@@ -24,6 +24,7 @@
 #pragma once
 
 #include "InOut.h"
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -48,6 +49,8 @@ struct TypeInfo
     Attribute(const std::string& type, const std::string& name) : type(type), name(name) {}
   };
 
+  static std::unique_ptr<TypeInfo> current; /**< The only instance of the current type info. */
+
   std::unordered_set<std::string> primitives; /**< All primitive data types. */
   std::unordered_map<std::string, std::vector<std::string>> enums; /**< All enumeration types. */
   std::unordered_map<std::string, std::vector<Attribute>> classes; /**< All classes and structures. */
@@ -66,6 +69,9 @@ struct TypeInfo
    * @param otherType The type name for the other type information.
    */
   bool areTypesEqual(const TypeInfo& other, const std::string& thisType, const std::string& otherType) const;
+
+  /** Initialize the only instance of the current type info. */
+  static void initCurrent();
 };
 
 /**

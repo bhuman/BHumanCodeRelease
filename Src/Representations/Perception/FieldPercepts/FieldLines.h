@@ -1,7 +1,8 @@
 /**
  * @file FieldLines.h
- * Declaration of a struct that represents the fieldline percepts
- * @author jeff
+ *
+ * Declaration of a struct that represents perceived field lines in
+ * field coordinates relative to the robot.
  */
 
 #pragma once
@@ -13,53 +14,27 @@
 
 /**
  * @struct FieldLines
- * A struct that represents the found fieldlines.
+ * A struct that contains a list of perceived lines on the field
  */
 STREAMABLE(FieldLines,
 {
   /**
    * @struct Line
-   *
-   * This struct represents a found fieldline.
+   * Internal representation for a single line
    */
   STREAMABLE(Line,
-  {
-    /**
-     * Calculates the distance of a point p to this line
-     * @param p a point
-     * @return the distance
-     */
-    float calculateDistToLine(const Vector2f& p) const
-    {
-      return p.x() * std::cos(alpha) + p.y() * std::sin(alpha) - d;
-    }
-
-    /**
-     * Calculates the closest point to a point on this line
-     * @param p a point
-     * @return the closest point on this line
-     */
-    Vector2f calculateClosestPointOnLine(const Vector2f& p) const,
-
-    (Angle) alpha, /**< direction of this line in Hesse norm form */
-    (float) d, /**< distance of this line in Hesse norm form */
-    (bool) midLine, /**< Whether this is the line throught the center circle */
-    (bool) isLong, /**< Whether this is a long line */
-    (Vector2f) first, /**< The starting point of this line in field coordinates */
-    (Vector2f) last, /**< The end point of this line in field coordinates */
+  {,
+    (Angle) alpha,    /**< Direction of this line in Hesse norm form */
+    (float) length,   /**< Distance between first and last point. Redundant but useful information */
+    (Vector2f) first, /**< The starting point of this line in field coordinates relative to the robot */
+    (Vector2f) last,  /**< The end point of this line in field coordinates relative to the robot */
   });
 
-  /** Determines the closest line to a given point
-   * @param point the given point
-   * @param retLine the closest line
-   * @return the distance from point to retLine
-   * */
-  float getClosestLine(Vector2f point, Line& retLine) const;
+  /** The method draws the lines to image/field/3D scene. */
+  void draw() const;
 
-  /**
-   * The method draws the percepts to image/field/3D scene.
-   */
-  void draw() const,
+  /** Verifies that all lines contain valid values and are sorted by length. */
+  void verify() const,
 
-  (std::vector<Line>) lines, /**< The found fieldlines */
+  (std::vector<Line>) lines, /**< The detected field lines, sorted by length (from long to short) */
 });

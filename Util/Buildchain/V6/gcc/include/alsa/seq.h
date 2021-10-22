@@ -22,7 +22,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -143,6 +143,8 @@ snd_seq_client_type_t snd_seq_client_info_get_type(const snd_seq_client_info_t *
 const char *snd_seq_client_info_get_name(snd_seq_client_info_t *info);
 int snd_seq_client_info_get_broadcast_filter(const snd_seq_client_info_t *info);
 int snd_seq_client_info_get_error_bounce(const snd_seq_client_info_t *info);
+int snd_seq_client_info_get_card(const snd_seq_client_info_t *info);
+int snd_seq_client_info_get_pid(const snd_seq_client_info_t *info);
 const unsigned char *snd_seq_client_info_get_event_filter(const snd_seq_client_info_t *info);
 int snd_seq_client_info_get_num_ports(const snd_seq_client_info_t *info);
 int snd_seq_client_info_get_event_lost(const snd_seq_client_info_t *info);

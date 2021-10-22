@@ -49,7 +49,7 @@ void FieldCoverage::operator>>(BHumanMessage& m) const
   m.theBHumanArbitraryMessage.queue.out.finishMessage(id());
 }
 
-void FieldCoverage::operator<<(const BHumanMessage& m)
+void FieldCoverage::operator<<(const BHumanMessage&)
 {
   for(size_t y = 0; y < lines.size(); y++)
   {

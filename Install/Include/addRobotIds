@@ -50,19 +50,13 @@ parseOptions() {
 getIdsFromRobot() {
   message "Loading ids from Robot"
 
-  # copy python scripts
-  tmpPath="/tmp/NaoInstall"
-  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "rm -Rf ${tmpPath}" || fatal "Can't remove '${tmpPath}' on NAO"
-  ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "mkdir -p ${tmpPath}" || fatal "Can't create '${tmpPath}' on NAO"
-  rsync ${rsyncOptions} -e "${sshCommand}" "${fileDir}/bin/getBodyId.py" nao@${remoteIp}:${tmpPath}/getBodyId.py || fatal "Can't copy 'getBodyId.py' to NAO"
-
   # get headId
   headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "cat /sys/qi/head_id 2>/dev/null || true")
   if [ -z ${headId} ]; then
     fatal "Failed reading the headId!"
   fi
-  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "bash -l -c 'python /tmp/NaoInstall/getBodyId.py' | grep -vE '\[(W|I)\]'")
-  if [ ${bodyId} == "Fail" ]; then
+  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "/opt/aldebaran/bin/chest-version 3")
+  if [ -z ${bodyId} ]; then
     fatal "Failed reading the bodyId!"
   fi
 }
@@ -123,4 +117,4 @@ createRobotsFile
 addIds
 
 message "Added ${name}'s ids to ${robotsFile}."
-message "Don't forget to run installRobot!"
+message "Don't forget to flash the robot!"

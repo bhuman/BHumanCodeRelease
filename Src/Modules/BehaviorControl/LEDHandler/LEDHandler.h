@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/TeamBehaviorStatus.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/RobotInfo.h"
@@ -24,7 +23,6 @@
 MODULE(LEDHandler,
 {,
   REQUIRES(BallModel),
-  REQUIRES(BehaviorStatus),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
@@ -41,6 +39,9 @@ MODULE(LEDHandler,
   {,
     (int)(5) chargingLightSlowness,
     (int)(2000) gameControllerTimeOut,
+    (int)(50) tempForHalfLEDActive,
+    (int)(65) tempForLEDBlinking,
+    (int)(75) tempForLEDFastBlinking,
   }),
 });
 

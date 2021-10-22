@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <set>
-#include <SimRobotCore2.h>
 #include "Platform/Thread.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/RobotInfo.h"
@@ -18,6 +16,9 @@
 #include "Tools/Settings.h"
 #include "Tools/Streams/Enum.h"
 #include "Tools/Streams/InOut.h"
+#include <SimRobot.h>
+#include <set>
+#include <string>
 
 class SimulatedRobot;
 
@@ -27,7 +28,22 @@ class SimulatedRobot;
 class GameController
 {
 public:
-  bool automatic = true; /**< Are the automatic features active? */
+  ENUM(AutomaticReferee,
+  {,
+    placeBall,
+    placePlayers,
+    switchToSet,
+    switchToPlaying,
+    ballOut,
+    freeKickComplete,
+    clearBall,
+    penalizeLeavingTheField,
+    penalizeIllegalPosition,
+    penalizeIllegalPositionInSet,
+    unpenalize,
+  });
+
+  unsigned automatic = ~0u; /**< Which automatic features are active? */
 
 private:
   struct Robot
@@ -35,6 +51,9 @@ private:
     SimulatedRobot* simulatedRobot = nullptr;
     RobotInfo info;
     unsigned timeWhenPenalized = 0;
+    unsigned timeWhenBallNotStuckBetweenLegs = 0;
+    float ownPenaltyAreaMargin = -1.f;
+    float opponentPenaltyAreaMargin = -1.f;
     uint8_t lastPenalty = PENALTY_NONE;
     Pose2f lastPose;
     bool manuallyPlaced = false;
@@ -47,12 +66,11 @@ private:
     playerPushing,
     illegalMotionInSet,
     inactivePlayer,
-    illegalDefender,
+    illegalPosition,
     leavingTheField,
-    kickOffGoal,
     requestForPickup,
     localGameStuck,
-    illegalPositioning,
+    illegalPositionInSet,
     substitute,
     manual,
   });
@@ -63,17 +81,18 @@ private:
   static const int numOfFieldPlayers = numOfRobots / 2 - 2; // Keeper, Substitute
   static const int halfTime = 600;
   static const int readyTime = 45;
+  static const int penaltyKickReadyTime = 30;
   static const int kickOffTime = 10;
   static const int freeKickTime = 30;
   static const int penaltyShotTime = 30;
   static const float footLength; /**< foot length for position check and manual placement at center circle. */
   static const float safeDistance; /**< safe distance from penalty areas for manual placement. */
   static const float dropHeight; /**< height at which robots are manually placed so the fall a little bit and recognize it. */
-  Pose2f lastBallContactPose; /**< Position were the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degress). */
+  Pose2f lastBallContactPose; /**< Position where the last ball contact of a robot took place, orientation is toward opponent goal (0/180 degrees). */
   unsigned lastBallContactTime = 0;
   FieldDimensions fieldDimensions;
   BallSpecification ballSpecification;
-  GameInfo gameInfo;
+  RawGameInfo gameInfo;
   TeamInfo teamInfos[2];
   uint8_t lastState = STATE_INITIAL;
   unsigned timeBeforeCurrentState = 0;
@@ -95,8 +114,6 @@ private:
     opponentGoalOutBySecondTeam,
     opponentGoalOutByFirstTeam
   };
-
-  friend Settings;
 
 public:
   GameController();
@@ -273,7 +290,7 @@ private:
    * Checks the position of a robot at the transition from ready to set and penalizes it if its position is illegal.
    * @param robot The number of the robot to check the position of.
    */
-  void checkIllegalPositioning(int robot);
+  void checkIllegalPositionInSet(int robot);
 
   /** Adds the time that has elapsed in the current state to timeBeforeCurrentState. */
   void addTimeInCurrentState();

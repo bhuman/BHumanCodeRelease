@@ -21,7 +21,6 @@ Semaphore::Semaphore(unsigned value)
 Semaphore::~Semaphore()
 {
   OSStatus status = MPDeleteSemaphore(static_cast<MPSemaphoreID>(handle));
-  static_cast<void>(status);
   ASSERT(status == noErr || status == kMPTaskAbortedErr);
 }
 

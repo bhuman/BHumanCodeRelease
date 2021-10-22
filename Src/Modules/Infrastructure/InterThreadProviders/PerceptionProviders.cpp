@@ -8,6 +8,19 @@
  */
 
 #include "PerceptionProviders.h"
+#include "Representations/Infrastructure/CameraStatus.h"
+#include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
+#include "Representations/Perception/BallPercepts/BallPercept.h"
+#include "Representations/Perception/FieldPercepts/CirclePercept.h"
+#include "Representations/Perception/FieldPercepts/FieldLines.h"
+#include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
+#include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
+#include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
+#include "Representations/Perception/FieldPercepts/LinesPercept.h"
+#include "Representations/Perception/ImagePreprocessing/BodyContour.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
+#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 
 MAKE_MODULE(PerceptionImageCoordinateSystemProvider, infrastructure);
 
@@ -61,6 +74,7 @@ ALIAS(CirclePercept);
 ALIAS(FieldBoundary);
 ALIAS(FieldLines);
 ALIAS(FieldLineIntersections);
+ALIAS(GoalPostsPercept);
 ALIAS(IntersectionsPercept);
 ALIAS(LinesPercept);
 ALIAS(ObstaclesFieldPercept);

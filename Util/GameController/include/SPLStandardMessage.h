@@ -30,7 +30,7 @@ struct SPLStandardMessage
 {
   char header[4];        // "SPL "
   uint8_t version;       // has to be set to SPL_STANDARD_MESSAGE_STRUCT_VERSION
-  uint8_t playerNum;     // [MANDATORY FIELD] 1-6 in normal games as well as in mixed team games
+  uint8_t playerNum;     // [MANDATORY FIELD] 1-6
   uint8_t teamNum;       // [MANDATORY FIELD] the number of the team (as provided by the organizers)
   uint8_t fallen;        // [MANDATORY FIELD] 1 means that the robot is fallen, 0 means that the robot can play
 
@@ -63,9 +63,9 @@ struct SPLStandardMessage
   // constructor
   SPLStandardMessage() :
     version(SPL_STANDARD_MESSAGE_STRUCT_VERSION),
-    playerNum(-1),
-    teamNum(-1),
-    fallen(-1),
+    playerNum(0),
+    teamNum(0),
+    fallen(255), // placeholder to detect in the TCM if this field is not set
     ballAge(-1.f),
     numOfDataBytes(0)
   {

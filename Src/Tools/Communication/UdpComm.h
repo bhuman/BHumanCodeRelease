@@ -99,8 +99,6 @@ public:
 
   static std::string getWifiBroadcastAddress();
 
-  static unsigned char getLastByteOfIP();
-
 private:
   bool resolve(const char*, int, struct sockaddr_in*);
 };

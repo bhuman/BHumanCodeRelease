@@ -213,11 +213,19 @@ void AnnotationWidget::filterChanged(const QString& newFilter)
   applyFilter();
 }
 
-void AnnotationWidget::jumpFrame(int row, int column)
+void AnnotationWidget::jumpFrame(int row, int)
 {
   NumberTableWidgetItem* item = static_cast<NumberTableWidgetItem*>(table->item(row, 0));
-  int frame = item->number;
-  view.logPlayer.gotoFrame(std::max(std::min(frame, view.logPlayer.numberOfFrames - 1), 0));
+  int targetFrame = item->number;
+
+  const auto clamp = [](int value, int lo, int hi) { return std::max(std::min(value, hi), lo); };
+  view.logPlayer.gotoFrame(clamp(targetFrame, 0, view.logPlayer.numberOfFrames - 1));
+
+  // Make sure images are updated as well.
+  view.logPlayer.stepImageBackward();
+  view.logPlayer.stepImageBackward();
+  for(int i = targetFrame - view.logPlayer.currentFrameNumber; i > 0; i--)
+    view.logPlayer.stepForward();
 }
 
 AnnotationView::AnnotationView(const QString& fullName, AnnotationInfo& info, LogPlayer& logPlayer, SystemCall::Mode mode, SimRobot::Application* application) :

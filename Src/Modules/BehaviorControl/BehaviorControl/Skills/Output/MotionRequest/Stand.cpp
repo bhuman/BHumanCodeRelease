@@ -21,15 +21,16 @@ SKILL_IMPLEMENTATION(StandImpl,
 
 class StandImpl : public StandImplBase
 {
-  void execute(const Stand&) override
+  void execute(const Stand& p) override
   {
     theMotionRequest.motion = MotionRequest::stand;
+    theMotionRequest.standHigh = p.high;
     theLibCheck.inc(LibCheck::motionRequest);
   }
 
   bool isDone(const Stand&) const override
   {
-    return theMotionInfo.motion == MotionRequest::stand;
+    return theMotionInfo.executedPhase == MotionPhase::stand;
   }
 };
 

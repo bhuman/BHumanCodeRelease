@@ -1,4 +1,5 @@
 #include "TriangleMesh.h"
+#include "Tools/Math/Eigen.h"
 
 using namespace std;
 

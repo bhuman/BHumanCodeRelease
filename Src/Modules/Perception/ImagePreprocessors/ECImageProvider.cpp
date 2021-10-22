@@ -8,18 +8,19 @@
 #include "Tools/Global.h"
 #include <asmjit/asmjit.h>
 
-MAKE_MODULE(ECImageProvider, perception)
+MAKE_MODULE(ECImageProvider, perception);
+
+#ifndef __arm64__
 
 void ECImageProvider::update(ECImage& ecImage)
 {
   ecImage.grayscaled.setResolution(theCameraInfo.width, theCameraInfo.height);
-  ecImage.colored.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.saturated.setResolution(theCameraInfo.width, theCameraInfo.height);
   ecImage.hued.setResolution(theCameraInfo.width, theCameraInfo.height);
 
   if(theCameraImage.timestamp > 10 && static_cast<int>(theCameraImage.width) == theCameraInfo.width / 2)
   {
-    if(disableClassification)
+    if(disableColor)
     {
       if(!eFunc)
         compileE();
@@ -30,21 +31,7 @@ void ECImageProvider::update(ECImage& ecImage)
       if(!ecFunc)
         compileEC();
 
-      // There may be faster ways to copy the colors.
-      if(theFieldColors.maxNonColorSaturation != currentMaxNonColorSaturation[0])
-        for(size_t i = 0; i < 16; i++)
-          currentMaxNonColorSaturation[i] = theFieldColors.maxNonColorSaturation;
-      if(theFieldColors.blackWhiteDelimiter != currentBlackWhiteDelimiter[0])
-        for(size_t i = 0; i < 16; i++)
-          currentBlackWhiteDelimiter[i] = theFieldColors.blackWhiteDelimiter;
-      if(theFieldColors.fieldHue.min != currentFieldHueMin[0])
-        for(size_t i = 0; i < 16; i++)
-          currentFieldHueMin[i] = theFieldColors.fieldHue.min;
-      if(theFieldColors.fieldHue.max != currentFieldHueMax[0])
-        for(size_t i = 0; i < 16; i++)
-          currentFieldHueMax[i] = theFieldColors.fieldHue.max;
-
-      ecFunc(theCameraInfo.width * theCameraInfo.height / 16, theCameraImage[0], ecImage.grayscaled[0], ecImage.saturated[0], ecImage.hued[0], ecImage.colored[0]);
+      ecFunc(theCameraInfo.width * theCameraInfo.height / 16, theCameraImage[0], ecImage.grayscaled[0], ecImage.saturated[0], ecImage.hued[0]);
     }
     ecImage.timestamp = theCameraImage.timestamp;
   }
@@ -63,8 +50,7 @@ void ECImageProvider::compileE()
 
   // Emit prolog
   a.enter(imm(0u), imm(0u));
-#if ASMJIT_ARCH_X86 == 64
-#ifdef _WIN32
+#ifdef WINDOWS
   // Windows64
   x86::Gp src = a.zdx();
   x86::Gp dest = x86::r8;
@@ -73,14 +59,6 @@ void ECImageProvider::compileE()
   a.mov(a.zcx(), a.zdi());
   x86::Gp src = a.zsi();
   x86::Gp dest = a.zdx();
-#endif
-#else
-  // CDECL
-  x86::Gp src = a.zdx();
-  x86::Gp dest = a.zax();
-  a.mov(a.zcx(), x86::Mem(a.zbp(), 8));
-  a.mov(src, x86::Mem(a.zbp(), 12));
-  a.mov(dest, x86::Mem(a.zbp(), 16));
 #endif
 
   Label loMask16 = a.newLabel();
@@ -137,14 +115,11 @@ void ECImageProvider::compileEC()
   x86::Gp grayscaled = a.zdx();
   x86::Gp saturated = a.zcx();
   x86::Gp hued = a.zax();
-  x86::Gp colored = a.zbx();
 
   // Emit Prolog
   a.push(a.zbp());
   a.mov(a.zbp(), a.zsp());
-  a.push(a.zbx());
-#if ASMJIT_ARCH_X86 == 64
-#ifdef _WIN32
+#ifdef WINDOWS
   // Windows64
   a.push(a.zdi());
   a.push(a.zsi());
@@ -153,22 +128,9 @@ void ECImageProvider::compileEC()
   a.mov(grayscaled, x86::r8);
   a.mov(saturated, x86::r9);
   a.mov(hued, x86::Mem(a.zbp(), 16 + 32));
-  a.mov(colored, x86::Mem(a.zbp(), 16 + 32 + 8));
 #else
   // System V x64
   a.mov(hued, x86::r8);
-  a.mov(colored, x86::r9);
-#endif
-#else
-  // CDECL
-  a.push(a.zdi());
-  a.push(a.zsi());
-  a.mov(remainingSteps, x86::Mem(a.zbp(), 8));
-  a.mov(src, x86::Mem(a.zbp(), 12));
-  a.mov(grayscaled, x86::Mem(a.zbp(), 16));
-  a.mov(saturated, x86::Mem(a.zbp(), 20));
-  a.mov(hued, x86::Mem(a.zbp(), 24));
-  a.mov(colored, x86::Mem(a.zbp(), 28));
 #endif
 
   // Define constants
@@ -182,18 +144,11 @@ void ECImageProvider::compileEC()
   x86::Mem c16_x8001(constants, 16 * 6);
   x86::Mem c16_5695(constants, 16 * 7);
   x86::Mem c16_11039(constants, 16 * 8);
-  x86::Mem maxNonColorSaturation8(constants, 16 * 9);
-  x86::Mem fieldHFrom8(constants, 16 * 10);
-  x86::Mem fieldHTo8(constants, 16 * 11);
-  x86::Mem blackWhiteDelimiter8(constants, 16 * 12);
-  x86::Mem classWhite8(constants, 16 * 13);
-  x86::Mem classField8(constants, 16 * 14);
-  x86::Mem classBlack8(constants, 16 * 15);
 
   // Start of loop
   Label loop = a.newLabel();
   a.bind(loop);
-  // XMM0-XMM1: Source / x64: XMM8-XMM9: Source
+  // XMM0-XMM1: Source
   a.movdqu(x86::xmm0, x86::Mem(src, 0));
   a.movdqu(x86::xmm1, x86::Mem(src, 16));
   a.add(src, 32);
@@ -204,20 +159,13 @@ void ECImageProvider::compileEC()
   a.movdqa(x86::xmm3, x86::xmm1);
   a.pand(x86::xmm2, x86::xmm4); // XMM2 is now 16-bit luminance0
   a.pand(x86::xmm3, x86::xmm4); // XMM3 is now 16-bit luminance1
-#if !ASMJIT_ARCH_64BIT
   a.movdqa(x86::xmm5, x86::xmm2);
   a.packuswb(x86::xmm5, x86::xmm3);
   // store grayscaled
   a.movdqa(x86::ptr(grayscaled), x86::xmm5);
-#else
-  a.movdqa(x86::xmm8, x86::xmm2);
-  a.packuswb(x86::xmm8, x86::xmm3); // XMM8 is now 8-bit grayscaled
-  // store grayscaled
-  a.movntdq(x86::ptr(grayscaled), x86::xmm8);
-#endif
   a.add(grayscaled, 16);
 
-  // Convert image data to 8-bit UV in XMM0 / x64: XMM8
+  // Convert image data to 8-bit UV in XMM0
   a.psrldq(x86::xmm0, 1);
   a.psrldq(x86::xmm1, 1);
   a.pand(x86::xmm0, x86::xmm4);
@@ -327,50 +275,15 @@ void ECImageProvider::compileEC()
   a.movntdq(x86::ptr(hued), x86::xmm0);
   a.add(hued, 16);
 
-  // Classify hue
-  a.movdqa(x86::xmm1, fieldHFrom8);
-  a.psubusb(x86::xmm1, x86::xmm0);
-  a.psubusb(x86::xmm0, fieldHTo8);
-  a.pcmpeqb(x86::xmm0, x86::xmm1); // XMM0 is now 8-bit isHueField
-
-  // Classify saturation
-  a.movdqa(x86::xmm1, maxNonColorSaturation8);
-  a.psubusb(x86::xmm1, x86::xmm2);
-  a.pxor(x86::xmm2, x86::xmm2); // XMM2 is now zeroed
-  a.pcmpeqb(x86::xmm1, x86::xmm2); // XMM1 is now 8-bit isColored
-
-  // Classify luminance
-  a.movdqa(x86::xmm3, blackWhiteDelimiter8);
-#if !ASMJIT_ARCH_64BIT
-  a.psubusb(x86::xmm3, x86::Mem(grayscaled, -16));
-#else
-  a.psubusb(x86::xmm3, x86::xmm8);
-#endif
-  a.pcmpeqb(x86::xmm2, x86::xmm3); // XMM2 is now 8-bit isWhite
-
-  // Map color classes
-  a.pand(x86::xmm0, classField8);
-  a.pand(x86::xmm0, x86::xmm1); // XMM0 now contains the mapped 'field' entries
-  a.movdqa(x86::xmm3, classWhite8);
-  a.pand(x86::xmm3, x86::xmm2);
-  a.pandn(x86::xmm2, classBlack8);
-  a.por(x86::xmm2, x86::xmm3);
-  a.pandn(x86::xmm1, x86::xmm2); // XMM1 now contains the mapped 'white' and 'black' entries
-  a.por(x86::xmm0, x86::xmm1); // XMM0 is now 8-bit colored
-  // store colored
-  a.movntdq(x86::ptr(colored), x86::xmm0);
-  a.add(colored, 16);
-
   // End of loop
   a.dec(remainingSteps);
   a.jnz(loop);
 
   // Return
-#if ASMJIT_ARCH_X86 != 64 || defined(_WIN32)
+#ifdef WINDOWS
   a.pop(a.zsi());
   a.pop(a.zdi());
 #endif
-  a.pop(a.zbx());
   a.mov(a.zsp(), a.zbp());
   a.pop(a.zbp());
   a.ret();
@@ -387,13 +300,6 @@ void ECImageProvider::compileEC()
   for(size_t i = 0; i < 8; i++) a.dint16(short(0x8001)); // 6: c16_x8001
   for(size_t i = 0; i < 8; i++) a.dint16(5695);          // 7: c16_5695
   for(size_t i = 0; i < 8; i++) a.dint16(11039);         // 8: c16_11039
-  for(size_t i = 0; i < 16; i++) a.dint8(0);             // 9: maxNonColorSaturation8
-  for(size_t i = 0; i < 16; i++) a.dint8(0);             // 10: fieldHFrom8
-  for(size_t i = 0; i < 16; i++) a.dint8(0);             // 11: fieldHTo8
-  for(size_t i = 0; i < 16; i++) a.dint8(0);             // 12: blackWhiteDelimiter8
-  for(size_t i = 0; i < 16; i++) a.dint8(FieldColors::Color::white); // 13: classWhite8
-  for(size_t i = 0; i < 16; i++) a.dint8(FieldColors::Color::field); // 14: classField8
-  for(size_t i = 0; i < 16; i++) a.dint8(FieldColors::Color::black); // 15: classBlack8
 
   // Bind function
   const Error err = Global::getAsmjitRuntime().add<EcFunc>(&ecFunc, &code);
@@ -404,11 +310,6 @@ void ECImageProvider::compileEC()
     return;
   }
 
-  auto constantsPtr = reinterpret_cast<uint8_t*>(ecFunc) + code.labelOffset(constants);
-  currentMaxNonColorSaturation = constantsPtr + 16 * 9;
-  currentFieldHueMin = constantsPtr + 16 * 10;
-  currentFieldHueMax = constantsPtr + 16 * 11;
-  currentBlackWhiteDelimiter = constantsPtr + 16 * 12;
 }
 
 ECImageProvider::~ECImageProvider()
@@ -418,3 +319,87 @@ ECImageProvider::~ECImageProvider()
   if(ecFunc)
     Global::getAsmjitRuntime().release(ecFunc);
 }
+
+#else
+
+#include "Tools/ImageProcessing/YHSColorConversion.h"
+
+template<bool aligned, bool avx>
+void updateSSE(const PixelTypes::YUYVPixel* const srcImage, const int srcWidth, const int srcHeight,
+               Image<PixelTypes::GrayscaledPixel>& grayscaled,
+               Image<PixelTypes::HuePixel>& hued, Image<PixelTypes::GrayscaledPixel>& saturated)
+{
+  ASSERT(srcWidth % 32 == 0);
+
+  __m_auto_i* grayscaledDest = reinterpret_cast<__m_auto_i*>(grayscaled[0]) - 1;
+  __m_auto_i* saturatedDest = reinterpret_cast<__m_auto_i*>(saturated[0]) - 1;
+  __m_auto_i* huedDest = reinterpret_cast<__m_auto_i*>(hued[0]) - 1;
+  const __m_auto_i* const imageEnd = reinterpret_cast<const __m_auto_i*>(srcImage + srcWidth * srcHeight) - 1;
+
+  static const __m_auto_i c_128 = _mmauto_set1_epi8(char(128));
+  static const __m_auto_i channelMask = _mmauto_set1_epi16(0x00FF);
+
+  const char* prefetchSrc = reinterpret_cast<const char*>(srcImage) + (avx ? 128 : 64);
+  const char* prefetchGrayscaledDest = reinterpret_cast<const char*>(grayscaled[0]) + (avx ? 64 : 32);
+
+  const __m_auto_i* src = reinterpret_cast<__m_auto_i const*>(srcImage) - 1;
+  while(src < imageEnd)
+  {
+    const __m_auto_i p0 = _mmauto_loadt_si_all<aligned>(++src);
+    const __m_auto_i p1 = _mmauto_loadt_si_all<aligned>(++src);
+    const __m_auto_i p2 = _mmauto_loadt_si_all<aligned>(++src);
+    const __m_auto_i p3 = _mmauto_loadt_si_all<aligned>(++src);
+
+    // Compute luminance
+    const __m_auto_i y0 = _mmauto_correct_256op(_mmauto_packus_epi16(_mmauto_and_si_all(p0, channelMask), _mmauto_and_si_all(p1, channelMask)));
+    const __m_auto_i y1 = _mmauto_correct_256op(_mmauto_packus_epi16(_mmauto_and_si_all(p2, channelMask), _mmauto_and_si_all(p3, channelMask)));
+    _mmauto_storet_si_all<true>(++grayscaledDest, y0);
+    _mmauto_storet_si_all<true>(++grayscaledDest, y1);
+
+    _mm_prefetch(prefetchSrc += 32, _MM_HINT_T0);
+    _mm_prefetch(prefetchSrc += 32, _MM_HINT_T0);
+    if(avx) _mm_prefetch(prefetchSrc += 32, _MM_HINT_T0);
+    if(avx) _mm_prefetch(prefetchSrc += 32, _MM_HINT_T0);
+
+    _mm_prefetch(prefetchGrayscaledDest += 32, _MM_HINT_T0);
+    if(avx) _mm_prefetch(prefetchGrayscaledDest += 32, _MM_HINT_T0);
+
+    // Compute saturation
+    const __m_auto_i uv0 = _mmauto_sub_epi8(_mmauto_correct_256op(_mmauto_packus_epi16(_mmauto_and_si_all(_mmauto_srli_si_all(p0, 1), channelMask), _mmauto_and_si_all(_mmauto_srli_si_all(p1, 1), channelMask))), c_128);
+    const __m_auto_i uv1 = _mmauto_sub_epi8(_mmauto_correct_256op(_mmauto_packus_epi16(_mmauto_and_si_all(_mmauto_srli_si_all(p2, 1), channelMask), _mmauto_and_si_all(_mmauto_srli_si_all(p3, 1), channelMask))), c_128);
+
+    const __m_auto_i sat0 = YHSColorConversion::computeLightingIndependentSaturation<avx>(y0, uv0);
+    const __m_auto_i sat1 = YHSColorConversion::computeLightingIndependentSaturation<avx>(y1, uv1);
+    _mmauto_streamt_si_all<true>(++saturatedDest, sat0);
+    _mmauto_streamt_si_all<true>(++saturatedDest, sat1);
+
+    // Compute hue
+    const __m_auto_i hue = YHSColorConversion::computeHue<avx>(uv0, uv1);
+    __m_auto_i hue0 = hue;
+    __m_auto_i hue1 = hue;
+    _mmauto_unpacklohi_epi8(hue0, hue1);
+    _mmauto_streamt_si_all<true>(++huedDest, hue0);
+    _mmauto_streamt_si_all<true>(++huedDest, hue1);
+  }
+}
+
+void ECImageProvider::update(ECImage& ecImage)
+{
+  ecImage.grayscaled.setResolution(theCameraInfo.width, theCameraInfo.height);
+  ecImage.saturated.setResolution(theCameraInfo.width, theCameraInfo.height);
+  ecImage.hued.setResolution(theCameraInfo.width, theCameraInfo.height);
+
+  if(theCameraImage.timestamp > 10 && static_cast<int>(theCameraImage.width) == theCameraInfo.width / 2)
+  {
+    const PixelTypes::YUYVPixel* const src = reinterpret_cast<const PixelTypes::YUYVPixel* const>(theCameraImage[0]);
+    if(simdAligned<_supportsAVX2>(src))
+      updateSSE<true, _supportsAVX2>(src, theCameraImage.width, theCameraImage.height, ecImage.grayscaled, ecImage.hued, ecImage.saturated);
+    else
+      updateSSE<false, _supportsAVX2>(src, theCameraImage.width, theCameraImage.height, ecImage.grayscaled, ecImage.hued, ecImage.saturated);
+    ecImage.timestamp = theCameraImage.timestamp;
+  }
+}
+
+ECImageProvider::~ECImageProvider() {}
+
+#endif

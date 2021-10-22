@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "RoboCupGameControlData.h"
+#include "Tools/Communication/RoboCupGameControlData.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Streams/Streamable.h"
 
@@ -32,11 +32,16 @@ public:
 
 protected:
   /**
-   * The method makes the object streamable.
-   * @param in The stream from which the object is read (if in != 0).
-   * @param out The stream to which the object is written (if out != 0).
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
    */
-  void serialize(In* in, Out* out) override;
+  void read(In& stream) override;
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override;
 
 private:
   static void reg();

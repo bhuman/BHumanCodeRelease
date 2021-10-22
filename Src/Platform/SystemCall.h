@@ -39,6 +39,12 @@ public:
   static unsigned long long getFreeDiskSpace(const char* path);
 
   /**
+   * Disable/enable playback of future sounds.
+   * @param isMuted Whether sounds are disabled.
+   */
+  static void mute(bool isMuted);
+
+  /**
    * Put a filename into play sound queue.
    * If you want to play Config/Sounds/bla.wav use play("bla.wav");
    * @param name The filename of the sound file.
@@ -52,7 +58,7 @@ public:
    * @param text The string to be synthesized and played
    * @return The amount of elements in the play sound queue.
    */
-  static int say(const char* text);
+  static int say(const char* text, float speed = 1.f);
 
   /**
    * Is the sound player currently playing a file?
@@ -60,5 +66,12 @@ public:
    */
   static bool soundIsPlaying();
 
+  /**
+   * Is a USB drive mounted?
+   * @return Whether a USB drive is mounted.
+   */
   static bool usbIsMounted();
+
+private:
+  static bool isMuted; /**< Whether sound playback requests will be ignored. */
 };

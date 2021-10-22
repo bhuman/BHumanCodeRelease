@@ -1,7 +1,6 @@
 /**
  * @file OdometryData.h
  * Contains the OdometryData struct.
- * @author Max Risler
  */
 
 #pragma once

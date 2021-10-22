@@ -7,15 +7,15 @@
  */
 
 #include "FootBumperStateProvider.h"
-#include "Platform/SystemCall.h"
 #include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/Geometry.h"
 
 MAKE_MODULE(FootBumperStateProvider, sensing);
 
 void FootBumperStateProvider::update(FootBumperState& footBumperState)
 {
   bool ignoreInnerBumper = ignoreContact();
-  bool ignoreByState = !((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
+  bool ignoreByState = !((theMotionInfo.executedPhase == MotionPhase::stand || theMotionInfo.executedPhase == MotionPhase::walk) &&
                          (theGameInfo.state == STATE_READY || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_PLAYING) && //The bumper is used for configuration in initial
                          (theFallDownState.state == FallDownState::upright));
   // Check, if any bumper is pressed
@@ -44,8 +44,8 @@ void FootBumperStateProvider::update(FootBumperState& footBumperState)
     }
     if(contactRightFoot)
     {
-      contactBufferRightLeft.push_front(contactRightFoot ? 1 : 0);
-      contactBufferRightRight.push_front(contactRightFoot ? 1 : 0);
+      contactBufferRightLeft.push_front(rightFootLeft ? 1 : 0);
+      contactBufferRightRight.push_front(rightFootRight ? 1 : 0);
       contactBufferRight.push_front(1);
       contactDurationRight++;
     }
@@ -71,7 +71,7 @@ void FootBumperStateProvider::update(FootBumperState& footBumperState)
   }
   // Generate model
   int thresholdContacts = static_cast<int>(1.f / Constants::motionCycleTime / contactThreshold);
-  if((theMotionInfo.motion == MotionInfo::stand || theMotionInfo.motion == MotionInfo::walk) &&
+  if((theMotionInfo.executedPhase == MotionPhase::stand || theMotionInfo.executedPhase == MotionPhase::walk) &&
      (theGameInfo.state == STATE_READY || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_PLAYING) && //The bumper is used for configuration in initial
      (theFallDownState.state == FallDownState::upright))
   {
@@ -110,13 +110,6 @@ void FootBumperStateProvider::update(FootBumperState& footBumperState)
   }
 
   // Debugging stuff:
-
-  if(debug && theFrameInfo.getTimeSince(lastSoundTime) > static_cast<int>(soundDelay) && (footBumperState.status[Legs::left].contact || footBumperState.status[Legs::right].contact))
-  {
-    lastSoundTime = theFrameInfo.time;
-    SystemCall::playSound("doh.wav");
-  }
-
   PLOT("module:FootBumperStateProvider:sumLeft", contactBufferLeft.sum());
   PLOT("module:FootBumperStateProvider:durationLeft", contactDurationLeft);
   PLOT("module:FootBumperStateProvider:sumRight", contactBufferRight.sum());
@@ -139,8 +132,19 @@ bool FootBumperStateProvider::checkContact(KeyStates::Key key, int& duration)
 
 bool FootBumperStateProvider::ignoreContact()
 {
-  Pose3f footLeft =  theRobotModel.soleLeft * Vector3f(theRobotDimensions.bumperInnerEdge.x(), -theRobotDimensions.bumperInnerEdge.y(), 0.f);
-  Pose3f footRight =  theRobotModel.soleRight * Vector3f(theRobotDimensions.bumperInnerEdge.x(), theRobotDimensions.bumperInnerEdge.y(), 0.f);
-  Vector3f bumperDistance = footRight.translation - footLeft.translation;
-  return bumperDistance.norm() < distanceBetweenFootBumpers;
+  const Vector2f footLeftLowerPoint = (theRobotModel.soleLeft * Vector3f(theRobotDimensions.bumperInnerEdge.x() + lowerShift.x(), -theRobotDimensions.bumperInnerEdge.y() - lowerShift.y(), 0.f)).head<2>();
+  const Vector2f footLeftUpperPoint = (theRobotModel.soleLeft * Vector3f(theRobotDimensions.bumperInnerEdge.x() + upperShift.x(), -theRobotDimensions.bumperInnerEdge.y() - upperShift.y(), 0.f)).head<2>();
+  const Vector2f footRightLowerPoint = (theRobotModel.soleRight * Vector3f(theRobotDimensions.bumperInnerEdge.x() + lowerShift.x(), theRobotDimensions.bumperInnerEdge.y() + lowerShift.y(), 0.f)).head<2>();
+  const Vector2f footRightUpperPoint = (theRobotModel.soleRight * Vector3f(theRobotDimensions.bumperInnerEdge.x() + upperShift.x(), theRobotDimensions.bumperInnerEdge.y() + upperShift.y(), 0.f)).head<2>();
+  const Vector2f footRightLowerExtraPoint = (theRobotModel.soleRight * Vector3f(theRobotDimensions.bumperInnerEdge.x() + lowerShift.x() + additionalLowerShift, theRobotDimensions.bumperInnerEdge.y() + lowerShift.y(), 0.f)).head<2>();
+  const Vector2f footLeftLowerExtraPoint = (theRobotModel.soleLeft * Vector3f(theRobotDimensions.bumperInnerEdge.x() + lowerShift.x() + additionalLowerShift, -theRobotDimensions.bumperInnerEdge.y() - lowerShift.y(), 0.f)).head<2>();
+
+  return std::abs(Geometry::getDistanceToEdge(Geometry::Line(footLeftLowerPoint, footLeftUpperPoint - footLeftLowerPoint), footRightLowerPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footLeftLowerPoint, footLeftUpperPoint - footLeftLowerPoint), footRightUpperPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footRightLowerPoint, footRightUpperPoint - footRightLowerPoint), footLeftLowerPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footRightLowerPoint, footRightUpperPoint - footRightLowerPoint), footLeftUpperPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footLeftLowerExtraPoint, footLeftLowerPoint - footLeftLowerExtraPoint), footRightLowerPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footLeftLowerExtraPoint, footLeftLowerPoint - footLeftLowerExtraPoint), footRightUpperPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footRightLowerExtraPoint, footRightLowerPoint - footRightLowerExtraPoint), footLeftLowerPoint)) < distanceBetweenFootBumpers ||
+         std::abs(Geometry::getDistanceToEdge(Geometry::Line(footRightLowerExtraPoint, footRightLowerPoint - footRightLowerExtraPoint), footLeftUpperPoint)) < distanceBetweenFootBumpers;
 }

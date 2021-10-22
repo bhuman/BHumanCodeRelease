@@ -3,12 +3,17 @@
 
 #ifndef DOC_HIDDEN
 #include <stdint.h>
+#ifdef __linux__
+#include <linux/types.h>
+#else
 typedef uint8_t __u8;
 typedef uint16_t __u16;
 typedef uint32_t __u32;
+typedef uint64_t __u64;
 typedef int8_t __s8;
 typedef int16_t __s16;
 typedef int32_t __s32;
+typedef int64_t __s64;
 
 #include <endian.h>
 #include <byteswap.h>
@@ -32,9 +37,21 @@ typedef int32_t __s32;
 #define __le64 __u64
 #define __le32 __u32
 #define __le16 __u16
+#define __le8  __u8
 #define __be64 __u64
 #define __be32 __u32
 #define __be16 __u16
+#define __be8  __u8
+#endif
+
+#ifndef __user
+#define __user
+#endif
+
+#ifndef __packed
+#define __packed __attribute__((__packed__))
+#endif
+
 #endif /* DOC_HIDDEN */
 
 #endif /* __TYPE_COMPAT_H */

@@ -13,6 +13,7 @@
 #include "Platform/BHAssert.h"
 #include "Tools/Math/Eigen.h"
 
+#include "Tools/Debugging/DebugDrawings.h"
 #include "KickViewMath.h"
 
 #include <vector>
@@ -109,15 +110,6 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   pal.setColor(QPalette::Background, Qt::darkGray);
   setPalette(pal);
 
-  QCheckBox* mirrorCB = new QCheckBox(tr("Mirror"), this);
-  mirrorCB->setCheckState(Qt::Unchecked);
-  mirrorCB->setBackgroundRole(QPalette::NoRole);
-  mirrorCB->setAutoFillBackground(true);
-  pal = mirrorCB->palette();
-  pal.setColor(QPalette::Background, Qt::darkGray);
-  pal.setColor(QPalette::Foreground, Qt::white);
-  mirrorCB->setPalette(pal);
-
   QCheckBox* armsBackFixCB = new QCheckBox(tr("ArmsBackFix"), this);
   armsBackFixCB->setCheckState(Qt::Unchecked);
   armsBackFixCB->setBackgroundRole(QPalette::NoRole);
@@ -172,7 +164,6 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   softLimb->setPopupMode(QToolButton::InstantPopup);
 
   label1->setAutoFillBackground(true);
-  mirrorCB->setAutoFillBackground(true);
   armsBackFixCB->setAutoFillBackground(true);
   clay->setAutoFillBackground(true);
   play->setAutoFillBackground(true);
@@ -183,7 +174,6 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   addPhase->setAutoFillBackground(true);
   deletePhase->setAutoFillBackground(true);
 
-  vbox3->addWidget(mirrorCB, 0, Qt::AlignTop);
   vbox3->addWidget(armsBackFixCB, 0, Qt::AlignTop);
   vbox3->addWidget(play, 0, Qt::AlignTop);
   vbox3->addWidget(play2, 0, Qt::AlignTop);
@@ -376,7 +366,6 @@ KickViewWidget::KickViewWidget(KickView& kickView, KickEngineParameters& paramet
   connect(slider1, SIGNAL(valueChanged(int)), this, SLOT(transparencyChanged(int)));
   connect(deletePhase, SIGNAL(clicked()), this, SLOT(removePhase()));
   connect(addPhase, SIGNAL(clicked()), this, SLOT(addPhaseAfterActual()));
-  connect(mirrorCB, SIGNAL(stateChanged(int)), this, SLOT(setMirrored(int)));
   connect(armsBackFixCB, SIGNAL(stateChanged(int)), this, SLOT(setArmsBackFix(int)));
   connect(play, SIGNAL(clicked()), this, SLOT(playWholeMotion()));
   connect(reset, SIGNAL(clicked()), this, SLOT(resetRobot()));
@@ -753,11 +742,6 @@ std::string KickViewWidget::boolToStr(bool b)
   return b ? "true" : "false";
 }
 
-void KickViewWidget::setMirrored(int state)
-{
-  mirror = (state == Qt::Checked);
-}
-
 void KickViewWidget::setArmsBackFix(int state)
 {
   armsBackFix = (state == Qt::Checked);
@@ -770,14 +754,15 @@ void KickViewWidget::playWholeMotion()
     playMotion(parameters.numberOfPhases);
     std::stringstream todo(std::stringstream::in | std::stringstream::out);
     std::string::size_type idxMotion = kickView.motionRequestCommand.find("motion");
-    std::string::size_type idxSpecialAction = kickView.motionRequestCommand.find("specialActionRequest", idxMotion);
-    std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickMotionType", idxSpecialAction);
-    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynPoints", idxKickMotion);
-    todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
-    todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
-    todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
-    todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
-    todo << "false" << "; " << "boost = false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    std::string::size_type idxStandHigh = kickView.motionRequestCommand.find("standHigh", idxMotion);
+    std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickType", idxStandHigh);
+    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("kickPower", idxKickMotion);
+    std::string::size_type idxVelocity = kickView.motionRequestCommand.find("velocity", idxDynamical);
+    todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "walkToBallAndKick; ";
+    todo << kickView.motionRequestCommand.substr(idxStandHigh, idxKickMotion - idxStandHigh);
+    todo << kickView.motionRequestCommand.substr(idxKickMotion, idxKickMotion + 11 - idxKickMotion) << "newKick;";
+    todo << kickView.motionRequestCommand.substr(idxDynamical, idxVelocity - idxDynamical);
+    todo << "velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = " << kickView.frameInfo.time << ";";
     commands.push_back(todo.str());
   }
 }
@@ -788,17 +773,17 @@ void KickViewWidget::playMotionTilActive()
   if(numberOfPhases > 0)
   {
     playMotion(numberOfPhases);
-
     std::stringstream todo(std::stringstream::in | std::stringstream::out);
     std::string::size_type idxMotion = kickView.motionRequestCommand.find("motion");
-    std::string::size_type idxSpecialAction = kickView.motionRequestCommand.find("specialActionRequest", idxMotion);
-    std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickMotionType", idxSpecialAction);
-    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("dynPoints", idxKickMotion);
-    todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "kick; ";
-    todo << kickView.motionRequestCommand.substr(idxSpecialAction, idxKickMotion + 17 - idxSpecialAction) << "newKick; mirror = ";
-    todo << (mirror ? "true" : "false") << "; " << "armsBackFix = ";
-    todo << (armsBackFix ? "true" : "false") << "; " << "autoProceed = ";
-    todo << "false" << "; " << "boost = false" << "; " << kickView.motionRequestCommand.substr(idxDynamical);
+    std::string::size_type idxStandHigh = kickView.motionRequestCommand.find("standHigh", idxMotion);
+    std::string::size_type idxKickMotion = kickView.motionRequestCommand.find("kickType", idxStandHigh);
+    std::string::size_type idxDynamical = kickView.motionRequestCommand.find("kickPower", idxKickMotion);
+    std::string::size_type idxVelocity = kickView.motionRequestCommand.find("velocity", idxDynamical);
+    todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "walkToBallAndKick; ";
+    todo << kickView.motionRequestCommand.substr(idxStandHigh, idxKickMotion - idxStandHigh);
+    todo << kickView.motionRequestCommand.substr(idxKickMotion, idxKickMotion + 11 - idxKickMotion) << "newKick;";
+    todo << kickView.motionRequestCommand.substr(idxDynamical, idxVelocity - idxDynamical);
+    todo << "velocity = { x = 0; y = 0; }; rotation = 0; radius = 50; covariance = { cols = [ { elems = [ 1, 0 ]; }, { elems = [ 0, 1 ]; } ]; }; }; ballEstimateTimestamp = 0; ballTimeWhenLastSeen = " << kickView.frameInfo.time << ";";
     commands.push_back(todo.str());
   }
 }
@@ -825,19 +810,34 @@ void KickViewWidget::playMotion(int phase)
   std::string separator = "";
   for(const KickEngineParameters::BoostAngle& boostAngle : parameters.boostAngles)
   {
-    setNewKickMotion += separator + "{ joint = " + TypeRegistry::getEnumName(boostAngle.joint) + "; angle = " + floatToStr(boostAngle.angle) + "; }";
+    setNewKickMotion += separator + "{ joint = " + TypeRegistry::getEnumName(boostAngle.joint) + "; angle = " + floatToStr(boostAngle.angle) + "; mode = " + TypeRegistry::getEnumName(boostAngle.mode)  + "; }";
     separator = ", ";
   }
+  setNewKickMotion += "];";
+  separator = "";
+  setNewKickMotion += "offsetList = [";
+  for(const KickEngineParameters::JointOffset& jointOffsets : parameters.offsetList)
+  {
+    setNewKickMotion += separator + "{kickKeyframeLine = " + std::to_string(jointOffsets.kickKeyframeLine) + "; boost = [";
+    for(const KickEngineParameters::BoostAngle& boost : jointOffsets.boost)
+    {
+      setNewKickMotion += separator + "{joint = " + TypeRegistry::getEnumName(boost.joint) + "; angle = " + floatToStr(boost.angle) + "; mode = " + TypeRegistry::getEnumName(boost.mode) + "; }";
+      separator = ", ";
+    }
+    setNewKickMotion += "];},";
+    separator = "";
+  }
   setNewKickMotion += "]; kpx = " + floatToStr(parameters.kpx) + "; kix = "
-                                  + floatToStr(parameters.kix) + "; kdx = "
-                                  + floatToStr(parameters.kdx) + "; kpy = "
-                                  + floatToStr(parameters.kpy) + "; kiy = "
-                                  + floatToStr(parameters.kiy) + "; kdy = "
-                                  + floatToStr(parameters.kdy) + "; loop = "
-                                  + boolToStr(parameters.loop) + "; standLeft = "
-                                  + boolToStr(parameters.standLeft) + "; ignoreHead = "
-                                  + boolToStr(parameters.ignoreHead) + "; adjustKickFootPosition = "
-                                  + std::to_string(parameters.adjustKickFootPosition) + "; phaseParameters = [";
+                      + floatToStr(parameters.kix) + "; kdx = "
+                      + floatToStr(parameters.kdx) + "; kpy = "
+                      + floatToStr(parameters.kpy) + "; kiy = "
+                      + floatToStr(parameters.kiy) + "; kdy = "
+                      + floatToStr(parameters.kdy) + "; loop = "
+                      + boolToStr(parameters.loop) + "; standLeft = "
+                      + boolToStr(parameters.standLeft) + "; ignoreHead = "
+                      + boolToStr(parameters.ignoreHead) + "; keyframeEarlyExitAllowedSafe = "
+                      + std::to_string(parameters.keyframeEarlyExitAllowedSafe) + "; keyframeEarlyExitAllowedRisky = "
+                      + std::to_string(parameters.keyframeEarlyExitAllowedRisky) + "; phaseParameters = [";
 
   for(int i = 0; i < phase; i++)
   {
@@ -940,12 +940,12 @@ void KickViewWidget::resetRobot()
 
 void KickViewWidget::standRobot()
 {
-  std::string command = kickView.motionRequestCommand;
-  std::string firstOfcom = command.substr(0, command.find("motion") + 9);
-  std::string temp = command.substr(command.find("motion") + 10, command.size() - command.find("motion") + 10);
-  std::string endOfcom = temp.substr(temp.find_first_of(";"), temp.size());
-  std::string stand = firstOfcom + "stand" + endOfcom;
-  commands.push_back(stand);
+  std::stringstream todo(std::stringstream::in | std::stringstream::out);
+  std::string::size_type idxMotion = kickView.motionRequestCommand.find("motion");
+  std::string::size_type walkSpeed = kickView.motionRequestCommand.find("walkSpeed", idxMotion);
+  todo << kickView.motionRequestCommand.substr(0, idxMotion + 9) << "stand; standHigh = false; ";
+  todo << kickView.motionRequestCommand.substr(walkSpeed);
+  commands.push_back(todo.str());
   commands.push_back(" ");
 }
 
@@ -962,11 +962,6 @@ void KickViewWidget::setDrawings(bool value)
 void KickViewWidget::setSingleDrawing(bool value)
 {
   singleDraw = value;
-}
-
-void KickViewWidget::setReachedDrawing(bool value)
-{
-  reachedDraw = value;
 }
 
 void KickViewWidget::setTra2d(bool value)
@@ -995,11 +990,6 @@ void KickViewWidget::setEditor(bool value)
     tabber->setHidden(false);
   else
     tabber->hide();
-}
-
-void KickViewWidget::setFollowMode(bool value)
-{
-  followMode = value;
 }
 
 void KickViewWidget::transparencyChanged(int i)

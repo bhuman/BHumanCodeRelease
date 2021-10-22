@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$">
+    <contentRoot DIR="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="CidrRootsConfiguration">
+    <sourceRoots>
+      <file path="$PROJECT_DIR$/../../Src" />
+      <file path="$PROJECT_DIR$/../../Util/SimRobot/Src" />
+    </sourceRoots>
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/../../Build" />
+      <file path="$PROJECT_DIR$/../../Config/Logs" />
+      <file path="$PROJECT_DIR$/../../Install" />
+      <file path="$PROJECT_DIR$/../../Util/Buildchain" />
+      <file path="$PROJECT_DIR$/../../Util/CABSL" />
+      <file path="$PROJECT_DIR$/../../Util/CallTool" />
+      <file path="$PROJECT_DIR$/../../Util/CompiledNN" />
+      <file path="$PROJECT_DIR$/../../Util/GameController" />
+      <file path="$PROJECT_DIR$/../../Util/SimRobot/Build" />
+      <file path="$PROJECT_DIR$/../../Util/SimRobot/Util" />
+      <file path="$PROJECT_DIR$/../../Util/dot" />
+      <file path="$PROJECT_DIR$/../../Util/fftw-3.3" />
+      <file path="$PROJECT_DIR$/../../Util/flite" />
+      <file path="$PROJECT_DIR$/../../Util/gtest" />
+      <file path="$PROJECT_DIR$/../../Util/hdf5" />
+      <file path="$PROJECT_DIR$/../../Util/libjpeg" />
+      <file path="$PROJECT_DIR$/../../Util/onnxruntime" />
+      <file path="$PROJECT_DIR$/../../Util/qtpropertybrowser" />
+      <file path="$PROJECT_DIR$/../../Util/snappy" />
+      <file path="$PROJECT_DIR$/../../Util/sse2neon" />
+    </excludeRoots>
+  </component>
+  <component name="JavaScriptSettings">
+    <option name="languageLevel" value="ES6" />
+  </component>
+</project>

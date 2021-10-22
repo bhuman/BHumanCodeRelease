@@ -1,0 +1,17 @@
+set(ASMJIT_ROOT_DIR "${BHUMAN_PREFIX}/Util/CompiledNN/3rdParty/asmjit/src")
+
+file(GLOB_RECURSE ASMJIT_SOURCES "${ASMJIT_ROOT_DIR}/*.cpp" "${ASMJIT_ROOT_DIR}/*.h")
+
+add_library(asmjit STATIC EXCLUDE_FROM_ALL ${ASMJIT_SOURCES})
+set_property(TARGET asmjit PROPERTY ARCHIVE_OUTPUT_DIRECTORY "${ASMJIT_OUTPUT_DIR}")
+set_property(TARGET asmjit PROPERTY FOLDER Libs)
+if(BUILD_DESKTOP)
+  set_property(TARGET asmjit PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set_property(TARGET asmjit PROPERTY XCODE_ATTRIBUTE_OTHER_LIBTOOLFLAGS -no_warning_for_no_symbols)
+endif()
+target_include_directories(asmjit SYSTEM PUBLIC "${ASMJIT_ROOT_DIR}")
+target_compile_definitions(asmjit PUBLIC ASMJIT_STATIC ASMJIT_BUILD_X86 ASMJIT_NO_BUILDER ASMJIT_NO_COMPILER ASMJIT_NO_LOGGING ASMJIT_NO_TEXT ASMJIT_NO_VALIDATION ASMJIT_NO_INTROSPECTION)
+
+target_link_libraries(asmjit PRIVATE Flags::Default)
+
+source_group(TREE "${ASMJIT_ROOT_DIR}/asmjit" FILES ${ASMJIT_SOURCES})

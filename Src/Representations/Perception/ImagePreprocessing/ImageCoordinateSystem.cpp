@@ -71,30 +71,4 @@ void ImageCoordinateSystem::draw() const
       SEND_DEBUG_IMAGE("corrected", correctedImage);
     }
   }
-
-  COMPLEX_IMAGE("horizonAligned")
-  {
-    if(Blackboard::getInstance().exists("CameraImage"))
-    {
-      Image<PixelTypes::YUYVPixel> horizonAlignedImage;
-      const CameraImage& theCameraImage = static_cast<const CameraImage&>(Blackboard::getInstance()["CameraImage"]);
-
-      horizonAlignedImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
-      memset(horizonAlignedImage[0], 0, (cameraInfo.width / 2) * cameraInfo.height * sizeof(PixelTypes::YUVPixel));
-      for(int ySrc = 0; ySrc < cameraInfo.height; ++ySrc)
-        for(int xSrc = 0; xSrc < cameraInfo.width; xSrc += 2)
-        {
-          Vector2f corrected(toCorrected(Vector2i(xSrc, ySrc)));
-          corrected.x() -= cameraInfo.opticalCenter.x();
-          corrected.y() -= cameraInfo.opticalCenter.y();
-          const Vector2f& horizonAligned(toHorizonAligned(corrected));
-          const Vector2i writePos = (horizonAligned + cameraInfo.opticalCenter + Vector2f(0.5f, 0.5f)).cast<int>().array() / Eigen::Array<int, 2, 1>(2, 1);
-          if(writePos.x() > 0 && writePos.y() > 0 && writePos.x() < static_cast<int>(horizonAlignedImage.width) && writePos.y() < static_cast<int>(horizonAlignedImage.height))
-          {
-            horizonAlignedImage[writePos.y()][writePos.x()].color = theCameraImage[ySrc][xSrc / 2].color;
-          }
-        }
-      SEND_DEBUG_IMAGE("horizonAligned", horizonAlignedImage);
-    }
-  }
 }

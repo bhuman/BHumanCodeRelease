@@ -20,7 +20,7 @@ set -eu
 basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
 scenario="$(grep -E "^[ 	]*scenario[ 	]*=" <"$basePath/../../Config/settings.cfg" | sed "s%[^=]*=[ 	]*\([A-Za-z_]*\).*%\1%")"
 
-if [[ "$OSTYPE" = "cygwin" || "$OSTYPE" = "msys" || ( -e /proc/version && ! -z "`grep Microsoft </proc/version 2>/dev/null`" ) ]]; then
+if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
   dot="${basePath}/../../Util/dot/dot.exe"
 else
   dot="${basePath}/../../Util/dot/dot"

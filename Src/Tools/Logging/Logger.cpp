@@ -17,14 +17,13 @@
 #include "Representations/Communication/TeamInfo.h"
 #include "Tools/Debugging/AnnotationManager.h"
 #include "Tools/Debugging/Debugging.h"
-#include "Tools/Debugging/TimingManager.h"
+#include "Tools/Debugging/Stopwatch.h"
 #include "Tools/Global.h"
 #include "Tools/Logging/LoggingTools.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/TypeInfo.h"
 #include <cstring>
-#include <snappy-c.h>
 
 #undef PRINT
 #ifndef TARGET_ROBOT
@@ -45,6 +44,7 @@
 Logger::Logger(const Configuration& config)
   : typeInfo(200000)
 {
+  TypeInfo::initCurrent();
   std::memset(gameInfoThreadName, 0, sizeof(gameInfoThreadName));
   InMapFile stream("logger.cfg");
   ASSERT(stream.exists());
@@ -88,7 +88,7 @@ Logger::Logger(const Configuration& config)
 
   if(enabled)
   {
-    typeInfo << TypeInfo();
+    typeInfo << *TypeInfo::current;
     InMapFile stream("teamList.cfg");
     if(stream.exists())
       stream >> teamList;
@@ -166,24 +166,27 @@ void Logger::execute(const std::string& threadName)
           return;
         }
 
-        buffer->out.bin << threadName;
-        buffer->out.finishMessage(idFrameBegin);
+        STOPWATCH("Logger")
+        {
+          buffer->out.bin << threadName;
+          buffer->out.finishMessage(idFrameBegin);
 
-        for(const std::string& representation : rpt.representations)
+          for(const std::string& representation : rpt.representations)
 #ifndef NDEBUG
-          if(Blackboard::getInstance().exists(representation.c_str()))
+            if(Blackboard::getInstance().exists(representation.c_str()))
 #endif
-          {
-            buffer->out.bin << Blackboard::getInstance()[representation.c_str()];
-            if(!buffer->out.finishMessage(static_cast<MessageID>(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + representation))))
-              OUTPUT_WARNING("Logger: Representation " << representation << " did not fit into buffer!");
-          }
+            {
+              buffer->out.bin << Blackboard::getInstance()[representation.c_str()];
+              if(!buffer->out.finishMessage(static_cast<MessageID>(TypeRegistry::getEnumValue(typeid(MessageID).name(), "id" + representation))))
+                OUTPUT_WARNING("Logger: Representation " << representation << " did not fit into buffer!");
+            }
 #ifndef NDEBUG
-          else
-            OUTPUT_WARNING("Logger: Representation " << representation << " does not exists!");
+            else
+              OUTPUT_WARNING("Logger: Representation " << representation << " does not exists!");
 #endif
 
-        Global::getAnnotationManager().getOut().copyAllMessages(*buffer);
+          Global::getAnnotationManager().getOut().copyAllMessages(*buffer);
+        }
         Global::getTimingManager().getData().copyAllMessages(*buffer);
         buffer->out.bin << threadName;
         buffer->out.finishMessage(idFrameFinished);
@@ -210,8 +213,6 @@ void Logger::writer()
   Thread::nameCurrentThread("Logger");
   BH_TRACE_INIT("Logger");
 
-  const size_t compressedSize = snappy_max_compressed_length(sizeOfBuffer + 2 * sizeof(unsigned));
-  std::vector<char> compressedBuffer(compressedSize + sizeof(unsigned)); // Also reserve 4 bytes for header
   OutBinaryFile* file = nullptr;
   std::string completeFilename;
 
@@ -248,13 +249,11 @@ void Logger::writer()
       buffer->writeMessageIDs(*file);
       *file << LoggingTools::logFileTypeInfo;
       file->write(typeInfo.data(), typeInfo.size());
-      *file << LoggingTools::logFileCompressed;
+      *file << LoggingTools::logFileUncompressed;
+      buffer->writeAppendableHeader(*file);
     }
 
-    size_t size = compressedSize;
-    VERIFY(snappy_compress(buffer->getStreamedData(), buffer->getStreamedSize(),
-                           compressedBuffer.data() + sizeof(unsigned), &size) == SNAPPY_OK);
-    reinterpret_cast<unsigned&>(compressedBuffer[0]) = static_cast<unsigned>(size);
+    buffer->append(*file);
     buffer->clear();
 
     {
@@ -262,10 +261,7 @@ void Logger::writer()
       buffersToWrite.pop_front();
       buffersAvailable.push(buffer);
     }
-
-    file->write(compressedBuffer.data(), size + sizeof(unsigned));
   }
 
-  if(file)
-    delete file;
+  delete file;
 }

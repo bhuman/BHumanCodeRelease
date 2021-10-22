@@ -10,6 +10,7 @@
 #include "Platform/BHAssert.h"
 
 #include <cerrno>
+#include <algorithm>
 #include <fcntl.h>
 
 #ifdef WINDOWS
@@ -48,7 +49,7 @@ struct _WSAFramework
 
 #endif
 
-#ifndef LINUX
+#ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
 
@@ -202,27 +203,27 @@ bool TcpComm::send(const unsigned char* buffer, int size)
 
   RESET_ERRNO;
   int sent = static_cast<int>(::send(transferSocket, reinterpret_cast<const char*>(buffer), size, MSG_NOSIGNAL));
-  if(sent > 0)
+  // the number of bytes sent is 0, even if send() indicated an error.
+  sent = std::max(sent, 0);
+
+  overallBytesSent += sent;
+  while(sent < size && (ERRNO == EWOULDBLOCK || ERRNO == EINPROGRESS || ERRNO == 0))
   {
-    overallBytesSent += sent;
-    while(sent < size && (ERRNO == EWOULDBLOCK || ERRNO == EINPROGRESS || ERRNO == 0))
+    timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;
+    fd_set wset;
+    FD_ZERO(&wset);
+    FD_SET(transferSocket, &wset);
+    RESET_ERRNO;
+    if(select(static_cast<int>(transferSocket + 1), 0, &wset, 0, &timeout) == -1)
+      break;
+    RESET_ERRNO;
+    int sent2 = static_cast<int>(::send(transferSocket, reinterpret_cast<const char*>(buffer) + sent, size - sent, MSG_NOSIGNAL));
+    if(sent2 >= 0)
     {
-      timeval timeout;
-      timeout.tv_sec = 0;
-      timeout.tv_usec = 100000;
-      fd_set wset;
-      FD_ZERO(&wset);
-      FD_SET(transferSocket, &wset);
-      RESET_ERRNO;
-      if(select(static_cast<int>(transferSocket + 1), 0, &wset, 0, &timeout) == -1)
-        break;
-      RESET_ERRNO;
-      int sent2 = static_cast<int>(::send(transferSocket, reinterpret_cast<const char*>(buffer) + sent, size - sent, MSG_NOSIGNAL));
-      if(sent2 >= 0)
-      {
-        sent += sent2;
-        overallBytesSent += sent;
-      }
+      sent += sent2;
+      overallBytesSent += sent;
     }
   }
 

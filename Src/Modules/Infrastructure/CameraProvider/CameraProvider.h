@@ -59,7 +59,7 @@ class CameraProvider : public CameraProviderBase
   CameraInfo cameraInfo;
   CameraIntrinsics cameraIntrinsics;
   CameraResolutionRequest cameraResolutionRequest;
-  CameraResolutionRequest::Resolutions lastResolutionRequest = CameraResolutionRequest::noRequest;
+  CameraResolutionRequest::Resolutions lastResolutionRequest = CameraResolutionRequest::defaultRes;
   volatile bool cameraOk = true;
 #ifdef CAMERA_INCLUDED
   static Semaphore performingReset;

@@ -31,22 +31,25 @@
 #include "Representations/Communication/BHumanMessage.h"
 #include "Representations/Communication/TeamData.h"
 #include "Tools/Communication/BNTP.h"
+#include "Tools/Communication/CompressedTeamCommunicationStreams.h"
+#include "Tools/Communication/RobotStatus.h"
 
 MODULE(TeamMessageHandler,
 {,
-  // v- using for calculations
+  // for calculations
   REQUIRES(FrameInfo),
   REQUIRES(MotionInfo),
   USES(OwnTeamInfo),
   USES(MotionRequest),
+  USES(RawGameInfo),
+  USES(TeamData),
 
-  // v- using for teamout
+  // extract data to send
   REQUIRES(FallDownState),
   REQUIRES(GroundContactState),
-  USES(RawGameInfo),
   USES(RobotInfo),
 
-  // v- directly sliding into teamout
+  // send directly
   USES(BallModel),
   USES(BehaviorStatus),
   USES(FieldCoverage),
@@ -54,7 +57,6 @@ MODULE(TeamMessageHandler,
   USES(ObstacleModel),
   USES(RobotHealth),
   USES(RobotPose),
-  USES(SideConfidence),
   USES(TeamBehaviorStatus),
   USES(TeamTalk),
   USES(Whistle),
@@ -71,8 +73,6 @@ MODULE(TeamMessageHandler,
   }),
 });
 
-//#define SELF_TEST_TeamMessageHandler
-
 /**
  * @class TeamDataSender
  * A modules for sending some representation to teammates
@@ -80,19 +80,23 @@ MODULE(TeamMessageHandler,
 class TeamMessageHandler : public TeamMessageHandlerBase
 {
 public:
-  TeamMessageHandler() : TeamMessageHandlerBase(), theBNTP(theFrameInfo, theRobotInfo) {}
+  TeamMessageHandler();
 
 private:
   BNTP theBNTP;
+  mutable RobotStatus theRobotStatus;
 
-  // v- output stuff
+  CompressedTeamCommunication::TypeRegistry teamCommunicationTypeRegistry;
+  const CompressedTeamCommunication::Type* teamMessageType;
+
+  // output stuff
   mutable unsigned timeLastSent = 0;
 
   void update(BHumanMessageOutputGenerator& outputGenerator) override;
   void generateMessage(BHumanMessageOutputGenerator& outputGenerator) const;
   void writeMessage(BHumanMessageOutputGenerator& outputGenerator, RoboCup::SPLStandardMessage* const m) const;
 
-  // v- input stuff
+  // input stuff
   struct ReceivedBHumanMessage : public BHumanMessage
   {
     const SynchronizationMeasurementsBuffer* bSMB = nullptr;
@@ -113,11 +117,13 @@ private:
     } lastErrorCode;
   } receivedMessageContainer;
 
+  static void regTeamMessage();
+
   void update(TeamData& teamData) override;
   void maintainBMateList(TeamData& teamData) const;
 
   unsigned timeWhenLastMimimi = 0;
-  bool readSPLStandardMessage(const RoboCup::SPLStandardMessage* const m);
+  bool readSPLStandardMessage(const SPLStandardMessageBufferEntry* const m);
   Teammate& getBMate(TeamData& teamData) const;
   void parseMessageIntoBMate(Teammate& bMate);
 };

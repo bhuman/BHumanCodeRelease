@@ -24,7 +24,7 @@ MODULE(ScanGridProvider,
   PROVIDES(ScanGrid),
   DEFINES_PARAMETERS(
   {,
-    (int)(3) minStepSize, /**< The minimum pixel distance between two neighboring scan lines. */
+    (int)(12) minStepSize, /**< The minimum pixel distance between two neighboring scan lines. */
     (int)(25) minNumOfLowResScanLines, /**< The minimum number of scan lines for low resolution. */
     (float)(0.9f) lineWidthRatio, /**< The ratio of field line width that is sampled when scanning the image. */
     (float)(0.8f) ballWidthRatio, /**< The ratio of ball width that is sampled when scanning the image. */

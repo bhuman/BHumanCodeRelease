@@ -8,16 +8,11 @@
 
 #pragma once
 
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Streams/AutoStreamable.h"
 #include <vector>
 
-STREAMABLE(TeammateRoles, COMMA public BHumanMessageParticle<undefined>
+STREAMABLE(TeammateRoles,
 {
-  /** BHumanMessageParticle functions */
-  void operator>>(BHumanMessage& m) const override;
-  void operator<<(const BHumanMessage& m) override;
-
   int operator[](const size_t i) const;
   int& operator[](const size_t i),
 

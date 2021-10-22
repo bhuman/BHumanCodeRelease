@@ -44,10 +44,10 @@ void FieldBallProvider::checkIfBallIsRollingTowardsAGoal(FieldBall& fieldBall)
     return;
   const Vector2f bPosField = fieldBall.positionOnField;
   const Vector2f bVelField = theBallModel.estimate.velocity.rotated(theRobotPose.rotation);
-  const Vector2f leftOppPost(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftGoal + opponentGoalpostYOffset);
-  const Vector2f rightOppPost(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosRightGoal - opponentGoalpostYOffset);
-  const Vector2f leftOwnPost(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftGoal + ownGoalpostYOffset);
-  const Vector2f rightOwnPost(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightGoal - ownGoalpostYOffset);
+  const Vector2f leftOppPost(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftGoal + opponentGoalpostYOffset);
+  const Vector2f rightOppPost(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightGoal - opponentGoalpostYOffset);
+  const Vector2f leftOwnPost(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftGoal + ownGoalpostYOffset);
+  const Vector2f rightOwnPost(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightGoal - ownGoalpostYOffset);
 
   // Check, if ball is rolling TOWARDS (this is why we multiply the velocity) the expanded opponent goal:
   fieldBall.isRollingTowardsOpponentGoal = Geometry::checkIntersectionOfLines(bPosField, bPosField + bVelField * 1000.f, leftOppPost, rightOppPost);

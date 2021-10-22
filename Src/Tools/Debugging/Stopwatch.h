@@ -27,8 +27,11 @@ public:
   /** Stop the stopwatch.*/
   ~Stopwatch()
   {
+#ifndef TARGET_TOOL
     const unsigned time = Global::getTimingManager().stopTiming(name + 15);
-    static_cast<void>(time);
+#else
+    static_cast<void>(name);
+#endif
     DEBUG_RESPONSE(name)
       OUTPUT(idPlot, bin, (name + 5) << static_cast<float>(time) * 0.001f);
   }

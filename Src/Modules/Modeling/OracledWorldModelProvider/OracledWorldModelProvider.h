@@ -16,6 +16,7 @@
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/TeamBallModel.h"
+#include "Representations/Modeling/TeamPlayersModel.h"
 
 MODULE(OracledWorldModelProvider,
 {,
@@ -26,6 +27,7 @@ MODULE(OracledWorldModelProvider,
   PROVIDES(BallModel3D),
   PROVIDES(GroundTruthBallModel),
   PROVIDES(ObstacleModel),
+  PROVIDES(TeamPlayersModel),
   PROVIDES(RobotPose),
   PROVIDES(GroundTruthRobotPose),
   PROVIDES(TeamBallModel),
@@ -79,6 +81,11 @@ private:
   void update(ObstacleModel& obstacleModel) override;
 
   /** One main function, might be called every cycle
+   * @param teamPlayersModel The data struct to be filled
+   */
+  void update(TeamPlayersModel& teamPlayersModel) override;
+
+  /** One main function, might be called every cycle
    * @param robotPose The data struct to be filled
    */
   void update(RobotPose& robotPose) override;
@@ -87,13 +94,6 @@ private:
    * @param groundTruthRobotPose The data struct to be filled
    */
   void update(GroundTruthRobotPose& groundTruthRobotPose) override;
-
-  /** Converts ground truth player data to an obstacle
-   * @param player A player
-   * @param obstacleModel The model to which the player will be added
-   * @param isTeammate Whether a player is in the first team or not
-   */
-  void playerToObstacle(const GroundTruthWorldState::GroundTruthPlayer& player, ObstacleModel& obstacleModel, const bool isTeammate) const;
 
   unsigned int lastBallModelComputation;  /*< Time of last ball model computation*/
   unsigned int lastRobotPoseComputation;  /*< Time of last robot pose computation*/

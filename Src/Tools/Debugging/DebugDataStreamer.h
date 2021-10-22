@@ -34,7 +34,19 @@ private:
    * @param in The stream from which the object is read. Must be 0 if this object was constructed for a reading stream.
    * @param out The stream to which the object is written. Must be 0 if this object was constructed for a writing stream.
    */
-  void serialize(In* in, Out* out) override;
+  void serialize(In* in, Out* out);
+
+  /**
+   * The method reads the debug data according to its specification.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override {serialize(&stream, nullptr);}
+
+  /**
+   * The method writes the debug data according to its specification.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override {const_cast<DebugDataStreamer*>(this)->serialize(nullptr, &stream);}
 
   /**
    * The method streams an entry.

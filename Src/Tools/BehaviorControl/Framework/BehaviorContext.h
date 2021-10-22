@@ -10,7 +10,7 @@
 
 struct BehaviorContext
 {
-  unsigned lastFrame = 1; /**< The timestamp of the last frame in which this option was executed. */
+  unsigned lastFrame = 2; /**< The timestamp of the last frame in which this option was executed. */
   unsigned behaviorStart = 0; /**< The time when the behavior (card or skill) started to run. */
   unsigned stateStart = 0; /**< The time when the current state started to run. */
   const char* stateName = nullptr; /**< The name of the current state. */

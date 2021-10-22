@@ -16,15 +16,17 @@ STREAMABLE(ArmKeyFrameRequest,
   /** Existing arm motions. Ordering must match ordering in armMotionEngine.cfg */
   ENUM(ArmKeyFrameId,
   {,
-    // IF U TOUCH THIS MAKE SURE U LOOKING IN THE MOTIONCOMBINATOR AND TAKE CARE TO SAVE THE ARMS CORRECTLY IN A FALLING CASE
+    // IF U TOUCH THIS MAKE SURE U TAKE CARE TO SAVE THE ARMS CORRECTLY IN A FALLING CASE
     useDefault,  /**< No explicit arm motion, so WalkingEngine's arm angles will be used */
-    back,        /**< Move arm to the back */
+    back,
+    raiseArm,    /**< Raise the arm. */
+    keeperStand, /**< Arm position for the keeper when guarding the goal */
     reverse,     /**< Reverse current arm keyframe motion */
   });
 
   STREAMABLE(Arm,
   {,
-    ((ArmKeyFrameRequest) ArmKeyFrameId)(useDefault) motion, /**< Motion to execute */
+    (ArmKeyFrameRequest::ArmKeyFrameId)(useDefault) motion, /**< Motion to execute */
     (bool)(false) fast, /**< Whether states should not be interpolated */
   }),
 

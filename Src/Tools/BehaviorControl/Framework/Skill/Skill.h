@@ -22,6 +22,7 @@ struct Skill
 
 struct ArmMotionRequest;
 struct BehaviorStatus;
+struct CalibrationRequest;
 struct HeadMotionRequest;
 struct MotionRequest;
 struct TeamTalk;
@@ -35,11 +36,12 @@ public:
    * @param activationGraph The activation graph that can be modified by skills.
    * @param armMotionRequest The arm motion request that can be modified by skills.
    * @param behaviorStatus The behavior status that can be modified by skills.
+   * @param calibrationRequest The calibration request that can be modified by skills.
    * @param headMotionRequest The head motion request that can be modified by skills.
    * @param motionRequest The motion request that can be modified by skills.
    */
   SkillRegistry(const char* skillConfig, ActivationGraph& activationGraph, ArmMotionRequest& armMotionRequest,
-                BehaviorStatus& behaviorStatus, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest, TeamTalk& teamTalk);
+                BehaviorStatus& behaviorStatus, CalibrationRequest& calibrationRequest, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest, TeamTalk& teamTalk);
 
   /** Destructor. */
   ~SkillRegistry();
@@ -48,6 +50,7 @@ public:
 
   ArmMotionRequest& theArmMotionRequest; /**< The arm motion request that can be modified by skills. */
   BehaviorStatus& theBehaviorStatus; /**< The behavior status that can be modified by skills. */
+  CalibrationRequest& theCalibrationRequest; /** The calibration request that can be modified by skills. */
   HeadMotionRequest& theHeadMotionRequest; /**< The head motion request that can be modified by skills. */
   MotionRequest& theMotionRequest; /**< The motion request that can be modified by skills. */
   TeamTalk& theTeamTalk; /**< The team talk that can be modified by skills. */

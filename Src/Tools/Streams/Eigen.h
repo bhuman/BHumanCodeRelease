@@ -80,7 +80,7 @@ void regMatrix()
   if(OPTIONS & Eigen::RowMajor)
     REG(EigenMatrixRow<T COMMA COLS> (*)[ROWS], rows);
   else
-    REG(EigenMatrixRow<T COMMA COLS> (*)[ROWS], cols);
+    REG(EigenMatrixRow<T COMMA ROWS> (*)[COLS], cols);
 }
 
 /**
@@ -105,12 +105,12 @@ Out& operator<<(Out& stream, const Eigen::Matrix<T, ROWS, COLS, OPTIONS, MAX_ROW
   PUBLISH(regMatrix<T, ROWS, COLS, OPTIONS>);
   if(OPTIONS & Eigen::RowMajor)
   {
-    EigenMatrixRow<T, COLS> (*const rows)[ROWS] = (EigenMatrixRow<T, COLS> (*const)[ROWS]) matrix.data();
+    const EigenMatrixRow<T, COLS> (*rows)[ROWS] = reinterpret_cast<const EigenMatrixRow<T, COLS> (*)[ROWS]>(matrix.data());
     STREAM_EXT(stream, rows);
   }
   else
   {
-    EigenMatrixRow<T, COLS> (*const cols)[ROWS] = (EigenMatrixRow<T, COLS> (*const)[ROWS]) matrix.data();
+    const EigenMatrixRow<T, ROWS> (*cols)[COLS] = reinterpret_cast<const EigenMatrixRow<T, ROWS> (*)[COLS]>(matrix.data());
     STREAM_EXT(stream, cols);
   }
 
@@ -139,12 +139,12 @@ In& operator>>(In& stream, Eigen::Matrix<T, ROWS, COLS, OPTIONS, MAX_ROWS, MAX_C
   PUBLISH(regMatrix<T, ROWS, COLS, OPTIONS>);
   if(OPTIONS & Eigen::RowMajor)
   {
-    EigenMatrixRow<T, COLS> (*rows)[ROWS] = (EigenMatrixRow<T, COLS> (*)[ROWS]) matrix.data();
+    EigenMatrixRow<T, COLS> (*rows)[ROWS] = reinterpret_cast<EigenMatrixRow<T, COLS> (*)[ROWS]>(matrix.data());
     STREAM_EXT(stream, rows);
   }
   else
   {
-    EigenMatrixRow<T, COLS> (*cols)[ROWS] = (EigenMatrixRow<T, COLS> (*)[ROWS]) matrix.data();
+    EigenMatrixRow<T, ROWS> (*cols)[COLS] = reinterpret_cast<EigenMatrixRow<T, ROWS> (*)[COLS]>(matrix.data());
     STREAM_EXT(stream, cols);
   }
 
@@ -182,7 +182,7 @@ Out& operator<<(Out& stream, const Eigen::Matrix<T, 1, ELEMS, OPTIONS, 1, MAX_EL
                 "Setting _MaxCols is not supported yet");
 
   PUBLISH(regMatrix1<T, 1, ELEMS, OPTIONS>);
-  T (*const elems)[ELEMS] = (T (*const)[ELEMS]) vector.data();
+  const T (*elems)[ELEMS] = reinterpret_cast<const T (*)[ELEMS]>(vector.data());
   STREAM_EXT(stream, elems);
 
   return stream;
@@ -206,7 +206,7 @@ In& operator>>(In& stream, Eigen::Matrix<T, 1, ELEMS, OPTIONS, 1, MAX_ELEMS>& ve
                 "Setting _MaxCols is not supported yet");
 
   PUBLISH(regMatrix1<T, 1, ELEMS, OPTIONS>);
-  T (*elems)[ELEMS] = (T (*)[ELEMS]) vector.data();
+  T (*elems)[ELEMS] = reinterpret_cast<T (*)[ELEMS]>(vector.data());
   STREAM_EXT(stream, elems);
 
   return stream;
@@ -230,7 +230,7 @@ Out& operator<<(Out& stream, const Eigen::Matrix<T, ELEMS, 1, OPTIONS, MAX_ELEMS
                 "Setting _MaxRows is not supported yet");
 
   PUBLISH(regMatrix1<T, ELEMS, 1, OPTIONS>);
-  T (*const elems)[ELEMS] = (T (*const)[ELEMS]) vector.data();
+  const T (*elems)[ELEMS] = reinterpret_cast<const T (*)[ELEMS]>(vector.data());
   STREAM_EXT(stream, elems);
 
   return stream;
@@ -254,7 +254,7 @@ In& operator>>(In& stream, Eigen::Matrix<T, ELEMS, 1, OPTIONS, MAX_ELEMS, 1>& ve
                 "Setting _MaxRows is not supported yet");
 
   PUBLISH(regMatrix1<T, ELEMS, 1, OPTIONS>);
-  T (*elems)[ELEMS] = (T (*)[ELEMS]) vector.data();
+  T (*elems)[ELEMS] = reinterpret_cast<T (*)[ELEMS]>(vector.data());
   STREAM_EXT(stream, elems);
 
   return stream;
@@ -586,14 +586,14 @@ template<typename T> void regAngleAxis()
  * Writing an Eigen angle axis vector to a stream.
  * @param T The type of the elements.
  * @param stream The stream to write to.
- * @param angleaxis The angle axis vector to write.
+ * @param angleAxis The angle axis vector to write.
  */
 template<typename T>
-In& operator>>(In& stream, Eigen::AngleAxis<T>& angleaxis)
+In& operator>>(In& stream, Eigen::AngleAxis<T>& angleAxis)
 {
   PUBLISH(regAngleAxis<T>);
-  T& angle = angleaxis.angle();
-  Eigen::Matrix<T, 3, 1>& axis = angleaxis.axis();
+  T& angle = angleAxis.angle();
+  Eigen::Matrix<T, 3, 1>& axis = angleAxis.axis();
 
   STREAM_EXT(stream, angle);
   STREAM_EXT(stream, axis);
@@ -605,14 +605,14 @@ In& operator>>(In& stream, Eigen::AngleAxis<T>& angleaxis)
  * Reading an Eigen angle axis vector from a stream.
  * @param T The type of the elements.
  * @param stream The stream to read from.
- * @param angleaxis The angle axis vector to read.
+ * @param angleAxis The angle axis vector to read.
  */
 template<typename T>
-Out& operator<<(Out& stream, const Eigen::AngleAxis<T>& angleaxis)
+Out& operator<<(Out& stream, const Eigen::AngleAxis<T>& angleAxis)
 {
   PUBLISH(regAngleAxis<T>);
-  const T& angle = angleaxis.angle();
-  const Eigen::Matrix<T, 3, 1>& axis = angleaxis.axis();
+  const T& angle = angleAxis.angle();
+  const Eigen::Matrix<T, 3, 1>& axis = angleAxis.axis();
 
   STREAM_EXT(stream, angle);
   STREAM_EXT(stream, axis);

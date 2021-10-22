@@ -12,6 +12,8 @@
 #include "Tools/Math/Transformation.h"
 #include "Tools/Module/Blackboard.h"
 
+#include <limits>
+
 void FieldBoundary::draw() const
 {
   DEBUG_DRAWING("representation:FieldBoundary:image", "drawingOnImage")
@@ -79,4 +81,15 @@ int FieldBoundary::getBoundaryY(int x) const
   float m = static_cast<float>(right->y() - left->y()) / static_cast<float>(right->x() - left->x());
 
   return static_cast<int>(static_cast<float>(x - left->x()) * m) + left->y();
+}
+
+int FieldBoundary::getBoundaryTopmostY(int imageWidth) const
+{
+  if(!isValid)
+    return 0;
+  int topmostY = std::min(getBoundaryY(0), getBoundaryY(imageWidth));
+  for(const auto& boundarySpot : boundaryInImage)
+    if(boundarySpot.y() < topmostY)
+      topmostY = boundarySpot.y();
+  return topmostY;
 }

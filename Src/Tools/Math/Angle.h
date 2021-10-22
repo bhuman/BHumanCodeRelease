@@ -77,7 +77,7 @@ V Angle::normalize(V data)
     return data;
   else
   {
-    data = data - static_cast<int>(data / V(pi2)) * V(pi2);
+    data = data - static_cast<float>(static_cast<int>(data / V(pi2))) * V(pi2);
     return data >= V(pi) ? V(data - V(pi2)) : data < -V(pi) ? V(data + V(pi2)) : data;
   }
 }

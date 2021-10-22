@@ -1,0 +1,5 @@
+# Penalize current robot for pushing
+pr playerPushing
+
+# Give penalty kick to other team
+gc penaltyKickForFirstTeam

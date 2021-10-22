@@ -3,7 +3,7 @@
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Math/Eigen.h"
 
-MAKE_MODULE(ManualHeadMotionProvider, behaviorControl)
+MAKE_MODULE(ManualHeadMotionProvider, behaviorControl);
 
 void ManualHeadMotionProvider::update(HeadMotionRequest& headMotionRequest)
 {

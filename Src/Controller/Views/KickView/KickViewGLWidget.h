@@ -35,7 +35,6 @@ private:
   Vector3f cameraPosOffset = Vector3f::Zero();
   RotationMatrix originRot;
   KickEngineParameters& parameters; //the actual Parameters
-  std::vector<Vector3f> reachedPositions[Phase::numOfLimbs];
 
   bool moveDrag = false;  //a Point in the 3DView is moved or not
   bool moveViewOfViewDragXY = false; //a Point in the XY(t)View (2D) is moved or not

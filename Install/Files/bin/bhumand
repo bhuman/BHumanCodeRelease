@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if [ $# -ne 1 ]; then
-  echo "usage: $0 ( start | stop | restart ) - Starts/stops/restarts the bhuman service."
-  exit 1
-fi
-
-exec systemctl --user "$1" bhuman.service

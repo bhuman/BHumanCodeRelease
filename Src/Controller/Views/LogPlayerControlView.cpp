@@ -127,8 +127,8 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
   statusLayout->addWidget(frameNumberLabel);
 
 #ifdef MACOS
-  int buttonSize = devicePixelRatio() > 1 ? 38 : 25;
-  buttonsLayout -> setSpacing(6);
+  int buttonSize = 38;
+  buttonsLayout->setSpacing(6);
 #else
   int buttonSize = 25;
 #endif
@@ -222,7 +222,7 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
   QShortcut* sc_prev_image = new QShortcut(QKeySequence("DOWN"), this);
   connect(sc_prev_image, &QShortcut::activated, nextImageButton, &QPushButton::released);
 
-  QShortcut* sc_fast_forward = new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Right), this);
+  QShortcut* sc_fast_forward = new QShortcut(QKeySequence(static_cast<int>(Qt::SHIFT) + static_cast<int>(Qt::Key_Right)), this);
   connect(sc_fast_forward, &QShortcut::activated, this, [&]()
   {
     SYNC_WITH(logPlayerControlView.console);
@@ -230,7 +230,7 @@ LogPlayerControlWidget::LogPlayerControlWidget(LogPlayerControlView& logPlayerCo
     logPlayerControlView.logPlayer.gotoFrame(std::max<>(std::min<>(frame - 1, logPlayerControlView.logPlayer.numberOfFrames - 1), 0));
   });
 
-  QShortcut* sc_fast_backward = new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_Left), this);
+  QShortcut* sc_fast_backward = new QShortcut(QKeySequence(static_cast<int>(Qt::SHIFT) + static_cast<int>(Qt::Key_Left)), this);
   connect(sc_fast_backward, &QShortcut::activated, this, [&]()
   {
     SYNC_WITH(logPlayerControlView.console);

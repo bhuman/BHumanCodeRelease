@@ -13,6 +13,11 @@
 #include <cstdarg>
 #include <cstdio>
 
+#ifdef WINDOWS
+#define ftell _ftelli64
+#define fseek _fseeki64
+#endif
+
 File::File(const std::string& name, const char* mode, bool tryAlternatives)
 {
   fullName = name;
@@ -31,11 +36,7 @@ File::File(const std::string& name, const char* mode, bool tryAlternatives)
   }
   else
   {
-#ifndef TARGET_ROBOT
     stream = fopen(names.back().c_str(), mode);
-#else
-    stream = fopen64(names.back().c_str(), mode);
-#endif
     if(stream)
       fullName = names.back();
   }
@@ -109,12 +110,24 @@ size_t File::getSize()
     return 0;
   else
   {
-    const long currentPos = ftell(static_cast<FILE*>(stream));
-    ASSERT(currentPos >= 0);
+    const size_t currentPos = getPosition();
     VERIFY(fseek(static_cast<FILE*>(stream), 0, SEEK_END) == 0);
-    const long size = ftell(static_cast<FILE*>(stream));
+    const size_t size = getPosition();
     VERIFY(fseek(static_cast<FILE*>(stream), currentPos, SEEK_SET) == 0);
     return static_cast<size_t>(size);
+  }
+}
+
+size_t File::getPosition()
+{
+  if(!stream)
+    return 0;
+  else
+  {
+    const auto currentPos = ftell(static_cast<FILE*>(stream));
+    static_assert(sizeof(currentPos) == 8, "ftell/fseek must use 64 bit offsets");
+    ASSERT(currentPos >= 0);
+    return static_cast<size_t>(currentPos);
   }
 }
 

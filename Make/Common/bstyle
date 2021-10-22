@@ -8,12 +8,7 @@
 # service on macOS.
 
 export LC_ALL=C
-if [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" ]; then
-  SCRIPTPATH=$(cygpath "$0")
-else
-  SCRIPTPATH="$0"
-fi
-BASEDIR=$(cd "$(dirname "$(which "$SCRIPTPATH")")" && pwd)
+BASEDIR=$(cd "$(dirname "$(which "$0")")" && pwd)
 WORDSTART="\\<"
 WORDEND="\\>"
 EOFHACK=" *_EOF_HACK"
@@ -22,7 +17,7 @@ if [ "`uname`" = "Darwin" ]; then
   WORDSTART="[[:<:]]"
   WORDEND="[[:>:]]"
   EOFHACK="	 *_EOF_HACK"
-elif [ "$OSTYPE" = "cygwin" -o "$OSTYPE" = "msys" -o -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
+elif [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
   ASTYLE=$BASEDIR/../../Util/Buildchain/Windows/bin/AStyle.exe
 else
   ASTYLE=astyle
@@ -33,6 +28,9 @@ fi
 -e "/^$/N;/^\n$/D" | sed \
 -e "/#include/s%\\\\%/%g" \
 -e "s%\(^ *\)MODULE(%\1struct MODULE %" \
+-e "s%\(^ *\)CARD(%\1struct CARD %" \
+-e "s%\(^ *\)SKILL_IMPLEMENTATION(%\1struct SKILL_IMPLEMENTATION %" \
+-e "s%\(^ *\)DECLARE_REPRESENTATIONS_AND_MAP(%\1struct DECLARE_REPRESENTATIONS_AND_MAP%" \
 -e "s%\(^ *\)DEFINES_PARAMETERS(%\1struct DEFINES_PARAMETERS%" \
 -e "s%\(^ *\)LOADS_PARAMETERS(%\1struct LOADS_PARAMETERS%" \
 -e "s%\(^ *\)STREAMABLE(%\1struct STREAMABLE %" \
@@ -59,7 +57,8 @@ fi
 -e "s%	$%%" \
 -e "s%\({,*\)		%\1	%g" \
 -e "s%		\( *}\)%	\1%g" \
--e "s%\(, *\(/[/*][^	]*\)\{0,1\}	 *}\))%\1 //_PAREN%g" \
+-e "s%\(, *\(/\*\([^*]*\*[^/]\)[^*]*\*/\)\{0,1\}	 *}\))%\1 /*_PAREN*/%g" \
+-e "s%\(, *\(/[/*][^	]*\)\{0,1\}	 *}\))%\1 /*_PAREN*/%g" \
 -e "s%,\( *\(/[/*][^	]*\)\{0,1\}	 *	 *(\)%,; //_REMOVE\1%g" \
 -e "s%${WORDSTART}\([A-Z]\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
 -e "s%${WORDSTART}\([A-Z][A-Z]*[a-z][A-Za-z0-9_]*\)$WORDEND\( *[*&][*&]*\)%\1_LAMBDA_HACK int\2%g" \
@@ -89,6 +88,9 @@ fi
 | tr -d '\r' \
 | sed \
 -e "s%\(^ *\)struct MODULE %\1MODULE(%" \
+-e "s%\(^ *\)struct CARD %\1CARD(%" \
+-e "s%\(^ *\)struct SKILL_IMPLEMENTATION %\1SKILL_IMPLEMENTATION(%" \
+-e "s%\(^ *\)struct DECLARE_REPRESENTATIONS_AND_MAP%\1DECLARE_REPRESENTATIONS_AND_MAP(%" \
 -e "s%\(^ *\)struct DEFINES_PARAMETERS%\1DEFINES_PARAMETERS(%" \
 -e "s%\(^ *\)struct LOADS_PARAMETERS%\1LOADS_PARAMETERS(%" \
 -e "s%\(^ *\)struct STREAMABLE %\1STREAMABLE(%" \
@@ -108,7 +110,7 @@ fi
 -e "s%\(^ *\)if/\*STOPWATCH\*/%\1STOPWATCH%" \
 -e "s%\(^ *\)/\*_ACTION\*/\( *\)$%\1action\2%" \
 -e "s%\(^ *\)/\*_TRANSITION\*/\( *\)$%\1transition\2%" \
--e "s%\(^ *}\) //_PAREN%\1)%" \
+-e "s%\(^ *}\) /\*_PAREN\*/%\1)%" \
 -e "s%; *//_REMOVE%%" \
 | tr '\n' '\t' \
 | sed \

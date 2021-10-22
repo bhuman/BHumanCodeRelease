@@ -80,7 +80,6 @@ void ObstaclesFieldPercept::draw() const
 
 void ObstaclesFieldPercept::verify() const
 {
-#ifndef NDEBUG
   for(const Obstacle& obstacle : obstacles)
   {
     ASSERT(std::isfinite(obstacle.center.x()));
@@ -90,5 +89,4 @@ void ObstaclesFieldPercept::verify() const
     ASSERT(std::isfinite(obstacle.right.x()));
     ASSERT(std::isfinite(obstacle.right.y()));
   }
-#endif
 }

@@ -24,7 +24,7 @@ MODULE(StaticInitialPoseProvider,
   PROVIDES(StaticInitialPose),
   LOADS_PARAMETERS(
   {,
-    (bool) isActive, /** < Is this function activated > */
+    (bool) isActive,     /** < Is this function activated > */
     (int) loadVariation, /** < Which variation should be loaded - starts at 0 > */
     (std::vector<PoseVariation>) poseVariations, /** < List of pose variations for testing > */
   }),
@@ -34,5 +34,5 @@ class StaticInitialPoseProvider : public StaticInitialPoseProviderBase
 {
 private:
   void update(StaticInitialPose& staticInitialPose) override;
-  void setRobotsInSimulator(const StaticInitialPose& staticInitialPose);
+  void setRobotsInSimulator(const Pose2f& staticInitialPose);
 };

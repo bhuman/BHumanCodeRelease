@@ -12,6 +12,7 @@
 #include "Representations/BehaviorControl/FieldBall.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
 #include "Representations/BehaviorControl/TeamBehaviorStatus.h"
+#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
@@ -28,6 +29,7 @@ MODULE(PathPlannerProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
+  REQUIRES(LibTeammates),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
   REQUIRES(OwnTeamInfo),
@@ -48,19 +50,10 @@ MODULE(PathPlannerProvider,
     (float) wrongBallSideCostFactor, /**< How much of a full circle is it more expensive to pass the ball on the wrong side? */
     (float) wrongBallSideRadius, /**< How far from the ball is passing it on the wrong side penalized? */
     (float) fieldBorderLimit, /**< Distance outside the side lines that is still used for walking (in mm). */
-    (float) startTurningBeforeTargetDistance, /**< How far before the target is started to turn to final direction (in mm)? */
-    (float) startTurningBeforeCircleDistance, /**< How far before the next circle is switched to walking a curve (in mm)? */
     (float) radiusControlOffset, /**< Plan closer to obstacles by this offset, but keep original distance when executing plan (in mm). */
     (float) radiusAvoidanceTolerance, /**< Radius range in which robot is partially pushed away (in mm). */
-    (float) fullTranslationThreshold, /**< Plan closer to obstacles by this offset, but keep original distance when executing plan (in mm). */
-    (float) noTranslationThreshold, /**< How wide is the corridor between surrounding and avoiding obstacles behavior (in mm)? */
-    (float) controlAheadAngle, /**< Put control point how far ahead on circles (in radians). */
     (float) rotationPenalty, /**< Penalty factor for rotating towards first intermediate target in mm/radian. Stabilizes path selection. */
     (float) switchPenalty, /**< Penalty for selecting a different turn direction around first obstacle in mm. */
-    (float) pFactor, /**< Proportional feedback from turn angle to speed. */
-    (float) iFactor, /**< Integral feedback from turn angle to speed. */
-    (float) antiWindupFactor, /**< How much of the saturated control input to subtract from the integrated error. */
-    (float) antiWindupSaturation, /**< Assumed saturation. */
   }),
 });
 
@@ -237,7 +230,6 @@ class PathPlannerProvider : public PathPlannerProviderBase
   std::vector<Barrier> barriers; /**< Barrier lines that cannot be crossed during planning. */
   std::vector<Geometry::Line> borders; /**< The border of the field plus a tolerance. */
   Rotation lastDir = cw; /**< Last direction selected when walking around first obstacle. */
-  float turnAngleIntegrator = 0.f; /**< An integrator over the angle to the next node. Unclear which unit this has. */
   unsigned timeWhenLastPlayedSound = 0; /**< Used to limit frequency of sound playback. */
   bool pathPlannerWasActive = false; /**< Was the path planner active in previous frame? */
 
@@ -250,9 +242,10 @@ class PathPlannerProvider : public PathPlannerProviderBase
   /**
    * Compute barrier lines that cannot be crossed during planning.
    * @param target The target the robot tries to reach.
-   * @param excludePenaltyArea Also generate barriers for the own penalty area.
+   * @param excludeOwnPenaltyArea Also generate barriers for the own penalty area.
+   * @param excludeOpponentPenaltyArea Also generate barriers for the opponent penalty area.
    */
-  void createBarriers(const Pose2f& target, bool excludePenaltyArea);
+  void createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea);
 
   /**
    * Clip penalty area barriers to make a position reachable.
@@ -266,9 +259,10 @@ class PathPlannerProvider : public PathPlannerProviderBase
   /**
    * Create the nodes from obstacles.
    * @param target The target the robot tries to reach.
-   * @param excludePenaltyArea Filter out obstacles inside the own penalty area and the own goal.
+   * @param excludeOwnPenaltyArea Filter out obstacles inside the own penalty area and the own goal.
+   * @param excludeOpponentPenaltyArea Filter out obstacles inside the opponents penalty area and the own goal.
    */
-  void createNodes(const Pose2f& target, bool excludePenaltyArea);
+  void createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea);
 
   /**
    * Determine the radius of an obstacle.
@@ -317,13 +311,13 @@ class PathPlannerProvider : public PathPlannerProviderBase
    * @param tangents The tangents found are returned here. Must be empty when passed. There are two sets of tangents,
    *                 i.e. the ones that start in clockwise direction and the ones that start in counter clockwise
    *                 direction. In addition, some tangents might be marked as dummies, because they are copies of
-   *                 tangents in the other direction, but are needed by the sweepline algorithm that is later used.
+   *                 tangents in the other direction, but are needed by the sweep line algorithm that is later used.
    */
   void createTangents(Node& node, Tangents& tangents);
 
   /**
    * Add all outgoing edges of a node to that node based on the tangents to all other nodes. Do not add edges that
-   * intersect with other nodes in between. This is determined using a sweepline algorithm that go through all
+   * intersect with other nodes in between. This is determined using a sweep line algorithm that go through all
    * tangents in ascending angular direction and keeps track of all nodes in the current direction ordered by their
    * distance. Only the tangents to the closest node in each direction are accepted as outgoing edges. The is done
    * separately for outgoing edges in clockwise and counterclockwise directions.
@@ -333,16 +327,11 @@ class PathPlannerProvider : public PathPlannerProviderBase
   void addNeighborsFromTangents(Node& node, Tangents& tangents);
 
   /**
-   * Calculate motion request to follow the planed path.
-   * @param target The target the robot tries to reach.
-   * @param speed The speed the robot should walk with in ratios of the maximum speed.
-   * @param edge The current edge that is traveled.
-   * @param nextEdge The next edge to be traveled after the next node. This is nullptr if
-   *                 there is no further edge anymore.
-   * @param motionRequest The motion request that is calculated.
+   * Calculate an avoidance vector in order to avoid close obstacles.
+   * @param nextNode The next node on the path.
+   * @return A vector pointing in a direction away from obstacles.
    */
-  void calcMotionRequest(const Pose2f& target, const Pose2f& speed,
-                         const Edge* edge, const Edge* nextEdge, MotionRequest& motionRequest);
+  Vector2f calcAvoidanceVector(const Node* nextNode) const;
 
   /** Some visualizations. */
   void draw() const;

@@ -9,7 +9,7 @@
 
 #include "StaticInitialPoseProvider.h"
 
-MAKE_MODULE(StaticInitialPoseProvider, infrastructure)
+MAKE_MODULE(StaticInitialPoseProvider, infrastructure);
 
 void StaticInitialPoseProvider::update(StaticInitialPose& staticInitialPose)
 {
@@ -20,15 +20,20 @@ void StaticInitialPoseProvider::update(StaticInitialPose& staticInitialPose)
   {
     const PoseVariation& poses = poseVariations[loadVariation];
     staticInitialPose.staticPoseOnField = poses.poseVaria[theRobotInfo.number - 1];
-    DEBUG_RESPONSE_ONCE("module:StaticInitialPoseProvider") setRobotsInSimulator(staticInitialPose);
+    staticInitialPose.jump = false;
+    DEBUG_RESPONSE_ONCE("module:StaticInitialPoseProvider")
+    {
+      setRobotsInSimulator(poses.poseVaria[theRobotInfo.number - 1]);
+      staticInitialPose.jump = true;
+      ++loadVariation;
+    }
   }
 }
 
-void StaticInitialPoseProvider::setRobotsInSimulator(const StaticInitialPose& staticInitialPose)
+void StaticInitialPoseProvider::setRobotsInSimulator(const Pose2f& staticInitialPose)
 {
-  const Vector2f& trans = staticInitialPose.staticPoseOnField.translation;
-  const Angle rot = staticInitialPose.staticPoseOnField.rotation >= 0
-                    ? staticInitialPose.staticPoseOnField.rotation - pi
-                    : staticInitialPose.staticPoseOnField.rotation + pi;
-  OUTPUT(idConsole, text, "mv " << -trans.x() << " " << -trans.y() << " 300 0 0 " << rot);
+  const Angle rotation = staticInitialPose.rotation >= 0
+                    ? staticInitialPose.rotation - pi
+                    : staticInitialPose.rotation + pi;
+  OUTPUT(idConsole, text, "mv " << -staticInitialPose.translation.x() << " " << -staticInitialPose.translation.y() << " 300 0 0 " << rotation);
 }

@@ -44,6 +44,7 @@ public:
   int numberOfFrames; /**< The overall number of frames available. */
   bool typeInfoReplayed; /**< The type information has to be replayed once. Already done? */
   int lastImageFrameNumber; /**< The number of the last frame that contained an image. */
+  bool logfileMerged = false;
   std::string logfilePath;
 
 private:
@@ -136,6 +137,12 @@ public:
   bool replay();
 
   /**
+   *
+   * @return
+   */
+  MessageQueue copyNextFrame();
+
+  /**
    * The function filters the message queue.
    * @param filter Returns whether a message should be kept.
    */
@@ -147,6 +154,13 @@ public:
    *               of this message.
    */
   void keepFrames(const std::function<bool(InMessage&)>& filter);
+
+  /**
+   * The function filters the message queue frame-wise.
+   * @param filter Returns wether a frame should be kept because
+   *               of this thread identifier
+   */
+  void keepFramesByThreadIdentifier(const std::function<bool(std::string)>& filter);
 
   void trim(int startFrame, int endFrame);
 
@@ -165,6 +179,11 @@ public:
    */
   void statistics(int frequencies[numOfDataMessageIDs], unsigned* sizes = nullptr,
                   const std::string& threadIdentifier = "", bool init = true);
+
+  /**
+   * Merges the current log file with a log file of the other thread.
+   */
+  void merge();
 
   /**
    * Loads labels for the current log from a file and adds them to the log.

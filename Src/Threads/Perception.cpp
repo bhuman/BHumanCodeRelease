@@ -32,14 +32,14 @@ bool Perception::afterFrame()
   {
     if(SystemCall::getMode() == SystemCall::physicalRobot)
       Thread::getCurrentThread()->setPriority(10);
-    Thread::sleep(1);
+    Thread::yield();
     BH_TRACE_MSG("before waitForFrameData");
     CameraProvider::waitForFrameData();
     if(SystemCall::getMode() == SystemCall::physicalRobot)
       Thread::getCurrentThread()->setPriority(0);
   }
   else
-    Thread::sleep(33);
+    Thread::yield();
 
   return FrameExecutionUnit::afterFrame();
 }

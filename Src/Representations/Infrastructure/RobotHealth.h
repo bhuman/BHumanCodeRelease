@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/RobotParts/Joints.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"

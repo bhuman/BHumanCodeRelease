@@ -1,5 +1,5 @@
 /* This file defines standard ELF types, structures, and macros.
-   Copyright (C) 1995-2019 Free Software Foundation, Inc.
+   Copyright (C) 1995-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _ELF_H
 #define	_ELF_H 1
@@ -360,7 +360,7 @@ typedef struct
 #define EM_RISCV	243	/* RISC-V */
 
 #define EM_BPF		247	/* Linux BPF -- in-kernel virtual machine */
-#define EM_CSKY		252     /* C_SKY */
+#define EM_CSKY		252     /* C-SKY */
 
 #define EM_NUM		253
 
@@ -809,9 +809,16 @@ typedef struct
 #define NT_ARM_SYSTEM_CALL	0x404	/* ARM system call number */
 #define NT_ARM_SVE	0x405		/* ARM Scalable Vector Extension
 					   registers */
+#define NT_ARM_PAC_MASK	0x406		/* ARM pointer authentication
+					   code masks.  */
+#define NT_ARM_PACA_KEYS	0x407	/* ARM pointer authentication
+					   address keys.  */
+#define NT_ARM_PACG_KEYS	0x408	/* ARM pointer authentication
+					   generic key.  */
 #define NT_VMCOREDD	0x700		/* Vmcore Device Dump Note.  */
 #define NT_MIPS_DSP	0x800		/* MIPS DSP ASE registers.  */
 #define NT_MIPS_FP_MODE	0x801		/* MIPS floating-point mode.  */
+#define NT_MIPS_MSA	0x802		/* MIPS SIMD registers.  */
 
 /* Legal values for the note segment descriptor types for object files.  */
 
@@ -987,6 +994,9 @@ typedef struct
 #define	DF_1_SINGLETON	0x02000000	/* Singleton symbols are used.  */
 #define	DF_1_STUB	0x04000000
 #define	DF_1_PIE	0x08000000
+#define	DF_1_KMOD       0x10000000
+#define	DF_1_WEAKFILTER 0x20000000
+#define	DF_1_NOCOMMON   0x40000000
 
 /* Flags for the feature selection in DT_FEATURE_1.  */
 #define DTF_1_PARINIT	0x00000001
@@ -1146,81 +1156,7 @@ typedef struct
     } a_un;
 } Elf64_auxv_t;
 
-/* Legal values for a_type (entry type).  */
-
-#define AT_NULL		0		/* End of vector */
-#define AT_IGNORE	1		/* Entry should be ignored */
-#define AT_EXECFD	2		/* File descriptor of program */
-#define AT_PHDR		3		/* Program headers for program */
-#define AT_PHENT	4		/* Size of program header entry */
-#define AT_PHNUM	5		/* Number of program headers */
-#define AT_PAGESZ	6		/* System page size */
-#define AT_BASE		7		/* Base address of interpreter */
-#define AT_FLAGS	8		/* Flags */
-#define AT_ENTRY	9		/* Entry point of program */
-#define AT_NOTELF	10		/* Program is not ELF */
-#define AT_UID		11		/* Real uid */
-#define AT_EUID		12		/* Effective uid */
-#define AT_GID		13		/* Real gid */
-#define AT_EGID		14		/* Effective gid */
-#define AT_CLKTCK	17		/* Frequency of times() */
-
-/* Some more special a_type values describing the hardware.  */
-#define AT_PLATFORM	15		/* String identifying platform.  */
-#define AT_HWCAP	16		/* Machine-dependent hints about
-					   processor capabilities.  */
-
-/* This entry gives some information about the FPU initialization
-   performed by the kernel.  */
-#define AT_FPUCW	18		/* Used FPU control word.  */
-
-/* Cache block sizes.  */
-#define AT_DCACHEBSIZE	19		/* Data cache block size.  */
-#define AT_ICACHEBSIZE	20		/* Instruction cache block size.  */
-#define AT_UCACHEBSIZE	21		/* Unified cache block size.  */
-
-/* A special ignored value for PPC, used by the kernel to control the
-   interpretation of the AUXV. Must be > 16.  */
-#define AT_IGNOREPPC	22		/* Entry should be ignored.  */
-
-#define	AT_SECURE	23		/* Boolean, was exec setuid-like?  */
-
-#define AT_BASE_PLATFORM 24		/* String identifying real platforms.*/
-
-#define AT_RANDOM	25		/* Address of 16 random bytes.  */
-
-#define AT_HWCAP2	26		/* More machine-dependent hints about
-					   processor capabilities.  */
-
-#define AT_EXECFN	31		/* Filename of executable.  */
-
-/* Pointer to the global system page used for system calls and other
-   nice things.  */
-#define AT_SYSINFO	32
-#define AT_SYSINFO_EHDR	33
-
-/* Shapes of the caches.  Bits 0-3 contains associativity; bits 4-7 contains
-   log2 of line size; mask those to get cache size.  */
-#define AT_L1I_CACHESHAPE	34
-#define AT_L1D_CACHESHAPE	35
-#define AT_L2_CACHESHAPE	36
-#define AT_L3_CACHESHAPE	37
-
-/* Shapes of the caches, with more room to describe them.
-   *GEOMETRY are comprised of cache line size in bytes in the bottom 16 bits
-   and the cache associativity in the next 16 bits.  */
-#define AT_L1I_CACHESIZE	40
-#define AT_L1I_CACHEGEOMETRY	41
-#define AT_L1D_CACHESIZE	42
-#define AT_L1D_CACHEGEOMETRY	43
-#define AT_L2_CACHESIZE		44
-#define AT_L2_CACHEGEOMETRY	45
-#define AT_L3_CACHESIZE		46
-#define AT_L3_CACHEGEOMETRY	47
-
-#define AT_MINSIGSTKSZ		51 /* Stack needed for signal delivery
-				      (AArch64).  */
-
+#include <bits/auxv.h>
 /* Note section contents.  Each entry in the note section begins with
    a header of a fixed form.  */
 
@@ -1705,6 +1641,7 @@ typedef struct
 #define SHT_MIPS_EH_REGION	0x70000027
 #define SHT_MIPS_XLATE_OLD	0x70000028
 #define SHT_MIPS_PDR_EXCEPTION	0x70000029
+#define SHT_MIPS_XHASH		0x7000002b
 
 /* Legal values for sh_flags field of Elf32_Shdr.  */
 
@@ -1952,7 +1889,9 @@ typedef struct
    in a PIE as it stores a relative offset from the address of the tag
    rather than an absolute address.  */
 #define DT_MIPS_RLD_MAP_REL  0x70000035
-#define DT_MIPS_NUM	     0x36
+/* GNU-style hash table with xlat.  */
+#define DT_MIPS_XHASH	     0x70000036
+#define DT_MIPS_NUM	     0x37
 
 /* Legal values for DT_MIPS_FLAGS Elf32_Dyn entry.  */
 
@@ -2854,6 +2793,13 @@ enum
 #define R_AARCH64_TLSDESC      1031	/* TLS Descriptor.  */
 #define R_AARCH64_IRELATIVE	1032	/* STT_GNU_IFUNC relocation.  */
 
+/* AArch64 specific values for the Dyn d_tag field.  */
+#define DT_AARCH64_VARIANT_PCS	(DT_LOPROC + 5)
+#define DT_AARCH64_NUM		6
+
+/* AArch64 specific values for the st_other field.  */
+#define STO_AARCH64_VARIANT_PCS 0x80
+
 /* ARM relocs.  */
 
 #define R_ARM_NONE		0	/* No reloc */
@@ -3022,7 +2968,7 @@ enum
 /* Keep this the last entry.  */
 #define R_ARM_NUM		256
 
-/* csky */
+/* C-SKY */
 #define R_CKCORE_NONE               0	/* no reloc */
 #define R_CKCORE_ADDR32             1	/* direct 32 bit (S + A) */
 #define R_CKCORE_PCRELIMM8BY4       2	/* disp ((S + A - P) >> 2) & 0xff   */
@@ -3085,6 +3031,17 @@ enum
 #define R_CKCORE_TLS_DTPMOD32       56
 #define R_CKCORE_TLS_DTPOFF32       57
 #define R_CKCORE_TLS_TPOFF32        58
+
+/* C-SKY elf header definition.  */
+#define EF_CSKY_ABIMASK		    0XF0000000
+#define EF_CSKY_OTHER		    0X0FFF0000
+#define EF_CSKY_PROCESSOR	    0X0000FFFF
+
+#define EF_CSKY_ABIV1		    0X10000000
+#define EF_CSKY_ABIV2		    0X20000000
+
+/* C-SKY attributes section.  */
+#define SHT_CSKY_ATTRIBUTES	    (SHT_LOPROC + 1)
 
 /* IA-64 specific declarations.  */
 

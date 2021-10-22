@@ -23,16 +23,14 @@ class WalkAtAbsoluteSpeedImpl : public WalkAtAbsoluteSpeedImplBase
 {
   void execute(const WalkAtAbsoluteSpeed& p) override
   {
-    theMotionRequest.motion = MotionRequest::walk;
-    theMotionRequest.walkRequest.mode = WalkRequest::absoluteSpeedMode;
-    theMotionRequest.walkRequest.speed = p.speed;
-    theMotionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
+    theMotionRequest.motion = MotionRequest::walkAtAbsoluteSpeed;
+    theMotionRequest.walkSpeed = p.speed;
     theLibCheck.inc(LibCheck::motionRequest);
   }
 
   bool isDone(const WalkAtAbsoluteSpeed&) const override
   {
-    return theMotionInfo.motion == MotionRequest::walk;
+    return theMotionInfo.executedPhase == MotionPhase::walk;
   }
 };
 

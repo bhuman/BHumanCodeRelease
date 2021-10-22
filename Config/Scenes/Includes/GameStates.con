@@ -3,7 +3,6 @@ mr RobotInfo LogDataProvider Cognition
 mr OwnTeamInfo LogDataProvider Cognition
 mr OpponentTeamInfo LogDataProvider Cognition
 mr RawGameInfo LogDataProvider Cognition
-mr GameInfo LogDataProvider Cognition
 
 # use keyboard to set different game states
 jc press 9 gc initial # Shift+Ctrl+I
@@ -13,6 +12,6 @@ jc press 16 gc playing # Shift+Ctrl+P
 jc press 6 gc finished # Shift+Ctrl+F
 jc press 2 gc kickOffFirstTeam # Shift+Ctrl+B
 jc press 25 gc kickOffSecondTeam # Shift+Ctrl+Y
-jc press 21 pr none # Shift+Ctrl+U
-jc press 13 pr manual # Shift+Ctrl+M
-jc press 23 pr playerPushing # Shift+Ctrl+W
+jc press 21 pr none # Shift+Ctrl+U (Unpenalized)
+jc press 13 pr manual # Shift+Ctrl+M (Manual penalty)
+jc press 7 pr playerPushing # Shift+Ctrl+G (pushinG, Gamecontroller penalty)

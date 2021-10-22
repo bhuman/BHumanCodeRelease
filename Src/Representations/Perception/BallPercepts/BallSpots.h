@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Tools/Math/Eigen.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 /**
  * @struct BallSpots

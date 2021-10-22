@@ -138,7 +138,7 @@ void Team::changePlayer(unsigned short number, unsigned short pos, Robot* robot)
   players[number - 1][pos] = robot;
 }
 
-void Team::serialize(In* in, Out* out)
+void Team::read(In& stream)
 {
   STREAM(name);
   STREAM(number);
@@ -153,20 +153,32 @@ void Team::serialize(In* in, Out* out)
   STREAM(deployDevice);
   STREAM(magicNumber);
   std::vector<std::string> players;
-  if(out)
-  {
-    std::vector<Robot*> robots = getPlayersWrapped();
-    for(Robot* r : robots)
-      players.push_back(r ? r->name : "_");
-  }
   STREAM(players);
-  if(in)
-  {
-    std::map<std::string, Robot*> robots = Session::getInstance().robotsByName;
-    for(size_t i = 0; i < players.size(); ++i)
-      if(players[i] != "_")
-        addPlayer(i % MAX_PLAYERS, i / MAX_PLAYERS, *robots[players[i]]);
-  }
+  std::map<std::string, Robot*> robots = Session::getInstance().robotsByName;
+  for(size_t i = 0; i < players.size(); ++i)
+    if(players[i] != "_")
+      addPlayer(i % MAX_PLAYERS, i / MAX_PLAYERS, *robots[players[i]]);
+}
+
+void Team::write(Out& stream) const
+{
+  STREAM(name);
+  STREAM(number);
+  STREAM(port);
+  STREAM(color);
+  STREAM(scenario);
+  STREAM(location);
+  STREAM(compile);
+  STREAM(buildConfig);
+  STREAM(wlanConfig);
+  STREAM(volume);
+  STREAM(deployDevice);
+  STREAM(magicNumber);
+  std::vector<std::string> players;
+  std::vector<Robot*> robots = getPlayersWrapped();
+  for(Robot* r : robots)
+    players.push_back(r ? r->name : "_");
+  STREAM(players);
 }
 
 void Team::setSelectPlayer(Robot* robot, bool select)

@@ -10,7 +10,6 @@
 
 #include <QString>
 #include <QProcess>
-#include <QProcessEnvironment>
 #include <string>
 
 class Context;
@@ -179,7 +178,7 @@ protected:
    * Do not call something like waitForFinished or close on the process since
    * run will do that after the call of interact.
    */
-  virtual void interact(QProcess* process) {}
+  virtual void interact(QProcess*) {}
 
 public slots:
 

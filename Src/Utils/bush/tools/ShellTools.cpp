@@ -32,7 +32,7 @@ std::string connectCommand(const std::string& ip)
 #ifdef WINDOWS
     "cmd /c "
 #endif
-    "bash -c \"cp Keys/id_rsa_nao /tmp/id_rsa_nao && chmod 600 /tmp/id_rsa_nao && ssh -i /tmp/id_rsa_nao -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" + ip + "\"";
+    "bash -c \"cp -n ../Install/Keys/id_rsa_nao /tmp/id_rsa_nao; chmod 600 /tmp/id_rsa_nao && ssh -i /tmp/id_rsa_nao -o PasswordAuthentication=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet nao@" + ip + "\"";
 }
 
 std::string scpCommand(const std::string& fromFile, const std::string& fromHost, const std::string& toDir, const std::string& toHost)
@@ -52,7 +52,7 @@ std::string scpCommand(const std::string& fromFile, const std::string& fromHost,
 #ifdef WINDOWS
     "cmd /c "
 #endif
-    "bash -c \"cp Keys/id_rsa_nao /tmp/id_rsa_nao && chmod 600 /tmp/id_rsa_nao && scp -r -i /tmp/id_rsa_nao -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet " + from + " " + to + "\"";
+    "bash -c \"cp -n ../Install/Keys/id_rsa_nao /tmp/id_rsa_nao; chmod 600 /tmp/id_rsa_nao && scp -r -i /tmp/id_rsa_nao -o PasswordAuthentication=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet " + from + " " + to + "\"";
 }
 
 std::string scpCommandFromRobot(const std::string& fromDir, const std::string& ip, const std::string& toDir)

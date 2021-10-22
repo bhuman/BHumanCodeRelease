@@ -13,10 +13,6 @@ vid all representation:BodyContour
 vid all representation:BallSpots:image
 vid all horizon
 
-# Segmented views
-vi image jpeg segmented Upper
-vi image jpeg segmented Lower
-
 call Includes/ManualHeadMotion
 
 # 3-D image views

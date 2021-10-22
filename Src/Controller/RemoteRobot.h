@@ -8,7 +8,8 @@
 
 #include "Tools/Debugging/TcpConnection.h"
 #include "RobotConsole.h"
-#include "SimulatedRobot.h"
+
+class SimulatedRobot;
 
 /**
  * @class RemoteRobot
@@ -18,20 +19,19 @@
 class RemoteRobot : public RobotConsole, public TcpConnection
 {
 private:
-  const std::string name; /**< The name of the robot. */
   const std::string ip; /**< The ip of the robot. */
-  int bytesTransfered = 0; /**< The number of bytes transfered so far. */
+  int bytesTransferred = 0; /**< The number of bytes transferred so far. */
   float transferSpeed = 0.f; /**< The transfer speed in kb/s. */
   unsigned timestamp = 0; /**< The time when the transfer speed was measured. */
-  SimulatedRobot simulatedRobot; /**< The interface to simulated objects. */
-  SimRobotCore2::Body* puppet; /**< A pointer to the puppet when there is one. Otherwise 0. */
+  std::unique_ptr<SimulatedRobot> simulatedRobot; /**< The interface to simulated objects. */
+  SimRobotCore2::Body* puppet = nullptr; /**< A pointer to the puppet when there is one. Otherwise 0. */
 
 public:
   /**
-   * @param name The name of the robot.
+   * @param robotName The name of the robot.
    * @param ip The ip address of the robot.
    */
-  RemoteRobot(const std::string& name, const std::string& ip);
+  RemoteRobot(const std::string& robotName, const std::string& ip);
 
   /**
    * The function is called to announce the termination of the thread.
@@ -49,7 +49,7 @@ public:
    *
    * @return The name.
    */
-  const std::string getName() const override { return name; }
+  const std::string getName() const override { return robotName; }
 
 protected:
   /**
@@ -59,7 +59,7 @@ protected:
   void init() override
   {
     RobotConsole::init();
-    Thread::nameCurrentThread(name + ".RemoteRobot");
+    Thread::nameCurrentThread(robotName + ".RemoteRobot");
   }
 
   /**

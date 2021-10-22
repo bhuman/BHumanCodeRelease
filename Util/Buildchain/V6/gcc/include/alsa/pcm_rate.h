@@ -24,7 +24,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -120,11 +120,14 @@ typedef struct snd_pcm_rate_ops {
 typedef int (*snd_pcm_rate_open_func_t)(unsigned int version, void **objp,
 					snd_pcm_rate_ops_t *opsp);
 
+typedef int (*snd_pcm_rate_open_conf_func_t)(unsigned int version, void **objp,
+					snd_pcm_rate_ops_t *opsp, const snd_config_t *conf);
+
 /**
  * Define the object entry for external PCM rate-converter plugins
  */
 #define SND_PCM_RATE_PLUGIN_ENTRY(name) _snd_pcm_rate_##name##_open
-
+#define SND_PCM_RATE_PLUGIN_CONF_ENTRY(name) _snd_pcm_rate_##name##_open_conf
 
 #ifndef DOC_HIDDEN
 /* old rate_ops for protocol version 0x010001 */

@@ -10,9 +10,7 @@
 #pragma once
 
 #include "Tools/MessageQueue/OutMessage.h"
-#ifdef TARGET_TOOL
-#include <iostream>
-#else
+#ifndef TARGET_TOOL
 #include "Tools/Debugging/DebugRequest.h"
 #endif
 #include "Tools/Global.h"

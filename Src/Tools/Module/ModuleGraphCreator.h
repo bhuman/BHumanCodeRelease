@@ -11,7 +11,6 @@
 
 #include "Module.h"
 #include "Tools/Framework/Configuration.h"
-#include "Tools/Streams/TypeInfo.h"
 
 #include <list>
 #include <unordered_set>
@@ -25,6 +24,7 @@
 class ModuleGraphCreator
 {
   friend class ModuleGraphCreatorTest; // Access for tests.
+  friend class Debug;
 private:
   /**
    * The class represents a provider of information.
@@ -44,8 +44,31 @@ private:
       representation(representation), moduleBase(moduleBase) {}
   };
 
+  /**
+   * The class represents a node in the dependency graph that is used for sorting the providers topologically.
+   */
+  struct Node
+  {
+    Provider provider; /**< The provider represented by this node. */
+    std::vector<Node*> edges; /**< The edges to other providers that depend on the representation provided here. */
+    Node* prev = nullptr; /**< The previous node during the depth first search. */
+    enum
+    {
+      unreached, /**< The node was not reached yet. */
+      reached, /**< The node was reached and is part of the path currently explored. */
+      done /**< The node was added to the providers list and is thereby done. */
+    } state = unreached; /**< The reachability state of this node. */
+
+    /**
+     * Constructor.
+     * @param provider The provider represented by this node.
+     */
+    Node(const Provider& provider) : provider(provider) {}
+  };
+
   std::unordered_map<std::string, ModuleBase*> modules; /**< A map of all modules for quick access via name. */
 
+  Configuration config; /**< The last configuration set. It may not work. */
   // The outer vector indicates the thread for which this is calculated.
   std::vector<std::vector<bool>> required; /**< Bitmap if a module is required. Uses modules index. Must not be changed after adding to the providers list. */
   std::vector<std::vector<std::vector<const char*>>> received; /**< The list of all names of representations received from other threads. */
@@ -54,9 +77,6 @@ private:
   std::vector<std::string> representationsToReset; /**< The list of all representations that must be reset. */
 
 public:
-  Configuration config; /**< The last configuration set. It may not work. */
-  TypeInfo typeInfo; /**< Information about all types. */
-
   /**
    * The constructor.
    * @param config The configuration of all threads.
@@ -111,6 +131,17 @@ private:
    * @return Is the set of providers consistent?
    */
   bool sortProviders(const std::vector<std::string>& providedByDefault, std::size_t index);
+
+  /**
+   * Sorts providers based on their dependencies.
+   * @param threadName The name of the thread just processed. Just for error messages.
+   * @param node Start node. All providers that depend on this provider and itself and are
+   *             not already marked as unreached will be added to the result at the beginning.
+   * @param providers A list of the providers in the sequence they must be called. This list
+   *                  is extended at its beginning by this method.
+   * @return Was sorting successful? If not, a cycle was found and sorting was aborted.
+   */
+  bool topologicalSort(const char* threadName, Node* node, std::list<Provider>& providers);
 
 public: // Passing data to the public:
   /** Contains all the parameters a thread needs to run its modules. */

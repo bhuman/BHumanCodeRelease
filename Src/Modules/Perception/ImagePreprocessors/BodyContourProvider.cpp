@@ -35,7 +35,7 @@ void BodyContourProvider::update(BodyContour& bodyContour)
 }
 
 void BodyContourProvider::add(const Pose3f& origin, const std::vector<Vector3f>& c, float sign,
-                              BodyContour& bodyContour)
+                              BodyContour& bodyContour) const
 {
   Vector2i q1,
            q2;
@@ -79,4 +79,4 @@ bool BodyContourProvider::calculatePointInImage(const Vector3f& pointInWorld, Ve
     return false;
 }
 
-MAKE_MODULE(BodyContourProvider, perception)
+MAKE_MODULE(BodyContourProvider, perception);

@@ -6,8 +6,6 @@
 
 #include "Platform/BHAssert.h"
 
-#ifndef NDEBUG
-
 #include <cstdlib>
 #include <cstdio>
 #include <cstdarg>
@@ -42,5 +40,3 @@ void Assert::abort()
 {
   ::abort();
 }
-
-#endif // NDEBUG

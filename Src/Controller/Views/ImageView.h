@@ -23,7 +23,6 @@
 #include <SimRobot.h>
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/RobotConsole.h"
-#include "Controller/Views/ColorCalibrationView/ColorCalibrationView.h"
 #include "Controller/Visualization/PaintMethods.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Tools/Math/Eigen.h"
@@ -49,11 +48,10 @@ public:
    * @param console The console object.
    * @param background The name of the background image.
    * @param name The name of the view.
-   * @param segmented The image will be segmented.
    * @param gain The intensity is multiplied with this factor.
    * @param ddScale The debug drawings are multiplied with this factor.
    */
-  ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, const std::string& threadIdentifier, float gain = 1.0f, float ddScale = 1.0f);
+  ImageView(QString fullName, RobotConsole& console, std::string background, std::string  name, std::string threadIdentifier, float gain = 1.0f, float ddScale = 1.0f);
 
 private:
   const QString fullName; /**< The path to this view in the scene graph */
@@ -61,7 +59,6 @@ private:
   RobotConsole& console; /**< A reference to the console object. */
   const std::string background; /**< The name of the background image. */
   const std::string name; /**< The name of the view. */
-  bool segmented;  /**< The image will be segmented. */
   float gain; /**< The intensity is multiplied with this factor. */
   float ddScale; /**< The debug drawings are multiplied with this factor. */
 
@@ -82,17 +79,16 @@ class ImageWidget : public WIDGET2D, public SimRobot::Widget
 {
   Q_OBJECT
 public:
-  ImageWidget(ImageView& imageView);
-  ~ImageWidget();
+  explicit ImageWidget(ImageView& imageView);
+  ~ImageWidget() override;
 
 private:
   ImageView& imageView;
   QImage* imageData = nullptr;
   void* imageDataStorage = nullptr;
-  int imageWidth = CameraImage::maxResolutionWidth;
-  int imageHeight = CameraImage::maxResolutionHeight;
+  int imageWidth = CameraImage::maxResolutionWidth / 2;
+  int imageHeight = CameraImage::maxResolutionHeight / 2;
   unsigned int lastImageTimestamp = 0;
-  unsigned int lastColorTableTimestamp = 0;
   unsigned int lastDrawingsTimestamp = 0;
   QPainter painter;
   QPointF dragStart;
@@ -106,8 +102,6 @@ private:
   void paint(QPainter& painter) override;
   void paintDrawings(QPainter& painter);
   void copyImage(const DebugImage& srcImage);
-  void copyImageSegmented(const DebugImage& srcImage);
-  void segmentImage(const DebugImage& srcImage);
   void paintImage(QPainter& painter, const DebugImage& srcImage);
   bool needsRepaint() const;
   void window2viewport(QPointF& point);

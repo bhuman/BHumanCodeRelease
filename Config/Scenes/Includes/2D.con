@@ -1,0 +1,31 @@
+cs 2D
+
+# activate simulation time
+st on
+
+robot all
+
+# request behavior output
+dr representation:MotionRequest
+
+# request behavior messages
+dr representation:ActivationGraph
+dr representation:TeamActivationGraph
+
+# field views
+vf worldState
+vfd worldState fieldLines
+vfd worldState goalFrame
+vfd worldState fieldPolygons
+vfd worldState representation:RobotPose
+vfd worldState representation:FieldBall:global
+
+# views relative to robot
+vfd worldState cognition:RobotPose
+vfd worldState representation:BallModel:endPosition
+vfd worldState representation:BallModel
+vfd worldState representation:MotionRequest
+vfd worldState representation:ObstacleModel:rectangle
+vfd worldState representation:FieldBall:relative
+
+call Includes/GameStates

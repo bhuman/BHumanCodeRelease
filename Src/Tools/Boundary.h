@@ -16,17 +16,7 @@
  */
 template<typename T = float> STREAMABLE(Boundary,
 {
-  Boundary();
-
-  /**
-   * Constructor.
-   * This constructor allows to specify the minimum and maximum values
-   * for type T, e.g. -HUGE_VAL and HUGE_VAL for float. These limits
-   * are used to construct the object, so that it can adapt to any boundary later.
-   * @param min The minimum value of T.
-   * @param max The maximum value of T.
-   */
-  Boundary(T min, T max);
+  Boundary() = default;
 
   /**
    * Constructor.
@@ -82,8 +72,6 @@ template<typename T = float> STREAMABLE(Boundary,
   (Range<T>) y, /**< The range in y-direction. */
 });
 
-template<typename T> Boundary<T>::Boundary() : x(0, 0), y(0, 0) {}
-template<typename T> Boundary<T>::Boundary(T min, T max) : x(max, min), y(max, min) {}
 template<typename T> Boundary<T>::Boundary(const Range<T>& x, const Range<T>& y) : x(x), y(y) {}
 
 using Boundaryi = Boundary<int>;

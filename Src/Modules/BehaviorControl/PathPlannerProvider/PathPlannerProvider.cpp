@@ -65,8 +65,8 @@ static const float epsilon = 0.1f; /**< Small offset in mm. */
 
 PathPlannerProvider::PathPlannerProvider()
 {
-  borders.emplace_back(theFieldDimensions.xPosOpponentGroundline + fieldBorderLimit, 0.f, 0.f, -1.f);
-  borders.emplace_back(theFieldDimensions.xPosOwnGroundline - fieldBorderLimit, 0.f, 0.f, 1.f);
+  borders.emplace_back(theFieldDimensions.xPosOpponentGroundLine + fieldBorderLimit, 0.f, 0.f, -1.f);
+  borders.emplace_back(theFieldDimensions.xPosOwnGroundLine - fieldBorderLimit, 0.f, 0.f, 1.f);
   borders.emplace_back(0.f, theFieldDimensions.yPosLeftSideline + fieldBorderLimit, 1.f, 0.f);
   borders.emplace_back(0.f, theFieldDimensions.yPosRightSideline - fieldBorderLimit, -1.f, 0.f);
 }
@@ -81,37 +81,41 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
   DECLARE_DEBUG_DRAWING3D("module:PathPlannerProvider:obstacles", "field");
   DECLARE_DEBUG_DRAWING3D("module:PathPlannerProvider:expanded", "field");
   DECLARE_DEBUG_DRAWING3D("module:PathPlannerProvider:path", "field");
-  DECLARE_PLOT("module:PathPlannerProvider:turnAngleIntegrator");
 
-  pathPlanner.plan = [this](const Pose2f& target, const Pose2f& speed, bool excludePenaltyArea) -> MotionRequest
+  pathPlanner.plan = [this](const Pose2f& target, const Pose2f& speed) -> MotionRequest::ObstacleAvoidance
   {
+    bool excludeOwnPenaltyArea = !theTeamBehaviorStatus.role.isGoalkeeper() && theLibTeammates.nonKeeperTeammatesInOwnPenaltyArea >= 2;
+    bool excludeOpponentPenaltyArea = theLibTeammates.teammatesInOpponentPenaltyArea >= 3;
     pathPlannerWasActive = true;
-    MotionRequest motionRequest;
-    createBarriers(target, excludePenaltyArea);
-    createNodes(target, excludePenaltyArea);
+    createBarriers(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea);
+    createNodes(target, excludeOwnPenaltyArea, excludeOpponentPenaltyArea);
     plan(nodes[0], nodes[1], speed.translation.x() / speed.rotation);
 
-    motionRequest.motion = MotionRequest::stand; // fall back if no path is found
+    bool foundPath = false;
+    MotionRequest::ObstacleAvoidance obstacleAvoidance;
     FOREACH_ENUM(Rotation, rotation)
       if(nodes[1].fromEdge[rotation])
       {
-        Edge* edge = nodes[1].fromEdge[rotation];
-        Edge* nextEdge = nullptr;
-        while(edge->fromNode != &nodes[0])
+        Edge* edge;
+        for(edge = nodes[1].fromEdge[rotation]; edge->fromNode != &nodes[0]; edge = edge->fromNode->fromEdge[edge->fromRotation])
         {
-          nextEdge = edge;
-          edge = edge->fromNode->fromEdge[edge->fromRotation];
+          obstacleAvoidance.path.emplace_back();
+          obstacleAvoidance.path.back().obstacle = Geometry::Circle(theRobotPose.inversePose * edge->fromNode->center, edge->fromNode->radius + radiusControlOffset);
+          obstacleAvoidance.path.back().clockwise = edge->fromRotation == cw;
         }
         lastDir = edge->toRotation;
-        calcMotionRequest(target, speed, edge, nextEdge, motionRequest);
+
+        std::reverse(obstacleAvoidance.path.begin(), obstacleAvoidance.path.end());
+        obstacleAvoidance.avoidance = calcAvoidanceVector(edge->toNode);
+
+        foundPath = true;
         break;
       }
 
-    if(motionRequest.motion == MotionRequest::stand)
+    if(!foundPath)
     {
-      // Walk straight to target
-      Edge edge(&nodes[0], &nodes[1], 0.f, nodes[1].center, cw, cw, (nodes[0].center - nodes[1].center).norm());
-      calcMotionRequest(target, speed, &edge, nullptr, motionRequest);
+      // Walk straight to target (but still avoid close obstacles)
+      obstacleAvoidance.avoidance = calcAvoidanceVector(&nodes[1]);
 
       if(theFrameInfo.getTimeSince(timeWhenLastPlayedSound) > 5000)
       {
@@ -122,19 +126,16 @@ void PathPlannerProvider::update(PathPlanner& pathPlanner)
     }
     draw();
 
-    return motionRequest;
+    return obstacleAvoidance;
   };
 
   if(!pathPlannerWasActive)
-  {
-    turnAngleIntegrator = 0.f;
     lastDir = numOfRotations;
-  }
   else
     pathPlannerWasActive = false;
 }
 
-void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludePenaltyArea)
+void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea)
 {
   barriers.clear();
   barriers.reserve(8);
@@ -149,7 +150,7 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludePenal
   barriers.emplace_back(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal,
                         theFieldDimensions.xPosOwnFieldBorder, theFieldDimensions.yPosRightGoal);
 
-  if(excludePenaltyArea)
+  if(excludeOwnPenaltyArea)
   {
     float left = theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaRadius - radiusControlOffset;
     float right = theFieldDimensions.yPosRightPenaltyArea - penaltyAreaRadius + radiusControlOffset;
@@ -159,18 +160,35 @@ void PathPlannerProvider::createBarriers(const Pose2f& target, bool excludePenal
     clipPenaltyArea(target.translation, left, right, front);
 
     barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyArea, left,
-                          theFieldDimensions.xPosOwnGroundline, left);
+                          theFieldDimensions.xPosOwnGroundLine, left);
     barriers.emplace_back(theFieldDimensions.xPosOwnPenaltyArea, right,
-                          theFieldDimensions.xPosOwnGroundline, right);
+                          theFieldDimensions.xPosOwnGroundLine, right);
+    barriers.emplace_back(front, theFieldDimensions.yPosLeftPenaltyArea,
+                          front, theFieldDimensions.yPosRightPenaltyArea);
+  }
+
+  if(excludeOpponentPenaltyArea)
+  {
+    float left = theFieldDimensions.yPosLeftPenaltyArea + penaltyAreaRadius - radiusControlOffset;
+    float right = theFieldDimensions.yPosRightPenaltyArea - penaltyAreaRadius + radiusControlOffset;
+    float front = theFieldDimensions.xPosOpponentPenaltyArea + penaltyAreaRadius - radiusControlOffset;
+
+    clipPenaltyArea(theRobotPose.translation, left, right, front);
+    clipPenaltyArea(target.translation, left, right, front);
+
+    barriers.emplace_back(theFieldDimensions.xPosOpponentPenaltyArea, left,
+                          theFieldDimensions.xPosOpponentGroundLine, left);
+    barriers.emplace_back(theFieldDimensions.xPosOpponentPenaltyArea, right,
+                          theFieldDimensions.xPosOpponentGroundLine, right);
     barriers.emplace_back(front, theFieldDimensions.yPosLeftPenaltyArea,
                           front, theFieldDimensions.yPosRightPenaltyArea);
   }
 
   if(wrongBallSideCostFactor > 0.f)
   {
-    const Vector2f& ballPosition = theFieldBall.recentBallPositionOnField();
+    const Vector2f& ballPosition = theTeamBehaviorStatus.role.playsTheBall() ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
     Vector2f end = ballPosition + (ballPosition - Vector2f(theFieldDimensions.xPosOwnGoal, 0)).normalized(wrongBallSideRadius);
-    barriers.emplace_back(ballPosition.x(), ballPosition.y(),end.x(), end.y(), ballRadius * pi2 * wrongBallSideCostFactor);
+    barriers.emplace_back(ballPosition.x(), ballPosition.y(), end.x(), end.y(), ballRadius * pi2 * wrongBallSideCostFactor);
   }
 }
 
@@ -191,12 +209,12 @@ void PathPlannerProvider::clipPenaltyArea(const Vector2f& position, float& left,
   }
 }
 
-void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyArea)
+void PathPlannerProvider::createNodes(const Pose2f& target, bool excludeOwnPenaltyArea, bool excludeOpponentPenaltyArea)
 {
   nodes.clear();
 
   // Reserve enough space that prevents any reallocation, because the addresses of entries are used.
-  nodes.reserve(sqr((excludePenaltyArea ? 8 : 6) +
+  nodes.reserve(sqr((excludeOwnPenaltyArea ? 8 : 6) + (excludeOpponentPenaltyArea ? 2 : 0) +
                     (useObstacles ? theObstacleModel.obstacles.size() : theTeamPlayersModel.obstacles.size())));
 
   // Insert start and target
@@ -211,7 +229,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
   nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal), goalPostRadius - radiusControlOffset);
   nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal), goalPostRadius - radiusControlOffset);
 
-  if(excludePenaltyArea)
+  if(excludeOwnPenaltyArea)
   {
     // The nodes around the penalty area will be intersected by barriers. Therefore, they can
     // be reached from two sides and must be cloneable once.
@@ -219,9 +237,23 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
     nodes.back().allowedClones = 1;
     nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnPenaltyArea, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
     nodes.back().allowedClones = 1;
-    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
     nodes.back().allowedClones = 1;
-    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.back().allowedClones = 1;
+  }
+
+  if(excludeOpponentPenaltyArea)
+  {
+    // The nodes around the penalty area will be intersected by barriers. Therefore, they can
+    // be reached from two sides and must be cloneable once.
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosLeftPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.back().allowedClones = 1;
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentPenaltyArea, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.back().allowedClones = 1;
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
+    nodes.back().allowedClones = 1;
+    nodes.emplace_back(Vector2f(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosRightPenaltyArea), penaltyAreaRadius - radiusControlOffset + epsilon);
     nodes.back().allowedClones = 1;
   }
 
@@ -242,7 +274,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
   // Add ball in playing if it is not the target
   if(theGameInfo.state == STATE_PLAYING)
   {
-    const Vector2f& ballPosition = theTeamBehaviorStatus.role.playBall ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
+    const Vector2f& ballPosition = theTeamBehaviorStatus.role.playsTheBall() ? theFieldBall.recentBallEndPositionOnField() : theFieldBall.recentBallPositionOnField();
     if(theGameInfo.setPlay != SET_PLAY_NONE && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
       addObstacle(ballPosition, freeKickRadius);
     else if((ballPosition - to.center).norm() >= 1.f)
@@ -254,7 +286,7 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
 
   // If other nodes surround start or target, shrink them.
   for(auto node = nodes.begin(); node != nodes.begin() + 2; ++node)
-    for(auto other = nodes.begin() + 2; other != nodes.end();)
+    for(auto other = nodes.begin() + 2; other != nodes.end(); ++other)
     {
       if((other->center - node->center).squaredNorm() <= sqr(other->radius))
       {
@@ -262,13 +294,8 @@ void PathPlannerProvider::createNodes(const Pose2f& target, bool excludePenaltyA
         const float distance = diff.norm();
         other->radius = (other->radius + distance - epsilon) / 2.f;
         other->center = node->center + (other->center - node->center).normalized(other->radius + epsilon);
-        if(other->radius <= 0.f)
-        {
-          other = nodes.erase(other);
-          continue; // skip ++
-        }
+        ASSERT(other->radius >= 0.f);
       }
-      ++other;
     }
 
   // If start and target are both inside the field, prevent passing obstacles outside the field.
@@ -627,15 +654,14 @@ void PathPlannerProvider::addNeighborsFromTangents(Node& node, Tangents& tangent
     index.reserve(t.size());
     for(auto& tangent : t)
       index.push_back(&tangent);
-    std::sort(index.begin(), index.end(),
-              [](const Tangent* t1, const Tangent* t2) -> bool
-              {
-                return t1->fromAngle < t2->fromAngle;
-              });
+    std::sort(index.begin(), index.end(), [](const Tangent* t1, const Tangent* t2) -> bool
+    {
+      return t1->fromAngle < t2->fromAngle;
+    });
 
     // Sweep through all tangents, managing a set of current nodes sorted by their distance.
-    std::vector<Tangent*> sweepline;
-    sweepline.reserve(t.size());
+    std::vector<Tangent*> sweepLine;
+    sweepLine.reserve(t.size());
     const auto byDistance = [](const Tangent* t1, const Tangent* t2) -> bool
     {
       return t1->circleDistance > t2->circleDistance;
@@ -643,12 +669,12 @@ void PathPlannerProvider::addNeighborsFromTangents(Node& node, Tangents& tangent
     for(auto& tangent : index)
     {
       // In general, if the node of the current tangent is not further away than the closest node
-      // in the sweepline, it is a neighbor. However, since the obstacles are modeled as circles,
+      // in the sweep line, it is a neighbor. However, since the obstacles are modeled as circles,
       // all obstacles must be checked until one is found that is actually further away or the target
       // point is actually inside another obstacle.
       if(!tangent->dummy)
       {
-        for(const auto& s : sweepline)
+        for(const auto& s : sweepLine)
           if(!s->ended)
           {
             if(s->circleDistance >= tangent->circleDistance)
@@ -674,14 +700,14 @@ void PathPlannerProvider::addNeighborsFromTangents(Node& node, Tangents& tangent
 
       if(tangent->side == Tangent::right)
       {
-        // If the current tangent is a right edge, add it to the sweepline
-        sweepline.push_back(tangent);
-        std::push_heap(sweepline.begin(), sweepline.end(), byDistance);
+        // If the current tangent is a right edge, add it to the sweep line
+        sweepLine.push_back(tangent);
+        std::push_heap(sweepLine.begin(), sweepLine.end(), byDistance);
       }
       else if(tangent->side == Tangent::left)
       {
         // If the current tangent is a left edge, mark it as to be deleted
-        // from the sweepline. Delete all closest entries from the sweepline
+        // from the sweep line. Delete all closest entries from the sweep line
         // as long as they can be deleted.
         if(tangent->matchingRightTangent != -1)
           t[tangent->matchingRightTangent].ended = true;
@@ -696,25 +722,19 @@ void PathPlannerProvider::addNeighborsFromTangents(Node& node, Tangents& tangent
           FAIL("Send Config/PathPlannerProvider.log to Thomas.Roefer@dfki.de.");
 #endif
         }
-        while(!sweepline.empty() && sweepline.front()->ended)
+        while(!sweepLine.empty() && sweepLine.front()->ended)
         {
-          std::pop_heap(sweepline.begin(), sweepline.end(), byDistance);
-          sweepline.pop_back();
+          std::pop_heap(sweepLine.begin(), sweepLine.end(), byDistance);
+          sweepLine.pop_back();
         }
       }
     }
   }
 }
 
-void PathPlannerProvider::calcMotionRequest(const Pose2f& target, const Pose2f& speed,
-                                            const Edge* edge, const Edge* nextEdge,
-                                            MotionRequest& motionRequest)
+Vector2f PathPlannerProvider::calcAvoidanceVector(const Node* nextNode) const
 {
-  motionRequest.motion = MotionRequest::walk;
-  motionRequest.walkRequest.walkKickRequest = WalkRequest::WalkKickRequest();
-  motionRequest.walkRequest.speed = speed;
-
-  // Determine general avoidance direction
+  // Determine general avoidance direction.
   Vector2f avoidance = Vector2f::Zero();
   bool closeToNextNode = false;
   bool closeToOtherNode = false;
@@ -727,62 +747,19 @@ void PathPlannerProvider::calcMotionRequest(const Pose2f& target, const Pose2f& 
       inFront |= (Pose2f(node->center) - theRobotPose).translation.x() >= 0.f;
       const float factor = std::min(1.f, (node->originalRadius + radiusControlOffset - offset.norm()) / radiusAvoidanceTolerance);
       avoidance += -(Pose2f(node->center) - theRobotPose).translation.normalized(factor);
-      closeToNextNode |= &*node == edge->toNode;
-      closeToOtherNode |= &*node != edge->toNode;
+      closeToNextNode |= &*node == nextNode;
+      closeToOtherNode |= &*node != nextNode;
     }
   }
 
   // Normalize if another node than the current one must (also) be avoided.
-  // Reset if only the current node must be avoided (control will do this anyway).
+  // Reset if only the current node must be avoided (this will happen implicitly).
   if(inFront && closeToOtherNode && avoidance.squaredNorm() > 1.f)
     avoidance.normalize();
   else if(!inFront || (closeToNextNode && !closeToOtherNode))
     avoidance = Vector2f::Zero();
 
-  const Vector2f toPoint = edge->toPoint == edge->toNode->center ? edge->toPoint : edge->toNode->center + (edge->toPoint - edge->toNode->center).normalized(edge->toNode->radius + radiusControlOffset);
-
-  auto translationFn = [&](const float rotation) -> float
-  {
-    return 1.f - std::max(0.f, std::min(1.f, (std::abs(rotation) - fullTranslationThreshold) / (noTranslationThreshold - fullTranslationThreshold)));
-  };
-
-  if(edge->toNode == &nodes[1] && (toPoint - theRobotPose.translation).norm() <= startTurningBeforeTargetDistance)
-  {
-    // Close to target -> start turning to final direction.
-    motionRequest.walkRequest.mode = WalkRequest::targetMode;
-    motionRequest.walkRequest.target = target - theRobotPose;
-    turnAngleIntegrator = 0.f;
-  }
-  else if(nextEdge && (toPoint - theRobotPose.translation).norm() <= startTurningBeforeCircleDistance)
-  {
-    const Vector2f offset = toPoint - edge->toNode->center;
-    Pose2f controlPose(Angle::normalize(offset.angle() + (edge->toRotation == cw ? -pi_2 - controlAheadAngle : pi_2 + controlAheadAngle)),
-                       Pose2f(edge->toRotation == cw ? -controlAheadAngle : controlAheadAngle, edge->toNode->center) * (offset / std::cos(controlAheadAngle)));
-
-    Pose2f speed = controlPose - theRobotPose;
-    speed.translation.normalize();
-    const float translationFactor = translationFn(speed.rotation);
-
-    motionRequest.walkRequest.mode = WalkRequest::relativeSpeedMode;
-    motionRequest.walkRequest.speed.translation.x() *= speed.translation.x() * translationFactor + avoidance.x();
-    motionRequest.walkRequest.speed.translation.y() *= speed.translation.y() * translationFactor + avoidance.y();
-    motionRequest.walkRequest.speed.rotation *= speed.rotation * pFactor;
-    turnAngleIntegrator = 0.f;
-  }
-  else
-  {
-    const Vector2f offsetToTarget = (Pose2f(toPoint) - theRobotPose).translation;
-    const float turnAngle = offsetToTarget.angle();
-
-    // Walk straight towards next intermediate target.
-    motionRequest.walkRequest.mode = WalkRequest::relativeSpeedMode;
-    motionRequest.walkRequest.speed.translation.x() *= translationFn(turnAngle) + avoidance.x();
-    motionRequest.walkRequest.speed.translation.y() *= avoidance.y();
-    motionRequest.walkRequest.speed.rotation *= clip(turnAngle * pFactor + turnAngleIntegrator * iFactor, -1.f, 1.f);
-
-    turnAngleIntegrator += turnAngle - antiWindupFactor * (motionRequest.walkRequest.speed.rotation - clip<float>(motionRequest.walkRequest.speed.rotation, -antiWindupSaturation, antiWindupSaturation));
-    turnAngleIntegrator = clip(turnAngleIntegrator, -1.f, 1.f);
-  }
+  return avoidance;
 }
 
 void PathPlannerProvider::draw() const
@@ -951,6 +928,4 @@ void PathPlannerProvider::draw() const
         }
       }
   }
-
-  PLOT("module:PathPlannerProvider:turnAngleIntegrator", turnAngleIntegrator);
 }

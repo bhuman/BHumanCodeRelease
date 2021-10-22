@@ -21,83 +21,12 @@
 #ifdef __clang__
 #pragma clang system_header
 #endif
+#if defined MACOS && defined __arm64__
+#include <sse2neon.h>
+#else
 #include <x86intrin.h>
+#endif
 #define ALWAYSINLINE inline __attribute((always_inline))
-#endif
-
-/**
- * Workarounds for several clang versions.
- */
-#if defined __clang__ && defined __has_builtin
-/**
- * Workarounds for clang-3.7.
- */
-#if __has_builtin(__builtin_shufflevector) && !__has_builtin(__builtin_ia32_pslldqi128)
-#undef _mm_slli_si128
-#define _mm_slli_si128(a, imm) __extension__ ({                         \
-    (__m128i)__builtin_shufflevector((__v16qi)_mm_setzero_si128(),        \
-                                     (__v16qi)(__m128i)(a),               \
-                                     ((imm)&0xF0) ? 0 : 16 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 17 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 18 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 19 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 20 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 21 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 22 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 23 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 24 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 25 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 26 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 27 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 28 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 29 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 30 - ((imm)&0xF), \
-                                     ((imm)&0xF0) ? 0 : 31 - ((imm)&0xF)); })
-#endif
-
-#if __has_builtin(__builtin_shufflevector) && !__has_builtin(__builtin_ia32_psrldqi128)
-#undef _mm_srli_si128
-#define _mm_srli_si128(a, imm) __extension__ ({                          \
-    (__m128i)__builtin_shufflevector((__v16qi)(__m128i)(a),                \
-                                     (__v16qi)_mm_setzero_si128(),         \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 0,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 1,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 2,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 3,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 4,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 5,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 6,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 7,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 8,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 9,  \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 10, \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 11, \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 12, \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 13, \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 14, \
-                                     ((imm)&0xF0) ? 16 : ((imm)&0xF) + 15); })
-#endif
-
- /**
- * Workarounds for clang-6.0.
- */
-#if !defined _mm_avg_epu8 && __has_builtin(__builtin_convertvector) && !__has_builtin(__builtin_ia32_pavgb128)
-#ifndef __DEFAULT_FN_ATTRS
-#define __DEFAULT_FN_ATTRS
-#endif
-static __inline__ __m128i __DEFAULT_FN_ATTRS my_mm_avg_epu8(__m128i __a, __m128i __b)
-{
-  using __v16hu = unsigned short __attribute__((__vector_size__(32)));
-  return (__m128i)__builtin_convertvector(
-    ((__builtin_convertvector((__v16qu)__a, __v16hu) +
-      __builtin_convertvector((__v16qu)__b, __v16hu)) + 1)
-    >> 1, __v16qu);
-}
-#ifdef _mm_avg_epu8
-#undef _mm_avg_epu8
-#endif
-#define _mm_avg_epu8(__a, __b) my_mm_avg_epu8(__a, __b)
-#endif
 #endif
 
 /**

@@ -43,10 +43,10 @@ STREAMABLE(FieldLineIntersections,
     (IntersectionType) type,
     (AdditionalType)(AdditionalType::none) additionalType,
     (Vector2f) pos, /**< The fieldcoordinates of the intersection */
-    /** dir1 and dir2 are the directions of the field lines.
-     * If the type is T: dir1 shows the direction of the vertical line.
-     *                   dir2 shows the direction of the horizontal line +90° relative to dir1.
-     * dir1 and dir2 point always from the intersection towards the lines
+    /** dir1 and dir2 are the directions of the field lines.                             ___
+     * If the type is T: dir1 shows the direction of the vertical line, i.e. the | in the |
+     *                   dir2 shows the direction of the horizontal line (+90° relative to dir1).
+     * dir1 and dir2 point always from the intersection away, along the lines
      * If the type is L: dir2 is +90° relative to dir1*/
     (Vector2f) dir1,
     (Vector2f) dir2,

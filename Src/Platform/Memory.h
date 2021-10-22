@@ -9,4 +9,4 @@ namespace Memory
 
   /** Free aligned memory. */
   void alignedFree(void* ptr);
-};
+}

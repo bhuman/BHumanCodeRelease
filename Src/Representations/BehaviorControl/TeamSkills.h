@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/Role.h"
+#include "Representations/BehaviorControl/PlayerRole.h"
 #include "Representations/BehaviorControl/TeamBehaviorStatus.h"
 #include "Representations/BehaviorControl/TeammateRoles.h"
 #include "Representations/BehaviorControl/TimeToReachBall.h"
@@ -38,5 +38,5 @@ namespace TeamSkills
    * This skill sets the role member of the TeamBehaviorStatus.
    * @param role The role to set
    */
-  TEAM_SKILL_INTERFACE(Role, (const ::Role&) role);
+  TEAM_SKILL_INTERFACE(Role, (const ::PlayerRole&) role);
 }

@@ -48,7 +48,7 @@ public:
 
   /** Returns possible completions of the given command line.
    *
-   * First of all this mehtod completes all available command names if just one
+   * First of all this method completes all available command names if just one
    * word is given in the command line string.
    * If a second word exsists it will be delivered to the completion method of
    * the command whose name equals the first word of the command line string.

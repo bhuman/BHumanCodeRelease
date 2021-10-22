@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -35,6 +35,7 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
+#include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Tools/Module/Module.h"
@@ -46,16 +47,17 @@ MODULE(BallPerceptFilter,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(FieldDimensions),
+  REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
   REQUIRES(OdometryData),
+  REQUIRES(OwnTeamInfo),
   REQUIRES(TeamData),
   REQUIRES(WorldModelPrediction),
   USES(RobotPose),
-  USES(TeamBehaviorStatus),
   USES(TeamBallModel),
   PROVIDES(FilteredBallPercepts),
   LOADS_PARAMETERS(
@@ -74,7 +76,7 @@ MODULE(BallPerceptFilter,
     (unsigned) requiredPerceptionCountFar,             /**< For far balls, this many perceptions are required for verification. */
     (float) requiredPerceptionDistanceNear,            /**< Maximum distance to a verification perception, if the ball is near */
     (float) requiredPerceptionDistanceFar,             /**< Maximum distance to a verification perception, if the ball is far */
-    (float) beginningOfFar,                            /**< Everything farther than this is consideres as "far" */
+    (float) beginningOfFar,                            /**< Everything farther than this is considers as "far" */
     (unsigned) neededSeenBallsForAcceptingGuessedOne,  /**< This number of seen balls must be quite close to a guessed ball to accept it. */
     (Angle) maximumAngleBetweenSeenAndGuessed,         /**< When comparing seen and guessed balls, the angles to them should not be larger than this. */
     (float) maximumDistanceBetweenSeenAndGuessed,      /**< When comparing seen and guessed balls, the distance between them should not be larger than this. */
@@ -106,6 +108,8 @@ private:
   RingBuffer<FilteredBallPercept, 5> bufferedSeenBalls;  /**< Each percept needs to be verified. This is the verification buffer. However, it contains only perceptions that had the status "seen". */
   RingBuffer<FilteredBallPercept, 10> bufferedBalls;     /**< A buffer for all guessed and seen balls, used for accepting moving guessed balls. */
   unsigned int timeOfLastFilteredPercept;                /**< Point of time when the last percept has been added to the module's output representation */
+  unsigned int timeOfLastPerceivedFieldFeature;          /**< Save time of field feature perception to evaluate robot pose quality (not sure, if this is cool) */
+
 
   void doSomeTestStuff();
 
@@ -141,7 +145,7 @@ private:
    */
   bool verifySeenBall();
 
-  /** Sometimes, we get ball percepts and the Perceptor is not sure, whether or not they are correct.
+  /** Sometimes, we get ball percepts and the perceptor is not sure, whether or not they are correct.
    *  If these "guessed" ball percepts are close to recently seen better ones, they should be used, too.
    *  @return true, if the described situation is the case
    */

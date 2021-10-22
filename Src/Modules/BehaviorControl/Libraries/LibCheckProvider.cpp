@@ -55,7 +55,7 @@ void LibCheckProvider::checkOutputs(const ActivationGraph& activationGraph, LibC
     if(callCounters[i] == 0 && notSetCheck[i] == 1)
     {
       OUTPUT_TEXT("Meeek! " << TypeRegistry::getEnumName(i) << " has not been set in this cycle (Robot " << theRobotInfo.number
-                  << (!callCounters[LibCheck::role] ? "" : ", Role: " + theTeamBehaviorStatus.role.getName())
+                  << (!callCounters[LibCheck::role] ? "" : ", Role: " + std::string(TypeRegistry::getEnumName(theTeamBehaviorStatus.role.role)))
                   << (options == "" ? "" : ", Options: " + options) << ") !");
     }
     else if(notSetCheck[i] == 2)
@@ -65,10 +65,10 @@ void LibCheckProvider::checkOutputs(const ActivationGraph& activationGraph, LibC
   }
 }
 
-
-void LibCheckProvider::checkMotionRequest(const ActivationGraph& activationGraph, const MotionRequest& theMotionRequest) const
+void LibCheckProvider::checkMotionRequest(const ActivationGraph&, const MotionRequest&) const
 {
   // Check for invalid motion request:
+  /*
   if(assertValidWalkRequest &&
      theMotionRequest.motion == MotionRequest::walk &&
      !theMotionRequest.walkRequest.isValid())
@@ -86,6 +86,7 @@ void LibCheckProvider::checkMotionRequest(const ActivationGraph& activationGraph
 #endif
     FAIL("Motion request is not valid (see walkRequest.log).");
   }
+   */
 }
 
 void LibCheckProvider::inc(LibCheck::CheckedOutput outputToCheck)
@@ -104,7 +105,7 @@ void LibCheckProvider::inc(LibCheck::CheckedOutput outputToCheck)
 
         OUTPUT_TEXT("Meeek! " << TypeRegistry::getEnumName(static_cast<LibCheck::CheckedOutput>(index)) << " has been set more than once in this cycle (Robot "
                     << theRobotInfo.number
-                    << (!callCounters[LibCheck::role] ? "" : ", Role: " + theTeamBehaviorStatus.role.getName())
+                    << (!callCounters[LibCheck::role] ? "" : ", Role: " + std::string(TypeRegistry::getEnumName(theTeamBehaviorStatus.role.role)))
                     << (options == "" ? "" : ", Options: " + options) << ") !");
       }
       else if(multipleSetCheck[index] == 2)

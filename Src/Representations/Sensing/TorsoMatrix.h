@@ -8,6 +8,9 @@
 
 #include "Tools/Math/Pose3f.h"
 #include "Tools/Streams/AutoStreamable.h"
+#include "Representations/Sensing/GroundContactState.h"
+#include "Representations/Sensing/InertialData.h"
+#include "Representations/Sensing/RobotModel.h"
 
 /**
  * @struct TorsoMatrix
@@ -15,9 +18,10 @@
  */
 STREAMABLE_WITH_BASE(TorsoMatrix, Pose3f,
 {
+  TorsoMatrix() = default;
+
+  void setTorsoMatrix(const InertialData& theInertialData, const RobotModel& theRobotModel, const GroundContactState& theGroundContactState);
   void draw(),
 
-  (Pose3f) offset, /**< The estimated offset (including odometry) from last torso matrix to this one. (relative to the torso) */
   (bool)(false) isValid, /**< Matrix is only valid if robot is on ground. */
-  (bool) leftSupportFoot, /**< Guess whether the left foot is the support foot. */
 });

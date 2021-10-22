@@ -11,26 +11,16 @@ class MessageQueue;
 
 /**
  * A class that keeps track of several stopwatches.
- * It always belongs to exactly one thread and should only be created/destroyed
- * by that thread.
- * There should be exactly one TimingManager per thread.
  */
-class TimingManager
+class TimingManager final
 {
-private:
-  struct Pimpl;
-  Pimpl* prvt;
-
-  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
-  /**
-   * Default constructor.
-   * No other instance of this class is allowed except the one accessible via Global::getTimingManager.
-   * Therefore the constructor is private.
-   */
+public:
+  /** Constructor. */
   TimingManager();
+
+  /** Destructor. */
   ~TimingManager();
 
-public:
   /** Start the stopwatch for the specified identifier. */
   void startTiming(const char* identifier);
 
@@ -45,9 +35,6 @@ public:
    */
   void signalThreadStart();
 
-  /** Tells the TimingManager that the current thread iteration is over. */
-  void signalThreadStop();
-
   /**
    * Returns a message queue that contains all timing data from this frame.
    * Call this method in between signalThreadStop() and signalThreadStart.
@@ -57,4 +44,7 @@ public:
 private:
   /** Prepares timing data for streaming. */
   void prepareData();
+
+  struct Pimpl;
+  Pimpl* prvt;
 };

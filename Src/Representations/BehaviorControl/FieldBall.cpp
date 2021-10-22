@@ -124,6 +124,6 @@ void FieldBall::draw() const
     CROSS("representation:FieldBall:relative", intersectionPositionWithOwnYAxis.x(), intersectionPositionWithOwnYAxis.y(), 150, 20, Drawings::solidPen, ColorRGBA::blue);
     LINE("representation:FieldBall:relative", 0.f, 0.f, intersectionPositionWithOwnYAxis.x() * 1.5f, intersectionPositionWithOwnYAxis.y() * 1.5f,
          10, Drawings::dashedPen, ColorRGBA::red);
-    DRAWTEXT("representation:FieldBall:relative", intersectionPositionWithOwnYAxis.x() * 1.5f, intersectionPositionWithOwnYAxis.y() * 1.5f, 250, ColorRGBA::blue, timeUntilIntersectsOwnYAxis);
+    DRAW_TEXT("representation:FieldBall:relative", intersectionPositionWithOwnYAxis.x() * 1.5f, intersectionPositionWithOwnYAxis.y() * 1.5f, 250, ColorRGBA::blue, timeUntilIntersectsOwnYAxis);
   }
 }

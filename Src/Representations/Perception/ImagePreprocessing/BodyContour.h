@@ -124,6 +124,20 @@ STREAMABLE(BodyContour,
   void clipRight(int& x, int y) const;
 
   /**
+   * @param y height of interest
+   * @param imageWidth width of the current image
+   * @return the x-position of the body contour's left edge in the image on height y
+   */
+  int getLeftEdge(int y, int imageWidth) const;
+
+  /**
+   * @param y height of interest
+   * @param imageWidth width of the current image
+   * @return the x-position of the body contour's right edge in the image on height y
+   */
+  int getRightEdge(int y, int imageWidth) const;
+
+  /**
    * Returns the y coordinate of the highest visible point.
    * @return
    */

@@ -1,0 +1,128 @@
+#!/bin/bash
+
+set -euo pipefail
+
+baseDir="$(cd "$(dirname "$(which "$0")")" && pwd)"
+bhDir="$(dirname "${baseDir}")"
+includeDir="${baseDir}/Include"
+
+source "${includeDir}/bhumanBase"
+
+homeDir="/tmp/b-human-home"
+buildConfiguration="Develop"
+requireUSB=false
+playbackVolume=20
+wirelessProfile="NONE"
+homeArchive="${baseDir}/home.tar.gz"
+
+usage() {
+  echo "usage:"
+  echo "${0} [-u] [-c <build configuration>] [-v <playback volume>] [-w <wireless profile>] [-H <home archive>]"
+  echo "${0} -h"
+  echo ""
+  echo " <build configuration>: build configuration of the bhuman binary (Debug, Develop, Release)"
+  echo " <playback volume>    : playback volume after first boot"
+  echo " <wireless profile>   : the active wireless profile after first boot"
+  echo " <home archive>       : path to the home archive"
+  echo ""
+  echo " -u                   : Require a USB drive when starting bhuman"
+  echo " -h                   : Display this help"
+  exit 1
+}
+
+parseOptions() {
+  while getopts hc:uv:w:H: opt; do
+    case "$opt" in
+      c)
+        buildConfiguration="${OPTARG}"
+        ;;
+      u)
+        requireUSB=true
+        ;;
+      v)
+        playbackVolume="${OPTARG}"
+        ;;
+      w)
+        wirelessProfile="${OPTARG}"
+        ;;
+      H)
+        homeArchive="${OPTARG}"
+        ;;
+      [?]|h)
+        usage
+        ;;
+    esac
+  done
+
+  if ! [ -r "${installDir}/Profiles/${wirelessProfile}" ]; then
+    echo "wireless profile \"${wirelessProfile}\" does not exist." >&2
+    exit 1
+  fi
+}
+
+checkApp "rsync"
+checkApp "tar"
+
+parseOptions "$@"
+
+if [ -e "${homeDir}" ]; then
+  echo "${homeDir} exists already (from a previous run). Do you want to remove it? [y|n]"
+  read answer
+  if [ "${answer}" = "y" ] || [ "${answer}" = "yes" ]; then
+    echo "Removing old directory."
+    rm -rf "${homeDir}"
+  else
+    echo "Not creating an archive."
+    exit 1
+  fi
+fi
+
+mkdir -p "${homeDir}/nao"
+
+# /home/nao/.ssh/authorized_keys
+mkdir -p "${homeDir}/nao/.ssh"
+cp "${installDir}/Keys/id_rsa_nao.pub" "${homeDir}/nao/.ssh/authorized_keys"
+
+# /home/nao/.config/systemd/user/{alsa-kludge,bhuman,hal,lola}.service
+# /home/nao/.config/systemd/user/default.target.wants/{alsa-kludge,bhuman,hal,lola}.service
+mkdir -p "${homeDir}/nao/.config/systemd/user/default.target.wants"
+for service in alsa-kludge bhuman hal lola; do
+  cp "${installDir}/Files/${service}.service" "${homeDir}/nao/.config/systemd/user"
+  ln -s ../${service}.service "${homeDir}/nao/.config/systemd/user/default.target.wants/${service}.service"
+done
+
+echo "${playbackVolume}" >"${homeDir}/nao/.config/volume"
+
+# /home/nao/robocup.conf
+touch "${homeDir}/nao/robocup.conf"
+
+# /home/nao/bin
+cp -r "${installDir}/Files/bin" "${homeDir}/nao"
+
+# /home/nao/Profiles
+cp -r "${installDir}/Profiles" "${homeDir}/nao"
+
+# /home/nao/Profiles/default (used by install.sh)
+sed -e "s/^/        /" "${installDir}/Profiles/${wirelessProfile}" >"${homeDir}/nao/Profiles/default"
+
+# /home/nao/logs
+mkdir -p "${homeDir}/nao/logs"
+
+# /home/nao/Config
+rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -r "${bhDir}/Build/Linux/Nao/${buildConfiguration}/bhuman" "${bhDir}/Config/." "${homeDir}/nao/Config"
+
+# /home/nao/.config/{hostname,wiredIp,wirelessIp}
+# TODO: Make this settable from the command line:
+settingsFile="${bhDir}/Config/settings.cfg"
+teamID=$(grep <"${settingsFile}" "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%")
+echo "Default" >"${homeDir}/nao/.config/hostname"
+echo "10.1.${teamID}.40" >"${homeDir}/nao/.config/wiredIp"
+echo "10.0.${teamID}.40" >"${homeDir}/nao/.config/wirelessIp"
+${requireUSB} && touch "${homeDir}/nao/.config/require-usb"
+
+# Create the archive.
+tar -czf "${homeArchive}" -C "${homeDir}" nao
+
+rm -r "${homeDir}"
+
+echo "Created home archive."

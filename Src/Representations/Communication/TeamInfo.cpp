@@ -7,10 +7,13 @@
 
 #include "TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
+#include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
+#include "Tools/Global.h"
 #include "Tools/Math/Eigen.h"
 #include "Tools/Module/Blackboard.h"
 #include "Tools/Settings.h"
+#include <algorithm>
 #include <cstring>
 
 /**
@@ -72,9 +75,19 @@ int TeamInfo::getSubstitutedPlayerNumber(int number) const
   return number;
 }
 
-void TeamInfo::serialize(In* in, Out* out)
+void TeamInfo::read(In& stream)
 {
   PlayerInfo(&players)[MAX_NUM_PLAYERS] = reinterpret_cast<PlayerInfo(&)[MAX_NUM_PLAYERS]>(this->players);
+
+  STREAM(teamNumber); // unique team number
+  STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK, ...
+  STREAM(score); // team's score
+  STREAM(players); // the team's players
+}
+
+void TeamInfo::write(Out& stream) const
+{
+  const PlayerInfo(&players)[MAX_NUM_PLAYERS] = reinterpret_cast<const PlayerInfo(&)[MAX_NUM_PLAYERS]>(this->players);
 
   STREAM(teamNumber); // unique team number
   STREAM(teamColor); // TEAM_BLUE, TEAM_RED, TEAM_YELLOW, TEAM_BLACK, ...
@@ -137,7 +150,8 @@ void TeamInfo::draw() const
     if(Blackboard::getInstance().exists("FieldDimensions"))
       yPosLeftSideline = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]).yPosLeftSideline;
     yPosLeftSideline += 500.f;
-    float x = teamNumber == 1 ? -1535.f : 1465.f;
+    const float x = teamNumber == 1 ? -1535.f : 1465.f;
+    const int score = std::min(static_cast<int>(this->score), 99);
     drawDigit(score / 10, Vector3f(x, yPosLeftSideline, 1000), 200, teamColor);
     drawDigit(score % 10, Vector3f(x + 270, yPosLeftSideline, 1000), 200, teamColor);
   };
@@ -163,7 +177,7 @@ void OwnTeamInfo::draw() const
       xPosOwnFieldBorder = theFieldDimensions.xPosOwnFieldBorder;
       yPosRightFieldBorder = theFieldDimensions.yPosRightFieldBorder;
     }
-    DRAWTEXT("representation:OwnTeamInfo", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName((Settings::TeamColor) teamColor));
+    DRAW_TEXT("representation:OwnTeamInfo", xPosOwnFieldBorder + 200, yPosRightFieldBorder - 100, (xPosOwnFieldBorder / -5200.f) * 140, ColorRGBA::red, "Team color: " << TypeRegistry::getEnumName((Settings::TeamColor) teamColor));
   }
 }
 

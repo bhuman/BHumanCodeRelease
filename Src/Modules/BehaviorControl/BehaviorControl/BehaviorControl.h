@@ -12,15 +12,17 @@
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/Communication/RobotInfo.h"
+#include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/TeamTalk.h"
-#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Tools/Module/Module.h"
 #include "Tools/Streams/Enum.h"
@@ -33,16 +35,18 @@ MODULE(BehaviorControl,
   REQUIRES(RobotHealth),
   REQUIRES(RobotInfo),
 
+  REQUIRES(BallModel),
   REQUIRES(FrameInfo),
   REQUIRES(JointSensorData),
   REQUIRES(LibCheck),
-  REQUIRES(RobotPose),
+  REQUIRES(OdometryData),
 
   PROVIDES(ActivationGraph),
   REQUIRES(ActivationGraph),
 
   PROVIDES(ArmMotionRequest),
   PROVIDES(BehaviorStatus),
+  PROVIDES(CalibrationRequest),
   PROVIDES(HeadMotionRequest),
   PROVIDES(MotionRequest),
   PROVIDES(TeamTalk),
@@ -92,6 +96,12 @@ private:
   void update(BehaviorStatus& behaviorStatus) override { behaviorStatus = theBehaviorStatus; }
 
   /**
+   * Updates the camera calibration request.
+   * @param CalibrationRequest The provided camera calibration request.
+   */
+  void update(CalibrationRequest& CalibrationRequest) override { CalibrationRequest = theCalibrationRequest; }
+
+  /**
    * Updates the head motion request.
    * @param headMotionRequest The provided head motion request.
    */
@@ -124,6 +134,7 @@ private:
 
   ArmMotionRequest theArmMotionRequest; /**< The arm motion request that is modified by the behavior. */
   BehaviorStatus theBehaviorStatus; /**< The behavior status that is modified by the behavior. */
+  CalibrationRequest theCalibrationRequest; /**< The camera calibration request that is modified by the behavior. */
   HeadMotionRequest theHeadMotionRequest; /**< The head motion request that is modified by the behavior. */
   MotionRequest theMotionRequest; /**< The motion request that is modified by the behavior. */
   TeamTalk theTeamTalk; /**< The team talk that is modified by the behavior. */

@@ -365,7 +365,7 @@ protected:
    * @param stream The stream.
    * @return End of stream reached?
    */
-  bool isEof(const PhysicalInStream& stream) const override { return eof; }
+  bool isEof(const PhysicalInStream& stream) const override;
 
   /**
    * reads a bool from a stream
@@ -458,7 +458,7 @@ protected:
    * reads the 'end of line' from a stream
    * @param stream the stream to read from
    */
-  void readEndl(PhysicalInStream& stream) override {}
+  void readEndl(PhysicalInStream& stream) override;
 
   /**
    * The function determines whether the current character is a whitespace.
@@ -508,6 +508,10 @@ private:
    */
   bool expectString(const std::string& str, PhysicalInStream& stream);
 };
+
+inline bool InText::isEof(const PhysicalInStream&) const { return eof; }
+
+inline void InText::readEndl(PhysicalInStream&) {}
 
 /**
  * The class InConfig reads text data from config (file) streams
@@ -702,7 +706,7 @@ protected:
    * In fact, the function does nothing.
    * @param stream A stream to read from.
    */
-  void readEndl(PhysicalInStream& stream) override {}
+  void readEndl(PhysicalInStream& stream) override;
 
   /**
    * The function reads a number of bytes from a stream.
@@ -727,6 +731,8 @@ protected:
     stream.skipInStream(size);
   }
 };
+
+inline void InBinary::readEndl(PhysicalInStream&) {}
 
 /**
  * @class InFile
@@ -776,13 +782,10 @@ public:
   virtual bool getEof() const;
 
   /**
-   * The function returns the full path of the file.
-   * @return The full path name actually used or the file searched for
-   *         if it was not found. If the file was opened, the path can
-   *         still be relative to the current directory if the B-Human
-   *         directory was specified this way.
+   * The function gives access to the underlying File object.
+   * @return The address of the File object or nullptr if it does not exist.
    */
-  std::string getFullName() const;
+  File* getFile() {return stream;}
 
 protected:
   /**
@@ -1009,6 +1012,18 @@ public:
  */
 class InMap : public In
 {
+public:
+  /**
+   * A list of possible errors during parsing and streaming from a map.
+   */
+  enum ErrorType
+  {
+    wrongLiteralFormat, /**< Error message when a literal can not be parsed. */
+    wrongValueType, /**< Error message when a value has the wrong type (i.e. the map is structurally wrong). */
+    missingAttribute, /**< Error message when an attribute of a record is missing. */
+    outOfRange /**< Error message when an array element beyond the end is selected. */
+  };
+
 private:
   /**
    * An entry representing a position in the ConfigMap.
@@ -1029,13 +1044,14 @@ private:
   SimpleMap* map = nullptr; /**< The configuration map that was read. */
   std::string name; /**< The name of the opened file. */
   std::vector<Entry> stack; /**< The hierarchy of values to read. */
-  bool showErrors; /**< Show error messages if specification does not match. */
+  unsigned errorMask; /**< The kinds of error messages to show if specification does not match. */
 
   /**
    * The method OUTPUTs an error message.
    * @param msg The error message.
+   * @param errorType The type of error.
    */
-  void printError(const std::string& msg);
+  void printError(const std::string& msg, ErrorType errorType);
 
   /**
    * The method reads an entry from the config map.
@@ -1047,30 +1063,30 @@ private:
     Entry& e = stack.back();
     if(e.value)
     {
-      const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
+      const auto* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
       if(literal)
       {
-        In& stream = *literal;
-        stream >> value;
-        if(!stream.eof())
-          printError("wrong format");
+        In* stream = createLiteralStream(*literal);
+        *stream >> value;
+        if(!stream->eof())
+          printError("wrong format", wrongLiteralFormat);
+        delete stream;
       }
       else
-        printError("literal expected");
+        printError("literal expected", wrongValueType);
     }
   }
 
 protected:
   /**
    * Constructor.
-   * @param showErrors Show error messages if specification does not match.
+   * @param errorMask The kinds of error messages to show if specification does not match.
    */
-  InMap(bool showErrors) : showErrors(showErrors) {}
+  InMap(unsigned errorMask) : errorMask(errorMask) {}
 
-  ~InMap()
+  ~InMap() override
   {
-    if(map != nullptr)
-      delete map;
+    delete map;
   }
 
   /** No assignment operator. */
@@ -1091,12 +1107,12 @@ protected:
   /**
    * Virtual redirection for operator>>(char& value).
    */
-  void inChar(char& value) override;
+  void inChar(char& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(unsigned char& value).
    */
-  void inSChar(signed char& value) override;
+  void inSChar(signed char& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(unsigned char& value).
@@ -1116,7 +1132,7 @@ protected:
   /**
    * Virtual redirection for operator>>(int& value).
    */
-  void inInt(int& value) override;
+  void inInt(int& value) override {in(value);}
 
   /**
    * Virtual redirection for operator>>(unsigned int& value).
@@ -1148,6 +1164,16 @@ protected:
    * the symbol "endl";
    */
   void inEndL() override {}
+
+  /**
+   * Returns a new stream from which a literal can be read.
+   * @param literal The string from which to create the stream.
+   * @return A pointer to the new stream (must be freed by the caller).
+   */
+  virtual In* createLiteralStream(const std::string& literal)
+  {
+    return new InTextMemory(literal.c_str(), literal.length());
+  }
 
 public:
   /**
@@ -1188,7 +1214,7 @@ public:
    * This is only the case if the file does not exist or
    * reading failed.
    */
-  bool eof() const override {return (const SimpleMap::Value*) *map == 0;}
+  bool eof() const override {return (const SimpleMap::Value*) *map == nullptr;}
 
   friend class DebugDataStreamer; // needs access to printError to report suppressible error message
 };
@@ -1207,9 +1233,9 @@ public:
   /**
    * Constructor.
    * @param name The name of the config file to read.
-   * @param showErrors Show error messages if specification does not match.
+   * @param errorMask The kinds of error messages to show if specification does not match.
    */
-  InMapFile(const std::string& name, bool showErrors = true);
+  InMapFile(const std::string& name, unsigned errorMask = ~0u);
 
   /**
    * The function states whether this stream actually exists.
@@ -1233,7 +1259,7 @@ public:
    * Constructor.
    * @param memory The block of memory to read from.
    * @param size The size of the memory block to read from.
-   * @param showErrors Show error messages if specification does not match.
+   * @param errorMask The kinds of error messages to show if specification does not match.
    */
-  InMapMemory(const void* memory, size_t size, bool showErrors = true);
+  InMapMemory(const void* memory, size_t size, unsigned errorMask = ~0u);
 };

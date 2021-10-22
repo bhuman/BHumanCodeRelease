@@ -15,11 +15,9 @@
 #include "BHToolBar.h"
 #include "RoboCupCtrl.h"
 #include "RobotConsole.h"
-#include "Tools/Settings.h"
 
 class ConsoleView;
 class RemoteRobot;
-class RemoteRobotWithPuppet;
 
 /**
  * The class implements the SimRobot controller for RoboCup.
@@ -30,7 +28,7 @@ public:
   DECLARE_SYNC;
   std::unordered_map<std::string, std::string> representationToFile;
   bool calculateImage = true; /**< Decides whether images are calculated by the simulator. */
-  unsigned calculateImageFps; /**< Declares the simulated image framerate. */
+  unsigned calculateImageFps; /**< Declares the simulated image frame rate. */
   unsigned globalNextImageTimestamp = 0;  /**< The theoretical timestamp of the next image to be calculated shared among all robots to synchronize image calculation. */
 
 private:
@@ -44,7 +42,6 @@ private:
   int nesting = 0; /**< The number of recursion level during the execution of console files. */
   std::set<std::string> completion; /**< A list for command completion. */
   std::set<std::string>::const_iterator currentCompletionIndex; /** Points to the last string that was used for auto completion */
-  Settings settings; /**< The current location. */
   const DebugRequestTable* debugRequestTable = nullptr; /**< Points to the debug request table used for tab-completion. */
   const ModuleInfo* moduleInfo = nullptr; /**< Points to the solution info used for tab-completion. */
   const std::unordered_map<std::string, RobotConsole::ThreadData>* threadData = nullptr; /**< Thread data used for tab-completion. */
@@ -52,8 +49,8 @@ private:
   const RobotConsole::Views* fieldViews = nullptr; /**< Points to the map of field views used for tab-completion. */
   const RobotConsole::PlotViews* plotViews = nullptr; /**< Points to the map of plot views used for tab-completion. */
   BHToolBar toolBar; /**< The toolbar shown for this controller. */
+  static constexpr float ballFriction = -0.35f; /**< The ball friction acceleration (2D only). */
 
-  friend class MultiImageSaveWidget;
 public:
   /**
    * @param application The interface to SimRobot.

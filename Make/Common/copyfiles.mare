@@ -1,7 +1,0 @@
-if tool == "vcxproj" {
-  copyfiles = {
-    dependencies = "Nao"
-    folder = "Utils"
-    buildCommand = "..\\..\\Util\\CallTool\\bin\\CallTool.exe CONFIG=$(configuration) /c \"copyfiles 192.168.5.xxx -nc\" /t Copyfiles \"copyfiles ip [-b] (restart bhuman) [-d] (delete logs) [-l location] [-p player] [-s scenario] [-t team] [-v volume] [-w wifi] \""
-  }
-}

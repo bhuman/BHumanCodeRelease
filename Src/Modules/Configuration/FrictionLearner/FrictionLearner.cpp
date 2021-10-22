@@ -9,9 +9,9 @@
 
 #include "FrictionLearner.h"
 
-MAKE_MODULE(FrictionLearner, infrastructure)
+MAKE_MODULE(FrictionLearner, infrastructure);
 
-void FrictionLearner::update(DummyRepresentation& dummy)
+void FrictionLearner::update(DummyRepresentation&)
 {
   if((theBallPercept.status == BallPercept::seen || (theBallPercept.status == BallPercept::guessed && acceptGuessedBalls))
      && theBallModel.estimate.velocity.norm() != 0.f)

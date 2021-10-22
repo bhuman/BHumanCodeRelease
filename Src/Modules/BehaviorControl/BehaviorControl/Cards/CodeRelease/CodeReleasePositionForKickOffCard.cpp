@@ -40,4 +40,3 @@ class CodeReleasePositionForKickOffCard : public CodeReleasePositionForKickOffCa
 };
 
 MAKE_CARD(CodeReleasePositionForKickOffCard);
-

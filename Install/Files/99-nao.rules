@@ -1,0 +1,24 @@
+# Chestboard
+SUBSYSTEM=="usb", ATTRS{idVendor}=="ffff", MODE="0660", GROUP="hal"
+
+# Congatec board
+KERNEL=="cgos", GROUP="nao", MODE="0660"
+
+# USB-I2C adapter
+KERNEL=="i2c-*", ATTR{name}=="SBRE USB-I2C on port ?.*", TAG+="systemd", \
+  SYMLINK+="i2c-head i2csbre", MODE="0660", GROUP="hal", \
+  RUN+="/opt/aldebaran/libexec/reset-cameras.sh toggle"
+
+# Top camera
+## Flash it
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b4", ATTR{idProduct}=="0053|00f3", ATTR{busnum}=="1", ATTR{devpath}=="1", \
+  RUN+="/opt/aldebaran/libexec/flash-cx3 -p $attr{busnum}:$attr{devpath} -f /opt/aldebaran/firmware/CX3RDK_OV5640_USB3.img"
+## Create symlink
+KERNEL=="video[0-9]*", SUBSYSTEM=="video4linux", KERNELS=="2-1:1.0", ATTR{index}=="0", TAG+="systemd", SYMLINK+="video-top"
+
+# Bottom camera
+## Flash it
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="04b4", ATTR{idProduct}=="0053|00f3", ATTR{busnum}=="1", ATTR{devpath}=="2.2", \
+  RUN+="/opt/aldebaran/libexec/flash-cx3 -p $attr{busnum}:$attr{devpath} -f /opt/aldebaran/firmware/CX3RDK_OV5640_USB2.img"
+## Create symlink
+KERNEL=="video[0-9]*", SUBSYSTEM=="video4linux", KERNELS=="1-2.2:1.0", ATTR{index}=="0", TAG+="systemd", SYMLINK+="video-bottom"

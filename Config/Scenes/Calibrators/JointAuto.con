@@ -1,0 +1,3 @@
+mr JointCalibration JointCalibratorAuto Motion
+mr JointRequest JointCalibratorAuto Motion
+dr module:JointCalibratorAuto:start

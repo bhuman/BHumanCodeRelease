@@ -142,27 +142,40 @@ public:
   }
 
 protected:
-  void serialize(In* in, Out* out)
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override
   {
     STREAM(type);
     STREAM(width);
     STREAM(height);
 
     const size_t size = width * height * PixelTypes::pixelSize(type);
-    if(out)
-      out->write(data, size);
-    else
+    if(isReference || !data || size > maxSize)
     {
-      if(isReference || !data || size > maxSize)
-      {
-        if(!isReference && data)
-          Memory::alignedFree(data);
-        isReference = false;
-        data = Memory::alignedMalloc(size, 32);
-        maxSize = size;
-      }
-      in->read(data, size);
+      if(!isReference && data)
+        Memory::alignedFree(data);
+      isReference = false;
+      data = Memory::alignedMalloc(size, 32);
+      maxSize = size;
     }
+    stream.read(data, size);
+  }
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override
+  {
+    STREAM(type);
+    STREAM(width);
+    STREAM(height);
+
+    const size_t size = width * height * PixelTypes::pixelSize(type);
+    stream.write(data, size);
   }
 
 private:

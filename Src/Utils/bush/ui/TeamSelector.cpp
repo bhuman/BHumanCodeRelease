@@ -28,12 +28,12 @@ TeamSelector::TeamSelector()
   }
 
   QAction* aNext = new QAction(this);
-  aNext->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_PageDown));
+  aNext->setShortcut(QKeySequence(static_cast<int>(Qt::CTRL) + static_cast<int>(Qt::Key_PageDown)));
   addAction(aNext);
   connect(aNext, SIGNAL(triggered()), this, SLOT(selectNext()));
 
   QAction* aPrev = new QAction(this);
-  aPrev->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_PageUp));
+  aPrev->setShortcut(QKeySequence(static_cast<int>(Qt::CTRL) + static_cast<int>(Qt::Key_PageUp)));
   addAction(aPrev);
   connect(aPrev, SIGNAL(triggered()), this, SLOT(selectPrev()));
 }

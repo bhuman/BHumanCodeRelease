@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2019 B-Human.  All rights reserved.
+Copyright (c) 2021 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup
@@ -39,34 +39,18 @@ are met:
    itself, if and wherever such third-party acknowledgments
    normally appear.
 
-4. If the source code or parts of the source code shall be used
-   for a RoboCup competition, the competing program must differ in
-   at least multiple major parts from the original distribution.
-   "Major parts" means own contributions to the RoboCup goal, which
-   are potentially publishable and usually manifest themselves as
-   new modules (i.e. source code) and not just as a parameterization
-   of existing technology (e.g. walking parameters, kicks, behavior
-   options).
-
-5. For each B-Human code release from which parts are used in a
+4. For each B-Human code release from which parts are used in a
    RoboCup competition, the usage shall be announced in the SPL
    mailing list (currently robocup-nao@lists.robocup.org) one month
    before the first competition in which you are using it. The
    announcement shall name which parts of this code are used.
    It shall also contain a description of the own contribution
-   that addresses the criterions mentioned above.
-
-6. If you are using this source code or parts of this source code
-   and happen to meet members of B-Human at a RoboCup competition,
-   please provide these members with a few bottles of your favorite
-   beer.
-
-7. Bug fixes regarding existing code shall be sent back to B-Human via
-   GitHub pull request (https://github.com/bhuman).
+   that addresses the criteria set by section A.1 of the SPL rule
+   book.
 
 
 THIS SOFTWARE IS PROVIDED BY B-HUMAN ``AS IS'' AND ANY
-EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
 PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
 B-HUMAN NOR ITS MEMBERS BE LIABLE FOR ANY DIRECT, INDIRECT,

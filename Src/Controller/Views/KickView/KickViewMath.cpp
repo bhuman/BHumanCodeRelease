@@ -82,11 +82,11 @@ bool KickViewMath::intersectRayAndPlane(const Vector3f& point, const Vector3f& v
 {
   Vector3f p = plane - point;
   float denominator = n.dot(v);
-  if(denominator == 0.0)
+  if(denominator == 0.f)
     return false;
 
   float r = n.dot(p) / denominator;
-  if(r < 0.0)
+  if(r < 0.f)
     return false;
 
   intersection = v;
@@ -113,7 +113,7 @@ bool KickViewMath::intersectRayWithAxisAlignedPlane(const Vector3f& p, const Vec
   const float* vv = &v.x();
   const float* pv = &p.x();
   float* intersectionPosv = &intersectionPos.x();
-  if(vv[thirdAxis] != 0.0)
+  if(vv[thirdAxis] != 0.f)
   {
     float s = (distance - pv[thirdAxis]) / vv[thirdAxis];
     int i = thirdAxis;
@@ -168,8 +168,8 @@ Pose3f KickViewMath::calculateHandPos(const JointAngles& jointAngles, const Join
   return handPos;
 }
 
-Vector3f KickViewMath::calcFootPos(const float& leg0, const float& leg1, const float& leg2, const float& leg3, const float& leg4, const float&
-                                   leg5, const Joints::Joint& joint, const RobotDimensions& robotDimensions)
+Vector3f KickViewMath::calcFootPos(const float& leg0, const float& leg1, const float& leg2, const float& leg3, const float&, const float&,
+                                   const Joints::Joint& joint, const RobotDimensions& robotDimensions)
 {
   Pose3f footPos;
   footPos.translate(0, 0, -robotDimensions.footHeight);

@@ -1,0 +1,85 @@
+#!/bin/bash
+# Generate CLion project or CMake caches
+
+cd "$(dirname "$(which "$0")")"
+
+if [ -n "$NO_CLION" ]; then
+  for CONFIG in Debug Develop Release; do
+    cmake -DCMAKE_BUILD_TYPE=$CONFIG -G Ninja -S . -B ../../Build/Linux/CMake/$CONFIG
+  done
+else
+  CMAKE_RUN_CONFIGURATION_MANAGER="    <generated>
+      <config projectName=\"B-Human\" targetName=\"Nao\" />
+      <config projectName=\"B-Human\" targetName=\"SimRobot\" />
+      <config projectName=\"B-Human\" targetName=\"bush\" />
+    </generated>"
+
+  CMAKE_SETTINGS="    <configurations>
+      <configuration PROFILE_NAME=\"Debug\" CONFIG_NAME=\"Debug\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Debug\" BUILD_OPTIONS=\"\" />
+      <configuration PROFILE_NAME=\"Develop\" CONFIG_NAME=\"Develop\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Develop\" BUILD_OPTIONS=\"\" />
+      <configuration PROFILE_NAME=\"Release\" CONFIG_NAME=\"Release\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Release\" BUILD_OPTIONS=\"\" />
+    </configurations>"
+
+  RUN_MANAGER="    <configuration name=\"Nao\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" PROGRAM_PARAMS=\"\$CMakeCurrentBuildTypeName\$\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"Nao\" CONFIG_NAME=\"Debug\" RUN_PATH=\"\$PROJECT_DIR\$/../Common/deployDialog\">
+      <method v=\"2\">
+        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
+      </method>
+    </configuration>
+    <configuration name=\"SimRobot\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"SimRobot\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"B-Human\" RUN_TARGET_NAME=\"SimRobot\">
+      <method v=\"2\">
+        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
+      </method>
+    </configuration>
+    <configuration name=\"bush\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"bush\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"B-Human\" RUN_TARGET_NAME=\"bush\">
+      <method v=\"2\">
+        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue=\"CMake Application.Nao\" />
+      <item itemvalue=\"CMake Application.SimRobot\" />
+      <item itemvalue=\"CMake Application.bush\" />
+    </list>"
+
+  if [ -e .idea/workspace.xml ]; then
+    (
+      sed -n "/<component name=\"CMakeRunConfigurationManager\"/{p;:a;N;/<\/component>\$/!ba;c\\
+$((tr '\n' '@' | sed 's/@/\\\n/g') <<<$CMAKE_RUN_CONFIGURATION_MANAGER)
+\
+  <\/component>
+};p" |
+      sed -n "/<component name=\"CMakeSettings\"/{p;:a;N;/<\/component>\$/!ba;c\\
+$((tr '\n' '@' | sed 's/@/\\\n/g') <<<$CMAKE_SETTINGS)
+\
+  <\/component>
+};p" |
+      sed -n "/<component name=\"RunManager\"/{p;:a;N;/<\/component>\$/!ba;c\\
+$((tr '\n' '@' | sed 's/@/\\\n/g') <<<$RUN_MANAGER)
+\
+  <\/component>
+};p"
+    ) <.idea/workspace.xml >.idea/temp.xml && mv .idea/temp.xml .idea/workspace.xml
+  else
+    echo >.idea/workspace.xml "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<project version=\"4\">
+  <component name=\"CMakeRunConfigurationManager\" shouldGenerate=\"false\" shouldDeleteObsolete=\"false\">
+$CMAKE_RUN_CONFIGURATION_MANAGER
+  </component>
+  <component name=\"CMakeSettings\">
+    <configurations>
+$CMAKE_SETTINGS
+    </configurations>
+  </component>
+  <component name=\"RunManager\" selected=\"CMake Application.SimRobot\">
+$RUN_MANAGER
+  </component>
+</project>"
+  fi
+
+  mkdir -p .idea/fileTemplates/includes
+  echo -n "#set( \$Author = \"$(git config user.name)\" )" > ".idea/fileTemplates/includes/Set Author."
+fi
+
+if [ ! -u ../../Util/Buildchain/Linux/bin/getModKey ]; then
+  pkexec bash -c "chown root:root $(pwd)/../../Util/Buildchain/Linux/bin/getModKey; chmod u+s $(pwd)/../../Util/Buildchain/Linux/bin/getModKey"
+fi

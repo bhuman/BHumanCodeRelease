@@ -18,14 +18,17 @@ mr CameraInfo LogDataProvider Lower
 mr CameraInfo LogDataProvider Upper
 mr FrameInfo LogDataProvider Lower
 mr FrameInfo LogDataProvider Upper
+mr CameraCalibration off
+mr CameraCalibration ConfigurationDataProvider Upper
+mr CameraCalibration ConfigurationDataProvider Lower
 mr BallModel OracledWorldModelProvider Cognition
-mr BallModel3D OracledWorldModelProvider Cognition
 mr GroundTruthBallModel OracledWorldModelProvider Cognition
 mr TeamBallModel OracledWorldModelProvider Cognition
 mr GroundTruthRobotPose OracledWorldModelProvider Cognition
 mr GroundTruthWorldState LogDataProvider Cognition
 mr ObstacleModel OracledWorldModelProvider Cognition
 mr RobotPose OracledWorldModelProvider Cognition
+mr TeamPlayersModel OracledWorldModelProvider Cognition
 mr FrameInfo LogDataProvider Motion
 mr FsrSensorData LogDataProvider Motion
 mr InertialSensorData LogDataProvider Motion
@@ -35,52 +38,58 @@ mr KeyStates LogDataProvider Motion
 # Deactivate Upper/Lower inter-thread communication
 mr ObstaclesPerceptorData off
 mr OtherFieldBoundary off
+mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
 
 # Representations not required anymore
 mr AlternativeRobotPoseHypothesis off
+mr AudioData off
 mr AutoExposureWeightTable off
+mr BallContactChecker off
 mr BallPercept off
-mr BallRegions off
 mr BallSpots off
 mr BodyContour off
+mr CameraCalibrationStatus off
 mr CameraImage off
 mr CameraIntrinsics off
+mr CameraResolutionRequest off
 mr CirclePercept off
 mr CNSImage off
 mr CNSPenaltyMarkRegions off
 mr CNSRegions off
 mr ColorScanLineRegionsHorizontal off
-mr ColorScanLineRegionsVertical off
 mr ColorScanLineRegionsVerticalClipped off
 mr ECImage off
 mr FieldBoundary off
 mr FieldLineIntersections off
 mr FieldLines off
 mr FilteredBallPercepts off
-mr GoalFrame off
+mr GoalPostsPercept off
 mr ImageCoordinateSystem off
 mr IntersectionRelations off
 mr IntersectionsPercept off
+mr JerseyClassifier off
 mr JPEGImage off
 mr LinesPercept off
 mr MidCircle off
-mr MidCorner off
 mr ObstaclesImagePercept off
-mr OuterCorner off
 mr PenaltyArea off
 mr PenaltyMarkPercept off
 mr PenaltyMarkRegions off
-mr PenaltyMarkSpots off
+mr PenaltyMarkWithPenaltyAreaLine off
+mr PerceptRegistration off
+mr RelativeFieldColors off
 mr ScanGrid off
 mr SelfLocalizationHypotheses off
-mr Thumbnail off
+mr SideInformation off
+mr WorldModelPrediction off
 
 # Representations that are still required
 mr CameraStatus default
 mr FieldFeatureOverview default
 mr ObstaclesFieldPercept default
 mr RobotHealth default
+mr Whistle default
 
-call Includes/DebugResponses
 call Includes/GameStates
+call Includes/DebugResponses

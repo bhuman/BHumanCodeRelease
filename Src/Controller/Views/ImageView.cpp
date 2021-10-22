@@ -13,29 +13,27 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QPinchGesture>
-#include <QTouchEvent>
 #include <QWidget>
 #include <QSettings>
 #include <QSignalMapper>
 #include <QMenu>
 #include <QFileDialog>
 #include <QDir>
-#include <sstream>
 #include <iostream>
+#include <utility>
 
 #include "ImageView.h"
-#include "ColorCalibrationView/ColorCalibrationView.h"
 #include "Controller/RoboCupCtrl.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/Visualization/PaintMethods.h"
 #include "Tools/ImageProcessing/ColorModelConversions.h"
-#include "Tools/ImageProcessing/YHS2SimpleConversion.h"
+#include "Tools/ImageProcessing/PixelTypes.h"
 
 #include "Tools/Math/Eigen.h"
 
-ImageView::ImageView(const QString& fullName, RobotConsole& console, const std::string& background, const std::string& name, bool segmented, const std::string& threadIdentifier, float gain, float ddScale) :
-  threadIdentifier(threadIdentifier), fullName(fullName), icon(":/Icons/tag_green.png"), console(console),
-  background(background), name(name), segmented(segmented),
+ImageView::ImageView(QString fullName, RobotConsole& console, std::string background, std::string name, std::string threadIdentifier, float gain, float ddScale) :
+  threadIdentifier(std::move(threadIdentifier)), fullName(std::move(fullName)), icon(":/Icons/tag_green.png"), console(console),
+  background(std::move(background)), name(std::move(name)),
   gain(gain), ddScale(ddScale)
 {}
 
@@ -70,13 +68,12 @@ ImageWidget::~ImageWidget()
 
   imageView.widget = nullptr;
 
-  if(imageData)
-    delete imageData;
+  delete imageData;
   if(imageDataStorage)
     Memory::alignedFree(imageDataStorage);
 }
 
-void ImageWidget::paintEvent(QPaintEvent* event)
+void ImageWidget::paintEvent(QPaintEvent*)
 {
   painter.begin(this);
   paint(painter);
@@ -150,8 +147,7 @@ void ImageWidget::copyImage(const DebugImage& srcImage)
      !(imageData->width() == srcImage.getImageWidth() && imageData->height() == height) ||
      imageData->format() != desiredFormat)
   {
-    if(imageData)
-      delete imageData;
+    delete imageData;
     if(imageDataStorage)
       Memory::alignedFree(imageDataStorage);
     imageDataStorage = Memory::alignedMalloc(srcImage.getImageWidth() * height * 4 + 256, 32);
@@ -177,57 +173,21 @@ void ImageWidget::copyImage(const DebugImage& srcImage)
   }
 }
 
-void ImageWidget::copyImageSegmented(const DebugImage& srcImage)
-{
-  if(!imageData || !imageDataStorage ||
-     !(imageData->width() == srcImage.getImageWidth() && imageData->height() == srcImage.height) ||
-     imageData->format() != QImage::Format::Format_RGB32)
-  {
-    if(imageData)
-      delete imageData;
-    if(imageDataStorage)
-      Memory::alignedFree(imageDataStorage);
-    imageDataStorage = Memory::alignedMalloc(srcImage.getImageWidth() * srcImage.height * 4, 32);
-    imageData = new QImage(reinterpret_cast<unsigned char*>(imageDataStorage), srcImage.getImageWidth(), srcImage.height, QImage::Format::Format_RGB32);
-  }
-
-  segmentImage(srcImage);
-}
-
-void ImageWidget::segmentImage(const DebugImage& srcImage)
-{
-  if(srcImage.type != PixelTypes::YUYV)
-    return;
-
-  Image<PixelTypes::ColoredPixel> colored(srcImage.width * 2, srcImage.height);
-  Image<PixelTypes::GrayscaledPixel> grayPixel(0, 0);
-  Image<PixelTypes::HuePixel> huePixel(0, 0);
-  YHS2s::updateSSE<false, false, false>(srcImage.getView<PixelTypes::YUYVPixel>()[0], srcImage.width, srcImage.height, imageView.console.colorCalibration, grayPixel, colored, huePixel, grayPixel);
-
-  imageView.console.debugImageConverter.convertToBGRA(DebugImage(colored), imageData->scanLine(0));
-}
-
 void ImageWidget::paintImage(QPainter& painter, const DebugImage& srcImage)
 {
-  if(srcImage.timestamp != lastImageTimestamp || imageView.segmented)
+  if(srcImage.timestamp != lastImageTimestamp)
   {
     if(srcImage.getImageWidth() > 1 && srcImage.height > 1)
     {
-      if(imageView.segmented)
-        copyImageSegmented(srcImage);
-      else
-        copyImage(srcImage);
+      copyImage(srcImage);
     }
 
     lastImageTimestamp = srcImage.timestamp;
-    if(imageView.segmented)
-      lastColorTableTimestamp = imageView.console.colorCalibrationTimestamp;
   }
   else if(!imageData || imageWidth != imageData->width() || imageHeight != imageData->height())
   {
     // make sure we have a buffer
-    if(imageData)
-      delete imageData;
+    delete imageData;
     imageData = new QImage(imageWidth, imageHeight, QImage::Format_RGB32);
   }
 
@@ -255,8 +215,7 @@ bool ImageWidget::needsRepaint() const
     return lastImageTimestamp != 0;
   }
   else
-    return image->timestamp != lastImageTimestamp ||
-           (imageView.segmented && imageView.console.colorCalibrationTimestamp != lastColorTableTimestamp);
+    return image->timestamp != lastImageTimestamp;
 }
 
 void ImageWidget::window2viewport(QPointF& point)
@@ -294,7 +253,7 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
     image = i->second.image;
 
   // Update tool tip
-  const char* text = 0;
+  const char* text = nullptr;
   const std::list<std::string>& drawings(imageView.console.imageViews[imageView.name]);
   Pose2f origin;
   for(const std::string& drawing : drawings)
@@ -354,16 +313,16 @@ void ImageWidget::mouseMoveEvent(QMouseEvent* event)
       case PixelTypes::Colored:
         switch(image->getView<PixelTypes::ColoredPixel>()[static_cast<size_t>(pos.ry())][static_cast<int>(pos.rx())])
         {
-          case FieldColors::none:
+          case PixelTypes::Color::none:
             strcpy(tooltip, "none");
             break;
-          case FieldColors::white:
+          case PixelTypes::Color::white:
             strcpy(tooltip, "white");
             break;
-          case FieldColors::black:
+          case PixelTypes::Color::black:
             strcpy(tooltip, "black");
             break;
-          case FieldColors::field:
+          case PixelTypes::Color::field:
             strcpy(tooltip, "field");
             break;
           default:
@@ -418,7 +377,7 @@ void ImageWidget::mouseReleaseEvent(QMouseEvent* event)
   {
     // update spot
     SYNC_WITH(imageView.console);
-    const char* action = 0;
+    const char* action = nullptr;
     const std::list<std::string>& drawings(imageView.console.imageViews[imageView.name]);
     Pose2f origin;
     for(const std::string& drawing : drawings)
@@ -513,7 +472,7 @@ bool ImageWidget::event(QEvent* event)
 {
   if(event->type() == QEvent::Gesture)
   {
-    QPinchGesture* pinch = static_cast<QPinchGesture*>(static_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
+    QPinchGesture* pinch = dynamic_cast<QPinchGesture*>(dynamic_cast<QGestureEvent*>(event)->gesture(Qt::PinchGesture));
     if(pinch && (pinch->changeFlags() & QPinchGesture::ScaleFactorChanged))
     {
 #ifdef FIX_MACOS_NO_CENTER_IN_PINCH_GESTURE_BUG
@@ -551,7 +510,7 @@ void ImageWidget::wheelEvent(QWheelEvent* event)
   QPointF beforeZoom = mousePos;
   window2viewport(beforeZoom);
 
-  zoom += zoom * 0.1f * event->delta() / 120.f;
+  zoom += zoom * 0.1f * static_cast<float>(event->delta()) / 120.f;
   if(zoom > ZOOM_MAX_VALUE)
     zoom = ZOOM_MAX_VALUE;
   else if(zoom < ZOOM_MIN_VALUE)
@@ -570,7 +529,7 @@ void ImageWidget::wheelEvent(QWheelEvent* event)
 #endif
 }
 
-void ImageWidget::mouseDoubleClickEvent(QMouseEvent* event)
+void ImageWidget::mouseDoubleClickEvent(QMouseEvent*)
 {
   zoom = 1.f;
   offset.setX(0);

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2019 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  * Copyright (C) 1982, 1986 Regents of the University of California.
@@ -82,6 +82,7 @@ struct udphdr
 #define UDP_NO_CHECK6_RX 102	/* Disable accepting checksum for UDP
 				   over IPv6.  */
 #define UDP_SEGMENT	103	/* Set GSO segmentation size.  */
+#define UDP_GRO		104	/* This socket can receive UDP GRO packets.  */
 
 /* UDP encapsulation types */
 #define UDP_ENCAP_ESPINUDP_NON_IKE 1	/* draft-ietf-ipsec-nat-t-ike-00/01 */

@@ -47,51 +47,6 @@ public:
   CameraInfo cameraInfo; /**< A copy of the camera information that is required for the methods to work. Isn't logged. */
 
   /**
-   * Converts image coordinates into coordinates in the horizon-aligned coordinate system.
-   * @param imageCoords The point in image coordinates.
-   * @return The point in horizon-aligned coordinates.
-   */
-  Vector2f toHorizonAligned(const Vector2f& imageCoords) const
-  {
-    return invRotation * imageCoords;
-  }
-
-  /**
-   * Converts coordinates in the horizon-aligned coordinate system into image coordinates.
-   * No clipping is done.
-   * @param horizonAlignedCoords The point in horizon-aligned coordinates.
-   * @return The point in image coordinates.
-   */
-  Vector2i fromHorizonAligned(const Vector2f& horizonAlignedCoords) const
-  {
-    const Vector2f result = rotation * horizonAlignedCoords;
-    return result.cast<int>();
-  }
-
-  /**
-   * Converts image coordintates into coordinates in the horizon-based coordinate system,
-   * i.e. a system of coordinates, in which the origin of the horizon is mapped to (0, 0).
-   * @param imageCoords The point in image coordinates.
-   * @return The point in horizon-based coordinates.
-   */
-  Vector2f toHorizonBased(const Vector2f& imageCoords) const
-  {
-    return invRotation * (imageCoords - origin);
-  }
-
-  /**
-   * Converts coordinates in the horizon-based coordinate system into image coordinates.
-   * No clipping is done.
-   * @param horizonBasedCoords The point in horizon-based coordinates.
-   * @return The point in image coordinates.
-   */
-  Vector2i fromHorizonBased(const Vector2f& horizonBasedCoords) const
-  {
-    const Vector2f result = rotation * horizonBasedCoords;
-    return (result + origin).cast<int>();
-  }
-
-  /**
    * Corrects image coordinates so that the distortion resulting from the rolling
    * shutter is compensated.
    * No clipping is done.
@@ -199,7 +154,6 @@ public:
    * The direction of the horizon is c[0], the direction downwards is c[1].
    */
   (Matrix2f) rotation,
-  (Matrix2f) invRotation, /**< The rotation from the image coordinates to the horizon-aligned coordinates. */
   (Vector2f) origin, /**< The origin of the horizon in image coordinates. */
   (Vector2f) offset, /**< The offset of the previous image to the current one. */
   (Vector2f) robotOffset, /**< The offset of the previous image to the current one in robot (torso) coordinates. */

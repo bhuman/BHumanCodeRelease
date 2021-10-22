@@ -17,7 +17,6 @@
 
 void TeamPlayersModel::verify() const
 {
-#ifndef NDEBUG
   for(const auto& obstacle : obstacles)
   {
     ASSERT(std::isfinite(obstacle.center.x()));
@@ -40,7 +39,6 @@ void TeamPlayersModel::verify() const
     ASSERT(std::isfinite(obstacle.covariance(1, 0)));
     ASSERT(Approx::isEqual(obstacle.covariance(0, 1), obstacle.covariance(1, 0), 1e-20f));
   }
-#endif
 }
 
 void TeamPlayersModel::draw() const
@@ -96,8 +94,8 @@ void TeamPlayersModel::draw() const
             const Geometry::Line leftLine(gloBallPos, left - gloBallPos);
             const Geometry::Line rightLine(gloBallPos, right - gloBallPos);
 
-            const Vector2f bottomLeft(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightSideline);
-            const Vector2f topRight(theFieldDimensions.xPosOpponentGroundline, theFieldDimensions.yPosLeftSideline);
+            const Vector2f bottomLeft(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightSideline);
+            const Vector2f topRight(theFieldDimensions.xPosOpponentGroundLine, theFieldDimensions.yPosLeftSideline);
 
             Vector2f useLeft;
             Vector2f useRight;
@@ -116,7 +114,7 @@ void TeamPlayersModel::draw() const
             POLYGON("representation:TeamPlayersModel:teamCoverage", 3, points, 10, Drawings::noPen, color, Drawings::solidBrush, color);
           };
 
-          //const Vector2f points[3] = { gloBallPos , Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosRightGoal) , Vector2f(theFieldDimensions.xPosOwnGroundline, theFieldDimensions.yPosLeftGoal) };
+          //const Vector2f points[3] = { gloBallPos , Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosRightGoal) , Vector2f(theFieldDimensions.xPosOwnGroundLine, theFieldDimensions.yPosLeftGoal) };
           //POLYGON("representation:TeamPlayersModel:teamCoverage", 3, points, 10, Drawings::noPen, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50), Drawings::solidBrush, ColorRGBA(ColorRGBA::red.r, ColorRGBA::red.g, ColorRGBA::red.b, 50));
 
           drawOffset(genuflectRange, ColorRGBA(ColorRGBA::violet.r, ColorRGBA::violet.g, ColorRGBA::violet.b, 100));

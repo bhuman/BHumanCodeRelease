@@ -9,11 +9,7 @@
 #include "ColorSpaceView.h"
 #include "Controller/RobotConsole.h"
 #include "Controller/Visualization/OpenGLMethods.h"
-#ifdef MACOS
-#include <gl.h>
-#else
-#include <GL/gl.h>
-#endif
+#include <Platform/OpenGL.h>
 
 ColorSpaceView::ColorSpaceView(const QString& fullName, RobotConsole& c, const std::string& n, ColorModel cm, int ch, const Vector3f& b, const std::string& threadIdentifier) :
   View3D(fullName, b), console(c), name(n), colorModel(cm), channel(ch), threadIdentifier(threadIdentifier)

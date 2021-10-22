@@ -69,7 +69,7 @@ void RobotHealth::operator>>(BHumanMessage& m) const
 
 #define RECEIVE_CASE(value) case WarningSuppressor::id##value: m.bin >> value; break
 #define RECEIVE_CASE_ARRAY(value) case WarningSuppressor::id##value: for(size_t _i=0;_i<value.size();++_i) m.bin >> value[_i]; break
-bool RobotHealth::handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>& toLocalTimestamp)
+bool RobotHealth::handleArbitraryMessage(InMessage& m, const std::function<unsigned(unsigned)>&)
 {
   ASSERT(m.getMessageID() == id());
 

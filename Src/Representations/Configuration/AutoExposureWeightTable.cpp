@@ -30,7 +30,7 @@ void AutoExposureWeightTable::draw() const
         for(int x = 0, x0 = 0, x1 = cellWidth; x1 <= theCameraInfo.width; x0 += cellWidth, x1 += cellWidth, ++x)
         {
           RECTANGLE("representation:AutoExposureWeightTable", x0, y0, x1, y1, 5, Drawings::solidPen, ColorRGBA::black);
-          DRAWTEXT("representation:AutoExposureWeightTable", x0 + cellWidth / 5, y0 + 4 * cellHeight / 5, 2 * cellHeight / 5, ColorRGBA::white, "" << table(y, x));
+          DRAW_TEXT("representation:AutoExposureWeightTable", x0 + cellWidth / 5, y0 + 4 * cellHeight / 5, 2 * cellHeight / 5, ColorRGBA::white, "" << table(y, x));
         }
     }
 }

@@ -21,31 +21,35 @@ profilesOnly=""
 ip=""
 head=""
 body=""
+lansubnet="192.168"
+wlansubnet="10.0"
 
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} [-d] [-t <team>] -r <robot> -i <ip> <name>"
-  echo "${0} [-d] [-t <team>] -r <robot> -s <head> -b <body> <name>"
-  echo "${0} -p [-t <team>] -r <robot> <name>"
+  echo "${0} [-d] [-t <team>] -r <robot> -i <ip> [-l <subnet>] [-w <subnet>] <name>"
+  echo "${0} [-d] [-t <team>] -r <robot> -s <head> -b <body> [-l <subnet>] [-w <subnet>] <name>"
+  echo "${0} -p [-t <team>] -r <robot> [-l <subnet>] [-w <subnet>] <name>"
   echo "${0} -D <name>"
   echo ""
-  echo " <name> : name of the robot"
-  echo " <team> : the third number of the IPv4 address of the robot (same for all robots)"
-  echo " <robot>: the last number of the IPv4 address of the robot (different for all robots)"
-  echo " <ip>   : Retrieve serial numbers from the robot with the given ip address"
-  echo " <head> : Specify serial numbers of the robot's head"
-  echo " <body> : Specify serial numbers of the robot's body"
+  echo " <name>     : name of the robot"
+  echo " <team>     : the third number of the IPv4 address of the robot (same for all robots)"
+  echo " <robot>    : the last number of the IPv4 address of the robot (different for all robots)"
+  echo " <ip>       : Retrieve serial numbers from the robot with the given ip address"
+  echo " <head>     : Specify serial numbers of the robot's head"
+  echo " <body>     : Specify serial numbers of the robot's body"
   echo ""
-  echo " -d     : Delete existing files for the given robot before creating new files"
-  echo " -D     : Only delete all files for the given robot"
-  echo " -p     : Only update the network profiles"
-  echo " -h     : Display this help"
+  echo " -d         : Delete existing files for the given robot before creating new files"
+  echo " -D         : Only delete all files for the given robot"
+  echo " -p         : Only update the network profiles"
+  echo " -l <subnet>: Set lan subnet"
+  echo " -w <subnet>: Set wireless lan subnet"
+  echo " -h         : Display this help"
   exit 1
 }
 
 parseOptions() {
-  while getopts :hpt:r:Ddi:s:b: opt ; do
+  while getopts :hpt:r:Ddi:s:b:l:w: opt ; do
     case "$opt" in
       p)
         profilesOnly="true"
@@ -71,6 +75,12 @@ parseOptions() {
       b)
         body="$OPTARG"
         ;;
+      l)
+        lansubnet="$OPTARG"
+        ;;
+      w)
+        wlansubnet="$OPTARG"
+        ;;
       [?]|h)
         usage
         ;;
@@ -88,8 +98,6 @@ parseOptions() {
 
   robotName=${1}
 
-  robotDir="${baseDir}/Robots/${robotName}"
-
   if [ -z ${deleteOnly} ]; then
     if [ -z "${teamID}" -o -z "${robotPart}" -o -z "${robotName}" ]; then
       usage
@@ -102,7 +110,6 @@ parseOptions() {
   fi
 
   debug "robotName: " "${robotName}"
-  debug "robotDir: " "${robotDir}"
   debug "teamID: " "${teamID}"
   debug "robotPart: " "${robotPart}"
   debug "ip: " "${ip}"
@@ -142,8 +149,6 @@ function checkFile()
 function checkFiles()
 {
   foundFiles=""
-  checkFile "${robotDir}/hostname"             || foundFiles="true"
-  checkFile "${robotDir}"                      || foundFiles="true"
   checkFile "${configDir}/Robots/${robotName}" || foundFiles="true"
   debug "foundFiles: ${foundFiles}"
 
@@ -153,29 +158,6 @@ function checkFiles()
   fi
 }
 
-function createRobotDirectory()
-{
-  message "Creating robot directory"
-  mkdir -p "${robotDir}" || return 1
-  return 0
-}
-
-function createHostname()
-{
-  echo "${robotName}" > "${robotDir}/hostname"
-  return 0;
-}
-
-function createProfiles()
-{
-  message "Creating network profiles"
-  mkdir -p "${profileDir}"
-
-  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wired.service" >"${robotDir}/wired.service" || return 1
-  sed -e "s/%teamID%/${teamID}/g" -e "s/%robotPart%/${robotPart}/g" <"${networkDir}/wireless.service" >"${robotDir}/wireless.service" || return 1
-  return 0
-}
-
 function createCalibrationDirectory()
 {
   message "Creating calibration directory"
@@ -183,13 +165,13 @@ function createCalibrationDirectory()
   return 0
 }
 
-function createBushConfig()
+function createNetworkConfig()
 {
   message "Creating network.cfg"
 cat > "${configDir}/Robots/$robotName/network.cfg" << EOF
 name = "${robotName}";
-lan = "192.168.${teamID}.${robotPart}";
-wlan = "10.0.${teamID}.${robotPart}";
+lan = "${lansubnet}.${teamID}.${robotPart}";
+wlan = "${wlansubnet}.${teamID}.${robotPart}";
 EOF
 }
 
@@ -222,18 +204,12 @@ checkApp "sed" "stream editor"
 parseOptions "$@"
 
 if [ -n "${profilesOnly}" ]; then
-  if ! [ -d ${robotDir} ]; then
+  if ! [ -d "${configDir}/Robots/${robotName}" ]; then
     error "Robot '${robotName}' does not exist"
     fatal "Rerun ${0} without -p"
   fi
-
-  if ! createProfiles; then
-    error "Failed to create network profiles"
-    fatal "Rerun ${0} with -d"
-  fi
-
-  if ! createBushConfig; then
-    error "Failed to create configuration for the bush"
+  if ! createNetworkConfig; then
+    error "Failed to create network configuration"
     fatal "Rerun ${0} with -d"
   fi
 else
@@ -252,24 +228,12 @@ else
     elif [ -z "$head" -o -z "$body" ]; then
       fatal "Both serial numbers must be specified"
     fi
-    if ! createRobotDirectory; then
-      error "Failed to create robot directory"
-      fatal "Rerun ${0} with -d"
-    fi
-    if ! createHostname; then
-      error "Failed to create hostname"
-      fatal "Rerun ${0} with -d"
-    fi
-    if ! createProfiles; then
-      error "Failed to create network profiles"
-      fatal "Rerun ${0} with -d"
-    fi
     if ! createCalibrationDirectory; then
       error "Failed to create calibration directory"
       fatal "Rerun ${0} with -d"
     fi
-    if ! createBushConfig; then
-      error "Failed to create configuration for the bush"
+    if ! createNetworkConfig; then
+      error "Failed to create network configuration"
       fatal "Rerun ${0} with -d"
     fi
     createRobotsFile

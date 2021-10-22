@@ -60,7 +60,7 @@ void RobotView::init()
 
   QLabel* powerLabel = new QLabel("<font size=2><b>Power</b></font>", statusWidget);
   powerBar = new QProgressBar(this);
-  powerBar->setMaximumSize(sizeManager.statusBarWidth, static_cast<int>(sizeManager.statusBarHeight * 0.8));
+  powerBar->setMaximumSize(sizeManager.statusBarWidth, static_cast<int>(sizeManager.statusBarHeight * 0.8f));
   powerBar->setRange(0, 100);
   powerBar->setValue(0);
   powerBar->setAlignment(Qt::AlignCenter);

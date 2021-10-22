@@ -1,0 +1,14 @@
+vd parameters:AutomaticCameraCalibrator
+vd parameters:CalibrationCard
+vd representation:CameraCalibration
+vd representation:CameraCalibrationStatus
+vd representation:CalibrationRequest
+vd representation:HeadAngleRequest
+
+vid all horizon
+vid all representation:FieldLines:image
+vid all representation:PenaltyMarkPercept:image
+vid all module:AutomaticCameraCalibrator:correctedLines
+vfd all behavior:AutonomousCameraCalibrationCard:position
+
+pr calibration

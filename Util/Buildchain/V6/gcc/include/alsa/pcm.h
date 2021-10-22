@@ -22,7 +22,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -32,6 +32,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdint.h>
 
 /**
  *  \defgroup PCM PCM Interface
@@ -173,6 +175,14 @@ typedef enum _snd_pcm_format {
 	SND_PCM_FORMAT_MPEG,
 	/** GSM */
 	SND_PCM_FORMAT_GSM,
+	/** Signed 20bit Little Endian in 4bytes format, LSB justified */
+	SND_PCM_FORMAT_S20_LE,
+	/** Signed 20bit Big Endian in 4bytes format, LSB justified */
+	SND_PCM_FORMAT_S20_BE,
+	/** Unsigned 20bit Little Endian in 4bytes format, LSB justified */
+	SND_PCM_FORMAT_U20_LE,
+	/** Unsigned 20bit Big Endian in 4bytes format, LSB justified */
+	SND_PCM_FORMAT_U20_BE,
 	/** Special */
 	SND_PCM_FORMAT_SPECIAL = 31,
 	/** Signed 24bit Little Endian in 3bytes format */
@@ -237,7 +247,11 @@ typedef enum _snd_pcm_format {
 	/** Float 64 bit CPU endian */
 	SND_PCM_FORMAT_FLOAT64 = SND_PCM_FORMAT_FLOAT64_LE,
 	/** IEC-958 CPU Endian */
-	SND_PCM_FORMAT_IEC958_SUBFRAME = SND_PCM_FORMAT_IEC958_SUBFRAME_LE
+	SND_PCM_FORMAT_IEC958_SUBFRAME = SND_PCM_FORMAT_IEC958_SUBFRAME_LE,
+	/** Signed 20bit in 4bytes format, LSB justified, CPU Endian */
+	SND_PCM_FORMAT_S20 = SND_PCM_FORMAT_S20_LE,
+	/** Unsigned 20bit in 4bytes format, LSB justified, CPU Endian */
+	SND_PCM_FORMAT_U20 = SND_PCM_FORMAT_U20_LE,
 #elif __BYTE_ORDER == __BIG_ENDIAN
 	/** Signed 16 bit CPU endian */
 	SND_PCM_FORMAT_S16 = SND_PCM_FORMAT_S16_BE,
@@ -256,7 +270,11 @@ typedef enum _snd_pcm_format {
 	/** Float 64 bit CPU endian */
 	SND_PCM_FORMAT_FLOAT64 = SND_PCM_FORMAT_FLOAT64_BE,
 	/** IEC-958 CPU Endian */
-	SND_PCM_FORMAT_IEC958_SUBFRAME = SND_PCM_FORMAT_IEC958_SUBFRAME_BE
+	SND_PCM_FORMAT_IEC958_SUBFRAME = SND_PCM_FORMAT_IEC958_SUBFRAME_BE,
+	/** Signed 20bit in 4bytes format, LSB justified, CPU Endian */
+	SND_PCM_FORMAT_S20 = SND_PCM_FORMAT_S20_BE,
+	/** Unsigned 20bit in 4bytes format, LSB justified, CPU Endian */
+	SND_PCM_FORMAT_U20 = SND_PCM_FORMAT_U20_BE,
 #else
 #error "Unknown endian"
 #endif
@@ -289,7 +307,9 @@ typedef enum _snd_pcm_state {
 	SND_PCM_STATE_SUSPENDED,
 	/** Hardware is disconnected */
 	SND_PCM_STATE_DISCONNECTED,
-	SND_PCM_STATE_LAST = SND_PCM_STATE_DISCONNECTED
+	SND_PCM_STATE_LAST = SND_PCM_STATE_DISCONNECTED,
+	/** Private - used internally in the library - do not use*/
+	SND_PCM_STATE_PRIVATE1 = 1024
 } snd_pcm_state_t;
 
 /** PCM start mode */
@@ -1108,10 +1128,10 @@ int snd_pcm_format_width(snd_pcm_format_t format);			/* in bits */
 int snd_pcm_format_physical_width(snd_pcm_format_t format);		/* in bits */
 snd_pcm_format_t snd_pcm_build_linear_format(int width, int pwidth, int unsignd, int big_endian);
 ssize_t snd_pcm_format_size(snd_pcm_format_t format, size_t samples);
-u_int8_t snd_pcm_format_silence(snd_pcm_format_t format);
-u_int16_t snd_pcm_format_silence_16(snd_pcm_format_t format);
-u_int32_t snd_pcm_format_silence_32(snd_pcm_format_t format);
-u_int64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
+uint8_t snd_pcm_format_silence(snd_pcm_format_t format);
+uint16_t snd_pcm_format_silence_16(snd_pcm_format_t format);
+uint32_t snd_pcm_format_silence_32(snd_pcm_format_t format);
+uint64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
 int snd_pcm_format_set_silence(snd_pcm_format_t format, void *buf, unsigned int samples);
 
 snd_pcm_sframes_t snd_pcm_bytes_to_frames(snd_pcm_t *pcm, ssize_t bytes);
@@ -1129,6 +1149,15 @@ int snd_pcm_area_copy(const snd_pcm_channel_area_t *dst_channel, snd_pcm_uframes
 int snd_pcm_areas_copy(const snd_pcm_channel_area_t *dst_channels, snd_pcm_uframes_t dst_offset,
 		       const snd_pcm_channel_area_t *src_channels, snd_pcm_uframes_t src_offset,
 		       unsigned int channels, snd_pcm_uframes_t frames, snd_pcm_format_t format);
+int snd_pcm_areas_copy_wrap(const snd_pcm_channel_area_t *dst_channels,
+			    snd_pcm_uframes_t dst_offset,
+			    const snd_pcm_uframes_t dst_size,
+			    const snd_pcm_channel_area_t *src_channels,
+			    snd_pcm_uframes_t src_offset,
+			    const snd_pcm_uframes_t src_size,
+			    const unsigned int channels,
+			    snd_pcm_uframes_t frames,
+			    const snd_pcm_format_t format);
 
 /** \} */
 

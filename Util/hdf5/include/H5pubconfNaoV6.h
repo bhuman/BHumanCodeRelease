@@ -126,7 +126,7 @@
 /* #undef H5_HAVE_FILTER_SZIP */
 
 /* Determine if __float128 is available */
-/* #undef H5_HAVE_FLOAT128 */
+#define H5_HAVE_FLOAT128 1
 
 /* Define to 1 if you have the `flock' function. */
 #define H5_HAVE_FLOCK 1
@@ -250,7 +250,7 @@
 /* #undef H5_HAVE_PTHREAD_H */
 
 /* Define to 1 if you have the <quadmath.h> header file. */
-/* #undef H5_HAVE_QUADMATH_H */
+#define H5_HAVE_QUADMATH_H 1
 
 /* Define to 1 if you have the `random' function. */
 #define H5_HAVE_RANDOM 1
@@ -464,7 +464,7 @@
 #define H5_PACKAGE_VERSION "1.10.5"
 
 /* Determine the maximum decimal precision in C */
-#define H5_PAC_C_MAX_REAL_PRECISION 21
+#define H5_PAC_C_MAX_REAL_PRECISION 33
 
 /* Define Fortran Maximum Real Decimal Precision */
 /* #undef H5_PAC_FC_MAX_REAL_PRECISION */

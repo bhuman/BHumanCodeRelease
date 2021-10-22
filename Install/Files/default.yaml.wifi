@@ -1,0 +1,4 @@
+  wifis:
+    wlan0:
+      addresses: [WIRELESS_IP_PLACEHOLDER/16]
+      access-points:

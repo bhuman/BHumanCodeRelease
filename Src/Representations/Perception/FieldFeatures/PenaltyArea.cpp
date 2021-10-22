@@ -32,7 +32,7 @@ void PenaltyArea::draw() const
       if(Blackboard::getInstance().exists("FieldDimensions"))
       {
         const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-        const float halfLength = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
+        const float halfLength = (theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
         const Vector2f leftBotton = (*this) * Vector2f(-halfLength, theFieldDimensions.yPosLeftPenaltyArea);
         const Vector2f leftTop = (*this) * Vector2f(halfLength, theFieldDimensions.yPosLeftPenaltyArea);
         const Vector2f rightBotton = (*this) * Vector2f(-halfLength, theFieldDimensions.yPosRightPenaltyArea);
@@ -55,7 +55,7 @@ void PenaltyArea::draw() const
         const CameraInfo& theCameraInfo = static_cast<const CameraInfo&>(Blackboard::getInstance()["CameraInfo"]);
         const ImageCoordinateSystem& theImageCoordinateSystem = static_cast<const ImageCoordinateSystem&>(Blackboard::getInstance()["ImageCoordinateSystem"]);
 
-        const float halfLength = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
+        const float halfLength = (theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
         const Vector2f leftBotton = (*this) * Vector2f(-halfLength, theFieldDimensions.yPosLeftPenaltyArea);
         const Vector2f leftTop = (*this) * Vector2f(halfLength, theFieldDimensions.yPosLeftPenaltyArea);
         const Vector2f rightBotton = (*this) * Vector2f(-halfLength, theFieldDimensions.yPosRightPenaltyArea);
@@ -93,6 +93,6 @@ const Pose2f PenaltyArea::getGlobalFeaturePosition() const
   ASSERT(isValid);
   ASSERT(Blackboard::getInstance().exists("FieldDimensions"));
   const FieldDimensions& theFieldDimensions = static_cast<const FieldDimensions&>(Blackboard::getInstance()["FieldDimensions"]);
-  const float penaltyAreaDepth = (theFieldDimensions.xPosOpponentGroundline - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
-  return Pose2f(0.f, theFieldDimensions.xPosOpponentGroundline - penaltyAreaDepth, 0.f);
+  const float penaltyAreaDepth = (theFieldDimensions.xPosOpponentGroundLine - theFieldDimensions.xPosOpponentPenaltyArea) / 2.f;
+  return Pose2f(0.f, theFieldDimensions.xPosOpponentGroundLine - penaltyAreaDepth, 0.f);
 }

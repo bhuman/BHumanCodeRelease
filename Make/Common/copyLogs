@@ -10,14 +10,25 @@ basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
 usage()
 {
   echo "usage: $0 [-d | --just-delete] [<targetDir>]" >&2
-  echo " -d             Delete log files after copying." >&2
-  echo " --just-delete  Just delete log files." >&2
+  echo "  options:"
+  echo "    -d             Delete log files after copying." >&2
+  echo "    --just-delete  Just delete log files." >&2
+  echo "  examples:"
+  echo "    $0"
+  echo "    $0 -d ../../Config/Logs"
+  echo "    $0 sftp://user@host:/path"
+  echo "    $0 --just-delete"
   exit 1
 }
 
 copy=true
 delete=false
 targetDir=${basePath}/../../Config/Logs
+mkdir1=
+mkdir2="xargs mkdir -p"
+cp1=
+cp2="xargs cp"
+cmd=xargs
 while true; do
   case $1 in
     "")
@@ -39,6 +50,14 @@ while true; do
       ;;
     *)
       targetDir=$1
+      if [ ! -z "$(grep <<<"$targetDir" "^sftp://.*:")" ]; then
+        host="$(sed <<<"$targetDir" "s%^sftp://\([^:]*\).*%\1%")"
+        targetDir="$(sed <<<"$targetDir" "s%^sftp://[^:]*:%%")"
+        mkdir1="-mkdir"
+        mkdir2="sftp -qb - $host"
+        cp1=put
+        cp2="sftp -qb - $host"
+      fi
       ;;
   esac
   shift
@@ -46,22 +65,34 @@ done
 
 set -eu
 
-files=$(ls /mnt/*_B-HUMAN/logs/*_*_*.log /media/*_B-HUMAN/logs/*_*_*.log /media/$USER/*_B-HUMAN/logs/*_*_*.log /cygdrive/*/logs/*_*_*.log /Volumes/*_B-HUMAN/logs/*_*_*.log 2>/dev/null || true)
+targetPath="$targetDir/$(date +%F-%H-%M)"
+
+files=$(ls /mnt/*_B-HUMAN/logs/*_*_*.log /media/*_B-HUMAN/logs/*_*_*.log /media/$USER/*_B-HUMAN/logs/*_*_*.log /run/media/$USER/*_B-HUMAN/logs/*_*_*.log /cygdrive/*/logs/*_*_*.log /Volumes/*_B-HUMAN/logs/*_*_*.log 2>/dev/null || true)
 
 if [ $copy = true -a ! -z "$files" ]; then
-  targetPath="$targetDir/$(date +%F-%H-%M)"
-  mkdir -p "$targetPath"
+  echo "$mkdir1 \"$targetPath\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
   while read path; do
     if [ ! -z "$path" ]; then
-      echo "Copying logs from $(dirname "$path") ..."
+      echo "Copying $path ..."
       name=$(basename $path | sed "s%_.*%%")
-      mkdir -p "$targetPath/$name"
-      cp "$path" "$targetPath/$name/"
-      if [ ! -z "$(ls "$(dirname "$path")"/bhumand* 2>/dev/null || true)" ]; then
-        cp "$(dirname "$path")"/bhumand* "$targetPath/$name/"
-      fi
+      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+      echo "$cp1 \"$path\"" "\"$targetPath/$name/\"" | $cp2 >/dev/null
     fi
   done <<<"$files"
+fi
+
+files2=$(ls /mnt/*_B-HUMAN/logs/bhumand*.log /media/*_B-HUMAN/logs/bhumand*.log /media/$USER/*_B-HUMAN/logs/bhumand*.log /run/media/$USER/*_B-HUMAN/logs/bhumand*.log /cygdrive/*/logs/bhumand*.log /Volumes/*_B-HUMAN/logs/bhumand*.log 2>/dev/null || true)
+
+if [ $copy = true -a ! -z "$files2" ]; then
+  echo "$mkdir1 \"$targetPath\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+  while read path; do
+    if [ ! -z "$path" ]; then
+      echo "Copying $path ..."
+      name="$(grep " Hi, I am " "$path" | head -1 | sed "s%[^ ]* Hi, I am \(.*\)\.%\1%")"
+      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+      echo "$cp1 \"$path\"" "\"$targetPath/$name/\"" | $cp2 >/dev/null
+    fi
+  done <<<"$files2"
 fi
 
 if $delete; then
@@ -70,5 +101,6 @@ if $delete; then
       echo "Deleting logs from $(dirname "$path") ..."
       rm "$(dirname "$path")"/*
     fi
-  done <<<"$files"
+  done <<<"$files
+$files2"
 fi

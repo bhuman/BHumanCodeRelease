@@ -1,0 +1,51 @@
+#!/bin/bash
+basePath=$(dirname "$(which "$0")")
+CALL=
+while true; do
+  case $1 in
+    "")
+      break;
+      ;;
+    "-arch_only")
+      shift
+      ;;
+    "-D")
+      ;;
+    "-dependency_info")
+      shift
+      INFO="$1"
+      ;;
+    "-o")
+      shift
+      OUTPUT="$1"
+      ;;
+    "-static")
+      ;;
+    "-syslibroot")
+      shift
+      ;;
+    "-L"*)
+      ;;
+    "-filelist")
+      shift
+      FILELIST="$1"
+      CALL="$CALL $(sed <"$FILELIST" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
+      ;;
+    *)
+      CALL="$CALL '$1'"
+      ;;
+  esac
+  shift
+done
+
+if [ ! -z "$INFO" ]; then
+  (
+    echo ""
+    echo "cctools-973.0.1"
+    sed <"$FILELIST" 's%^%|%' | tr '|' $'\x10'
+    echo -n $'\x40'
+    echo "$OUTPUT"
+  ) | tr '\n' '\0' >"$INFO"
+fi
+
+bash -c "\"${basePath}/ar\" rcs \"$OUTPUT\" $CALL"

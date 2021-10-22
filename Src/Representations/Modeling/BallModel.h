@@ -8,10 +8,9 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
+#include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
 #include "Tools/Math/Eigen.h"
-#include "Representations/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Representations/Communication/BHumanMessage.h"
+#include "Tools/Streams/AutoStreamable.h"
 
 /**
  * @struct BallState

@@ -1,4 +1,4 @@
-// Same base finctionality as on Linux, hence the includes.
+// Same base functionality as on Linux, hence the includes.
 #include "Platform/Linux/ThreadBase.cpp"
 
 void Thread::nameCurrentThread(const std::string& name)

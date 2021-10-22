@@ -1,0 +1,30 @@
+#!/bin/sh
+
+usage()
+{
+  echo "usage: $0 [<playback volume> [<capture volume>]] - Sets the sound volume."
+  exit 1
+}
+
+PLAYBACK_VOLUME=$1
+CAPTURE_VOLUME=$2
+case $# in
+  0)
+    PLAYBACK_VOLUME=$(cat /home/nao/.config/volume)
+    CAPTURE_VOLUME=75
+    ;;
+  1)
+    CAPTURE_VOLUME=75
+    ;;
+  2)
+    ;;
+  *)
+    usage
+esac
+
+echo ${PLAYBACK_VOLUME} >/home/nao/.config/volume
+
+aplay -q /home/nao/Config/Sounds/empty.wav || exit 1
+amixer set PCM ${PLAYBACK_VOLUME}% unmute >/dev/null 2>&1 || exit 1
+amixer set "Analog Front" 100% unmute >/dev/null 2>&1 || exit 1
+amixer set Digital ${CAPTURE_VOLUME}% unmute >/dev/null 2>&1 || ( arecord -d 1 -f FLOAT_LE -c 2 -q >/dev/null && amixer set Digital ${CAPTURE_VOLUME}% unmute >/dev/null 2>&1 )

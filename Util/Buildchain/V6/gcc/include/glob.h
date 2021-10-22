@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2019 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef	_GLOB_H
 #define	_GLOB_H	1
@@ -54,14 +54,14 @@ typedef __SIZE_TYPE__ size_t;
 # define GLOB_ONLYDIR	 (1 << 13)/* Match only directories.  */
 # define GLOB_TILDE_CHECK (1 << 14)/* Like GLOB_TILDE but return an error
 				      if the user name is not available.  */
-# define __GLOB_FLAGS	(GLOB_ERR|GLOB_MARK|GLOB_NOSORT|GLOB_DOOFFS| \
-			 GLOB_NOESCAPE|GLOB_NOCHECK|GLOB_APPEND|     \
-			 GLOB_PERIOD|GLOB_ALTDIRFUNC|GLOB_BRACE|     \
-			 GLOB_NOMAGIC|GLOB_TILDE|GLOB_ONLYDIR|GLOB_TILDE_CHECK)
+# define __GLOB_FLAGS	(GLOB_ERR|GLOB_MARK|GLOB_NOSORT|GLOB_DOOFFS  \
+			 |GLOB_NOESCAPE|GLOB_NOCHECK|GLOB_APPEND     \
+			 |GLOB_PERIOD|GLOB_ALTDIRFUNC|GLOB_BRACE     \
+			 |GLOB_NOMAGIC|GLOB_TILDE|GLOB_ONLYDIR|GLOB_TILDE_CHECK)
 #else
-# define __GLOB_FLAGS	(GLOB_ERR|GLOB_MARK|GLOB_NOSORT|GLOB_DOOFFS| \
-			 GLOB_NOESCAPE|GLOB_NOCHECK|GLOB_APPEND|     \
-			 GLOB_PERIOD)
+# define __GLOB_FLAGS	(GLOB_ERR|GLOB_MARK|GLOB_NOSORT|GLOB_DOOFFS  \
+			 |GLOB_NOESCAPE|GLOB_NOCHECK|GLOB_APPEND     \
+			 |GLOB_PERIOD)
 #endif
 
 /* Error returns from `glob'.  */

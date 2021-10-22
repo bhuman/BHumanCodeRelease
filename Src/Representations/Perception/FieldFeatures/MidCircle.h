@@ -10,7 +10,7 @@
 
 /**
  * @struct MidCircle
- * It defines a the pose of a mid circle in relative field coordinates to the robot.
+ * It defines the pose of a mid circle in relative field coordinates to the robot.
  * The mid circle pose: position => position of the center point; rotation => looking in direction of the opposite goal (vertical to the mid line)
  */
 STREAMABLE_WITH_BASE(MidCircle, FieldFeature,
@@ -34,7 +34,7 @@ STREAMABLE_WITH_BASE(MidCircle, FieldFeature,
   };
 
   /**
-   * Returns 1 of the 2 global position of this feature (in case of isValid == true).
+   * Returns 1 of the 2 global positions of this feature (in case of isValid == true).
    */
   const Pose2f getGlobalFeaturePosition() const override,
 });

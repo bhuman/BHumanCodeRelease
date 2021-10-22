@@ -15,13 +15,15 @@
 #include "Tools/Global.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/OutStreams.h"
+#include <cstdlib>
 #include <cstring>
 #include <csignal>
 
-MAKE_MODULE(NaoProvider, infrastructure)
+MAKE_MODULE(NaoProvider, infrastructure);
 
 #ifdef TARGET_ROBOT
 
+#include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -227,6 +229,15 @@ NaoProvider::NaoProvider()
   std::memset(&jointStiffnesses[0], 0, sizeof(jointStiffnesses));
   std::memset(&leds[0], 0, sizeof(leds));
 
+  static_assert(numOfCPUCores <= 8);
+  char cpuTemperaturePath[] = "/sys/class/hwmon/hwmon1/temp2_input";
+  for(size_t i = 0; i < numOfCPUCores; ++i)
+  {
+    cpuTemperatureFiles[i] = ::open(cpuTemperaturePath, O_RDONLY);
+    ASSERT(cpuTemperatureFiles[i] >= 0);
+    ++cpuTemperaturePath[28];
+  }
+
   socket = ::socket(AF_UNIX, SOCK_STREAM, 0);
   ASSERT(socket > 0);
   sockaddr_un address;
@@ -240,6 +251,8 @@ NaoProvider::NaoProvider()
 
 NaoProvider::~NaoProvider()
 {
+  for(size_t i = 0; i < numOfCPUCores; ++i)
+    close(cpuTemperatureFiles[i]);
   close(socket);
   theInstance = nullptr;
 }
@@ -314,6 +327,11 @@ void NaoProvider::update(KeyStates& theKeyStates)
 
 void NaoProvider::update(SystemSensorData& theSystemSensorData)
 {
+  if(theFrameInfo.getTimeSince(timeWhenCPUTemperatureRead) >= timeBetweenCPUTemperatureUpdates)
+  {
+    theSystemSensorData.cpuTemperature = readCPUTemperature();
+    timeWhenCPUTemperatureRead = theFrameInfo.time;
+  }
   theSystemSensorData.batteryLevel = MsgPack::readFloat(batteryLevel);
   theSystemSensorData.batteryCurrent = MsgPack::readFloat(batteryCurrent);
   theSystemSensorData.batteryTemperature = MsgPack::readFloat(batteryTemperature);
@@ -394,7 +412,7 @@ void NaoProvider::receivePacket()
         },
 
         // Ignore strings
-        [](const std::string& key, const unsigned char* p, size_t size) {});
+        [](const std::string&, const unsigned char*, size_t) {});
 
       // Initialize the packet to send to LoLA
       // Please note that the code assumes that the order of sensors and actuators is the same
@@ -413,7 +431,7 @@ void NaoProvider::receivePacket()
       for(int i = 0; i < Joints::numOfJoints - 1; ++i)
         jointStiffnesses[jointMappings[i]] = MsgPack::write(0.f, p);
 
-      // Determine addresses for leds
+      // Determine addresses for LEDs
       writeLEDs("REar", rightEarMappings, LEDRequest::chestRed - LEDRequest::earsRight0Deg, p);
       writeLEDs("LEar", leftEarMappings, LEDRequest::earsRight0Deg - LEDRequest::earsLeft0Deg, p);
       writeLEDs("Chest", chestMappings, LEDRequest::headRearLeft0 - LEDRequest::chestRed, p);
@@ -497,6 +515,21 @@ void NaoProvider::finishFrame()
 
   if(theInstance)
     theInstance->sendPacket();
+}
+
+float NaoProvider::readCPUTemperature() const
+{
+  float result = 0.f;
+  char buffer[8];
+  for(size_t i = 0; i < numOfCPUCores; ++i)
+  {
+    VERIFY(::lseek(cpuTemperatureFiles[i], 0, SEEK_SET) == 0);
+    ssize_t length = ::read(cpuTemperatureFiles[i], buffer, 8);
+    ASSERT(length > 1);
+    ASSERT(buffer[length - 1] == '\n');
+    result = std::max(result, static_cast<float>(std::atoi(buffer)) / 1000.f);
+  }
+  return result;
 }
 
 #endif

@@ -15,7 +15,7 @@
 #include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/CognitionStateChanges.h"
+#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -28,7 +28,7 @@ const size_t BALL_BUFFER_LENGTH = 10;
 MODULE(TeamBallLocator,
 {,
   REQUIRES(BallSpecification),
-  REQUIRES(CognitionStateChanges),
+  REQUIRES(ExtendedGameInfo),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(GameInfo),
@@ -56,12 +56,11 @@ public:
   struct BufferedBall
   {
     Pose2f robotPose;                  /**< The pose of the observing robot */
-    float poseValidity;                /**< Validity of the pose, as estimated by self-localization */
+    float poseQualityModifier;         /**< Quality of the pose, robot pose, used for computing the weight of an observation */
     Vector2f pos = Vector2f::Zero();   /**< Position of the ball (relative to the observer) */
     Vector2f vel = Vector2f::Zero();   /**< Velocity of the ball (relative to the observer) */
     unsigned time;                     /**< Point of time (in ms) of the observation */
     bool valid;                        /**< This observation can be considered */
-    bool seenByMixedTeamPartner;       /**< True, if ball was not seen by B-Human software, only relevant for Mixed Team */
   };
 
   /** A ball that is a candidate for becoming (a part of the) team ball */
@@ -85,10 +84,8 @@ private:
   /** Adds new information to the ball buffers */
   void updateInternalBallBuffers();
 
-  /** Updates the internal list of currently available balls
-   * @param considerMixedTeammates Use balls from non-B-Human robots in Mixed Team Competition, if set to true
-   */
-  void findAvailableBalls(bool considerMixedTeammates);
+  /** Updates the internal list of currently available balls */
+  void findAvailableBalls();
 
   /** Check, which ball is compatible to which other ball, fill the compatibleBallsIndices lists */
   void clusterBalls();
@@ -98,13 +95,20 @@ private:
    */
   void computeModel(TeamBallModel& teamBallModel);
 
+  /** Maps current localization quality to a floating point number.
+   *  This function determines, how strong the self-localization should influence a ball weighting.
+   * @param quality The assumed precision/trustworthiness of a robot pose estimate
+   * @return A weighting in the range [0,..,1]
+   */
+  float localizationQualityToModifier(const RobotPose::LocalizationQuality quality) const;
+
   /** Computes the weighting for a given ball observation
    * @param ball The ball observation
    * @return A weighting that says how "good" the observation is
    */
   float computeWeighting(const BufferedBall& ball) const;
 
-  /** In some situatione (game is not in PLAY or ball was out), the ball
+  /** In some situations (game is not in PLAY or ball was out), the ball
    *  becomes replaced by humans. Thus, we should reset all stored information then.
    *  @return true, if all buffers have been reset.
    */

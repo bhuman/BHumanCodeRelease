@@ -16,8 +16,8 @@
  * STREAMABLE_WITH_BASE(<class>, <base>, ...
  *
  * <class>: The name of the class to be declared.
- * <base>:  Its base class. It must be streamable and its serialize method must not be private.
- *          The default (without "_WITH_BASE") is the class Streamable.
+ * <base>:  Its base class. It must be streamable and its read and write methods must not be
+ *          private. The default (without "_WITH_BASE") is the class Streamable.
  * <header>: Everything that can be part of a class body except for the attributes that should
  *          be streamable. Please note that this part must not contain commas that are not
  *          surrounded by parentheses, because C++ would consider it to be more than a single
@@ -251,7 +251,7 @@
 #define _STREAM_VAR_2_III(...)
 
 /** Generate streaming code from declaration. */
-#define _STREAM_SER(seq) {auto& _var = _STREAM_VAR(seq); Streaming::streamIt(in, out, #seq, _var);}
+#define _STREAM_SER(seq) {auto& _var = _STREAM_VAR(seq); Streaming::streamIt(stream, #seq, _var);}
 
 /** Generate the actual declaration. */
 #define _STREAM_DECL(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq);
@@ -269,22 +269,28 @@
 #define _STREAM_INIT_I_2_III(...) __VA_ARGS__ _STREAM_DROP(
 
 /** Generate streamable class. */
-#define _STREAM_STREAMABLE(name, base, streamBase, header, ...) \
+#define _STREAM_STREAMABLE(name, base, readBase, writeBase, header, ...) \
   struct name : public base \
   _STREAM_UNWRAP header; \
-  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, base, streamBase, __VA_ARGS__)
-#define _STREAM_STREAMABLE_I(n, name, base, streamBase, ...) _STREAM_STREAMABLE_II(n, name, base, streamBase, (_STREAM_SER, __VA_ARGS__), (_STREAM_DECL, __VA_ARGS__), (_STREAM_REG, __VA_ARGS__))
-#define _STREAM_STREAMABLE_II(n, theName, base, streamBase, params1, params2, params3) \
+  _STREAM_STREAMABLE_I(_STREAM_TUPLE_SIZE(__VA_ARGS__), name, base, readBase, writeBase, __VA_ARGS__)
+#define _STREAM_STREAMABLE_I(n, name, base, readBase, writeBase, ...) _STREAM_STREAMABLE_II(n, name, base, readBase, writeBase, (_STREAM_SER, __VA_ARGS__), (_STREAM_DECL, __VA_ARGS__), (_STREAM_REG, __VA_ARGS__))
+#define _STREAM_STREAMABLE_II(n, theName, base, readBase, writeBase, params1, params2, params3) \
     _STREAM_ATTR_##n params2 \
   protected: \
     friend struct Streaming::OnRead<theName, true>; \
-    void serialize(In* in, Out* out) override \
+    void read(In& stream) override \
     { \
+      static_cast<void>(stream); \
       PUBLISH(_reg); \
-      streamBase \
+      readBase; \
       _STREAM_ATTR_##n params1 \
-      if(in) \
-        Streaming::onRead(*this); \
+      Streaming::onRead(*this); \
+    } \
+    void write(Out& stream) const override \
+    { \
+      static_cast<void>(stream); \
+      writeBase; \
+      _STREAM_ATTR_##n params1 \
     } \
   private: \
     static void _reg() \
@@ -303,12 +309,16 @@
  *               allowed if enclosed by parentheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , (header), __VA_ARGS__)
+#ifndef Q_MOC_RUN
+#define STREAMABLE(name, header, ...) _STREAM_STREAMABLE(name, Streamable, , , (header), __VA_ARGS__)
+#else
+#define STREAMABLE(name, ...) struct name {}
+#endif
 
 /**
  * Generate a streamable class that is derived from a class that is already
- * streamable. Please note that the serialize method in the base class must
- * not be private. For instance, this is the case if that class also was
+ * streamable. Please note that the read and write methods in the base class
+ * must not be private. For instance, this is the case if that class also was
  * created by a STREAMABLE macro.
  * @param name The name of the class.
  * @param name The name of the base class.
@@ -317,7 +327,11 @@
  *               allowed if enclosed by parentheses.
  * @param ... The actual declarations. It must end with a closing curly bracket.
  */
-#define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, STREAM_BASE(base), (header), __VA_ARGS__)
+#ifndef Q_MOC_RUN
+#define STREAMABLE_WITH_BASE(name, base, header, ...) _STREAM_STREAMABLE(name, base, base::read(stream), base::write(stream), (header), __VA_ARGS__)
+#else
+#define STREAMABLE_WITH_BASE(name, base, ...) struct name : public base {}
+#endif
 
 /**
  * Use this macro to replace a comma that is not enclosed by parentheses
@@ -356,7 +370,7 @@ namespace Streaming
    */
   template<typename T> struct OnRead<T, false>
   {
-    static void onRead(T& t) {}
+    static void onRead(T&) {}
   };
 
   template<typename T> static void onRead(T& t)

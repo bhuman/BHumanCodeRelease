@@ -18,7 +18,8 @@
 
 thread_local std::list<std::function<bool(InMessage& message)>> ModuleContainer::messageHandlers;
 
-ModuleContainer::ModuleContainer(const Configuration& config, const std::size_t index, Logger* logger) :
+ModuleContainer::ModuleContainer(const Settings& settings, const std::string& robotName, const Configuration& config, const std::size_t index, Logger* logger) :
+  ThreadFrame(settings, robotName),
   name(config()[index].name),
   priority(config()[index].priority),
   moduleGraphRunner(config().size()),
@@ -105,8 +106,8 @@ bool ModuleContainer::main()
         sender.send();
       }
 
-    Global::getTimingManager().signalThreadStop();
-    logger->execute(getName());
+    if(logger)
+      logger->execute(getName());
 
     DEBUG_RESPONSE("timing") Global::getTimingManager().getData().copyAllMessages(*debugSender);
 

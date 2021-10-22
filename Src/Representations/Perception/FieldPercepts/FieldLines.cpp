@@ -1,8 +1,9 @@
 /**
- * @file FieldLines.cpp
- * Implementation of a struct that represents the fieldline percepts
- * @author jeff
- */
+* @file FieldLines.cpp
+*
+* Implementation of a struct that represents perceived field lines in
+* field coordinates relative to the robot.
+*/
 
 #include "FieldLines.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -14,30 +15,6 @@
 #include "Tools/Module/Blackboard.h"
 
 using namespace std;
-
-Vector2f FieldLines::Line::calculateClosestPointOnLine(const Vector2f& p) const
-{
-  const Vector2f normal = Vector2f(cos(alpha + pi), sin(alpha + pi));
-  return p + normal * calculateDistToLine(p);
-}
-
-float FieldLines::getClosestLine(Vector2f point, Line& retLine) const
-{
-  vector<Line>::const_iterator closestLine = lines.end();
-  float minDist = -1.f;
-  for(vector<Line>::const_iterator l1 = lines.begin(); l1 != lines.end(); l1++)
-  {
-    const float dist = abs(l1->calculateDistToLine(point));
-    if(dist < minDist || minDist == -1)
-    {
-      closestLine = l1;
-      minDist = dist;
-    }
-  }
-  if(minDist != -1.f)
-    retLine = *closestLine;
-  return minDist;
-}
 
 void FieldLines::draw() const
 {
@@ -59,7 +36,7 @@ void FieldLines::draw() const
   {
     for(vector<Line>::const_iterator line = lines.begin(); line != lines.end(); line++)
     {
-      const Drawings::PenStyle pen = line->midLine ? Drawings::dashedPen : Drawings::solidPen;
+      const Drawings::PenStyle pen = Drawings::solidPen;
       LINE("representation:FieldLines:field", line->first.x(), line->first.y(), line->last.x(), line->last.y(), 15, pen, ColorRGBA::red);
       ARROW("representation:FieldLines:field", line->first.x(), line->first.y(), line->first.x() + cos(line->alpha - pi_2) * 100, line->first.y() + sin(line->alpha - pi_2) * 100, 15, pen, ColorRGBA::red);
       CROSS("representation:FieldLines:field", line->first.x(), line->first.y(), 10, 5, pen, ColorRGBA::red);
@@ -71,7 +48,7 @@ void FieldLines::draw() const
   {
     for(vector<Line>::const_iterator line = lines.begin(); line != lines.end(); line++)
     {
-      const Drawings::PenStyle pen = line->midLine ? Drawings::dashedPen : Drawings::solidPen;
+      const Drawings::PenStyle pen = Drawings::solidPen;
       Vector2f pImg;
       if(Transformation::robotToImage(line->first, *theCameraMatrix, *theCameraInfo, pImg))
       {
@@ -82,7 +59,7 @@ void FieldLines::draw() const
           const Vector2f lineInImageDirection = endInImage - startInImage;
           const Vector2f offSet = Vector2f(5.f, -10.f);
           const Vector2f textPosition = startInImage + 0.5f * lineInImageDirection + offSet;
-          DRAWTEXT("representation:FieldLines:imageText", textPosition.x(), textPosition.y(), 8, ColorRGBA::red, "" << (line->first - line->last).norm() / 1000.f << "m" << (line->last - line->first).angle() << "rad"); //TODO calcs rad in same direction
+          DRAW_TEXT("representation:FieldLines:imageText", textPosition.x(), textPosition.y(), 8, ColorRGBA::red, "" << (line->first - line->last).norm() / 1000.f << "m" << (line->last - line->first).angle() << "rad"); //TODO calcs rad in same direction
           LINE("representation:FieldLines:image", startInImage.x(), startInImage.y(), endInImage.x(), endInImage.y(), 3, pen, ColorRGBA::red);
         }
       }
@@ -95,5 +72,24 @@ void FieldLines::draw() const
   {
     for(vector<Line>::const_iterator line = lines.begin(); line != lines.end(); line++)
       LINE3D("representation:FieldLines", line->first.x(), line->first.y(), 0, line->last.x(), line->last.y(), 0, 2, ColorRGBA::red);
+  }
+}
+
+void FieldLines::verify() const
+{
+  // Verify validity of elements:
+  for(const Line& l : lines)
+  {
+     ASSERT(!std::isnan(static_cast<float>(l.alpha)));
+     ASSERT(!std::isnan(l.first.x()));
+     ASSERT(!std::isnan(l.last.y()));
+  }
+  // Verify increasing length of lines in list:
+  if(lines.size() > 1)
+  {
+    for(size_t i = 0; i < lines.size() - 1; i++)
+    {
+      ASSERT(lines[i].length >= lines[i+1].length);
+    }
   }
 }

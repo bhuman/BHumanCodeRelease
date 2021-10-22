@@ -25,7 +25,7 @@
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 
-MAKE_MODULE(BallStateEstimator, modeling)
+MAKE_MODULE(BallStateEstimator, modeling);
 
 bool compareHypothesesWeightings(BallStateEstimate& a, BallStateEstimate& b)
 {
@@ -33,7 +33,10 @@ bool compareHypothesesWeightings(BallStateEstimate& a, BallStateEstimate& b)
 }
 
 BallStateEstimator::BallStateEstimator(): timeWhenBallFirstDisappeared(0),
-  ballDisappeared(false)
+  ballDisappeared(false),
+  penaltyBallModelingStartTime(0),
+  averagePenaltyBallPosition(Vector2f::Zero()),
+  useAveragePenaltyBallPosition(false)
 {
   init();
 }
@@ -63,6 +66,19 @@ void BallStateEstimator::update(BallModel& ballModel)
       init();
     else
       return;
+  }
+  // *** Shortcut for a a very fast reaction in a penalty shootout!
+  if((theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT ||
+    (theGameInfo.setPlay == SET_PLAY_PENALTY_KICK && theRobotInfo.isGoalkeeper())) &&
+    theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
+  {
+    if(theGameInfo.state == STATE_PLAYING && theRobotInfo.penalty == PENALTY_NONE && (theExtendedGameInfo.timeSincePlayingStarted < 2000.f || theExtendedGameInfo.timeSinceLastPenaltyEnded < 2000.f))
+      return; // Nothing to do at this point of time
+    if(computeBallModelForPenaltyShootout(ballModel))
+    {
+      reset(); // All filters are deleted to avoid side effects
+      return;  // Ball has moved, model is filled, we are done!
+    }
   }
   // *** Do state estimation
   ballWasSeenInThisFrame = theFilteredBallPercepts.percepts.size() > 0;
@@ -110,7 +126,7 @@ void BallStateEstimator::update(BallModel& ballModel)
     createNewFilters(ballPercept.positionOnField, ballPercept.radiusOnField, ballPercept.covOnField);
 
     // If we see a new ball for the first time after multiple seconds without any ball perceptions,
-    // all filter become resetted, i.e. the lists are emptied and bestState == nullptr.
+    // all filter become reset, i.e. the lists are emptied and bestState == nullptr.
     // A newly created filter usually should not be used for model generation (see comment above).
     // However, if this new filter is the only one that we have, we should take it anyway!
     if(bestState == nullptr)
@@ -321,7 +337,7 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     else
       ballModel.estimate.velocity = bestState->getVelocity();
     // <hack-description>This seems to be the best temporary
-    // solution to avoid the generation of quite high velocities due to noise between two measurements.
+    // solution to avoid the generation of quiet high velocities due to noise between two measurements.
     // T.L.
     // </hack-description>
     // </hack>
@@ -359,6 +375,54 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     else
       ballModel.timeWhenDisappeared = theFrameInfo.time;
   }
+}
+
+bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel)
+{
+  if(!theFilteredBallPercepts.percepts.empty() &&
+     theGameInfo.state == STATE_PLAYING && theRobotInfo.penalty == PENALTY_NONE &&
+     theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
+  {
+    const Vector2f relativeBall        = theFilteredBallPercepts.percepts[0].positionOnField;
+    const Vector2f globalBall          = Transformation::robotToField(theWorldModelPrediction.robotPose, relativeBall);
+    const Vector2f relativePenaltyMark = Transformation::fieldToRobot(theWorldModelPrediction.robotPose, Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f));
+
+    if(penaltyBallModelingStartTime == 0)
+      penaltyBallModelingStartTime = theFrameInfo.time;
+    else if(theFrameInfo.getTimeSince(penaltyBallModelingStartTime) < 1000)
+    {
+      if((relativeBall - relativePenaltyMark).squaredNorm() < sqr(200.f))
+        penaltyBallPositions.push_back(relativeBall);
+    }
+    else if(!useAveragePenaltyBallPosition && penaltyBallPositions.size() >= 5)
+    {
+      averagePenaltyBallPosition = Vector2f::Zero();
+      for(const auto& position : penaltyBallPositions)
+        averagePenaltyBallPosition += position;
+      averagePenaltyBallPosition /= static_cast<float>(penaltyBallPositions.size());
+      useAveragePenaltyBallPosition = true;
+    }
+
+    // Ball has been seen close to own penalty area!!!
+    if(globalBall.x() < theFieldDimensions.xPosOwnPenaltyMark - 200.f)
+    {
+      Vector2f velocity = relativeBall - (useAveragePenaltyBallPosition ? averagePenaltyBallPosition : relativePenaltyMark);
+      velocity.normalize(2000.f);
+      ballModel.estimate.velocity = velocity;
+      ballModel.estimate.position = relativeBall;
+      ballModel.lastPerception = relativeBall;
+      ballModel.timeWhenLastSeen = ballModel.timeWhenDisappeared = theFrameInfo.time;
+      return true;
+    }
+  }
+  else if(theGameInfo.state != STATE_PLAYING || theRobotInfo.penalty != PENALTY_NONE)
+  {
+    penaltyBallPositions.clear();
+    penaltyBallModelingStartTime = 0;
+    averagePenaltyBallPosition = Vector2f::Zero();
+    useAveragePenaltyBallPosition = false;
+  }
+  return false;
 }
 
 void BallStateEstimator::integrateCollisionWithFeet()

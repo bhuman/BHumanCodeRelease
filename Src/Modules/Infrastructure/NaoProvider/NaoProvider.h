@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -24,11 +22,9 @@
 MODULE(NaoProvider,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo), // This is to ensure that the GameInfo exists in the Motion blackboard and the Logger can access it.
   REQUIRES(JointCalibration),
   USES(JointRequest),
   REQUIRES(LEDRequest),
-  REQUIRES(OpponentTeamInfo), // This is to ensure that the OwnTeamInfo exists in the Motion blackboard and the Logger can access it.
   PROVIDES(FrameInfo),
   PROVIDES(FsrSensorData),
   PROVIDES(InertialSensorData),
@@ -39,6 +35,7 @@ MODULE(NaoProvider,
   {,
     (int)(3000) timeChestButtonPressedUntilShutdown, /**< Time the chest button must be pressed until shutdown (in ms). */
     (int)(5000) timeBetweenBatteryLevelUpdates, /**< Time between writing updates the battery level to a file (in ms). */
+    (int)(5000) timeBetweenCPUTemperatureUpdates, /**< Time between reading the CPU temperature (in ms). */
   }),
 });
 
@@ -46,6 +43,8 @@ MODULE(NaoProvider,
 
 class NaoProvider : public NaoProviderBase
 {
+  static constexpr size_t numOfCPUCores = 4; /**< The number of CPU cores. */
+
   static thread_local NaoProvider* theInstance; /**< The only instance of this module. */
   static const Joints::Joint jointMappings[Joints::numOfJoints - 1]; /**< Mappings from LoLA's joint indices to B-Human's joint indices. */
   static const KeyStates::Key keyMappings[KeyStates::numOfKeys]; /**< Mappings from LoLA's touch indices to B-Human's key indices. */
@@ -80,8 +79,10 @@ class NaoProvider : public NaoProviderBase
   std::array<unsigned char*, Joints::numOfJoints> jointStiffnesses; /**< The addresses of joint stiffness data inside packetToSend. */
   std::array<unsigned char*, LEDRequest::numOfLEDs> leds; /**< The addresses of led data inside packetToSend. */
   unsigned timeWhenPacketReceived = 0; /**< The time when the last packet was received. */
-  unsigned timeWhenChestButtonUnpressed = 0; /**< The last time the chest buttom was not pressed. */
+  unsigned timeWhenChestButtonUnpressed = 0; /**< The last time the chest button was not pressed. */
   unsigned timeWhenBatteryLevelWritten = 0; /**< The last time the battery level was written to a file. */
+  unsigned timeWhenCPUTemperatureRead = 0; /**< The last time the CPU temperature was read. */
+  int cpuTemperatureFiles[numOfCPUCores]; /**< The file descriptors where the CPU core temperatures can be read from. */
 
   /**
    * This method is called when the representation provided needs to be updated.
@@ -127,11 +128,11 @@ class NaoProvider : public NaoProviderBase
   void receivePacket();
 
   /**
-   * Write a range of leds to the packet to send and initialise the pointers
+   * Write a range of LEDs to the packet to send and initialize the pointers
    * intended to point into packetToSend for this range.
    * @param category LoLA's name for the led range.
    * @param ledMappings Mappings from LoLA's LED indices to B-Human's LED indices.
-   * @param numOfLEDs How many leds are in the range?
+   * @param numOfLEDs How many LEDs are in the range?
    * @param p A pointer into packetToSend. It is advanced by the amount of data
    *          written.
    */
@@ -139,6 +140,12 @@ class NaoProvider : public NaoProviderBase
 
   /** Send packet to LoLA. */
   void sendPacket();
+
+  /**
+   * Reads the temperatures of the CPU cores.
+   * @return The maximum CPU temperature of any of the cores.
+   */
+  float readCPUTemperature() const;
 
 public:
   /** Set this as the only instance, zero all pointers, and open UDP port. */

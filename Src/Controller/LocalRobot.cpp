@@ -9,11 +9,16 @@
 
 #include "LocalRobot.h"
 #include "Controller/ConsoleRoboCupCtrl.h"
+#include "Controller/SimulatedRobot2D.h"
+#include "Controller/SimulatedRobot3D.h"
 #include "Platform/Time.h"
+#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Sensing/FallDownState.h"
+#include "Representations/Sensing/GroundContactState.h"
 #include "Threads/Debug.h"
 
-LocalRobot::LocalRobot(Debug* debug) :
-  RobotConsole(connectReceiverWithRobot(debug), connectSenderWithRobot(debug)),
+LocalRobot::LocalRobot(const Settings& settings, const std::string& robotName, Debug* debug) :
+  RobotConsole(settings, robotName, connectReceiverWithRobot(debug), connectSenderWithRobot(debug)),
   updatedSignal(1)
 {
   mode = static_cast<ConsoleRoboCupCtrl*>(RoboCupCtrl::controller)->getMode();
@@ -26,9 +31,12 @@ LocalRobot::LocalRobot(Debug* debug) :
     {
       updateAnnotationsFromLog();
       logPlayer.play();
-      puppet = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject("RoboCup.puppets." + robotName, SimRobotCore2::body);
-      if(puppet)
-        simulatedRobot.init(puppet);
+      if(!RoboCupCtrl::controller->is2D)
+      {
+        puppet = static_cast<SimRobotCore2::Body*>(RoboCupCtrl::application->resolveObject("RoboCup.puppets." + QString::fromStdString(robotName), SimRobotCore2::body));
+        if(puppet)
+          simulatedRobot = std::make_unique<SimulatedRobot3D>(puppet);
+      }
     }
     else
     {
@@ -37,10 +45,13 @@ LocalRobot::LocalRobot(Debug* debug) :
   }
   else if(mode == SystemCall::simulatedRobot)
   {
-    SimRobotCore2::Body* robot = (SimRobotCore2::Body*)RoboCupCtrl::application->resolveObject(RoboCupCtrl::getRobotFullName(), SimRobotCore2::body);
+    SimRobot::Object* robot = RoboCupCtrl::application->resolveObject("RoboCup.robots." + QString::fromStdString(robotName), RoboCupCtrl::controller->is2D ? static_cast<int>(SimRobotCore2D::body) : static_cast<int>(SimRobotCore2::body));
     ASSERT(robot);
-    simulatedRobot.init(robot);
-    ctrl->gameController.registerSimulatedRobot(robotName.mid(5).toInt() - 1, simulatedRobot);
+    if(RoboCupCtrl::controller->is2D)
+      simulatedRobot = std::make_unique<SimulatedRobot2D>(robot);
+    else
+      simulatedRobot = std::make_unique<SimulatedRobot3D>(robot);
+    ctrl->gameController.registerSimulatedRobot(SimulatedRobot::getNumber(robot) - 1, *simulatedRobot);
   }
 }
 
@@ -54,53 +65,103 @@ bool LocalRobot::main()
 
       if(mode == SystemCall::simulatedRobot)
       {
-        if(jointLastTimestampSent != jointSensorData.timestamp)
+        if(!ctrl->is2D)
         {
-          debugSender->out.bin << "Motion";
-          debugSender->out.finishMessage(idFrameBegin);
-          debugSender->out.bin << jointSensorData;
-          debugSender->out.finishMessage(idJointSensorData);
-          debugSender->out.bin << fsrSensorData;
-          debugSender->out.finishMessage(idFsrSensorData);
-          debugSender->out.bin << inertialSensorData;
-          debugSender->out.finishMessage(idInertialSensorData);
-          debugSender->out.bin << odometryData;
-          debugSender->out.finishMessage(idGroundTruthOdometryData);
-          debugSender->out.bin << "Motion";
-          debugSender->out.finishMessage(idFrameFinished);
-          jointLastTimestampSent = jointSensorData.timestamp;
+          if(jointLastTimestampSent != jointSensorData.timestamp)
+          {
+            debugSender->out.bin << "Motion";
+            debugSender->out.finishMessage(idFrameBegin);
+            debugSender->out.bin << jointSensorData;
+            debugSender->out.finishMessage(idJointSensorData);
+            debugSender->out.bin << fsrSensorData;
+            debugSender->out.finishMessage(idFsrSensorData);
+            debugSender->out.bin << inertialSensorData;
+            debugSender->out.finishMessage(idInertialSensorData);
+            debugSender->out.bin << odometryData;
+            debugSender->out.finishMessage(idGroundTruthOdometryData);
+            debugSender->out.bin << "Motion";
+            debugSender->out.finishMessage(idFrameFinished);
+            jointLastTimestampSent = jointSensorData.timestamp;
+          }
+
+          if(imageLastTimestampSent != cameraImage.timestamp)
+          {
+            std::string perception = TypeRegistry::getEnumName(cameraInfo.camera);
+            perception[0] &= ~0x20;
+            debugSender->out.bin << perception;
+            debugSender->out.finishMessage(idFrameBegin);
+            if(ctrl->calculateImage)
+            {
+              debugSender->out.bin << cameraImage;
+              debugSender->out.finishMessage(idCameraImage);
+            }
+            else
+            {
+              FrameInfo frameInfo;
+              frameInfo.time = cameraImage.timestamp;
+              debugSender->out.bin << frameInfo;
+              debugSender->out.finishMessage(idFrameInfo);
+            }
+            debugSender->out.bin << cameraInfo;
+            debugSender->out.finishMessage(idCameraInfo);
+            debugSender->out.bin << worldState;
+            debugSender->out.finishMessage(idGroundTruthWorldState);
+            debugSender->out.bin << perception;
+            debugSender->out.finishMessage(idFrameFinished);
+
+            debugSender->out.bin << "Cognition";
+            debugSender->out.finishMessage(idFrameBegin);
+            ctrl->gameController.writeGameInfo(debugSender->out.bin);
+            debugSender->out.finishMessage(idRawGameInfo);
+            const int robot = std::atoi(robotName.substr(5).c_str()) - 1;
+            ctrl->gameController.writeOwnTeamInfo(robot, debugSender->out.bin);
+            debugSender->out.finishMessage(idOwnTeamInfo);
+            ctrl->gameController.writeOpponentTeamInfo(robot, debugSender->out.bin);
+            debugSender->out.finishMessage(idOpponentTeamInfo);
+            ctrl->gameController.writeRobotInfo(robot, debugSender->out.bin);
+            debugSender->out.finishMessage(idRobotInfo);
+            debugSender->out.bin << worldState;
+            debugSender->out.finishMessage(idGroundTruthWorldState);
+            debugSender->out.bin << "Cognition";
+            debugSender->out.finishMessage(idFrameFinished);
+            imageLastTimestampSent = cameraImage.timestamp;
+          }
         }
-
-        if(imageLastTimestampSent != cameraImage.timestamp)
+        else
         {
-          std::string perception = TypeRegistry::getEnumName(cameraInfo.camera);
-          perception[0] &= ~0x20;
-          debugSender->out.bin << perception;
-          debugSender->out.finishMessage(idFrameBegin);
-          if(ctrl->calculateImage)
-          {
-            debugSender->out.bin << cameraImage;
-            debugSender->out.finishMessage(idCameraImage);
-          }
-          else
-          {
-            FrameInfo frameInfo;
-            frameInfo.time = cameraImage.timestamp;
-            debugSender->out.bin << frameInfo;
-            debugSender->out.finishMessage(idFrameInfo);
-          }
-          debugSender->out.bin << cameraInfo;
-          debugSender->out.finishMessage(idCameraInfo);
-          debugSender->out.bin << worldState;
-          debugSender->out.finishMessage(idGroundTruthWorldState);
-          debugSender->out.bin << perception;
-          debugSender->out.finishMessage(idFrameFinished);
-
           debugSender->out.bin << "Cognition";
           debugSender->out.finishMessage(idFrameBegin);
+          FrameInfo frameInfo;
+          frameInfo.time = cameraImage.timestamp;
+          debugSender->out.bin << frameInfo;
+          debugSender->out.finishMessage(idFrameInfo);
+          debugSender->out.bin << cameraInfo;
+          debugSender->out.finishMessage(idCameraInfo);
+          debugSender->out.bin << odometryData;
+          debugSender->out.finishMessage(idGroundTruthOdometryData);
+          {
+            FallDownState fallDownState;
+            fallDownState.state = FallDownState::upright;
+            debugSender->out.bin << fallDownState;
+            debugSender->out.finishMessage(idFallDownState);
+          }
+          {
+            GroundContactState groundContactState;
+            groundContactState.contact = true;
+            debugSender->out.bin << groundContactState;
+            debugSender->out.finishMessage(idGroundContactState);
+          }
+          {
+            CameraMatrix cameraMatrix;
+            cameraMatrix.isValid = false;
+            debugSender->out.bin << cameraMatrix;
+            debugSender->out.finishMessage(idCameraMatrix);
+          }
+          debugSender->out.bin << motionInfo;
+          debugSender->out.finishMessage(idMotionInfo);
           ctrl->gameController.writeGameInfo(debugSender->out.bin);
           debugSender->out.finishMessage(idGameInfo);
-          int robot = robotName.mid(5).toInt() - 1;
+          const int robot = std::atoi(robotName.substr(5).c_str()) - 1;
           ctrl->gameController.writeOwnTeamInfo(robot, debugSender->out.bin);
           debugSender->out.finishMessage(idOwnTeamInfo);
           ctrl->gameController.writeOpponentTeamInfo(robot, debugSender->out.bin);
@@ -111,7 +172,6 @@ bool LocalRobot::main()
           debugSender->out.finishMessage(idGroundTruthWorldState);
           debugSender->out.bin << "Cognition";
           debugSender->out.finishMessage(idFrameFinished);
-          imageLastTimestampSent = cameraImage.timestamp;
         }
       }
       debugSender->send(true);
@@ -140,9 +200,9 @@ void LocalRobot::update()
       if(puppet)
       {
         if(RobotConsole::jointSensorData.timestamp)
-          simulatedRobot.setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
+          simulatedRobot->setJointRequest(reinterpret_cast<JointRequest&>(RobotConsole::jointSensorData));
         else
-          simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
+          simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
       }
     }
     if(mode == SystemCall::simulatedRobot || puppet)
@@ -150,11 +210,11 @@ void LocalRobot::update()
       if(moveOp != noMove)
       {
         if(moveOp == moveBoth)
-          simulatedRobot.moveRobot(movePos, moveRot * 1_deg, true);
+          simulatedRobot->moveRobot(movePos, moveRot * 1_deg, true);
         else if(moveOp == movePosition)
-          simulatedRobot.moveRobot(movePos, Vector3f::Zero(), false);
+          simulatedRobot->moveRobot(movePos, Vector3f::Zero(), false);
         else if(moveOp == moveBallPosition)
-          simulatedRobot.moveBall(movePos);
+          simulatedRobot->moveBall(movePos);
         moveOp = noMove;
       }
     }
@@ -174,27 +234,28 @@ void LocalRobot::update()
         nextImageTimestamp = newNextImageTimestamp;
 
         if(ctrl->calculateImage)
-          simulatedRobot.getImage(cameraImage, cameraInfo);
+          simulatedRobot->getImage(cameraImage, cameraInfo);
         else
         {
-          simulatedRobot.getCameraInfo(cameraInfo);
+          simulatedRobot->getCameraInfo(cameraInfo);
           cameraImage.timestamp = now;
         }
-        simulatedRobot.getRobotPose(robotPose);
-        simulatedRobot.getWorldState(worldState);
-        simulatedRobot.toggleCamera();
+        simulatedRobot->getRobotPose(robotPose);
+        simulatedRobot->getWorldState(worldState);
+        simulatedRobot->toggleCamera();
       }
       else
-        simulatedRobot.getRobotPose(robotPose);
+        simulatedRobot->getRobotPose(robotPose);
 
       if(jointCalibrationChanged)
       {
-        simulatedRobot.setJointCalibration(jointCalibration);
+        simulatedRobot->setJointCalibration(jointCalibration);
         jointCalibrationChanged = false;
       }
-      simulatedRobot.getOdometryData(robotPose, odometryData);
-      simulatedRobot.getSensorData(fsrSensorData, inertialSensorData);
-      simulatedRobot.getAndSetJointData(jointRequest, jointSensorData);
+      simulatedRobot->getOdometryData(robotPose, odometryData);
+      simulatedRobot->getSensorData(fsrSensorData, inertialSensorData);
+      simulatedRobot->getAndSetJointData(jointRequest, jointSensorData);
+      simulatedRobot->getAndSetMotionData(motionRequest, motionInfo);
     }
 
     QString statusText;
@@ -234,7 +295,7 @@ void LocalRobot::update()
     }
 
     if(statusText.size() > 0)
-      ((ConsoleRoboCupCtrl*)ConsoleRoboCupCtrl::controller)->printStatusText((robotName + ": " + statusText).toUtf8());
+      ((ConsoleRoboCupCtrl*)ConsoleRoboCupCtrl::controller)->printStatusText((QString::fromStdString(robotName) + ": " + statusText).toUtf8());
   }
 
   updateSignal.post();

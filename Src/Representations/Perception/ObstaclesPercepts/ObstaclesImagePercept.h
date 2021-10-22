@@ -26,7 +26,6 @@ STREAMABLE(ObstaclesImagePercept,
     (bool) fallen, /**< Is the obstacle a player lying on the field? */
     (float)(1.f) probability,
     (float)(-1.f) distance,
-    (std::vector<Vector2i>) convexHull,
   });
 
   /** Draws this percept. */

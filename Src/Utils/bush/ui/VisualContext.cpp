@@ -133,7 +133,7 @@ void VisualContext::cancel()
   emit sCancel();
 }
 
-void VisualContext::executeInContext(Console* console, TeamSelector* teamSelector, const QString& cmdLine)
+void VisualContext::executeInContext(Console*, TeamSelector* teamSelector, const QString& cmdLine)
 {
   Context* context = new Context(teamSelector->getSelectedRobots(),
                                  teamSelector->getSelectedTeam());

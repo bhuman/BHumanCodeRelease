@@ -44,15 +44,17 @@ private:
   std::unordered_map<std::string, DebugSender<MessageQueue>*> senderMap;
 
   std::unique_ptr<ModuleGraphCreator> moduleGraphCreator; /**< Calculates the execution order of the modules of all threads and their data exchange. */
-  Configuration config; /**< The inital configuration of all threads. */
+  Configuration config; /**< The initial configuration of all threads. */
   bool legacy = false; /**< Replaying a legacy log file? */
 
 public:
   /**
    * The constructor.
-   * @param config The inital configuration of all threads.
+   * @param settings The settings of this thread.
+   * @param robotName The name of the robot this thread belongs to.
+   * @param config The initial configuration of all threads.
    */
-  Debug(const Configuration& config);
+  Debug(const Settings& settings, const std::string& robotName, const Configuration& config);
 
 protected:
   /**

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "InverseKinematic.h"
 #include "Tools/Math/Pose3f.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
@@ -20,6 +21,8 @@ namespace MotionUtilities
    * but only those that should not be ignored.
    * @param source The source joint request. All angles != JointAngles::ignore will be copied.
    * @param target The target joint request.
+   * @param startJoint first joint (includes)
+   * @param endJoint last joint (excludes)
    */
   void copy(const JointRequest& source, JointRequest& target,
             const StiffnessSettings& theStiffnessSettings,
@@ -32,6 +35,8 @@ namespace MotionUtilities
    * @param fromRatio The ratio of "from" in the target joint request.
    * @param target The target joint request.
    * @param interpolateStiffness Whether to interpolate stiffness.
+   * @param startJoint first joint (includes)
+   * @param endJoint last joint (excludes)
    */
   void interpolate(const JointRequest& from, const JointRequest& to, float fromRatio, JointRequest& target, bool interpolateStiffness,
                    const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
@@ -50,5 +55,9 @@ namespace MotionUtilities
 
   void interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target, const JointAngles& theJointAngles);
   void stand(JointRequest& jointRequest);
+  void walkStand(JointRequest& output, const RobotDimensions& dimensions);
+  void sitFront(JointRequest& output);
   void sit(JointRequest& jointRequest);
+  void safeArmsBehind(JointRequest& jointRequest);
+  void safeArmsFront(JointRequest& jointRequest);
 };

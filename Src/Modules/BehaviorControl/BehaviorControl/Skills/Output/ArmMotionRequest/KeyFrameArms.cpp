@@ -9,17 +9,15 @@
 
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
 #include "Representations/BehaviorControl/Skills.h"
-#include "Representations/MotionControl/ArmKeyFrameEngineOutput.h"
-#include "Representations/MotionControl/ArmMotionSelection.h"
+#include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 
 SKILL_IMPLEMENTATION(KeyFrameArmsImpl,
 {,
   IMPLEMENTS(KeyFrameArms),
   IMPLEMENTS(KeyFrameSingleArm),
-  REQUIRES(ArmKeyFrameEngineOutput),
-  REQUIRES(ArmMotionSelection),
   REQUIRES(LibCheck),
+  REQUIRES(ArmMotionInfo),
   MODIFIES(ArmMotionRequest),
 });
 
@@ -56,8 +54,7 @@ class KeyFrameArmsImpl : public KeyFrameArmsImplBase
 
   bool requestIsExecuted(ArmKeyFrameRequest::ArmKeyFrameId motion, Arms::Arm arm) const
   {
-    return theArmMotionSelection.targetArmMotion[arm] == ArmMotionSelection::keyFrameS &&
-           theArmKeyFrameEngineOutput.arms[arm].motion == motion;
+    return theArmMotionInfo.isKeyframeMotion(arm, motion);
   }
 };
 

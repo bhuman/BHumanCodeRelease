@@ -84,6 +84,5 @@ namespace Projection
    */
   float getSizeByDistance(const CameraInfo& cameraInfo, float sizeInReality, float distance);
 
-  void calculateAnglesForPoint(const Vector2f& point, const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Vector2f& angles);
   [[nodiscard]] bool calculatePointByAngles(const Vector2f& angles, const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Vector2f& point);
 };

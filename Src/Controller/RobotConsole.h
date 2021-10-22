@@ -21,10 +21,10 @@
 
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/Communication/RobotInfo.h"
-#include "Representations/Configuration/FieldColors.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
+#include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/FsrSensorData.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
@@ -50,7 +50,6 @@
 #include <list>
 
 class ConsoleRoboCupCtrl;
-class ColorCalibrationView;
 class ImageView;
 
 /**
@@ -83,7 +82,7 @@ public:
 
     ~ImagePtr() { reset(); }
 
-    void reset() { if(image) delete image; image = nullptr; }
+    void reset() { delete image; image = nullptr; }
   };
 
   struct Plot
@@ -204,7 +203,7 @@ private:
     bool handleMessage(InMessage& message);
   };
 
-  /** A console command based on the joystick's axes that is excuted when no button is pressed. */
+  /** A console command based on the joystick's axes that is executed when no button is pressed. */
   struct JoystickMotionCommand
   {
     int indices[Joystick::numOfAxes]; /**< Indices for the sequence of $x, $y, and $r in motionCommand. */
@@ -214,9 +213,6 @@ private:
 
 public:
   DECLARE_SYNC; /**< Make this object synchronizable. */
-  FieldColors colorCalibration; /**< The color calibration */
-  bool colorCalibrationChanged = false; /**< Was the color calibration changed since the color table was updated? */
-  unsigned colorCalibrationTimestamp = 0; /**< The last time when the last color table was updated. */
   SystemCall::Mode mode; /**< Defines mode in which this thread runs. */
   std::string logFile; /**< The name of the log file replayed. */
   std::unordered_map<std::string, ThreadData> threadData; /** Data that is maintained per thread. */
@@ -230,7 +226,6 @@ public:
 
 protected:
   ConsoleRoboCupCtrl* ctrl; /** A pointer to the controller object. */
-  QString robotName; /**< The name of the robot. (e.g. "Robot1") */
   LogPlayer logPlayer; /**< The log player to record and replay log files. */
   const char* pollingFor = nullptr; /**< The information the console is waiting for. */
   enum MoveOp { noMove, movePosition, moveBoth, moveBallPosition } moveOp = noMove; /**< The move operation to perform. */
@@ -239,12 +234,13 @@ protected:
   bool jointCalibrationChanged = false; /**< Was the joint calibration changed since setting it for the local robot? */
 
   // Representations received
+  FrameInfo frameInfo; /**< The new frame info received from the robot code. */
   JointCalibration jointCalibration; /**< The new joint calibration angles received from the robot code. */
   JointSensorData jointSensorData; /**< The most current set of joint angles received from the robot code. */
   JointRequest jointRequest; /**< The joint angles request received from the robot code. */
+  MotionRequest motionRequest; /**< The motion request received from the robot code. */
 
 private:
-  QString robotFullName; /**< The full name of the robot. (e.g. "RoboCup.Robot1") */
   TypeInfo typeInfo; /**< Information about all data types used by the connected robot. */
   DebugRequestTable debugRequestTable;
   DebugDataInfos debugDataInfos; /** All debug data information. */
@@ -253,7 +249,6 @@ private:
   Drawings incompleteImageDrawings; /**< Buffers incomplete image drawings from the debug queue. */
   Drawings incompleteFieldDrawings; /**< Buffers incomplete field drawings from the debug queue. */
   Drawings3D incompleteDrawings3D; /**< Buffers incomplete 3d drawings from the debug queue. */
-  ColorCalibrationView* colorCalibrationView = nullptr; /**< Points to the color calibration view. */
   std::unordered_map<std::string, DataView*> dataViews; /**< The map of all data views */
   Views imageViews3D; /**< The map of all 3-D image views. */
   Vector3f background = Vector3f(0.5f, 0.5f, 0.5f); /**< The background color of all 3-D views. */
@@ -274,7 +269,7 @@ private:
   bool moduleRequestChanged = false; /**< Was the module request changed since it was sent? */
   bool logImagesAsJPEGs = false; /**< Compress images before they are stored in a log file. */
   bool perThreadViewsAdded = false; /**< Were the per-thread views already added? */
-  bool kickViewSet = false; /**Indicator if there is already a KikeView, we need it just once */
+  bool kickViewSet = false; /**< Indicator whether there already is a KickView, we need just one. */
 
   // Helpers
   LogExtractor logExtractor; /**< The log extractor to extract things from log files. */
@@ -296,7 +291,6 @@ private:
   unsigned sensorDataTimestamp = 0; /**< Last time new sensor data was received. */
   JointLimits jointLimits; /**< The joint calibration received from the robot code. */
   KeyStates keyStates; /**< The most current set of key states received from the robot code. */
-  MotionRequest motionRequest; /**< The motion request received from the robot code. */
   RobotDimensions robotDimensions; /**< The robotDimensions received from the robot code. */
   RobotInfo robotInfo; /**< The RobotInfo received from the robot code. */
 
@@ -320,10 +314,12 @@ public:
    * The constructor.
    * Note: ThreadFrame cares about the destruction of the pointers.
    * Note: If no messaging is required pass <code>nullptr</code>.
+   * @param settings The settings for this thread.
+   * @param robotName The name of the robot this thread belongs to.
    * @param debugReceiver The receiver of this thread.
    * @param debugSender The sender of this thread.
    */
-  RobotConsole(DebugReceiver<MessageQueue>* receiver, DebugSender<MessageQueue>* sender);
+  RobotConsole(const Settings& settings, const std::string& robotName, DebugReceiver<MessageQueue>* receiver, DebugSender<MessageQueue>* sender);
 
   /** Destructor. */
   ~RobotConsole();
@@ -369,11 +365,6 @@ public:
    * @return empty string in case of error.
    */
   std::string getDebugRequest(const std::string& name);
-
-  /**
-   * Save current color calibration.
-   */
-  void saveColorCalibration();
 
 protected:
   /**
@@ -488,7 +479,6 @@ private:
   bool set(In& stream);
   bool saveImage(In& stream);
   bool saveRequest(In& stream, bool first);
-  bool sendMof(In& stream);
   bool repoll(In& stream);
   bool moduleRequest(In&);
   bool moveRobot(In&);

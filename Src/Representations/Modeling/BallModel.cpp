@@ -10,7 +10,6 @@
 #include "Tools/Debugging/DebugDrawings.h"
 #include "Tools/Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Approx.h"
-#include "Tools/Math/Covariance.h"
 #include "Tools/Modeling/BallPhysics.h"
 #include "Tools/Module/Blackboard.h"
 
@@ -18,19 +17,10 @@
 
 void BallModel::operator>>(BHumanMessage& m) const
 {
-  m.theBHumanStandardMessage.ballLastPercept = lastPerception;
+  Streaming::streamIt(*m.theBHumanStandardMessage.out, "theBallModel",  *this);
 
   m.theBSPLStandardMessage.ball[0] = estimate.position.x();
   m.theBSPLStandardMessage.ball[1] = estimate.position.y();
-  m.theBHumanStandardMessage.ballVelocity = estimate.velocity;
-
-  m.theBHumanStandardMessage.ballTimeWhenLastSeen = timeWhenLastSeen;
-  m.theBHumanStandardMessage.ballTimeWhenDisappeared = timeWhenDisappeared;
-  m.theBHumanStandardMessage.ballSeenPercentage = seenPercentage;
-
-  m.theBHumanStandardMessage.ballCovariance[0] = estimate.covariance(0, 0);
-  m.theBHumanStandardMessage.ballCovariance[1] = estimate.covariance(1, 1);
-  m.theBHumanStandardMessage.ballCovariance[2] = (estimate.covariance(0, 1) + estimate.covariance(1, 0)) / 2.f;
 
   if(timeWhenLastSeen && Blackboard::getInstance().exists("FrameInfo"))
   {
@@ -43,38 +33,10 @@ void BallModel::operator>>(BHumanMessage& m) const
 
 void BallModel::operator<<(const BHumanMessage& m)
 {
+  Streaming::streamIt(*m.theBHumanStandardMessage.in, "theBallModel", *this);
+
   estimate.position.x() = m.theBSPLStandardMessage.ball[0];
   estimate.position.y() = m.theBSPLStandardMessage.ball[1];
-
-  if(m.hasBHumanParts)
-  {
-    estimate.velocity = m.theBHumanStandardMessage.ballVelocity;
-    estimate.covariance << m.theBHumanStandardMessage.ballCovariance[0], m.theBHumanStandardMessage.ballCovariance[2],
-                           m.theBHumanStandardMessage.ballCovariance[2], m.theBHumanStandardMessage.ballCovariance[1];
-
-    lastPerception = m.theBHumanStandardMessage.ballLastPercept;
-
-    timeWhenLastSeen = m.toLocalTimestamp(m.theBHumanStandardMessage.ballTimeWhenLastSeen);
-    timeWhenDisappeared = m.toLocalTimestamp(m.theBHumanStandardMessage.ballTimeWhenDisappeared);
-    seenPercentage = m.theBHumanStandardMessage.ballSeenPercentage;
-  }
-  else
-  {
-    estimate.velocity.x() = 0.f;
-    estimate.velocity.y() = 0.f;
-    estimate.covariance = Covariance::rotateCovarianceMatrix(
-        (Matrix2f() << sqr(50.f + estimate.position.norm() * 0.03f), 0.f, 0.f, sqr(50.f + estimate.position.norm() * 0.01f)).finished(),
-        estimate.position.angle());
-
-    lastPerception = estimate.position;
-
-    if(m.theBSPLStandardMessage.ballAge < 0.f)
-      timeWhenLastSeen = 0;
-    else
-      timeWhenLastSeen = std::max<int>(0, Time::getCurrentSystemTime() - 200 - static_cast<int>(m.theBSPLStandardMessage.ballAge * 1000.f));
-    timeWhenDisappeared = timeWhenLastSeen;
-    seenPercentage = 40;
-  }
 }
 
 void BallModel::verify() const

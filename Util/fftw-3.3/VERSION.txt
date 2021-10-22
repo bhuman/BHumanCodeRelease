@@ -1,0 +1,22 @@
+This is FFTW 3.3.5 because it is the latest version of which precompiled Windows libraries exist.
+
+FFTW for Linux has been compiled with (--with-pic is necessary because the archive is linked into libSimulatedNao.so which is a shared library):
+./configure --disable-fortran --disable-doc --enable-float --enable-sse --enable-sse2 --enable-avx --enable-avx2 --enable-fma --with-pic
+make
+make DESTDIR=... install
+./configure --disable-fortran --disable-doc --enable-sse2 --enable-avx --enable-avx2 --enable-fma --with-pic
+make
+make DESTDIR=... install
+
+For NaoV6 it has been compiled on Ubuntu on the NAO.
+CFLAGS="-march=silvermont -mtune=silvermont -O2" ./configure --disable-fortran --disable-doc --enable-float --enable-sse --enable-sse2
+make
+make DESTDIR=... install
+CFLAGS="-march=silvermont -mtune=silvermont -O2" ./configure --disable-fortran --disable-doc --enable-sse2
+make
+make DESTDIR=... install
+
+  - Arne Hasselbring 22.12.2017
+
+
+For macOSarm64, FFTW 3.3.9 was compiled (without any special flags).

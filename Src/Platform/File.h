@@ -91,6 +91,12 @@ public:
   size_t getSize();
 
   /**
+   * The function returns the current position in the file
+   * @return The current position in number of bytes since the begin
+   */
+  size_t getPosition();
+
+  /**
    * The function returns the full path of the file.
    * @return The full path name actually used or the file searched for
    *         if it was not found. If the file was opened, the path can

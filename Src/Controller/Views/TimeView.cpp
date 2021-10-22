@@ -120,9 +120,9 @@ void TimeWidget::update()
       return;
     lastTimeInfoTimestamp = timeView.info.timestamp;
 
-    float avgFrequency = -1.0;
-    float minDuration = -1.0;
-    float maxDuration = -1.0;
+    float avgFrequency = -1.f;
+    float minDuration = -1.f;
+    float maxDuration = -1.f;
     timeView.info.getThreadStatistics(avgFrequency, minDuration, maxDuration);
     frequency->setText(" Freq: " + QString::number(avgFrequency, 'f', 1)
                        + ", Min: " + QString::number(minDuration, 'f', 1) +

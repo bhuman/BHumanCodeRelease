@@ -128,6 +128,48 @@ void MessageQueue::append(In& stream)
     }
 }
 
+void MessageQueue::append(In& stream, size_t size)
+{
+  stream.skip(8);
+  size_t usedSize = size - 8;
+
+  // Trying a direct copy. This is hacked, but fast.
+  char* dest = queue.reserve(usedSize - MessageQueueBase::headerSize);
+  if(dest)
+  {
+    stream.read(dest - MessageQueueBase::headerSize, usedSize);
+    queue.usedSize += usedSize;
+    queue.writePosition = 0;
+
+    // Count new messages
+    for(char* p = dest - MessageQueueBase::headerSize, * pEnd = p + usedSize; p < pEnd;
+        p += 4 + (*reinterpret_cast<unsigned*>(p) >> 8))
+      ++queue.numberOfMessages;
+  }
+  else // Not all messages fit in there, so try step by step (some will be missing).
+  {
+    size_t readSize = 0;
+    while(readSize < usedSize)
+    {
+      unsigned char id = 0;
+      unsigned int size = 0;
+      stream >> id;
+
+      stream.read(&size, 3);
+
+      char* dest = queue.reserve(size);
+      if(dest)
+      {
+        stream.read(dest, size);
+        out.finishMessage(MessageID(id));
+      }
+      else
+        stream.skip(size);
+      readSize += 4 + size;
+    }
+  }
+}
+
 Out& operator<<(Out& stream, const MessageQueue& messageQueue)
 {
   messageQueue.write(stream);
@@ -144,11 +186,4 @@ void operator>>(InMessage& message, MessageQueue& queue)
 {
   queue.out.bin.write(message.getData(), message.getMessageSize());
   queue.out.finishMessage(message.getMessageID());
-}
-
-char* MessageQueue::getStreamedData()
-{
-  ((unsigned*)queue.buf)[-2] = static_cast<unsigned>(queue.usedSize);
-  ((unsigned*)queue.buf)[-1] = (queue.numberOfMessages & 0x0fffffff) | (static_cast<unsigned>(queue.usedSize >> 4) & 0xf0000000);
-  return queue.buf - MessageQueueBase::queueHeaderSize;
 }

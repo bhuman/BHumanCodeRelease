@@ -9,8 +9,6 @@
 
 #include <cstdio>
 
-#ifndef NDEBUG
-
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -100,7 +98,7 @@ bool Assert::logInit(const char* name)
   if(assertFramework.data != MAP_FAILED)
     thread = assertFramework.data->currentThread++;
   pthread_mutex_unlock(&AssertFramework::mutex);
-  ASSERT(thread >= 0 && thread < int(sizeof(assertFramework.data->thread) / sizeof(*assertFramework.data->thread)));
+  assert(thread >= 0 && thread < int(sizeof(assertFramework.data->thread) / sizeof(*assertFramework.data->thread)));
   AssertFramework::threadData = &assertFramework.data->thread[thread];
   memccpy(AssertFramework::threadData->name, name, 0, sizeof(AssertFramework::threadData->name) - 1);
   AssertFramework::threadData->name[sizeof(AssertFramework::threadData->name) - 1] = 0;
@@ -121,11 +119,13 @@ void Assert::logAdd(int trackId, const char* file, int lineNum, const std::strin
   track->active = true;
 }
 
-#endif // NDEBUG
-
-void Assert::logDump(int termSignal)
+void Assert::logDump(bool toStderr, int termSignal)
 {
-  FILE* fp = stderr;
+  // This is not written to /home/nao/logging because bhuman might have crashed due to USB drive disconnection and we still want to have the crash dump.
+  FILE* fp = toStderr ? stderr : fopen("/home/nao/bhdump.log", "w");
+  if(!fp)
+    return;
+  setvbuf(fp, nullptr, _IONBF, 0);
 
 #ifndef NDEBUG
   assertFramework.init(false);
@@ -159,18 +159,18 @@ void Assert::logDump(int termSignal)
   const char* termSignalNames[] =
   {
     "",
-    "",
+    "sigHUP",
     "sigINT",
     "sigQUIT",
     "sigILL",
-    "",
+    "sigTRAP",
     "sigABRT",
-    "",
+    "sigBUS",
     "sigFPE",
     "sigKILL",
-    "",
+    "sigUSR1",
     "sigSEGV",
-    "",
+    "sigUSR2",
     "sigPIPE",
     "sigALRM",
     "sigTERM"
@@ -182,4 +182,7 @@ void Assert::logDump(int termSignal)
     fprintf(fp, "%s\n", termSignalName);
   else
     fprintf(fp, "term signal %d\n", termSignal);
+
+  if(fp != stderr)
+    fclose(fp);
 }

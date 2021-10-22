@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script builds the code from the command line using xcodebuild.
-# It is executed by the bush and copyfiles. It filters out a lot of the
-# output of xcodebuild, which would otherwise slow down the bush 
+# It is executed by the bush and deploy. It filters out a lot of the
+# output of xcodebuild, which would otherwise slow down the bush
 # significantly.
 
 cd "$(dirname "$(which "$0")")"
@@ -37,7 +37,7 @@ cd "$(dirname "$(which "$0")")"
     -e "s%^ProcessInfoPlistFile.*/\([^ ]*\)%Processing \1 ...%" \
     -e "s%^CpResource.*/\([^ ]*\)%Copying \1 ...%" \
     -e "s%^PBXCp.*/\([^ ]*\)%Copying \1 ...%"
-  test ${PIPESTATUS[0]} -eq 0 
+  test ${PIPESTATUS[0]} -eq 0
 ) 2> >( grep "BUILD FAILED" >&2 )
 RESULT=$?
 sleep 1

@@ -8,7 +8,7 @@
 #include <cmath>
 #include <sstream>
 
-MAKE_MODULE(InertialDataProvider, sensing)
+MAKE_MODULE(InertialDataProvider, sensing);
 
 InertialDataProvider::State InertialDataProvider::State::operator+(const Vector3f& angleAxis) const
 {
@@ -31,7 +31,7 @@ void InertialDataProvider::update(InertialData& inertialData)
   bool ignoreAccUpdate = false;
   MODIFY("module:InertialDataProvider:ignoreAccUpdate", ignoreAccUpdate);
 
-  if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.gyroIsStuck)
+  if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.bodyDisconnect)
   {
     // This reinitializes the filter after a sudden orientation change in the simulation, e.g. when rotating the robot via commands
     if((lastRawAngle - theInertialSensorData.angle.head<2>()).norm() > pi / 3.f)
@@ -41,7 +41,7 @@ void InertialDataProvider::update(InertialData& inertialData)
       ukf.init(State(zRot), Matrix3f::Zero());
     }
     //This reinitializes the filter after the real robot lost the connection to its sensory (V6 head flex problem)
-    if(theGyroOffset.gyroIsStuck)
+    if(theGyroOffset.bodyDisconnect)
     {
       Quaternionf rot = Rotation::Euler::fromAngles(theInertialSensorData.angle.x(), theInertialSensorData.angle.y(), 0.f);
       ukf.init(State(rot), Matrix3f::Zero());
@@ -55,15 +55,71 @@ void InertialDataProvider::update(InertialData& inertialData)
   inertialData.gyro.x() *= theIMUCalibration.gyroFactor.x();
   inertialData.gyro.y() *= theIMUCalibration.gyroFactor.y();
   inertialData.gyro.z() *= theIMUCalibration.gyroFactor.z();
+  bool isAccBasedOnGroundContactPoints = false;
+  bool isAccXMeasured = false;
+  Angle supportFootRotationY;
 
-  if(!ignoreAccUpdate)
-    filterAcc(inertialData);
+  hadXAccUpdate = !(!hadXAccUpdate || theFootSupport.switched);
+
+  if(!hadXAccUpdate &&
+     theIMUCalibration.isCalibrated && theFootSoleRotationCalibration.isCalibrated &&
+     theMotionInfo.executedPhase == MotionPhase::walk && // is robot walking?
+     theMotionRequest.isWalking() &&
+     theFootSupport.footPressure[theFootSupport.support > 0.f ? Legs::left : Legs::right].backwardPressure == theFrameInfo.time && theFootSupport.footPressure[theFootSupport.support > 0.f ? Legs::left : Legs::right].backwardPressure == theFrameInfo.time)
+  {
+    supportFootRotationY = (theFootSupport.support > 0.f ? theRobotModel.soleLeft.inverse().rotation : theRobotModel.soleRight.inverse().rotation).getYAngle() + theFootSoleRotationCalibration.yRotationOffset;
+    isAccXMeasured = true;
+  }
+
+  // Replace measured acc with modelled acc
+  if(theMotionInfo.executedPhase == MotionPhase::walk &&  // is robot walking?
+     theMotionRequest.isWalking() &&
+     theFootSupport.switched && // support foot switched
+     theFootSupport.lastSwitch > minTimeForLastSupportSwitch && // robot had an actual support foot switch
+     theFootSupport.lastSwitch < maxTimeForLastSupportSwitch &&
+     // In case the robot is tilted far to the front or back (resulting from an unstable walk), we do not want to overwrite the accelerometer measurement
+     theFrameInfo.getTimeSince(std::max(theFootSupport.footPressure[Legs::right].forwardPressure, theFootSupport.footPressure[Legs::left].forwardPressure)) < maxTimeSinceForwardAndBackwardPressure &&
+     theFrameInfo.getTimeSince(std::max(theFootSupport.footPressure[Legs::left].backwardPressure, theFootSupport.footPressure[Legs::right].backwardPressure)) < maxTimeSinceForwardAndBackwardPressure)
+  {
+    Vector2f groundPointLeft = (theRobotModel.soleLeft * Vector3f(theRobotModel.soleLeft.rotation.col(2).x() >= 0.f ? theFootOffset.forward : -theFootOffset.backward, theRobotModel.soleLeft.rotation.col(2).y() >= 0.f ? theFootOffset.leftFoot.left : -theFootOffset.leftFoot.right, 0.f)).tail<2>();
+    Vector2f groundPointRight = (theRobotModel.soleRight * Vector3f(theRobotModel.soleRight.rotation.col(2).x() >= 0.f ? theFootOffset.forward : -theFootOffset.backward, theRobotModel.soleRight.rotation.col(2).y() >= 0.f ? theFootOffset.rightFoot.left : -theFootOffset.rightFoot.right, 0.f)).tail<2>();
+
+    if(std::abs(groundPointLeft.x() - groundPointRight.x()) > minGroundContactPointsDistance)
+    {
+      RotationMatrix diff;
+      const Angle feetPlaneXRotation = -(groundPointLeft - groundPointRight).angle();
+      if(std::abs(feetPlaneXRotation) < maxAllowedFeetPlaneXRotation)
+      {
+        diff.rotateX(feetPlaneXRotation);
+        if(isAccXMeasured)
+          diff.rotateY(supportFootRotationY);
+        else
+          diff.rotateY(inertialData.angle.y());
+        Vector3f accGravOnly(diff.col(0).z(), diff.col(1).z(), diff.col(2).z());
+        accGravOnly *= Constants::g_1000;
+        inertialData.acc = accGravOnly;
+        isAccBasedOnGroundContactPoints = true;
+        hadAccelerometerMeasurement = false;
+      }
+    }
+  }
+
+  if(!isAccBasedOnGroundContactPoints && isAccXMeasured)
+  {
+    RotationMatrix usedRotation(theFootSupport.support > 0.f ? theRobotModel.soleLeft.inverse().rotation : theRobotModel.soleRight.inverse().rotation);
+    usedRotation.rotateY(theFootSoleRotationCalibration.yRotationOffset);
+    Vector3f accGravOnly(usedRotation.col(0).z(), usedRotation.col(1).z(), usedRotation.col(2).z()); // taken from B-Human Coderelease 2016
+    accGravOnly *= Constants::g_1000;
+    inertialData.acc.x() = accGravOnly.x();
+    inertialData.acc.z() = accGravOnly.z();
+    hadAccelerometerMeasurement = false;
+  }
 
   processGyroscope(inertialData.gyro);
 
   if(!ignoreAccUpdate && (theInertialSensorData.acc != lastAccelerometerMeasurement || !hadAccelerometerMeasurement))
   {
-    processAccelerometer(inertialData.acc);
+    processAccelerometer(inertialData.acc, isAccBasedOnGroundContactPoints, isAccXMeasured);
     lastAccelerometerMeasurement = theInertialSensorData.acc;
     hadAccelerometerMeasurement = true;
   }
@@ -91,9 +147,9 @@ void InertialDataProvider::update(InertialData& inertialData)
   PLOT("module:InertialDataProvider:internalOrientation:z", angleAxisVec.z().toDegrees());
 }
 
-void InertialDataProvider::processAccelerometer(const Vector3f& acc)
+void InertialDataProvider::processAccelerometer(const Vector3f& acc, const bool isAccBasedOnGroundContactPoints, const bool isAccXMeasured)
 {
-  if(theMotionInfo.isStanding() && theGroundContactState.contact)
+  if(theMotionInfo.executedPhase == MotionPhase::stand && theGroundContactState.contact)
   {
     accelerometerLengths.push_front(acc.norm());
     if(accelerometerLengths.full())
@@ -120,14 +176,24 @@ void InertialDataProvider::processAccelerometer(const Vector3f& acc)
   else
     accelerometerLengths.clear();
 
-  auto measuremantModel = [&](const State& state)
+  auto measurementModel = [&](const State& state)
   {
     const Vector3f gVec = Vector3f(0.f, 0.f, gravity);
     return state.orientation.inverse() * gVec;
   };
 
-  const Vector3f measurementNoise = (theMotionInfo.motion == MotionRequest::Motion::walk ? accDeviationWhileWalking : accDeviation) + sqr(acc.norm() - gravity) * accDeviationFactor;
-  ukf.update<3>(acc, measuremantModel, measurementNoise.cwiseAbs2().asDiagonal());
+  const Vector3f& useBaseAccDeviation = theMotionInfo.executedPhase == MotionPhase::walk ? accDeviationWhileWalking : (theMotionInfo.executedPhase == MotionPhase::stand ? accDeviationWhileStanding : accDeviation);
+  Vector3f measurementNoise = useBaseAccDeviation + sqr(acc.norm() - gravity) * accDeviationFactor;
+  if(isAccBasedOnGroundContactPoints)
+    measurementNoise.y() = 1.f;
+  if(isAccXMeasured)
+  {
+    measurementNoise.x() = 1.f;
+    hadXAccUpdate = true;
+  }
+  if(isAccBasedOnGroundContactPoints && isAccXMeasured)
+    measurementNoise.z() = 1.f;
+  ukf.update<3>(acc, measurementModel, measurementNoise.cwiseAbs2().asDiagonal());
 }
 
 void InertialDataProvider::processGyroscope(const Vector3a& gyro)
@@ -139,17 +205,4 @@ void InertialDataProvider::processGyroscope(const Vector3a& gyro)
 
   const Vector3f dynamicNoise = gyroDeviation.cast<float>() * std::sqrt(1.f / Constants::motionCycleTime);
   ukf.predict(dynamicModel, dynamicNoise.cwiseAbs2().asDiagonal());
-}
-
-void InertialDataProvider::filterAcc(InertialData& id)
-{
-  auto dynamicModel = [](Vector3f& state) {};
-  auto measurementModel = [&](const Vector3f& state)
-  {
-    return state;
-  };
-  filteredAccUKF.predict(dynamicModel, accDynamicFilterDeviation.asDiagonal());
-  filteredAccUKF.update<3>(id.acc, measurementModel, accDeviation.asDiagonal());
-
-  id.filteredAcc = filteredAccUKF.mean;
 }

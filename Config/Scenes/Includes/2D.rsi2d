@@ -1,0 +1,67 @@
+<Simulation>
+  <Compound name="field">
+    <ChainGeometry loop="true" name="fence">
+5.5 -4
+-5.5 -4
+-5.5 4
+5.5 4
+    </ChainGeometry>
+
+    <Compound ref="fieldGoal" name="goal1">
+      <Translation x="-4525mm"/>
+    </Compound>
+
+    <Compound ref="fieldGoal" name="goal2">
+      <Translation x="4525mm"/>
+      <Rotation angle="180degree"/>
+    </Compound>
+  </Compound>
+
+  <Compound name="fieldGoal">
+    <DiskGeometry radius="50mm" name="post1">
+      <Translation y="-800mm"/>
+    </DiskGeometry>
+    <DiskGeometry radius="50mm" name="post2">
+      <Translation y="800mm"/>
+    </DiskGeometry>
+
+    <ChainGeometry name="net">
+-0.05 -0.8
+-0.45 -0.8
+-0.45 0.8
+-0.05 0.8
+    </ChainGeometry>
+  </Compound>
+
+  <Body name="ball">
+    <DiskGeometry radius="50mm" color="rgb(255,0,0)" category="0" mask="1"/>
+    <DiskMass radius="50mm" value="45g"/>
+  </Body>
+
+  <Body name="player">
+    <Set name="playerColor" value="rgb(0,0,0)"/>
+
+    <RectMass width="100mm" height="60mm" value="5.36kg"/>
+
+    <ConvexGeometry color="$playerColor" name="legL" category="0" mask="1">
+-0.03 0.1
+-0.03 0.01
+0.11 0.01
+0.11 0.1
+    </ConvexGeometry>
+
+    <ConvexGeometry color="$playerColor" name="legR" category="0" mask="1">
+-0.03 -0.01
+-0.03 -0.1
+0.11 -0.1
+0.11 -0.01
+    </ConvexGeometry>
+
+    <ConvexGeometry color="$playerColor" name="upperBody" category="1" mask="2">
+-0.03 0.15
+-0.03 -0.15
+0.05 -0.15
+0.05 0.15
+    </ConvexGeometry>
+  </Body>
+</Simulation>

@@ -59,7 +59,7 @@ void DebugDataStreamer::serialize(In* in, Out* out)
         stream << "array has " << dynamicSize << " elements instead of " << size;
         InMap* inMap = dynamic_cast<InMap*>(in);
         if(inMap)
-          inMap->printError(stream.str());
+          inMap->printError(stream.str(), InMap::outOfRange);
         else
         {
           OUTPUT_ERROR(stream.str());

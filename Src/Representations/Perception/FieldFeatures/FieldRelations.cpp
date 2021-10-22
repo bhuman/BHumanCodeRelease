@@ -60,7 +60,7 @@ IntersectionRelations::LineIntersectionRelations::LineIntersectionRelations(cons
   intersectionPositions[MarkedLine::groundLine][1] = theFieldDimensions.yPosLeftPenaltyArea;
   intersectionPositions[MarkedLine::groundLine][2] = -intersectionPositions[MarkedLine::groundLine][1];
   intersectionPositions[MarkedLine::groundLine][3] = -intersectionPositions[MarkedLine::groundLine][0];
-  intersectionPositions[MarkedLine::sideLine][0] = theFieldDimensions.xPosOpponentGroundline;
+  intersectionPositions[MarkedLine::sideLine][0] = theFieldDimensions.xPosOpponentGroundLine;
   intersectionPositions[MarkedLine::sideLine][1] = theFieldDimensions.xPosHalfWayLine;
   intersectionPositions[MarkedLine::sideLine][2] = -intersectionPositions[MarkedLine::sideLine][0];
   intersectionPositions[MarkedLine::sideLine][3] = MarkedIntersection::numOfIntersectionMarkers;
@@ -68,22 +68,30 @@ IntersectionRelations::LineIntersectionRelations::LineIntersectionRelations(cons
   intersectionPositions[MarkedLine::groundPenalty][1] = -intersectionPositions[MarkedLine::groundPenalty][0];
   intersectionPositions[MarkedLine::groundPenalty][2] = MarkedIntersection::numOfIntersectionMarkers;
   intersectionPositions[MarkedLine::groundPenalty][3] = MarkedIntersection::numOfIntersectionMarkers;
-  intersectionPositions[MarkedLine::sidePenaltyL][0] = theFieldDimensions.xPosOpponentGroundline;
+  intersectionPositions[MarkedLine::sidePenaltyL][0] = theFieldDimensions.xPosOpponentGroundLine;
   intersectionPositions[MarkedLine::sidePenaltyL][1] = theFieldDimensions.xPosOpponentPenaltyArea;
   intersectionPositions[MarkedLine::sidePenaltyL][2] = MarkedIntersection::numOfIntersectionMarkers;
   intersectionPositions[MarkedLine::sidePenaltyL][3] = MarkedIntersection::numOfIntersectionMarkers;
   intersectionPositions[MarkedLine::sidePenaltyR][0] = theFieldDimensions.xPosOpponentPenaltyArea;
-  intersectionPositions[MarkedLine::sidePenaltyR][1] = theFieldDimensions.xPosOpponentGroundline;
+  intersectionPositions[MarkedLine::sidePenaltyR][1] = theFieldDimensions.xPosOpponentGroundLine;
   intersectionPositions[MarkedLine::sidePenaltyR][2] = MarkedIntersection::numOfIntersectionMarkers;
   intersectionPositions[MarkedLine::sidePenaltyR][3] = MarkedIntersection::numOfIntersectionMarkers;
 }
 
-void IntersectionRelations::LineIntersectionRelations::serialize(In* in, Out* out)
+void IntersectionRelations::LineIntersectionRelations::read(In& stream)
 {
   for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
-    Streaming::streamIt(in, out, (std::string("intersections") + std::to_string(i)).data(), intersections[i]);
+    Streaming::streamIt(stream, (std::string("intersections") + std::to_string(i)).data(), intersections[i]);
   for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
-    Streaming::streamIt(in, out, (std::string("intersectionPositions") + std::to_string(i)).data(), intersectionPositions[i]);
+    Streaming::streamIt(stream, (std::string("intersectionPositions") + std::to_string(i)).data(), intersectionPositions[i]);
+}
+
+void IntersectionRelations::LineIntersectionRelations::write(Out& stream) const
+{
+  for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
+    Streaming::streamIt(stream, (std::string("intersections") + std::to_string(i)).data(), intersections[i]);
+  for(int i = 0; i < MarkedLine::firstLineMarkerOther; ++i)
+    Streaming::streamIt(stream, (std::string("intersectionPositions") + std::to_string(i)).data(), intersectionPositions[i]);
 }
 
 void IntersectionRelations::propagateMarkedIntersection(const MarkedIntersection& start, const FieldLineIntersections& theFieldLineIntersections,

@@ -8,18 +8,21 @@
 
 #pragma once
 
+#include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/RobotInfo.h"
 #include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
+#include "Platform/SystemCall.h"
 #include "Tools/Communication/UdpComm.h"
 #include "Tools/Module/Module.h"
 
 MODULE(GameDataProvider,
 {,
+  USES(BehaviorStatus),
+  REQUIRES(EnhancedKeyStates),
   REQUIRES(FrameInfo),
-  REQUIRES(KeyStates),
   REQUIRES(RobotInfo),
   PROVIDES(RobotInfo),
   PROVIDES(OwnTeamInfo),
@@ -27,9 +30,9 @@ MODULE(GameDataProvider,
   PROVIDES(RawGameInfo),
   DEFINES_PARAMETERS(
   {,
-    (int)(3000) chestButtonPressDuration, /**< Chest button state changes are ignored when happening in more than this period (in ms). */
-    (int)(300) chestButtonTimeout, /**< Accept chest button press when chest button was not pressed again within this period (in ms). */
-    (int)(30) buttonDelay, /**< Button state changes are ignored when happening in less than this period (in ms). */
+    (unsigned)(1000) unstiffHeadButtonPressDuration, /**< How long the head buttons need to be pressed until the robot transitions to unstiff (in ms). */
+    (unsigned)(200) calibrationHeadButtonPressDuration, /**< How long the front head button needs to be pressed until the robot transitions to calibration (in ms). */
+    (int)(7777) unstiffFinishedDuration, /**< How long the game state needs to be finished until the robot transitions to unstiff (in ms). */
     (int)(2000) gameControllerTimeout, /**< Connected to GameController when packet was received within this period of time (in ms). */
     (int)(1000) aliveDelay, /**< Send an alive signal in this interval of ms. */
   }),
@@ -39,17 +42,12 @@ class GameDataProvider : public GameDataProviderBase
 {
   UdpComm socket; /**< The socket to communicate with the GameController. */
   RoboCup::RoboCupGameControlData gameCtrlData; /**< The local copy of the GameController packet. */
-  bool previousChestButtonPressed = false; /**< Whether the chest button was pressed during the previous cycle. */
-  bool previousLeftFootButtonPressed = false; /**< Whether the left foot bumper was pressed during the previous cycle. */
-  bool previousRightFootButtonPressed = false; /**< Whether the right foot bumper was pressed during the previous cycle. */
-  unsigned whenChestButtonStateChanged = 0; /**< When last state change of the chest button occured. */
-  unsigned whenChestButtonPressed = 0; /**< When the chest button was pressed. */
-  unsigned whenChestButtonReleased = 0;/**< When the chest button was released. */
-  unsigned whenLeftFootButtonStateChanged = 0; /**< When last state change of the left foot bumper occured. */
-  unsigned whenRightFootButtonStateChanged = 0; /**< When last state change of the right foot bumper occured. */
+  unsigned whenGameCtrlDataWasSet = 0; /**< When the local copy of the GameController packet was set. */
   unsigned whenPacketWasReceived = 0; /**< When the last GameController packet was received. */
   unsigned whenPacketWasSent = 0; /**< When the last return packet was sent to the GameController. */
-  int chestButtonPressCounter = 0; /**< Counter for pressing the chest button*/
+  unsigned whenStateNotFinished = 0; /**< Last time when the state was something else than finished. */
+  RobotInfo::Mode mode = SystemCall::getMode() == SystemCall::physicalRobot ? RobotInfo::unstiff : RobotInfo::active; /**< The current robot mode. */
+  bool ignoreChestButton = false; /**< Whether the chest button should be ignored in \c handleButtons. */
 
   /**
    * This method is called when the representation provided needs to be updated.
@@ -79,14 +77,18 @@ class GameDataProvider : public GameDataProviderBase
    * Receives a packet from the GameController.
    * Packets are only accepted when the team number is know (nonzero) and
    * they are addressed to this team.
+   * @param setGameCtrlData Whether the received data shall overwrite the local state.
    */
-  bool receive();
+  void receive(bool setGameCtrlData);
 
   /** Sends the alive message to the GameController. */
   bool sendAliveMessage();
 
   /** Handle the official button interface. */
   void handleButtons();
+
+  /** Resets the internal game state. */
+  void resetGameCtrlData();
 
 public:
   /** Initialize data and open socket. */

@@ -51,7 +51,6 @@ bool DeleteLogsCmd::DeleteLogsTask::execute()
 {
   QStringList args;
   args.push_back("--just-delete");
-  args.push_back(fromString(robot->name));
   args.push_back(fromString(robot->getBestIP(context())));
 
   ProcessRunner r(context(), getCommand(), args);

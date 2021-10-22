@@ -16,6 +16,7 @@
 class Debug;
 class FrameExecutionUnit;
 struct Logger;
+struct Settings;
 
 /**
  * @class ModuleContainer
@@ -43,10 +44,12 @@ private:
 public:
   /**
    * The constructor.
+   * @param settings The settings of this module container.
+   * @param robotName The name of the robot this module container belongs to.
    * @param config The inital configuration of all threads.
    * @param index The index of this thread in the config.
    */
-  ModuleContainer(const Configuration& config, const std::size_t index, Logger* logger);
+  ModuleContainer(const Settings& settings, const std::string& robotName, const Configuration& config, const std::size_t index, Logger* logger);
 
   /** The destructor frees the execution unit. */
   ~ModuleContainer();

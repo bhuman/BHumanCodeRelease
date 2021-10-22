@@ -10,11 +10,11 @@
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/MotionControl/HeadAngleRequest.h"
-#include "Representations/MotionControl/HeadMotionEngineOutput.h"
+#include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Math/Geometry.h"
 #include "Tools/Module/Module.h"
 
 MODULE(HeadMotionEngine,
@@ -24,25 +24,19 @@ MODULE(HeadMotionEngine,
   REQUIRES(HeadAngleRequest),
   REQUIRES(HeadLimits),
   REQUIRES(JointAngles),
-  PROVIDES(HeadMotionEngineOutput),
+  USES(JointRequest),
+  PROVIDES(HeadMotionGenerator),
   DEFINES_PARAMETERS(
   {,
-    (int)(800) stopAndGoModeFrequenzy, /* Milliseconds between 2 stops in stopAndGoMode */
+    (float)(10.f) maxAcceleration, /**< Maximum angle acceleration (rad/s^2). */
+    (float)(1.f) maxAccelerationNoGroundContact, /**< Maximum angle acceleration (rad/s^2) when not having ground contact. */
+    (int)(800) stopAndGoModeFrequency, /**< Milliseconds between 2 stops in stopAndGoMode. */
   }),
 });
 
 class HeadMotionEngine : public HeadMotionEngineBase
 {
-private:
-  Angle requestedPan;
-  Angle requestedTilt;
-  Vector2f lastSpeed;
+  void update(HeadMotionGenerator& headMotionGenerator) override;
 
-public:
-  HeadMotionEngine();
-
-  /**
-   * The update method to generate the head joint angles from desired head motion.
-   */
-  void update(HeadMotionEngineOutput& headMotionEngineOutput) override;
+  Vector2f lastSpeed = Vector2f::Zero();
 };

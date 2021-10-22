@@ -109,7 +109,7 @@ void FieldLineIntersections::draw() const
         if(Transformation::robotToImage(inter->pos, *theCameraMatrix, *theCameraInfo, intersectionInImage))
         {
           const Vector2f uncorIntersection = theImageCoordinateSystem->fromCorrected(intersectionInImage);
-          DRAWTEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
+          DRAW_TEXT("representation:FieldLines:image", uncorIntersection.x(), uncorIntersection.y(), 25, ColorRGBA(255, 180, 180),
                    (inter->type == Intersection::L ? "L" : inter->type == Intersection::T ? "T" : "X") <<
                    (inter->additionalType == Intersection::none ? "" : inter->additionalType == Intersection::mid ? "m" : "b"));
         }

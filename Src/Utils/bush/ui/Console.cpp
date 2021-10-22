@@ -158,6 +158,18 @@ void Console::fireCommand(const QString& command)
       if(msgBox.exec() != QMessageBox::Yes)
         return;
     }
+    else if(command == "restart robot -s")
+    {
+      QMessageBox msgBox;
+      msgBox.setWindowTitle("Reboot");
+      msgBox.setText("The selected robots will be rebooted.\n\nAre you sure?");
+      msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+      msgBox.setDefaultButton(QMessageBox::Cancel);
+      msgBox.setIcon(QMessageBox::Warning);
+
+      if(msgBox.exec() != QMessageBox::Yes)
+        return;
+    }
 
     QtConcurrent::run(visualContext, &VisualContext::executeInContext, this, teamSelector, command);
     cmdLine->setFocus();

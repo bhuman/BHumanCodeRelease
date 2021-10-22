@@ -42,31 +42,41 @@ rm -f "${DUMPFILE}"
 if [ ! -x "${BINARY}" ]; then
   chmod u+x "${BINARY}" || exit 1
 fi
-# Ignore SIGINT and SIGTERM. This inherits to child processes,
 
+# Ignore SIGINT and SIGTERM. This inherits to child processes,
 # but bhuman installs its own handlers, so this script will come to an end, too.
 trap "" 2 15
 
-# Log to USB drive if available.
-mount /media/usb 2>/dev/null && mkdir -p /media/usb/logs
-if [ -d /media/usb/logs ]; then
-  ln -sf /media/usb/logs "${LOGDIR}"
+# Mount USB drive. In some contexts in which a USB drive is required (e.g. remote events), we refuse to continue without a USB drive.
+if [ -e /home/nao/.config/require-usb ]; then
+  while ! ( mount /media/usb 2>/dev/null && /home/nao/bin/chmod-usb && mkdir -p /media/usb/logs ); do
+    trap - 2 15
+    aplay -q /home/nao/Config/Sounds/insertUSBDrive.wav
+    sleep 10
+    trap "" 2 15
+  done
 else
-  ln -sf /home/nao/logs "${LOGDIR}"
+  mount /media/usb 2>/dev/null && /home/nao/bin/chmod-usb && mkdir -p /media/usb/logs
+fi
+
+if [ -d /media/usb/logs ]; then
+  ln -sfT /media/usb/logs "${LOGDIR}"
+else
+  ln -sfT /home/nao/logs "${LOGDIR}"
 fi
 
 # Make log-names unique by numbering them.
 COUNTER=$(ls "${LOGDIR}" | sed -nE "s/^bhumand_\(([0-9]+)\).log$/\1/p" | sort -n | tail -n1)
 COUNTER=$(expr ${COUNTER} + 1)
 LOGFILE="${LOGDIR}/bhumand_(${COUNTER}).log"
-# Actually execute bhuman.
 
+# Actually execute bhuman.
 if ${DEBUG}; then
   gdb "${BINARY}"
 elif ${BACKGROUND}; then
-  "${BINARY}" -w 2>&1 | stdbuf -o0 awk -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
+  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' >"${LOGFILE}"
 else
-  "${BINARY}" -w 2>&1 | stdbuf -o0 awk -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
+  "${BINARY}" -w 2>&1 | mawk -W interactive -F '\n' '{print strftime("%H:%M:%S", systime()) " " $0}' | tee "${LOGFILE}"
 fi
 
 # Remove leftovers.

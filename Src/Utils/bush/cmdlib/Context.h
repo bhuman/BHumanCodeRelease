@@ -107,8 +107,8 @@ class Context : public AbstractConsole
   volatile bool canceled;
 
   // do not copy it
-  Context(const Context& other) : detached(false) {}
-  Context& operator=(const Context& other) { return *this; }
+  Context(const Context&) : detached(false) {}
+  Context& operator=(const Context&) { return *this; }
 
   Context(Context* parent, const std::string& cmdLine);
   Context(Context* parent, Task* task);

@@ -122,24 +122,26 @@ void JPEGImage::toCameraImage(CameraImage& dest) const
   jpeg_destroy_decompress(&cInfo);
 }
 
-void JPEGImage::serialize(In* in, Out* out)
+void JPEGImage::read(In& stream)
 {
   STREAM(width);
   STREAM(height);
-
-  timestamp |= 1 << 31;
   STREAM(timestamp);
   ASSERT((timestamp & 1 << 31) != 0);
   timestamp &= ~(1 << 31);
-
   STREAM(size);
-  if(in)
-  {
-    allocator.resize(size);
-    in->read(allocator.data(), size);
-  }
-  else
-    out->write(allocator.data(), size);
+  allocator.resize(size);
+  stream.read(allocator.data(), size);
+}
+
+void JPEGImage::write(Out& stream) const
+{
+  unsigned timestamp = this->timestamp | 1 << 31;
+  STREAM(width);
+  STREAM(height);
+  STREAM(timestamp);
+  STREAM(size);
+  stream.write(allocator.data(), size);
 }
 
 void JPEGImage::reg()

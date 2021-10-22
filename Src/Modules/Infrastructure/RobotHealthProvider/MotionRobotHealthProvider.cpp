@@ -7,7 +7,7 @@
 #include "MotionRobotHealthProvider.h"
 #include "Platform/Time.h"
 
-MAKE_MODULE(MotionRobotHealthProvider, infrastructure)
+MAKE_MODULE(MotionRobotHealthProvider, infrastructure);
 
 void MotionRobotHealthProvider::update(MotionRobotHealth& motionRobotHealth)
 {

@@ -26,7 +26,7 @@ STREAMABLE(LabelImage,
     float getOverlap(const Annotation& annotation) const;
     float getArea()const;
     float probability;
-    float mesuredDistance;
+    float measuredDistance;
     bool correct;
     float iou;
     ENUM(LabelType,
@@ -50,14 +50,14 @@ STREAMABLE(LabelImage,
   });
 
   void draw() const;
-  float getRecall(const LabelImage& groundTruth, const Annotation::LabelType& type) const;
-  float getPrecision(const LabelImage& groundTruth, const Annotation::LabelType& type) const;
-  float getIou(const LabelImage& groundTruth, const Annotation::LabelType& type) const;
+  float getRecall(const Annotation::LabelType& type) const;
+  float getPrecision(const Annotation::LabelType& type) const;
+  float getIou(const Annotation::LabelType& type) const;
   float getMAP(const LabelImage& groundTruth, const Annotation::LabelType& type) const;
   void nonMaximumSuppression(float threshold = 0.7f);
   void bigBoxSuppression();
   void evaluate(const LabelImage& groundTruth, const Annotation::LabelType& type, float threshold = 0.7f);
-  //void evaluate_area(const float distance, const bool lower, const CameraInfo cameraInfo, const CameraMatrix cameraMatrix, const LabelImage& groundTruth, const Annotation::LabelType& type, float threshold = 0.7f);
+  //void evaluateArea(const float distance, const bool lower, const CameraInfo cameraInfo, const CameraMatrix cameraMatrix, const LabelImage& groundTruth, const Annotation::LabelType& type, float threshold = 0.7f);
 
   std::vector<LabelImage::Annotation> operator[](const Annotation::LabelType& type) const;
   std::vector<LabelImage::Annotation> getLabels(const Vector2i& center, const Vector2i& size) const;
@@ -67,7 +67,7 @@ STREAMABLE(LabelImage,
 
   (bool)(false) valid,
   (bool)(false) evaluated,
-  (int)(-1) numPositves,
+  (int)(-1) numPositives,
   (unsigned)(0) frameTime,
   (std::vector<Annotation>) annotations,
 });

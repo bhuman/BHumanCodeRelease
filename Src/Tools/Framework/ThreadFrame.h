@@ -60,12 +60,17 @@ private:
   asmjit::JitRuntime* asmjitRuntime; /**< JIT and Remote Assembler for C++ in this thread. */
   TimingManager timingManager; /**< Keeps track of the module timing in this thread. */
 
+protected:
+  const std::string robotName; /**< The name of the robot this thread belongs to. */
+
 public:
   /**
    * The constructor.
    * Used by the ModuleContainer and Debug in the simulation.
+   * @param settings The settings of this thread.
+   * @param robotName The name of the robot this thread belongs to.
    */
-  ThreadFrame();
+  ThreadFrame(const Settings& settings, const std::string& robotName);
   ~ThreadFrame();
 
   /**
@@ -105,10 +110,12 @@ protected:
    * Used by the RobotConsole and by Debug on the robot.
    * Note: ThreadFrame cares about the destruction of the pointers.
    * Note: If no messaging is required pass <code>nullptr</code>.
+   * @param settings The settings of this thread.
+   * @param robotName The name of the robot this thread belongs to.
    * @param debugReceiver The receiver of this thread.
    * @param debugSender The sender of this thread.
    */
-  ThreadFrame(DebugReceiver<MessageQueue>* debugReceiver, DebugSender<MessageQueue>* debugSender);
+  ThreadFrame(const Settings& settings, const std::string& robotName, DebugReceiver<MessageQueue>* debugReceiver, DebugSender<MessageQueue>* debugSender);
 
   /**
    * The function determines the priority of the thread.

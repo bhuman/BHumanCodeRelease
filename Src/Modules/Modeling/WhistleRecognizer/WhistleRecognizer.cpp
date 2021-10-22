@@ -19,7 +19,7 @@
 #include <limits>
 #include <type_traits>
 
-MAKE_MODULE(WhistleRecognizer, modeling)
+MAKE_MODULE(WhistleRecognizer, modeling);
 
 static DECLARE_SYNC;
 
@@ -71,14 +71,13 @@ void WhistleRecognizer::update(Whistle& theWhistle)
   DECLARE_PLOT("module:WhistleRecognizer:samples2");
   DECLARE_PLOT("module:WhistleRecognizer:samples3");
 
+  // Remember if sound was playing during this team communication cycle
+  soundWasPlaying |= SystemCall::soundIsPlaying();
+
   // Empty buffers when entering a state where it should be recorded.
-  const bool shouldRecord = ((!detectInPlaying &&
-                              theRawGameInfo.state == STATE_SET
-                              && theGameInfo.state != STATE_PLAYING)
-                             || (detectInPlaying
-                                 && theGameInfo.state == STATE_PLAYING
-                                 && theRobotInfo.penalty == PENALTY_NONE))
-                            && !SystemCall::soundIsPlaying();
+  const bool shouldRecord = (theGameInfo.state == STATE_SET
+                             || theGameInfo.state == STATE_PLAYING)
+                            && !soundWasPlaying;
   if(!hasRecorded && shouldRecord)
     buffers.clear();
   hasRecorded = shouldRecord;
@@ -103,11 +102,11 @@ void WhistleRecognizer::update(Whistle& theWhistle)
   const int firstBuffer = theDamageConfigurationHead.audioChannelsDefect[0] ? 1 : 0;
 
   // No whistles can be detected while sound is playing.
-  if(SystemCall::soundIsPlaying())
+  if(soundWasPlaying)
     theWhistle.channelsUsedForWhistleDetection = 0;
 
   // Count number of channels if they were set to zero and no sound is playing.
-  if(!theWhistle.channelsUsedForWhistleDetection && !SystemCall::soundIsPlaying())
+  if(!theWhistle.channelsUsedForWhistleDetection && !soundWasPlaying)
     for(size_t i = 0; i < buffers.size(); ++i)
       if(!theDamageConfigurationHead.audioChannelsDefect[i])
         ++theWhistle.channelsUsedForWhistleDetection;
@@ -233,10 +232,16 @@ void WhistleRecognizer::update(Whistle& theWhistle)
   // Reset best correlation after it was sent in two network packets.
   if(theBHumanMessageOutputGenerator.sendThisFrame)
   {
-    if(bestUpdated)
-      bestUpdated = false;
-    else
+    if(!bestUpdated)
       bestCorrelation = 1.f;
+    bestUpdated = false;
+    soundWasPlaying = SystemCall::soundIsPlaying();
+  }
+
+  DEBUG_RESPONSE_ONCE("module:WhistleRecognizer:detectNow")
+  {
+    theWhistle.lastTimeWhistleDetected = theFrameInfo.time;
+    theWhistle.confidenceOfLastWhistleDetection = 2.f;
   }
 
   SEND_DEBUG_IMAGE("module:WhistleRecognizer:spectra", canvas, PixelTypes::Edge2);

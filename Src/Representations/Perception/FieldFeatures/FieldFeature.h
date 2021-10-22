@@ -74,7 +74,7 @@ STREAMABLE_WITH_BASE(FieldFeature, Pose2f,
   const RobotPoseToFF getGlobalRobotPosition() const;
 
   /**
-   * Returns 1 of the 2 global position of this feature (in case of isValid == true).
+   * Returns 1 of the 2 global positions of this feature (in case of isValid == true).
    */
   virtual const Pose2f getGlobalFeaturePosition() const = 0;
   void clear();

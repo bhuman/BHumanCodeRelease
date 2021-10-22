@@ -7,12 +7,7 @@
  */
 
 #include "Controller/RobotConsole.h"
-#ifdef MACOS
-#include <gl.h>
-#include <glu.h>
-#else
-#include <GL/glew.h>
-#endif
+#include <Platform/OpenGL.h>
 #include "DebugDrawing3D.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Time.h"
@@ -72,25 +67,25 @@ void DebugDrawing3D::draw()
 
 void DebugDrawing3D::draw2()
 {
-  glPushAttrib(GL_ENABLE_BIT);
+  glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
   glPushMatrix();
 
   if(flip)
-    glRotated(180., 0., 0., 1.);
+    glRotatef(180.f, 0.f, 0.f, 1.f);
 
   // Convert mm to m.
-  glScaled(0.001, 0.001, 0.001);
+  glScalef(0.001f, 0.001f, 0.001f);
 
   // Custom scaling.
   glScalef(scale.x(), scale.y(), scale.z());
 
   // Custom rotation.
   if(rotate.z() != 0)
-    glRotatef(toDegrees(rotate.z()), 0., 0., 1.);
+    glRotatef(toDegrees(rotate.z()), 0.f, 0.f, 1.f);
   if(rotate.y() != 0)
-    glRotatef(toDegrees(rotate.y()), 0., 1., 0.);
+    glRotatef(toDegrees(rotate.y()), 0.f, 1.f, 0.f);
   if(rotate.x() != 0)
-    glRotatef(toDegrees(rotate.x()), 1., 0., 0.);
+    glRotatef(toDegrees(rotate.x()), 1.f, 0.f, 0.f);
 
   // Custom translation.
   glTranslatef(trans.x(), trans.y(), trans.z());
@@ -143,7 +138,7 @@ void DebugDrawing3D::draw2()
     glPopMatrix();
   }
 
-  // draw ellypsoids
+  // draw ellipsoids
   for(const Ellipsoid& e : ellipsoids)
   {
     glColor4ub(e.color.r, e.color.g, e.color.b, e.color.a);
@@ -187,21 +182,21 @@ void DebugDrawing3D::draw2()
     glColor4ub(c.color.r, c.color.g, c.color.b, c.color.a);
 
     glPushMatrix();
-    glTranslated(c.point.x(), c.point.y(), c.point.z());
+    glTranslatef(c.point.x(), c.point.y(), c.point.z());
     if(c.rotation.x() != 0)
-      glRotated(toDegrees(c.rotation.x()), 1, 0, 0);
+      glRotatef(toDegrees(c.rotation.x()), 1.f, 0.f, 0.f);
     if(c.rotation.y() != 0)
-      glRotated(toDegrees(c.rotation.y()), 0, 1, 0);
+      glRotatef(toDegrees(c.rotation.y()), 0.f, 1.f, 0.f);
     if(c.rotation.z() != 0)
-      glRotated(toDegrees(c.rotation.z()), 0, 0, 1);
-    glTranslated(0, 0, -c.height / 2);
+      glRotated(toDegrees(c.rotation.z()), 0.f, 0.f, 1.f);
+    glTranslatef(0.f, 0.f, -c.height / 2.f);
     GLUquadric* q = gluNewQuadric();
     gluCylinder(q, c.baseRadius, c.topRadius, c.height, 16, 1);
-    glRotated(180, 0, 1, 0);
+    glRotatef(180.f, 0.f, 1.f, 0.f);
     if(c.baseRadius > 0.f)
       gluDisk(q, 0, c.baseRadius, 16, 1);
-    glRotated(180, 0, 1, 0);
-    glTranslated(0, 0, c.height);
+    glRotatef(180.f, 0.f, 1.f, 0.f);
+    glTranslatef(0.f, 0.f, c.height);
     if(c.topRadius > 0.f)
       gluDisk(q, 0, c.topRadius, 16, 1);
     gluDeleteQuadric(q);
@@ -213,16 +208,16 @@ void DebugDrawing3D::draw2()
     glColor4ub(pD.color.r, pD.color.g, pD.color.b, pD.color.a);
 
     glPushMatrix();
-    glTranslated(pD.point.x(), pD.point.y(), pD.point.z());
+    glTranslatef(pD.point.x(), pD.point.y(), pD.point.z());
     if(pD.rotation.x() != 0)
-      glRotated(toDegrees(pD.rotation.x()), 1, 0, 0);
+      glRotatef(toDegrees(pD.rotation.x()), 1.f, 0.f, 0.f);
     if(pD.rotation.y() != 0)
-      glRotated(toDegrees(pD.rotation.y()), 0, 1, 0);
+      glRotatef(toDegrees(pD.rotation.y()), 0.f, 1.f, 0.f);
     if(pD.rotation.z() != 0)
-      glRotated(toDegrees(pD.rotation.z()), 0, 0, 1);
+      glRotatef(toDegrees(pD.rotation.z()), 0.f, 0.f, 1.f);
 
     GLUquadric* q = gluNewQuadric();
-    gluPartialDisk(q, pD.innerRadius, pD.outerRadius, 16, 10, toDegrees(pD.startAngle), toDegrees(pD.sweeptAngle));
+    gluPartialDisk(q, pD.innerRadius, pD.outerRadius, 16, 10, toDegrees(pD.startAngle), toDegrees(pD.sweptAngle));
 
     gluDeleteQuadric(q);
     glPopMatrix();
@@ -251,13 +246,13 @@ void DebugDrawing3D::draw2()
       delete[] imageData;
 
       glPushMatrix();
-      glTranslated(i.point.x(), i.point.y(), i.point.z());
+      glTranslatef(i.point.x(), i.point.y(), i.point.z());
       if(i.rotation.x() != 0)
-        glRotated(toDegrees(i.rotation.x()), 1, 0, 0);
+        glRotatef(toDegrees(i.rotation.x()), 1.f, 0.f, 0.f);
       if(i.rotation.y() != 0)
-        glRotated(toDegrees(i.rotation.y()), 0, 1, 0);
+        glRotatef(toDegrees(i.rotation.y()), 0.f, 1.f, 0.f);
       if(i.rotation.z() != 0)
-        glRotated(toDegrees(i.rotation.z()), 0, 0, 1);
+        glRotatef(toDegrees(i.rotation.z()), 0.f, 0.f, 1.f);
       glBegin(GL_QUADS);
       float right = static_cast<float>(i.cameraImage->width) / width;
       float top = static_cast<float>(i.cameraImage->height) / height;
@@ -337,7 +332,7 @@ void DebugDrawing3D::sphere(const Vector3f& v, float r, ColorRGBA color)
   spheres.push_back(element);
 }
 
-void DebugDrawing3D::ellypsoid(const Pose3f& pose, const Vector3f& radii, ColorRGBA color)
+void DebugDrawing3D::ellipsoid(const Pose3f& pose, const Vector3f& radii, ColorRGBA color)
 {
   Ellipsoid element;
   element.pose = pose;
@@ -368,7 +363,7 @@ void DebugDrawing3D::partDisc(const Vector3f& v, const Vector3f& rot, float inne
   element.innerRadius = innerRadius;
   element.outerRadius = outerRadius;
   element.startAngle = startAngle;
-  element.sweeptAngle = sweepAngle;
+  element.sweptAngle = sweepAngle;
   element.color = color;
   partDiscs.push_back(element);
 }
@@ -516,7 +511,7 @@ bool DebugDrawing3D::addShapeFromQueue(InMessage& message, Drawings3D::ShapeType
       message.bin >> p;
       message.bin >> s;
       message.bin >> c;
-      this->ellypsoid(p, s, c);
+      this->ellipsoid(p, s, c);
       break;
     }
     case Drawings3D::cylinder:
@@ -600,7 +595,7 @@ const DebugDrawing3D::Image3D& DebugDrawing3D::Image3D::operator=(const DebugDra
   if(cameraImage)
     delete cameraImage;
 
-  (Element&)*this = other;
+  *static_cast<Element*>(this) = other;
   point = other.point;
   rotation = other.rotation;
   width = other.width;

@@ -1,0 +1,11 @@
+# Additional setup for 5 vs 5
+
+robot robot1 robot2 robot3 robot4 robot5
+jc press 11 call Includes/PenaltyKickFirst # Shift+Ctrl+K (penalty kicK)
+jc press 12 call Includes/PushingFreeKickFirst # Shift+Ctrl+L (fouL)
+
+robot robot7 robot8 robot9 robot10 robot11
+jc press 11 call Includes/PenaltyKickSecond # Shift+Ctrl+K (penalty kicK)
+jc press 12 call Includes/PushingFreeKickSecond # Shift+Ctrl+L (fouL)
+
+robot all

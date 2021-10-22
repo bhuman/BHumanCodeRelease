@@ -13,7 +13,6 @@ thread_local ConfigurationDataProvider* ConfigurationDataProvider::theInstance =
 ConfigurationDataProvider::ConfigurationDataProvider()
 {
   theInstance = this;
-  ModuleContainer::addMessageHandler(handleMessage);
 
   read(theCameraSettings);
 
@@ -25,29 +24,25 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theCameraCalibration);
   read(theDamageConfigurationBody);
   read(theDamageConfigurationHead);
-  read(theFieldColors);
-  read(theGetUpPhase);
+  read(theFootOffset);
   read(theGlobalOptions);
   read(theHeadLimits);
   read(theIMUCalibration);
   read(theJointCalibration);
   read(theJointLimits);
+  read(theKeyframeMotionParameters);
+  read(theKickInfo);
   read(theMassCalibration);
+  read(theRelativeFieldColorsParameters);
   read(theRobotDimensions);
   read(theStiffnessSettings);
-  read(theWalk2014Modifier);
+  read(theSetupPoses);
+  read(theWalkModifier);
 }
 
 ConfigurationDataProvider::~ConfigurationDataProvider()
 {
   theInstance = nullptr;
-}
-
-void ConfigurationDataProvider::update(FieldColors& fieldColors)
-{
-  update(fieldColors, theFieldColors);
-  DEBUG_RESPONSE_ONCE("representation:FieldColors:once")
-    OUTPUT(idFieldColors, bin, fieldColors);
 }
 
 void ConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
@@ -57,23 +52,27 @@ void ConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
     cameraCalibration = theCameraCalibrationNext.getNext();
 }
 
-bool ConfigurationDataProvider::handleMessage(InMessage& message)
-{
-  if(theInstance && message.getMessageID() == idColorCalibration)
-  {
-    if(!theInstance->theFieldColors)
-      theInstance->theFieldColors = std::make_unique<FieldColors>();
-    message.bin >> *theInstance->theFieldColors;
-    return true;
-  }
-  else
-    return false;
-}
-
 void ConfigurationDataProvider::update(JointLimits& jointLimits)
 {
   update(jointLimits, theJointLimits);
   DEBUG_RESPONSE_ONCE("representation:JointLimits:once") OUTPUT(idJointLimits, bin, jointLimits);
+}
+
+void ConfigurationDataProvider::update(KickInfo& kickInfo)
+{
+  const bool wasEmpty = theKickInfo == nullptr;
+  update(kickInfo, theKickInfo);
+  if(wasEmpty)
+    return;
+  for(KickInfo::Kick& kick : kickInfo.kicks)
+  {
+    // Comment this in, if the velocity needs to be recalculated
+    //kick.ballVelocity.min = BallPhysics::velocityForDistance(kick.range.min, ConfigurationDataProviderBase::theBallSpecification.friction);
+    //kick.ballVelocity.max = BallPhysics::velocityForDistance(kick.range.max, ConfigurationDataProviderBase::theBallSpecification.friction);
+
+    kick.range.min = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.min, 0.f), ConfigurationDataProviderBase::theBallSpecification.friction)).norm();
+    kick.range.max = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.max, 0.f), ConfigurationDataProviderBase::theBallSpecification.friction)).norm();
+  }
 }
 
 void ConfigurationDataProvider::update(RobotDimensions& robotDimensions)
@@ -82,4 +81,4 @@ void ConfigurationDataProvider::update(RobotDimensions& robotDimensions)
   DEBUG_RESPONSE_ONCE("representation:RobotDimensions:once") OUTPUT(idRobotDimensions, bin, robotDimensions);
 }
 
-MAKE_MODULE(ConfigurationDataProvider, infrastructure)
+MAKE_MODULE(ConfigurationDataProvider, infrastructure);

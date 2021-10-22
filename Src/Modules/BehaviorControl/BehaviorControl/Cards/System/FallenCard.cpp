@@ -7,6 +7,8 @@
  */
 
 #include "Representations/BehaviorControl/Skills.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Sensing/FallDownState.h"
 #include "Tools/BehaviorControl/Framework/Card/Card.h"
 
@@ -17,6 +19,7 @@ CARD(FallenCard,
   CALLS(GetUpEngine),
   CALLS(LookForward),
   REQUIRES(FallDownState),
+  REQUIRES(MotionInfo),
 });
 
 class FallenCard : public FallenCardBase
@@ -24,7 +27,11 @@ class FallenCard : public FallenCardBase
   bool preconditions() const override
   {
     return theFallDownState.state == FallDownState::fallen ||
-           theFallDownState.state == FallDownState::squatting;
+           (theFallDownState.state == FallDownState::squatting &&
+            // sitDownKeeper is special because it automatically continues to a get up motion when being left.
+            !theMotionInfo.isKeyframeMotion(KeyframeMotionRequest::sitDownKeeper) &&
+            // Do not get up when we want to sit down.
+            !theMotionInfo.isKeyframeMotion(KeyframeMotionRequest::sitDown));
   }
 
   bool postconditions() const override

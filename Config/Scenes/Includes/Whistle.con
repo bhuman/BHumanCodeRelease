@@ -1,7 +1,6 @@
 dr annotation
 
-set representation:RawGameInfo packetNumber = 0; competitionPhase = 0; competitionType = 0; gamePhase = 0; state = 2; setPlay = 0; firstHalf = 1; kickingTeam = 1; dropInTeam = 0; dropInTime = 0; secsRemaining = 600; secondaryTime = 0; timeLastPacketReceived = 0;
-set representation:GameInfo packetNumber = 0; competitionPhase = 0; competitionType = 0; gamePhase = 0; state = 2; setPlay = 0; firstHalf = 1; kickingTeam = 1; dropInTeam = 0; dropInTime = 0; secsRemaining = 600; secondaryTime = 0; timeLastPacketReceived = 0;
+set representation:RawGameInfo packetNumber = 0; competitionPhase = 0; competitionType = 0; gamePhase = 0; state = 2; setPlay = 0; firstHalf = 1; kickingTeam = 1; secsRemaining = 600; secondaryTime = 0; timeLastPacketReceived = 0;
 
 vp correlation 100 0 2
 vpd correlation module:WhistleRecognizer:correlation0 red

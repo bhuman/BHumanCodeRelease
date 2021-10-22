@@ -17,7 +17,7 @@
 #include <limits>
 
 /**
- * A Manifold construct to handle state spaces with singularities and encapsualte
+ * A Manifold construct to handle state spaces with singularities and encapsulate
  * the topological stucure with [+] and [-] operations.
  */
 template<unsigned N>

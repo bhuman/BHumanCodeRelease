@@ -11,11 +11,7 @@ class Context;
  */
 class RobotCommand : public CommandAdapter
 {
-  bool status;
-
 public:
-  RobotCommand() : status(true) {}
-
   /**
    * Executes the preExecution(), perRobotExecution() and postExecution() in
    * this order.
@@ -33,7 +29,7 @@ public:
    * @param params The parameters of the command.
    * @return Should return false to indicate an error.
    */
-  virtual bool preExecution(Context& context, const std::vector<std::string>& params) { return true; }
+  virtual bool preExecution(Context& context, const std::vector<std::string>& params);
 
   /**
    * This method can be either used to execute code for every robot separately
@@ -53,8 +49,11 @@ public:
    * @param params The parameters of the command.
    * @return Should return false to indicate an error.
    */
-  virtual bool postExecution(Context& context, const std::vector<std::string>& params) { return status; }
+  virtual bool postExecution(Context& context, const std::vector<std::string>& params);
 };
+
+inline bool RobotCommand::preExecution(Context&, const std::vector<std::string>&) { return true; }
+inline bool RobotCommand::postExecution(Context&, const std::vector<std::string>&) { return true; }
 
 /**
  * A Task which can be executed concurrent for a specific robot.

@@ -2,6 +2,7 @@ call Includes/Normal
 
 # motion request is required by simulation
 dr representation:MotionRequest
+dr representation:FrameInfo
 
 # request behavior messages
 dr representation:ActivationGraph

@@ -26,7 +26,7 @@ namespace Constants
   ///@}
 
   constexpr float motionCycleTime = 0.012f;
-};
+}
 
 using Constants::pi;
 using Constants::pi2;

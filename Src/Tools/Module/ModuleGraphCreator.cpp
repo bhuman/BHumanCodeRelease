@@ -10,13 +10,17 @@
 #include "ModuleGraphCreator.h"
 #include "Platform/SystemCall.h"
 #include "Tools/Settings.h"
+#include "Tools/Streams/TypeInfo.h"
 
 #include <algorithm>
 #include <map>
+#include <unordered_map>
 
 ModuleGraphCreator::ModuleGraphCreator(const Configuration& config)
-  : required(config().size()), received(config().size()), sent(config().size()), providers(config().size()), typeInfo(true)
+  : required(config().size()), received(config().size()), sent(config().size()), providers(config().size())
 {
+  TypeInfo::initCurrent();
+
   for(auto& r : received)
     r.resize(config().size());
   for(auto& s : sent)
@@ -238,7 +242,7 @@ bool ModuleGraphCreator::calcShared(const Configuration& config, std::size_t ind
               return false;
             }
             // Check if the representation and the alias are equal.
-            if(!typeInfo.areTypesEqual(typeInfo, requirement.representation, rp.representation))
+            if(!TypeInfo::current->areTypesEqual(*TypeInfo::current, requirement.representation, rp.representation))
             {
               OUTPUT_ERROR(config()[index].name << ": The representations " << rp.representation << " and the alias " << requirement.representation << " are not equal!");
               return false;
@@ -377,62 +381,88 @@ bool ModuleGraphCreator::update(In& stream)
 
 bool ModuleGraphCreator::sortProviders(const std::vector<std::string>& providedByDefault, std::size_t index)
 {
-  // The representations already provided. These are all that are received from the other thread
-  // and the ones that are provided by default.
-  std::vector<std::string> provided = providedByDefault;
-  for(const auto& thread : received[index])
-    for(const char* r : thread)
-      provided.emplace_back(r);
+  // Collect all representations already provided by default or by other threads.
+  std::unordered_set<std::string> alreadyProvided;
+  for(const std::string& representation : providedByDefault)
+    alreadyProvided.insert(representation);
+  for(const auto& received : this->received[index])
+    for(const char* representation : received)
+      alreadyProvided.insert(representation);
 
-  int remaining = static_cast<int>(providers[index].size()), // The number of entries not correct sequence so far.
-      pushBackCount = remaining; // The number of push_backs still allowed. If zero, no valid sequence is possible.
-  std::list<Provider>::iterator i = providers[index].begin();
-  while(i != providers[index].end())
+  // Create nodes of the dependency graph.
+  std::vector<Node> nodes;
+  std::unordered_map<std::string, Node*> lookup;
+  nodes.reserve(providers[index].size());
+  lookup.reserve(providers[index].size());
+  for(const Provider& provider : providers[index])
   {
-    const std::vector<ModuleBase::Info>& info = i->moduleBase->getModuleInfo();
-    auto j = info.cbegin();
-    for(; j != info.cend(); ++j)
-      if(!j->update && std::string(j->representation) != i->representation && std::find(provided.begin(), provided.end(), j->representation) == provided.end())
-        break;
-    if(j != info.cend()) // at least one requirement missing
+    nodes.push_back(provider);
+    lookup[provider.representation] = &nodes.back();
+  }
+
+  // Add inverse dependencies to graph (provider -> providers that depend on the representation provided).
+  for(Node& target : nodes)
+  {
+    for(const auto& info : target.provider.moduleBase->getModuleInfo())
     {
-      if(pushBackCount) // still one left to try
+      // Skip if this is not a requirement or if it is already provided.
+      if(info.update || alreadyProvided.find(info.representation) != alreadyProvided.end())
+        continue;
+
+      // Who provides this representation?
+      auto provider = lookup.find(info.representation);
+
+      // Add this provider as dependency to the other provider
+      if(provider != lookup.end())
+        provider->second->edges.push_back(&target);
+      else
       {
-        providers[index].emplace_back(*i);
-        i = providers[index].erase(i);
-        --pushBackCount;
-      }
-      else // we checked all, none was satisfied
-      {
-        std::string text;
-        for(const std::string& p : provided)
-        {
-          text += text == "" ? "" : ", ";
-          text += p;
-        }
-        std::string text2 = "";
-        while(i != providers[index].end())
-        {
-          text2 += text2.empty() ? "" : ", ";
-          text2 += i->representation;
-          ++i;
-        }
-        if(text.empty())
-          OUTPUT_ERROR(config()[index].name << ": Requirements missing for providers for " << text2 << "!");
-        else
-          OUTPUT_ERROR(config()[index].name << ": Only found consistent providers for " << text <<
-                       ".\nRequirements missing for providers for " << text2 << "!");
+        OUTPUT_ERROR(config()[index].name << "Requirement " << info.representation << " missing for provider "
+                     << target.provider.moduleBase->name);
         return false;
       }
     }
-    else // we found one with all requirements fulfilled
+  }
+
+  // Fill list of providers by a topological sort.
+  std::list<Provider> providers;
+  for(Node& node : nodes)
+    if(node.state == Node::unreached && !topologicalSort(config()[index].name.c_str(), &node, providers))
+      return false;
+
+  // Use new list.
+  this->providers[index] = providers;
+  return true;
+}
+
+bool ModuleGraphCreator::topologicalSort(const char* threadName, Node* node, std::list<Provider>& providers)
+{
+  node->state = Node::reached;
+  for(Node* other : node->edges)
+  {
+    // Detect cycles. However, a provider is allowed to depend on itself.
+    if(other->state == Node::reached && other != node)
     {
-      provided.emplace_back(i->representation); // add representation provided
-      ++i; // continue with next provider
-      --remaining; // we have one less to go,
-      pushBackCount = remaining; // and the search starts again
+      std::string text = std::string(other->provider.moduleBase->name) + "." + other->provider.representation;
+      while(node != other)
+      {
+        text = std::string(node->provider.moduleBase->name) + "." + node->provider.representation + " -> " + text;
+        node = node->prev;
+      }
+      text = std::string(node->provider.moduleBase->name) + "." + node->provider.representation + " -> " + text;
+      OUTPUT_ERROR(threadName << ": Cyclic dependency " << text << "!");
+      return false;
+    }
+    else if(other->state == Node::unreached)
+    {
+      other->prev = node;
+      if(!topologicalSort(threadName, other, providers))
+        return false;
     }
   }
+
+  providers.push_front(node->provider);
+  node->state = Node::done;
   return true;
 }
 

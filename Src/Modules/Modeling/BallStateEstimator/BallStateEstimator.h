@@ -21,13 +21,20 @@
 #pragma once
 
 #include "BallStateEstimateFilters.h"
+#include "Representations/Communication/GameInfo.h"
+#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
+#include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallContactChecker.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FilteredBallPercepts.h"
 #include "Representations/Modeling/Odometer.h"
+#include "Representations/Modeling/RobotPose.h"
+#include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -42,11 +49,17 @@ MODULE(BallStateEstimator,
   REQUIRES(BodyContour),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(FieldDimensions),
   REQUIRES(FilteredBallPercepts),
   REQUIRES(FrameInfo),
+  REQUIRES(GameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
+  REQUIRES(OwnTeamInfo),
+  REQUIRES(RobotInfo),
+  REQUIRES(WorldModelPrediction),
+  USES(ExtendedGameInfo),
   PROVIDES(BallModel),
   DEFINES_PARAMETERS(
   {,
@@ -89,6 +102,10 @@ private:
   unsigned timeWhenBallFirstDisappeared;                    /**< A point of time from which on a ball seems to have disappeared (is not seen anymore although it should be) */
   bool ballDisappeared;                                     /**< If true, the ball is currently considered as disappeared */
   FilteredBallPercept lastBallPercept;                      /**< The last seen ball. Used for velocity computation */
+  unsigned penaltyBallModelingStartTime;                    /**< The time when the specific penalty ball modeling started */
+  std::vector<Vector2f> penaltyBallPositions;               /**< A list of all ball position measurements in the first second after the start of the modeling */
+  Vector2f averagePenaltyBallPosition;                      /**< The average ball position calculated from the list of measurements */
+  bool useAveragePenaltyBallPosition;                       /**< If true, the averaged ball position is used */
 
   /** Initialize member variables and reset filters */
   void init();
@@ -100,6 +117,12 @@ private:
    *  @param ballModel The ball model!
    */
   void generateModel(BallModel& ballModel);
+
+  /** Shortcut for a very fast reaction of the goal keeper in a penalty shootout
+   *  @param ballModel The model is filled, if the method returns true
+   *  @return true, if the ball has left the penalty mark. In this case, the model is filled.
+   */
+  bool computeBallModelForPenaltyShootout(BallModel& ballModel);
 
   void motionUpdate(BallModel& ballModel);
   void integrateCollisionWithFeet();

@@ -19,7 +19,7 @@ std::string ExitCmd::getDescription() const
   return "Exit bush.";
 }
 
-bool ExitCmd::execute(Context& context, const std::vector<std::string>& params)
+bool ExitCmd::execute(Context& context, const std::vector<std::string>&)
 {
   context.shutdown();
   return true;

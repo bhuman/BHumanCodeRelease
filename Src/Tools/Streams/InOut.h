@@ -109,7 +109,7 @@ public:
    */
   virtual bool isBinary() const {return false;}
 
-  virtual void select(const char* name, int type, const char* enumType = nullptr) {}
+  virtual void select(const char* name, int type, const char* enumType = nullptr);
   virtual void deselect() {}
 
   /**
@@ -142,6 +142,8 @@ public:
   friend Out& operator<<(Out& out, Out& (*f)(Out&));
   friend Out& endl(Out& stream);
 };
+
+inline void Out::select(const char*, int, const char*) {}
 
 /**
  * Operator that writes a Boolean into a stream.
@@ -375,7 +377,7 @@ public:
    *             >= 0: array/list element index.
    * @param enumType The type as string if it is an enum. Otherwise nullptr.
    */
-  virtual void select(const char* name, int type, const char* enumType = nullptr) {}
+  virtual void select(const char* name, int type, const char* enumType = nullptr);
 
   /**
    * Deselects a field for reading.
@@ -412,6 +414,8 @@ public:
   friend In& operator>>(In& in, In& (*f)(In&));
   friend In& endl(In& stream);
 };
+
+inline void In::select(const char*, int, const char*) {}
 
 /**
  * Operator that reads a Boolean from a stream.
@@ -550,8 +554,8 @@ namespace EnumHelpers
   template<typename T, bool isEnum> struct EnumOrClass
   {
     // An error here usually means that you try to stream data that is not streamable
-    static Out& write(Out& out, const T& t) {return (Out2&)out << t;}
-    static In& read(In& in, T& t) {return (In2&)in >> t;}
+    static Out& write(Out& out, const T& t) {return static_cast<Out2&>(out) << t;}
+    static In& read(In& in, T& t) {return static_cast<In2&>(in) >> t;}
   };
 
   /**

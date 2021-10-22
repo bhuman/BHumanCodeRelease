@@ -57,7 +57,7 @@ void CameraMatrix::draw() const
       isValid[4] = isValid[5] = false;
 
     // determine the boundary of all the points that were projected to the ground
-    Boundaryi boundary(-10000, +10000);
+    Boundaryi boundary;
     for(int i = 0; i < 6; ++i)
       if(isValid[i])
       {
@@ -123,7 +123,7 @@ void CameraMatrix::draw() const
         isValid[4] = isValid[5] = false;
 
       // determine the boundary of all the points that were projected to the ground
-      Boundaryi boundary(-10000, +10000);
+      Boundaryi boundary;
       for(int i = 0; i < 6; ++i)
         if(isValid[i])
           boundary.add(pointOnField[i]);
@@ -194,7 +194,7 @@ void RobotCameraMatrix::draw() const
     }
 
     // determine the boundary of all the points that were projected to the ground
-    Boundaryi boundary(-10000, +10000);
+    Boundaryi boundary;
     for(int i = 0; i < 6; ++i)
       if(isValid[i])
       {
@@ -261,7 +261,7 @@ void RobotCameraMatrix::draw() const
         isValid[4] = isValid[5] = false;
 
       // determine the boundary of all the points that were projected to the ground
-      Boundaryi boundary(-10000, +10000);
+      Boundaryi boundary;
       for(int i = 0; i < 6; ++i)
         if(isValid[i])
           boundary.add(pointOnField[i]);

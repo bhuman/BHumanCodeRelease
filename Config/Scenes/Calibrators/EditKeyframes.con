@@ -1,0 +1,21 @@
+vd representation:KeyframeMotionGenerator
+vd parameters:KeyframeMotionEngine
+vd representation:JointRequest
+set module:KeyframeMotionEngine:setSteppingKeyframes true
+
+echo set module:KeyframeMotionEngine:Edit:setLine -1
+echo set module:KeyframeMotionEngine:Edit:setMotion decideAutomatic
+echo
+echo dr module:KeyframeMotionEngine:Edit:addLine
+echo dr module:KeyframeMotionEngine:Edit:addLineAfter
+echo dr module:KeyframeMotionEngine:Edit:addLineBefore
+echo dr module:KeyframeMotionEngine:Edit:deleteLine
+echo dr module:KeyframeMotionEngine:Edit:getCurrentAngles
+echo dr module:KeyframeMotionEngine:Edit:setCurrentAngles
+echo dr module:KeyframeMotionEngine:Edit:getCurrentAnglesLeftArm
+echo dr module:KeyframeMotionEngine:Edit:getCurrentAnglesRightArm
+echo dr module:KeyframeMotionEngine:Edit:getCurrentAnglesLeftLeg
+echo dr module:KeyframeMotionEngine:Edit:getCurrentAnglesRightLeg
+echo
+echo save parameters:KeyframeMotionEngine
+echo set module:KeyframeMotionEngine:setSteppingKeyframes true

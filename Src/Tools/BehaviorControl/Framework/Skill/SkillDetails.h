@@ -117,7 +117,12 @@ private:
     struct _S : public Streamable \
     { \
       _SKILL_INTERFACE_DECL2(seq) \
-      void serialize(In* in, Out* out) \
+      void read(In& stream) override \
+      { \
+        auto _STREAM_VAR(seq) = this->_STREAM_VAR(seq); \
+        _STREAM_SER(seq) \
+      } \
+      void write(Out& stream) const override \
       { \
         auto _STREAM_VAR(seq) = this->_STREAM_VAR(seq); \
         _STREAM_SER(seq) \
@@ -168,6 +173,7 @@ private:
     }; \
     void operator ()(_STREAM_ATTR_##n params2 const void* _unused = nullptr) \
     { \
+      static_cast<void>(_unused); \
       _STREAM_ATTR_##n params3 \
       if(_context.lastFrame != registry::theInstance->lastFrameTime && _context.lastFrame != registry::theInstance->currentFrameTime) \
       { \
@@ -256,7 +262,7 @@ public:
    * @param getSkillInfo The function that returns the info.
    * @param next The creator that shall be next in the list.
    */
-  SkillImplementationCreatorBase(const char* name, Info (*getSkillInfo)(), SkillImplementationCreatorBase* next) :
+  SkillImplementationCreatorBase(const char* name, Info (*getSkillInfo)(), SkillImplementationCreatorBase* next) noexcept :
     name(name), getSkillInfo(getSkillInfo), next(next)
   {}
 
@@ -290,7 +296,7 @@ public:
    * @param name The name of the skill that can be created by this instance.
    * @param getSkillInfo The function that returns the info.
    */
-  SkillImplementationCreatorList(const char* name, Info (*getSkillInfo)()) :
+  SkillImplementationCreatorList(const char* name, Info (*getSkillInfo)()) noexcept :
     SkillImplementationCreatorBase(name, getSkillInfo, first)
   {
     first = this;
@@ -310,7 +316,7 @@ public:
    * @param name The name of the skill implementation that can be created by this instance.
    * @param getSkillInfo The function that returns the info.
    */
-  SkillImplementationCreator(const char* name, SkillImplementationCreatorBase::Info (*getSkillInfo)()) :
+  SkillImplementationCreator(const char* name, SkillImplementationCreatorBase::Info (*getSkillInfo)()) noexcept :
     SkillImplementationCreatorList<Instance>(name, getSkillInfo)
   {
   }
@@ -332,8 +338,8 @@ private:
 #define _SKILL_IMPLEMENTATION_PARAMETERS_USES(type)
 #define _SKILL_IMPLEMENTATION_PARAMETERS_MODIFIES(type)
 #define _SKILL_IMPLEMENTATION_PARAMETERS_CALLS(type)
-#define _SKILL_IMPLEMENTATION_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
-#define _SKILL_IMPLEMENTATION_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , header, __VA_ARGS__); using NoParameters = Params;
+#define _SKILL_IMPLEMENTATION_PARAMETERS__MODULE_DEFINES_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
+#define _SKILL_IMPLEMENTATION_PARAMETERS__MODULE_LOADS_PARAMETERS(header, ...) _STREAM_STREAMABLE(Params, Streamable, , , header, __VA_ARGS__); using NoParameters = Params;
 
 #define _SKILL_IMPLEMENTATION_LOAD(x) _MODULE_JOIN(_SKILL_IMPLEMENTATION_LOAD_, x)
 #define _SKILL_IMPLEMENTATION_LOAD_IMPLEMENTS(type)
@@ -428,6 +434,7 @@ private:
     using Parameters = theName##Skill::Parameters; \
     theName##Base(const char* fileName = nullptr) \
     { \
+      static_cast<void>(fileName); \
       static const char* skillName = #theName; \
       static_cast<void>(skillName); \
       _MODULE_ATTR_##n load \
@@ -461,4 +468,4 @@ private:
  * @param skill The name of the skill implementation that can be created.
  */
 #define _MAKE_SKILL_IMPLEMENTATION(instance, skill) \
-  SkillImplementationCreator<instance, skill> the##skill##SkillImplementation(#skill, skill##Base::getSkillInfo);
+  SkillImplementationCreator<instance, skill> the##skill##SkillImplementation(#skill, skill##Base::getSkillInfo)

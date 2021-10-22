@@ -7,25 +7,23 @@
 
 #pragma once
 
-#include <SimRobotCore2.h>
-#include "Representations/Configuration/CameraIntrinsics.h"
-#include "Representations/Configuration/JointCalibration.h"
-#include "Representations/Configuration/RobotDimensions.h"
-#include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/SensorData/JointSensorData.h"
-#include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/RobotParts/Joints.h"
 #include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include <SimRobot.h>
+#include <vector>
 
 struct CameraImage;
+struct CameraInfo;
 struct FsrSensorData;
 struct GroundTruthWorldState;
 struct InertialSensorData;
+struct JointCalibration;
 struct JointRequest;
+struct JointSensorData;
+struct MotionInfo;
+struct MotionRequest;
 struct OdometryData;
 struct Pose2f;
+struct Pose3f;
 
 /**
  * An interface to a simulated robot (and its ball).
@@ -33,49 +31,26 @@ struct Pose2f;
 class SimulatedRobot
 {
 private:
-  SimRobot::Application* application;
-
-  bool firstTeam = false; /**< Whether this robot is in the first team or not. */
-  int robotNumber; /**< The number of this robot */
-  SimRobot::Object* robot = nullptr; /**< The simulated robot object. */
-  SimRobot::Object* leftFoot = nullptr; /**< The simulated left foot of the robot. */
-  SimRobot::Object* rightFoot = nullptr; /**< The simulated right foot of the robot. */
-  static SimRobot::Object* ball; /**< The simulated ball. */
-  std::vector<SimRobot::Object*> firstTeamRobots; /**< The simulated robots in the first team(excluding this robot). */
+  int robotNumber = -1; /**< The number of this robot */
+  std::vector<SimRobot::Object*> firstTeamRobots; /**< The simulated robots in the first team (excluding this robot). */
   std::vector<SimRobot::Object*> secondTeamRobots; /**< The simulated robots in the second team (excluding this robot). */
-  mutable Vector3f lastBallPosition; /**< The ball position at the time when \c getWorldState was called last */
-  mutable unsigned lastBallTime = 0; /**< The simulated time when \c getWorldState was called last */
+  mutable Vector3f lastBallPosition; /**< The ball position at the time when \c getWorldState was called last. */
+  mutable unsigned lastBallTime = 0; /**< The simulated time when \c getWorldState was called last. */
 
-  SimRobot::Object* jointSensors[Joints::numOfJoints]; /**< The handles to the sensor ports of the joints. */
-  SimRobot::Object* jointActuators[Joints::numOfJoints]; /**< The handles to the actuator ports of the joints. */
-  SimRobot::Object* cameraSensor = nullptr; /**< The handle to the sensor port of the selected camera. */
-  SimRobot::Object* upperCameraSensor = nullptr; /**< The handle to the sensor port of the upper camera. */
-  SimRobot::Object* lowerCameraSensor = nullptr; /**< The handle to the sensor port of the lower camera. */
-  SimRobot::Object* accSensor = nullptr; /**< The handle to the sensor port of the virtual accelerometer. */
-  SimRobot::Object* gyroSensor = nullptr; /**< The handle to the sensor port of the virtual gyrosope. */
-  SimRobot::Object* leftUsSensor = nullptr; /** The handle to the sensor port of the virtual us sensor */
-  SimRobot::Object* rightUsSensor = nullptr; /** The handle to the sensor port of the virtual us sensor */
-  SimRobot::Object* centerLeftUsSensor = nullptr; /** The handle to the sensor port of the virtual us sensor */
-  SimRobot::Object* centerRightUsSensor = nullptr; /** The handle to the sensor port of the virtual us sensor */
-
-  static SimRobotCore2::SensorPort* activeCameras[12]; /**< An array of all activated cameras */
-  static unsigned activeCameraCount; /**< Total count of constructed cameras */
-  unsigned activeCameraIndex; /**< Index of this robot in the \c activeCameras array */
-
-  JointCalibration jointCalibration; /**< The simulated robot is perfectly calibrated, but this is usefull for testing calibration. */
-  ENUM_INDEXED_ARRAY(CameraInfo, CameraInfo::Camera) cameraInfos; /**< Information about the upper camera. */
-  CameraIntrinsics cameraIntrinsics;
-  RobotDimensions robotDimensions;
+protected:
+  static SimRobot::Object* ball; /**< The simulated ball. */
+  SimRobot::Object* robot = nullptr; /**< The simulated robot object. */
+  bool firstTeam = false; /**< Whether this robot is in the first team or not. */
 
 public:
-  SimulatedRobot();
-  ~SimulatedRobot();
-
   /**
-   * Initializes iterface for the given robot.
-   * @param robot The robot to initialize the interface for
+   * Initializes interface for the given robot.
+   * @param robot The robot to initialize the interface for.
    */
-  void init(SimRobot::Object* robot);
+  explicit SimulatedRobot(SimRobot::Object* robot);
+
+  /** Virtual destructor for polymorphism. */
+  virtual ~SimulatedRobot() = default;
 
   /**
    * Sets the only ball used to create the ball model.
@@ -86,7 +61,7 @@ public:
    * Determines the pose of the simulated robot.
    * @param robotPose The determined pose of the robot.
    */
-  void getRobotPose(Pose2f& robotPose) const;
+  virtual void getRobotPose(Pose2f& robotPose) const = 0;
 
   /**
    * Determines all robot states as well as the ball state.
@@ -112,44 +87,51 @@ public:
    * @param cameraImage The determined image.
    * @param cameraInfo The information about the camera that took the image.
    */
-  void getImage(CameraImage& cameraImage, CameraInfo& cameraInfo);
+  virtual void getImage(CameraImage& cameraImage, CameraInfo& cameraInfo) = 0;
 
   /**
    * Determines the camera information (in case no images are generated) of the simulated robot.
    * @param cameraInfo The information about the camera that took the image (in theory).
    */
-  void getCameraInfo(CameraInfo& cameraInfo);
+  virtual void getCameraInfo(CameraInfo& cameraInfo) = 0;
 
   /**
    * Sets the values of the JointCalibration.
    * @param jointCalibration The joint calibration to set.
    */
-  void setJointCalibration(const JointCalibration& jointCalibration);
+  virtual void setJointCalibration(const JointCalibration& jointCalibration) = 0;
 
   /**
    * Determines the current joint angles of the simulated robot and sets new ones.
    * @param jointRequest The joint request to set.
    * @param jointAngles The determined joint angles.
    */
-  void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const;
+  virtual void getAndSetJointData(const JointRequest& jointRequest, JointSensorData& jointSensorData) const = 0;
 
   /**
    * Sets the values of all joint actuators.
    * @param jointRequest The joint request to set.
    */
-  void setJointRequest(const JointRequest& jointRequest) const;
+  virtual void setJointRequest(const JointRequest& jointRequest) const = 0;
 
   /**
    * Toggles between the two cameras.
    */
-  void toggleCamera();
+  virtual void toggleCamera() = 0;
 
   /**
    * Determines the sensor data of the simulated robot.
    * @param fsrSensorData The determined FSR sensor data.
    * @param inertialSensorData The determined inertial sensor data.
    */
-  void getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData);
+  virtual void getSensorData(FsrSensorData& fsrSensorData, InertialSensorData& inertialSensorData) = 0;
+
+  /**
+   * Does the abstract motion emulation.
+   * @param motionRequest The requested motion.
+   * @param motionInfo The actually executed motion.
+   */
+  virtual void getAndSetMotionData(const MotionRequest& motionRequest, MotionInfo& motionInfo) = 0;
 
   /**
    * Moves and rotates the robot to an absolute pose
@@ -157,13 +139,13 @@ public:
    * @param rot The target rotation (as euler angles; in radian)
    * @param changeRotation Whether the rotation of the robot should be changed or not
    */
-  void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation);
+  virtual void moveRobot(const Vector3f& pos, const Vector3f& rot, bool changeRotation) = 0;
 
   /**
    * Enables or disables the physics simulation of the body
    * @param enable Whether to enable or disable the physics simulation
    */
-  void enablePhysics(bool enable);
+  virtual void enablePhysics(bool enable) = 0;
 
   /**
    * Moves the ball to the given position
@@ -185,32 +167,17 @@ public:
   static Vector3f getPosition3D(const SimRobot::Object* obj);
 
   /**
+   * Applies rolling friction to the ball (if the simulation core does not do it).
+   * @param friction The negative acceleration of the ball (m/s^2).
+   */
+  static void applyBallFriction(float friction);
+
+  /**
    * Determines whether a robot is member of the first or second team
    * @param obj The robot
    * @return \c true if the robot is in the first team; \c false otherwise
    */
   static bool isFirstTeam(const SimRobot::Object* obj);
-
-private:
-  /**
-   * Adds jitter to a sensor value.
-   */
-  float addUsJitter(float value);
-
-  /**
-   * Determines the two-dimensional pose of a SimRobot object without team color rotation.
-   * @param obj The object of which the pose will be determined.
-   * @param Pose2f The two-dimensional pose of the specified object.
-   * @return Is the robot upright?
-   */
-  bool getPose2f(const SimRobot::Object* obj, Pose2f& Pose2f) const;
-
-  /**
-   * Determines the three-dimensional pose of a SimRobot object without team color rotation.
-   * @param obj The object of which the pose will be determined.
-   * @param Pose3f The three-dimensional pose of the specified object.
-   */
-  void getPose3f(const SimRobot::Object* obj, Pose3f& Pose3f) const;
 
   /**
    * Determines a robot's number
@@ -218,4 +185,20 @@ private:
    * @return The number
    */
   static int getNumber(const SimRobot::Object* obj);
+
+protected:
+  /**
+   * Determines the two-dimensional pose of a SimRobot object without team color rotation.
+   * @param obj The object of which the pose will be determined.
+   * @param pose The two-dimensional pose of the specified object.
+   * @return Is the robot upright?
+   */
+  virtual bool getPose2f(const SimRobot::Object* obj, Pose2f& pose) const = 0;
+
+  /**
+   * Determines the three-dimensional pose of a SimRobot object without team color rotation.
+   * @param obj The object of which the pose will be determined.
+   * @param pose The three-dimensional pose of the specified object.
+   */
+  virtual void getPose3f(const SimRobot::Object* obj, Pose3f& pose) const = 0;
 };

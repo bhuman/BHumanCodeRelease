@@ -40,8 +40,12 @@ mr OpponentTeamInfo default
 mr RawGameInfo default
 mr GameInfo default
 
-# configure the log data providers
-log mr
+# Support replaying legacy logs: It is assumed that the
+# Cognition log was selected and a Motion log is merged
+# in. Otherwise, this will not work.
+log merge
+log mr legacy
+log start
 
 # enable behavior graph
 dr representation:ActivationGraph

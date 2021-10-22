@@ -20,7 +20,7 @@ DataView::DataView(const QString& fullName, const std::string& repName,
   theConsole(console), theName(repName), typeInfo(typeInfo)
 {}
 
-bool DataView::handleMessage(InMessage& msg, const std::string& type, const std::string& repName)
+bool DataView::handleMessage(InMessage& msg, const std::string& type, const std::string&)
 {
   SYNC;
 
@@ -131,7 +131,7 @@ void DataView::setAutoSet(bool value)
   theAutoSetModeIsEnabled = value;
 }
 
-bool DataView::handlePropertyEditorEvent(QWidget* pEditor, QtProperty* pProperty, QEvent* pEvent)
+bool DataView::handlePropertyEditorEvent(QWidget*, QtProperty*, QEvent* pEvent)
 {
   /*
    * FocusIn/Out is used to detect whether the user is currently editing a value.

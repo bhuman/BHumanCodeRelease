@@ -65,7 +65,7 @@ void CameraMatrixProvider::camera2image(const Vector3f& camera, Vector2f& image)
 bool CameraMatrixProvider::intersectLineWithCullPlane(const Vector3f& lineBase, const Vector3f& lineDir,
                                                       Vector3f& point) const
 {
-  if(lineDir.x() == 0.)
+  if(lineDir.x() == 0.f)
     return false;
   point = lineBase + lineDir * ((lineBase.x() - 200.0f) / -lineDir.x());
   return true;
@@ -89,8 +89,8 @@ void CameraMatrixProvider::drawFieldLines(const CameraMatrix& cameraMatrix) cons
     const Vector2f start0(Pose2f(relativeLine).translate(0, -halfFieldLinesWidth).translation);
     const Vector2f end1(Pose2f(relativeLine).translate(length, halfFieldLinesWidth).translation);
 
-    start0C = cameraMatrixInv * Vector3f(start0.x(), start0.y(), 0.); // field2camera
-    end1C = cameraMatrixInv * Vector3f(end1.x(), end1.y(), 0.); // field2camera
+    start0C = cameraMatrixInv * Vector3f(start0.x(), start0.y(), 0.f); // field2camera
+    end1C = cameraMatrixInv * Vector3f(end1.x(), end1.y(), 0.f); // field2camera
 
     if(start0C.x() <= 200 && end1C.x() <= 200)
       continue;
@@ -98,16 +98,16 @@ void CameraMatrixProvider::drawFieldLines(const CameraMatrix& cameraMatrix) cons
     const Vector2f& start1(Pose2f(relativeLine).translate(0, halfFieldLinesWidth).translation);
     const Vector2f& end0(Pose2f(relativeLine).translate(length, -halfFieldLinesWidth).translation);
 
-    start1C = cameraMatrixInv * Vector3f(start1.x(), start1.y(), 0.); // field2camera
-    end0C = cameraMatrixInv * Vector3f(end0.x(), end0.y(), 0.); // field2camera
+    start1C = cameraMatrixInv * Vector3f(start1.x(), start1.y(), 0.f); // field2camera
+    end0C = cameraMatrixInv * Vector3f(end0.x(), end0.y(), 0.f); // field2camera
 
-    if(start0C.x() <= 200)
+    if(start0C.x() <= 200.f)
       intersectLineWithCullPlane(start0C, end0C - start0C, start0C);
-    else if(end0C.x() <= 200)
+    else if(end0C.x() <= 200.f)
       intersectLineWithCullPlane(start0C, end0C - start0C, end0C);
-    if(start1C.x() <= 200)
+    if(start1C.x() <= 200.f)
       intersectLineWithCullPlane(start1C, end1C - start1C, start1C);
-    else if(end1C.x() <= 200)
+    else if(end1C.x() <= 200.f)
       intersectLineWithCullPlane(start1C, end1C - start1C, end1C);
 
     camera2image(start0C, start0I);
@@ -119,22 +119,22 @@ void CameraMatrixProvider::drawFieldLines(const CameraMatrix& cameraMatrix) cons
     LINE("module:CameraMatrixProvider:calibrationHelper", start1I.x(), start1I.y(), end1I.x(), end1I.y(), 0, Drawings::solidPen, ColorRGBA::black);
   }
 
-  start0C = cameraMatrixInv * Vector3f(100, -11, 0.); // field2camera
-  end0C = cameraMatrixInv * Vector3f(0, -11, 0.); // field2camera
+  start0C = cameraMatrixInv * Vector3f(100.f, -11.f, 0.f); // field2camera
+  end0C = cameraMatrixInv * Vector3f(0.f, -11.f, 0.f); // field2camera
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
   LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x(), start0I.y(), end0I.x(), end0I.y(), 0, Drawings::solidPen, ColorRGBA::blue);
 
-  start0C = cameraMatrixInv * Vector3f(100, 11, 0.); // field2camera
-  end0C = cameraMatrixInv * Vector3f(0, 11, 0.); // field2camera
+  start0C = cameraMatrixInv * Vector3f(100.f, 11.f, 0.f); // field2camera
+  end0C = cameraMatrixInv * Vector3f(0.f, 11.f, 0.f); // field2camera
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
   LINE("module:CameraMatrixProvider:calibrationHelper", start0I.x(), start0I.y(), end0I.x(), end0I.y(), 0, Drawings::solidPen, ColorRGBA::blue);
 
-  start0C = cameraMatrixInv * Vector3f(110, 1000, 0.); // field2camera
-  end0C = cameraMatrixInv * Vector3f(110, -1000, 0.); // field2camera
+  start0C = cameraMatrixInv * Vector3f(110.f, 1000.f, 0.f); // field2camera
+  end0C = cameraMatrixInv * Vector3f(110.f, -1000.f, 0.f); // field2camera
   camera2image(start0C, start0I);
   camera2image(end0C, end0I);
 
@@ -192,7 +192,7 @@ void CameraMatrixProvider::drawRobotParts()
     }
   }
 
-  for(unsigned int i = 0; i < p.shineIndex.size(); i += 3)
+  for(unsigned int i = 0; i < p.shinIndex.size(); i += 3)
   {
     //for each triangle do
     Pose3f f[6] = {theRobotModel.limbs[Limbs::tibiaRight],
@@ -203,7 +203,7 @@ void CameraMatrixProvider::drawRobotParts()
                    theRobotModel.limbs[Limbs::tibiaLeft]
                   };
     //triangle point indices
-    int tIndex[3] = { p.shineIndex[i] * 3, p.shineIndex[i + 1] * 3, p.shineIndex[i + 2] * 3};
+    int tIndex[3] = { p.shinIndex[i] * 3, p.shinIndex[i + 1] * 3, p.shinIndex[i + 2] * 3};
 
     Pose3f invertedCameraMatrix = theRobotCameraMatrix.inverse();
 
@@ -212,8 +212,8 @@ void CameraMatrixProvider::drawRobotParts()
     for(int k = 0; k < 3; ++k)
     {
       //add triangle point to ankle pose and convert from meter to mm
-      f[k].translate(p.shinePoints[tIndex[k]] * 1000, p.shinePoints[tIndex[k] + 1] * 1000, p.shinePoints[tIndex[k] + 2] * 1000); //right
-      f[k + 3].translate(p.shinePoints[tIndex[k]] * 1000, -p.shinePoints[tIndex[k] + 1] * 1000, p.shinePoints[tIndex[k] + 2] * 1000); //left
+      f[k].translate(p.shinPoints[tIndex[k]] * 1000, p.shinPoints[tIndex[k] + 1] * 1000, p.shinPoints[tIndex[k] + 2] * 1000); //right
+      f[k + 3].translate(p.shinPoints[tIndex[k]] * 1000, -p.shinPoints[tIndex[k] + 1] * 1000, p.shinPoints[tIndex[k] + 2] * 1000); //left
 
       //project into the image
       camera2image(invertedCameraMatrix * f[k].translation, projected2Image[k]); //right

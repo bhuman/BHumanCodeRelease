@@ -15,12 +15,11 @@
 STREAMABLE(PathPlanner,
 {
   /**
-   * The function plans a path to a target and returns the first step of it.
+   * The function plans a path to a target and returns the resulting obstacle avoidance information.
    * The parameters of the function are:
    * target The target to reach in field coordinates.
    * speed The speed to walk with in ratios of the maximum speeds.
-   * excludePenaltyArea Avoid the own penalty area?
-   * The function returns the motion request that should be executed.
+   * The function returns the obstacle avoidance information.
    */
-  FUNCTION(MotionRequest(const Pose2f& target, const Pose2f& speed, bool excludePenaltyArea)) plan,
+  FUNCTION(MotionRequest::ObstacleAvoidance(const Pose2f& target, const Pose2f& speed)) plan,
 });

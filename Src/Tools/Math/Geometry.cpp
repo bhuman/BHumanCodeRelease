@@ -3,13 +3,10 @@
  * Implemets class Geometry
  *
  * @author <A href=mailto:juengel@informatik.hu-berlin.de>Matthias Jüngel</A>
- * @author <a href="mailto:walter.nistico@uni-dortmund.de">Walter Nistico</a>
  */
 
 #include "Geometry.h"
 #include "Approx.h"
-#include "RotationMatrix.h"
-#include "Representations/Modeling/RobotPose.h"
 #include "Tools/Math/BHMath.h"
 #include "Tools/Math/Eigen.h"
 #include <algorithm>
@@ -211,6 +208,26 @@ bool Geometry::getIntersectionOfRaysFactor(const Line& ray1, const Line& ray2, f
   return false;
 }
 
+bool Geometry::getIntersectionOfLineAndConvexPolygon(const std::vector<Vector2f>& polygon, const Line& direction, Vector2f& intersection)
+{
+  for(size_t i = 0; i < polygon.size(); ++i)
+  {
+    Vector2f intersection2D;
+    const Vector2f& p1 = polygon[i];
+    const Vector2f& p2 = polygon[(i + 1) % polygon.size()];
+    const Vector2f dir = p2 - p1;
+    const Geometry::Line polygonLine(p1, dir.normalized());
+    if(Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p1) &&
+       !Geometry::isPointLeftOfLine(direction.base, direction.base + direction.direction, p2) &&
+       Geometry::getIntersectionOfLines(direction, polygonLine, intersection2D))
+    {
+      intersection = intersection2D;
+      return true;
+    }
+  }
+  return false;
+}
+
 float Geometry::getDistanceToLine(const Line& line, const Vector2f& point)
 {
   if(line.direction.x() == 0 && line.direction.y() == 0)
@@ -261,6 +278,13 @@ bool Geometry::isPointInsideRectangle2(const Vector2f& corner1, const Vector2f& 
 {
   const Vector2f bottomLeft(std::min(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()));
   const Vector2f topRight(std::max(corner1.x(), corner2.x()), std::max(corner1.y(), corner2.y()));
+  return isPointInsideRectangle(bottomLeft, topRight, point);
+}
+
+bool Geometry::isPointInsideRectangle(const Rect& rect, const Vector2f& point)
+{
+  const Vector2f bottomLeft(std::min(rect.a.x(), rect.b.x()), std::min(rect.a.y(), rect.b.y()));
+  const Vector2f topRight(std::max(rect.a.x(), rect.b.x()), std::max(rect.a.y(), rect.b.y()));
   return isPointInsideRectangle(bottomLeft, topRight, point);
 }
 
@@ -382,7 +406,7 @@ bool Geometry::clipPointInsideRectangle(const Vector2i& bottomLeftCorner, const 
 }
 
 bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLeft, const Vector2i& topRight,
-    const Geometry::Line& line, Vector2i& point1, Vector2i& point2)
+                                                       const Geometry::Line& line, Vector2i& point1, Vector2i& point2)
 {
   int foundPoints = 0;
   Vector2f point[2];
@@ -408,7 +432,7 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLef
     {
       point[foundPoints].x() = x1;
       point[foundPoints].y() = static_cast<float>(bottomLeft.y());
-      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1))
+      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1f))
       {
         foundPoints++;
       }
@@ -418,7 +442,7 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLef
     {
       point[foundPoints].x() = x2;
       point[foundPoints].y() = static_cast<float>(topRight.y());
-      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1))
+      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1f))
       {
         foundPoints++;
       }
@@ -449,7 +473,7 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2i& bottomLef
 }
 
 bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLeft, const Vector2f& topRight,
-    const Geometry::Line& line, Vector2f& point1, Vector2f& point2)
+                                                       const Geometry::Line& line, Vector2f& point1, Vector2f& point2)
 {
   int foundPoints = 0;
   Vector2f point[2];
@@ -475,7 +499,7 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLef
     {
       point[foundPoints].x() = x1;
       point[foundPoints].y() = bottomLeft.y();
-      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1))
+      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1f))
       {
         foundPoints++;
       }
@@ -485,7 +509,7 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLef
     {
       point[foundPoints].x() = x2;
       point[foundPoints].y() = topRight.y();
-      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1))
+      if((foundPoints == 0) || ((point[0] - point[1]).norm() > 0.1f))
         foundPoints++;
     }
   }
@@ -513,200 +537,13 @@ bool Geometry::getIntersectionPointsOfLineAndRectangle(const Vector2f& bottomLef
   }
 }
 
-bool Geometry::clipLineWithRectangleCohenSutherland(const Vector2i& topLeft, const Vector2i& bottomRight, Vector2i& point1, Vector2i& point2)
-{
-  constexpr int CLIPLEFT = 0b0001;
-  constexpr int CLIPRIGHT = 0b0010;
-  constexpr int CLIPLOWER = 0b0100;
-  constexpr int CLIPUPPER = 0b1000;
-
-  int K1 = 0, K2 = 0;
-
-  const int dx = point2.x() - point1.x();
-  const int dy = point2.y() - point1.y();
-
-  if(point1.y() < topLeft.y())     K1 = CLIPLOWER;
-  if(point1.y() > bottomRight.y()) K1 = CLIPUPPER;
-  if(point1.x() < topLeft.x())     K1 |= CLIPLEFT;
-  if(point1.x() > bottomRight.x()) K1 |= CLIPRIGHT;
-
-  if(point2.y() < topLeft.y())     K2 = CLIPLOWER;
-  if(point2.y() > bottomRight.y()) K2 = CLIPUPPER;
-  if(point2.x() < topLeft.x())     K2 |= CLIPLEFT;
-  if(point2.x() > bottomRight.x()) K2 |= CLIPRIGHT;
-
-  while(K1 || K2)
-  {
-    if(K1 & K2)
-      return false;
-
-    if(K1)
-    {
-      if(K1 & CLIPLEFT)
-      {
-        point1.y() += (topLeft.x() - point1.x()) * dy / dx;
-        point1.x() = topLeft.x();
-      }
-      else if(K1 & CLIPRIGHT)
-      {
-        point1.y() += (bottomRight.x() - point1.x()) * dy / dx;
-        point1.x() = bottomRight.x();
-      }
-      if(K1 & CLIPLOWER)
-      {
-        point1.x() += (topLeft.y() - point1.y()) * dx / dy;
-        point1.y() = topLeft.y();
-      }
-      else if(K1 & CLIPUPPER)
-      {
-        point1.x() += (bottomRight.y() - point1.y()) * dx / dy;
-        point1.y() = bottomRight.y();
-      }
-      K1 = 0;
-
-      if(point1.y() < topLeft.y())     K1 = CLIPLOWER;
-      if(point1.y() > bottomRight.y()) K1 = CLIPUPPER;
-      if(point1.x() < topLeft.x())     K1 |= CLIPLEFT;
-      if(point1.x() > bottomRight.x()) K1 |= CLIPRIGHT;
-    }
-
-    if(K1 & K2)
-      return false;
-
-    if(K2)
-    {
-      if(K2 & CLIPLEFT)
-      {
-        point2.y() += (topLeft.x() - point2.x()) * dy / dx;
-        point2.x() = topLeft.x();
-      }
-      else if(K2 & CLIPRIGHT)
-      {
-        point2.y() += (bottomRight.x() - point2.x()) * dy / dx;
-        point2.x() = bottomRight.x();
-      }
-      if(K2 & CLIPLOWER)
-      {
-        point2.x() += (topLeft.y() - point2.y()) * dx / dy;
-        point2.y() = topLeft.y();
-      }
-      else if(K2 & CLIPUPPER)
-      {
-        point2.x() += (bottomRight.y() - point2.y()) * dx / dy;
-        point2.y() = bottomRight.y();
-      }
-      K2 = 0;
-
-      if(point2.y() < topLeft.y())     K2 = CLIPLOWER;
-      if(point2.y() > bottomRight.y()) K2 = CLIPUPPER;
-      if(point2.x() < topLeft.x())     K2 |= CLIPLEFT;
-      if(point2.x() > bottomRight.x()) K2 |= CLIPRIGHT;
-    }
-  }
-  return true;
-}
-
-bool Geometry::isPointInsideTriangle(const float x1, const float y1, const float x2, const float y2,
-                                     const float x3, const float y3, const float px, const float py)
-{
-  // calc  barycentric coordinates
-  const float alpha = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) /
-                      ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
-  const float beta = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) /
-                     ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
-  const float gamma = 1.0f - alpha - beta;
-  return alpha > 0 && beta > 0 && gamma > 0;
-}
-
-// from http://geomalgorithms.com/a07-_distance.html:
-// Copyright 2001 softSurfer, 2012 Dan Sunday
-// This code may be freely used, distributed and modified for any purpose
-// providing that this copyright notice is included with it.
-// SoftSurfer makes no warranty for this code, and cannot be held
-// liable for any real or imagined damage resulting from its use.
-// Users of this code must verify correctness for their application.
-float Geometry::distance(const LineSegment3D& S1, const LineSegment3D& S2, LineSegment3D& SE)
-{
-  const Vector3f u = S1.P1 - S1.P0;
-  const Vector3f v = S2.P1 - S2.P0;
-  const Vector3f w = S1.P0 - S2.P0;
-  const float a = u.norm();         // always >= 0
-  const float b = u.dot(v);
-  const float c = v.norm();         // always >= 0
-  const float d = u.dot(w);
-  const float e = v.dot(w);
-  const float D = a * c - b * b;    // always >= 0
-  float sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-  float tN, tD = D;       // tc = tN / tD, default tD = D >= 0
-
-  // compute the line parameters of the two closest points
-  if(Approx::isZero(D))   // the lines are almost parallel
-  {
-    sN = 0.0;         // force using point P0 on segment S1
-    sD = 1.0;         // to prevent possible division by 0.0 later
-    tN = e;
-    tD = c;
-  }
-  else                   // get the closest points on the infinite lines
-  {
-    sN = (b * e - c * d);
-    tN = (a * e - b * d);
-    if(sN < 0.0)          // sc < 0 => the s=0 edge is visible
-    {
-      sN = 0.0;
-      tN = e;
-      tD = c;
-    }
-    else if(sN > sD)    // sc > 1  => the s=1 edge is visible
-    {
-      sN = sD;
-      tN = e + b;
-      tD = c;
-    }
-  }
-
-  if(tN < 0.0)              // tc < 0 => the t=0 edge is visible
-  {
-    tN = 0.0;
-    // recompute sc for this edge
-    if(-d < 0.0)
-      sN = 0.0;
-    else if(-d > a)
-      sN = sD;
-    else
-    {
-      sN = -d;
-      sD = a;
-    }
-  }
-  else if(tN > tD)        // tc > 1  => the t=1 edge is visible
-  {
-    tN = tD;
-    // recompute sc for this edge
-    if((-d + b) < 0.0)
-      sN = 0;
-    else if((-d + b) > a)
-      sN = sD;
-    else
-    {
-      sN = (-d + b);
-      sD = a;
-    }
-  }
-  // finally do the division to get sc and tc
-  const float sc = (Approx::isZero(sN) ? 0.f : sN / sD);
-  const float tc = (Approx::isZero(tN) ? 0.f : tN / tD);
-
-  // get the difference of the two closest points
-  const Vector3f dP = w + (sc * u) - (tc * v);  // =  S1(sc) - S2(tc)
-
-  SE.P0 = S1.P0 + sc * u;
-  SE.P1 = S2.P0 + tc * v;
-
-  return dP.norm();   // return the closest distance
-}
-
 bool Geometry::isPointLeftOfLine(const Vector2f& start, const Vector2f& end, const Vector2f& point)
 {
   return ((end.x() - start.x()) * (point.y() - start.y()) - (end.y() - start.y()) * (point.x() - start.x())) > 0.f;
+}
+
+Vector2f Geometry::getOrthogonalProjectionOfPointOnLine(const Vector2f& base, const Vector2f& dir, const Vector2f& point)
+{
+  const float l = (point.x() - base.x()) * dir.x() + (point.y() - base.y()) * dir.y();
+  return base + (dir * l);
 }

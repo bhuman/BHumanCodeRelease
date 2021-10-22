@@ -21,7 +21,7 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
   Matrix3f B(Matrix3f::Identity());
   B.topLeftCorner<2, 2>() = Q;
 
-  robotPose = base + offset; // This does not touch robot pose attributes not inherited from Pose2D.
+  robotPose = base + offset; // This does not touch robot pose attributes not inherited from Pose2f.
   robotPose.covariance = A * robotPose.covariance * A.transpose() + B * theOdometer.odometryOffsetCovariance * B.transpose();
   Covariance::fixCovariance(robotPose.covariance);
 
@@ -34,4 +34,4 @@ void OdometryOnlySelfLocator::update(RobotPose& robotPose)
   }
 }
 
-MAKE_MODULE(OdometryOnlySelfLocator, modeling)
+MAKE_MODULE(OdometryOnlySelfLocator, modeling);

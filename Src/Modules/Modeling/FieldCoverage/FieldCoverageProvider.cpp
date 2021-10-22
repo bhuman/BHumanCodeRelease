@@ -17,7 +17,7 @@ void FieldCoverageProvider::update(FieldCoverage& fieldCoverage)
   if(!initDone)
     init(fieldCoverage);
 
-  if(theCameraMatrix.isValid && theRobotPose.deviation < 60.f)
+  if(theCameraMatrix.isValid && theRobotPose.getTranslationalStandardDeviation() < 60.f)
   {
     const Angle openingAngle_2 = theCameraInfo.openingAngleWidth * 0.9f / 2.f;
     const Angle headAngle = std::atan2(theCameraMatrix.rotation(1, 0), theCameraMatrix.rotation(0, 0));
@@ -83,7 +83,7 @@ void FieldCoverageProvider::init(FieldCoverage& fieldCoverage)
 {
   initDone = true;
 
-  const float cellLengthX = theFieldDimensions.xPosOpponentGroundline * 2 / numOfCellsX;
+  const float cellLengthX = theFieldDimensions.xPosOpponentGroundLine * 2 / numOfCellsX;
   const float cellLengthY = theFieldDimensions.yPosLeftSideline * 2 / numOfCellsY;
   const unsigned time = std::max(10000u, theFrameInfo.time);
 
@@ -93,7 +93,7 @@ void FieldCoverageProvider::init(FieldCoverage& fieldCoverage)
     fieldCoverage.lines[y].timestamps.resize(numOfCellsX, time);
   }
 
-  float positionOnFieldX = theFieldDimensions.xPosOwnGroundline + cellLengthX / 2.f;
+  float positionOnFieldX = theFieldDimensions.xPosOwnGroundLine + cellLengthX / 2.f;
   float positionOnFieldY = theFieldDimensions.yPosRightSideline + cellLengthY / 2.f;
 
   cells.reserve(numOfCellsY * numOfCellsX);
@@ -104,7 +104,7 @@ void FieldCoverageProvider::init(FieldCoverage& fieldCoverage)
       cells.emplace_back(fieldCoverage.lines[y].timestamps[x], positionOnFieldX, positionOnFieldY, cellLengthX, cellLengthY);
       positionOnFieldX += cellLengthX;
     }
-    positionOnFieldX = theFieldDimensions.xPosOwnGroundline + cellLengthX / 2.f;
+    positionOnFieldX = theFieldDimensions.xPosOwnGroundLine + cellLengthX / 2.f;
     positionOnFieldY += cellLengthY;
   }
 }

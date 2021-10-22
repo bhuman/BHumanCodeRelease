@@ -14,8 +14,6 @@
 #include <cstdlib>
 #endif
 
-std::string bhumandDirOnRobot = "/home/nao/";
-
 std::string makeDirectory()
 {
 #ifdef WINDOWS

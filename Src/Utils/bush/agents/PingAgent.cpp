@@ -133,8 +133,7 @@ void PingAgent::updatePing(ENetwork network, QProcess* process)
   QString pingOutput(data);
 
   QStringList splittedOutput = pingOutput.split(" ", QString::SkipEmptyParts);
-  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|time=\\d+(\\.\\d+)?)"));
-
+  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|(Zeit|time)=\\d+(\\.\\d+)?)"));
   const unsigned currentTime = Time::getRealSystemTime();
 
   if(filteredSplittedOutput.empty())

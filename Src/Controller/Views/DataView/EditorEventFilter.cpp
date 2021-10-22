@@ -13,7 +13,7 @@ EditorEventFilter::EditorEventFilter(QObject* pParent, DataView* pView, QWidget*
   QObject(pParent), pTheView(pView), pTheSource(pSource), pTheProperty(pProperty)
 {}
 
-bool EditorEventFilter::eventFilter(QObject* obj, QEvent* event)
+bool EditorEventFilter::eventFilter(QObject*, QEvent* event)
 {
   if(nullptr != pTheView &&
      (event->type() == QEvent::FocusIn || event->type() == QEvent::Paint ||

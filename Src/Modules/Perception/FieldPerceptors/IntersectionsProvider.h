@@ -30,24 +30,22 @@ MODULE(IntersectionsProvider,
   PROVIDES(IntersectionsPercept),
   LOADS_PARAMETERS(
   {,
-    (float)(0.15f) maxAllowedIntersectionAngleDifference, /**<The angle between two intersecting lines should not differ more from 90° than this number (in rad) */
-    (float)(0.8f) maxLengthUnrecognizedProportion,  /**< the length of the recognized line multiplied by this value could maximal imagine */
-    (float)(800.f) maxIntersectionGap,  /**< the maximum distance between the intersection and one end of the line (if the intersection is not on the line) */
-    (float)(10.f) maxOverheadToDecleareAsEnd,  /**< the max of pixel an end can be farther away to declear as end*/
-    (float)(1500.f) minimumBallExclusionCheckDistance, /**< When a ball is at least this far away, it is used to exclude intersections*/
-    (float)(1.5f) ballRadiusInImageScale, /**< Enlarge ball radius in image by this factor */
+    (float) maxAllowedIntersectionAngleDifference, /**<The angle between two intersecting lines should not differ more from 90° than this number (in rad) */
+    (float) maxLengthUnrecognizedProportion,  /**< the length of the recognized line multiplied by this value could maximal imagine */
+    (float) maxIntersectionGap,  /**< the maximum distance between the intersection and one end of the line (if the intersection is not on the line) */
+    (float) maxOverheadToDecleareAsEnd,  /**< the max of pixel an end can be farther away to declear as end*/
+    (float) minimumBallExclusionCheckDistance, /**< When a ball is at least this far away, it is used to exclude intersections*/
+    (float) ballRadiusInImageScale, /**< Enlarge ball radius in image by this factor */
   }),
 });
 
 class IntersectionsProvider : public IntersectionsProviderBase
 {
-private:
-  bool ballIsInImageAndCanBeUsed;           // True, if the center of the ball is currently inside the image
-  Vector2f ballPositionInFieldCoordinates;  // Ball position in global coordinates
-  Vector2f ballPositionInImage;             // Ball position in image coordinates
-  float ballRadiusInImageScaled;            // Ball radius in image, scaled by ballRadiusInImageScale
-
 public:
+  /** Constructor. */
+  IntersectionsProvider();
+
+private:
   void update(IntersectionsPercept& intersectionsPercept) override;
 
   /**
@@ -65,4 +63,9 @@ public:
 
   /**enforces that horizontal is +90° of vertical*/
   void enforceTIntersectionDirections(const Vector2f& vertical, Vector2f& horizontal) const;
+
+  bool ballIsInImageAndCanBeUsed;           // True, if the center of the ball is currently inside the image
+  Vector2f ballPositionInFieldCoordinates;  // Ball position in global coordinates
+  Vector2f ballPositionInImage;             // Ball position in image coordinates
+  float ballRadiusInImageScaled;            // Ball radius in image, scaled by ballRadiusInImageScale
 };

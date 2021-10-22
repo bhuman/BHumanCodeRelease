@@ -11,6 +11,7 @@
 #include "Tools/Streams/AutoStreamable.h"
 #include "Tools/Math/Eigen.h"
 #include <algorithm>
+#include <limits>
 #include <type_traits>
 
 /**
@@ -23,14 +24,15 @@ STREAMABLE(Range,
    * Constructor.
    * Defines an empty range.
    */
-  constexpr Range() : min(T()) COMMA max(T()) {};
+  constexpr Range()
+    : min(std::numeric_limits<T>::max()) COMMA max(std::numeric_limits<T>::lowest()) {}
 
   /**
    * Constructor.
-   * Defines an empty range.
+   * Defines an empty range around a value.
    * @param minmax A conjoined starting and ending point of the empty range.
    */
-  constexpr Range(T minmax) : min(minmax) COMMA max(minmax) {};
+  constexpr Range(T minmax) : min(minmax) COMMA max(minmax) {}
 
   /**
    * Constructor.

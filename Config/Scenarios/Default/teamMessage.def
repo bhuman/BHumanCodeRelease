@@ -1,0 +1,115 @@
+RobotStatus
+{
+  isPenalized: Boolean
+  isUpright: Boolean
+  hasGroundContact: Boolean
+  timeWhenLastUpright: Timestamp(bits=8, shift=6, reference=relativePast)
+  timeOfLastGroundContact: Timestamp(bits=8, shift=6, reference=relativePast)
+  sequenceNumbers: Integer(min=-1, max=14)[6]
+}
+
+RobotPose
+{
+  rotation: Angle(bits=8) // Is also present in the SPLStandardMessage.
+  translation: Vector<Float(min=-32768, max=32767, bits=16)>(n=2) // Is also present in the SPLStandardMessage.
+  quality: Enum(type=RobotPose::LocalizationQuality)
+  covariance: Matrix<Float>(m=3, n=3, symmetric)
+  timestampLastJump: Timestamp(bits=8, shift=7, reference=relativePast, noclip)
+}
+
+BallState
+{
+  position: Vector<Float(min=-32768, max=32767, bits=16)>(n=2) // Is also present in the SPLStandardMessage.
+  velocity: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  covariance: Matrix<Float>(m=2, n=2, symmetric)
+}
+
+BallModel
+{
+  lastPerception: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  estimate: BallState
+  timeWhenLastSeen: Timestamp
+  timeWhenDisappeared: Timestamp
+  seenPercentage: Integer(min=0, max=100)
+}
+
+Whistle
+{
+  confidenceOfLastWhistleDetection: Float(min=0, max=2.55, bits=8)
+  channelsUsedForWhistleDetection: Integer(min=0, max=4)
+  lastTimeWhistleDetected: Timestamp(bits=16, reference=relativePast, noclip)
+}
+
+BehaviorStatus
+{
+  activity: Enum(type=BehaviorStatus::Activity, uncompressed)
+  passTarget: Integer(min=-1, max=14)
+  walkingTo: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  speed: Float(min=-500.0, max=500.0, bits=16)
+  shootingTo: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+}
+
+TimeToReachBall
+{
+  timeWhenReachBall: Timestamp(bits=16, shift=3, reference=relativeFuture)
+  timeWhenReachBallStriker: Timestamp(bits=16, shift=3, reference=relativeFuture)
+}
+
+TeammateRoles
+{
+  roles: Integer(min=-1, max=14)[:7]
+  captain: Integer(min=-1, max=14)
+  timestamp: Timestamp(bits=13, reference=relativePast)
+}
+
+PlayerRole
+{
+  role: Enum(type=PlayerRole::RoleType)
+}
+
+TeamBehaviorStatus
+{
+  teamActivity: Enum(type=TeamBehaviorStatus::TeamActivity)
+  timeToReachBall: TimeToReachBall
+  teammateRoles: TeammateRoles
+  role: PlayerRole
+}
+
+Obstacle
+{
+  covariance: Matrix<Float>(m=2, n=2, symmetric)
+  center: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
+  left: Vector<Float(min=-32768, max=32767, bits=14)>(n=2)
+  right: Vector<Float(min=-32768, max=32767, bits=14)>(n=2)
+  lastSeen: Timestamp(bits=8, shift=6, reference=relativePast)
+  type: Enum(type=Obstacle::Type)
+}
+
+ObstacleModel
+{
+  obstacles: Obstacle[:7]
+}
+
+TeamTalk
+{
+  say: Integer(min=0, max=255)
+  timestamp: Timestamp(bits=8, shift=6, reference=relativeFuture, noclip)
+}
+
+FrameInfo
+{
+  time: Timestamp(bits=8, reference=relativePast)
+}
+
+TeamMessage
+{
+  theRobotStatus: RobotStatus
+  theRobotPose: RobotPose
+  theFrameInfo: FrameInfo
+  theBallModel: BallModel
+  theWhistle: Whistle
+  theBehaviorStatus: BehaviorStatus
+  theTeamBehaviorStatus: TeamBehaviorStatus
+  theObstacleModel: ObstacleModel
+  theTeamTalk: TeamTalk
+}

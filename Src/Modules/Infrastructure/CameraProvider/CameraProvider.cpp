@@ -19,7 +19,7 @@
 #include "Tools/Debugging/Annotation.h"
 #include <cstdio>
 
-MAKE_MODULE(CameraProvider, infrastructure)
+MAKE_MODULE(CameraProvider, infrastructure);
 
 thread_local CameraProvider* CameraProvider::theInstance = nullptr;
 #ifdef CAMERA_INCLUDED
@@ -39,6 +39,7 @@ CameraProvider::CameraProvider()
 
 #ifdef CAMERA_INCLUDED
   headName = Global::getSettings().headName.c_str();
+  headName.append(".wav");
   thread.start(this, &CameraProvider::takeImages);
   takeNextImage.post();
   imageTaken.wait();
@@ -70,7 +71,7 @@ void CameraProvider::update(CameraImage& theCameraImage)
     if(theCameraImage.timestamp - timestampLastRowChange > 3000)
     {
       timestampLastRowChange = theCameraImage.timestamp;
-      currentRow = Random::uniformInt(1, cameraInfo.height - 2);
+      currentRow = Random::uniformInt(1, cameraInfo.height-2);
       rowBuffer.clear();
     }
     std::string res = MD5().digestMemory(reinterpret_cast<unsigned char*>(theCameraImage[currentRow]), cameraInfo.width * sizeof(CameraImage::PixelType));
@@ -80,7 +81,7 @@ void CameraProvider::update(CameraImage& theCameraImage)
     for(auto i = rowBuffer.begin(); i != rowBuffer.end(); ++i)
       if(*i == res && ++appearances > 25)
       {
-        OUTPUT_ERROR("Probaly encountered a puzzle image!");
+        OUTPUT_ERROR("Probably encountered a distorted image!");
         camera->resetRequired = true;
         return;
       }
@@ -239,6 +240,8 @@ void CameraProvider::setupCamera()
 bool CameraProvider::isFrameDataComplete()
 {
 #ifdef CAMERA_INCLUDED
+  if(resetPending)
+    return false;
   if(theInstance)
     return theInstance->camera->hasImage();
   else
@@ -265,7 +268,7 @@ void CameraProvider::takeImages()
       if(resetPending)
       {
         NaoCamera::resetCamera();
-        SystemCall::say(headName.c_str());
+        SystemCall::playSound(headName.c_str());
         SystemCall::say("Camera reset");
         resetPending = false;
       }

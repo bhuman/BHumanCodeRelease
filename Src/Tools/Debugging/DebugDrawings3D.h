@@ -3,9 +3,9 @@
  */
 
 #pragma once
-#ifndef TARGET_TOOL
 
 #include "Tools/Debugging/DebugDrawings.h"
+#if !defined TARGET_TOOL
 #include "Tools/Math/Eigen.h"
 #include "Tools/RobotParts/FootShape.h"
 #include "Tools/Streams/Eigen.h"
@@ -34,12 +34,9 @@ namespace Drawings3D
     image
   };
 };
-
-/**
- * singleton drawing manager class.
- */
-class DrawingManager3D : public DrawingManager {};
 #endif
+
+class DrawingManager3D : public DrawingManager {};
 
 #if !defined TARGET_TOOL && (!defined TARGET_ROBOT || !defined NDEBUG)
 /**
@@ -103,7 +100,8 @@ class DrawingManager3D : public DrawingManager {};
  * A macro that adds a cross to a drawing.
  * @param id The drawing to which the cross should be added.
  * @param x,y,z The center of the cross.
- * @param size Half of the height of the rectangle enclosing the cross.
+ * @param length stretching the cross by this amount.
+ * @param size width of the cross lines.
  * @param penColor The color of the quadrangle.
  */
 #define CROSS3D(id, x, y, z, length, size, penColor) \
@@ -516,13 +514,13 @@ class DrawingManager3D : public DrawingManager {};
       DECLARED_DEBUG_RESPONSE("debug drawing 3d:" id) \
       { \
         OUTPUT(idDebugDrawing3D, bin, \
-                static_cast<char>(Drawings3D::partDisc) << \
-                Global::getDrawingManager3D().getDrawingId(id) << \
-                static_cast<float>(from.x()) << static_cast<float>(from.y()) << static_cast<float>(from.z()) << \
-                static_cast<float>(rx) << static_cast<float>(ry) << static_cast<float>(0) << \
-                static_cast<float>(innerRadius) << static_cast<float>(outerRadius) << \
-                static_cast<float>(startAngle) << static_cast<float>(endAngle - startAngle) << \
-                ColorRGBA(color) \
+               static_cast<char>(Drawings3D::partDisc) << \
+               Global::getDrawingManager3D().getDrawingId(id) << \
+               static_cast<float>(from.x()) << static_cast<float>(from.y()) << static_cast<float>(from.z()) << \
+               static_cast<float>(rx) << static_cast<float>(ry) << static_cast<float>(0) << \
+               static_cast<float>(innerRadius) << static_cast<float>(outerRadius) << \
+               static_cast<float>(startAngle) << static_cast<float>(endAngle - startAngle) << \
+               ColorRGBA(color) \
               ); \
       } \
     } \

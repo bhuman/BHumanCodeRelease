@@ -1,7 +1,6 @@
-
 #include "ArmKeyFrameEngine.h"
 
-MAKE_MODULE(ArmKeyFrameEngine, motionControl)
+MAKE_MODULE(ArmKeyFrameEngine, motionControl);
 
 ArmKeyFrameEngine::ArmKeyFrameEngine() : ArmKeyFrameEngineBase()
 {
@@ -12,27 +11,37 @@ ArmKeyFrameEngine::ArmKeyFrameEngine() : ArmKeyFrameEngineBase()
   defaultPos = allMotions[ArmKeyFrameRequest::useDefault].states[0];
 }
 
-void ArmKeyFrameEngine::update(ArmKeyFrameEngineOutput& armKeyFrameEngineOutput)
+void ArmKeyFrameEngine::update(ArmKeyFrameGenerator& armKeyFrameGenerator)
 {
-  updateArm(arms[Arms::left], armKeyFrameEngineOutput);
-  updateArm(arms[Arms::right], armKeyFrameEngineOutput);
+  armKeyFrameGenerator.calcJoints = [this](Arms::Arm arm, const ArmMotionRequest& armMotionRequest, JointRequest& jointRequest, ArmMotionInfo& armMotionInfo)
+  {
+    // Hack to allow the walking engine to take over
+    // TODO reverse should calculate the interpolation speed.
+    if(armMotionRequest.armKeyFrameRequest.arms[arm].motion == ArmKeyFrameRequest::reverse && armMotionInfo.armKeyFrameRequest.arms[arm].motion == ArmKeyFrameRequest::raiseArm)
+    {
+      armMotionInfo.isFree[arm] = true;
+      return;
+    }
+    if(armMotionInfo.armMotion[arm] != ArmMotionInfo::keyFrame)
+      arms[arm].wasActive = false;
+    updateArm(arms[arm], armMotionRequest, jointRequest);
+    armMotionInfo.armMotion[arm] = ArmMotionInfo::keyFrame;
+    armMotionInfo.armKeyFrameRequest.arms[arm].motion = arms[arm].currentMotion.id;
+    armMotionInfo.armKeyFrameRequest.arms[arm].fast = arms[arm].fast;
+    armMotionInfo.isFree[arm] = arms[arm].isLastMotionFinished &&
+                                (arms[arm].currentMotion.id == ArmKeyFrameRequest::useDefault || arms[arm].currentMotion.id == ArmKeyFrameRequest::reverse);
+  };
 }
 
-void ArmKeyFrameEngine::updateArm(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrameEngineOutput)
+void ArmKeyFrameEngine::updateArm(Arm& arm, const ArmMotionRequest& armMotionRequest, JointRequest& jointRequest)
 {
-  if(theArmMotionSelection.targetArmMotion[arm.id] != ArmMotionSelection::keyFrameS)
+  if(!arm.wasActive || (arm.isLastMotionFinished && arm.currentMotion.id != armMotionRequest.armKeyFrameRequest.arms[arm.id].motion))
   {
-    arm.wasActive = false;
-    return;
-  }
+    const ArmKeyFrameMotion& nextMotion = armMotionRequest.armKeyFrameRequest.arms[arm.id].motion == ArmKeyFrameRequest::reverse ?
+                                                          (arm.currentMotion.id != ArmKeyFrameRequest::reverse ? arm.currentMotion.reverse(defaultPos) : allMotions[ArmKeyFrameRequest::useDefault]) :
+                                                          allMotions[armMotionRequest.armKeyFrameRequest.arms[arm.id].motion];
 
-  if(!arm.wasActive || (arm.isLastMotionFinished && arm.currentMotion.id != theArmKeyFrameRequest.arms[arm.id].motion))
-  {
-    const ArmKeyFrameMotion& nextMotion = theArmKeyFrameRequest.arms[arm.id].motion == ArmKeyFrameRequest::reverse ?
-                                          (arm.currentMotion.id != ArmKeyFrameRequest::reverse ? arm.currentMotion.reverse(defaultPos) : allMotions[ArmKeyFrameRequest::useDefault]) :
-                                          allMotions[theArmKeyFrameRequest.arms[arm.id].motion];
-
-    arm.startMotion(nextMotion, theArmKeyFrameRequest.arms[arm.id].fast, theJointAngles);
+    arm.startMotion(nextMotion, armMotionRequest.armKeyFrameRequest.arms[arm.id].fast, theJointAngles);
   }
   arm.wasActive = true;
   // test whether a motion is active now
@@ -43,7 +52,7 @@ void ArmKeyFrameEngine::updateArm(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrame
     {
       // stay in target position
       arm.isLastMotionFinished = true;
-      updateOutput(arm, armKeyFrameEngineOutput, arm.currentMotion.getTargetState());
+      updateOutput(arm, jointRequest, arm.currentMotion.getTargetState());
     }
     else
     {
@@ -53,7 +62,7 @@ void ArmKeyFrameEngine::updateArm(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrame
       {
         ArmKeyFrameMotion::ArmAngles result;
         createOutput(arm, nextState, arm.interpolationTime, result);
-        updateOutput(arm, armKeyFrameEngineOutput, result);
+        updateOutput(arm, jointRequest, result);
 
         if(arm.interpolationTime >= nextState.steps)
         {
@@ -65,16 +74,18 @@ void ArmKeyFrameEngine::updateArm(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrame
       else
       {
         // no interpolation
-        updateOutput(arm, armKeyFrameEngineOutput, nextState);
+        updateOutput(arm, jointRequest, nextState);
         ++arm.stateIndex;
         arm.interpolationTime = 1;
         arm.interpolationStart = nextState;
       }
     }
   }
+  else
+    updateOutput(arm, jointRequest, arm.currentMotion.getTargetState());
 }
 
-void ArmKeyFrameEngine::createOutput(Arm& arm, ArmKeyFrameMotion::ArmAngles target, int& time, ArmKeyFrameMotion::ArmAngles& result)
+void ArmKeyFrameEngine::createOutput(Arm& arm, ArmKeyFrameMotion::ArmAngles target, float& time, ArmKeyFrameMotion::ArmAngles& result)
 {
   // interpolate angles and set stiffness
   const ArmKeyFrameMotion::ArmAngles from = arm.interpolationStart;
@@ -87,12 +98,12 @@ void ArmKeyFrameEngine::createOutput(Arm& arm, ArmKeyFrameMotion::ArmAngles targ
                           ? theStiffnessSettings.stiffnesses[arm.firstJoint + i]
                           : target.stiffness[i];
   }
-  ++time;
+  time += Constants::motionCycleTime * 1000.f;
 }
 
-void ArmKeyFrameEngine::updateOutput(Arm& arm, ArmKeyFrameEngineOutput& armKeyFrameEngineOutput, ArmKeyFrameMotion::ArmAngles& values)
+void ArmKeyFrameEngine::updateOutput(const Arm& arm, JointRequest& jointRequest, const ArmKeyFrameMotion::ArmAngles& values)
 {
-  const Joints::Joint startJoint = !arm.id ? Joints::lShoulderPitch : Joints::rShoulderPitch;
+  const Joints::Joint startJoint = arm.firstJoint;
   for(unsigned i = 0; i < values.angles.size(); ++i)
   {
     if(arm.id == Arms::right &&
@@ -100,12 +111,9 @@ void ArmKeyFrameEngine::updateOutput(Arm& arm, ArmKeyFrameEngineOutput& armKeyFr
         i == Joints::elbowYaw ||
         i == Joints::elbowRoll ||
         i == Joints::wristYaw))
-      armKeyFrameEngineOutput.angles[startJoint + i] = -values.angles[i];
+      jointRequest.angles[startJoint + i] = -values.angles[i];
     else
-      armKeyFrameEngineOutput.angles[startJoint + i] = values.angles[i];
-    armKeyFrameEngineOutput.stiffnessData.stiffnesses[startJoint + i] = values.stiffness[i];
+      jointRequest.angles[startJoint + i] = values.angles[i];
+    jointRequest.stiffnessData.stiffnesses[startJoint + i] = values.stiffness[i];
   }
-  armKeyFrameEngineOutput.arms[arm.id].motion = arm.currentMotion.id;
-  armKeyFrameEngineOutput.arms[arm.id].isFree = arm.isLastMotionFinished &&
-                                                (arm.currentMotion.id == ArmKeyFrameRequest::useDefault || arm.currentMotion.id == ArmKeyFrameRequest::reverse);
 }

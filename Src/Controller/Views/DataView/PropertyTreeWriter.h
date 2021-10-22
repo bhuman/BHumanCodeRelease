@@ -59,7 +59,7 @@ protected:
   void inUInt(unsigned int& value) override;
   void inFloat(float& value) override { in(value); }
   void inDouble(double& value) override { in(value); }
-  void inString(std::string& value) override { in(value); }
+  void inString(std::string& value) override { QString s; in(s); value = s.toStdString(); }
   void inAngle(Angle& value) override;
   void inEndL() override {}
 
@@ -85,10 +85,10 @@ public:
   void deselect() override { stack.pop_back(); }
 
   /** Not allowed for this stream! */
-  void read(void* p, size_t size) override { ASSERT(false); }
+  void read(void*, size_t) override { ASSERT(false); }
 
   /** Not allowed for this stream! */
-  void skip(size_t size) override { ASSERT(false); }
+  void skip(size_t) override { ASSERT(false); }
 
   /** Not allowed for this stream! */
   bool eof() const override { ASSERT(false); return false; }

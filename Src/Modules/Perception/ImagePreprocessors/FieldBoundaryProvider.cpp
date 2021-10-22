@@ -1,69 +1,134 @@
 /**
  * @file FieldBoundaryProvider.cpp
  *
- * This file implements a module that estimates the field boundary using
- * a RANSAC algorithm for a single straight line or two intersecting
- * straight lines.
+ * This file implements a module that calculates the field boundary
+ * using a deep neural network (and subsequent line fitting).
  *
- * @author Thomas Röfer
+ * @author Arne Hasselbring
+ * @author Yannik Meinken
+ * @author Jonah Jaeger
+ * @author Thorben Lorenzen
  */
 
 #include "FieldBoundaryProvider.h"
+#include "Platform/BHAssert.h"
+#include "Platform/File.h"
 #include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/Random.h"
+#include "Tools/Global.h"
+#include "Tools/ImageProcessing/PatchUtilities.h"
 #include "Tools/Math/Transformation.h"
-#include <limits>
 
-MAKE_MODULE(FieldBoundaryProvider, perception)
+MAKE_MODULE(FieldBoundaryProvider, perception);
 
-void FieldBoundaryProvider::update(FieldBoundary& theFieldBoundary)
+FieldBoundaryProvider::FieldBoundaryProvider() :
+  network(&Global::getAsmjitRuntime())
 {
-  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:spots", "drawingOnImage");
+  model = std::make_unique<NeuralNetwork::Model>(std::string(File::getBHDir()) + ((theCameraInfo.camera == CameraInfo::upper) ? "/Config/NeuralNets/FieldBoundary/net.h5" : "/Config/NeuralNets/FieldBoundary/net-uncertainty.h5"));
+  model->setInputUInt8(0);
 
-  // Only with a valid camera matrix, the field boundary can be computed.
-  if(theCameraMatrix.isValid)
+  network.compile(*model);
+
+  ASSERT(network.valid());
+
+  ASSERT(network.numOfInputs() == 1);
+  ASSERT(network.numOfOutputs() == 1);
+
+  ASSERT(network.input(0).rank() == 3);
+  ASSERT(network.input(0).dims(2) == 1 || network.input(0).dims(2) == 3);
+
+  patchSize = Vector2i(network.input(0).dims(1), network.input(0).dims(0));
+
+  ASSERT(network.output(0).rank() == 1 || network.output(0).rank() == 2);
+  ASSERT(network.output(0).dims(0) == static_cast<unsigned>(patchSize.x()));
+  ASSERT(network.output(0).rank() == 1 || network.output(0).dims(1) == 2);
+}
+
+void FieldBoundaryProvider::update(FieldBoundary& fieldBoundary)
+{
+  DECLARE_DEBUG_DRAWING("module:FieldBoundaryProvider:prediction", "drawingOnImage");
+  DECLARE_DEBUG_RESPONSE("module:FieldBoundaryProvider:debugPrints");
+
+  fieldBoundary.boundaryInImage.clear();
+  fieldBoundary.boundaryOnField.clear();
+  if((fieldBoundary.isValid = network.valid() && theCameraMatrix.isValid))
   {
-    // Propagate the previous field boundary to the current image.
-    if(theOtherFieldBoundary.isValid)
-      predict(theFieldBoundary);
-    else
-      theFieldBoundary.isValid = false;
-
-    // Find field boundary spots. These might also simply be the predicted ones.
-    std::vector<Spot> spots;
-    spots.reserve(theColorScanLineRegionsVertical.scanLines.size());
-    STOPWATCH("FieldBoundaryProvider:findSpots")
-      findSpots(theFieldBoundary, spots);
-
-    // If enough spots were found, compute new field boundary.
-    // Otherwise, the predicted one is used instead.
-    if(spots.size() >= minNumberOfSpots)
+    if(!fieldBoundary.isValid)
     {
-      std::vector<Spot> model;
-      model.reserve(3);
-      STOPWATCH("FieldBoundaryProvider:calcBoundary")
-        calcBoundary(spots, model);
+      std::vector<Spot> spots;
+      predictSpots(spots);
+      validatePrediction(fieldBoundary, spots);
+    }
+    else if(theCameraInfo.camera == CameraInfo::upper)
+    {
+      std::vector<Spot> spots;
+      predictSpots(spots);
+      bool odd = boundaryIsOdd(spots);
+      (odd && ! theOtherFieldBoundary.extrapolated) ? projectPrevious(fieldBoundary) : validatePrediction(fieldBoundary, spots);
+      fieldBoundary.odd = odd;
+    }
+    else if(theCameraInfo.camera == CameraInfo::lower)
+    {
+      if(theOtherFieldBoundary.odd || theOtherFieldBoundary.extrapolated || theOtherFieldBoundary.boundaryInImage.size() == 0)
+      {
+        std::vector<Spot> spots;
+        predictSpots(spots);
 
-      // Fill representation with the boundary found.
-      fillRepresentation(model, theFieldBoundary);
+        theOtherFieldBoundary.boundaryInImage.size() > 1 && boundaryIsOdd(spots) ? projectPrevious(fieldBoundary) : validatePrediction(fieldBoundary, spots);
+      }
+      else
+        projectPrevious(fieldBoundary);
     }
   }
-  else
-    theFieldBoundary.isValid = false;
+  fieldBoundary.isValid = fieldBoundary.boundaryInImage.size() > 1;
 
-  if(!theFieldBoundary.isValid)
+  if(!fieldBoundary.isValid)
   {
-    theFieldBoundary.boundaryInImage.clear();
-    theFieldBoundary.boundaryOnField.clear();
+    fieldBoundary.boundaryInImage.clear();
+    fieldBoundary.boundaryOnField.clear();
   }
 }
 
-void FieldBoundaryProvider::predict(FieldBoundary& fieldBoundary) const
+void FieldBoundaryProvider::validatePrediction(FieldBoundary& fieldBoundary, std::vector<Spot>& spots)
+{
+  if((fieldBoundary.isValid = (spots.size() >= minNumberOfSpots)))
+  {
+    if(fittingMethod == Ransac)
+    {
+      std::vector<Spot> newSpots;
+      for(auto s : spots)
+      {
+        if(s.inImage.y() > top)
+          newSpots.push_back(s);
+      }
+      STOPWATCH("FieldBoundaryProvider:fitBoundaryRansac")
+        fitBoundaryRansac(newSpots, fieldBoundary);
+    }
+    else if(fittingMethod == NotRansac)
+    {
+      std::vector<Spot> newSpots;
+      for(auto s : spots)
+      {
+        if(s.inImage.y() > top)
+          newSpots.push_back(s);
+      }
+      STOPWATCH("FieldBoundaryProvider:fitBoundaryNotRansac")
+        fitBoundaryNotRansac(newSpots, fieldBoundary);
+    }
+    else if(fittingMethod == NoFitting)
+    {
+      for(const Spot& spot : spots)
+      {
+        fieldBoundary.boundaryInImage.emplace_back(spot.inImage);
+        fieldBoundary.boundaryOnField.emplace_back(spot.onField);
+      }
+    }
+    fieldBoundary.extrapolated = false;
+  }
+}
+
+void FieldBoundaryProvider::projectPrevious(FieldBoundary& fieldBoundary)
 {
   const Pose2f invOdometryOffset = theOdometer.odometryOffset.inverse();
-  fieldBoundary.boundaryInImage.clear();
-  fieldBoundary.boundaryOnField.clear();
   for(Vector2f spotOnField : theOtherFieldBoundary.boundaryOnField)
   {
     Vector2f spotInImage;
@@ -74,62 +139,111 @@ void FieldBoundaryProvider::predict(FieldBoundary& fieldBoundary) const
       fieldBoundary.boundaryOnField.emplace_back(spotOnField);
     }
   }
-  fieldBoundary.isValid = fieldBoundary.boundaryInImage.size() > 1;
+  fieldBoundary.extrapolated = true;
 }
 
-void FieldBoundaryProvider::findSpots(const FieldBoundary& fieldBoundary, std::vector<Spot>& spots) const
+void FieldBoundaryProvider::predictSpots(std::vector<Spot>& spots)
 {
-  for(const ColorScanLineRegionsVertical::ScanLine& scanLine : theColorScanLineRegionsVertical.scanLines)
+  unsigned char* input = reinterpret_cast<std::uint8_t*>(network.input(0).data());
+
+  if(network.input(0).dims(2) == 1)
+    PatchUtilities::extractInput<std::uint8_t, true>(theCameraImage, patchSize, input);
+  else
+    PatchUtilities::extractInput<std::uint8_t, false>(theCameraImage, patchSize, input);
+
+  network.apply();
+  const float* output = network.output(0).data();
+
+  const unsigned int xScale = theCameraInfo.width / patchSize(0);
+  const unsigned int stepSize = network.output(0).rank() == 2 ? 2 : 1;
+  for(int x = 0, idx = 0; x < patchSize(0); ++x, idx += stepSize)
   {
-    // Use point from previous field boundary if it is above lower or below upper image.
-    if(fieldBoundary.isValid)
+    const Vector2f spotInImage(x * xScale + xScale / 2, std::max(0.f, std::min(output[idx], 1.f)) * static_cast<float>(theCameraInfo.height - 1));
+    DOT("module:FieldBoundaryProvider:prediction", spotInImage.x(), spotInImage.y(), ColorRGBA::orange, ColorRGBA::orange);
+    float uncertainty = 0;
+
+    if(network.output(0).rank() == 2)
     {
-      int y = fieldBoundary.getBoundaryY(scanLine.x);
-      if((theCameraInfo.camera == CameraInfo::upper && y >= theCameraInfo.height)
-         || (theCameraInfo.camera == CameraInfo::lower && y < 0))
-      {
-        Vector2i spotInImage(scanLine.x, y);
-        Vector2f spotOnField;
-        if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
-           && spotOnField.squaredNorm() >= sqr(minDistance))
-        {
-          spots.emplace_back(spotInImage, spotOnField);
-          CROSS("module:FieldBoundaryProvider:spots", spotInImage.x(), spotInImage.y(), 3, 1, Drawings::solidPen, ColorRGBA::red);
-          continue;
-        }
-      }
+      uncertainty = 1.f / (output[idx + 1] * output[idx + 1]) * static_cast<float>(theCameraInfo.height - 1);
+      DOT("module:FieldBoundaryProvider:prediction", spotInImage.x(), spotInImage.y() + uncertainty, ColorRGBA::blue, ColorRGBA::blue);
+      DOT("module:FieldBoundaryProvider:prediction", spotInImage.x(), spotInImage.y() - uncertainty, ColorRGBA::blue, ColorRGBA::blue);
     }
 
-    // Search boundary spot as the end of the most field-ish region sequence starting at the bottom.
-    int score = 0;
-    int maxScore = 0;
-    int maxUpper = theCameraInfo.height;
-    for(const ScanLineRegion& region : scanLine.regions)
-    {
-      score += (region.is(FieldColors::field) ? 1 : -1) * (region.range.lower - region.range.upper);
-      if(score >= maxScore)
-      {
-        maxScore = score;
-        maxUpper = region.range.upper;
-      }
-    }
-
-    // Add spot if it can be projected to the field.
-    Vector2i spotInImage(scanLine.x, maxUpper);
     Vector2f spotOnField;
-    if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField)
-       && spotOnField.squaredNorm() >= sqr(minDistance))
-    {
-      spots.emplace_back(spotInImage, spotOnField);
-      CROSS("module:FieldBoundaryProvider:spots", spotInImage.x(), spotInImage.y(), 3, 1, Drawings::solidPen, ColorRGBA::orange);
-    }
+    if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(spotInImage), theCameraMatrix, theCameraInfo, spotOnField) && spotOnField.squaredNorm() >= sqr(minDistance))
+      spots.emplace_back(spotInImage.cast<int>(), spotOnField, uncertainty);
   }
 }
 
-void FieldBoundaryProvider::calcBoundary(const std::vector<Spot>& spots, std::vector<Spot>& model) const
+bool FieldBoundaryProvider::boundaryIsOdd(const std::vector<Spot>& spots) const
 {
+  //with less than 3 points not usable
+  if(spots.size() < 3)
+    return true;
+
+  int yMaxBorder = 0;
+  //find the lowest point of the three left/right most points
+  for(size_t i = 0; i < 3; i++)
+  {
+    if(spots[i].inImage.y() > yMaxBorder)
+      yMaxBorder = spots[i].inImage.y();
+
+    if(spots[spots.size() - 1 - i].inImage.y() > yMaxBorder)
+      yMaxBorder = spots[spots.size() - 1 - i].inImage.y();
+  }
+  int toLowSum = 0;
+  float uncertaintySum = 0;
+  float sum = 0;
+  float gradient;
+  int num = 0;
+  //for each triple of following points sum the difference from the middle point to the line between the first and last point.
+  for(size_t i = 0; i < spots.size(); i++)
+  {
+    //only if the point is not at the top of the image
+    if(spots[i].inImage.y() > top)
+    {
+      num++;
+      //if the point is below the lower end
+      if(spots[i].inImage.y() > yMaxBorder)
+        toLowSum += spots[i].inImage.y() - yMaxBorder;
+
+      uncertaintySum += spots[i].uncertanty;
+
+      if(i + 2 >= spots.size())
+        continue;
+
+      //compute the discrepancy of the middle point to the line between the first and third
+      gradient = ((float) spots[i].inImage.y() - spots[i + 2].inImage.y()) / (spots[i].inImage.x() - spots[i + 2].inImage.x());
+      sum += std::abs((spots[i].inImage.y() + gradient * (spots[i + 1].inImage.x() - spots[i].inImage.x())) - spots[i + 1].inImage.y());
+      LINE("module:FieldBoundaryProvider:prediction", spots[i + 1].inImage.x(), spots[i + 1].inImage.y(), spots[i + 1].inImage.x(), (spots[i].inImage.y() + gradient * (spots[i + 1].inImage.x() - spots[i].inImage.x())), 1, Drawings::solidPen, ColorRGBA::red);
+    }
+  }
+  //if one of the limits is violated
+  if(((float)num / spots.size() < nonTopPoints) || uncertaintySum / num > uncertaintyLimit  || toLowSum / num > maxPointsUnderBorder || sum / num > threshold)
+  {
+    DEBUG_RESPONSE("module:FieldBoundaryProvider:debugPrints")
+    {
+      if(num)
+      {
+        OUTPUT_TEXT(((float)num / spots.size() < nonTopPoints) << ", " << (uncertaintySum / num > uncertaintyLimit) << ", " << (toLowSum / num > maxPointsUnderBorder) << ", " << (sum / num > threshold));
+        OUTPUT_TEXT((float)num / spots.size() << ", " << uncertaintySum / num <<  ", " << toLowSum / num << ", " << sum / num);
+      }
+      else
+        OUTPUT_TEXT("num = " << num);
+    }
+    return true;
+  }
+  else
+    return false;
+}
+
+void FieldBoundaryProvider::fitBoundaryRansac(const std::vector<Spot>& spots, FieldBoundary& fieldBoundary)
+{
+  std::vector<Spot> fbmodel;
+  fbmodel.reserve(3);
+
   int minError = std::numeric_limits<int>::max();
-  const int goodEnough = static_cast<int>(maxSquaredError * spots.size() * acceptanceRatio);
+  const int goodEnough = static_cast<int>(static_cast<float>(maxSquaredError * spots.size()) * acceptanceRatio);
 
   for(int i = 0; i < maxNumberOfIterations && minError > goodEnough; ++i)
   {
@@ -190,28 +304,73 @@ void FieldBoundaryProvider::calcBoundary(const std::vector<Spot>& spots, std::ve
     if(error < minError)
     {
       minError = error;
-      model.clear();
-      model.emplace_back(leftSpot);
+      fbmodel.clear();
+      fbmodel.emplace_back(leftSpot);
 
       if(errorRightLine < errorRightStraight)
       {
-        model.emplace_back(corner);
-        model.emplace_back(rightSpot);
+        fbmodel.emplace_back(corner);
+        fbmodel.emplace_back(rightSpot);
       }
       else
-        model.emplace_back(middleSpot);
+        fbmodel.emplace_back(middleSpot);
     }
   }
-}
 
-void FieldBoundaryProvider::fillRepresentation(const std::vector<Spot>& model, FieldBoundary& fieldBoundary) const
-{
-  fieldBoundary.boundaryInImage.clear();
-  fieldBoundary.boundaryOnField.clear();
-  for(const Spot& spot : model)
+  for(const Spot& spot : fbmodel)
   {
     fieldBoundary.boundaryInImage.emplace_back(spot.inImage);
     fieldBoundary.boundaryOnField.emplace_back(spot.onField);
   }
-  fieldBoundary.isValid = fieldBoundary.boundaryInImage.size() > 1;
+}
+
+void FieldBoundaryProvider::fitBoundaryNotRansac(const std::vector<Spot>& spots, FieldBoundary& fieldBoundary)
+{
+  struct TwoLineModel
+  {
+    LineCandidate first, second;
+    Vector2f peak;
+    std::vector<Vector2f> pointsInImage;
+    Angle angleDev = 359_deg;
+  };
+  TwoLineModel bestModel;
+
+  for(unsigned int i = 2; i < spots.size() - 2; i += 2)
+  {
+    LineCandidate first(spots, 0, i, true), second(spots, i, static_cast<int>(spots.size()), true);
+
+    // TODO: Do this in a less stupid way
+    Vector2f peak, firstInImage, peakInImage, secondInImage;
+    if(!Geometry::getIntersectionOfLines(first.line, second.line, peak) ||
+       !Transformation::robotToImage(first.line.base, theCameraMatrix, theCameraInfo, firstInImage) ||
+       !Transformation::robotToImage(peak, theCameraMatrix, theCameraInfo, peakInImage) ||
+       !Transformation::robotToImage(second.line.base, theCameraMatrix, theCameraInfo, secondInImage) ||
+       firstInImage.x() > peakInImage.x() || secondInImage.x() < peakInImage.x())
+      continue;
+
+    Angle angleDev = std::abs(first.line.direction.angleTo(second.line.direction) - 90_deg);
+    if(angleDev < bestModel.angleDev)
+      bestModel = TwoLineModel({first, second, peak, {firstInImage, peakInImage, secondInImage}, angleDev});
+  }
+
+  if(bestModel.angleDev < randomlyChosenAngleDevThreshold)
+  {
+    fieldBoundary.boundaryOnField = {bestModel.first.line.base, bestModel.peak, bestModel.second.line.base};
+    for(Vector2f& p : bestModel.pointsInImage)
+      fieldBoundary.boundaryInImage.emplace_back(theImageCoordinateSystem.fromCorrected(p).cast<int>());
+  }
+  else
+  {
+    LineCandidate singleLine(spots, 0, static_cast<int>(spots.size()), false);
+    std::vector<Vector2f> boundaryPoints = {singleLine.line.base - 200.f * singleLine.line.direction, singleLine.line.base, singleLine.line.base + 200.f * singleLine.line.direction};
+    for(Vector2f& point : boundaryPoints)
+    {
+      Vector2f onField;
+      if(Transformation::imageToRobot(theImageCoordinateSystem.toCorrected(point), theCameraMatrix, theCameraInfo, onField))
+      {
+        fieldBoundary.boundaryInImage.emplace_back(point.cast<int>());
+        fieldBoundary.boundaryOnField.emplace_back(onField);
+      }
+    }
+  }
 }

@@ -115,15 +115,14 @@ INSTANTIATE_TEST_CASE_P(MultipleProvider, ModuleGraphCreatorDeathTest, testing::
     "a: B is provided by more than one module!\n$"}
 ));
 
-// OUTPUT_ERROR("Requirements missing for providers for " << text2 << "!");
-// OUTPUT_ERROR("Only found consistent providers for " << text << ".\nRequirements missing for providers for " << text2 << "!");
+// OUTPUT_ERROR(threadName << ": Cyclic dependency " << text << "!");
 INSTANTIATE_TEST_CASE_P(CircleProvider, ModuleGraphCreatorDeathTest, testing::Values(
   // Full circle
   Errors {createConfig({{{"B", "Cc"}, {"A", "Bm"}}}),
-    "a: Requirements missing for providers for A, B!\n$"},
+    "a: Cyclic dependency Bm.A -> Cc.B -> Bm.A!\n$"},
   // Parts are a circle
   Errors {createConfig({{{"B", "Cc"}, {"A", "Bm"}, {"C", "Dc"}}}),
-    "a: Only found consistent providers for C.\nRequirements missing for providers for A, B!\n$"}
+    "a: Cyclic dependency Bm.A -> Cc.B -> Bm.A!\n$"}
 ));
 
 // Uses received2.front().front().front() to save the error message.

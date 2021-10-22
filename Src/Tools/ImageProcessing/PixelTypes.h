@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "Representations/Configuration/FieldColors.h"
 #include "Tools/Streams/Enum.h"
 #include <vector>
 #include "Tools/ImageProcessing/ColorModelConversions.h"
@@ -24,6 +23,14 @@ namespace PixelTypes
     Edge2,            //
     Edge2MonoAvg,     //
     Edge2MonoAbsAvg,  //
+  });
+
+  ENUM(Color, // color classes for segmentation
+  {,
+    none,  // any color that is none of the others
+    white,
+    black,
+    field,
   });
 
   struct RGBPixel
@@ -145,7 +152,7 @@ namespace PixelTypes
     };
   };
 
-  using ColoredPixel = FieldColors::Color;
+  using ColoredPixel = Color;
   using GrayscaledPixel = unsigned char;
 
 

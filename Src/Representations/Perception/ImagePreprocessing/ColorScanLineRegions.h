@@ -5,8 +5,10 @@
 
 #pragma once
 
+#include "Tools/ImageProcessing/PixelTypes.h"
 #include "Tools/Streams/AutoStreamable.h"
-#include "Representations/Configuration/FieldColors.h"
+
+using PixelTypes::Color;
 
 union ScanLineRange
 {
@@ -26,19 +28,17 @@ union ScanLineRange
   struct
   {
     unsigned short left; // inclusive
-    unsigned short right; //  exclusive
+    unsigned short right; // exclusive
   };
 };
 
 struct ScanLineRegion : public Streamable
 {
   ScanLineRegion() = default;
-  ScanLineRegion(const unsigned short from, const unsigned short to, const FieldColors::Color c);
-  bool is(FieldColors::Color cmpColor) const { return cmpColor == color; }
-  static const char* getName(FieldColors::Color e) { return TypeRegistry::getEnumName(e); }
+  ScanLineRegion(const unsigned short from, const unsigned short to, const Color c);
 
   ScanLineRange range;
-  FieldColors::Color color;
+  Color color;
 
   static void reg()
   {
@@ -50,19 +50,32 @@ struct ScanLineRegion : public Streamable
   }
 
 protected:
-  void serialize(In* in, Out* out);
+  /**
+   * Read this object from a stream.
+   * @param stream The stream from which the object is read.
+   */
+  void read(In& stream) override
+  {
+    STREAM(range.from);
+    STREAM(range.to);
+    STREAM(color);
+  }
+
+  /**
+   * Write this object to a stream.
+   * @param stream The stream to which the object is written.
+   */
+  void write(Out& stream) const override
+  {
+    STREAM(range.from);
+    STREAM(range.to);
+    STREAM(color);
+  }
 };
 
-inline ScanLineRegion::ScanLineRegion(const unsigned short from, const unsigned short to, const FieldColors::Color c) :
+inline ScanLineRegion::ScanLineRegion(const unsigned short from, const unsigned short to, const Color c) :
   range(from, to), color(c)
 {}
-
-inline void ScanLineRegion::serialize(In* in, Out* out)
-{
-  STREAM(range.from);
-  STREAM(range.to);
-  STREAM(color);
-}
 
 STREAMABLE(ColorScanLineRegionsVertical,
 {

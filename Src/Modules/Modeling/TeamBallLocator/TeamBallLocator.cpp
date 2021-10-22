@@ -9,8 +9,9 @@
 
 #include "TeamBallLocator.h"
 #include "Tools/Modeling/BallPhysics.h"
+#include "Tools/Settings.h"
 
-MAKE_MODULE(TeamBallLocator, modeling)
+MAKE_MODULE(TeamBallLocator, modeling);
 
 
 void TeamBallLocator::update(TeamBallModel& teamBallModel)
@@ -25,11 +26,7 @@ void TeamBallLocator::update(TeamBallModel& teamBallModel)
   ballsAvailableForTeamBall.clear();
   teamBallModel.isValid = false;
   // Try to compute a team ball
-  findAvailableBalls(false);
-  // If we play a mixed team game and did not find any available balls so far, try to use the
-  // balls that our partners have sent (which have been ignore before)
-  if(theGameInfo.competitionType == COMPETITION_TYPE_MIXEDTEAM && ballsAvailableForTeamBall.size() == 0)
-    findAvailableBalls(true);
+  findAvailableBalls();
   clusterBalls();
   computeModel(teamBallModel);
 }
@@ -38,7 +35,8 @@ void TeamBallLocator::computeModel(TeamBallModel& teamBallModel)
 {
   teamBallModel.balls.clear();
   // No active balls -> no team ball:
-  if(ballsAvailableForTeamBall.size() == 0) {
+  if(ballsAvailableForTeamBall.size() == 0)
+  {
     teamBallModel.isValid = false;
     return;
   }
@@ -139,13 +137,13 @@ void TeamBallLocator::updateInternalBallBuffers()
   {
     BufferedBall newBall;
     newBall.robotPose              = theRobotPose;
-    newBall.poseValidity           = theRobotPose.validity;
+    newBall.poseQualityModifier    = localizationQualityToModifier(theRobotPose.quality);
     newBall.pos                    = theBallModel.estimate.position;
     newBall.vel                    = theBallModel.estimate.velocity;
     newBall.time                   = theBallModel.timeWhenLastSeen;
-    newBall.seenByMixedTeamPartner = false;
     newBall.valid = true;
-    balls[i].push_front(newBall);
+    if(newBall.poseQualityModifier > 0.f) // If the value is zero, the final weighting would be 0, too.
+      balls[i].push_front(newBall);
   }
   // Observations by teammates:
   for(auto const& teammate : theTeamData.teammates)
@@ -161,13 +159,13 @@ void TeamBallLocator::updateInternalBallBuffers()
     {
       BufferedBall newBall;
       newBall.robotPose              = teammate.theRobotPose;
-      newBall.poseValidity           = teammate.theRobotPose.validity;
+      newBall.poseQualityModifier    = localizationQualityToModifier(teammate.theRobotPose.quality);
       newBall.pos                    = teammate.theBallModel.estimate.position;
       newBall.vel                    = teammate.theBallModel.estimate.velocity;
       newBall.time                   = teammate.theBallModel.timeWhenLastSeen;
-      newBall.seenByMixedTeamPartner = teammate.mateType != Teammate::BHumanRobot;
       newBall.valid = true;
-      balls[teammate.number].push_front(newBall);
+      if(newBall.poseQualityModifier > 0.f) // If the value is zero, the final weighting would be 0, too.
+        balls[teammate.number].push_front(newBall);
     }
   }
   // If any teammate is not PLAYING anymore, invalidate the observations that happened during the time
@@ -198,15 +196,12 @@ void TeamBallLocator::updateInternalBallBuffers()
   }
 }
 
-void TeamBallLocator::findAvailableBalls(bool considerMixedTeammates)
+void TeamBallLocator::findAvailableBalls()
 {
   for(unsigned int robot = 0; robot < balls.size(); ++robot)
   {
     if(balls[robot].size() > 2) // We want more than just the initial entry
     {
-      // Only consider non-B-Human balls, if considerMixedTeammates is true:
-      if(balls[robot][0].seenByMixedTeamPartner && !considerMixedTeammates)
-        continue;
       // Find ball:
       size_t i = 0;
       while(i < balls[robot].size())
@@ -268,6 +263,17 @@ void TeamBallLocator::clusterBalls()
   }
 }
 
+float TeamBallLocator::localizationQualityToModifier(const RobotPose::LocalizationQuality quality) const
+{
+  if(quality == RobotPose::superb)
+    return 1.f;      // If localization appears to be really good, it should not negatively affect the ball weighting
+  else if(quality == RobotPose::okay)
+    return 0.75f;    // This might be the most common case and the value could be a parameter (but must not)
+  else
+    return 0.f;      // Do not use any ball from this robot. It assumes that it does not have any clue about its position
+}
+
+
 float TeamBallLocator::computeWeighting(const TeamBallLocator::BufferedBall& ball) const
 {
   const int timeSinceBallWasSeen = theFrameInfo.getTimeSince(ball.time);
@@ -297,7 +303,7 @@ float TeamBallLocator::computeWeighting(const TeamBallLocator::BufferedBall& bal
   const float ballDeviation = (ballPositionWithPositiveDeviation - ballPositionWithNegativeDeviation) / 2; // averaged deviation of the ball position
 
   // Part 3: Combination with validity *****
-  const float weighting = (ballAgeWeight / ballDeviation) * ball.poseValidity;
+  const float weighting = (ballAgeWeight / ballDeviation) * ball.poseQualityModifier;
   return std::abs(weighting);
 }
 
@@ -307,9 +313,9 @@ bool TeamBallLocator::checkForResetByGameSituation()
   // In READY, INITIAL, FINISHED, a team ball model does not make any sense:
   if(theGameInfo.state != STATE_PLAYING && theGameInfo.state != STATE_SET)
     reset = true;
-  // Same for any goal free kick or corner kick (kick ins and pushing free kicks are different because the ball stays about where it was):
-  if((theCognitionStateChanges.lastSetPlay != SET_PLAY_GOAL_FREE_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_FREE_KICK) ||
-      (theCognitionStateChanges.lastSetPlay != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK))
+  // Same for any goal kick or corner kick (kick ins and pushing free kicks are different because the ball stays about where it was):
+  if((theExtendedGameInfo.setPlayLastFrame != SET_PLAY_GOAL_KICK && theGameInfo.setPlay == SET_PLAY_GOAL_KICK) ||
+      (theExtendedGameInfo.setPlayLastFrame != SET_PLAY_CORNER_KICK && theGameInfo.setPlay == SET_PLAY_CORNER_KICK))
     reset = true;
   // If any of the above conditions was true, we delete every ball information that we have stored:
   if(reset)

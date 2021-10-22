@@ -2,4 +2,4 @@
 basePath=$(dirname "$(which "$0")")
 export CCACHE_CPP2=1
 export CCACHE_SLOPPINESS=pch_defines,time_macros
-"${basePath}"/ccache "${basePath}"/../lib/../bin/clang++ "$@"
+"${basePath}"/ccache "${basePath}"/../../macOS/lib/../bin/clang++ -Xclang -sys-header-deps "$@"

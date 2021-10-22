@@ -21,7 +21,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -84,6 +84,8 @@ typedef struct _snd_config_update snd_config_update_t;
 
 extern snd_config_t *snd_config;
 
+const char *snd_config_topdir(void);
+
 int snd_config_top(snd_config_t **config);
 
 int snd_config_load(snd_config_t *config, snd_input_t *in);
@@ -93,6 +95,10 @@ int snd_config_update(void);
 int snd_config_update_r(snd_config_t **top, snd_config_update_t **update, const char *path);
 int snd_config_update_free(snd_config_update_t *update);
 int snd_config_update_free_global(void);
+
+int snd_config_update_ref(snd_config_t **top);
+void snd_config_ref(snd_config_t *top);
+void snd_config_unref(snd_config_t *top);
 
 int snd_config_search(snd_config_t *config, const char *key,
 		      snd_config_t **result);
@@ -108,7 +114,10 @@ int snd_config_expand(snd_config_t *config, snd_config_t *root,
 int snd_config_evaluate(snd_config_t *config, snd_config_t *root,
 			snd_config_t *private_data, snd_config_t **result);
 
-int snd_config_add(snd_config_t *config, snd_config_t *leaf);
+int snd_config_add(snd_config_t *config, snd_config_t *child);
+int snd_config_add_before(snd_config_t *before, snd_config_t *child);
+int snd_config_add_after(snd_config_t *after, snd_config_t *child);
+int snd_config_remove(snd_config_t *config);
 int snd_config_delete(snd_config_t *config);
 int snd_config_delete_compound_members(const snd_config_t *config);
 int snd_config_copy(snd_config_t **dst, snd_config_t *src);
@@ -130,6 +139,7 @@ int snd_config_imake_safe_string(snd_config_t **config, const char *key, const c
 int snd_config_imake_pointer(snd_config_t **config, const char *key, const void *ptr);
 
 snd_config_type_t snd_config_get_type(const snd_config_t *config);
+int snd_config_is_array(const snd_config_t *config);
 
 int snd_config_set_id(snd_config_t *config, const char *id);
 int snd_config_set_integer(snd_config_t *config, long value);

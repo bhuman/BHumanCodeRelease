@@ -26,16 +26,20 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/LabelImage.h"
 #include "Representations/Modeling/RobotPose.h"
+#include "Representations/MotionControl/MotionInfo.h"
+#include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Perception/BallPercepts/BallSpots.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Sensing/FallDownState.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/ImageProcessing/ImageExport.h"
 #include "Tools/ImageProcessing/PatchUtilities.h"
 #include "Tools/Logging/LoggingTools.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Motion/SensorData.h"
+#include "Tools/RingBuffer.h"
 #include "Tools/Streams/TypeInfo.h"
 #include <QImage>
 #include <QDir>
@@ -75,7 +79,7 @@ bool LogExtractor::save(const std::string& fileName, const TypeInfo* typeInfo)
   size_t index = fileName.find_last_of("\\/");
   if(index != std::string::npos)
     createNewFolder(fileName.substr(0, index));
-  
+
   OutBinaryFile file(fileName);
   if(file.exists())
   {
@@ -276,7 +280,7 @@ bool LogExtractor::saveImages(const std::string& path, const bool raw, const boo
   // Use DECLARE_REPRESENTATIONS_AND_MAP as soon as the hack is no longer needed
   return goThroughLog(
            representations,
-           [&](const std::string& frameType)
+           [&](const std::string&)
   {
     if(onlyPlaying &&
        (theGameInfo.state != STATE_PLAYING // isStateValid
@@ -306,12 +310,12 @@ bool LogExtractor::saveImages(const std::string& path, const bool raw, const boo
         return true;
 
       // Open PNG file
-      const std::string filename = CameraImage::expandImageFileName(folderPath + (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower"), imageToExport->timestamp);
+      const std::string filename = ImageExport::expandImageFileName(folderPath + (theCameraInfo.camera == CameraInfo::upper ? "upper" : "lower"), imageToExport->timestamp);
       QFile qfile(filename.c_str());
       qfile.open(QIODevice::WriteOnly);
 
       // Write image
-      imageToExport->exportImage(qfile, raw ? YUYVImage::raw : YUYVImage::rgb);
+      ImageExport::exportImage(*imageToExport, qfile, raw ? ImageExport::raw : ImageExport::rgb);
       imageToExport->timestamp = 0;
 
       // Remove IEND chunk
@@ -493,6 +497,122 @@ bool LogExtractor::writeTimingData(const std::string& fileName)
   return true;
 }
 
+bool LogExtractor::saveChoregrapheTimeline(const std::string& path)
+{
+  logPlayer.stop(); // Just reset the LogPlayer to start
+  const std::string name = File::isAbsolute(path.c_str()) ? path : std::string(File::getBHDir()) + "/Config/" + path;
+  OutTextRawFile file(name);
+  if(!file.exists())
+    return false;
+
+  DECLARE_REPRESENTATIONS_AND_MAP(
+  {,
+    JointRequest,
+  });
+
+  std::vector<JointRequest> jointRequests;
+
+  if(goThroughLog(representations,
+                  [&jointRequests, &theJointRequest](const std::string&)
+{
+  for(Angle angle : theJointRequest.angles)
+      if(angle == SensorData::off)
+        return true;
+    jointRequests.emplace_back(theJointRequest);
+    return true;
+  }))
+  {
+    FOREACH_ENUM(Joints::Joint, joint)
+    {
+      std::string name = TypeRegistry::getEnumName(joint);
+      name[0] &= ~0x20;
+      file << "<ActuatorCurve name=\"value\" actuator=\"" << name << "\" mute=\"0\" unit=\"0\">" << endl;
+
+      for(size_t i = 0; i < jointRequests.size(); ++i)
+        file << "  <Key frame=\"" << static_cast<int>(i + 1) << "\" value=\"" << jointRequests[i].angles[joint].toDegrees() << "\" />" << endl;
+
+      file << "</ActuatorCurve>" << endl;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool LogExtractor::analyzeRobotStatus()
+{
+  DECLARE_REPRESENTATIONS_AND_MAP(
+  {,
+    JointAngles,
+    FrameInfo,
+    InertialSensorData,
+  });
+
+  RingBuffer<JointAngles, 5> angleList;
+  Vector3a lastGyro;
+  int frameCounter = -1;
+  int disconnectCounter = -1;
+
+  bool finished = goThroughLog(
+                    representations,
+                    [&angleList, &theJointAngles, &lastGyro, &disconnectCounter, &theInertialSensorData, &frameCounter, &theFrameInfo](const std::string&)
+  {
+    frameCounter += 1; //for some reason the frameCounter can get desynced with the real frame number. Also is there a better way to get the log frame?
+    //only continue, if the JointAngles have new data
+
+    disconnectCounter += 1;
+    bool canContinue = false;
+    //only continue, if the JointAngles have new data
+    if(theInertialSensorData.gyro != lastGyro)
+    {
+      disconnectCounter = 0;
+      lastGyro = theInertialSensorData.gyro;
+    }
+    if(disconnectCounter > 5)
+      OUTPUT_TEXT("Gyros not updating at LogFrame: " << frameCounter);
+
+    for(size_t i = 0; i < Joints::numOfJoints; i++)
+      if(theJointAngles.angles[i] != angleList[0].angles[i])
+        canContinue = true;
+    if(!canContinue)
+      return true;
+    angleList.push_front(theJointAngles);
+    //wait until the RingBuffer is filled with the last 5 JointAngles
+    if(frameCounter >= 5)
+    {
+      std::vector<JointAngles> difs;
+      JointAngles jointAnglePre = angleList[0];
+      JointAngles jointAnglePost;
+      for(size_t i = 1; i < angleList.capacity(); i++)
+      {
+        JointAngles angles;
+        jointAnglePost = angleList[i];
+
+        //calc the difference of the 2 JointAngles
+        for(size_t j = 0; j < Joints::numOfJoints; j++)
+        {
+          Angle a = jointAnglePre.angles[j];
+          Angle b = jointAnglePost.angles[j];
+          angles.angles[j] = a - b;
+        }
+        difs.push_back(angles);
+        jointAnglePre = jointAnglePost;
+      }
+      for(size_t i = 0; i < Joints::numOfJoints; i++)
+      {
+        //If the difference in the movement of a joint was steady but slow (under 3_deg), but for one frame it jumped (over 4_deg and different signs), we now that this joint sensor is defect
+        if(std::fabs(difs[0].angles[i]) < 3_deg &&
+           std::fabs(difs[1].angles[i]) > 4_deg &&
+           std::fabs(difs[2].angles[i]) > 4_deg &&
+           std::fabs(difs[3].angles[i]) < 3_deg &&
+           std::signbit(float(difs[1].angles[i])) != std::signbit(float(difs[2].angles[i])))
+          OUTPUT_TEXT("Broken Joint < " << TypeRegistry::getEnumName((static_cast<Joints::Joint>(i))) << " > " << "at Frame (Logframe/FrameInfo.time) " << frameCounter - 5 << " / " << theFrameInfo.time << " with value " << difs[1].angles[i] << " " << difs[2].angles[i]); //the frameInfo.time is needed as long as the log frame can be desynced.
+      }
+    }
+    return true;
+  });
+  return finished;
+}
+
 bool LogExtractor::saveLabeledBallSpots(const std::string& path)
 {
   DECLARE_REPRESENTATIONS_AND_MAP(
@@ -506,10 +626,10 @@ bool LogExtractor::saveLabeledBallSpots(const std::string& path)
   BallSpecification ballSpecification;
 
   int imageNumber = 0;
-                    const std::string& folderPath = createNewFolder(path.substr(0, path.rfind(".")) + "/");
+  const std::string& folderPath = createNewFolder(path.substr(0, path.rfind(".")) + "/");
 
-                    return saveCSV(path,
-                                   [](Out& file, const std::string& sep)
+  return saveCSV(path,
+                 [](Out& file, const std::string& sep)
   {
     file << "# imagenumber" << sep << "frametime" << sep << "camera" << sep << "ball" << sep << "blurred" << sep << "hidden" << sep << "penaltyMark" << sep << "blurred" << sep << "hidden" << sep << "footFront" << sep << "blurred" << sep << "hidden" << sep << "counter footFront" << sep << "footBack" << sep << "blurred" << sep << "hidden" << sep << "counter footBack" << sep << "x image" << sep << "y image" << sep << "x field" << sep << "y field" << sep << "estimated distance";
   },
@@ -527,7 +647,10 @@ bool LogExtractor::saveLabeledBallSpots(const std::string& path)
 
         ss << folderPath << imageNumber;
 
-        const float diameter = IISC::getImageBallRadiusByCenter(ballSpot.cast<float>(), theCameraInfo, theCameraMatrix, ballSpecification) * 3.5f;
+        Vector2f relativePosition;
+        Geometry::Circle ball;
+        const float diameter = Transformation::imageToRobotHorizontalPlane(ballSpot.cast<float>(), ballSpecification.radius, theCameraMatrix, theCameraInfo, relativePosition)
+                               && Projection::calculateBallInImage(relativePosition, theCameraMatrix, theCameraInfo, ballSpecification.radius, ball) ? ball.radius * 3.5f : -1.f;
         std::vector<LabelImage::Annotation> annotations = theLabelImage.getLabels(ballSpot, Vector2i(diameter, diameter));
         for(const auto& annotation : annotations)
         {
@@ -575,7 +698,7 @@ bool LogExtractor::saveLabeledBallSpots(const std::string& path)
           CameraImage cameraImage;
           theJPEGImage.toCameraImage(cameraImage);
           PatchUtilities::extractPatch(ballSpot, Vector2i(diameter, diameter), Vector2i(32, 32), cameraImage.getGrayscaled(), dest);
-          dest.exportImage(ss.str(), theLabelImage.frameTime, GrayscaledImage::grayscale);
+          ImageExport::exportImage(dest, ss.str(), theLabelImage.frameTime, ImageExport::grayscale);
           file << imageNumber << sep
                << theLabelImage.frameTime << sep
                << theCameraInfo.camera << sep
@@ -620,7 +743,7 @@ bool LogExtractor::saveCSV(const std::string& fileName, const std::function<void
 
   const bool finished = goThroughLog(
                           representations,
-                          [&writeInFile, &noEndl, &file, &sep](const std::string& frameType)
+                          [&writeInFile, &noEndl, &file, &sep](const std::string&)
   {
     writeInFile(file, sep);
     if(!noEndl)

@@ -22,10 +22,11 @@
 #include "Tools/Modeling/BallLocatorTools.h"
 #include "Tools/Modeling/Measurements.h"
 
-MAKE_MODULE(BallPerceptFilter, modeling)
+MAKE_MODULE(BallPerceptFilter, modeling);
 
 BallPerceptFilter::BallPerceptFilter() : timeBallWasBeenSeenInLowerCameraImage(0),
-                                         timeWhenLastKickWasExecuted(0), timeOfLastFilteredPercept(0)
+                                         timeWhenLastKickWasExecuted(0), timeOfLastFilteredPercept(0),
+                                         timeOfLastPerceivedFieldFeature(0)
 {
 }
 
@@ -55,14 +56,16 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 
   // Odometry update for buffered ball percepts:
   const Pose2f odometryOffset = theOdometer.odometryOffset.inverse();
-  for(size_t i=0; i<bufferedSeenBalls.size(); i++)
+  for(size_t i = 0; i < bufferedSeenBalls.size(); i++)
     bufferedSeenBalls[i].positionOnField = odometryOffset * bufferedSeenBalls[i].positionOnField;
-  for(size_t i=0; i<bufferedBalls.size(); i++)
+  for(size_t i = 0; i < bufferedBalls.size(); i++)
     bufferedBalls[i].positionOnField = odometryOffset * bufferedBalls[i].positionOnField;
 
   // Update other internal stuff
   if(theMotionInfo.isKicking()) //&& theBallContactWithRobot.timeOfLastContact > timeWhenLastKickWasExecuted)
     timeWhenLastKickWasExecuted = theFrameInfo.time;
+  if(theFieldFeatureOverview.combinedStatus.lastSeen > timeOfLastPerceivedFieldFeature)
+    timeOfLastPerceivedFieldFeature = theFieldFeatureOverview.combinedStatus.lastSeen;
 
   // Do some first checks
   if(theBallPercept.status == BallPercept::notSeen)
@@ -85,9 +88,9 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 
   // Analyze new percept
   if(theBallPercept.status == BallPercept::seen ||  // The ball was seen and the perceptor seems to be quite sure.
-     (theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theTeamBehaviorStatus.role.isGoalkeeper && theBallPercept.status != BallPercept::notSeen) || // A penalty keeper accepts everything ;-)
+     (theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber && theBallPercept.status != BallPercept::notSeen) || // A penalty keeper accepts everything ;-)
      currentlyPerceivedGuessedBallIsCloseToPreviouslyPerceivedSeenBalls() || // There have been quite good perceptions close to the currently - not so good - one.
-     robotRecentlyKickedAndThereAreGuessedBallsRollingAway() || // After a kick, a sequence of badly perceived balls should be observerable
+     robotRecentlyKickedAndThereAreGuessedBallsRollingAway() || // After a kick, a sequence of badly perceived balls should be observable
      perceptsAreOnALineThatIsCompatibleToARollingBall()) // We can accept bad percepts if they appear to form a line
   {
     bool ballCanBeUsed = true;
@@ -137,10 +140,10 @@ void BallPerceptFilter::update(FilteredBallPercepts& filteredBallPercepts)
 bool BallPerceptFilter::perceptCanBeExcludedByLocalization()
 {
   // Not sure about position
-  if(theRobotPose.validity != 1.f)
+  if(theRobotPose.quality != RobotPose::superb)
     return false;
   // Not seen cool stuff recently
-  if(theFrameInfo.getTimeSince(theRobotPose.timeOfLastConsideredFieldFeature) > fieldFeatureTimeout)
+  if(theFrameInfo.getTimeSince(timeOfLastPerceivedFieldFeature) > fieldFeatureTimeout)
     return false;
   Vector2f ballOnField = theWorldModelPrediction.robotPose * theBallPercept.positionOnField;
   // Not in the field of play ...
@@ -239,7 +242,7 @@ bool BallPerceptFilter::verifySeenBall()
 {
   // Override for keeper in penalty shootout:
   // All balls can be used!
-  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theTeamBehaviorStatus.role.isGoalkeeper)
+  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
     return true;
   // Otherwise check distance to other seen balls:
   float verificationDistance = requiredPerceptionDistanceNear;
@@ -298,36 +301,36 @@ bool BallPerceptFilter::currentlyPerceivedGuessedBallIsCloseToPreviouslyPerceive
 bool BallPerceptFilter::robotRecentlyKickedAndThereAreGuessedBallsRollingAway()
 {
   // Method should not have been called in this case:
- if(theBallPercept.status != BallPercept::guessed)
-   return false;
- // We have not kicked recently:
- if(theFrameInfo.getTimeSince(timeWhenLastKickWasExecuted) > timeSpanForAcceptingKickedGuessedBalls)
-   return false;
- // Find the percepts that are assumed to be a trace of a kicked ball:
- unsigned lastIndex = 0;
- for(unsigned int i = 0; i < bufferedBalls.size(); i++)
- {
-   if(bufferedBalls[i].timeWhenSeen > timeWhenLastKickWasExecuted &&
-      theFrameInfo.getTimeSince(bufferedBalls[i].timeWhenSeen) < timeSpanForAcceptingKickedGuessedBalls)
-     lastIndex = i;
-   else
-     break;
- }
- // Do we have enough balls in buffer?
- if(static_cast<int>(lastIndex + 1) < requiredNumberOfGuessBallsForKickDetection)
-   return false;
- // If yes, these balls need to have decreasing distances (due to order in buffer) as we assume that the ball is rolling away
- float distance = theFieldDimensions.xPosOpponentGroundline * 4.f;;
- for(unsigned int i=0; i<= lastIndex; i++)
- {
-   const float currentDistance = bufferedBalls[i].positionOnField.norm();
-   if(currentDistance < distance)
-     distance = currentDistance;
-   else
-     return false;
- }
- ANNOTATION("BallPerceptFilter", "Found a sequence of " << lastIndex + 1 << " balls with an increasing distance after a kick!");
- return true;
+  if(theBallPercept.status != BallPercept::guessed)
+    return false;
+  // We have not kicked recently:
+  if(theFrameInfo.getTimeSince(timeWhenLastKickWasExecuted) > timeSpanForAcceptingKickedGuessedBalls)
+    return false;
+  // Find the percepts that are assumed to be a trace of a kicked ball:
+  unsigned lastIndex = 0;
+  for(unsigned int i = 0; i < bufferedBalls.size(); i++)
+  {
+    if(bufferedBalls[i].timeWhenSeen > timeWhenLastKickWasExecuted &&
+       theFrameInfo.getTimeSince(bufferedBalls[i].timeWhenSeen) < timeSpanForAcceptingKickedGuessedBalls)
+      lastIndex = i;
+    else
+      break;
+  }
+  // Do we have enough balls in buffer?
+  if(static_cast<int>(lastIndex + 1) < requiredNumberOfGuessBallsForKickDetection)
+    return false;
+  // If yes, these balls need to have decreasing distances (due to order in buffer) as we assume that the ball is rolling away
+  float distance = theFieldDimensions.xPosOpponentGroundLine * 4.f;;
+  for(unsigned int i = 0; i <= lastIndex; i++)
+  {
+    const float currentDistance = bufferedBalls[i].positionOnField.norm();
+    if(currentDistance < distance)
+      distance = currentDistance;
+    else
+      return false;
+  }
+  ANNOTATION("BallPerceptFilter", "Found a sequence of " << lastIndex + 1 << " balls with an increasing distance after a kick!");
+  return true;
 }
 
 bool BallPerceptFilter::perceptsAreOnALineThatIsCompatibleToARollingBall()
@@ -357,7 +360,7 @@ bool BallPerceptFilter::perceptsAreOnALineThatIsCompatibleToARollingBall()
      speed > minimumVelocityForMotionDetection && speed < theBallSpecification.ballSpeedUpperBound())
   {
     ANNOTATION("BallPerceptFilter", "Found a sequence that indicates a rolling ball: " << stdDevMoving << " < " << stdDevStatic << "  with " << speed << "mm/s!");
-   // OUTPUT_TEXT("Found a sequence that indicates a rolling ball: " << stdDevMoving << " < " << stdDevStatic << "  with " << speed << "mm/s!");
+    // OUTPUT_TEXT("Found a sequence that indicates a rolling ball: " << stdDevMoving << " < " << stdDevStatic << "  with " << speed << "mm/s!");
     return true;
   }
   return false;
@@ -366,11 +369,11 @@ bool BallPerceptFilter::perceptsAreOnALineThatIsCompatibleToARollingBall()
 float BallPerceptFilter::computeStdDevOfStaticBallHypothesis(unsigned indexOfOldestObservation)
 {
   Vector2f mean = bufferedBalls[0].positionOnField;
-  for(unsigned int i=1; i<=indexOfOldestObservation; ++i)
+  for(unsigned int i = 1; i <= indexOfOldestObservation; ++i)
     mean += bufferedBalls[i].positionOnField;
   mean /= static_cast<float>(indexOfOldestObservation + 1);
   float variance = 0.f;
-  for(unsigned int i=0; i<=indexOfOldestObservation; ++i)
+  for(unsigned int i = 0; i <= indexOfOldestObservation; ++i)
     variance += (bufferedBalls[i].positionOnField - mean).squaredNorm();
   variance /= (indexOfOldestObservation + 1);
   return std::sqrt(variance);
@@ -390,12 +393,12 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
     const auto dt    = (b2.timeWhenSeen - b1.timeWhenSeen) / 1000.f;   // in s
     const auto tToB1 = (b1.timeWhenSeen - t0) / 1000.f;        // in s
     const auto dPos = (b2.positionOnField - b1.positionOnField) / 1000.f;      // in m
-    z((i-1) * 2)         = dPos.x() - 0.5f * theBallSpecification.friction * dt * dt + dt * tToB1;;
-    z((i-1) * 2 + 1)     = dPos.y() - 0.5f * theBallSpecification.friction * dt * dt + dt * tToB1;;
-    A((i-1) * 2, 0)      = dt;
-    A((i-1) * 2, 1)      = 0.f;
-    A((i-1) * 2 + 1, 0)  = 0.f;
-    A((i-1) * 2 + 1, 1)  = dt;
+    z((i - 1) * 2)         = dPos.x() - 0.5f * theBallSpecification.friction * dt * dt + dt * tToB1;
+    z((i - 1) * 2 + 1)     = dPos.y() - 0.5f * theBallSpecification.friction * dt * dt + dt * tToB1;
+    A((i - 1) * 2, 0)      = dt;
+    A((i - 1) * 2, 1)      = 0.f;
+    A((i - 1) * 2 + 1, 0)  = 0.f;
+    A((i - 1) * 2 + 1, 1)  = dt;
   }
   Vector2f x;
   x = (A.transpose() * A).inverse() * A.transpose() * z;
@@ -408,7 +411,7 @@ float BallPerceptFilter::computeStdDevOfMovingBallHypothesis(unsigned indexOfOld
   Vector2f startPosition = bufferedBalls[indexOfOldestObservation].positionOnField;
   Vector2f startVelocity = x * 1000.f;
   float timeSpan = (bufferedBalls[0].timeWhenSeen - bufferedBalls[indexOfOldestObservation].timeWhenSeen) / 1000.f;
-  BallPhysics::propagateBallPositionAndVelocity(startPosition,startVelocity, timeSpan, theBallSpecification.friction);
+  BallPhysics::propagateBallPositionAndVelocity(startPosition, startVelocity, timeSpan, theBallSpecification.friction);
   endVelocity = startVelocity;
 
   // Return error:
@@ -420,7 +423,7 @@ void BallPerceptFilter::doSomeTestStuff()
   DECLARE_DEBUG_DRAWING("module:BallPerceptFilter:testStuff", "drawingOnField");
   if(theCameraInfo.camera == CameraInfo::lower)
     return;
-  Vector2f pointRelativeToRobot(2000.f,0.f);
+  Vector2f pointRelativeToRobot(2000.f, 0.f);
   MODIFY("module:BallPerceptFilter:testPoint", pointRelativeToRobot);
   const Matrix2f cov = Measurements::positionToCovarianceMatrixInRobotCoordinates(
                                        pointRelativeToRobot, 0.f, theCameraMatrix,

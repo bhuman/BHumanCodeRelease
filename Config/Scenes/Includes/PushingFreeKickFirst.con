@@ -1,0 +1,5 @@
+# Penalize current robot for pushing
+pr playerPushing
+
+# Give pushing free kick to other team
+gc pushingFreeKickForSecondTeam

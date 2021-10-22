@@ -1,7 +1,7 @@
 /**
  * @file ThumbnailProvider.h
  *
- * Declares a module which calculated a colored or grayscaled thumbnail image.
+ * Declares a module which calculated a colored or gray-scaled thumbnail image.
  *
  * @author Alexis Tsogias
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
@@ -32,15 +32,5 @@ MODULE(ThumbnailProvider,
 
 class ThumbnailProvider : public ThumbnailProviderBase
 {
-private:
-  Image<PixelTypes::ColoredPixel> shrinkedColors;
-
-  void shrinkY(const unsigned int downScales, const Image<PixelTypes::GrayscaledPixel>& src, Image<PixelTypes::GrayscaledPixel>& dest) const;
-  void shrinkColors(const unsigned int downScales, const Image<PixelTypes::ColoredPixel>& src, Image<PixelTypes::ColoredPixel>& dest) const;
-  void shrinkUV(const unsigned int downScales, const CameraImage& src, Image<unsigned short>& dest) const;
-
-  void combineGrayscaleAndColors(const Image<PixelTypes::GrayscaledPixel>& y, const Image<PixelTypes::ColoredPixel>& c, Image<PixelTypes::GrayscaledPixel>& dest) const;
-
-public:
   void update(Thumbnail& thumbnail) override;
 };

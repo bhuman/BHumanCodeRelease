@@ -12,7 +12,7 @@
 #include "Tools/Math/RotationMatrix.h"
 #include "Tools/Math/Projection.h"
 
-MAKE_MODULE(CoordinateSystemProvider, perception)
+MAKE_MODULE(CoordinateSystemProvider, perception);
 
 void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSystem)
 {
@@ -22,7 +22,6 @@ void CoordinateSystemProvider::update(ImageCoordinateSystem& imageCoordinateSyst
   imageCoordinateSystem.origin = horizon.base;
   imageCoordinateSystem.rotation.col(0) = horizon.direction;
   imageCoordinateSystem.rotation.col(1) = Vector2f(-horizon.direction.y(), horizon.direction.x());
-  imageCoordinateSystem.invRotation = imageCoordinateSystem.rotation.transpose();
 
   calcOffset(prevCameraMatrix, theCameraMatrix, prevCameraMatrixOffset, imageCoordinateSystem.offset);
   calcOffset(prevRobotCameraMatrix, theRobotCameraMatrix, prevRobotCameraMatrixOffset, imageCoordinateSystem.robotOffset);

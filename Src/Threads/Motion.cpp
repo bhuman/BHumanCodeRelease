@@ -39,16 +39,3 @@ bool Motion::afterFrame()
 
   return FrameExecutionUnit::afterFrame();
 }
-
-#if (defined LINUX || defined MACOS)
-#include "Modules/Sensing/FallDownStateDetector/FallDownStateProvider.h"
-#include "Modules/Sensing/InertialDataProvider/InertialDataProvider.h"
-#include "Modules/MotionControl/WalkingEngine/Walk2014Generator.h"
-
-extern Module<FallDownStateProvider, FallDownStateProviderBase> theFallDownStateProviderModule;
-auto linkFallDownStateProvider = &theFallDownStateProviderModule;
-extern Module<InertialDataProvider, InertialDataProviderBase> theInertialDataProviderModule;
-auto linkInertialDataProvider = &theInertialDataProviderModule;
-extern Module<Walk2014Generator, Walk2014GeneratorBase> theWalk2014GeneratorModule;
-auto linkWalk2014Generator = &theWalk2014GeneratorModule;
-#endif

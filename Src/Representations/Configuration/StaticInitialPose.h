@@ -13,6 +13,7 @@
 
 STREAMABLE(StaticInitialPose,
 {,
-  (bool) isActive,
-  (Pose2f) staticPoseOnField,
+  (bool) isActive,            /**< If the module is activ. */
+  (bool)(false) jump,         /**< Only Simulator! Whether the own position was changed this moment. */
+  (Pose2f) staticPoseOnField, /**< The Pose to which will be switched */
 });

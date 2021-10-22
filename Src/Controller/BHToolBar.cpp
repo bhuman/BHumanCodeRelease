@@ -178,8 +178,7 @@ void BHToolBar::requestSitDown(bool active)
 void BHToolBar::setPlayDead()
 {
   MotionRequest moReq;
-  moReq.motion = MotionRequest::Motion::specialAction;
-  moReq.specialActionRequest.specialAction = SpecialActionRequest::SpecialActionID::playDead;
+  moReq.motion = MotionRequest::playDead;
 
   console.setRepresentation("MotionRequest", moReq);
 
@@ -194,8 +193,9 @@ void BHToolBar::setPlayDead()
 void BHToolBar::setSitDown()
 {
   MotionRequest moReq;
-  moReq.motion = MotionRequest::Motion::specialAction;
-  moReq.specialActionRequest.specialAction = SpecialActionRequest::SpecialActionID::sitDown;
+  moReq.motion = MotionRequest::Motion::keyframeMotion;
+  moReq.keyframeMotionRequest.keyframeMotion = KeyframeMotionRequest::sitDown;
+  moReq.keyframeMotionRequest.mirror = false;
 
   console.setRepresentation("MotionRequest", moReq);
 }
@@ -204,7 +204,7 @@ void BHToolBar::setStand()
 {
   MotionRequest moReq;
   moReq.motion = MotionRequest::Motion::stand;
-  moReq.specialActionRequest.specialAction = SpecialActionRequest::SpecialActionID::playDead;
+  moReq.standHigh = false;
 
   console.setRepresentation("MotionRequest", moReq);
 

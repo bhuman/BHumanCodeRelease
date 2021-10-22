@@ -19,14 +19,14 @@ namespace Random
 
   /**
    * Returns a normally distributed value of type T with a mean and a sigma.
-   * Undefined behaviour if T is not a real type.
+   * Undefined behavior, if T is not a real type.
    */
   template<typename T = float>
   T normal(T mean, T sigma);
 
   /**
    * Returns a normally distributed value of type T with zero mean and a sigma.
-   * Undefined behaviour if T is not a real type.
+   * Undefined behavior, if T is not a real type.
    */
   template<typename T = float>
   T normal(T sigma = T(1)) { return normal(T(0), sigma); }

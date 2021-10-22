@@ -57,7 +57,7 @@ bool PlotWidget::needsRepaint() const
   return false;
 }
 
-void PlotWidget::paintEvent(QPaintEvent* event)
+void PlotWidget::paintEvent(QPaintEvent*)
 {
   painter.begin(this);
   if(antialiasing)
@@ -79,13 +79,13 @@ void PlotWidget::paint(QPainter& painter)
   const QFontMetrics& fontMetrics = painter.fontMetrics();
   {
     char buf[32];
-    sprintf(buf, "%g", (plotView.maxValue - plotView.minValue) < 8. ? (plotView.minValue / 4.) : plotView.minValue);
+    sprintf(buf, "%g", (plotView.maxValue - plotView.minValue) < 8.f ? (plotView.minValue / 4.f) : plotView.minValue);
     const QSize& bufSize = fontMetrics.size(Qt::TextSingleLine, buf);
     textHeight = bufSize.height();
     leftMargin = bufSize.width();
     bottomMargin = textHeight + space * 2;
     topMargin = space + textHeight / 2.f;
-    sprintf(buf, "%g", (plotView.maxValue - plotView.minValue) < 8. ? (plotView.maxValue / 4.) : plotView.maxValue);
+    sprintf(buf, "%g", (plotView.maxValue - plotView.minValue) < 8.f ? (plotView.maxValue / 4.f) : plotView.maxValue);
     const QSize& bufSize2 = fontMetrics.size(Qt::TextSingleLine, buf);
     if(bufSize2.width() > leftMargin)
       leftMargin = bufSize2.width();
@@ -149,24 +149,24 @@ void PlotWidget::paint(QPainter& painter)
     {
       QRectF rect(0, 0, leftMargin - space, textHeight);
       sprintf(buf, "%g", plotView.maxValue);
-      rect.moveTop((plotView.valueLength - (plotView.maxValue - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.);
+      rect.moveTop((plotView.valueLength - (plotView.maxValue - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.f);
       painter.drawText(rect, Qt::AlignRight, tr(buf));
       sprintf(buf, "%g", plotView.minValue);
-      rect.moveTop((plotView.valueLength - (plotView.minValue - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.);
+      rect.moveTop((plotView.valueLength - (plotView.minValue - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.f);
       painter.drawText(rect, Qt::AlignRight, tr(buf));
-      rect.moveTop((plotView.valueLength - (0. - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.);
+      rect.moveTop((plotView.valueLength - (0.f - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.f);
       painter.drawText(rect, Qt::AlignRight, QString("0"));
       const float minOffset = plotView.valueLength * 20.f / plotRect.height();
       for(float pos = stepY; pos <= plotView.maxValue - minOffset; pos += stepY)
       {
         sprintf(buf, "%g", pos);
-        rect.moveTop((plotView.valueLength - (pos - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.);
+        rect.moveTop((plotView.valueLength - (pos - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.f);
         painter.drawText(rect, Qt::AlignRight, tr(buf));
       }
       for(float pos = -stepY; pos >= plotView.minValue + minOffset; pos -= stepY)
       {
         sprintf(buf, "%g", pos);
-        rect.moveTop(((plotView.maxValue - plotView.minValue) - (pos - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.);
+        rect.moveTop(((plotView.maxValue - plotView.minValue) - (pos - plotView.minValue)) * plotRect.height() / plotView.valueLength + topMargin - textHeight / 2.f);
         painter.drawText(rect, Qt::AlignRight, tr(buf));
       }
     }
@@ -177,15 +177,15 @@ void PlotWidget::paint(QPainter& painter)
       sprintf(buf, "%.2f", plotSizeF * plotView.xScale);
       rect.setWidth(fontMetrics.size(Qt::TextSingleLine, buf).width());
       sprintf(buf, "%g", plotSizeF * plotView.xScale);
-      rect.moveLeft((plotSizeF - plotSizeF) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.);
+      rect.moveLeft((plotSizeF - plotSizeF) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.f);
       painter.drawText(rect, Qt::AlignCenter, tr(buf));
-      rect.moveLeft((plotSizeF - 0.) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.);
+      rect.moveLeft((plotSizeF - 0.f) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.f);
       painter.drawText(rect, Qt::AlignCenter, QString("0"));
       const float minOffset = plotSizeF * 25.f / plotRect.width();
       for(float pos = stepX; pos <= plotSizeF - minOffset; pos += stepX)
       {
         sprintf(buf, "%g", pos * plotView.xScale);
-        rect.moveLeft((plotSizeF - pos) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.);
+        rect.moveLeft((plotSizeF - pos) * plotRect.width() / plotSizeF + leftMargin - rect.width() / 2.f);
         painter.drawText(rect, Qt::AlignCenter, tr(buf));
       }
     }
@@ -221,19 +221,19 @@ void PlotWidget::paint(QPainter& painter)
   float twoPxX = plotSizeF * 2.f / plotRect.width();
   float twoPxY = plotView.valueLength * 2.f / plotRect.height();
   for(float pos = stepY; pos < plotView.maxValue; pos += stepY)
-    painter.drawLine(QPointF(0., pos), QPointF(plotSizeF + twoPxX, pos));
+    painter.drawLine(QPointF(0.f, pos), QPointF(plotSizeF + twoPxX, pos));
   for(float pos = -stepY; pos > plotView.minValue; pos -= stepY)
-    painter.drawLine(QPointF(0., pos), QPointF(plotSizeF + twoPxX, pos));
+    painter.drawLine(QPointF(0.f, pos), QPointF(plotSizeF + twoPxX, pos));
   for(float pos = stepX; pos < plotSizeF; pos += stepX)
     painter.drawLine(QPointF(pos, plotView.minValue - twoPxY), QPointF(pos, plotView.maxValue));
   painter.setPen(blackPen);
-  painter.drawLine(QPointF(0., 0.), QPointF(plotSizeF + twoPxX, 0.));
-  painter.drawLine(QPointF(0., plotView.minValue - twoPxY), QPointF(0., plotView.maxValue));
+  painter.drawLine(QPointF(0.f, 0.f), QPointF(plotSizeF + twoPxX, 0.f));
+  painter.drawLine(QPointF(0.f, plotView.minValue - twoPxY), QPointF(0.f, plotView.maxValue));
   painter.drawLine(QPointF(plotSizeF, plotView.minValue - twoPxY), QPointF(plotSizeF, plotView.maxValue));
-  if(plotView.minValue != 0.)
-    painter.drawLine(QPointF(0., plotView.minValue), QPointF(plotSizeF + twoPxX, plotView.minValue));
-  if(plotView.maxValue != 0.)
-    painter.drawLine(QPointF(0., plotView.maxValue), QPointF(plotSizeF + twoPxX, plotView.maxValue));
+  if(plotView.minValue != 0.f)
+    painter.drawLine(QPointF(0.f, plotView.minValue), QPointF(plotSizeF + twoPxX, plotView.minValue));
+  if(plotView.maxValue != 0.f)
+    painter.drawLine(QPointF(0.f, plotView.maxValue), QPointF(plotSizeF + twoPxX, plotView.maxValue));
 
   {
     SYNC_WITH(plotView.console);

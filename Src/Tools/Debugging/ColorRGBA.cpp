@@ -1,7 +1,7 @@
 #include "ColorRGBA.h"
 
 #include "Platform/BHAssert.h"
-#include "Representations/Communication/RoboCupGameControlData.h"
+#include "Tools/Communication/RoboCupGameControlData.h"
 
 const ColorRGBA ColorRGBA::white(255, 255, 255);
 const ColorRGBA ColorRGBA::gray(128, 128, 128);

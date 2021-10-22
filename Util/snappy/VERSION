@@ -1,0 +1,26 @@
+libsnappy 1.1.9
+
+Common
+------
+git clone -b 1.1.9 https://github.com/google/snappy.git
+git submodule update --init
+mkdir build
+cd build
+
+Unix
+----
+In snappy.cc, make AdvanceToNextTag static.
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
+make
+
+macOS
+-----
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make
+
+Windows
+-------
+cmake ..
+Open Snappy.sln
+Change the output name of the Debug library from snappy to snappyd
+Build both Debug and Release

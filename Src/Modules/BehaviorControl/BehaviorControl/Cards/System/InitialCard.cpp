@@ -14,7 +14,7 @@ CARD(InitialCard,
 {,
   CALLS(Activity),
   CALLS(LookAtAngles),
-  CALLS(SpecialAction),
+  CALLS(Stand),
   REQUIRES(GameInfo),
 });
 
@@ -34,7 +34,7 @@ class InitialCard : public InitialCardBase
   {
     theActivitySkill(BehaviorStatus::initial);
     theLookAtAnglesSkill(0.f, 0.f, 150_deg);
-    theSpecialActionSkill(SpecialActionRequest::standHigh);
+    theStandSkill(/* high: */ true);
   }
 };
 

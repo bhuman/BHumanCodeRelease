@@ -28,7 +28,6 @@ void FilteredBallPercepts::draw() const
 
 void FilteredBallPercepts::verify() const
 {
-#ifndef NDEBUG
   for(const auto& percept : percepts)
   {
     ASSERT(std::isfinite(percept.positionInImage.x()));
@@ -43,5 +42,4 @@ void FilteredBallPercepts::verify() const
     ASSERT(percept.radiusOnField > 0.f);
     ASSERT(percept.timeWhenSeen > 0);
   }
-#endif
 }

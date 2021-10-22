@@ -18,42 +18,41 @@
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
+#include "Representations/Perception/ImagePreprocessing/RelativeFieldColors.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 
 MODULE(BallSpotsProvider,
 {,
   REQUIRES(BallSpecification),
   REQUIRES(BodyContour),
-  REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
-  REQUIRES(FieldDimensions),
+  REQUIRES(CameraMatrix),
+  REQUIRES(ColorScanLineRegionsVerticalClipped),
   REQUIRES(ECImage),
+  REQUIRES(FieldDimensions),
+  REQUIRES(FrameInfo),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(ObstaclesImagePercept),
-  REQUIRES(ColorScanLineRegionsVerticalClipped),
+  REQUIRES(RelativeFieldColors),
   REQUIRES(WorldModelPrediction),
-  REQUIRES(FrameInfo),
   PROVIDES(BallSpots),
   LOADS_PARAMETERS(
   {,
-    (float)(3.f) minRadiusOfWantedRegion, //< if a regions radius is smaller than this, the green check must be successful
-    (Angle)(60_deg) greenEdge, //< The greenEdge for IISC::calcPossibleVisibleBallByLowestPoint(..)
-    (float)(0.5f) ballSpotDistUsage, //< How much of the lower visible part of the ball has to be found
-    (float)(1.5) scanLengthRadiusFactor, //< The factor to determine the maximum scan length
-    (unsigned)(5) maxNumberOfSkippablePixel, //< The maximum number of pixels that are allowed to be skipped while scanBallSpotOneDirection(..)
-    (unsigned)(3) maxNumberOfSkippableGreenPixel, //< The maximum number of green pixels that are allowed to be skipped while scanBallSpotOneDirection(..)
-    (float)(1.3f) minAllowedDistanceRadiusRelation, //< The factor to determine the minimum distance between two ball spots
-    (float)(0.7) minFoundDiameterPercentage, //< The minimum ratio of the messured width compared to the calculated width
-    (float)(0.3f) noiseThreshold, //< The maximum ratio of non-good pixels
-    (float)(0.4f) minGoodNeutralRatio, //< The minimum ratio of good pixels compared to non-bad pixels
+    (float) minRadiusOfWantedRegion, //< if a regions radius is smaller than this, the green check must be successful
+    (Angle) greenEdge, //< The greenEdge for IISC::calcPossibleVisibleBallByLowestPoint(..)
+    (float) ballSpotDistUsage, //< How much of the lower visible part of the ball has to be found
+    (float) scanLengthRadiusFactor, //< The factor to determine the maximum scan length
+    (unsigned) maxNumberOfSkippablePixel, //< The maximum number of pixels that are allowed to be skipped while scanBallSpotOneDirection(..)
+    (float) minAllowedDistanceRadiusRelation, //< The factor to determine the minimum distance between two ball spots
+    (float) minFoundDiameterPercentage, //< The minimum ratio of the messured width compared to the calculated width
+    (float) noiseThreshold, //< The maximum ratio of non-good pixels
+    (float) minGoodNeutralRatio, //< The minimum ratio of good pixels compared to non-bad pixels
 
-    (int)(2) additionalRadiusForGreenCheck, //< the distance between the ball spot and the green scan areas
-    (float)(0.9f) greenPercent, //< the minimum ratio of detected green compared to all considered pixels in the green check
+    (int) additionalRadiusForGreenCheck, //< the distance between the ball spot and the green scan areas
+    (float) greenPercent, //< the minimum ratio of detected green compared to all considered pixels in the green check
 
-    (bool)(true) allowColorNon, //< Is a non-colored pixel neutral? (if not it is bad)
-    (bool)(true) blackPixelsAreNeutral, // Is a black-colored pixel neutral? (if not it is good)
-
-    (bool)(false) allowScanLineTopSpotFitting, // Is it allowed to find a spot on top of a scanLine?
+    (bool) allowScanLineTopSpotFitting, // Is it allowed to find a spot on top of a scanLine?
+    (bool) lessStrictChecks, // Allow more Ballspots?
   }),
 });
 
@@ -83,10 +82,12 @@ class BallSpotsProvider : public BallSpotsProviderBase
    *
    * @param initialPoint The initial ball spot guess
    * @param circle The guessed ball in image
+   * @param luminanceRef The luminance of a white reference Pixel
+   * @param saturationRef The saturation of a white reference Pixel
    * @return Is the scanned width not entirely smaller then the calculated one?
    *         And are the pixels right colored in the majority?
    */
-  bool correctWithScanLeftAndRight(Vector2i& initialPoint, const Geometry::Circle& circle) const;
+  bool correctWithScanLeftAndRight(Vector2i& initialPoint, const Geometry::Circle& circle, unsigned char luminanceRef, unsigned char saturationRef) const;
 
   /**
    * The method performs a scan in one direction.
@@ -95,36 +96,38 @@ class BallSpotsProvider : public BallSpotsProviderBase
    * @param currentLength A variable that counts the scanned pixels
    * @param maxLength The maximum scan length
    * @param goodPixelCounter A variable that counts the accepted pixels
-   * @param goodPixelCounter A variable that counts the neutral pixels
    * @param getX(Vector2i,int) A pointer of a function that calculates the x-Value of the next element
    * @param getY(Vector2i,int) A pointer of a function that calculates the y-Value of the next element
+   * @param luminanceRef The luminance of a white reference Pixel
+   * @param saturationRef The saturation of a white reference Pixel
    */
   void scanBallSpotOneDirection(const Vector2i& spot, int& currentLength, const int& maxLength,
-                                unsigned& goodPixelCounter, unsigned& neutralPixelCounter,
+                                unsigned& goodPixelCounter,
                                 int(*getX)(const Vector2i& spot, const int currentLength),
-                                int(*getY)(const Vector2i& spot, const int currentLength)) const;
+                                int(*getY)(const Vector2i& spot, const int currentLength),
+                                unsigned char luminanceRef, unsigned char saturationRef) const;
 
   /**
    * The method checks a pixel.
    *
    * @param pixel The color pixel
    * @param goodPixelCounter A variable that counts the accepted pixels
-   * @param neutralPixelCounter A variable that counts the neutral pixels
-   * @param currentSkippedGreen A variable that counts the consecutive skipped green pixels
    * @param currentSkipped A variable that counts the consecutive skipped pixels
+   * @param luminanceRef The luminance of a white reference Pixel
+   * @param saturationRef The saturation of a white reference Pixel
    * @return Is the consecutive skipped pixel (or green pixel) count to high?
    */
-  bool checkPixel(const PixelTypes::ColoredPixel& pixel,
-                  unsigned& goodPixelCounter, unsigned& neutralPixelCounter, unsigned& currentSkippedGreen, unsigned& currentSkipped) const;
+  bool checkPixel(unsigned char pixelLuminance, unsigned char pixelSaturation,
+                  unsigned& goodPixelCounter, unsigned& currentSkipped, unsigned char luminanceRef, unsigned char saturationRef) const;
 
   /**
    * The method checks if the last spot is duplicative.
    *
    * @param ballSpots The representation with all previously found ball spots
-   * @param minAllowedDistanz The minimum allowed distance (in pixel) to an other spot
+   * @param minAllowedDistance The minimum allowed distance (in pixel) to an other spot
    * @return Is the spot duplicative?
    */
-  bool isLastDuplicative(const BallSpots& ballSpots, const int minAllowedDistanz) const;
+  bool isLastDuplicative(const BallSpots& ballSpots, const int minAllowedDistance) const;
 
   /**
    * The method checks if the spot is clearly inside a visually detected robot.
@@ -144,7 +147,7 @@ class BallSpotsProvider : public BallSpotsProviderBase
    * @param radius The calculate radius (in pixel) for a ball at this image position
    * @return Is the spot surrounded by enough green pixel?
    */
-  bool checkGreenAround(const Vector2i& spot, const float radius) const;
+  bool checkGreenAround(const Vector2i& spot, const float radius, unsigned char luminanceRef, unsigned char saturationRef) const;
 
   /**
    * The method calculates how a ball would look like if the ball visibility starts at

@@ -34,7 +34,7 @@ class FinishedCard : public FinishedCardBase
   {
     theActivitySkill(BehaviorStatus::finished);
     theLookForwardSkill();
-    theStandSkill();
+    theStandSkill(/* high: */ theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT);
   }
 };
 

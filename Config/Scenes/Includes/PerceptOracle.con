@@ -50,7 +50,6 @@ mr PenaltyMarkPercept OracledPerceptsProvider Upper
 
 # Representations not required anymore
 mr AutoExposureWeightTable off
-mr BallRegions off
 mr BallSpots off
 mr CameraImage off
 mr CameraIntrinsics off
@@ -58,25 +57,26 @@ mr CNSImage off
 mr CNSPenaltyMarkRegions off
 mr CNSRegions off
 mr ColorScanLineRegionsHorizontal off
-mr ColorScanLineRegionsVertical off
 mr ColorScanLineRegionsVerticalClipped off
-mr ECImage off
+mr ECImage default
+mr GoalPostsPercept default
+mr JerseyClassifier off
 mr JPEGImage off
 mr ObstaclesPerceptorData off
 mr OtherFieldBoundary off
+mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
 mr PenaltyMarkRegions off
-mr PenaltyMarkSpots off
+mr RelativeFieldColors off
 mr ScanGrid off
-mr Thumbnail off
 
 # Representations that are still required
 mr CameraStatus default
 mr FieldFeatureOverview default
 mr RobotHealth default
 
-call Includes/DebugResponses
 call Includes/GameStates
+call Includes/DebugResponses
 
 dr debugDrawing3d:representation:RobotPose
-dr debugDrawing3d:representation:SideConfidence
+dr debugDrawing3d:representation:RobotInfo

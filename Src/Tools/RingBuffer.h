@@ -32,15 +32,16 @@ public:
 
   public:
     iterator(RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
+    iterator(const iterator& other) : iterator(other.buffer, other.index) {}
     iterator& operator=(const iterator& other) {return *new(this) iterator(other.buffer, other.index);}
     T* operator->() const {return &buffer[index];}
     T& operator*() const {return buffer[index];}
-    bool operator==(const iterator& other) const {return index == other.index;}
-    bool operator!=(const iterator& other) const {return index != other.index;}
-    iterator operator++() {++index; return *this;}
+    bool operator==(const iterator& other) const {return index == other.index && &buffer == &other.buffer;}
+    bool operator!=(const iterator& other) const {return index != other.index || &buffer != &other.buffer;}
+    iterator& operator++() {++index; return *this;}
     iterator operator++(int) {iterator result(*this); ++index; return result;}
-    iterator operator+=(std::ptrdiff_t offset) {index += offset; return *this;}
-    iterator operator-=(std::ptrdiff_t offset) {index -= offset; return *this;}
+    iterator& operator+=(std::ptrdiff_t offset) {index += offset; return *this;}
+    iterator& operator-=(std::ptrdiff_t offset) {index -= offset; return *this;}
     iterator operator+(std::ptrdiff_t offset) {iterator result(*this); return result += offset;}
     iterator operator-(std::ptrdiff_t offset) {iterator result(*this); return result -= offset;}
   };
@@ -54,15 +55,16 @@ public:
 
   public:
     const_iterator(const RingBuffer<T, n>& buffer, std::size_t index) : buffer(buffer), index(index) {}
+    const_iterator(const const_iterator& other) : const_iterator(other.buffer, other.index) {}
     const_iterator& operator=(const const_iterator& other) {return *new(this) const_iterator(other.buffer, other.index);}
     const T* operator->() const {return &buffer[index];}
     const T& operator*() const {return buffer[index];}
-    bool operator==(const const_iterator& other) const {return index == other.index;}
-    bool operator!=(const const_iterator& other) const {return !(*this == other);}
-    const_iterator operator++() {++index; return *this;}
+    bool operator==(const const_iterator& other) const {return index == other.index && &buffer == &other.buffer;}
+    bool operator!=(const const_iterator& other) const {return index != other.index || &buffer != &other.buffer;}
+    const_iterator& operator++() {++index; return *this;}
     const_iterator operator++(int) {iterator result(*this); ++index; return result;}
-    const_iterator operator+=(std::ptrdiff_t offset) {index += offset; return *this;}
-    const_iterator operator-=(std::ptrdiff_t offset) {index -= offset; return *this;}
+    const_iterator& operator+=(std::ptrdiff_t offset) {index += offset; return *this;}
+    const_iterator& operator-=(std::ptrdiff_t offset) {index -= offset; return *this;}
     const_iterator operator+(std::ptrdiff_t offset) {iterator result(*this); return result += offset;}
     const_iterator operator-(std::ptrdiff_t offset) {iterator result(*this); return result -= offset;}
   };
@@ -72,7 +74,7 @@ public:
    * @param capacity The maximum number of entries the buffer can store. If not specified,
    *                 the second template parameter is used as default capacity.
    */
-  RingBuffer(size_t capacity = n) :
+  RingBuffer(std::size_t capacity = n) :
     buffer(reinterpret_cast<T*>(Memory::alignedMalloc(capacity * sizeof(T)))),
     allocated(capacity)
   {}
@@ -157,8 +159,8 @@ public:
    * @param index The index of the element. Element 0 is the same as front(), element
    *              size()-1 is the same as back().
    */
-  T& operator[](size_t index) {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
-  const T& operator[](size_t index) const {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
+  T& operator[](std::size_t index) {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
+  const T& operator[](std::size_t index) const {ASSERT(!empty()); return buffer[(allocated + head - index - 1) % allocated];}
 
   /** Access the first element of the buffer. */
   T& front() {ASSERT(!empty()); return (*this)[0];}
@@ -172,7 +174,7 @@ public:
   std::size_t size() const {return entries;}
 
   /** The maximum number of elements that can be stored in the buffer. */
-  size_t capacity() const {return allocated;}
+  std::size_t capacity() const {return allocated;}
 
   /**
    * Changes the capacity of the buffer. If it actually changes, the complexity is O(size()).

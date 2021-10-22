@@ -89,10 +89,25 @@ public:
   bool saveJointAngleData(const std::string& path);
 
   /**
+   * Writes all requested joint angles in a format, that can be pasted as body of an
+   * <ActuatorList> tag inside a Choregraphe .xar file timeline. It is assumed that
+   * the attribute "fps" is set to the Motion frame rate.
+   * @param path The path of the file to which the data is written.
+   * @return whether writing the file was successful or not
+   */
+  bool saveChoregrapheTimeline(const std::string& path);
+
+  /**
    * Writes a csv with all module timings.
    * @return true if writing was successful
    */
   bool writeTimingData(const std::string& fileName);
+
+  /**
+   * Analyze if the measured joint angles are jumping, which indicates defect sensors.
+   * @return true if analyzing was successful
+   */
+  bool analyzeRobotStatus();
 
   /**
    * Saves images of ballSpots and related metadata according to imported labels

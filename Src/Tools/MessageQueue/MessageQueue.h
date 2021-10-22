@@ -68,13 +68,6 @@ public:
   size_t getStreamedSize() const {return MessageQueueBase::queueHeaderSize + queue.usedSize;}
 
   /**
-   * The method returns the queue in streamed format. It runs in constant time.
-   * @return A buffer of getStreamedSize() bytes. Note that it is only valid until the next
-   *         non-const call to a method of this queue.
-   */
-  char* getStreamedData();
-
-  /**
    * The method calls a given message handler for all messages in the queue. Note that the messages
    * still remain in the queue and have to be removed manually with clear().
    * @param handler A reference to a message handler.
@@ -182,9 +175,20 @@ protected:
 
   /**
    * The method reads all messages from a stream and appends them to this message queue.
+   * The data in the stream has to start with a header.
    * @param stream The stream that is read from.
    */
   void append(In& stream);
+
+  /**
+   * The method reads messages from a stream and appends them to this message queue.
+   * The size determines the amount of data to be read. It must contain complete messages, i.e.
+   * it is not allowed that the data read ends in the middle of a message.
+   * The data in the stream has to start with a header, which is skipped.
+   * @param stream The stream that is read from.
+   * @param size The number of bytes to be read.
+   */
+  void append(In& stream, size_t size);
 
   friend In& operator>>(In& stream, MessageQueue& messageQueue); /**< Gives the streaming operator access to append(). */
   friend Out& operator<<(Out& stream, const MessageQueue& messageQueue); /**< Gives the streaming operator access to write(). */

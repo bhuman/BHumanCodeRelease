@@ -8,31 +8,6 @@
 
 #include "TeammateRoles.h"
 
-void TeammateRoles::operator>>(BHumanMessage& m) const
-{
-  for(size_t i = 0; i < BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
-  {
-    m.theBHumanStandardMessage.teammateRolesIsGoalkeeper[i] = false;
-    m.theBHumanStandardMessage.teammateRolesPlayBall[i] = false;
-    m.theBHumanStandardMessage.teammateRolesPlayerIndex[i] = (*this)[i + 1];
-  }
-  m.theBHumanStandardMessage.teammateRolesTimestamp = timestamp;
-  m.theBHumanStandardMessage.captain = captain;
-}
-
-void TeammateRoles::operator<<(const BHumanMessage& m)
-{
-  if(!m.hasBHumanParts)
-    return;
-
-  for(size_t i = 0; i < BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS; ++i)
-  {
-    (*this)[i + 1] = m.theBHumanStandardMessage.teammateRolesPlayerIndex[i];
-  }
-  timestamp = m.toLocalTimestamp(m.theBHumanStandardMessage.teammateRolesTimestamp);
-  captain = m.theBHumanStandardMessage.captain;
-}
-
 int& TeammateRoles::operator[](const size_t i)
 {
   while(roles.size() <= i)

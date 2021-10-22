@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2019 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -13,7 +13,7 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <http://www.gnu.org/licenses/>.  */
+   <https://www.gnu.org/licenses/>.  */
 
 /*
  *	ISO C99 Standard: 7.14 Signal handling <signal.h>
@@ -369,6 +369,9 @@ extern int __libc_current_sigrtmax (void) __THROW;
 
 #define SIGRTMIN        (__libc_current_sigrtmin ())
 #define SIGRTMAX        (__libc_current_sigrtmax ())
+
+/* System-specific extensions.  */
+#include <bits/signal_ext.h>
 
 __END_DECLS
 

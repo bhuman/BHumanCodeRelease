@@ -15,6 +15,7 @@
 #include <QString>
 #include <QIcon>
 
+struct FrameInfo;
 struct JointAngles;
 struct JointLimits;
 struct MotionRequest;
@@ -28,14 +29,15 @@ public:
   QString fullName;
   QIcon icon;
   RobotConsole& console;
-  const MotionRequest& motionRequest;
+  const FrameInfo& frameInfo;
   const JointAngles& jointAngles;
   const JointLimits& jointLimits;
+  const MotionRequest& motionRequest;
   const RobotDimensions& robotDimensions;
   const std::string& motionRequestCommand;
   SimRobotCore2::Body* robot;
 
-  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles,
+  KickView(const QString& fullName, RobotConsole& console, const MotionRequest& motionRequest, const JointAngles& jointAngles, const FrameInfo& frameInfo,
            const JointLimits& jointLimits, const RobotDimensions& robotDimensions, const std::string& mr, SimRobotCore2::Body* robot);
 
 private:

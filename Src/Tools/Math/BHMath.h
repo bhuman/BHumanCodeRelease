@@ -46,7 +46,7 @@ namespace impl
   template<typename T>
   struct SgnPos<T, false>
   {
-    inline static constexpr int run(const T& x)
+    inline static constexpr int run(const T&)
     {
       return 1;
     }

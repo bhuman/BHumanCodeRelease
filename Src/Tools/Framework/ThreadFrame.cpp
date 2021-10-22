@@ -10,23 +10,26 @@
 #include "ThreadFrame.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Global.h"
-#ifdef TARGET_SIM
-#include "Controller/RoboCupCtrl.h"
-#endif
-
 #include <asmjit/asmjit.h>
 
-ThreadFrame::ThreadFrame() : asmjitRuntime(new asmjit::JitRuntime())
+ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName) :
+  settings(settings),
+  asmjitRuntime(new asmjit::JitRuntime()),
+  robotName(robotName)
 {
   // Set settings as soon as possible for file access.
-  Global::theSettings = &settings;
+  Global::theSettings = &this->settings;
 }
 
-ThreadFrame::ThreadFrame(DebugReceiver<MessageQueue>* debugReceiver, DebugSender<MessageQueue>* debugSender)
-  : debugReceiver(debugReceiver), debugSender(debugSender), asmjitRuntime(new asmjit::JitRuntime())
+ThreadFrame::ThreadFrame(const Settings& settings, const std::string& robotName, DebugReceiver<MessageQueue>* debugReceiver, DebugSender<MessageQueue>* debugSender) :
+  debugReceiver(debugReceiver),
+  debugSender(debugSender),
+  settings(settings),
+  asmjitRuntime(new asmjit::JitRuntime()),
+  robotName(robotName)
 {
   // Set settings as soon as possible for file access and debugOut for debugging.
-  Global::theSettings = &settings;
+  Global::theSettings = &this->settings;
 
   // Initialize MessageQueues if no messaging is required.
   if(!debugReceiver && !debugSender)
@@ -63,11 +66,7 @@ void ThreadFrame::setGlobals()
 
 void ThreadFrame::threadMain()
 {
-#ifdef TARGET_SIM
-  Thread::nameCurrentThread(RoboCupCtrl::controller->getRobotName() + "." + getName());
-#else
-  Thread::nameCurrentThread(getName());
-#endif
+  Thread::nameCurrentThread(robotName.empty() ? getName() : (robotName + "." + getName()));
 
   if(SystemCall::getMode() == SystemCall::physicalRobot)
     setPriority(getPriority());
@@ -106,7 +105,7 @@ bool ThreadFrame::handleMessage(InMessage& message)
       return true;
     }
     case idDebugDataChangeRequest:
-      Global::getDebugDataTable().threadChangeRequest(message);
+      Global::getDebugDataTable().processChangeRequest(message);
       return true;
     default:
       return false;
@@ -115,5 +114,5 @@ bool ThreadFrame::handleMessage(InMessage& message)
 
 void ThreadFrame::handleAllMessages(MessageQueue& messageQueue)
 {
-  debugReceiver->handleAllMessages(*this);
+  messageQueue.handleAllMessages(*this);
 }

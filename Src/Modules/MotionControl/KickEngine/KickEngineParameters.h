@@ -1,6 +1,7 @@
 /**
  * @file KickEngineParameters.h
  * @author <a href="mailto:judy@informatik.uni-bremen.de">Judith Müller</a>
+ * @author Philip Reichenberg
  */
 
 #pragma once
@@ -10,6 +11,7 @@
 #include "Tools/Math/Eigen.h"
 #include "Tools/Streams/Enum.h"
 #include "Representations/Infrastructure/JointAngles.h"
+
 class Phase : public Streamable
 {
 public:
@@ -40,7 +42,8 @@ public:
   Vector3f odometryOffset = Vector3f::Zero();
 
 protected:
-  void serialize(In* in, Out* out) override;
+  void read(In& stream) override;
+  void write(Out& stream) const override;
 
 private:
   static void reg();
@@ -49,10 +52,25 @@ private:
 STREAMABLE(KickEngineParameters,
 {
   STREAMABLE(BoostAngle,
-  {,
+  {
+    ENUM(InterpolationMode,
+    {,
+      linear,
+      cosine,
+      square,
+    }),
+
     (Joints::Joint) joint,
     (Angle) angle,
+    (InterpolationMode) mode,
   });
+
+  STREAMABLE(JointOffset,
+  {,
+    (int) kickKeyframeLine,
+    (std::vector<BoostAngle>) boost,
+  });
+
   using stdVectorBoostAngles = std::vector<BoostAngle>;
 
   int numberOfPhases = 0;
@@ -72,6 +90,7 @@ STREAMABLE(KickEngineParameters,
   void onRead(),
 
   (stdVectorBoostAngles) boostAngles, /**< Used joints for boosting. */
+  (std::vector<JointOffset>) offsetList, /**< Adjust trajectory of specific joint. */
 
   /**< Reference values for the limbs. */
   (Vector3f)(Vector3f::Zero()) footOrigin,
@@ -92,7 +111,8 @@ STREAMABLE(KickEngineParameters,
   (bool)(false) loop, /**< Repeat the kick . */
   (bool)(true)  standLeft, /**< Is the left foot the support foot. */
   (bool)(false) ignoreHead, /**< Shall the head be ignored. */
-  (int)(-1) adjustKickFootPosition, /**< The keyframe number of the current kick, at which the kicking foots z- and x-translation are adjusted. */
+  (int)(-1) keyframeEarlyExitAllowedSafe, /**< The keyframe number of the current kick, at which the kick can be exited early based on safe measurements. */
+  (int)(-1) keyframeEarlyExitAllowedRisky, /**< The keyframe number of the current kick, at which the kick can be exited early based on risky measurements. */
 
   (std::vector<Phase>) phaseParameters, /**< The keyframes for the kick. */
 });

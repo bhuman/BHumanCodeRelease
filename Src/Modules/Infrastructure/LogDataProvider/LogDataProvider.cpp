@@ -22,13 +22,14 @@
 
 thread_local LogDataProvider* LogDataProvider::theInstance = nullptr;
 
-MAKE_MODULE(LogDataProvider, infrastructure)
+MAKE_MODULE(LogDataProvider, infrastructure);
 
 LogDataProvider::LogDataProvider() :
   frameDataComplete(false),
   thumbnail(nullptr)
 {
   theInstance = this;
+  TypeInfo::initCurrent();
   states.fill(unknown);
   if(SystemCall::getMode() == SystemCall::logFileReplay)
     OUTPUT(idTypeInfoRequest, bin, '\0');
@@ -77,12 +78,6 @@ void LogDataProvider::update(ECImage& ecImage)
     thumbnail->toECImage(ecImage);
 }
 
-void LogDataProvider::update(FieldColors& fieldColors)
-{
-  DEBUG_RESPONSE_ONCE("representation:FieldColors:once")
-    OUTPUT(idFieldColors, bin, fieldColors);
-}
-
 void LogDataProvider::update(GroundTruthOdometryData& groundTruthOdometryData)
 {
   Pose2f odometryOffset(groundTruthOdometryData);
@@ -122,7 +117,7 @@ bool LogDataProvider::handle(InMessage& message)
       {
         // Check whether the current and the logged specifications are the same.
         const char* type = TypeRegistry::getEnumName(message.getMessageID()) + 2;
-        states[message.getMessageID()] = currentTypeInfo.areTypesEqual(*logTypeInfo, type, type) ? accept : convert;
+        states[message.getMessageID()] = TypeInfo::current->areTypesEqual(*logTypeInfo, type, type) ? accept : convert;
         if(states[message.getMessageID()] == convert)
           OUTPUT_WARNING(std::string(type) + " has changed and is converted. Some fields will keep their previous values.");
       }
@@ -140,7 +135,7 @@ bool LogDataProvider::handle(InMessage& message)
       outMap << streamer;
 
       // Read from textual representation. Errors are suppressed.
-      InMapMemory inMap(outMap.data(), outMap.size(), false);
+      InMapMemory inMap(outMap.data(), outMap.size(), 0);
       inMap >> Blackboard::getInstance()[TypeRegistry::getEnumName(message.getMessageID()) + 2];
 
       // HACK: This does not work if anything else than the sample format is changed in AudioData.

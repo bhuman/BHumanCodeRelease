@@ -48,7 +48,7 @@ MODULE(Ac,
 class Ac : public AcBase
 {
 protected:
-  void update(A& a) override {}
+  void update(A&) override {}
 };
 
 MODULE(Bc,
@@ -59,7 +59,7 @@ MODULE(Bc,
 class Bc : public BcBase
 {
 protected:
-  void update(B& b) override {}
+  void update(B&) override {}
 };
 
 MODULE(Cc,
@@ -71,7 +71,7 @@ MODULE(Cc,
 class Cc : public CcBase
 {
 protected:
-  void update(B& b) override {}
+  void update(B&) override {}
 };
 
 MODULE(Dc,
@@ -82,7 +82,7 @@ MODULE(Dc,
 class Dc : public DcBase
 {
 protected:
-  void update(C& c) override {}
+  void update(C&) override {}
 };
 
 MODULE(Ec,
@@ -95,7 +95,7 @@ MODULE(Ec,
 class Ec : public EcBase
 {
 protected:
-  void update(C& c) override {}
+  void update(C&) override {}
 };
 
 // Motion
@@ -108,7 +108,7 @@ MODULE(Am,
 class Am : public AmBase
 {
 protected:
-  void update(D& d) override {}
+  void update(D&) override {}
 };
 
 MODULE(Bm,
@@ -120,7 +120,7 @@ MODULE(Bm,
 class Bm : public BmBase
 {
 protected:
-  void update(A& a) override {}
+  void update(A&) override {}
 };
 
 MODULE(Cm,
@@ -133,8 +133,8 @@ MODULE(Cm,
 
 class Cm : public CmBase
 {
-  void update(A& a) override {}
-  void update(B& b) override {}
+  void update(A&) override {}
+  void update(B&) override {}
 };
 
 // Other
@@ -147,7 +147,7 @@ MODULE(At,
 class At : public AtBase
 {
 protected:
-  void update(C& c) override {}
+  void update(C&) override {}
 };
 
 MODULE(Bt,
@@ -160,7 +160,7 @@ MODULE(Bt,
 class Bt : public BtBase
 {
 protected:
-  void update(D& d) override {}
+  void update(D&) override {}
 };
 
 MODULE(Ct,
@@ -172,7 +172,7 @@ MODULE(Ct,
 class Ct : public CtBase
 {
 protected:
-  void update(aA& aA) override {}
+  void update(aA&) override {}
 };
 
 MODULE(Dt,
@@ -184,7 +184,7 @@ MODULE(Dt,
 class Dt : public DtBase
 {
 protected:
-  void update(B& b) override {}
+  void update(B&) override {}
 };
 
 MODULE(Et,
@@ -196,5 +196,5 @@ MODULE(Et,
 class Et : public EtBase
 {
 protected:
-  void update(C& c) override {}
+  void update(C&) override {}
 };

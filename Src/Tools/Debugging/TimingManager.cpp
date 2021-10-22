@@ -34,7 +34,6 @@ struct TimingManager::Pimpl
   unsigned frameNo = 0; /**<  Number of the current frame*/
   vector<const char*> watchNames; /**< Contains the names of the stopwatches */
   MessageQueue data; /**< Contains the timing data in streamable format inbetween frames */
-  bool threadRunning = false; /**< Is a thread iteration running right now? */
   bool dataPrepared = false; /**< True if data hs already been prepared this frame */
   int watchNameIndex = 0; /**< Every frame a few watch names are transmitted. This is the index of the watchname that is to be transmitted next */
 };
@@ -76,21 +75,14 @@ void TimingManager::signalThreadStart()
 {
   prvt->currentThreadStartTime = Time::getCurrentSystemTime();
   prvt->frameNo++;
-  prvt->threadRunning = true;
   prvt->data.clear();
   prvt->dataPrepared = false;
   for(const pair<const char* const, unsigned long long>& it : prvt->timing)
     prvt->timing[it.first] = 0;
 }
 
-void TimingManager::signalThreadStop()
-{
-  prvt->threadRunning = false;
-}
-
 MessageQueue& TimingManager::getData()
 {
-  ASSERT(!prvt->threadRunning);
   if(!prvt->dataPrepared)
   {
     prepareData();

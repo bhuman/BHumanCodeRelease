@@ -11,6 +11,7 @@
 #include "Platform/SystemCall.h"
 #include "Representations/BehaviorControl/Skills.h"
 #include "Tools/Debugging/Annotation.h"
+#include "Tools/Settings.h"
 #include <regex>
 
 MAKE_MODULE(BehaviorControl, behaviorControl, BehaviorControl::getExtModuleInfo);
@@ -18,7 +19,7 @@ MAKE_MODULE(BehaviorControl, behaviorControl, BehaviorControl::getExtModuleInfo)
 #define SKILL(name) (*theSkillRegistry.getSkill<Skills::name##Skill>(#name))
 
 BehaviorControl::BehaviorControl() :
-  theSkillRegistry("skills.cfg", const_cast<ActivationGraph&>(theActivationGraph), theArmMotionRequest, theBehaviorStatus, theHeadMotionRequest, theMotionRequest, theTeamTalk),
+  theSkillRegistry("skills.cfg", const_cast<ActivationGraph&>(theActivationGraph), theArmMotionRequest, theBehaviorStatus, theCalibrationRequest, theHeadMotionRequest, theMotionRequest, theTeamTalk),
   theCardRegistry(const_cast<ActivationGraph&>(theActivationGraph))
 {
   theSkillRegistry.checkSkills(CardCreatorBase::gatherSkillInfo(CardCreatorList<Card>::first));
@@ -41,10 +42,16 @@ void BehaviorControl::update(ActivationGraph& activationGraph)
 
   theBehaviorStatus.passTarget = -1;
   theBehaviorStatus.walkingTo = Vector2f::Zero();
+  theBehaviorStatus.speed = 0.f;
   theBehaviorStatus.shootingTo = Vector2f::Zero();
 
   theArmMotionRequest.armMotion[Arms::left] = ArmMotionRequest::none;
   theArmMotionRequest.armMotion[Arms::right] = ArmMotionRequest::none;
+
+  theMotionRequest.odometryData = theOdometryData;
+  theMotionRequest.ballEstimate = theBallModel.estimate;
+  theMotionRequest.ballEstimateTimestamp = theFrameInfo.time;
+  theMotionRequest.ballTimeWhenLastSeen = theBallModel.timeWhenLastSeen;
 
   theSkillRegistry.modifyAllParameters();
   theCardRegistry.modifyAllParameters();
@@ -65,9 +72,7 @@ void BehaviorControl::update(ActivationGraph& activationGraph)
 
 void BehaviorControl::execute()
 {
-#ifdef TARGET_SIM
   MODIFY("module:BehaviorControl:status", status);
-#endif
 
   //is usb mounted? - Sound
   if(theEnhancedKeyStates.hitStreak[KeyStates::headMiddle] == 3)
@@ -80,9 +85,9 @@ void BehaviorControl::execute()
 
   if((theEnhancedKeyStates.hitStreak[KeyStates::headRear] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headFront] > 0)
      || (theEnhancedKeyStates.hitStreak[KeyStates::headFront] == 3 && theEnhancedKeyStates.pressedDuration[KeyStates::headRear] > 0))
-    SKILL(Say)((std::regex_replace(TypeRegistry::getEnumName(theRobotHealth.jointWithMaxTemperature), std::regex("([A-Z])"), " $1") + " " + std::to_string(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature])).c_str());
+    SKILL(Say)((std::string(TypeRegistry::getEnumName(Global::getSettings().teamColor)) + " " + std::to_string(theRobotInfo.number) + " " + std::regex_replace(TypeRegistry::getEnumName(theRobotHealth.jointWithMaxTemperature), std::regex("([A-Z])"), " $1") + " " + std::to_string(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature])).c_str());
 
-  if((status == gettingUp || status == penalized || status == playing) && theEnhancedKeyStates.hitStreak[KeyStates::chest] == 3)
+  if((status == gettingUp || status == penalized || status == playing) && theRobotInfo.mode == RobotInfo::unstiff)
     status = sittingDown;
 
   if((status == penalized || status == playing) && !theCameraStatus.ok)
@@ -97,9 +102,9 @@ void BehaviorControl::execute()
   {
     SKILL(Activity)(BehaviorStatus::unknown);
     SKILL(LookForward)();
-    SKILL(SpecialAction)(SpecialActionRequest::sitDown);
+    SKILL(KeyframeMotion)(KeyframeMotionRequest::sitDown);
 
-    if(SKILL(SpecialAction).isDone())
+    if(SKILL(KeyframeMotion).isDone())
       status = inactive;
 
     return;
@@ -108,24 +113,14 @@ void BehaviorControl::execute()
   if(status == inactive)
   {
     SKILL(Activity)(BehaviorStatus::unknown);
-    if(SystemCall::getMode() == SystemCall::simulatedRobot)
-    {
-      SKILL(LookForward)();
-      SKILL(SpecialAction)(SpecialActionRequest::standHigh);
-      if(SKILL(SpecialAction).isDone())
-        status = playing;
-    }
-    else
-    {
-      SKILL(LookAtAngles)(JointAngles::off, JointAngles::off);
-      SKILL(SpecialAction)(SpecialActionRequest::playDead);
-      if(theEnhancedKeyStates.getHitStreakFor(KeyStates::chest, 1000, 0) > 0)
-        status = gettingUp;
-    }
+    SKILL(LookAtAngles)(JointAngles::off, JointAngles::off);
+    SKILL(PlayDead)();
+    if(theRobotInfo.mode != RobotInfo::unstiff)
+      status = gettingUp;
     return;
   }
 
-  // On a real robot, directly interpolating from playDead to sstandHigh is bad, therefore, a stand is requested in between.
+  // On a real robot, directly interpolating from playDead to standHigh is bad, therefore, a stand is requested in between.
   if(status == gettingUp)
   {
     SKILL(Activity)(BehaviorStatus::unknown);
@@ -148,7 +143,7 @@ void BehaviorControl::execute()
     status = penalized;
     SKILL(Activity)(BehaviorStatus::unknown);
     SKILL(LookForward)();
-    SKILL(SpecialAction)(SpecialActionRequest::standHigh);
+    SKILL(Stand)(true);
 
     return;
   }
@@ -171,5 +166,5 @@ void BehaviorControl::execute()
   SKILL(Annotation)("NO VALID BEHAVIOR DEFINED!");
   SKILL(Activity)(BehaviorStatus::unknown);
   SKILL(LookForward)();
-  SKILL(SpecialAction)(SpecialActionRequest::sitDown);
+  SKILL(KeyframeMotion)(KeyframeMotionRequest::sitDown);
 }

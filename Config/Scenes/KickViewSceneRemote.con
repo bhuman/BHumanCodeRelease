@@ -3,6 +3,7 @@ call Includes/connectDialog Includes/connect
 
 # motion request is required by simulation
 dr representation:MotionRequest
+dr representation:FrameInfo
 
 call Includes/DebugResponses
 

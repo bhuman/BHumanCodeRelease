@@ -10,6 +10,8 @@
 
 #include "DebugDrawing.h"
 
+#include <QImage>
+
 class DebugDrawing;
 class QPainter;
 class QBrush;

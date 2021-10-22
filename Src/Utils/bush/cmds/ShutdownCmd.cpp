@@ -47,7 +47,7 @@ bool ShutdownCmd::ShutdownTask::execute()
   std::string ip = robot->getBestIP(context());
 
   context().printLine(robot->name + ": Shutting down...");
-  std::string command = remoteCommand("halt", ip);
+  std::string command = remoteCommand("sudo systemctl poweroff", ip);
   ProcessRunner r(context(), fromString(command));
   r.run();
   if(r.error())

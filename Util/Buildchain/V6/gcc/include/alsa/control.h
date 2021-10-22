@@ -21,7 +21,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -245,8 +245,8 @@ int snd_ctl_subscribe_events(snd_ctl_t *ctl, int subscribe);
 int snd_ctl_card_info(snd_ctl_t *ctl, snd_ctl_card_info_t *info);
 int snd_ctl_elem_list(snd_ctl_t *ctl, snd_ctl_elem_list_t *list);
 int snd_ctl_elem_info(snd_ctl_t *ctl, snd_ctl_elem_info_t *info);
-int snd_ctl_elem_read(snd_ctl_t *ctl, snd_ctl_elem_value_t *value);
-int snd_ctl_elem_write(snd_ctl_t *ctl, snd_ctl_elem_value_t *value);
+int snd_ctl_elem_read(snd_ctl_t *ctl, snd_ctl_elem_value_t *data);
+int snd_ctl_elem_write(snd_ctl_t *ctl, snd_ctl_elem_value_t *data);
 int snd_ctl_elem_lock(snd_ctl_t *ctl, snd_ctl_elem_id_t *id);
 int snd_ctl_elem_unlock(snd_ctl_t *ctl, snd_ctl_elem_id_t *id);
 int snd_ctl_elem_tlv_read(snd_ctl_t *ctl, const snd_ctl_elem_id_t *id,
@@ -408,6 +408,8 @@ void snd_ctl_elem_info_set_item(snd_ctl_elem_info_t *obj, unsigned int val);
 const char *snd_ctl_elem_info_get_item_name(const snd_ctl_elem_info_t *obj);
 int snd_ctl_elem_info_get_dimensions(const snd_ctl_elem_info_t *obj);
 int snd_ctl_elem_info_get_dimension(const snd_ctl_elem_info_t *obj, unsigned int idx);
+int snd_ctl_elem_info_set_dimension(snd_ctl_elem_info_t *info,
+				    const int dimension[4]);
 void snd_ctl_elem_info_get_id(const snd_ctl_elem_info_t *obj, snd_ctl_elem_id_t *ptr);
 unsigned int snd_ctl_elem_info_get_numid(const snd_ctl_elem_info_t *obj);
 snd_ctl_elem_iface_t snd_ctl_elem_info_get_interface(const snd_ctl_elem_info_t *obj);
@@ -422,6 +424,27 @@ void snd_ctl_elem_info_set_device(snd_ctl_elem_info_t *obj, unsigned int val);
 void snd_ctl_elem_info_set_subdevice(snd_ctl_elem_info_t *obj, unsigned int val);
 void snd_ctl_elem_info_set_name(snd_ctl_elem_info_t *obj, const char *val);
 void snd_ctl_elem_info_set_index(snd_ctl_elem_info_t *obj, unsigned int val);
+
+int snd_ctl_add_integer_elem_set(snd_ctl_t *ctl, snd_ctl_elem_info_t *info,
+				 unsigned int element_count,
+				 unsigned int member_count,
+				 long min, long max, long step);
+int snd_ctl_add_integer64_elem_set(snd_ctl_t *ctl, snd_ctl_elem_info_t *info,
+				   unsigned int element_count,
+				   unsigned int member_count,
+				   long long min, long long max,
+				   long long step);
+int snd_ctl_add_boolean_elem_set(snd_ctl_t *ctl, snd_ctl_elem_info_t *info,
+				 unsigned int element_count,
+				 unsigned int member_count);
+int snd_ctl_add_enumerated_elem_set(snd_ctl_t *ctl, snd_ctl_elem_info_t *info,
+				    unsigned int element_count,
+				    unsigned int member_count,
+				    unsigned int items,
+				    const char *const labels[]);
+int snd_ctl_add_bytes_elem_set(snd_ctl_t *ctl, snd_ctl_elem_info_t *info,
+			       unsigned int element_count,
+			       unsigned int member_count);
 
 int snd_ctl_elem_add_integer(snd_ctl_t *ctl, const snd_ctl_elem_id_t *id, unsigned int count, long imin, long imax, long istep);
 int snd_ctl_elem_add_integer64(snd_ctl_t *ctl, const snd_ctl_elem_id_t *id, unsigned int count, long long imin, long long imax, long long istep);

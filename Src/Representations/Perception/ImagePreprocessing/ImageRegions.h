@@ -22,19 +22,7 @@ STREAMABLE(ImageRegions,
   (std::vector<Boundaryi>) regions,
 });
 
-/** The regions that must be searched for the center of the ball. */
-STREAMABLE_WITH_BASE(BallRegions, ImageRegions,
-{
-  void draw() const
-  {
-    DEBUG_DRAWING("representation:BallRegions", "drawingOnImage")
-      for(const Boundaryi& region : regions)
-        RECTANGLE("representation:BallRegions", region.x.min, region.y.min,
-                  region.x.max, region.y.max, 1, Drawings::solidPen, ColorRGBA::orange);
-  },
-});
-
-/** The regions that the CNS must be calculated of to search for the ball. */
+/** The regions that the CNS must be calculated of. */
 STREAMABLE_WITH_BASE(CNSRegions, ImageRegions,
 {
   void draw() const

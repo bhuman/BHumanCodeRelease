@@ -12,13 +12,14 @@
 #include <functional>
 
 class Streamable;
+class In;
 
 /**
- * Helper class to check whether a type has an accessible serialize method.
+ * Helper class to check whether a type has accessible read and write methods.
  */
-struct HasSerialize
+struct HasReadWrite
 {
-  template<typename T> static auto test(T* t) -> decltype(t->serialize(nullptr, nullptr), bool()) {return true;}
+  template<typename T> static auto test(T* t) -> decltype(t->read(*static_cast<In*>(nullptr)), bool()) {return true;}
   static bool test(void*) {return false;}
 };
 
@@ -88,14 +89,14 @@ public:
     if(entry.counter++ == 0)
     {
       entry.data = std::make_unique<T>();
-      if(HasSerialize::test(dynamic_cast<T*>(&*entry.data)))
+      if(HasReadWrite::test(dynamic_cast<T*>(&*entry.data)))
         entry.reset = [](Streamable* data)
       {
         dynamic_cast<T*>(data)->~T();
         new(dynamic_cast<T*>(data)) T();
       };
       else
-        entry.reset = [](Streamable* data) {};
+        entry.reset = [](Streamable*) {};
       ++version;
     }
     return dynamic_cast<T&>(*entry.data);

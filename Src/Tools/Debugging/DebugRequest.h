@@ -35,24 +35,17 @@ inline DebugRequest::DebugRequest(const std::string& name, bool enable)
 /**
  * @class DebugRequestTable
  *
- * A singleton class that maintains the table of currently active debug requests.
+ * A class that maintains the table of currently active debug requests.
  * It provides a fast access based on character pointers and a slower one based
  * on strings.
  */
-class DebugRequestTable
+class DebugRequestTable final
 {
 private:
   std::vector<char> enabled; /**< Are requests enabled or disabled? */
   std::unordered_map<const char*, size_t> fastIndex; /**< Maps char pointers to entries of vector "enabled". */
   std::unordered_map<std::string, size_t> slowIndex; /**< Maps strings to entries of vector "enabled". */
   std::unordered_set<const char*> polled; /**< Which requests were already published during this polling phase? */
-
-  /**
-   * Default constructor.
-   * No other instance of this class is allowed except the one accessible via Global::getDebugRequestTable.
-   * Therefore the constructor is private.
-   */
-  DebugRequestTable();
 
   /**
    * Uses the slow index to find request and updates the fast index.
@@ -63,6 +56,9 @@ private:
 
 public:
   int pollCounter = 0; /**< How many frames is polling still active? */
+
+  /** Constructor. */
+  DebugRequestTable();
 
   /** No copy constructor. */
   DebugRequestTable(const DebugRequestTable&) = delete;
@@ -106,7 +102,6 @@ public:
 
   friend class ConsoleRoboCupCtrl;
   friend class RobotConsole;
-  friend class ThreadFrame; /**< A thread is allowed to create the instance. */
 };
 
 inline bool DebugRequestTable::isActive(const char* name)

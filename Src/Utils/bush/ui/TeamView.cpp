@@ -28,7 +28,7 @@ void TeamView::init()
     settingsGrid->setAlignment(Qt::AlignmentFlag::AlignLeft);
 
     pbSave = new QPushButton(QIcon(":icons/disk.png"), "");
-    pbSave->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+    pbSave->setShortcut(QKeySequence(static_cast<int>(Qt::CTRL) + static_cast<int>(Qt::Key_S)));
     pbSave->setToolTip("Save team configuration");
     settingsGrid->addWidget(pbSave);
     connect(pbSave, SIGNAL(clicked()), teamSelector, SLOT(saveTeams()));
@@ -97,6 +97,7 @@ void TeamView::init()
     sVolume->setMinimum(0);
     sVolume->setMaximum(11);
     sVolume->setPageStep(3);
+    sVolume->setNotchesVisible(true);
     sVolume->setValue((team->volume * 11 + 50) / 100);
     sVolume->setToolTip("Set audio volume");
     settingsGrid->addWidget(sVolume);
@@ -130,7 +131,7 @@ void TeamView::init()
     layout->addRow(settingsGrid);
 
     QFrame* hr = new QFrame(this);
-    hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
+    hr->setFrameStyle(static_cast<int>(QFrame::Sunken) | static_cast<int>(QFrame::HLine));
     QLabel* players = new QLabel("<b>Players</b>");
     layout->addRow(players, hr);
     layout->setAlignment(hr, Qt::AlignVCenter);
@@ -170,7 +171,7 @@ void TeamView::generateRobotViews(QGridLayout* teamGrid)
       teamGrid->addWidget(rv, j > 0 ? 2 : 0, static_cast<int>(i));
     }
   QFrame* hr = new QFrame(this);
-  hr->setFrameStyle(QFrame::Sunken | QFrame::HLine);
+  hr->setFrameStyle(static_cast<int>(QFrame::Sunken) | static_cast<int>(QFrame::HLine));
   QFormLayout* subTitle = new QFormLayout();
   teamGrid->addLayout(subTitle, 1, 0, 1, static_cast<int>(max), Qt::AlignVCenter);
 

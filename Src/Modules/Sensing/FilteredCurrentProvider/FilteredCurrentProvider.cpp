@@ -6,8 +6,9 @@
 
 #include "FilteredCurrentProvider.h"
 #include "Tools/Settings.h"
+#include <cmath>
 
-MAKE_MODULE(FilteredCurrentProvider, sensing)
+MAKE_MODULE(FilteredCurrentProvider, sensing);
 
 FilteredCurrentProvider::FilteredCurrentProvider()
 {
@@ -49,7 +50,7 @@ void FilteredCurrentProvider::update(FilteredCurrent& theFilteredCurrent)
   checkMotorMalfunction(theFilteredCurrent);
 
   // If the gyro is stuck, we assume the whole connection to the robot disconnected. In such a case, we can not detect a motor malfunction.
-  if(theGyroOffset.gyroIsStuck)
+  if(theGyroOffset.bodyDisconnect)
     theFilteredCurrent.legMotorMalfunction = false;
 }
 
@@ -75,7 +76,7 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
         jointDif = minJointDifArms;
       }
       // If current is 0, the stiffness high enough and the jointRequest and jointAngle difference is high enough, increase the counter
-      if(currents[i].average() == 0 && theJointRequest.stiffnessData.stiffnesses[i] >= stiffness && std::fabs(theJointRequest.angles[i] - theJointSensorData.angles[i]) >= jointDif)
+      if(currents[i].average() == 0 && theJointRequest.stiffnessData.stiffnesses[i] >= stiffness && std::abs(theJointRequest.angles[i] - theJointSensorData.angles[i]) >= jointDif)
         flags[i] += 1;
       else
         flags[i] = std::max(flags[i] - 1, 0); // subtract by 1 is better than setting to 0, in case we did a check at a bad time, where the deactivated joint had a correct position
@@ -97,14 +98,13 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
             continue;
           //arms shall not play motorMalFunction
           if(i >= Joints::firstArmJoint && i < Joints::firstLegJoint)
-          {
             SystemCall::say(std::string("Arm damaged").c_str()); //probably only playing while doing get ups
-          }
           else
           {
             SystemCall::playSound("sirene.wav");
-            SystemCall::say((std::string("Motor malfunction ") + TypeRegistry::getEnumName(Global::getSettings().teamColor) + " " + std::to_string(theRobotInfo.number)).c_str());
-            if(!theGyroOffset.gyroIsStuck)
+            SystemCall::say("Motor malfunction!");
+            SystemCall::say((std::string(TypeRegistry::getEnumName(Global::getSettings().teamColor)) + " " + std::to_string(theRobotInfo.number)).c_str());
+            if(!theGyroOffset.bodyDisconnect)
               theFilteredCurrent.legMotorMalfunction = true;
           }
           if(theFrameInfo.getTimeSince(annotationTimestamp) > annotationWaitTime)

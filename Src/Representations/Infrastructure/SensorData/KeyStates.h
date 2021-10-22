@@ -56,13 +56,21 @@ STREAMABLE_WITH_BASE(EnhancedKeyStates, KeyStates,
    * @param key the sensor
    * @param timeOut is if the sensor is triggered longer than this, the trigger state gets rejected
    * @param allowedTimeBetweenHitStreak allowed time between to hits to be considered as streak
-   * @param allowedButtonStruggleTime allowed time between to hits to be NOT considered as two seperate hits
    *
    * @return the size of the current finished hit streak recently
    */
   FUNCTION(unsigned(KeyStates::Key key, unsigned timeOut, unsigned allowedTimeBetweenHitStreak)) getHitStreakFor;
-  FUNCTION(unsigned(KeyStates::Key key, unsigned timeOut, unsigned allowedTimeBetweenHitStreak, unsigned allowedButtonStruggleTime)) getStruggleHitStreakFor;
-  ,
+
+  /*
+   * checks whether a button press just reached a certain duration in this frame
+   *
+   * @param key the sensor
+   * @param duration the duration for which to check
+   *
+   * @return whether a button press just reached a certain duration in this frame
+   */
+  FUNCTION(bool(KeyStates::Key key, unsigned duration)) isPressedFor,
+
   (ENUM_INDEXED_ARRAY(unsigned, Key)) hitStreak,       ///< hit streak per key calculated with default parameters of the provider (finished recently)
   (ENUM_INDEXED_ARRAY(unsigned, Key)) pressedDuration, ///< duration per key since this one is pressed
                                                        ///<     (0 == pressed[key] for the first time this frame || !pressed[key]) -> True

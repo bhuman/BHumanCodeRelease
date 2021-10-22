@@ -14,11 +14,11 @@
 
 DebugDataTable::~DebugDataTable()
 {
-  for(std::unordered_map< std::string, char*>::iterator iter = table.begin(); iter != table.end(); ++iter)
+  for(std::unordered_map<std::string, char*>::iterator iter = table.begin(); iter != table.end(); ++iter)
     delete[] iter->second;
 }
 
-void DebugDataTable::threadChangeRequest(InMessage& in)
+void DebugDataTable::processChangeRequest(InMessage& in)
 {
   std::string name;
   char change;

@@ -15,18 +15,18 @@
 #include "Platform/SystemCall.h"
 #include "Tools/Boundary.h"
 #include "Tools/Global.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Settings.h"
 #include <algorithm>
 #include <cmath>
 
-MAKE_MODULE(AutoExposureWeightTableProvider, infrastructure)
+MAKE_MODULE(AutoExposureWeightTableProvider, infrastructure);
 
 void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExposureWeightTable)
 {
   AutoExposureWeightTable::Table& table = theAutoExposureWeightTable.tables[theCameraInfo.camera];
-  
+
   DEBUG_RESPONSE("module:AutoExposureWeightTableProvider:alwaysChange")
   {
     for(int i = 0; i < table.size(); ++i)
@@ -40,6 +40,8 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
   else
   {
     table = AutoExposureWeightTable::Table::Zero();
+    if(theCameraInfo.width <= 0 || theCameraInfo.height <= 0)
+      return;
     ASSERT(theCameraInfo.width % table.cols() == 0);
     ASSERT(theCameraInfo.height % table.rows() == 0);
     const int cellWidth = static_cast<int>(theCameraInfo.width / table.cols());
@@ -75,12 +77,13 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
       Pose3f cameraAboveBallCenter = theCameraMatrix;
       cameraAboveBallCenter.translation.z() -= theBallSpecification.radius;
       Vector2f ballCenter;
-      if(Transformation::robotToImage(theWorldModelPrediction.ballPosition, cameraAboveBallCenter, theCameraInfo, ballCenter))
+      Geometry::Circle ball;
+      if(Transformation::robotToImage(theWorldModelPrediction.ballPosition, cameraAboveBallCenter, theCameraInfo, ballCenter)
+         && Projection::calculateBallInImage(theWorldModelPrediction.ballPosition, theCameraMatrix, theCameraInfo, theBallSpecification.radius, ball))
       {
         // Determine expected radius in image and compute corresponding area.
-        float radius = IISC::getImageBallRadiusByCenter(ballCenter, theCameraInfo, theCameraMatrix, theBallSpecification);
-        Boundaryf ballArea(Rangef(ballCenter.x() - radius, ballCenter.x() + radius),
-                           Rangef(ballCenter.y() - radius, ballCenter.y() + radius));
+        Boundaryf ballArea(Rangef(ballCenter.x() - ball.radius, ballCenter.x() + ball.radius),
+                           Rangef(ballCenter.y() - ball.radius, ballCenter.y() + ball.radius));
 
         // Is any part of the area inside the image?
         if(ballArea.x.max >= 0 && ballArea.x.min < theCameraInfo.width

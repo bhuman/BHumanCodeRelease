@@ -15,13 +15,12 @@ static constexpr float MAX_DIST_ON_FIELD = 142127.f; // Human soccer field diago
 
 Vector2f Transformation::robotToField(const Pose2f& rp, const Vector2f& relPos)
 {
-  float s = std::sin(rp.rotation);
-  float c = std::cos(rp.rotation);
-  return Vector2f(relPos.x() * c - relPos.y() * s, relPos.x() * s + relPos.y() * c) + rp.translation;
+  return rp * relPos;
 }
 
 Vector2f Transformation::fieldToRobot(const Pose2f& rp, const Vector2f& fieldCoord)
 {
+  // return rp.inverse * fieldCoord; would be slower
   const float invRotation = -rp.rotation;
   const float s = std::sin(invRotation);
   const float c = std::cos(invRotation);

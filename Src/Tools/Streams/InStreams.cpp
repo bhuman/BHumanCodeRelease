@@ -16,6 +16,7 @@
 #include "Platform/File.h"
 #include "Tools/Debugging/Debugging.h"
 #include "Tools/Math/Angle.h"
+#include "Tools/Math/BHMath.h"
 #include "Tools/Streams/TypeRegistry.h"
 
 void StreamReader::skipData(size_t size, PhysicalInStream& stream)
@@ -341,14 +342,12 @@ void InBinary::readAngle(Angle& d, PhysicalInStream& stream)
 
 InFile::~InFile()
 {
-  if(stream != nullptr)
-    delete stream;
+  delete stream;
 }
 
 InFile& InFile::operator=(InFile&& other)
 {
-  if(stream)
-    delete stream;
+  delete stream;
   stream = other.stream;
   other.stream = nullptr;
   return *this;
@@ -376,152 +375,72 @@ void InFile::readFromStream(void* p, size_t size)
     stream->read(p, size);
 }
 
-std::string InFile::getFullName() const
-{
-  ASSERT(stream);
-  return stream->getFullName();
-}
-
 void InMemory::readFromStream(void* p, size_t size)
 {
-  if(memory != 0)
+  if(memory)
   {
-    memcpy(p, memory, size);
+    std::memcpy(p, memory, size);
     memory += size;
   }
 }
 
 void InMap::parse(In& stream, const std::string& name)
 {
-  map = new SimpleMap(stream, name);
+  map = new SimpleMap(stream, name, name.size() >= 5 && name.substr(name.size() - 5) == ".json");
   this->name = name;
   stack.reserve(20);
 }
 
-void InMap::printError(const std::string& msg)
+void InMap::printError(const std::string& msg, ErrorType errorType)
 {
-  if(showErrors)
+  if(errorMask & bit(errorType))
   {
-    std::string path = "";
-    for(std::vector<Entry>::const_iterator i = stack.begin(); i != stack.end(); ++i)
+    std::string path;
+    for(const auto& entry : stack)
     {
-      if(i->key)
+      if(entry.key)
       {
-        if(path != "")
+        if(!path.empty())
           path += '.';
-        path += i->key;
+        path += entry.key;
       }
       else
-      {
-        char buf[20];
-        sprintf(buf, "[%d]", i->type);
-        path += buf;
-      }
+        path += '[' + std::to_string(entry.type) + ']';
     }
 #ifdef TARGET_ROBOT
-    FAIL(name << (name == "" || path == "" ? "" : ", ") <<
-         path << (name == "" && path == "" ? "" : ": ") << msg);
+    FAIL(name << (name.empty() || path.empty() ? "" : ", ") <<
+         path << (name.empty() && path.empty() ? "" : ": ") << msg);
 #else
-    OUTPUT_ERROR(name << (name == "" || path == "" ? "" : ", ") <<
-                 path << (name == "" && path == "" ? "" : ": ") << msg);
+    OUTPUT_ERROR(name << (name.empty() || path.empty() ? "" : ", ") <<
+                 path << (name.empty() && path.empty() ? "" : ": ") << msg);
 #endif
-  }
-}
-
-void InMap::inChar(char& value)
-{
-  Entry& e = stack.back();
-  if(e.value)
-  {
-    const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
-    if(literal)
-    {
-      In& stream = *literal;
-      int i;
-      stream >> i;
-      value = static_cast<char>(i);
-      if(!stream.eof())
-        printError("wrong format");
-    }
-    else
-      printError("literal expected");
-  }
-}
-
-void InMap::inSChar(signed char& value)
-{
-  Entry& e = stack.back();
-  if(e.value)
-  {
-    const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
-    if(literal)
-    {
-      In& stream = *literal;
-      int i;
-      stream >> i;
-      value = static_cast<signed char>(i);
-      if(!stream.eof())
-        printError("wrong format");
-    }
-    else
-      printError("literal expected");
   }
 }
 
 void InMap::inUChar(unsigned char& value)
 {
   Entry& e = stack.back();
-  if(e.value)
+  if(e.value && e.enumType)
   {
-    const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
+    const auto* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
     if(literal)
     {
-      In& stream = *literal;
-      if(e.enumType)
-      {
-        std::string s;
-        stream >> s;
-        int valueOrError = TypeRegistry::getEnumValue(e.enumType, s);
-        if(valueOrError >= 0)
-          value = static_cast<unsigned char>(valueOrError);
-        else
-        {
-          std::string t;
-          for(int i = 0; TypeRegistry::getEnumName(e.enumType, i); ++i)
-            t += std::string("'") + TypeRegistry::getEnumName(e.enumType, i) + "', ";
-          printError("expected one of " + t + "found '" + s + "'");
-        }
-      }
+      int valueOrError = TypeRegistry::getEnumValue(e.enumType, *literal);
+      if(valueOrError >= 0)
+        value = static_cast<unsigned char>(valueOrError);
       else
       {
-        unsigned i;
-        stream >> i;
-        value = static_cast<unsigned char>(i);
-        if(!stream.eof())
-          printError("wrong format");
+        std::string t;
+        for(int i = 0; TypeRegistry::getEnumName(e.enumType, i); ++i)
+          t += std::string("'") + TypeRegistry::getEnumName(e.enumType, i) + "', ";
+        printError("expected one of " + t + "found '" + *literal + "'", wrongLiteralFormat);
       }
     }
     else
-      printError("literal expected");
+      printError("literal expected", wrongValueType);
   }
-}
-
-void InMap::inInt(int& value)
-{
-  Entry& e = stack.back();
-  if(e.value)
-  {
-    const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
-    if(literal)
-    {
-      In& stream = *literal;
-      stream >> value;
-      if(!stream.eof())
-        printError("wrong format");
-    }
-    else
-      printError("literal expected");
-  }
+  else
+    in(value);
 }
 
 void InMap::inUInt(unsigned int& value)
@@ -531,36 +450,25 @@ void InMap::inUInt(unsigned int& value)
   {
     if(e.value)
     {
-      const SimpleMap::Array* array = dynamic_cast<const SimpleMap::Array*>(e.value);
+      const auto* array = dynamic_cast<const SimpleMap::Array*>(e.value);
       if(array)
         value = static_cast<unsigned>(array->size());
       else
-        printError("array expected");
+        printError("array expected", wrongValueType);
     }
     else
       value = 0;
   }
-  else if(e.value)
-  {
-    const SimpleMap::Literal* literal = dynamic_cast<const SimpleMap::Literal*>(e.value);
-    if(literal)
-    {
-      In& stream = *literal;
-      stream >> value;
-      if(!stream.eof())
-        printError("wrong format");
-    }
-    else
-      printError("literal expected");
-  }
+  else
+    in(value);
 }
 
-void InMap::read(void* p, size_t size)
+void InMap::read(void*, size_t)
 {
   FAIL("Unsupported operation.");
 }
 
-void InMap::skip(size_t size)
+void InMap::skip(size_t)
 {
   FAIL("Unsupported operation.");
 }
@@ -573,44 +481,44 @@ void InMap::select(const char* name, int type, const char* enumType)
   Streaming::trimName(name);
   const SimpleMap::Value* value = stack.empty() ? (const SimpleMap::Value*) *map : stack.back().value;
   if(!value) // invalid
-    stack.push_back(Entry(name, 0, type, enumType)); // add more invalid
+    stack.emplace_back(name, nullptr, type, enumType); // add more invalid
   else if(type >= 0) // array element
   {
-    const SimpleMap::Array* array = dynamic_cast<const SimpleMap::Array*>(value);
+    const auto* array = dynamic_cast<const SimpleMap::Array*>(value);
     if(array)
     {
       if(type < static_cast<int>(array->size()))
-        stack.push_back(Entry(name, (*array)[type], type, enumType));
+        stack.emplace_back(name, (*array)[type], type, enumType);
       else
       {
-        printError("array index out of range");
-        stack.push_back(Entry(name, 0, type, enumType)); // add invalid
+        printError("array index out of range", outOfRange);
+        stack.emplace_back(name, nullptr, type, enumType); // add invalid
       }
     }
     else
     {
-      printError("array expected");
-      stack.push_back(Entry(name, 0, type, enumType)); // add invalid
+      printError("array expected", wrongValueType);
+      stack.emplace_back(name, nullptr, type, enumType); // add invalid
     }
   }
   else // record element
   {
-    const SimpleMap::Record* record = dynamic_cast<const SimpleMap::Record*>(value);
+    const auto* record = dynamic_cast<const SimpleMap::Record*>(value);
     if(record)
     {
-      SimpleMap::Record::const_iterator i = record->find(name);
+      auto i = record->find(name);
       if(i != record->end())
-        stack.push_back(Entry(name, i->second, type, enumType));
+        stack.emplace_back(name, i->second, type, enumType);
       else
       {
-        printError(std::string("attribute '") + name + "' not found");
-        stack.push_back(Entry(name, 0, type, enumType)); // add invalid
+        printError(std::string("attribute '") + name + "' not found", missingAttribute);
+        stack.emplace_back(name, nullptr, type, enumType); // add invalid
       }
     }
     else
     {
-      printError("record expected");
-      stack.push_back(Entry(name, 0, type, enumType)); // add invalid
+      printError("record expected", wrongValueType);
+      stack.emplace_back(name, nullptr, type, enumType); // add invalid
     }
   }
 }
@@ -620,16 +528,16 @@ void InMap::deselect()
   stack.pop_back();
 }
 
-InMapFile::InMapFile(const std::string& name, bool showErrors) :
-  InMap(showErrors),
+InMapFile::InMapFile(const std::string& name, unsigned errorMask) :
+  InMap(errorMask),
   stream(name)
 {
   if(stream.exists())
-    parse(stream, stream.getFullName());
+    parse(stream, stream.getFile()->getFullName());
 }
 
-InMapMemory::InMapMemory(const void* memory, size_t size, bool showErrors) :
-  InMap(showErrors),
+InMapMemory::InMapMemory(const void* memory, size_t size, unsigned errorMask) :
+  InMap(errorMask),
   stream(memory, size)
 {
   parse(stream);

@@ -44,16 +44,31 @@ public:
     return cov;
   }
 
+  /** Pose update based on the assumed robot motion
+   * @param odometryOffset The pos(e)itional changes regarding translation and rotation (as reported by motion modules)
+   * @param filterProcessDeviation Process noise for Kalman filter update
+   * @param odometryDeviation The assumed uncertainty in odometry information
+   * @param odometryRotationDeviation Additional odometry uncertainty of rotation that affects translation
+   */
   void motionUpdate(const Pose2f& odometryOffset, const Pose2f& filterProcessDeviation,
                     const Pose2f& odometryDeviation, const Vector2f& odometryRotationDeviation);
 
 protected:
-  /** Computes the 7 sigma points (in the sigmaPoints array) based on the current content of cov */
+  /** Computes the 7 sigma points (in the sigmaPoints array), based on the current content of cov */
   void generateSigmaPoints();
 
+  /** Pose update based on the measurement of a perceived landmark
+  * @param landmarkPosition The model position of the landmark (in absolute field coordinates)
+  * @param reading The position of the measured landmark (in coordinates relative to the robot)
+  * @param readingCov The covariance of the measurement
+  */
   void landmarkSensorUpdate(const Vector2f& landmarkPosition, const Vector2f& reading, const Matrix2f& readingCov);
 
   void lineSensorUpdate(bool vertical, const Vector2f& reading, const Matrix2f& readingCov);
 
+  /** Pose update based on the (somehow virtual) absolute measurement of the own pose
+  * @param reading The measured pose (in absolute field coordinates)
+  * @param readingCov The covariance of the measurement (based on the relative measurement of some features indicating the absolute pose)
+  */
   void poseSensorUpdate(const Vector3f& reading, const Matrix3f& readingCov);
 };

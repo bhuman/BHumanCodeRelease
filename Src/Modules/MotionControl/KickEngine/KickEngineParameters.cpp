@@ -5,7 +5,7 @@
 
 #include "KickEngineParameters.h"
 
-void Phase::serialize(In* in, Out* out)
+void Phase::read(In& stream)
 {
   STREAM(duration);
 
@@ -29,6 +29,55 @@ void Phase::serialize(In* in, Out* out)
   Vector2f& comTra2(comTra[2]);
   Vector2f& headTra1(headTra[1]);
   Vector2f& headTra2(headTra[2]);
+
+  STREAM(leftFootTra1)
+  STREAM(leftFootTra2)
+  STREAM(leftFootRot1)
+  STREAM(leftFootRot2)
+  STREAM(rightFootTra1)
+  STREAM(rightFootTra2)
+  STREAM(rightFootRot1)
+  STREAM(rightFootRot2)
+  STREAM(leftArmTra1)
+  STREAM(leftArmTra2)
+  STREAM(leftHandRot1)
+  STREAM(leftHandRot2)
+  STREAM(rightArmTra1)
+  STREAM(rightArmTra2)
+  STREAM(rightHandRot1)
+  STREAM(rightHandRot2)
+  STREAM(comTra1)
+  STREAM(comTra2)
+  STREAM(headTra1)
+  STREAM(headTra2)
+
+  STREAM(odometryOffset)
+}
+
+void Phase::write(Out& stream) const
+{
+  STREAM(duration);
+
+  const Vector3f& leftFootTra1(controlPoints[leftFootTra][1]);
+  const Vector3f& leftFootTra2(controlPoints[leftFootTra][2]);
+  const Vector3f& leftFootRot1(controlPoints[leftFootRot][1]);
+  const Vector3f& leftFootRot2(controlPoints[leftFootRot][2]);
+  const Vector3f& rightFootTra1(controlPoints[rightFootTra][1]);
+  const Vector3f& rightFootTra2(controlPoints[rightFootTra][2]);
+  const Vector3f& rightFootRot1(controlPoints[rightFootRot][1]);
+  const Vector3f& rightFootRot2(controlPoints[rightFootRot][2]);
+  const Vector3f& leftArmTra1(controlPoints[leftArmTra][1]);
+  const Vector3f& leftArmTra2(controlPoints[leftArmTra][2]);
+  const Vector3f& leftHandRot1(controlPoints[leftHandRot][1]);
+  const Vector3f& leftHandRot2(controlPoints[leftHandRot][2]);
+  const Vector3f& rightArmTra1(controlPoints[rightArmTra][1]);
+  const Vector3f& rightArmTra2(controlPoints[rightArmTra][2]);
+  const Vector3f& rightHandRot1(controlPoints[rightHandRot][1]);
+  const Vector3f& rightHandRot2(controlPoints[rightHandRot][2]);
+  const Vector2f& comTra1(comTra[1]);
+  const Vector2f& comTra2(comTra[2]);
+  const Vector2f& headTra1(headTra[1]);
+  const Vector2f& headTra2(headTra[2]);
 
   STREAM(leftFootTra1)
   STREAM(leftFootTra2)

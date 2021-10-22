@@ -22,19 +22,19 @@ STREAMABLE(ArmKeyFrameMotion,
   STREAMABLE(ArmAngles,
   {,
     (std::vector<Angle>)({0.f, 0.f, 0.f, 0.f, 0.f, 0.f}) angles, /**< Array of size 6, containing target angles for shoulder+elbow joint */
-    (std::vector<int>)({0, 0, 0, 0, 0, 0}) stiffness, /**< Array of size 6, containing stiffness data to set while targetting the above angles */
-    (int)(4) steps, /**< Duration in motion frame for reaching the target angles from the current position */
+    (std::vector<int>)({0, 0, 0, 0, 0, 0}) stiffness, /**< Array of size 6, containing stiffness data to set while targeting the above angles */
+    (int)(40) steps, /**< Duration in ms for reaching the target angles from the current position */
   });
 
   /**
    * Creates a new arm motion representing the reverse motion of this one. That is
    * it will contain the same array of target states but in reverse order with the
-   * provided state as target state. Inteneded use is to reverse any arm motion to
+   * provided state as target state. Intended use is to reverse any arm motion to
    * reach back to the default position of the arm, that's why the default position
    * must be passed to this method. It will be appended as target state to the
    * created motion.
    * @param defaultPos Angle definition of the arm's default position.
-   * @return A new ArmKeyFrameMotion targetting the arm#s default position.
+   * @return A new ArmKeyFrameMotion targeting the arm#s default position.
    */
   ArmKeyFrameMotion reverse(ArmAngles defaultPos)
   {
@@ -68,5 +68,5 @@ STREAMABLE(ArmKeyFrameMotion,
   },
 
   (ArmKeyFrameRequest::ArmKeyFrameId) id, /** Unique id of this motion. */
-  (std::vector<ArmAngles>) states,    /** Array of states to move the arm to */
+  (std::vector<ArmAngles>) states, /** Array of states to move the arm to */
 });

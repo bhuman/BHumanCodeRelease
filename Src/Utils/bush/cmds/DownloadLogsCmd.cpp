@@ -53,18 +53,12 @@ Task* DownloadLogsCmd::perRobotExecution(Context& context, Robot& robot)
   return new DownloadLogsCmd::DownloadLogsTask(context, &robot);
 }
 
-bool DownloadLogsCmd::postExecution(Context& context, const std::vector<std::string>& params)
-{
-  return true;
-}
-
 bool DownloadLogsCmd::DownloadLogsTask::execute()
 {
   QString command = getCommand();
-  QStringList args = QStringList();
+  QStringList args;
   // args.push_back("-d"); //delete files after download.
 
-  args.push_back(fromString(robot->name));
   args.push_back(fromString(robot->getBestIP(context())));
 
   ProcessRunner r(context(), command, args);
@@ -73,10 +67,12 @@ bool DownloadLogsCmd::DownloadLogsTask::execute()
   if(r.error())
   {
     context().errorLine("Download failed!");
+    return false;
   }
   else
   {
     context().printLine("Success! (" + robot->name + ")");
+    return true;
   }
 
   return true;

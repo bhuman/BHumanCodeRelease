@@ -27,7 +27,7 @@ std::string RestartCmd::getDescription() const
 bool RestartCmd::preExecution(Context& context, const std::vector<std::string>& params)
 {
   type = NO_RESTART;
-  if(params.size() > 1)
+  if(params.size() > 1 && !(params[0] == "robot" && params[1] == "-s"))
   {
     context.errorLine("Too many parameters.");
     return false;
@@ -84,14 +84,14 @@ bool RestartCmd::RestartTask::execute()
 
   if(type == BHUMAND)
   {
-    std::string command = remoteCommand("bhumand restart", ip);
+    std::string command = remoteCommand("systemctl --user restart bhuman.service", ip);
     ProcessRunner r(context(), command);
     r.run();
     reportStatus(r);
   }
   else if(type == ROBOT)
   {
-    std::string command = remoteCommand("reboot", ip);
+    std::string command = remoteCommand("sudo systemctl reboot", ip);
     ProcessRunner r(context(), command);
     r.run();
     reportStatus(r);

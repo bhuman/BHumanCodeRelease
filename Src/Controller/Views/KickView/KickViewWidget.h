@@ -50,25 +50,21 @@ public:
 
   bool getDrawings() const {return phaseDrawings;}
   bool getSingleDrawing() const {return singleDraw;}
-  bool getReachedDrawing() const {return reachedDraw;}
   bool getEditor() const {return !tabber->isHidden();}
   bool getTra2d() const {return tra2dWindows;}
   bool getTra1d() const {return tra1dWindows;}
   bool getVelocity() const {return velocityWindows;}
   bool getAccel() const {return accelWindows;}
-  bool getFollowMode() const {return followMode;}
 
 private slots:
   //Buttons
   void setDrawings(bool value);
   void setSingleDrawing(bool value);
-  void setReachedDrawing(bool value);
   void setEditor(bool value);
   void setTra2d(bool value);
   void setTra1d(bool value);
   void setVelocity(bool value);
   void setAccel(bool value);
-  void setFollowMode(bool value);
 
   void removePhase();
   void addPhaseAfterActual();
@@ -76,7 +72,6 @@ private slots:
   void playMotionTilActive();
   void resetRobot();
   void standRobot();
-  void setMirrored(int state);
   void setArmsBackFix(int state);
   void recordPose();
   void setStiffness(int limb);
@@ -118,12 +113,10 @@ private:
   //Drawings and openGl
   bool phaseDrawings = true; //show phaseDrawings
   bool singleDraw = false; //show only the drawings of the actual Phase
-  bool reachedDraw = false;
   bool tra2dWindows = false; //show 2D-View of phaseDrawings for actual Phase and Limb
   bool tra1dWindows = false; //show 1D-View of phaseDrawings for actual Phase and Limb
   bool velocityWindows = false; //show one curves velocity
   bool accelWindows = false; //show one curves acceleration
-  bool followMode = false;
   Vector3f dragPlane = Vector3f::Zero(); //plane for the 3D View where a selected point is moved
   Selected selectedPoint; //Infos about the actual selected Point
 
@@ -131,8 +124,6 @@ private:
   int ghost = 0; //set the opacity of the robot model
 
   std::vector<std::string> commands;
-
-  MotionRequest::Motion lastMotion;
 
   //Contextmenu
   KickMenuBar* kickMenuBar; //the contextMenubar

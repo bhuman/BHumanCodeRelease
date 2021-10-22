@@ -10,7 +10,7 @@
 #include "WorldModelPredictor.h"
 #include "Tools/Modeling/BallPhysics.h"
 
-MAKE_MODULE(WorldModelPredictor, modeling)
+MAKE_MODULE(WorldModelPredictor, modeling);
 
 void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
 {

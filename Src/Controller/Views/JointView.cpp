@@ -17,7 +17,7 @@ private:
   JointWidget* jointWidget;
 
 public:
-  JointHeaderedWidget(JointView& sensorView, RobotConsole& console);
+  JointHeaderedWidget(JointView& sensorView);
 
 private:
   QWidget* getWidget() override { return this; }
@@ -68,7 +68,7 @@ void JointWidget::forceUpdate()
   QWidget::update();
 }
 
-void JointWidget::paintEvent(QPaintEvent* event)
+void JointWidget::paintEvent(QPaintEvent*)
 {
   painter.begin(this);
   painter.setFont(font);
@@ -120,12 +120,12 @@ void JointWidget::print(const char* name, const char* value1, const char* value2
     painter.drawRect(paintRect.left(), paintRectField1.top(), paintRect.width(), paintRectField1.height());
     painter.setPen(QApplication::palette().text().color());
   }
-  painter.drawText(paintRectField0, Qt::TextSingleLine | Qt::AlignVCenter, tr(name));
-  painter.drawText(paintRectField1, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value1));
-  painter.drawText(paintRectField2, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value2));
-  painter.drawText(paintRectField3, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value3));
-  painter.drawText(paintRectField4, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value4));
-  painter.drawText(paintRectField5, Qt::TextSingleLine | Qt::AlignVCenter | Qt::AlignRight, tr(value5));
+  painter.drawText(paintRectField0, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter), tr(name));
+  painter.drawText(paintRectField1, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), tr(value1));
+  painter.drawText(paintRectField2, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), tr(value2));
+  painter.drawText(paintRectField3, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), tr(value3));
+  painter.drawText(paintRectField4, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), tr(value4));
+  painter.drawText(paintRectField5, static_cast<int>(Qt::TextSingleLine) | static_cast<int>(Qt::AlignVCenter) | static_cast<int>(Qt::AlignRight), tr(value5));
   paintRectField0.moveTop(paintRectField0.top() + lineSpacing);
   paintRectField1.moveTop(paintRectField1.top() + lineSpacing);
   paintRectField2.moveTop(paintRectField2.top() + lineSpacing);
@@ -148,7 +148,7 @@ void JointWidget::newSection()
   fillBackground = false;
 }
 
-JointHeaderedWidget::JointHeaderedWidget(JointView& sensorView, RobotConsole& console)
+JointHeaderedWidget::JointHeaderedWidget(JointView& sensorView)
 {
   QStringList headerLabels;
   headerLabels << "Joint" << "Request" << "Sensor" << "Load" << "Temp" << "Stiffness";
@@ -172,5 +172,5 @@ JointView::JointView(const QString& fullName, RobotConsole& robotConsole, const 
 
 SimRobot::Widget* JointView::createWidget()
 {
-  return new JointHeaderedWidget(*this, console);
+  return new JointHeaderedWidget(*this);
 }

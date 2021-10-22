@@ -61,7 +61,7 @@ struct IntermediateValues
   IntermediateValues() = default;
 
   /** Constructor to explicitly initialize with zero. */
-  IntermediateValues(int zero)
+  IntermediateValues(int)
     : dX(_mm_set1_epi16(0)),
       gaussIX(_mm_set1_epi16(0)),
       gaussI2XA(_mm_set1_ps(0)),
@@ -75,7 +75,7 @@ struct IntermediateValues
  * Load 2 x 8 image pixel and convert to 16 bit, also generates 1 pixel shifts for later filter computation.
  * img[i] contains src[i], imgL[i] contains src[i-1] and, imgR[i] contains src[i+1], i = 0..7
  * when interpreting __m128i as unsigned short[8].
- * lastScr is the __m128i directly before the current one (src), which is directly folllowed by nextSrc
+ * lastSrc is the __m128i directly before the current one (src), which is directly followed by nextSrc
  */
 ALWAYSINLINE static void load2x8PixelUsingSSE(__m128i& imgL, __m128i& img, __m128i& imgR,
   __m128i& imgL2, __m128i& img2, __m128i& imgR2,
@@ -115,7 +115,7 @@ ALWAYSINLINE static  __m128 blur_ps(__m128 a, __m128 b, __m128 c)
   return _mm_add_ps(a, _mm_add_ps(b, _mm_add_ps(b, c)));
 }
 
-static __m128i cnsOffsetV = _mm_set1_epi8(static_cast<unsigned char>(CNSResponse::OFFSET));
+static const __m128i cnsOffsetV = _mm_set1_epi8(static_cast<unsigned char>(CNSResponse::OFFSET));
 
 /**
  * Sets \c cns[i] to \c CNSResponse() for \c i = 0 .. width-1.

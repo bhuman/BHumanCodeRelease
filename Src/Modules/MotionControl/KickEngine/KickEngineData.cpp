@@ -2,6 +2,7 @@
  * @file KickEngineData.cpp
  * This file implements a module that creates motions.
  * @author <A href="mailto:judy@tzi.de">Judith Müller</A>
+ * @author Philip Reichenberg
  */
 
 #include <cstring>
@@ -25,11 +26,10 @@ bool KickEngineData::getMotionIDByName(const KickRequest& kr, const std::vector<
       motionID = i;
       return true;
     }
-
   return false;
 }
 
-void KickEngineData::calculateOrigins(const KickRequest& kr, const JointAngles& ja, const TorsoMatrix& to, const RobotDimensions& robotDimensions)
+void KickEngineData::calculateOrigins(const KickRequest& kr, const JointAngles& ja)
 {
   if(!wasActive)
   {
@@ -77,7 +77,7 @@ void KickEngineData::calcPhaseState()
   phase = static_cast<float>(timeSinceTimestamp) / static_cast<float>(currentParameters.phaseParameters[phaseNumber].duration);
 }
 
-bool KickEngineData::checkPhaseTime(const FrameInfo& frame, const JointAngles& ja, const TorsoMatrix& torsoMatrix)
+bool KickEngineData::checkPhaseTime(const FrameInfo& frame, const JointAngles& ja)
 {
   timeSinceTimestamp = frame.getTimeSince(timestamp);
 
@@ -93,6 +93,7 @@ bool KickEngineData::checkPhaseTime(const FrameInfo& frame, const JointAngles& j
       phaseNumber++;
       timestamp = frame.time;
       timeSinceTimestamp = frame.getTimeSince(timestamp);
+      lastTrajetoryOffset = currentTrajetoryOffset;
       //Do we have a valid Keyframe left?
       if(phaseNumber < currentParameters.numberOfPhases)
       {
@@ -103,44 +104,46 @@ bool KickEngineData::checkPhaseTime(const FrameInfo& frame, const JointAngles& j
           {
             Vector3f inverse = currentParameters.phaseParameters[phaseNumber].controlPoints[Phase::leftHandRot][2];
             inverse.x() *= -1.f;
-            addDynPoint(DynPoint(Phase::leftHandRot, phaseNumber, inverse), torsoMatrix);
+            addDynPoint(DynPoint(Phase::leftHandRot, phaseNumber, inverse));
           }
           if(rElbowFront)
           {
             Vector3f inverse = currentParameters.phaseParameters[phaseNumber].controlPoints[Phase::rightHandRot][2];
             inverse.x() *= -1.f;
-            addDynPoint(DynPoint(Phase::rightHandRot, phaseNumber, inverse), torsoMatrix);
+            addDynPoint(DynPoint(Phase::rightHandRot, phaseNumber, inverse));
           }
         }
-        if(phaseNumber - 1 > 0 && fastKickEndAdjusted)
-        {
-          fastKickEndAdjusted = false;
-          currentParameters.phaseParameters[phaseNumber - 1].controlPoints[Phase::rightFootTra][2].z() = adjustedZValue;
-          currentParameters.phaseParameters[phaseNumber - 1].controlPoints[Phase::rightFootTra][2].x() = adjustedXValue;
-        }
 
-        //Calculate the controll points
-        for(unsigned int i = 0; i < currentKickRequest.dynPoints.size(); i++)
-          if(currentKickRequest.dynPoints[i].phaseNumber == phaseNumber)
-            addDynPoint(currentKickRequest.dynPoints[i], torsoMatrix);
+        //Calculate the control points
+        if(currentKickRequest.calcDynPoints)
+        {
+          const auto dynPoints = currentKickRequest.calcDynPoints(phaseNumber);
+          for(const auto& dynPoint : dynPoints)
+            if(dynPoint.phaseNumber == phaseNumber)
+              addDynPoint(dynPoint);
+        }
       }
     }
   }
   else if(currentParameters.loop && phaseNumber == currentParameters.numberOfPhases)
   {
     phaseNumber = 0;
-    //calculateOrigins(currentKickRequest, ja, torsoMatrix);
+    //calculateOrigins(currentKickRequest, ja);
     currentParameters.initFirstPhaseLoop(origins, currentParameters.phaseParameters[currentParameters.numberOfPhases - 1].comTra[2], Vector2f(ja.angles[Joints::headPitch], ja.angles[Joints::headYaw]));
 
-    for(unsigned int i = 0; i < currentKickRequest.dynPoints.size(); i++)
-      if(currentKickRequest.dynPoints[i].phaseNumber == phaseNumber)
-        addDynPoint(currentKickRequest.dynPoints[i], torsoMatrix);
+    if(currentKickRequest.calcDynPoints)
+    {
+      const auto dynPoints = currentKickRequest.calcDynPoints(phaseNumber);
+      for(const auto& dynPoint : dynPoints)
+        if(dynPoint.phaseNumber == phaseNumber)
+          addDynPoint(dynPoint);
+    }
   }
 
   return phaseNumber < currentParameters.numberOfPhases;
 }
 
-bool KickEngineData::calcJoints(JointRequest& jointRequest, const RobotDimensions& rd, const DamageConfigurationBody& theDamageConfigurationBody)
+bool KickEngineData::calcJoints(const InertialData& inertialData, JointRequest& jointRequest, const RobotDimensions& rd, const DamageConfigurationBody& theDamageConfigurationBody, const bool calcSideCorrection)
 {
   //Calculate Legs
   if(motionID > -1)
@@ -150,15 +153,25 @@ bool KickEngineData::calcJoints(JointRequest& jointRequest, const RobotDimension
       jointRequest.angles[Joints::headPitch] = head.x();
       jointRequest.angles[Joints::headYaw] = head.y();
     }
-    else
+
+    if(phaseNumber < currentParameters.numberOfPhases && calcSideCorrection &&
+       (currentKickRequest.kickMotionType == KickRequest::kickForwardFast || currentKickRequest.kickMotionType == KickRequest::kickForwardFastLong))
     {
-      jointRequest.angles[Joints::headYaw] = JointAngles::ignore;
-      jointRequest.angles[Joints::headPitch] = JointAngles::ignore;
+      // get feet pose
+      const Vector3f leftRot = positions[Phase::leftFootRot];
+      const Vector3f rightRot = positions[Phase::rightFootRot];
+      Pose3f leftFoot = Pose3f(positions[Phase::leftFootTra]).rotateX(leftRot.x()).rotateY(leftRot.y()).rotateZ(leftRot.z());
+      Pose3f rightFoot = Pose3f(positions[Phase::rightFootTra]).rotateX(rightRot.x()).rotateY(rightRot.y()).rotateZ(rightRot.z());
+
+      // correct side translation of kick foot
+      const float heightDif = 230.f + rightFoot.translation.z();
+      const float sideCorrection = heightDif * std::sin(inertialData.angle.x() * (currentKickRequest.mirror ? -1.f : 1.f) - bodyAngle.x());
+      positions[Phase::rightFootTra].y() += sideCorrection;
     }
 
+    // calc joints
     calcLegJoints(Joints::lHipYawPitch, jointRequest, rd, theDamageConfigurationBody);
     calcLegJoints(Joints::rHipYawPitch, jointRequest, rd, theDamageConfigurationBody);
-
     simpleCalcArmJoints(Joints::lShoulderPitch, jointRequest, rd, positions[Phase::leftArmTra], positions[Phase::leftHandRot]);
     simpleCalcArmJoints(Joints::rShoulderPitch, jointRequest, rd, positions[Phase::rightArmTra], positions[Phase::rightHandRot]);
 
@@ -171,25 +184,6 @@ bool KickEngineData::calcJoints(JointRequest& jointRequest, const RobotDimension
 
     return false;
   }
-}
-
-void KickEngineData::calcOdometryOffset(KickEngineOutput& output, const RobotModel& theRobotModel)
-{
-  Pose3f ankleInAnkle;
-  //quickhack to compute support foot, could be worng if the motion is using the right foot as support foot as default
-  //could use theTorsoMatrix.leftSupportFoot, but if the swing foot steps into the ground the odometry jumps
-  if(currentKickRequest.mirror)
-    ankleInAnkle = theRobotModel.limbs[Limbs::ankleRight].inverse() * theRobotModel.limbs[Limbs::ankleLeft];
-  else
-    ankleInAnkle = theRobotModel.limbs[Limbs::ankleLeft].inverse() * theRobotModel.limbs[Limbs::ankleRight];
-
-  Pose2f currentOdometry(ankleInAnkle.translation.x() * 0.5f, ankleInAnkle.translation.y() * 0.5f);
-
-  output.odometryOffset = currentOdometry - lastOdometry;
-  if(phase == 0)
-    output.odometryOffset += Pose2f(currentParameters.phaseParameters[phaseNumber].odometryOffset.x(), currentParameters.phaseParameters[phaseNumber].odometryOffset.y());
-
-  lastOdometry = currentOdometry;
 }
 
 void KickEngineData::calcLegJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions, const DamageConfigurationBody& theDamageConfigurationBody)
@@ -232,7 +226,7 @@ void KickEngineData::calcLegJoints(const Joints::Joint& joint, JointRequest& joi
 
   //and add additonal foot rotation (which is probably not flat to the ground)
   const float leg4 = std::atan2(footRot(0, 2), footRot(2, 2)) + footRotAng.y();
-  const float leg5 = std::asin(-footRot(1, 2)) + footRotAng.x() ;
+  const float leg5 = std::asin(-footRot(1, 2)) + footRotAng.x();
 
   jointRequest.angles[joint] = leg0;
   jointRequest.angles[joint + 1] = (/*-pi_4 * sign + */leg1);
@@ -241,12 +235,31 @@ void KickEngineData::calcLegJoints(const Joints::Joint& joint, JointRequest& joi
   jointRequest.angles[joint + 4] = leg4;
   jointRequest.angles[joint + 5] = leg5;
 
-  //quickhack which allows calibration, but works only if the left foot is the support foot in .kmc file
+  //quick hack which allows calibration, but works only if the left foot is the support foot in .kmc file
   Vector2f tiltCalibration = currentKickRequest.mirror ? theDamageConfigurationBody.startTiltRight : theDamageConfigurationBody.startTiltLeft;
   if(currentKickRequest.mirror)
     tiltCalibration.x() *= -1.f;
   jointRequest.angles[Joints::lAnkleRoll] += tiltCalibration.x();
   jointRequest.angles[Joints::lAnklePitch] += tiltCalibration.y();
+}
+
+void KickEngineData::calcOdometryOffset(const RobotModel& theRobotModel)
+{
+  Pose3f ankleInAnkle;
+  //quick hack to compute support foot, could be wrong if the motion is using the right foot as support foot as default
+  if(currentKickRequest.mirror)
+    ankleInAnkle = theRobotModel.limbs[Limbs::ankleRight].inverse() * theRobotModel.limbs[Limbs::ankleLeft];
+  else
+    ankleInAnkle = theRobotModel.limbs[Limbs::ankleLeft].inverse() * theRobotModel.limbs[Limbs::ankleRight];
+
+  Pose2f currentOdometry(ankleInAnkle.translation.x() * 0.5f, ankleInAnkle.translation.y() * 0.5f);
+
+  odometryOutput = currentOdometry - lastOdometry;
+  if(phase == 0)
+    odometryOutput += Pose2f(currentParameters.phaseParameters[phaseNumber].odometryOffset.x(), currentParameters.phaseParameters[phaseNumber].odometryOffset.y());
+
+  lastOdometry = currentOdometry;
+  odometryOutput.translation.x() = 0.f;
 }
 
 void KickEngineData::simpleCalcArmJoints(const Joints::Joint& joint, JointRequest& jointRequest, const RobotDimensions& theRobotDimensions,
@@ -271,7 +284,7 @@ void KickEngineData::simpleCalcArmJoints(const Joints::Joint& joint, JointReques
 
   jointRequest.angles[joint + 0] = std::atan2(elbow.translation.z(), elbow.translation.x());
   jointRequest.angles[joint + 1] = std::atan2(elbow.translation.y(), std::sqrt(sqr(elbow.translation.x()) + sqr(elbow.translation.z())));
-  jointRequest.angles[joint + 0] = (jointRequest.angles[joint + 0] < pi) ? jointRequest.angles[joint + 0] : 0_deg;  //clip special
+  jointRequest.angles[joint + 0] = (jointRequest.angles[joint + 0] < pi) ? jointRequest.angles[joint + 0] : 0_deg; //clip special
 
   jointRequest.angles[joint + 0] *= -1.f;
   jointRequest.angles[joint + 1] *= sign;
@@ -294,8 +307,8 @@ void KickEngineData::balanceCOM(JointRequest& joints, const RobotDimensions& rd,
   float height = comRobotModel.centerOfMass.z() - ref.z();
 
   const Vector2f balance(
-    currentParameters.kpy * (actualDiff.x()) + currentParameters.kiy * balanceSum.x() + currentParameters.kdy * ((actualDiff.x() - lastCom.x()) / cycletime),
-    -currentParameters.kpx * (actualDiff.y()) + -currentParameters.kix * balanceSum.y() + -currentParameters.kdx * ((actualDiff.y() - lastCom.y()) / cycletime));
+    currentParameters.kpy * (actualDiff.x()) + currentParameters.kiy * balanceSum.x() + currentParameters.kdy * ((actualDiff.x() - lastCom.x()) / cycleTime),
+    -currentParameters.kpx * (actualDiff.y()) + -currentParameters.kix * balanceSum.y() + -currentParameters.kdx * ((actualDiff.y() - lastCom.y()) / cycleTime));
 
   if(height != 0.f)
   {
@@ -320,6 +333,60 @@ void KickEngineData::mirrorIfNecessary(JointRequest& joints)
     }
   }
 }
+
+void KickEngineData::applyTrajetoryAdjustment(JointRequest& jointRequest, const JointLimits& limits)
+{
+  std::vector<KickEngineParameters::BoostAngle> currentOffsetList;
+  for(KickEngineParameters::JointOffset offset : currentParameters.offsetList)
+    if(offset.kickKeyframeLine == phaseNumber)
+    {
+      currentOffsetList = offset.boost;
+      break;
+    }
+  // first reduce all joints, that have no longer an adjusted trajectory, by adding the missing BoostAngle
+  FOREACH_ENUM(Joints::Joint, joint)
+  {
+    if(lastTrajetoryOffset[joint] != 0_deg)
+    {
+      bool reduce = true;
+      for(KickEngineParameters::BoostAngle boost : currentOffsetList)
+        reduce &= (currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint) != joint;
+      if(reduce)
+      {
+        KickEngineParameters::BoostAngle reduceJoint;
+        reduceJoint.angle = 0_deg;
+        reduceJoint.joint = joint;
+        reduceJoint.mode = KickEngineParameters::BoostAngle::cosine;
+        currentOffsetList.emplace_back(reduceJoint);
+      }
+    }
+  }
+  // calculate current offsets
+  currentTrajetoryOffset.fill(0_deg);
+  for(KickEngineParameters::BoostAngle boost : currentOffsetList)
+    currentTrajetoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)] = interpolate(lastTrajetoryOffset[(currentKickRequest.mirror ? Joints::mirror(boost.joint) : boost.joint)], boost.angle, phase, boost.mode);
+
+  // apply offsets
+  FOREACH_ENUM(Joints::Joint, joint)
+  {
+    const Angle newOffset = limits.limits[joint].limit(jointRequest.angles[joint] + currentTrajetoryOffset[joint]) - jointRequest.angles[joint];
+    const Rangea clip(currentTrajetoryOffset[joint] > 0_deg ? 0_deg : currentTrajetoryOffset[joint], currentTrajetoryOffset[joint] < 0_deg ? 0_deg : currentTrajetoryOffset[joint]);
+    currentTrajetoryOffset[joint] = clip.limit(newOffset);
+    jointRequest.angles[joint] += currentTrajetoryOffset[joint];
+  }
+}
+
+Angle KickEngineData::interpolate(Angle from, Angle to, float currentTime, KickEngineParameters::BoostAngle::InterpolationMode mode)
+{
+  if(mode == KickEngineParameters::BoostAngle::square)
+    return Angle((static_cast<float>(to - from)) * ((currentTime * currentTime)) + static_cast<float>(from));
+  else if(mode == KickEngineParameters::BoostAngle::cosine)
+    return Angle(from + (to - from) * (1.f + std::cos(Constants::pi * phase / 1.f - Constants::pi)) / 2.f);
+  else if(mode == KickEngineParameters::BoostAngle::linear)
+    return from * (1.f - currentTime) + to * currentTime;
+  else return 0_deg;
+}
+
 void KickEngineData::BOOST(JointRequest& jointRequest, int boostPhase)
 {
   if(currentKickRequest.mirror)
@@ -345,11 +412,11 @@ void KickEngineData::BOOST(JointRequest& jointRequest, int boostPhase)
   }
 }
 
-void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id, const float& ratio)
+void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimits& jointLimits, const InertialData& id)
 {
-  if(id.gyro.y() != 0 && id.gyro.x() != 0 && !willBeLeft)
+  if(id.gyro.y() != 0 && id.gyro.x() != 0)
   {
-    //Predict next gyrodata
+    //Low-pass filter
     gyro = id.gyro.head<2>().cast<float>() * 0.3f + 0.7f * gyro;
 
     //some clipping
@@ -363,67 +430,67 @@ void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimit
     //calculate the commandedVelocity
     float commandedVelocity[4];
     //y-velocity if left leg is support
-    commandedVelocity[0] = (balancedJointRequest.angles[Joints::lHipPitch] - lastBalancedJointRequest.angles[Joints::lHipPitch]) / cycletime;
+    commandedVelocity[0] = (balancedJointRequest.angles[Joints::lHipPitch] - lastBalancedJointRequest.angles[Joints::lHipPitch]) / cycleTime;
     //y-velocity if right leg is support
-    commandedVelocity[1] = (balancedJointRequest.angles[Joints::rHipPitch] - lastBalancedJointRequest.angles[Joints::rHipPitch]) / cycletime;
-    //x-velcocity if left leg is support
-    commandedVelocity[2] = (balancedJointRequest.angles[Joints::lHipRoll] - lastBalancedJointRequest.angles[Joints::lHipRoll]) / cycletime;
+    commandedVelocity[1] = (balancedJointRequest.angles[Joints::rHipPitch] - lastBalancedJointRequest.angles[Joints::rHipPitch]) / cycleTime;
+    //x-velocity if left leg is support
+    commandedVelocity[2] = (balancedJointRequest.angles[Joints::lHipRoll] - lastBalancedJointRequest.angles[Joints::lHipRoll]) / cycleTime;
     //x-velocity if right leg is support
-    commandedVelocity[3] = (balancedJointRequest.angles[Joints::rHipRoll] - lastBalancedJointRequest.angles[Joints::rHipRoll]) / cycletime;
+    commandedVelocity[3] = (balancedJointRequest.angles[Joints::rHipRoll] - lastBalancedJointRequest.angles[Joints::rHipRoll]) / cycleTime;
 
-    //calculate disturbance from meseaured velocity and commanded velocity
+    //calculate disturbance from measured velocity and commanded velocity
     // y-velocity if left leg is support
-    float gyroVelyLeft = (gyro.y() + commandedVelocity[0] - lastGyroLeft.y()) / cycletime;
+    float gyroVelYLeft = (gyro.y() + commandedVelocity[0] - lastGyroLeft.y()) / cycleTime;
     lastGyroLeft.y() = gyro.y() + commandedVelocity[0];
     //y-velocity if right leg is support
-    float gyroVelyRight = (gyro.y() + commandedVelocity[1] - lastGyroRight.y()) / cycletime;
+    float gyroVelYRight = (gyro.y() + commandedVelocity[1] - lastGyroRight.y()) / cycleTime;
     lastGyroRight.y() = gyro.y() + commandedVelocity[1];
     //x-velocity if left leg is support
-    float gyroVelxLeft = (gyro.x() + commandedVelocity[2] - lastGyroLeft.x()) / cycletime;
+    float gyroVelXLeft = (gyro.x() + commandedVelocity[2] - lastGyroLeft.x()) / cycleTime;
     lastGyroLeft.x() = gyro.x() + commandedVelocity[2];
     //x-velocity if right leg is support
-    float gyroVelxRight = (gyro.x() + commandedVelocity[3] - lastGyroRight.x()) / cycletime;
+    float gyroVelXRight = (gyro.x() + commandedVelocity[3] - lastGyroRight.x()) / cycleTime;
     lastGyroRight.x() = gyro.x() + commandedVelocity[3];
 
     //calculate control variable with PID-Control
     float calcVelocity[4];
-    //y if left supprt
-    calcVelocity[0] = -gyroP.y() * (gyro.y() + commandedVelocity[0]) - gyroD.y() * gyroVelyLeft - gyroI.y() * (gyroErrorLeft.y());
+    //y if left support
+    calcVelocity[0] = -gyroP.y() * (gyro.y() + commandedVelocity[0]) - gyroD.y() * gyroVelYLeft - gyroI.y() * (gyroErrorLeft.y());
     //y if right support
-    calcVelocity[1] = -gyroP.y() * (gyro.y() + commandedVelocity[1]) - gyroD.y() * gyroVelyRight - gyroI.y() * (gyroErrorRight.y());
+    calcVelocity[1] = -gyroP.y() * (gyro.y() + commandedVelocity[1]) - gyroD.y() * gyroVelYRight - gyroI.y() * (gyroErrorRight.y());
     //x if left support
-    calcVelocity[2] = -gyroP.x() * (gyro.x() + commandedVelocity[2]) + gyroD.x() * gyroVelxLeft + gyroI.x() * gyroErrorLeft.x();
+    calcVelocity[2] = -gyroP.x() * (gyro.x() + commandedVelocity[2]) + gyroD.x() * gyroVelXLeft + gyroI.x() * gyroErrorLeft.x();
     //x if right support
-    calcVelocity[3] = -gyroP.x() * (gyro.x() - commandedVelocity[3]) + gyroD.x() * gyroVelxRight + gyroI.x() * gyroErrorRight.x();
+    calcVelocity[3] = -gyroP.x() * (gyro.x() - commandedVelocity[3]) + gyroD.x() * gyroVelXRight + gyroI.x() * gyroErrorRight.x();
 
-    bool supp = (currentKickRequest.mirror) ? !toLeftSupport : toLeftSupport;
+    bool support = (currentKickRequest.mirror) ? !toLeftSupport : toLeftSupport;
 
-    if(supp)  //last support Leg was left
+    if(support)  //last support Leg was left
     {
       //y
-      jointRequest.angles[Joints::rHipPitch] += calcVelocity[0] * cycletime * ratio;
-      jointRequest.angles[Joints::lHipPitch] += calcVelocity[0] * cycletime * ratio;
-      jointRequest.angles[Joints::lAnklePitch] += calcVelocity[0] * cycletime * ratio;
-      jointRequest.angles[Joints::rAnklePitch] += calcVelocity[0] * cycletime * ratio;
+      jointRequest.angles[Joints::rHipPitch] += calcVelocity[0] * cycleTime;
+      jointRequest.angles[Joints::lHipPitch] += calcVelocity[0] * cycleTime;
+      jointRequest.angles[Joints::lAnklePitch] += calcVelocity[0] * cycleTime;
+      jointRequest.angles[Joints::rAnklePitch] += calcVelocity[0] * cycleTime;
       //x
-      jointRequest.angles[Joints::lHipRoll] += calcVelocity[2] * cycletime * ratio;
-      jointRequest.angles[Joints::rHipRoll] += calcVelocity[2] * cycletime * ratio;
-      jointRequest.angles[Joints::lAnkleRoll] -= calcVelocity[2] * cycletime * ratio;
-      jointRequest.angles[Joints::rAnkleRoll] -= calcVelocity[2] * cycletime * ratio;
+      jointRequest.angles[Joints::lHipRoll] += calcVelocity[2] * cycleTime;
+      jointRequest.angles[Joints::rHipRoll] += calcVelocity[2] * cycleTime;
+      jointRequest.angles[Joints::lAnkleRoll] -= calcVelocity[2] * cycleTime;
+      jointRequest.angles[Joints::rAnkleRoll] -= calcVelocity[2] * cycleTime;
     }
     else //if(toRightSupport)
     {
       //y
-      jointRequest.angles[Joints::rHipPitch] += calcVelocity[1] * cycletime * ratio;
-      jointRequest.angles[Joints::lHipPitch] += calcVelocity[1] * cycletime * ratio;
-      jointRequest.angles[Joints::lAnklePitch] += calcVelocity[1] * cycletime * ratio;
-      jointRequest.angles[Joints::rAnklePitch] += calcVelocity[1] * cycletime * ratio;
+      jointRequest.angles[Joints::rHipPitch] += calcVelocity[1] * cycleTime;
+      jointRequest.angles[Joints::lHipPitch] += calcVelocity[1] * cycleTime;
+      jointRequest.angles[Joints::lAnklePitch] += calcVelocity[1] * cycleTime;
+      jointRequest.angles[Joints::rAnklePitch] += calcVelocity[1] * cycleTime;
 
       //x
-      jointRequest.angles[Joints::lHipRoll] += calcVelocity[3] * cycletime * ratio;
-      jointRequest.angles[Joints::rHipRoll] += calcVelocity[3] * cycletime * ratio;
-      jointRequest.angles[Joints::lAnkleRoll] -= calcVelocity[3] * cycletime * ratio;
-      jointRequest.angles[Joints::rAnkleRoll] -= calcVelocity[3] * cycletime * ratio;
+      jointRequest.angles[Joints::lHipRoll] += calcVelocity[3] * cycleTime;
+      jointRequest.angles[Joints::rHipRoll] += calcVelocity[3] * cycleTime;
+      jointRequest.angles[Joints::lAnkleRoll] -= calcVelocity[3] * cycleTime;
+      jointRequest.angles[Joints::rAnkleRoll] -= calcVelocity[3] * cycleTime;
     }
     gyroErrorLeft += lastGyroLeft;
     gyroErrorRight += lastGyroRight;
@@ -431,40 +498,7 @@ void KickEngineData::addGyroBalance(JointRequest& jointRequest, const JointLimit
   }
 }
 
-bool KickEngineData::adjustFastKickHack(const TorsoMatrix& torsoMatrix)
-{
-  //Adjust kicking foot position, to prevent that the foot pushes into the ground and results in a fall
-  if(phaseNumber == currentParameters.adjustKickFootPosition)
-  {
-    //Foot position is already frozen
-    if(fastKickEndAdjusted)
-      return true;
-    Pose3f foot1 = Pose3f();
-    Pose3f foot2 = Pose3f();
-    if(currentKickRequest.mirror)
-    {
-      foot1 = torsoMatrix.rotation * robotModel.soleLeft;
-      foot2 = torsoMatrix.rotation * robotModel.soleRight;
-    }
-    else
-    {
-      foot1 = torsoMatrix.rotation * robotModel.soleRight;
-      foot2 = torsoMatrix.rotation * robotModel.soleLeft;
-    }
-    float currentZDif = foot1.translation.z() - lastZDif;
-    //only z check is necessary
-    //calculate kick foot height 3 frames into the future
-    if(lastZDif != 0.f && currentZDif * 3.f + foot1.translation.z() < foot2.translation.z())
-    {
-      return true;
-    }
-    lastZDif = foot1.translation.z();
-    lastXDif = foot1.translation.x();
-  }
-  return false;
-}
-
-void KickEngineData::addDynPoint(const DynPoint& dynPoint, const TorsoMatrix& torsoMatrix)
+void KickEngineData::addDynPoint(const DynPoint& dynPoint)
 {
   Vector3f d = dynPoint.translation;
 
@@ -488,8 +522,8 @@ void KickEngineData::addDynPoint(const DynPoint& dynPoint, const TorsoMatrix& to
       currentParameters.phaseParameters[phaseNumber].controlPoints[limb][2] -
       currentParameters.phaseParameters[phaseNumber].controlPoints[limb][1];
 
-    float factor = static_cast<float>(currentParameters.phaseParameters[phaseNumber + 1].duration) /
-                   static_cast<float>(currentParameters.phaseParameters[phaseNumber].duration);
+    float factor = static_cast<float>(currentParameters.phaseParameters[phaseNumber].duration) /
+                   static_cast<float>(currentParameters.phaseParameters[phaseNumber + 1].duration);
     currentParameters.phaseParameters[phaseNumber + 1].controlPoints[limb][0] *= factor;
 
     currentParameters.phaseParameters[phaseNumber + 1].controlPoints[limb][0] +=
@@ -497,11 +531,9 @@ void KickEngineData::addDynPoint(const DynPoint& dynPoint, const TorsoMatrix& to
   }
 }
 
-void KickEngineData::ModifyData(const KickRequest& br, JointRequest& kickEngineOutput, std::vector<KickEngineParameters>& params)
+void KickEngineData::ModifyData(JointRequest& jointRequest)
 {
-  auto& p = params.back();
-  MODIFY("module:KickEngine:newKickMotion", p);
-  strcpy(p.name, "newKick");
+  wasActive = motionID > -1;
 
   MODIFY("module:KickEngine:px", gyroP.x());
   MODIFY("module:KickEngine:dx", gyroD.x());
@@ -539,74 +571,59 @@ void KickEngineData::ModifyData(const KickRequest& br, JointRequest& kickEngineO
     switch(static_cast<Phase::Limb>(i))
     {
       case Phase::leftFootTra:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lHipRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lHipPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lKneePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lAnklePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lAnkleRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lHipRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lHipPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lKneePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lAnklePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lAnkleRoll] = stiffness;
         break;
       case Phase::rightFootTra:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rHipRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rHipPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rKneePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rAnklePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rAnkleRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rHipRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rHipPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rKneePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rAnklePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rAnkleRoll] = stiffness;
         break;
       case Phase::leftFootRot:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lAnklePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lAnkleRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rHipYawPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lHipYawPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lAnklePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lAnkleRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rHipYawPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lHipYawPitch] = stiffness;
         break;
       case Phase::rightFootRot:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rAnklePitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rAnkleRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rHipYawPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lHipYawPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rAnklePitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rAnkleRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rHipYawPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lHipYawPitch] = stiffness;
         break;
       case Phase::leftArmTra:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lShoulderPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lShoulderRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lShoulderPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lShoulderRoll] = stiffness;
         break;
       case Phase::rightArmTra:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rShoulderPitch] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rShoulderRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rShoulderPitch] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rShoulderRoll] = stiffness;
         break;
       case Phase::leftHandRot:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lElbowRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lElbowYaw] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lWristYaw] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::lHand] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lElbowRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lElbowYaw] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lWristYaw] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::lHand] = stiffness;
         break;
       case Phase::rightHandRot:
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rElbowRoll] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rElbowYaw] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rWristYaw] = stiffness;
-        kickEngineOutput.stiffnessData.stiffnesses[Joints::rHand] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rElbowRoll] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rElbowYaw] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rWristYaw] = stiffness;
+        jointRequest.stiffnessData.stiffnesses[Joints::rHand] = stiffness;
         break;
     }
   }
 }
 
-void KickEngineData::calcPositions(const TorsoMatrix& torsoMatrix)
+void KickEngineData::calcPositions()
 {
   for(int i = 0; i < Phase::numOfLimbs; ++i)
     positions[i] = currentParameters.getPosition(phase, phaseNumber, i);
-  bool adjustKick = adjustFastKickHack(torsoMatrix);
-  if(adjustKick)
-  {
-    if(!fastKickEndAdjusted)
-    {
-      adjustedZValue = positions[Phase::rightFootTra].z() + 5.f; //the edges of the foot should be used to get the right foot height. this is a working hack tho.
-      adjustedXValue = positions[Phase::rightFootTra].x();
-      fastKickEndAdjusted = true;
-    }
-    else
-    {
-      positions[Phase::rightFootTra].z() = adjustedZValue;
-      positions[Phase::rightFootTra].x() = adjustedXValue;
-    }
-  }
   if(!currentParameters.ignoreHead)
     head = currentParameters.getHeadRefPosition(phase, phaseNumber);
 
@@ -614,15 +631,9 @@ void KickEngineData::calcPositions(const TorsoMatrix& torsoMatrix)
       (toLeftSupport) ? positions[Phase::leftFootTra].z() : positions[Phase::rightFootTra].z();
 }
 
-void KickEngineData::setExecutedKickRequest(KickRequest& br)
-{
-  br.mirror = currentKickRequest.mirror;
-  br.armsBackFix = currentKickRequest.armsBackFix;
-  br.kickMotionType = currentKickRequest.kickMotionType;
-}
-
-void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, std::vector<KickEngineParameters>& params,
-                              const JointAngles& ja, const TorsoMatrix& torsoMatrix, JointRequest& jointRequest, const RobotDimensions& rd, const MassCalibration& mc, const DamageConfigurationBody& theDamageConfigurationBody)
+void KickEngineData::initData(const InertialData& inertialData, const FrameInfo& frame, const KickRequest& kr, const std::vector<KickEngineParameters>& params,
+                              const JointAngles& ja, JointRequest& jointRequest, const RobotDimensions& rd,
+                              const MassCalibration& mc, const DamageConfigurationBody& theDamageConfigurationBody)
 {
   VERIFY(getMotionIDByName(kr, params));
 
@@ -631,39 +642,42 @@ void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, std
   timestamp = frame.time;
   currentParameters = params[motionID];
   toLeftSupport = currentParameters.standLeft;
-  adjustedZValue = 0.f;
-  adjustedXValue = 0.f;
-  fastKickEndAdjusted = 0.f;
-  lastZDif = 0.f;
-  lastXDif = 0.f;
+  if(kr.kickMotionType != KickRequest::stopBallEnd)
+  {
+    ref = Vector3f::Zero();
+    actualDiff = ref;
+    calculateOrigins(kr, ja);
+    currentParameters.initFirstPhase(origins, Vector2f(ja.angles[Joints::headPitch], (kr.mirror) ? -ja.angles[Joints::headYaw] : ja.angles[Joints::headYaw]));
+    calcPositions();
 
-  ref = Vector3f::Zero();
-  actualDiff = ref;
-  calculateOrigins(kr, ja, torsoMatrix, rd);
-  currentParameters.initFirstPhase(origins, Vector2f(ja.angles[Joints::headPitch], (kr.mirror) ? -ja.angles[Joints::headYaw] : ja.angles[Joints::headYaw]));
-  calcPositions(torsoMatrix);
+    float angleY = toLeftSupport ? -robotModel.limbs[Limbs::footLeft].rotation.inverse().getYAngle() : -robotModel.limbs[Limbs::footRight].rotation.inverse().getYAngle();
+    float angleX = toLeftSupport ? -robotModel.limbs[Limbs::footLeft].rotation.inverse().getXAngle() : -robotModel.limbs[Limbs::footRight].rotation.inverse().getXAngle();
+    if(kr.mirror)
+      angleX *= -1.f;
 
-  float angleY = toLeftSupport ? -robotModel.limbs[Limbs::footLeft].rotation.inverse().getYAngle() : -robotModel.limbs[Limbs::footRight].rotation.inverse().getYAngle();
-  float angleX = toLeftSupport ? -robotModel.limbs[Limbs::footLeft].rotation.inverse().getXAngle() : -robotModel.limbs[Limbs::footRight].rotation.inverse().getXAngle();
-  if(kr.mirror)
-    angleX *= -1.f;
+    bodyAngle = Vector2f(angleX, angleY);
+    calcJoints(inertialData, jointRequest, rd, theDamageConfigurationBody, true);
+    comRobotModel.setJointData(jointRequest, rd, mc);
+    const Pose3f& torso = toLeftSupport ? comRobotModel.limbs[Limbs::footLeft] : comRobotModel.limbs[Limbs::footRight];
+    const Vector3f com = torso.rotation.inverse() * comRobotModel.centerOfMass;
 
-  bodyAngle = Vector2f(angleX, angleY);
-  calcJoints(jointRequest, rd, theDamageConfigurationBody);
-  comRobotModel.setJointData(jointRequest, rd, mc);
-  const Pose3f& torso = toLeftSupport ? comRobotModel.limbs[Limbs::footLeft] : comRobotModel.limbs[Limbs::footRight];
-  const Vector3f com = torso.rotation.inverse() * comRobotModel.centerOfMass;
+    //this calculates inverse of pid com control -> getting com to max pos at start -> being rotated as before engine
+    float foot = toLeftSupport ? origins[Phase::leftFootTra].z() : origins[Phase::rightFootTra].z();
+    float height = comRobotModel.centerOfMass.z() - foot;
 
-  //this calculates inverse of pid com control -> getting com to max pos at start -> beeing rotated as before engine
-  float foot = toLeftSupport ? origins[Phase::leftFootTra].z() : origins[Phase::rightFootTra].z();
-  float height = comRobotModel.centerOfMass.z() - foot;
+    balanceSum.x() = std::tan(angleY - Constants::pi) * height;
+    balanceSum.x() /= currentParameters.kiy;
+    balanceSum.y() = std::tan(angleX - Constants::pi) * height;
+    balanceSum.y() /= -currentParameters.kix;
 
-  balanceSum.x() = std::tan(angleY - Constants::pi) * height;
-  balanceSum.x() /= currentParameters.kiy;
-  balanceSum.y() = std::tan(angleX - Constants::pi) * height;
-  balanceSum.y() /= -currentParameters.kix;
-
-  currentParameters.initFirstPhaseLoop(origins, Vector2f(com.x(), com.y()), Vector2f(ja.angles[Joints::headPitch], (kr.mirror) ? -ja.angles[Joints::headYaw] : ja.angles[Joints::headYaw]));
+    currentParameters.initFirstPhaseLoop(origins, Vector2f(com.x(), com.y()), Vector2f(ja.angles[Joints::headPitch], (kr.mirror) ? -ja.angles[Joints::headYaw] : ja.angles[Joints::headYaw]));
+  }
+  else
+  {
+    calculateOrigins(kr, ja);
+    Vector2f lastCom = currentParameters.phaseParameters[0].comTra[2];
+    currentParameters.initFirstPhaseLoop(origins, lastCom, Vector2f(ja.angles[Joints::headPitch], (kr.mirror) ? -ja.angles[Joints::headYaw] : ja.angles[Joints::headYaw]));
+  }
 
   if(!wasActive)
   {
@@ -682,9 +696,13 @@ void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, std
       lastBalancedJointRequest.angles[i] = ja.angles[i];
     }
   }
-  for(unsigned int i = 0; i < kr.dynPoints.size(); i++)
-    if(kr.dynPoints[i].phaseNumber == phaseNumber)
-      addDynPoint(kr.dynPoints[i], torsoMatrix);
+  if(kr.calcDynPoints)
+  {
+    const auto dynPoints = kr.calcDynPoints(phaseNumber);
+    for(const auto& dynPoint : dynPoints)
+      if(dynPoint.phaseNumber == phaseNumber)
+        addDynPoint(dynPoint);
+  }
 
   lElbowFront = origins[Phase::leftHandRot].x() > pi_4;
   rElbowFront = origins[Phase::rightHandRot].x() < -pi_4;
@@ -692,24 +710,22 @@ void KickEngineData::initData(const FrameInfo& frame, const KickRequest& kr, std
   if(kr.armsBackFix) //quick hack to not break arms while they are on the back
   {
     if(lElbowFront)
-      addDynPoint(DynPoint(Phase::leftHandRot, 0, Vector3f(pi_2, -pi_4, 0)), torsoMatrix);
+      addDynPoint(DynPoint(Phase::leftHandRot, 0, Vector3f(pi_2, -pi_4, 0)));
 
     if(rElbowFront)
-      addDynPoint(DynPoint(Phase::rightHandRot, 0, Vector3f(-pi_2, pi_4, 0)), torsoMatrix);
+      addDynPoint(DynPoint(Phase::rightHandRot, 0, Vector3f(-pi_2, pi_4, 0)));
   }
 }
 
-void KickEngineData::setEngineActivation(const float& ratio)
+bool KickEngineData::activateNewMotion(const KickRequest& br)
 {
-  willBeLeft = (ratio < 1.f && lastRatio > ratio);
-  wasActive = (ratio != 0.f && motionID > -1);
-  startComp = (ratio != 0.f && lastRatio <= ratio);
-  lastRatio = ratio;
-}
-
-bool KickEngineData::activateNewMotion(const KickRequest& br, const bool& isLeavingPossible)
-{
-  if(!wasActive || (br.kickMotionType != currentKickRequest.kickMotionType && isLeavingPossible))
+  if(!wasActive || (br.kickMotionType != currentKickRequest.kickMotionType
+                    && !((br.kickMotionType == KickRequest::otherSideKick && currentKickRequest.kickMotionType == KickRequest::kickForwardFast)) //prevent double kick
+                    && !((br.kickMotionType == KickRequest::kickForwardFast && currentKickRequest.kickMotionType == KickRequest::otherSideKick))
+                    && !((br.kickMotionType == KickRequest::kickForwardFast && currentKickRequest.kickMotionType == KickRequest::kickForwardAndUp))
+                    && !((br.kickMotionType == KickRequest::otherSideKick && currentKickRequest.kickMotionType == KickRequest::kickForwardAndUp)) //prevent double kick
+                    && !((br.kickMotionType == KickRequest::kickForwardAndUp && currentKickRequest.kickMotionType == KickRequest::otherSideKick))
+                    && !((br.kickMotionType == KickRequest::kickForwardAndUp && currentKickRequest.kickMotionType == KickRequest::kickForwardFast))))
     return true;
   else if(br.kickMotionType == currentKickRequest.kickMotionType && br.mirror == currentKickRequest.mirror)
     currentKickRequest = br; // update KickRequest when it is compatible to the current motion
@@ -717,12 +733,13 @@ bool KickEngineData::activateNewMotion(const KickRequest& br, const bool& isLeav
   return false;
 }
 
-bool KickEngineData::sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, KickEngineOutput& kickEngineOutput, const JointRequest& theJointRequest, const FrameInfo& frame)
+bool KickEngineData::sitOutTransitionDisturbance(bool& compensate, bool& compensated, const InertialData& id, JointRequest& jointRequest, const JointRequest& theJointRequest, const FrameInfo& frame)
 {
   if(compensate)
   {
     if(!startComp)
     {
+      startComp = true; // kickEngine overrides it back to false, if it is still interpolation into active
       timestamp = frame.time;
       gyro = Vector2f::Zero();
       lastGyroLeft = Vector2f::Zero();
@@ -734,12 +751,10 @@ bool KickEngineData::sitOutTransitionDisturbance(bool& compensate, bool& compens
       lastCom = Vector3f::Zero();
       motionID = -1;
 
-      kickEngineOutput.isLeavingPossible = false;
       lastBalancedJointRequest.angles = theJointRequest.angles;
       compenJoints.angles = theJointRequest.angles;
     }
-    kickEngineOutput.stiffnessData = theJointRequest.stiffnessData;
-    kickEngineOutput.angles = compenJoints.angles;
+    jointRequest.stiffnessData = theJointRequest.stiffnessData;
 
     int time = frame.getTimeSince(timestamp);
     if((std::abs(id.gyro.x()) < 0.1f && std::abs(id.gyro.y()) < 0.1f && time > 200) || time > 1000)

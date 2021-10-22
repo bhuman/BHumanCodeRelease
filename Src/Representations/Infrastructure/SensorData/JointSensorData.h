@@ -23,7 +23,7 @@ STREAMABLE_WITH_BASE(JointSensorData, JointAngles,
 inline JointSensorData::JointSensorData() :
   JointAngles()
 {
-  currents.fill(SensorData::off);
+  currents.fill(static_cast<short>(SensorData::off));
   temperatures.fill(0);
   status.fill(TemperatureStatus::regular);
 }

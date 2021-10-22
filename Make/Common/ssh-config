@@ -12,8 +12,8 @@ set -eu
 
 ########### PARAMETERS ###########
 baseDir=$(cd "$(dirname "$(which "$0")")" && pwd)
-robotsDir="../../Install/Robots"
-sshKeySource="${baseDir}/../../Config/Keys/id_rsa_nao"
+robotsDir="${baseDir}/../../Config/Robots"
+sshKeySource="${baseDir}/../../Install/Keys/id_rsa_nao"
 sshKeyPath=/tmp/id_rsa_nao
 install=false
 config=~/.ssh/config
@@ -34,19 +34,18 @@ if [[ $# -ge 1 ]] ; then
 fi
 
 # change mod of private key
-cp "${sshKeySource}" "${sshKeyPath}"
+cp -n "${sshKeySource}" "${sshKeyPath}"
 chmod 600 "${sshKeyPath}"
 
 # create host for each robot
 hosts=""
 for robot in `ls ${robotsDir}`
 do
-  lanDir=${robotsDir}/${robot}/wired
-  wlanDir=${robotsDir}/${robot}/wireless
+  networkConfig=${robotsDir}/${robot}/network.cfg
 
-  if [ -e ${lanDir} ]; then
-    lan=`cat ${lanDir} | grep -e "^BASE_ETH0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
-    wlan=`cat ${wlanDir} | grep -e "^BASE_WLAN0_IP\|^ROBOT_ID" | sed "s/^.*=\"\(.*\)\"$/\1/" | tr -d "\n"`
+  if [ -r "${networkConfig}" ]; then
+    lan=`grep "^lan" "${networkConfig}" | sed "s%.*\"\([^\"]*\)\".*%\1%"`
+    wlan=`grep "^wlan" "${networkConfig}" | sed "s%.*\"\([^\"]*\)\".*%\1%"`
 
     hosts=${hosts}"Host ${robot}\n"
     hosts=${hosts}"  HostName ${lan}\n"
@@ -65,16 +64,6 @@ do
 done
 
 if ${install} ; then
-  if [[ $(uname) == *CYGWIN* ]] ; then
-    status "installing ssh autocompletion"
-    cp ${baseDir}/ssh-hosts ~/.ssh-hosts
-
-    # do not include the ssh-hosts file more than once
-    if [[ `grep -c 'source .ssh-hosts' ~/.bashrc` == 0 ]] ; then
-      echo "source .ssh-hosts" >> ~/.bashrc
-    fi
-  fi
-
   status "installing ssh config file"
   mkdir -p ~/.ssh
   # keep an existing ssh conf intact

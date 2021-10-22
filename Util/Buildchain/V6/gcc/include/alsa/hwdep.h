@@ -21,7 +21,7 @@
  *
  *   You should have received a copy of the GNU Lesser General Public
  *   License along with this library; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 
@@ -76,8 +76,11 @@ typedef enum _snd_hwdep_iface {
 	SND_HWDEP_IFACE_FW_OXFW,	/**< Oxford OXFW970/971 based device */
 	SND_HWDEP_IFACE_FW_DIGI00X,	/* Digidesign Digi 002/003 family */
 	SND_HWDEP_IFACE_FW_TASCAM,	/* TASCAM FireWire series */
+	SND_HWDEP_IFACE_LINE6,		/* Line6 USB processors */
+	SND_HWDEP_IFACE_FW_MOTU,	/* MOTU FireWire series */
+	SND_HWDEP_IFACE_FW_FIREFACE,	/* RME Fireface series */
 
-	SND_HWDEP_IFACE_LAST = SND_HWDEP_IFACE_FW_TASCAM	/**< last known hwdep interface */
+	SND_HWDEP_IFACE_LAST = SND_HWDEP_IFACE_FW_FIREFACE,	/**< last known hwdep interface */
 } snd_hwdep_iface_t;
 
 /** open for reading */

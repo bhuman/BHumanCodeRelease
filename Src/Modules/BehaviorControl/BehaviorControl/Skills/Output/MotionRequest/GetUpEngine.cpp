@@ -21,15 +21,15 @@ SKILL_IMPLEMENTATION(GetUpEngineImpl,
 
 class GetUpEngineImpl : public GetUpEngineImplBase
 {
-  void execute(const GetUpEngine& p) override
+  void execute(const GetUpEngine&) override
   {
     theMotionRequest.motion = MotionRequest::getUp;
     theLibCheck.inc(LibCheck::motionRequest);
   }
 
-  bool isDone(const GetUpEngine& p) const override
+  bool isDone(const GetUpEngine&) const override
   {
-    return theMotionInfo.motion == MotionRequest::getUp;
+    return theMotionInfo.executedPhase == MotionPhase::getUp;
   }
 };
 

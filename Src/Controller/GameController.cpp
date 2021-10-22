@@ -1,5 +1,5 @@
 /**
- * @file Controller/GameController.h
+ * @file Controller/GameController.cpp
  * This file implements a class that simulates a console-based GameController.
  * @author Thomas Röfer
  * @author Arne Hasselbring
@@ -12,6 +12,7 @@
 #include "Tools/Global.h"
 #include "Tools/Settings.h"
 #include "Tools/Streams/InStreams.h"
+#include "Tools/Math/BHMath.h"
 #include "Tools/Math/Eigen.h"
 #include <limits>
 #include <algorithm>
@@ -33,6 +34,8 @@ GameController::GameController()
   gameInfo.kickingTeam = 1;
   gameInfo.secsRemaining = halfTime;
   gameInfo.secondaryTime = 0;
+  for(auto& teamInfo : teamInfos)
+    teamInfo.players[gameInfo.playersPerTeam - 1].penalty = PENALTY_SUBSTITUTE;
   // Force reloading of the field dimensions (they cannot be loaded here because the file search path is not available yet).
   fieldDimensions.xPosOwnPenaltyMark = 0.f;
 }
@@ -42,6 +45,8 @@ void GameController::registerSimulatedRobot(int robot, SimulatedRobot& simulated
   ASSERT(!robots[robot].simulatedRobot);
   robots[robot].simulatedRobot = &simulatedRobot;
   robots[robot].info.number = robot % (numOfRobots / 2) + 1;
+  if(robots[robot].info.number == gameInfo.playersPerTeam)
+    robots[robot].info.penalty = robots[robot].lastPenalty = PENALTY_SUBSTITUTE;
   if(fieldDimensions.xPosOwnPenaltyMark == 0.f)
     fieldDimensions.load();
 }
@@ -67,12 +72,14 @@ bool GameController::handleStateCommand(const std::string& command)
     if(gameInfo.state == STATE_READY)
       return true;
 
-    resetPenaltyTimes();
-    if(gameInfo.state == STATE_PLAYING)
+    if(gameInfo.state == STATE_INITIAL)
+      resetPenaltyTimes();
+    else if(gameInfo.state == STATE_PLAYING)
       addTimeInCurrentState();
     timeWhenStateBegan = Time::getCurrentSystemTime();
     gameInfo.state = STATE_READY;
-    gameInfo.setPlay = SET_PLAY_NONE;
+    if(gameInfo.setPlay != SET_PLAY_PENALTY_KICK)
+      gameInfo.setPlay = SET_PLAY_NONE;
 
     return true;
   }
@@ -94,7 +101,8 @@ bool GameController::handleStateCommand(const std::string& command)
         VERIFY(handleRobotCommand(i, "substitute"));
     }
     gameInfo.state = STATE_SET;
-    gameInfo.setPlay = SET_PLAY_NONE;
+    if(gameInfo.setPlay != SET_PLAY_PENALTY_KICK)
+      gameInfo.setPlay = SET_PLAY_NONE;
 
     return true;
   }
@@ -154,11 +162,6 @@ bool GameController::handleCompetitionTypeCommand(const std::string& command)
     gameInfo.competitionType = COMPETITION_TYPE_NORMAL;
     return true;
   }
-  else if(command == "competitionTypeMixedTeam")
-  {
-    gameInfo.competitionType = COMPETITION_TYPE_MIXEDTEAM;
-    return true;
-  }
   return false;
 }
 
@@ -201,17 +204,17 @@ bool GameController::handleFreeKickCommand(const std::string& command)
 {
   if(!(gameInfo.state == STATE_PLAYING && gameInfo.setPlay == SET_PLAY_NONE && gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT))
     return false;
-  if(command == "goalFreeKickForFirstTeam")
+  if(command == "goalKickForFirstTeam")
   {
     timeWhenSetPlayBegan = Time::getCurrentSystemTime();
-    gameInfo.setPlay = SET_PLAY_GOAL_FREE_KICK;
+    gameInfo.setPlay = SET_PLAY_GOAL_KICK;
     gameInfo.kickingTeam = 1;
     return true;
   }
-  else if(command == "goalFreeKickForSecondTeam")
+  else if(command == "goalKickForSecondTeam")
   {
     timeWhenSetPlayBegan = Time::getCurrentSystemTime();
-    gameInfo.setPlay = SET_PLAY_GOAL_FREE_KICK;
+    gameInfo.setPlay = SET_PLAY_GOAL_KICK;
     gameInfo.kickingTeam = 2;
     return true;
   }
@@ -256,6 +259,20 @@ bool GameController::handleFreeKickCommand(const std::string& command)
     gameInfo.setPlay = SET_PLAY_KICK_IN;
     gameInfo.kickingTeam = 2;
     return true;
+  }
+  else if(command == "penaltyKickForFirstTeam")
+  {
+    timeWhenSetPlayBegan = Time::getCurrentSystemTime();
+    gameInfo.setPlay = SET_PLAY_PENALTY_KICK;
+    gameInfo.kickingTeam = 1;
+    return handleStateCommand("ready");
+  }
+  else if(command == "penaltyKickForSecondTeam")
+  {
+    timeWhenSetPlayBegan = Time::getCurrentSystemTime();
+    gameInfo.setPlay = SET_PLAY_PENALTY_KICK;
+    gameInfo.kickingTeam = 2;
+    return handleStateCommand("ready");
   }
   return false;
 }
@@ -367,6 +384,14 @@ bool GameController::handleRobotCommand(int robot, const std::string& command)
         r.timeWhenPenalized = Time::getCurrentSystemTime();
       return true;
     }
+  FOREACH_ENUM(RobotInfo::Mode, i)
+  {
+    if(command == TypeRegistry::getEnumName(i))
+    {
+      r.info.mode = i;
+      return true;
+    }
+  }
   return false;
 }
 
@@ -405,8 +430,8 @@ void GameController::placeGoalie(int robot)
   if(r.info.penalty != PENALTY_NONE)
     return;
   r.manuallyPlaced = true;
-  r.lastPose = robot < numOfRobots / 2 ? Pose2f(-pi, fieldDimensions.xPosOpponentGroundline - safeDistance, 0.f)
-               : Pose2f(0.f, fieldDimensions.xPosOwnGroundline + safeDistance, 0.f);
+  r.lastPose = robot < numOfRobots / 2 ? Pose2f(-pi, fieldDimensions.xPosOpponentGroundLine - safeDistance, 0.f)
+               : Pose2f(0.f, fieldDimensions.xPosOwnGroundLine + safeDistance, 0.f);
 }
 
 void GameController::placeFromSet(int robot, int minRobot, const Pose2f* poses)
@@ -447,15 +472,15 @@ void GameController::placeOffensivePlayers(int minRobot)
   {
     {
       Pose2f(0.f, -fieldDimensions.centerCircleRadius - footLength, 0.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, fieldDimensions.yPosRightGoal / 2.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f)
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, 0.f),
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f),
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f)
     },
     {
       Pose2f(-pi, fieldDimensions.centerCircleRadius + footLength, 0.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, fieldDimensions.yPosLeftGoal / 2.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f)
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, 0.f),
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f),
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f)
     }
   };
 
@@ -475,16 +500,16 @@ void GameController::placeDefensivePlayers(int minRobot)
   static const Pose2f poses[2][numOfFieldPlayers] =
   {
     {
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, fieldDimensions.yPosLeftGoal / 2.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, fieldDimensions.yPosRightGoal / 2.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f),
-      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f)
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, 0.f),
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyArea + safeDistance, 0.f),
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f),
+      Pose2f(0.f, fieldDimensions.xPosOwnPenaltyMark, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f)
     },
     {
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, fieldDimensions.yPosLeftGoal / 2.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, fieldDimensions.yPosRightGoal / 2.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f),
-      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f)
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, 0.f),
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyArea - safeDistance, 0.f),
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, (fieldDimensions.yPosRightPenaltyArea + fieldDimensions.yPosRightSideline) / 2.f),
+      Pose2f(-pi, fieldDimensions.xPosOpponentPenaltyMark, (fieldDimensions.yPosLeftPenaltyArea + fieldDimensions.yPosLeftSideline) / 2.f)
     }
   };
 
@@ -499,20 +524,52 @@ void GameController::placeDefensivePlayers(int minRobot)
   }
 }
 
-void GameController::checkIllegalPositioning(int robot)
+void GameController::checkIllegalPositionInSet(int robot)
 {
   Robot& r = robots[robot];
   if(!r.simulatedRobot || r.info.penalty != PENALTY_NONE)
     return;
 
-  if(r.lastPose.translation.y() < fieldDimensions.yPosRightSideline ||
-     r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline ||
-     (robot < numOfRobots / 2 && (r.lastPose.translation.x() < footLength || r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundline)) ||
-     (robot >= numOfRobots / 2 && (r.lastPose.translation.x() > -footLength || r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundline)) ||
-     ((gameInfo.kickingTeam != (robot < numOfRobots / 2 ? 1 : 2)) && r.lastPose.translation.squaredNorm() < sqr(fieldDimensions.centerCircleRadius + footLength)))
+  const bool isFirstTeam = robot < numOfRobots / 2;
+  const bool isKickingTeam = gameInfo.kickingTeam == (isFirstTeam ? 1 : 2);
+  const bool isGoalkeeper = robot == 0 || robot == numOfRobots / 2;
+  const bool isPenaltyKick = gameInfo.setPlay == SET_PLAY_PENALTY_KICK;
+  const bool notOnField = r.lastPose.translation.y() < fieldDimensions.yPosRightSideline - footLength ||
+                          r.lastPose.translation.y() > fieldDimensions.yPosLeftSideline + footLength ||
+                          r.lastPose.translation.x() < fieldDimensions.xPosOwnGroundLine - footLength ||
+                          r.lastPose.translation.x() > fieldDimensions.xPosOpponentGroundLine + footLength;
+  const bool inOpponentHalf = isFirstTeam ? (r.lastPose.translation.x() < footLength) : (r.lastPose.translation.x() > -footLength);
+  const bool inCenterCircle = r.lastPose.translation.squaredNorm() < sqr(fieldDimensions.centerCircleRadius + footLength);
+  const bool notOnOwnGoalLine = std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine)) > footLength ||
+                                r.lastPose.translation.y() > fieldDimensions.yPosLeftGoal || r.lastPose.translation.y() < fieldDimensions.yPosRightGoal;
+  const bool inOpponentPenaltyArea = r.lastPose.translation.y() > fieldDimensions.yPosRightPenaltyArea - footLength && r.lastPose.translation.y() < fieldDimensions.yPosLeftPenaltyArea + footLength &&
+                                     (isFirstTeam ? (r.lastPose.translation.x() < fieldDimensions.xPosOwnPenaltyArea + footLength) : (r.lastPose.translation.x() > fieldDimensions.xPosOpponentPenaltyArea - footLength));
+  const bool inOwnPenaltyArea = r.lastPose.translation.y() > fieldDimensions.yPosRightPenaltyArea - footLength && r.lastPose.translation.y() < fieldDimensions.yPosLeftPenaltyArea + footLength &&
+                                (isFirstTeam ? (r.lastPose.translation.x() > fieldDimensions.xPosOpponentPenaltyArea - footLength) : (r.lastPose.translation.x() < fieldDimensions.xPosOwnPenaltyArea + footLength));
+  const Vector2f opponentPenaltyMark(isFirstTeam ? fieldDimensions.xPosOwnPenaltyMark : fieldDimensions.xPosOpponentPenaltyMark, 0.f);
+  const bool onOpponentPenaltyMark = (r.lastPose.translation - opponentPenaltyMark).squaredNorm() < sqr(footLength + fieldDimensions.penaltyMarkSize * 0.5f);
+  auto closestToOpponentPenaltyMark = [&]() -> bool
+  {
+    const float myDistance2 = (r.lastPose.translation - opponentPenaltyMark).squaredNorm();
+    const int base = isFirstTeam ? 0 : numOfRobots / 2;
+    for(int i = base; i < base + numOfRobots / 2; ++i)
+    {
+      if(i == robot || !robots[i].simulatedRobot || robots[i].info.penalty != PENALTY_NONE)
+        continue;
+      const float itsDistance2 = (robots[i].lastPose.translation - opponentPenaltyMark).squaredNorm();
+      if(itsDistance2 >= sqr(footLength + fieldDimensions.penaltyMarkSize * 0.5f) && (itsDistance2 < myDistance2 || (itsDistance2 == myDistance2 && i < robot)))
+        return false;
+    }
+    return true;
+  };
+
+  if(notOnField ||
+     (isPenaltyKick ?
+      (isKickingTeam ? onOpponentPenaltyMark || (inOpponentPenaltyArea && !closestToOpponentPenaltyMark()) : (isGoalkeeper ? notOnOwnGoalLine : inOwnPenaltyArea)) :
+      inOpponentHalf || (!isKickingTeam && inCenterCircle)))
   {
     RoboCup::RobotInfo& tr = teamInfos[robot * 2 / numOfRobots].players[robot % (numOfRobots / 2)];
-    r.info.penalty = PENALTY_SPL_ILLEGAL_POSITIONING;
+    r.info.penalty = PENALTY_SPL_ILLEGAL_POSITION_IN_SET;
     tr.penalty = r.info.penalty;
     r.timeWhenPenalized = Time::getCurrentSystemTime();
   }
@@ -534,26 +591,135 @@ void GameController::referee()
 {
   SYNC;
 
-  if(automatic && lastState != STATE_SET && gameInfo.state == STATE_SET)
+  if(lastState != STATE_SET && gameInfo.state == STATE_SET)
   {
-    if(gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT)
-    {
+    if(automatic & bit(penalizeIllegalPositionInSet) && gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT)
       for(int i = 0; i < numOfRobots; ++i)
-        checkIllegalPositioning(i);
-      SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
+        checkIllegalPositionInSet(i);
+
+    if(automatic & bit(placeBall))
+    {
+      if(gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT || gameInfo.setPlay == SET_PLAY_PENALTY_KICK)
+        SimulatedRobot::moveBall(Vector3f(gameInfo.kickingTeam == 1 ? fieldDimensions.xPosOwnPenaltyMark : fieldDimensions.xPosOpponentPenaltyMark, 0.f, 50.f), true);
+      else
+        SimulatedRobot::moveBall(Vector3f(0.f, 0.f, 50.f), true);
     }
-    else
-      SimulatedRobot::moveBall(Vector3f(gameInfo.kickingTeam == 1 ? fieldDimensions.xPosOwnPenaltyMark : fieldDimensions.xPosOpponentPenaltyMark, 0.f, 50.f), true);
   }
   lastState = gameInfo.state;
 
   executePlacement();
 
+  // Prepare numbers for illegal positioning.
+  if(automatic & bit(penalizeIllegalPosition))
+  {
+    for(int i = 0; i < numOfRobots; ++i)
+    {
+      Robot& r = robots[i];
+      if(r.info.penalty == PENALTY_NONE && r.simulatedRobot)
+      {
+        const bool isFirstTeam = i < numOfRobots / 2;
+        const float yMargin = std::min(r.lastPose.translation.y() - fieldDimensions.yPosRightPenaltyArea + footLength, fieldDimensions.yPosLeftPenaltyArea + footLength - r.lastPose.translation.y());
+        const float xMarginOwn = isFirstTeam ? (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength) : (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x());
+        const float xMarginOpponent = isFirstTeam ? (fieldDimensions.xPosOwnPenaltyArea + footLength - r.lastPose.translation.x()) : (r.lastPose.translation.x() - fieldDimensions.xPosOpponentPenaltyArea + footLength);
+        r.ownPenaltyAreaMargin = std::min(yMargin, xMarginOwn);
+        r.opponentPenaltyAreaMargin = std::min(yMargin, xMarginOpponent);
+      }
+      else
+        r.ownPenaltyAreaMargin = r.opponentPenaltyAreaMargin = -1.f;
+    }
+  }
+
   for(int i = 0; i < numOfRobots; ++i)
   {
     Robot& r = robots[i];
 
-    if(automatic && r.info.penalty != PENALTY_NONE && r.lastPenalty == PENALTY_NONE && r.simulatedRobot)
+    if(r.info.penalty == PENALTY_NONE && r.simulatedRobot)
+    {
+      auto inCenterCircleBeforeBallIsInPlay = [&]
+      {
+        return gameInfo.state == STATE_PLAYING && gameInfo.setPlay == SET_PLAY_NONE &&
+               lastBallContactTime < timeWhenStateBegan && Time::getTimeSince(timeWhenStateBegan) < 10000 &&
+               gameInfo.kickingTeam != (i < numOfRobots / 2 ? 1 : 2) &&
+               r.lastPose.translation.squaredNorm() < sqr(fieldDimensions.centerCircleRadius + footLength);
+      };
+      auto inPenaltyAreaDuringPenaltyKick = [&]
+      {
+        if(gameInfo.state != STATE_PLAYING || gameInfo.setPlay != SET_PLAY_PENALTY_KICK)
+          return false;
+        const bool isFirstTeam = i < numOfRobots / 2;
+        const bool isKickingTeam = gameInfo.kickingTeam == (isFirstTeam ? 1 : 2);
+        // Outside the penalty area is legal.
+        if((isKickingTeam ? r.opponentPenaltyAreaMargin : r.ownPenaltyAreaMargin) < 0.f)
+          return false;
+        // The goalkeeper is only allowed to stand on the goal line.
+        // (but if it's outside the penalty area, that's okay, too, because that will happen when it's unpenalized during a penalty kick).
+        if(!isKickingTeam && i == (isFirstTeam ? 0 : numOfRobots / 2) &&
+           std::abs(r.lastPose.translation.x() - (isFirstTeam ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine)) < footLength &&
+           r.lastPose.translation.y() < fieldDimensions.yPosLeftGoal && r.lastPose.translation.y() > fieldDimensions.yPosRightGoal)
+          return false;
+        // No other defender may be in there.
+        if(!isKickingTeam)
+          return true;
+        // The player of the kicking team which is deepest inside the opponent's penalty area is considered to be the taker which is allowed to be there.
+        // All others are not.
+        for(int j = isFirstTeam ? 0 : numOfRobots / 2; j < (isFirstTeam ? numOfRobots / 2 : numOfRobots); ++j)
+          if(i != j && (robots[j].opponentPenaltyAreaMargin > r.opponentPenaltyAreaMargin || (robots[j].opponentPenaltyAreaMargin == r.opponentPenaltyAreaMargin && j < i)))
+            return true;
+        return false;
+      };
+      auto inFullPenaltyArea = [&]
+      {
+        const bool isFirstTeam = i < numOfRobots / 2;
+        // Count the number of players which are deeper inside the respective penalty area.
+        // If more than 3 players are, this player must be illegal.
+        if(r.ownPenaltyAreaMargin >= 0.f)
+        {
+          int counter = 0;
+          for(int j = isFirstTeam ? 0 : numOfRobots / 2; j < (isFirstTeam ? numOfRobots / 2 : numOfRobots); ++j)
+            if(i != j && (robots[j].ownPenaltyAreaMargin > r.ownPenaltyAreaMargin || (robots[j].ownPenaltyAreaMargin == r.ownPenaltyAreaMargin && j < i)))
+              ++counter;
+          if(counter >= 3)
+            return true;
+        }
+        if(r.opponentPenaltyAreaMargin >= 0.f)
+        {
+          int counter = 0;
+          for(int j = isFirstTeam ? 0 : numOfRobots / 2; j < (isFirstTeam ? numOfRobots / 2 : numOfRobots); ++j)
+            if(i != j && (robots[j].opponentPenaltyAreaMargin > r.opponentPenaltyAreaMargin || (robots[j].opponentPenaltyAreaMargin == r.opponentPenaltyAreaMargin && j < i)))
+              ++counter;
+          if(counter >= 3)
+            return true;
+        }
+        return false;
+      };
+      auto inFreeKickArea = [&]
+      {
+        const bool isFirstTeam = i < numOfRobots / 2;
+        if(gameInfo.state != STATE_PLAYING || gameInfo.setPlay == SET_PLAY_NONE || gameInfo.setPlay == SET_PLAY_PENALTY_KICK ||
+           gameInfo.kickingTeam == (isFirstTeam ? 1 : 2))
+          return false;
+        // A goalkeeper within its own penalty area is allowed to approach the ball.
+        // TODO: It is still not allowed to touch the ball.
+        if(i == (isFirstTeam ? 0 : numOfRobots / 2) && r.ownPenaltyAreaMargin >= 0.f)
+          return false;
+
+        // For now, just penalize anyone who is within 75cm after 10s.
+        // TODO: This does not consider:
+        //   - Players that clearly violate the rule by walking to or playing the ball before 10s
+        //   - Players that are inside the circle after 10s because they are fallen or pushed
+        Vector2f ballPos;
+        SimulatedRobot::getAbsoluteBallPosition(ballPos);
+        return Time::getTimeSince(timeWhenSetPlayBegan) > 10000 && (r.lastPose.translation - ballPos).squaredNorm() < sqr(750.f);
+      };
+
+      if(automatic & bit(penalizeLeavingTheField) && !fieldDimensions.isInsideCarpet(r.lastPose.translation))
+        VERIFY(handleRobotCommand(i, "leavingTheField"));
+      else if(automatic & bit(penalizeIllegalPosition) &&
+              (inCenterCircleBeforeBallIsInPlay() || inPenaltyAreaDuringPenaltyKick() || inFullPenaltyArea() || inFreeKickArea()))
+        VERIFY(handleRobotCommand(i, "illegalPosition"));
+    }
+
+    if(automatic & bit(placePlayers) && r.info.penalty != PENALTY_NONE && r.lastPenalty == PENALTY_NONE && r.simulatedRobot)
     {
       placeForPenalty(i, fieldDimensions.xPosOpponentPenaltyMark,
                       fieldDimensions.yPosRightFieldBorder + 100.f, -pi_2);
@@ -561,18 +727,18 @@ void GameController::referee()
 
     if(r.info.penalty != PENALTY_NONE)
     {
-      r.info.secsTillUnpenalised = static_cast<uint8_t>(std::max<int>((r.info.penalty == PENALTY_SPL_ILLEGAL_POSITIONING ? 15 : 45) - Time::getTimeSince(r.timeWhenPenalized) / 1000, 0));
+      r.info.secsTillUnpenalised = static_cast<uint8_t>(std::max<int>((r.info.penalty == PENALTY_SPL_ILLEGAL_POSITION_IN_SET ? 15 : 45) - Time::getTimeSince(r.timeWhenPenalized) / 1000, 0));
       RoboCup::RobotInfo& tr = teamInfos[i * 2 / numOfRobots].players[i % (numOfRobots / 2)];
       tr.secsTillUnpenalised = r.info.secsTillUnpenalised;
 
-      if(automatic && r.info.secsTillUnpenalised <= 0 && r.info.penalty != PENALTY_MANUAL && r.info.penalty != PENALTY_SUBSTITUTE)
+      if(automatic & bit(unpenalize) && r.info.secsTillUnpenalised <= 0 && r.info.penalty != PENALTY_MANUAL && r.info.penalty != PENALTY_SUBSTITUTE)
       {
         r.info.penalty = PENALTY_NONE;
         tr.penalty = PENALTY_NONE;
       }
     }
 
-    if(automatic && r.info.penalty == PENALTY_NONE && r.lastPenalty != PENALTY_NONE && r.simulatedRobot)
+    if(automatic & bit(placePlayers) && r.info.penalty == PENALTY_NONE && r.lastPenalty != PENALTY_NONE && r.simulatedRobot)
     {
       if(gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
       {
@@ -580,7 +746,7 @@ void GameController::referee()
         if(gameInfo.kickingTeam == (i < numOfRobots / 2 ? 1 : 2))
           newPose.translate(fieldDimensions.xPosPenaltyStrikerStartPosition, 0.f);
         else
-          newPose.translate(fieldDimensions.xPosOwnGroundline, 0.f);
+          newPose.translate(fieldDimensions.xPosOwnGroundLine, 0.f);
         r.simulatedRobot->moveRobot(Vector3f(newPose.translation.x(), newPose.translation.y(), dropHeight), Vector3f(0.f, 0.f, newPose.rotation), true);
       }
       else
@@ -593,6 +759,16 @@ void GameController::referee()
       }
     }
 
+    if(automatic & bit(clearBall) && r.simulatedRobot)
+    {
+      Vector2f ballPos;
+      r.simulatedRobot->getAbsoluteBallPosition(ballPos);
+      if((r.lastPose * Vector2f(50.f, 0.f) - ballPos).norm() > 50.f)
+        r.timeWhenBallNotStuckBetweenLegs = Time::getCurrentSystemTime();
+      else if(r.timeWhenBallNotStuckBetweenLegs && Time::getTimeSince(r.timeWhenBallNotStuckBetweenLegs) > 500)
+        SimulatedRobot::moveBall((Vector3f() << r.lastPose * Vector2f(150.f, 0.f), 50.f).finished(), true);
+    }
+
     r.lastPenalty = r.info.penalty;
   }
 
@@ -601,37 +777,38 @@ void GameController::referee()
     case STATE_READY:
       if(Time::getTimeSince(timeWhenStateBegan) < 2000)
         timeWhenLastRobotMoved = 0;
-      if(Time::getTimeSince(timeWhenStateBegan) >= readyTime * 1000 ||
-         (automatic && timeWhenLastRobotMoved && Time::getTimeSince(timeWhenLastRobotMoved) > 2000))
+      if(Time::getTimeSince(timeWhenStateBegan) >= (gameInfo.setPlay == SET_PLAY_PENALTY_KICK ? penaltyKickReadyTime : readyTime) * 1000 ||
+         (automatic & bit(switchToSet) && timeWhenLastRobotMoved && Time::getTimeSince(timeWhenLastRobotMoved) > 2000))
         handleGlobalCommand("set");
       break;
 
     case STATE_SET:
-      if(automatic && gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT && Time::getTimeSince(timeWhenStateBegan) >= 5000)
+      if(automatic & bit(switchToPlaying) && gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT && Time::getTimeSince(timeWhenStateBegan) >= 5000)
         handleGlobalCommand("playing");
       break;
 
     case STATE_PLAYING:
-      if(Time::getTimeSince(timeWhenSetPlayBegan) >= freeKickTime * 1000)
+      if(gameInfo.setPlay != SET_PLAY_NONE && (gameInfo.setPlay != SET_PLAY_PENALTY_KICK ?
+                                               Time::getTimeSince(timeWhenSetPlayBegan) >= freeKickTime * 1000 :
+                                               Time::getTimeSince(timeWhenStateBegan) >= penaltyShotTime * 1000))
         gameInfo.setPlay = SET_PLAY_NONE;
 
-      if(automatic)
-      {
-        if(gameInfo.setPlay != SET_PLAY_NONE && lastBallContactTime > timeWhenSetPlayBegan + 500 && (gameInfo.kickingTeam == 1) != (lastBallContactPose.rotation == 0.f))
-          VERIFY(handleGlobalCommand("playing"));
+      if(automatic & bit(freeKickComplete) && gameInfo.setPlay != SET_PLAY_NONE &&
+         lastBallContactTime > timeWhenSetPlayBegan + 500 && (gameInfo.kickingTeam == 1) != (lastBallContactPose.rotation == 0.f))
+        VERIFY(handleGlobalCommand("playing"));
 
-        const auto ballOut = updateBall();
-        if(gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && ballOut != (gameInfo.kickingTeam == 1 ? goalByFirstTeam : goalBySecondTeam) && ballOut != notOut)
-        {
+      if(automatic & bit(ballOut))
+      {
+        const auto ballOutType = updateBall();
+        if(gameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && ballOutType != (gameInfo.kickingTeam == 1 ? goalByFirstTeam : goalBySecondTeam) && ballOutType != notOut)
           VERIFY(handleGlobalCommand("finished"));
-        }
-        else if(ballOut != notOut)
+        else if(ballOutType != notOut)
         {
           // It is possible that setPlay is not NONE here because the autoreferee may
           // not have detected a completed free kick or an opponent (which actually is
           // not allowed to do so) touched the ball.
           gameInfo.setPlay = SET_PLAY_NONE;
-          switch(ballOut)
+          switch(ballOutType)
           {
             case goalByFirstTeam:
               VERIFY(handleGlobalCommand("goalByFirstTeam"));
@@ -652,10 +829,10 @@ void GameController::referee()
               VERIFY(handleGlobalCommand("cornerKickForFirstTeam"));
               break;
             case opponentGoalOutByFirstTeam:
-              VERIFY(handleGlobalCommand("goalFreeKickForSecondTeam"));
+              VERIFY(handleGlobalCommand("goalKickForSecondTeam"));
               break;
             case opponentGoalOutBySecondTeam:
-              VERIFY(handleGlobalCommand("goalFreeKickForFirstTeam"));
+              VERIFY(handleGlobalCommand("goalKickForFirstTeam"));
               break;
             default:
               break;
@@ -689,22 +866,22 @@ GameController::BallOut GameController::updateBall()
       result = ballPos.x() > 0.f ? goalBySecondTeam : goalByFirstTeam;
     else
     {
-      if(std::abs(ballPos.x()) > fieldDimensions.xPosOpponentGroundline)
+      if(std::abs(ballPos.x()) > fieldDimensions.xPosOpponentGroundLine)
       {
-        if((ballPos.x() > 0.f) == (lastBallContactPose.rotation == 0.f)) // goal free kick
+        if((ballPos.x() > 0.f) == (lastBallContactPose.rotation == 0.f)) // goal kick
         {
-          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentPenaltyMark : fieldDimensions.xPosOwnPenaltyMark;
+          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGoalArea : fieldDimensions.xPosOwnGoalArea;
 
           if(ballPos.y() < 0.f)
-            ballPos.y() = fieldDimensions.yPosRightPenaltyArea;
+            ballPos.y() = fieldDimensions.yPosRightGoalArea;
           else
-            ballPos.y() = fieldDimensions.yPosLeftPenaltyArea;
+            ballPos.y() = fieldDimensions.yPosLeftGoalArea;
 
           result = lastBallContactPose.rotation == 0.f ? opponentGoalOutBySecondTeam : opponentGoalOutByFirstTeam;
         }
         else // corner kick
         {
-          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGroundline : fieldDimensions.xPosOwnGroundline;
+          ballPos.x() = ballPos.x() > 0.f ? fieldDimensions.xPosOpponentGroundLine : fieldDimensions.xPosOwnGroundLine;
 
           if(ballPos.y() < 0.f)
             ballPos.y() = fieldDimensions.yPosRightSideline;
@@ -717,10 +894,10 @@ GameController::BallOut GameController::updateBall()
       else // kick in
       {
         float x = ballPos.x();
-        if(x < fieldDimensions.xPosOwnGroundline)
-          x = fieldDimensions.xPosOwnGroundline; // clip
-        else if(x > fieldDimensions.xPosOpponentGroundline)
-          x = fieldDimensions.xPosOpponentGroundline; // clip
+        if(x < fieldDimensions.xPosOwnGroundLine)
+          x = fieldDimensions.xPosOwnGroundLine; // clip
+        else if(x > fieldDimensions.xPosOpponentGroundLine)
+          x = fieldDimensions.xPosOpponentGroundLine; // clip
         ballPos.x() = x;
 
         if(ballPos.y() < 0.f)
@@ -749,15 +926,17 @@ void GameController::writeGameInfo(Out& stream)
 
   const int duration = gameInfo.gamePhase == GAME_PHASE_NORMAL ? halfTime : penaltyShotTime;
   const int timePlayed = gameInfo.state == STATE_INITIAL
-    || ((gameInfo.state == STATE_READY || gameInfo.state == STATE_SET)
-        && (gameInfo.competitionPhase == COMPETITION_PHASE_PLAYOFF || timeBeforeCurrentState == 0))
-    || gameInfo.state == STATE_FINISHED
-      ? timeBeforeCurrentState / 1000
-      : Time::getTimeSince(timeWhenStateBegan - timeBeforeCurrentState) / 1000;
+                         || ((gameInfo.state == STATE_READY || gameInfo.state == STATE_SET)
+                             && (gameInfo.competitionPhase == COMPETITION_PHASE_PLAYOFF || timeBeforeCurrentState == 0))
+                         || gameInfo.state == STATE_FINISHED
+                         ? timeBeforeCurrentState / 1000
+                         : Time::getTimeSince(timeWhenStateBegan - timeBeforeCurrentState) / 1000;
   gameInfo.secsRemaining = static_cast<int16_t>(duration - timePlayed);
 
   if(gameInfo.state == STATE_READY)
-    gameInfo.secondaryTime = static_cast<int16_t>(readyTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
+    gameInfo.secondaryTime = static_cast<int16_t>((gameInfo.setPlay == SET_PLAY_PENALTY_KICK ? penaltyKickReadyTime : readyTime) - Time::getTimeSince(timeWhenStateBegan) / 1000);
+  else if(gameInfo.state == STATE_PLAYING && gameInfo.setPlay == SET_PLAY_PENALTY_KICK)
+    gameInfo.secondaryTime = static_cast<int16_t>(penaltyShotTime - Time::getTimeSince(timeWhenStateBegan) / 1000);
   else if(gameInfo.state == STATE_PLAYING && gameInfo.setPlay != SET_PLAY_NONE)
     gameInfo.secondaryTime = static_cast<int16_t>(freeKickTime - Time::getTimeSince(timeWhenSetPlayBegan) / 1000);
   else if(gameInfo.state == STATE_PLAYING && gameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT && kickOffTime >= Time::getTimeSince(timeWhenStateBegan) / 1000)
@@ -809,21 +988,22 @@ void GameController::addCompletion(std::set<std::string>& completion) const
     "playing",
     "finished",
     "competitionTypeNormal",
-    "competitionTypeMixedTeam",
     "competitionPhasePlayoff",
     "competitionPhaseRoundRobin",
     "manualPlacementFirstTeam",
     "manualPlacementSecondTeam",
     "goalByFirstTeam",
     "goalBySecondTeam",
-    "goalFreeKickForFirstTeam",
-    "goalFreeKickForSecondTeam",
+    "goalKickForFirstTeam",
+    "goalKickForSecondTeam",
     "pushingFreeKickForFirstTeam",
     "pushingFreeKickForSecondTeam",
     "cornerKickForFirstTeam",
     "cornerKickForSecondTeam",
     "kickInForFirstTeam",
     "kickInForSecondTeam",
+    "penaltyKickForFirstTeam",
+    "penaltyKickForSecondTeam",
     "kickOffFirstTeam",
     "kickOffSecondTeam",
     "gamePenaltyShootout",
@@ -833,6 +1013,8 @@ void GameController::addCompletion(std::set<std::string>& completion) const
   for(int i = 0; i < num; ++i)
     completion.insert(std::string("gc ") + commands[i]);
   FOREACH_ENUM(Penalty, i)
+    completion.insert(std::string("pr ") + TypeRegistry::getEnumName(i));
+  FOREACH_ENUM(RobotInfo::Mode, i)
     completion.insert(std::string("pr ") + TypeRegistry::getEnumName(i));
 }
 
