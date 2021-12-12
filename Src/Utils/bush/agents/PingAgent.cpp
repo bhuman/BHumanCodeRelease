@@ -3,11 +3,12 @@
 #include "Utils/bush/Session.h"
 #include "Utils/bush/tools/StringTools.h"
 #include "Platform/Time.h"
-#include <QProcess>
 #include <QByteArray>
+#include <QProcess>
+#include <QProcessEnvironment>
+#include <QRegExp>
 #include <QString>
 #include <QStringList>
-#include <QRegExp>
 #include <iostream>
 
 PingAgent::~PingAgent()
@@ -35,6 +36,8 @@ void PingAgent::cleanUp()
 
 void PingAgent::initializeProcesses(std::map<std::string, Robot*>& robotsByName)
 {
+  QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+  env.insert("LC_ALL", "C");
   for(size_t n = 0; n < ENetworkSize; ++n)
   {
     pingProcesses[n] = QList<QProcess*>();
@@ -44,6 +47,7 @@ void PingAgent::initializeProcesses(std::map<std::string, Robot*>& robotsByName)
         it != robotsByName.end(); it++, i++)
     {
       pingProcesses[n] << new QProcess(this);
+      pingProcesses[n][i]->setProcessEnvironment(env);
 
       robots[pingProcesses[n][i]] = it->second;
       pings[n][it->second->name] = 2000.0;
@@ -133,7 +137,7 @@ void PingAgent::updatePing(ENetwork network, QProcess* process)
   QString pingOutput(data);
 
   QStringList splittedOutput = pingOutput.split(" ", QString::SkipEmptyParts);
-  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|(Zeit|time)=\\d+(\\.\\d+)?)"));
+  QStringList filteredSplittedOutput = splittedOutput.filter(QRegExp("((Zeit|Time|time)[<=]\\d+ms|time=\\d+(\\.\\d+)?)"));
   const unsigned currentTime = Time::getRealSystemTime();
 
   if(filteredSplittedOutput.empty())
