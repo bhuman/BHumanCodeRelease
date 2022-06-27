@@ -393,6 +393,7 @@ if(BUILD_NAO OR (NOT DISABLE_NAO))
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
     include("../CMake/asmjitNao.cmake")
 
+    set_property(TARGET asmjitNao PROPERTY XCODE_ATTRIBUTE_OTHER_LIBTOOLFLAGS)
     target_compile_definitions(asmjitNao PUBLIC LINUX)
     target_compile_options(asmjitNao PUBLIC
         -UMACOS
