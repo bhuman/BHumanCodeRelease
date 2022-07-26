@@ -10,7 +10,7 @@ name=""
 usage() {
   echo "usage:"
   echo "${0} [-h]"
-  echo "${0} -ids <headId> <BodyId> <name>"
+  echo "${0} -ids <headId> <bodyId> <name>"
   echo "${0} -ip <remoteIp> <name>"
   echo ""
   echo " <name>     : Name of the robot."
@@ -55,7 +55,7 @@ getIdsFromRobot() {
   if [ -z ${headId} ]; then
     fatal "Failed reading the headId!"
   fi
-  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "/opt/aldebaran/bin/chest-version 3")
+  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "bash -l -c \"python -c \\\"import naoqi; print naoqi.ALProxy('ALMemory', '127.0.0.1', 9559).getData('Device/DeviceList/ChestBoard/BodyId')\\\"\" | grep -vE '\[(W|I)\]'")
   if [ -z ${bodyId} ]; then
     fatal "Failed reading the bodyId!"
   fi
