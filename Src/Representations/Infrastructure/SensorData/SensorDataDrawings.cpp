@@ -1,7 +1,7 @@
 #include "FsrSensorData.h"
 #include "InertialSensorData.h"
 #include "SystemSensorData.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void FsrSensorData::draw()
 {

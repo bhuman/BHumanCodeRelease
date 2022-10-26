@@ -5,7 +5,6 @@
  */
 
 #include "FilteredCurrentProvider.h"
-#include "Tools/Settings.h"
 #include <cmath>
 
 MAKE_MODULE(FilteredCurrentProvider, sensing);
@@ -31,13 +30,20 @@ void FilteredCurrentProvider::update(FilteredCurrent& theFilteredCurrent)
   DECLARE_PLOT("module:FilteredCurrentProvider:rAP");
 
   // Filter the currents
-  for(int i = 0; i < Joints::numOfJoints; i++)
+  Joints::Joint legJointWithHighestCurrent = Joints::lHipPitch;
+  for(std::size_t i = 0; i < Joints::numOfJoints; i++)
   {
     short value = theJointSensorData.currents[i];
     currents[i].push_front(static_cast<int>(value == SensorData::off ? 1.f : value));
     theFilteredCurrent.currents[i] = currents[i].average();
+    if(i > Joints::firstLeftLegJoint &&
+       theFilteredCurrent.currents[i] > theFilteredCurrent.currents[legJointWithHighestCurrent])
+    {
+      legJointWithHighestCurrent = static_cast<Joints::Joint>(i);
+    }
   }
   theFilteredCurrent.isValid = true;
+  theFilteredCurrent.legJointWithHighestCurrent = legJointWithHighestCurrent;
   PLOT("module:FilteredCurrentProvider:lHYP", theFilteredCurrent.currents[Joints::lHipYawPitch]);
   PLOT("module:FilteredCurrentProvider:lHP", theFilteredCurrent.currents[Joints::lHipPitch]);
   PLOT("module:FilteredCurrentProvider:lKP", theFilteredCurrent.currents[Joints::lKneePitch]);
@@ -66,17 +72,17 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
     for(size_t i = 0; i < currents.size(); i++)
     {
       // Decide which threshold to use
-      Angle jointDif = theGroundContactState.contact ? minJointDifNormalJoints : minJointDifNormalJointsNoGroundConntact;
+      Angle jointDiff = theGroundContactState.contact ? minJointDiffNormalJoints : minJointDiffNormalJointsNoGroundConntact;
       int stiffness = stiffnessThreshold;
       if(i == Joints::lAnkleRoll || i == Joints::rAnkleRoll)
-        jointDif = minJointDifAnkleRoll;
+        jointDiff = minJointDiffAnkleRoll;
       else if(i >= Joints::firstArmJoint && i < Joints::firstLegJoint)
       {
         stiffness = stiffnessThresholdArms;
-        jointDif = minJointDifArms;
+        jointDiff = minJointDiffArms;
       }
       // If current is 0, the stiffness high enough and the jointRequest and jointAngle difference is high enough, increase the counter
-      if(currents[i].average() == 0 && theJointRequest.stiffnessData.stiffnesses[i] >= stiffness && std::abs(theJointRequest.angles[i] - theJointSensorData.angles[i]) >= jointDif)
+      if(currents[i].average() == 0 && theJointRequest.stiffnessData.stiffnesses[i] >= stiffness && std::abs(theJointRequest.angles[i] - theJointSensorData.angles[i]) >= jointDiff)
         flags[i] += 1;
       else
         flags[i] = std::max(flags[i] - 1, 0); // subtract by 1 is better than setting to 0, in case we did a check at a bad time, where the deactivated joint had a correct position
@@ -101,9 +107,9 @@ void FilteredCurrentProvider::checkMotorMalfunction(FilteredCurrent& theFiltered
             SystemCall::say(std::string("Arm damaged").c_str()); //probably only playing while doing get ups
           else
           {
-            SystemCall::playSound("sirene.wav");
-            SystemCall::say("Motor malfunction!");
-            SystemCall::say((std::string(TypeRegistry::getEnumName(Global::getSettings().teamColor)) + " " + std::to_string(theRobotInfo.number)).c_str());
+            SystemCall::playSound("sirene.wav", true);
+            SystemCall::say("Motor malfunction!", true);
+            SystemCall::say((std::string(TypeRegistry::getEnumName(theGameState.ownTeam.color)) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
             if(!theGyroOffset.bodyDisconnect)
               theFilteredCurrent.legMotorMalfunction = true;
           }

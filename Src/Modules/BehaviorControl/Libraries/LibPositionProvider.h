@@ -8,7 +8,7 @@
  * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
  */
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Modeling/ObstacleModel.h"

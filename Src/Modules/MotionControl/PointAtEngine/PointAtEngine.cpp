@@ -5,8 +5,8 @@
  */
 
 #include "PointAtEngine.h"
-#include "Tools/RobotParts/Limbs.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "RobotParts/Limbs.h"
+#include "Debugging/DebugDrawings3D.h"
 
 MAKE_MODULE(PointAtEngine, motionControl);
 

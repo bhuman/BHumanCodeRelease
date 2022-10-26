@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/RobotParts/Limbs.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "RobotParts/Arms.h"
+#include "RobotParts/Limbs.h"
 
 struct JointAngles;
 struct Pose3f;

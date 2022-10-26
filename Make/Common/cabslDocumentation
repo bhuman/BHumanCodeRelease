@@ -20,11 +20,13 @@ set -eu
 basePath=$(cd "$(dirname "$(which "$0")")" && pwd)
 scenario="$(grep -E "^[ 	]*scenario[ 	]*=" <"$basePath/../../Config/settings.cfg" | sed "s%[^=]*=[ 	]*\([A-Za-z_]*\).*%\1%")"
 
-if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
-  dot="${basePath}/../../Util/dot/dot.exe"
-else
-  dot="${basePath}/../../Util/dot/dot"
+dot="${basePath}/../../Util/dot/dot"
+if [ -e /proc/version ]; then
+  if [ ! -z "`grep Microsoft </proc/version`" ]; then
+    dot="${basePath}/../../Util/dot/dot.exe"
+  fi
 fi
+
 pdf=
 
 while [ $# -gt 0 ]; do
@@ -55,10 +57,19 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-echo "Creating graphs for BehaviorControl..."
-mkdir -p "${basePath}/../../Build/Documentation/BehaviorControl"
-cd "${basePath}/../../Build/Documentation/BehaviorControl"
-"${basePath}/../../Util/CABSL/createSkillsAndCardsGraphs" -d "$dot" $pdf -s "$scenario" "${basePath}/../../Src/Modules/BehaviorControl/BehaviorControl"
+echo "Creating graphs for SkillBehaviorControl..."
+mkdir -p "${basePath}/../../Build/Documentation/SkillBehaviorControl"
+cd "${basePath}/../../Build/Documentation/SkillBehaviorControl"
+
+(
+  echo "option theRootSkill"
+  grep "^[ 	]*the[A-Z][A-Za-z0-9]*Skill[ 	]*(" "${basePath}/../../Src/Modules/BehaviorControl/SkillBehaviorControl/SkillBehaviorControl.cpp" \
+  | sed "s%^[   ]*\(the[A-Z][A-Za-z0-9]*Skill\)[ 	]*(.*%call \1%"
+  grep "^[ 	]*[A-Z][A-Za-z0-9]*" "${basePath}/../../Config/Scenarios/$scenario/skillBehaviorControl.cfg" | sed "s%^[ 	]*\([A-Z][A-Za-z0-9]*\).*%call \1%"
+) >data.tmp
+
+"${basePath}/../../Util/CABSL/createOptionAndSkillGraphs" -a data.tmp -d "$dot" $pdf "${basePath}/../../Src/Modules/BehaviorControl/SkillBehaviorControl"
+rm data.tmp
 
 cd "${basePath}/../../Src/"
 
@@ -68,5 +79,4 @@ while read line; do
   cd "${basePath}/../../Build/Documentation/${line% *}"
   "${basePath}/../../Util/CABSL/createGraphs" -d "$dot" $pdf "${basePath}/../../Src/${line##* }"
 done <<<\
-"FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp
-WalkingEngine Modules/MotionControl/WalkingEngine/WalkingEngine.h"
+"FallDownStateProvider Modules/Sensing/FallDownStateDetector/FallDownStateProvider.cpp"

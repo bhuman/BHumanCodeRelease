@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(FootBumperState,
 {

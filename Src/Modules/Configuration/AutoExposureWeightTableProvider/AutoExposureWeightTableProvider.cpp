@@ -13,11 +13,11 @@
 
 #include "AutoExposureWeightTableProvider.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Boundary.h"
-#include "Tools/Global.h"
+#include "Math/Boundary.h"
+#include "Streaming/Global.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Settings.h"
+#include "Framework/Settings.h"
 #include <algorithm>
 #include <cmath>
 
@@ -35,7 +35,7 @@ void AutoExposureWeightTableProvider::update(AutoExposureWeightTable& theAutoExp
   }
 
   // Use static table or reset all weights to 0.
-  if(useStaticTables)
+  if(useStaticTables[theCameraInfo.camera])
     table = staticTables[theCameraInfo.camera];
   else
   {

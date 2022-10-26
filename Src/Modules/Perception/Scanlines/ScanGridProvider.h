@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"

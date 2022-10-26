@@ -1,12 +1,13 @@
 /**
  * @file LibLookActiveProvider.cpp
  * @author Andreas Stolpmann
+ * @author Florian Scholz
  */
 
 #include "Tools/Motion/InverseKinematic.h"
 #include "Tools/Math/Transformation.h"
 #include "LibLookActiveProvider.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Geometry.h"
 
 MAKE_MODULE(LibLookActiveProvider, behaviorControl);
 
@@ -37,12 +38,17 @@ HeadTarget LibLookActiveProvider::calculateHeadTarget(const bool withBall, const
 {
   theBallPositionRelative = theBallModel.estimate.position;
   theBallSpeedRelative = theBallModel.estimate.velocity;
+
+  teamBallIsUsed = false;
+
   if(!onlyOwnBall
-     && (theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout || theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 100)
-     && theTeamBallModel.timeWhenLastSeen > theBallModel.timeWhenLastSeen)
+     && (theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout || theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 1000)
+     && theTeammatesBallModel.isValid)
   {
-    theBallPositionRelative = Transformation::fieldToRobot(theRobotPose, theTeamBallModel.position);
-    theBallSpeedRelative = theTeamBallModel.velocity.rotated(-theRobotPose.rotation);
+    theBallPositionRelative = Transformation::fieldToRobot(theRobotPose, theTeammatesBallModel.position);
+    theBallSpeedRelative = theTeammatesBallModel.velocity.rotated(-theRobotPose.rotation);
+
+    teamBallIsUsed = true;
   }
 
   calculateSpeedFactors();
@@ -98,16 +104,21 @@ Angle LibLookActiveProvider::calculateTilt(const bool forceBall, const bool only
   }
   else if(forceBall)
   {
-    Vector3f hip2Target = theTorsoMatrix.inverse() * Vector3f(theBallPositionRelative.x(), theBallPositionRelative.y(), theBallSpecification.radius);
+    Pose3f torsoMatrix = theTorsoMatrix;
+    const Vector3f hip2Target = torsoMatrix
+                                .rotateY(theCameraCalibration.bodyRotationCorrection.y())
+                                .rotateX(theCameraCalibration.bodyRotationCorrection.x())
+                                .inverse() * Vector3f(theBallPositionRelative.x(), theBallPositionRelative.y(), theBallSpecification.radius);
     Vector2a panTiltLowerCam, panTiltUpperCam;
     InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, CameraInfo::lower, panTiltLowerCam, theCameraCalibration);
     InverseKinematic::calcHeadJoints(hip2Target, pi_2, theRobotDimensions, CameraInfo::upper, panTiltUpperCam, theCameraCalibration);
 
-    Angle tilt = panTiltUpperCam.y() + (panTiltLowerCam.y() - panTiltUpperCam.y());
-    if(defaultTilt < tilt)
-      tilt = std::min(minTilt, tilt);
-    else
-      tilt = defaultTilt;
+    const Angle oldTilt = theJointRequest.stiffnessData.stiffnesses[Joints::headPitch] == 0 ? theJointAngles.angles[Joints::headPitch] : theJointRequest.angles[Joints::headPitch];
+    Angle tilt = panTiltUpperCam.y();
+
+    //if can not use upper camera && upper camera is not near || lower camera is near && can not easily use upper camera
+    if((tilt > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max && std::abs(tilt - oldTilt) > cameraChoiceHysteresis) || (std::abs(panTiltLowerCam.y() - oldTilt) < cameraChoiceHysteresis && tilt + cameraChoiceHysteresis > theHeadLimits.getTiltBound(panTiltUpperCam.x()).max))
+      tilt = panTiltLowerCam.y();
     return tilt;
   }
   else
@@ -130,7 +141,7 @@ Angle LibLookActiveProvider::calculateSpeed(const bool forceBall, const float) c
 
 bool LibLookActiveProvider::shouldLookAtBall() const
 {
-  if(theGameInfo.state != STATE_PLAYING)
+  if(!theGameState.isPlaying())
     return false;
 
   const float distanceStrikerBallSquared = theLibTeam.getBallPosition(theLibTeam.strikerPlayerNumber).squaredNorm();
@@ -147,11 +158,21 @@ bool LibLookActiveProvider::panReached(const Angle targetPan) const
   return std::abs(currentPan - targetPan) < 5_deg;
 }
 
+float LibLookActiveProvider::getTranslationOffset(float x) const
+{
+  return mapToRange(x, 0.f, 10000.f, pi, theCameraInfo.openingAngleWidth / 3.f);
+}
+
 Angle LibLookActiveProvider::clipPanToBall(const Angle pan) const
 {
-  const Angle tolerance = theCameraInfo.openingAngleWidth / 3.f;
+  Angle tolerance = theCameraInfo.openingAngleWidth / 3.f;
   const Angle ballAngle = theBallPositionRelative.angle();
 
+  if(teamBallIsUsed)
+  {
+    const float distance = (theTeammatesBallModel.position - theRobotPose.translation).norm();
+    tolerance += getTranslationOffset(distance);
+  }
   return Rangea(ballAngle - tolerance, ballAngle + tolerance).limit(pan);
 }
 
@@ -205,10 +226,9 @@ bool LibLookActiveProvider::ballInSight() const
 
 bool LibLookActiveProvider::ballPositionUnknown(const bool onlyOwnBall) const
 {
-  const bool disappeared = theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 100
-                           && theTeamBallModel.timeWhenLastSeen < theBallModel.timeWhenDisappeared;
+  const bool disappeared = theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared) > 100;
   const bool notSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout;
-  const bool globalNotSeen = theFrameInfo.getTimeSince(theTeamBallModel.timeWhenLastSeen) > ballPositionUnknownTimeout;
+  const bool globalNotSeen = !theTeammatesBallModel.isValid;
 
   return disappeared || (notSeen && (onlyOwnBall || globalNotSeen));
 }

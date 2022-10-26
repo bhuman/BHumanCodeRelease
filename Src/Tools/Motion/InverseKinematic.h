@@ -8,10 +8,10 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Eigen.h"
+#include "RobotParts/Arms.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/Enum.h"
 
 struct CameraCalibration;
 struct JointAngles;
@@ -22,22 +22,10 @@ struct RobotDimensions;
 namespace InverseKinematic
 {
   /**
-   * This method calculates the joint angles for the legs of the robot from a Pose3f for each leg.
-   * @param positionLeft The desired position (translation + rotation) of the left foots ankle point.
-   * @param positionRight The desired position (translation + rotation) of the right foots ankle point.
-   * @param jointAngles The instance of JointAngles where the resulting joint angles are written into.
-   * @param robotDimensions The Robot Dimensions needed for calculation.
-   * @param ratio The ratio between the left and right yaw angle.
-   * @return Whether the target position was reachable or not (if the given target position is not reachable the computation proceeds using the closest reachable position near the target).
-   */
-  [[nodiscard]] bool calcLegJoints(const Pose3f& positionLeft, const Pose3f& positionRight, JointAngles& jointAngles,
-                                   const RobotDimensions& robotDimensions, float ratio = 0.5f);
-
-  /**
    * This method calculates the joint angles for the legs of the robot from a Pose3f for each leg and the body pitch and roll.
-   * @param positionLeft The desired position (translation + rotation) of the left foots point
-   * @param positionRight The desired position (translation + rotation) of the right foots point
-   * @param bodyRotation The rotation of the body around the x-Axis and y-Axis
+   * @param positionLeft The desired pose (translation + rotation) of the left foot sole
+   * @param positionRight The desired pose (translation + rotation) of the right foot sole
+   * @param bodyRotation The rotation of the body around the x-axis and y-axis
    * @param jointAngles The instance of JointAngles where the resulting joint angles are written into.
    * @param robotDimensions The RobotDimensions needed for calculation
    * @param ratio The ratio between the left and right yaw angle

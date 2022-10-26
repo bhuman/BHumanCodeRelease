@@ -8,7 +8,6 @@
 
 #include "CameraSettings.h"
 #include "Platform/BHAssert.h"
-#include "Platform/Camera.h"
 
 CameraSettings::Collection::Collection()
 {

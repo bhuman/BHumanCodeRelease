@@ -2,8 +2,8 @@
 
 #include "JointAngles.h"
 #include "StiffnessData.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Debugging/Debugging.h"
+#include "Streaming/AutoStreamable.h"
+#include "Debugging/Debugging.h"
 #include <cmath>
 
 STREAMABLE_WITH_BASE(JointRequest, JointAngles,

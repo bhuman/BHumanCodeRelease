@@ -10,7 +10,7 @@
 #include "Representations/Perception/ImagePreprocessing/CNSImage.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/ImageRegions.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(CNSImageProvider,
 {,

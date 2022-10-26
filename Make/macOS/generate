@@ -53,6 +53,33 @@ if [ ! -e "$CMAKE" ]; then
   fi
 fi
 
+# Determine current version of macOS SDK.
+SDKVERSION="$(grep "MinimalDisplayName" "$(xcrun --show-sdk-path)/SDKSettings.json" \
+| sed 's%^.*"MinimalDisplayName":"\([^"]*\).*$%\1%')"
+CLANGVERSION="$(clang --version | grep version | sed 's%.*(\(.*\)).*%\1%')"
+
+if [ -d "$PROJECTPATH" ]; then
+  # Delete project if macOS SDK version changed.
+  if [ -f "$PROJECTPATH/sdkversion" ]; then
+    OLDVERSION="$(cat "$PROJECTPATH/sdkversion")"
+  else
+    OLDVERSION=
+  fi
+  if [ "$OLDVERSION" != "$SDKVERSION" ]; then
+    rm -r "$PROJECTPATH" "$PROJECTDIR"
+  elif [ -d "$PROJECTDIR/PrecompiledHeaders" ]; then
+    # Delete precompiled headers if clang version changed.
+    if [ -f "$PROJECTPATH/clangversion" ]; then
+      OLDVERSION="$(cat "$PROJECTPATH/clangversion")"
+    else
+      OLDVERSION=
+    fi
+    if [ "$OLDVERSION" != "$CLANGVERSION" ]; then
+      rm -r "$PROJECTDIR/PrecompiledHeaders"
+    fi
+  fi
+fi
+
 # When switching between ARM and Intel code, copied frameworks will not be updated
 # by default. Therefore, app folders are deleted to force copying frameworks again.
 if [ ! -z "$ROSETTA" -a -f "$PROJECTPATH/project.pbxproj" ]; then
@@ -64,14 +91,6 @@ if [ ! -z "$ROSETTA" -a -f "$PROJECTPATH/project.pbxproj" ]; then
     find ../../Build/macOS -name "*.app" -type d | xargs rm -r
   fi
 fi
-
-# Temporarily create cmake files for Nao libraries.
-sed <../CMake/asmjit.cmake >../CMake/asmjitNao.cmake \
-  -e 's%asmjit %asmjitNao %g'
-sed <../CMake/CompiledNN.cmake >../CMake/CompiledNNNao.cmake \
-  -e 's%asmjit%asmjitNao%g' \
-  -e 's%CompiledNN %CompiledNNNao %g' \
-  -e 's%HDF5::HDF5%Nao::HDF5::HDF5%g'
 
 # Determine directories that do not directly contain files.
 DIRONLY="$(for dir in $(find ../../Src ../../Util/SimRobot/Src -type d); do \
@@ -102,10 +121,7 @@ if [ -d "$PROJECTPATH/CMakeFiles" ]; then
 fi
 
 # Create project.
-"$CMAKE" -G Xcode -S ../Common -B $PROJECTDIR $ROSETTA
-
-# Delete temporary cmake files.
-rm ../CMake/asmjitNao.cmake ../CMake/CompiledNNNao.cmake
+"$CMAKE" -G Xcode -S ../CMake -B $PROJECTDIR $ROSETTA
 
 # Backwards compatibility: Remove the link to project if it exists.
 if [ -L "$PROJECTPATH" ]; then
@@ -113,7 +129,7 @@ if [ -L "$PROJECTPATH" ]; then
 fi
 
 # Ensure that project directory exists.
-mkdir -p $PROJECTPATH
+mkdir -p "$PROJECTPATH"
 
 # Move generated/updated CMakeFiles directory back here.
 mv "$PROJECTDIR/CMakeFiles" "$PROJECTPATH"
@@ -123,18 +139,35 @@ if [ -e "$PROJECTDIR/CMakeFiles-temp" ]; then
   mv "$PROJECTDIR/CMakeFiles-temp" "$PROJECTDIR/CMakeFiles"
 fi
 
+# Remember macOS SDK and clang version
+echo -n "$SDKVERSION" >"$PROJECTPATH/sdkversion"
+echo -n "$CLANGVERSION" >"$PROJECTPATH/clangversion"
+
 # Remove dummy files created before.
 while read dir; do
   rm "$dir/DUMMY_FILE.h"
 done <<<"$DIRONLY"
 
-# Assign folders to most source groups.
-grep <$PROJECTSRC/project.pbxproj -v '/Make/Common/CMakeLists.txt' \
+# Assign folders to most source groups and improve use of object link libraries.
+grep <$PROJECTSRC/project.pbxproj -v '/Make/CMake/CMakeLists.txt' \
 | sed \
   -e 's%B-Human-temp%B-Human%' \
   -e 's%/Build/macOS/CMakeFiles/%/Make/macOS/B-Human.xcodeproj/CMakeFiles/%' \
+  -e 's%\("[^"]*\.o"\),*%~\1,~%g' \
+  -e 's%~~%~%g' \
+| tr '~' '\n' \
+| sed 's%^\([ 	]*\)\(".*/\([^/]*\)\.build/\)[^/]*\(/.*/\)[^/]*\.o"[,;]$%\1"-filelist",\2Objects-normal\4\3.LinkFileList",%' \
+| uniq \
 | tr '\n' '~' \
-| sed 's%\(isa = PBXGroup;~[^)]*/\* \)\(/[^*]*\)\(/[^*]*\)\( \*/,[^<]*\)<group>";%\1\2\3\4<absolute>";~			path = "\2";%g'\
+| sed \
+  -e 's%\(isa = PBXGroup;~[^)]*/\* \)\(/[^*]*\)\(/[^*]*\)\( \*/,[^<]*\)<group>";%\1\2\3\4<absolute>";~			path = "\2";%g' \
+  -e 's%\(isa = PBXGroup;~[^}]*name = "*.[^;]*\)Nao\("*;\)%\1\2%g' \
+  -e 's%\(isa = PBXGroup;~[^}]*name = Simulated\);%\1Nao;%g' \
+  -e 's%\(targets = ([^)]*\)~				[A-F0-9]* /\* Src \*/,%\1%g' \
+  -e 's%\(targets = ([^)]*\)~				[A-F0-9]* /\* Config \*/,%\1%g' \
+  -e 's%",~"%","%g' \
+  -e 's%",~)%")%g' \
+  -e 's%("",%(%g' \
 | tr '~' '\n' >$TEMPPATH2
 
 # Remove some unwanted folders and files from project tree and add options to copying frameworks.
@@ -143,6 +176,7 @@ grep <$PROJECTSRC/project.pbxproj -v '/Make/Common/CMakeLists.txt' \
   sed <$TEMPPATH2 -n '/targets = (/,$p' ) \
   | grep -v "ALL_BUILD \*/,$" \
   | grep -v "DUMMY_FILE.h" \
+  | grep -v "/\* Frameworks \*/,$" \
   | sed -e 's%\.framework \*/;%.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); };%' \
     -e 's%\.dylib \*/;%.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); };%' \
     -e 's%make -C %make -sC %g' \
@@ -150,9 +184,10 @@ grep <$PROJECTSRC/project.pbxproj -v '/Make/Common/CMakeLists.txt' \
     -e 's%USER_\(HEADER_SEARCH_PATHS = ([^,;)]*_autogen/[^,;)]*,*\)%\1); USER_HEADER_SEARCH_PATHS = (%' >$TEMPPATH
 
 # CMake generates some wrong path names.
-# This assumes that "/arm64/" is not part of the path to the B-Human directory.
 if [ "$ROSETTA" = "-DROSETTA=1" ]; then
-  sed <$TEMPPATH >$TEMPPATH2 's%/arm64/%/x86_64/%g' && mv $TEMPPATH2 $TEMPPATH
+  sed <$TEMPPATH >$TEMPPATH2 's%/Objects-normal/arm64/%/$(OBJECT_FILE_DIR_normal:base)/x86_64/%g' && mv $TEMPPATH2 $TEMPPATH
+else
+  sed <$TEMPPATH >$TEMPPATH2 's%Nao\.build/Objects-normal/arm64/%Nao.build/$(OBJECT_FILE_DIR_normal:base)/x86_64/%g' && mv $TEMPPATH2 $TEMPPATH
 fi
 
 touch $PROJECTPATH/project.pbxproj
@@ -164,8 +199,21 @@ else
   echo "Updating Xcode project"
 
   # Sort folders Libs.
-  for NUM in 1 2 3 4; do
+  for NUM in 1 2 3; do
     BEFORE=$(($(grep <$TEMPPATH -Fnm $NUM '/* Libs */ =' | tail -1 | sed 's%:.*%%') + 2))
+    SIZE=$(($(tail <$TEMPPATH +$(($BEFORE + 1)) | grep -Fnm 1 ");" | sed 's%:.*%%') - 1))
+    AFTER=$(($BEFORE + $SIZE + 1))
+    (
+      head <$TEMPPATH -$BEFORE
+      tail <$TEMPPATH +$(($BEFORE + 1)) | head -$SIZE | sort -fk 2
+      tail <$TEMPPATH +$AFTER
+    ) >$TEMPPATH2 \
+    && mv $TEMPPATH2 $TEMPPATH
+  done
+
+  # Sort folders Apps.
+  for NUM in 1 2; do
+    BEFORE=$(($(grep <$TEMPPATH -Fnm $NUM '/* Apps */ =' | tail -1 | sed 's%:.*%%') + 2))
     SIZE=$(($(tail <$TEMPPATH +$(($BEFORE + 1)) | grep -Fnm 1 ");" | sed 's%:.*%%') - 1))
     AFTER=$(($BEFORE + $SIZE + 1))
     (
@@ -188,7 +236,7 @@ else
   # Deactivate some building targets.
   SCHEMETEMPLATE=$SCHEMESRC/SimRobot.xcscheme
   sed <$SCHEMETEMPLATE >$TEMPPATH2 \
-  -e 's%\.\./\.\./Build/macOS/B-Human-temp%../../Make/macOS/B-Human%' \
+  -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
   -e 's%debugDocumentVersioning *= *"YES"/>%debugDocumentVersioning = "YES">\
    </ProfileAction>%' \
   -e 's%<Testables/>%<Testables>\
@@ -198,7 +246,7 @@ else
     echo '         <TestableReference'
     echo '            skipped = "NO">'
     sed <$SCHEMESRC/Tests.xcscheme -n '/BuildableReference/,/\/BuildActionEntry/{/\/BuildActionEntry/!p;};/\/BuildActionEntry/q' \
-    | sed 's%\.\./\.\./Build/macOS/B-Human-temp%../../Make/macOS/B-Human%'
+    | sed 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%'
     echo "         </TestableReference>"
     sed <$TEMPPATH2 -n '/<\/Testables>/,$p'
   ) \
@@ -229,12 +277,12 @@ else
   sed <"$SCHEMEDIR/SimRobot - Debug.xcscheme" >$TEMPPATH 's%buildConfiguration *= *"Debug"%buildConfiguration = "Release"%'
   mv $TEMPPATH "$SCHEMEDIR/SimRobot - Release.xcscheme"
 
-  # Create two schemes for the bush from the one CMake created.
+  # Create two schemes for other apps from the ones CMake created.
   # Disable GPU validation to suppress some output. Deactivate some building targets.
   for PROJECT in bush; do
     SCHEMETEMPLATE=$SCHEMESRC/$PROJECT.xcscheme
     sed <$SCHEMETEMPLATE >$TEMPPATH2 \
-    -e 's%\.\./\.\./Build/macOS/B-Human-temp%../../Make/macOS/B-Human%' \
+    -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
     -e 's%debugDocumentVersioning *= *"YES"/>%debugDocumentVersioning = "YES">\
    </ProfileAction>%'
     (
@@ -257,7 +305,7 @@ else
   # Set the deployDialog as runnable target. Deactivate some building targets.
   SCHEMETEMPLATE=$SCHEMESRC/Nao.xcscheme
   sed <$SCHEMETEMPLATE >$TEMPPATH \
-  -e 's%\.\./\.\./Build/macOS/B-Human-temp%../../Make/macOS/B-Human%' \
+  -e 's%"container:[^"]*/Build/macOS/B-Human-temp%"container:../../Make/macOS/B-Human%' \
   -e 's%selectedDebuggerIdentifier.*%selectedDebuggerIdentifier = ""%' \
   -e 's%selectedLauncherIdentifier.*%selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"%' \
   -e 's%buildForTesting *= *"YES"%buildForTesting = "NO"%' \
@@ -288,15 +336,15 @@ else
   SETTINGSDIR=$PROJECTPATH/project.xcworkspace/xcuserdata/$USER.xcuserdatad
   SETTINGSPATH=$SETTINGSDIR/WorkspaceSettings.xcsettings
   mkdir -p "$SETTINGSDIR"
-  $PLIST "Set :BuildLocationStyle CustomLocation" $SETTINGSPATH >/dev/null 2>>/dev/null || $PLIST "Add :BuildLocationStyle string CustomLocation" $SETTINGSPATH  >/dev/null
-  $PLIST "Set :CustomBuildIntermediatesPath ../../Build/macOS" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildIntermediatesPath string ../../Build/macOS" $SETTINGSPATH
-  $PLIST "Set :CustomBuildLocationType RelativeToWorkspace" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildLocationType string RelativeToWorkspace" $SETTINGSPATH
-  $PLIST "Set :CustomBuildProductsPath ../../Build/macOS" $SETTINGSPATH 2>/dev/null || $PLIST "Add :CustomBuildProductsPath string ../../Build/macOS" $SETTINGSPATH
+  $PLIST "Set :BuildLocationStyle UseTargetSettings" $SETTINGSPATH >/dev/null 2>>/dev/null || $PLIST "Add :BuildLocationStyle string UseTargetSettings" $SETTINGSPATH  >/dev/null
   $PLIST "Set :DerivedDataLocationStyle Default" $SETTINGSPATH 2>/dev/null || $PLIST "Add :DerivedDataLocationStyle string Default" $SETTINGSPATH
 fi
 
 # Disable App Nap for SimRobot.
 defaults write org.B-Human.SimRobot NSAppSleepDisabled -bool YES
+
+# Disable a default view menu entry because it doesn't work well with recreating the menu.
+defaults write org.B-Human.SimRobot NSFullScreenMenuItemEverywhere -bool NO
 
 # Install data formatters for Xcode debugger.
 if [ ! -e ~/Library/Developer/Xcode/UserData/Debugger/CustomDataFormatters ]; then
@@ -309,9 +357,14 @@ mkdir -p ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 cp ../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/Info.plist ~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/
 sed <../../Util/Buildchain/macOS/AStyle\ for\ B-Human.workflow/Contents/document.wflow >~/Library/Services/AStyle\ for\ B-Human.workflow/Contents/document.wflow "s%PWD%`pwd`%"
 
+# Install Replay with TeamCommunicationMonitor service.
+mkdir -p ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
+cp ../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/Info.plist ~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/
+sed <../../Util/Buildchain/macOS/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow >~/Library/Services/Replay\ with\ TeamCommunicationMonitor.workflow/Contents/document.wflow "s%PWD%`pwd`%"
+
 # Install certificate for app signing.
 cp ../../Util/Buildchain/macOS/B-Human_Code_Release.keychain-db ~/Library/Keychains/
-security find-certificate -c B-Human_Code_Release >/dev/null 2>/dev/null
+security find-certificate -c B-Human_Code_Release_Code_Release >/dev/null 2>/dev/null
 if [ ! $? = 0 ]; then
   security list-keychains -s `security list-keychains | tr '\n' ' ' | tr '\"' ' '` B-Human_Code_Release.keychain-db
 fi

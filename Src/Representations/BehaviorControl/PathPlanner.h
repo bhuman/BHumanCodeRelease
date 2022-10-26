@@ -10,7 +10,7 @@
 #pragma once
 
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Tools/Function.h"
+#include "Streaming/Function.h"
 
 STREAMABLE(PathPlanner,
 {

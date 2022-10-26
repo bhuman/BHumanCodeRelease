@@ -17,7 +17,7 @@
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(NaoProvider,
 {,
@@ -36,6 +36,8 @@ MODULE(NaoProvider,
     (int)(3000) timeChestButtonPressedUntilShutdown, /**< Time the chest button must be pressed until shutdown (in ms). */
     (int)(5000) timeBetweenBatteryLevelUpdates, /**< Time between writing updates the battery level to a file (in ms). */
     (int)(5000) timeBetweenCPUTemperatureUpdates, /**< Time between reading the CPU temperature (in ms). */
+    (unsigned)(10) retries, /**< Number of tries to connect socket. */
+    (unsigned)(10) retryDelay, /**< Delay before a retry to connect socket. */
   }),
 });
 
@@ -172,7 +174,7 @@ class NaoProvider : public NaoProviderBase
   void update(FrameInfo&) {}
   void update(FsrSensorData&) {}
   void update(InertialSensorData&) {}
-  void update(JointSensorData&) {}
+  void update(JointSensorData& theJointSensorData) {static_cast<JointAngles&>(theJointSensorData) = theJointRequest;}
   void update(KeyStates&) {}
   void update(SystemSensorData&) {}
 

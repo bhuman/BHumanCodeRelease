@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "Tools/RobotParts/FsrSensors.h"
-#include "Tools/RobotParts/Joints.h"
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "RobotParts/FsrSensors.h"
+#include "RobotParts/Joints.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/EnumIndexedArray.h"
 #include <cstring>
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Pose2f.h"
+#include "Streaming/Enum.h"
 
 STREAMABLE(DamageConfigurationHead,
 {
@@ -46,6 +46,5 @@ STREAMABLE(DamageConfigurationBody,
   (Joints::stdVectorJoint)(Joints::stdVectorJoint()) jointsToEraseStiffness,
   (Vector2f) startTiltLeft,
   (Vector2f) startTiltRight,
-  (bool) doNotBoost,
   (ENUM_INDEXED_ARRAY(Side, Legs::Leg)) sides,
 });

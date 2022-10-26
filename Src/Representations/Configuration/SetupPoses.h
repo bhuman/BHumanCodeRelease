@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Platform/BHAssert.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 #include <vector>
 
 /**
@@ -30,6 +30,9 @@ STREAMABLE(SetupPoses,
     (Vector2f) turnedTowards,     /*< The position (in global field coordinates) at which the robot is turned (looking at) */
   });
 
+  /** Implements a debug request to place a player at its setup pose. */
+  void draw() const;
+
   /** Convenience function to find the correct pose given the player number.
    *  The list of poses is not ordered by numbers.
    *  It has to be made sure that the config file contains the entry. Otherwise -> ASSERT!
@@ -41,15 +44,3 @@ STREAMABLE(SetupPoses,
 
   (std::vector<SetupPose>) poses, /*< A list of all available robot poses, not ordered by number */
 });
-
-inline const SetupPoses::SetupPose& SetupPoses::getPoseOfRobot(int number) const
-{
-  ASSERT(poses.size() > 0);
-  if(poses.size() == 1)
-    return poses[0];
-  for(const auto& pose : poses)
-    if(pose.playerNumber == number)
-      return pose;
-  ASSERT(false);
-  return poses[0]; // Dummy line to avoid compiler complaints
-}

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * The inertialData contains filtered data from the IMU.

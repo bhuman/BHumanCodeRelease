@@ -1,0 +1,30 @@
+find_package(Python3 COMPONENTS Development QUIET)
+
+if(Python3_FOUND)
+  set(PYTHON_ROOT_DIR "${BHUMAN_PREFIX}/Src/Libs/Python")
+  set(PYTHON_OUTPUT_DIR "${OUTPUT_PREFIX}/Build/${OS}/Python/$<CONFIG>")
+
+  set(PYTHON_LOGS_SOURCES
+      "${PYTHON_ROOT_DIR}/Logs.cpp")
+
+  Python3_add_library(PythonLogs MODULE WITH_SOABI ${PYTHON_LOGS_SOURCES})
+  set_property(TARGET PythonLogs PROPERTY FOLDER Libs)
+  set_property(TARGET PythonLogs PROPERTY LIBRARY_OUTPUT_NAME logs)
+  if(DEFINED REAL_VERSION_INFO)
+    # We are in a pip build.
+    target_compile_definitions(PythonLogs PRIVATE VERSION_INFO=${REAL_VERSION_INFO})
+  else()
+    set_property(TARGET PythonLogs PROPERTY LIBRARY_OUTPUT_DIRECTORY "${PYTHON_OUTPUT_DIR}")
+    set_property(TARGET PythonLogs PROPERTY PDB_OUTPUT_DIRECTORY "${PYTHON_OUTPUT_DIR}")
+  endif()
+  set_property(TARGET PythonLogs PROPERTY EXCLUDE_FROM_ALL TRUE)
+  target_link_libraries(PythonLogs PRIVATE Debugging)
+  target_link_libraries(PythonLogs PRIVATE Framework)
+  target_link_libraries(PythonLogs PRIVATE Math)
+  target_link_libraries(PythonLogs PRIVATE Platform)
+  target_link_libraries(PythonLogs PRIVATE Streaming)
+  target_link_libraries(PythonLogs PRIVATE snappy::snappy)
+  target_include_directories(PythonLogs SYSTEM PRIVATE "${BHUMAN_PREFIX}/Util/pybind11/include")
+  target_include_directories(PythonLogs PRIVATE "${PYTHON_ROOT_DIR}/..")
+  source_group(TREE "${PYTHON_ROOT_DIR}" FILES ${PYTHON_LOGS_SOURCES})
+endif()

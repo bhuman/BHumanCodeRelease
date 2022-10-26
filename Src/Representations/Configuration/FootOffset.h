@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Angle.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Math/Angle.h"
 
 STREAMABLE(FootValues,
 {,

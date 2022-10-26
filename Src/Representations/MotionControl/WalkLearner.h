@@ -4,7 +4,7 @@
  * @author Philip Reichenberg
  */
 
-#include "Tools/Function.h"
+#include "Streaming/Function.h"
 #include "Representations/MotionControl/WalkGenerator.h"
 #pragma once
 STREAMABLE(WalkLearner,

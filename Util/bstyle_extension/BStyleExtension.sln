@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BStyleExtension", "BStyleExtension\BStyleExtension.csproj", "{800677F7-E2C4-4D91-840A-D28D04C291CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{800677F7-E2C4-4D91-840A-D28D04C291CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{800677F7-E2C4-4D91-840A-D28D04C291CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{800677F7-E2C4-4D91-840A-D28D04C291CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{800677F7-E2C4-4D91-840A-D28D04C291CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -6,20 +6,17 @@
 
 #include "FallDownStateProvider.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Constants.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Math/Rotation.h"
-#include "Tools/RobotParts/FsrSensors.h"
+#include "Debugging/Annotation.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Constants.h"
+#include "Math/Pose3f.h"
+#include "Math/Rotation.h"
+#include "RobotParts/FsrSensors.h"
 
 MAKE_MODULE(FallDownStateProvider, sensing);
 
 FallDownStateProvider::FallDownStateProvider() : lastTimeSoundPlayed(theFrameInfo.time)
 {
-  footShapeToeX = 0.f;
-  for(size_t i = 0; i < FootShape::polygon.size(); ++i)
-    footShapeToeX = std::max(FootShape::polygon[i].x(), footShapeToeX);
   theSensorData = useInertiaData ? &theInertialData : &theInertialSensorData;
   getSupportPolygon();
   lastTiltingEdge = tiltingEdge = getTiltingEdge();
@@ -44,7 +41,7 @@ void FallDownStateProvider::update(FallDownState& fallDownState)
   supportFootCenter = torsoToOrigin * supportFootCenter;
 
   // predict and measure the next state
-  if(fallDownState.state == FallDownState::upright || fallDownState.state == FallDownState::staggering)
+  if((fallDownState.state == FallDownState::upright || fallDownState.state == FallDownState::staggering) && !resetFilter)
   {
     convertToNewOrigin(lastTiltingEdge, tiltingEdge, ukf.mean);
     updateUKF();
@@ -53,6 +50,7 @@ void FallDownStateProvider::update(FallDownState& fallDownState)
   {
     const Vector5f measurement = measure();
     initUKF(measurement);
+    resetFilter = false;
   }
   const Vector3f& comInOrigin = ukf.mean.head<3>();
   torsoUpright = (comInOrigin.head<2>() - supportFootCenter.head<2>()).norm() <= 0.7f * (-supportFootCenter.head<2>()).norm();
@@ -63,6 +61,7 @@ void FallDownStateProvider::update(FallDownState& fallDownState)
            && std::abs(theSensorData->gyro.y()) <= maxGyroToRegainStableState;
   toUpright = torsoUpright && torsoAboveGround >= maxTorsoHeightToKeepSquatting && theGroundContactState.contact;
   toSquatting = torsoUpright && torsoAboveGround < minTorsoHeightToKeepUpright && theGroundContactState.contact;
+  isPickedUp = torsoUpright && torsoAboveGround >= maxTorsoHeightToKeepSquatting && !theGroundContactState.contact;
   useTorsoOrientation = std::abs(theSensorData->angle.x()) >= minTorsoOrientationToDetermineDirection.x()
                         || std::abs(theSensorData->angle.y()) >= minTorsoOrientationToDetermineDirection.y();
   direction = getFallDirection();
@@ -218,25 +217,18 @@ void FallDownStateProvider::getSupportPolygon()
                                   && !((supportedFootSoleToTorso.translation.x() < com.x() && supportedFootSoleToTorso.translation.x() < otherSupportedFootSoleToTorso.translation.x())
                                        || (supportedFootSoleToTorso.translation.x() > com.x() && supportedFootSoleToTorso.translation.x() > otherSupportedFootSoleToTorso.translation.x()));
 
-  auto scaleFootShape = [](const float xPosition, const float scaling)
-  {
-    return (xPosition > 0.f ? xPosition * scaling : xPosition);
-  };
-
-  const float scalingFootShape = theFootOffset.forward / footShapeToeX;
-
   if(useSupportFootOnly)
   {
     const float sign = supportFoot == Legs::left ? 1.f : -1.f;
     for(size_t i = 0; i < FootShape::polygon.size(); ++i)
-      supportPolygon.push_back(supportedFootSoleToTorso * Vector3f(scaleFootShape(FootShape::polygon[i].x(), scalingFootShape), sign * FootShape::polygon[i].y(), 0.f));
+      supportPolygon.push_back(supportedFootSoleToTorso * Vector3f(FootShape::polygon[i].x(), sign * FootShape::polygon[i].y(), 0.f));
   }
   else
   {
     for(size_t i = 0; i < FootShape::polygon.size(); ++i)
     {
-      supportPolygon.push_back(leftSoleToTorso * Vector3f(scaleFootShape(FootShape::polygon[i].x(), scalingFootShape), FootShape::polygon[i].y(), 0.f));
-      supportPolygon.push_back(rightSoleToTorso * Vector3f(scaleFootShape(FootShape::polygon[i].x(), scalingFootShape), -FootShape::polygon[i].y(), 0.f));
+      supportPolygon.push_back(leftSoleToTorso * Vector3f(FootShape::polygon[i].x(), FootShape::polygon[i].y(), 0.f));
+      supportPolygon.push_back(rightSoleToTorso * Vector3f(FootShape::polygon[i].x(), -FootShape::polygon[i].y(), 0.f));
     }
   }
   supportPolygon = getConvexHull(supportPolygon);

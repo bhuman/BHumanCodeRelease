@@ -5,7 +5,7 @@
  */
 
 #include "ECImageProvider.h"
-#include "Tools/Global.h"
+#include "Streaming/Global.h"
 #include <asmjit/asmjit.h>
 
 MAKE_MODULE(ECImageProvider, perception);
@@ -45,7 +45,7 @@ void ECImageProvider::compileE()
 
   // Initialize assembler
   CodeHolder code;
-  code.init(Global::getAsmjitRuntime().codeInfo());
+  code.init(Global::getAsmjitRuntime().environment());
   x86::Assembler a(&code);
 
   // Emit prolog
@@ -87,9 +87,9 @@ void ECImageProvider::compileE()
   a.ret();
 
   // Store constant
-  a.align(AlignMode::kAlignZero, 16);
+  a.align(AlignMode::kZero, 16);
   a.bind(loMask16);
-  for(size_t i = 0; i < 8; i++) a.dint16(0x00FF);
+  a.embedUInt16(0x00FF, 8);
 
   // Bind function
   const Error err = Global::getAsmjitRuntime().add<EFunc>(&eFunc, &code);
@@ -106,7 +106,7 @@ void ECImageProvider::compileEC()
 
   // Initialize assembler
   CodeHolder code;
-  code.init(Global::getAsmjitRuntime().codeInfo());
+  code.init(Global::getAsmjitRuntime().environment());
   x86::Assembler a(&code);
 
   // Define argument registers
@@ -289,17 +289,17 @@ void ECImageProvider::compileEC()
   a.ret();
 
   // Constants
-  a.align(AlignMode::kAlignZero, 16);
+  a.align(AlignMode::kZero, 16);
   a.bind(constants);
-  for(size_t i = 0; i < 8; i++) a.dint16(0x00FF);        // 0: loMask16
-  for(size_t i = 0; i < 16; i++) a.dint8(char(128));     // 1: c8_128
-  for(size_t i = 0; i < 4; i++) a.dint32(0x0000FFFF);    // 2: loMask32
-  for(size_t i = 0; i < 8; i++) a.dint16(1 << 5);        // 3: init for tally
-  for(size_t i = 0; i < 8; i++) a.dint16(64);            // 4: c16_64
-  for(size_t i = 0; i < 8; i++) a.dint16(128);           // 5: c16_128
-  for(size_t i = 0; i < 8; i++) a.dint16(short(0x8001)); // 6: c16_x8001
-  for(size_t i = 0; i < 8; i++) a.dint16(5695);          // 7: c16_5695
-  for(size_t i = 0; i < 8; i++) a.dint16(11039);         // 8: c16_11039
+  a.embedUInt16(0x00FF, 8);     // 0: loMask16
+  a.embedUInt8(128, 16);        // 1: c8_128
+  a.embedUInt32(0x0000FFFF, 4); // 2: loMask32
+  a.embedUInt16(1 << 5, 8);     // 3: init for tally
+  a.embedUInt16(64, 8);         // 4: c16_64
+  a.embedUInt16(128, 8);        // 5: c16_128
+  a.embedUInt16(0x8001, 8);     // 6: c16_x8001
+  a.embedUInt16(5695, 8);       // 7: c16_5695
+  a.embedUInt16(11039, 8);      // 8: c16_11039
 
   // Bind function
   const Error err = Global::getAsmjitRuntime().add<EcFunc>(&ecFunc, &code);
@@ -309,7 +309,6 @@ void ECImageProvider::compileEC()
     ecFunc = nullptr;
     return;
   }
-
 }
 
 ECImageProvider::~ECImageProvider()
@@ -322,7 +321,7 @@ ECImageProvider::~ECImageProvider()
 
 #else
 
-#include "Tools/ImageProcessing/YHSColorConversion.h"
+#include "ImageProcessing/YHSColorConversion.h"
 
 template<bool aligned, bool avx>
 void updateSSE(const PixelTypes::YUYVPixel* const srcImage, const int srcWidth, const int srcHeight,
@@ -403,3 +402,11 @@ void ECImageProvider::update(ECImage& ecImage)
 ECImageProvider::~ECImageProvider() {}
 
 #endif
+
+void ECImageProvider::update(OptionalECImage& theOptionalECImage)
+{
+  if(theCalibrationRequest.targetState == CameraCalibrationStatus::State::recordSamples)
+    theOptionalECImage.image = theECImage;
+  else
+    theOptionalECImage.image.reset();
+}

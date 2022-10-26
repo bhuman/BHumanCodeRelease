@@ -1,6 +1,6 @@
 #!/bin/bash
-
-# This script is based on something published by the Nao Devils.
+# This script creates a root image for the NAO robot using Ubuntu 20.04.
+# It is based on something published by the Nao Devils.
 # Thanks!
 
 set -euo pipefail
@@ -19,11 +19,11 @@ rootImage="${baseDir}/root.ext3"
 
 usage() {
   echo "usage:"
-  echo "${0} [-r <root image>] <SBR image>"
+  echo "${0} [-r <root image>] <OPN image>"
   echo "${0} -h"
   echo ""
   echo " <root image>: path to the root image (.ext3)"
-  echo " <SBR image> : path to an original SoftBank Robotics .opn (including HAL and LoLA)"
+  echo " <OPN image> : path to an original Aldebaran .opn (including HAL and LoLA)"
   echo ""
   echo " -h          : Display this help"
   exit 1
@@ -50,7 +50,7 @@ parseOptions() {
 
   naoOPN="${1}"
   if [ ! $(dd if="${naoOPN}" skip=96 bs=1 count=8 status=none | xxd -p) = "0000000000100000" ]; then
-    fatal "Invalid SoftBank image."
+    fatal "Invalid Aldebaran image."
   fi
 }
 
@@ -100,10 +100,10 @@ mount -t proc /proc "${rootDir}/proc"
 LANG=C chroot "${rootDir}" /bin/bash <<EOF
 set -eu
 
-apt-get update
-apt-get dist-upgrade
+DEBIAN_FRONTEND=noninteractive apt-get update -y
+DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y alsa beignet-opencl-icd gdb htop i2c-tools libusb-1.0-0 ocl-icd-libopencl1 openssh-server pciutils rsync ubuntu-minimal vim wpasupplicant
+DEBIAN_FRONTEND=noninteractive apt-get install -y alsa gdb htop i2c-tools libusb-1.0-0 openssh-server pciutils rsync ubuntu-minimal vim wpasupplicant
 
 # wpa_supplicant does not need to run by itself, it will be started by netplan if necessary.
 systemctl disable wpa_supplicant.service

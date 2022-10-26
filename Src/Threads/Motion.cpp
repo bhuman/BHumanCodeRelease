@@ -11,9 +11,8 @@
 #include "Modules/Infrastructure/LogDataProvider/LogDataProvider.h"
 #include "Platform/Thread.h"
 #include "Platform/Time.h"
-#include "Tools/Framework/Communication.h"
-#include "Tools/Math/Constants.h"
-#include "Tools/Module/ModulePacket.h"
+#include "Math/Constants.h"
+#include "Framework/ModulePacket.h"
 
 REGISTER_EXECUTION_UNIT(Motion)
 

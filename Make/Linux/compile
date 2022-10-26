@@ -4,31 +4,16 @@
 cd "$(dirname "$(which "$0")")"
 
 CONFIG="Develop"
-TARGET=""
+TARGETS=""
 
-if [ $# -eq 1 ]; then
-  case $1 in
-    Debug|Develop|Release)
-      CONFIG=$1
-      ;;
-    *)
-      TARGET="--target $1"
-      ;;
-  esac
-elif [ $# -eq 2 ]; then
-  case $1 in
-    Debug|Develop|Release)
-      CONFIG=$1
-      TARGET="--target $2"
-      ;;
-    *)
-      CONFIG=$2
-      TARGET="--target $1"
-      ;;
-  esac
-elif [ $# -ne 0 ]; then
-  >&2 echo "wrong number of arguments"
-  exit 1
+case $1 in
+  Debug|Develop|Release)
+    CONFIG=$1
+    shift
+esac
+
+if [ $# -gt 0 ]; then
+  TARGETS="--target $@"
 fi
 
-cmake --build ../../Build/Linux/CMake/$CONFIG $TARGET --config $CONFIG
+cmake --build ../../Build/Linux/CMake/$CONFIG --config $CONFIG $TARGETS

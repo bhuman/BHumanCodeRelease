@@ -5,13 +5,13 @@
  */
 
 #include "CameraMatrix.h"
-#include "Tools/Boundary.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Boundary.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/Geometry.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 CameraMatrix::CameraMatrix(const Pose3f& pose) :
   Pose3f(pose), invPos(Pose3f::inverse()), isValid(true)

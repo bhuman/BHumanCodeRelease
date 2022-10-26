@@ -3,9 +3,9 @@
  * @author <a href="mailto:simont@tzi.de>Simon Taddiken</a>
  */
 #pragma once
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "RobotParts/Arms.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * Class that represents the possible arm motions that can be requested from
@@ -21,6 +21,12 @@ STREAMABLE(ArmKeyFrameRequest,
     back,
     raiseArm,    /**< Raise the arm. */
     keeperStand, /**< Arm position for the keeper when guarding the goal */
+    arm45degreeUpSideways, /**< Move the Arm in a position 45 Degrees up sideways to the body of the robot*/
+    arm45degreeDownSideways, /**< Move the Arm in a position 45 Degrees down sideways to the body of the robot*/
+    armHorizontalSideways, /**< Move the Arm in a position horizontal sideways to the body of the robot*/
+    armHandToChest, /**< Bent the arm at the ellbow, so the hand of the robot is in front of the chest while the shoulder dosen't move*/
+    arm45degreeUpFront, /**< Move the arm in a position 45 Degree down in front of the body of the robot*/
+    dynamicRefereePositon, /**< both arms in a horizontal sideways position, to a hands in front of the chest position two times*/
     reverse,     /**< Reverse current arm keyframe motion */
   });
 

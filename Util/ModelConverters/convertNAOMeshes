@@ -1,0 +1,27 @@
+#! /bin/sh
+
+# The XML files that are needed for this can be converted using the OgreXMLConverter
+# which converts the binary Ogre format to the textual Ogre format.
+
+./convertOgreToRoSi2.py naoHeadYaw.xml
+./convertOgreToRoSi2.py naoLAnklePitch.xml
+./convertOgreToRoSi2.py naoLAnkleRollV6.xml --normals
+./convertOgreToRoSi2.py naoLElbowRoll.xml
+./convertOgreToRoSi2.py naoLHipPitch.xml
+./convertOgreToRoSi2.py naoLHipRoll.xml
+./convertOgreToRoSi2.py naoLHipYawPitch.xml
+./convertOgreToRoSi2.py naoLKneePitchV6.xml
+./convertOgreToRoSi2.py naoLShoulderPitch.xml --normals
+./convertOgreToRoSi2.py naoLShoulderRollV6.xml
+./convertOgreToRoSi2.py naoRAnklePitch.xml
+./convertOgreToRoSi2.py naoRAnkleRollV6.xml --normals
+./convertOgreToRoSi2.py naoRElbowRoll.xml
+./convertOgreToRoSi2.py naoRHipPitch.xml
+./convertOgreToRoSi2.py naoRHipRoll.xml
+./convertOgreToRoSi2.py naoRHipYawPitch.xml
+./convertOgreToRoSi2.py naoRKneePitchV6.xml
+./convertOgreToRoSi2.py naoRShoulderPitch.xml --normals
+./convertOgreToRoSi2.py naoRShoulderRollV6.xml
+./convertOgreToRoSi2.py naoWristYawV6.xml
+./convertOgreToRoSi2.py naoHeadPitchV6.xml --texture
+./convertOgreToRoSi2.py naoTorsoV6.xml --texture

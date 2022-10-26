@@ -10,11 +10,11 @@
 
 #include "Representations/Configuration/KickInfo.h"
 #include "Representations/Modeling/BallModel.h"
-#include "Representations/MotionControl/KeyframeMotionRequest.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Angle.h"
+#include "Math/Geometry.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
+#include "Tools/Motion/KickPrecision.h"
 
 STREAMABLE(MotionRequest,
 {
@@ -27,9 +27,10 @@ STREAMABLE(MotionRequest,
     walkToPose, /**< Walk to a target pose. */
     walkToBallAndKick, /**< Walk to the ball and kick it. */
     dribble, /**< Dribble the ball. */
-    getUp, /**< Get up. */
-    keyframeMotion, /**< Execute a keyframe motion. */
+    dive, /**< Execute a diving motion. */
+    special, /**< Execute a special motion. */
     replayWalk, /**< Replay a recorded walkPhase history. */
+    calibration, /**< Calibration module controls the arms. */
   });
 
   STREAMABLE(ObstacleAvoidance,
@@ -38,10 +39,46 @@ STREAMABLE(MotionRequest,
     {,
       (Geometry::Circle) obstacle, /**< The obstacle circle around which to walk. */
       (bool) clockwise, /**< Whether the obstacle should be circumnavigated in clockwise direction (else counterclockwise). */
-    }),
+    });
+
+    /**
+     * This operator is only needed to determine, whether the default parameter was passed to a skill.
+     * It does not really check equality, but is sufficuent for comparing with an empty object.
+     * @param other The object this one is compared to.
+     * @return Are they equal?
+     */
+    bool operator==(const ObstacleAvoidance& other) const
+    {
+      ASSERT(other.avoidance.isZero() && other.path.empty());
+      return avoidance == other.avoidance && path.size() == other.path.size();
+    },
+
     (Vector2f)(Vector2f::Zero()) avoidance, /**< A vector that steers away from close obstacles. */
     (std::vector<PathSegment>) path, /**< The path of obstacles that should be followed. */
   });
+
+  struct Dive
+  {
+    ENUM(Request,
+    {,
+      prepare,
+      jumpLeft,
+      jumpRight,
+      squatArmsBackLeft,
+      squatArmsBackRight,
+      squatWideArmsBackLeft,
+      squatWideArmsBackRight,
+    });
+  };
+
+  struct Special
+  {
+    ENUM(Request,
+    {,
+      demoBannerWave,
+      demoBannerWaveInitial,
+    });
+  };
 
   bool isWalking() const
   {
@@ -60,16 +97,19 @@ STREAMABLE(MotionRequest,
   (Pose2f) walkTarget, /**< The walk target (only used if type is walkToPose). */
   (bool)(false) keepTargetRotation, /**< Whether the target rotation should be reached as soon as possible, i.e. takes away one degree of freedom from motion (only used if type is walkToPose). */
   (ObstacleAvoidance) obstacleAvoidance, /**< Information about which obstacles there are to avoid (only used if type is walkTo* or dribble). */
+  (std::optional<Vector2f>) targetOfInterest, /**< If filled, the first entry is used to decide how the body shall be orientated while walking, so the camera can see this target at all times. Target is in relative coordinates. */
+  (bool)(false) forceSideWalking, /**< If set, the robot is forced to side walk. */
 
   (Angle)(0_deg) targetDirection, /**< The target direction of the ball (only used if type is walkToBallAndKick or dribble). */
   (Rangea) directionPrecision, /**< The min and max target direction difference of the ball (only used if type is walkToBallAndKick or dribble). */
   (KickInfo::KickType)(KickInfo::forwardFastLeft) kickType, /**< The kick type (only used if type is walkToBallAndKick). */
-  (float)(0.f) kickPower, /**< The kick power (only used if type is walkToBallAndKick). */
-  (bool)(false) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
+  (float)(0.f) kickLength, /**< The kick length (only used if type is walkToBallAndKick) (in mm). */
+  (KickPrecision)(KickPrecision::notPrecise) alignPrecisely, /**< Whether the robot should align (and kick) more precisely than usual, probably taking more time. */
   (bool)(true) preStepAllowed, /**< Is the InWalkKick allowed to have a preStep? */
   (bool)(true) turnKickAllowed, /**< Can the forward InWalkKick be executed with rotation? */
 
-  (KeyframeMotionRequest) keyframeMotionRequest, /**< The specific requested keyframe motion (only used if type is keyframeMotion). */
+  (Dive::Request)(Dive::prepare) diveRequest, /**< The specific requested diving motion (only used if type is dive). */
+  (Special::Request)(Special::demoBannerWave) specialRequest, /**< The specific requested special motion (only used if type is special). */
 
   (Pose2f) odometryData, /**< The odometry data when this request was created. */
   (BallState) ballEstimate, /**< The most recent ball estimate. */

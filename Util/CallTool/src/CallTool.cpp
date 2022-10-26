@@ -130,11 +130,8 @@ void handleInitDialog()
 {
   // add icon to dialog
 	HICON hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_MAIN_ICON));
-  HICON hSmall = LoadIcon(hInst, MAKEINTRESOURCE(IDI_SMALL_ICON));
 	SendMessage(hDlg, WM_SETICON, (WPARAM)ICON_BIG, (LPARAM)hIcon);
-	SendMessage(hDlg, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)hSmall);
 	DestroyIcon(hIcon);
-  DestroyIcon(hSmall);
 
   if(title)
     SetWindowText(hDlg, title);

@@ -8,10 +8,10 @@
 
 #pragma once
 #include "Representations/MotionControl/MotionRequest.h"
-#include "Tools/Function.h"
-#include "Tools/Math/Pose2f.h"
+#include "Streaming/Function.h"
+#include "Math/Pose2f.h"
 
 STREAMABLE(LibWalk,
 {
-  FUNCTION(MotionRequest::ObstacleAvoidance(const Pose2f& target, bool rough, bool disableObstacleAvoidance)) calcObstacleAvoidance,
+  FUNCTION(MotionRequest::ObstacleAvoidance(const Pose2f& target, bool rough, bool disableObstacleAvoidance, bool toBall)) calcObstacleAvoidance,
 });

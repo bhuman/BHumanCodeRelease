@@ -4,13 +4,13 @@
  * Very simple representation of a seen ball
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
- * @autor Jesse
+ * @author Jesse
  */
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
-#include "Tools/Math/Eigen.h"
+#include "Streaming/Enum.h"
+#include "Math/Eigen.h"
 #include <vector>
 
 STREAMABLE(BallPercept,
@@ -23,7 +23,7 @@ STREAMABLE(BallPercept,
   });
 
   BallPercept() = default;
-  inline BallPercept(const Vector2f& positionInImage, const float radiusInImage, const Vector2f& relativePositionOnField, const float radiusOnField, const BallPercept::Status status);
+  BallPercept(const Vector2f& positionInImage, const float radiusInImage, const Vector2f& relativePositionOnField, const float radiusOnField, const BallPercept::Status status);
 
   /** Draws the ball*/
   void draw() const;

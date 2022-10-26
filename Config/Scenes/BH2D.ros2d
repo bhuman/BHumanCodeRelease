@@ -6,7 +6,7 @@
     <Compound ref="field"/>
 
     <Compound name="robots">
-      <Body ref="player" name="robot3">
+      <Body ref="player" name="robot5">
         <Set name="playerColor" value="rgb(0,0,0)"/>
         <Translation x="0.9"/>
         <Rotation angle="180degree"/>

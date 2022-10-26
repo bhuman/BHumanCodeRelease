@@ -1,5 +1,5 @@
 #!/bin/bash
-# copies a bhuman distribution to a robot
+# Copies a B-Human distribution to a robot or creates an image file.
 
 usage()
 {
@@ -10,16 +10,16 @@ usage()
   echo "    -d                     delete logs or add timestamp to image"
   echo "    -h | --help | /h | /?  print this text"
   echo "    -i                     create image instead of deploying"
+  echo "    -k                     keep ip address for remote connection"
   echo "    -l <location>          set location"
   echo "    -m <magic number>      set magic number for teamcomm (0-255). Set -1 for random."
   echo "    -nc                    never compile"
   echo "    -nr                    do not check whether target is reachable"
-  echo "    -o <team port>         overwrite team port"
   echo "    -p <player number>     set player number"
   echo "    -r <n> <ip>            copy to <ip> and set playernumber to <n> (one -r per robot)"
   echo "    -s <scenario>          set scenario"
   echo "    -t <team number>       set team number"
-  echo "    -u                     check for a USB drive before starting bhuman (only when creating an image)"
+  echo "    -u                     check for USB drive before starting (only when creating an image)"
   echo "    -v <volume percent>    set NAO's volume"
   echo "    -w <wireless profile>  set wireless profile"
   echo "  examples:"
@@ -34,10 +34,9 @@ settingsReplacements()
   local SEDFLAGS=""
   [ ! -z $SCENARIO ] && SEDFLAGS="$SEDFLAGS -e 's/scenario =.*/scenario = $SCENARIO;/'"
   [ ! -z $LOCATION ] && SEDFLAGS="$SEDFLAGS -e 's/location =.*/location = $LOCATION;/'"
-  [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $TEAM;/'"
+  [ ! -z $COLOR ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $COLOR;/'"
   [ ! -z $PLAYER ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber =.*/playerNumber = $PLAYER;/'"
-  [ ! -z $NUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $NUMBER;/'"
-  [ ! -z $PORT ] && SEDFLAGS="$SEDFLAGS -e 's/teamPort =.*/teamPort = $PORT;/'"
+  [ ! -z $TEAM ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $TEAM;/'"
   [ ! -z $MAGICNUMBER ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber =.*/magicNumber = $MAGICNUMBER;/'"
   echo "$SEDFLAGS"
 }
@@ -47,7 +46,7 @@ copy()
   REMOTE=`$RESOLVE <<<"$1"`
   PLAYER=$2
 
-  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 6 )) ); then
+  if [ ! -z $PLAYER ] && ( (( $PLAYER < 1 )) || (( $PLAYER > 7 )) ); then
     echo "error: player number is $PLAYER!" >&2
     exit 1
   fi
@@ -88,7 +87,7 @@ copy()
   fi
 
   echo "updating bhuman"
-  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Config/. nao@$REMOTE:/home/nao/Config
+  rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -rzce "ssh $sshoptions" ../../Build/Linux/Nao/$CONFIG/bhuman ../../Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0 ../../Config/. nao@$REMOTE:/home/nao/Config
 
   # set playback volume and reset capture value to 75%
   echo "setting volume to $VOLUME%"
@@ -100,7 +99,7 @@ copy()
   SEDFLAGS="$(settingsReplacements)"
   if [ ! -z "$SEDFLAGS" ]; then
     echo "updating settings"
-    ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS < /home/nao/Config/settings.cfg > /home/nao/Config/settingsTEMP.cfg && mv /home/nao/Config/settingsTEMP.cfg /home/nao/Config/settings.cfg"
+    ssh $sshoptions nao@$REMOTE "sed $SEDFLAGS -i /home/nao/Config/settings.cfg"
   fi
 
   if [ ! -z $RESTART ]; then
@@ -125,22 +124,22 @@ cd "$(dirname "$(which "$0")")"
 cp -n $keySource $keyFile || true
 
 # init variables
-[ -z $CONFIG ] && CONFIG="Develop"
+CONFIG="Develop"
 PLAYER=
+COLOR=
 TEAM=
-NUMBER=
 SCENARIO=
 LOCATION=
 REMOTE=
 COMPILE=1
 CHECK=1
+KEEPIP=
 NUMMULTIPLE=0
 RESTART=
 MULTIPLEDATA=
 DELETELOGS=
 VOLUME=100
 PROFILE=
-PORT=
 MAGICNUMBER=
 REQUIREUSB=
 IMAGE=
@@ -166,24 +165,20 @@ while true; do
       shift
       SCENARIO=$1
       ;;
+    "-k" | "/k")
+      KEEPIP=1
+      ;;
     "-l" | "/l")
       shift
       LOCATION=$1
       ;;
     "-c" | "/c")
       shift
-      TEAM=$1
+      COLOR=$1
       ;;
     "-t" | "/t")
       shift
-      NUMBER=$1
-      if [ -z $PORT ]; then
-        PORT=`printf "100%02d" $NUMBER`
-      fi
-      ;;
-    "-o" | "/o")
-      shift
-      PORT=$1
+      TEAM=$1
       ;;
     "-nc" | "/nc")
       COMPILE=
@@ -354,6 +349,11 @@ if [ ! -z $IMAGE ]; then # write an opn image
     trap - EXIT
   fi
 elif [ ! -z $REMOTE ]; then # deploy to a single robot
+  if [ -z "$KEEPIP" ]; then
+    rm -f ../../Config/Scenes/Includes/connect.con
+  else
+    echo "sc Remote $($RESOLVE <<<"$REMOTE")" >../../Config/Scenes/Includes/connect.con
+  fi
   copy $REMOTE $PLAYER
 else # try to deploy to multiple targets
   if [ "$NUMMULTIPLE" -ne 0 ]; then

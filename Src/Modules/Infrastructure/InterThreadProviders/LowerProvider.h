@@ -9,15 +9,16 @@
 
 #pragma once
 
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
-#include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesPerceptorData.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 STREAMABLE_WITH_BASE(LowerFieldBoundary, FieldBoundary, {,});
-STREAMABLE_WITH_BASE(LowerObstaclesPerceptorData, ObstaclesPerceptorData, {,});
 STREAMABLE_WITH_BASE(LowerGoalPostsPercept, GoalPostsPercept, {,});
+STREAMABLE_WITH_BASE(LowerObstaclesPerceptorData, ObstaclesPerceptorData, {,});
+STREAMABLE_WITH_BASE(LowerOdometryData, OdometryData, {,});
 
 MODULE(LowerProvider,
 {,
@@ -27,6 +28,8 @@ MODULE(LowerProvider,
   PROVIDES(OtherGoalPostsPercept),
   REQUIRES(LowerObstaclesPerceptorData),
   PROVIDES(OtherObstaclesPerceptorData),
+  REQUIRES(LowerOdometryData),
+  PROVIDES(OtherOdometryData),
 });
 
 class LowerProvider : public LowerProviderBase
@@ -50,4 +53,10 @@ class LowerProvider : public LowerProviderBase
    *                                      here.
    */
   void update(OtherObstaclesPerceptorData& theOtherObstaclesPerceptorData) override;
+
+  /**
+   * This method is called when the representation provided needs to be updated.
+   * @param theOtherOdometryData The representation updated.
+   */
+  void update(OtherOdometryData& theOtherOdometryData) override;
 };

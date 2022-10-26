@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -21,9 +21,9 @@
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Perception/ImagePreprocessing/RelativeFieldColors.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/LeastSquares.h"
-#include "Tools/Module/Module.h"
+#include "Math/Eigen.h"
+#include "Math/LeastSquares.h"
+#include "Framework/Module.h"
 
 #include <limits>
 #include <vector>
@@ -32,54 +32,54 @@ MODULE(LinePerceptor,
 {,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(ColorScanLineRegionsVerticalClipped),
+  REQUIRES(ColorScanLineRegionsHorizontal),
   REQUIRES(ECImage),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
-  REQUIRES(ColorScanLineRegionsVerticalClipped),
-  REQUIRES(ColorScanLineRegionsHorizontal),
+  REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(ObstaclesImagePercept),
   REQUIRES(RelativeFieldColors),
-  REQUIRES(RobotInfo),
   PROVIDES(LinesPercept),
   REQUIRES(LinesPercept),
   PROVIDES(CirclePercept),
   LOADS_PARAMETERS(
   {,
-    (int) maxLineWidthDeviationPx,          /**< maximum deviation of line width in the image to the expected width at that position in px */
-    (float) maxLineWidthDeviationMm,      /**< maximum deviation of line width to the expected width in mm */
+    (int) maxLineWidthDeviationPx,           /**< maximum deviation of line width in the image to the expected width at that position in px */
+    (float) maxLineWidthDeviationMm,         /**< maximum deviation of line width to the expected width in mm */
     (int) maxSkipWidth,                      /**< regions with a size of up to this many pixels can be skipped next to lines. */
     (int) maxSkipNumber,                     /**< The maximum number of neighboring regions to skip. */
-    (float) greenAroundLineRatio,          /**< minimum green next to the line required as factor of line width. */
+    (float) greenAroundLineRatio,            /**< minimum green next to the line required as factor of line width. */
     (float) greenAroundLineRatioCalibration,
-    (float) maxDistantHorizontalLength,    /**< maximum length of distant horizontal lines in mm */
-    (float) maxLineFittingError,          /**< maximum error of fitted lines through spots on the field in mm */
-    (unsigned int) minSpotsPerLine,          /**< minimum number of spots per line */
-    (unsigned int) minSpotsPerLineCalibration,
-    (unsigned int) whiteCheckStepSize,      /**< step size in px when checking if lines are white */
-    (float) minWhiteRatio,               /**< minimum ratio of white pixels in lines */
-    (float) minSquaredLineLength,     /**< minimum squared length of found lines in mm */
-    (float) maxCircleFittingError,        /**< maximum error of fitted circles through spots on the field in mm */
-    (float) maxCircleRadiusDeviation,    /**< maximum deviation in mm of the perceived center circle radius to the expected radius */
-    (unsigned int) minSpotsOnCircle,        /**< minimum number of spots on the center circle */
-    (Angle) minCircleAngleBetweenSpots, /**< minimum angular distance around the circle center that has to be spanned by a circle candidate */
-    (Angle) circleAngleBetweenSpots,    /**< angular distance around the circle center that should be spanned by a circle candidates spots */
-    (float) minCircleWhiteRatio,         /**< minimum ratio of white pixels in the center circle */
-    (float) sqrCircleClusterRadius, /**< squared radius for clustering center circle candidates */
-    (unsigned int) minCircleClusterSize,     /**< minimum size of a cluster to be considered a valid circle candidate */
-    (float) maxWidthCheckDistance,      /**< maximum distance of line spots in mm to be checked for the correct line width on forming candidates */
-    (bool) trimLines,                     /**< whether lines extended by robots shall be trimmed */
+    (float) maxDistantHorizontalLength,      /**< maximum length of distant horizontal lines in mm */
+    (float) maxLineFittingError,             /**< maximum error of fitted lines through spots on the field in mm */
+    (unsigned) minSpotsPerLine,              /**< minimum number of spots per line */
+    (unsigned) minSpotsPerLineCalibration,
+    (unsigned) whiteCheckStepSize,           /**< step size in px when checking if lines are white */
+    (float) minWhiteRatio,                   /**< minimum ratio of white pixels in lines */
+    (float) minSquaredLineLength,            /**< minimum squared length of found lines in mm */
+    (float) maxCircleFittingError,           /**< maximum error of fitted circles through spots on the field in mm */
+    (float) maxCircleRadiusDeviation,        /**< maximum deviation in mm of the perceived center circle radius to the expected radius */
+    (unsigned int) minSpotsOnCircle,         /**< minimum number of spots on the center circle */
+    (Angle) minCircleAngleBetweenSpots,      /**< minimum angular distance around the circle center that has to be spanned by a circle candidate */
+    (Angle) circleAngleBetweenSpots,         /**< angular distance around the circle center that should be spanned by a circle candidates spots */
+    (float) minCircleWhiteRatio,             /**< minimum ratio of white pixels in the center circle */
+    (float) sqrCircleClusterRadius,          /**< squared radius for clustering center circle candidates */
+    (unsigned) minCircleClusterSize,         /**< minimum size of a cluster to be considered a valid circle candidate */
+    (float) maxWidthCheckDistance,           /**< maximum distance of line spots in mm to be checked for the correct line width on forming candidates */
+    (bool) trimLines,                        /**< whether lines extended by robots shall be trimmed */
     (bool) trimLinesCalibration,
-    (int) maxWidthImage,                    /**< maximum width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks*/
-    (float) maxWidthImageSquared, /**< maximum squared width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks */
-    (float) mFactor,                       /**< the calculated width of a line at a spot in mm must be below the expected width multiplied by this factor to consider the spot a valid line spot */
+    (int) maxWidthImage,                     /**< maximum width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks*/
+    (float) maxWidthImageSquared,            /**< maximum squared width of a line in the image at a spot up to which the spot is considered a valid line spot without further checks */
+    (float) mFactor,                         /**< the calculated width of a line at a spot in mm must be below the expected width multiplied by this factor to consider the spot a valid line spot */
     (int) minConsecutiveSpots,               /**< number of consecutive valid line spots found at which trimming shall be stopped */
 
-    (float) squaredWhiteCheckNearField, /**< squared distance in mm from which on the whiteCheckDistance becomes increased due to possibly blurry images */
-    (float) maxNormalAngleDiff,          /**< maximum angle difference between two normal vectors for two line segments possibly belong to the same line */
-    (bool) relaxedGreenCheckAtImageBorder, /**< accept line spots with too small neighboring green regions if they reach to the image border */
-    (bool) perspectivelyCorrectWhiteCheck, /**< true: transform image to field, compute test points on field, project back; false: compute test points in image */
-    (bool) highResolutionScan,           /**< use all the vertical scan lines or only the low resolution subset */
+    (float) squaredWhiteCheckNearField,      /**< squared distance in mm from which on the whiteCheckDistance becomes increased due to possibly blurry images */
+    (float) maxNormalAngleDiff,              /**< maximum angle difference between two normal vectors for two line segments possibly belong to the same line */
+    (bool) relaxedGreenCheckAtImageBorder,   /**< accept line spots with too small neighboring green regions if they reach to the image border */
+    (bool) perspectivelyCorrectWhiteCheck,   /**< true: transform image to field, compute test points on field, project back; false: compute test points in image */
+    (bool) highResolutionScan,               /**< use all the vertical scan lines or only the low resolution subset */
   }),
 });
 
@@ -95,8 +95,8 @@ private:
     Vector2f field;
     unsigned int candidate;
 
-    inline Spot(const float imgX, const float imgY) : image(imgX, imgY) {}
-    inline Spot(const Vector2f& image, const Vector2f& field) : image(image), field(field) {}
+    Spot(const float imgX, const float imgY) : image(imgX, imgY) {}
+    Spot(const Vector2f& image, const Vector2f& field) : image(image), field(field) {}
   };
 
   /**
@@ -108,7 +108,7 @@ private:
     float d;
     std::vector<const Spot*> spots;
 
-    inline Candidate(const Spot* anchor) : spots()
+    Candidate(const Spot* anchor) : spots()
     {
       spots.emplace_back(anchor);
     }
@@ -118,7 +118,7 @@ private:
      *
      * @param point point to calculate the distance to
      */
-    inline float getDistance(const Vector2f& point) const
+    float getDistance(const Vector2f& point) const
     {
       return std::abs(n0.dot(point) - d);
     }
@@ -126,7 +126,7 @@ private:
     /**
      * Recalculates n0 and d.
      */
-    inline void fitLine()
+    void fitLine()
     {
       LeastSquares::LineFitter fitter;
       for(const Spot* spot : spots)
@@ -146,7 +146,7 @@ private:
     std::vector<Vector2f> fieldSpots;
     LeastSquares::CircleFitter fitter;
 
-    inline CircleCandidate(const Candidate& line, const Vector2f& spot)
+    CircleCandidate(const Candidate& line, const Vector2f& spot)
     {
       for(const Spot* const lineSpot : line.spots)
         fieldSpots.emplace_back(lineSpot->field);
@@ -161,7 +161,7 @@ private:
      *
      * @param spot field spot to add
      */
-    inline void addSpot(const Vector2f& spot)
+    void addSpot(const Vector2f& spot)
     {
       fieldSpots.emplace_back(spot);
       fitter.add(spot);
@@ -174,7 +174,7 @@ private:
      *
      * @param point point to calculate the distance to
      */
-    inline float getDistance(const Vector2f& point) const
+    float getDistance(const Vector2f& point) const
     {
       return std::abs((center - point).norm() - radius);
     }
@@ -182,7 +182,7 @@ private:
     /**
      * Calculates the average error of this circle candidate.
      */
-    inline float calculateError() const
+    float calculateError() const
     {
       float error = 0.f;
       for(const Vector2f& spot : fieldSpots)
@@ -194,7 +194,7 @@ private:
      * Calculates how much of a circle corresponding to this candidate lies between the outermost fieldSpots.
      * @return Portion of the candidate that is between the outermost fieldSpots expressed as an angle.
      */
-    inline Angle circlePartInImage() const
+    Angle circlePartInImage() const
     {
       Vector2f referenceVector = fieldSpots[0] - center;
       Angle low = 0_deg;
@@ -228,7 +228,7 @@ private:
     Vector2f center;
     std::vector<Vector2f> centers;
 
-    inline CircleCluster(const Vector2f& center) : center(center) { centers.emplace_back(center); }
+    CircleCluster(const Vector2f& center) : center(center) { centers.emplace_back(center); }
   };
 
   std::vector<std::vector<Spot>> spotsH;
@@ -402,9 +402,9 @@ private:
 
   bool debugIsPointWhite = false;
 
-#define GREEN_AROUND_LINE_RATIO (theRobotInfo.mode == RobotInfo::Mode::calibration ? greenAroundLineRatioCalibration : greenAroundLineRatio)
-#define MIN_SPOTS_PER_LINE (theRobotInfo.mode == RobotInfo::Mode::calibration ? minSpotsPerLineCalibration : minSpotsPerLine)
-#define TRIM_LINES (theRobotInfo.mode == RobotInfo::Mode::calibration ? trimLinesCalibration : trimLines)
+#define GREEN_AROUND_LINE_RATIO (theGameState.playerState == GameState::calibration ? greenAroundLineRatioCalibration : greenAroundLineRatio)
+#define MIN_SPOTS_PER_LINE (theGameState.playerState == GameState::calibration ? minSpotsPerLineCalibration : minSpotsPerLine)
+#define TRIM_LINES (theGameState.playerState == GameState::calibration ? trimLinesCalibration : trimLines)
 
 public:
   LinePerceptor()

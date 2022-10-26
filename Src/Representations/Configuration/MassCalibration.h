@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/RobotParts/Limbs.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Eigen.h"
+#include "RobotParts/Limbs.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(MassCalibration,
 {

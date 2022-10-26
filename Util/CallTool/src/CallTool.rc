@@ -98,7 +98,6 @@ IDB_BANNER_BITMAP       BITMAP                  "bhuman.bmp"
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_MAIN_ICON           ICON                    "CallTool.ico"
-IDI_SMALL_ICON          ICON                    "Small.ico"
 #endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 

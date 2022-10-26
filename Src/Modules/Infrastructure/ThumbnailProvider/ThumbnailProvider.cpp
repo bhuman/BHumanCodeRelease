@@ -7,7 +7,7 @@
  */
 
 #include "ThumbnailProvider.h"
-#include "Tools/ImageProcessing/Resize.h"
+#include "ImageProcessing/Resize.h"
 
 
 MAKE_MODULE(ThumbnailProvider, infrastructure);

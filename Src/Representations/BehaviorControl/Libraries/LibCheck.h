@@ -8,11 +8,10 @@
 
 #pragma once
 
-#include "Representations/MotionControl/MotionRequest.h"
-#include "Tools/Function.h"
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Streaming/Function.h"
+#include "RobotParts/Arms.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 STREAMABLE(LibCheck,
 {
@@ -22,25 +21,14 @@ STREAMABLE(LibCheck,
     headMotionRequest,
     activity,
     passTarget,
-    firstTeamCheckedOutput,
-    teamActivity = firstTeamCheckedOutput,
-    timeToReachBall,
-    teammateRoles,
-    role,
   });
 
   /** Increments one counter */
   FUNCTION(void(LibCheck::CheckedOutput outputToCheck)) inc;
 
-  /** Indicates that an arm has been set */
-  FUNCTION(void(Arms::Arm arm)) setArm;
-
-  /** Checks whether an arm has been set */
-  FUNCTION(bool(Arms::Arm arm)) wasSetArm;
+  /** Decrements one counter. Only use if an output should really be overwritten. */
+  FUNCTION(void(LibCheck::CheckedOutput outputToCheck)) dec;
 
   /** Performs checks for the individual behavior */
-  FUNCTION(void(const MotionRequest& theMotionRequest)) performCheck;
-
-  /** Performs checks for the team behavior */
-  FUNCTION(void()) performTeamCheck,
+  FUNCTION(void()) performCheck,
 });

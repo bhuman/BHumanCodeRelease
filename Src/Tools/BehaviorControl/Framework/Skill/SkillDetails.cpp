@@ -12,7 +12,7 @@ void SkillImplementationCreatorBase::addToModuleInfo(SkillImplementationCreatorB
 {
   for(SkillImplementationCreatorBase* skill = firstCreator; skill != nullptr; skill = skill->next)
   {
-    auto requirements = skill->getSkillInfo().requires;
+    auto requirements = skill->getSkillInfo().requirements;
     for(const char* requirement : requirements)
     {
       bool found = false;

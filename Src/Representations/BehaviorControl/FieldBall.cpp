@@ -9,8 +9,8 @@
 
 #include "FieldBall.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 
 bool FieldBall::ballWasSeen(int timeInterval) const
 {
@@ -21,7 +21,7 @@ Vector2f FieldBall::recentBallPositionOnField(const int ballSeenTimeout, const i
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
     return teamPositionOnField;
   else
     return positionOnField;
@@ -31,7 +31,7 @@ Vector2f FieldBall::recentBallPositionRelative(const int ballSeenTimeout, const 
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
     return teamPositionRelative;
   else
     return positionRelative;
@@ -41,7 +41,7 @@ Vector2f FieldBall::recentBallEndPositionOnField(const int ballSeenTimeout, cons
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
     return teamEndPositionOnField;
   else
     return endPositionOnField;
@@ -51,7 +51,7 @@ Vector2f FieldBall::recentBallEndPositionRelative(const int ballSeenTimeout, con
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
     return teamEndPositionRelative;
   else
     return endPositionRelative;
@@ -61,7 +61,7 @@ void FieldBall::recentBallPositions(Vector2f& ballPositionOnField, Vector2f& bal
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
   {
     ballPositionOnField = teamPositionOnField;
     ballPositionRelative = teamPositionRelative;
@@ -77,7 +77,7 @@ void FieldBall::recentBallEndPositions(Vector2f& ballEndPositionOnField, Vector2
 {
   ASSERT(ballSeenTimeout >= 0);
   if((timeSinceBallWasSeen > ballSeenTimeout || timeSinceBallDisappeared > ballDisappearedTimeout)
-     && timeSinceTeamBallWasValid < timeSinceBallWasSeen)
+     && teammatesBallIsValid && teammatesBallNewerThanOwnBall)
   {
     ballEndPositionOnField = teamEndPositionOnField;
     ballEndPositionRelative = teamEndPositionRelative;

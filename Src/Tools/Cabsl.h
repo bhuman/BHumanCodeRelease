@@ -7,33 +7,49 @@
  *
  * Grammar:
  *
- * <cabsl> ::= { <option> }
+ * <cabsl>       = { <option> }
  *
- * <option> ::= option '(' <C-ident> { ',' <decl> } ')'
- *              '{'
- *              [ common_transition <transition> ]
- *              { <other_state> } initial_state <state> { <other_state> }
- *              '}'
+ * <option>      = option '(' <C-ident> { ',' <param-decl> } { ',' <param-dflt> } ')'
+ *                 '{'
+ *                 [ common_transition <transition> ]
+ *                 { <other-state> } initial_state <state> { <other-state> }
+ *                 '}'
  *
- * <other_state> ::= ( state | target_state | aborted_state ) <state>
+ * <param-decl>  = '(' <type> ')' ' ' <C-ident>
  *
- * <state> ::= '(' C-ident ')'
- *             '{'
- *             [ transition <transition> ]
- *             [ action <action> ]
- *             '}'
+ * <param-dflt>  = '(' <type> ')' '(' <C-expr> ')' ' ' <C-ident>
  *
- * <transition> ::= '{' <C-ifelse> '}'
+ * <other-state> = ( state | target_state | aborted_state ) <state>
  *
- * <action> ::= '{' <C-statements> '}'
+ * <state>       = '(' C-ident ')'
+ *                 '{'
+ *                 [ transition <transition> ]
+ *                 [ action <action> ]
+ *                 '}'
  *
- * <C-ifelse> should contain 'goto' statements (names of states are
- * labels). Conditions can use the pre-defined symbols 'state_time',
- * 'option_time', 'action_done', and 'action_aborted'. Within a state, the
- * action <C-statements> can contain calls to other (sub)options.
- * 'action_done' determines whether the last suboption called reached a
- * target state in the previous execution cycle. 'action_aborted' does the
- * same for an aborted state.
+ * <transition>  = '{' <C-ifelse> '}'
+ *
+ * <action>      = '{' <C-statements> '}'
+ *
+ * '<C-ident>' is a normal C++ identifier. '<C-expr>' is a normal C++
+ * expression that can be used as default value for a parameter.
+ * '<C-ifelse>' is a decision tree. It should contain `goto` statements
+ * (names of states are labels).  Conditions can use the pre-defined
+ * symbols 'state_time', 'option_time', 'action_done', and 'action_aborted'.
+ * Within a state, the action <C-statements> can contain calls to other
+ * (sub)options. 'action_done' determines whether the last sub-option called
+ * reached a target state in the previous execution cycle. 'action_aborted'
+ * does the same for an aborted state.
+ *
+ * The command 'select_option' allows to execute one option from a list of
+ * options. It is tried to execute each option in the list in the sequence they
+ * are given. If an option determines that it cannot currently be executed,
+ * it stays in its 'initial_state'. Otherwise, it is run normally. 'select_option'
+ * stops after the first option that was actually executed. Note that an
+ * option that stays in its 'initial_state' when it was called by 'select_option'
+ * is considered as not having been executed at all if it has no action block
+ * for that state. If it has, the block is still executed, but neither the
+ * 'option_time' nor the 'state_time' are increased.
  *
  * If Microsoft Visual Studio is used and options are included from separate
  * files, the following preprocessor code might be added before including
@@ -48,12 +64,13 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h" // Not used, but avoids naming conflicts
+#include "Math/Eigen.h" // Not used, but avoids naming conflicts
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Platform/BHAssert.h"
-#include "Tools/FunctionList.h"
-#include "Tools/Streams/OutStreams.h"
-#include "Tools/Streams/TypeRegistry.h"
+#include "Platform/SystemCall.h"
+#include "Streaming/FunctionList.h"
+#include "Streaming/OutStreams.h"
+#include "Streaming/TypeRegistry.h"
 #include <unordered_map>
 #include <vector>
 
@@ -75,17 +92,18 @@ protected:
   class OptionContext
   {
   public:
-    /** The different types of states (for implementing target_state and aborted_state). */
+    /** The different types of states (for implementing initial_state, target_state, and aborted_state). */
     enum StateType
     {
       normalState,
+      initialState,
       targetState,
       abortedState
     };
 
     int state; /**< The state currently selected. This is actually the line number in which the state was declared. */
     const char* stateName; /**< The name of the state (for activation graph). */
-    unsigned lastFrame = 2; /**< The timestamp of the last frame in which this option was executed. */
+    unsigned lastFrame = static_cast<unsigned>(-1); /**< The timestamp of the last frame in which this option was executed. */
     unsigned optionStart; /**< The time when the option started to run (for option_time). */
     unsigned stateStart; /**< The time when the current state started to run (for state_time). */
     StateType stateType; /**< The type of the current state in this option. */
@@ -104,6 +122,7 @@ protected:
     const char* optionName; /**< The name of the option (for activation graph). */
     OptionContext& context; /**< The context of the state. */
     Cabsl* instance; /**< The object that encapsulates the behavior. */
+    bool fromSelect; /**< Option is called from 'select_option'. */
     mutable std::vector<std::string> parameters; /**< Parameter names and their values. */
 
     /**
@@ -113,15 +132,15 @@ protected:
      * @param context The context of the state.
      * @param instance The object that encapsulates the behavior.
      */
-    OptionExecution(const char* optionName, OptionContext& context, Cabsl* instance) :
-      optionName(optionName), context(context), instance(instance)
+    OptionExecution(const char* optionName, OptionContext& context, Cabsl* instance, bool fromSelect = false) :
+      optionName(optionName), context(context), instance(instance), fromSelect(fromSelect)
     {
       if(context.lastFrame != instance->lastFrameTime && context.lastFrame != instance->_currentFrameTime)
       {
         context.optionStart = instance->_currentFrameTime; // option started now
         context.stateStart = instance->_currentFrameTime; // initial state started now
         context.state = 0; // initial state is always marked with a 0
-        context.stateType = OptionContext::normalState; // initial state is a normal state
+        context.stateType = OptionContext::initialState;
         context.subOptionStateType = OptionContext::normalState; // reset action_done and action_aborted
       }
       context.addedToGraph = false; // not added to graph yet
@@ -136,12 +155,15 @@ protected:
      */
     ~OptionExecution()
     {
-      addToActivationGraph(); // add to activation graph if it has not been already
+      if(!fromSelect || context.stateType != OptionContext::initialState)
+      {
+        addToActivationGraph(); // add to activation graph if it has not been already
+        context.lastFrame = instance->_currentFrameTime; // Remember that this option was called in this frame
+      }
       if(instance->activationGraph)
         --instance->activationGraph->currentDepth; // decrease depth counter for activation graph
       context.subOptionStateType = instance->stateType; // remember the state type of the last sub option called
       instance->stateType = context.stateType; // publish the state type of this option, so the caller can grab it
-      context.lastFrame = instance->_currentFrameTime; // Remember that this option was called in this frame
     }
 
     /**
@@ -169,7 +191,8 @@ protected:
     {
       OutMapMemory stream(true, 1024);
       stream << value;
-      parameters.emplace_back(stream.data());
+      const std::string text = stream.data();
+      parameters.emplace_back(text.substr(0, text.size() - 2));
     }
 
     /**
@@ -257,7 +280,7 @@ public:
      * option.
      * Note that options with parameters will be ignored, because they currently
      * cannot be called externally.
-     * @param descriptor A function that can return the description of an option.
+     * @param descriptor The descriptor of an option.
      */
     static void add(OptionDescriptor& descriptor)
     {
@@ -267,7 +290,7 @@ public:
       ASSERT(optionsByIndex);
       ASSERT(optionsByName);
       if(!descriptor.hasParameters // ignore options with parameters for now
-         && TypeRegistry::getEnumValue(typeid(Option).name(), descriptor.name) < 0) // only register once
+         && optionsByName->find(descriptor.name) == optionsByName->end()) // only register once
       {
         descriptor.index = static_cast<int>(optionsByIndex->size());
         optionsByIndex->push_back(&descriptor);
@@ -296,8 +319,10 @@ public:
      * executed.
      * @param behavior The behavior instance.
      * @param option The index of the option.
+     * @param fromSelect Was this method called fron "select_option"?
+     * @return Was the option actually executed?
      */
-    static void execute(CabslBehavior* behavior, Option option)
+    static bool execute(CabslBehavior* behavior, Option option, bool fromSelect = false)
     {
       if(!optionsByIndex)
         init();
@@ -306,8 +331,26 @@ public:
       {
         const OptionDescriptor& descriptor = *(*optionsByIndex)[option];
         OptionContext& context = *reinterpret_cast<OptionContext*>(reinterpret_cast<char*>(behavior) + descriptor.offsetOfContext);
-        (behavior->*(descriptor.option))(OptionExecution(descriptor.name, context, behavior));
+        (behavior->*(descriptor.option))(OptionExecution(descriptor.name, context, behavior, fromSelect));
+        return context.stateType != OptionContext::initialState;
       }
+      else
+        return false;
+    }
+
+    /**
+     * The method executes a list of options. It stops after the first option that reports that
+     * it was actually executed.
+     * @param behavior The behavior instance.
+     * @param options The list of options. The options are executed in that order.
+     * @return Was an option actually executed?
+     */
+    static bool execute(CabslBehavior* behavior, const std::vector<Option>& options)
+    {
+      for(Option option : options)
+        if(execute(behavior, option, true))
+          return true;
+      return false;
     }
   };
 
@@ -343,7 +386,10 @@ public:
    */
   void beginFrame(unsigned frameTime, bool clearActivationGraph = true)
   {
-    _currentFrameTime = std::max(frameTime, lastFrameTime + 1);
+    if(SystemCall::getMode() == SystemCall::logFileReplay && frameTime < lastFrameTime)
+      _currentFrameTime = frameTime;
+    else
+      _currentFrameTime = std::max(frameTime, lastFrameTime + 1);
     if(activationGraph && clearActivationGraph)
     {
       activationGraph->currentDepth = 0;
@@ -494,7 +540,7 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
   initial_state: \
   if(_o.context.state == -1) \
     goto name; \
-  _state(name, 0, OptionContext::normalState)
+  _state(name, 0, OptionContext::initialState)
 
 /**
  * The actual code generated for the state macros above.
@@ -549,6 +595,13 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
 /** Did a suboption called reached an aborted state? */
 #define action_aborted (_o.context.subOptionStateType == OptionContext::abortedState)
 
+/**
+ * Executes the first applicable option from a list.
+ * @param ... The list of options as a std::vector<OptionInfos::Option>.
+ * @return Was an option executed?
+ */
+#define select_option(...) OptionInfos::execute(this, __VA_ARGS__)
+
 #else // __INTELLISENSE__
 
 #ifndef INTELLISENSE_PREFIX
@@ -580,6 +633,7 @@ template<typename CabslBehavior> typename Cabsl<CabslBehavior>::OptionInfos Cabs
 #define state_time 0
 #define action_done false
 #define action_aborted false
+#define select_option(...) false
 
 #endif
 

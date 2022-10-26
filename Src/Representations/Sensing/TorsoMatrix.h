@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Pose3f.h"
+#include "Streaming/AutoStreamable.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"

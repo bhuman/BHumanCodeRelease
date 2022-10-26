@@ -11,28 +11,23 @@
 
 #pragma once
 
-#include "Representations/Communication/BHumanMessage.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/AudioData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/Whistle.h"
-#include "Tools/Debugging/DebugImages.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBuffer.h"
-#include "Tools/Streams/Eigen.h"
+#include "Debugging/DebugImages.h"
+#include "Math/Eigen.h"
+#include "Framework/Module.h"
+#include "Math/RingBuffer.h"
 #include <fftw3.h>
 
 MODULE(WhistleRecognizer,
 {,
-  USES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(AudioData),
-  REQUIRES(BHumanMessageOutputGenerator),
   REQUIRES(DamageConfigurationHead),
   REQUIRES(FrameInfo),
-  REQUIRES(RawGameInfo),
-  REQUIRES(RobotInfo),
   PROVIDES(Whistle),
   LOADS_PARAMETERS(
   {,
@@ -42,7 +37,9 @@ MODULE(WhistleRecognizer,
     (float) newSampleRatio, /**< The ratio of new samples buffered before recognition is tried again (0..1). */
     (float) minVolume, /**< The minimum volume that must be reached for accepting a whistle [0..1). */
     (float) minCorrelation, /**< The ratio between the selfCorrelation and the current correlation that is accepted ]0..1]. */
+    (int) accumulationDuration, /**< The duration over which correlations are collected before they are reported. */
     (int) minAnnotationDelay, /**< The minimum time between annotations announcing a detected whistle. */
+    (bool) mute, /**< Deactivate sound output in game states in which a whistle could be detected. */
   }),
 });
 
@@ -66,8 +63,8 @@ class WhistleRecognizer : public WhistleRecognizerBase
   double* correlation; /**< The correlation with the signature. */
   fftw_plan fft; /**< The plan to compute the FFT. */
   fftw_plan ifft; /**< The plan to compute the inverse FFT. */
-  float bestCorrelation = 1.f; /**< The best correlation since the last network packet was sent twice. */
-  bool bestUpdated = false; /**< Was the best correlation updated since the last network packet was sent? */
+  float bestCorrelation = 1.f; /**< The best correlation of the last accumulation phase. */
+  unsigned lastTimeWhistleDetected = 0; /**< The last time a whistle was detected. */
   Image<PixelTypes::Edge2Pixel> canvas; /**< Canvas for drawing spectra. */
 
   /**

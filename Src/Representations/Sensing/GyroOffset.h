@@ -5,12 +5,14 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Angle.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Math/Angle.h"
 
 STREAMABLE(GyroOffset,
 {,
   (Vector3a)(Vector3a::Zero()) offset, /**< Current offsets of the gyros. */
+  (bool)(false) offsetCheckFinished, /**< Could the robot check for offsets in the gyros? If not, the robot should say so and not do anything. */
   (bool)(false) bodyDisconnect, /**< Head lost connection to the body */
+  (bool)(false) isIMUBad,  /**< Do the gyros have such high offets, that the robot should not do any motion related things? */
 });

@@ -35,15 +35,21 @@ void LEDHandler::setRightEar(LEDRequest& ledRequest)
 
 void LEDHandler::setLeftEar(LEDRequest& ledRequest)
 {
+  if(theLibDemo.isOneVsOneDemoActive)
+  {
+    setBatteryLevelInEar(ledRequest, LEDRequest::earsLeft0Deg);
+    return;
+  }
+
   //left ear -> connected players
   //          + GameController connection lost -> freaky blinking
-  if(theFrameInfo.getTimeSince(theGameInfo.timeLastPacketReceived) > gameControllerTimeOut)
+  if(!theGameState.gameControllerActive)
   {
     ledRequest.ledStates[LEDRequest::earsLeft324Deg] = LEDRequest::blinking;
     ledRequest.ledStates[LEDRequest::earsLeft144Deg] = LEDRequest::blinking;
   }
 
-  int numberOfConnectedTeammates = static_cast<int>(theTeamData.teammates.size());
+  int numberOfConnectedTeammates = static_cast<int>(theGlobalTeammatesModel.teammates.size());
   if(numberOfConnectedTeammates > 0)
   {
     ledRequest.ledStates[LEDRequest::earsLeft0Deg] = LEDRequest::on;
@@ -147,24 +153,59 @@ void LEDHandler::setLeftEye(LEDRequest& ledRequest)
 
 void LEDHandler::setRightEye(LEDRequest& ledRequest)
 {
-  if(theTeamBehaviorStatus.role.playsTheBall())
+  if(Role::isActiveRole(theStrategyStatus.role))
     setEyeColor(ledRequest, false, red, LEDRequest::on);
-  else if(theTeamBehaviorStatus.role.isGoalkeeper())
-    setEyeColor(ledRequest, false, blue, LEDRequest::on);
-  else if(theTeamBehaviorStatus.role.supporterIndex() == 0)
-    setEyeColor(ledRequest, false, white, LEDRequest::on);
-  else if(theTeamBehaviorStatus.role.supporterIndex() == 1)
-    setEyeColor(ledRequest, false, yellow, LEDRequest::on);
-  else if(theTeamBehaviorStatus.role.supporterIndex() == 2)
-    setEyeColor(ledRequest, false, green, LEDRequest::on);
-  else if(theTeamBehaviorStatus.role.supporterIndex() == 3)
-    setEyeColor(ledRequest, false, cyan, LEDRequest::on);
+  else
+  {
+    switch(theStrategyStatus.position)
+    {
+      case Tactic::Position::goalkeeper:
+        setEyeColor(ledRequest, false, blue, LEDRequest::on);
+        break;
+      case Tactic::Position::defender:
+      case Tactic::Position::defenderL:
+      case Tactic::Position::defenderR:
+        setEyeColor(ledRequest, false, white, LEDRequest::on);
+        break;
+      case Tactic::Position::midfielder:
+      case Tactic::Position::midfielderL:
+      case Tactic::Position::midfielderR:
+        setEyeColor(ledRequest, false, green, LEDRequest::on);
+        break;
+      case Tactic::Position::forward:
+      case Tactic::Position::forwardL:
+      case Tactic::Position::forwardR:
+        setEyeColor(ledRequest, false, cyan, LEDRequest::on);
+        break;
+      default:
+        ASSERT(theStrategyStatus.position == Tactic::Position::none);
+    }
+  }
 }
 
 void LEDHandler::setHead(LEDRequest& ledRequest)
 {
   for(unsigned i = LEDRequest::headRearLeft0; i <= LEDRequest::headMiddleLeft0; i++)
     ledRequest.ledStates[i] = LEDRequest::off;
+
+  //Added for Demos, so we know when a robot is in heat and needs a pause
+  if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForLEDFastBlinking)
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::fastBlinking;
+  }
+  else if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForLEDBlinking)
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::blinking;
+  }
+  else if(theLibDemo.isDemoActive && static_cast<int>(theJointSensorData.temperatures[theRobotHealth.jointWithMaxTemperature]) > tempForHalfLEDActive)
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::off;
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 2))
+      ledRequest.ledStates[i] = LEDRequest::on;
+  }
 
   if(theSystemSensorData.batteryCharging)
   {
@@ -177,64 +218,65 @@ void LEDHandler::setHead(LEDRequest& ledRequest)
     ledRequest.ledStates[currentLED] = LEDRequest::on;
     ledRequest.ledStates[nextLED] = LEDRequest::on;
   }
+//  Show if Robot wwants to make a pass or receive one, maybe add different signs for both situations later on
+  else if(theBehaviorStatus.passTarget > 0 || theBehaviorStatus.passOrigin > 0)
+  {
+      for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+        ledRequest.ledStates[i] = LEDRequest::on;
+  }
+  else
+  {
+    for(LEDRequest::LED i = LEDRequest::firstHeadLED; i <= LEDRequest::lastHeadLED; i = LEDRequest::LED(unsigned(i) + 1))
+      ledRequest.ledStates[i] = LEDRequest::off;
+  }
 }
 
 void LEDHandler::setChestButton(LEDRequest& ledRequest)
 {
-  switch(theRobotInfo.mode)
+  if(theGameState.playerState == GameState::unstiff)
+    ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::blinking;
+  else if(theGameState.playerState == GameState::calibration)
   {
-    case RobotInfo::unstiff:
-      ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::blinking;
-      break;
-    case RobotInfo::calibration:
-      ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
-      ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
-      break;
-    case RobotInfo::active:
-    default:
-      if(theRobotInfo.penalty != PENALTY_NONE)
-        ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
-      else
-        switch(theGameInfo.state)
-        {
-          case STATE_READY:
-            ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
-            break;
-          case STATE_SET:
-            ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
-            ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::half;
-            break;
-          case STATE_PLAYING:
-            ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::on;
-            break;
-        }
+    ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
+    ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
   }
+  else if(theGameState.isPenalized())
+    ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
+  else if(theGameState.isReady())
+    ledRequest.ledStates[LEDRequest::chestBlue] = LEDRequest::on;
+  else if(theGameState.isSet())
+  {
+    ledRequest.ledStates[LEDRequest::chestRed] = LEDRequest::on;
+    ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::half;
+  }
+  else if(theGameState.isPlaying())
+    ledRequest.ledStates[LEDRequest::chestGreen] = LEDRequest::on;
 }
 
 void LEDHandler::setLeftFoot(LEDRequest& ledRequest)
 {
-  switch(theOwnTeamInfo.teamColor)
+  switch(theGameState.ownTeam.color)
   {
-    case TEAM_ORANGE:
+    case GameState::Team::Color::orange:
       ledRequest.ledStates[LEDRequest::footLeftGreen] = LEDRequest::half;
-    case TEAM_RED:
+    case GameState::Team::Color::red:
       ledRequest.ledStates[LEDRequest::footLeftRed] = LEDRequest::on;
       break;
-    case TEAM_WHITE:
+    case GameState::Team::Color::white:
       ledRequest.ledStates[LEDRequest::footLeftBlue] = LEDRequest::on;
-    case TEAM_YELLOW:
+    case GameState::Team::Color::yellow:
       ledRequest.ledStates[LEDRequest::footLeftRed] = LEDRequest::on;
-    case TEAM_GREEN:
+    case GameState::Team::Color::green:
       ledRequest.ledStates[LEDRequest::footLeftGreen] = LEDRequest::on;
       break;
-    case TEAM_PURPLE:
+    case GameState::Team::Color::purple:
       ledRequest.ledStates[LEDRequest::footLeftRed] = LEDRequest::on;
-    case TEAM_BLUE:
+    case GameState::Team::Color::blue:
       ledRequest.ledStates[LEDRequest::footLeftBlue] = LEDRequest::on;
       break;
-    case TEAM_GRAY:
+    case GameState::Team::Color::gray:
       ledRequest.ledStates[LEDRequest::footLeftBlue] = LEDRequest::half;
-    case TEAM_BROWN: // more a darker yellow
+    case GameState::Team::Color::brown: // more a darker yellow
       ledRequest.ledStates[LEDRequest::footLeftRed] = LEDRequest::half;
       ledRequest.ledStates[LEDRequest::footLeftGreen] = LEDRequest::half;
       break;
@@ -243,20 +285,7 @@ void LEDHandler::setLeftFoot(LEDRequest& ledRequest)
 
 void LEDHandler::setRightFoot(LEDRequest& ledRequest)
 {
-  if(theGameInfo.state == STATE_INITIAL &&
-     theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT &&
-     theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
-    ledRequest.ledStates[LEDRequest::footRightGreen] = LEDRequest::on;
-  else if(theGameInfo.state == STATE_INITIAL &&
-          theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT &&
-          theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
-  {
-    ledRequest.ledStates[LEDRequest::footRightRed] = LEDRequest::on;
-    ledRequest.ledStates[LEDRequest::footRightGreen] = LEDRequest::on;
-  }
-  else if(theFrameInfo.getTimeSince(theGameInfo.timeLastPacketReceived) < gameControllerTimeOut &&
-          theGameInfo.state <= STATE_SET &&
-          theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
+  if(theGameState.gameControllerActive && theGameState.isForOwnTeam())
   {
     ledRequest.ledStates[LEDRequest::footRightRed] = LEDRequest::on;
     ledRequest.ledStates[LEDRequest::footRightGreen] = LEDRequest::on;

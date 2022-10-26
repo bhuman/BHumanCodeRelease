@@ -11,13 +11,11 @@
 
 #include "ObstacleHypothesis.h"
 
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
-#include "Representations/Communication/TeamData.h"
+#include "Representations/Communication/ReceivedTeamMessages.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
@@ -31,28 +29,27 @@
 #include "Representations/Sensing/FootBumperState.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(ObstacleModelProvider,
 {,
   REQUIRES(ArmContactModel),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
-  REQUIRES(ExtendedGameInfo),
+  REQUIRES(ExtendedGameState),
   REQUIRES(FallDownState),
   REQUIRES(FieldBoundary),
   REQUIRES(FieldDimensions),
   REQUIRES(FootBumperState),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(ObstaclesFieldPercept),
   REQUIRES(Odometer),
-  REQUIRES(RobotInfo),
+  REQUIRES(ReceivedTeamMessages),
   REQUIRES(RobotModel),
   REQUIRES(RobotPose),
-  REQUIRES(TeamData),
   REQUIRES(TorsoMatrix),
   PROVIDES(ObstacleModel),
   LOADS_PARAMETERS(
@@ -102,6 +99,7 @@ MODULE(ObstacleModelProvider,
     // ObstacleHypothesis::considerType
     (int) teamThreshold,                       /**< Only switch team if this threshold is reached. */
     (int) uprightThreshold,                    /**< Only switch upright/fallen if this threshold is reached. */
+    (float) goalAreaIgnoreTolerance,           /**< Tolerance around the goal area in mm for ignoring obstacles while the goalkeeper walks in at the beginning of the half. 0 turns it off. */
   }),
 });
 
@@ -118,11 +116,25 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   static_assert(Obstacle::Type::unknown < Obstacle::Type::someRobot, "Assumption broken");
   static_assert(Obstacle::Type::goalpost < Obstacle::Type::unknown, "Assumption broken");
 
+  struct TeammateMeasurement
+  {
+    TeammateMeasurement(const Matrix2f& covariance, const Pose2f& pose, const Vector2f& target, float speed, unsigned time) :
+      covariance(covariance), pose(pose), target(target), speed(speed), time(time)
+    {}
+
+    Matrix2f covariance;
+    Pose2f pose;
+    Vector2f target;
+    float speed;
+    unsigned time;
+  };
+
   // Used for writing annotations only once per contact.
   bool armContact[Arms::numOfArms] = { false, false }, footContact[Legs::numOfLegs] = { false, false };
 
   std::vector<ObstacleHypothesis, Eigen::aligned_allocator<ObstacleHypothesis>> obstacleHypotheses; /**< List of obstacles. */
   std::vector<bool> merged; /**< This is to merge obstacles once for every "percept" per frame. */
+  std::vector<TeammateMeasurement> teammateMeasurements; /**< Pseudo-measurements from team messages from the last frame. */
 
   /** The function is called when the representation provided needs to be updated. */
   void update(ObstacleModel& obstacleModel) override;
@@ -155,7 +167,7 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
   void tryToMerge(const ObstacleHypothesis& measurement);
 
   /**< The function fits team and position of obstacles located exclusively near a team member. */
-  void considerTeamData();
+  void considerTeammates();
   /** The function will merge overlapping hypotheses to one hypotheses. */
   void mergeOverlapping();
   /** The function increases the attribute notSeenButShouldSeenCount of obstacles that should be seen but wasn't seen recently. */
@@ -177,11 +189,18 @@ class ObstacleModelProvider : public ObstacleModelProviderBase
            + (measurementDistance < 0 ? 0.f : measurementDistance * maxRadius / maxDistance);
   }
 
-  inline bool isObstacle(const ObstacleHypothesis& obstacle)
+  bool isObstacle(const ObstacleHypothesis& obstacle)
   {
     return obstacle.seenCount >= minPercepts || debug;
   }
 
   /** Calculates the velocity for every obstacles. */
   void calculateVelocity();
+
+  /**
+   * Checks whether this obstacle hypothesis should be ignored.
+   * Currently checks for obstacles close to the goal area, while the
+   * goal keeper is walking in at the beginning of the half.
+   */
+  bool shouldIgnore(const ObstacleHypothesis& obstacle) const;
 };

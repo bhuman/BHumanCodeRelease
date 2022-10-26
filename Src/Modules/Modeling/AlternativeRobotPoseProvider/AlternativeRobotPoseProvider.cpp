@@ -8,7 +8,7 @@
  */
 
 #include "AlternativeRobotPoseProvider.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 #include <algorithm>
 #include <cmath>
 
@@ -19,7 +19,7 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
   clusters.clear();
   alternativeRobotPoseHypothesis.isValid = false;
   if(currentStateOrMotionRuinsOdometry() || // Things are going on and might (but must not) ruin the odometry completely
-     (theExtendedGameInfo.timeSinceLastCalibrationStarted > 5000 && theRobotInfo.mode == RobotInfo::calibration)) // Robot is calibrating
+     (theGameState.playerState == GameState::calibration && theFrameInfo.getTimeSince(theExtendedGameState.timeWhenPlayerStateStarted[GameState::calibration]) > 5000)) // Robot is calibrating
   {
     observations.clear();
     return;
@@ -31,6 +31,8 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
   if(currentMotionAllowsAcceptanceOfNewFeatures())
   {
     addFieldFeatureToBuffer(&theMidCircle);
+    addFieldFeatureToBuffer(&theMidCorner, true);
+    addFieldFeatureToBuffer(&theOuterCorner);
     addFieldFeatureToBuffer(&thePenaltyArea);
     addFieldFeatureToBuffer(&thePenaltyMarkWithPenaltyAreaLine);
   }
@@ -49,20 +51,23 @@ void AlternativeRobotPoseProvider::update(AlternativeRobotPoseHypothesis& altern
       bestClusterSize = clusters[i].numOfPoses;
     }
   }
-  alternativeRobotPoseHypothesis.pose = clusters[bestClusterIdx].pose;
-  alternativeRobotPoseHypothesis.timeOfLastPerceptionUpdate = clusters[bestClusterIdx].timeOfNewestObservation;
-  alternativeRobotPoseHypothesis.isInOwnHalf = clusters[bestClusterIdx].isInOwnHalf;
-  alternativeRobotPoseHypothesis.numOfContributingObservations = bestClusterSize;
-  alternativeRobotPoseHypothesis.isValid = theFieldDimensions.isInsideCarpet(alternativeRobotPoseHypothesis.pose.translation);
+  if(clusters[bestClusterIdx].numOfPoses != clusters[bestClusterIdx].numOfStupidFarMidCornerPoses)
+  {
+    alternativeRobotPoseHypothesis.pose = clusters[bestClusterIdx].pose;
+    alternativeRobotPoseHypothesis.timeOfLastPerceptionUpdate = clusters[bestClusterIdx].timeOfNewestObservation;
+    alternativeRobotPoseHypothesis.isInOwnHalf = clusters[bestClusterIdx].isInOwnHalf;
+    alternativeRobotPoseHypothesis.numOfContributingObservations = bestClusterSize;
+    alternativeRobotPoseHypothesis.isValid = theFieldDimensions.isInsideCarpet(alternativeRobotPoseHypothesis.pose.translation);
+  }
 }
 
 bool AlternativeRobotPoseProvider::currentStateOrMotionRuinsOdometry()
 {
   // The robot was manually placed:
-  if(theGameInfo.state == STATE_SET && !theGroundContactState.contact)
+  if(theGameState.isSet() && !theGroundContactState.contact)
     return true;
   // There is nothing reasonable to do before the robot finally enters READY:
-  if(theGameInfo.state == STATE_INITIAL)
+  if(theGameState.isInitial())
     return true;
   // Some motion phases can be troublesome as the odometry offset between configurations cannot be determined:
   if(theMotionInfo.isMotion(bit(MotionPhase::playDead) | bit(MotionPhase::fall) | bit(MotionPhase::getUp)))
@@ -85,16 +90,17 @@ bool AlternativeRobotPoseProvider::currentMotionAllowsAcceptanceOfNewFeatures()
 }
 
 
-void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* ff)
+void AlternativeRobotPoseProvider::addFieldFeatureToBuffer(const FieldFeature* ff, bool isMidCorner)
 {
   if(ff->isValid)
   {
     const FieldFeature::RobotPoseToFF poses = ff->getGlobalRobotPosition();
     const Pose2f& ownSidePose = poses.pos1.translation.x() <= 0.f ? poses.pos1 : poses.pos2;
     PoseObservation newObservation;
-    newObservation.pose              = ownSidePose;
-    newObservation.timeOfObservation = theFrameInfo.time;
-    newObservation.stillInOwnHalf    = theSideInformation.robotMustBeInOwnHalf;
+    newObservation.pose                      = ownSidePose;
+    newObservation.timeOfObservation         = theFrameInfo.time;
+    newObservation.stillInOwnHalf            = theSideInformation.robotMustBeInOwnHalf;
+    newObservation.basedOnStupidFarMidCorner = isMidCorner && ff->translation.norm() > maxDistanceCloseMidCorner;
     observations.push_front(newObservation);
     if(!newObservation.stillInOwnHalf) // We have to consider the alternative, too
     {
@@ -144,6 +150,8 @@ void AlternativeRobotPoseProvider::clusterObservations()
           c.timeOfNewestObservation = observations[j].timeOfObservation;
         if(observations[j].stillInOwnHalf)
           c.isInOwnHalf = true;
+        if(observations[j].basedOnStupidFarMidCorner)
+          c.numOfStupidFarMidCornerPoses++;
       }
     }
     ASSERT(c.numOfPoses > 0); // Should not happen!

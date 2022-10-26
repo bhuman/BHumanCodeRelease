@@ -5,27 +5,23 @@
  */
 
 #include "ConfigurationDataProvider.h"
-#include "Tools/Framework/ModuleContainer.h"
-#include "Tools/Settings.h"
-
-thread_local ConfigurationDataProvider* ConfigurationDataProvider::theInstance = nullptr;
+#include "Debugging/Debugging.h"
+#include "Tools/Modeling/BallPhysics.h"
+#include "Framework/Settings.h"
 
 ConfigurationDataProvider::ConfigurationDataProvider()
 {
-  theInstance = this;
-
   read(theCameraSettings);
 
   theFieldDimensions = std::make_unique<FieldDimensions>();
   theFieldDimensions->load();
-  theIntersectionRelations = std::make_unique<IntersectionRelations>(*theFieldDimensions);
 
   read(theBallSpecification);
+  read(theBehaviorParameters);
   read(theCameraCalibration);
   read(theDamageConfigurationBody);
   read(theDamageConfigurationHead);
   read(theFootOffset);
-  read(theGlobalOptions);
   read(theHeadLimits);
   read(theIMUCalibration);
   read(theJointCalibration);
@@ -37,12 +33,8 @@ ConfigurationDataProvider::ConfigurationDataProvider()
   read(theRobotDimensions);
   read(theStiffnessSettings);
   read(theSetupPoses);
+  read(theStaticJointPoses);
   read(theWalkModifier);
-}
-
-ConfigurationDataProvider::~ConfigurationDataProvider()
-{
-  theInstance = nullptr;
 }
 
 void ConfigurationDataProvider::update(CameraCalibration& cameraCalibration)
@@ -60,18 +52,20 @@ void ConfigurationDataProvider::update(JointLimits& jointLimits)
 
 void ConfigurationDataProvider::update(KickInfo& kickInfo)
 {
-  const bool wasEmpty = theKickInfo == nullptr;
-  update(kickInfo, theKickInfo);
-  if(wasEmpty)
-    return;
-  for(KickInfo::Kick& kick : kickInfo.kicks)
+  if(theKickInfo) // Not copied to representation yet
   {
-    // Comment this in, if the velocity needs to be recalculated
-    //kick.ballVelocity.min = BallPhysics::velocityForDistance(kick.range.min, ConfigurationDataProviderBase::theBallSpecification.friction);
-    //kick.ballVelocity.max = BallPhysics::velocityForDistance(kick.range.max, ConfigurationDataProviderBase::theBallSpecification.friction);
+    update(kickInfo, theKickInfo);
+    for(KickInfo::Kick& kick : kickInfo.kicks)
+    {
+      const BallSpecification& ballSpecification = theBallSpecification ? *theBallSpecification : ConfigurationDataProviderBase::theBallSpecification;
 
-    kick.range.min = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.min, 0.f), ConfigurationDataProviderBase::theBallSpecification.friction)).norm();
-    kick.range.max = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.max, 0.f), ConfigurationDataProviderBase::theBallSpecification.friction)).norm();
+      // Comment this in, if the velocity needs to be recalculated
+      //kick.ballVelocity.min = BallPhysics::velocityForDistance(kick.range.min, ballSpecification.friction);
+      //kick.ballVelocity.max = BallPhysics::velocityForDistance(kick.range.max, ballSpecification.friction);
+
+      kick.range.min = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.min, 0.f), ballSpecification.friction)).norm();
+      kick.range.max = (BallPhysics::getEndPosition(Vector2f(0.f, 0.f), Vector2f(kick.ballVelocity.max, 0.f), ballSpecification.friction)).norm();
+    }
   }
 }
 

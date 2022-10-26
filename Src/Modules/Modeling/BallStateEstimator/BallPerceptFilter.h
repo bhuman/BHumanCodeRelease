@@ -20,17 +20,16 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
 #include "Representations/Communication/TeamData.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/FilteredBallPercepts.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamBallModel.h"
+#include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/OdometryData.h"
@@ -38,7 +37,7 @@
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(BallPerceptFilter,
 {,
@@ -49,23 +48,20 @@ MODULE(BallPerceptFilter,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
   REQUIRES(OdometryData),
-  REQUIRES(OwnTeamInfo),
   REQUIRES(TeamData),
+  REQUIRES(TeammatesBallModel),
   REQUIRES(WorldModelPrediction),
   USES(RobotPose),
-  USES(TeamBallModel),
   PROVIDES(FilteredBallPercepts),
   LOADS_PARAMETERS(
   {,
     (float) fieldBorderExclusionDistance,              /**< Stuff that is more far away from the field (not the carpet!) is excluded. */
-    (int) ballBorderAdditionalPixelThreshold,          /**< When excluding certain balls at the image's border, this is the required distance of the ball center to the border. */
     (float) robotBanRadius,                            /**< If a ball is at the image border and this close to a teammate, it becomes excluded. */
-    (bool) banBallsInRobotsAtImageBorder,              /**< If true, some balls at/in robots close to the image border might become excluded. */
     (int) fieldFeatureTimeout,                         /**< When using self-localization information, there should have been a field feature recently. */
     (Vector2f) robotRotationDeviation,                 /**< Deviation of the rotation of the robot's torso */
     (int) farBallIgnoreTimeout,                        /**< If we have seen a ball in the lower image recently, ignore balls in upper image for this time, if they are far away. */
@@ -123,11 +119,6 @@ private:
    * @return true, if it seems to be a false positive
    */
   bool perceptIsInsideTeammateAndCanBeExcludedByTeamBall();
-
-  /** Check, if the percept might be a teammate at the image border
-   * @return true, if this is the case
-   */
-  bool perceptIsAtImageBorderAndCloseToTeammate();
 
   /** Check, if the percept is not in the same half as the robot. FOR TESTING ONLY
    * @return true, if this is the case

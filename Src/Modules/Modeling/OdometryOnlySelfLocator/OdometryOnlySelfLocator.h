@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/Odometer.h"

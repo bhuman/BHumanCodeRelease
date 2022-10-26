@@ -11,8 +11,8 @@
 #pragma once
 
 #include "Representations/Configuration/RelativeFieldColorsParameters.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Range.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Range.h"
 #include <algorithm>
 
 STREAMABLE(RelativeFieldColors,

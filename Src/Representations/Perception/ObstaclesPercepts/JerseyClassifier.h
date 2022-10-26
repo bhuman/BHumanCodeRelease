@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "Tools/Function.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Streaming/AutoStreamable.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 
@@ -23,4 +23,8 @@ STREAMABLE(JerseyClassifier,
    *                        jersey color was detected.
    */
   FUNCTION(void(const ObstaclesImagePercept::Obstacle& obstacleInImage, ObstaclesFieldPercept::Obstacle& obstacleOnField)) detectJersey,
+});
+
+STREAMABLE_WITH_BASE(JerseyClassifierOld, JerseyClassifier,
+{,
 });

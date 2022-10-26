@@ -5,7 +5,9 @@ vi image Lower
 vid all representation:FieldLines:image
 vid all representation:PenaltyMarkPercept:image
 vid all representation:PenaltyArea:image
+#vid all representation:OuterCorner:image
 vid all representation:MidCircle:image
+#vid all representation:MidCorner:image
 vid all representation:BallPercept:image
 vid all representation:ObstaclesImagePercept:image
 vid all representation:ObstaclesFieldPercept:image

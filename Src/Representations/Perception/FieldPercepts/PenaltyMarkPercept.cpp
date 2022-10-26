@@ -6,8 +6,8 @@
 
 #include "PenaltyMarkPercept.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 
 void PenaltyMarkPercept::draw() const
 {

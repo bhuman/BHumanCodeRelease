@@ -5,7 +5,8 @@
  */
 
 #include "RobotHealth.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
+#include "Representations/Communication/BHumanMessageOutputGenerator.h"
 
 // otherwise RobotHealthMessageID::getName() throws an unused function warning
 struct WarningSuppressor

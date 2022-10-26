@@ -1,2 +1,0 @@
-# replay all log files in subfolders.
-sml "${Log Folder:,,../../Logs/}"

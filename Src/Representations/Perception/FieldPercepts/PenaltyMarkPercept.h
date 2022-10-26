@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Math/Angle.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * @struct PenaltyMarkPercept

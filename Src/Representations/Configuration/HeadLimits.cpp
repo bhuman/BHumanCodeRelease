@@ -7,8 +7,8 @@
 #include "HeadLimits.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Eigen.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Eigen.h"
 
 #include <algorithm>
 

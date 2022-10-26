@@ -11,10 +11,10 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/JointAngles.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/RobotParts/Limbs.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Eigen.h"
+#include "Math/Pose3f.h"
+#include "RobotParts/Limbs.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * @struct RobotModel

@@ -1,6 +1,6 @@
 # LICENSE
 ------------------------------------------------------------------
-Copyright (c) 2021 B-Human.  All rights reserved.
+Copyright (c) 2022 B-Human.  All rights reserved.
 
 
 Preamble: B-Human releases most of the software it uses at RoboCup
@@ -23,30 +23,53 @@ copyright owners remain.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
 are met:
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following
-   disclaimer in the documentation and/or other materials provided
-   with the distribution.
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
 
-3. The end-user documentation included with the redistribution, if
-   any, must include the following acknowledgment:
-   "This product includes software developed by B-Human
-    (http://www.b-human.de)."
-   Alternately, this acknowledgment may appear in the software
-   itself, if and wherever such third-party acknowledgments
-   normally appear.
+ 2. Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following
+    disclaimer in the documentation and/or other materials provided
+    with the distribution.
 
-4. For each B-Human code release from which parts are used in a
-   RoboCup competition, the usage shall be announced in the SPL
-   mailing list (currently robocup-nao@lists.robocup.org) one month
-   before the first competition in which you are using it. The
-   announcement shall name which parts of this code are used.
-   It shall also contain a description of the own contribution
-   that addresses the criteria set by section A.1 of the SPL rule
-   book.
+ 3. The end-user documentation included with the redistribution, if
+    any, must include the following acknowledgment:
+    "This product includes software developed by B-Human
+     (http://www.b-human.de)."
+    Alternately, this acknowledgment may appear in the software
+    itself, if and wherever such third-party acknowledgments
+    normally appear.
+
+ 4. To use parts of this B-Human code release in a RoboCup
+    competition, participating teams must fulfill the following
+    conditions (if applicable):
+
+      - The usage of this version of the code release must be
+        announced on the SPL mailing list (currently
+        robocup-nao@lists.robocup.org) at least one month before
+        the first competition in which it is used. The announcement
+        shall name which parts of this code are used.
+      
+    If the code usage is not limited to single components, such
+    as the ball detection or the self-localization, but consists
+    of major parts of the B-Human system, we consider the team
+    to use "derived software" and the following additional
+    conditions apply:
+      
+      - The announcement on the SPL mailing list shall also contain
+        a description of the own contribution that addresses the
+        criteria set by the SPL rule book (in the 2022 SPL rules
+        described in section A.1 of
+        https://spl.robocup.org/wp-content/uploads/SPL-Rules-2022.pdf).
+
+      - For each year, the derived software as used in the last
+        RoboCup competition game in that year, including the
+        contributions previously announced, must be publicly
+        released as source code. The release must be licensed such
+        that other RoboCup teams can use it, although it may place
+        conditions on the use (such as this license). The release
+        must be published and announced on the SPL mailing list by
+        the end of that year.
 
 
 THIS SOFTWARE IS PROVIDED BY B-HUMAN ``AS IS'' AND ANY

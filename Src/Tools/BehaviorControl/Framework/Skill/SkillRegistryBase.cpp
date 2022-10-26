@@ -9,7 +9,7 @@
 #include "SkillRegistryBase.h"
 #include "SkillDetails.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Streams/InStreams.h"
+#include "Streaming/InStreams.h"
 
 SkillRegistryBase::SkillRegistryBase(ActivationGraph& activationGraph) :
   theActivationGraph(activationGraph)
@@ -160,7 +160,7 @@ void SkillRegistryBase::resolveSkills(const char* skillConfig)
   }
 }
 
-void SkillRegistryBase::checkSkills(const std::vector<const char*>& skillNames)
+void SkillRegistryBase::checkSkills([[maybe_unused]] const std::vector<const char*>& skillNames)
 {
 #ifndef NDEBUG
   for(const char* skill : skillNames)

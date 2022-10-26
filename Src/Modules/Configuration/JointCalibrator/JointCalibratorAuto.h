@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Platform/SystemCall.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/JointCalibration.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Configuration/JointLimits.h"
@@ -15,9 +15,9 @@
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Tools/Motion/MotionUtilities.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/EnumIndexedArray.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Math/Eigen.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "Debugging/DebugDrawings.h"
 
 STREAMABLE(PhasePairs,
 {,
@@ -46,7 +46,7 @@ MODULE(JointCalibratorAuto,
     (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) calibrationReference,
     (Angle) headYawOtherRef,
     (std::vector<Phases>) calibrationPoses,
-    (Angle) maxTorsoDif,
+    (Angle) maxTorsoDiff,
     (int) responseWaitTime,
     (int) switchTransitionWaitTime,
     (int) samplingTime,

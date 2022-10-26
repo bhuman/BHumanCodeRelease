@@ -19,22 +19,22 @@
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose2f.h"
+#include "Math/Eigen.h"
+#include "Math/Pose2f.h"
 #include "Tools/Motion/WalkKickType.h"
 #include "Tools/Modeling/BallPhysics.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Framework/Module.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(KickKeyframePart,
 {,
-  (Vector2f)(Vector2f(0.f, 0.f)) relativePositionToBallMax, /**< Max relative position to the ball for the origin of the swing foot sole. */
-  (Vector2f)(Vector2f(0.f, 0.f)) relativePositionToBallMin, /**< Min relative position to the ball for the origin of the swing foot sole. */
-  (Vector2f)(Vector2f(0.f, 0.f)) offsetSwingFootMax, /**< Max hip shift backward. */
-  (Vector2f)(Vector2f(0.f, 0.f)) offsetSwingFootMin, /**< Min hip shift backward. */
-  (Vector2f)(Vector2f(0.f, 0.f)) minStepTarget, /**< Min size of the step target. */
+  (Vector2f)(Vector2f::Zero()) relativePositionToBallMax, /**< Max relative position to the ball for the origin of the swing foot sole. */
+  (Vector2f)(Vector2f::Zero()) relativePositionToBallMin, /**< Min relative position to the ball for the origin of the swing foot sole. */
+  (Vector2f)(Vector2f::Zero()) offsetSwingFootMax, /**< Max hip shift backward. */
+  (Vector2f)(Vector2f::Zero()) offsetSwingFootMin, /**< Min hip shift backward. */
+  (Vector2f)(Vector2f::Zero()) minStepTarget, /**< Min size of the step target. */
   (float)(1000.f) maxSideStep, /**< Max allowed side step target. Values is based on the left foot (so only positive values make sense). */
   (float)(1.f) directionRatio, /**< Reach direction with this ratio. */
   (float)(0.5f) reachPositionRatio, /**< Reach the relativePositionToBall after this % part of the step. (Between 0 and 1. One step takes 250 ms)*/
@@ -55,7 +55,8 @@ STREAMABLE(KickKeyframe,
 {,
   (float)(0.f) reduceSwingFootHeight, /**< Swing foot height is clipped at the end of the step by this amount. */
   (float)(1.f) increaseSwingHeightFactor, /**< Increase max height of the swing foot for this step. */
-  (bool)(false) useSlowFootHeightInterpolation, /**< Interpolate the support foot height slower back to 0 in the next walking step. */
+  (bool)(false) useSlowSupportFootHeightAfterKickInterpolation, /**< Interpolate the support foot height slower back to 0 in the next walking step. */
+  (float)(0.f) useSlowSwingFootHeightInterpolation, /**< Interpolate the swing foot height as if it was a large side step. */
   (WalkKickStep::OverrideFoot)(WalkKickStep::OverrideFoot::none) overrideOldSwingFoot, /**<  Override the previous swing foot position variables based on the last measured/requested angles? */
   (WalkKickStep::OverrideFoot)(WalkKickStep::OverrideFoot::none) overrideOldSupportFoot, /**<  Override the previous support foot position variables based on the last measured/requested angles? */
   (int) numOfBalanceSteps, /**< Number of balance steps that need to follow after the inWalkKick. */
@@ -68,12 +69,17 @@ STREAMABLE(WalkKickParameters,
   // All kicks are based on the left foot as kick foot
   (Rangef) maxXDeviation, /**< Max x deviation for ball relative to support foot at the start of the walk kick. */
   (Rangef) maxYDeviation, /**< Max x deviation for ball relative to support foot at the start of the walk kick. */
-  (Rangef) additionalXDeviation, /**< Additional x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is false. */
-  (Rangef) additionalYDeviation, /**< Max x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is false. */
+  (Rangef) additionalXDeviation, /**< Additional x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is notPrecise. */
+  (Rangef) additionalYDeviation, /**< Max x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is notPrecise. */
+  (Rangef) additionalXDeviationJustHitTheBall, /**< Additional x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is justHitTheBall. */
+  (Rangef) additionalYDeviationJustHitTheBall, /**< Max x deviation for ball relative to support foot at the start of the walk kick, when alignPrecisely is justHitTheBall. */
   (Angle) maxAngleDeviation, /**< Max x deviation for ball relative to support foot at the start of the walk kick. */
-  (Rangef) maxClipBeforAbortX, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
-  (Rangef) maxClipBeforAbortY, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
-  (Rangea) maxClipBeforAbortRot, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
+  (Rangef) maxClipBeforeAbortX, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
+  (Rangef) maxClipBeforeAbortY, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
+  (Rangea) maxClipBeforeAbortRot, /**< Step targets can be clipped for so much, before the in walk kick is aborted. */
+  (Rangef) maxClipBeforeAbortJustHitTheBallX, /**< Step targets can be clipped for so much, before the in walk kick is aborted, when precision "JustHitTheBall" is set. */
+  (Rangef) maxClipBeforeAbortJustHitTheBallY, /**< Step targets can be clipped for so much, before the in walk kick is aborted, when precision "JustHitTheBall" is set. */
+  (Rangea) maxClipBeforeAbortJustHitTheBallRot, /**< Step targets can be clipped for so much, before the in walk kick is aborted, when precision "JustHitTheBall" is set. */
   (Rangef) sideDeviationScalingBasedOnLastStep, /**< Min -> negativ scaling, Max -> positiv scaling. */
   (std::vector<KickKeyframe>) kickKeyFrame, /**< Feet pose relative to ball. */
 });
@@ -94,7 +100,7 @@ MODULE(WalkKickEngine,
   REQUIRES(KickInfo),
   REQUIRES(MassCalibration),
   REQUIRES(MotionRequest),
-  USES(OdometryData),
+  REQUIRES(OdometryDataPreview),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotModel),
   REQUIRES(WalkGenerator),
@@ -119,14 +125,13 @@ MODULE(WalkKickEngine,
     (float) turnKickPreviousMaxXStepSize, /**< When executing turn kicks, the previous allowed forward step size gets interpolated. */
     (Angle) forwardStealVFeetAngle, /**< Consider V-Shape rotation of the feet, when executing the forward steal. */
     (float) walkToBallForForwardStealMaxXTranslation, /**< Max allowed x-Translation step size when walking to the ball for the forward steal kick. */
-    (Vector2f) forwardStealKickPose, /**< Feet kick pose for the forward steal. */
     (Vector2f) forwardStealWaitingKickPose, /**< Feet kick pose for the forward steal when no rotation is applied yet. */
     (float) forwardStealVFeetAngleFactor, /**< Factor for forwardStealVFeetAngle to start the the kick pose for the forward steal. */
     (Angle) forwardPreStepSkipMaxKickAngle, /**< Skip pre step for forward kicks, if the kick angle is small. */
-    (Angle) forwardStealMinVAngleThreshold, /**< Start forwardSteal if the Angle between both legs are bigger than this value. */
     (float) forwardStealMinXAbortThreshold, /**< Abort forwardSteal if the ball is too far away. */
     (float) timeSinceBallLastSeenThreshold, /**< Abort forwardSteal if the ball was not seen for this time. */
-    (Pose2f) maxClipBeforAbortForwardSteal, /**< For the forwardSteal, use different abort thresholds after the first keyframe. */
+    (Pose2f) maxClipBeforeAbortForwardSteal, /**< For the forwardSteal, use different abort thresholds after the first keyframe. */
+    (float) forwardStealMaxPreviousYTranslation, /**< The needed y-translation to executed this step is not allowed to be above this threshold. */
     (float) stepDuration, /**< Assumed duration of one walking step. */
     (ENUM_INDEXED_ARRAY(WalkKickParameters, WalkKicks::Type)) walkKicksList, /**< List of in walk kicks. */
   }),
@@ -143,7 +148,6 @@ private:
   int kickIndex; /**< Current index of the current executed kick. */
   float currentKickPoseShiftY;
   bool enableDrawings = false; /**< If true, drawings are calculated. */
-  OdometryData updatedOdometryData;
   void update(WalkKickGenerator& walkKickGenerator) override;
 
   /**
@@ -157,23 +161,54 @@ private:
    * Can the kick be executed or is one of the step targets too much clipped?
    * @param originalPoses The original planned step targets
    * @param clippedPoses The clipped step targets
-   * @param maxClipBeforAbort Parameters to decide, if the clippedPoses differentiate too much from the originalPoses
-   *
+   * @param maxClipBeforeAbort Parameters to decide, if the clippedPoses differentiate too much from the originalPoses
+   * @param kickPoseShiftY Kickpose shift resulting from an obstacle. TODO should be removed and a new kick should be added with the shifted pose!
+   * @param mirror Is the kick mirrored (instead of left leg is kicking, right leg is kicking)
    * @return True if executable, else false
    */
-  bool canExecute(const std::vector<Pose2f>& originalPoses, const std::vector<Pose2f>& clippedPoses, const Rangef& maxClipBeforAbortX,
-                  const Rangef& maxClipBeforAbortY, const Rangea& maxClipBeforAbortRot, const float kickPoseShiftY, const bool mirror);
+  bool canExecute(const std::vector<Pose2f>& originalPoses, const std::vector<Pose2f>& clippedPoses, const Rangef& maxClipBeforeAbortX,
+                  const Rangef& maxClipBeforeAbortY, const Rangea& maxClipBeforeAbortRot, const float kickPoseShiftY, const bool mirror);
+
+  /**
+   * Checks if the kick can be executed, given the current ball position. Simple threshold checks
+   * @param canKick previous check, if kikc is possible
+   * @param precisionRange Precision of the kick direction
+   * @param ballModel the ball relativ to the kicking foot
+   * @param walkKickVariant all information to the requested kick
+   * @param lastExecutedStep
+   * @param precision Ball needs to be as close to the ref position as possible
+   * @param kickPoseShiftY An obstacle shifted the kick pose
+   * @param turnKickAllowed Turn kicks are allowed?
+   * @param isPreStep Is the current walk step a pre step?
+   */
+  bool findBestKickExecution(const bool canKick, const Rangea& precisionRange,
+                             const Vector2f& ballModel, WalkKickVariant& walkKickVariant,
+                             const Pose2f& lastExecutedStep, const KickPrecision precision,
+                             const float kickPoseShiftY, const bool turnKickAllowed, const bool isPreStep);
+
+  /**
+   * Get clip ranges based on kick and precision
+   * @param maxClip Clip ranges
+   * @param kick The executed kick
+   * @param kickIndex Index in the kick
+   * @param isJustHitTheBall Precision request is "just hit"
+   */
+  void getClipRanges(Rangef& maxClipX, Rangef& maxClipY, Rangea& maxClipRot, const WalkKickVariant& kick,
+                     const int kickIndex, const bool isJustHitTheBall);
 
   /**
    * Clip step target
    * @param original Original step target
    * @param newPose New step target
+   * @param lastStep Last executed walk step size
    * @param isLeftPhase Is left foot the swing foot?
    * @param keyframePart Special parameters
+   * @param walkKickType The kick type TODO remove, information is already in "kick"
+   * @param kick The kick
    */
-  void clipStepTarget(Pose2f& original, Pose2f& newPose, const Pose2f& lastStep, const bool isLeftPhase,
-                      const KickKeyframePart keyframePart,
-                      const WalkKicks::Type walkKickType);
+  void clipStepTarget(Pose2f& original, Pose2f& newPose, const Pose2f& lastStep,
+                      const bool isLeftPhase, const KickKeyframePart keyframePart,
+                      const WalkKicks::Type walkKickType, const WalkKickVariant& kick);
 
   /**
    * Apply the following clipping: minimal step target, hold position
@@ -200,8 +235,10 @@ private:
    * @param poses Step targets that shall be executed
    * @param stepSwingOffsets Step targets for the swing foot
    * @param kick Current kick
-   * @param odometryData The odometryData matching the last ball position
    * @param index Current keyframe index
+   * @param ballPosition relativ ball position to the swing foot
+   * @param clipOffsets offsets for the swing foot
+   * @param convertedOdometryRotation The odometryData matching the last ball position
    */
   void getNextStepPositions(const MotionPhase& lastPhase, std::vector<Pose2f>& poses, std::vector<Vector2f>& stepSwingOffsets,
                             const WalkKickVariant& kick, const int index, const Vector2f ballPosition,
@@ -241,11 +278,14 @@ private:
    * Calculates the allowed deviations to start the kick
    * @param kick The InWalkKick
    * @param lastStep Last step target
-   * @param alignPrecisely If false, more deviation is allowed
+   * @param precision If false, more deviation is allowed
+   * @param kickPoseShiftY KickPose shift based on an obstacle TODO remove and add a new kick with the shifted pose
+   * @param isPreStep Is this a pre step?
    *
    * @return The allowed deviations
    */
-  DeviationValues getForwardTurnKickDeviation(const WalkKickVariant& kick, const Pose2f& lastStep, const bool alignPrecisely, const float kickPoseShiftY);
+  DeviationValues getForwardTurnKickDeviation(const WalkKickVariant& kick, const Pose2f& lastStep,
+                                              const KickPrecision precision, const float kickPoseShiftY, const bool isPreStep);
 
   /**
    * Calculates the relative position to the ball (RPB) based on the requested power
@@ -287,10 +327,12 @@ private:
 
   /**
    * Special Check for the forwardSteal kick
+   * @param The requested kick
+   * @param steps The to be executed step
    * @param kick The kick parameters
    * @return true if the forwardSteal kick should be aborted
    */
-  bool forwardStealAbortCondition(const WalkKickVariant& kick);
+  bool forwardStealAbortCondition(const WalkKickVariant& kick, const std::vector<Pose2f>& steps, const int index);
 
   /**
    * Clip the planned kick direction based on the precision range;

@@ -99,7 +99,7 @@ while read line; do
   if [ "$type" == "option" ]; then
     option=$id
     echo "Reading option '$option'" >&2
-    echo "  $id [label=\"$label\", URL = \"$urlPath$option.$format\"];" >>"$optionsTmp"
+    echo "  $id [label=\"$label\", tooltip = \"option '$id'\", URL = \"$urlPath$option.$format\"];" >>"$optionsTmp"
     common=
     state=
     internalTmp=/tmp/internal_$option.tmp
@@ -114,19 +114,19 @@ while read line; do
     else
       echo "$state -> option_$id [color = \"#808080\" style = dashed minlen = 2];" >>"$externalTmp"
     fi
-    echo "option_$id [shape = rectangle, label = \"$label\", URL = \"$urlPath$id.$format\"];" >>"$externalTmp"
+    echo "option_$id [shape = rectangle, label = \"$label\", tooltip = \"option '$id'\", URL = \"$urlPath$id.$format\"];" >>"$externalTmp"
   elif [ "$type" == "state" ]; then
     state=$id
-    echo " $state [shape = circle, label = \"$label\"];" >>"$internalTmp"
+    echo " $state [shape = circle, label = \"$label\", tooltip = \"state '$id'\"];" >>"$internalTmp"
   elif [ "$type" == "initial_state" ]; then
     state=$id
-    echo "  $state [shape = Mcircle, label = \"$label\"];" >>"$internalTmp"
+    echo "  $state [shape = Mcircle, label = \"$label\", tooltip = \"initial_state '$id'\"];" >>"$internalTmp"
   elif [ "$type" == "target_state" ]; then
     state=$id
-    echo "$state [shape = doublecircle, label = \"$label\"];" >>"$internalTmp"
+    echo "$state [shape = doublecircle, label = \"$label\", tooltip = \"target_state '$id'\"];" >>"$internalTmp"
   elif [ "$type" == "aborted_state" ]; then
     state=$id
-    echo "$state [shape = doubleoctagon, regular = true, label = \"$label\"];" >>"$internalTmp"
+    echo "$state [shape = doubleoctagon, regular = true, label = \"$label\", tooltip = \"aborted_state '$id'\"];" >>"$internalTmp"
   elif [ "$type" == "goto" ]; then
     if [ -z "$state" ]; then
       common=`echo "$common $id"`
@@ -147,7 +147,7 @@ done <<<"$lines"
 file=`basename "${1%.*}.$format"`
 echo "Writing graph '$file'" >&2
 (
-  echo "digraph G {"
+  echo "digraph \"\" {"
   echo "  margin = 0;"
   echo "  node [shape = box, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
   echo "  edge [arrowsize=0.8];"
@@ -166,7 +166,7 @@ while read option; do
     label=`sed -E -e "s%_% %g" -e "s%([a-z])([A-Z])%\1 \2%g" <<<"$option" | tr '[:upper:]' '[:lower:]'`
     echo "Writing graph '$file'" >&2
     (
-      echo "digraph G {"
+      echo "digraph \"\" {"
       echo "margin = 0;"
       echo "node [style = filled, fillcolor = white, fontname = Arial, fontsize=9, fontcolor = \"#005A9C\", margin = 0.05];"
       echo "ranksep = 0.4;"
@@ -175,6 +175,7 @@ while read option; do
       echo "compound = true;"
       echo "subgraph cluster_ {"
       echo "label = \"option '$label'\""
+      echo "tooltip = \"option '$option'\""
       echo "labeljust = l;"
       echo "style = filled;"
       echo "fillcolor = \"#F4F4F4\";"

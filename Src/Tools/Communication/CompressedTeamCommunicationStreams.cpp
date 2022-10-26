@@ -9,11 +9,11 @@
 #include "CompressedTeamCommunicationStreams.h"
 #include "Platform/BHAssert.h"
 #include "Tools/Communication/BHumanTeamMessageParts/BHumanStandardMessage.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/OutStreams.h"
-#include "Tools/Streams/TypeInfo.h"
-#include "Tools/Streams/TypeRegistry.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/OutStreams.h"
+#include "Streaming/TypeInfo.h"
+#include "Streaming/TypeRegistry.h"
 #include <algorithm>
 #include <cstring>
 #include <functional>
@@ -650,16 +650,16 @@ void CompressedTeamCommunication::TypeRegistry::compile()
 
 void CompressedTeamCommunication::TypeRegistry::generateTCMPluginClass(const std::string& file, const RecordType* type)
 {
-  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 13, "This method is not adjusted for the current message version");
+  static_assert(BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION == 15, "This method is not adjusted for the current message version");
 
-  tcmPluginGeneratedTypes.clear();
+  tcmPluginGeneratedRecords.clear();
+  tcmPluginGeneratedEnums.clear();
 
   OutTextRawFile out(file);
   out << "package bhuman.message;" << endl;
   out << endl;
   out << "import bhuman.message.data.Angle;" << endl;
   out << "import bhuman.message.data.BitStream;" << endl;
-  out << "import bhuman.message.data.ComplexStreamReader;" << endl;
   out << "import bhuman.message.data.Eigen;" << endl;
   out << "import bhuman.message.data.Timestamp;" << endl;
   out << "import java.nio.ByteBuffer;" << endl;
@@ -671,64 +671,35 @@ void CompressedTeamCommunication::TypeRegistry::generateTCMPluginClass(const std
   out << "/**" << endl;
   out << " * This class was generated automatically. DO NOT EDIT!" << endl;
   out << " */" << endl;
-  out << "public class BHumanStandardMessage implements ComplexStreamReader<BHumanStandardMessage> {" << endl;
+  out << "public class BHumanStandardMessage {" << endl;
   out << "    public static final String BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER = \"" BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER "\";" << endl;
   out << "    public static final short BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION = " << BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION << ";" << endl;
-  out << endl;
-  out << "    public static class BNTPMessage {" << endl;
-  out << "        public long requestOrigination;" << endl;
-  out << "        public long requestReceipt;" << endl;
-  out << "        public short receiver;" << endl;
-  out << "    }" << endl;
   out << endl;
   for(const auto& pair : type->members)
     ensureTypeExists(out, pair.second);
   out << "    public short magicNumber;" << endl;
   out << "    public long timestamp;" << endl;
-  out << "    public boolean requestsNTPMessage;" << endl;
-  out << "    public List<BNTPMessage> ntpMessages;" << endl;
+  out << "    public long referenceGameControllerPacketTimestamp;" << endl;
+  out << "    public short referenceGameControllerPacketNumber;" << endl;
   out << endl;
   generateRecordMemberDeclarations(out, type, "    ");
   out << endl;
-  out << "    @Override" << endl;
   out << "    public int getStreamedSize(final ByteBuffer stream) {" << endl;
-  out << "        int size = 1 + 4 + 2;" << endl;
+  out << "        int size = 1 + 4 + 4 + 1 + 2;" << endl;
   out << "        if (stream.remaining() < size) {" << endl;
   out << "            return size;" << endl;
   out << "        }" << endl;
-  out << "        final int container = Unsigned.toUnsigned(stream.getShort(stream.position() + size - 2));" << endl;
-  out << "        int ntpReceivers = container & 0x3F;" << endl;
-  out << "        int ntpCount = 0;" << endl;
-  out << "        while (ntpReceivers != 0) {" << endl;
-  out << "            if ((ntpReceivers & 1) == 1) {" << endl;
-  out << "                ++ntpCount;" << endl;
-  out << "            }" << endl;
-  out << "            ntpReceivers >>= 1;" << endl;
-  out << "        }" << endl;
-  out << "        final int compressedSize = container >> 7;" << endl;
-  out << "        return size + ntpCount * 5 + compressedSize;" << endl;
+  out << "        final int compressedSize = Unsigned.toUnsigned(stream.getShort(stream.position() + size - 2));" << endl;
+  out << "        return size + compressedSize;" << endl;
   out << "    }" << endl;
   out << endl;
-  out << "    @Override" << endl;
-  out << "    public BHumanStandardMessage read(final ByteBuffer stream) {" << endl;
+  out << "    public BHumanStandardMessage read(final ByteBuffer stream, byte playerNumber) {" << endl;
   out << "        magicNumber = Unsigned.toUnsigned(stream.get());" << endl;
   out << "        timestamp = Unsigned.toUnsigned(stream.getInt());" << endl;
-  out << "        final int ntpAndSizeContainer = Unsigned.toUnsigned(stream.getShort());" << endl;
-  out << "        requestsNTPMessage = (ntpAndSizeContainer & (1 << 6)) != 0;" << endl;
-  out << "        ntpMessages = new LinkedList<>();" << endl;
-  out << "        long runner = 1 << 6;" << endl;
-  out << "        for (short i = 1; runner != 0; ++i) {" << endl;
-  out << "            if ((ntpAndSizeContainer & (runner >>= 1)) != 0) {" << endl;
-  out << "                final BNTPMessage message = new BNTPMessage();" << endl;
-  out << "                message.receiver = i;" << endl;
-  out << "                ntpMessages.add(message);" << endl;
-  out << "                final long timeStruct32 = Unsigned.toUnsigned(stream.getInt());" << endl;
-  out << "                final long timeStruct8 = (long) Unsigned.toUnsigned(stream.get());" << endl;
-  out << "                message.requestOrigination = timeStruct32 & 0xFFFFFFF;" << endl;
-  out << "                message.requestReceipt = timestamp - ((timeStruct32 >> 20) & 0xF00) | timeStruct8;" << endl;
-  out << "            }" << endl;
-  out << "        }" << endl;
-  out << "        final int positionAfterCompressed = stream.position() + (ntpAndSizeContainer >> 7);" << endl;
+  out << "        referenceGameControllerPacketTimestamp = Unsigned.toUnsigned(stream.getInt());" << endl;
+  out << "        referenceGameControllerPacketNumber = Unsigned.toUnsigned(stream.get());" << endl;
+  out << "        final int containerSize = Unsigned.toUnsigned(stream.getShort());" << endl;
+  out << "        final int positionAfterCompressed = stream.position() + containerSize;" << endl;
   out << "        final BitStream bitStream = new BitStream(stream);" << endl;
   out << "        final long __timestampBase = timestamp;" << endl;
   generateRecordMemberReading(out, type, "        ");
@@ -740,18 +711,24 @@ void CompressedTeamCommunication::TypeRegistry::generateTCMPluginClass(const std
 
 void CompressedTeamCommunication::TypeRegistry::ensureTypeExists(Out& out, const CompressedTeamCommunication::Type* type)
 {
-  if(tcmPluginGeneratedTypes.count(type))
-    return;
   if(const auto* recordType = dynamic_cast<const CompressedTeamCommunication::RecordType*>(type); recordType)
   {
+    if(tcmPluginGeneratedRecords.count(recordType->name))
+      return;
     for(const auto& pair : recordType->members)
       ensureTypeExists(out, pair.second);
     generateRecord(out, recordType);
+    tcmPluginGeneratedRecords.insert(recordType->name);
   }
   else if(const auto* arrayType = dynamic_cast<const CompressedTeamCommunication::ArrayType*>(type); arrayType)
     ensureTypeExists(out, arrayType->element);
   else if(const auto* enumType = dynamic_cast<const CompressedTeamCommunication::EnumType*>(type); enumType)
+  {
+    if(tcmPluginGeneratedEnums.count(enumType->name))
+      return;
     generateEnum(out, enumType);
+    tcmPluginGeneratedEnums.insert(enumType->name);
+  }
   else if(const auto* vectorType = dynamic_cast<const CompressedTeamCommunication::VectorType*>(type); vectorType)
     ensureTypeExists(out, vectorType->elementType);
   else if(const auto* matrixType = dynamic_cast<const CompressedTeamCommunication::MatrixType*>(type); matrixType)
@@ -769,7 +746,6 @@ void CompressedTeamCommunication::TypeRegistry::generateEnum(Out& out, const Com
   out << "        UNKNOWN" << endl;
   out << "    }" << endl;
   out << endl;
-  tcmPluginGeneratedTypes.insert(type);
 }
 
 void CompressedTeamCommunication::TypeRegistry::generateRecord(Out& out, const CompressedTeamCommunication::RecordType* type)
@@ -787,7 +763,6 @@ void CompressedTeamCommunication::TypeRegistry::generateRecord(Out& out, const C
   out << "        }" << endl;
   out << "    }" << endl;
   out << endl;
-  tcmPluginGeneratedTypes.insert(type);
 }
 
 void CompressedTeamCommunication::TypeRegistry::generateRecordMemberDeclarations(Out& out, const CompressedTeamCommunication::RecordType* type, const std::string& indentation) const

@@ -38,14 +38,14 @@
 ****************************************************************************/
 
 #include "qtpropertybrowserutils_p.h"
-#include <QtWidgets/QApplication>
-#include <QtGui/QPainter>
-#include <QtWidgets/QHBoxLayout>
-#include <QtGui/QMouseEvent>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QMenu>
-#include <QtCore/QLocale>
+#include <QApplication>
+#include <QPainter>
+#include <QHBoxLayout>
+#include <QMouseEvent>
+#include <QCheckBox>
+#include <QLineEdit>
+#include <QMenu>
+#include <QLocale>
 
 QT_BEGIN_NAMESPACE
 
@@ -103,7 +103,7 @@ void QtCursorDatabase::appendCursor(Qt::CursorShape shape, const QString &name, 
 {
     if (m_cursorShapeToValue.contains(shape))
         return;
-    const int value = m_cursorNames.count();
+    const int value = static_cast<int>(m_cursorNames.count());
     m_cursorNames.append(name);
     m_cursorIcons.insert(value, icon);
     m_valueToCursorShape.insert(value, shape);

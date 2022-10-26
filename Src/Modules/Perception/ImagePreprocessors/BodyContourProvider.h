@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Tools/Math/Eigen.h"
+#include "Framework/Module.h"
+#include "Math/Eigen.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"

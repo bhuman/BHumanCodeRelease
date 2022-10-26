@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose2f.h"
+#include "Math/Eigen.h"
+#include "Math/Pose2f.h"
 
 /**
  * @struct WorldModelPrediction

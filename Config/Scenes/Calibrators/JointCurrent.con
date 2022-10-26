@@ -1,0 +1,8 @@
+vp currentsLeft 1000 -1 1800
+vpd currentsLeft module:FilteredCurrentProvider:lAP red
+vpd currentsLeft module:FilteredCurrentProvider:lKP orange
+vpd currentsLeft module:FilteredCurrentProvider:lHP brown
+vp currentsRight 1000 -1 1800
+vpd currentsRight module:FilteredCurrentProvider:rAP blue
+vpd currentsRight module:FilteredCurrentProvider:rKP cyan
+vpd currentsRight module:FilteredCurrentProvider:rHP black

@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Eigen.h"
 
 STREAMABLE(ObstaclesImagePercept,
 {

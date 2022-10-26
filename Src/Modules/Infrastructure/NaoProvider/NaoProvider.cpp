@@ -12,9 +12,9 @@
 #include "Platform/Thread.h"
 #include "Platform/Time.h"
 #include "Tools/Communication/MsgPack.h"
-#include "Tools/Global.h"
-#include "Tools/Settings.h"
-#include "Tools/Streams/OutStreams.h"
+#include "Streaming/Global.h"
+#include "Framework/Settings.h"
+#include "Streaming/OutStreams.h"
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
@@ -243,7 +243,14 @@ NaoProvider::NaoProvider()
   sockaddr_un address;
   address.sun_family = AF_UNIX;
   std::strcpy(address.sun_path, "/tmp/robocup");
-  VERIFY(!connect(socket, reinterpret_cast<sockaddr*>(&address), sizeof(address)));
+  unsigned i;
+  for(i = 0; i < retries; ++i)
+  {
+    if(!connect(socket, reinterpret_cast<const sockaddr*>(&address), sizeof(address)))
+      break;
+    Thread::sleep(retryDelay);
+  }
+  ASSERT(i < retries);
 
   // Receive a first packet and setup all tables
   receivePacket();

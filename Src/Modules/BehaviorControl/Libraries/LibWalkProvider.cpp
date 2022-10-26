@@ -24,7 +24,6 @@ LibWalkProvider::LibWalkProvider() : lastAvoidanceAngleOffset(0.f), activeLastFr
   goalPosts[1] = Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal);
   goalPosts[2] = Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal);
   goalPosts[3] = Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
-
 }
 
 void LibWalkProvider::update(LibWalk& libWalk)
@@ -39,13 +38,13 @@ void LibWalkProvider::update(LibWalk& libWalk)
     lastAvoidanceAngleOffset = 0.f;
   activeLastFrame = false;
 
-  libWalk.calcObstacleAvoidance = [this](const Pose2f& originalTarget, bool rough, bool disableObstacleAvoidance) -> MotionRequest::ObstacleAvoidance
+  libWalk.calcObstacleAvoidance = [this](const Pose2f& originalTarget, bool rough, bool disableObstacleAvoidance, bool toBall) -> MotionRequest::ObstacleAvoidance
   {
-    return calcObstacleAvoidance(originalTarget, rough, disableObstacleAvoidance);
+    return calcObstacleAvoidance(originalTarget, rough, disableObstacleAvoidance, toBall);
   };
 }
 
-MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Pose2f& originalTarget, bool rough, bool disableObstacleAvoidance)
+MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Pose2f& originalTarget, bool rough, bool disableObstacleAvoidance, bool toBall)
 {
   activeLastFrame = true;
 
@@ -59,7 +58,7 @@ MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Po
     lastAvoidanceAngleOffset = 0.f;
   }
 
-  calculateObstacles(target, targetOnField, rough, disableObstacleAvoidance);
+  calculateObstacles(target, targetOnField, rough, disableObstacleAvoidance, toBall);
 
   const Angle targetAngle = target.translation.angle();
   const Angle angleLeft = getNextFreeAngle(targetAngle, true);
@@ -129,7 +128,7 @@ MotionRequest::ObstacleAvoidance LibWalkProvider::calcObstacleAvoidance(const Po
   return obstacleAvoidance;
 }
 
-void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& targetOnField, const bool rough, const bool disableObstacleAvoidance)
+void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& targetOnField, const bool rough, const bool disableObstacleAvoidance, bool toBall)
 {
   obstacles.clear();
 
@@ -142,7 +141,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
   }
 
   // the field border is an obstacle, except if the target is not inside the field (in case theRobotPose is wrong and the ball deemed outside the field)
-  if(theGameInfo.state != STATE_PLAYING || !theTeamBehaviorStatus.role.playsTheBall() ||
+  if(!theGameState.isPlaying() || !toBall ||
      (std::abs(targetOnField.x()) < theFieldDimensions.xPosOpponentGroundLine
       && std::abs(targetOnField.y()) < theFieldDimensions.yPosLeftSideline))
   {
@@ -201,11 +200,10 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
     addObstacle(theRobotPose.inversePose * closestPointOnLine, 200.f, fieldBorderAvoidanceMinRadius, fieldBorderAvoidanceMaxRadius, fieldBorderAvoidanceDistance);
 
   // Ball
-  if(!rough && theGameInfo.state == STATE_PLAYING
-     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.timeSinceTeamBallWasValid < ballTimeout))
+  if(!rough && theGameState.isPlaying()
+     && (theFieldBall.timeSinceBallWasSeen < ballTimeout || theFieldBall.teammatesBallIsValid))
   {
-    const bool useOwnBall = theFieldBall.timeSinceBallWasSeen < ballTimeout;
-    const Vector2f& ballPosition = useOwnBall ? theFieldBall.positionRelative : theFieldBall.teamPositionRelative;
+    const Vector2f& ballPosition = theFieldBall.recentBallPositionRelative(ballTimeout);
     if(ballPosition.squaredNorm() < sqr(ballAvoidanceDistance))
       addObstacle(ballPosition, theBallSpecification.radius, ballAvoidanceMinRadius, ballAvoidanceMaxRadius, ballAvoidanceDistance);
   }
@@ -222,10 +220,8 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
         o.active = false;
     }
   }
-  /// the own penalty area is an obstacle, if already three teammates are in this area
-  /// checks for two teammates other than the goalkeeper instead, to allow her/him to return should she/he be missing
   /// the penalty area obstacles are added after the rough check, so that they can't be deactivated
-  if(!theRobotInfo.isGoalkeeper() && theLibTeammates.nonKeeperTeammatesInOwnPenaltyArea >= 2)
+  if(theIllegalAreas.illegal & bit(IllegalAreas::ownPenaltyArea))
   {
     if(theLibPosition.isNearOwnPenaltyArea(theRobotPose.translation, penaltyAreaAvoidanceDistance, penaltyAreaAvoidanceDistance))
     {
@@ -250,9 +246,7 @@ void LibWalkProvider::calculateObstacles(const Pose2f& target, const Vector2f& t
       addObstacle(obstaclePos, 300.f, penaltyAreaAvoidanceMinRadius, penaltyAreaAvoidanceMaxRadius, penaltyAreaAvoidanceDistance);
     }
   }
-  //////
-  /// the opponents penalty area is an obstacle, if already three teammates are in this area
-  if(theLibTeammates.teammatesInOpponentPenaltyArea >= 3)
+  if(theIllegalAreas.illegal & bit(IllegalAreas::opponentPenaltyArea))
   {
     if(theLibPosition.isNearOpponentPenaltyArea(theRobotPose.translation, penaltyAreaAvoidanceDistance, penaltyAreaAvoidanceDistance))
     {

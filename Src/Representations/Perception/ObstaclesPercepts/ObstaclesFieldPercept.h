@@ -12,9 +12,9 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 STREAMABLE(ObstaclesFieldPercept,
 {
@@ -32,7 +32,8 @@ STREAMABLE(ObstaclesFieldPercept,
     (Vector2f) left, /**< Obstacle's left edge in robot-relative coordinates (in mm). */
     (Vector2f) right, /**< Obstacle's right edge in robot-relative coordinates (in mm). */
     (bool) fallen, /**< Is the obstacle a player lying on the field? */
-    (Type) type, /**< The type of the obstacle. */
+    (Type)(Type::unknown) type, /**< The type of the obstacle. */
+    (float)(0.f) probability, /**<Type's probablility */
   });
 
   /** Draws this percept. */

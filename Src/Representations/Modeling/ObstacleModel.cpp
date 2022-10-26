@@ -1,12 +1,12 @@
 #include "ObstacleModel.h"
 #include "Platform/SystemCall.h"
-#include "Representations/Communication/TeamInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Approx.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Approx.h"
 #include "Tools/Modeling/Obstacle.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 void ObstacleModel::operator>>(BHumanMessage& m) const
 {
@@ -60,11 +60,11 @@ void ObstacleModel::draw() const
   DECLARE_DEBUG_DRAWING("representation:ObstacleModel:fallen", "drawingOnField");
   DECLARE_DEBUG_DRAWING3D("representation:ObstacleModel", "robot");
 
-  const ColorRGBA ownColor = ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OwnTeamInfo") ?
-      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK);
+  const ColorRGBA ownColor = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
+      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.color : GameState::Team::Color::black));
 
-  const ColorRGBA opponentColor = ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OpponentTeamInfo") ?
-      static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]).teamColor : TEAM_RED);
+  const ColorRGBA opponentColor = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
+      static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).opponentTeam.color : GameState::Team::Color::red));
 
   ColorRGBA color;
   for(const auto& obstacle : obstacles)

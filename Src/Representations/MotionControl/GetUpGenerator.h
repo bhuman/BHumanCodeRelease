@@ -8,11 +8,12 @@
 
 #pragma once
 
-#include "Tools/Function.h"
-#include "Tools/Motion/MotionGenerator.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Streaming/AutoStreamable.h"
+#include "Tools/Motion/MotionPhase.h"
+#include <memory>
 
-STREAMABLE_WITH_BASE(GetUpGenerator, MotionGenerator,
+STREAMABLE(GetUpGenerator,
 {
-  BASE_HAS_FUNCTION,
+  FUNCTION(std::unique_ptr<MotionPhase>(const MotionPhase&)) createPhase,
 });

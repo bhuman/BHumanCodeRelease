@@ -2,9 +2,9 @@ call Includes/Fast
 
 # field views
 vf worldState
+vfd worldState fieldPolygons
 vfd worldState fieldLines
 vfd worldState goalFrame
-vfd worldState fieldPolygons
 vfd worldState representation:RobotPose
 vfd worldState representation:FieldBall:global
 
@@ -15,6 +15,7 @@ vfd worldState representation:BallModel
 vfd worldState representation:MotionRequest
 vfd worldState representation:ObstacleModel:rectangle
 vfd worldState representation:FieldBall:relative
+vfd worldState cognition:Reset
 
 # press any key to activate the joystick
 jc press 1 call Includes/Joystick

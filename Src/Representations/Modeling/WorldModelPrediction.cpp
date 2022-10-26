@@ -10,7 +10,7 @@
 
 #include "WorldModelPrediction.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void WorldModelPrediction::draw() const
 {

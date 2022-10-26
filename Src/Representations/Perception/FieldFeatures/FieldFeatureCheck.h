@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/Annotation.h"
+#include "Framework/Blackboard.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 

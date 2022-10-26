@@ -8,18 +8,18 @@
 #pragma once
 
 #include "Representations/MotionControl/KickRequest.h"
-#include "Tools/Math/Angle.h"
+#include "Math/Angle.h"
 #include "Tools/Motion/MotionPhase.h"
 #include "Tools/Motion/WalkKickType.h"
-#include "Tools/Range.h"
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Range.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * @struct KickInfo
- * A representation that contains the nearest pose for shooting a goal
+ * A representation that contains information about the available kicks
  */
 STREAMABLE(KickInfo,
 {
@@ -27,6 +27,8 @@ STREAMABLE(KickInfo,
   {,
     forwardFastRight,
     forwardFastLeft,
+    forwardFastRightPass,
+    forwardFastLeftPass,
     forwardFastRightLong,
     forwardFastLeftLong,
     walkForwardsRight,

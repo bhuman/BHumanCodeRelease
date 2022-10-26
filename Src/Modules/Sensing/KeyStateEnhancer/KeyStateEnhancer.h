@@ -9,9 +9,9 @@
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/KeyStates.h"
-#include "Tools/RingBuffer.h"
-#include "Tools/Range.h"
-#include "Tools/Module/Module.h"
+#include "Math/RingBuffer.h"
+#include "Math/Range.h"
+#include "Framework/Module.h"
 
 #include <array>
 

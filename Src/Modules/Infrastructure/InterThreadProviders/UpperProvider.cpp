@@ -26,3 +26,8 @@ void UpperProvider::update(OtherObstaclesPerceptorData& theOtherObstaclesPercept
   static_cast<ObstaclesPerceptorData&>(theOtherObstaclesPerceptorData) = theUpperObstaclesPerceptorData;
   theOtherObstaclesPerceptorData.imageCoordinateSystem.cameraInfo = theUpperObstaclesPerceptorData.cameraInfo;
 }
+
+void UpperProvider::update(OtherOdometryData& theOtherOdometryData)
+{
+  static_cast<OdometryData&>(theOtherOdometryData) = theUpperOdometryData;
+}

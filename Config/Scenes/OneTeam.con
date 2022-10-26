@@ -4,3 +4,4 @@ call Includes/Normal
 call Includes/Views
 
 dr debugDrawing3d:representation:RobotPose
+dr representation:SetupPoses:place

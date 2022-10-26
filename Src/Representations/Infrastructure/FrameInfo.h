@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * @struct FrameInfo

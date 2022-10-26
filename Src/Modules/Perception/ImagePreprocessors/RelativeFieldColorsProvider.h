@@ -13,7 +13,7 @@
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/RelativeFieldColors.h"
 #include "Representations/Perception/ImagePreprocessing/ScanGrid.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(RelativeFieldColorsProvider,
 {,

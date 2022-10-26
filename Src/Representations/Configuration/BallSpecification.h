@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/Modeling/BallPhysics.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * This representation contains all configurable

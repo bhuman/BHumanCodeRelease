@@ -13,7 +13,7 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
 {
   if(groundContactState.contact)
   {
-    if(theFsrSensorData.totals[Legs::left] + theFsrSensorData.totals[Legs::right] >= minPressureToKeepContact)
+    if(theFsrData.legInfo[Legs::left].hasPressure == theFsrData.lastUpdateTimestamp || theFsrData.legInfo[Legs::right].hasPressure == theFsrData.lastUpdateTimestamp)
       lastTimeWithPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithPressure) < maxTimeWithoutPressure;
     if(!groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)
@@ -21,10 +21,10 @@ void GroundContactDetector::update(GroundContactState& groundContactState)
   }
   else
   {
-    if(std::abs(theInertialSensorData.gyro.y()) > maxGyroYToRegainContact
-       || theFsrSensorData.totals[Legs::left] + theFsrSensorData.totals[Legs::right] < minPressureToRegainContact
-       || theFsrSensorData.totals[Legs::left] < minPressurePerFootToRegainContact
-       || theFsrSensorData.totals[Legs::right] < minPressurePerFootToRegainContact)
+    if(theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::left].hasPressure) > maxTimeWithoutPressure ||
+       theFrameInfo.getTimeSince(theFsrData.legInfo[Legs::right].hasPressure) > maxTimeWithoutPressure ||
+       (theFsrData.legInfo[Legs::left].totals <= minPressurePerFootToRegainContact &&
+        theFsrData.legInfo[Legs::right].totals <= minPressurePerFootToRegainContact))
       lastTimeWithoutPressure = theFrameInfo.time;
     groundContactState.contact = theFrameInfo.getTimeSince(lastTimeWithoutPressure) > minTimeWithPressure;
     if(groundContactState.contact && SystemCall::getMode() == SystemCall::physicalRobot)

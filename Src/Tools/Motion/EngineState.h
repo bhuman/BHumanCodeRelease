@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
+#include "Streaming/Enum.h"
 
 namespace EngineStates
 {
@@ -15,18 +15,13 @@ namespace EngineStates
   {, //all States defined in getUpEngine.cpp
     off,
     helpMeState,
-    pickUp,
     breakUp,
-    waiting,
     decideAction,
+    waiting,
     waitForRequest,
-    recoverFallen,
     working,
-    workingAction,
     finished,
-    finishedRecover,
     balanceOut,
-    calibrationState,
     retryState,
   });
 

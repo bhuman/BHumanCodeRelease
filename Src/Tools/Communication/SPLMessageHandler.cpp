@@ -10,8 +10,6 @@
 #include "SPLMessageHandler.h"
 #include "Platform/BHAssert.h"
 #include "Platform/SystemCall.h"
-#include "Platform/Time.h"
-#include "Tools/Debugging/DebugDrawings.h"
 
 void SPLMessageHandler::startLocal(int port, unsigned localId)
 {
@@ -28,9 +26,10 @@ void SPLMessageHandler::startLocal(int port, unsigned localId)
   VERIFY(socket.joinMulticast(group.c_str()));
   VERIFY(socket.setTarget(group.c_str(), port));
   socket.setLoopback(true);
+  targetSet = true;
 }
 
-void SPLMessageHandler::start(int port, const char* subnet)
+void SPLMessageHandler::start(int port)
 {
   ASSERT(!this->port);
   this->port = port;
@@ -38,20 +37,16 @@ void SPLMessageHandler::start(int port, const char* subnet)
   socket.setBlocking(false);
   VERIFY(socket.setBroadcast(true));
   VERIFY(socket.bind("0.0.0.0", port));
-  socket.setTarget(subnet, port);
   socket.setLoopback(false);
+  trySetWifiTarget();
 }
 
 void SPLMessageHandler::send()
 {
-  if(!port)
+  if(!port || (!targetSet && !(trySetWifiTarget(), targetSet)))
     return;
 
   socket.write(reinterpret_cast<char*>(&out), offsetof(RoboCup::SPLStandardMessage, data) + out.numOfDataBytes);
-
-  // Plot usage of data buffer in percent:
-  const float usageInPercent = 100.f * out.numOfDataBytes / static_cast<float>(SPL_STANDARD_MESSAGE_DATA_SIZE);
-  PLOT("module:SPLMessageHandler:standardMessageDataBufferUsageInPercent", usageInPercent);
 }
 
 void SPLMessageHandler::receive()
@@ -65,12 +60,20 @@ void SPLMessageHandler::receive()
   do
   {
     auto* entry = in.setForward();
-    size = localId ? socket.readLocal(reinterpret_cast<char*>(&entry->message), sizeof(entry->message))
-                   : socket.read(reinterpret_cast<char*>(&entry->message), sizeof(entry->message), remoteIp);
+    size = localId ? socket.readLocal(reinterpret_cast<char*>(entry), sizeof(*entry))
+                   : socket.read(reinterpret_cast<char*>(entry), sizeof(*entry), remoteIp);
     if(size < static_cast<int>(offsetof(RoboCup::SPLStandardMessage, data)) || size > static_cast<int>(sizeof(RoboCup::SPLStandardMessage)))
       in.removeFront();
-    else
-      entry->timestamp = Time::getCurrentSystemTime();
   }
   while(size > 0);
+}
+
+void SPLMessageHandler::trySetWifiTarget()
+{
+  std::string bcastAddr = UdpComm::getWifiBroadcastAddress();
+  if(!bcastAddr.empty())
+  {
+    socket.setTarget(bcastAddr.c_str(), port);
+    targetSet = true;
+  }
 }

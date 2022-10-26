@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Tools/Math/Eigen.h"
+#include "Math/Eigen.h"
 #include "Tools/Motion/SensorData.h"
-#include "Tools/RobotParts/FsrSensors.h"
-#include "Tools/RobotParts/Legs.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "RobotParts/FsrSensors.h"
+#include "RobotParts/Legs.h"
+#include "Streaming/EnumIndexedArray.h"
 
 #include <array>
 

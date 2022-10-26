@@ -6,7 +6,7 @@
  */
 
 #include "LibPositionProvider.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 MAKE_MODULE(LibPositionProvider, behaviorControl);
 

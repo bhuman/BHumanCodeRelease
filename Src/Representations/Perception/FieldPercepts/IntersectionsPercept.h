@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Debugging/DebugDrawings.h"
+#include "Streaming/AutoStreamable.h"
 #include <vector>
 
 /**

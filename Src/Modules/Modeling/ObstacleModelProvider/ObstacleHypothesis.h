@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Tools/Modeling/Obstacle.h"
-#include "Tools/RingBuffer.h"
+#include "Math/RingBuffer.h"
 
 struct CameraInfo;
 struct CameraMatrix;

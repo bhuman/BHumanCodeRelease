@@ -8,9 +8,9 @@
  */
 
 #include "UKFRobotPoseHypothesis.h"
-#include "Tools/Math/Covariance.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/Probabilistics.h"
+#include "Math/Covariance.h"
+#include "Math/Geometry.h"
+#include "Math/Probabilistics.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Measurements.h"
 

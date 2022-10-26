@@ -7,7 +7,7 @@
  */
 
 #include "BallSpots.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void BallSpots::draw() const
 {

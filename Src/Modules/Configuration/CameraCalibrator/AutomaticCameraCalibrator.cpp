@@ -9,7 +9,7 @@
 
 #include "AutomaticCameraCalibrator.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/Annotation.h"
+#include "Debugging/Annotation.h"
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 #include <cmath>
@@ -17,7 +17,7 @@
 MAKE_MODULE(AutomaticCameraCalibrator, infrastructure);
 
 AutomaticCameraCalibrator::AutomaticCameraCalibrator() :
-  state(State::idle),
+  state(CameraCalibrationStatus::State::idle),
   functor(*this)
 {
   numOfSamples = 0;
@@ -67,7 +67,7 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
   updateSampleConfiguration();
 
   // Calibration start requested.
-  if(state == State::idle && theCalibrationRequest.targetState == State::recordSamples)
+  if(state == CameraCalibrationStatus::State::idle && theCalibrationRequest.targetState == CameraCalibrationStatus::State::recordSamples)
   {
     optimizer = nullptr;
     successiveConvergences = 0;
@@ -76,14 +76,14 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
     std::for_each(samples.begin(), samples.end(), [](std::unique_ptr<Sample>& sample) { sample.reset(); });
     nextCameraCalibration = theCameraCalibration;
 
-    state = State::recordSamples;
+    state = CameraCalibrationStatus::State::recordSamples;
     inStateSince = theFrameInfo.time;
   }
 
   // Abort requested.
-  if(theCalibrationRequest.targetState == State::idle && state != State::idle)
+  if(theCalibrationRequest.targetState == CameraCalibrationStatus::State::idle && state != CameraCalibrationStatus::State::idle)
   {
-    state = State::idle;
+    state = CameraCalibrationStatus::State::idle;
     inStateSince = theFrameInfo.time;
   }
 
@@ -98,18 +98,19 @@ void AutomaticCameraCalibrator::update(CameraCalibration& cameraCalibration)
     }
   }
 
-  if(state == State::recordSamples && currentSampleConfiguration && theCalibrationRequest.sampleConfigurationRequest)
+  if(state == CameraCalibrationStatus::State::recordSamples && currentSampleConfiguration &&
+     theCalibrationRequest.sampleConfigurationRequest && theOptionalECImage.image)
   {
     recordSamples();
   }
 
-  if(theCalibrationRequest.targetState == State::optimize && state != State::optimize)
+  if(theCalibrationRequest.targetState == CameraCalibrationStatus::State::optimize && state != CameraCalibrationStatus::State::optimize)
   {
-    state = State::optimize;
+    state = CameraCalibrationStatus::State::optimize;
     inStateSince = theFrameInfo.time;
   }
 
-  if(state == State::optimize)
+  if(state == CameraCalibrationStatus::State::optimize)
     optimize();
 
   cameraCalibration = nextCameraCalibration;
@@ -164,7 +165,7 @@ bool AutomaticCameraCalibrator::fitLine(CorrectedLine& cline)
     std::sort(localMaxima.begin(), localMaxima.end(), [](const Maximum& a, const Maximum& b) { return a.maxAcc > b.maxAcc; });
     int angle = localMaxima[0].angleIndex, distance = localMaxima[0].distanceIndex - dMax;
     Vector2f pointOnLine = Vector2f(distance * cosAngles[angle], distance * sinAngles[angle]) + Vector2f(startX, startY);
-    Vector2f n0 = Vector2f(cosAngles[angle], sinAngles[angle]);
+    Vector2f n0(cosAngles[angle], sinAngles[angle]);
 
     Eigen::Hyperplane<float, 2> optimalLine = Eigen::Hyperplane<float, 2>(n0, pointOnLine);
     Vector2f norm = std::abs(correctedStart.x() - correctedEnd.x()) < std::abs(correctedStart.y() - correctedEnd.y()) ? Vector2f(0, 1) : Vector2f(1, 0);
@@ -214,7 +215,7 @@ void AutomaticCameraCalibrator::update(CameraResolutionRequest& cameraResolution
 {
   if(SystemCall::getMode() == SystemCall::Mode::physicalRobot)
   {
-    if(state == State::idle)
+    if(state == CameraCalibrationStatus::State::idle)
     {
       cameraResolutionRequest.resolutions[CameraInfo::lower] = CameraResolutionRequest::Resolutions::defaultRes;
       cameraResolutionRequest.resolutions[CameraInfo::upper] = CameraResolutionRequest::Resolutions::defaultRes;
@@ -229,7 +230,7 @@ void AutomaticCameraCalibrator::update(CameraResolutionRequest& cameraResolution
 
 void AutomaticCameraCalibrator::extractImagePatch(const Vector2i& start, const Vector2i& size, Sobel::Image1D& grayImage)
 {
-  const ECImage& theECImage = theCameraInfo.camera == CameraInfo::upper ? static_cast<const ECImage&>(theUpperECImage) : static_cast<const ECImage&>(theLowerECImage);
+  const ECImage& theECImage = *theOptionalECImage.image;
   int currentY = start.y();
   for(int y = 0; y < size.y(); ++y, ++currentY)
   {
@@ -405,7 +406,7 @@ void AutomaticCameraCalibrator::recordSamples()
             continue;
 
           const Geometry::Line line2(cLine2.aOnField, (cLine2.bOnField - cLine2.aOnField).normalized());
-          const float distance = Geometry::getDistanceToLine(line2, (cLine3.aOnField + cLine3.bOnField) * 0.5f);
+          const float distance = Geometry::getDistanceToLineSigned(line2, (cLine3.aOnField + cLine3.bOnField) * 0.5f);
           const float combinedOffset = distance > 0 ? cLine2.offset - cLine3.offset : cLine3.offset - cLine2.offset;
 
           if(parallelLinesRange.isInside(std::abs(distance) - combinedOffset))
@@ -467,8 +468,8 @@ void AutomaticCameraCalibrator::recordSamples()
           std::swap(cLineGoalArea, cLineGroundLine);
         if(!fitLine(cLineGoalArea) || !fitLine(cLineGroundLine))
           continue;
-        float goalAreaLineDistance = std::abs(Geometry::getDistanceToLine(Geometry::Line(cLineGoalArea.aOnField, (cLineGoalArea.bOnField - cLineGoalArea.aOnField).normalized()), thePenaltyMarkPercept.positionOnField));
-        float groundLineDistance = std::abs(Geometry::getDistanceToLine(Geometry::Line(cLineGroundLine.aOnField, (cLineGroundLine.bOnField - cLineGroundLine.aOnField).normalized()), thePenaltyMarkPercept.positionOnField));
+        float goalAreaLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGoalArea.aOnField, (cLineGoalArea.bOnField - cLineGoalArea.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
+        float groundLineDistance = Geometry::getDistanceToLine(Geometry::Line(cLineGroundLine.aOnField, (cLineGroundLine.bOnField - cLineGroundLine.aOnField).normalized()), thePenaltyMarkPercept.positionOnField);
 
         // Check if the found lines have a valid distance from the penalty spot.
         bool goalAreaLineDistanceValid, groundLineDistanceValid;
@@ -569,7 +570,7 @@ void AutomaticCameraCalibrator::optimize()
 void AutomaticCameraCalibrator::resetOptimization(const bool finished)
 {
   if(finished)
-    state = State::idle;
+    state = CameraCalibrationStatus::State::idle;
   else
   {
     OUTPUT_TEXT("Restart optimize! An optimization error occurred!");
@@ -688,11 +689,11 @@ float AutomaticCameraCalibrator::ParallelLinesDistanceSample::computeError(const
 
   const Geometry::Line line1(cLine1.aOnField, (cLine1.bOnField - cLine1.aOnField).normalized());
   const Geometry::Line line2(cLine2.aOnField, (cLine2.bOnField - cLine2.aOnField).normalized());
-  const float distance1 = Geometry::getDistanceToLine(line1, cLine2.aOnField);
-  const float distance2 = Geometry::getDistanceToLine(line1, cLine2.bOnField);
+  const float distance1 = Geometry::getDistanceToLineSigned(line1, cLine2.aOnField);
+  const float distance2 = Geometry::getDistanceToLineSigned(line1, cLine2.bOnField);
 
-  const float distance3 = Geometry::getDistanceToLine(line2, cLine1.aOnField);
-  const float distance4 = Geometry::getDistanceToLine(line2, cLine1.bOnField);
+  const float distance3 = Geometry::getDistanceToLineSigned(line2, cLine1.aOnField);
+  const float distance4 = Geometry::getDistanceToLineSigned(line2, cLine1.bOnField);
 
   const float distance1ErrorRange = cLine2.aOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
   const float distance2ErrorRange = cLine2.bOnField.norm() / 1000.f * calibrator.pixelInaccuracyPerMeter;
@@ -719,7 +720,7 @@ float AutomaticCameraCalibrator::GoalAreaDistanceSample::computeError(const Came
   CHECK_PROJECTION_LINE_PENALTY("GoalAreaDistanceSample", cLine, penaltyMarkInImage, penaltyMarkOnField)
 
   const Geometry::Line line(cLine.aOnField, (cLine.bOnField - cLine.aOnField).normalized());
-  const float goalAreaDistance = std::abs(Geometry::getDistanceToLine(line, penaltyMarkOnField));
+  const float goalAreaDistance = Geometry::getDistanceToLine(line, penaltyMarkOnField);
   const float goalAreaDistanceError = std::abs(goalAreaDistance - (calibrator.theFieldDimensions.xPosOpponentGoalArea -
                                                calibrator.theFieldDimensions.xPosOpponentPenaltyMark + cLine.offset));
   OUTPUT_TEXT("PenaltyDistanceError: " << goalAreaDistanceError);
@@ -732,7 +733,7 @@ float AutomaticCameraCalibrator::GroundLineDistanceSample::computeError(const Ca
   CHECK_PROJECTION_LINE_PENALTY("GroundLineDistanceSample", cLine, penaltyMarkInImage, penaltyMarkOnField)
 
   const Geometry::Line line(cLine.aOnField, (cLine.bOnField - cLine.aOnField).normalized());
-  const float groundLineDistance = std::abs(Geometry::getDistanceToLine(line, penaltyMarkOnField));
+  const float groundLineDistance = Geometry::getDistanceToLine(line, penaltyMarkOnField);
   const float groundLineDistanceError = std::abs(groundLineDistance - (calibrator.theFieldDimensions.xPosOpponentGroundLine -
                                                  calibrator.theFieldDimensions.xPosOpponentPenaltyMark + cLine.offset));
   OUTPUT_TEXT("GroundLineDistanceError: " << groundLineDistanceError);

@@ -6,39 +6,39 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
+#include "Representations/BehaviorControl/Libraries/LibDemo.h"
+#include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Communication/TeamData.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/LEDRequest.h"
 #include "Representations/Infrastructure/SensorData/SystemSensorData.h"
 #include "Representations/Modeling/BallModel.h"
+#include "Representations/Modeling/GlobalTeammatesModel.h"
 #include "Representations/Perception/FieldFeatures/FieldFeatureOverview.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 
 MODULE(LEDHandler,
 {,
   REQUIRES(BallModel),
+  REQUIRES(BehaviorStatus),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
+  REQUIRES(GlobalTeammatesModel),
   REQUIRES(GroundContactState),
   REQUIRES(JointSensorData),
-  REQUIRES(OwnTeamInfo),
-  REQUIRES(RobotInfo),
+  REQUIRES(LibDemo),
   USES(RobotHealth),
   REQUIRES(SystemSensorData),
-  REQUIRES(TeamBehaviorStatus),
+  REQUIRES(StrategyStatus),
   REQUIRES(TeamData),
   PROVIDES(LEDRequest),
   DEFINES_PARAMETERS(
   {,
     (int)(5) chargingLightSlowness,
-    (int)(2000) gameControllerTimeOut,
     (int)(50) tempForHalfLEDActive,
     (int)(65) tempForLEDBlinking,
     (int)(75) tempForLEDFastBlinking,

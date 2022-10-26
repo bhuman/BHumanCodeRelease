@@ -14,9 +14,6 @@ GyroOffsetProvider::GyroOffsetProvider()
   gyroMeanX.clear();
   gyroMeanY.clear();
   gyroMeanZ.clear();
-  gyroDeviationX.clear();
-  gyroDeviationY.clear();
-  gyroDeviationZ.clear();
   gyroChecks = { 0, 0, 0 };
   timestamps = { 0, 0, 0 };
   samplingStart = startTimestamp;
@@ -33,23 +30,26 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
   if(SystemCall::getMode() != SystemCall::simulatedRobot)
     checkBodyDisconnection(gyroOffset);
   if(SystemCall::getMode() != SystemCall::physicalRobot)
-    return;
-  //Make sure the robot is not making sound when he is not in Initial.
-  //I have no idea if this is enough in a case, where the game is already going on but the robot was rebooted.
-  if(theGameInfo.state != STATE_INITIAL && wasPlayingOnce)
-    return;
-  if(theRobotInfo.penalty == 0 && (theGameInfo.state == STATE_PLAYING || theGameInfo.state == STATE_SET || theGameInfo.state == STATE_READY))
   {
-    wasPlayingOnce = true;
+    gyroOffset.offsetCheckFinished = true;
     return;
   }
+  // Gyro has offsets. Say that the robot needs a reboot.
+  if(gyroOffset.isIMUBad && theFrameInfo.getTimeSince(gyroOffsetSoundTimestamp) > gyroOffsetWarningTime)
+  {
+    const Angle maxOffset = gyroOffset.offset.maxCoeff();
+    gyroOffsetSoundTimestamp = theFrameInfo.time;
+    SystemCall::playSound("sirene.wav", true);
+    SystemCall::say((std::string("Please reboot me. My gyros have an offset of ") + std::to_string(static_cast<int>(maxOffset.toDegrees())) + " degrees!").c_str(), true);
+  }
+  if(gyroOffset.offsetCheckFinished)
+    return;
   switch(state)
   {
     //waiting until the first time standHigh
     case waiting:
     {
-      if(theGroundContactState.contact
-         && ((theMotionRequest.motion == MotionRequest::stand && theMotionRequest.standHigh) || (theMotionRequest.motion == MotionRequest::playDead)))
+      if(theGroundContactState.contact && theMotionInfo.executedPhase == MotionPhase::playDead)
       {
         //is the robot long enough in standhigh?
         if(theFrameInfo.getTimeSince(samplingStart) > waitTimeBeforeSampling)
@@ -59,17 +59,18 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
         }
       }
       else if(theFrameInfo.time != 0)
+      {
         samplingStart = theFrameInfo.time;
+        if(theFrameInfo.getTimeSince(gyroNotCheckedTimestamp) > gyroNotCheckedWarningTime)
+        {
+          gyroNotCheckedTimestamp = theFrameInfo.time;
+          SystemCall::say("Please place me on the ground. I need to calibrate my gyro values!", true);
+        }
+      }
       break;
     }
     case sampling:
     {
-      //if the motion request changed, we assume the robot starts playing now.
-      if(!((theMotionRequest.motion == MotionRequest::stand && theMotionRequest.standHigh) || (theMotionRequest.motion == MotionRequest::playDead)))
-      {
-        state = waiting;
-        break;
-      }
       //when robot is picked up again, wait until he has ground contact
       if(!theGroundContactState.contact)
       {
@@ -84,9 +85,6 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
         gyroMeanX.push_front(theGyroState.mean.x());
         gyroMeanY.push_front(theGyroState.mean.y());
         gyroMeanZ.push_front(theGyroState.mean.z());
-        gyroDeviationX.push_front(theGyroState.deviation.x());
-        gyroDeviationY.push_front(theGyroState.deviation.y());
-        gyroDeviationZ.push_front(theGyroState.deviation.z());
         samplingCounter += 1;
       }
       //We did enough sampling
@@ -97,21 +95,27 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
     case set:
     {
       //check if for the windows of the last 333ms and the last 666-999ms, the gyro deviation was small enough
-      if(gyroDeviationX[0] < thresholdGyroDeviation && gyroDeviationY[0] < thresholdGyroDeviation && gyroDeviationZ[0] < thresholdGyroDeviation // last 333ms
-         && gyroDeviationX[2] < thresholdGyroDeviation && gyroDeviationY[2] < thresholdGyroDeviation && gyroDeviationZ[2] < thresholdGyroDeviation) // last 666-999ms
+      if(theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) > minNotMovingTime)
       {
-        gyroOffset.offset.x() = std::abs(gyroMeanX[1]) > thresholdZero ? gyroMeanX[1] : 0_deg;
-        gyroOffset.offset.y() = std::abs(gyroMeanY[1]) > thresholdZero ? gyroMeanY[1] : 0_deg;
-        gyroOffset.offset.z() = std::abs(gyroMeanZ[1]) > thresholdZero ? gyroMeanZ[1] : 0_deg;
-        if(std::abs(gyroMeanX[1]) > thresholdZero
-           || std::abs(gyroMeanY[1]) > thresholdZero
-           || std::abs(gyroMeanZ[1]) > thresholdZero)
+        gyroOffset.offset.x() = std::abs(gyroMeanX[1]) > thresholdZero ? std::abs(gyroMeanX[1]) : 0;
+        gyroOffset.offset.y() = std::abs(gyroMeanY[1]) > thresholdZero ? std::abs(gyroMeanY[1]) : 0;
+        gyroOffset.offset.z() = std::abs(gyroMeanZ[1]) > thresholdZero ? std::abs(gyroMeanZ[1]) : 0;
+        if(gyroOffset.offset.x() > thresholdZero
+           || gyroOffset.offset.y() > thresholdZero
+           || gyroOffset.offset.z() > thresholdZero)
         {
-          float maxOffset = std::max(std::max(std::abs(gyroOffset.offset.x().toDegrees()), std::abs(gyroOffset.offset.y().toDegrees())), std::abs(gyroOffset.offset.z().toDegrees()));
-          SystemCall::playSound("sirene.wav");
-          SystemCall::say((std::string("Gyro has Offset ") + TypeRegistry::getEnumName(Global::getSettings().teamColor) + " " + std::to_string(theRobotInfo.number) + " with an offset of " +  std::to_string(static_cast<int>(maxOffset)) + " degrees").c_str());
+          const Angle maxOffset = gyroOffset.offset.maxCoeff();
+          SystemCall::playSound("sirene.wav", true);
+          SystemCall::say((std::string("Gyro has Offset ") + TypeRegistry::getEnumName(theGameState.ownTeam.color) + " " + std::to_string(theGameState.playerNumber) + " with an offset of " + std::to_string(static_cast<int>(maxOffset.toDegrees())) + " degrees").c_str(), true);
           ANNOTATION("GyroOffsetProvider", "Added Offset " << gyroOffset.offset);
           OUTPUT_ERROR("GyroOffsetProvider - Added an Offset for the Gyros."); // Error, so we write it into the bhumand.log
+          gyroOffsetSoundTimestamp = theFrameInfo.time;
+          gyroOffset.isIMUBad = true;
+        }
+        gyroOffset.offsetCheckFinished = true;
+        if(gyroNotCheckedTimestamp != 0) // Only say it, if robot needed to say the warning
+        {
+          SystemCall::say("Thank you. I am ready to be used.", true);
         }
         state = off;
       }
@@ -119,6 +123,11 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
       {
         samplingCounter = -1;
         state = sampling;
+        if(theFrameInfo.getTimeSince(gyroNotCheckedTimestamp) > gyroNotCheckedWarningTime)
+        {
+          gyroNotCheckedTimestamp = theFrameInfo.time;
+          SystemCall::say("Please place me on the ground. I need to calibrate my gyro values!", true);
+        }
       }
       break;
     }
@@ -129,7 +138,10 @@ void GyroOffsetProvider::update(GyroOffset& gyroOffset)
 
 void GyroOffsetProvider::checkBodyDisconnection(GyroOffset& gyroOffset)
 {
-  if(lastGyroChange == 0 || lastGyros != theInertialData.gyro)
+  if(lastGyroChange == 0 || lastGyros != theInertialData.gyro
+     || (bodyDisconnectGyroRange.isInside(theInertialData.gyro.x()) &&
+         bodyDisconnectGyroRange.isInside(theInertialData.gyro.y()) &&
+         bodyDisconnectGyroRange.isInside(theInertialData.gyro.z())))
   {
     if(gyroStuckTimestamp > theFrameInfo.time) // in case we are in a log file
       gyroStuckTimestamp = theFrameInfo.time - bodyDisconnectWaitTime;
@@ -145,8 +157,8 @@ void GyroOffsetProvider::checkBodyDisconnection(GyroOffset& gyroOffset)
     {
       gyroStuckSoundTimestamp = theFrameInfo.time;
       ANNOTATION("GyroOffsetProvider", "No body connection for " << theFrameInfo.getTimeSince(lastGyroChange) << "ms");
-      SystemCall::playSound("sirene.wav");
-      SystemCall::say((std::string("Body disconnect ") + TypeRegistry::getEnumName(Global::getSettings().teamColor) + " " + std::to_string(theRobotInfo.number)).c_str());
+      SystemCall::playSound("sirene.wav", true);
+      SystemCall::say((std::string("Body disconnect ") + TypeRegistry::getEnumName(theGameState.ownTeam.color) + " " + std::to_string(theGameState.playerNumber)).c_str(), true);
       OUTPUT_ERROR("Body Disconnect!");
     }
   }

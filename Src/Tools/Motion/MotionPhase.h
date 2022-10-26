@@ -9,8 +9,8 @@
 #pragma once
 
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Pose2f.h"
+#include "Streaming/Enum.h"
 #include <memory>
 
 struct MotionInfo;
@@ -28,6 +28,7 @@ struct MotionPhase
     getUp,
     keyframeMotion,
     replayWalk,
+    calibration,
   });
 
   ENUM(Limb,

@@ -1,7 +1,7 @@
 #include "TorsoMatrix.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Rotation.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Rotation.h"
 
 void TorsoMatrix::setTorsoMatrix(const InertialData& theInertialData, const RobotModel& theRobotModel, const GroundContactState& theGroundContactState)
 {
@@ -9,26 +9,14 @@ void TorsoMatrix::setTorsoMatrix(const InertialData& theInertialData, const Robo
   const RotationMatrix torsoRotation = Rotation::AngleAxis::unpack(axis);
 
   // calculate "center of hip" position from left foot
-  Pose3f fromLeftFoot = Pose3f(torsoRotation) *= theRobotModel.soleLeft;
-  fromLeftFoot.translation *= -1.;
-  fromLeftFoot.rotation = torsoRotation;
+  const Vector3f fromLeftFoot = -torsoRotation * theRobotModel.soleLeft.translation;
 
   // calculate "center of hip" position from right foot
-  Pose3f fromRightFoot = Pose3f(torsoRotation) *= theRobotModel.soleRight;
-  fromRightFoot.translation *= -1.;
-  fromRightFoot.rotation = torsoRotation;
-
-  // determine used foot
-  const bool useLeft = fromLeftFoot.translation.z() > fromRightFoot.translation.z();
-
-  // calculate foot span
-  const Vector3f newFootSpan(fromRightFoot.translation - fromLeftFoot.translation);
+  const Vector3f fromRightFoot = -torsoRotation * theRobotModel.soleRight.translation;
 
   // and construct the matrix
-  Pose3f newTorsoMatrix;
-  newTorsoMatrix.translate(newFootSpan.x() / (useLeft ? 2.f : -2.f), newFootSpan.y() / (useLeft ? 2.f : -2.f), 0);
-  newTorsoMatrix.conc(useLeft ? fromLeftFoot : fromRightFoot);
-  static_cast<Pose3f&>(*this) = newTorsoMatrix;
+  translation << 0.5f * (fromLeftFoot.head<2>() + fromRightFoot.head<2>()), std::max(fromLeftFoot.z(), fromRightFoot.z());
+  rotation = torsoRotation;
 
   // valid?
   isValid = theGroundContactState.contact;

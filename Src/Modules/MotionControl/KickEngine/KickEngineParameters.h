@@ -8,8 +8,8 @@
 
 #include <vector>
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Eigen.h"
+#include "Streaming/Enum.h"
 #include "Representations/Infrastructure/JointAngles.h"
 
 class Phase : public Streamable
@@ -71,8 +71,6 @@ STREAMABLE(KickEngineParameters,
     (std::vector<BoostAngle>) boost,
   });
 
-  using stdVectorBoostAngles = std::vector<BoostAngle>;
-
   int numberOfPhases = 0;
   char name[260];
 
@@ -89,7 +87,6 @@ STREAMABLE(KickEngineParameters,
 
   void onRead(),
 
-  (stdVectorBoostAngles) boostAngles, /**< Used joints for boosting. */
   (std::vector<JointOffset>) offsetList, /**< Adjust trajectory of specific joint. */
 
   /**< Reference values for the limbs. */

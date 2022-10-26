@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Tools/Function.h"
+#include "Streaming/Function.h"
 #include "Tools/Motion/MotionGenerator.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE_WITH_BASE(WalkAtRelativeSpeedGenerator, MotionGenerator,
 {

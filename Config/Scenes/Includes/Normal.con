@@ -4,8 +4,7 @@
 st on
 
 # only a single robot displays game state
-dr debugDrawing3d:representation:GameInfo
-dr debugDrawing3d:representation:TeamInfo
+dr debugDrawing3d:representation:GameState
 
 # in case we have more than a single robot
 robot all

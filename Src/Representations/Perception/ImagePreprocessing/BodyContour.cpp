@@ -6,8 +6,8 @@
  */
 
 #include "BodyContour.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 
 BodyContour::Line::Line(const Vector2i& p1, const Vector2i& p2) :
   p1(p1.x() < p2.x() ? p1 : p2), p2(p1.x() < p2.x() ? p2 : p1)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+    <Metadata>
+        <Identity Id="BStyle.6b52ccde-8ae4-4233-bccd-6b9b0ba06a56" Version="3.0.0.8" Language="en-US" Publisher="lukamicoder and lpost and grobler"/>
+        <DisplayName>BStyle Extension 2022</DisplayName>
+        <Description xml:space="preserve">An extension for the B-Human Codestyle.</Description>
+        <License>Resources\License.txt</License>
+        <Icon>Resources\Preview.png</Icon>
+        <PreviewImage>Resources\Preview.png</PreviewImage>
+    </Metadata>
+    <Installation>
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[17.0,18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Id="Microsoft.VisualStudio.IntegratedShell" Version="[17.0,18.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+    </Installation>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+    </Assets>
+</PackageManifest>

@@ -6,9 +6,9 @@
 
 #include "MotionUtilities.h"
 
-void  MotionUtilities::copy(const JointRequest& source, JointRequest& target,
-                            const StiffnessSettings& theStiffnessSettings,
-                            const Joints::Joint startJoint, const Joints::Joint endJoint)
+void MotionUtilities::copy(const JointRequest& source, JointRequest& target,
+                           const StiffnessSettings& theStiffnessSettings,
+                           const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i < endJoint; ++i)
   {
@@ -20,10 +20,24 @@ void  MotionUtilities::copy(const JointRequest& source, JointRequest& target,
   }
 }
 
-void  MotionUtilities::interpolate(const JointRequest& from, const JointRequest& to,
-                                   float fromRatio, JointRequest& target, bool interpolateStiffness,
-                                   const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
-                                   const Joints::Joint startJoint, const Joints::Joint endJoint)
+void MotionUtilities::copy(const JointAngles& source, JointAngles& target,
+                           const Joints::Joint startJoint, const Joints::Joint endJoint)
+{
+  for(int i = startJoint; i < endJoint; ++i)
+    target.angles[i] = source.angles[i];
+}
+
+void MotionUtilities::copy(const std::array<Angle, Joints::numOfJoints>& source, JointAngles& target,
+                           const Joints::Joint startJoint, const Joints::Joint endJoint)
+{
+  for(int i = startJoint; i < endJoint; ++i)
+    target.angles[i] = source[i];
+}
+
+void MotionUtilities::interpolate(const JointRequest& from, const JointRequest& to,
+                                  float fromRatio, JointRequest& target, bool interpolateStiffness,
+                                  const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
+                                  const Joints::Joint startJoint, const Joints::Joint endJoint)
 {
   for(int i = startJoint; i < endJoint; ++i)
   {
@@ -88,7 +102,7 @@ bool MotionUtilities::interpolate(JointRequest& joints, const float alpha, const
   return diff < threshold;
 }
 
-void MotionUtilities::interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target, const JointAngles& theJointAngles)
+void MotionUtilities::interpolate(const JointAngles& from, const JointRequest& to, const float& ratio, JointRequest& target, const JointAngles& theJointAngles)
 {
   for(int i = 0; i < Joints::numOfJoints; ++i)
   {
@@ -114,19 +128,9 @@ void MotionUtilities::interpolate(const JointAngles& from, const JointRequest& t
   }
 }
 
-void MotionUtilities::stand(JointRequest& output)
+void MotionUtilities::walkStand(JointRequest& output, const RobotDimensions& dimensions)
 {
-  output.angles[Joints::lKneePitch] = 48.4503_deg;
-  output.angles[Joints::rKneePitch] = 48.4503_deg;
-  output.angles[Joints::lHipPitch] = -21.7585_deg;
-  output.angles[Joints::rHipPitch] = -21.7585_deg;
-  output.angles[Joints::lHipRoll] = 0_deg;
-  output.angles[Joints::rHipRoll] = 0_deg;
-  output.angles[Joints::lAnkleRoll] = 0_deg;
-  output.angles[Joints::rAnkleRoll] = 0_deg;
-  output.angles[Joints::rAnklePitch] = -26.6918_deg;
-  output.angles[Joints::lAnklePitch] = -26.6918_deg;
-
+  VERIFY(InverseKinematic::calcLegJoints(Pose3f(Vector3f(-12.f, 50.f, -230.f)), Pose3f(Vector3f(-12.f, -50.f, -230.f)), Vector2f::Zero(), output, dimensions)); // this verify should never be false!
   output.angles[Joints::rShoulderPitch] = 90_deg;
   output.angles[Joints::lShoulderPitch] = 90_deg;
   output.angles[Joints::rShoulderRoll] = -7_deg;
@@ -137,67 +141,4 @@ void MotionUtilities::stand(JointRequest& output)
   output.angles[Joints::rElbowRoll] = 0_deg;
   output.angles[Joints::rWristYaw] = 90_deg;
   output.angles[Joints::lWristYaw] = -90_deg;
-}
-
-void MotionUtilities::walkStand(JointRequest& output, const RobotDimensions& dimensions)
-{
-  VERIFY(InverseKinematic::calcLegJoints(Pose3f(Vector3f(-12.f, 50.f, -230.f)), Pose3f(Vector3f(-12.f, -50.f, -230.f)), Vector2f::Zero(), output, dimensions)); // this verify should never be false!
-}
-
-void MotionUtilities::sitFront(JointRequest& output)
-{
-  output.angles[Joints::lKneePitch] = 123_deg;
-  output.angles[Joints::rKneePitch] = 123_deg;
-  output.angles[Joints::lHipPitch] = -24_deg;
-  output.angles[Joints::rHipPitch] = -24_deg;
-  output.angles[Joints::lHipRoll] = 0_deg;
-  output.angles[Joints::rHipRoll] = 0_deg;
-  output.angles[Joints::lAnklePitch] = -75_deg;
-  output.angles[Joints::rAnklePitch] = -75_deg;
-  output.angles[Joints::lAnkleRoll] = 0_deg;
-  output.angles[Joints::rAnkleRoll] = 0_deg;
-}
-
-void MotionUtilities::sit(JointRequest& output)
-{
-  // Sit down to reduce the impact-force
-  output.angles[Joints::lKneePitch] = 123_deg;
-  output.angles[Joints::rKneePitch] = 123_deg;
-  output.angles[Joints::lHipPitch] = -90_deg;
-  output.angles[Joints::rHipPitch] = -90_deg;
-  output.angles[Joints::lHipRoll] = 0_deg;
-  output.angles[Joints::rHipRoll] = 0_deg;
-  output.angles[Joints::lAnklePitch] = -45_deg;
-  output.angles[Joints::rAnklePitch] = -45_deg;
-  output.angles[Joints::lAnkleRoll] = 0_deg;
-  output.angles[Joints::rAnkleRoll] = 0_deg;
-}
-
-void MotionUtilities::safeArmsBehind(JointRequest& jointRequest)
-{
-  jointRequest.angles[Joints::lShoulderRoll] = 8_deg;
-  jointRequest.angles[Joints::lShoulderPitch] = 123_deg;
-  jointRequest.angles[Joints::lElbowYaw] = 17_deg;
-  jointRequest.angles[Joints::lElbowRoll] = -78_deg;
-  jointRequest.angles[Joints::lWristYaw] = -90_deg;
-  jointRequest.angles[Joints::rShoulderRoll] = -8_deg;
-  jointRequest.angles[Joints::rShoulderPitch] = 123_deg;
-  jointRequest.angles[Joints::rElbowYaw] = -17_deg;
-  jointRequest.angles[Joints::rElbowRoll] = 78_deg;
-  jointRequest.angles[Joints::rWristYaw] = 90_deg;
-  jointRequest.stiffnessData.stiffnesses[Joints::lElbowRoll] = 20;
-  jointRequest.stiffnessData.stiffnesses[Joints::rElbowRoll] = 20;
-}
-void MotionUtilities::safeArmsFront(JointRequest& jointRequest)
-{
-  jointRequest.angles[Joints::lShoulderRoll] = 10_deg;
-  jointRequest.angles[Joints::lShoulderPitch] = 20_deg;
-  jointRequest.angles[Joints::lElbowYaw] = 100_deg;
-  jointRequest.angles[Joints::lElbowRoll] = -60_deg;
-  jointRequest.angles[Joints::lWristYaw] = -90_deg;
-  jointRequest.angles[Joints::rShoulderRoll] = -7_deg;
-  jointRequest.angles[Joints::rShoulderPitch] = 60_deg;
-  jointRequest.angles[Joints::rElbowYaw] = -96_deg;
-  jointRequest.angles[Joints::rElbowRoll] = 0_deg;
-  jointRequest.angles[Joints::rWristYaw] = 90_deg;
 }

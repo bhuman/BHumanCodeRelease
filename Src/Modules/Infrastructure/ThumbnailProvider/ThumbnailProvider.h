@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/Thumbnail.h"

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Math/Eigen.h"
+#include "Math/Eigen.h"
+#include "Math/Pose2f.h"
 
 struct CameraMatrix;
 struct CameraInfo;

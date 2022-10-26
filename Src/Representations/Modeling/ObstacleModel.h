@@ -8,8 +8,8 @@
 #pragma once
 
 #include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/Math/Eigen.h"
+#include "Streaming/Enum.h"
+#include "Math/Eigen.h"
 #include "Tools/Modeling/Obstacle.h"
 
 /**

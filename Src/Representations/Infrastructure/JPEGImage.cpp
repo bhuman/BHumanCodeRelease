@@ -5,7 +5,7 @@
  */
 
 #include "JPEGImage.h"
-#include "Tools/ImageProcessing/SIMD.h"
+#include "ImageProcessing/SIMD.h"
 #include "Platform/BHAssert.h"
 #include "Platform/Memory.h"
 #include <cstddef>

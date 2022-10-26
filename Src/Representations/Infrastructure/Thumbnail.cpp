@@ -7,7 +7,7 @@
  */
 
 #include "Thumbnail.h"
-#include "Tools/ImageProcessing/SIMD.h"
+#include "ImageProcessing/SIMD.h"
 
 void Thumbnail::toYUYV(Image<PixelTypes::YUYVPixel>& dest) const
 {

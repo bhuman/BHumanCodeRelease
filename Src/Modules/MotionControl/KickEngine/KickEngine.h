@@ -14,17 +14,19 @@
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/MotionControl/KickGenerator.h"
 #include "Representations/Sensing/FootSupport.h"
+#include "Representations/Sensing/FsrData.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Tools/Motion/MotionUtilities.h"
-#include "Tools/Streams/InStreams.h"
+#include "Streaming/InStreams.h"
 
 MODULE(KickEngine,
 {,
   USES(JointRequest),
   REQUIRES(DamageConfigurationBody),
   REQUIRES(FootSupport),
+  REQUIRES(FsrData),
   REQUIRES(FrameInfo),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
@@ -64,7 +66,6 @@ private:
   bool compensated = false;
   bool isInterpolating = true;
   bool adjustStartArmPosition = true; // if the arms are on the back, move them to the side
-  int boostState = 0;
   unsigned startTime = 0;
   unsigned bothFeetGroundContactTimestamp = 0;
   KickRequest currentKickRequest;

@@ -1,1 +1,1 @@
-../Common/CMakeLists.txt
+../CMake/CMakeLists.txt

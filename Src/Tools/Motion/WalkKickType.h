@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include "Tools/Streams/Enum.h"
+#include "Streaming/Enum.h"
 
 namespace WalkKicks
 {

@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Enum.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 #include <vector>
 
 /**

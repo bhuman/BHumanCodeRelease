@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Pose2f.h"
 
 /**
  * @struct SelfLocalizationHypotheses

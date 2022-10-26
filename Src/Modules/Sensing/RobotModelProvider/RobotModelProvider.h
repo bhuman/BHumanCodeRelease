@@ -12,7 +12,7 @@
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Sensing/RobotModel.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(RobotModelProvider,
 {,

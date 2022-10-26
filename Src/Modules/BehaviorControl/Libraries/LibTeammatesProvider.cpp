@@ -4,6 +4,7 @@
  */
 
 #include "LibTeammatesProvider.h"
+#include "Tools/BehaviorControl/Strategy/PositionRole.h"
 
 MAKE_MODULE(LibTeammatesProvider, behaviorControl);
 
@@ -24,14 +25,14 @@ int LibTeammatesProvider::nonKeeperTeammatesInOwnPenaltyArea() const
   int teammatesInPenaltyArea = 0;
   for(auto const& teammate : theTeamData.teammates)
   {
-    if(teammate.status != Teammate::PENALIZED
-       && !teammate.isGoalkeeper
-       && theLibPosition.isNearOwnPenaltyArea(teammate.theRobotPose.translation, distanceThreshold, distanceThreshold))
+    const Vector2f teammatePosition = teammate.getEstimatedPosition(theFrameInfo.time);
+    if(!teammate.isGoalkeeper
+       && theLibPosition.isNearOwnPenaltyArea(teammatePosition, distanceThreshold, distanceThreshold))
     {
-      if(isNear && !theLibPosition.isNearOwnPenaltyArea(teammate.theRobotPose.translation, insideDistanceThreshold, insideDistanceThreshold))
+      if(isNear && !theLibPosition.isNearOwnPenaltyArea(teammatePosition, insideDistanceThreshold, insideDistanceThreshold))
       {
         /// breaks ties between two robots attempting to enter simultaneously
-        if(teammate.theTeamBehaviorStatus.role.playsTheBall())
+        if(teammate.theStrategyStatus.role == ActiveRole::toRole(ActiveRole::playBall))
           ++teammatesInPenaltyArea;
       }
       else
@@ -49,11 +50,8 @@ int LibTeammatesProvider::teammatesInOpponentPenaltyArea() const
   int teammatesInPenaltyArea = 0;
   for(auto const& teammate : theTeamData.teammates)
   {
-    if(teammate.status != Teammate::PENALIZED
-       && theLibPosition.isNearOpponentPenaltyArea(teammate.theRobotPose.translation, distanceThreshold, distanceThreshold))
-    {
+    if(theLibPosition.isNearOpponentPenaltyArea(teammate.getEstimatedPosition(theFrameInfo.time), distanceThreshold, distanceThreshold))
       ++teammatesInPenaltyArea;
-    }
   }
   return teammatesInPenaltyArea;
 }

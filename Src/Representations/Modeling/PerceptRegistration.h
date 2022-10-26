@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "Tools/Function.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
 
 
 /**

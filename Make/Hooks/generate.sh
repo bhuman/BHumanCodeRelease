@@ -20,16 +20,16 @@ if [ "$('git' config hooks.generateProject)" = "true" ]
 then
   case "$OSTYPE" in
     "msys") # Git for Windows
-      if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
-        pushd "${scriptPath}/../../Make/VS2019" >/dev/null
+      if [ -f "${scriptPath}/../../Make/Windows/generate.cmd" ]; then
+        pushd "${scriptPath}/../../Make/Windows" >/dev/null
         wsl ./generate # wsl beacuse with bash an msys bash is used
         popd >/dev/null
       fi
       ;;
     linux*)
       if [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then # WSL
-        if [ -f "${scriptPath}/../../Make/VS2019/generate.cmd" ]; then
-          pushd "${scriptPath}/../../Make/VS2019" >/dev/null
+        if [ -f "${scriptPath}/../../Make/Windows/generate.cmd" ]; then
+          pushd "${scriptPath}/../../Make/Windows" >/dev/null
           ./generate
           popd >/dev/null
         fi

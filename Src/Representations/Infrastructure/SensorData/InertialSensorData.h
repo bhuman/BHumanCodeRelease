@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * Encapsulates the IMU sensor data as it is provided by NAOqi.

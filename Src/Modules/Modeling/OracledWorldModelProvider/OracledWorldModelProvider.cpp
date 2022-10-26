@@ -7,10 +7,10 @@
  */
 
 #include "OracledWorldModelProvider.h"
-#include "Tools/Global.h"
-#include "Tools/Settings.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Streaming/Global.h"
+#include "Framework/Settings.h"
+#include "Math/Pose3f.h"
+#include "Debugging/DebugDrawings.h"
 
 OracledWorldModelProvider::OracledWorldModelProvider():
   lastBallModelComputation(0), lastRobotPoseComputation(0)
@@ -58,32 +58,13 @@ void OracledWorldModelProvider::update(GroundTruthBallModel& groundTruthBallMode
   groundTruthBallModel.timeWhenLastSeen = theBallModel.timeWhenLastSeen;
 }
 
-void OracledWorldModelProvider::update(BallModel3D& ballModel)
-{
-  if(theGroundTruthWorldState.balls.size() == 0)
-    return;
-  computeRobotPose();
-  const Vector3f ballPosition = theGroundTruthWorldState.balls[0].position;
-  const Vector3f ballVelocity = theGroundTruthWorldState.balls[0].velocity;
-
-  ballModel.estimate.position = Pose3f(theRobotPose.translation.x(), theRobotPose.translation.y(), 0.f).rotateZ(theRobotPose.rotation).inverse() * ballPosition;
-  ballModel.estimate.velocity = Pose3f().rotateZ(-theRobotPose.rotation) * ballVelocity;
-  ballModel.lastPerception = ballModel.estimate.position;
-  ballModel.timeWhenLastSeen = theFrameInfo.time;
-  ballModel.timeWhenDisappeared = theFrameInfo.time;
-}
-
-void OracledWorldModelProvider::update(TeamBallModel& teamBallModel)
+void OracledWorldModelProvider::update(TeammatesBallModel& teammatesBallModel)
 {
   computeBallModel();
   computeRobotPose();
-  teamBallModel.position = theRobotPose * theBallModel.estimate.position;
-  teamBallModel.velocity = theBallModel.estimate.velocity.rotated(theRobotPose.rotation);
-  teamBallModel.isValid = true;
-  teamBallModel.timeWhenLastValid = theFrameInfo.time;
-  teamBallModel.timeWhenLastSeen = theFrameInfo.time;
-  teamBallModel.contributors = TeamBallModel::meAndOthers; // Does not matter in this context
-  teamBallModel.balls.clear(); // Does not matter in this context
+  teammatesBallModel.position = theRobotPose * theBallModel.estimate.position;
+  teammatesBallModel.velocity = theBallModel.estimate.velocity.rotated(theRobotPose.rotation);
+  teammatesBallModel.isValid = true;
 }
 
 void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
@@ -104,11 +85,10 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
     obstacleModel.obstacles.back().setLeftRight(Obstacle::getRobotDepth());
   };
 
-  const bool teammate = Global::getSettings().teamNumber == 1;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
-    toObstacle(theGroundTruthWorldState.firstTeamPlayers[i], teammate);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
-    toObstacle(theGroundTruthWorldState.secondTeamPlayers[i], !teammate);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
+    toObstacle(theGroundTruthWorldState.ownTeamPlayers[i], true);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
+    toObstacle(theGroundTruthWorldState.opponentTeamPlayers[i], false);
 
   //add goal posts
   float squaredObstacleModelMaxDistance = sqr(obstacleModelMaxDistance);
@@ -124,34 +104,6 @@ void OracledWorldModelProvider::update(ObstacleModel& obstacleModel)
   goalPost = theRobotPose.inversePose * Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal);
   if(goalPost.squaredNorm() < squaredObstacleModelMaxDistance)
     obstacleModel.obstacles.emplace_back(Matrix2f::Identity(), goalPost, theFrameInfo.time, Obstacle::goalpost);
-}
-
-void OracledWorldModelProvider::update(TeamPlayersModel& teamPlayersModel)
-{
-  teamPlayersModel.obstacles.clear();
-
-  //add goal posts
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosLeftGoal), 0, Obstacle::goalpost);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOpponentGoalPost, theFieldDimensions.yPosRightGoal), 0, Obstacle::goalpost);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosLeftGoal), 0, Obstacle::goalpost);
-  teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), Vector2f(theFieldDimensions.xPosOwnGoalPost, theFieldDimensions.yPosRightGoal), 0, Obstacle::goalpost);
-
-  if(!Global::settingsExist())
-    return;
-
-  auto toObstacle = [this, &teamPlayersModel](const GroundTruthWorldState::GroundTruthPlayer& player, bool isTeammate)
-  {
-    teamPlayersModel.obstacles.emplace_back(Matrix2f::Identity(), player.pose.translation, theFrameInfo.time,
-                                            isTeammate ? (player.upright ? Obstacle::teammate : Obstacle::fallenTeammate)
-                                                       : player.upright ? Obstacle::opponent : Obstacle::fallenOpponent);
-    teamPlayersModel.obstacles.back().setLeftRight(Obstacle::getRobotDepth());
-  };
-
-  const bool teammate = Global::getSettings().teamNumber == 1;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
-    toObstacle(theGroundTruthWorldState.firstTeamPlayers[i], teammate);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
-    toObstacle(theGroundTruthWorldState.secondTeamPlayers[i], !teammate);
 }
 
 void OracledWorldModelProvider::update(RobotPose& robotPose)

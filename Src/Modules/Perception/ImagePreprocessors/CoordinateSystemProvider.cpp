@@ -7,9 +7,9 @@
  */
 
 #include "CoordinateSystemProvider.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/RotationMatrix.h"
+#include "Math/Geometry.h"
+#include "Math/Eigen.h"
+#include "Math/RotationMatrix.h"
 #include "Tools/Math/Projection.h"
 
 MAKE_MODULE(CoordinateSystemProvider, perception);

@@ -1,25 +1,48 @@
+/**
+ * @file IntersectionsProvider.cpp
+ *
+ * This file implements a module that detects and classifies intersections of fieldlines.
+ *
+ * @author Arne Böckmann
+ * @author <a href="mailto:jesse@tzi.de">Jesse Richter-Klug</a>
+ * @author Felix Thielke
+ * @author Laurens Schiefelbein
+ */
 
 #include "IntersectionsProvider.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Geometry.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/Stopwatch.h"
+#include "Math/Geometry.h"
+#include "Platform/File.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include <cmath>
 
 MAKE_MODULE(IntersectionsProvider, perception);
 
-IntersectionsProvider::IntersectionsProvider()
+
+IntersectionsProvider::IntersectionsProvider() : network(&Global::getAsmjitRuntime())
 {
+  // Initialize model for the neural net
+  model = std::make_unique<NeuralNetwork::Model>(std::string(File::getBHDir())
+    + "/Config/NeuralNets/IntersectionsProvider/intersections_model.h5");
+  network.compile(*model);
+
   if(std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosLeftGoalArea) > theFieldDimensions.fieldLinesWidth)
-    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosLeftGoalArea) * 0.7f);
+    maxIntersectionGapStrict = std::min(maxIntersectionGapStrict, std::abs(theFieldDimensions.yPosLeftPenaltyArea - theFieldDimensions.yPosLeftGoalArea) * 0.7f);
   if(std::abs(theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea) > theFieldDimensions.fieldLinesWidth)
-    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea) * 0.7f);
+    maxIntersectionGapStrict = std::min(maxIntersectionGapStrict, std::abs(theFieldDimensions.yPosLeftSideline - theFieldDimensions.yPosLeftPenaltyArea) * 0.7f);
   if(std::abs(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea) > theFieldDimensions.fieldLinesWidth)
-    maxIntersectionGap = std::min(maxIntersectionGap, std::abs(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea) * 0.7f);
+    maxIntersectionGapStrict = std::min(maxIntersectionGapStrict, std::abs(theFieldDimensions.xPosOpponentGoalArea - theFieldDimensions.xPosOpponentPenaltyArea) * 0.7f);
 }
 
 void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
 {
+  DECLARE_DEBUG_RESPONSE("module:IntersectionsProvider:skipClassification");
+
+  // check whether network has been successfully compiled
+  if(!network.valid()) return;
+
   DECLARE_DEBUG_DRAWING("module:IntersectionsProvider:intersections", "drawingOnImage");
   intersectionsPercept.intersections.clear();
 
@@ -61,6 +84,12 @@ void IntersectionsProvider::update(IntersectionsPercept& intersectionsPercept)
       Vector2f intersection;
       if(Geometry::getIntersectionOfLines(theLinesPercept.lines[i].line, theLinesPercept.lines[j].line, intersection))
       {
+        // The Classification already works great for intersection that are close. So we only use the network, when the intersection is far away. In that case we relax the parameters so that more potential intersections will be generated.
+        const bool useStrictParameters = intersection.norm() < minClassificationDistance;
+        const float maxLengthUnrecognizedProportion = useStrictParameters ? maxLengthUnrecognizedProportionStrict : maxLengthUnrecognizedProportionRelaxed;
+        const float maxIntersectionGap = useStrictParameters ? maxIntersectionGapStrict : maxLengthUnrecognizedProportionRelaxed;
+        const float maxOverheadToDecleareAsEnd = useStrictParameters ? maxOverheadToDecleareAsEndStrict : maxOverheadToDecleareAsEndRelaxed;
+
         Vector2f lineEndCloser;//the end of line that is closest to the intersection
         Vector2f line2EndCloser;
         Vector2f lineEndFurther;//the end of line that is further away from the intersection
@@ -172,18 +201,27 @@ bool IntersectionsProvider::isPointInSegment(const LinesPercept::Line& line, con
   return (line.firstField - point).squaredNorm() <= lineSquaredNorm && (line.lastField - point).squaredNorm() <= lineSquaredNorm;
 }
 
+// note: removed const
 void IntersectionsProvider::addIntersection(IntersectionsPercept& intersectionsPercept, IntersectionsPercept::Intersection::IntersectionType type,
     const Vector2f& intersection, const Vector2f& dir1, const Vector2f& dir2,
-    unsigned line1, unsigned line2) const
+    unsigned line1, unsigned line2)
 {
-  COMPLEX_DRAWING("module:IntersectionsProvider:intersections")
+  Vector2f pInImg;
+  if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
   {
-    Vector2f pInImg;
-    if(Transformation::robotToImage(intersection, theCameraMatrix, theCameraInfo, pInImg))
-      DRAW_TEXT("module:IntersectionsProvider:intersections", pInImg.x(), pInImg.y(), 30,
-               ColorRGBA::black, TypeRegistry::getEnumName(type));
+    pInImg = theImageCoordinateSystem.fromCorrected(pInImg);
+    DEBUG_RESPONSE_NOT("module:IntersectionsProvider:skipClassification")
+    {
+      if(threshold > 0.f && !IntersectionsProvider::classifyIntersection(type, intersection, pInImg))
+        return;
+    }
   }
   intersectionsPercept.intersections.emplace_back(type, intersection, dir1, dir2, line1, line2);
+
+  COMPLEX_DRAWING("module:IntersectionsProvider:intersections")
+  {
+    DRAW_TEXT("module:IntersectionsProvider:intersections", pInImg.x(), pInImg.y(), 30, ColorRGBA::black, TypeRegistry::getEnumName(type));
+  }
 }
 
 void IntersectionsProvider::enforceTIntersectionDirections(const Vector2f& vertical, Vector2f& horizontal) const
@@ -194,4 +232,71 @@ void IntersectionsProvider::enforceTIntersectionDirections(const Vector2f& verti
   {
     horizontal.mirror();
   }
+}
+
+bool IntersectionsProvider::classifyIntersection(IntersectionsPercept::Intersection::IntersectionType& type, const Vector2f& intersection, const Vector2f& pInImg)
+{
+  // If the distance between intersection and robot is bigger than the distance threshold, the intersection will not be classified by the network.
+  if(!isWithinBounds(pInImg) || intersection.norm() < minClassificationDistance)
+    return true;
+
+  STOPWATCH("module:IntersectionsProvider:network") {
+    const float distanceToIntersection = intersection.norm();
+
+    const int inputSize = distanceToIntersection < 5700 ? 140 : 64; // This is so that distant intersections do not appear too small in the patch
+    const int stretchingFactor = 2; // Stretch the patch along the y-Axis by this factor
+    const int tempPatchSize = patchSize * stretchingFactor; // Size of the patch that gets stretched
+    const Vector2f center(pInImg.x(), pInImg.y());
+
+    Image<PixelTypes::GrayscaledPixel> patch(tempPatchSize, tempPatchSize);
+    Image<PixelTypes::GrayscaledPixel> resizedPatch(patchSize, patchSize);
+
+    // extract patch
+    PatchUtilities::extractPatch(center.cast<int>(), Vector2i(inputSize, inputSize), Vector2i(tempPatchSize, tempPatchSize), theECImage.grayscaled, patch);
+
+    // The patch height is 64p. But we need a 32x32 patch. So we cut off the first and last 16 pixels to get the center.
+    for(unsigned int i = patchSize/2; i < patch.height - patchSize/2; i++) {
+      // Stretch the image along the x-Axis by taking every other value of the image-width.
+      for(unsigned int j = 0; j < patch.width; j += stretchingFactor) {
+        // Corrected indices for resizedPatch because we only take half of the height and every other value of the width.
+        resizedPatch[i - patchSize/2][j - (j/2)] = patch[i][j];
+      }
+    }
+
+    PatchUtilities::extractPatch(Vector2i(patchSize/2, patchSize/2), Vector2i(patchSize, patchSize), Vector2i(patchSize, patchSize), resizedPatch, network.input(0).data());
+
+    network.apply();
+    float l = network.output(0)[0];
+    float none = network.output(0)[1];
+    float t = network.output(0)[2];
+    float x = network.output(0)[3];
+
+    if (none >= threshold + 0.15f)
+      return false;
+    else if(l >= threshold)
+    {
+      type = IntersectionsPercept::Intersection::L;
+      return true;
+    }
+    else if(t >= threshold)
+    {
+      type = IntersectionsPercept::Intersection::T;
+      return true;
+    }
+    // We want to be especially sure before we classify an intersection as x.
+    else if(x >= threshold + 0.1f)
+    {
+      type = IntersectionsPercept::Intersection::X;
+      return true;
+    }
+  }
+  // If no prediction passes the threshold, take the original prediction by the IntersectionsProvider.
+  return true;
+}
+
+bool IntersectionsProvider::isWithinBounds(const Vector2f& intersectionPoint) {
+  return (intersectionPoint.x() - patchSize / 2 >= 0 &&
+          intersectionPoint.x() + patchSize / 2 <= theCameraInfo.width &&
+          intersectionPoint.y() - patchSize / 2 >= 0 &&
+          intersectionPoint.y() + patchSize / 2 <= theCameraInfo.height);
 }

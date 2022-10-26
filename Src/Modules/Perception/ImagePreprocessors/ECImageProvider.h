@@ -6,16 +6,20 @@
 
 #pragma once
 
+#include "Representations/Configuration/CalibrationRequest.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(ECImageProvider,
 {,
+  REQUIRES(CalibrationRequest),
   REQUIRES(CameraInfo),
   REQUIRES(CameraImage),
+  REQUIRES(ECImage),
   PROVIDES(ECImage),
+  PROVIDES(OptionalECImage),
   LOADS_PARAMETERS(
   {,
     (bool) disableColor,
@@ -35,6 +39,7 @@ private:
   EFunc eFunc = nullptr;
 
   void update(ECImage& ecImage) override;
+  void update(OptionalECImage& theOptionalECImage) override;
   void compileE();
   void compileEC();
 

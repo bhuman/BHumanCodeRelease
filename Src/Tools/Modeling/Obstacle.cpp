@@ -1,6 +1,6 @@
 #include "Obstacle.h"
-#include "Tools/Math/Probabilistics.h"
-#include "Tools/Module/Blackboard.h"
+#include "Math/Probabilistics.h"
+#include "Framework/Blackboard.h"
 #include "Representations/Configuration/FieldDimensions.h"
 
 Obstacle::Obstacle(const Matrix2f& covariance, const Vector2f& center, const Vector2f& left, const Vector2f& right, const Vector2f& velocity,
@@ -50,4 +50,19 @@ bool Obstacle::isTeammate() const
 bool Obstacle::isOpponent() const
 {
   return type == Obstacle::opponent || type == Obstacle::fallenOpponent;
+}
+
+bool Obstacle::isSomeRobot() const
+{
+  return type == Obstacle::someRobot || type == Obstacle::fallenSomeRobot;
+}
+
+bool Obstacle::isUnknown() const
+{
+  return type == Obstacle::unknown;
+}
+
+bool Obstacle::isGoalpost() const
+{
+  return type == Obstacle::goalpost;
 }

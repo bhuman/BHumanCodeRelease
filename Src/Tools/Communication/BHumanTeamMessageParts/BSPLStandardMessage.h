@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Communication/RoboCupGameControlData.h"
-#include "Tools/Streams/Streamable.h"
+#include "Network/RoboCupGameControlData.h"
+#include "Streaming/Streamable.h"
 
 //THIS STRUCT IS INDENTED TO NOT USE RoboCup::SPLStandardMessage.data!
 struct BSPLStandardMessage : public RoboCup::SPLStandardMessage, public Streamable

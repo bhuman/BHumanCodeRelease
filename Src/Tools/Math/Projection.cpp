@@ -5,11 +5,11 @@
  */
 
 #include "Projection.h"
+#include "Math/BHMath.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Math/BHMath.h"
 
 #include <cmath>
 

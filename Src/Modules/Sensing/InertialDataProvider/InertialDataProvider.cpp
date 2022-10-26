@@ -1,9 +1,9 @@
 #include "InertialDataProvider.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Rotation.h"
-#include "Tools/Math/Eigen.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/BHMath.h"
+#include "Math/Rotation.h"
+#include "Math/Eigen.h"
 
 #include <cmath>
 #include <sstream>
@@ -28,8 +28,23 @@ Vector3f InertialDataProvider::State::operator-(const State& other) const
 
 void InertialDataProvider::update(InertialData& inertialData)
 {
+  DECLARE_PLOT("module:InertialDataProvider:dev1");
+  DECLARE_PLOT("module:InertialDataProvider:dev10");
+  DECLARE_PLOT("module:InertialDataProvider:dev50");
+
   bool ignoreAccUpdate = false;
   MODIFY("module:InertialDataProvider:ignoreAccUpdate", ignoreAccUpdate);
+
+  if(soleCalibrationId != theFootSoleRotationCalibration.id)
+  {
+    soleCalibrationId = theFootSoleRotationCalibration.id;
+    soleCalibration[Legs::left] = Quaternionf(Rotation::Euler::fromAngles(theFootSoleRotationCalibration.footCalibration[Legs::left].rotationOffset.x(),
+                                              theFootSoleRotationCalibration.footCalibration[Legs::left].rotationOffset.y(),
+                                              0.f)).normalized();
+    soleCalibration[Legs::right] = Quaternionf(Rotation::Euler::fromAngles(theFootSoleRotationCalibration.footCalibration[Legs::right].rotationOffset.x(),
+                                               theFootSoleRotationCalibration.footCalibration[Legs::right].rotationOffset.y(),
+                                               0.f)).normalized();
+  }
 
   if(SystemCall::getMode() == SystemCall::Mode::simulatedRobot || theGyroOffset.bodyDisconnect)
   {
@@ -57,62 +72,86 @@ void InertialDataProvider::update(InertialData& inertialData)
   inertialData.gyro.z() *= theIMUCalibration.gyroFactor.z();
   bool isAccBasedOnGroundContactPoints = false;
   bool isAccXMeasured = false;
-  Angle supportFootRotationY;
+  float supportFootRotationY;
 
+  const Legs::Leg leg = theFootSupport.support > 0.f ? Legs::left : Legs::right;
+  Quaternionf soleRot;
   hadXAccUpdate = !(!hadXAccUpdate || theFootSupport.switched);
-
   if(!hadXAccUpdate &&
-     theIMUCalibration.isCalibrated && theFootSoleRotationCalibration.isCalibrated &&
+     theIMUCalibration.isCalibrated && theFootSoleRotationCalibration.footCalibration[leg].isCalibrated &&
      theMotionInfo.executedPhase == MotionPhase::walk && // is robot walking?
      theMotionRequest.isWalking() &&
-     theFootSupport.footPressure[theFootSupport.support > 0.f ? Legs::left : Legs::right].backwardPressure == theFrameInfo.time && theFootSupport.footPressure[theFootSupport.support > 0.f ? Legs::left : Legs::right].backwardPressure == theFrameInfo.time)
+     theFootSupport.lastSwitch > minTimeForLastSupportSwitch && // robot had an actual support foot switch
+     theFootSupport.lastSwitch < maxTimeForLastSupportSwitch &&
+     feetPressureRatioSagitalRangeXAcc.isInside(theFsrData.legInfo[leg].sagittalRatio) && // front and back FSRs measured pressure
+     theFsrData.legInfo[leg].totals > minSumSolePressure) // the robot has enough weight on the support foot
   {
-    supportFootRotationY = (theFootSupport.support > 0.f ? theRobotModel.soleLeft.inverse().rotation : theRobotModel.soleRight.inverse().rotation).getYAngle() + theFootSoleRotationCalibration.yRotationOffset;
-    isAccXMeasured = true;
+    soleRot = Quaternionf((leg == Legs::left ? theRobotModel.soleLeft : theRobotModel.soleRight).inverse().rotation).normalized();
+    soleRot *= soleCalibration[leg];
+    supportFootRotationY = Rotation::AngleAxis::pack(AngleAxisf(soleRot)).y();
+    if(supportFootRotationY > 0.5_deg)
+      isAccXMeasured = true;
   }
 
+  // TODO clean up ...
   // Replace measured acc with modelled acc
-  if(theMotionInfo.executedPhase == MotionPhase::walk &&  // is robot walking?
+  if(theMotionInfo.executedPhase == MotionPhase::walk &&   // is robot walking?
      theMotionRequest.isWalking() &&
      theFootSupport.switched && // support foot switched
      theFootSupport.lastSwitch > minTimeForLastSupportSwitch && // robot had an actual support foot switch
      theFootSupport.lastSwitch < maxTimeForLastSupportSwitch &&
      // In case the robot is tilted far to the front or back (resulting from an unstable walk), we do not want to overwrite the accelerometer measurement
-     theFrameInfo.getTimeSince(std::max(theFootSupport.footPressure[Legs::right].forwardPressure, theFootSupport.footPressure[Legs::left].forwardPressure)) < maxTimeSinceForwardAndBackwardPressure &&
-     theFrameInfo.getTimeSince(std::max(theFootSupport.footPressure[Legs::left].backwardPressure, theFootSupport.footPressure[Legs::right].backwardPressure)) < maxTimeSinceForwardAndBackwardPressure)
+     feetPressureRatioSagitalRangeYAcc.isInside(theFsrData.legInfo[leg].lateralRatio) &&
+     theFsrData.legInfo[leg].totals > 0.4f &&
+     theFrameInfo.getTimeSince(std::max(theFsrData.legInfo[Legs::right].forwardPressure, theFsrData.legInfo[Legs::left].forwardPressure)) < maxTimeSinceForwardAndBackwardPressure &&
+     theFrameInfo.getTimeSince(std::max(theFsrData.legInfo[Legs::left].backwardPressure, theFsrData.legInfo[Legs::right].backwardPressure)) < maxTimeSinceForwardAndBackwardPressure &&
+     theFrameInfo.getTimeSince(std::max(theFsrData.legInfo[Legs::left].hasPressure, theFsrData.legInfo[Legs::right].hasPressure)) < maxTimeSinceForwardAndBackwardPressure)
   {
-    Vector2f groundPointLeft = (theRobotModel.soleLeft * Vector3f(theRobotModel.soleLeft.rotation.col(2).x() >= 0.f ? theFootOffset.forward : -theFootOffset.backward, theRobotModel.soleLeft.rotation.col(2).y() >= 0.f ? theFootOffset.leftFoot.left : -theFootOffset.leftFoot.right, 0.f)).tail<2>();
-    Vector2f groundPointRight = (theRobotModel.soleRight * Vector3f(theRobotModel.soleRight.rotation.col(2).x() >= 0.f ? theFootOffset.forward : -theFootOffset.backward, theRobotModel.soleRight.rotation.col(2).y() >= 0.f ? theFootOffset.rightFoot.left : -theFootOffset.rightFoot.right, 0.f)).tail<2>();
+    const Rangef& range = Rangef::ZeroOneRange();
+    const float leftFootRotY = theRobotModel.soleLeft.rotation.getYAngle();
+    const float leftFootRotX = theRobotModel.soleLeft.rotation.getXAngle();
+    const float rightFootRotY = theRobotModel.soleRight.rotation.getYAngle();
+    const float rightFootRotX = theRobotModel.soleRight.rotation.getXAngle();
 
-    if(std::abs(groundPointLeft.x() - groundPointRight.x()) > minGroundContactPointsDistance)
+    const bool breakCalc = std::abs(leftFootRotY - rightFootRotY) > 0.02f || std::max(std::abs(leftFootRotY), std::abs(rightFootRotY)) > 0.03f;
+
+    const float leftYRatio = range.limit((leftFootRotY + soleRotationInterpolation) / (2.f * +soleRotationInterpolation));
+    const float leftXRatio = range.limit((leftFootRotX + soleRotationInterpolation) / (2.f * +soleRotationInterpolation));
+    const float rightYRatio = range.limit((rightFootRotY + soleRotationInterpolation) / (2.f * +soleRotationInterpolation));
+    const float rightXRatio = range.limit((rightFootRotX + soleRotationInterpolation) / (2.f * +soleRotationInterpolation));
+
+    const float forwardLength = theFootOffset.forward + theFootOffset.backward;
+    const float sideLengthLeft = theFootOffset.leftFoot.right + theFootOffset.leftFoot.left;
+    const float sideLengthRight = theFootOffset.rightFoot.right + theFootOffset.rightFoot.left;
+
+    Vector2f groundPointLeft = ((theRobotModel.soleLeft * soleCalibration[Legs::left]) *
+                                Vector3f(-theFootOffset.backward + forwardLength * leftYRatio,
+                                         theFootOffset.leftFoot.left - sideLengthLeft * leftXRatio,
+                                         0.f)).tail<2>();
+    Vector2f groundPointRight = ((theRobotModel.soleRight * soleCalibration[Legs::right]) *
+                                 Vector3f(-theFootOffset.backward + forwardLength * rightYRatio,
+                                          theFootOffset.rightFoot.left - sideLengthRight * rightXRatio,
+                                          0.f)).tail<2>();
+
+    if(!breakCalc && std::abs(groundPointLeft.x() - groundPointRight.x()) > minGroundContactPointsDistance &&
+       theRobotModel.soleLeft.translation.y() - theRobotModel.soleRight.translation.y() < 150.f)
     {
-      RotationMatrix diff;
       const Angle feetPlaneXRotation = -(groundPointLeft - groundPointRight).angle();
-      if(std::abs(feetPlaneXRotation) < maxAllowedFeetPlaneXRotation)
-      {
-        diff.rotateX(feetPlaneXRotation);
-        if(isAccXMeasured)
-          diff.rotateY(supportFootRotationY);
-        else
-          diff.rotateY(inertialData.angle.y());
-        Vector3f accGravOnly(diff.col(0).z(), diff.col(1).z(), diff.col(2).z());
-        accGravOnly *= Constants::g_1000;
-        inertialData.acc = accGravOnly;
-        isAccBasedOnGroundContactPoints = true;
-        hadAccelerometerMeasurement = false;
-      }
+      inertialData.acc.y() = std::tan(-feetPlaneXRotation) * inertialData.acc.z();
+      isAccBasedOnGroundContactPoints = true;
+      hadAccelerometerMeasurement = false;
     }
   }
 
-  if(!isAccBasedOnGroundContactPoints && isAccXMeasured)
+  if(isAccXMeasured)
   {
-    RotationMatrix usedRotation(theFootSupport.support > 0.f ? theRobotModel.soleLeft.inverse().rotation : theRobotModel.soleRight.inverse().rotation);
-    usedRotation.rotateY(theFootSoleRotationCalibration.yRotationOffset);
-    Vector3f accGravOnly(usedRotation.col(0).z(), usedRotation.col(1).z(), usedRotation.col(2).z()); // taken from B-Human Coderelease 2016
-    accGravOnly *= Constants::g_1000;
-    inertialData.acc.x() = accGravOnly.x();
-    inertialData.acc.z() = accGravOnly.z();
+    inertialData.acc.x() = std::tan(-supportFootRotationY) * inertialData.acc.z();
     hadAccelerometerMeasurement = false;
+
+    if(isAccBasedOnGroundContactPoints)
+    {
+      inertialData.acc.normalize(gravity);
+    }
   }
 
   processGyroscope(inertialData.gyro);
@@ -139,7 +178,10 @@ void InertialDataProvider::update(InertialData& inertialData)
 
   inertialData.orientation2D = Rotation::removeZRotation(ukf.mean.orientation);
   inertialData.orientation3D = ukf.mean.orientation;
-  inertialData.angle << Rotation::AngleAxis::pack(AngleAxisf(inertialData.orientation2D)).head<2>().cast<Angle>(), 0_deg;
+  if(useIMUAnglesInCalibration && theMotionInfo.executedPhase == MotionPhase::stand && theCalibrationRequest.targetState != CameraCalibrationStatus::State::idle)
+    inertialData.angle << theInertialSensorData.angle;
+  else
+    inertialData.angle << Rotation::AngleAxis::pack(AngleAxisf(inertialData.orientation2D)).head<2>().cast<Angle>(), 0_deg;
 
   const Vector3a angleAxisVec = Rotation::AngleAxis::pack(AngleAxisf(ukf.mean.orientation)).cast<Angle>();
   PLOT("module:InertialDataProvider:internalOrientation:x", angleAxisVec.x().toDegrees());
@@ -182,17 +224,19 @@ void InertialDataProvider::processAccelerometer(const Vector3f& acc, const bool 
     return state.orientation.inverse() * gVec;
   };
 
-  const Vector3f& useBaseAccDeviation = theMotionInfo.executedPhase == MotionPhase::walk ? accDeviationWhileWalking : (theMotionInfo.executedPhase == MotionPhase::stand ? accDeviationWhileStanding : accDeviation);
+  Vector3f& useBaseAccDeviation = theMotionInfo.executedPhase == MotionPhase::walk && theGroundContactState.contact ? accDeviationWhileWalking : (theMotionInfo.executedPhase == MotionPhase::stand ? accDeviationWhileStanding : accDeviation);
   Vector3f measurementNoise = useBaseAccDeviation + sqr(acc.norm() - gravity) * accDeviationFactor;
   if(isAccBasedOnGroundContactPoints)
-    measurementNoise.y() = 1.f;
+    measurementNoise.y() = accSoleDeviation;
+  if(isAccXMeasured)
+    measurementNoise.x() = accSoleDeviation;
+  if(isAccBasedOnGroundContactPoints && isAccXMeasured)
+    measurementNoise.z() = accSoleDeviation;
   if(isAccXMeasured)
   {
-    measurementNoise.x() = 1.f;
     hadXAccUpdate = true;
   }
-  if(isAccBasedOnGroundContactPoints && isAccXMeasured)
-    measurementNoise.z() = 1.f;
+
   ukf.update<3>(acc, measurementModel, measurementNoise.cwiseAbs2().asDiagonal());
 }
 

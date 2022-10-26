@@ -7,9 +7,9 @@
 #include "RobotHealthProvider.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Time.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Settings.h"
-#include "Tools/Streams/InStreams.h"
+#include "Debugging/Annotation.h"
+#include "Framework/Settings.h"
+#include "Streaming/InStreams.h"
 
 #include <algorithm>
 #include <iterator>
@@ -39,7 +39,7 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
     highCPUTemperatureSince = theFrameInfo.time;
     if(enableName)
       SystemCall::playSound(wavName.c_str());
-    SystemCall::say("CPU temperature at exclamation mark");
+    SystemCall::say("CPU temperature at exclamation mark", theLibDemo.isDemoActive);
   }
 #ifdef TARGET_ROBOT
   if(theFrameInfo.getTimeSince(lastWlanCheckedTime) > 10 * 1000)
@@ -86,7 +86,7 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
       {
         if(enableName)
           SystemCall::playSound(wavName.c_str());
-        SystemCall::say("Low battery");
+        SystemCall::say("Low battery", true);
         // next warning in 90 seconds
         startBatteryLow = theFrameInfo.time + 30000;
         batteryVoltageFalling = false;
@@ -107,17 +107,17 @@ void RobotHealthProvider::update(RobotHealth& robotHealth)
         unsigned timeToNextScream = timeBetweenHeatScreams;
         if(robotHealth.maxJointTemperatureStatus >= JointSensorData::TemperatureStatus::criticallyHot)
         {
-          SystemCall::say("Fire exclamation mark");
+          SystemCall::say("Fire exclamation mark", theLibDemo.isDemoActive);
           timeToNextScream /= 4;
         }
         else if(robotHealth.maxJointTemperatureStatus >= JointSensorData::TemperatureStatus::veryHot)
         {
-          SystemCall::say("Fire");
+          SystemCall::say("Fire", theLibDemo.isDemoActive);
           timeToNextScream /= 2;
         }
         else
         {
-          SystemCall::say("Heat");
+          SystemCall::say("Heat", theLibDemo.isDemoActive);
         }
         highTemperatureSince = theFrameInfo.time + timeToNextScream;
       }

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Platform/BHAssert.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(ActivationGraph,
 {
@@ -55,7 +55,3 @@ inline void ActivationGraph::verify() const
 {
   ASSERT(currentDepth == 0);
 }
-
-STREAMABLE_WITH_BASE(TeamActivationGraph, ActivationGraph,
-{,
-});

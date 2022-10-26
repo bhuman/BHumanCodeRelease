@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"

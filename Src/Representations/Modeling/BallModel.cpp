@@ -7,11 +7,11 @@
 #include "Platform/Time.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Approx.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Approx.h"
 #include "Tools/Modeling/BallPhysics.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 #include <algorithm>
 
@@ -83,11 +83,7 @@ void BallModel::draw() const
     if(Blackboard::getInstance().exists("BallSpecification"))
     {
       const BallSpecification& ballSpecification = static_cast<const BallSpecification&>(Blackboard::getInstance()["BallSpecification"]);
-      Vector2f position;
-      if(estimate.rotation == 0.f)
-        position = BallPhysics::getEndPosition(estimate.position, estimate.velocity, ballSpecification.friction);
-      else
-        position = BallPhysics::getEndPositionRegardingRotation(estimate.position, estimate.velocity, estimate.rotation, ballSpecification.friction);
+      Vector2f position = BallPhysics::getEndPosition(estimate.position, estimate.velocity, ballSpecification.friction);
       ColorRGBA violet = ColorRGBA(168, 25, 99, 220); //So you know what you see in the world state...
       CIRCLE("representation:BallModel:endPosition",
              position.x(),  position.y(), 45, 0, // pen width
@@ -120,30 +116,5 @@ void GroundTruthBallModel::draw() const
            Drawings::solidBrush, transparentOrange);
     ARROW("representation:GroundTruthBallModel", position.x(), position.y(),
           position.x() + velocity.x(), position.y() + velocity.y(), 5, 1, transparentOrange);
-  }
-}
-
-void BallModel3D::draw() const
-{
-  // drawing of the ball model in the field view
-  DEBUG_DRAWING("representation:BallModel3D", "drawingOnField")
-  {
-    const Vector3f& position(estimate.position);
-    const Vector3f& velocity(estimate.velocity);
-    CIRCLE("representation:BallModel3D",
-           position.x(), position.y(), 45, 0, // pen width
-           Drawings::solidPen, ColorRGBA::red,
-           Drawings::solidBrush, ColorRGBA::red);
-    ARROW("representation:BallModel3D", position.x(), position.y(),
-          position.x() + velocity.x(), position.y() + velocity.y(), 5, 1, ColorRGBA::red);
-  }
-
-  DEBUG_DRAWING3D("representation:BallModel3D", "robot")
-  {
-    TRANSLATE3D("representation:BallModel3D", 0, 0, -230);
-    if(Time::getTimeSince(timeWhenLastSeen) < 5000 && Time::getTimeSince(timeWhenDisappeared) < 1000)
-    {
-      SPHERE3D("representation:BallModel3D", estimate.position.x(), estimate.position.y(), estimate.position.z(), estimate.radius, ColorRGBA::orange);
-    }
   }
 }

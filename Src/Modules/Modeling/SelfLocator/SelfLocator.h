@@ -9,13 +9,11 @@
 #pragma once
 
 #include "UKFRobotPoseHypothesis.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
-#include "Representations/Communication/TeamInfo.h"
+#include "Representations/BehaviorControl/Libraries/LibDemo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Odometer.h"
@@ -37,23 +35,22 @@
 #include "Representations/Configuration/SetupPoses.h"
 #include "Representations/Configuration/StaticInitialPose.h"
 #include "Tools/Modeling/SampleSet.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(SelfLocator,
 {,
   REQUIRES(AlternativeRobotPoseHypothesis),
-  REQUIRES(ExtendedGameInfo),
+  REQUIRES(ExtendedGameState),
   REQUIRES(Odometer),
   REQUIRES(OdometryData),
-  REQUIRES(OwnTeamInfo),
   REQUIRES(FallDownState),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(GyroState),
-  REQUIRES(RobotInfo),
   REQUIRES(CirclePercept),
   REQUIRES(FieldDimensions),
   REQUIRES(FieldFeatureOverview),
   REQUIRES(FrameInfo),
+  REQUIRES(LibDemo),
   REQUIRES(MotionInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
@@ -66,6 +63,7 @@ MODULE(SelfLocator,
   REQUIRES(WorldModelPrediction),
   REQUIRES(SetupPoses),
   REQUIRES(StaticInitialPose),
+  REQUIRES(GroundTruthRobotPose),
   USES(MotionRequest),
   PROVIDES(RobotPose),
   PROVIDES(SelfLocalizationHypotheses),
@@ -131,12 +129,17 @@ private:
   int idOfLastBestSample;                       /**< Identifier of the best sample of the last frame */
   float averageWeighting;                       /**< The average of the weightings of all samples in the sample set */
   unsigned lastAlternativePoseTimestamp;        /**< Last time an alternative pose was valid */
-  unsigned int nextManualPlacementPoseNumber;   /**< Counter for uniform manual placement pose selection */
   Vector2f currentRotationDeviation;            /**< Set to either robotRotationDeviation or robotRotationDeviationInStand */
   Pose3f inverseCameraMatrix;                   /**< Precomputed matrix that is needed multiple times */
   unsigned lastTimePenaltyMarkSeen;             /**< Last time a penalty mark was seen */
   unsigned lastTimeCirclePerceptSeen;           /**< Last time a circle percept was seen */
   bool validitiesHaveBeenUpdated;               /**< Flag that indicates that the validities of the samples have been changed this frame */
+  Pose2f lastGroundTruthRobotPose;              /**< Remember ground truth of last frame */
+
+  int sumOfPerceivedLandmarks;                  /**< Statistics: Sum up number of all perceived landmarks */
+  int sumOfPerceivedLines;                      /**< Statistics: Sum up number of all perceived lines */
+  float sumOfUsedLandmarks;                     /**< Statistics: Sum up number of all integrated landmarks (average over samples) */
+  float sumOfUsedLines;                         /**< Statistics: Sum up number of all integrated lines (average over samples) */
 
   /**
    * The method provides the robot pose
@@ -166,6 +169,13 @@ private:
    * @return true, if a sample has been replaced
    */
   bool sensorResetting(const RobotPose& robotPose);
+
+  /** Special function for testing (currently only working in simulation).
+   *  Whenever the ground truth robot pose has changed to a certain extent, the samples are
+   *  reinitializes at the new pose. This allows easier testing by moving the robot around without waiting
+   *  for it to relocalize at the new pose.
+   */
+  void resetSamplesToGroundTruth();
 
   /** Some motions lead to low-quality percepts, as the camera pose cannot be computed precisely enough.
    *  This functions performs the necessary checks.
@@ -229,7 +239,7 @@ private:
    */
   Pose2f getNewPoseAtWalkInPosition();
 
-  /** Returns a pose on the manual placement line or inside the own penalty area (if the robot is the goalie)
+  /** Returns a pose on the manual placement positions for the 1v1 demo
    * @return A robot pose
    */
   Pose2f getNewPoseAtManualPlacementPosition();

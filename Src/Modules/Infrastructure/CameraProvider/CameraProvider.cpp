@@ -10,19 +10,23 @@
  */
 
 #include "CameraProvider.h"
+#include "NaoCamera.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
 #include "Platform/Time.h"
-#include "Tools/Settings.h"
-#include "Tools/Streams/InStreams.h"
-#include "Tools/Debugging/Stopwatch.h"
-#include "Tools/Debugging/Annotation.h"
+#include "Framework/Settings.h"
+#include "Streaming/InStreams.h"
+#include "Debugging/Stopwatch.h"
+#include "Debugging/Annotation.h"
+#ifdef TARGET_ROBOT
+#include <MD5.h>
+#endif
 #include <cstdio>
 
 MAKE_MODULE(CameraProvider, infrastructure);
 
 thread_local CameraProvider* CameraProvider::theInstance = nullptr;
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
 Semaphore CameraProvider::performingReset = Semaphore(1);
 bool CameraProvider::resetPending = false;
 #endif
@@ -37,7 +41,7 @@ CameraProvider::CameraProvider()
   theInstance = this;
   setupCamera();
 
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   headName = Global::getSettings().headName.c_str();
   headName.append(".wav");
   thread.start(this, &CameraProvider::takeImages);
@@ -48,7 +52,7 @@ CameraProvider::CameraProvider()
 
 CameraProvider::~CameraProvider()
 {
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   thread.announceStop();
   takeNextImage.post();
   thread.stop();
@@ -61,7 +65,7 @@ CameraProvider::~CameraProvider()
 
 void CameraProvider::update(CameraImage& theCameraImage)
 {
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   unsigned timestamp = static_cast<long long>(camera->getTimestamp() / 1000) > static_cast<long long>(Time::getSystemTimeBase())
                        ? static_cast<unsigned>(camera->getTimestamp() / 1000 - Time::getSystemTimeBase()) : 100000;
   if(camera->hasImage())
@@ -71,7 +75,7 @@ void CameraProvider::update(CameraImage& theCameraImage)
     if(theCameraImage.timestamp - timestampLastRowChange > 3000)
     {
       timestampLastRowChange = theCameraImage.timestamp;
-      currentRow = Random::uniformInt(1, cameraInfo.height-2);
+      currentRow = Random::uniformInt(1, cameraInfo.height - 2);
       rowBuffer.clear();
     }
     std::string res = MD5().digestMemory(reinterpret_cast<unsigned char*>(theCameraImage[currentRow]), cameraInfo.width * sizeof(CameraImage::PixelType));
@@ -109,7 +113,7 @@ void CameraProvider::update(CameraImage& theCameraImage)
 #else
   theCameraImage.setResolution(cameraInfo.width / 2, cameraInfo.height);
   theCameraImage.timestamp = Time::getCurrentSystemTime();
-#endif // CAMERA_INCLUDED
+#endif // TARGET_ROBOT
 }
 
 void CameraProvider::update(JPEGImage& jpegImage)
@@ -129,14 +133,14 @@ void CameraProvider::update(CameraStatus& cameraStatus)
     if(cameraStatus.ok)
     {
       ANNOTATION("CameraProvider", "Could not acquire new image.");
-      SystemCall::playSound("sirene.wav");
-      SystemCall::say("Camera broken");
+      SystemCall::playSound("sirene.wav", true);
+      SystemCall::say("Camera broken", true);
     }
 #ifdef NDEBUG
     else if(!SystemCall::soundIsPlaying())
     {
-      SystemCall::playSound("sirene.wav");
-      SystemCall::say("Camera broken");
+      SystemCall::playSound("sirene.wav", true);
+      SystemCall::say("Camera broken", true);
     }
 #endif
   }
@@ -225,7 +229,7 @@ void CameraProvider::setupCamera()
   // update focal length
   cameraInfo.updateFocalLength();
 
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   ASSERT(camera == nullptr);
   camera = new NaoCamera(whichCamera == CameraInfo::upper ?
                          "/dev/video-top" : "/dev/video-bottom",
@@ -239,7 +243,7 @@ void CameraProvider::setupCamera()
 
 bool CameraProvider::isFrameDataComplete()
 {
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   if(resetPending)
     return false;
   if(theInstance)
@@ -251,7 +255,7 @@ bool CameraProvider::isFrameDataComplete()
 
 void CameraProvider::takeImages()
 {
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   BH_TRACE_INIT(whichCamera == CameraInfo::upper ? "UpperCameraProvider" : "LowerCameraProvider");
   Thread::nameCurrentThread("CameraProvider");
   thread.setPriority(11);
@@ -268,8 +272,8 @@ void CameraProvider::takeImages()
       if(resetPending)
       {
         NaoCamera::resetCamera();
-        SystemCall::playSound(headName.c_str());
-        SystemCall::say("Camera reset");
+        SystemCall::playSound(headName.c_str(), true);
+        SystemCall::say("Camera reset", true);
         resetPending = false;
       }
       setupCamera();
@@ -327,7 +331,7 @@ void CameraProvider::takeImages()
 
 void CameraProvider::waitForFrameData()
 {
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   if(theInstance)
   {
     theInstance->takeNextImage.post();

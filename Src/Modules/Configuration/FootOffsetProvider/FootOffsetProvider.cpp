@@ -6,7 +6,7 @@
  */
 
 #include "FootOffsetProvider.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings3D.h"
 #include <cmath>
 
 MAKE_MODULE(FootOffsetProvider, sensing);

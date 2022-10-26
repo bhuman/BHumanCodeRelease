@@ -1,0 +1,24 @@
+vf worldState
+vfd worldState fieldPolygons
+
+vfd worldState cognition:Reset
+vfd worldState module:PassEvaluationProvider:heatmap
+set module:ExpectedGoalsProvider:drawHeatmap false
+set module:PassEvaluationProvider:drawHeatmap true
+
+vfd worldState fieldLines
+vfd worldState goalFrame
+vfd worldState representation:TeammatesBallModel
+vfd worldState cognition:RobotPose
+vfd worldState representation:ObstacleModel:rectangle
+vfd worldState cognition:Reset
+
+echo set module:PassEvaluationProvider:drawHeatmap true
+echo set module:PassEvaluationProvider:drawHeatmap false
+echo set module:PassEvaluationProvider:drawCombinedHeatmap true
+echo set module:PassEvaluationProvider:drawCombinedHeatmap false
+echo set module:PassEvaluationProvider:calcPassTargetFree false
+echo set module:PassEvaluationProvider:calcPassLineFree false
+echo set module:PassEvaluationProvider:calcPassTargetInField false
+echo set module:PassEvaluationProvider:calcShotLineFree false
+echo set module:PassEvaluationProvider:calcShotDistance false

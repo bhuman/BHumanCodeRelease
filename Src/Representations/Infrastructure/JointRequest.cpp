@@ -1,5 +1,5 @@
 #include "JointRequest.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void JointRequest::draw()
 {

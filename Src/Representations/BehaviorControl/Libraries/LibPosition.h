@@ -7,10 +7,10 @@
  */
 
 #pragma once
-#include "Tools/Function.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Math/Eigen.h"
+#include "Math/Geometry.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(LibPosition,
 {

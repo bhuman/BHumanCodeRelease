@@ -1,28 +1,30 @@
 /**
  * @file LibLookActiveProvider.h
  * @author Andreas Stolpmann
+ * @author Florian Scholz
  */
 
-#include "Tools/Module/Module.h"
-#include "Tools/Debugging/Debugging.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Framework/Module.h"
+#include "Debugging/Debugging.h"
+#include "Debugging/DebugDrawings.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/Libraries/LibLookActive.h"
 #include "Representations/BehaviorControl/Libraries/LibTeam.h"
-#include "Representations/Communication/GameInfo.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/HeadLimits.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
+#include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamBallModel.h"
+#include "Representations/Modeling/TeammatesBallModel.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/RingBufferWithSum.h"
+#include "Math/RingBufferWithSum.h"
 
 MODULE(LibLookActiveProvider,
 {,
@@ -33,13 +35,14 @@ MODULE(LibLookActiveProvider,
   REQUIRES(CameraInfo),
   REQUIRES(FrameInfo),
   REQUIRES(HeadLimits),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   USES(HeadMotionRequest),
   REQUIRES(JointAngles),
+  REQUIRES(JointRequest),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotDimensions),
   REQUIRES(RobotPose),
-  REQUIRES(TeamBallModel),
+  REQUIRES(TeammatesBallModel),
   REQUIRES(LibTeam),
   REQUIRES(MotionInfo),
   REQUIRES(TorsoMatrix),
@@ -62,6 +65,7 @@ MODULE(LibLookActiveProvider,
     (bool) lookAtCloseObstacleWhenFollowingBall,
     (float) maxObstacleDistanceToBeLookedAt,
     (int) maxObstacleAgeToBeLookedAt,
+    (Angle) cameraChoiceHysteresis,
   }),
 });
 
@@ -70,6 +74,8 @@ class LibLookActiveProvider : public LibLookActiveProviderBase
 private:
   Vector2f theBallPositionRelative;
   Vector2f theBallSpeedRelative;
+
+  bool teamBallIsUsed = false;
 
   float translationSpeedFactor = 1.f;
   float rotationSpeedFactor = 1.f;
@@ -90,6 +96,8 @@ private:
   Angle clipPanToBall(const Angle pan) const;
 
   Angle clipPanToNearObstacle(const Angle pan) const;
+
+  float getTranslationOffset(float x) const;
 
   RingBufferWithSum<float, 180> translationSpeedBuffer;
   RingBufferWithSum<Angle, 120> rotationSpeedBuffer;

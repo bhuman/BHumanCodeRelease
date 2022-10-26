@@ -8,7 +8,7 @@
 
 #include "FieldFeature.h"
 #include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle<idFieldFeatureOverview>
 {
@@ -20,6 +20,8 @@ STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle
   {,
     penaltyArea,
     midCircle,
+    midCorner,
+    outerCorner,
     penaltyMarkWithPenaltyAreaLine,
   });
 
@@ -37,6 +39,7 @@ STREAMABLE(FieldFeatureOverview, COMMA public PureBHumanArbitraryMessageParticle
     };
     ,
     (bool)(false) isValid,       //< Seen in current Frame
+    (bool)(false) isRightSided,  //< just for FieldFeatures with a side (like OuterCorner)
     (unsigned)(0) lastSeen,      //< the timestamp, when this pose was valid
   });
   void draw() const,

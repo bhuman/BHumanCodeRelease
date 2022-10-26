@@ -9,10 +9,10 @@
 
 #pragma once
 
-#include "Tools/Function.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Streaming/Function.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 
 /**
@@ -32,7 +32,7 @@ STREAMABLE(BallContactInformation,
   (ContactType)(none) contactType,               /**< Which part of the robot touched the ball */
   (Vector2f)(Vector2f::Zero())  newPosition,     /**< The position of the ball (after the contact) relative to the robot (in mm) */
   (Vector2f)(Vector2f::Zero())  newVelocity,     /**< The velocity of the ball (after the contact) relative to the robot (in mm/s) */
-  (Vector2f)(Vector2f(1.f,1.f)) addVelocityCov,  /**< The amount of uncertainty that is added to the velocity after the contact */
+  (Vector2f)(1.f, 1.f) addVelocityCov,  /**< The amount of uncertainty that is added to the velocity after the contact */
 });
 
 

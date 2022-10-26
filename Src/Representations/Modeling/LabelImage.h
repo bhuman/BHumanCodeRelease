@@ -9,9 +9,9 @@
 
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 #include <vector>
 #include <map>
 

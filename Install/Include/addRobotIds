@@ -48,14 +48,14 @@ parseOptions() {
 }
 
 getIdsFromRobot() {
-  message "Loading ids from Robot"
+  message "Loading ids from Robot. If prompted please enter password twice (usually nao)."
 
   # get headId
-  headId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "cat /sys/qi/head_id 2>/dev/null || true")
+  headId=$(ssh ${sshOptions} nao@${remoteIp} "cat /sys/qi/head_id 2>/dev/null || true")
   if [ -z ${headId} ]; then
     fatal "Failed reading the headId!"
   fi
-  bodyId=$(ssh -i "${privateKey}" ${sshOptions} nao@${remoteIp} "bash -l -c \"python -c \\\"import naoqi; print naoqi.ALProxy('ALMemory', '127.0.0.1', 9559).getData('Device/DeviceList/ChestBoard/BodyId')\\\"\" | grep -vE '\[(W|I)\]'")
+  bodyId=$(ssh ${sshOptions} nao@${remoteIp} "bash -l -c \"python -c \\\"import naoqi; print naoqi.ALProxy('ALMemory', '127.0.0.1', 9559).getData('Device/DeviceList/ChestBoard/BodyId')\\\"\" | grep -vE '\[(W|I)\]'")
   if [ -z ${bodyId} ]; then
     fatal "Failed reading the bodyId!"
   fi
@@ -100,7 +100,6 @@ checkFile() {
 
 if ! parseOptions "$@"; then
   checkFile
-  copyKey ${remoteIp}
   getIdsFromRobot
 else
   checkFile

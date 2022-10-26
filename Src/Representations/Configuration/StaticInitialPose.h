@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2f.h"
+#include "Math/Pose2f.h"
 
 STREAMABLE(StaticInitialPose,
 {,

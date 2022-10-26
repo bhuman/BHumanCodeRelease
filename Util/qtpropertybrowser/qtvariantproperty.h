@@ -41,8 +41,8 @@
 #define QTVARIANTPROPERTY_H
 
 #include "qtpropertybrowser.h"
-#include <QtCore/QVariant>
-#include <QtGui/QIcon>
+#include <QVariant>
+#include <QIcon>
 
 QT_BEGIN_NAMESPACE
 
@@ -119,7 +119,7 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotDecimalsChanged(QtProperty *, int))
     Q_PRIVATE_SLOT(d_func(), void slotValueChanged(QtProperty *, bool))
     Q_PRIVATE_SLOT(d_func(), void slotValueChanged(QtProperty *, const QString &))
-    Q_PRIVATE_SLOT(d_func(), void slotRegExpChanged(QtProperty *, const QRegExp &))
+    Q_PRIVATE_SLOT(d_func(), void slotRegExpChanged(QtProperty *, const QRegularExpression &))
     Q_PRIVATE_SLOT(d_func(), void slotValueChanged(QtProperty *, const QDate &))
     Q_PRIVATE_SLOT(d_func(), void slotRangeChanged(QtProperty *, const QDate &, const QDate &))
     Q_PRIVATE_SLOT(d_func(), void slotValueChanged(QtProperty *, const QTime &))

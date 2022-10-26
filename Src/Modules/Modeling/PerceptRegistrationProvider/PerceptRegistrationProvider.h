@@ -24,7 +24,7 @@
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
 #include "Representations/Perception/GoalPercepts/GoalPostsPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(PerceptRegistrationProvider,
 {,
@@ -51,6 +51,7 @@ MODULE(PerceptRegistrationProvider,
     (Angle) globalPoseAssociationMaxAngularDeviation, /**< Angular threshold for associating a computed pose (by field feature) and the currently estimated pose */
     (Vector2f) robotRotationDeviation,                /**< Deviation of the rotation of the robot's torso */
     (Vector2f) robotRotationDeviationInStand,         /**< Deviation of the rotation of the robot's torso when it is standing. */
+    (bool) useIntersectionDirections,                 /**< If set to false, the directions of intersections are ignored in the matching process. */
   }),
 });
 
@@ -108,6 +109,10 @@ private:
   Vector2f opponentGoalPostsWorldModel[2];                    /**< The positions of the two posts of the opponent goal. */
   std::vector<WorldModelFieldLine> verticalLinesWorldModel;   /**< Field lines to match against, lines in this list are parallel to the field's x axis */
   std::vector<WorldModelFieldLine> horizontalLinesWorldModel; /**< Field lines to match against, lines in this list are parallel to the field's y axis */
+
+  std::vector<Vector2f> xIntersectionsWorld;                  /**< List of all x intersections in global field coordinates (used when direction checking is off) */
+  std::vector<Vector2f> tIntersectionsWorld;                  /**< List of all t intersections in global field coordinates (used when direction checking is off). Contains all x intersections, too. */
+  std::vector<Vector2f> lIntersectionsWorld;                  /**< List of all l intersections in global field coordinates (used when direction checking is off). Contains all x and t intersections, too. */
 
   Matrix2f penaltyMarkCovariance;                             /**< Covariance of last penalty mark perception (saved, as it is needed multiple times in one frame)*/
   unsigned int timeOfLastPenaltyMarkCovarianceUpdate;         /**< Timestamp of frame in which the penalty mark covariance was computed the last time*/
@@ -201,13 +206,25 @@ private:
 
   /**
    * Determine, if the perceived field line intersection matches one of the intersections on the
-   * field. Position as well as orientation (in steps of 90 degrees) are checked.
+   * field. Position, type as well as orientation (in steps of 90 degrees) are checked.
    * If this is the case, the matching intersection is returned.
    * @param pose The assumed pose of the robot
    * @param intersectionPercept The position of the perceived intersection (in robot coordinates)
    * @param intersectionWorldModel The position of the real intersection (in field coordinates)
+   * @return true, if a matching intersection was found
   */
   bool getCorrespondingIntersection(const Pose2f& pose, const FieldLineIntersections::Intersection& intersectionPercept, Vector2f& intersectionWorldModel) const;
+
+  /**
+   * Determine, if the perceived field line intersection matches one of the intersections on the
+   * field. Position and type are checked, rotation is not checked.
+   * If this is the case, the matching intersection is returned.
+   * @param pose The assumed pose of the robot
+   * @param intersectionPercept The position of the perceived intersection (in robot coordinates)
+   * @param intersectionWorldModel The position of the real intersection (in field coordinates)
+   * @return true, if a matching intersection was found
+  */
+  bool getCorrespondingIntersectionNoDirections(const Pose2f& pose, const FieldLineIntersections::Intersection& intersectionPercept, Vector2f& intersectionWorldModel) const;
 
   /**
    * L and T intersections are stored in lists depending on their direction (0,90,180,270) on the field.

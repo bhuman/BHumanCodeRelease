@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "Tools/Streams/EnumIndexedArray.h"
-#include "Tools/Function.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "Streaming/Function.h"
 
 /**
  * The struct represents the states of the keys.

@@ -23,12 +23,12 @@
 #pragma once
 
 #include <vector>
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
 #include "Representations/Infrastructure/DummyRepresentation.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Tools/Math/Eigen.h"
+#include "Math/Eigen.h"
 
 MODULE(FrictionLearner,
 {,

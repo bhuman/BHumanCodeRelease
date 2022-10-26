@@ -7,10 +7,10 @@
 #pragma once
 
 #include "Platform/BHAssert.h"
-#include "Representations/Communication/BHumanMessage.h"
-#include "Tools/Streams/Streamable.h"
-#include "Tools/MessageQueue/InMessage.h"
-#include "Tools/MessageQueue/MessageIDs.h"
+#include "Streaming/Streamable.h"
+#include "Streaming/InMessage.h"
+#include "Streaming/MessageIDs.h"
+#include "Tools/Communication/BHumanMessage.h"
 #include <functional>
 
 template<MessageID ID>

@@ -5,8 +5,8 @@
 #pragma once
 
 #include <vector>
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(FieldBoundary,
 {
@@ -33,7 +33,7 @@ STREAMABLE(FieldBoundary,
    */
   void verify() const
   {
-    for(const Vector2f& p : boundaryOnField)
+    for([[maybe_unused]] const Vector2f& p : boundaryOnField)
       ASSERT(std::isfinite(p.x()) && std::isfinite(p.y()));
   }
 

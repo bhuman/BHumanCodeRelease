@@ -1,11 +1,11 @@
 #!/bin/bash
 basePath=$(dirname "$(which "$0")")
 CALL=
-LIBLIST=
+FILELIST=
 while true; do
   case $1 in
     "")
-      break;
+      break
       ;;
     "-target")
       shift
@@ -15,11 +15,15 @@ while true; do
       ;;
     "-filelist")
       shift
-      FILELIST="$1"
-      CALL="$CALL $(sed <"$FILELIST" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
+      FILELIST="$FILELIST$(cat "$1" | tr '\n' '|')"
+      CALL="$CALL $(sed <"$1" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
       ;;
     /*.a)
-      LIBLIST="$LIBLIST$1|"
+      FILELIST="$FILELIST$1|"
+      CALL="$CALL '$1'"
+      ;;
+    /*.o)
+      FILELIST="$FILELIST$1|"
       CALL="$CALL '$1'"
       ;;
     "-o")
@@ -53,11 +57,10 @@ if [ ! -z "$INFO" ]; then
   (
     echo ""
     echo "cctools-973.0.1"
-    sed <"$FILELIST" 's%^%|%' | tr '|' $'\x10'
-    echo -n "$LIBLIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
+    echo -n "$FILELIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
     echo -n $'\x40'
     echo "$OUTPUT"
   ) | tr '\n' '\0' >"$INFO"
 fi
 
-bash -c "\"${basePath}/ld.lld\" -nostdlib --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/lib64/ld-linux-x86-64.so.2 ../../Util/Buildchain/V6/gcc/lib/crt1.o ../../Util/Buildchain/V6/gcc/lib/crti.o ../../Util/Buildchain/V6/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.28 --start-group ../../Util/Buildchain/V6/gcc/lib/libm-2.31.so --as-needed ../../Util/Buildchain/V6/gcc/lib/libmvec-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a --start-group ../../Util/Buildchain/V6/gcc/lib/libc-2.31.so ../../Util/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/gcc/lib/ld-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a ../../Util/Buildchain/V6/gcc/lib/crtend.o ../../Util/Buildchain/V6/gcc/lib/crtn.o"
+bash -c "\"${basePath}/mold\" -nostdlib --eh-frame-hdr -m elf_x86_64 -dynamic-linker=/lib64/ld-linux-x86-64.so.2 ../../Util/Buildchain/V6/gcc/lib/crt1.o ../../Util/Buildchain/V6/gcc/lib/crti.o ../../Util/Buildchain/V6/gcc/lib/crtbegin.o $CALL ../../Util/Buildchain/V6/gcc/lib/libstdc++.so.6.0.28 --start-group ../../Util/Buildchain/V6/gcc/lib/libm-2.31.so --as-needed ../../Util/Buildchain/V6/gcc/lib/libmvec-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a --start-group ../../Util/Buildchain/V6/gcc/lib/libc-2.31.so ../../Util/Buildchain/V6/gcc/lib/libc_nonshared.a --as-needed ../../Util/Buildchain/V6/gcc/lib/ld-2.31.so --no-as-needed --end-group --start-group ../../Util/Buildchain/V6/gcc/lib/libgcc_s.so.1 ../../Util/Buildchain/V6/gcc/lib/libgcc.a --end-group ../../Util/Buildchain/V6/gcc/lib/libgcc.a ../../Util/Buildchain/V6/gcc/lib/crtend.o ../../Util/Buildchain/V6/gcc/lib/crtn.o"

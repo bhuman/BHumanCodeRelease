@@ -18,16 +18,21 @@ void FallEngine::update(FallGenerator& fallGenerator)
 {
   fallGenerator.shouldCatchFall = [this](const MotionRequest& motionRequest)
   {
+    const bool isWavingRequest = motionRequest.motion == MotionRequest::special &&
+                                 (motionRequest.specialRequest == MotionRequest::Special::demoBannerWave || motionRequest.specialRequest == MotionRequest::Special::demoBannerWaveInitial);
+    const bool isWaving = theMotionInfo.executedPhase == MotionPhase::keyframeMotion &&
+                          (theMotionInfo.executedKeyframeMotion.keyframeMotion == KeyframeMotionRequest::demoBannerWave ||
+                           theMotionInfo.executedKeyframeMotion.keyframeMotion == KeyframeMotionRequest::demoBannerWaveInitial);
     return theFallDownState.state == FallDownState::falling &&
-           motionRequest.motion != MotionRequest::keyframeMotion &&
-           motionRequest.motion != MotionRequest::getUp &&
+           motionRequest.motion != MotionRequest::dive &&
+           (motionRequest.motion != MotionRequest::special || isWavingRequest) &&
            motionRequest.motion != MotionRequest::playDead &&
-           theMotionInfo.executedPhase != MotionPhase::keyframeMotion &&
+           (theMotionInfo.executedPhase != MotionPhase::keyframeMotion || isWaving) &&
            theMotionInfo.executedPhase != MotionPhase::getUp &&
            theMotionInfo.executedPhase != MotionPhase::playDead;
   };
 
-  fallGenerator.createPhase = [this]()
+  fallGenerator.createPhase = [this]
   {
     return std::make_unique<FallPhase>(*this);
   };
@@ -45,6 +50,7 @@ FallPhase::FallPhase(const FallEngine& engine) :
 
   // Start with the measured joint angles when the phase starts.
   request.angles = engine.theJointAngles.angles;
+  mirrorFrontFall = engine.theInertialData.angle.x() < 0_deg;
 }
 
 void FallPhase::update()
@@ -65,51 +71,68 @@ void FallPhase::update()
 bool FallPhase::isDone(const MotionRequest& motionRequest) const
 {
   // If the robot becomes upright / squatting on its own (or with human help) or a getUp is requested after the robot has reached the ground, the phase is done.
-  return engine.theFallDownState.state == FallDownState::upright ||
-         engine.theFallDownState.state == FallDownState::squatting ||
-         (waitingForGetUp && motionRequest.motion == MotionRequest::getUp &&
-          std::abs(engine.theInertialData.gyro.x()) < engine.maxGyroToStartGetUp &&
-          std::abs(engine.theInertialData.gyro.y()) < engine.maxGyroToStartGetUp &&
-          std::abs(engine.theInertialData.gyro.z()) < engine.maxGyroToStartGetUp);
+  return (engine.theFallDownState.state == FallDownState::upright ||
+          engine.theFallDownState.state == FallDownState::squatting ||
+          (waitingForGetUp && motionRequest.motion != MotionRequest::dive)) &&
+         std::abs(engine.theInertialData.gyro.x()) < engine.maxGyroToStartGetUp &&
+         std::abs(engine.theInertialData.gyro.y()) < engine.maxGyroToStartGetUp &&
+         std::abs(engine.theInertialData.gyro.z()) < engine.maxGyroToStartGetUp;
 }
 
 void FallPhase::calcJoints(const MotionRequest&, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo)
 {
+  if(engine.theFrameInfo.getTimeSince(startTime) > engine.waitAfterFalling)
+  {
+    if(!afterFallMotion)
+    {
+      afterFallMotion = true;
+      afterFallStart = request;
+    }
+    const float ratio = Rangef::ZeroOneRange().limit((engine.theFrameInfo.getTimeSince(startTime) - engine.waitAfterFalling) / engine.standInterpolationDuration);
+    const auto& target = engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit];
+    FOREACH_ENUM(Joints::Joint, joint)
+    {
+      request.angles[joint] = target[joint] * ratio + afterFallStart.angles[joint] * (1.f - ratio);
+      request.stiffnessData.stiffnesses[joint] = 20;
+    }
+  }
   safeBody(request);
   safeArms(request);
 
-  // Pitch the head such that it points away from the floor.
-  request.angles[Joints::headYaw] = 0;
-  request.angles[Joints::headPitch] = 0;
-  if(fallDirection == FallDownState::front)
-    request.angles[Joints::headPitch] = -23_deg;
-  else if(fallDirection == FallDownState::back)
-    request.angles[Joints::headPitch] = 20_deg;
-  else // fall direction unknown
-    request.angles[Joints::headPitch] = 0_deg;
-
-  // Set head yaw stiffness high as long as it has not reached its target, then set it low.
-  if(std::abs(engine.theJointAngles.angles[Joints::headYaw]) > 0.1f && !headYawInSafePosition)
-    request.stiffnessData.stiffnesses[Joints::headYaw] = 50;
-  else
-  {
-    headYawInSafePosition = true;
-    request.stiffnessData.stiffnesses[Joints::headYaw] = 20;
-  }
-
-  // Set head pitch stiffness high as long as it has not reached its target, then set it low.
-  if(std::abs(engine.theJointAngles.angles[Joints::headPitch] - request.angles[Joints::headPitch]) > 0.1f && !headPitchInSafePosition)
-    request.stiffnessData.stiffnesses[Joints::headPitch] = 50;
-  else
-  {
-    headPitchInSafePosition = true;
-    request.stiffnessData.stiffnesses[Joints::headPitch] = 20;
-  }
+  setHeadStiffness(request);
 
   ASSERT(request.isValid());
   jointRequest = request;
   odometryOffset = Pose2f();
   motionInfo.isMotionStable = false;
+}
+
+std::unique_ptr<MotionPhase> FallPhase::createNextPhase(const MotionPhase& defaultPhase) const
+{
+  if(engine.theFallDownState.state == FallDownState::upright || engine.theFallDownState.state == FallDownState::staggering || defaultPhase.type == MotionPhase::playDead)
+    return std::unique_ptr<MotionPhase>();
+  return engine.theGetUpGenerator.createPhase(*this);
+}
+
+void FallPhase::setHeadStiffness(JointRequest& request)
+{
+  // Set head yaw stiffness high as long as it has not reached its target, then set it low.
+  if(std::abs(engine.theJointAngles.angles[Joints::headYaw]) > 0.1f && !headYawInSafePosition)
+    request.stiffnessData.stiffnesses[Joints::headYaw] = engine.stiffnessHead.max;
+  else
+  {
+    headYawInSafePosition = true;
+    request.stiffnessData.stiffnesses[Joints::headYaw] = engine.stiffnessHead.min;
+  }
+
+  // Set head pitch stiffness high as long as it has not reached its target, then set it low.
+  if(std::abs(engine.theJointAngles.angles[Joints::headPitch] - request.angles[Joints::headPitch]) > 0.1f && !headPitchInSafePosition)
+    request.stiffnessData.stiffnesses[Joints::headPitch] = engine.stiffnessHead.max;
+  else
+  {
+    headPitchInSafePosition = true;
+    request.stiffnessData.stiffnesses[Joints::headPitch] = engine.stiffnessHead.min;
+  }
 }
 
 void FallPhase::safeBody(JointRequest& request)
@@ -118,94 +141,160 @@ void FallPhase::safeBody(JointRequest& request)
     request.stiffnessData.stiffnesses[i] = 10;
 
   if(fallDirection == FallDownState::front)
-    MotionUtilities::sitFront(request);
+  {
+    JointAngles ref;
+    if((engine.theInertialData.angle.y() > engine.lateFallYAngleFront && engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDuration) ||
+       lateFallMotion)
+    {
+      lateFallMotion = true;
+      ref.angles = engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFrontAfterFall];
+    }
+    else
+      ref.angles = engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFront];
+
+    if(mirrorFrontFall)
+    {
+      JointAngles anglesMirror;
+      anglesMirror.mirror(ref);
+      ref = anglesMirror;
+    }
+    MotionUtilities::copy(ref, request, Joints::firstLegJoint, Joints::numOfJoints);
+  }
+  else if(fallDirection == FallDownState::back)
+  {
+    if((engine.theInertialData.angle.y() < engine.lateFallYAngleBack && engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDuration) ||
+       lateFallMotion)
+    {
+      lateFallMotion = true;
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitBackAfterFall],
+                            request, Joints::firstLegJoint, Joints::numOfJoints);
+    }
+    else
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitBack],
+                            request, Joints::firstLegJoint, Joints::numOfJoints);
+  }
   else
-    MotionUtilities::sit(request);
-  if(engine.theJointAngles.angles[Joints::lKneePitch] < 100_deg)
-    request.stiffnessData.stiffnesses[Joints::lKneePitch] = 20;
-  if(engine.theJointAngles.angles[Joints::rKneePitch] < 100_deg)
-    request.stiffnessData.stiffnesses[Joints::rKneePitch] = 20;
+  {
+    MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit],
+                          request, Joints::firstLegJoint, Joints::numOfJoints);
+  }
+  const int useKneeStiffness = lateFallMotion ? engine.stiffnessLeg.max : engine.stiffnessLeg.min;
+  request.stiffnessData.stiffnesses[Joints::lKneePitch] = useKneeStiffness;
+  request.stiffnessData.stiffnesses[Joints::rKneePitch] = useKneeStiffness;
+  request.stiffnessData.stiffnesses[Joints::lHipPitch] = engine.stiffnessLeg.min;
+  request.stiffnessData.stiffnesses[Joints::rHipPitch] = engine.stiffnessLeg.min;
 }
 void FallPhase::safeArms(JointRequest& request)
 {
-  if(engine.theFrameInfo.getTimeSince(startTime) > 5000)
-  {
-    JointRequest armRequest;
-    MotionUtilities::stand(armRequest);
-    MotionUtilities::copy(armRequest, request, engine.theStiffnessSettings, Joints::firstArmJoint, Joints::firstLegJoint);
-    for(size_t i = Joints::firstArmJoint; i < Joints::firstLegJoint; i++)
-      request.stiffnessData.stiffnesses[i] = SystemCall::getMode() == SystemCall::physicalRobot ? 0 : 1;
-  }
+  const bool lowStiffness = engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDuration;
+  const bool lowStiffnessElbow = engine.theFrameInfo.getTimeSince(startTime) > engine.highStiffnessDurationElbowRoll;
   // move arms behind, to damp the fall
-  else if(fallDirection == FallDownState::back)
+  switch(fallDirection)
   {
-    MotionUtilities::safeArmsBehind(request);
-    leftShoulderPitchLowStiffness = true;
-    leftShoulderRollLowStiffness = true;
-    rightShoulderPitchLowStiffness = true;
-    rightShoulderRollLowStiffness = true;
-  }
-  // move arms to the front, to damp the fall
-  else if(fallDirection == FallDownState::front)
-  {
-    JointRequest goal;
-    MotionUtilities::safeArmsFront(goal);
-    request.angles[Joints::lShoulderRoll] = goal.angles[Joints::lShoulderRoll];
-    // make sure arm does not get stuck behind
-    if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 0_deg)
+    // move arms back and pull legs together
+    case FallDownState::back:
     {
-      request.angles[Joints::lShoulderPitch] = goal.angles[Joints::lShoulderPitch];
-      request.angles[Joints::lElbowYaw] = goal.angles[Joints::lElbowYaw];
-      request.angles[Joints::lElbowRoll] = goal.angles[Joints::lElbowRoll];
-      request.angles[Joints::lWristYaw] = goal.angles[Joints::lWristYaw];
-      leftShoulderRollLowStiffness = true;
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitBack],
+                            request, static_cast<Joints::Joint>(0), Joints::firstLegJoint);
+      const int useStiffness = lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      const int useStiffnessElbow = lowStiffnessElbow ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::rShoulderPitch] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::lElbowRoll] = useStiffnessElbow;
+      request.stiffnessData.stiffnesses[Joints::rElbowRoll] = useStiffnessElbow;
+      break;
     }
-    if(engine.theJointAngles.angles[Joints::lShoulderPitch] < 50_deg)
-      leftShoulderPitchLowStiffness = true;
+    // move arms to the front, to damp the fall
+    case FallDownState::front:
+    {
+      JointAngles goal;
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sitFront],
+                            goal, static_cast<Joints::Joint>(0), Joints::firstLegJoint);
 
-    request.angles[Joints::rShoulderRoll] = goal.angles[Joints::rShoulderRoll];
-    // make sure arm does not get stuck behind
-    if(engine.theJointAngles.angles[Joints::rShoulderRoll] < 5_deg)
-    {
-      request.angles[Joints::rShoulderPitch] = goal.angles[Joints::rShoulderPitch];
-      request.angles[Joints::rElbowYaw] = goal.angles[Joints::rElbowYaw];
-      request.angles[Joints::rElbowRoll] = goal.angles[Joints::rElbowRoll];
-      request.angles[Joints::rWristYaw] = goal.angles[Joints::rWristYaw];
-      rightShoulderRollLowStiffness = true;
-    }
-    if(engine.theJointAngles.angles[Joints::rShoulderPitch] < 80_deg)
-      rightShoulderPitchLowStiffness = true;
+      if(mirrorFrontFall)
+      {
+        JointAngles anglesMirror;
+        anglesMirror.mirror(goal);
+        goal = anglesMirror;
+      }
 
-    request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = leftShoulderRollLowStiffness ? 10 : 50;
-    request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = leftShoulderPitchLowStiffness ? 10 : 20;
-    request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = rightShoulderRollLowStiffness ? 10 : 50;
-    request.stiffnessData.stiffnesses[Joints::rShoulderPitch] = rightShoulderPitchLowStiffness ? 10 : 20;
-  }
-  else
-  {
-    leftShoulderPitchLowStiffness = true;
-    rightShoulderPitchLowStiffness = true;
-    request.angles[Joints::lShoulderRoll] = 20_deg;
-    if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 10_deg)
-    {
-      request.angles[Joints::lShoulderPitch] = 77_deg;
-      request.angles[Joints::lElbowYaw] = 0_deg;
-      request.angles[Joints::lElbowRoll] = -15_deg;
-      request.angles[Joints::lWristYaw] = -90_deg;
-      leftShoulderRollLowStiffness = true;
+      request.angles[Joints::lShoulderRoll] = goal.angles[Joints::lShoulderRoll];
+      // make sure arm does not get stuck behind
+      if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 0_deg || leftShoulderRollLowStiffness)
+      {
+        request.angles[Joints::lShoulderPitch] = goal.angles[Joints::lShoulderPitch];
+        request.angles[Joints::lElbowYaw] = goal.angles[Joints::lElbowYaw];
+        request.angles[Joints::lElbowRoll] = goal.angles[Joints::lElbowRoll];
+        request.angles[Joints::lWristYaw] = goal.angles[Joints::lWristYaw];
+        leftShoulderRollLowStiffness = true;
+      }
+      else
+      {
+        // Boost the joints. No idea if this is still needed
+        request.angles[Joints::lShoulderRoll] = 20_deg;
+        request.angles[Joints::lElbowYaw] = -90_deg;
+      }
+
+      request.angles[Joints::rShoulderRoll] = goal.angles[Joints::rShoulderRoll];
+      // make sure arm does not get stuck behind
+      if(engine.theJointAngles.angles[Joints::rShoulderRoll] < 0_deg || rightShoulderRollLowStiffness)
+      {
+        request.angles[Joints::rShoulderPitch] = goal.angles[Joints::rShoulderPitch];
+        request.angles[Joints::rElbowYaw] = goal.angles[Joints::rElbowYaw];
+        request.angles[Joints::rElbowRoll] = goal.angles[Joints::rElbowRoll];
+        request.angles[Joints::rWristYaw] = goal.angles[Joints::rWristYaw];
+        rightShoulderRollLowStiffness = true;
+      }
+      else
+      {
+        // Boost the joints. No idea if this is still needed
+        request.angles[Joints::rShoulderRoll] = -20_deg;
+        request.angles[Joints::rElbowYaw] = -90_deg;
+      }
+
+      const int useStiffness = lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::rElbowYaw] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::rElbowYaw] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = leftShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = useStiffness;
+      request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = rightShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::rShoulderPitch] = useStiffness;
+
+      request.angles[Joints::headPitch] = goal.angles[Joints::headPitch];
+      request.angles[Joints::headYaw] = goal.angles[Joints::headYaw];
+      break;
     }
-    request.angles[Joints::rShoulderRoll] = -20_deg;
-    if(engine.theJointAngles.angles[Joints::rShoulderRoll] < -10_deg)
+    // pull legs together and wait until something happens
+    default:
     {
-      request.angles[Joints::rShoulderPitch] = 77_deg;
-      request.angles[Joints::rElbowYaw] = 0_deg;
-      request.angles[Joints::rElbowRoll] = 15_deg;
-      request.angles[Joints::rWristYaw] = 90_deg;
-      rightShoulderRollLowStiffness = true;
+      JointAngles goal;
+      MotionUtilities::copy(engine.theStaticJointPoses.pose[StaticJointPoses::StaticJointPoseName::sit],
+                            goal, static_cast<Joints::Joint>(0), Joints::firstLegJoint);
+      if(engine.theJointAngles.angles[Joints::lShoulderRoll] > 10_deg)
+      {
+        request.angles[Joints::lShoulderPitch] = goal.angles[Joints::lShoulderPitch];
+        request.angles[Joints::lElbowYaw] = goal.angles[Joints::lElbowYaw];
+        request.angles[Joints::lElbowRoll] = goal.angles[Joints::lElbowRoll];
+        request.angles[Joints::lWristYaw] = goal.angles[Joints::lWristYaw];
+        leftShoulderRollLowStiffness = true;
+      }
+      if(engine.theJointAngles.angles[Joints::rShoulderRoll] < -10_deg)
+      {
+        request.angles[Joints::rShoulderPitch] = goal.angles[Joints::rShoulderPitch];
+        request.angles[Joints::rElbowYaw] = goal.angles[Joints::rElbowYaw];
+        request.angles[Joints::rElbowRoll] = goal.angles[Joints::rElbowRoll];
+        request.angles[Joints::rWristYaw] = goal.angles[Joints::rWristYaw];
+        rightShoulderRollLowStiffness = true;
+      }
+      request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = leftShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = engine.stiffnessArm.min;
+      request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = rightShoulderRollLowStiffness || lowStiffness ? engine.stiffnessArm.min : engine.stiffnessArm.max;
+      request.stiffnessData.stiffnesses[Joints::rShoulderPitch] = engine.stiffnessArm.min;
+
+      request.angles[Joints::headPitch] = goal.angles[Joints::headPitch];
+      request.angles[Joints::headYaw] = goal.angles[Joints::headYaw];
     }
-    request.stiffnessData.stiffnesses[Joints::lShoulderRoll] = leftShoulderRollLowStiffness ? 10 : 30;
-    request.stiffnessData.stiffnesses[Joints::lShoulderPitch] = 10;
-    request.stiffnessData.stiffnesses[Joints::rShoulderRoll] = rightShoulderRollLowStiffness ? 10 : 30;
-    request.stiffnessData.stiffnesses[Joints::rShoulderPitch] = 10;
   }
 }

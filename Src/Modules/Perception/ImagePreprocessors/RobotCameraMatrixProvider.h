@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"

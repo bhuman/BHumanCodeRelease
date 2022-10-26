@@ -1,8 +1,8 @@
 #include "LabelImage.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Math/Angle.h"
+#include "Math/Angle.h"
 #include <numeric>
 
 bool LabelImage::Annotation::isInside(const Annotation& annotation)const

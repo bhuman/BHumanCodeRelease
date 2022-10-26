@@ -1,0 +1,4 @@
+call Includes/PerceptOracle
+
+gc set
+ar off

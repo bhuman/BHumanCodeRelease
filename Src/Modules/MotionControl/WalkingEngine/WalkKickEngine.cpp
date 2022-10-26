@@ -3,15 +3,27 @@
  *
  * This file implements a module that provides a walk kick generator.
  *
+ * The general procedure is as follows:
+ * 1. canStart is executed, to check if the requested kick is possible.
+ * This is based on thresholds for the ball position and the executed step.
+ *
+ * 2. createPhase is executed, to create a walk phase with kick parameters.
+ * Here the relative ball positions from the configuration are converted in explicit walk step sizes as a list of keyframes.
+ * Afterwards some clippings are applied and follow up calculations like
+ * interpolations for the forward/turn kick, execution durations for the keyframes, etc.
+ *
+ * 3. if the step was a pre step, createPhaseWithNextPhase is executed again.
+ *
  * @author Philip Reichenberg
  */
 
 #include "WalkKickEngine.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Rotation.h"
-#include "Tools/Streams/TypeRegistry.h"
+#include "Debugging/Annotation.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Rotation.h"
+#include "Streaming/TypeRegistry.h"
+#include "Tools/Motion/KickLengthConverter.h"
 #include <regex>
 #include <cmath>
 
@@ -28,14 +40,11 @@ WalkKickEngine::WalkKickEngine()
   ASSERT(walkKicksList[WalkKicks::forward].kickKeyFrame.size() == walkKicksList[WalkKicks::turnOut].kickKeyFrame.size());
   for(size_t i = 0; i < walkKicksList[WalkKicks::forward].kickKeyFrame.size(); i++)
     ASSERT(walkKicksList[WalkKicks::forward].kickKeyFrame[i].keyframes.size() == walkKicksList[WalkKicks::turnOut].kickKeyFrame[i].keyframes.size());
-  ASSERT(walkKicksList[WalkKicks::forwardSteal].kickKeyFrame.size() == 6);
+  ASSERT(walkKicksList[WalkKicks::forwardSteal].kickKeyFrame.size() == 1);
 }
 
 void WalkKickEngine::update(WalkKickGenerator& walkKickGenerator)
 {
-  updatedOdometryData = theOdometryData;
-  updatedOdometryData.rotation = Rotation::Euler::getZAngle(theInertialData.orientation3D);
-
   walkKickGenerator.drawStep = [this](const Pose2f& step)
   {
     draw(step);
@@ -46,8 +55,8 @@ void WalkKickEngine::update(WalkKickGenerator& walkKickGenerator)
     return getVShapeWalkStep(isLeftPhase, direction);
   };
 
-  walkKickGenerator.canStart = [this](const WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const Rangea& precisionRange,
-                                      const bool alignPrecisely, const bool preStepAllowed, const bool turnKickAllowed, const float kickPoseShiftY)
+  walkKickGenerator.canStart = [this](WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const Rangea& precisionRange,
+                                      const bool preStepAllowed, const bool turnKickAllowed, const float kickPoseShiftY)
   {
     // No InWalkKicks after standing
     if(lastPhase.type != MotionPhase::walk)
@@ -63,21 +72,20 @@ void WalkKickEngine::update(WalkKickGenerator& walkKickGenerator)
     Pose2f lastExecutedStep(0_deg, 0.f, 0.f);
     std::tie(leftPose, rightPose, lastExecutedStep) = theWalkGenerator.getStartOffsetOfNextWalkPhase(lastPhase);
     const Pose2f lastStepChange = theWalkGenerator.getLastStepChange(lastPhase);
-    bool criticalLastStepYTranslation = std::abs(lastStepChange.translation.y()) > restrictedYTranslationOfPreStep.y();
+    const Pose2f maxOfLastStepExecution(std::max(std::abs(lastExecutedStep.rotation), std::abs(lastStepChange.rotation)), std::max(std::abs(lastExecutedStep.translation.x()), std::abs(lastStepChange.translation.x())), std::max(std::abs(lastExecutedStep.translation.y()), std::abs(lastStepChange.translation.y())));
+    bool criticalLastStepYTranslation = maxOfLastStepExecution.translation.y() > restrictedYTranslationOfPreStep.y();
     if(walkKickVariant.walkKickType == WalkKicks::forward)
     {
       const Rangef forwardRange(walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : 0_deg, walkKickVariant.kickLeg != Legs::left ? -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset : 0_deg);
       const Angle confAngle = forwardRange.limit(walkKickVariant.direction);
       const float interpolation = Rangef::ZeroOneRange().limit(confAngle / (walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset) / 0.5f);
-      criticalLastStepYTranslation |= std::abs(lastStepChange.translation.x()) > turnKickPreviousMaxXStepSize * (1.f - interpolation) + restrictedYTranslationOfPreStep.x() * interpolation;
+      criticalLastStepYTranslation |= maxOfLastStepExecution.translation.x() > turnKickPreviousMaxXStepSize * (1.f - interpolation) + restrictedYTranslationOfPreStep.x() * interpolation;
     }
     else if(walkKickVariant.walkKickType == WalkKicks::turnOut)
-      criticalLastStepYTranslation |= std::abs(lastStepChange.translation.x()) > restrictedYTranslationOfPreStep.x();
-    else
-      criticalLastStepYTranslation |= std::abs(lastStepChange.translation.x()) > restrictedYTranslationOfPreStep.x();
+      criticalLastStepYTranslation |= maxOfLastStepExecution.translation.x() > restrictedYTranslationOfPreStep.x();
 
-    if(alignPrecisely && (walkKickVariant.walkKickType == WalkKicks::forward || walkKickVariant.walkKickType == WalkKicks::turnOut)) // force the robot to stop before the kick
-      criticalLastStepYTranslation |= std::abs(lastStepChange.translation.x()) > forwardTurnPreciseMaxStepSize;
+    if(walkKickVariant.precision == KickPrecision::precise && walkKickVariant.walkKickType == WalkKicks::turnOut) // force the robot to stop before the kick
+      criticalLastStepYTranslation |= maxOfLastStepExecution.translation.x() > forwardTurnPreciseMaxStepSize;
 
     // Is left the swing foot?
     bool isLeftPhase = theWalkGenerator.isNextLeftPhase(walkKickVariant.kickLeg == Legs::left, lastPhase);
@@ -97,126 +105,75 @@ void WalkKickEngine::update(WalkKickGenerator& walkKickGenerator)
     // Calculate ball model relative to the kicking foot
     const Pose3f supportInTorso3D = (theTorsoMatrix * kickFootPosition).rotateZ(rotationOffset);
     const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f scsCognition = supportInTorso.inverse() * updatedOdometryData.inverse() * theMotionRequest.odometryData;
+    const Pose2f scsCognition = supportInTorso.inverse() * theOdometryDataPreview.inverse() * theMotionRequest.odometryData;
     const Vector2f ballModel = scsCognition * theMotionRequest.ballEstimate.position;
 
     // Can the kick be executed based on the swing foot and the kick type?
     const bool preStepIsNext = walkKickVariant.kickLeg != (isLeftPhase ? Legs::left : Legs::right);
-    bool canKick = preStepIsNext && (preStepAllowed || walkKickVariant.walkKickType == WalkKicks::forwardSteal);
+    bool canKick = preStepIsNext && preStepAllowed && !(walkKickVariant.walkKickType == WalkKicks::forwardLong && walkKickVariant.precision == KickPrecision::precise);
     if(!preStepIsNext && ((walkKickVariant.walkKickType == WalkKicks::forward && std::abs(walkKickVariant.direction) < forwardPreStepSkipMaxKickAngle) || walkKickVariant.walkKickType == WalkKicks::forwardLong))
       canKick = true;
-    if(walkKickVariant.walkKickType == WalkKicks::sidewardsOuter)
-      canKick = !preStepIsNext && lastStepChange.translation.x() < sidewardsOuterForwardRestriction;
+    if(walkKickVariant.walkKickType == WalkKicks::sidewardsOuter || walkKickVariant.walkKickType == WalkKicks::forwardSteal)
+      canKick = !preStepIsNext && maxOfLastStepExecution.translation.x() < sidewardsOuterForwardRestriction;
 
     // was last step size too big?
     // this check is needed to ensure that the ball is hit
-    if(criticalLastStepYTranslation)
+    if(criticalLastStepYTranslation && walkKickVariant.precision != KickPrecision::justHitTheBall)
       for(WalkKicks::Type kickType : walkKicksWithRestrictedStart)
         if(kickType == walkKickVariant.walkKickType)
           canKick = false;
 
-    // Can the kick be executed based on the ball position relative to the kick foot?
-    Angle confAngle = -theKickInfo[walkKickVariant.kickType].rotationOffset;
     WalkKickVariant kick = walkKickVariant;
-    if(walkKickVariant.walkKickType == WalkKicks::forward && turnKickAllowed)
-    {
-      const Rangef forwardRange(walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : 0_deg, walkKickVariant.kickLeg != Legs::left ? -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset : 0_deg);
-      confAngle = forwardRange.limit(walkKickVariant.direction);
-      kick.kickInterpolation = Rangef::ZeroOneRange().limit(confAngle / (walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset));
-    }
+    canKick &= findBestKickExecution(canKick, precisionRange, ballModel, kick,
+                                     lastStepChange, walkKickVariant.precision, kickPoseShiftY, turnKickAllowed, preStepIsNext);
 
-    const DeviationValues dv = getForwardTurnKickDeviation(kick, lastExecutedStep, alignPrecisely, kickPoseShiftY);
+    if(walkKickVariant.walkKickType == WalkKicks::forwardSteal)
+      canKick &= std::abs((theTorsoMatrix * theRobotModel.soleLeft).rotation.getZAngle() - (theTorsoMatrix * theRobotModel.soleRight).rotation.getZAngle()) > forwardStealVFeetAngle * forwardStealVFeetAngleFactor;
 
-    float xRangeMaxOffset = 0.f;
-    // the turn kick / the interpolation version between the forward and the turn kick might need this offset too.
-    // TODO eval if the robot can execute the kick without falling, with the offsets
-    if((walkKickVariant.walkKickType == WalkKicks::forwardLong || walkKickVariant.walkKickType == WalkKicks::forward))
-    {
-      Rangef maxAdditionalXRange(0.f, maxForward.max * (1.f - kick.kickInterpolation)); // for turn kicks, we do not want to start them far away
-      // the robot can stand further away from the ball, if the previous step was bigger.
-      xRangeMaxOffset += maxAdditionalXRange.limit(lastExecutedStep.translation.x() + maxForwardAcceleration);
-    }
-
-    const Vector2f xRange(dv.maxXDeviation.min, dv.maxXDeviation.max + xRangeMaxOffset);
-    bool ballInRange = true;
-    ballInRange &= ballModel.y() > dv.maxYDeviation.min && ballModel.y() < dv.maxYDeviation.max && ballModel.x() > xRange.x() && ballModel.x() < xRange.y();
-    const Rangea precisionRangeWithDeviation(precisionRange.min - dv.maxAngleDeviation, precisionRange.max + dv.maxAngleDeviation);
-    ballInRange &= precisionRangeWithDeviation.isInside(confAngle - walkKickVariant.direction);
-    canKick &= ballInRange;
     if(canKick)
     {
+      kick.power = KickLengthConverter::kickLengthToPower(kick.kickType, kick.length, kick.direction, theKickInfo);
       // Can the resulting step target be executed?
       const int kickIndex = (kick.walkKickType == WalkKicks::forward || kick.walkKickType == WalkKicks::forwardLong) &&
                             ((kick.kickLeg == Legs::left && isLeftPhase) || (kick.kickLeg == Legs::right && !isLeftPhase)) ? 1 : 0;
+
+      if(kick.walkKickType == WalkKicks::forwardSteal)
+        kick.direction = forwardStealVFeetAngle * (kick.kickLeg == Legs::left ? 1.f : -1.f) * 0.5f;
 
       // Get step targets
       std::vector<Pose2f> stepTargets, originalTargets;
       std::vector<Vector2f> stepSwingOffset;
 
-      if(kick.walkKickType != WalkKicks::forward)
-        clipKickDirectionWithPrecision(kick.direction, walkKickVariant, precisionRange);
-
-      if(kick.walkKickType == WalkKicks::sidewardsOuter || kick.walkKickType == WalkKicks::forwardSteal || kick.walkKickType == WalkKicks::forwardLong)
-        kick.direction += theKickInfo[kick.kickType].rotationOffset;
-
       Pose2f lastExecutedStep;
       // use theOdometryData and not the updated one, because the rotation of the current frame is not added to the kickDirection yet
-      getNextStepPositionsSpecialHandling(lastPhase, kick, theOdometryData, kickIndex, originalTargets, stepTargets, stepSwingOffset, lastExecutedStep);
-
-      // for the forwardLong, we want to check where the ball will lie after the prestep.
-      if((kick.walkKickType == WalkKicks::forwardLong) &&
-         std::abs(walkKickVariant.direction) < forwardPreStepSkipMaxKickAngle && (kick.kickLeg == Legs::left) != isLeftPhase)
-      {
-        const Vector2f xRange(dv.maxXDeviation.min + stepTargets[stepTargets.size() - 1].translation.x(), dv.maxXDeviation.max + stepTargets[stepTargets.size() - 1].translation.x());
-        if(!(ballModel.x() > xRange.x() && ballModel.x() < xRange.y()))
-          return false;
-      }
+      getNextStepPositionsSpecialHandling(lastPhase, kick, theOdometryDataPreview, kickIndex, originalTargets, stepTargets, stepSwingOffset, lastExecutedStep);
 
       // Abort if needed
-      Rangef maxClipX = walkKicksList[kick.walkKickType].maxClipBeforAbortX;
-      Rangef maxClipY = walkKicksList[kick.walkKickType].maxClipBeforAbortY;
-      Rangea maxClipRot = walkKicksList[kick.walkKickType].maxClipBeforAbortRot;
-      if(kick.walkKickType == WalkKicks::forward)
-      {
-        const Rangef& refMaxClipX = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortX;
-        const Rangef& refMaxClipY = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortY;
-        const Rangea& refMaxClipRot = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortRot;
-        maxClipX.min = (1.f - kick.kickInterpolation) * maxClipX.min + kick.kickInterpolation * refMaxClipX.min;
-        maxClipX.max = (1.f - kick.kickInterpolation) * maxClipX.max + kick.kickInterpolation * refMaxClipX.max;
-        maxClipY.min = (1.f - kick.kickInterpolation) * maxClipY.min + kick.kickInterpolation * refMaxClipY.min;
-        maxClipY.max = (1.f - kick.kickInterpolation) * maxClipY.max + kick.kickInterpolation * refMaxClipY.max;
-        maxClipRot.min = (1.f - kick.kickInterpolation) * maxClipRot.min + kick.kickInterpolation * refMaxClipRot.min;
-        maxClipRot.max = (1.f - kick.kickInterpolation) * maxClipRot.max + kick.kickInterpolation * refMaxClipRot.max;
-      }
-      if(!canExecute(originalTargets, stepTargets, maxClipX, maxClipY, maxClipRot, kickPoseShiftY, kick.kickLeg != Legs::left) || forwardStealAbortCondition(kick))
+      Rangef maxClipX;
+      Rangef maxClipY;
+      Rangea maxClipRot;
+      getClipRanges(maxClipX, maxClipY, maxClipRot, kick, kickIndex, walkKickVariant.precision == KickPrecision::justHitTheBall);
+      if(!canExecute(originalTargets, stepTargets, maxClipX, maxClipY, maxClipRot, kickPoseShiftY, kick.kickLeg != Legs::left) || forwardStealAbortCondition(kick, stepTargets, kickIndex))
         return false;
     }
-    if(walkKickVariant.walkKickType == WalkKicks::forwardSteal)
-      return canKick && std::abs((theTorsoMatrix * theRobotModel.soleLeft).rotation.getZAngle() - (theTorsoMatrix * theRobotModel.soleRight).rotation.getZAngle()) > forwardStealMinVAngleThreshold;
-    return canKick;
+    if(canKick)
+    {
+      walkKickVariant = kick;
+      return true;
+    }
+    return false;
   };
 
-  walkKickGenerator.createPhase = [this](const WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const Rangea& precisionRange, const bool playSound, const float kickPoseShiftY)
+  walkKickGenerator.createPhase = [this](const WalkKickVariant& walkKickVariant, const MotionPhase& lastPhase, const bool playSound, const float kickPoseShiftY)
   {
     currentKickPoseShiftY = kickPoseShiftY;
-    odometryAtStart = theOdometryData; // use theOdometryData and not the updated one, because the rotation of the current frame is not added on the kick direction yet
+    odometryAtStart = theOdometryDataPreview; // use theOdometryData and not the updated one, because the rotation of the current frame is not added on the kick direction yet
     currentKick = walkKickVariant;
 
-    if(currentKick.walkKickType == WalkKicks::forward)
-    {
-      const Rangef forwardRange(walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : 0_deg, walkKickVariant.kickLeg != Legs::left ? -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset : 0_deg);
-      const Angle confAngle = forwardRange.limit(walkKickVariant.direction);
-      currentKick.kickInterpolation = Rangef::ZeroOneRange().limit(confAngle / (walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset));
-    }
-    else
-      clipKickDirectionWithPrecision(currentKick.direction, walkKickVariant, precisionRange);
-
-    if(currentKick.walkKickType == WalkKicks::sidewardsOuter || currentKick.walkKickType == WalkKicks::forwardSteal || currentKick.walkKickType == WalkKicks::forwardLong)   // Hack for the side kick
-      currentKick.direction += theKickInfo[walkKickVariant.kickType].rotationOffset;
     const bool isLeftPhase = theWalkGenerator.isNextLeftPhase(false, lastPhase);
 
-    // Special handling for the forward and forwardLong kicks
-    kickIndex = ((currentKick.walkKickType == WalkKicks::forward && std::abs(currentKick.direction) < forwardPreStepSkipMaxKickAngle) || currentKick.walkKickType == WalkKicks::forwardLong) &&
+    // Can the resulting step target be executed?
+    kickIndex = (currentKick.walkKickType == WalkKicks::forward || currentKick.walkKickType == WalkKicks::forwardLong) &&
                 ((currentKick.kickLeg == Legs::left && isLeftPhase) || (currentKick.kickLeg == Legs::right && !isLeftPhase)) ? 1 : 0;
 
     // TODO the kick can still be aborted in the pre step for some reason... I think. This results in a false sound
@@ -231,13 +188,118 @@ void WalkKickEngine::update(WalkKickGenerator& walkKickGenerator)
   draw(theWalkStepData.stepTarget);
 }
 
+bool WalkKickEngine::findBestKickExecution(const bool canKick, const Rangea& precisionRange,
+                                           const Vector2f& ballModel, WalkKickVariant& walkKickVariant,
+                                           const Pose2f& lastExecutedStep, const KickPrecision precision,
+                                           const float kickPoseShiftY, const bool turnKickAllowed, const bool isPreStep)
+{
+  if(!canKick)
+    return false;
+
+  Angle confAngle = -theKickInfo[walkKickVariant.kickType].rotationOffset;
+  if(walkKickVariant.walkKickType != WalkKicks::forward || !turnKickAllowed)
+  {
+    walkKickVariant.kickInterpolation = 0.f;
+    const DeviationValues dv = getForwardTurnKickDeviation(walkKickVariant, lastExecutedStep, precision, kickPoseShiftY, isPreStep);
+
+    // the robot can stand further away from the ball, if the previous step was bigger.
+    float xRangeMaxOffset = 0.f;
+    if((walkKickVariant.walkKickType == WalkKicks::forwardLong || walkKickVariant.walkKickType == WalkKicks::forward))
+    {
+      Rangef maxAdditionalXRange(0.f, maxForward.max / 2.f);
+      xRangeMaxOffset += maxAdditionalXRange.limit(lastExecutedStep.translation.x() + maxForwardAcceleration);
+    }
+    const Rangef xRange(dv.maxXDeviation.min + (isPreStep && walkKickVariant.walkKickType == WalkKicks::forwardLong ? xRangeMaxOffset / 2.f : 0.f), dv.maxXDeviation.max + xRangeMaxOffset);
+    bool ballInRange = true;
+    ballInRange &= dv.maxYDeviation.isInside(ballModel.y()) && xRange.isInside(ballModel.x());
+    const Rangea precisionRangeWithDeviation(precisionRange.min - dv.maxAngleDeviation, precisionRange.max + dv.maxAngleDeviation);
+    ballInRange &= precisionRangeWithDeviation.isInside(walkKickVariant.direction - confAngle);
+
+    if(walkKickVariant.walkKickType != WalkKicks::forward)
+      clipKickDirectionWithPrecision(walkKickVariant.direction, walkKickVariant, precisionRange);
+
+    if(walkKickVariant.walkKickType == WalkKicks::sidewardsOuter || walkKickVariant.walkKickType == WalkKicks::forwardSteal || walkKickVariant.walkKickType == WalkKicks::forwardLong)
+      walkKickVariant.direction += theKickInfo[walkKickVariant.kickType].rotationOffset;
+
+    return ballInRange;
+  }
+  else // for forward / turn kicks, we base relative ball pose it not one point, but a range. This can be used to find a kick angles that lets us execute the kick earlier!
+  {
+    const Rangea kickInterpolationAngle(walkKickVariant.direction + precisionRange.min, walkKickVariant.direction + precisionRange.max);
+    const Rangef forwardRange(walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : 0_deg, walkKickVariant.kickLeg != Legs::left ? -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset : 0_deg);
+    Rangef kickInterpolationRange;
+    const Rangea kickAngleRange(forwardRange.limit(kickInterpolationAngle.min), forwardRange.limit(kickInterpolationAngle.max));
+    kickInterpolationRange.min = Rangef::ZeroOneRange().limit(kickAngleRange.min / (walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset));
+    kickInterpolationRange.max = Rangef::ZeroOneRange().limit(kickAngleRange.max / (walkKickVariant.kickLeg == Legs::left ? -theKickInfo[KickInfo::walkTurnLeftFootToRight].rotationOffset : -theKickInfo[KickInfo::walkTurnRightFootToLeft].rotationOffset));
+    walkKickVariant.kickInterpolation = kickInterpolationRange.min;
+    DeviationValues dvMin = getForwardTurnKickDeviation(walkKickVariant, lastExecutedStep, precision, kickPoseShiftY, isPreStep);
+    walkKickVariant.kickInterpolation = kickInterpolationRange.max;
+    DeviationValues dvMax = getForwardTurnKickDeviation(walkKickVariant, lastExecutedStep, precision, kickPoseShiftY, isPreStep);
+
+    dvMin.maxXDeviation.max += Rangef(0.f, maxForward.max * (1.f - kickInterpolationRange.min))
+                               .limit(lastExecutedStep.translation.x() + maxForwardAcceleration);
+    dvMax.maxXDeviation.max += Rangef(0.f, maxForward.max * (1.f - kickInterpolationRange.max))
+                               .limit(lastExecutedStep.translation.x() + maxForwardAcceleration);
+
+    const Rangef overallYDeviation(dvMin.maxYDeviation.min, dvMax.maxYDeviation.max);
+    if(!overallYDeviation.isInside(ballModel.y()))
+      return false;
+
+    float denominator = dvMin.maxYDeviation.max - dvMin.maxYDeviation.min;
+    ASSERT(denominator > 0); // Must be bigger than 0
+    const float ratio = Rangef::ZeroOneRange().limit((ballModel.y() - dvMin.maxYDeviation.min) / denominator); // Must be between 0 and 1
+    const Rangef usedXDeviation(dvMin.maxXDeviation.min * (1.f - ratio) + dvMax.maxXDeviation.min * ratio, dvMin.maxXDeviation.max * (1.f - ratio) + dvMax.maxXDeviation.max * ratio);
+    if(!usedXDeviation.isInside(ballModel.x()))
+      return false;
+
+    walkKickVariant.kickInterpolation = kickInterpolationRange.min * (1.f - ratio) + kickInterpolationRange.max * ratio;
+    walkKickVariant.direction = kickAngleRange.min * (1.f - ratio) + kickAngleRange.max * ratio;
+
+    const Angle maxAngleDeviation = dvMin.maxAngleDeviation * (1.f - ratio) + dvMax.maxAngleDeviation * ratio;
+
+    const Rangea precisionRangeWithDeviation(kickInterpolationAngle.min - maxAngleDeviation, kickInterpolationAngle.max + maxAngleDeviation);
+    return precisionRangeWithDeviation.isInside(walkKickVariant.direction);
+  }
+}
+
+void WalkKickEngine::getClipRanges(Rangef& maxClipX, Rangef& maxClipY, Rangea& maxClipRot,
+                                   const WalkKickVariant& kick, const int kickIndex, const bool isJustHitTheBall)
+{
+  maxClipX = !isJustHitTheBall ? walkKicksList[kick.walkKickType].maxClipBeforeAbortX : walkKicksList[kick.walkKickType].maxClipBeforeAbortJustHitTheBallX;
+  maxClipY = !isJustHitTheBall ? walkKicksList[kick.walkKickType].maxClipBeforeAbortY : walkKicksList[kick.walkKickType].maxClipBeforeAbortJustHitTheBallY;
+  maxClipRot = walkKicksList[kick.walkKickType].maxClipBeforeAbortRot;
+  if(kick.walkKickType == WalkKicks::forward)
+  {
+    const Rangef& refMaxClipX = !isJustHitTheBall ? walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortX : walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortJustHitTheBallX;
+    const Rangef& refMaxClipY = !isJustHitTheBall ? walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortY : walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortJustHitTheBallY;
+    const Rangea& refMaxClipRot = !isJustHitTheBall ? walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortRot : walkKicksList[WalkKicks::turnOut].maxClipBeforeAbortJustHitTheBallRot;
+    maxClipX.min = (1.f - kick.kickInterpolation) * maxClipX.min + kick.kickInterpolation * refMaxClipX.min;
+    maxClipX.max = (1.f - kick.kickInterpolation) * maxClipX.max + kick.kickInterpolation * refMaxClipX.max;
+    maxClipY.min = (1.f - kick.kickInterpolation) * maxClipY.min + kick.kickInterpolation * refMaxClipY.min;
+    maxClipY.max = (1.f - kick.kickInterpolation) * maxClipY.max + kick.kickInterpolation * refMaxClipY.max;
+    maxClipRot.min = (1.f - kick.kickInterpolation) * maxClipRot.min + kick.kickInterpolation * refMaxClipRot.min;
+    maxClipRot.max = (1.f - kick.kickInterpolation) * maxClipRot.max + kick.kickInterpolation * refMaxClipRot.max;
+  }
+  else if(kick.walkKickType == WalkKicks::forwardSteal && kickIndex > 0)
+  {
+    maxClipX.min = -maxClipBeforeAbortForwardSteal.translation.x();
+    maxClipX.max = maxClipBeforeAbortForwardSteal.translation.x();
+    maxClipY.min = -maxClipBeforeAbortForwardSteal.translation.y();
+    maxClipY.max = maxClipBeforeAbortForwardSteal.translation.y();
+    maxClipRot.min = -maxClipBeforeAbortForwardSteal.rotation;
+    maxClipRot.max = maxClipBeforeAbortForwardSteal.rotation;
+  }
+}
+
 void WalkKickEngine::clipKickDirectionWithPrecision(Angle& direction, const WalkKickVariant& walkKickVariant, const Rangea& precisionRange)
 {
   const Rangea precision(walkKickVariant.direction + precisionRange.min, walkKickVariant.direction + precisionRange.max);
   direction = precision.limit(-theKickInfo[walkKickVariant.kickType].rotationOffset);
 }
 
-void WalkKickEngine::clipStepTarget(Pose2f& original, Pose2f& newPose, const Pose2f& lastStep, const bool isLeftPhase, const KickKeyframePart keyframePart, const WalkKicks::Type walkKickType)
+void WalkKickEngine::clipStepTarget(Pose2f& original, Pose2f& newPose, const Pose2f& lastStep,
+                                    const bool isLeftPhase, const KickKeyframePart keyframePart,
+                                    const WalkKicks::Type walkKickType, const WalkKickVariant& kick)
 {
   newPose = original;
   Rangef useSideTurn(isLeftPhase ? maxSide.min : -maxSide.max, isLeftPhase ? maxSide.max : -maxSide.min);
@@ -262,10 +324,15 @@ void WalkKickEngine::clipStepTarget(Pose2f& original, Pose2f& newPose, const Pos
     original.rotation = 0_deg;
     newPose.rotation = 0_deg;
   }
-  if(keyframePart.clipMaxSpeed)
+  if(keyframePart.clipMaxSpeed) // For such kicks we ignore the clipping differences anyway. Just make sure the robot does not fall
   {
     if(newPose.translation.x() > lastStep.translation.x() + maxForwardAcceleration)
       newPose.translation.x() = lastStep.translation.x() + maxForwardAcceleration;
+  }
+  else if(kick.precision == KickPrecision::justHitTheBall)
+  {
+    if(newPose.translation.x() > lastStep.translation.x() + maxForwardAcceleration)
+      newPose.translation.x() = std::min(newPose.translation.x(), forwardLongMaxStepSize);
   }
   if(walkKickType == WalkKicks::forwardLong)
     newPose.translation.x() = std::min(newPose.translation.x(), forwardLongMaxStepSize);
@@ -300,7 +367,7 @@ void WalkKickEngine::getNextStepPositionsSpecialHandling(const MotionPhase& last
                                (1.f - kick.kickInterpolation) * forwardStepTargets[i].translation.x() + kick.kickInterpolation * turnStepTargets[i].translation.x(),
                                (1.f - kick.kickInterpolation) * forwardStepTargets[i].translation.y() + kick.kickInterpolation * turnStepTargets[i].translation.y());
       stepSwingOffsets.emplace_back((1.f - kick.kickInterpolation) * forwardSwingOffset[i].x() + kick.kickInterpolation * turnSwingOffset[i].x(),
-                                    (1.f - currentKick.kickInterpolation) * forwardSwingOffset[i].y() + kick.kickInterpolation * turnSwingOffset[i].y());
+                                    (1.f - kick.kickInterpolation) * forwardSwingOffset[i].y() + kick.kickInterpolation * turnSwingOffset[i].y());
     }
   }
   else
@@ -359,7 +426,7 @@ void WalkKickEngine::getNextStepPositionsWithClipping(const MotionPhase& lastPha
   const Vector2f ballPosition = getZeroBallPosition(isLeftPhase, scsCognition);
 
   // Get complete odometry for kick direction
-  Angle convertedOdometryRotation = scsCognition.rotation - (updatedOdometryData.rotation - odometryData.rotation);
+  Angle convertedOdometryRotation = scsCognition.rotation - (theOdometryDataPreview.rotation - odometryData.rotation);
   std::vector<Pose2f> clipOffsets;
   getNextStepPositions(lastPhase, stepTargets, stepSwingOffsets, kick, index, ballPosition, clipOffsets, convertedOdometryRotation);
   Pose2f leftPose;
@@ -370,7 +437,8 @@ void WalkKickEngine::getNextStepPositionsWithClipping(const MotionPhase& lastPha
   applyAllClipping(kick, isLeftPhase, index, stepTargets, lastExecutedStep);
   for(size_t i = 0; i < stepTargets.size(); i++)
   {
-    clipStepTarget(originalTargets[i], stepTargets[i], lastExecutedStep, isLeftPhase, walkKicksList[kick.walkKickType].kickKeyFrame[index].keyframes[i], kick.walkKickType);
+    clipStepTarget(originalTargets[i], stepTargets[i], lastExecutedStep, isLeftPhase,
+                   walkKicksList[kick.walkKickType].kickKeyFrame[index].keyframes[i], kick.walkKickType, kick);
     if(kick.walkKickType == WalkKicks::forwardLong && i == 0 && index == 1)
     {
       stepTargets[i].translation.y() = (stepTargets[i].translation.y() - (-lastExecutedStep.translation.y())) / 2.f + (-lastExecutedStep.translation.y());
@@ -387,7 +455,8 @@ void WalkKickEngine::getNextStepPositionsWithClipping(const MotionPhase& lastPha
   std::vector<Pose2f> placeHolder = stepTargets; // Do not override the original step targets again
   for(size_t i = 0; i < stepTargets.size(); i++)
   {
-    clipStepTarget(placeHolder[i], stepTargets[i], lastExecutedStep, isLeftPhase, walkKicksList[kick.walkKickType].kickKeyFrame[index].keyframes[i], kick.walkKickType);
+    clipStepTarget(placeHolder[i], stepTargets[i], lastExecutedStep, isLeftPhase,
+                   walkKicksList[kick.walkKickType].kickKeyFrame[index].keyframes[i], kick.walkKickType, kick);
   }
 }
 
@@ -442,15 +511,15 @@ void WalkKickEngine::getNextStepPositions(const MotionPhase& lastPhase, std::vec
   stepSwingOffsets = stepTargetsWithoutOffset;
 }
 
-bool WalkKickEngine::canExecute(const std::vector<Pose2f>& originalPoses, const std::vector<Pose2f>& clippedPoses, const Rangef& maxClipBeforAbortX,
-                                const Rangef& maxClipBeforAbortY, const Rangea& maxClipBeforAbortRot, const float kickPoseShiftY, const bool mirror)
+bool WalkKickEngine::canExecute(const std::vector<Pose2f>& originalPoses, const std::vector<Pose2f>& clippedPoses, const Rangef& maxClipBeforeAbortX,
+                                const Rangef& maxClipBeforeAbortY, const Rangea& maxClipBeforeAbortRot, const float kickPoseShiftY, const bool mirror)
 {
   bool reachable = true;
-  Rangef useMaxClipBeforAbortY = maxClipBeforAbortY;
+  Rangef useMaxClipBeforAbortY = maxClipBeforeAbortY;
   if(mirror)
   {
-    useMaxClipBeforAbortY.min = -maxClipBeforAbortY.max;
-    useMaxClipBeforAbortY.max = -maxClipBeforAbortY.min;
+    useMaxClipBeforAbortY.min = -maxClipBeforeAbortY.max;
+    useMaxClipBeforAbortY.max = -maxClipBeforeAbortY.min;
   }
   useMaxClipBeforAbortY.min += std::min(-kickPoseShiftY, 0.f);
   useMaxClipBeforAbortY.max += std::max(-kickPoseShiftY, 0.f);
@@ -459,24 +528,33 @@ bool WalkKickEngine::canExecute(const std::vector<Pose2f>& originalPoses, const 
     Pose2f diffStepTarget(0_deg, 0.f, 0.f);
     diffStepTarget.rotation = originalPoses[i].rotation - clippedPoses[i].rotation;
     diffStepTarget.translation = originalPoses[i].translation - clippedPoses[i].translation;
-    if(!maxClipBeforAbortX.contains(diffStepTarget.translation.x()) || !useMaxClipBeforAbortY.contains(diffStepTarget.translation.y()) || !maxClipBeforAbortRot.contains(diffStepTarget.rotation))
+    if(!maxClipBeforeAbortX.contains(diffStepTarget.translation.x()) || !useMaxClipBeforAbortY.contains(diffStepTarget.translation.y()) || !maxClipBeforeAbortRot.contains(diffStepTarget.rotation))
       reachable = false;
   }
   return reachable;
 }
 
-bool WalkKickEngine::forwardStealAbortCondition(const WalkKickVariant& kick)
+bool WalkKickEngine::forwardStealAbortCondition(const WalkKickVariant& kick, const std::vector<Pose2f>& steps, const int index)
 {
-  if(kick.walkKickType == WalkKicks::forwardSteal && theFrameInfo.getTimeSince(theMotionRequest.ballTimeWhenLastSeen) < timeSinceBallLastSeenThreshold)
+  if(kick.walkKickType == WalkKicks::forwardSteal && theFrameInfo.getTimeSince(theMotionRequest.ballTimeWhenLastSeen) < timeSinceBallLastSeenThreshold && steps.size() >= 2)
   {
+    float yDiff = 0.f;
+    if(index == 0)
+    {
+      const Vector2f hipOffset(0.f, kick.kickLeg == Legs::left ? theRobotDimensions.yHipOffset : -theRobotDimensions.yHipOffset);
+      const Vector2f forwardAndSide = (steps[1].translation + hipOffset).rotated(-steps[1].rotation * 0.5f) - 2.f * hipOffset + hipOffset.rotated(steps[1].rotation * 0.5f);
+      const float sign = kick.kickLeg == Legs::left ? 1.f : -1.f;
+      yDiff = ((kick.kickLeg != Legs::left ? theRobotModel.soleRight.translation.y() : theRobotModel.soleLeft.translation.y()) - (forwardAndSide.y() / 2.f + theRobotDimensions.yHipOffset * sign)) * sign;
+    }
     // Get ball position
     const Pose3f supportInTorso3D = theTorsoMatrix * (kick.kickLeg != Legs::left ? theRobotModel.soleRight : theRobotModel.soleLeft);
     const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-    const Pose2f scsCognition = supportInTorso.inverse() * updatedOdometryData.inverse() * theMotionRequest.odometryData;
+    const Pose2f scsCognition = supportInTorso.inverse() * theOdometryDataPreview.inverse() * theMotionRequest.odometryData;
     const Vector2f ballPosition = scsCognition * theMotionRequest.ballEstimate.position;
     if((kick.kickLeg == Legs::right && ballPosition.y() < 0.f)
        || (kick.kickLeg == Legs::left && ballPosition.y() > 0.f)
-       || ballPosition.x() > forwardStealMinXAbortThreshold)
+       || ballPosition.x() > forwardStealMinXAbortThreshold
+       || yDiff > forwardStealMaxPreviousYTranslation)
       return true;
   }
   return false;
@@ -499,12 +577,15 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
     return std::unique_ptr<MotionPhase>();
   }
 
-  if(forwardStealAbortCondition(currentKick))
+  if(forwardStealAbortCondition(currentKick, std::vector<Pose2f>(), kickIndex))
     return std::unique_ptr<MotionPhase>();
 
   // Ball was not seen for a too long time
   if(currentKick.walkKickType == WalkKicks::forwardSteal && theFrameInfo.getTimeSince(theMotionRequest.ballTimeWhenLastSeen) > timeSinceBallLastSeenThreshold && kickIndex >= 4)
     return std::unique_ptr<MotionPhase>();
+
+  if(currentKick.walkKickType == WalkKicks::forwardSteal && kickIndex > 0)
+    currentKick.direction *= -1.f;
 
   std::vector<Pose2f> originalTargets, stepTargets;
   std::vector<Vector2f> stepSwingOffset;
@@ -512,30 +593,11 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
   getNextStepPositionsSpecialHandling(lastPhase, currentKick, odometryAtStart, kickIndex, originalTargets, stepTargets, stepSwingOffset, lastExecutedStep);
 
   // Abort if needed
-  Rangef maxClipX = walkKicksList[currentKick.walkKickType].maxClipBeforAbortX;
-  Rangef maxClipY = walkKicksList[currentKick.walkKickType].maxClipBeforAbortY;
-  Rangea maxClipRot = walkKicksList[currentKick.walkKickType].maxClipBeforAbortRot;
-  if(currentKick.walkKickType == WalkKicks::forward)
-  {
-    const Rangef& refMaxClipX = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortX;
-    const Rangef& refMaxClipY = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortY;
-    const Rangea& refMaxClipRot = walkKicksList[WalkKicks::turnOut].maxClipBeforAbortRot;
-    maxClipX.min = (1.f - currentKick.kickInterpolation) * maxClipX.min + currentKick.kickInterpolation * refMaxClipX.min;
-    maxClipX.max = (1.f - currentKick.kickInterpolation) * maxClipX.max + currentKick.kickInterpolation * refMaxClipX.max;
-    maxClipY.min = (1.f - currentKick.kickInterpolation) * maxClipY.min + currentKick.kickInterpolation * refMaxClipY.min;
-    maxClipY.max = (1.f - currentKick.kickInterpolation) * maxClipY.max + currentKick.kickInterpolation * refMaxClipY.max;
-    maxClipRot.min = (1.f - currentKick.kickInterpolation) * maxClipRot.min + currentKick.kickInterpolation * refMaxClipRot.min;
-    maxClipRot.max = (1.f - currentKick.kickInterpolation) * maxClipRot.max + currentKick.kickInterpolation * refMaxClipRot.max;
-  }
-  else if(currentKick.walkKickType == WalkKicks::forwardSteal && kickIndex > 0)
-  {
-    maxClipX.min = -maxClipBeforAbortForwardSteal.translation.x();
-    maxClipX.max = maxClipBeforAbortForwardSteal.translation.x();
-    maxClipY.min = -maxClipBeforAbortForwardSteal.translation.y();
-    maxClipY.max = maxClipBeforAbortForwardSteal.translation.y();
-    maxClipRot.min = -maxClipBeforAbortForwardSteal.rotation;
-    maxClipRot.max = maxClipBeforAbortForwardSteal.rotation;
-  }
+  Rangef maxClipX;
+  Rangef maxClipY;
+  Rangea maxClipRot;
+  getClipRanges(maxClipX, maxClipY, maxClipRot, currentKick, kickIndex, currentKick.precision == KickPrecision::justHitTheBall);
+
   if(!canExecute(originalTargets, stepTargets, maxClipX, maxClipY, maxClipRot, currentKickPoseShiftY, currentKick.kickLeg != Legs::left))
   {
     if(kickIndex > 0 && !theWalkGenerator.wasLastPhaseInWalkKick(lastPhase) && (currentKick.walkKickType == WalkKicks::forward || currentKick.walkKickType == WalkKicks::forwardLong))
@@ -580,6 +642,7 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
     stepRatio.emplace_back(timings[i] / sum);
 
   // Set parameters for the step targets
+  const Legs::Leg swingLeg = theWalkGenerator.isNextLeftPhase(false, lastPhase) ? Legs::left : Legs::right;
   std::vector<WalkKickStep::StepKeyframe> stepKeyframes;
   for(int i = 0; i < static_cast<int>(stepTargets.size()); i++)
   {
@@ -610,12 +673,41 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
       keyframe.holdXSupportTarget = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].keyframes[i].holdXSupportTarget;
       keyframe.holdXSwingTarget = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].keyframes[i].holdXSwingTarget;
     }
+
+    // Set the interpolation types
+    // Prestep -> smooth interpolation
+    // Kickstep -> kick with linear interpolation the ball
+    if(currentKick.kickLeg == swingLeg)
+    {
+      if(stepTargets.size() == 1 || i > 0)
+        keyframe.interpolationType = WalkKickStep::InterpolationType::linear;
+      else if(i == 0)
+        keyframe.interpolationType = WalkKickStep::InterpolationType::cosinusZeroToMax;
+    }
+    else
+    {
+      if(stepTargets.size() == 1)
+        keyframe.interpolationType = WalkKickStep::InterpolationType::normal;
+      else
+      {
+        if(i == 0)
+          keyframe.interpolationType = WalkKickStep::InterpolationType::cosinusZeroToMax;
+        else if(i < static_cast<int>(stepTargets.size()) - 1)
+          keyframe.interpolationType = WalkKickStep::InterpolationType::linear;
+        else
+          keyframe.interpolationType = WalkKickStep::InterpolationType::sinusMaxToZero;
+      }
+    }
+
     stepKeyframes.emplace_back(keyframe);
   }
   WalkKickStep kickStep;
   kickStep.keyframe = stepKeyframes;
   kickStep.increaseSwingHeightFactor = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].increaseSwingHeightFactor;
-  std::vector<WalkKickStep::LongKickParams> jointOffsets = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].jointOffsets;
+  WalkKicks::Type jointOffsetsKick = currentKick.walkKickType;
+  if(currentKick.walkKickType == WalkKicks::forward && currentKick.kickInterpolation > 0.5f)
+    jointOffsetsKick = WalkKicks::turnOut;
+  std::vector<WalkKickStep::LongKickParams> jointOffsets = walkKicksList[jointOffsetsKick].kickKeyFrame[kickIndex].jointOffsets;
 
   // For the forwardLong, we want to compensate the ankle pitch of the kick foot, to prevent a ball lob which would result in a large kick direction deviation
   if(currentKick.walkKickType == WalkKicks::forwardLong && kickIndex == 1)
@@ -666,7 +758,12 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
     }
   }
   kickStep.currentKick = currentKick.walkKickType;
-  kickStep.useSlowFootHeightInterpolation = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].useSlowFootHeightInterpolation;
+  kickStep.useSlowSupportFootHeightAfterKickInterpolation = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].useSlowSupportFootHeightAfterKickInterpolation;
+  if(currentKick.walkKickType == WalkKicks::forward)
+    kickStep.useSlowSwingFootHeightInterpolation = (1.f - currentKick.kickInterpolation) * walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].useSlowSwingFootHeightInterpolation +
+                                                   currentKick.kickInterpolation * walkKicksList[WalkKicks::turnOut].kickKeyFrame[kickIndex].useSlowSwingFootHeightInterpolation;
+  else
+    kickStep.useSlowSwingFootHeightInterpolation = walkKicksList[currentKick.walkKickType].kickKeyFrame[kickIndex].useSlowSwingFootHeightInterpolation;
 
   // create WalkPhase
   kickIndex++;
@@ -677,7 +774,8 @@ std::unique_ptr<MotionPhase> WalkKickEngine::createPhaseWithNextPhase(const Moti
   return phase;
 }
 
-DeviationValues WalkKickEngine::getForwardTurnKickDeviation(const WalkKickVariant& kick, const Pose2f& lastStep, const bool alignPrecisely, const float kickPoseShiftY)
+DeviationValues WalkKickEngine::getForwardTurnKickDeviation(const WalkKickVariant& kick, const Pose2f& lastStep,
+                                                            const KickPrecision precision, const float kickPoseShiftY, const bool isPreStep)
 {
   // if the robot moved backward last step, we currently do not want to scale.
   // TODO test if it even matters
@@ -699,12 +797,20 @@ DeviationValues WalkKickEngine::getForwardTurnKickDeviation(const WalkKickVarian
     dv.maxYDeviation = Rangef((1.f - kick.kickInterpolation) * (walkKicksList[kick.walkKickType].maxYDeviation.min + walkKicksList[kick.walkKickType].sideDeviationScalingBasedOnLastStep.min * filteredLastStep.translation.x()) + kick.kickInterpolation * (walkKicksList[otherWalkKick].maxYDeviation.min + walkKicksList[otherWalkKick].sideDeviationScalingBasedOnLastStep.min * filteredLastStep.translation.x()),
                               (1.f - kick.kickInterpolation) * (walkKicksList[kick.walkKickType].maxYDeviation.max + walkKicksList[kick.walkKickType].sideDeviationScalingBasedOnLastStep.max * filteredLastStep.translation.x()) + kick.kickInterpolation * (walkKicksList[otherWalkKick].maxYDeviation.max + walkKicksList[otherWalkKick].sideDeviationScalingBasedOnLastStep.max * filteredLastStep.translation.x()));
 
-    if(!alignPrecisely)
+    // isPreStep is used here, because otherwise the pre step will result in a strange huge walk step, which will not kick the ball like expected
+    if(precision == KickPrecision::notPrecise || (isPreStep && precision == KickPrecision::justHitTheBall))
     {
       dv.maxXDeviation.min += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalXDeviation.min + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalXDeviation.min;
       dv.maxXDeviation.max += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalXDeviation.max + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalXDeviation.max;
       dv.maxYDeviation.min += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalYDeviation.min + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalYDeviation.min;
       dv.maxYDeviation.max += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalYDeviation.max + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalYDeviation.max;
+    }
+    else if(precision == KickPrecision::justHitTheBall)
+    {
+      dv.maxXDeviation.min += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalXDeviationJustHitTheBall.min + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalXDeviationJustHitTheBall.min;
+      dv.maxXDeviation.max += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalXDeviationJustHitTheBall.max + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalXDeviationJustHitTheBall.max;
+      dv.maxYDeviation.min += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalYDeviationJustHitTheBall.min + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalYDeviationJustHitTheBall.min;
+      dv.maxYDeviation.max += (1.f - kick.kickInterpolation) * walkKicksList[kick.walkKickType].additionalYDeviationJustHitTheBall.max + kick.kickInterpolation * walkKicksList[otherWalkKick].additionalYDeviationJustHitTheBall.max;
     }
 
     // mirror if kickleg is not the left one
@@ -734,12 +840,20 @@ DeviationValues WalkKickEngine::getForwardTurnKickDeviation(const WalkKickVarian
   dv.maxYDeviation.min += walkKicksList[kick.walkKickType].sideDeviationScalingBasedOnLastStep.min * filteredLastStep.translation.x();
   dv.maxYDeviation.max += walkKicksList[kick.walkKickType].sideDeviationScalingBasedOnLastStep.max * filteredLastStep.translation.x();
 
-  if(!alignPrecisely)
+  // isPreStep is used here, because otherwise the pre step will result in a strange huge walk step, which will not kick the ball like expected
+  if(precision == KickPrecision::notPrecise || (isPreStep && precision == KickPrecision::justHitTheBall))
   {
     dv.maxXDeviation.min += walkKicksList[kick.walkKickType].additionalXDeviation.min;
     dv.maxXDeviation.max += walkKicksList[kick.walkKickType].additionalXDeviation.max;
     dv.maxYDeviation.min += walkKicksList[kick.walkKickType].additionalYDeviation.min;
     dv.maxYDeviation.max += walkKicksList[kick.walkKickType].additionalYDeviation.max;
+  }
+  else if(precision == KickPrecision::justHitTheBall)
+  {
+    dv.maxXDeviation.min += walkKicksList[kick.walkKickType].additionalXDeviationJustHitTheBall.min;
+    dv.maxXDeviation.max += walkKicksList[kick.walkKickType].additionalXDeviationJustHitTheBall.max;
+    dv.maxYDeviation.min += walkKicksList[kick.walkKickType].additionalYDeviationJustHitTheBall.min;
+    dv.maxYDeviation.max += walkKicksList[kick.walkKickType].additionalYDeviationJustHitTheBall.max;
   }
 
   // mirror if kickleg is not the left one
@@ -749,8 +863,8 @@ DeviationValues WalkKickEngine::getForwardTurnKickDeviation(const WalkKickVarian
   // add ball offset
   if(kick.walkKickType == WalkKicks::forwardSteal)
   {
-    dv.maxXDeviation.min -= forwardStealKickPose.x();
-    dv.maxXDeviation.max -= forwardStealKickPose.x();
+    dv.maxXDeviation.min -= forwardStealWaitingKickPose.x();
+    dv.maxXDeviation.max -= forwardStealWaitingKickPose.x();
   }
   else
   {
@@ -785,24 +899,23 @@ Vector2f WalkKickEngine::getZeroBallPosition(const bool isLeftPhase, Pose2f& scs
   const Pose3f supportInTorso3D = theTorsoMatrix * (isLeftPhase ? theRobotModel.soleRight : theRobotModel.soleLeft);
   const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
   const Pose2f hipOffset(0.f, 0.f, isLeftPhase ? -theRobotDimensions.yHipOffset : theRobotDimensions.yHipOffset);
-  scsCognition = hipOffset * hipOffset * supportInTorso.inverse() * updatedOdometryData.inverse() * theMotionRequest.odometryData;
+  scsCognition = hipOffset * hipOffset * supportInTorso.inverse() * theOdometryDataPreview.inverse() * theMotionRequest.odometryData;
   return scsCognition * theMotionRequest.ballEstimate.position;
 }
 
 Pose2f WalkKickEngine::getVShapeWalkStep(const bool isLeftPhase, const Angle direction)
 {
   Pose2f scsCognition;
-  const Vector2f ball = getZeroBallPosition(isLeftPhase, scsCognition);
-  Vector2f offset;
-  if(std::abs(scsCognition.rotation) < forwardStealVFeetAngle * forwardStealVFeetAngleFactor)
-    offset = forwardStealWaitingKickPose;
-  else
-    offset = forwardStealKickPose;
+  Vector2f ball = getZeroBallPosition(isLeftPhase, scsCognition);
+  Vector2f offset = forwardStealWaitingKickPose;
   if(!isLeftPhase)
     offset.y() *= -1.f;
-  offset.rotate(direction + (isLeftPhase ? forwardStealVFeetAngle : -forwardStealVFeetAngle) + scsCognition.rotation);
-  Pose2f step(direction + (isLeftPhase ? forwardStealVFeetAngle : -forwardStealVFeetAngle) + scsCognition.rotation, ball + offset);
-  step.translation.x() = std::max(0.f, std::min(walkToBallForForwardStealMaxXTranslation, step.translation.x()));
+
+  const Angle poseRot = (isLeftPhase ? 1.f : -1.f) * forwardStealVFeetAngle / 2.f + scsCognition.rotation + direction;
+  offset.rotate(-direction);
+  Pose2f step(poseRot, ball + offset);
+  if(isLeftPhase == (step.translation.y() < 0.f))
+    step.translation.y() = 0.f;
   return step;
 }
 
@@ -814,7 +927,7 @@ void WalkKickEngine::draw(const Pose2f& pose)
   // Stuff below is to debug all calculated later
   const Pose3f supportInTorso3D = theTorsoMatrix;
   const Pose2f supportInTorso(supportInTorso3D.rotation.getZAngle(), supportInTorso3D.translation.head<2>());
-  const Pose2f scsCognition = supportInTorso.inverse() * updatedOdometryData.inverse() * theMotionRequest.odometryData;
+  const Pose2f scsCognition = supportInTorso.inverse() * theOdometryDataPreview.inverse() * theMotionRequest.odometryData;
   const Vector2f ballPosition = scsCognition * theMotionRequest.ballEstimate.position;
 
   // Calculate where the support foot will be placed

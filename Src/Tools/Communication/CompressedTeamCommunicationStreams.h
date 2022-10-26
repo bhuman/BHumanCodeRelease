@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Math/Constants.h"
-#include "Tools/Streams/InOut.h"
+#include "Math/Constants.h"
+#include "Streaming/InOut.h"
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -309,7 +309,8 @@ namespace CompressedTeamCommunication
     std::vector<TypeDeclaration> typeDeclarations; /**< The available type declarations. */
     std::vector<std::unique_ptr<Type>> typeContainer; /**< All types that were created during compilation of the type registry. */
     std::unordered_map<std::string, const Type*> typesByName; /**< Map from type names to type handles for user-defined types. */
-    std::unordered_set<const Type*> tcmPluginGeneratedTypes; /**< The set of types for which code has already been generated (during TCM plugin generation). */
+    std::unordered_set<std::string> tcmPluginGeneratedRecords; /**< The set of record names for which code has already been generated (during TCM plugin generation). */
+    std::unordered_set<std::string> tcmPluginGeneratedEnums; /**< The set of enum names for which code has already been generated (during TCM plugin generation). */
   };
 
   class Base

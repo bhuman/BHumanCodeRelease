@@ -10,12 +10,10 @@
 
 #pragma once
 
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/BallPercepts/BallPercept.h"
@@ -23,9 +21,9 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/ImageProcessing/PatchUtilities.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Module/Module.h"
+#include "ImageProcessing/PatchUtilities.h"
+#include "Math/Eigen.h"
+#include "Framework/Module.h"
 #include <CompiledNN/CompiledNN.h>
 #include <CompiledNN/Model.h>
 
@@ -37,24 +35,29 @@ MODULE(BallPerceptor,
   REQUIRES(CameraMatrix),
   REQUIRES(ECImage),
   REQUIRES(FieldDimensions),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
-  REQUIRES(OwnTeamInfo),
   REQUIRES(RobotPose),
-  REQUIRES(TeamBehaviorStatus),
   PROVIDES(BallPercept),
   LOADS_PARAMETERS(
-  {,
+  {
+    ENUM(NormalizationMode,
+    {,
+      none,
+      normalizeContrast,
+      normalizeBrightness,
+    }),
+
     (std::string) encoderName, /**< The file name (relative to "NeuralNetworks/BallPerceptor") from which to load the model.  */
     (std::string) classifierName,
     (std::string) correctorName,
     (float) guessedThreshold, /**< Limit from which a ball is guessed. */
     (float) acceptThreshold, /**< Limit from which a ball is accepted. */
     (float) ensureThreshold, /**< Limit from which a ball is detected for sure. */
-    (bool) useContrastNormalization,
+    (NormalizationMode) normalizationMode, /**< The kind of normalization used for patches. */
+    (float) normalizationOutlierRatio, /**< The ratio of pixels ignored when determining the value range that is scaled to 0..255. */
     (float) ballAreaFactor,
-    (float) contrastNormalizationPercent,
     (bool) useFloat,
     (PatchUtilities::ExtractionMode) extractionMode,
   }),

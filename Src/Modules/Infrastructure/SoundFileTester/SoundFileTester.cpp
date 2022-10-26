@@ -8,7 +8,7 @@
 
 #include "SoundFileTester.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/Modify.h"
+#include "Debugging/Modify.h"
 
 MAKE_MODULE(SoundFileTester, infrastructure);
 

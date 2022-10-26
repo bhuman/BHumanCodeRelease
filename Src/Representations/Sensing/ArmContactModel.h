@@ -11,10 +11,10 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/Enum.h"
+#include "RobotParts/Arms.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/EnumIndexedArray.h"
 #include <map>
 
 STREAMABLE(ArmContactModel,

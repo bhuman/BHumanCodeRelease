@@ -9,39 +9,39 @@
 #pragma once
 
 #include "Platform/SystemCall.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Sensing/GyroState.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
-#include "Tools/Settings.h"
+#include "Debugging/Annotation.h"
+#include "Framework/Module.h"
+#include "Math/RingBufferWithSum.h"
 
 MODULE(GyroOffsetProvider,
 {,
   USES(FrameInfo),
-  USES(GameInfo),
+  USES(GameState),
   USES(GroundContactState),
   USES(InertialData),
-  USES(MotionRequest),
-  USES(RobotInfo),
+  USES(MotionInfo),
   REQUIRES(GyroState),
   PROVIDES(GyroOffset),
   DEFINES_PARAMETERS(
   {,
-    (Angle)(3_deg) thresholdGyroDeviation, // if the NAO is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
-    (Angle)(1_deg) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
+    (Angle)(3_deg) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
+    (Rangea)(Rangea(-0.5_deg, 0.5_deg)) bodyDisconnectGyroRange, // To detect a body disconnect, the gyros must have values outside of this range
     (int)(100) thresholdTime, // if a check was positive, wait this time until the next check
     (int)(10) minChecks, // so many checks in a row must be positive before we do a calibration
     (int)(2000) waitTimeBeforeSampling, // Wait this much befor sampling
-    (int)(100) maxGyroDelay, // gyros need to update at least once in this time, in ms
+    (int)(1000) maxGyroDelay, // gyros need to update at least once in this time, in ms
     (unsigned int)(101000) startTimestamp, // check stuck gyro after the software is running for at least for 1 second
     (int)(1500) bodyDisconnectWaitTime, // Wait this much time, until the body connection is back. The joints need about one seconds, until the stiffness is back
+    (int)(10000) gyroOffsetWarningTime, // Repeat the sound, that the robot needs a reboot, every 10secs
+    (int)(8000) gyroNotCheckedWarningTime, // Repeat that the gyro was not checked after this duration
+    (int)(900) minNotMovingTime, // Robot shall not move for this time!
   }),
 });
 
@@ -61,9 +61,6 @@ private:
   RingBuffer<Angle, 3> gyroMeanX;
   RingBuffer<Angle, 3> gyroMeanY;
   RingBuffer<Angle, 3> gyroMeanZ;
-  RingBuffer<Angle, 3> gyroDeviationX;
-  RingBuffer<Angle, 3> gyroDeviationY;
-  RingBuffer<Angle, 3> gyroDeviationZ;
 
   int samplingCounter;
   unsigned int lastGyroStateUpdate;
@@ -72,9 +69,11 @@ private:
   bool wasPlayingOnce;
   State state;
   std::vector<int> gyroChecks;
-  unsigned int samplingStart;
-  unsigned int gyroStuckTimestamp;
-  unsigned int gyroStuckSoundTimestamp;
+  unsigned int samplingStart = 0;
+  unsigned int gyroStuckTimestamp = 0;
+  unsigned int gyroStuckSoundTimestamp = 0;
+  unsigned int gyroOffsetSoundTimestamp = 0;
+  unsigned int gyroNotCheckedTimestamp = 0;
   std::vector<unsigned int> timestamps; //timestamps, so the checks are done once per thresholdTime
 
   void update(GyroOffset& gyroOffset) override;

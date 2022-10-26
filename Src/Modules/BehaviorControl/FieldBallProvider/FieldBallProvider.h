@@ -14,8 +14,8 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamBallModel.h"
-#include "Tools/Module/Module.h"
+#include "Representations/Modeling/TeammatesBallModel.h"
+#include "Framework/Module.h"
 
 MODULE(FieldBallProvider,
 {,
@@ -24,7 +24,7 @@ MODULE(FieldBallProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   REQUIRES(RobotPose),
-  REQUIRES(TeamBallModel),
+  REQUIRES(TeammatesBallModel),
   PROVIDES(FieldBall),
   DEFINES_PARAMETERS(
   {,

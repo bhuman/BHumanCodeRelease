@@ -38,17 +38,17 @@
 ****************************************************************************/
 
 #include "qttreepropertybrowser.h"
-#include <QtCore/QSet>
-#include <QtGui/QIcon>
-#include <QtWidgets/QTreeWidget>
-#include <QtWidgets/QItemDelegate>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QHeaderView>
-#include <QtGui/QPainter>
-#include <QtWidgets/QApplication>
-#include <QtGui/QFocusEvent>
-#include <QtWidgets/QStyle>
-#include <QtGui/QPalette>
+#include <QSet>
+#include <QIcon>
+#include <QTreeWidget>
+#include <QItemDelegate>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QPainter>
+#include <QApplication>
+#include <QFocusEvent>
+#include <QStyle>
+#include <QPalette>
 
 QT_BEGIN_NAMESPACE
 
@@ -429,7 +429,7 @@ static QIcon drawIndicatorIcon(const QPalette &palette, QStyle *style)
 void QtTreePropertyBrowserPrivate::init(QWidget *parent)
 {
     QHBoxLayout *layout = new QHBoxLayout(parent);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     m_treeWidget = new QtPropertyEditorView(parent);
     m_treeWidget->setEditorPrivate(this);
     m_treeWidget->setIconSize(QSize(18, 18));
@@ -551,7 +551,7 @@ void QtTreePropertyBrowserPrivate::propertyInserted(QtBrowserItem *index, QtBrow
     m_indexToItem[index] = newItem;
 
     newItem->setFlags(newItem->flags() | Qt::ItemIsEditable);
-    m_treeWidget->setItemExpanded(newItem, true);
+    m_treeWidget->expandItem(newItem);
 
     updateItem(newItem);
 }

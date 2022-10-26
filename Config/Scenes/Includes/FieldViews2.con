@@ -13,8 +13,10 @@ vfd worldState representation:BallPercept:field
 vfd worldState representation:FieldLines:field
 vfd worldState representation:PenaltyMarkPercept:field
 vfd worldState representation:PenaltyArea:field
+#vfd worldState representation:OuterCorner:field
 vfd worldState representation:MidCircle:field
 vfd worldState representation:PenaltyMarkWithPenaltyAreaLine:field
+#vfd worldState representation:MidCorner:field
 vfd worldState representation:FieldBoundary:field
 vfd worldState representation:ObstaclesFieldPercept:field
 vfd worldState perception:Reset

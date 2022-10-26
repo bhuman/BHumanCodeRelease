@@ -7,23 +7,20 @@
 #pragma once
 
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Infrastructure/SensorData/FsrSensorData.h"
 #include "Representations/Infrastructure/SensorData/InertialSensorData.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Tools/Module/Module.h"
+#include "Representations/Sensing/FsrData.h"
+#include "Framework/Module.h"
 
 MODULE(GroundContactDetector,
 {,
   REQUIRES(FrameInfo),
-  REQUIRES(FsrSensorData),
+  REQUIRES(FsrData),
   REQUIRES(InertialSensorData),
   PROVIDES(GroundContactState),
   LOADS_PARAMETERS(
   {,
-    (float) minPressureToKeepContact, /**< Minimum pressure on both feet for ground contact in kg. */
-    (float) minPressureToRegainContact, /**< Minimum pressure on both feet to regain ground contact in kg. */
-    (float) minPressurePerFootToRegainContact, /**< Minimum pressure on both feet to regain ground contact in kg. */
-    (Angle) maxGyroYToRegainContact, /**< Maximum y gyro value considered as "not moving". */
+    (float) minPressurePerFootToRegainContact, /**< Minimum pressure on both feet to regain ground contact in %. */
     (int) maxTimeWithoutPressure, /**< Maxmimum time allowed without minimum pressure before losing contact in ms. */
     (int) minTimeWithPressure, /**< Minimum time required with minimum pressure to regain contact in ms. */
   }),

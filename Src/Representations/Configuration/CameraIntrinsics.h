@@ -7,9 +7,9 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * This struct stores the opening angles and optical centers of both cameras.

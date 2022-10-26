@@ -14,7 +14,7 @@ REGISTER_EXECUTION_UNIT(Perception)
 
 bool Perception::beforeFrame()
 {
-  return LogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete();
+  return (LogDataProvider::isFrameDataComplete() && CameraProvider::isFrameDataComplete());
 }
 
 void Perception::beforeModules()

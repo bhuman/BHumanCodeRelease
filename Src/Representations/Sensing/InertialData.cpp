@@ -1,7 +1,7 @@
 #include "InertialData.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Rotation.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/Rotation.h"
 
 void InertialData::draw()
 {

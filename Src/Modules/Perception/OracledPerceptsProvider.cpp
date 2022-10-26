@@ -7,12 +7,12 @@
  */
 
 #include "OracledPerceptsProvider.h"
-#include "Tools/Global.h"
-#include "Tools/Settings.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/Probabilistics.h"
+#include "Streaming/Global.h"
+#include "Framework/Settings.h"
+#include "Math/Geometry.h"
+#include "Math/Probabilistics.h"
 #include "Tools/Math/Projection.h"
-#include "Tools/Math/RotationMatrix.h"
+#include "Math/RotationMatrix.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Obstacle.h"
 
@@ -223,10 +223,10 @@ void OracledPerceptsProvider::falseBallPercept(BallPercept& ballPercept)
 
   for(size_t i = 0; i < goalPosts.size(); i++)
     addPercept(goalPosts[i]);
-  for(size_t i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
-    addPercept(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation);
-  for(size_t i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
-    addPercept(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation);
+  for(size_t i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.ownTeamPlayers[i].pose.translation);
+  for(size_t i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
+    addPercept(theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation);
   for(size_t i = 0; i < intersections.size(); ++i)
     addPercept(intersections[i].pos);
   for(size_t i = 0; i < penaltyMarks.size(); ++i)
@@ -436,12 +436,12 @@ void OracledPerceptsProvider::update(ObstaclesImagePercept& obstaclesImagePercep
   if(!theCameraMatrix.isValid || !Global::settingsExist())
     return;
 
-  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.firstTeamPlayers[i], obstaclesImagePercept);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation))
-      createPlayerBox(theGroundTruthWorldState.secondTeamPlayers[i], obstaclesImagePercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.ownTeamPlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.ownTeamPlayers[i], obstaclesImagePercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation))
+      createPlayerBox(theGroundTruthWorldState.opponentTeamPlayers[i], obstaclesImagePercept);
 }
 
 void OracledPerceptsProvider::update(ObstaclesFieldPercept& obstaclesFieldPercept)
@@ -450,13 +450,12 @@ void OracledPerceptsProvider::update(ObstaclesFieldPercept& obstaclesFieldPercep
   if(!theCameraMatrix.isValid || !Global::settingsExist())
     return;
 
-  const bool isFirstTeam = Global::getSettings().teamNumber == 1;
-  for(unsigned int i = 0; i < theGroundTruthWorldState.firstTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.firstTeamPlayers[i].pose.translation))
-      createPlayerOnField(theGroundTruthWorldState.firstTeamPlayers[i], !isFirstTeam, obstaclesFieldPercept);
-  for(unsigned int i = 0; i < theGroundTruthWorldState.secondTeamPlayers.size(); ++i)
-    if(!isPointBehindObstacle(theGroundTruthWorldState.secondTeamPlayers[i].pose.translation))
-      createPlayerOnField(theGroundTruthWorldState.secondTeamPlayers[i], isFirstTeam, obstaclesFieldPercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.ownTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.ownTeamPlayers[i].pose.translation))
+      createPlayerOnField(theGroundTruthWorldState.ownTeamPlayers[i], false, obstaclesFieldPercept);
+  for(unsigned int i = 0; i < theGroundTruthWorldState.opponentTeamPlayers.size(); ++i)
+    if(!isPointBehindObstacle(theGroundTruthWorldState.opponentTeamPlayers[i].pose.translation))
+      createPlayerOnField(theGroundTruthWorldState.opponentTeamPlayers[i], true, obstaclesFieldPercept);
 }
 
 void OracledPerceptsProvider::update(FieldBoundary& fieldBoundary)
@@ -588,7 +587,6 @@ bool OracledPerceptsProvider::pointIsInImage(const Vector2f& p, Vector2f& pImg) 
 
 void OracledPerceptsProvider::updateViewPolygon()
 {
-  // code is copied from FieldCoverageProvider::drawFieldView()
   const Vector3f vectorToCenter(1, 0, 0);
 
   RotationMatrix r = theCameraMatrix.rotation;
@@ -774,11 +772,11 @@ bool OracledPerceptsProvider::isPointBehindObstacle(const Vector2f& pointGlo) co
     return pointAngle < leftPointAngle && pointAngle > rightPointAngle; //would not work on behind the robot, but we can not see anything there too
   };
 
-  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.secondTeamPlayers)
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.ownTeamPlayers)
     if(player.upright && isBehind(player.pose.translation))
       return true;
 
-  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.firstTeamPlayers)
+  for(const GroundTruthWorldState::GroundTruthPlayer& player : theGroundTruthWorldState.opponentTeamPlayers)
     if(player.upright && isBehind(player.pose.translation))
       return true;
 

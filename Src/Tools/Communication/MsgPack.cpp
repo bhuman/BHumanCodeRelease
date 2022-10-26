@@ -10,7 +10,7 @@
 
 #include "MsgPack.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Debugging/Debugging.h"
+#include "Debugging/Debugging.h"
 #include <cstring>
 
 namespace MsgPack

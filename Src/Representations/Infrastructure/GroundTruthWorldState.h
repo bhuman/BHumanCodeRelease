@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
 #include <vector>
 
 /**
@@ -30,8 +30,8 @@ STREAMABLE(GroundTruthWorldState,
     (bool) upright,
   }),
 
-  (std::vector<GroundTruthPlayer>) firstTeamPlayers,
-  (std::vector<GroundTruthPlayer>) secondTeamPlayers,
+  (std::vector<GroundTruthPlayer>) ownTeamPlayers,
+  (std::vector<GroundTruthPlayer>) opponentTeamPlayers,
   (std::vector<GroundTruthBall>) balls,
   (Pose2f) ownPose,
 });

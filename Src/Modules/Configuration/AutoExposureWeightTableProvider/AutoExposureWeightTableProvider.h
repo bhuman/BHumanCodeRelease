@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include "Framework/Module.h"
 #include "Representations/Configuration/AutoExposureWeightTable.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -20,7 +21,7 @@
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Streaming/EnumIndexedArray.h"
 
 MODULE(AutoExposureWeightTableProvider,
 {,
@@ -36,7 +37,7 @@ MODULE(AutoExposureWeightTableProvider,
     (float) distanceThreshold, /**< The maximum field distance of areas considered (in mm). */
     (int) ballValidDelay, /**< How long is the ball prioritized after its last detection (in ms)? */
     (float) ballWeightRatio, /**< The ratio between the summed up weights of ball areas and other areas. */
-    (bool) useStaticTables, /**< Only provide the static tables defined below? */
+    (ENUM_INDEXED_ARRAY(bool, CameraInfo::Camera)) useStaticTables, /**< Only provide the static tables defined below? */
     (AutoExposureWeightTable::Table[CameraInfo::numOfCameras]) staticTables, /**< Static weights each in the range [0 .. AutoExposureWeightTable::maxWeight]. */
   }),
 });

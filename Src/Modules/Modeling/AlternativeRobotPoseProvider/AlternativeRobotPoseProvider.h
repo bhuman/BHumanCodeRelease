@@ -9,37 +9,38 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
-#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/AlternativeRobotPoseHypothesis.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/SideInformation.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
+#include "Representations/Perception/FieldFeatures/MidCorner.h"
+#include "Representations/Perception/FieldFeatures/OuterCorner.h"
 #include "Representations/Perception/FieldFeatures/PenaltyArea.h"
 #include "Representations/Perception/FieldFeatures/PenaltyMarkWithPenaltyAreaLine.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/GyroState.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBuffer.h"
+#include "Framework/Module.h"
+#include "Math/RingBuffer.h"
 
 MODULE(AlternativeRobotPoseProvider,
 {,
-  REQUIRES(ExtendedGameInfo),
+  REQUIRES(ExtendedGameState),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(GroundContactState),
   REQUIRES(GyroState),
   REQUIRES(MidCircle),
+  REQUIRES(MidCorner),
   REQUIRES(MotionInfo),
+  REQUIRES(OuterCorner),
   REQUIRES(Odometer),
   REQUIRES(PenaltyArea),
   REQUIRES(PenaltyMarkWithPenaltyAreaLine),
-  REQUIRES(RobotInfo),
   REQUIRES(SideInformation),
   PROVIDES(AlternativeRobotPoseHypothesis),
   DEFINES_PARAMETERS(
@@ -48,6 +49,7 @@ MODULE(AlternativeRobotPoseProvider,
     (float)(800.f) translationDifference,      /**< Maximum translational difference for assigning a pose to a cluster */
     (float)(0.5f) rotationDifference,          /**< Maximum rotational difference for assigning a pose to a cluster */
     (unsigned)(6) maxClusters,                 /**< Do not try to find more than this number of clusters */
+    (float)(3000.f) maxDistanceCloseMidCorner, /**< MidCorners that are farther away than this, cannot form a new pose alone */
   }),
 });
 
@@ -64,12 +66,14 @@ class AlternativeRobotPoseProvider : public AlternativeRobotPoseProviderBase
     Pose2f pose;                    /**< The robot's pose */
     unsigned int timeOfObservation; /**< The point of time when the pose was computed */
     bool stillInOwnHalf;            /**< The robot knows that it must be in its own half during observation */
+    bool basedOnStupidFarMidCorner; /**< The pose has been computed based on a perception of a MidCorner that is quite far away */
   };
 
   /** A cluster of poses */
   struct Cluster
   {
     int numOfPoses;                        /**< The number of poses that have been clustered */
+    int numOfStupidFarMidCornerPoses;      /**< The number of poses based on far MidCorner inputs that have been clustered */
     Pose2f pose;                           /**< The center of the cluster (i.e. average of all poses) */
     unsigned int timeOfNewestObservation;  /**< Point of time, the newest pose of this cluster was computed */
     bool isInOwnHalf;                      /**< At least one of the poses was definitely in the own half (given provided side information) */
@@ -78,6 +82,7 @@ class AlternativeRobotPoseProvider : public AlternativeRobotPoseProviderBase
     Cluster()
     {
       numOfPoses = 0;
+      numOfStupidFarMidCornerPoses = 0;
       pose.rotation = 0;
       pose.translation = Vector2f(0.f, 0.f);
       timeOfNewestObservation = 0;
@@ -95,8 +100,9 @@ class AlternativeRobotPoseProvider : public AlternativeRobotPoseProviderBase
 
   /** Converts and adds a feature to the ring buffer.
    * @param ff A pointer to a field feature, e.g. PenaltyArea, MidCircle, ...
+   * @param isMidCorner set to true, if the type of the class is MidCorner
    */
-  void addFieldFeatureToBuffer(const FieldFeature* ff);
+  void addFieldFeatureToBuffer(const FieldFeature* ff, bool isMidCorner = false);
 
   /** Some motions might not have a reliable odometry (falling, diving, ...) and same
    *  game situations might lead to a displaced robot.

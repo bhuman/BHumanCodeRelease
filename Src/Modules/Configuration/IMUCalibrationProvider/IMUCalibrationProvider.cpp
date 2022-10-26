@@ -4,11 +4,13 @@
  */
 
 #include "IMUCalibrationProvider.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Framework/Settings.h"
+#include "Math/Eigen.h"
+#include "Math/Rotation.h"
 #include "Platform/File.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Rotation.h"
 #include <cmath>
+#include <filesystem>
 
 MAKE_MODULE(IMUCalibrationProvider, sensing);
 
@@ -23,24 +25,40 @@ void IMUCalibrationProvider::update(IMUCalibration& imuCalibration)
 {
   bool update = false;
   MODIFY_ONCE("module:IMUCalibrationProvider:forceUpdate", update);
-  if(update || theCalibrationRequest.serialNumberIMUCalibration > serialNumberIMUCalibration)
+  if(update || (theCalibrationRequest.serialNumberIMUCalibration > imuCalibration.serialNumberIMUCalibration && isStandingStill()))
   {
-    imuCalibration.rotation = Rotation::Euler::fromAngles(-theInertialSensorData.angle.x() + theInertialData.angle.x(), -theInertialSensorData.angle.y() + theInertialData.angle.y(), 0);
-    serialNumberIMUCalibration = theCalibrationRequest.serialNumberIMUCalibration;
+    imuCalibration.rotation = Quaternionf(imuCalibration.rotation) * (Rotation::Euler::fromAngles(-theInertialSensorData.angle.x() + theInertialData.angle.x(), -theInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
+    imuCalibration.serialNumberIMUCalibration = theCalibrationRequest.serialNumberIMUCalibration;
     imuCalibration.isCalibrated = true;
     //save the calibration
-    std::string name = "imuCalibration.cfg";
-    for(std::string& fullName : File::getFullNames(name))
-    {
-      File path(fullName, "r", false);
-      if(path.exists())
-      {
-        name = std::move(fullName);
-        break;
-      }
-    }
-    OutMapFile stream(name, true);
+    const std::string path = std::string(File::getBHDir()) + "/Config/Robots/" + Global::getSettings().bodyName + "/Body";
+    std::filesystem::create_directories(path);
+    OutMapFile stream(path + "/imuCalibration.cfg", true);
     ASSERT(stream.exists());
     stream << imuCalibration;
   }
+  else if(isAutoCalibrationActive && isStandingStill() && theFrameInfo.getTimeSince(lastCalibration) > minTimeBetweenCalibration)
+  {
+    const auto timeSinceCalibrationStarted = theFrameInfo.getTimeSince(calibrationStarted);
+    if(timeSinceCalibrationStarted > waitTimeTillNewCalibrationAccepted && timeSinceCalibrationStarted < minStandStillTime)
+    {
+      calibrationStarted = 0;
+      lastCalibration = theFrameInfo.time;
+      imuCalibration.rotation = tempIMUCalibration.rotation;
+      imuCalibration.isCalibrated = true;
+    }
+    else if(theFrameInfo.getTimeSince(calibrationStarted) > minStandStillTime)
+    {
+      calibrationStarted = theFrameInfo.time;
+      tempIMUCalibration = imuCalibration;
+      tempIMUCalibration.rotation = Quaternionf(tempIMUCalibration.rotation) * (Rotation::Euler::fromAngles(-theInertialSensorData.angle.x() + theInertialData.angle.x(), -theInertialSensorData.angle.y() + theInertialData.angle.y(), 0));
+    }
+  }
+  else
+    calibrationStarted = 0;
+}
+
+bool IMUCalibrationProvider::isStandingStill()
+{
+  return theFrameInfo.getTimeSince(theGyroState.notMovingSinceTimestamp) > minStandStillTime && theGroundContactState.contact;
 }

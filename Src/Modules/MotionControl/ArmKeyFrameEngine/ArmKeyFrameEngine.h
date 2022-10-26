@@ -1,18 +1,16 @@
 #pragma once
 
 #include "ArmKeyFrameMotion.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/StiffnessData.h"
 #include "Representations/MotionControl/ArmKeyFrameGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(ArmKeyFrameEngine,
 {,
   REQUIRES(JointAngles),
-  REQUIRES(RobotInfo),
   REQUIRES(StiffnessSettings),
   PROVIDES(ArmKeyFrameGenerator),
   LOADS_PARAMETERS(
@@ -32,8 +30,6 @@ MODULE(ArmKeyFrameEngine,
 class ArmKeyFrameEngine : public ArmKeyFrameEngineBase
 {
 public:
-  void update(ArmKeyFrameGenerator& armKeyFrameGenerator) override;
-
   ArmKeyFrameEngine();
 
 private:
@@ -43,17 +39,17 @@ private:
   class Arm
   {
   public:
-    Arms::Arm id;              /**< ID of the motion this arm currently executes */
-    Joints::Joint firstJoint;  /**< Index of the first joint belonging to this arm within the JointAngles' array */
-    unsigned stateIndex;       /**< Index to identify the current set of angles the arm should head to within its currentMotion */
-    float interpolationTime;   /**< Time in ms how long current motion is active */
-    bool isLastMotionFinished; /**< Whether this arm currently performs a motion */
-    bool fast;                 /**< If set to true, current motion will be performed without interpolation */
-    bool wasActive;            /**< If the arm key frame engine was active last frame */
+    const Arms::Arm id;               /**< ID of the motion this arm currently executes */
+    const Joints::Joint firstJoint;   /**< Index of the first joint belonging to this arm within the JointAngles' array */
+    unsigned stateIndex = 0;          /**< Index to identify the current set of angles the arm should head to within its currentMotion */
+    float time = 0.f;                 /**< Time in ms how long current motion is active */
+    bool isLastMotionFinished = true; /**< Whether this arm currently performs a motion */
+    bool fast = false;                /**< If set to true, current motion will be performed without interpolation */
+    bool wasActive = false;           /**< If the arm key frame engine was active last frame */
     ArmKeyFrameMotion::ArmAngles interpolationStart; /**< Set of angles at which interpolation towards the next state began */
-    ArmKeyFrameMotion currentMotion; /**< The motion which is currently performed by this arm. Contains the actual target states in order they should be reached */
-    Arm(Arms::Arm id = Arms::left, Joints::Joint firstJoint = Joints::lShoulderPitch) :
-      id(id), firstJoint(firstJoint), stateIndex(0), interpolationTime(0.f), isLastMotionFinished(true), wasActive(false)
+    ArmKeyFrameMotion currentMotion;  /**< The motion which is currently performed by this arm. Contains the actual target states in order they should be reached */
+    Arm(Arms::Arm id) :
+      id(id), firstJoint(Joints::combine(id, Joints::shoulderPitch))
     {}
 
     /**
@@ -65,27 +61,33 @@ private:
      */
     void startMotion(const ArmKeyFrameMotion& motion, bool fast, const JointAngles& currentJoints)
     {
-      stateIndex = 0;
-      interpolationTime = 1.f;
-      isLastMotionFinished = false;
-      currentMotion = motion;
-      this->fast = fast;
+      if(wasActive)
+        interpolationStart.angles = currentMotion.states.back().angles;
+      else
+        for(unsigned i = 0; i < interpolationStart.angles.size(); ++i)
+        {
+          interpolationStart.angles[i] = currentJoints.angles[firstJoint + i];
+          if(id == Arms::right &&
+             (i + Joints::rShoulderPitch == Joints::rShoulderRoll ||
+              i + Joints::rShoulderPitch == Joints::rElbowYaw ||
+              i + Joints::rShoulderPitch == Joints::rElbowRoll ||
+              i + Joints::rShoulderPitch == Joints::rWristYaw))
+            interpolationStart.angles[i] *= -1.f;
+        }
 
-      for(unsigned i = 0; i < interpolationStart.angles.size(); ++i)
-      {
-        interpolationStart.angles[i] = currentJoints.angles[firstJoint + i];
-        if(id == Arms::right &&
-           (i + Joints::rShoulderPitch == Joints::rShoulderRoll ||
-            i + Joints::rShoulderPitch == Joints::rElbowYaw ||
-            i + Joints::rShoulderPitch == Joints::rElbowRoll ||
-            i + Joints::rShoulderPitch == Joints::rWristYaw))
-          interpolationStart.angles[i] *= -1.f;
-      }
+      stateIndex = 0;
+      time = 0.f;
+      isLastMotionFinished = false;
+      this->fast = fast;
+      wasActive = true;
+      currentMotion = motion;
     }
   };
 
-  Arm arms[2];                             /**< There are two arms :) */
-  ArmKeyFrameMotion::ArmAngles defaultPos; /**< Default position of an arm. Will be read from configuration */
+  Arm arms[Arms::numOfArms];               /**< There are two arms :) */
+  ArmKeyFrameMotion::ArmAngles defaultPos; /**< Default position of an arm. Will be read from configuration. */
+
+  void update(ArmKeyFrameGenerator& armKeyFrameGenerator) override;
 
   /**
    * Performs the update step for a single arm. Checks whether a new motion for the provided arm is
@@ -103,10 +105,9 @@ private:
    * @param arm The arm
    * @param target Target angles for the interpolation. Starting point for interpolation is retrieved
    *      from the Arm instance itself.
-   * @param time Current interpolation time int motion steps
    * @param result Will contain the four interpolated result angles+stiffness to be set.
    */
-  void createOutput(Arm& arm, ArmKeyFrameMotion::ArmAngles target, float& time, ArmKeyFrameMotion::ArmAngles& result);
+  void createOutput(Arm& arm, const ArmKeyFrameMotion::ArmKeyFrameState& target, ArmKeyFrameMotion::ArmAngles& result) const;
 
   /**
    * For a given arm, updates the engine's current output with the calculated target angles.
@@ -114,5 +115,5 @@ private:
    * @param jointRequest Output representation to be filled
    * @param values Angles+stiffness to be set for this arm during this motion frame
    */
-  void updateOutput(const Arm& arm, JointRequest& jointRequest, const ArmKeyFrameMotion::ArmAngles& values);
+  void updateOutput(const Arm& arm, JointRequest& jointRequest, const ArmKeyFrameMotion::ArmAngles& values) const;
 };

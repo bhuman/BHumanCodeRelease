@@ -6,17 +6,22 @@
 
 #pragma once
 
-#include "Representations/Sensing/GyroState.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Sensing/GyroState.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
+#include "Framework/Module.h"
+#include "Math/RingBufferWithSum.h"
 
 MODULE(GyroStateProvider,
 {,
   USES(FrameInfo),
   USES(InertialData),
   PROVIDES(GyroState),
+  DEFINES_PARAMETERS(
+  {,
+    (Angle)(3_deg) thresholdGyroDeviation, // if the NAO is not moving, the gyros should vary max by this value. It must be high, because the gyros have a high deviation over a long time interval
+    (Angle)(3_deg) thresholdZero, // if the NAO is not moving, the gyros should be lower than this value
+  }),
 });
 
 class GyroStateProvider : public GyroStateProviderBase
@@ -29,6 +34,7 @@ private:
   RingBufferWithSum<Angle, 27> gyroValuesY;
   RingBufferWithSum<Angle, 27> gyroValuesZ;
   int samplingCounter;
+  bool isNotMoving = false;
 
   void update(GyroState& gyroOffset) override;
 };

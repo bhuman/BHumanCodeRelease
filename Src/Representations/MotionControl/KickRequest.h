@@ -4,10 +4,10 @@
  */
 
 #pragma once
-#include "Tools/Function.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Math/Eigen.h"
+#include "Streaming/Enum.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(DynPoint,
 {
@@ -51,10 +51,6 @@ STREAMABLE(KickRequest,
   {,
     kickForwardFast,
     kickForwardFastLong,
-    otherSideKick,
-    stopBallStart,
-    stopBallEnd,
-    kickForwardAndUp,
     // kicks up to here are loaded by the KickEngine
     newKick,
     none,

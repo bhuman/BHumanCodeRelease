@@ -39,23 +39,23 @@
 
 #include "qteditorfactory.h"
 #include "qtpropertybrowserutils_p.h"
-#include <QtWidgets/QSpinBox>
-#include <QtWidgets/QScrollBar>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QAbstractItemView>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QDateTimeEdit>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QMenu>
-#include <QtGui/QKeyEvent>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QToolButton>
-#include <QtWidgets/QColorDialog>
-#include <QtWidgets/QFontDialog>
-#include <QtWidgets/QSpacerItem>
-#include <QtWidgets/QKeySequenceEdit>
-#include <QtCore/QMap>
+#include <QSpinBox>
+#include <QScrollBar>
+#include <QComboBox>
+#include <QAbstractItemView>
+#include <QLineEdit>
+#include <QDateTimeEdit>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QKeyEvent>
+#include <QApplication>
+#include <QLabel>
+#include <QToolButton>
+#include <QColorDialog>
+#include <QFontDialog>
+#include <QSpacerItem>
+#include <QKeySequenceEdit>
+#include <QMap>
 
 #if defined(Q_CC_MSVC)
 #    pragma warning(disable: 4786) /* MS VS 6: truncating debug info after 255 characters */
@@ -905,7 +905,7 @@ class QtLineEditFactoryPrivate : public EditorFactoryPrivate<QLineEdit>
 public:
 
     void slotPropertyChanged(QtProperty *property, const QString &value);
-    void slotRegExpChanged(QtProperty *property, const QRegExp &regExp);
+    void slotRegExpChanged(QtProperty *property, const QRegularExpression &regExp);
     void slotSetValue(const QString &value);
 };
 
@@ -924,7 +924,7 @@ void QtLineEditFactoryPrivate::slotPropertyChanged(QtProperty *property,
 }
 
 void QtLineEditFactoryPrivate::slotRegExpChanged(QtProperty *property,
-            const QRegExp &regExp)
+            const QRegularExpression &regExp)
 {
     if (!m_createdEditors.contains(property))
         return;
@@ -940,7 +940,7 @@ void QtLineEditFactoryPrivate::slotRegExpChanged(QtProperty *property,
         const QValidator *oldValidator = editor->validator();
         QValidator *newValidator = 0;
         if (regExp.isValid()) {
-            newValidator = new QRegExpValidator(regExp, editor);
+            newValidator = new QRegularExpressionValidator(regExp, editor);
         }
         editor->setValidator(newValidator);
         if (oldValidator)
@@ -1003,8 +1003,8 @@ void QtLineEditFactory::connectPropertyManager(QtStringPropertyManager *manager)
 {
     connect(manager, SIGNAL(valueChanged(QtProperty*,QString)),
                 this, SLOT(slotPropertyChanged(QtProperty*,QString)));
-    connect(manager, SIGNAL(regExpChanged(QtProperty*,QRegExp)),
-                this, SLOT(slotRegExpChanged(QtProperty*,QRegExp)));
+    connect(manager, SIGNAL(regExpChanged(QtProperty*,QRegularExpression)),
+                this, SLOT(slotRegExpChanged(QtProperty*,QRegularExpression)));
 }
 
 /*!
@@ -1017,9 +1017,9 @@ QWidget *QtLineEditFactory::createEditor(QtStringPropertyManager *manager,
 {
 
     QLineEdit *editor = d_ptr->createEditor(property, parent);
-    QRegExp regExp = manager->regExp(property);
+    QRegularExpression regExp = manager->regExp(property);
     if (regExp.isValid()) {
-        QValidator *validator = new QRegExpValidator(regExp, editor);
+        QValidator *validator = new QRegularExpressionValidator(regExp, editor);
         editor->setValidator(validator);
     }
     editor->setText(manager->value(property));
@@ -1040,8 +1040,8 @@ void QtLineEditFactory::disconnectPropertyManager(QtStringPropertyManager *manag
 {
     disconnect(manager, SIGNAL(valueChanged(QtProperty*,QString)),
                 this, SLOT(slotPropertyChanged(QtProperty*,QString)));
-    disconnect(manager, SIGNAL(regExpChanged(QtProperty*,QRegExp)),
-                this, SLOT(slotRegExpChanged(QtProperty*,QRegExp)));
+    disconnect(manager, SIGNAL(regExpChanged(QtProperty*,QRegularExpression)),
+                this, SLOT(slotRegExpChanged(QtProperty*,QRegularExpression)));
 }
 
 // QtDateEditFactory
@@ -1553,7 +1553,7 @@ QtCharEdit::QtCharEdit(QWidget *parent)
 {
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(m_lineEdit);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     m_lineEdit->installEventFilter(this);
     m_lineEdit->setReadOnly(true);
     m_lineEdit->setFocusProxy(this);
@@ -1572,7 +1572,7 @@ bool QtCharEdit::eventFilter(QObject *o, QEvent *e)
             QAction *action = itAction.next();
             action->setShortcut(QKeySequence());
             QString actionString = action->text();
-            const int pos = actionString.lastIndexOf(QLatin1Char('\t'));
+            const auto pos = actionString.lastIndexOf(QLatin1Char('\t'));
             if (pos > 0)
                 actionString = actionString.remove(pos, actionString.length() - pos);
             action->setText(actionString);
@@ -1847,7 +1847,7 @@ void QtEnumEditorFactoryPrivate::slotEnumNamesChanged(QtProperty *property,
         editor->blockSignals(true);
         editor->clear();
         editor->addItems(enumNames);
-        const int nameCount = enumNames.count();
+        const auto nameCount = enumNames.count();
         for (int i = 0; i < nameCount; i++)
             editor->setItemIcon(i, enumIcons.value(i));
         editor->setCurrentIndex(manager->value(property));
@@ -1870,7 +1870,7 @@ void QtEnumEditorFactoryPrivate::slotEnumIconsChanged(QtProperty *property,
     while (itEditor.hasNext()) {
         QComboBox *editor = itEditor.next();
         editor->blockSignals(true);
-        const int nameCount = enumNames.count();
+        const auto nameCount = enumNames.count();
         for (int i = 0; i < nameCount; i++)
             editor->setItemIcon(i, enumIcons.value(i));
         editor->setCurrentIndex(manager->value(property));
@@ -1950,7 +1950,7 @@ QWidget *QtEnumEditorFactory::createEditor(QtEnumPropertyManager *manager, QtPro
     QStringList enumNames = manager->enumNames(property);
     editor->addItems(enumNames);
     QMap<int, QIcon> enumIcons = manager->enumIcons(property);
-    const int enumNamesCount = enumNames.count();
+    const auto enumNamesCount = enumNames.count();
     for (int i = 0; i < enumNamesCount; i++)
         editor->setItemIcon(i, enumIcons.value(i));
     editor->setCurrentIndex(manager->value(property));

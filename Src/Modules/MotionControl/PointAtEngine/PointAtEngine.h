@@ -7,9 +7,9 @@
  */
 
 #pragma once
-#include "Tools/Module/Module.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Math/BHMath.h"
+#include "Framework/Module.h"
+#include "Math/Pose3f.h"
+#include "Math/BHMath.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
 #include "Representations/MotionControl/PointAtGenerator.h"

@@ -20,8 +20,8 @@
 
 #include "BallStateEstimator.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Random.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/Random.h"
 #include "Tools/Math/Transformation.h"
 #include <algorithm>
 
@@ -33,7 +33,7 @@ bool compareHypothesesWeightings(BallStateEstimate& a, BallStateEstimate& b)
 }
 
 BallStateEstimator::BallStateEstimator(): timeWhenBallFirstDisappeared(0),
-  ballDisappeared(false),
+  ballNotSeenButShouldBeSeenCounter(0),
   penaltyBallModelingStartTime(0),
   averagePenaltyBallPosition(Vector2f::Zero()),
   useAveragePenaltyBallPosition(false)
@@ -68,11 +68,12 @@ void BallStateEstimator::update(BallModel& ballModel)
       return;
   }
   // *** Shortcut for a a very fast reaction in a penalty shootout!
-  if((theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT ||
-    (theGameInfo.setPlay == SET_PLAY_PENALTY_KICK && theRobotInfo.isGoalkeeper())) &&
-    theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
+  if((theGameState.isPenaltyShootout() ||
+    (theGameState.isPenaltyKick() && theGameState.isGoalkeeper())) &&
+    theGameState.isForOpponentTeam())
   {
-    if(theGameInfo.state == STATE_PLAYING && theRobotInfo.penalty == PENALTY_NONE && (theExtendedGameInfo.timeSincePlayingStarted < 2000.f || theExtendedGameInfo.timeSinceLastPenaltyEnded < 2000.f))
+    if(theGameState.isPlaying() && theGameState.playerState == GameState::active &&
+       theFrameInfo.getTimeSince(std::max(theExtendedGameState.timeWhenStateStarted[theGameState.state], theExtendedGameState.timeWhenPlayerStateStarted[GameState::active])) < 2000)
       return; // Nothing to do at this point of time
     if(computeBallModelForPenaltyShootout(ballModel))
     {
@@ -360,17 +361,17 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
     if(ballWasSeen)
     {
       timeWhenBallFirstDisappeared = theFrameInfo.time;
-      ballDisappeared = false;
+      ballNotSeenButShouldBeSeenCounter = 0;
     }
     else if(ballShouldBeVisible)
     {
-      ballDisappeared = true;
+      ++ballNotSeenButShouldBeSeenCounter;
     }
-    else if(!ballDisappeared)
+    else if(!ballNotSeenButShouldBeSeenCounter)
     {
       timeWhenBallFirstDisappeared = theFrameInfo.time;
     }
-    if(theFrameInfo.getTimeSince(timeWhenBallFirstDisappeared) > ballDisappearedTimeout)
+    if(ballNotSeenButShouldBeSeenCounter >= ballDisappearedThreshold)
       ballModel.timeWhenDisappeared = timeWhenBallFirstDisappeared;
     else
       ballModel.timeWhenDisappeared = theFrameInfo.time;
@@ -380,7 +381,7 @@ void BallStateEstimator::generateModel(BallModel& ballModel)
 bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel)
 {
   if(!theFilteredBallPercepts.percepts.empty() &&
-     theGameInfo.state == STATE_PLAYING && theRobotInfo.penalty == PENALTY_NONE &&
+     theGameState.isPlaying() && !theGameState.isPenalized() &&
      theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
   {
     const Vector2f relativeBall        = theFilteredBallPercepts.percepts[0].positionOnField;
@@ -415,7 +416,7 @@ bool BallStateEstimator::computeBallModelForPenaltyShootout(BallModel& ballModel
       return true;
     }
   }
-  else if(theGameInfo.state != STATE_PLAYING || theRobotInfo.penalty != PENALTY_NONE)
+  else if(!theGameState.isPlaying() || theGameState.playerState != GameState::active)
   {
     penaltyBallPositions.clear();
     penaltyBallModelingStartTime = 0;

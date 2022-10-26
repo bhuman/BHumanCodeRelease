@@ -11,13 +11,13 @@
 
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Modeling/Odometer.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/LeastSquares.h"
-#include "Tools/Module/Module.h"
+#include "Math/Geometry.h"
+#include "Math/LeastSquares.h"
+#include "Framework/Module.h"
 #include <CompiledNN/CompiledNN.h>
 #include <memory>
 
@@ -34,8 +34,9 @@ MODULE(FieldBoundaryProvider,
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(ImageCoordinateSystem),
-  REQUIRES(Odometer),
+  REQUIRES(OdometryData),
   REQUIRES(OtherFieldBoundary),
+  REQUIRES(OtherOdometryData),
   PROVIDES(FieldBoundary),
   DEFINES_PARAMETERS(
   {,
@@ -85,7 +86,7 @@ private:
       fitLine(fitOnField);
     }
 
-    inline void fitLine(bool fitOnField)
+    void fitLine(bool fitOnField)
     {
       Vector2f n0;
       float d;

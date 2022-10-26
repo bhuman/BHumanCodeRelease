@@ -1,10 +1,11 @@
 #!/bin/bash
 basePath=$(dirname "$(which "$0")")
 CALL=
+FILELIST=
 while true; do
   case $1 in
     "")
-      break;
+      break
       ;;
     "-arch_only")
       shift
@@ -28,8 +29,8 @@ while true; do
       ;;
     "-filelist")
       shift
-      FILELIST="$1"
-      CALL="$CALL $(sed <"$FILELIST" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
+      FILELIST="$FILELIST$(cat "$1" | tr '\n' '|')"
+      CALL="$CALL $(sed <"$1" "s%\(.*\)%'\1'%" | tr '\n' ' ')"
       ;;
     *)
       CALL="$CALL '$1'"
@@ -42,7 +43,7 @@ if [ ! -z "$INFO" ]; then
   (
     echo ""
     echo "cctools-973.0.1"
-    sed <"$FILELIST" 's%^%|%' | tr '|' $'\x10'
+    echo -n "$FILELIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
     echo -n $'\x40'
     echo "$OUTPUT"
   ) | tr '\n' '\0' >"$INFO"

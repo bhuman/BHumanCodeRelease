@@ -9,7 +9,7 @@
  */
 
 #include "SelfLocalizationHypotheses.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void SelfLocalizationHypotheses::draw() const
 {

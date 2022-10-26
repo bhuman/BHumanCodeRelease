@@ -8,12 +8,12 @@
 
 #include "PlayersDeeptector.h"
 #include "Platform/File.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/Stopwatch.h"
-#include "Tools/Global.h"
-#include "Tools/ImageProcessing/PatchUtilities.h"
-#include "Tools/ImageProcessing/Resize.h"
-#include "Tools/Math/Eigen.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/Stopwatch.h"
+#include "Streaming/Global.h"
+#include "ImageProcessing/PatchUtilities.h"
+#include "ImageProcessing/Resize.h"
+#include "Math/Eigen.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 #include <CompiledNN/Model.h>
@@ -26,6 +26,9 @@ PlayersDeeptector::PlayersDeeptector() :
   NeuralNetwork::CompilationSettings settings;
   settings.useExpApproxInSigmoid = false;
   settings.useExpApproxInTanh = false;
+#if defined MACOS && defined __arm64__
+  settings.useCoreML = true;
+#endif
 
   if(theCameraInfo.camera == CameraInfo::upper)
   {
@@ -137,7 +140,8 @@ void PlayersDeeptector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
           if(obstacleInImage.bottom > theECImage.grayscaled.height * 0.9f)
             for(const ObstaclesFieldPercept::Obstacle& incompleteObstacle : theOtherObstaclesPerceptorData.incompleteObstacles)
             {
-              const Rangea rangeLower((theOdometer.odometryOffset.inverse() * incompleteObstacle.right).angle(), (theOdometer.odometryOffset.inverse() * incompleteObstacle.left).angle());
+              const Pose2f inverseOdometryOffset = theOdometryData.inverse() * theOtherOdometryData;
+              const Rangea rangeLower((inverseOdometryOffset * incompleteObstacle.right).angle(), (inverseOdometryOffset * incompleteObstacle.left).angle());
               if(range.min <= rangeLower.max && rangeLower.min <= range.max)
                 obstacleInImage.bottomFound = false;
             }
@@ -169,7 +173,8 @@ void PlayersDeeptector::update(ObstaclesFieldPercept& theObstaclesFieldPercept)
           bool hasMatch = false;
           for(const ObstaclesFieldPercept::Obstacle& incompleteObstacle : theOtherObstaclesPerceptorData.incompleteObstacles)
           {
-            const Rangea rangeUpper((theOdometer.odometryOffset.inverse() * incompleteObstacle.right).angle(), (theOdometer.odometryOffset.inverse() * incompleteObstacle.left).angle());
+            const Pose2f inverseOdometryOffset = theOdometryData.inverse() * theOtherOdometryData;
+            const Rangea rangeUpper((inverseOdometryOffset * incompleteObstacle.right).angle(), (inverseOdometryOffset * incompleteObstacle.left).angle());
             if((hasMatch = (range.min <= rangeUpper.max && rangeUpper.min <= range.max)))
             {
               obstacleOnField.type = incompleteObstacle.type;
@@ -299,7 +304,7 @@ bool PlayersDeeptector::trimObstacle(bool trimHeight, ObstaclesImagePercept::Obs
       for(int x = offset; comp(x); x += step, firstSpot = *secondSpot)
       {
         secondSpot += step;
-        if(std::abs(*secondSpot - firstSpot) > minContrastDif / 2)
+        if(std::abs(*secondSpot - firstSpot) > minContrastDiff / 2)
         {
           limits[side].emplace_back(x - step / 2);
           break;
@@ -369,9 +374,9 @@ void PlayersDeeptector::scanImage(std::vector<std::vector<Region>>& regions)
       rightSat += xyStep;
       if(yLimits[index].first < static_cast<int>(y - xyStep) && yLimits[index].second > static_cast<int>(y + xyStep))
       {
-        bool horizontalChange = (leftSat < satThreshold || *rightSat < satThreshold) && std::abs(*rightLum - leftLum) > minContrastDif;
+        bool horizontalChange = (leftSat < satThreshold || *rightSat < satThreshold) && std::abs(*rightLum - leftLum) > minContrastDiff;
         bool verticalChange = (*(upperRow.second + x) < satThreshold || *(lowerRow.second + x) < satThreshold) &&
-                              std::abs(static_cast<short>(*(upperRow.first + x)) - static_cast<short>(*(lowerRow.first + x))) > minContrastDif;
+                              std::abs(static_cast<short>(*(upperRow.first + x)) - static_cast<short>(*(lowerRow.first + x))) > minContrastDiff;
         Classification spotClassification = horizontalChange ? (verticalChange ? Nothing : Horizontal) : (verticalChange ? Vertical : Nothing);
         if(spotClassification != Nothing)
         {

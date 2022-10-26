@@ -4,6 +4,8 @@ void FieldFeatureOverviewProvider::update(FieldFeatureOverview& fieldFeatureOver
 {
   const FieldFeature* fieldFeatures[FieldFeatureOverview::numOfFeatures];
   fieldFeatures[FieldFeatureOverview::midCircle] = &theMidCircle;
+  fieldFeatures[FieldFeatureOverview::midCorner] = &theMidCorner;
+  fieldFeatures[FieldFeatureOverview::outerCorner] = &theOuterCorner;
   fieldFeatures[FieldFeatureOverview::penaltyArea] = &thePenaltyArea;
   fieldFeatures[FieldFeatureOverview::penaltyMarkWithPenaltyAreaLine] = &thePenaltyMarkWithPenaltyAreaLine;
 
@@ -15,6 +17,8 @@ void FieldFeatureOverviewProvider::update(FieldFeatureOverview& fieldFeatureOver
       fieldFeatureOverview.statuses[i] = Pose2f(*fieldFeatures[i]);
       fieldFeatureOverview.combinedStatus.lastSeen = fieldFeatureOverview.statuses[i].lastSeen = theFrameInfo.time;
     }
+
+  fieldFeatureOverview.statuses[FieldFeatureOverview::outerCorner].isRightSided = theOuterCorner.isRightCorner;
 }
 
 MAKE_MODULE(FieldFeatureOverviewProvider, perception);

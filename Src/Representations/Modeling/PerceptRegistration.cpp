@@ -8,7 +8,7 @@
  */
 
 #include "PerceptRegistration.h"
-#include "Tools/Math/Approx.h"
+#include "Math/Approx.h"
 
 RegisteredLine::RegisteredLine(const Vector2f& perceptStart, const Vector2f& perceptEnd,
                                const Vector2f& modelStart, const Vector2f& modelEnd,

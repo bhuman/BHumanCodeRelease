@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Representations/MotionControl/MotionRequest.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 /**
  * @struct KeyframeMotionRequest
@@ -20,30 +21,20 @@ STREAMABLE(KeyframeMotionRequest,
   ENUM(KeyframeMotionID,
   {,
     decideAutomatic, //Default. If selected, robot tries to get up
-    front,
-    back,
-    fromSplit,
-    recoverFast,
-    recoverFromSideBack,
-    recoverFromSideFront,
-    recoverFromGenu,
-    recoverFromSumo,
-    recoverArmLeftFrontLyingOn,
-    stand,
-    sit,
-    calibrateHalfSplit,
-    calibrateSplit,
     // below are normal motions
     firstNonGetUpAction,
     sitDown = firstNonGetUpAction,
     sitDownKeeper,
     keeperJumpLeft,
-    genuflectFromSitting,
     genuflectStand,
     genuflectStandDefender,
     demoBannerWave,
     demoBannerWaveInitial,
-  }),
+  });
+
+  static KeyframeMotionRequest fromDiveRequest(MotionRequest::Dive::Request diveRequest);
+
+  static KeyframeMotionRequest fromSpecialRequest(MotionRequest::Special::Request specialRequest),
 
   (KeyframeMotionID)(decideAutomatic) keyframeMotion, /**< The keyframe motion selected. */
   (bool)(false) mirror, /**< Mirror left and right. For get up motions, this field is ignored. */

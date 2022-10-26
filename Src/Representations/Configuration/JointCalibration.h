@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Tools/Math/BHMath.h"
-#include "Tools/RobotParts/Joints.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/BHMath.h"
+#include "RobotParts/Joints.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(JointCalibration,
 {

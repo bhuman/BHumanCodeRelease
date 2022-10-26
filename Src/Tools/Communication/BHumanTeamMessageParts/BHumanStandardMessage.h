@@ -8,22 +8,13 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/InOut.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/InOut.h"
 #include <cstdint>
 #include <vector>
 
 #define BHUMAN_STANDARD_MESSAGE_STRUCT_HEADER  "BHUM"
-#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 13      /**< This should be incremented with each change. */
-#define BHUMAN_STANDARD_MESSAGE_MAX_NUM_OF_PLAYERS 6   /**< The maximum number of players per team. */
-
-/** The definintion of an NTP message we send - in response to a previously received request. */
-STREAMABLE(BNTPMessage,
-{,
-  (uint32_t) requestOrigination,  /**<                        The timestamp of the generation of the request. */
-  (uint32_t) requestReceipt,      /**< [delta 0..-4095]       The timestamp of the receipt of the request. */
-  (uint8_t) receiver,             /**< [#_MAX_NUM_OF_PLAYERS] The robot to which this message should be sent. */
-});
+#define BHUMAN_STANDARD_MESSAGE_STRUCT_VERSION 15      /**< This should be incremented with each change. */
 
 STREAMABLE(BHumanStandardMessage,
 {
@@ -59,8 +50,8 @@ STREAMABLE(BHumanStandardMessage,
   (uint8_t)(0) magicNumber, /**< The magic number. */
   (unsigned)(0) timestamp,  /**< Timestamp when this message has been sent (relative to the clock frame of the sending robot). */
 
-  (bool)(false) requestsNTPMessage,       /**< Whether this robot requests NTP replies from the others. */
-  (std::vector<BNTPMessage>) ntpMessages, /**< The NTP replies of this robot to other robots. */
+  (unsigned)(0) referenceGameControllerPacketTimestamp, /**< The timestamp when a specific GameController packet was received. */
+  (uint8_t)(0) referenceGameControllerPacketNumber, /**< The packet number of the above GameController packet. */
 
   (std::vector<uint8_t>) compressedContainer, /**< The container for the compressed data. */
 });

@@ -31,8 +31,8 @@ void JointCalibratorAuto::update(JointRequest& jointRequest)
   {
     case State::waiting:
     {
-      Vector2a torsoDif = theInertialData.angle.head<2>() - calibrationPoses[index].torsoAngle;
-      if(std::abs(torsoDif.x()) < maxTorsoDif && std::abs(torsoDif.y()) < maxTorsoDif   //robot is tilted into a correct position
+      Vector2a torsoDiff = theInertialData.angle.head<2>() - calibrationPoses[index].torsoAngle;
+      if(std::abs(torsoDiff.x()) < maxTorsoDiff && std::abs(torsoDiff.y()) < maxTorsoDiff   //robot is tilted into a correct position
          && theFrameInfo.getTimeSince(switchTransition) > switchTransitionWaitTime) //robot is long enough in the tilted position
       {
         calibrationState = State::switching;
@@ -42,7 +42,7 @@ void JointCalibratorAuto::update(JointRequest& jointRequest)
       }
       else
       {
-        if(!(std::abs(torsoDif.x()) < maxTorsoDif && std::abs(torsoDif.y()) < maxTorsoDif))  //robot is not tilted in the correct position
+        if(!(std::abs(torsoDiff.x()) < maxTorsoDiff && std::abs(torsoDiff.y()) < maxTorsoDiff))  //robot is not tilted in the correct position
           switchTransition = theFrameInfo.time;
         if(theFrameInfo.getTimeSince(waitingResponse) > responseWaitTime)  //print current and requested torso angle
         {
@@ -124,9 +124,9 @@ void JointCalibratorAuto::update(JointRequest& jointRequest)
         {
           if(measuredPositions[joint].x() != 0 || measuredPositions[joint].y() != 0)
           {
-            Angle maxDif = theJointLimits.limits[joint].max - measuredPositions[joint].y();
-            Angle minDif = theJointLimits.limits[joint].min - measuredPositions[joint].x();
-            Angle measurement = std::abs(maxDif) < std::abs(minDif) ? measuredPositions[joint].y() : measuredPositions[joint].x();
+            Angle maxDiff = theJointLimits.limits[joint].max - measuredPositions[joint].y();
+            Angle minDiff = theJointLimits.limits[joint].min - measuredPositions[joint].x();
+            Angle measurement = std::abs(maxDiff) < std::abs(minDiff) ? measuredPositions[joint].y() : measuredPositions[joint].x();
             Angle ref = calibrationReference[joint];
             calibration.offsets[joint] -= ref - measurement;
           }
@@ -137,9 +137,9 @@ void JointCalibratorAuto::update(JointRequest& jointRequest)
         {
           if(measuredPositions[joint].x() != 0 || measuredPositions[joint].y() != 0)
           {
-            Angle maxDif = theJointLimits.limits[joint].max - measuredPositions[joint].y();
-            Angle minDif = theJointLimits.limits[joint].min - measuredPositions[joint].x();
-            Angle measurement = std::abs(maxDif) < std::abs(minDif) ? measuredPositions[joint].y() : measuredPositions[joint].x();
+            Angle maxDiff = theJointLimits.limits[joint].max - measuredPositions[joint].y();
+            Angle minDiff = theJointLimits.limits[joint].min - measuredPositions[joint].x();
+            Angle measurement = std::abs(maxDiff) < std::abs(minDiff) ? measuredPositions[joint].y() : measuredPositions[joint].x();
             calibrationReference[joint] = measurement;
           }
           else

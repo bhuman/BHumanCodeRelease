@@ -12,9 +12,9 @@
 #include "WhistleRecognizer.h"
 #include "Platform/SystemCall.h"
 #include "Platform/Thread.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/BHMath.h"
+#include "Debugging/Annotation.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/BHMath.h"
 #include <algorithm>
 #include <limits>
 #include <type_traits>
@@ -34,6 +34,7 @@ WhistleRecognizer::WhistleRecognizer()
     ASSERT(stream.exists());
     signatures.emplace_back();
     stream >> signatures.back();
+    signatures.back().name = fileName;
   }
 
   // Allocate memory for FFTW plans
@@ -71,12 +72,18 @@ void WhistleRecognizer::update(Whistle& theWhistle)
   DECLARE_PLOT("module:WhistleRecognizer:samples2");
   DECLARE_PLOT("module:WhistleRecognizer:samples3");
 
-  // Remember if sound was playing during this team communication cycle
+  // Switch off sound to hear the whistle.
+  SystemCall::mute(mute
+                   && (theGameState.isSet() || theGameState.isPlaying())
+                   && !theGameState.isPenalized()
+                   && theGameState.playerState != GameState::calibration);
+
+  // Remember if sound was playing during this accumulation phase.
+  // Except for some corner cases, soundWasPlaying should be false.
   soundWasPlaying |= SystemCall::soundIsPlaying();
 
   // Empty buffers when entering a state where it should be recorded.
-  const bool shouldRecord = (theGameInfo.state == STATE_SET
-                             || theGameInfo.state == STATE_PLAYING)
+  const bool shouldRecord = (theGameState.isSet() || theGameState.isPlaying())
                             && !soundWasPlaying;
   if(!hasRecorded && shouldRecord)
     buffers.clear();
@@ -188,11 +195,7 @@ void WhistleRecognizer::update(Whistle& theWhistle)
           else
           {
             const float channelCorrelation = correlate(signature.spectrum, buffers[i]);
-            if(channelCorrelation > bestChannelCorrelation)
-            {
-              bestChannelCorrelation = channelCorrelation;
-              bestUpdated = true;
-            }
+            bestChannelCorrelation = std::max(bestChannelCorrelation, channelCorrelation);
             correlation += channelCorrelation;
           }
 
@@ -221,26 +224,25 @@ void WhistleRecognizer::update(Whistle& theWhistle)
 
     if(bestSignature)
     {
-      if(theFrameInfo.getTimeSince(theWhistle.lastTimeWhistleDetected) > minAnnotationDelay)
+      if(theFrameInfo.getTimeSince(lastTimeWhistleDetected) > minAnnotationDelay)
         ANNOTATION("WhistleRecognizer", bestSignature->name << " with " << static_cast<int>(bestCorrelation * 100.f) << "%");
-      theWhistle.lastTimeWhistleDetected = theFrameInfo.time;
+      lastTimeWhistleDetected = theFrameInfo.time;
     }
 
     samplesRequired = static_cast<unsigned>(bufferSize * newSampleRatio);
   }
 
-  // Reset best correlation after it was sent in two network packets.
-  if(theBHumanMessageOutputGenerator.sendThisFrame)
+  // Publish whistle detection and reset best correlation after accumulation phase.
+  if(theFrameInfo.getTimeSince(lastTimeWhistleDetected) >= accumulationDuration)
   {
-    if(!bestUpdated)
-      bestCorrelation = 1.f;
-    bestUpdated = false;
+    theWhistle.lastTimeWhistleDetected = lastTimeWhistleDetected;
+    bestCorrelation = 1.f;
     soundWasPlaying = SystemCall::soundIsPlaying();
   }
 
   DEBUG_RESPONSE_ONCE("module:WhistleRecognizer:detectNow")
   {
-    theWhistle.lastTimeWhistleDetected = theFrameInfo.time;
+    lastTimeWhistleDetected = theFrameInfo.time;
     theWhistle.confidenceOfLastWhistleDetection = 2.f;
   }
 
@@ -248,7 +250,7 @@ void WhistleRecognizer::update(Whistle& theWhistle)
 }
 
 float WhistleRecognizer::correlate(std::vector<Vector2d>& signature, const RingBuffer<AudioData::Sample>& buffer,
-                                      bool record)
+                                   bool record)
 {
   // Compute volume of samples.
   float volume = 0;

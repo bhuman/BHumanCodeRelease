@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Math/Pose3f.h"
+#include "Math/Pose3f.h"
 #include "Representations/Configuration/RobotDimensions.h"
 #include "Representations/Configuration/CameraCalibration.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -46,7 +46,7 @@ public:
 
   void computeCameraMatrix(const Pose3f& torsoMatrix, const Pose3f& robotCameraMatrix, const CameraCalibration& cameraCalibration);
 
-  inline Pose3f inverse() const
+  Pose3f inverse() const
   {
     return invPos;
   }

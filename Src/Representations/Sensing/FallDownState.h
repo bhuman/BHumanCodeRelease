@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Enum.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 /**
  * @struct FallDownState

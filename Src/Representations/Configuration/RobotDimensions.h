@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/RobotParts/FsrSensors.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "RobotParts/FsrSensors.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * This representation contains all necessary dimensions of the robot.

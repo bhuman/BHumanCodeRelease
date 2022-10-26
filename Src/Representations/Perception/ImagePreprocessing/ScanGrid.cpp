@@ -4,7 +4,7 @@
  */
 
 #include "ScanGrid.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void ScanGrid::draw() const
 {

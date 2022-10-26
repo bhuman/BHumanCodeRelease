@@ -7,9 +7,9 @@
 #include "ForwardKinematic.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Configuration/RobotDimensions.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Pose3f.h"
-#include "Tools/Math/Rotation.h"
+#include "Math/BHMath.h"
+#include "Math/Pose3f.h"
+#include "Math/Rotation.h"
 
 void ForwardKinematic::calculateArmChain(Arms::Arm arm, const JointAngles& joints, const RobotDimensions& robotDimensions, ENUM_INDEXED_ARRAY(Pose3f, Limbs::Limb)& limbs)
 {

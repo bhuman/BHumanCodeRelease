@@ -4,7 +4,7 @@
  */
 
 #include "FieldFeatureOverview.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 
 #define PLOT_SINGE_TSL(name) \
@@ -18,6 +18,8 @@ void FieldFeatureOverview::draw() const
 
     PLOT_SINGE_TSL(penaltyArea);
     PLOT_SINGE_TSL(midCircle);
+    PLOT_SINGE_TSL(midCorner);
+    PLOT_SINGE_TSL(outerCorner);
     PLOT_SINGE_TSL(penaltyMarkWithPenaltyAreaLine);
 
     PLOT("representation:FieldFeatureOverview:timeSinceLast", theFrameInfo.getTimeSince(combinedStatus.lastSeen));
@@ -26,6 +28,13 @@ void FieldFeatureOverview::draw() const
 
 void FieldFeatureOverview::operator>>(BHumanMessage& m) const
 {
+  static_assert(numOfFeatures <= 8, "The container is to small. Ajust it!");
+  uint8_t isRightSidedContainer = 0;
+  FOREACH_ENUM(Feature, i)
+    (isRightSidedContainer <<= 1) |= statuses[i].isRightSided ? 1 : 0;
+
+  m.theBHumanArbitraryMessage.queue.out.bin << isRightSidedContainer;
+
   FOREACH_ENUM(Feature, i)
   {
     const FieldFeatureStatus& status = statuses[i];
@@ -44,6 +53,18 @@ bool FieldFeatureOverview::handleArbitraryMessage(InMessage& m, const std::funct
 
   combinedStatus.isValid = false;
   combinedStatus.lastSeen = 0;
+
+  {
+    static_assert(numOfFeatures <= 8, "The container is too small. Adjust it!");
+    uint8_t isRightSidedContainer;
+    m.bin >> isRightSidedContainer;
+    int runner = 1 << (numOfFeatures - 1);
+    FOREACH_ENUM(Feature, i)
+    {
+      statuses[i].isRightSided = (isRightSidedContainer & runner) != 0;
+      runner >>= 1;
+    }
+  }
 
   FOREACH_ENUM(Feature, i)
   {

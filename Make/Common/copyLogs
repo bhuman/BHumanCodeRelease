@@ -1,7 +1,10 @@
 #!/bin/bash
 # Copies all log files from mounted USB drives with names that
-# end with "_B-HUMAN". On Windows, the name of the USB drive is
-# ignored.
+# end with "_B-HUMAN". If the target directory is an sftp-URL,
+# access must work without additional input, i.e. the
+# SSH server must already be known and public key authentication
+# must be used. On Windows, this must work inside WSL, i.e.
+# WSL's /root/.ssh must contain the required files.
 
 set -e
 
@@ -16,7 +19,7 @@ usage()
   echo "  examples:"
   echo "    $0"
   echo "    $0 -d ../../Config/Logs"
-  echo "    $0 sftp://user@host:/path"
+  echo "    $0 sftp://sftp@b-human.informatik.uni-bremen.de:/upload/data/logs/2020/Testspiele"
   echo "    $0 --just-delete"
   exit 1
 }
@@ -65,36 +68,64 @@ done
 
 set -eu
 
+# Append timestamp to target directory.
 targetPath="$targetDir/$(date +%F-%H-%M)"
 
-files=$(ls /mnt/*_B-HUMAN/logs/*_*_*.log /media/*_B-HUMAN/logs/*_*_*.log /media/$USER/*_B-HUMAN/logs/*_*_*.log /run/media/$USER/*_B-HUMAN/logs/*_*_*.log /cygdrive/*/logs/*_*_*.log /Volumes/*_B-HUMAN/logs/*_*_*.log 2>/dev/null || true)
+# USB drives are not automatically mounted in WSL.
+# When on Windows, mount them.
+if [ -e /proc/version ]; then
+  if [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    device_ids=( $(wmic.exe logicaldisk where drivetype=2 get DeviceID | tail -n +2 | tr '\r\n' ' ') )
+    volume_names=( $(wmic.exe logicaldisk where drivetype=2 get VolumeName | tail -n +2 | tr -d '\r' | sed 's%^$%NONE%' | tr '\n' ' ') )
+    for ((i=0;i<${#device_ids[@]};i++)); do
+      device_id=${device_ids[$i]/:}
+      volume_name=${volume_names[$i]}
+      if [[ "$volume_name" == *_B-HUMAN ]]; then
+        mkdir -p "/mnt/$volume_name"
+        if [ -z "$(mount | grep " /mnt/$volume_name ")" ]; then
+          mount -t drvfs "$device_id:" "/mnt/$volume_name"
+        fi
+      fi
+    done
+  fi
+fi
 
+# Find all regular log files.
+files=$(ls /mnt/*_B-HUMAN/logs/*_*_*.log /media/*_B-HUMAN/logs/*_*_*.log /media/$USER/*_B-HUMAN/logs/*_*_*.log /run/media/$USER/*_B-HUMAN/logs/*_*_*.log /Volumes/*_B-HUMAN/logs/*_*_*.log 2>/dev/null || true)
+
+# Append the name of the robot to the target directory and create it.
+# Copy the regular log files to the corresponding directories for each robot.
 if [ $copy = true -a ! -z "$files" ]; then
   echo "$mkdir1 \"$targetPath\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
   while read path; do
     if [ ! -z "$path" ]; then
       echo "Copying $path ..."
       name=$(basename $path | sed "s%_.*%%")
-      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" | grep -v "remote mkdir.*: Failure" 1>&2 || true )
       echo "$cp1 \"$path\"" "\"$targetPath/$name/\"" | $cp2 >/dev/null
     fi
   done <<<"$files"
 fi
 
-files2=$(ls /mnt/*_B-HUMAN/logs/bhumand*.log /media/*_B-HUMAN/logs/bhumand*.log /media/$USER/*_B-HUMAN/logs/bhumand*.log /run/media/$USER/*_B-HUMAN/logs/bhumand*.log /cygdrive/*/logs/bhumand*.log /Volumes/*_B-HUMAN/logs/bhumand*.log 2>/dev/null || true)
+# Find all files 'bhumand.log'.
+files2=$(ls /mnt/*_B-HUMAN/logs/bhumand*.log /media/*_B-HUMAN/logs/bhumand*.log /media/$USER/*_B-HUMAN/logs/bhumand*.log /run/media/$USER/*_B-HUMAN/logs/bhumand*.log /Volumes/*_B-HUMAN/logs/bhumand*.log 2>/dev/null || true)
 
+# Append the name of the robot to the target directory and create it.
+# Copy the these log files to the corresponding directories for each robot.
 if [ $copy = true -a ! -z "$files2" ]; then
-  echo "$mkdir1 \"$targetPath\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+  echo "$mkdir1 \"$targetPath\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" | grep -v "remote mkdir.*: Failure" 1>&2 || true )
   while read path; do
     if [ ! -z "$path" ]; then
       echo "Copying $path ..."
-      name="$(grep " Hi, I am " "$path" | head -1 | sed "s%[^ ]* Hi, I am \(.*\)\.%\1%")"
-      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" 1>&2 || true )
+      name="$(grep " Hi, I am " "$path" | head -1 | sed "s%[^ ]* Hi, I am \([^ .]*\).*%\1%")"
+      echo "$mkdir1 \"$targetPath/$name\"" | $mkdir2 2>&1 >/dev/null | ( grep -v "Couldn't create directory: Failure" | grep -v "remote mkdir.*: Failure" 1>&2 || true )
       echo "$cp1 \"$path\"" "\"$targetPath/$name/\"" | $cp2 >/dev/null
     fi
   done <<<"$files2"
 fi
 
+# If the script did not run into errors until now,
+# delete logs from USB drives if requested.
 if $delete; then
   while read path; do
     if [ -e "$path" ]; then
@@ -103,4 +134,18 @@ if $delete; then
     fi
   done <<<"$files
 $files2"
+fi
+
+# Unmount USB drives on Windows.
+if [ -e /proc/version ]; then
+  if [ ! -z "$(grep Microsoft </proc/version)" ]; then
+    for ((i=0;i<${#device_ids[@]};i++)); do
+      volume_name=${volume_names[$i]}
+      if [[ "$volume_name" == *_B-HUMAN ]]; then
+        mkdir -p "/mnt/$volume_name"
+        umount "/mnt/$volume_name"
+        rmdir "/mnt/$volume_name"
+      fi
+    done
+  fi
 fi

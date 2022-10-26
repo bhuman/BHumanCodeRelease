@@ -6,9 +6,9 @@
  * @author <A href="mailto:jesse@tzi.de">Jesse Richter-Klug</A>
  */
 
-#include "Tools/Streams/Streamable.h"
-#include "Tools/MessageQueue/MessageQueue.h"
-#include <SPLStandardMessage.h>
+#include "Network/RoboCupGameControlData.h"
+#include "Streaming/Streamable.h"
+#include "Streaming/MessageQueue.h"
 #include <cstdint>
 
 #pragma once

@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(WalkingEngineOutput,
 {,

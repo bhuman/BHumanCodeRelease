@@ -9,11 +9,11 @@
 
 #include "MotionRequest.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void MotionRequest::draw() const
 {
-  auto drawObstacleAvoidance = [this]()
+  auto drawObstacleAvoidance = [this]
   {
     if(obstacleAvoidance.avoidance != Vector2f::Zero())
       ARROW("representation:MotionRequest", 0, 0, obstacleAvoidance.avoidance.x() * 100.f, obstacleAvoidance.avoidance.y() * 100.f, 0, Drawings::solidPen, ColorRGBA(0x8e, 0, 0, 127));
@@ -75,7 +75,7 @@ void MotionRequest::verify() const
   {
     ASSERT(std::isfinite(obstacleAvoidance.avoidance.x()));
     ASSERT(std::isfinite(obstacleAvoidance.avoidance.y()));
-    for(const auto& segment : obstacleAvoidance.path)
+    for([[maybe_unused]] const auto& segment : obstacleAvoidance.path)
     {
       ASSERT(std::isfinite(segment.obstacle.center.x()));
       ASSERT(std::isfinite(segment.obstacle.center.y()));
@@ -95,9 +95,13 @@ void MotionRequest::verify() const
   if(motion == walkToBallAndKick)
   {
     ASSERT(kickType >= static_cast<KickInfo::KickType>(0) && kickType < KickInfo::numOfKickTypes);
-    ASSERT(kickPower >= 0.f && kickPower <= 1.f);
+    ASSERT(kickLength >= 0.f);
+    ASSERT(std::isfinite(kickLength));
   }
 
-  if(motion == keyframeMotion)
-    ASSERT(keyframeMotionRequest.keyframeMotion >= KeyframeMotionRequest::firstNonGetUpAction && keyframeMotionRequest.keyframeMotion < KeyframeMotionRequest::numOfKeyframeMotionIDs);
+  if(motion == dive)
+    ASSERT(diveRequest >= static_cast<Dive::Request>(0) && diveRequest < Dive::numOfRequests);
+
+  if(motion == special)
+    ASSERT(specialRequest >= static_cast<Special::Request>(0) && specialRequest < Special::numOfRequests);
 }

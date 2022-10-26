@@ -6,28 +6,26 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Modeling/Odometer.h"
-#include "Representations/Perception/FieldFeatures/FieldRelations.h"
 #include "Representations/Perception/FieldFeatures/MidCircle.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(MidCirclePerceptor,
 {,
   REQUIRES(JointAngles),
   REQUIRES(FrameInfo),
   REQUIRES(FieldLineIntersections),
-  REQUIRES(IntersectionRelations),
   REQUIRES(FieldLines),
-  USES(GameInfo),
+  USES(GameState),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
   REQUIRES(CirclePercept),
@@ -39,7 +37,6 @@ MODULE(MidCirclePerceptor,
     (int)(30) maxTimeOffset,
     (float)(150) maxLineDistanceToCircleCenter,
     (float)(-500) allowedOffsetOfMidLineEndToCircleCenter,
-    (float)(300) allowedTsXVariance,
     (float)(sqr(200)) squaredMinLineLength,
   }),
 });
@@ -52,5 +49,4 @@ private:
   CirclePercept theLastCirclePercept;
 
   bool searchCircleWithLine(MidCircle& midCircle) const;
-  bool searchWithSXAndT(MidCircle& midCircle) const;
 };

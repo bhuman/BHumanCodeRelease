@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(CameraResolutionRequest,
 {

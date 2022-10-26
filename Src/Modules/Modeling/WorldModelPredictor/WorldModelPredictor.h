@@ -9,17 +9,16 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/Odometer.h"
 #include "Representations/Modeling/RobotPose.h"
 #include "Representations/Modeling/WorldModelPrediction.h"
 #include "Representations/MotionControl/OdometryData.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(WorldModelPredictor,
 {,
@@ -28,10 +27,9 @@ MODULE(WorldModelPredictor,
   REQUIRES(BallSpecification),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(Odometer),
   REQUIRES(OdometryData),
-  REQUIRES(OwnTeamInfo),
   PROVIDES(WorldModelPrediction),
 });
 

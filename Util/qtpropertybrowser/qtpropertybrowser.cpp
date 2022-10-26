@@ -38,9 +38,9 @@
 ****************************************************************************/
 
 #include "qtpropertybrowser.h"
-#include <QtCore/QSet>
-#include <QtCore/QMap>
-#include <QtGui/QIcon>
+#include <QSet>
+#include <QMap>
+#include <QIcon>
 
 #if defined(Q_CC_MSVC)
 #    pragma warning(disable: 4786) /* MS VS 6: truncating debug info after 255 characters */
@@ -1120,7 +1120,7 @@ void QtBrowserItemPrivate::addChild(QtBrowserItem *index, QtBrowserItem *after)
 {
     if (m_children.contains(index))
         return;
-    int idx = m_children.indexOf(after) + 1; // we insert after returned idx, if it was -1 then we set idx to 0;
+    auto idx = m_children.indexOf(after) + 1; // we insert after returned idx, if it was -1 then we set idx to 0;
     m_children.insert(idx, index);
 }
 
@@ -1428,7 +1428,7 @@ void QtAbstractPropertyBrowserPrivate::removeBrowserIndexes(QtProperty *property
 void QtAbstractPropertyBrowserPrivate::removeBrowserIndex(QtBrowserItem *index)
 {
     QList<QtBrowserItem *> children = index->children();
-    for (int i = children.count(); i > 0; i--) {
+    for (auto i = children.count(); i > 0; i--) {
         removeBrowserIndex(children.at(i - 1));
     }
 

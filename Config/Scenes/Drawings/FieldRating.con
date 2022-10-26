@@ -1,0 +1,12 @@
+vfd worldState cognition:Reset
+vfd worldState module:FieldRatingProvider:potentialField
+dr module:FieldRatingProvider:potentialField
+echo set module:FieldRatingProvider:drawing:ballNear true
+echo set module:FieldRatingProvider:drawing:facing true
+echo set module:FieldRatingProvider:drawing:field true
+echo set module:FieldRatingProvider:drawing:goal true
+echo set module:FieldRatingProvider:drawing:goalAngle true
+echo set module:FieldRatingProvider:drawing:opponent true
+echo set module:FieldRatingProvider:drawing:teammate true
+echo set module:FieldRatingProvider:drawing:otherSide true
+echo dr module:FieldRatingProvider:drawing:activateAll

@@ -22,12 +22,12 @@
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
 
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/Modify.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/Modify.h"
 #include "Tools/Motion/InverseKinematic.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Tools/Motion/MotionUtilities.h"
-#include "Tools/Math/Rotation.h"
+#include "Math/Rotation.h"
 
 MODULE(FootOffsetProvider,
 {,

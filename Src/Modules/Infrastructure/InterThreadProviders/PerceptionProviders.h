@@ -13,7 +13,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 // The perception threads already draw these representations
 #undef _MODULE_DRAW

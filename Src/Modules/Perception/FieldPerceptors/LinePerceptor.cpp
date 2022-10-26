@@ -8,11 +8,11 @@
  */
 
 #include "LinePerceptor.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Deviation.h"
-#include "Tools/Math/Geometry.h"
+#include "Debugging/DebugDrawings.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "Math/BHMath.h"
+#include "Math/Deviation.h"
+#include "Math/Geometry.h"
 #include "Tools/Math/Transformation.h"
 
 MAKE_MODULE(LinePerceptor, perception);

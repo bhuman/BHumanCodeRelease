@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * @struct FieldBall
@@ -99,11 +99,12 @@ STREAMABLE(FieldBall,
   (Vector2f)(Vector2f::Zero()) teamEndPositionRelative,   /**< The ball end position (i.e. where it comes to a stop) in relative robot coordinates, as estimated by the whole team */
   (int)(0) timeSinceBallWasSeen,                          /**< Yes, you guessed it */
   (int)(0) timeSinceBallDisappeared,                      /**< Yes, you guessed it */
-  (int)(0) timeSinceTeamBallWasValid,                     /**< Yes, you guessed it */
+  (bool)(false) teammatesBallIsValid,                     /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOpponentGoal,             /**< Yes, you guessed it */
   (bool)(false) isRollingTowardsOwnGoal,                  /**< Yes, you guessed it */
   (bool)(false) isInsideOwnPenaltyArea,                   /**< Yes, you guessed it */
   (float)(0.f) distanceToOwnPenaltyArea,                  /**< Yes, you guessed it. If the ball is inside the area, member is set to 0.f. If the position is unknown, member is set to -1.f.*/
   (Vector2f)(Vector2f::Zero()) intersectionPositionWithOwnYAxis,          /**< The position (in local coordinates) at which a rolling ball will pass the robot. Vector2f::Zero(), if this will not happen. */
   (float)(std::numeric_limits<float>::max()) timeUntilIntersectsOwnYAxis, /**< The time until a rolling ball will pass the robot. float::max, if this will not happen. */
+  (bool)(false) teammatesBallNewerThanOwnBall,                            /**< is my ball older than the teams? only to use in intern funktion, do not get it from here*/
 });

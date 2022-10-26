@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/StaticInitialPose.h"
-#include "Representations/Communication/RobotInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 
 STREAMABLE(PoseVariation,
 {,
@@ -20,7 +20,7 @@ STREAMABLE(PoseVariation,
 
 MODULE(StaticInitialPoseProvider,
 {,
-  REQUIRES(RobotInfo),
+  REQUIRES(GameState),
   PROVIDES(StaticInitialPose),
   LOADS_PARAMETERS(
   {,

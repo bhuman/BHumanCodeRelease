@@ -7,10 +7,11 @@
  */
 
 #include "SelfLocator.h"
+#include "Framework/Settings.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Math/Probabilistics.h"
-#include "Tools/Math/Eigen.h"
+#include "Debugging/Annotation.h"
+#include "Math/Probabilistics.h"
+#include "Math/Eigen.h"
 #include <algorithm>
 
 using namespace std;
@@ -18,13 +19,17 @@ using namespace std;
 SelfLocator::SelfLocator() : lastTimeFarFieldBorderSeen(0), lastTimeJumpSound(0),
   timeOfLastReturnFromPenalty(0), lastTimeNotInStandWalkKick(0),
   nextSampleNumber(0), idOfLastBestSample(-1), averageWeighting(0.5f), lastAlternativePoseTimestamp(0),
-  nextManualPlacementPoseNumber(0), lastTimePenaltyMarkSeen(0), lastTimeCirclePerceptSeen(0),
-  validitiesHaveBeenUpdated(false)
+  lastTimePenaltyMarkSeen(0), lastTimeCirclePerceptSeen(0), validitiesHaveBeenUpdated(false)
 {
   // Create sample set with samples at the typical walk-in positions
   samples = new SampleSet<UKFRobotPoseHypothesis>(numberOfSamples);
   for(int i = 0; i < samples->size(); ++i)
     samples->at(i).init(getNewPoseAtWalkInPosition(), walkInPoseDeviation, nextSampleNumber++, 0.5f);
+  lastGroundTruthRobotPose = theGroundTruthRobotPose;
+
+  // Initialize statistics:
+  sumOfPerceivedLandmarks = sumOfPerceivedLines = 0;
+  sumOfUsedLines = sumOfUsedLandmarks = 0.f;
 }
 
 SelfLocator::~SelfLocator()
@@ -77,6 +82,11 @@ void SelfLocator::update(RobotPose& robotPose)
    */
   handleGameStateChanges();
 
+  DEBUG_RESPONSE("module:SelfLocator:activateSampleResettingToGroundTruth")
+    resetSamplesToGroundTruth();
+  // In any case, remember last ground truth robot pose
+  lastGroundTruthRobotPose = theGroundTruthRobotPose;
+
   /* Move all samples according to the current odometry.
    */
   STOPWATCH("SelfLocator:motionUpdate")
@@ -127,7 +137,7 @@ void SelfLocator::update(RobotPose& robotPose)
    */
   if(validitiesHaveBeenUpdated &&
      theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) > 4000 &&
-     theGameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT)
+     !theGameState.isPenaltyShootout())
     resampling();
 
   /* Fill the RobotPose representation based on the current sample set
@@ -166,16 +176,42 @@ void SelfLocator::update(RobotPose& robotPose)
     }
   }
 
-  if((theWorldModelPrediction.robotPose.translation - robotPose.translation).norm() > positionJumpNotificationDistance &&
-     theGameInfo.state == STATE_PLAYING && !theSideInformation.mirror)
+  /* Some statistics */
+  DEBUG_RESPONSE_ONCE("module:SelfLocator:output_statistics")
   {
+    const int percentLandmarks = static_cast<int>(sumOfUsedLandmarks / sumOfPerceivedLandmarks * 100.f);
+    const int percentLines = static_cast<int>(sumOfUsedLines / sumOfPerceivedLines * 100.f);
+    OUTPUT_TEXT("Landmarks perceived: " << sumOfPerceivedLandmarks << "  used: " << sumOfUsedLandmarks << " = " << percentLandmarks << "%");
+    OUTPUT_TEXT("Lines perceived: " << sumOfPerceivedLines << "  used: " << sumOfUsedLines << " = " << percentLines << "%");
+  }
+
+  // Check, if there is a huge difference between the current and the previous robot pose:
+  const float robotPoseDelta = (theWorldModelPrediction.robotPose.translation - robotPose.translation).norm();
+  if(robotPoseDelta > positionJumpNotificationDistance && theGameState.isPlaying() && !theSideInformation.mirror)
+  {
+    // Play annoying sound
     if(theFrameInfo.getTimeSince(lastTimeJumpSound) > 1337)
     {
       SystemCall::say("Jump");
       lastTimeJumpSound = theFrameInfo.time;
     }
+    // Annotate jump depending on current situation:
+    // A jump when returning from a penalty is intended, thus we do not annotate it (in most cases) for some seconds.
+    if(theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 1337 * 5)
+    {
+      // This indicates that the robot was unsure about the side at which it was placed.
+      // This is not so cool and should be annotated:
+      if(timeOfLastReturnFromPenalty < robotPose.timestampLastJump)
+      {
+        ANNOTATION("SelfLocator", "Robot was unsure after return from penalty!");
+      }
+    }
+    // Standard case:
+    else
+    {
+      ANNOTATION("SelfLocator", "Robot position has jumped over " << static_cast<int>(robotPoseDelta) << " mm!");
+    }
     robotPose.timestampLastJump = theFrameInfo.time;
-    ANNOTATION("SelfLocator", "Robot position has jumped!");
   }
 
   MODIFY("representation:RobotPose", robotPose);
@@ -303,13 +339,15 @@ void SelfLocator::sensorUpdate()
   if(currentMotionIsUnsafe())
     return;
   // In the penalty shootout, the goalkeeper should not perform any real localization
-  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber)
+  if(theGameState.isPenaltyShootout() && theGameState.isForOpponentTeam())
     return;
 
   // Perform integration of measurements:
   bool useLines = true;
   bool useLandmarks = true;
   bool usePoses = true;
+  unsigned int usedLines = 0;
+  unsigned int usedLandmarks = 0;
   MODIFY("module:SelfLocator:useLines", useLines);
   MODIFY("module:SelfLocator:useLandmarks", useLandmarks);
   MODIFY("module:SelfLocator:usePoses", usePoses);
@@ -332,6 +370,7 @@ void SelfLocator::sensorUpdate()
     if(useLandmarks && thePerceptRegistration.totalNumberOfAvailableLandmarks > 0)
     {
       thePerceptRegistration.registerLandmarks(samplePose, landmarks);
+      usedLandmarks += static_cast<unsigned int>(landmarks.size());
       for(const auto& landmark : landmarks)
         samples->at(i).updateByLandmark(landmark);
       numerator += validityFactorLandmarkMeasurement * (static_cast<float>(landmarks.size()) / thePerceptRegistration.totalNumberOfAvailableLandmarks);
@@ -340,6 +379,7 @@ void SelfLocator::sensorUpdate()
     if(useLines && thePerceptRegistration.totalNumberOfAvailableLines > 0)
     {
       thePerceptRegistration.registerLines(samplePose, lines);
+      usedLines += static_cast<unsigned int>(lines.size());
       for(const auto& line : lines)
       {
         if(line.partOfCenterCircle) // This is not a classic line and is thus treated as a different kind of measurement
@@ -367,7 +407,7 @@ void SelfLocator::sensorUpdate()
   }
 
   // Apply side information:
-  if(theGameInfo.gamePhase != GAME_PHASE_PENALTYSHOOT)
+  if(!theGameState.isPenaltyShootout())
   {
     for(int i = 0; i < numberOfSamples; ++i)
     {
@@ -383,6 +423,12 @@ void SelfLocator::sensorUpdate()
     if(!theFieldDimensions.isInsideCarpet(position))
       samples->at(i).invalidate();
   }
+
+  // Statistics
+  sumOfPerceivedLines += thePerceptRegistration.totalNumberOfAvailableLines;
+  sumOfPerceivedLandmarks += thePerceptRegistration.totalNumberOfAvailableLandmarks;
+  sumOfUsedLines += static_cast<float>(usedLines) / numberOfSamples;
+  sumOfUsedLandmarks += static_cast<float>(usedLandmarks) / numberOfSamples;
 }
 
 bool SelfLocator::currentMotionIsUnsafe()
@@ -399,9 +445,9 @@ bool SelfLocator::currentMotionIsUnsafe()
 
 bool SelfLocator::sensorResetting(const RobotPose& robotPose)
 {
-  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT) // Don't replace samples in penalty shootout
+  if(theGameState.isPenaltyShootout())                       // Don't replace samples in penalty shootout
     return false;
-  if(theSideInformation.mirror)                          // Don't replace samples in mirror cycle
+  if(theSideInformation.mirror)                              // Don't replace samples in mirror cycle
     return false;
   if(timeOfLastReturnFromPenalty != 0 && theFrameInfo.getTimeSince(timeOfLastReturnFromPenalty) < 7000)
     return false;
@@ -452,6 +498,20 @@ bool SelfLocator::sensorResetting(const RobotPose& robotPose)
     return true;
   }
   return false;
+}
+
+void SelfLocator::resetSamplesToGroundTruth() {
+  if(theGroundTruthRobotPose.timestamp != theFrameInfo.time)
+    return;
+  const float distanceDeviation = std::abs((theGroundTruthRobotPose.translation - lastGroundTruthRobotPose.translation).norm());
+  const float rotationDeviation = std::abs(Angle::normalize(theGroundTruthRobotPose.rotation - lastGroundTruthRobotPose.rotation));
+  // Numbers are guessed and hardcoded, but this is a debugging function anyway ...
+  if(distanceDeviation > 300.f || rotationDeviation > Angle::fromDegrees(30.f)) {
+    for(int i = 0; i < samples->size(); ++i)
+      samples->at(i).init(theGroundTruthRobotPose, penaltyShootoutPoseDeviation, nextSampleNumber++, 0.9f);
+    sampleSetHasBeenReset = true;
+    idOfLastBestSample = -1;
+  }
 }
 
 bool SelfLocator::alternativeRobotPoseIsCompatibleToPose(const Pose2f& robotPose)
@@ -532,19 +592,19 @@ void SelfLocator::handleSideInformation()
 
 void SelfLocator::handleGameStateChanges()
 {
-  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
+  if(theGameState.isPenaltyShootout())
   {
     // penalty shoot: if game state switched to playing reset samples to start position
-    if((theExtendedGameInfo.gameStateLastFrame != STATE_PLAYING && theGameInfo.state == STATE_PLAYING) ||
-       (theExtendedGameInfo.penaltyLastFrame != PENALTY_NONE && theRobotInfo.penalty == PENALTY_NONE))
+    if((theGameState.isPlaying() && !theExtendedGameState.wasPlaying()) ||
+       (!theGameState.isPenalized() && theExtendedGameState.wasPenalized()))
     {
       for(int i = 0; i < samples->size(); ++i)
         samples->at(i).init(getNewPoseAtPenaltyShootoutPosition(), penaltyShootoutPoseDeviation, nextSampleNumber++, 1.f);
       sampleSetHasBeenReset = true;
     }
   }
-  // If the robot has been lifted during SET, reset samples to manual positioning line positions
-  else if(theExtendedGameInfo.manuallyPlaced && theGameInfo.state == STATE_SET)
+  // If the robot has been lifted during SET in a 1v1 demo, reset samples to custom positions
+  else if(theExtendedGameState.manuallyPlaced && theGameState.isSet() && theLibDemo.isOneVsOneDemoActive)
   {
     for(int i = 0; i < samples->size(); ++i)
     {
@@ -554,7 +614,8 @@ void SelfLocator::handleGameStateChanges()
     timeOfLastReturnFromPenalty = theFrameInfo.time;
   }
   // If a penalty is over, reset samples to reenter positions
-  else if(theExtendedGameInfo.returnFromGameControllerPenalty || theExtendedGameInfo.returnFromManualPenalty || theExtendedGameInfo.startingCalibration)
+  else if(theExtendedGameState.returnFromGameControllerPenalty || theExtendedGameState.returnFromManualPenalty ||
+          (theGameState.playerState == GameState::calibration && theGameState.playerState != theExtendedGameState.playerStateLastFrame))
   {
     int startOfSecondHalfOfSampleSet = samples->size() / 2;
     // The first half of the new sample set is left of the own goal ...
@@ -567,9 +628,10 @@ void SelfLocator::handleGameStateChanges()
     timeOfLastReturnFromPenalty = theFrameInfo.time;
   }
   // Normal game is about to start: We start on the sidelines looking at our goal: (this is for checking in TeamCom)
-  else if((theExtendedGameInfo.gameStateLastFrame != STATE_INITIAL && theGameInfo.state == STATE_INITIAL) ||
+  else if((theGameState.isInitial() && !theExtendedGameState.wasInitial()) ||
           // Normal game really starts: We start on the sidelines looking at our goal: (this is for actual setup)
-          (theExtendedGameInfo.gameStateLastFrame == STATE_INITIAL && theGameInfo.state == STATE_READY))
+          (theGameState.isReady() && theExtendedGameState.wasInitial()) ||
+          (theGameState.isPlaying() && !theExtendedGameState.wasPlaying() && Global::getSettings().scenario.starts_with( "DynamicBallHandlingChallenge")) || (theGameState.isSet() && !theExtendedGameState.wasSet() && Global::getSettings().scenario.starts_with("DynamicBallHandlingChallenge"))) // HACK for Dynamic Ball Handling Challenge Defender, which skips the READY phase
   {
     for(int i = 0; i < samples->size(); ++i)
       samples->at(i).init(getNewPoseAtWalkInPosition(), walkInPoseDeviation, nextSampleNumber++, 0.5f);
@@ -652,9 +714,9 @@ void SelfLocator::domainSpecificSituationHandling()
   // Currently, this method only handles the case that the
   // keeper is turned by 180 degrees but assumes to stand correctly
   if(!goalieActivateTwistHandling ||
-     !theRobotInfo.isGoalkeeper() ||
-     theGameInfo.state != STATE_PLAYING ||
-     theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
+     !theGameState.isGoalkeeper() ||
+     !theGameState.isPlaying() ||
+     theGameState.isPenaltyShootout())
     return;
   // The robot is in its goal area and assumes to look at the opponent half
   // and guards its goal.
@@ -785,13 +847,13 @@ Pose2f SelfLocator::getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal)
   // Special stuff for some demos:
   if(demoUseCustomReturnFromPenaltyPoses)
   {
-    if(theRobotInfo.isGoalkeeper())
+    if(theGameState.isGoalkeeper())
       return demoCustomReturnFromPenaltyPoseGoalie;
     else
       return demoCustomReturnFromPenaltyPoseFieldPlayer;
   }
   // Testing purposes: Static start position
-  if(theStaticInitialPose.isActive && (theExtendedGameInfo.penaltyLastFrame == PENALTY_MANUAL || theExtendedGameInfo.penaltyLastFrame == PENALTY_SPL_PLAYER_PUSHING))
+  if(theStaticInitialPose.isActive && (theExtendedGameState.playerStateLastFrame == GameState::penalizedPlayerPushing || theExtendedGameState.playerStateLastFrame == GameState::penalizedManual))
   {
     return theStaticInitialPose.staticPoseOnField;
   }
@@ -807,55 +869,30 @@ Pose2f SelfLocator::getNewPoseReturnFromPenaltyPosition(bool leftSideOfGoal)
 
 Pose2f SelfLocator::getNewPoseAtWalkInPosition()
 {
-  const int effectivePlayerNumber = theOwnTeamInfo.getSubstitutedPlayerNumber(theRobotInfo.number);
-  if(effectivePlayerNumber >= 1 && effectivePlayerNumber <= 6)
-  {
-    const SetupPoses::SetupPose& p = theSetupPoses.getPoseOfRobot(effectivePlayerNumber);
-    Pose2f result;
-    result.translation = p.position;
-    result.rotation    = (p.turnedTowards - p.position).angle();
-    return result;
-  }
-  else
-  {
-    ASSERT(false);   // This point will be reached as soon as we have higher numbers -> The assert will remind us that work has to be done ;-)
-    return Pose2f(); // Dummy return
-  }
+  const int effectivePlayerNumber = theGameState.ownTeam.getSubstitutedPlayerNumber(theGameState.playerNumber);
+  const SetupPoses::SetupPose& p = theSetupPoses.getPoseOfRobot(effectivePlayerNumber);
+  Pose2f result;
+  result.translation = p.position;
+  result.rotation    = (p.turnedTowards - p.position).angle();
+  return result;
 }
 
 Pose2f SelfLocator::getNewPoseAtManualPlacementPosition()
 {
   // Goalie
-  if(theRobotInfo.isGoalkeeper())
+  if(theGameState.isGoalkeeper())
   {
     return Pose2f(0.f, theFieldDimensions.xPosOwnGroundLine + 52.f, 0.f);
   }
   else
   {
-    Pose2f result;
-    switch(nextManualPlacementPoseNumber)
-    {
-      case 0:
-        result = Pose2f(0.f, theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber ? -theFieldDimensions.centerCircleRadius - 127.f : theFieldDimensions.xPosOwnPenaltyArea + 127.f, 0.f);
-        break;
-      case 1:
-        result = Pose2f(0.f, theFieldDimensions.xPosOwnPenaltyMark, 0.f);
-        break;
-      case 2:
-        result = Pose2f(0.f, theFieldDimensions.xPosOwnPenaltyMark, (theFieldDimensions.yPosLeftPenaltyArea + theFieldDimensions.yPosLeftSideline) / 2.f);
-        break;
-      case 3:
-        result = Pose2f(0.f, theFieldDimensions.xPosOwnPenaltyMark, (theFieldDimensions.yPosRightPenaltyArea + theFieldDimensions.yPosRightSideline) / 2.f);
-        break;
-    }
-    nextManualPlacementPoseNumber = (nextManualPlacementPoseNumber + 1) % 4;
-    return result;
+    return Pose2f(0.f, demoCustomReturnFromPenaltyPoseFieldPlayer.translation.x(), demoCustomReturnFromPenaltyPoseFieldPlayer.translation.y());
   }
 }
 
 Pose2f SelfLocator::getNewPoseAtPenaltyShootoutPosition()
 {
-  if(theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber)
+  if(theGameState.isForOwnTeam())
   {
     //striker pose (edge of penalty area, looking towards opponent goal)
     return Pose2f(0.f, theFieldDimensions.xPosPenaltyStrikerStartPosition, 0.f);

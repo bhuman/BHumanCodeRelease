@@ -3,6 +3,7 @@
  *
  * This file implements a module that provides representations from the lower
  * camera thread for the current frame.
+ *
  * @author Thomas Röfer
  */
 
@@ -26,3 +27,7 @@ void LowerProvider::update(OtherObstaclesPerceptorData& theOtherObstaclesPercept
   theOtherObstaclesPerceptorData.imageCoordinateSystem.cameraInfo = theLowerObstaclesPerceptorData.cameraInfo;
 }
 
+void LowerProvider::update(OtherOdometryData& theOtherOdometryData)
+{
+  static_cast<OdometryData&>(theOtherOdometryData) = theLowerOdometryData;
+}

@@ -8,18 +8,17 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
+#include "Streaming/Enum.h"
 
 namespace Interception
 {
   ENUM(Method,
   {,
     stand,
-    genuflectFromSitting,
+    walk,
     genuflectStandDefender,
     genuflectStand,
     jumpLeft,
     jumpRight,
-    walk,
   });
 }

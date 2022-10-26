@@ -4,8 +4,7 @@
 st on
 
 # Only a single robot displays game state
-dr debugDrawing3d:representation:GameInfo
-dr debugDrawing3d:representation:TeamInfo
+dr debugDrawing3d:representation:GameState
 
 # In case we have more than a single robot
 robot all
@@ -48,6 +47,9 @@ mr ObstaclesImagePercept OracledPerceptsProvider Upper
 mr PenaltyMarkPercept OracledPerceptsProvider Lower
 mr PenaltyMarkPercept OracledPerceptsProvider Upper
 
+# IntersectionsProvider should not use network
+dr module:IntersectionsProvider:skipClassification
+
 # Representations not required anymore
 mr AutoExposureWeightTable off
 mr BallSpots off
@@ -61,11 +63,14 @@ mr ColorScanLineRegionsVerticalClipped off
 mr ECImage default
 mr GoalPostsPercept default
 mr JerseyClassifier off
+mr JerseyClassifierOld off
 mr JPEGImage off
 mr ObstaclesPerceptorData off
+mr OptionalECImage default
 mr OtherFieldBoundary off
 mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
+mr OtherOdometryData off
 mr PenaltyMarkRegions off
 mr RelativeFieldColors off
 mr ScanGrid off
@@ -79,4 +84,4 @@ call Includes/GameStates
 call Includes/DebugResponses
 
 dr debugDrawing3d:representation:RobotPose
-dr debugDrawing3d:representation:RobotInfo
+dr debugDrawing3d:representation:GameState:playerNumber

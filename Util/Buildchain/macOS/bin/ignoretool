@@ -1,0 +1,36 @@
+#!/bin/bash
+FILELIST=
+while true; do
+  case $1 in
+    "")
+      break
+      ;;
+    "-dependency_info")
+      shift
+      INFO="$1"
+      ;;
+    "-o")
+      shift
+      OUTPUT="$1"
+      ;;
+    "-filelist")
+      shift
+      FILELIST="$FILELIST$(cat "$1" | tr '\n' '|')"
+      ;;
+    *)
+      ;;
+  esac
+  shift
+done
+
+if [ ! -z "$INFO" ]; then
+  (
+    echo ""
+    echo "cctools-973.0.1"
+    echo -n "$FILELIST" | tr '|' '\n' | sed 's%^%|%' | tr '|' $'\x10'
+    echo -n $'\x40'
+    echo "$OUTPUT"
+  ) | tr '\n' '\0' >"$INFO"
+fi
+
+touch "$OUTPUT"

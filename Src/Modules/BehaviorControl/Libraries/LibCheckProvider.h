@@ -10,35 +10,37 @@
 
 #pragma once
 
+#include "Framework/Module.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Representations/BehaviorControl/Libraries/LibCheck.h"
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/MotionControl/MotionRequest.h"
-#include "Tools/Module/Module.h"
+#include "Representations/Infrastructure/GameState.h"
+#include "Streaming/EnumIndexedArray.h"
 
 MODULE(LibCheckProvider,
 {,
   USES(ActivationGraph),
   REQUIRES(FrameInfo),
-  REQUIRES(RobotInfo),
-  USES(TeamActivationGraph),
-  USES(TeamBehaviorStatus),
+  REQUIRES(GameState),
   PROVIDES(LibCheck),
   LOADS_PARAMETERS(
-  {,
-    (std::vector<int>) notSetCheck,       /** Assert that a request has been set at least once */
-    (std::vector<int>) multipleSetCheck,  /** Print a warning if an assert has not been set at least once */
-    (bool) assertValidWalkRequest,        /** Asserts that there are no strange walk parameters */
+  {
+    ENUM(Reaction,
+    {,
+      ignore,
+      warn,
+      abort,
+    }),
+
+    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) notSetReaction,       /** Assert that a request has been set at least once */
+    (ENUM_INDEXED_ARRAY(Reaction, LibCheck::CheckedOutput)) multipleSetReaction,  /** Print a warning if an assert has not been set at least once */
   }),
 });
 
 class LibCheckProvider : public LibCheckProviderBase
 {
 private:
-  int callCounters[LibCheck::numOfCheckedOutputs]; /**< The counters for different checks */
-  bool setArmsInThisFrame[Arms::numOfArms]; /**< This arm was set in this frame */
+  ENUM_INDEXED_ARRAY(int, LibCheck::CheckedOutput) callCounters; /**< The counters for different checks */
 
   /**
    * Updates LibCheck
@@ -49,23 +51,14 @@ private:
   /** Resets all status information */
   void reset();
 
-  /**
-   * Checks whether a behavior part set all its outputs
-   * @param activationGraph The activation graph of the behavior part
-   * @param start The first output ID to be checked
-   * @param end The first output ID not to be checked after \c start
-   */
-  void checkOutputs(const ActivationGraph& activationGraph, LibCheck::CheckedOutput start, LibCheck::CheckedOutput end) const;
-
-  /**
-   * Checks whether the motion request is valid
-   * @param activationGraph The activation graph of the individual behavior
-   * @param theMotionRequest The motion request to check for validity
-   */
-  void checkMotionRequest(const ActivationGraph& activationGraph, const MotionRequest& theMotionRequest) const;
+  /** Checks whether a behavior part set all its outputs */
+  void performCheck() const;
 
   /** Increments one counter */
   void inc(LibCheck::CheckedOutput outputToCheck);
+
+  /** Decrements one counter. Only use if an output should really be overwritten. */
+  void dec(LibCheck::CheckedOutput outputToCheck);
 
   /**
    * Serializes an activation graph to a string

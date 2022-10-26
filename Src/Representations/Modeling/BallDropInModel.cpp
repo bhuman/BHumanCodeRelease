@@ -7,7 +7,7 @@
  */
 
 #include "BallDropInModel.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void BallDropInModel::draw() const
 {
@@ -19,7 +19,7 @@ void BallDropInModel::draw() const
 
   DEBUG_DRAWING("representation:BallDropInModel:dropInPositions", "drawingOnField")
   {
-    for(Vector2f position : dropInPositions)
+    for(const Vector2f& position : dropInPositions)
     {
       CROSS("representation:BallDropInModel:dropInPositions", position.x(), position.y(),
             75, 30, Drawings::solidPen, ColorRGBA(255, 192, 203));

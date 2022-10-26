@@ -1,0 +1,96 @@
+<Simulation>
+
+  <Compound name="crowd">
+    <ComplexAppearance name="crowdLeft" ref="crowd">
+      <Set name="side" value="Left"/>
+    </ComplexAppearance>
+
+    <ComplexAppearance name="crowdRight" ref="crowd">
+      <Set name="side" value="Right"/>
+    </ComplexAppearance>
+
+    <ComplexAppearance name="crowdOwn" ref="crowd">
+      <Set name="side" value="Own"/>
+    </ComplexAppearance>
+
+    <ComplexAppearance name="crowdOpponent" ref="crowd">
+      <Set name="side" value="Opponent"/>
+    </ComplexAppearance>
+
+    <ComplexAppearance name="crowdTop" ref="crowd">
+      <Set name="side" value="Top"/>
+    </ComplexAppearance>
+
+    <ComplexAppearance ref="floor"/>
+  </Compound>
+
+  <Surface name="crowdLeft" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/left.jpg"/>
+  <Surface name="crowdRight" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/right.jpg"/>
+  <Surface name="crowdOwn" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/front.jpg"/>
+  <Surface name="crowdOpponent" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/back.jpg"/>
+  <Surface name="crowdTop" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/ceiling.jpg"/>
+  <Surface name="floor" diffuseColor="rgb(100%, 100%, 100%)" diffuseTexture="../Textures/environment/floor.jpg"/>
+
+  <ComplexAppearance name="crowd">
+    <Surface ref="crowd$side"/>
+    <Vertices ref="crowd$side"/>
+    <Quads>
+      0 2 3 1
+    </Quads>
+    <TexCoords>
+      0 0
+      1 0
+      0 1
+      1 1
+    </TexCoords>
+  </ComplexAppearance>
+
+  <ComplexAppearance name="floor">
+    <Surface ref="floor"/>
+    <Quads>
+      0 2 3 1
+    </Quads>
+      <Vertices>
+    -6.0 -5.0 -0.01
+     -6.0 5.0 -0.01
+    6.0 -5.0 -0.01
+    6.0 5.0 -0.01
+  </Vertices>
+  </ComplexAppearance>
+
+  <Vertices name="crowdLeft" unit="m">
+    -6.0 -5.0 -0.01
+    6.0 -5.0 -0.01
+    -6.0 -5.0 4.0
+    6.0 -5.0 4.0
+  </Vertices>
+
+  <Vertices name="crowdOwn" unit="m">
+    6.0 -5.0 -0.01
+    6.0 5.0 -0.01
+    6.0 -5.0 4.0
+    6.0 5.0 4.0
+  </Vertices>
+
+  <Vertices name="crowdRight" unit="m">
+    6.0 5.0 -0.01
+    -6.0 5.0 -0.01
+    6.0 5.0 4.0
+    -6.0 5.0 4.0
+  </Vertices>
+
+  <Vertices name="crowdOpponent" unit="m">
+    -6.0 5.0 -0.01
+    -6.0 -5.0 -0.01
+    -6.0 5.0 4.0
+    -6.0 -5.0 4.0
+  </Vertices>
+
+  <Vertices name="crowdTop" unit="m">
+    -6.0 -5.0 4.0
+    6.0 -5.0 4.0
+    -6.0 5.0 4.0
+    6.0 5.0 4.0
+  </Vertices>
+
+</Simulation>

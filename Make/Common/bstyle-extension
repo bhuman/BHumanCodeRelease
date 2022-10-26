@@ -1,0 +1,7 @@
+#!/bin/bash
+# Used to call bstyle from the B-Style extension for Visual Studio.
+# Assumes it runs in WSL.
+
+# Convert Windows path to WSL path.
+SOURCE_FILE=$(wslpath "$1")
+cat "$SOURCE_FILE" | ./bstyle > "$SOURCE_FILE".bstyle-tmp

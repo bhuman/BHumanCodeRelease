@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Function.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Function.h"
 
 STREAMABLE(PotentialValue,
 {
@@ -22,16 +22,15 @@ STREAMABLE(PotentialValue,
   },
 
   (float)(0.f) value,
-  (Vector2f)(Vector2f(0.f, 0.f)) direction,
+  (Vector2f)(Vector2f::Zero()) direction,
 });
 
 STREAMABLE(FieldRating,
 {
   FUNCTION(PotentialValue(const float x, const float y, const bool calculateFieldDirection)) potentialFieldOnly;
   FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) potentialWithRobotFacingDirection;
-  FUNCTION(void(PotentialValue& pv, const float x, const float y, bool& teammateArea, const bool calculateFieldDirection)) potentialOverall;
+  FUNCTION(void(PotentialValue& pv, const float x, const float y, bool& teammateArea, const bool calculateFieldDirection, const int passTarget)) potentialOverall;
   FUNCTION(void(PotentialValue& pv, const PotentialValue& ballNear)) removeBallNearFromTeammatePotential;
   FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) duelBallNearPotential;
-  FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) getPotentialOtherSide;
   FUNCTION(void(PotentialValue& pv, const float x, const float y, const bool calculateFieldDirection)) getObstaclePotential,
 });

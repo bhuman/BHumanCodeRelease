@@ -8,25 +8,25 @@
 #pragma once
 
 #include "Platform/SystemCall.h"
-#include "Representations/Communication/RobotInfo.h"
 #include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Sensing/FilteredCurrent.h"
 #include "Representations/Sensing/GroundContactState.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Debugging/Annotation.h"
+#include "Framework/Module.h"
+#include "Math/RingBufferWithSum.h"
+#include "Debugging/DebugDrawings.h"
+#include "Streaming/EnumIndexedArray.h"
 
 MODULE(FilteredCurrentProvider,
 {,
   REQUIRES(FrameInfo),
+  REQUIRES(GameState),
   REQUIRES(GroundContactState),
   REQUIRES(GyroOffset),
-  REQUIRES(RobotInfo),
   USES(JointRequest),
   REQUIRES(JointSensorData),
   PROVIDES(FilteredCurrent),
@@ -38,10 +38,10 @@ MODULE(FilteredCurrentProvider,
     (int)(300) checkWaitTime, /**< Wait time between motor malfunction checks. */
     (int)(3000) motorMalfunctionTime, /**< Sound wait time for a detected motor malfunction. */
     (int)(45000) annotationWaitTime, /**< Wait time for motor malfunction annotations. */
-    (Angle)(4_deg) minJointDifNormalJoints, /**< Min difference in jointRequest and jointAngles for the legs, to detect a motor malfunction. */
-    (Angle)(8_deg) minJointDifNormalJointsNoGroundConntact, /**< Min difference in jointRequest and jointAngles when no ground contact is detected, to detect a motor malfunction. */
-    (Angle)(10_deg) minJointDifAnkleRoll, /**< Min difference in jointRequest and jointAngles for the ankleRolls, to detect a motor malfunction. This value must be high, because the current can be 0 at high differences. */
-    (Angle)(6_deg) minJointDifArms, /**< Min difference in jointRequest and jointAngles for the arms, to detect a motor malfunction. */
+    (Angle)(4_deg) minJointDiffNormalJoints, /**< Min difference in jointRequest and jointAngles for the legs, to detect a motor malfunction. */
+    (Angle)(8_deg) minJointDiffNormalJointsNoGroundConntact, /**< Min difference in jointRequest and jointAngles when no ground contact is detected, to detect a motor malfunction. */
+    (Angle)(10_deg) minJointDiffAnkleRoll, /**< Min difference in jointRequest and jointAngles for the ankleRolls, to detect a motor malfunction. This value must be high, because the current can be 0 at high differences. */
+    (Angle)(6_deg) minJointDiffArms, /**< Min difference in jointRequest and jointAngles for the arms, to detect a motor malfunction. */
     (std::vector<Joints::Joint>)({Joints::headYaw, Joints::headPitch, Joints::lWristYaw, Joints::rWristYaw, Joints::lHand, Joints::rHand}) ignoreJoints, /**< Joints which are not checks for a motor malfunction. */
   }),
 });

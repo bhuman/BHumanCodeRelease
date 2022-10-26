@@ -2,7 +2,7 @@
 
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(JointAnglesProvider,
 {,

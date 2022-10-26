@@ -21,8 +21,8 @@
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/RelativeFieldColors.h"
 #include "Representations/Perception/ImagePreprocessing/ScanGrid.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/Module/Module.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "Framework/Module.h"
 
 #include <limits>
 
@@ -41,7 +41,7 @@ MODULE(ScanLineRegionizer,
   PROVIDES(ColorScanLineRegionsVerticalClipped),
   DEFINES_PARAMETERS(
   {,
-    (Vector2f)(Vector2f(1500.f, 0.f)) additionalSmoothingPoint, /**< On field distance in mm up to which additional smoothing is applied */
+    (Vector2f)(1500.f, 0.f) additionalSmoothingPoint, /**< On field distance in mm up to which additional smoothing is applied */
     (float)(13) edgeThreshold,                         /**< The edge threshold. */
     (unsigned short)(12) minHorizontalScanLineDistance, /**< Minimal distance between horizontal scan lines in px */
     (unsigned char)(20) luminanceSimilarityThreshold,  /**< Maximum luminance difference for two regions to become united */

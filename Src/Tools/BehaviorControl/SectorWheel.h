@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Range.h"
-#include "Tools/Streams/Enum.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Math/Range.h"
+#include "Streaming/Enum.h"
 
 #include <list>
 

@@ -25,7 +25,6 @@ struct BehaviorStatus;
 struct CalibrationRequest;
 struct HeadMotionRequest;
 struct MotionRequest;
-struct TeamTalk;
 
 class SkillRegistry : public SkillRegistryBase
 {
@@ -41,7 +40,7 @@ public:
    * @param motionRequest The motion request that can be modified by skills.
    */
   SkillRegistry(const char* skillConfig, ActivationGraph& activationGraph, ArmMotionRequest& armMotionRequest,
-                BehaviorStatus& behaviorStatus, CalibrationRequest& calibrationRequest, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest, TeamTalk& teamTalk);
+                BehaviorStatus& behaviorStatus, CalibrationRequest& calibrationRequest, HeadMotionRequest& headMotionRequest, MotionRequest& motionRequest);
 
   /** Destructor. */
   ~SkillRegistry();
@@ -53,7 +52,6 @@ public:
   CalibrationRequest& theCalibrationRequest; /** The calibration request that can be modified by skills. */
   HeadMotionRequest& theHeadMotionRequest; /**< The head motion request that can be modified by skills. */
   MotionRequest& theMotionRequest; /**< The motion request that can be modified by skills. */
-  TeamTalk& theTeamTalk; /**< The team talk that can be modified by skills. */
 };
 
 #define _SKILL_REGISTRY SkillRegistry

@@ -9,10 +9,10 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 using namespace std;
 
@@ -78,7 +78,7 @@ void FieldLines::draw() const
 void FieldLines::verify() const
 {
   // Verify validity of elements:
-  for(const Line& l : lines)
+  for([[maybe_unused]] const Line& l : lines)
   {
      ASSERT(!std::isnan(static_cast<float>(l.alpha)));
      ASSERT(!std::isnan(l.first.x()));

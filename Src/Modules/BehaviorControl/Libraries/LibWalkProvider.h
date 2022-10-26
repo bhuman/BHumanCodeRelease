@@ -6,21 +6,18 @@
  * @author Andreas Stolpmann
  */
 
-#include "Tools/Module/Module.h"
-#include "Tools/Debugging/Debugging.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Framework/Module.h"
+#include "Debugging/Debugging.h"
+#include "Debugging/DebugDrawings.h"
 #include "Representations/BehaviorControl/BehaviorStatus.h"
 #include "Representations/BehaviorControl/FieldBall.h"
-#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
+#include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/Libraries/LibPosition.h"
 #include "Representations/BehaviorControl/Libraries/LibWalk.h"
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
-#include "Representations/Communication/TeamData.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
 
@@ -31,14 +28,11 @@ MODULE(LibWalkProvider,
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
-  REQUIRES(LibTeammates),
+  REQUIRES(GameState),
+  REQUIRES(IllegalAreas),
   REQUIRES(LibPosition),
   REQUIRES(ObstacleModel),
-  REQUIRES(RobotInfo),
   REQUIRES(RobotPose),
-  REQUIRES(TeamBehaviorStatus),
-  REQUIRES(TeamData),
   PROVIDES(LibWalk),
   LOADS_PARAMETERS(
   {,
@@ -100,7 +94,7 @@ private:
   Angle lastAvoidanceAngleOffset;
   bool activeLastFrame;
 
-  void calculateObstacles(const Pose2f& target, const Vector2f& targetOnField, const bool rough, const bool disableObstacleAvoidance);
+  void calculateObstacles(const Pose2f& target, const Vector2f& targetOnField, const bool rough, const bool disableObstacleAvoidance, bool toBall);
 
   void addObstacle(const Vector2f& pos, const float radius, const float minAvoidanceRadius, const float maxAvoidanceRadius, const float avoidanceDistance);
   void addObstacle(const Vector2f& center, const Vector2f& left, const Vector2f& right, const float minAvoidanceRadius, const float maxAvoidanceRadius, const float avoidanceDistance);
@@ -109,6 +103,6 @@ private:
 
   float getSqrDistanceToLine(const Vector2f& base, const Vector2f& dir, float length, const Vector2f& point, Vector2f& orthogonalProjection);
 
-  MotionRequest::ObstacleAvoidance calcObstacleAvoidance(const Pose2f& target, bool rough, bool disableObstacleAvoidance);
+  MotionRequest::ObstacleAvoidance calcObstacleAvoidance(const Pose2f& target, bool rough, bool disableObstacleAvoidance, bool toBall);
   void update(LibWalk& libWalk) override;
 };

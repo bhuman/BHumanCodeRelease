@@ -7,8 +7,8 @@
  */
 
 #include "GoalPostsPercept.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include <cmath>
 
 void GoalPostsPercept::draw() const
@@ -54,7 +54,7 @@ void GoalPostsPercept::draw() const
 
 void GoalPostsPercept::verify() const
 {
-  for(const GoalPost& gp : goalPosts)
+  for([[maybe_unused]] const GoalPost& gp : goalPosts)
   {
     ASSERT(gp.positionInImage.x() > 0);
     ASSERT(gp.positionInImage.y() > 0);

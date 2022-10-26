@@ -3,7 +3,7 @@
 # This script can be launched from the Finder. It is an interactive
 # front end to the common downloadLogs script.
 
-if [ $TERM == dumb ]; then open $0; exit; fi
+if [ $TERM = dumb ]; then open $0; exit; fi
 clear
 cd `dirname $0`
 set -eu

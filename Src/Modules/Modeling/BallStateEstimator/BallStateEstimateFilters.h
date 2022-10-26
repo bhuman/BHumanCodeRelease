@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "Tools/Debugging/Debugging.h"
+#include "Debugging/Debugging.h"
 #include "Tools/Modeling/BallPhysics.h"
 #include "Tools/Modeling/BallLocatorTools.h"
 

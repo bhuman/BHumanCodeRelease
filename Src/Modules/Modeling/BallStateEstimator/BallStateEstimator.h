@@ -21,14 +21,11 @@
 #pragma once
 
 #include "BallStateEstimateFilters.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/RobotInfo.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Representations/Infrastructure/ExtendedGameInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/BallContactChecker.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/FilteredBallPercepts.h"
@@ -39,8 +36,8 @@
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
+#include "Framework/Module.h"
+#include "Math/RingBufferWithSum.h"
 
 MODULE(BallStateEstimator,
 {,
@@ -49,17 +46,15 @@ MODULE(BallStateEstimator,
   REQUIRES(BodyContour),
   REQUIRES(CameraInfo),
   REQUIRES(CameraMatrix),
+  REQUIRES(ExtendedGameState),
   REQUIRES(FieldDimensions),
   REQUIRES(FilteredBallPercepts),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(MotionInfo),
   REQUIRES(Odometer),
-  REQUIRES(OwnTeamInfo),
-  REQUIRES(RobotInfo),
   REQUIRES(WorldModelPrediction),
-  USES(ExtendedGameInfo),
   PROVIDES(BallModel),
   DEFINES_PARAMETERS(
   {,
@@ -68,7 +63,7 @@ MODULE(BallStateEstimator,
     (Pose2f)(0.5f, 0.5f, 0.5f) odometryDeviation,        /**< The percentage inaccuracy of the odometry */
     (float)(0.1f) initialStateWeight,                    /**< The weight of newly created states (between >0 and <1) */
     (float)(1000.f) ballDisappearedMaxCheckingDistance,  /**< Balls can only "disappear" within this distance */
-    (int)(250) ballDisappearedTimeout,                   /**< Threshold. For this time span, a ball can not disappear. This avoid immediate disappearance after a few false negatives */
+    (unsigned)(7) ballDisappearedThreshold,              /**< Threshold for the amount of "false negatives" before the ball is considered disappeared */
     (int)(700) lastBallPerceptTimeout,                   /**< Threshold. Consider a previously seen ball as valid for velocity computation for this amount of milliseconds. */
     (int)(4) minNumberOfMeasurementsForRollingBalls,     /**< A internal rolling ball hypothesis can only be selected, if it incorporates at least this number of measurements. */
     (float)(80.f) minSpeed,                              /**< Minimum ball speed. Everything below this threshold will become clipped to 0. */
@@ -100,7 +95,7 @@ private:
   RingBufferWithSum<unsigned short, 60> seenStats;          /**< Contains a 100 for time the ball was seen and 0 when it was not, used for statistics in ball model */
   bool ballWasSeenInThisFrame;                              /**< Internal flag to keep some expressions short */
   unsigned timeWhenBallFirstDisappeared;                    /**< A point of time from which on a ball seems to have disappeared (is not seen anymore although it should be) */
-  bool ballDisappeared;                                     /**< If true, the ball is currently considered as disappeared */
+  unsigned ballNotSeenButShouldBeSeenCounter;               /**< How often the ball has not been seen (although it should have been) since the last percept. */
   FilteredBallPercept lastBallPercept;                      /**< The last seen ball. Used for velocity computation */
   unsigned penaltyBallModelingStartTime;                    /**< The time when the specific penalty ball modeling started */
   std::vector<Vector2f> penaltyBallPositions;               /**< A list of all ball position measurements in the first second after the start of the modeling */

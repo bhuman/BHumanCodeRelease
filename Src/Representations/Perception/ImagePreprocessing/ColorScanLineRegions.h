@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "Streaming/AutoStreamable.h"
 
 using PixelTypes::Color;
 

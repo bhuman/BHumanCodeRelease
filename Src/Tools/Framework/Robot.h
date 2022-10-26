@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Framework/ThreadFrame.h"
-#include "Tools/Logging/Logger.h"
+#include "Framework/Logger.h"
+#include "Framework/ThreadFrame.h"
 #include <string>
 
 struct Settings;

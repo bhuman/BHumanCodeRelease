@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Tools/Function.h"
+#include "Streaming/Function.h"
 #include "Representations/MotionControl/HeadMotionRequest.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(HeadTarget,
 {,

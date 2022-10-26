@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(HeadMotionInfo,
 {,

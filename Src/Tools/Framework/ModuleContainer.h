@@ -8,10 +8,12 @@
 
 #pragma once
 
-#include "ThreadFrame.h"
-#include "Tools/Framework/Configuration.h"
-#include "Tools/Module/ModuleGraphRunner.h"
-#include "Tools/Module/ModulePacket.h"
+#include "Framework/ThreadFrame.h"
+#include "Framework/Configuration.h"
+#include "Framework/ModuleGraphRunner.h"
+#include "Framework/ModulePacket.h"
+#include "Representations/Infrastructure/GameState.h"
+#include <unordered_map>
 
 class Debug;
 class FrameExecutionUnit;
@@ -40,6 +42,8 @@ private:
 
   int numberOfMessages = 0; /**< The number of debus messages at the beginning of a frame. */
   Logger* logger; /**< Points to the only logger of this robot. */
+
+  GameState::State lastGameState = GameState::beforeHalf; /**< Game state in the last frame (for annotation). */
 
 public:
   /**
@@ -118,4 +122,28 @@ protected:
    * @return Has the message been handled?
    */
   bool handleMessage(InMessage& message) override;
+
+private:
+  /** A team number and the corresponding team name. */
+  STREAMABLE(Team,
+  {,
+    (uint8_t)(0) number,
+    (std::string) name,
+  });
+
+  /** The map from team numbers to team names. */
+  STREAMABLE(TeamList,
+  {,
+    (std::vector<Team>) teams,
+  });
+
+  bool isLoggingMaster = false; /**< Whether this thread controls the logger. */
+  std::unordered_map<uint8_t COMMA std::string> teams; /**< The map from team numbers to team names for naming the log file after the opponent. */
+
+  /**
+   * Builds a log file description matching the current game state.
+   * @param gameState The current game state.
+   * @return The description for the log file.
+   */
+  std::string getLogDescription(const GameState& gameState) const;
 };

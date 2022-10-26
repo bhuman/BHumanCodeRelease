@@ -6,8 +6,8 @@
 
 #include "AutoExposureWeightTable.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 
 void AutoExposureWeightTable::verify() const
 {

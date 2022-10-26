@@ -10,8 +10,8 @@
 
 #include "Representations/Infrastructure/JointRequest.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
-#include "Tools/Function.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE(HeadMotionGenerator,
 {

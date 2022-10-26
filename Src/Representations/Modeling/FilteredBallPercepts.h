@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
 #include <vector>
 
 /**

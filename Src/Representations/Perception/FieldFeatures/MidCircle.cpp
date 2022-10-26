@@ -7,8 +7,8 @@
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "MidCircle.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 #include "Tools/Math/Transformation.h"
 #include "Representations/Configuration/FieldDimensions.h"
 

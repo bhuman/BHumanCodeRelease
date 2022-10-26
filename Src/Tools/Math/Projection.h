@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "Math/Geometry.h"
 #include <vector>
-#include "Tools/Math/Geometry.h"
 
 struct CameraMatrix;
 struct CameraInfo;

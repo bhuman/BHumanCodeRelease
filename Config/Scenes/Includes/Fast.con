@@ -4,8 +4,7 @@
 st on
 
 # only a single robot displays game state
-dr debugDrawing3d:representation:GameInfo
-dr debugDrawing3d:representation:TeamInfo
+dr debugDrawing3d:representation:GameState
 
 # in case we have more than a single robot
 robot all
@@ -18,17 +17,17 @@ mr CameraInfo LogDataProvider Lower
 mr CameraInfo LogDataProvider Upper
 mr FrameInfo LogDataProvider Lower
 mr FrameInfo LogDataProvider Upper
-mr CameraCalibration off
 mr CameraCalibration ConfigurationDataProvider Upper
 mr CameraCalibration ConfigurationDataProvider Lower
+mr CameraCalibration ConfigurationDataProvider Cognition
+mr CameraCalibration ConfigurationDataProvider Motion
 mr BallModel OracledWorldModelProvider Cognition
 mr GroundTruthBallModel OracledWorldModelProvider Cognition
-mr TeamBallModel OracledWorldModelProvider Cognition
+mr TeammatesBallModel OracledWorldModelProvider Cognition
 mr GroundTruthRobotPose OracledWorldModelProvider Cognition
 mr GroundTruthWorldState LogDataProvider Cognition
 mr ObstacleModel OracledWorldModelProvider Cognition
 mr RobotPose OracledWorldModelProvider Cognition
-mr TeamPlayersModel OracledWorldModelProvider Cognition
 mr FrameInfo LogDataProvider Motion
 mr FsrSensorData LogDataProvider Motion
 mr InertialSensorData LogDataProvider Motion
@@ -40,10 +39,10 @@ mr ObstaclesPerceptorData off
 mr OtherFieldBoundary off
 mr OtherGoalPostsPercept off
 mr OtherObstaclesPerceptorData off
+mr OtherOdometryData off
 
 # Representations not required anymore
 mr AlternativeRobotPoseHypothesis off
-mr AudioData off
 mr AutoExposureWeightTable off
 mr BallContactChecker off
 mr BallPercept off
@@ -66,13 +65,16 @@ mr FieldLines off
 mr FilteredBallPercepts off
 mr GoalPostsPercept off
 mr ImageCoordinateSystem off
-mr IntersectionRelations off
 mr IntersectionsPercept off
+mr JerseyClassifierOld off
 mr JerseyClassifier off
 mr JPEGImage off
 mr LinesPercept off
 mr MidCircle off
+mr MidCorner off
 mr ObstaclesImagePercept off
+mr OptionalECImage off
+mr OuterCorner off
 mr PenaltyArea off
 mr PenaltyMarkPercept off
 mr PenaltyMarkRegions off

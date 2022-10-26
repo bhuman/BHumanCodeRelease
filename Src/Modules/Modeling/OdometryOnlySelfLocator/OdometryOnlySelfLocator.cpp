@@ -8,7 +8,7 @@
  */
 
 #include "OdometryOnlySelfLocator.h"
-#include "Tools/Math/Covariance.h"
+#include "Math/Covariance.h"
 
 void OdometryOnlySelfLocator::update(RobotPose& robotPose)
 {

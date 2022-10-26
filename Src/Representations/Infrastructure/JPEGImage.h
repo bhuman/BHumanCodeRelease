@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraImage.h"
-#include "Tools/Streams/Streamable.h"
+#include "Streaming/Streamable.h"
 
 /**
  * Definition of a struct for JPEG-compressed images.

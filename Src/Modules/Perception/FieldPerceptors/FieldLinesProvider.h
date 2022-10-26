@@ -5,21 +5,21 @@
 
 #pragma once
 
-#include "Representations/Communication/GameInfo.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Representations/Modeling/Odometer.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/RobotPose.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/FieldPercepts/CirclePercept.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/IntersectionsPercept.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Module/Module.h"
+#include "Math/Eigen.h"
+#include "Framework/Module.h"
 
 MODULE(FieldLinesProvider,
 {,
@@ -31,9 +31,9 @@ MODULE(FieldLinesProvider,
   REQUIRES(CameraMatrix),
   REQUIRES(CameraInfo),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
+  REQUIRES(GameState),
 
-  REQUIRES(Odometer),
+  REQUIRES(OdometryData),
 
   REQUIRES(CirclePercept),
   REQUIRES(IntersectionsPercept),
@@ -65,7 +65,8 @@ private:
   std::vector<SpotLineStatus> spotLineUsage;
   static const int lostIndex = 5555;
   std::vector<unsigned> lineIndexTable;
-  bool lastCircleWasSeen = false;
+  CirclePercept lastCirclePercept;
+  OdometryData lastOdometryData;
   unsigned int lastFrameTime = 1;
   std::vector<FieldLines::Line> internalListOfLines;  /**< Unsorted list of computed field lines. */
 

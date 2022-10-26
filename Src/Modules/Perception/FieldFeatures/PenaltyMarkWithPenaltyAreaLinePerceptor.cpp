@@ -17,7 +17,7 @@
 */
 
 #include "PenaltyMarkWithPenaltyAreaLinePerceptor.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Geometry.h"
 
 
 PenaltyMarkWithPenaltyAreaLinePerceptor::PenaltyMarkWithPenaltyAreaLinePerceptor()
@@ -28,7 +28,6 @@ PenaltyMarkWithPenaltyAreaLinePerceptor::PenaltyMarkWithPenaltyAreaLinePerceptor
 
 void PenaltyMarkWithPenaltyAreaLinePerceptor::update(PenaltyMarkWithPenaltyAreaLine& penaltyMarkWithPenaltyAreaLine)
 {
-  penaltyMarkWithPenaltyAreaLine.clear();
   penaltyMarkWithPenaltyAreaLine.isValid = false;
   // Check for backwards "jump" in log file:
   if(theFrameInfo.time < timeWhenPenaltyMarkLastSeen)
@@ -62,7 +61,7 @@ bool PenaltyMarkWithPenaltyAreaLinePerceptor::findMatchingLine()
 {
   const float minimumLineLengthSqr = minimumLineLength * minimumLineLength;
   // Iterate over all observed lines and try to find the penalty area border.
-  // The loop stops when one candidate is found as the matching should be unambigous.
+  // The loop stops when one candidate is found as the matching should be unambiguous.
   for(unsigned int i = 0; i < theFieldLines.lines.size(); ++i)
   {
     const auto& line = theFieldLines.lines[i];

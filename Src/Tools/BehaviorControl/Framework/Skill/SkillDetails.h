@@ -22,7 +22,7 @@
  *   IMPLEMENTS(WalkToPoint),   // The skill implements WalkToPoint.
  *   REQUIRES(ArmContactModel), // The skill can access the ArmContactModel and it is made sure ...
  *   REQUIRES(FootBumperState), // ... that this representation is updated before the BehaviorControl module is run.
- *   REQUIRES(GameInfo),        // ...
+ *   REQUIRES(GameState),       // ...
  *   CALLS(PathToTarget),       // The skill can call the PathToTarget skill.
  *   CALLS(WalkToTarget),       // ...
  *   DEFINES_PARAMETERS(
@@ -53,10 +53,10 @@
 #include "SkillRegistryBase.h"
 #include "Representations/BehaviorControl/ActivationGraph.h"
 #include "Tools/BehaviorControl/Framework/BehaviorContext.h"
-#include "Tools/Module/Module.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/Streamable.h"
-#include "Tools/Streams/OutStreams.h"
+#include "Framework/Module.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Streamable.h"
+#include "Streaming/OutStreams.h"
 #include <type_traits>
 
 class SkillImplementationInterface;
@@ -106,7 +106,7 @@ private:
 #define _SKILL_INTERFACE_0(registry, name) _SKILL_INTERFACE_IV(1, registry, name, (f,), (f,), (f,), (f,))
 #define _SKILL_INTERFACE_1(registry, name, ...) _SKILL_INTERFACE_III(_STREAM_TUPLE_SIZE(__VA_ARGS__, ignore), registry, name, __VA_ARGS__, ignore)
 
-#define _SKILL_INTERFACE_DECL(seq) std::remove_const<std::remove_reference<decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type)>::type>::type _STREAM_VAR(seq);
+#define _SKILL_INTERFACE_DECL(seq) std::remove_const<std::remove_reference<decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type)>::type>::type _STREAM_VAR(seq) _STREAM_INIT(seq);
 #define _SKILL_INTERFACE_DECL2(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq);
 #define _SKILL_INTERFACE_PARAM(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq),
 #define _SKILL_INTERFACE_PARAM2(seq) decltype(Streaming::TypeWrapper<_STREAM_DECL_I seq))>::type) _STREAM_VAR(seq) _STREAM_INIT(seq)
@@ -131,7 +131,8 @@ private:
     } _s(_STREAM_VAR(seq)); \
     OutMapMemory stream(true, 1024); \
     stream << _s; \
-    _parameters.emplace_back(stream.data()); \
+    const std::string text = stream.data(); \
+    _parameters.emplace_back(text.substr(0, text.size() - 2)); \
   }
 
 /** If a default value exists, only stream parameters that are different from it. */
@@ -140,9 +141,12 @@ private:
 
 #define _SKILL_INTERFACE_III(n, registry, name, ...) _SKILL_INTERFACE_IV(n, registry, name, (_SKILL_INTERFACE_DECL, __VA_ARGS__), (_SKILL_INTERFACE_PARAM, __VA_ARGS__), (_SKILL_INTERFACE_ASSIGN, __VA_ARGS__), (_SKILL_INTERFACE_STREAM, __VA_ARGS__))
 #define _SKILL_INTERFACE_IV(n, registry, name, params1, params2, params3, params4) \
-  struct name \
+  struct _##name##Params \
   { \
     _STREAM_ATTR_##n params1 \
+  }; \
+  struct name : public _##name##Params \
+  { \
     mutable BehaviorContext _context; \
     void setState(const char* name) const \
     { \
@@ -175,6 +179,24 @@ private:
     { \
       static_cast<void>(_unused); \
       _STREAM_ATTR_##n params3 \
+      callSkill(); \
+    } \
+    void operator ()(const _##name##Params& params) \
+    { \
+      *static_cast<_##name##Params*>(this) = params; \
+      callSkill(); \
+    } \
+    bool isDone() const \
+    { \
+      return theImplementation->isDone(*this); \
+    } \
+    bool isAborted() const \
+    { \
+      return theImplementation->isAborted(*this); \
+    } \
+  private: \
+    void callSkill() \
+    { \
       if(_context.lastFrame != registry::theInstance->lastFrameTime && _context.lastFrame != registry::theInstance->currentFrameTime) \
       { \
         _context.behaviorStart = registry::theInstance->currentFrameTime; \
@@ -195,15 +217,6 @@ private:
       --theActivationGraph.currentDepth; \
       _context.lastFrame = registry::theInstance->currentFrameTime; \
     } \
-    bool isDone() const \
-    { \
-      return theImplementation->isDone(*this); \
-    } \
-    bool isAborted() const \
-    { \
-      return theImplementation->isAborted(*this); \
-    } \
-  private: \
     void preProcess() override \
     { \
       theImplementation->preProcess(*this); \
@@ -251,7 +264,7 @@ class SkillImplementationCreatorBase
 public:
   struct Info
   {
-    std::vector<const char*> requires; /**< The names of representations required by this skill implementation. */
+    std::vector<const char*> requirements; /**< The names of representations required by this skill implementation. */
     std::vector<SkillInterfaceCreator> implements; /**< Info about skills implemented by this skill implementation. */
     std::vector<const char*> calls; /**< The names of skills called by this skill implementation. */
   };
@@ -372,7 +385,7 @@ private:
 
 #define _SKILL_IMPLEMENTATION_INFO(x) _MODULE_JOIN(_SKILL_IMPLEMENTATION_INFO_, x)
 #define _SKILL_IMPLEMENTATION_INFO_IMPLEMENTS(type) _info.implements.emplace_back(#type, _SKILLS_NAMESPACE::type##Skill::createNew);
-#define _SKILL_IMPLEMENTATION_INFO_REQUIRES(type) _info.requires.push_back(#type);
+#define _SKILL_IMPLEMENTATION_INFO_REQUIRES(type) _info.requirements.push_back(#type);
 #define _SKILL_IMPLEMENTATION_INFO_USES(type)
 #define _SKILL_IMPLEMENTATION_INFO_MODIFIES(type)
 #define _SKILL_IMPLEMENTATION_INFO_CALLS(type) _info.calls.push_back(#type);

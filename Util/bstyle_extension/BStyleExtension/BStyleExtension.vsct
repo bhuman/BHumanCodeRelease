@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <Extern href="stdidcmd.h" />
+    <Extern href="vsshlids.h" />
+    <!--<Extern href="msobtnid.h" xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" />-->
+
+    <Commands package="GuidPkg">
+        <Groups>
+            <Groups>
+                <Group guid="GuidCmdSet" id="TopLevelMenuGroup" priority="0x0090">
+                    <Parent guid="guidStdEditor" id="IDM_VS_EDITOR_ADVANCED_MENU" />
+                </Group>
+            </Groups>
+        </Groups>
+
+        <Buttons>
+            <Button guid="GuidCmdSet" id="FormatDocumentCommand" priority="0x0100" type="Button">
+                <Parent guid="GuidCmdSet" id="TopLevelMenuGroup" />
+                <CommandFlag>DefaultInvisible</CommandFlag>
+                <CommandFlag>DefaultDisabled</CommandFlag>
+                <CommandFlag>DynamicVisibility</CommandFlag>
+                <Strings>
+                    <CommandName>Format Document (BStyle)</CommandName>
+                    <ButtonText>Format Document (BStyle)</ButtonText>
+                </Strings>
+            </Button>
+            <Button guid="GuidCmdSet" id="FormatSelectionCommand" priority="0x0110" type="Button">
+                <Parent guid="GuidCmdSet" id="TopLevelMenuGroup" />
+                <CommandFlag>DefaultInvisible</CommandFlag>
+                <CommandFlag>DefaultDisabled</CommandFlag>
+                <CommandFlag>DynamicVisibility</CommandFlag>
+                <Strings>
+                    <CommandName>Format Selection (BStyle)</CommandName>
+                    <ButtonText>Format Selection (BStyle)</ButtonText>
+                </Strings>
+            </Button>
+        </Buttons>
+    </Commands>
+  
+    <KeyBindings>
+        <KeyBinding guid="GuidCmdSet" id="FormatDocumentCommand" editor="guidVSStd97" mod1="Control Shift Alt" key1="B" />
+        <KeyBinding guid="GuidCmdSet" id="FormatSelectionCommand" editor="guidVSStd97" mod1="Control Shift Alt" key1="S" />
+    </KeyBindings>
+
+    <Symbols>
+        <GuidSymbol name="GuidPkg" value="{6b52ccde-8ae4-4233-bccd-6b9b0ba06a57}" />
+        <GuidSymbol name="GuidCmdSet" value="{b507eff0-0667-4d9c-865f-37557da05595}">
+            <IDSymbol name="TopLevelMenuGroup" value="0x1020" />
+            <IDSymbol name="FormatDocumentCommand" value="0x0100" />
+            <IDSymbol name="FormatSelectionCommand" value="0x110" />
+        </GuidSymbol>
+    </Symbols>
+
+</CommandTable>

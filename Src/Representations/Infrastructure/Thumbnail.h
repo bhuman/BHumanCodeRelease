@@ -13,11 +13,11 @@
 
 #include "CameraImage.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
-#include "Tools/ImageProcessing/Image.h"
-#include "Tools/Streams/Streamable.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/Debugging/DebugImages.h"
+#include "ImageProcessing/Image.h"
+#include "Streaming/Streamable.h"
+#include "Streaming/Enum.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "Debugging/DebugImages.h"
 
 struct Thumbnail : public Streamable
 {

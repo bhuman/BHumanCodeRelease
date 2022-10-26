@@ -1,32 +1,28 @@
 /**
  * @file TeamData.cpp
+ *
+ * This representation should soon be obsolete (04.2022).
  */
 
 #include "TeamData.h"
 #include "Representations/Infrastructure/FrameInfo.h"
-#include "Tools/Module/Blackboard.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Framework/Blackboard.h"
+#include "Debugging/DebugDrawings3D.h"
 #include <algorithm>
-
-#define HANDLE_PARTICLE(particle) case id##particle: return the##particle.handleArbitraryMessage(message, [this](unsigned u){return this->toLocalTimestamp(u);})
-bool Teammate::handleMessage(InMessage& message)
-{
-  switch(message.getMessageID())
-  {
-      HANDLE_PARTICLE(FieldCoverage);
-      HANDLE_PARTICLE(RobotHealth);
-    default:
-      return false;
-  }
-}
 
 Vector2f Teammate::getEstimatedPosition(unsigned time) const
 {
-  const float timeSinceLastPacket = std::max(0, static_cast<int>(time) - static_cast<int>(timeWhenLastPacketReceived)) / 1000.f;
-  const float distanceToTarget = theBehaviorStatus.walkingTo.norm(); // Do not overshoot the target.
+  return getEstimatedPosition(theRobotPose, theBehaviorStatus.walkingTo, theBehaviorStatus.speed, -theFrameInfo.getTimeSince(time));
+};
+
+Vector2f Teammate::getEstimatedPosition(const Pose2f& pose, const Vector2f& target, float speed,
+                                        const int timeSinceUpdate)
+{
+  const float timeSinceLastPacket = std::max(0, timeSinceUpdate) / 1000.f;
+  const float distanceToTarget = target.norm(); // Do not overshoot the target.
   const float correctionFactor = 0.5f;
-  const Vector2f walkDirection = ((theRobotPose * theBehaviorStatus.walkingTo) - theRobotPose.translation).normalized();
-  return theRobotPose.translation + std::min(distanceToTarget, timeSinceLastPacket * correctionFactor * theBehaviorStatus.speed) * walkDirection;
+  const Vector2f walkDirection = ((pose * target) - pose.translation).normalized();
+  return pose.translation + std::min(distanceToTarget, timeSinceLastPacket * correctionFactor * speed) * walkDirection;
 };
 
 void TeamData::draw() const
@@ -36,12 +32,10 @@ void TeamData::draw() const
   for(auto const& teammate : teammates)
   {
     ColorRGBA posCol;
-    if(teammate.status == Teammate::PLAYING)
+    if(teammate.isUpright)
       posCol = ColorRGBA::green;
-    else if(teammate.status == Teammate::FALLEN)
-      posCol = ColorRGBA::yellow;
     else
-      posCol = ColorRGBA::red;
+      posCol = ColorRGBA::yellow;
 
     const Vector2f& rPos = teammate.theRobotPose.translation;
     const float radius = std::max(50.f, teammate.theRobotPose.getTranslationalStandardDeviation());
@@ -67,18 +61,7 @@ void TeamData::draw() const
 
     // Role
     DRAW_TEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 150, 100,
-             ColorRGBA::black, TypeRegistry::getEnumName(teammate.theTeamBehaviorStatus.role.role));
-
-    // Time to reach ball
-    int ttrb = teammate.theTeamBehaviorStatus.role.playsTheBall()
-               ? static_cast<int>(teammate.theTeamBehaviorStatus.timeToReachBall.timeWhenReachBallStriker)
-               : static_cast<int>(teammate.theTeamBehaviorStatus.timeToReachBall.timeWhenReachBall);
-    if(Blackboard::getInstance().exists("FrameInfo"))
-    {
-      const FrameInfo& theFrameInfo = static_cast<const FrameInfo&>(Blackboard::getInstance()["FrameInfo"]);
-      ttrb = theFrameInfo.getTimeSince(ttrb);
-    }
-    DRAW_TEXT("representation:TeamData", rPos.x() + 100, rPos.y() - 300, 100, ColorRGBA::black, "TTRB: " << ttrb);
+             ColorRGBA::black, TypeRegistry::getEnumName(teammate.theStrategyStatus.position));
 
     // Line from Robot to WalkTarget
     const Vector2f target = teammate.theRobotPose * teammate.theBehaviorStatus.walkingTo;

@@ -6,9 +6,9 @@
  */
 
 #include "CameraMatrixProvider.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
-#include "Tools/Math/RotationMatrix.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
+#include "Math/RotationMatrix.h"
 
 MAKE_MODULE(CameraMatrixProvider, perception);
 
@@ -19,7 +19,7 @@ void CameraMatrixProvider::update(CameraMatrix& cameraMatrix)
                          (theFallDownState.state == FallDownState::upright ||
                           theFallDownState.state == FallDownState::squatting) &&
                          theFrameInfo.getTimeSince(theJointSensorData.timestamp) < 500 &&
-                         (theRobotInfo.penalty == PENALTY_NONE || theRobotInfo.penalty == PENALTY_SPL_ILLEGAL_MOTION_IN_SET);
+                         (!theGameState.isPenalized() || theGameState.playerState == GameState::penalizedIllegalMotionInSet);
 
   DEBUG_DRAWING("module:CameraMatrixProvider:calibrationHelper", "drawingOnImage") drawFieldLines(cameraMatrix);
   DEBUG_DRAWING3D("module:CameraMatrixProvider:cameraMatrix", "field")

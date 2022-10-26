@@ -6,15 +6,15 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Infrastructure/CameraImage.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Streams/EnumIndexedArray.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/ImageProcessing/Image.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "ImageProcessing/Image.h"
 
 namespace CoordinateSystemProviderModule
 {

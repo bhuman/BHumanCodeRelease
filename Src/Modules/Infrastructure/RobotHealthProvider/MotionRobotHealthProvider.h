@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Tools/RingBufferWithSum.h"
+#include "Framework/Module.h"
+#include "Math/RingBufferWithSum.h"
 #include "Representations/Infrastructure/RobotHealth.h"
 
 MODULE(MotionRobotHealthProvider,

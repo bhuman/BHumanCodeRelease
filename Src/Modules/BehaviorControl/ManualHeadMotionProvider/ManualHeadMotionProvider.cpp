@@ -1,7 +1,7 @@
 #include "ManualHeadMotionProvider.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Debugging/Debugging.h"
-#include "Tools/Math/Eigen.h"
+#include "Debugging/Debugging.h"
+#include "Math/Eigen.h"
 
 MAKE_MODULE(ManualHeadMotionProvider, behaviorControl);
 

@@ -4,7 +4,7 @@ call Includes/replayDialog Includes/replay
 
 # simulation time on, otherwise log data may be skipped
 st on
-dt 160
+dt 203
 
 # all views are defined in another script
 call Includes/ImageViews
@@ -16,8 +16,8 @@ vid lower representation:FieldBoundary:image
 vid upper representation:PenaltyMarkPercept:image
 vid lower representation:PenaltyMarkPercept:image
 
-vfd worldState representation:GameInfo
-vfd worldState representation:OwnTeamInfo
+vfd worldState representation:GameState
+vfd worldState representation:GameState:ownTeam
 
 # navigate in log file using shortcuts
 jc press 1 log pause # Shift+Crtl+A
@@ -31,14 +31,9 @@ jc press 22 log forward image # Shift+Crtl+V
 jc press 2 log fastBackward # Shift+Ctrl+B
 jc press 14 log fastForward # Shift+Ctrl+N
 
-set representation:GroundContactState contact = true;
-
 # deactivate game info provided in Cognition
-mr RobotInfo default
-mr OwnTeamInfo default
-mr OpponentTeamInfo default
-mr RawGameInfo default
-mr GameInfo default
+mr GameControllerData default
+mr GameState default
 
 # Support replaying legacy logs: It is assumed that the
 # Cognition log was selected and a Motion log is merged
@@ -49,7 +44,6 @@ log start
 
 # enable behavior graph
 dr representation:ActivationGraph
-dr representation:TeamActivationGraph
 
 # send joint angles to control puppet
 dr representation:JointSensorData

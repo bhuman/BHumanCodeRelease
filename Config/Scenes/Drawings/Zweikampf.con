@@ -1,0 +1,7 @@
+vfd worldState cognition:Reset
+echo vfd worldState cognition:Reset
+echo vfd worldState skill:Zweikampf:wheel
+echo vfd worldState skill:Zweikampf:kicks
+echo vfd worldState skill:Zweikampf:sideSteal
+echo vfd worldState skill:Zweikampf:sidewardRange
+echo vfd worldState skill:Zweikampf:wheelSteal

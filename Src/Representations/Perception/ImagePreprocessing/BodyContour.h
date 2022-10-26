@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * @struct BodyContour

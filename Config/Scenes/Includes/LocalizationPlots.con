@@ -1,3 +1,4 @@
+poll
 vp SelfLocatorSampleHandling 1000 0 12
 vpd SelfLocatorSampleHandling module:SelfLocator:missingSamples red
 vpd SelfLocatorSampleHandling module:SelfLocator:sampleReplacements blue

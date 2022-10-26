@@ -1,11 +1,8 @@
 RobotStatus
 {
-  isPenalized: Boolean
   isUpright: Boolean
-  hasGroundContact: Boolean
   timeWhenLastUpright: Timestamp(bits=8, shift=6, reference=relativePast)
-  timeOfLastGroundContact: Timestamp(bits=8, shift=6, reference=relativePast)
-  sequenceNumbers: Integer(min=-1, max=14)[6]
+  sequenceNumbers: Integer(min=-1, max=14)[7]
 }
 
 RobotPose
@@ -49,30 +46,16 @@ BehaviorStatus
   shootingTo: Vector<Float(min=-32768, max=32767, bits=16)>(n=2)
 }
 
-TimeToReachBall
+StrategyStatus
 {
-  timeWhenReachBall: Timestamp(bits=16, shift=3, reference=relativeFuture)
-  timeWhenReachBallStriker: Timestamp(bits=16, shift=3, reference=relativeFuture)
-}
-
-TeammateRoles
-{
-  roles: Integer(min=-1, max=14)[:7]
-  captain: Integer(min=-1, max=14)
-  timestamp: Timestamp(bits=13, reference=relativePast)
-}
-
-PlayerRole
-{
-  role: Enum(type=PlayerRole::RoleType)
-}
-
-TeamBehaviorStatus
-{
-  teamActivity: Enum(type=TeamBehaviorStatus::TeamActivity)
-  timeToReachBall: TimeToReachBall
-  teammateRoles: TeammateRoles
-  role: PlayerRole
+  proposedTactic: Enum(type=Tactic::Type, uncompressed)
+  acceptedTactic: Enum(type=Tactic::Type, uncompressed)
+  proposedMirror: Boolean
+  acceptedMirror: Boolean
+  proposedSetPlay: Enum(type=SetPlay::Type, uncompressed)
+  acceptedSetPlay: Enum(type=SetPlay::Type, uncompressed)
+  position: Enum(type=Tactic::Position::Type)
+  role: Enum(type=Role::Type)
 }
 
 Obstacle
@@ -90,12 +73,6 @@ ObstacleModel
   obstacles: Obstacle[:7]
 }
 
-TeamTalk
-{
-  say: Integer(min=0, max=255)
-  timestamp: Timestamp(bits=8, shift=6, reference=relativeFuture, noclip)
-}
-
 FrameInfo
 {
   time: Timestamp(bits=8, reference=relativePast)
@@ -109,7 +86,6 @@ TeamMessage
   theBallModel: BallModel
   theWhistle: Whistle
   theBehaviorStatus: BehaviorStatus
-  theTeamBehaviorStatus: TeamBehaviorStatus
+  theStrategyStatus: StrategyStatus
   theObstacleModel: ObstacleModel
-  theTeamTalk: TeamTalk
 }

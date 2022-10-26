@@ -10,7 +10,7 @@
  */
 
 #include "ScanLineRegionizer.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 
 #include <functional>

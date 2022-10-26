@@ -5,12 +5,11 @@
 */
 
 #include "PenaltyAreaPerceptor.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Geometry.h"
 #include <vector>
 
 void PenaltyAreaPerceptor::update(PenaltyArea& penaltyArea)
 {
-  penaltyArea.clear();
   penaltyArea.isValid = searchWithIntersections(penaltyArea);
 }
 
@@ -35,10 +34,6 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
           penaltyArea.rotation = ((*i)->dir2 + (*i)->dir2).angle() + 90_deg;
           penaltyArea.rotation.normalize();
           penaltyArea.translation = ((*i)->pos + (*j)->pos) / 2.f - Vector2f(halfPenaltyDepth, 0.f).rotate(penaltyArea.rotation);
-
-          theIntersectionRelations.propagateMarkedIntersection(
-            MarkedIntersection((*i)->ownIndex, ((penaltyArea.inverse() * (*i)->pos).y() > 0.f) ? MarkedIntersection::STR : MarkedIntersection::STL),
-            theFieldLineIntersections, theFieldLines, penaltyArea);
           return true;
         }
       }
@@ -54,10 +49,6 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
             penaltyArea.rotation = (lIntersection.dir2 + tIntersection.dir2.rotated(pi)).angle() - 90_deg;
             penaltyArea.rotation.normalize();
             penaltyArea.translation = (lIntersection.pos + tIntersection.pos) / 2 + Vector2f(0.f, theFieldDimensions.yPosLeftPenaltyArea).rotate(penaltyArea.rotation);
-
-            theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(tIntersection.ownIndex,
-                ((penaltyArea.inverse() * tIntersection.pos).y() > 0.f) ? MarkedIntersection::STL : MarkedIntersection::STR),
-                theFieldLineIntersections, theFieldLines, penaltyArea);
             return true;
           }
           else if(std::abs(Angle(tIntersection.dir1.angle() - lIntersection.dir2.angle() + pi).normalize()) < thresholdAngleDisForIntersections)
@@ -65,10 +56,6 @@ bool PenaltyAreaPerceptor::searchWithIntersections(PenaltyArea& penaltyArea) con
             penaltyArea.rotation = (lIntersection.dir1 + tIntersection.dir2).angle() + 90_deg;
             penaltyArea.rotation.normalize();
             penaltyArea.translation = (lIntersection.pos + tIntersection.pos) / 2 - Vector2f(0.f, theFieldDimensions.yPosLeftPenaltyArea).rotate(penaltyArea.rotation);
-
-            theIntersectionRelations.propagateMarkedIntersection(MarkedIntersection(tIntersection.ownIndex,
-                ((penaltyArea.inverse() * tIntersection.pos).y() > 0.f) ? MarkedIntersection::STL : MarkedIntersection::STR),
-                theFieldLineIntersections, theFieldLines, penaltyArea);
             return true;
           }
         }

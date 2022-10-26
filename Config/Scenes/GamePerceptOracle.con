@@ -1,2 +1,4 @@
 call Includes/PerceptOracle
 call Includes/5vs5
+
+dr representation:SetupPoses:place

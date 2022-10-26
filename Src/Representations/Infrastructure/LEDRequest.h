@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/EnumIndexedArray.h"
 
 /**
  * This describes a LEDRequest

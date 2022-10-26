@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"

@@ -9,9 +9,9 @@
 #pragma once
 
 #include "Representations/MotionControl/KickRequest.h"
-#include "Tools/Function.h"
+#include "Streaming/Function.h"
 #include "Tools/Motion/MotionPhase.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 #include <memory>
 
 STREAMABLE(KickGenerator,

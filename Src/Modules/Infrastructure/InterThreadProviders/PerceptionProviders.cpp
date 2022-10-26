@@ -19,6 +19,7 @@
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
+#include "Representations/Perception/ImagePreprocessing/ECImage.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 
@@ -78,5 +79,6 @@ ALIAS(GoalPostsPercept);
 ALIAS(IntersectionsPercept);
 ALIAS(LinesPercept);
 ALIAS(ObstaclesFieldPercept);
+ALIAS(OptionalECImage);
 ALIAS(PenaltyMarkPercept);
 ALIAS(RobotCameraMatrix);

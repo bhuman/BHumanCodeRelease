@@ -19,21 +19,18 @@ void StaticInitialPoseProvider::update(StaticInitialPose& staticInitialPose)
   if(isActive && static_cast<size_t>(loadVariation) < poseVariations.size())
   {
     const PoseVariation& poses = poseVariations[loadVariation];
-    staticInitialPose.staticPoseOnField = poses.poseVaria[theRobotInfo.number - 1];
+    staticInitialPose.staticPoseOnField = poses.poseVaria[theGameState.playerNumber - Settings::lowestValidPlayerNumber];
     staticInitialPose.jump = false;
     DEBUG_RESPONSE_ONCE("module:StaticInitialPoseProvider")
     {
-      setRobotsInSimulator(poses.poseVaria[theRobotInfo.number - 1]);
+      setRobotsInSimulator(poses.poseVaria[theGameState.playerNumber - Settings::lowestValidPlayerNumber]);
       staticInitialPose.jump = true;
       ++loadVariation;
     }
   }
 }
 
-void StaticInitialPoseProvider::setRobotsInSimulator(const Pose2f& staticInitialPose)
+void StaticInitialPoseProvider::setRobotsInSimulator([[maybe_unused]] const Pose2f& staticInitialPose)
 {
-  const Angle rotation = staticInitialPose.rotation >= 0
-                    ? staticInitialPose.rotation - pi
-                    : staticInitialPose.rotation + pi;
-  OUTPUT(idConsole, text, "mv " << -staticInitialPose.translation.x() << " " << -staticInitialPose.translation.y() << " 300 0 0 " << rotation);
+  OUTPUT(idConsole, text, "mv " << staticInitialPose.translation.x() << " " << staticInitialPose.translation.y() << " 300 0 0 " << staticInitialPose.rotation);
 }

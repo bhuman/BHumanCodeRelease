@@ -7,9 +7,9 @@
  */
 
 #include "Transformation.h"
+#include "Math/RotationMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/RotationMatrix.h"
 
 static constexpr float MAX_DIST_ON_FIELD = 142127.f; // Human soccer field diagonal
 

@@ -8,8 +8,8 @@
 
 #pragma once
 
+#include "Framework/Module.h"
 #include "Representations/<#path#>/___VARIABLE_representation:identifier___.h"
-#include "Tools/Module/Module.h"
 
 MODULE(___FILEBASENAME___,
 {,

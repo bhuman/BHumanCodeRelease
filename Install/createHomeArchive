@@ -8,19 +8,28 @@ includeDir="${baseDir}/Include"
 
 source "${includeDir}/bhumanBase"
 
+settingsFile="${bhDir}/Config/settings.cfg"
+teamID=$(grep <"${settingsFile}" "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%")
+
 homeDir="/tmp/b-human-home"
 buildConfiguration="Develop"
 requireUSB=false
 playbackVolume=20
 wirelessProfile="NONE"
+defaultHostname="Default"
+defaultWiredIP="192.168.${teamID}.40"
+defaultWirelessIP="10.0.${teamID}.40"
 homeArchive="${baseDir}/home.tar.gz"
 
 usage() {
   echo "usage:"
-  echo "${0} [-u] [-c <build configuration>] [-v <playback volume>] [-w <wireless profile>] [-H <home archive>]"
+  echo "${0} [-u] [-c <build configuration>] [-d <default hostname>] [-e <default wired IP>] [-f <default wireless IP>] [-v <playback volume>] [-w <wireless profile>] [-H <home archive>]"
   echo "${0} -h"
   echo ""
   echo " <build configuration>: build configuration of the bhuman binary (Debug, Develop, Release)"
+  echo " <default hostname>   : the hostname if the flashed robot is not known"
+  echo " <default wired IP>   : the wired IP address if the flashed robot is not known"
+  echo " <default wireless IP>: the wireless IP address if the flashed robot is not known"
   echo " <playback volume>    : playback volume after first boot"
   echo " <wireless profile>   : the active wireless profile after first boot"
   echo " <home archive>       : path to the home archive"
@@ -31,10 +40,19 @@ usage() {
 }
 
 parseOptions() {
-  while getopts hc:uv:w:H: opt; do
+  while getopts hc:d:e:f:uv:w:H: opt; do
     case "$opt" in
       c)
         buildConfiguration="${OPTARG}"
+        ;;
+      d)
+        defaultHostname="${OPTARG}"
+        ;;
+      e)
+        defaultWiredIP="${OPTARG}"
+        ;;
+      f)
+        defaultWirelessIP="${OPTARG}"
         ;;
       u)
         requireUSB=true
@@ -109,16 +127,13 @@ sed -e "s/^/        /" "${installDir}/Profiles/${wirelessProfile}" >"${homeDir}/
 mkdir -p "${homeDir}/nao/logs"
 
 # /home/nao/Config
-rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -r "${bhDir}/Build/Linux/Nao/${buildConfiguration}/bhuman" "${bhDir}/Config/." "${homeDir}/nao/Config"
+rsync --del --exclude=.* --exclude=/Images --exclude=/Keys --exclude=/Logs --exclude=/Scenes --chmod=u+rw,go+r,Dugo+x -r "${bhDir}/Build/Linux/Nao/${buildConfiguration}/bhuman" "${bhDir}/Util/onnxruntime/lib/Linux/libonnxruntime.so.1.10.0" "${bhDir}/Config/." "${homeDir}/nao/Config"
 
-# /home/nao/.config/{hostname,wiredIp,wirelessIp}
-# TODO: Make this settable from the command line:
-settingsFile="${bhDir}/Config/settings.cfg"
-teamID=$(grep <"${settingsFile}" "teamNumber" | sed "s%[^=]*=[ ]*\([0-9]*\).*%\1%")
-echo "Default" >"${homeDir}/nao/.config/hostname"
-echo "10.1.${teamID}.40" >"${homeDir}/nao/.config/wiredIp"
-echo "10.0.${teamID}.40" >"${homeDir}/nao/.config/wirelessIp"
-${requireUSB} && touch "${homeDir}/nao/.config/require-usb"
+# /home/nao/.config/{hostname,wiredIP,wirelessIP}
+echo "${defaultHostname}" >"${homeDir}/nao/.config/hostname"
+echo "${defaultWiredIP}" >"${homeDir}/nao/.config/wiredIP"
+echo "${defaultWirelessIP}" >"${homeDir}/nao/.config/wirelessIP"
+${requireUSB} && touch "${homeDir}/nao/.config/requireUSB"
 
 # Create the archive.
 tar -czf "${homeArchive}" -C "${homeDir}" nao

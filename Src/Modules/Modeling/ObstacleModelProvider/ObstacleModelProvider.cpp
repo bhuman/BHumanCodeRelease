@@ -9,8 +9,9 @@
  */
 
 #include "ObstacleModelProvider.h"
-#include "Tools/Debugging/Annotation.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/Annotation.h"
+#include "Debugging/DebugDrawings.h"
+#include "Representations/Communication/TeamData.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Measurements.h"
 
@@ -38,7 +39,7 @@ void ObstacleModelProvider::update(ObstacleModel& obstacleModel)
     addFootContacts(); // Add hypotheses measured by foot contact.
   addPlayerPercepts(); // Add players field percepts.
   if(useTeammatePositionForClassification)
-    considerTeamData(); // Fit team and position of obstacles located exclusively near a team member.
+    considerTeammates(); // Fit team and position of obstacles located exclusively near a team member.
   mergeOverlapping(); // Overlapping hypotheses are merged together.
 
   // Set the same length for left and right.
@@ -52,7 +53,7 @@ void ObstacleModelProvider::update(ObstacleModel& obstacleModel)
   obstacleModel.obstacles.clear();
   for(const auto& ob : obstacleHypotheses)
   {
-    if(isObstacle(ob))
+    if(isObstacle(ob) && !shouldIgnore(ob))
       obstacleModel.obstacles.emplace_back(ob);
   }
 }
@@ -62,19 +63,20 @@ bool ObstacleModelProvider::clearAndFinish(ObstacleModel& obstacleModel)
   DEBUG_RESPONSE_ONCE("module:ObstacleModelProvider:clear")
     obstacleHypotheses.clear();
 
-  if(theRobotInfo.penalty != PENALTY_NONE
-     || theGameInfo.state == STATE_INITIAL
+  if(theGameState.isPenalized()
+     || theGameState.isInitial()
      // While falling down / getting up / the obstacles might be invalid, better clean up
      || theFallDownState.state == FallDownState::falling
      || theFallDownState.state == FallDownState::fallen
      || theMotionInfo.executedPhase == MotionPhase::getUp
-     || theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT) // Penalty shootout -> obstacles will be ignored
+     || theGameState.isPenaltyShootout()) // Penalty shootout -> obstacles will be ignored
   {
-    if(theGameInfo.state != STATE_FINISHED) // If the GameController operator fails epically and resets from finished to playing
+    if(!theGameState.isFinished()) // If the GameController operator fails epically and resets from finished to playing
     {
       obstacleModel.obstacles.clear();
       obstacleHypotheses.clear();
     }
+    teammateMeasurements.clear();
     return true;
   }
   return false;
@@ -92,7 +94,7 @@ void ObstacleModelProvider::deleteObstacles()
        || centerDistanceSquared >= sqr(maxDistance)
        || centerDistanceSquared <= sqr(obstacleRadius * 0.5f) // Obstacle is really inside us
        // HACK: Ignore the referee hand before the kick-off.
-       || (theExtendedGameInfo.gameStateLastFrame != STATE_PLAYING && theGameInfo.state == STATE_PLAYING && theFrameInfo.getTimeSince(obstacle->lastSeen) > 1500)
+       || (!theExtendedGameState.wasPlaying() && theGameState.isPlaying() && theFrameInfo.getTimeSince(obstacle->lastSeen) > 1500)
        || theFieldDimensions.clipToField(absObsPos) > 500.f // obstacleIsNotOnField
        //|| obstacle->velocity.squaredNorm() > sqr(maxVelocity)  // The velocity is currently not accurate enough for this
       )
@@ -256,29 +258,23 @@ void ObstacleModelProvider::tryToMerge(const ObstacleHypothesis& measurement)
   merged.push_back(true);
 }
 
-void ObstacleModelProvider::considerTeamData()
+void ObstacleModelProvider::considerTeammates()
 {
   // TODO try to add teammate.theBehaviorStatus.walkingTo to track teammates better. Or use to adapt velocity.
-  if(obstacleHypotheses.empty() || theTeamData.teammates.empty())
-    return;
 
-  for(const Teammate& teammate : theTeamData.teammates)
+  auto handle = [this](const TeammateMeasurement& measurement)
   {
-    // Only for one frame (upper and lower) after receiving a package.
-    if(teammate.status != Teammate::PLAYING
-       || theFrameInfo.getTimeSince(teammate.timeWhenLastPacketReceived) > 2 * static_cast<int>(mergeOverlapTimeDiff))
-      continue;
+    Matrix2f relativeCovariance = Covariance::rotateCovarianceMatrix(measurement.covariance, -theRobotPose.rotation);
+    Covariance::fixCovariance(relativeCovariance);
 
-    const Matrix2f cov = teammate.theRobotPose.covariance.topLeftCorner(2, 2);
-    ASSERT(cov(0, 1) == cov(1, 0));
-    const Vector2f relativePosition = Transformation::fieldToRobot(theRobotPose, teammate.theRobotPose.translation);
+    const Vector2f relativePosition = theRobotPose.inversePose * Teammate::getEstimatedPosition(measurement.pose, measurement.target, measurement.speed, theFrameInfo.getTimeSince(measurement.time));
 
     // Only consider teammates that are located nearby.
     if(relativePosition.squaredNorm() > sqr(maxDistance))
-      continue;
+      return;
 
-    ObstacleHypothesis teammateHypothesis(cov, relativePosition, Vector2f::Zero(), Vector2f::Zero(),
-                                          teammate.timeWhenLastPacketReceived,
+    ObstacleHypothesis teammateHypothesis(relativeCovariance, relativePosition, Vector2f::Zero(), Vector2f::Zero(),
+                                          measurement.time,
                                           Obstacle::teammate, minPercepts / 2);
     teammateHypothesis.setLeftRight(Obstacle::getRobotDepth());
     // Strengthens the hypothesis that this is a teammate.
@@ -316,6 +312,30 @@ void ObstacleModelProvider::considerTeamData()
       obstacleHypotheses[atMerge].considerType(teammateHypothesis, teamThreshold, uprightThreshold);
       obstacleHypotheses[atMerge].lastSeen = std::max(obstacleHypotheses[atMerge].lastSeen, teammateHypothesis.lastSeen);
     }
+  };
+
+  // Handle teammate measurements from the previous frame.
+  if(!obstacleHypotheses.empty())
+    for(const TeammateMeasurement& measurement : teammateMeasurements)
+      handle(measurement);
+
+  // Only for one frame (upper and lower) after receiving a packet.
+  teammateMeasurements.clear();
+
+  // Add teammate measurements for next frame and process them now.
+  for(const ReceivedTeamMessage& teamMessage : theReceivedTeamMessages.messages)
+  {
+    if(!teamMessage.isUpright)
+      continue;
+
+    teammateMeasurements.emplace_back(teamMessage.theRobotPose.covariance.topLeftCorner(2, 2),
+                                      teamMessage.theRobotPose,
+                                      teamMessage.theBehaviorStatus.walkingTo,
+                                      teamMessage.theBehaviorStatus.speed,
+                                      teamMessage.theFrameInfo.time);
+
+    if(!obstacleHypotheses.empty())
+      handle(teammateMeasurements.back());
   }
 }
 
@@ -484,5 +504,20 @@ void ObstacleModelProvider::calculateVelocity()
         }
       }
     }
+  }
+}
+
+bool ObstacleModelProvider::shouldIgnore(const ObstacleHypothesis& obstacle) const
+{
+  if(goalAreaIgnoreTolerance == 0.f ||
+     !theGameState.kickOffSetupFromSidelines ||
+     !theGameState.isGoalkeeper())
+    return false;
+  else
+  {
+    const Vector2f obstacleInField = theRobotPose * obstacle.center;
+    return obstacleInField.x() < theFieldDimensions.xPosOwnGoalArea + goalAreaIgnoreTolerance &&
+           obstacleInField.y() < theFieldDimensions.yPosLeftGoalArea + goalAreaIgnoreTolerance &&
+           obstacleInField.y() > theFieldDimensions.yPosRightGoalArea - goalAreaIgnoreTolerance;
   }
 }

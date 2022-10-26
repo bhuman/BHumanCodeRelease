@@ -8,14 +8,14 @@
 #include "RobotPose.h"
 #include "BallModel.h"
 #include "Platform/Time.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 #include "Tools/Math/Projection.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 void RobotPose::onRead()
 {
@@ -86,15 +86,9 @@ void RobotPose::draw() const
   for(int i = 0; i < 4; i++)
     bodyPoints[i] = *this * bodyPoints[i];
   const Vector2f dirVec = *this * Vector2f(200, 0);
-  static const ColorRGBA colors[] =
-  {
-    ColorRGBA::blue,
-    ColorRGBA::red,
-    ColorRGBA::yellow,
-    ColorRGBA::black
-  };
-  const ColorRGBA ownTeamColorForDrawing = colors[Blackboard::getInstance().exists("OwnTeamInfo") ?
-                                                      static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK];
+  const ColorRGBA ownTeamColorForDrawing = ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
+                                                                                     static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.color :
+                                                                                     GameState::Team::Color::black));
 
   DEBUG_DRAWING("representation:RobotPose", "drawingOnField")
   {
@@ -170,7 +164,7 @@ void RobotPose::draw() const
       const float standRange = 80.f;
       const float genuflectRange = 200.f;
 
-      auto drawOffset = [&](const float range, const ColorRGBA color)
+      auto drawOffset = [&](const float range, [[maybe_unused]] const ColorRGBA color)
       {
         const Vector2f rangeOffset = offset.normalized(range);
         const Vector2f left = this->translation + rangeOffset;

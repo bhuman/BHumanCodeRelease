@@ -1,5 +1,5 @@
 #include "ColorScanLineRegions.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void ColorScanLineRegionsVertical::draw() const
 {

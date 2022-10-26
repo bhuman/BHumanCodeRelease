@@ -10,17 +10,15 @@
  */
 
 #include "Representations/BehaviorControl/FieldBall.h"
+#include "Representations/BehaviorControl/IllegalAreas.h"
 #include "Representations/BehaviorControl/PathPlanner.h"
-#include "Representations/BehaviorControl/TeamBehaviorStatus.h"
-#include "Representations/BehaviorControl/Libraries/LibTeammates.h"
-#include "Representations/Communication/GameInfo.h"
-#include "Representations/Communication/TeamInfo.h"
+#include "Representations/BehaviorControl/StrategyStatus.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamPlayersModel.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include <limits>
 
 MODULE(PathPlannerProvider,
@@ -28,22 +26,19 @@ MODULE(PathPlannerProvider,
   REQUIRES(FieldBall),
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
-  REQUIRES(GameInfo),
-  REQUIRES(LibTeammates),
+  REQUIRES(GameState),
+  REQUIRES(IllegalAreas),
   REQUIRES(ObstacleModel),
   REQUIRES(RobotPose),
-  REQUIRES(OwnTeamInfo),
-  REQUIRES(TeamBehaviorStatus),
-  REQUIRES(TeamPlayersModel),
+  REQUIRES(StrategyStatus),
   PROVIDES(PathPlanner),
   LOADS_PARAMETERS(
   {,
-    (bool) useObstacles, /**< Use TeamPlayersModel or ObstacleModel? */
     (float) goalPostRadius, /**< Radius to walk around a goal post (in mm). */
     (float) uprightRobotRadius, /**< Radius to walk around an upright robot (in mm). */
     (float) fallenRobotRadius, /**< Radius to walk around a fallen robot (in mm). */
     (float) readyRobotRadius, /**< Radius to walk around a robot in ready state (in mm). */
-    (float) centerCircleRadius, /**< If != 0: Radius to walk around a the center circle in ready state in defensive kickoff (in mm). */
+    (float) centerCircleRadius, /**< If != 0: Radius to walk around a the center circle in ready state in defensive kick-off (in mm). */
     (float) penaltyAreaRadius, /**< Radius to walk around a corner of the own penalty area (in mm). */
     (float) ballRadius, /**< Radius to walk around the ball (in mm). */
     (float) freeKickRadius, /**< Radius to walk around the ball when defending a free kick (in mm). */
@@ -306,7 +301,7 @@ class PathPlannerProvider : public PathPlannerProviderBase
    * on whether the nodes are circles or points (one for point to point, two for a point and a circle, four for two
    * circles) and whether they overlap (none if one node is inside the other one, two if they intersect, four if two
    * circles do not overlap). If another circle overlaps, the angular range of the overlap is also marked as being
-   * blocked in the node passed, i.e. no tangents can start from this ranges.
+   * blocked in the node passed, i.e. no tangents can start from this range.
    * @param node The node from which the tangents to all neighbors are created.
    * @param tangents The tangents found are returned here. Must be empty when passed. There are two sets of tangents,
    *                 i.e. the ones that start in clockwise direction and the ones that start in counter clockwise

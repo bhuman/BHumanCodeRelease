@@ -7,10 +7,10 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Module/Next.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Eigen.h"
+#include "Math/Angle.h"
+#include "Framework/Next.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(CameraCalibration,
 {,

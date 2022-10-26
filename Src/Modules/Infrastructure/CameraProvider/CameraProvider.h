@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "Platform/Camera.h"
 #include "Platform/Semaphore.h"
 #include "Platform/Thread.h"
 #include "Representations/Configuration/AutoExposureWeightTable.h"
@@ -23,11 +22,10 @@
 #include "Representations/Infrastructure/CameraStatus.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JPEGImage.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
-#include "Tools/Math/Random.h"
-#include "Tools/Md5.h"
-#include "Tools/RingBuffer.h"
+#include "Math/Random.h"
+#include "Math/RingBuffer.h"
 
 class NaoCamera;
 
@@ -61,7 +59,7 @@ class CameraProvider : public CameraProviderBase
   CameraResolutionRequest cameraResolutionRequest;
   CameraResolutionRequest::Resolutions lastResolutionRequest = CameraResolutionRequest::defaultRes;
   volatile bool cameraOk = true;
-#ifdef CAMERA_INCLUDED
+#ifdef TARGET_ROBOT
   static Semaphore performingReset;
   static bool resetPending;
   RingBuffer<std::string, 120> rowBuffer;

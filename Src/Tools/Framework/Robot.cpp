@@ -7,18 +7,18 @@
  */
 
 #include "Robot.h"
+#include "Framework/Configuration.h"
+#include "Framework/Debug.h"
 #include "Platform/BHAssert.h"
-#include "Threads/Debug.h"
-#include "Tools/Framework/Configuration.h"
+#include "Platform/File.h"
+#include "Streaming/InStreams.h"
 #include "Tools/Framework/ModuleContainer.h"
-#include "Tools/Global.h"
-#include "Tools/Streams/InStreams.h"
 
 Robot::Robot(const Settings& settings, const std::string& name) : name(name)
 {
-  Global::theSettings = const_cast<Settings*>(&settings);
+  File::setSearchPath(settings.getSearchPath());
   InMapFile stream("threads.cfg");
-  Global::theSettings = nullptr;
+  File::clearSearchPath();
 
   Configuration config;
   stream >> config;

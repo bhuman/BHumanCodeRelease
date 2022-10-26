@@ -13,9 +13,9 @@
 #include "FieldBoundaryProvider.h"
 #include "Platform/BHAssert.h"
 #include "Platform/File.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Global.h"
-#include "Tools/ImageProcessing/PatchUtilities.h"
+#include "Debugging/DebugDrawings.h"
+#include "Streaming/Global.h"
+#include "ImageProcessing/PatchUtilities.h"
 #include "Tools/Math/Transformation.h"
 
 MAKE_MODULE(FieldBoundaryProvider, perception);
@@ -128,7 +128,7 @@ void FieldBoundaryProvider::validatePrediction(FieldBoundary& fieldBoundary, std
 
 void FieldBoundaryProvider::projectPrevious(FieldBoundary& fieldBoundary)
 {
-  const Pose2f invOdometryOffset = theOdometer.odometryOffset.inverse();
+  const Pose2f invOdometryOffset = theOdometryData.inverse() * theOtherOdometryData;
   for(Vector2f spotOnField : theOtherFieldBoundary.boundaryOnField)
   {
     Vector2f spotInImage;
@@ -290,7 +290,7 @@ void FieldBoundaryProvider::fitBoundaryRansac(const std::vector<Spot>& spots, Fi
 
     // Accumulate errors in image coordinates, assuming both a continuing left line and a separate right line.
     int errorRightLine = 0; // Assuming a separate line on the right.
-    int errorRightStraight = 0;// Assuming left line continues.
+    int errorRightStraight = 0; // Assuming left line continues.
     const int abortError = minError - errorLeft;
     while(j < spots.size() && std::min(errorRightLine, errorRightStraight) < abortError)
     {

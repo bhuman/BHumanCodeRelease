@@ -7,10 +7,9 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/Modify.h"
+#include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 
 #include <limits>
 

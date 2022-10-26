@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Representations/MotionControl/CalibrationGenerator.h"
 #include "Representations/Configuration/DamageConfiguration.h"
 #include "Representations/Configuration/JointLimits.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -17,26 +18,30 @@
 #include "Representations/MotionControl/ArmKeyFrameGenerator.h"
 #include "Representations/MotionControl/ArmMotionInfo.h"
 #include "Representations/MotionControl/ArmMotionRequest.h"
+#include "Representations/MotionControl/DiveGenerator.h"
 #include "Representations/MotionControl/DribbleGenerator.h"
 #include "Representations/MotionControl/FallGenerator.h"
 #include "Representations/MotionControl/GetUpGenerator.h"
-#include "Representations/MotionControl/HeadAngleRequest.h"
 #include "Representations/MotionControl/HeadMotionGenerator.h"
 #include "Representations/MotionControl/HeadMotionInfo.h"
+#include "Representations/MotionControl/HeadMotionRequest.h"
 #include "Representations/MotionControl/KeyframeMotionGenerator.h"
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/MotionControl/MotionRequest.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/MotionControl/PointAtGenerator.h"
 #include "Representations/MotionControl/ReplayWalkRequestGenerator.h"
+#include "Representations/MotionControl/SpecialGenerator.h"
 #include "Representations/MotionControl/StandGenerator.h"
 #include "Representations/MotionControl/WalkAtAbsoluteSpeedGenerator.h"
 #include "Representations/MotionControl/WalkAtRelativeSpeedGenerator.h"
+#include "Representations/MotionControl/WalkGenerator.h"
 #include "Representations/MotionControl/WalkToPoseGenerator.h"
 #include "Representations/MotionControl/WalkToBallAndKickGenerator.h"
 #include "Representations/Sensing/FallDownState.h"
+#include "Representations/Sensing/GyroOffset.h"
 #include "Representations/Sensing/InertialData.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Tools/Motion/MotionGenerator.h"
 #include "Tools/Motion/MotionPhase.h"
 
@@ -44,15 +49,18 @@ MODULE(MotionEngine,
 {,
   REQUIRES(ArmKeyFrameGenerator),
   REQUIRES(ArmMotionRequest),
+  REQUIRES(CalibrationGenerator),
   REQUIRES(CognitionFrameInfo),
   REQUIRES(DamageConfigurationBody),
+  REQUIRES(DiveGenerator),
   REQUIRES(DribbleGenerator),
   REQUIRES(FallDownState),
   REQUIRES(FallGenerator),
   REQUIRES(FrameInfo),
   REQUIRES(GetUpGenerator),
-  REQUIRES(HeadAngleRequest),
+  REQUIRES(GyroOffset),
   REQUIRES(HeadMotionGenerator),
+  REQUIRES(HeadMotionRequest),
   REQUIRES(InertialData),
   REQUIRES(JointAngles),
   REQUIRES(JointLimits),
@@ -60,10 +68,12 @@ MODULE(MotionEngine,
   REQUIRES(MotionRequest),
   REQUIRES(PointAtGenerator),
   REQUIRES(ReplayWalkRequestGenerator),
+  REQUIRES(SpecialGenerator),
   REQUIRES(StandGenerator),
   REQUIRES(StiffnessSettings),
   REQUIRES(WalkAtAbsoluteSpeedGenerator),
   REQUIRES(WalkAtRelativeSpeedGenerator),
+  REQUIRES(WalkGenerator),
   REQUIRES(WalkToPoseGenerator),
   REQUIRES(WalkToBallAndKickGenerator),
   PROVIDES(JointRequest),
@@ -156,6 +166,7 @@ struct PlayDeadPhase : MotionPhase
 private:
   bool isDone(const MotionRequest& motionRequest) const override;
   void calcJoints(const MotionRequest& motionRequest, JointRequest& jointRequest, Pose2f& odometryOffset, MotionInfo& motionInfo) override;
+  std::unique_ptr<MotionPhase> createNextPhase(const MotionPhase& defaultNextPhase) const override;
 
   const MotionEngine& engine; /**< A reference to the running motion engine. */
 };

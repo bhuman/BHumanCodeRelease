@@ -3,12 +3,12 @@
 # This script can be launched from the Finder. It is an interactive
 # front end to the common login script.
 
-if [ $TERM == dumb ]; then open $0; exit; fi
+if [ $TERM = dumb ]; then open $0; exit; fi
 clear
 cd "$(dirname "$(which "$0")")"
 set -eu
 read -p 'Cable or WLAN (C/w): ' MODE
-if [ "$MODE" == "w" ]; then
+if [ "$MODE" = "w" ]; then
   SUBNET=`grep "^wlan *=" ../../Config/Robots/*/network.cfg | head -1 | sed -e 's%[^"]*"%%' -e 's%[0-9]*[^0-9]*$%%'`
 else
   SUBNET=`grep "^lan *=" ../../Config/Robots/*/network.cfg | head -1 | sed -e 's%[^"]*"%%' -e 's%[0-9]*[^0-9]*$%%'`

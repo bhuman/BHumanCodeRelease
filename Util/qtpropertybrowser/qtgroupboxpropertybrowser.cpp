@@ -38,12 +38,12 @@
 ****************************************************************************/
 
 #include "qtgroupboxpropertybrowser.h"
-#include <QtCore/QSet>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QGroupBox>
-#include <QtCore/QTimer>
-#include <QtCore/QMap>
+#include <QSet>
+#include <QGridLayout>
+#include <QLabel>
+#include <QGroupBox>
+#include <QTimer>
+#include <QMap>
 
 QT_BEGIN_NAMESPACE
 
@@ -126,11 +126,11 @@ void QtGroupBoxPropertyBrowserPrivate::slotUpdate()
         if (!par) {
             w = q_ptr;
             l = m_mainLayout;
-            oldRow = m_children.indexOf(item);
+            oldRow = static_cast<int>(m_children.indexOf(item));
         } else {
             w = par->groupBox;
             l = par->layout;
-            oldRow = par->children.indexOf(item);
+            oldRow = static_cast<int>(par->children.indexOf(item));
             if (hasHeader(par))
                 oldRow += 2;
         }
@@ -182,10 +182,10 @@ void QtGroupBoxPropertyBrowserPrivate::propertyInserted(QtBrowserItem *index, Qt
             m_children.insert(0, newItem);
     } else {
         if (parentItem) {
-            row = parentItem->children.indexOf(afterItem) + 1;
+            row = static_cast<int>(parentItem->children.indexOf(afterItem) + 1);
             parentItem->children.insert(row, newItem);
         } else {
-            row = m_children.indexOf(afterItem) + 1;
+            row = static_cast<int>(m_children.indexOf(afterItem) + 1);
             m_children.insert(row, newItem);
         }
     }
@@ -205,11 +205,11 @@ void QtGroupBoxPropertyBrowserPrivate::propertyInserted(QtBrowserItem *index, Qt
             if (!par) {
                 w = q_ptr;
                 l = m_mainLayout;
-                oldRow = m_children.indexOf(parentItem);
+                oldRow = static_cast<int>(m_children.indexOf(parentItem));
             } else {
                 w = par->groupBox;
                 l = par->layout;
-                oldRow = par->children.indexOf(parentItem);
+                oldRow = static_cast<int>(par->children.indexOf(parentItem));
                 if (hasHeader(par))
                     oldRow += 2;
             }
@@ -281,12 +281,12 @@ void QtGroupBoxPropertyBrowserPrivate::propertyRemoved(QtBrowserItem *index)
     int row = -1;
 
     if (parentItem) {
-        row = parentItem->children.indexOf(item);
+        row = static_cast<int>(parentItem->children.indexOf(item));
         parentItem->children.removeAt(row);
         if (hasHeader(parentItem))
             row += 2;
     } else {
-        row = m_children.indexOf(item);
+        row = static_cast<int>(m_children.indexOf(item));
         m_children.removeAt(row);
     }
 
@@ -306,15 +306,10 @@ void QtGroupBoxPropertyBrowserPrivate::propertyRemoved(QtBrowserItem *index)
     } else {
         WidgetItem *par = parentItem->parent;
         QGridLayout *l = 0;
-        int oldRow = -1;
         if (!par) {
             l = m_mainLayout;
-            oldRow = m_children.indexOf(parentItem);
         } else {
             l = par->layout;
-            oldRow = par->children.indexOf(parentItem);
-            if (hasHeader(par))
-                oldRow += 2;
         }
 
         if (parentItem->widget) {

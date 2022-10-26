@@ -7,8 +7,8 @@
 #pragma once
 
 #include "Tools/Communication/BHumanTeamMessageParts/BHumanMessageParticle.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/RobotParts/Joints.h"
+#include "Debugging/DebugDrawings.h"
+#include "RobotParts/Joints.h"
 #include "Representations/Infrastructure/SensorData/JointSensorData.h"
 #include <cstring>
 

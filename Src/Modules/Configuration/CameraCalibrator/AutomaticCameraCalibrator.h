@@ -19,8 +19,6 @@
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/LEDRequest.h"
-#include "Representations/MotionControl/HeadAngleRequest.h"
-#include "Representations/MotionControl/HeadMotionInfo.h"
 #include "Representations/Perception/FieldPercepts/LinesPercept.h"
 #include "Representations/Perception/FieldPercepts/PenaltyMarkPercept.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
@@ -28,12 +26,9 @@
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
 #include "Representations/Sensing/GroundContactState.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/ImageProcessing/Sobel.h"
-#include "Tools/Module/Module.h"
-#include "Tools/Optimization/GaussNewtonOptimizer.h"
-
-STREAMABLE_WITH_BASE(LowerECImage, ECImage, {, });
-STREAMABLE_WITH_BASE(UpperECImage, ECImage, {, });
+#include "ImageProcessing/Sobel.h"
+#include "Framework/Module.h"
+#include "Math/GaussNewtonOptimizer.h"
 
 MODULE(AutomaticCameraCalibrator,
 {,
@@ -44,11 +39,10 @@ MODULE(AutomaticCameraCalibrator,
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(JointAngles),
   REQUIRES(LinesPercept),
-  REQUIRES(LowerECImage),
+  REQUIRES(OptionalECImage),
   REQUIRES(PenaltyMarkPercept),
   REQUIRES(RobotDimensions),
   REQUIRES(TorsoMatrix),
-  REQUIRES(UpperECImage),
 
   PROVIDES(CameraCalibration),
   USES(CameraCalibration),
@@ -369,7 +363,7 @@ private:
    */
   bool projectLineOnFieldIntoImage(const Geometry::Line& lineOnField, const CameraMatrix& cameraMatrix, const CameraInfo& cameraInfo, Geometry::Line& lineInImage) const;
 
-  State state; /**< The state in which the calibrator currently is. */
+  CameraCalibrationStatus::State state; /**< The state in which the calibrator currently is. */
   int inStateSince; /**< The frameInfo.time when the current state was set. */
 
   std::unique_ptr<GaussNewtonOptimizer<numOfParameterTranslations>> optimizer; /**< The optimizer (can be null if the optimization is not running). */

@@ -4,7 +4,7 @@
 
 #include "FieldLinesProvider.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Geometry.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 
@@ -30,7 +30,7 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
 
   for(const SpotLine& line : theLinesPercept.lines)
   {
-    if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT)
+    if(theGameState.isPenaltyShootout())
     {
       if(std::abs(std::abs((theRobotPose * line.firstField - theRobotPose * line.lastField).angle()) - 90_deg) > 30_deg
          && (std::abs((theRobotPose * line.firstField).y()) < theFieldDimensions.yPosLeftPenaltyArea - 150
@@ -62,12 +62,12 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
 
     {
       //is line most likely in/of center circle
-      if((theCirclePercept.wasSeen || lastCircleWasSeen)
+      if((theCirclePercept.wasSeen || lastCirclePercept.wasSeen)
          && theFrameInfo.getTimeSince(lastFrameTime) <= maxTimeOffset) // because of log backjumps
       {
-        const Vector2f centerCirclePosition = theCirclePercept.wasSeen ? theCirclePercept.pos : theOdometer.odometryOffset.inverse() * theCirclePercept.pos;
+        const Vector2f centerCirclePosition = theCirclePercept.wasSeen ? theCirclePercept.pos : theOdometryData.inverse() * lastOdometryData * lastCirclePercept.pos;
 
-        if(std::abs(std::abs(Geometry::getDistanceToLine(line.line, centerCirclePosition)) - theFieldDimensions.centerCircleRadius) < maxLineDeviationFromAssumedCenterCircle)
+        if(std::abs(Geometry::getDistanceToLine(line.line, centerCirclePosition) - theFieldDimensions.centerCircleRadius) < maxLineDeviationFromAssumedCenterCircle)
         {
           //(again) FieldLines should not contain lines that are on the circle
           spotLineUsage.push_back(thrown);
@@ -143,7 +143,8 @@ void FieldLinesProvider::update(FieldLines& fieldLines)
   fieldLines.lines.clear();
   for(size_t i = 0; i < sortedLineIndizes.size(); i++)
     fieldLines.lines.emplace_back(internalListOfLines[sortedLineIndizes[i]]);
-  lastCircleWasSeen = theCirclePercept.wasSeen;
+  lastCirclePercept = theCirclePercept;
+  lastOdometryData = theOdometryData;
   lastFrameTime = theFrameInfo.time;
 }
 

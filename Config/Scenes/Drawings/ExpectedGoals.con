@@ -1,0 +1,19 @@
+vf worldState
+vfd worldState fieldPolygons
+
+vfd worldState cognition:Reset
+vfd worldState module:ExpectedGoalsProvider:heatmap
+set module:PassEvaluationProvider:drawHeatmap false
+set module:ExpectedGoalsProvider:drawHeatmap true
+
+vfd worldState fieldLines
+vfd worldState goalFrame
+vfd worldState representation:TeammatesBallModel
+vfd worldState cognition:RobotPose
+vfd worldState representation:ObstacleModel:rectangle
+vfd worldState cognition:Reset
+
+echo set module:ExpectedGoalsProvider:drawHeatmap true
+echo set module:ExpectedGoalsProvider:drawHeatmap false
+echo set module:ExpectedGoalsProvider:calcOpeningAngle false
+echo set module:ExpectedGoalsProvider:calcShotDistance false

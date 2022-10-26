@@ -17,8 +17,6 @@ if [ "`uname`" = "Darwin" ]; then
   WORDSTART="[[:<:]]"
   WORDEND="[[:>:]]"
   EOFHACK="	 *_EOF_HACK"
-elif [ -e /proc/version -a ! -z "`grep Microsoft </proc/version`" ]; then
-  ASTYLE=$BASEDIR/../../Util/Buildchain/Windows/bin/AStyle.exe
 else
   ASTYLE=astyle
 fi

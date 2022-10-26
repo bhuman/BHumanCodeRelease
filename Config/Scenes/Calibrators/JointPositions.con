@@ -1,0 +1,17 @@
+vp left 100 -40 60
+echo vp left 100 -40 60
+vpd left representation:JointAngles:lHipPitch red lhpMeas
+vpd left representation:JointAngles:lKneePitch blue lkpMeas
+vpd left representation:JointAngles:lAnklePitch black lAPMeas
+vpd left representation:JointRequest:lHipPitch orange lhpReq
+vpd left representation:JointRequest:lKneePitch cyan
+vpd left representation:JointRequest:lAnklePitch green
+
+vp right 100 -40 60
+echo vp right 100 -40 60
+vpd right representation:JointAngles:rHipPitch red rhpMeas
+vpd right representation:JointAngles:rKneePitch blue rKpMeas
+vpd right representation:JointAngles:rAnklePitch black rAPMeas
+vpd right representation:JointRequest:rHipPitch orange rhpReq
+vpd right representation:JointRequest:rKneePitch cyan
+vpd right representation:JointRequest:rAnklePitch green

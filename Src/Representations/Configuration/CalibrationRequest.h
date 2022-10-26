@@ -10,7 +10,8 @@
 
 #include "Representations/Configuration/CameraCalibrationStatus.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 /** This enumeration lists the possible types of samples. */
 ENUM(SampleType,
@@ -31,17 +32,13 @@ STREAMABLE(SampleConfigurationRequest,
   (Angle)(0) headTilt,
   (unsigned)(0) sampleTypes,
 });
-/*
-  SampleConfigurationRequest() = default;
-  SampleConfigurationRequest(const SampleConfigurationRequest& r) = default;
- */
 
 STREAMABLE(CalibrationRequest,
 {,
-  (State)(State::idle) targetState,
+  (CameraCalibrationStatus::State)(CameraCalibrationStatus::State::idle) targetState,
   (unsigned)(0) totalNumOfSamples,
   (std::optional<SampleConfigurationRequest>)() sampleConfigurationRequest,
   (unsigned)(0) serialNumberIMUCalibration, /**< Current iteration, how often the IMU calibration was requested to be calibrated. */
-  (unsigned)(0) serialNumberFootSoleRotationCalibration, /**< Current iteration, how often the foot sole rotation calibration was requested to be calibrated. */
   (bool)(false) preciseJointPositions, /**< Instead of an energy saving mode, the robot should reach the exact target joint positions for the legs. */
+  (unsigned)(0) numOfFootSoleCalibration, /**< Average over this number of calibrations tries the foot sole rotation offset. */
 });

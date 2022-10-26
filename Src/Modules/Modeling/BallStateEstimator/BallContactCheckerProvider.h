@@ -20,7 +20,7 @@
 #include "Representations/MotionControl/MotionInfo.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Representations/Sensing/TorsoMatrix.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(BallContactCheckerProvider,
 {,

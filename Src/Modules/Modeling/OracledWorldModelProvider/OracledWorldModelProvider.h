@@ -8,15 +8,14 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Infrastructure/GroundTruthWorldState.h"
 #include "Representations/Modeling/BallModel.h"
 #include "Representations/Modeling/ObstacleModel.h"
 #include "Representations/Modeling/RobotPose.h"
-#include "Representations/Modeling/TeamBallModel.h"
-#include "Representations/Modeling/TeamPlayersModel.h"
+#include "Representations/Modeling/TeammatesBallModel.h"
 
 MODULE(OracledWorldModelProvider,
 {,
@@ -24,13 +23,11 @@ MODULE(OracledWorldModelProvider,
   REQUIRES(FieldDimensions),
   REQUIRES(FrameInfo),
   PROVIDES(BallModel),
-  PROVIDES(BallModel3D),
   PROVIDES(GroundTruthBallModel),
   PROVIDES(ObstacleModel),
-  PROVIDES(TeamPlayersModel),
   PROVIDES(RobotPose),
   PROVIDES(GroundTruthRobotPose),
-  PROVIDES(TeamBallModel),
+  PROVIDES(TeammatesBallModel),
   LOADS_PARAMETERS(
   {,
     (Pose2f) robotPoseOffset, /**< Offset that will be added to the robot pose. Useful for testing */
@@ -61,29 +58,19 @@ private:
   void update(BallModel& ballModel) override;
 
   /** One main function, might be called every cycle
-   * @param ballModel3D The data struct to be filled
-   */
-  void update(BallModel3D& ballModel) override;
-
-  /** One main function, might be called every cycle
    * @param groundTruthBallModel The data struct to be filled
    */
   void update(GroundTruthBallModel& groundTruthBallModel) override;
 
   /** One main function, might be called every cycle
-   * @param teamBallModel The data struct to be filled
+   * @param teammatesBallModel The data struct to be filled
    */
-  void update(TeamBallModel& teamBallModel) override;
+  void update(TeammatesBallModel& teammatesBallModel) override;
 
   /** One main function, might be called every cycle
    * @param obstacleModel The data struct to be filled
    */
   void update(ObstacleModel& obstacleModel) override;
-
-  /** One main function, might be called every cycle
-   * @param teamPlayersModel The data struct to be filled
-   */
-  void update(TeamPlayersModel& teamPlayersModel) override;
 
   /** One main function, might be called every cycle
    * @param robotPose The data struct to be filled

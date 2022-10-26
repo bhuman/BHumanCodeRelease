@@ -18,7 +18,7 @@
 #include "Representations/Perception/ImagePreprocessing/ColorScanLineRegions.h"
 #include "Representations/Perception/ImagePreprocessing/ScanGrid.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 
 MODULE(PenaltyMarkRegionsProvider,
 {,
@@ -32,7 +32,7 @@ MODULE(PenaltyMarkRegionsProvider,
   PROVIDES(CNSPenaltyMarkRegions),
   DEFINES_PARAMETERS(
   {,
-    (float)(2000.f) maxDistanceOnField, /**< The maximum distance in which penalty marks are detected. */
+    (float)(3000.f) maxDistanceOnField, /**< The maximum distance in which penalty marks are detected. */
     (int)(3) regionExtensionFactor, /**< Region heights are extended by this value times the expected line width to better merge diagonal lines. */
     (float)(0.5f) sizeToleranceRatio, /**< Acceptable deviation of the measured size from the expected one. */
     (float)(0.9f) minWhiteRatio, /**< Ratio of pixels that must be white in a candidate region. */

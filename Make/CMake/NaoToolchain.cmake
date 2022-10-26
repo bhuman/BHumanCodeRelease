@@ -14,7 +14,7 @@ set(_buildchain_dir "${CMAKE_CURRENT_LIST_DIR}/../../Util/Buildchain")
 if(CMAKE_HOST_APPLE OR CMAKE_HOST_WIN32)
   message(FATAL_ERROR "This file should not be included on macOS or Windows.")
 else()
-  set(_linker "ld.lld")
+  set(_linker "ld.mold")
 endif()
 
 set(_v6_lib_dir "${_buildchain_dir}/V6/gcc/lib")

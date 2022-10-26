@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include "Debugging/Annotation.h"
+#include "Framework/Module.h"
+#include "Math/Geometry.h"
+#include "Math/UnscentedKalmanFilter.h"
 #include "Representations/Configuration/FootOffset.h"
 #include "Representations/Configuration/MassCalibration.h"
 #include "Representations/Infrastructure/FrameInfo.h"
@@ -16,9 +20,6 @@
 #include "Representations/Sensing/InertialData.h"
 #include "Representations/Sensing/RobotModel.h"
 #include "Tools/Cabsl.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Math/UnscentedKalmanFilter.h"
-#include "Tools/Module/Module.h"
 
 MODULE(FallDownStateProvider,
 {,
@@ -52,6 +53,7 @@ MODULE(FallDownStateProvider,
     (int)(150) minTimeBetweenSound,
     (int)(0) minTimeWithoutGroundContactToAssumePickup,
     (Vector2a)(55_deg, 55_deg) minTorsoOrientationToDetermineDirection,
+    (int)(5000) maxTimeStaggering, /**< If the robot stays this long staggering, something is wrong and the filter is reset. */
 
     (Vector3f)(16.f, 16.f, 16.f) positionProcessDeviation, //  dynamic noise density of the com-position
     (Vector2a)(Vector2a::Constant(22_deg)) velocityProcessDeviation, // dynamic noise density of the velocity
@@ -70,16 +72,17 @@ private:
   bool torsoUpright; /** Is the com within sub support polygon? */
   bool toSquatting; /** Are all conditions for a return to squatting from a fall met? */
   bool toUpright; /** Are all conditions for a return to upright from a fall met? */
+  bool isPickedUp; /** Are all conditions for a return to picked up from a fall met? */
   bool useTorsoOrientation; /** Torso orientation is big enough to be used. */
   const InertialSensorData* theSensorData; /** Pointer to the sensor data.*/
   FallDownState* theFallDownState; /** Pointer to the fall down state updated.*/
   FallDownState::Direction direction; /** The fall direction. Always computed, even if not falling. */
   float torsoAboveGround; /**< The distance of the torso above the ground (in mm). */
-  float footShapeToeX; /**< The foot toe x position (in mm). */
 
   UKF<5> ukf = UKF<5>(Vector5f::Zero()); // The statevector of the ukf is composed of: com, velocity;
   Vector5f dynamicNoise;
   Vector5f measurementNoise;
+  bool resetFilter = false;
 
   Legs::Leg supportFoot;
   Vector3f supportFootCenter; // relative to tilting edge
@@ -235,11 +238,16 @@ private:
       transition
       {
         if(falling)
-        {
           goto preFall;
-        }
         else if(torsoUpright)
           goto upright;
+        else if(state_time > maxTimeStaggering)
+        {
+          ANNOTATION("FallDownStateProvider", "Staggering state kept too long. Resetting filter");
+          OUTPUT_WARNING("FallDownStateProvider: Staggering state kept too long. Resetting filter.");
+          resetFilter = true;
+          goto upright;
+        }
       }
       action
       {
@@ -290,6 +298,11 @@ private:
         {
           say("Squatting");
           goto squatting;
+        }
+        else if(isPickedUp)
+        {
+          say("Picked up");
+          goto pickedUp;
         }
       }
       action

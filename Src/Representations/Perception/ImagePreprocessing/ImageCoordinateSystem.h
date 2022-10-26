@@ -8,9 +8,9 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Math/BHMath.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * @struct ImageCoordinateSystem

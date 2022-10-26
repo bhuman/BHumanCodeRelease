@@ -6,14 +6,15 @@
 
 #pragma once
 #include "Representations/Infrastructure/JointRequest.h"
-#include "Tools/Function.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/Function.h"
+#include "Streaming/Enum.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(EnergySaving,
 {
   ENUM(EnergyState,
   {,
+    off,
     waiting,
     working,
     resetState,
@@ -25,7 +26,7 @@ STREAMABLE(EnergySaving,
   FUNCTION(void()) shutDown,
 
   (ENUM_INDEXED_ARRAY(Angle, Joints::Joint)) offsets,
-  (EnergyState)(EnergyState::waiting) state,
+  (EnergyState)(EnergyState::off) state,
 });
 
 inline EnergySaving::EnergySaving()

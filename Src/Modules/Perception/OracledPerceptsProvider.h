@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/BallSpecification.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
@@ -53,9 +53,6 @@ MODULE(OracledPerceptsProvider,
     (float) centerCircleMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
     (float) centerCircleRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (bool)  applyIntersectionNoise,                  /**< Activate / Deactivate noise for intersection percepts */
-    (float) intersectionPosInImageStdDev,            /**< Standard deviation of error in pixels (x as well as y) */
-    (float) intersectionMaxVisibleDistance,          /**< Maximum distance until which this object can be seen */
-    (float) intersectionRecognitionRate,             /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (bool)  applyLineNoise,                          /**< Activate / Deactivate noise for line percepts */
     (float) linePosInImageStdDev,                    /**< Standard deviation of error in pixels (x as well as y) */
     (float) lineMaxVisibleDistance,                  /**< Maximum distance until which this object can be seen */
@@ -75,7 +72,7 @@ MODULE(OracledPerceptsProvider,
     (float) penaltyMarkRecognitionRate,              /**< Likelihood of actually perceiving this object, when it is in the field of view */
     (float) penaltyMarkFalsePositiveRate,            /**< Likelihood of perceiving a false positive, when no penaltyMark was seen */
     (float) penaltyMarkFalseDeviationFactor,         /**< Factor of how much the false penalty mark deviates from its original position */
-    (float) obstacleCoverageThickness,               /**<  */
+    (float) obstacleCoverageThickness,               /**< The obstacle radius assumed when computing whether another object is hidden behind it. */
   }),
 });
 

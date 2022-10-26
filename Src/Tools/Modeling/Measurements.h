@@ -10,8 +10,8 @@
 
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Covariance.h"
+#include "Math/BHMath.h"
+#include "Math/Covariance.h"
 
 namespace Measurements
 {

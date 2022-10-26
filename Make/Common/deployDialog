@@ -1,4 +1,10 @@
 #!/bin/bash
+# This script displays a deploy dialog on macOS and Linux. It
+# asks for command line options for the script 'deploy' and
+# then calls that script with these options. It remembers these
+# options in the file 'deploy-options.txt' and reuses them the
+# next time it is called. It can used at the end of a build
+# process in an IDE to directly deploy the code.
 
 cd "$(dirname "$(which "$0")")"
 
@@ -14,7 +20,7 @@ else
   IP_TO_NAME=`tr '\n' ' ' <<<"$IP_TO_NAME"`
 fi
 
-HELP="$(./deploy --help | grep -v -E "^(usage|  (options|examples):|    \.|    -(h|nc|nr|r))" | sed -e 's%^ *\(-.\)[^a-z<]*\([a-z][^<]*\)$%  \1 (\2)%' -e 's%^ *\(-. <[^>]*>\( <[^>]*>\)*\).*$%  \1%')"
+HELP="$(./deploy --help | grep -v -E "^(usage|  (options|examples):|    \.|    -(h|k|nc|nr|r))" | sed -e 's% *(.*%%' -e 's%^ *\(-.\)[^a-z<]*\([a-z][^<]*\)$%  \1 (\2)%' -e 's%^ *\(-. <[^>]*>\( <[^>]*>\)*\).*$%  \1%')"
 
 if [ -e deploy-options.txt ]; then
   OPTIONS=`cat deploy-options.txt`
@@ -35,44 +41,34 @@ else
 fi
 
 if [ "$(uname)" == "Darwin" ]; then
-  if [ ! -z "`echo "x $OPTIONS " | sed "s%.* -a .*%%"`" ] || [ -z `../../Util/Buildchain/macOS/bin/getModKey | sed "s%4096%%"` ]; then
-    BHDIR="$(cd "$(dirname "$(which "$0")")/../.."; pwd)"
-    HELP="$(sed <<<"$HELP" -e 's% (%    	(%' -e 's% <%	<%' | tr '\n' X | sed -e 's%X$%%' -e 's%X%\\n%g')"
-    COMMAND=`osascript <<-APPLESCRIPT
-      tell application "Xcode"
-        activate
-        display dialog "usage:    <robot> {options}\noptions:\n  -a   	(auto deploy these settings in future)\n$HELP" with title "Deploy" with icon file POSIX file "$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns" default answer "$COMMAND" buttons {"Cancel ", "Deploy"} default button 2
-        if button returned of result = "Deploy" then
-          return (text returned of result) as string
-        else
-          return ""
-        end if
-      end tell
-      APPLESCRIPT
-     `
-  fi
-elif [ ! -z "`echo "x $OPTIONS " | sed "s%.* -a .*%%"`" ] || [ -z `../../Util/Buildchain/Linux/bin/getModKey | sed "s%512%%"` ]; then
-    COMMAND=`wish <<EOF
-ttk::setTheme default
+  BHDIR="$(cd "$(dirname "$(which "$0")")/../.."; pwd)"
+  HELP="$(sed <<<"$HELP" -e 's% (%    	(%' -e 's% <%	<%' | tr '\n' X | sed -e 's%X$%%' -e 's%X%\\n%g')"
+  COMMAND=`osascript <<-APPLESCRIPT
+    tell application "Xcode"
+      activate
+      display dialog "usage:    <robot> {options}\noptions:\n$HELP" with title "Deploy" with icon file POSIX file "$BHDIR/Util/SimRobot/Src/SimRobot/Icons/SimRobot.icns" default answer "$COMMAND" buttons {"Cancel ", "Deploy"} default button 2
+      if button returned of result = "Deploy" then
+        return (text returned of result) as string
+      else
+        return ""
+      end if
+    end tell
+    APPLESCRIPT
+  `
+else
+  HELP="$(sed <<<"$HELP" -e 's% (%    	(%' -e 's% <%	<%')"
+  HELP="usage:    <robot> {options}
+options:
+$HELP"
+  HELP=$(sed -e ';=' <<<"$HELP" | sed '-e N;s%\n% %' | sed -e 's%^\([0-9]*\) \(.*\)$%pack [ttk::label .frame1.label\1 -text \"\2\" -font \"Mono 10\"] -side top -anchor w%')
+  COMMAND=`wish <<EOF
+ttk::setTheme clam
 wm title . "Deploy"
 wm iconphoto . [image create photo .icon -file ../../Util/SimRobot/Src/SimRobot/Icons/SimRobot.png ]
 wm attribute . -type dialog
 set inputcommand "$COMMAND"
 frame .frame1
-pack [ttk::label .frame1.label1 -text "usage: <robot> {options}" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label2 -text "options:" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label3 -text "-a  (auto deploy these settings in the future)" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label4 -text "-b  (restart bhuman)" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label5 -text "-c  <team color>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label6 -text "-d  (delete all logs)" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label7 -text "-l  <location>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label8 -text "-m  <magic number>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label9 -text "-o  <team port>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label10 -text "-p  <player number>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label11 -text "-s  <scenario>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label12 -text "-t  <team number>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label13 -text "-v  <volume percent>" -font "Mono 10"] -side top -anchor w
-pack [ttk::label .frame1.label14 -text "-w  <wireless profile>" -font "Mono 10"] -side top -anchor w
+$HELP
 pack .frame1 -fill both -expand 1 -padx 10
 frame .frame2
 pack .frame2 -fill both -expand 1 -padx 10 -pady 5
@@ -87,7 +83,6 @@ fi
 if [ ! -z "$COMMAND" ]; then
   NAME=`sed "s% *\([^ ]*\).*%\1%" <<<"$COMMAND"`
   IP=`$NAME_TO_IP <<<"$NAME"`
-  echo "sc Remote $IP" >../../Config/Scenes/Includes/connect.con
   echo "$COMMAND" | sed "s% *[^ ]* *%%" >deploy-options.txt
-  ../Common/deploy $CONFIGURATION -nc `echo "$COMMAND" | sed -e "s% -a%%" -e "s%<robot>%%"`
+  ../Common/deploy $CONFIGURATION -nc -k `echo "$COMMAND" | sed -e "s% -a%%" -e "s%<robot>%%"`
 fi

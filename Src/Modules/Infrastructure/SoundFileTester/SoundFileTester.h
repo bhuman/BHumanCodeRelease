@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Infrastructure/DummyRepresentation.h"
 
 MODULE(SoundFileTester,

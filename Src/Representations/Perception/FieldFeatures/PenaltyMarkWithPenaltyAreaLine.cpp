@@ -18,8 +18,8 @@
 #include "PenaltyMarkWithPenaltyAreaLine.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 
 // TODO: Drawing in image
 

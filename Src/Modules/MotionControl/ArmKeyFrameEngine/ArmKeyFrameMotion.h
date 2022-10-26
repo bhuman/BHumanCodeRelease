@@ -8,12 +8,25 @@
 
 #pragma once
 
-#include "Platform/BHAssert.h"
 #include "Representations/MotionControl/ArmKeyFrameRequest.h"
-#include "Tools/Math/Angle.h"
+#include "Math/Angle.h"
+#include "Platform/BHAssert.h"
+#include "RobotParts/Joints.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
+#include <array>
+#include <vector>
 
 STREAMABLE(ArmKeyFrameMotion,
 {
+  ENUM(ArmInterpolation,
+  {,
+    linear,
+    maxToZero,
+    zeroToMax,
+    zeroToMaxToZero,
+  });
+
   /**
    * Represents one single state that an arm should reach. Consists of
    * target angles to be reached, stiffness data and amount of motion steps
@@ -21,9 +34,14 @@ STREAMABLE(ArmKeyFrameMotion,
    */
   STREAMABLE(ArmAngles,
   {,
-    (std::vector<Angle>)({0.f, 0.f, 0.f, 0.f, 0.f, 0.f}) angles, /**< Array of size 6, containing target angles for shoulder+elbow joint */
-    (std::vector<int>)({0, 0, 0, 0, 0, 0}) stiffness, /**< Array of size 6, containing stiffness data to set while targeting the above angles */
-    (int)(40) steps, /**< Duration in ms for reaching the target angles from the current position */
+    (std::array<Angle, Joints::numOfArmJoints>)({}) angles, /**< Target angles for all arm joints. */
+    (std::array<int, Joints::numOfArmJoints>)({}) stiffness, /**< Stiffness data to set while targeting the above angles. */
+  });
+
+  STREAMABLE_WITH_BASE(ArmKeyFrameState, ArmAngles,
+  {,
+    (float)(1000.f) duration, /**< Duration in ms for reaching the target angles from the current position. */
+    (ArmInterpolation)(zeroToMaxToZero) interpolation, /**< Interpolation method to use for this state. */
   });
 
   /**
@@ -34,39 +52,45 @@ STREAMABLE(ArmKeyFrameMotion,
    * must be passed to this method. It will be appended as target state to the
    * created motion.
    * @param defaultPos Angle definition of the arm's default position.
-   * @return A new ArmKeyFrameMotion targeting the arm#s default position.
+   * @return A new ArmKeyFrameMotion targeting the arm's default position.
    */
-  ArmKeyFrameMotion reverse(ArmAngles defaultPos)
+  ArmKeyFrameMotion reverse(const ArmAngles& defaultPos) const
   {
     ASSERT(id != ArmKeyFrameRequest::reverse); // reverse motion not reversible
+    ASSERT(!states.empty());
 
     ArmKeyFrameMotion result;
     result.id = ArmKeyFrameRequest::reverse;
 
-    if(id == ArmKeyFrameRequest::useDefault)
+    // add states in reverse order, but with the angles/stiffnesses shifted by one state
+    for(auto it = states.rbegin(); it != states.rend(); ++it)
     {
-      result.states = std::vector<ArmAngles>(states);
-      return result;
+      auto& state = result.states.emplace_back();
+      static_cast<ArmAngles&>(state) = std::next(it) == states.rend() ? defaultPos : *std::next(it);
+      state.duration = it->duration;
+      switch(it->interpolation)
+      {
+        case maxToZero:
+          state.interpolation = zeroToMax;
+          break;
+        case zeroToMax:
+          state.interpolation = maxToZero;
+          break;
+        default:
+          state.interpolation = it->interpolation;
+          break;
+      }
     }
-
-    result.states = std::vector<ArmAngles>();
-
-    // add states in reverse order and skip the last state
-    for(std::vector<ArmAngles>::reverse_iterator it = ++states.rbegin(); it != states.rend(); ++it)
-    {
-      result.states.push_back(*it);
-    }
-    // default position is the last state
-    result.states.push_back(defaultPos);
     return result;
   }
 
   /** Gets the last set of arm angles from this motion's states. */
-  ArmAngles& getTargetState()
+  const ArmAngles& getTargetState() const
   {
-    return *states.rbegin();
+    ASSERT(!states.empty());
+    return states.back();
   },
 
   (ArmKeyFrameRequest::ArmKeyFrameId) id, /** Unique id of this motion. */
-  (std::vector<ArmAngles>) states, /** Array of states to move the arm to */
+  (std::vector<ArmKeyFrameState>) states, /** Array of states to move the arm to. */
 });

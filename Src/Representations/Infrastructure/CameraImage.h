@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/ImageProcessing/Image.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
+#include "ImageProcessing/Image.h"
+#include "ImageProcessing/PixelTypes.h"
 
 struct CameraImage : public Image<PixelTypes::YUYVPixel>
 {

@@ -10,8 +10,8 @@
  */
 
 #include "PenaltyMarkRegionsProvider.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
+#include "Tools/Math/InImageSizeCalculations.h"
+#include "ImageProcessing/PixelTypes.h"
 
 MAKE_MODULE(PenaltyMarkRegionsProvider, perception);
 

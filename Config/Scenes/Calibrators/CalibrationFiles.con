@@ -1,0 +1,6 @@
+save representation:CameraCalibration
+save representation:FootSoleRotationCalibration
+save representation:IMUCalibration
+
+echo --Optional Calibration File. Save It With This Command By Hand--
+echo save parameters:FsrDataProvider

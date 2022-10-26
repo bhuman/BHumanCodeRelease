@@ -6,20 +6,18 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
+#include "Framework/Module.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Perception/FieldPercepts/FieldLines.h"
 #include "Representations/Perception/FieldPercepts/FieldLineIntersections.h"
 #include "Representations/Perception/FieldFeatures/PenaltyArea.h"
-#include "Representations/Perception/FieldFeatures/FieldRelations.h"
-#include "Tools/Math/BHMath.h"
+#include "Math/BHMath.h"
 
 MODULE(PenaltyAreaPerceptor,
 {,
   REQUIRES(FieldDimensions),
   REQUIRES(FieldLines),
   REQUIRES(FieldLineIntersections),
-  REQUIRES(IntersectionRelations),
   PROVIDES(PenaltyArea),
   LOADS_PARAMETERS(
   {,

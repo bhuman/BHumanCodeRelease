@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Tools/RobotParts/Joints.h"
-#include "Tools/Streams/EnumIndexedArray.h"
-#include "Tools/Range.h"
+#include "RobotParts/Joints.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "Math/Range.h"
 
 STREAMABLE(JointLimits,
 {

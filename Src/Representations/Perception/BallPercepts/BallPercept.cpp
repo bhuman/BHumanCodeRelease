@@ -4,12 +4,12 @@
  * Very simple representation of a seen ball
  *
  * @author <a href="mailto:tlaue@uni-bremen.de">Tim Laue</a>
- * @autor Jesse
+ * @author Jesse
  */
 
 #include "BallPercept.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugDrawings3D.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings3D.h"
 
 void BallPercept::draw() const
 {

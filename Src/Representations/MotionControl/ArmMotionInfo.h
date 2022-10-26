@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Representations/MotionControl/ArmMotionRequest.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
 
 STREAMABLE_WITH_BASE(ArmMotionInfo, ArmMotionRequest,
 {

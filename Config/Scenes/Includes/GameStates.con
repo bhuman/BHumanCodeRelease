@@ -1,17 +1,5 @@
-# Simulator provides GameController info
-mr RobotInfo LogDataProvider Cognition
-mr OwnTeamInfo LogDataProvider Cognition
-mr OpponentTeamInfo LogDataProvider Cognition
-mr RawGameInfo LogDataProvider Cognition
+# Simulator provides whistle
+mr Whistle LogDataProvider
 
-# use keyboard to set different game states
-jc press 9 gc initial # Shift+Ctrl+I
-jc press 18 gc ready # Shift+Ctrl+R
-jc press 19 gc set # Shift+Ctrl+S
-jc press 16 gc playing # Shift+Ctrl+P
-jc press 6 gc finished # Shift+Ctrl+F
-jc press 2 gc kickOffFirstTeam # Shift+Ctrl+B
-jc press 25 gc kickOffSecondTeam # Shift+Ctrl+Y
-jc press 21 pr none # Shift+Ctrl+U (Unpenalized)
-jc press 13 pr manual # Shift+Ctrl+M (Manual penalty)
-jc press 7 pr playerPushing # Shift+Ctrl+G (pushinG, Gamecontroller penalty)
+# Everything else is the same in 2D
+call Includes/GameStates2D

@@ -3,53 +3,36 @@
 
 cd "$(dirname "$(which "$0")")"
 
-if [ -n "$NO_CLION" ]; then
-  for CONFIG in Debug Develop Release; do
-    cmake -DCMAKE_BUILD_TYPE=$CONFIG -G Ninja -S . -B ../../Build/Linux/CMake/$CONFIG
-  done
-else
+USE_CLION=
+
+if [ "$1" = "-c" ]; then
+  USE_CLION=1
+elif [ $# != 0 ]; then
+  echo "usage: $0 [-c]"
+  echo "  options:"
+  echo "    -c    generate a CLion project instead of CMake caches"
+  exit 1
+fi
+
+if [ -f .idea/workspace.xml -o ! -z "$USE_CLION" ]; then
   CMAKE_RUN_CONFIGURATION_MANAGER="    <generated>
+      <config projectName=\"B-Human\" targetName=\"bush\" />
       <config projectName=\"B-Human\" targetName=\"Nao\" />
       <config projectName=\"B-Human\" targetName=\"SimRobot\" />
-      <config projectName=\"B-Human\" targetName=\"bush\" />
+      <config projectName=\"B-Human\" targetName=\"Tests\" />
     </generated>"
 
-  CMAKE_SETTINGS="    <configurations>
-      <configuration PROFILE_NAME=\"Debug\" CONFIG_NAME=\"Debug\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Debug\" BUILD_OPTIONS=\"\" />
-      <configuration PROFILE_NAME=\"Develop\" CONFIG_NAME=\"Develop\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Develop\" BUILD_OPTIONS=\"\" />
-      <configuration PROFILE_NAME=\"Release\" CONFIG_NAME=\"Release\" GENERATION_OPTIONS=\"-GNinja\" GENERATION_DIR=\"../../Build/Linux/CMake/Release\" BUILD_OPTIONS=\"\" />
-    </configurations>"
-
-  RUN_MANAGER="    <configuration name=\"Nao\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" PROGRAM_PARAMS=\"\$CMakeCurrentBuildTypeName\$\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"Nao\" CONFIG_NAME=\"Debug\" RUN_PATH=\"\$PROJECT_DIR\$/../Common/deployDialog\">
-      <method v=\"2\">
-        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
-      </method>
-    </configuration>
-    <configuration name=\"SimRobot\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"SimRobot\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"B-Human\" RUN_TARGET_NAME=\"SimRobot\">
-      <method v=\"2\">
-        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
-      </method>
-    </configuration>
-    <configuration name=\"bush\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"B-Human\" TARGET_NAME=\"bush\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"B-Human\" RUN_TARGET_NAME=\"bush\">
-      <method v=\"2\">
-        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask\" enabled=\"true\" />
-      </method>
-    </configuration>
-    <list>
+  RUN_MANAGER="    <list>
+      <item itemvalue=\"CMake Application.bush\" />
       <item itemvalue=\"CMake Application.Nao\" />
       <item itemvalue=\"CMake Application.SimRobot\" />
-      <item itemvalue=\"CMake Application.bush\" />
+      <item itemvalue=\"Google Test.Tests\" />
     </list>"
 
-  if [ -e .idea/workspace.xml ]; then
+  if [ -f .idea/workspace.xml ]; then
     (
       sed -n "/<component name=\"CMakeRunConfigurationManager\"/{p;:a;N;/<\/component>\$/!ba;c\\
 $((tr '\n' '@' | sed 's/@/\\\n/g') <<<$CMAKE_RUN_CONFIGURATION_MANAGER)
-\
-  <\/component>
-};p" |
-      sed -n "/<component name=\"CMakeSettings\"/{p;:a;N;/<\/component>\$/!ba;c\\
-$((tr '\n' '@' | sed 's/@/\\\n/g') <<<$CMAKE_SETTINGS)
 \
   <\/component>
 };p" |
@@ -62,13 +45,9 @@ $((tr '\n' '@' | sed 's/@/\\\n/g') <<<$RUN_MANAGER)
   else
     echo >.idea/workspace.xml "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <project version=\"4\">
+  <component name=\"ExecutionTargetManager\" SELECTED_TARGET=\"CMakeBuildProfile:Develop\" />
   <component name=\"CMakeRunConfigurationManager\" shouldGenerate=\"false\" shouldDeleteObsolete=\"false\">
 $CMAKE_RUN_CONFIGURATION_MANAGER
-  </component>
-  <component name=\"CMakeSettings\">
-    <configurations>
-$CMAKE_SETTINGS
-    </configurations>
   </component>
   <component name=\"RunManager\" selected=\"CMake Application.SimRobot\">
 $RUN_MANAGER
@@ -78,8 +57,8 @@ $RUN_MANAGER
 
   mkdir -p .idea/fileTemplates/includes
   echo -n "#set( \$Author = \"$(git config user.name)\" )" > ".idea/fileTemplates/includes/Set Author."
-fi
-
-if [ ! -u ../../Util/Buildchain/Linux/bin/getModKey ]; then
-  pkexec bash -c "chown root:root $(pwd)/../../Util/Buildchain/Linux/bin/getModKey; chmod u+s $(pwd)/../../Util/Buildchain/Linux/bin/getModKey"
+else
+  for CONFIG in Debug Develop Release; do
+    cmake -DCMAKE_BUILD_TYPE=$CONFIG -G Ninja -S . -B ../../Build/Linux/CMake/$CONFIG
+  done
 fi

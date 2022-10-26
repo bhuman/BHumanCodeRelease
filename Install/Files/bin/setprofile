@@ -4,11 +4,11 @@ PROFILES="/home/nao/Profiles"
 
 usage()
 {
-  echo "usage: $0 <profile> - Sets the wireless network profile."
+  echo "usage: $0 <profile> [<wireless IP>] - Sets the wireless network profile."
   exit 1
 }
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   usage
 fi
 
@@ -18,13 +18,26 @@ if [ ! -e "${PROFILES}/$1" ]; then
 fi
 
 if [ $(id -u) -ne 0 ]; then
-  exec sudo $0 "$1"
+  exec sudo $0 "$@"
 fi
 
 if [ -s "${PROFILES}/$1" ]; then
   sed -e "s/^/        /" "${PROFILES}/$1" >/etc/netplan/default.yaml.profile
+  if [ $# -eq 2 ]; then
+    ADDRESS="addresses: [$2]"
+    if [ "$2" = "dhcp" ]; then
+      ADDRESS="dhcp4: yes"
+    fi
+    cat >/etc/netplan/default.yaml.wifi <<EOF
+  wifis:
+    wlan0:
+      ${ADDRESS}
+      access-points:
+EOF
+  fi
   cat /etc/netplan/default.yaml.base /etc/netplan/default.yaml.wifi /etc/netplan/default.yaml.profile >/etc/netplan/default.yaml.staging
 else
+  rm -f /etc/netplan/default.yaml.profile
   cp /etc/netplan/default.yaml.base /etc/netplan/default.yaml.staging
 fi
 

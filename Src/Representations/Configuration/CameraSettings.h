@@ -9,8 +9,8 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/EnumIndexedArray.h"
 #include <array>
 
 STREAMABLE(CameraSettings,

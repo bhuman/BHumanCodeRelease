@@ -1,9 +1,8 @@
 vd parameters:AutomaticCameraCalibrator
-vd parameters:CalibrationCard
 vd representation:CameraCalibration
 vd representation:CameraCalibrationStatus
 vd representation:CalibrationRequest
-vd representation:HeadAngleRequest
+vd representation:HeadMotionRequest
 
 vid all horizon
 vid all representation:FieldLines:image
@@ -11,4 +10,4 @@ vid all representation:PenaltyMarkPercept:image
 vid all module:AutomaticCameraCalibrator:correctedLines
 vfd all behavior:AutonomousCameraCalibrationCard:position
 
-pr calibration
+echo dr module:GameStateProvider:calibration

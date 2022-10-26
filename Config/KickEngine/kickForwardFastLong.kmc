@@ -1,8 +1,3 @@
-boostAngles = [
-  {joint = rKneePitch; angle = -5deg; mode = linear;},
-  {joint = rHipPitch; angle = -60deg; mode = linear;},
-  {joint = rAnklePitch; angle = 50deg; mode = linear;}
-];
 offsetList = [
   {kickKeyframeLine = 2; boost = [{joint = rKneePitch; angle = 30deg; mode = cosine;},{joint = rAnklePitch; angle = 0deg; mode = cosine;},{joint = rHipPitch; angle = 5deg; mode = cosine;}];},
   {kickKeyframeLine = 3; boost = [{joint = rKneePitch; angle = -120deg; mode = cosine;},{joint = rAnklePitch; angle = 45deg; mode = cosine;},{joint = rHipPitch; angle = -5deg; mode = linear;}];},

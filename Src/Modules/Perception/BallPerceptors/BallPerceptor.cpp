@@ -11,9 +11,9 @@
 #include "BallPerceptor.h"
 #include "Platform/File.h"
 #include "Platform/SystemCall.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/Stopwatch.h"
-#include "Tools/Global.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/Stopwatch.h"
+#include "Streaming/Global.h"
 #include "Tools/Math/Projection.h"
 #include "Tools/Math/Transformation.h"
 
@@ -79,8 +79,8 @@ void BallPerceptor::update(BallPercept& theBallPercept)
   }
 
   // Special ball handling for penalty goal keeper
-  if((theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT || (theGameInfo.setPlay == SET_PLAY_PENALTY_KICK && theTeamBehaviorStatus.role.isGoalkeeper()))
-      && theGameInfo.kickingTeam != theOwnTeamInfo.teamNumber && theMotionInfo.executedPhase == MotionPhase::keyframeMotion)
+  if((theGameState.state == GameState::opponentPenaltyShot || theGameState.state == GameState::opponentPenaltyKick) &&
+     theMotionInfo.isKeyframeMotion(KeyframeMotionRequest::sitDownKeeper))
   {
     Vector2f inImageLowPoint;
     Vector2f inImageUpPoint;
@@ -123,14 +123,26 @@ float BallPerceptor::apply(const Vector2i& ballSpot, Vector2f& ballPosition, flo
     if(useFloat)
     {
       PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, encoder.input(0).data(), extractionMode);
-      if(useContrastNormalization)
-        PatchUtilities::normalizeContrast(encoder.input(0).data(), Vector2i(patchSize, patchSize), contrastNormalizationPercent);
+      switch(normalizationMode)
+      {
+        case BallPerceptorModule::Params::normalizeContrast:
+          PatchUtilities::normalizeContrast(encoder.input(0).data(), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+          break;
+        case BallPerceptorModule::Params::normalizeBrightness:
+          PatchUtilities::normalizeBrightness(encoder.input(0).data(), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+      }
     }
     else
     {
       PatchUtilities::extractPatch(ballSpot, Vector2i(ballArea, ballArea), Vector2i(patchSize, patchSize), theECImage.grayscaled, reinterpret_cast<unsigned char*>(encoder.input(0).data()), extractionMode);
-      if(useContrastNormalization)
-        PatchUtilities::normalizeContrast(reinterpret_cast<unsigned char*>(encoder.input(0).data()), Vector2i(patchSize, patchSize), contrastNormalizationPercent);
+      switch(normalizationMode)
+      {
+        case BallPerceptorModule::Params::normalizeContrast:
+          PatchUtilities::normalizeContrast(reinterpret_cast<unsigned char*>(encoder.input(0).data()), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+          break;
+        case BallPerceptorModule::Params::normalizeBrightness:
+          PatchUtilities::normalizeBrightness(reinterpret_cast<unsigned char*>(encoder.input(0).data()), Vector2i(patchSize, patchSize), normalizationOutlierRatio);
+      }
     }
   const float stepSize = static_cast<float>(ballArea) / static_cast<float>(patchSize);
 

@@ -8,25 +8,18 @@
 
 #pragma once
 
-#include "Tools/Function.h"
-#include "Tools/Motion/MotionGenerator.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Function.h"
+#include "Tools/Motion/MotionPhase.h"
 #include "Representations/MotionControl/KeyframeMotionRequest.h"
+#include <memory>
 
-STREAMABLE(EditKeyframe,
-{,
-  (JointAngles)(JointAngles()) angles,
-  (KeyframeMotionRequest::KeyframeMotionID)(KeyframeMotionRequest::decideAutomatic) motion,
-  (int)(-1) line,
-});
-
-STREAMABLE_WITH_BASE(KeyframeMotionGenerator, MotionGenerator,
+STREAMABLE(KeyframeMotionGenerator,
 {
-  BASE_HAS_FUNCTION;
-  FUNCTION(void(const int line, const float ratio, const KeyframeMotionRequest::KeyframeMotionID motion)) setPhaseInformation,
+  FUNCTION(std::unique_ptr<MotionPhase>(const KeyframeMotionRequest&, const MotionPhase&)) createPhase;
+  FUNCTION(void(const float ratio, const KeyframeMotionRequest::KeyframeMotionID motion)) setPhaseInformation;
+  FUNCTION(bool(const MotionPhase&)) wasLastGetUp,
 
-  (int)(0) line,
   (float)(0.f) ratio,
   (KeyframeMotionRequest::KeyframeMotionID)(KeyframeMotionRequest::decideAutomatic) motion,
-  (EditKeyframe) editKeyframe,
 });

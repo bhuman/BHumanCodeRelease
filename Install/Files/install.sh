@@ -871,8 +871,8 @@ setup_system() {
 
   # Configure hostname and IPs if possible.
   local hostname="$(cat /tmp/userpart/nao/.config/hostname)"
-  local wiredIp="$(cat /tmp/userpart/nao/.config/wiredIp)"
-  local wirelessIp="$(cat /tmp/userpart/nao/.config/wirelessIp)"
+  local wiredIP="$(cat /tmp/userpart/nao/.config/wiredIP)"
+  local wirelessIP="$(cat /tmp/userpart/nao/.config/wirelessIP)"
   if [ -r /tmp/userpart/nao/Config/Robots/robots.cfg ]; then
     local headId="$(/tmp/get-head-id)"
     if [ -n "${headId}" ]; then
@@ -882,18 +882,18 @@ setup_system() {
         if [ -n "${hostname}" ]; then
           local networkFile="/tmp/userpart/nao/Config/Robots/${hostname}/network.cfg"
           if [ -r "${networkFile}" ]; then
-            wiredIp="$(grep "^lan" "${networkFile}" | sed "s%.*\"\([^\"]*\)\".*%\1%")"
-            wirelessIp="$(grep "^wlan" "${networkFile}" | sed "s%.*\"\([^\"]*\)\".*%\1%")"
+            wiredIP="$(grep "^lan" "${networkFile}" | sed "s%.*\"\([^\"]*\)\".*%\1%")"
+            wirelessIP="$(grep "^wlan" "${networkFile}" | sed "s%.*\"\([^\"]*\)\".*%\1%")"
           fi
         fi
       fi
     fi
   fi
-  if [ -n "${hostname}" -a -n "${wiredIp}" -a -n "${wirelessIp}" ]; then
+  if [ -n "${hostname}" -a -n "${wiredIP}" -a -n "${wirelessIP}" ]; then
     sed "s%HOSTNAME_PLACEHOLDER%${hostname}%g" /tmp/rootpart/etc/hosts >/tmp/hosts.tmp && mv /tmp/hosts.tmp /tmp/rootpart/etc/hosts
     sed "s%HOSTNAME_PLACEHOLDER%${hostname}%g" /tmp/rootpart/etc/hostname >/tmp/hostname.tmp && mv /tmp/hostname.tmp /tmp/rootpart/etc/hostname
-    sed "s%WIRED_IP_PLACEHOLDER%${wiredIp}%g" /tmp/rootpart/etc/netplan/default.yaml.base >/tmp/default.yaml.base.tmp && mv /tmp/default.yaml.base.tmp /tmp/rootpart/etc/netplan/default.yaml.base
-    sed "s%WIRELESS_IP_PLACEHOLDER%${wirelessIp}%g" /tmp/rootpart/etc/netplan/default.yaml.wifi >/tmp/default.yaml.wifi.tmp && mv /tmp/default.yaml.wifi.tmp /tmp/rootpart/etc/netplan/default.yaml.wifi
+    sed "s%WIRED_IP_PLACEHOLDER%${wiredIP}%g" /tmp/rootpart/etc/netplan/default.yaml.base >/tmp/default.yaml.base.tmp && mv /tmp/default.yaml.base.tmp /tmp/rootpart/etc/netplan/default.yaml.base
+    sed "s%WIRELESS_IP_PLACEHOLDER%${wirelessIP}%g" /tmp/rootpart/etc/netplan/default.yaml.wifi >/tmp/default.yaml.wifi.tmp && mv /tmp/default.yaml.wifi.tmp /tmp/rootpart/etc/netplan/default.yaml.wifi
   else
     echo "No hostname and IP set. Things will break."
     # TODO: proper error handling

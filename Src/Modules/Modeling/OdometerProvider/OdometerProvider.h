@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "Tools/Module/Module.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Framework/Module.h"
+#include "Debugging/DebugDrawings.h"
 #include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Modeling/Odometer.h"
 

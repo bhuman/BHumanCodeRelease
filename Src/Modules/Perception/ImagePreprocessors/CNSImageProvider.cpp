@@ -8,11 +8,11 @@
 
 #include "CNSImageProvider.h"
 #include "Representations/Infrastructure/CameraImage.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/ImageProcessing/AVX.h"
+#include "Debugging/DebugDrawings.h"
+#include "Math/BHMath.h"
+#include "ImageProcessing/AVX.h"
 #include "Tools/Math/Transformation.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
+#include "Tools/Math/InImageSizeCalculations.h"
 
 MAKE_MODULE(CNSImageProvider, perception);
 

@@ -5,7 +5,7 @@
  */
 #include "BSPLStandardMessage.h"
 #include "Platform/BHAssert.h"
-#include "Tools/FunctionList.h"
+#include "Streaming/FunctionList.h"
 #include <cstddef>
 
 size_t BSPLStandardMessage::sizeOfBSPLMessage() const

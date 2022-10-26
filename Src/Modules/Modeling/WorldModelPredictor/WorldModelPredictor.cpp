@@ -46,10 +46,10 @@ void WorldModelPredictor::update(WorldModelPrediction& worldModelPrediction)
   worldModelPrediction.ballVelocity = propagatedBallVelocity.rotate(odometryOffset.rotation);
 
   // Special handling for penalty shootout -> ball is supposed to be on the penalty spot!
-  if(theGameInfo.gamePhase == GAME_PHASE_PENALTYSHOOT &&
+  if(theGameState.isPenaltyShootout() &&
      theFrameInfo.getTimeSince(lastUsedBallModel.timeWhenLastSeen) > 100)
   {
-    const Vector2f knownBallPosition = theGameInfo.kickingTeam == theOwnTeamInfo.teamNumber
+    const Vector2f knownBallPosition = theGameState.isForOwnTeam()
       ? Vector2f(theFieldDimensions.xPosOpponentPenaltyMark, 0.f)
       : Vector2f(theFieldDimensions.xPosOwnPenaltyMark, 0.f);
     worldModelPrediction.ballPosition = theRobotPose.inversePose * knownBallPosition;

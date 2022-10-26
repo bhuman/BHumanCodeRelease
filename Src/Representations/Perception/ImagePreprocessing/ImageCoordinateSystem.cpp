@@ -7,11 +7,11 @@
 
 #include "ImageCoordinateSystem.h"
 #include "Representations/Infrastructure/CameraImage.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Debugging/DebugImages.h"
-#include "Tools/ImageProcessing/PixelTypes.h"
-#include "Tools/ImageProcessing/Image.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Debugging/DebugImages.h"
+#include "ImageProcessing/PixelTypes.h"
+#include "ImageProcessing/Image.h"
+#include "Framework/Blackboard.h"
 
 Vector2f ImageCoordinateSystem::fromCorrected(const Vector2f& correctedCoords, const Vector2f& offset) const
 {

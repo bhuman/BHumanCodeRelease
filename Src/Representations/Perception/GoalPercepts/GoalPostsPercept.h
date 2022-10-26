@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Math/Pose2f.h"
+#include "Streaming/Enum.h"
+#include "Math/Eigen.h"
+#include "Math/Pose2f.h"
 #include <vector>
 
 STREAMABLE(GoalPostsPercept,

@@ -12,7 +12,7 @@
 #include "Representations/Infrastructure/CameraInfo.h"
 #include "Representations/Infrastructure/FrameInfo.h"
 #include "Representations/Modeling/LabelImage.h"
-#include "Representations/Modeling/Odometer.h"
+#include "Representations/MotionControl/OdometryData.h"
 #include "Representations/Perception/ImagePreprocessing/BodyContour.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ECImage.h"
@@ -22,9 +22,9 @@
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesFieldPercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesImagePercept.h"
 #include "Representations/Perception/ObstaclesPercepts/ObstaclesPerceptorData.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/ImageProcessing/InImageSizeCalculations.h"
-#include "Tools/Module/Module.h"
+#include "Math/Eigen.h"
+#include "Tools/Math/InImageSizeCalculations.h"
+#include "Framework/Module.h"
 #include <CompiledNN/CompiledNN.h>
 
 MODULE(PlayersDeeptector,
@@ -39,8 +39,9 @@ MODULE(PlayersDeeptector,
   REQUIRES(ImageCoordinateSystem),
   REQUIRES(JerseyClassifier),
   REQUIRES(ObstaclesFieldPercept),
-  REQUIRES(Odometer),
+  REQUIRES(OdometryData),
   REQUIRES(OtherObstaclesPerceptorData),
+  REQUIRES(OtherOdometryData),
   PROVIDES(ObstaclesFieldPercept),
   PROVIDES(ObstaclesImagePercept),
   USES(ObstaclesPerceptorData),
@@ -50,7 +51,7 @@ MODULE(PlayersDeeptector,
     (float)(0.6f) objectThres, /**< Limit from which a robot is accepted. */
     (unsigned int)(2) xyStep, /** Step size in x/y direction for scanning the image. */
     (unsigned int)(16) xyRegions, /** Number of regions in x/y direction. */
-    (short)(40) minContrastDif, /** Minimal contrast difference to consider a spot. */
+    (short)(40) minContrastDiff, /** Minimal contrast difference to consider a spot. */
     (short)(100) brightnessThreshold, /** Minimal brightness to count a spot as bright. */
     (unsigned char)(40) satThreshold, /** Maximum saturation to count a spot as non saturated. */
     (float)(0.2f) mixedThresh, /** Ratio of the horizontal & vertical contrast changes from which a region is considered a mixed region. */

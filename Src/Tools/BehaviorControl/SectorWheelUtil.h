@@ -9,7 +9,7 @@
 #pragma once
 
 #include "SectorWheel.h"
-#include "Tools/Math/Angle.h"
+#include "Math/Angle.h"
 
 namespace SectorWheelUtil
 {

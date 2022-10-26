@@ -48,7 +48,7 @@ fi
 trap "" 2 15
 
 # Mount USB drive. In some contexts in which a USB drive is required (e.g. remote events), we refuse to continue without a USB drive.
-if [ -e /home/nao/.config/require-usb ]; then
+if [ -e /home/nao/.config/requireUSB ]; then
   while ! ( mount /media/usb 2>/dev/null && /home/nao/bin/chmod-usb && mkdir -p /media/usb/logs ); do
     trap - 2 15
     aplay -q /home/nao/Config/Sounds/insertUSBDrive.wav
@@ -57,6 +57,39 @@ if [ -e /home/nao/.config/require-usb ]; then
   done
 else
   mount /media/usb 2>/dev/null && /home/nao/bin/chmod-usb && mkdir -p /media/usb/logs
+fi
+
+if [ -f /media/usb/config.json ]; then
+  settingsReplacements()
+  {
+    local SEDFLAGS=""
+    [ ! -z ${COLOR} ] && SEDFLAGS="$SEDFLAGS -e 's/teamColor =.*/teamColor = $COLOR;/'"
+    [ ! -z ${PLAYER} ] && SEDFLAGS="$SEDFLAGS -e 's/playerNumber =.*/playerNumber = $PLAYER;/'"
+    [ ! -z ${TEAM} ] && SEDFLAGS="$SEDFLAGS -e 's/teamNumber =.*/teamNumber = $TEAM;/'"
+    [ ! -z ${MAGICNUMBER} ] && SEDFLAGS="$SEDFLAGS -e 's/magicNumber =.*/magicNumber = $MAGICNUMBER;/'"
+    echo "${SEDFLAGS}"
+  }
+
+  PLAYER=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['playerNumber'])" 2>/dev/null)
+  if [ -z ${PLAYER} ]; then
+    PLAYER=$(lsblk -ndo label $(mount | grep -o ".* on /media/usb " | tr " " "\n" | head -1) | grep -Eo "[0-9]+$")
+  fi
+  COLOR=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['teamColor'])" 2>/dev/null)
+  TEAM=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['teamNumber'])" 2>/dev/null)
+  MAGICNUMBER=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['settings']['magicNumber'])" 2>/dev/null)
+  SEDFLAGS="$(settingsReplacements)"
+  if [ ! -z "${SEDFLAGS}" ]; then
+    bash -c "sed ${SEDFLAGS} -i /home/nao/Config/settings.cfg"
+  fi
+
+  IP=$(eval echo $(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['ipAddress'])" 2>/dev/null))
+  SSID=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['ssid'])" 2>/dev/null)
+  PASSWORD=$(python3 -c "import json; config = json.load(open('/media/usb/config.json', 'r')); print(config['wifi']['password'])" 2>/dev/null)
+  if [ ! -z "${SSID}" -a ! -z "${IP}" ]; then
+    echo "\"${SSID}\":" >/home/nao/Profiles/fromUSB
+    echo "  password: \"${PASSWORD}\"" >>/home/nao/Profiles/fromUSB
+    /home/nao/bin/setprofile fromUSB ${IP}
+  fi
 fi
 
 if [ -d /media/usb/logs ]; then

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "InverseKinematic.h"
-#include "Tools/Math/Pose3f.h"
+#include "Math/Pose3f.h"
 #include "Representations/Infrastructure/JointAngles.h"
 #include "Representations/Infrastructure/JointRequest.h"
 
@@ -29,6 +29,26 @@ namespace MotionUtilities
             const Joints::Joint startJoint, const Joints::Joint endJoint);
 
   /**
+   * The method copies all joint angles from one joint request to another.
+   * @param source The source joint request. All angles will be copied.
+   * @param target The target joint request.
+   * @param startJoint first joint (includes)
+   * @param endJoint last joint (excludes)
+   */
+  void copy(const JointAngles& source, JointAngles& target,
+            const Joints::Joint startJoint, const Joints::Joint endJoint);
+
+  /**
+   * The method copies all joint angles from one joint request to another.
+   * @param source The source joint request. All angles will be copied.
+   * @param target The target joint request.
+   * @param startJoint first joint (includes)
+   * @param endJoint last joint (excludes)
+   */
+  void copy(const std::array<Angle, Joints::numOfJoints>& source, JointAngles& target,
+            const Joints::Joint startJoint, const Joints::Joint endJoint);
+
+  /**
    * The method interpolates between two joint requests.
    * @param from The first source joint request. This one is the starting point.
    * @param to The second source joint request. This one has to be reached over time.
@@ -38,7 +58,7 @@ namespace MotionUtilities
    * @param startJoint first joint (includes)
    * @param endJoint last joint (excludes)
    */
-  void interpolate(const JointRequest& from, const JointRequest& to, float fromRatio, JointRequest& target, bool interpolateStiffness,
+  void interpolate(const JointRequest& from, const JointRequest& to, const float fromRatio, JointRequest& target, bool interpolateStiffness,
                    const StiffnessSettings& theStiffnessSettings, const JointAngles& lastJointAngles,
                    const Joints::Joint startJoint, const Joints::Joint endJoint);
 
@@ -53,11 +73,6 @@ namespace MotionUtilities
   bool interpolate(JointRequest& joints, const float alpha, const float threshold, const JointRequest& theJointRequest, const JointAngles& theJointAngles,
                    const JointRequest& theStandLegRequest);
 
-  void interpolate(const JointAngles& from, const JointRequest& to, float& ratio, JointRequest& target, const JointAngles& theJointAngles);
-  void stand(JointRequest& jointRequest);
+  void interpolate(const JointAngles& from, const JointRequest& to, const float& ratio, JointRequest& target, const JointAngles& theJointAngles);
   void walkStand(JointRequest& output, const RobotDimensions& dimensions);
-  void sitFront(JointRequest& output);
-  void sit(JointRequest& jointRequest);
-  void safeArmsBehind(JointRequest& jointRequest);
-  void safeArmsFront(JointRequest& jointRequest);
 };

@@ -10,14 +10,14 @@
  */
 
 #include "ObstaclesFieldPercept.h"
-#include "Representations/Communication/TeamInfo.h"
 #include "Representations/Infrastructure/CameraInfo.h"
+#include "Representations/Infrastructure/GameState.h"
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 #include "Tools/Math/Transformation.h"
 #include "Tools/Modeling/Obstacle.h"
-#include "Tools/Module/Blackboard.h"
+#include "Framework/Blackboard.h"
 #include <cmath>
 
 void ObstaclesFieldPercept::draw() const
@@ -33,10 +33,10 @@ void ObstaclesFieldPercept::draw() const
   const ColorRGBA teamColors[] =
   {
     ColorRGBA::white,
-    ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OwnTeamInfo") ?
-        static_cast<const OwnTeamInfo&>(Blackboard::getInstance()["OwnTeamInfo"]).teamColor : TEAM_BLACK),
-    ColorRGBA::fromTeamColor(Blackboard::getInstance().exists("OpponentTeamInfo") ?
-         static_cast<const OpponentTeamInfo&>(Blackboard::getInstance()["OpponentTeamInfo"]).teamColor : TEAM_RED)
+    ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
+        static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).ownTeam.color : GameState::Team::Color::black)),
+    ColorRGBA::fromTeamColor(static_cast<int>(Blackboard::getInstance().exists("GameState") ?
+        static_cast<const GameState&>(Blackboard::getInstance()["GameState"]).opponentTeam.color : GameState::Team::Color::red))
   };
 
   // Draw robots in field view:
@@ -80,7 +80,7 @@ void ObstaclesFieldPercept::draw() const
 
 void ObstaclesFieldPercept::verify() const
 {
-  for(const Obstacle& obstacle : obstacles)
+  for([[maybe_unused]] const Obstacle& obstacle : obstacles)
   {
     ASSERT(std::isfinite(obstacle.center.x()));
     ASSERT(std::isfinite(obstacle.center.y()));

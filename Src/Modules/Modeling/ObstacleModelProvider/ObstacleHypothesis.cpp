@@ -11,8 +11,8 @@
 #include "Representations/Perception/ImagePreprocessing/CameraMatrix.h"
 #include "Representations/Perception/ImagePreprocessing/FieldBoundary.h"
 #include "Representations/Perception/ImagePreprocessing/ImageCoordinateSystem.h"
-#include "Tools/Math/BHMath.h"
-#include "Tools/Math/Covariance.h"
+#include "Math/BHMath.h"
+#include "Math/Covariance.h"
 #include "Tools/Math/Transformation.h"
 
 #include <algorithm>

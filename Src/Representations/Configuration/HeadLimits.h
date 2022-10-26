@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Range.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Range.h"
 
 struct RobotCameraMatrix;
 

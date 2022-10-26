@@ -7,8 +7,8 @@
 #pragma once
 
 #include "ArmKeyFrameRequest.h"
-#include "Tools/RobotParts/Arms.h"
-#include "Tools/Math/Eigen.h"
+#include "RobotParts/Arms.h"
+#include "Math/Eigen.h"
 
 /**
  * @struct ArmMotionRequest

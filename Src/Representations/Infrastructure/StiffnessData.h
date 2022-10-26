@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Tools/RobotParts/Joints.h"
-#include "Tools/Streams/EnumIndexedArray.h"
-#include "Tools/Debugging/Debugging.h"
+#include "RobotParts/Joints.h"
+#include "Streaming/EnumIndexedArray.h"
+#include "Debugging/Debugging.h"
 
 STREAMABLE(StiffnessData,
 {

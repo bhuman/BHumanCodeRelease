@@ -1,0 +1,34 @@
+call Includes/Normal
+
+# Views
+vi image Upper
+vi image Lower
+
+vid lower representation:FieldBoundary:image
+vid lower representation:FieldLines:image
+vid lower representation:MidCircle:image
+vid lower representation:BodyContour
+
+
+# Shift+Ctrl+W: Whistle
+mr Whistle WhistleRecognizer
+jc press 23 set representation:KeyStates pressed = { headFront = false; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; }; \n dr module:WhistleRecognizer:detectNow
+
+# Shift+Ctrl+H: Head button
+jc press 8 set representation:KeyStates pressed = { headFront = true; headMiddle = false; headRear = false; lHandBack = false; lHandLeft = false; lHandRight = false; rHandBack = false; rHandLeft = false; rHandRight = false; lFootLeft = false; lFootRight = false; rFootLeft = false; rFootRight = false; chest = false; };
+
+# Activate sound
+dr unmute
+
+# make challenge related debug information visible
+vd representation:RefereePercept
+vd parameters:RefereeGestureDetection
+vid upper representation:Keypoints
+vid upper module:KeypointsProvider:patch
+vid upper module:KeypointsProvider:mask
+vid upper module:RefereeGestureDetection:arms
+vid upper module:RefereeGestureDetection:shoulderToWrist
+gc playing
+
+ar off
+ar trueGameState

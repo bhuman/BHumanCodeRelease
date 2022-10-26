@@ -7,7 +7,7 @@
  */
 
 #include "AudioProvider.h"
-#include "Platform/SystemCall.h"
+#include "Platform/Time.h"
 #include "Platform/Thread.h"
 #include <type_traits>
 
@@ -68,10 +68,8 @@ void AudioProvider::update(AudioData& audioData)
     currentCaptureVolume = captureVolume;
   }
 
-  unsigned available = std::min(static_cast<unsigned>(snd_pcm_avail(handle)), maxFrames);
-  audioData.samples.resize(available * channels);
-
-  int status = static_cast<int>(snd_pcm_readi(handle, audioData.samples.data(), available));
+  audioData.samples.resize(frames * channels);
+  int status = static_cast<int>(snd_pcm_readi(handle, audioData.samples.data(), frames));
   if(status < 0)
   {
     OUTPUT_WARNING("Lost audio stream (" << status << "), recovering...");
@@ -82,7 +80,10 @@ void AudioProvider::update(AudioData& audioData)
     audioData.samples.clear();
   }
 
-  if(onlySoundInSetAndPlaying && theGameInfo.state != STATE_SET && theGameInfo.state != STATE_PLAYING)
+  // Set timestamp after recording to keep semantics of previous approach.
+  timestamp = Time::getCurrentSystemTime();
+
+  if(onlySoundInSetAndPlaying && !theGameState.isSet() && !theGameState.isPlaying())
     audioData.samples.clear();
 }
 
@@ -126,6 +127,10 @@ bool AudioProvider::setCaptureVolume(const std::string& element, float volumePer
 
 AudioProvider::AudioProvider() {}
 AudioProvider::~AudioProvider() {}
-void AudioProvider::update(AudioData&) {}
+void AudioProvider::update(AudioData&)
+{
+  Thread::yield();
+  timestamp = Time::getCurrentSystemTime();
+}
 
 #endif

@@ -7,7 +7,7 @@
  */
 
 #include "FieldBallProvider.h"
-#include "Tools/Math/Geometry.h"
+#include "Math/Geometry.h"
 #include "Tools/Modeling/BallPhysics.h"
 
 MAKE_MODULE(FieldBallProvider, behaviorControl);
@@ -22,14 +22,19 @@ void FieldBallProvider::update(FieldBall& fieldBall)
   fieldBall.endPositionRelative     = BallPhysics::getEndPosition(theBallModel.estimate.position, theBallModel.estimate.velocity, theBallSpecification.friction);
   fieldBall.endPositionOnField      = theRobotPose * fieldBall.endPositionRelative;
 
-  fieldBall.teamPositionOnField     = theTeamBallModel.position;
-  fieldBall.teamPositionRelative    = theRobotPose.inversePose * fieldBall.teamPositionOnField;
-  fieldBall.teamEndPositionOnField  = BallPhysics::getEndPosition(theTeamBallModel.position, theTeamBallModel.velocity, theBallSpecification.friction);
-  fieldBall.teamEndPositionRelative = theRobotPose.inversePose * fieldBall.teamEndPositionOnField;
+  fieldBall.teammatesBallIsValid = theTeammatesBallModel.isValid;
+  if(theTeammatesBallModel.isValid)
+  {
+    fieldBall.teamPositionOnField     = theTeammatesBallModel.position;
+    fieldBall.teamPositionRelative    = theRobotPose.inversePose * theTeammatesBallModel.position;
+    fieldBall.teamEndPositionOnField  = BallPhysics::getEndPosition(theTeammatesBallModel.position, theTeammatesBallModel.velocity, theBallSpecification.friction);
+    fieldBall.teamEndPositionRelative = theRobotPose.inversePose * fieldBall.teamEndPositionOnField;
+  }
 
   fieldBall.timeSinceBallWasSeen = theFrameInfo.getTimeSince(theBallModel.timeWhenLastSeen);
   fieldBall.timeSinceBallDisappeared = theFrameInfo.getTimeSince(theBallModel.timeWhenDisappeared);
-  fieldBall.timeSinceTeamBallWasValid = theFrameInfo.getTimeSince(theTeamBallModel.timeWhenLastValid);
+
+  fieldBall.teammatesBallNewerThanOwnBall = theTeammatesBallModel.newerThanOwnBall;
 
   checkIfBallIsRollingTowardsAGoal(fieldBall);
   checkIfBallIsPassingOwnYAxis(fieldBall);
@@ -83,7 +88,7 @@ void FieldBallProvider::checkIfBallIsInsideOwnPenaltyArea(FieldBall& fieldBall)
 {
   fieldBall.isInsideOwnPenaltyArea = false;
   fieldBall.distanceToOwnPenaltyArea = -1.f;
-  if(!fieldBall.ballWasSeen() && !theTeamBallModel.isValid)
+  if(!fieldBall.ballWasSeen() && !theTeammatesBallModel.isValid)
     return;
   const Vector2f& bp = fieldBall.recentBallPositionOnField();
   fieldBall.isInsideOwnPenaltyArea = bp.x() < theFieldDimensions.xPosOwnPenaltyArea &&

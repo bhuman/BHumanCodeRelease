@@ -9,10 +9,10 @@
 
 #pragma once
 
-#include "Tools/Streams/Enum.h"
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/AutoStreamable.h"
+#include "Streaming/Enum.h"
+#include "Math/Angle.h"
+#include "Math/Eigen.h"
+#include "Streaming/AutoStreamable.h"
 
 /**
  * Information about the camera which provides the images for the robot

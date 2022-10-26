@@ -8,8 +8,8 @@
 #include "PenaltyArea.h"
 #include "Representations/Configuration/FieldDimensions.h"
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Debugging/DebugDrawings.h"
-#include "Tools/Module/Blackboard.h"
+#include "Debugging/DebugDrawings.h"
+#include "Framework/Blackboard.h"
 #include "Tools/Math/Transformation.h"
 
 void PenaltyArea::draw() const

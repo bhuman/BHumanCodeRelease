@@ -8,16 +8,9 @@
 
 #pragma once
 
-#include "Tools/Math/Angle.h"
-#include "Tools/Streams/AutoStreamable.h"
-
-/** This enumeration describes the states that this module can be in. */
-ENUM(State,
-{,
-  idle, /**< Nothing special is done. */
-  recordSamples, /**< Samples are constructed from observations. */
-  optimize, /**< The optimization is running (one iteration per frame). */
-});
+#include "Math/Angle.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Enum.h"
 
 ENUM(SampleConfigurationStatus,
 {,
@@ -29,8 +22,16 @@ ENUM(SampleConfigurationStatus,
 });
 
 STREAMABLE(CameraCalibrationStatus,
-{,
-  (State)(State::idle) state,
+{
+  /** This enumeration describes the states that this module can be in. */
+  ENUM(State,
+  {,
+    idle, /**< Nothing special is done. */
+    recordSamples, /**< Samples are constructed from observations. */
+    optimize, /**< The optimization is running (one iteration per frame). */
+  }),
+
+  (CameraCalibrationStatus::State)(CameraCalibrationStatus::State::idle) state,
   (int)(0) inStateSince,
   (SampleConfigurationStatus)(SampleConfigurationStatus::none) sampleConfigurationStatus,
 });

@@ -9,8 +9,8 @@
 #pragma once
 
 #include "Representations/Infrastructure/CameraInfo.h"
-#include "Tools/Math/Eigen.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Eigen.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(AutoExposureWeightTable,
 {

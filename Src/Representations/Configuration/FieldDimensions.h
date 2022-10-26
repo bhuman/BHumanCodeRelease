@@ -9,12 +9,12 @@
 
 #pragma once
 
-#include "Tools/Boundary.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/Enum.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Math/Geometry.h"
-#include "Tools/Streams/EnumIndexedArray.h"
+#include "Math/Boundary.h"
+#include "Math/Pose2f.h"
+#include "Streaming/Enum.h"
+#include "Streaming/AutoStreamable.h"
+#include "Math/Geometry.h"
+#include "Streaming/EnumIndexedArray.h"
 
 STREAMABLE(SimpleFieldDimensions,
 {,
@@ -39,7 +39,6 @@ STREAMABLE(SimpleFieldDimensions,
   (float) yPosLeftSideline,
   (float) yPosLeftPenaltyArea,
   (float) yPosLeftGoal,
-  (float) yPosCenterGoal,
   (float) yPosRightGoal,
   (float) yPosRightPenaltyArea,
   (float) yPosRightSideline,
@@ -239,4 +238,10 @@ private:
    * The method draws the field lines.
    */
   void drawCorners() const;
+
+  /**
+   * The method draws dimension names and to which distances they correspond.
+   * @param showValues Also draw the actual values of the dimensions.
+   */
+  void drawDimensions(bool showValues) const;
 };

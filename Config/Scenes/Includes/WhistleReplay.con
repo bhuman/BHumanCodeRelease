@@ -1,2 +1,2 @@
-mr RawGameInfo LogDataProvider Cognition
+mr Whistle WhistleRecognizer Audio
 call Includes/Whistle

@@ -10,7 +10,7 @@
 
 #include "FilteredBallPercepts.h"
 #include "Platform/BHAssert.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Debugging/DebugDrawings.h"
 
 void FilteredBallPercepts::draw() const
 {
@@ -28,7 +28,7 @@ void FilteredBallPercepts::draw() const
 
 void FilteredBallPercepts::verify() const
 {
-  for(const auto& percept : percepts)
+  for([[maybe_unused]] const auto& percept : percepts)
   {
     ASSERT(std::isfinite(percept.positionInImage.x()));
     ASSERT(std::isfinite(percept.positionInImage.y()));

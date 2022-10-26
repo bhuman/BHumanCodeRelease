@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "Tools/Math/Angle.h"
-#include "Tools/Math/Pose2f.h"
-#include "Tools/Streams/AutoStreamable.h"
-#include "Tools/Function.h"
+#include "Math/Angle.h"
+#include "Math/Pose2f.h"
+#include "Streaming/AutoStreamable.h"
+#include "Streaming/Function.h"
 
 STREAMABLE(WalkStepData,
 {

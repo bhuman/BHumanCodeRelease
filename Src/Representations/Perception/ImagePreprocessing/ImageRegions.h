@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "Tools/Boundary.h"
-#include "Tools/Debugging/DebugDrawings.h"
+#include "Math/Boundary.h"
+#include "Debugging/DebugDrawings.h"
 
 /** The regions around image spots that must be scanned for a certain kind of percept detection */
 STREAMABLE(ImageRegions,
@@ -22,7 +22,19 @@ STREAMABLE(ImageRegions,
   (std::vector<Boundaryi>) regions,
 });
 
-/** The regions that the CNS must be calculated of. */
+/** The regions that must be searched for the center of the ball. */
+STREAMABLE_WITH_BASE(BallRegions, ImageRegions,
+{
+  void draw() const
+  {
+    DEBUG_DRAWING("representation:BallRegions", "drawingOnImage")
+      for(const Boundaryi& region : regions)
+        RECTANGLE("representation:BallRegions", region.x.min, region.y.min,
+                  region.x.max, region.y.max, 1, Drawings::solidPen, ColorRGBA::orange);
+  },
+});
+
+/** The regions that the CNS must be calculated of to search for the ball. */
 STREAMABLE_WITH_BASE(CNSRegions, ImageRegions,
 {
   void draw() const
