@@ -22,11 +22,13 @@ Thumbs.db
 /Make/Hooks/gitpath
 !/Make/Linux/.idea
 /Make/Linux/.idea/*
+!/Make/Linux/.idea/cmake.xml
 !/Make/Linux/.idea/misc.xml
 !/Make/Linux/.idea/codeStyles
 !/Make/Linux/.idea/fileTemplates
 /Make/Linux/.idea/fileTemplates/includes/Set Author.
-/Make/VS20*/*.sln
+!/Make/Linux/.idea/runConfigurations
+/Make/Windows/B-Human.lnk
 /Make/macOS/B-Human.xcodeproj
 /Make/Common/deploy-options.txt
 /Util/Buildchain/macOS/bin/cmake
