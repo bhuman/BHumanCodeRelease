@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: B-Human Code Release
+message: "If you use this software, please cite as below."
+type: software
+authors:
+  - name: "B-Human Team"
+    website: "https://b-human.de/team-en.html"
+repository-code: "https://github.com/bhuman/BHumanCodeRelease/releases/tag/coderelease2022"
+url: "https://wiki.b-human.de/coderelease2022/"
+license-url: "https://raw.githubusercontent.com/bhuman/BHumanCodeRelease/coderelease2022/License.md"
+version: "2022"
+date-released: "2022-10-28"
